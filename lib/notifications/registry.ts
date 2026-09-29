@@ -31,6 +31,7 @@ export type NotificationEvent =
   | 'plan.share'
   | 'plan.comment'
   | 'plan.assign'
+  | 'order.shipped'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -60,6 +61,11 @@ export interface NotificationContexts {
   'plan.comment': { title: string; body: string; url: string; tag: string }
   /** A to-do on a shared Plan handed to the recipient (LIVE-545). `comments`, push. */
   'plan.assign': { title: string; body: string; url: string; tag: string }
+  /** The seller marked a buyer's order shipped (LIVE-606, ADR-1575). The caller
+   *  (lib/commerce/fulfilment.ts notifyOrderShipped) authors the push copy in-voice and renders
+   *  the email from the money-receipt builders; a buyer with no deliverable address hands in no
+   *  email and that channel is a clean skip. */
+  'order.shipped': { title: string; body: string; url: string; email?: EmailPayload }
 }
 
 /** Per-channel rendered payloads. A type renders only the channels it declares; a channel
@@ -180,6 +186,20 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     channels: ['push'],
     render: (ctx) => ({
       push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+    }),
+  },
+
+  // A shipped order (LIVE-606, ADR-1575). Lifecycle category: the buyer's own email_lifecycle /
+  // push_lifecycle switches gate it, so a member who turned lifecycle mail off finds out from
+  // My orders instead of their inbox, and suppression still wins on the address. Not
+  // transactional on purpose: the receipt was the record of the charge; this is news about it.
+  'order.shipped': {
+    event: 'order.shipped',
+    category: 'lifecycle',
+    channels: ['email', 'push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url },
+      ...(ctx.email ? { email: ctx.email } : {}),
     }),
   },
 }

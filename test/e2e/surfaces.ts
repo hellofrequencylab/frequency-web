@@ -1413,11 +1413,15 @@ function envMaskSelectors(): readonly string[] {
     .filter(Boolean)
 }
 
+/** The mask SELECTORS for a surface: global + per-surface + env. The band reader reads the same
+ *  list, so a box the camera paints over is never named as what moved (ADR-1598). */
+export function maskSelectorsFor(surface: Surface): readonly string[] {
+  return [...GLOBAL_MASK_SELECTORS, ...(surface.masks ?? []), ...envMaskSelectors()]
+}
+
 /** The `mask` locators for a surface: global + per-surface + env. */
 export function masksFor(page: Page, surface: Surface): Locator[] {
-  return [...GLOBAL_MASK_SELECTORS, ...(surface.masks ?? []), ...envMaskSelectors()].map(
-    (selector) => page.locator(selector),
-  )
+  return maskSelectorsFor(surface).map((selector) => page.locator(selector))
 }
 
 /* ── Navigation helpers ───────────────────────────────────────────────────── */
@@ -1862,6 +1866,13 @@ export interface SnapshotBox {
   h: number
   top: number
   d: string
+  /** Horizontal extent, CSS px. Optional so a snapshot recorded without it still reads. */
+  left?: number
+  w?: number
+  /** Inside a box the camera paints over (a mask selector matches it or an ancestor). The
+   *  band reader skips these: a masked box is magenta in both pictures, so it is never what
+   *  moved, and naming it sent CHROME-DRIFT after a list that had been masked since LIVE-513. */
+  masked?: boolean
 }
 
 export type BoxSnapshot = Record<string, SnapshotBox>
@@ -1872,9 +1883,20 @@ export type BoxSnapshot = Record<string, SnapshotBox>
  * Out-of-flow boxes (`fixed` / `absolute`) are not recorded because they cannot move the
  * document's height, but the walk descends through them. Empty on a page with no body.
  */
-export async function boxSnapshot(page: Page): Promise<BoxSnapshot> {
+export async function boxSnapshot(
+  page: Page,
+  maskSelectors: readonly string[] = GLOBAL_MASK_SELECTORS,
+): Promise<BoxSnapshot> {
   return await page.evaluate(
-    ({ nodeCap, textCap }) => {
+    ({ nodeCap, textCap, masks }) => {
+      const isMasked = (el: Element): boolean =>
+        masks.some((sel) => {
+          try {
+            return el.closest(sel) !== null
+          } catch {
+            return false
+          }
+        })
       const describe = (el: Element): string => {
         const tag = el.tagName.toLowerCase()
         const id = el.id ? `#${el.id}` : ''
@@ -1889,7 +1911,7 @@ export async function boxSnapshot(page: Page): Promise<BoxSnapshot> {
         const text = (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, textCap)
         return `${tag}${id}${cls}${text ? ` "${text}"` : ''}`
       }
-      const out: Record<string, { h: number; top: number; d: string }> = {}
+      const out: Record<string, { h: number; top: number; d: string; left: number; w: number; masked?: boolean }> = {}
       if (!document.body) return out
       const scrollTop = window.scrollY || 0
       const stack: { el: Element; path: string }[] = [{ el: document.body, path: 'body' }]
@@ -1911,6 +1933,9 @@ export async function boxSnapshot(page: Page): Promise<BoxSnapshot> {
               h: Math.round(rect.height * 100) / 100,
               top: Math.round((rect.top + scrollTop) * 100) / 100,
               d: describe(kid),
+              left: Math.round(rect.left * 100) / 100,
+              w: Math.round(rect.width * 100) / 100,
+              ...(isMasked(kid) ? { masked: true } : {}),
             }
           }
           stack.push({ el: kid, path })
@@ -1918,7 +1943,7 @@ export async function boxSnapshot(page: Page): Promise<BoxSnapshot> {
       }
       return out
     },
-    { nodeCap: NODE_WALK_CAP, textCap: MOVER_TEXT_CAP },
+    { nodeCap: NODE_WALK_CAP, textCap: MOVER_TEXT_CAP, masks: [...maskSelectors] },
   )
 }
 
@@ -2043,6 +2068,9 @@ export interface DiffBand {
   to: number
   rows: number
   pixels: number
+  /** Leftmost / rightmost differing column in the band, inclusive (ADR-1598). */
+  left?: number
+  right?: number
 }
 
 export interface BandReading {
@@ -2091,6 +2119,15 @@ const tagOf = (desc: string): string => (desc.match(/^[a-z0-9-]+/i)?.[0] ?? '').
  * so a table row wins over the table and the table over the shell, plus the smallest box under
  * it that carries TEXT, so the reader gets words and not only a tag. SVG internals are skipped
  * in favour of the `<svg>` they belong to. Pure.
+ *
+ * TWO FILTERS, both from CHROME-DRIFT (ADR-1598). On PR #2949 every desktop operator surface
+ * named the admin info rail's "Just joined" list under its four largest bands, and the list had
+ * been inside the `admin-rail` mask since LIVE-513: the committed PNGs show that column as one
+ * magenta box. The pixels were on the LEFT rail, in the same rows, and the reader could not say
+ * so because it matched rows and nothing else. So a box inside a mask is never named (it is the
+ * same magenta in both pictures), and when the band carries its columns and the box its
+ * horizontal extent, the box must overlap those columns too. Either half missing (an older
+ * snapshot, a hand-built band) falls back to rows alone, which is what this did before.
  */
 export function boxesInBands(
   snapshot: BoxSnapshot,
@@ -2099,10 +2136,14 @@ export function boxesInBands(
 ): { band: DiffBand; boxes: (SnapshotBox & { path: string })[] }[] {
   const all = Object.entries(snapshot)
     .map(([path, box]) => ({ path, ...box }))
-    .filter((b) => !SVG_INTERNAL_TAGS.has(tagOf(b.d)))
+    .filter((b) => !SVG_INTERNAL_TAGS.has(tagOf(b.d)) && !b.masked)
+  const acrossColumns = (b: SnapshotBox, band: DiffBand): boolean =>
+    band.left === undefined || band.right === undefined || b.left === undefined || b.w === undefined
+      ? true
+      : b.left <= band.right && b.left + b.w >= band.left
   return bands.map((band) => {
     const overlapping = all
-      .filter((b) => b.top <= band.to && b.top + b.h >= band.from)
+      .filter((b) => b.top <= band.to && b.top + b.h >= band.from && acrossColumns(b, band))
       .sort((x, y) => x.h - y.h || y.path.split('>').length - x.path.split('>').length)
     const boxes = overlapping.slice(0, Math.max(0, perBand - 1))
     const worded = overlapping.find((b) => b.d.includes(' "') && !boxes.includes(b))
@@ -2167,11 +2208,12 @@ export function bandsMessage(
 ): string {
   const shown = named.slice(0, BAND_CAP).map(({ band, boxes }) => {
     const rows = band.from === band.to ? `row ${band.from}` : `rows ${band.from}-${band.to}`
+    const cols = band.left === undefined || band.right === undefined ? '' : ` x ${band.left}-${band.right}`
     const under =
       boxes.length > 0
         ? ` under ${andList(boxes.map((b) => `${b.d} (top ${Math.round(b.top)}, ${Math.round(b.h)}px tall)`))}`
-        : ' under no in-flow box the snapshot recorded'
-    return `${rows} (${band.pixels} px)${under}`
+        : ' under no unmasked in-flow box the snapshot recorded'
+    return `${rows}${cols} (${band.pixels} px)${under}`
   })
   const more = reading.bands.length > BAND_CAP ? `, and ${reading.bands.length - BAND_CAP} smaller` : ''
   return [
@@ -2201,6 +2243,9 @@ export function attachedImagePair(
 export interface CaptureContext {
   before?: BoxSnapshot
   attachments?: readonly { name: string; path?: string }[]
+  /** The surface's mask selectors (`maskSelectorsFor`), so the band reader skips what the camera
+   *  painted over. Omitted, the global list applies. */
+  maskSelectors?: readonly string[]
 }
 
 /* ── THE FLIP THE WAIT CANNOT SEE: a height that only moves WHILE THE SHUTTER IS OPEN ─────
@@ -2421,6 +2466,53 @@ export function capturedHeights(text: string): number[] {
 }
 
 /**
+ * The distinct heights the CAMERA produced: the `received` half of each `Expected an image …,
+ * received …` line, in first-seen order. Pure.
+ *
+ * 🔴 TWO DISTINCT HEIGHTS IN THE LOG ARE NOT A FLIP BY THEMSELVES (CHROME-DRIFT, ADR-1598).
+ * On PR #2949 `/admin` read "changed height DURING capture: 1372 and 1293" on every attempt, and
+ * the call log said the same thing each time: `Expected an image 1280px by 1372px, received
+ * 1280px by 1293px`. 1372 is the committed baseline and 1293 is the page, which never moved: the
+ * page had simply become 79px shorter than its picture. A flip is the camera disagreeing with
+ * ITSELF, so it is two distinct RECEIVED heights (the PR #2878 log alternates them, 14567 then
+ * 14521). One received height against a different expected height is a page that changed size
+ * since the baseline, and `baselineHeightMessage` says so.
+ */
+export function receivedHeights(text: string): number[] {
+  const heights: number[] = []
+  for (const match of text.matchAll(/received (\d+)px by (\d+)px/g)) {
+    const height = Number(match[2])
+    if (Number.isFinite(height) && !heights.includes(height)) heights.push(height)
+  }
+  return heights
+}
+
+/** The committed baseline's height, from the first `Expected an image W px by H px` line, or
+ *  null when the log carries none. Pure. */
+export function expectedHeight(text: string): number | null {
+  const match = /Expected an image (\d+)px by (\d+)px/.exec(text)
+  return match ? Number(match[2]) : null
+}
+
+/**
+ * The sentence for a page that held ONE height through the shutter, and that height is not the
+ * baseline's. Pure. It says what is known (the page is N px shorter or taller than the committed
+ * picture on every capture, so the pixel compare never ran) and the one thing a mask cannot do,
+ * hold a height, so nobody reaches for a mask. What it does NOT do is name the box: a baseline
+ * has no DOM to diff against. The measured case is a desktop operator page shorter than the
+ * left rail, where the rail's length (the DB `left_rail` menu) sets the page's (ADR-1598).
+ */
+export function baselineHeightMessage(label: string, expected: number, received: number): string {
+  const spread = Math.abs(received - expected)
+  const direction = received < expected ? 'shorter' : 'taller'
+  return [
+    `${label} is ${received}px tall on every capture against a ${expected}px baseline, ${spread}px ${direction}.`,
+    'This is NOT a flip: the camera agreed with itself, and the page changed height since the baseline was taken, so the pixel compare never ran.',
+    'A mask cannot hold a height. Find the in-flow box that is a different size than it was in the committed picture (on a page shorter than a rail, the rail sets the height), or recapture if the change is intended.',
+  ].join(' ')
+}
+
+/**
  * The sentence for a height that only moved while the shutter was open. Pure.
  *
  * It says WHY the wait was silent, because the first question anybody will ask of this message
@@ -2486,11 +2578,16 @@ export async function explainCaptureFailure(
 ): Promise<unknown> {
   const text = error instanceof Error ? `${error.message}` : String(error)
   const heights = capturedHeights(text)
+  const received = receivedHeights(text)
+  const baseline = expectedHeight(text)
   const parts: string[] = []
   // Every read below is best-effort by design: if the page has gone (closed, crashed, navigated)
   // we must still rethrow the real failure rather than replace it with our own stack.
   const samples = await readViewportProbe(page).catch(() => [] as ViewportSample[])
-  if (heights.length >= 2) {
+  if (received.length === 1 && baseline !== null && baseline !== received[0]) {
+    // One camera height, not the baseline's: a page that changed size, not a flip (ADR-1598).
+    parts.push(baselineHeightMessage(label, baseline, received[0]!))
+  } else if (heights.length >= 2) {
     const boxes = await viewportDependentBoxes(page).catch(() => [] as ViewportBox[])
     const after = context.before ? await boxSnapshot(page).catch(() => null) : null
     const movers = context.before && after ? smallestEnclosing(diffBoxes(context.before, after)) : []
@@ -2512,7 +2609,7 @@ export async function explainCaptureFailure(
       reading = null
     }
     if (reading && reading.bands.length > 0) {
-      const snapshot = await boxSnapshot(page).catch(() => null)
+      const snapshot = await boxSnapshot(page, context.maskSelectors).catch(() => null)
       const named = snapshot ? boxesInBands(snapshot, reading.bands.slice(0, BAND_CAP)) : []
       parts.push(`${parts.length === 0 ? `${label}: ` : ''}${bandsMessage(reading, named)}`)
     }
