@@ -170,9 +170,9 @@ export function isImportable(c: ProjectedContact): boolean {
 
 // ── The dry-run plan (dedupe + create/merge/skip) ────────────────────────────────
 
-export type RowAction = 'create' | 'merge' | 'skip'
+type RowAction = 'create' | 'merge' | 'skip'
 
-export interface PlannedRow {
+interface PlannedRow {
   rowIndex: number
   action: RowAction
   contact: ProjectedContact
@@ -180,7 +180,7 @@ export interface PlannedRow {
   matchedKey: string | null
 }
 
-export interface CommitPlan {
+interface CommitPlan {
   rows: PlannedRow[]
   diff: DiffCounts
   errors: RowError[]
@@ -315,7 +315,7 @@ export function planCommit(
 }
 
 /** How many planned rows the preview table carries; the rest are summarized as "+N more". */
-export const PREVIEW_ROW_CAP = 200
+const PREVIEW_ROW_CAP = 200
 
 /** The preview-facing slice of a plan (what gets staged in `validation`). Includes a CAPPED
  *  per-row list derived from the SAME planned rows as `diff`, so the table and the totals can

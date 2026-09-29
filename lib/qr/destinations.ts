@@ -4,7 +4,7 @@
 // RSVPs to Events, send members to the Quest, etc. Pure data (no imports), safe on
 // client + server.
 
-export interface SiteDestination {
+interface SiteDestination {
   label: string
   /** Root-relative path the code redirects to. */
   path: string

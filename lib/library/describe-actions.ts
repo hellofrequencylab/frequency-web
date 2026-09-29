@@ -34,7 +34,7 @@ import { readImageDescriptor } from './image-describe'
 
 /** What the caller learns: which columns were filled in, if any. Never an error a member would act
  *  on — a missing placeholder is cosmetic, so every refusal reads the same way. */
-export type DescribeAssetResult = { ok: true; written: string[] } | { error: string }
+type DescribeAssetResult = { ok: true; written: string[] } | { error: string }
 
 /**
  * Fill in the blurhash + palette of an asset that already exists, from a descriptor the browser

@@ -18,7 +18,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export interface ConnectorSuggestion {
+interface ConnectorSuggestion {
   profileId: string
   displayName: string
   handle: string

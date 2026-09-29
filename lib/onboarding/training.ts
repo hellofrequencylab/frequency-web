@@ -28,7 +28,7 @@ export async function assignTraining(profileId: string, role: CommunityRole): Pr
     .upsert({ profile_id: profileId, role, status: 'assigned' }, { onConflict: 'profile_id,role', ignoreDuplicates: true })
 }
 
-export interface ActiveTraining extends TrainingDef {
+interface ActiveTraining extends TrainingDef {
   status: string
 }
 

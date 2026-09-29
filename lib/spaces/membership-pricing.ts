@@ -18,7 +18,7 @@ export type BillingInterval = 'month' | 'year'
 
 /** The price fields this module reads off a tier. Structural, so the caller can pass a
  *  MembershipTier or a plain row without importing the server module. */
-export interface TierPrices {
+interface TierPrices {
   /** The MONTHLY price in cents (0 = free). */
   priceCents: number
   /** The optional yearly price for the SAME tier in cents; null = monthly only. */
@@ -28,7 +28,7 @@ export interface TierPrices {
 }
 
 /** What one card shows for the selected cadence. */
-export interface TierPriceView {
+interface TierPriceView {
   /** The amount to show, in cents. */
   cents: number
   /** The cadence that amount is charged at, for the label under it. */

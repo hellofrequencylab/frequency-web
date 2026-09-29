@@ -8,7 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMarketRead, type MarketRead } from './market-read'
 
-export interface ContentDraftPayload {
+interface ContentDraftPayload {
   channel: string
   hook: string
   body: string

@@ -16,12 +16,12 @@
 // (being executable) is the one that gets checked against — keep the doc in step.
 
 /** How a breached SLO is handled (OBSERVABILITY-BASELINES.md §4b). */
-export type SloAction =
+type SloAction =
   | 'page' // wired signal + a human is expected to respond immediately
   | 'track' // drift is reviewed; a sustained breach opens an investigation
 
 /** The kind of objective, so consumers can group/format them sensibly. */
-export type SloKind = 'availability' | 'latency' | 'error-rate' | 'freshness'
+type SloKind = 'availability' | 'latency' | 'error-rate' | 'freshness'
 
 export type Slo = {
   /** Stable identifier, dot-namespaced like log events (e.g. `latency.read-hot-paths`). */
@@ -147,7 +147,7 @@ export const SLOS: readonly Slo[] = [
  * `jobs` lists the route segments under app/api/cron/ that share each window, so the
  * mapping back to vercel.json (and to withCronHeartbeat's `jobName`) stays obvious.
  */
-export type CronFreshnessWindow = {
+type CronFreshnessWindow = {
   /** Group label, e.g. 'every 2 min', 'daily'. */
   group: string
   /** Minutes within which a fresh job must have last succeeded (interval + grace). */
@@ -202,6 +202,7 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
       'vera-owner-brief',
       'embed-help',
       'embed-library',
+      'tag-library',
       'lifecycle-triggers',
       'event-occurrences',
       'refresh-traits',
@@ -255,7 +256,7 @@ export function meetsSlo(slo: Slo, value: number): boolean {
 // not budgets, so `errorBudget` returns null for them rather than inventing a number.
 
 /** A computed error-budget snapshot for one ratio SLO at one measured value. */
-export type ErrorBudget = {
+type ErrorBudget = {
   /** The SLO this budget is derived from. */
   sloId: string
   /**
@@ -379,7 +380,7 @@ export function isCronFresh(
 // check created or deleted, CRON_HEARTBEAT_SKIP edited). Neither alone is the move.
 
 /** A cron that deliberately has no monitor, and the one-line reason silence was chosen. */
-export type UnmonitoredCron = {
+type UnmonitoredCron = {
   /** Cron route segment (matches app/api/cron/<job> and vercel.json `path`). */
   job: string
   /** Why a silent failure here does not page anyone. One line. */
@@ -416,6 +417,7 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'embed-room-messages', reason: 'embedding derivation; a miss degrades room search gradually and a backfill repairs it' },
   { job: 'embed-practices', reason: 'embedding derivation; a miss degrades practice search gradually and a backfill repairs it' },
   { job: 'embed-library', reason: 'embedding derivation; a miss degrades library search gradually and a backfill repairs it' },
+  { job: 'tag-library', reason: 'AI derivation (LIVE-587); an image left unnamed tonight is still unnamed tomorrow and the next run names it' },
   { job: 'embed-help', reason: 'embedding derivation; a miss degrades help search gradually and a backfill repairs it' },
   { job: 'summarize-vera-memory', reason: 'AI derivation; a missed summary is caught up by the next run, nothing is lost' },
   { job: 'refresh-traits', reason: 'AI derivation; traits go stale by a day and the next run recomputes them' },

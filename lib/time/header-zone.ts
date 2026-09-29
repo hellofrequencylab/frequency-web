@@ -12,7 +12,7 @@
 
 import { zoneWords } from './zone-words'
 
-export interface HeaderZone {
+interface HeaderZone {
   /** The IANA value, for the tooltip and for saying WHOSE zone this is. Empty when nothing said. */
   name: string
   /** What the header SHOWS: plain words, never a raw identifier and never a seasonal abbreviation. */

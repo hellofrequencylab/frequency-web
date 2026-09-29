@@ -65,7 +65,7 @@ export function isAdvocacyPlaybook(playbookId: unknown): boolean {
 // ── The usage read-model + the ceiling math (PURE) ───────────────────────────────────────────────
 
 /** A Space's outcome usage for the current period + the soft ceiling state. Display-only. */
-export interface SpaceOutcomeUsage {
+interface SpaceOutcomeUsage {
   /** Playbook actions run (status 'done') in the period. The metered volume unit. */
   playbookActions: number
   /** Distinct members re-activated by a re-activation playbook in the period. */

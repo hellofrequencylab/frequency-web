@@ -11,10 +11,10 @@
 
 import { getSessionId } from './observe'
 
-export const VITAL_NAMES = ['LCP', 'INP', 'CLS', 'FCP', 'TTFB'] as const
+const VITAL_NAMES = ['LCP', 'INP', 'CLS', 'FCP', 'TTFB'] as const
 export type VitalName = (typeof VITAL_NAMES)[number]
 const RATINGS = ['good', 'needs-improvement', 'poor'] as const
-export type VitalRating = (typeof RATINGS)[number]
+type VitalRating = (typeof RATINGS)[number]
 
 /** Viewport bucket (Lift 7d). A phone and a desktop are two different products at the
  *  same URL, and a blended p75 hides whichever one is losing. Derived from the viewport
@@ -23,11 +23,11 @@ export type VitalRating = (typeof RATINGS)[number]
  *  cannot narrow this stream toward an identity. That account-free posture is the whole
  *  reason vitals sit outside the `analytics` consent scope (ADR-922), and a bucket of
  *  three carries no more entropy than the path already does. */
-export const VIEWPORT_CLASSES = ['mobile', 'tablet', 'desktop'] as const
-export type ViewportClass = (typeof VIEWPORT_CLASSES)[number]
+const VIEWPORT_CLASSES = ['mobile', 'tablet', 'desktop'] as const
+type ViewportClass = (typeof VIEWPORT_CLASSES)[number]
 
 /** Pure: width in CSS px → bucket. Tailwind's md (768) and lg (1024). */
-export function viewportClassForWidth(width: number): ViewportClass {
+function viewportClassForWidth(width: number): ViewportClass {
   if (!Number.isFinite(width) || width <= 0) return 'desktop'
   if (width < 768) return 'mobile'
   if (width < 1024) return 'tablet'
@@ -36,7 +36,7 @@ export function viewportClassForWidth(width: number): ViewportClass {
 
 /** The current viewport bucket, or null off the browser. Read at normalize time (the
  *  report callback), which is the closest we get to "the viewport this load rendered in". */
-export function currentViewportClass(): ViewportClass | null {
+function currentViewportClass(): ViewportClass | null {
   if (typeof window === 'undefined') return null
   return viewportClassForWidth(window.innerWidth)
 }
@@ -44,7 +44,7 @@ export function currentViewportClass(): ViewportClass | null {
 /** ≤ the 5 metric kinds + slack for a retried metric id within one page load. */
 export const MAX_VITALS_BATCH = 8
 
-export interface CleanVital {
+interface CleanVital {
   name: VitalName
   /** ms for time metrics (whole), unitless 4dp for CLS. */
   value: number

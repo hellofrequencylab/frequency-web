@@ -26,7 +26,7 @@ import type { Json } from '@/lib/database.types'
  *  1 = gave an email on the tour beat, 2 = picked a core feature, 3 and 4 = filled in identity
  *  (4 is the path where the email is first captured at the identity beat). 0 = row opened by a
  *  funnel that never sent a step. */
-export const SIGNUP_STEP_LABELS: Readonly<Record<number, string>> = {
+const SIGNUP_STEP_LABELS: Readonly<Record<number, string>> = {
   0: 'Started',
   1: 'Email',
   2: 'Feature pick',
@@ -116,7 +116,7 @@ export function mapSignupLeadRow(row: SignupLeadRow, now: number = Date.now()): 
   }
 }
 
-export interface ListAbandonedSignupLeadsOptions {
+interface ListAbandonedSignupLeadsOptions {
   /** Only rows created within this many days. Default 30. */
   sinceDays?: number
   /** Cap on rows returned, newest activity first. Default 200. */
@@ -169,7 +169,7 @@ function csvEscape(value: string): string {
   return value
 }
 
-export const SIGNUP_LEAD_CSV_HEADER = ['email', 'name', 'handle', 'source', 'step', 'step_label', 'summary', 'created_at', 'updated_at'] as const
+const SIGNUP_LEAD_CSV_HEADER = ['email', 'name', 'handle', 'source', 'step', 'step_label', 'summary', 'created_at', 'updated_at'] as const
 
 /** The export the operator downloads. One row per lead; header first; CRLF line ends. */
 export function abandonedSignupLeadsToCsv(leads: readonly AbandonedSignupLead[]): string {

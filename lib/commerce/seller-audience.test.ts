@@ -1,5 +1,35 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
+
+// ── A table-level fake of the admin client, for the behavioural cases at the end ────────────
+//
+// Every read the classifier makes is `from(table)…filters…` awaited as a thenable. The fake records
+// each query's table and filters and answers from `rows(table, filters)`, so a case states the
+// database it needs in one function and every other table answers "no rows".
+type Filters = Record<string, unknown>
+type Answer = { data: unknown[] | null; error: unknown }
+let rows: (table: string, f: Filters) => Answer = () => ({ data: [], error: null })
+const reads: Array<{ table: string; f: Filters }> = []
+function query(table: string) {
+  const f: Filters = {}
+  const q = {
+    select: () => q,
+    limit: () => q,
+    eq: (k: string, v: unknown) => ((f[`eq:${k}`] = v), q),
+    in: (k: string, v: unknown) => ((f[`in:${k}`] = v), q),
+    or: (v: string) => ((f.or = v), q),
+    not: () => q,
+    is: () => q,
+    then: (ok: (a: Answer) => unknown, bad?: (e: unknown) => unknown) => {
+      reads.push({ table, f })
+      return Promise.resolve(rows(table, f)).then(ok, bad)
+    },
+  }
+  return q
+}
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: query }) }))
+
+import { buyerIsSellersAudience } from './seller-audience'
 
 // ── "Once you have your contact, Frequency doesn't take a cut" (ADR-913) ────────────────────
 //
@@ -112,5 +142,158 @@ describe('every money path asks the question', () => {
     expect(tips).toContain('const fee = 0')
     expect(tips).not.toContain('classifyOrderSource')
     expect(tips).not.toContain('platformFeeCents')
+  })
+})
+
+describe("a PROFILE seller's own audience is the profile plus every Space they own (ADR-1584, LIVE-221)", () => {
+  const SELLER = '11111111-1111-4111-8111-111111111111'
+  const BUYER = '22222222-2222-4222-8222-222222222222'
+  const OWNED = '33333333-3333-4333-8333-333333333333'
+  const OTHER = '44444444-4444-4444-8444-444444444444'
+
+  beforeEach(() => {
+    reads.length = 0
+    rows = () => ({ data: [], error: null })
+  })
+
+  it('a stranger to the profile and to every Space it owns still classifies network', async () => {
+    rows = (t) => (t === 'spaces' ? { data: [{ id: OWNED }], error: null } : { data: [], error: null })
+    const v = await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+  })
+
+  it("an accepted friend of the seller's profile is their own audience", async () => {
+    rows = (t, f) =>
+      t === 'friendships' && f['eq:status'] === 'accepted' && f['eq:user_a_id'] === SELLER && f['eq:user_b_id'] === BUYER
+        ? { data: [{ id: 'f1' }], error: null }
+        : { data: [], error: null }
+    const v = await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'friend', degraded: false })
+  })
+
+  it('reads the friendship in canonical pair order whichever side is the seller', async () => {
+    // The table's CHECK is user_a_id < user_b_id, so the lower id is always user_a.
+    rows = (t, f) =>
+      t === 'friendships' && f['eq:user_a_id'] === SELLER && f['eq:user_b_id'] === BUYER
+        ? { data: [{ id: 'f1' }], error: null }
+        : { data: [], error: null }
+    const swapped = await buyerIsSellersAudience({ sellerProfileId: BUYER, buyerProfileId: SELLER })
+    expect(swapped).toEqual({ isOwnAudience: true, signal: 'friend', degraded: false })
+  })
+
+  it('an active member of a Space the seller owns is their own audience', async () => {
+    rows = (t, f) => {
+      if (t === 'spaces' && f['eq:owner_profile_id'] === SELLER) return { data: [{ id: OWNED }], error: null }
+      if (
+        t === 'space_members' &&
+        (f['in:space_id'] as string[] | undefined)?.includes(OWNED) &&
+        f['eq:profile_id'] === BUYER &&
+        f['eq:status'] === 'active'
+      )
+        return { data: [{ id: 'm1' }], error: null }
+      return { data: [], error: null }
+    }
+    const v = await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'owned_space_member', degraded: false })
+  })
+
+  it('a seller who owns no Space never asks space_members', async () => {
+    await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(reads.some((r) => r.table === 'spaces')).toBe(true)
+    expect(reads.some((r) => r.table === 'space_members')).toBe(false)
+  })
+
+  it('a failed read of the owned Spaces is a non-answer, so the sale fails safe to 0%', async () => {
+    rows = (t) => (t === 'spaces' ? { data: null, error: { message: 'boom' } } : { data: [], error: null })
+    const v = await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: null, degraded: true })
+  })
+
+  it("a SPACE sale is still measured against that Space, not the owner's friends or other Spaces", async () => {
+    // The seller is a friend of the buyer and the buyer is a member of the seller's OTHER Space, but
+    // not of the Space on this sale: every one of those reads would say yes if the Space path asked.
+    rows = (t, f) => {
+      if (t === 'friendships') return { data: [{ id: 'f' }], error: null }
+      if (t === 'spaces') return { data: [{ id: OTHER }], error: null }
+      if (t === 'space_members' && f['eq:space_id'] === OWNED) return { data: [], error: null }
+      if (t === 'space_members') return { data: [{ id: 'm' }], error: null }
+      return { data: [], error: null }
+    }
+    const v = await buyerIsSellersAudience({ sellerSpaceId: OWNED, sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+    expect(reads.some((r) => r.table === 'friendships')).toBe(false)
+    expect(reads.some((r) => r.table === 'spaces')).toBe(false)
+  })
+})
+
+describe("a Space's own audience includes its TIER members, not only its staff (ADR-1600, LIVE-627)", () => {
+  const OWNER = '11111111-1111-4111-8111-111111111111'
+  const BUYER = '22222222-2222-4222-8222-222222222222'
+  const SPACE = '33333333-3333-4333-8333-333333333333'
+  const ELSEWHERE = '44444444-4444-4444-8444-444444444444'
+
+  // A tiny table store: each read answers the rows whose columns match every eq / in filter, so a
+  // case states the database it needs as rows and the classifier's own filters decide what counts.
+  // A lapsed row only stays out because the classifier asks for `status = 'active'`.
+  function db(tables: Record<string, Array<Record<string, unknown>>>) {
+    return (t: string, f: Filters): Answer => {
+      const hits = (tables[t] ?? []).filter((row) =>
+        Object.entries(f).every(([k, v]) => {
+          const [op, col] = k.split(':') as [string, string]
+          if (op === 'eq') return row[col] === v
+          if (op === 'in') return (v as unknown[]).includes(row[col])
+          return true
+        }),
+      )
+      return { data: hits.map((row, i) => ({ id: `r${i}`, ...row })), error: null }
+    }
+  }
+  const tier = (status: string, space = SPACE) => ({ space_id: space, member_profile_id: BUYER, status })
+
+  beforeEach(() => {
+    reads.length = 0
+    rows = () => ({ data: [], error: null })
+  })
+
+  it("an active tier member is that Space's own audience, so its sale to them is 0%", async () => {
+    rows = db({ space_memberships: [tier('active')] })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'space_tier_member', degraded: false })
+  })
+
+  it.each(['cancelled', 'waitlist'])('a %s tier membership is not a membership, so the sale stays network', async (status) => {
+    rows = db({ space_memberships: [tier(status)] })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+  })
+
+  it("a tier membership in ANOTHER Space does not make the buyer this Space's audience", async () => {
+    rows = db({ space_memberships: [tier('active', ELSEWHERE)] })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+  })
+
+  it('staff on the Space roster still count, under their own signal', async () => {
+    rows = db({ space_members: [{ space_id: SPACE, profile_id: BUYER, status: 'active' }] })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'space_member', degraded: false })
+  })
+
+  it('a failed tier-membership read is a non-answer, so the sale fails safe to 0%', async () => {
+    rows = (t) => (t === 'space_memberships' ? { data: null, error: { message: 'boom' } } : { data: [], error: null })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: null, degraded: true })
+  })
+
+  it("a profile seller's owned-Space audience takes in that Space's tier members the same way", async () => {
+    rows = db({ spaces: [{ id: SPACE, owner_profile_id: OWNER }], space_memberships: [tier('active')] })
+    const v = await buyerIsSellersAudience({ sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'owned_space_member', degraded: false })
+  })
+
+  it("a lapsed tier member of a profile seller's owned Space stays network", async () => {
+    rows = db({ spaces: [{ id: SPACE, owner_profile_id: OWNER }], space_memberships: [tier('cancelled')] })
+    const v = await buyerIsSellersAudience({ sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
   })
 })

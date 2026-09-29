@@ -7,8 +7,7 @@ import {
   type PlanWrite,
   type SpacePlan,
 } from './plans'
-import { copyPlaybookToPlan, type PlanPlaybook } from './playbooks'
-import { buildVeraProposal } from './vera-plan'
+import type { PlanPlaybook } from './playbooks'
 import { planAnchorDayKey, type AnchorCandidate } from './relative-schedule'
 import { log } from '@/lib/log'
 
@@ -444,14 +443,6 @@ export async function insertPlaybook(
   })
   if (error) return planIoFailed('insert_playbook', 'The playbook could not be saved.', error)
   return { data: true }
-}
-
-export function seedPlanFromPlaybook(playbook: PlanPlaybook) {
-  return copyPlaybookToPlan(playbook)
-}
-
-export function veraProposalForPlan(opts: Parameters<typeof buildVeraProposal>[0]) {
-  return buildVeraProposal(opts)
 }
 
 // ── SHARES, THE HANDSHAKE (PROG-CAL7 Together, LIVE-541) ─────────────────────────────────────

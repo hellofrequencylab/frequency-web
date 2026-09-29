@@ -102,7 +102,7 @@ export function hasAccountSignal(cookieString: string | null | undefined): boole
  *   • the member twins (`/spaces/<slug>`, `/events/<slug>`, …) — those render the member's own view
  *     of a thing and keep the member's own mode.
  */
-export const PUBLIC_COMMUNITY_PATTERN = /^\/discover(?:\/|$)/
+const PUBLIC_COMMUNITY_PATTERN = /^\/discover(?:\/|$)/
 
 export function isPublicCommunityPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false
@@ -127,7 +127,7 @@ export function isPublicCommunityPath(pathname: string | null | undefined): bool
  * (Funnel splashes + Circle invite redemption) are ordinary surfaces that keep honouring the
  * member's choice. That is the same boundary the route group drew, written as a path.
  */
-export const LIGHT_LOCKED_PATTERN = /^\/join(?:\/(?:complete|preview))?\/?$/
+const LIGHT_LOCKED_PATTERN = /^\/join(?:\/(?:complete|preview))?\/?$/
 
 export function isLightLockedPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false
@@ -142,7 +142,7 @@ export const MOBILE_MAX_WIDTH_PX = 767
 
 /* ── The law ──────────────────────────────────────────────────────────────── */
 
-export interface ModeInputs {
+interface ModeInputs {
   /** Raw `localStorage['freq-theme']` (already legacy-migrated by the caller). */
   stored: string | null
   /** `prefers-color-scheme: dark`. */

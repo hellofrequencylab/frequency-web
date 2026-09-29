@@ -21,7 +21,7 @@ import type { ResolvedCategory, ResolvedItem, ResolvedMenu } from './types'
  *  ALL of its items ride inside the panel, including the section's own landing page, so
  *  nothing is unreachable without a hover. A single-link section stays a plain nav link
  *  carrying its one item's href. */
-export type CategoryTrigger = {
+type CategoryTrigger = {
   /** The category this trigger projects (its id is the stable render key). */
   category: ResolvedCategory
   /** The rendered tab name: the category's label, falling back to the menu's. */

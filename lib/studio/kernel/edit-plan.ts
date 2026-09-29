@@ -20,7 +20,7 @@ import type { EntityManifest, FieldDef, RepeatDef } from './manifest'
 import { inlineFields, railFields } from './review-kernel'
 
 /** Both edit planes of one manifest, from placement alone (ADR-450 §2). */
-export interface EditPlan {
+interface EditPlan {
   /** Content that IS the page, edited in place on the live entity. */
   inline: FieldDef[]
   /** Configuration, edited in the Inspector rail. The default placement. */
@@ -41,7 +41,7 @@ export function editPlan(manifest: EntityManifest): EditPlan {
  * cannot represent (ADR-1309) — a drop rather than a silent half-render, because a swallowed
  * fail-safe is an invisible regression.
  */
-export type RailDropReason = 'unknown' | 'inline' | 'spark-only' | 'keyed-repeat'
+type RailDropReason = 'unknown' | 'inline' | 'spark-only' | 'keyed-repeat'
 
 export interface RailForm {
   /** The fields the form renders, in MANIFEST order. */
@@ -57,7 +57,7 @@ export interface RailForm {
   dropped: { path: string; reason: RailDropReason }[]
 }
 
-export interface RailFormOptions {
+interface RailFormOptions {
   /**
    * An entity with no inline canvas yet renders its inline plane in the rail too. The fields keep
    * their `inline` placement; the rail is only where they render until the canvas lands, and

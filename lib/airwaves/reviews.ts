@@ -30,7 +30,7 @@ export interface RecordingReview {
 
 /** The reviews wall a Recording surface renders: the aggregate (average + count + distribution), the
  *  visible reviews newest-first, and (when signed in) the caller's own review so the form pre-fills. */
-export interface RecordingReviewSummary {
+interface RecordingReviewSummary {
   aggregate: ReviewAggregate
   reviews: RecordingReview[]
   myReview: RecordingReview | null

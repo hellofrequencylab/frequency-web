@@ -101,7 +101,7 @@ const SCOPED_PATTERNS: readonly RegExp[] = []
 // rail via `railFor`, so the admin info rail owns the right column.)
 const LEFT_WORKSPACE_PREFIXES: readonly string[] = []
 
-export type LeftRail = 'global' | 'none'
+type LeftRail = 'global' | 'none'
 
 /** Whether the global MEMBER left rail (the one site menu) frames a page. 'global'
  *  everywhere today; 'none' only if a route mounts its OWN left nav (none currently). */

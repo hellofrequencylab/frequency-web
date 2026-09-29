@@ -29,21 +29,21 @@ import { WEEKDAY_NAMES } from './day-notes'
  *  the check-in ledger is read per event. */
 export const MAX_HISTORY_EVENTS = 50
 
-export interface AttendedEventRow {
+interface AttendedEventRow {
   /** `events.starts_at` as stored: the wall clock in the event's zone, as UTC parts. */
   startsAt: string | null
   /** The event's attendance record, or null when it has none. */
   attendance: number | null
 }
 
-export interface AttendanceBucket {
+interface AttendanceBucket {
   /** Events with a record in this bucket. */
   events: number
   /** People counted present across them. */
   people: number
 }
 
-export interface AttendanceBest {
+interface AttendanceBest {
   /** 0 is Sunday, as `WEEKDAY_NAMES` and day notes count. */
   weekday: number
   /** The starting hour, 0 to 23, within that weekday that drew the most people. */

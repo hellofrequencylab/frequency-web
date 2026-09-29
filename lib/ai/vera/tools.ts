@@ -10,10 +10,10 @@
 
 import { createEntityToolDef } from './create-tools'
 
-export type ToolMode = 'read' | 'write'
+type ToolMode = 'read' | 'write'
 export type ParamType = 'string' | 'number' | 'boolean'
 
-export interface ToolParam {
+interface ToolParam {
   name: string
   type: ParamType
   required: boolean
@@ -205,7 +205,7 @@ export function requiresConfirmation(key: string): boolean {
   return BY_KEY.get(key)?.mode === 'write'
 }
 
-export interface ToolCallValidation {
+interface ToolCallValidation {
   ok: boolean
   errors: string[]
 }

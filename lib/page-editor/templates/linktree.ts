@@ -24,7 +24,7 @@ import { SPOTLIGHT_PUCK_TYPES } from '@/lib/spotlight/puck/convert'
  *  SpaceIdentityHeader (cover + logo + name), so a brand/space Spotlight opens with the SAME
  *  identity its landing page shows (uniform by default, Phase 4). A member personal Spotlight omits
  *  it and keeps its existing identity treatment (the render bridge paints the member avatar header). */
-export interface LinktreePresetOptions {
+interface LinktreePresetOptions {
   /** Lead with the shared SpaceIdentityHeader (brand/space Spotlights only). Default false. */
   withIdentity?: boolean
 }

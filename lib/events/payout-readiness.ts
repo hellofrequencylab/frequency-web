@@ -22,7 +22,7 @@ import { getConnectReadyMap } from '@/lib/billing/connect'
 import { canSellTickets } from './ticket-eligibility'
 
 /** The three columns this needs off an event row. Anything wider satisfies it. */
-export interface EventPayeeRow {
+interface EventPayeeRow {
   id: string
   host_id?: string | null
   /** Set when a Space hosts the event, in which case its OWNER is the payee (ADR-819). */

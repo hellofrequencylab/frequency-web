@@ -216,7 +216,7 @@ export function clearSpotlightDraft(meta: unknown): Record<string, unknown> {
 // never drags server-only code into the client build.
 
 /** The raw (unvalidated) editor seed sources plus the dirty flag. */
-export interface SpotlightEditorSeed {
+interface SpotlightEditorSeed {
   layout: unknown
   theme: unknown
   background: unknown

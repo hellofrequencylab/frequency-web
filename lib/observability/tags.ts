@@ -10,7 +10,7 @@
 import * as Sentry from '@sentry/nextjs'
 
 /** The dimensions we tag events by. All optional — only set tags that are known. */
-export type ObservabilityTags = {
+type ObservabilityTags = {
   /** Logical route or job identifier, e.g. `cron.process-queue`, `action.rsvp`. */
   route?: string
   /** Money/data partition when known: 'foundation' | 'labs' (lib/entities). */

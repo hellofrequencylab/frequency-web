@@ -20,7 +20,7 @@ function db() {
   return createAdminClient()
 }
 
-export interface NearbyPracticeSignal {
+interface NearbyPracticeSignal {
   practiceId: string
   /** The Practice title, for the prompt copy (falls back to a generic phrase). */
   practiceLabel: string

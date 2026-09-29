@@ -28,7 +28,7 @@ import type { InteractionChannel, InteractionDirection } from './interactions'
 /** The website-event reference kinds a message can be tied to. The first eight mirror the
  *  scope-spine CHECK vocabulary (ADR-831, lock-step with InteractionScopeKind); `ticket` covers the
  *  legacy space-ticket metadata rows. */
-export type PathRefKind =
+type PathRefKind =
   | 'event' | 'circle' | 'hub' | 'nexus' | 'campaign' | 'dispatch' | 'booking' | 'membership' | 'ticket'
 
 const REF_KINDS: readonly PathRefKind[] =
@@ -253,7 +253,7 @@ function ts(at: string | null | undefined): number {
 
 // ── The assembler ───────────────────────────────────────────────────────────────────────────────────
 
-export interface AssembleMessagePathInput {
+interface AssembleMessagePathInput {
   interactions: PathInteractionRow[]
   conversations: PathConversationRow[]
   messages: PathMessageRow[]

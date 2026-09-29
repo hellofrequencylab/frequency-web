@@ -31,7 +31,7 @@ export const GUIDE_PHASES = ['shape', 'schedule', 'ready'] as const
 export type GuidePhase = (typeof GUIDE_PHASES)[number]
 
 /** How the member entered the guided flow (recorded at creation, for resume copy). */
-export type WizardOrigin = 'spark' | 'template' | 'framework'
+type WizardOrigin = 'spark' | 'template' | 'framework'
 
 export interface JourneyWizardState {
   v: 1
@@ -179,7 +179,7 @@ export interface ReadyCheckInput {
   windowEndsAt: string | null
 }
 
-export interface ReadyCheckItem {
+interface ReadyCheckItem {
   key: 'name' | 'promise' | 'story' | 'cover' | 'structure' | 'schedule'
   label: string
   /** Set = the box is ticked. */

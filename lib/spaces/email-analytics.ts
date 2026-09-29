@@ -72,7 +72,7 @@ export interface SpaceEmailStats {
 
 /** Per-contact engagement rollup for the Community Resonance member detail: how many emails a person was
  *  sent, and how many they opened / clicked / replied to. All whole numbers, all 0 for an unknown address. */
-export interface ContactEngagement {
+interface ContactEngagement {
   sent: number
   opened: number
   clicked: number
@@ -80,7 +80,7 @@ export interface ContactEngagement {
 }
 
 /** One effective suppression for a Space (its own row, or a global one that affects it). */
-export interface SpaceSuppression {
+interface SpaceSuppression {
   id: string
   email: string
   /** Why the address is suppressed (e.g. 'unsubscribe', 'bounce', 'complaint'); null if unrecorded. */
@@ -92,7 +92,7 @@ export interface SpaceSuppression {
 }
 
 /** One recent send, for the owner's history list. */
-export interface SpaceSend {
+interface SpaceSend {
   id: string
   email: string
   status: SendStatus

@@ -44,7 +44,7 @@ export type AdminSlot =
 
 /** Which surface renders a module (ADR-138): `inline` = tune, on the page ·
  *  `sidebar` = manage, in the page admin dock. */
-export type AdminSurface = 'inline' | 'sidebar'
+type AdminSurface = 'inline' | 'sidebar'
 
 export interface AdminModule {
   /** Stable id — e.g. 'circle.settings'. */

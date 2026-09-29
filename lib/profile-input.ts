@@ -6,14 +6,14 @@ const HANDLE_RE = /^[a-z0-9_]{3,30}$/
 const DISPLAY_NAME_MAX = 80
 const BIO_MAX = 500
 
-export interface ProfileInput {
+interface ProfileInput {
   displayName: string
   handle: string
   bio?: string
   avatarUrl?: string
 }
 
-export interface SanitizedProfile {
+interface SanitizedProfile {
   displayName: string
   handle: string
   bio: string

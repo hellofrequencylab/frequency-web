@@ -96,7 +96,7 @@ export function accessibilityLabel(slug: string): string {
 // ── Address display (Tier B privacy model, ADR-867) ─────────────────────────
 
 /** What a viewer may see of a listing's location. */
-export interface AddressDisplay {
+interface AddressDisplay {
   /** The coarse place line. Safe EVERYWHERE: page body, cards, meta description,
    *  and JSON-LD addressLocality. Never contains the street address. */
   areaLabel: string | null
@@ -163,7 +163,7 @@ function rowToHousingDetail(r: Record<string, unknown>): HousingDetail {
   }
 }
 
-export interface HousingDetailInput {
+interface HousingDetailInput {
   listingType: HousingType
   rentCents?: number | null
   depositCents?: number | null
@@ -254,7 +254,7 @@ export async function getHousingDetail(listingId: string): Promise<HousingDetail
 // (migration 20270108000000). Astrology and resonance are deliberately NOT here:
 // astrology is opt-in-sensitive and resonance is opaque; neither is ever a chip.
 
-export interface MatchFits {
+interface MatchFits {
   budget: number
   geo: number
   timing: number
@@ -301,7 +301,7 @@ export function fitChips(
 }
 
 /** A roommate-listing match with the per-term fits alongside the blended score. */
-export interface RoommateListingMatch extends RoommateMatch {
+interface RoommateListingMatch extends RoommateMatch {
   fits: MatchFits
 }
 
@@ -327,7 +327,7 @@ export async function matchRoommates(
 /** A roommate<->roommate match: another active seeker ranked against the caller,
  *  enriched with their public profile card. Symmetric (reciprocal resonance).
  *  Coarse city/score band only — never coordinates. */
-export interface RoommateSeekerMatch {
+interface RoommateSeekerMatch {
   profileId: string
   displayName: string
   handle: string
@@ -389,7 +389,7 @@ export async function matchRoommateSeekers(
   return out
 }
 
-export interface HousingFacets {
+interface HousingFacets {
   propertyType?: PropertyType | null
   /** Dollars-per-month bounds (inclusive), applied to rent_cents. */
   minPriceCents?: number | null
@@ -455,7 +455,7 @@ const SEEKER_ENUMS = {
 } as const
 
 /** Raw (untrusted) lifestyle inputs, as strings off the form. */
-export interface SeekerPreferenceInput {
+interface SeekerPreferenceInput {
   cleanliness?: string | null
   social_level?: string | null
   schedule?: string | null
@@ -515,7 +515,7 @@ export function sanitizeSeekerPreferences(input: SeekerPreferenceInput): Record<
 /** The lifestyle block as the seeker FORM expects it (camelCase, all strings).
  *  Mirrors LifestylePrefs in the roommates seeker form; kept structural here so
  *  the server module never imports a client file. */
-export interface SeekerLifestylePrefill {
+interface SeekerLifestylePrefill {
   cleanliness?: string
   socialLevel?: string
   schedule?: string
@@ -564,7 +564,7 @@ export function seekerPreferencesToLifestyle(
   return out
 }
 
-export interface SeekerProfile {
+interface SeekerProfile {
   active: boolean
   budgetMinCents: number | null
   budgetMaxCents: number | null
@@ -635,7 +635,7 @@ export async function upsertSeekerProfile(
 // housing module that already holds the service-role client (scripts/admin-client-baseline.txt).
 
 /** The row shape of one claim; the alerts layer's HousingMatchAlert satisfies it. */
-export interface HousingMatchClaim {
+interface HousingMatchClaim {
   recipientProfileId: string
   counterpartProfileId: string
   kind: 'seeker' | 'listing'

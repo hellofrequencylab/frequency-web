@@ -37,7 +37,7 @@ function looseFrom(admin: Admin, table: string): LooseQuery {
 
 /** The context a caller (createBooking / rescheduleBooking) already holds, so confirmation mail needs
  *  no re-read of the just-written row. */
-export interface BookingNotifyContext {
+interface BookingNotifyContext {
   bookingId: string
   spaceId: string
   spaceSlug: string
@@ -122,7 +122,7 @@ function icsEscape(s: string): string {
 }
 
 /** A single-event VCALENDAR for a booking, as a base64 string ready to attach. Pure. */
-export function buildBookingIcsBase64(params: {
+function buildBookingIcsBase64(params: {
   uid: string
   startsAt: string
   endsAt: string

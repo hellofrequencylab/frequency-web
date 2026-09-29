@@ -15,9 +15,9 @@ export interface MemberStats {
   eventCount30d: number
 }
 
-export type LifecycleStage = 'new' | 'activated' | 'engaged' | 'at_risk' | 'dormant'
+type LifecycleStage = 'new' | 'activated' | 'engaged' | 'at_risk' | 'dormant'
 
-export type TraitValueType = 'number' | 'string' | 'timestamp' | 'boolean' | 'enum'
+type TraitValueType = 'number' | 'string' | 'timestamp' | 'boolean' | 'enum'
 export interface ComputedTrait {
   key: string
   type: TraitValueType
@@ -463,7 +463,7 @@ export function computeTraits(stats: MemberStats, now: number): ComputedTrait[] 
 
 /** Per-member practice counts in two trailing weekly buckets (the decline-slope input).
  *  Sourced nightly from practice_logs: this week = days 0 to 6, last week = days 7 to 13. */
-export interface PracticeCadenceStats {
+interface PracticeCadenceStats {
   /** Practice logs in the trailing 7 days (days 0 to 6). */
   practiceThisWeek: number
   /** Practice logs in the week before that (days 7 to 13). */
@@ -491,7 +491,7 @@ export function declineSlope(s: PracticeCadenceStats): number {
 
 /** A member's own crowding limits, read from notification preferences (the notification-budget
  *  input). All optional: a member who set nothing reads as the `standard` budget. */
-export interface NotificationBudgetInputs {
+interface NotificationBudgetInputs {
   /** Hard weekly send cap the member tolerates (0 = they want no outbound; undefined = no cap set). */
   weeklyCap?: number | null
   /** The member has quiet hours configured (a narrower window we may reach them). */
@@ -502,7 +502,7 @@ export interface NotificationBudgetInputs {
   suppressed?: boolean | null
 }
 
-export type NotificationBudgetTier = 'generous' | 'standard' | 'sparing' | 'paused'
+type NotificationBudgetTier = 'generous' | 'standard' | 'sparing' | 'paused'
 
 /**
  * Band a member's outreach budget into one of four tiers. PURE. FAIL-SAFE toward RESTRAINT:

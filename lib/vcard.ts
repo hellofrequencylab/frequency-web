@@ -92,7 +92,7 @@ export function buildVcf(profile: VcardProfile, config: VcardConfig): string | n
  *  has no per-member `vcard` opt-in blob, so it always offers a card built from what it already stores
  *  (brand name, tagline, logo) plus its public profile-data contact fields (phone / email / website).
  *  No new schema: these map onto existing columns / preferences (lib/spaces/profile-data.ts). */
-export interface SpaceVcardInput {
+interface SpaceVcardInput {
   /** The Space's brand / display name (the FN + ORG). */
   name: string
   /** The Space's tagline, used as the card NOTE. */

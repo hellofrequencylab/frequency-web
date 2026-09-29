@@ -26,7 +26,7 @@ import { getStaffMember } from '@/lib/staff'
 import { isStaff, type WebRole } from '@/lib/core/roles'
 import { staffCan } from '@/lib/core/staff-roles'
 
-export type GateResult =
+type GateResult =
   | { ok: true; profileId: string; webRole: WebRole }
   | { ok: false; error: string }
 

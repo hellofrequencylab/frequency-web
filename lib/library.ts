@@ -45,7 +45,7 @@ export type LibraryItem = {
   featuredAt: string | null
 }
 
-export type PendingItem = {
+type PendingItem = {
   contentType: ContentType
   id: string
   title: string

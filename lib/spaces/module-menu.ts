@@ -14,7 +14,7 @@
 import { SPACE_MODULES, isModuleHideable, isModuleAdvanced } from '@/lib/admin/modules/space-modules'
 
 /** The owner's persisted menu overrides for a Space, ready to hand to `spaceModuleManifest`. */
-export interface ModuleMenuPrefs {
+interface ModuleMenuPrefs {
   /** Module ids in the owner's preferred order; unlisted modules keep their catalog order, after these. */
   order: string[]
   /** Module ids the owner has hidden from the menu (never a shell / Danger / Module Manager id). */

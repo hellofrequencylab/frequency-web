@@ -20,7 +20,7 @@ import { recordAiUsage } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import type { TimelineEntry } from './timeline'
 
-export interface BriefInputs {
+interface BriefInputs {
   name: string
   title?: string | null
   company?: string | null

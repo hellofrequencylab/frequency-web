@@ -22,7 +22,7 @@ export function isValidKind(kind: unknown): kind is string {
   return typeof kind === 'string' && /^[a-z][a-z0-9_.]{0,39}$/.test(kind)
 }
 
-export interface RawObservation {
+interface RawObservation {
   kind?: unknown
   surface?: unknown
   path?: unknown
@@ -31,7 +31,7 @@ export interface RawObservation {
   t?: unknown
 }
 
-export interface CleanObservation {
+interface CleanObservation {
   kind: string
   surface: string | null
   path: string | null

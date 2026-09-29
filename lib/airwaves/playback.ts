@@ -23,7 +23,7 @@ import { canViewRecording, type MediaKind } from './types'
 const db = () => createAdminClient() as unknown as SupabaseClient
 
 /** The outcome of resolving a Recording for a viewer: a playable payload, a locked wall, or a miss. */
-export type RecordingResolution =
+type RecordingResolution =
   | { status: 'ok'; recording: PlayerRecording }
   | { status: 'locked'; title: string; mediaKind: MediaKind }
   | { status: 'missing' }

@@ -38,7 +38,7 @@ export type ModeVariant =
 
 /** The lexicon a Mode paints over the generic nouns. Each is the plain plural the operator surfaces use
  *  for that concept; the resolver always returns a complete set (no partial lexicon). */
-export interface ModeLexicon {
+interface ModeLexicon {
   /** The people this operator works with: clients / customers / members / supporters / attendees. */
   people: string
   /** A single such person (the singular of `people`), for inline copy. */
@@ -52,7 +52,7 @@ export interface ModeLexicon {
 /** One default CRM pipeline stage in a Mode preset: a plain operator-facing column label + its kind
  *  (open / won / lost), matching the crm_stages primitive (lib/crm/stage-templates.ts). The Mode's
  *  pipeline is a SUGGESTION seeded on provision; an operator who edits it is never re-clobbered. */
-export interface ModeStage {
+interface ModeStage {
   name: string
   kind: 'open' | 'won' | 'lost'
 }

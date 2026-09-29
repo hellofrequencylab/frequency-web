@@ -8,7 +8,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 
-export type LedgerCurrency = 'gems' | 'zaps'
+type LedgerCurrency = 'gems' | 'zaps'
 
 export interface LedgerEntry {
   id: string
@@ -21,14 +21,14 @@ export interface LedgerEntry {
 
 export type LedgerStreakType = 'attendance' | 'posting' | 'hosting' | 'login'
 
-export interface StreakSummary {
+interface StreakSummary {
   type: LedgerStreakType
   current: number
   longest: number
   lastActivityAt: string | null
 }
 
-export interface EarningLog {
+interface EarningLog {
   entries: LedgerEntry[]
   streaks: StreakSummary[]
   totals: {

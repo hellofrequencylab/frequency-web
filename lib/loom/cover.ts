@@ -92,7 +92,7 @@ export function coverOffer(
 }
 
 /** What the author tells the model, beyond the draft itself. */
-export interface CoverPromptInput {
+interface CoverPromptInput {
   /** The entity's own name ("Journey", "Event"), so the image reads as that kind of thing. */
   entityLabel: string
   /** The draft's title. The one field a cover really needs. */

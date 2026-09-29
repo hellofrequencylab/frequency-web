@@ -15,7 +15,8 @@ import { getLibraryHealth, type FunnelMetrics } from '@/lib/practices/health'
 
 // Library health dashboard (BUILD-LIST Practice Library §4.3). A READ-ONLY operator view of the
 // practice library's vital signs: growth over time, coverage gaps by Pillar/sub-category, the
-// adoption funnel, top/bottom performers, the review SLA, and the contributor leaderboard. Every
+// adoption funnel, where members' Zaps land by Pillar (LIVE-642), top/bottom performers, the
+// review SLA, and the contributor leaderboard. Every
 // number is computed from existing tables by lib/practices/health.ts (no writes, no migration).
 //
 // Composes the shared DashboardTemplate (PAGE-FRAMEWORK §8.1) + the kit primitives (StatCard,
@@ -26,7 +27,7 @@ export default async function PracticeLibraryHealthPage() {
   await requireAdmin('host', { staff: 'community' })
 
   const health = await getLibraryHealth({ weeks: 12 })
-  const { growth, coverage, funnel, performers, reviewSla, contributors } = health
+  const { growth, coverage, funnel, performers, reviewSla, contributors, zapLanding } = health
 
   const activePct = Math.round(funnel.activeRate * 100)
   const slaTone = reviewSla.overdue > 0 ? 'down' : reviewSla.aging > 0 ? 'flat' : 'up'
@@ -141,6 +142,45 @@ export default async function PracticeLibraryHealthPage() {
         {coverage.unpilared > 0 && (
           <p className="mt-3 text-meta text-muted">
             {coverage.unpilared} published practice{coverage.unpilared === 1 ? '' : 's'} with no Pillar set.
+          </p>
+        )}
+      </section>
+
+      {/* Where Zaps land: the per-Pillar ledger over the window (LIVE-642, ADR-1605). */}
+      <section>
+        <SectionHeader title="Where Zaps land" count={zapLanding.total} />
+        {zapLanding.total === 0 ? (
+          <EmptyState
+            variant="first-use"
+            title={`No Zaps earned in the last ${health.weeks} weeks`}
+            description="Once members log practices, this shows which Pillar their Zaps land in."
+          />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {zapLanding.pillars.map((p) => {
+              const pct = Math.round(p.share * 100)
+              return (
+                <div key={p.id} className="rounded-card border border-border bg-surface p-4">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-body-sm font-bold text-text">{p.name}</p>
+                    <p className="text-body-sm font-bold tabular-nums text-text">{p.zaps}</p>
+                  </div>
+                  <p className="mb-2 mt-0.5 text-meta text-subtle">{pct}% of Zaps earned</p>
+                  <ProgressTrack value={pct} size="md" minVisible={2} label={`${p.name}: ${pct}% of Zaps earned`} />
+                </div>
+              )
+            })}
+          </div>
+        )}
+        <p className="mt-3 text-meta text-muted">
+          Zaps from practice logs in the last {health.weeks} weeks, credited by the Pillar split each log
+          carried when it was earned. A split attributes and never adds, so the Pillars
+          {zapLanding.unattributed > 0 ? ' and the no-Pillar remainder' : ''} sum to the total.
+          {zapLanding.unattributed > 0 && ` ${zapLanding.unattributed} came from practices with no active Pillar.`}
+        </p>
+        {!zapLanding.complete && (
+          <p className="mt-1 text-meta text-danger">
+            Partial read: the log query stopped early, so these figures cover part of the window.
           </p>
         )}
       </section>

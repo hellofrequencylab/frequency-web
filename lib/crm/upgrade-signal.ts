@@ -54,7 +54,7 @@ const LEADERSHIP_ROLES: readonly string[] = ['host', 'guide', 'mentor']
 // ── The verdict ───────────────────────────────────────────────────────────────────────────────
 
 /** The upgrade read for one member: a 0..100 score, the candidate flag, and the transparent "why". */
-export interface UpgradeSignal {
+interface UpgradeSignal {
   /** 0..100 blended score (sum of the bands earned). */
   score: number
   /** True when this member is not already a business AND clears the candidate score. */
@@ -135,7 +135,7 @@ export function scoreUpgrade(input: UpgradeSignalInput): UpgradeSignal {
 // ── Batch IO (one set-based read, no N+1, fail-safe) ────────────────────────────────────────────
 
 /** What the caller already knows about a member (the classifier's verdict) keyed to their profile. */
-export interface UpgradeCohortEntry {
+interface UpgradeCohortEntry {
   profileId: string
   isBusiness: boolean
   communityRole: string | null

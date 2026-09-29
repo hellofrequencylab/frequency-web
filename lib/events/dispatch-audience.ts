@@ -184,7 +184,7 @@ export interface DispatchViewerContext {
  * viewer couldn't see. Private events + drafts are host-only: a private event
  * never bleeds into the surrounding area.
  */
-export function viewerCanReadEvent(
+function viewerCanReadEvent(
   event: EventDispatchTarget,
   viewer: DispatchViewerContext,
 ): boolean {

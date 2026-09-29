@@ -93,7 +93,7 @@ export const getPracticeMetrics = cache(computePracticeMetrics)
 
 const WEEK = 7 * DAY
 
-export interface RetentionCohort {
+interface RetentionCohort {
   /** ISO date (YYYY-MM-DD) of the cohort's first week (Monday, UTC). */
   weekStart: string
   /** Members whose first verified practice fell in that week. */

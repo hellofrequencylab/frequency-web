@@ -36,9 +36,9 @@ export interface OnboardingAccountRow {
   last_sign_in_at: string | null
 }
 
-export type OnboardingAccountState = 'stuck' | 'fresh' | 'dormant' | 'completed'
+type OnboardingAccountState = 'stuck' | 'fresh' | 'dormant' | 'completed'
 
-export interface ThroughputOptions {
+interface ThroughputOptions {
   minAgeDays?: number
   activeWindowDays?: number
 }
@@ -71,7 +71,7 @@ export function classifyOnboardingAccount(
   return 'stuck'
 }
 
-export interface ThroughputReading {
+interface ThroughputReading {
   stuck: string[]
   counts: Record<OnboardingAccountState, number>
   scanned: number

@@ -34,7 +34,7 @@ import { asDayKey, seriesRule } from '@/lib/calendar/pencil-series'
 // (Pencil, Skip this date); docs/CONTENT-VOICE.md owns the tone, and bans the em dash in copy.
 
 /** An entry as the drawer holds it, reduced to what the decision reads. */
-export interface SeriesEntryShape {
+interface SeriesEntryShape {
   /** The entry kind (`pencil`, `unavailable`, `private`). Only an event on its way can repeat. */
   kind: string
   /** The stored rule, as `EntryInput.repeat` carries it ('' or null when it does not repeat). */
@@ -51,7 +51,7 @@ export interface SeriesEntryShape {
  *  `set removed_at = null`. That changes how bad the mistake is; it does NOT change the reach of
  *  the press, and the reach is what this module exists to ask about. A repeating entry is still one
  *  row, so `deleteRow` still means every date of it, and still has to be asked for by name. */
-export type SeriesDeleteAction = 'skipThisDate' | 'deleteRow' | 'nothing'
+type SeriesDeleteAction = 'skipThisDate' | 'deleteRow' | 'nothing'
 
 /** What the person picked in the delete dialog. */
 export type SeriesDeleteChoice = 'thisDate' | 'series' | 'keep'
@@ -63,7 +63,7 @@ export type SeriesSaveChoice = 'thisDate' | 'series' | 'keep'
  *  which is every date; `splitSeriesAt` is public.split_calendar_series, ONE statement in which the
  *  master gains the day in `exception_dates` and a new one-off row carries the edited values for
  *  that day, together or not at all. */
-export type SeriesSaveAction = 'saveSeries' | 'splitSeriesAt' | 'nothing'
+type SeriesSaveAction = 'saveSeries' | 'splitSeriesAt' | 'nothing'
 
 export interface SeriesDeletePlan {
   /** Ask before writing anything. True exactly when the entry repeats. */
@@ -144,7 +144,7 @@ export function resolveSeriesSaveChoice(choice: SeriesSaveChoice, plan: SeriesSa
 /** The sentence whose absence cost the owner their series. Pinned by the probe. */
 export const SERIES_DELETE_UNDO_WARNING = 'This cannot be undone.'
 
-export const SERIES_CHOICE_HEADING = 'This date repeats'
+const SERIES_CHOICE_HEADING = 'This date repeats'
 
 export const SERIES_DELETE_COPY = {
   heading: SERIES_CHOICE_HEADING,

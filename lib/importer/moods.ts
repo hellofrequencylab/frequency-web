@@ -104,7 +104,7 @@ export function moodImageStyle(value: unknown): string {
  *
  *  This is the one function a new entity calls. Reaching past it to a single mapping is how the look
  *  drifts entity by entity, which is exactly what this file exists to stop. */
-export interface MoodLook {
+interface MoodLook {
   theme: SpaceThemeId
   accent: AccentKey
   emphasis: AccentEmphasis

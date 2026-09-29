@@ -76,7 +76,7 @@ export function doorLabel(door: LeadDoor): string {
 export type ConsentState = 'unknown' | 'subscribed' | 'unsubscribed'
 
 /** Options that can make a capture consent-native (mailable). */
-export interface DoorConsentOpts {
+interface DoorConsentOpts {
   /** The scanner unlocked an offer behind the code (Space QR door). */
   offerUnlocked?: boolean
   /** The warm intro was accepted (double-opt-in complete). */
@@ -216,7 +216,7 @@ export interface EntryPointInput {
   metadata?: Record<string, unknown> | null
 }
 
-export interface EntryPointRow {
+interface EntryPointRow {
   space_id: string
   contact_id: string
   kind: LeadDoor
@@ -381,7 +381,7 @@ async function mayClaimSpace(current: string | null, spaceId: string, profileId:
  * written, false when one already existed (never overwritten) or on any error. The DB also guards this
  * with unique(contact_id) + the no-overwrite trigger; this is the code-side invariant.
  */
-export async function stampEntryPoint(input: EntryPointInput): Promise<boolean> {
+async function stampEntryPoint(input: EntryPointInput): Promise<boolean> {
   const row = buildEntryPointRow(input)
   if (!row) return false
   try {
@@ -405,7 +405,7 @@ export async function stampEntryPoint(input: EntryPointInput): Promise<boolean> 
 }
 
 /** The immutable entry point for a contact, or null. */
-export async function getEntryPoint(contactId: string): Promise<EntryPointRow & { created_at?: string } | null> {
+async function getEntryPoint(contactId: string): Promise<EntryPointRow & { created_at?: string } | null> {
   try {
     const { data } = (await table('lead_entry_points')
       .select('space_id, contact_id, kind, label, captured_where, captured_by_profile_id, code_id, metadata, created_at')
@@ -417,7 +417,7 @@ export async function getEntryPoint(contactId: string): Promise<EntryPointRow & 
   }
 }
 
-export interface TouchpointInput {
+interface TouchpointInput {
   spaceId: string
   contactId: string
   kind: string
@@ -483,7 +483,7 @@ async function stampContactAcquisition(
 
 // ── The capture engine ───────────────────────────────────────────────────────────────────────────
 
-export interface CaptureLeadInput {
+interface CaptureLeadInput {
   spaceId: string
   door: LeadDoor
   /** Identity — at least one of email / phone is required to seal a claimable lead. */

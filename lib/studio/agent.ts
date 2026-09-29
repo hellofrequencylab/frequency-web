@@ -25,7 +25,7 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-export interface AgentActionRow {
+interface AgentActionRow {
   id: string
   kind: string
   payload: Record<string, unknown>

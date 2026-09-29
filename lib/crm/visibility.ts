@@ -31,7 +31,7 @@ export type LeadCandidate = {
 }
 
 export type LeadReason = 'owner' | 'network_local' | 'member' | null
-export type LeadVisibility = { visible: boolean; reason: LeadReason }
+type LeadVisibility = { visible: boolean; reason: LeadReason }
 
 function sameLocality(a: string | null, b: string | null): boolean {
   if (!a || !b) return false

@@ -11,7 +11,7 @@
 // (the member-local day, same framing as practice_logs.logged_for). Fully unit-testable.
 
 /** One term chip on the adopt surface. `weeks: null` = ongoing (no end date). */
-export interface TermPreset {
+interface TermPreset {
   weeks: number | null
   /** Chip label (plain voice, no em dashes). */
   label: string
@@ -35,7 +35,7 @@ export const TERM_PRESETS: readonly TermPreset[] = [
 export const DEFAULT_TERM_WEEKS = 4
 
 /** Max cue length (mirrors the DB check). */
-export const MAX_CUE_LEN = 140
+const MAX_CUE_LEN = 140
 
 /** Active SELF-adopted practices a member may hold at once (owner decision, 2026-08-03).
  *  Journey-sourced adoptions ride outside the cap — they are phase-scoped and expire on
@@ -71,7 +71,7 @@ export function termWindow(today: string, weeks: number | null): { startsOn: str
 /** Where a member stands inside a term. Day/week are 1-based and endowed: the adoption day is
  *  Day 1 immediately (a never-empty bar finishes more often, Nunes & Drèze 2006). Days past
  *  the end clamp to the total so a late read never shows "Day 30 of 28". */
-export interface TermProgress {
+interface TermProgress {
   day: number
   totalDays: number | null
   week: number

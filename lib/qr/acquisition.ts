@@ -14,12 +14,12 @@ export interface AcquisitionRow {
   code: string | null
 }
 
-export interface AcquisitionBucket {
+interface AcquisitionBucket {
   key: string
   count: number
 }
 
-export interface AcquisitionSummary {
+interface AcquisitionSummary {
   /** Signups that carried any acquisition snapshot. */
   total: number
   byChannel: AcquisitionBucket[]

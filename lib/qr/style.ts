@@ -10,7 +10,7 @@ import { avatarSrc } from '../images/avatar-focus'
 export type ModuleShape = 'square' | 'rounded' | 'dots' | 'connected'
 export type EyeShape = 'square' | 'rounded' | 'circle'
 
-export interface QrGradient {
+interface QrGradient {
   from: string
   to: string
   /** Degrees, 0 = left→right. */
@@ -59,7 +59,7 @@ export const DEFAULT_STYLE: QrStyle = {
   margin: 2,
 }
 
-export interface StylePreset {
+interface StylePreset {
   key: string
   label: string
   style: QrStyle

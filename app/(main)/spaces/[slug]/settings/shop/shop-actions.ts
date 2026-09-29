@@ -18,11 +18,21 @@ import {
   type ProductPatch,
 } from '@/lib/commerce/products'
 import { upsertVariants } from '@/lib/commerce/variants'
+import { setOrderFulfillment } from '@/lib/commerce/fulfilment'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
-import type { ProductStatus, ProductKind, CommerceVertical, ProductCondition, ServiceConfig, ServicePriceModel, VariantInput } from '@/lib/commerce/types'
+import type {
+  ProductStatus,
+  ProductKind,
+  CommerceVertical,
+  ProductCondition,
+  ServiceConfig,
+  ServicePriceModel,
+  VariantInput,
+  FulfillmentStatus,
+} from '@/lib/commerce/types'
 
 // Space Shop console write actions (ADR-596). Every action gates on resolveSpaceManageAccess (owner /
 // admin / editor — NOT the profile-only productOwnerProfileId, which is null for a Space), and each
@@ -333,6 +343,33 @@ export async function setSpaceListingMarketPublishedAction(slug: string, id: str
   if (!(await gateSpaceItem(slug, id))) return
   await setProductMarketPublished(id, published)
   revalidatePath(`/spaces/${slug}/settings/shop`)
+}
+
+/** Move one of this Space's orders along the fulfilment ladder (LIVE-606, ADR-1575): shipped with a
+ *  carrier and tracking number, then delivered, then complete. Gated like every other Shop write
+ *  (gateSpaceWrite), and the writer binds the update to owner_space_id, so an order id from another
+ *  Space finds nothing. A refusal (a step back, a race, an unpaid order) is logged with the writer's
+ *  sentence and the page re-renders where the order actually stands. */
+export async function setOrderFulfillmentAction(
+  slug: string,
+  orderId: string,
+  status: FulfillmentStatus,
+  formData: FormData,
+): Promise<void> {
+  const gate = await gateSpaceWrite(slug)
+  if (!gate) return
+  const result = await setOrderFulfillment(
+    orderId,
+    {
+      status,
+      carrier: String(formData.get('carrier') ?? ''),
+      tracking: String(formData.get('tracking') ?? ''),
+    },
+    { kind: 'space', spaceId: gate.spaceId },
+  )
+  if (!result.ok) console.warn('[shop] fulfilment refused', { slug, orderId, status, reason: result.error })
+  revalidatePath(`/spaces/${slug}/settings/shop`)
+  revalidatePath('/orders')
 }
 
 /** Save the Storefront tab settings: the renameable tab label + the published toggle (Phase 6 surfaces

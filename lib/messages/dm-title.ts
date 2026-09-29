@@ -10,7 +10,7 @@
 // client component needs the same rule the server loader uses. Pure, no imports, safe on both
 // sides of the boundary.
 
-export type DmTitlePeer = { id: string; display_name: string }
+type DmTitlePeer = { id: string; display_name: string }
 
 /** The label for a conversation with no stored name, from the participants who are not me. */
 export function deriveDmTitle(others: Array<{ display_name: string }>): string {

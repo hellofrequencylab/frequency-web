@@ -67,7 +67,7 @@ export function normalizeElementConfig(raw: unknown, featureKeys: readonly strin
 
 /** Does `ctx` meet the required element role? BY CONTEXT: a SpaceRole (per-space mount) maps to the
  *  space ladder; otherwise the community ladder + platform staff. Staff always meets any tier. */
-export function meetsElementRole(required: ElementRole, ctx: ViewerRoleCtx): boolean {
+function meetsElementRole(required: ElementRole, ctx: ViewerRoleCtx): boolean {
   const staff = isStaff(ctx.webRole)
   switch (required) {
     case 'everyone':

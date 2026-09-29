@@ -15,7 +15,7 @@ function db() {
   return createAdminClient()
 }
 
-export interface JourneyRun {
+interface JourneyRun {
   id: string
   planId: string
   circleId: string
@@ -168,7 +168,7 @@ export async function getKickoffEvent(runId: string): Promise<KickoffEvent | nul
 export type PhaseEventKind = 'meetup' | 'gathering'
 
 /** Both scheduled touchpoint Events for one week (phase), either null when unscheduled. */
-export interface PhaseTouchpointEvents {
+interface PhaseTouchpointEvents {
   meetup: KickoffEvent | null
   gathering: KickoffEvent | null
 }

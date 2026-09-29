@@ -32,7 +32,7 @@ export type RoomVisibility =
   | 'outpost'
   | 'channel'
 
-export type RoomViewer = {
+type RoomViewer = {
   visibility: RoomVisibility
   /** Does the caller hold a `room_members` row for this room? */
   isMember: boolean

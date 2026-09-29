@@ -36,7 +36,7 @@ export function isSeatToken(token: unknown): token is string {
 /** The member rule (setRsvpPlusOnes in app/(main)/events/actions.ts), and the SQL clamp. */
 export const MAX_GUEST_PLUS_ONES = 5
 
-export type GuestSeatQuestionType =
+type GuestSeatQuestionType =
   | 'short_text'
   | 'long_text'
   | 'dropdown'
@@ -55,7 +55,7 @@ export interface GuestSeatQuestion {
 }
 
 /** Everything a bearer may be shown. Deliberately no location, venue, host or other attendee. */
-export interface GuestSeatView {
+interface GuestSeatView {
   rsvpId: string
   eventId: string
   slug: string

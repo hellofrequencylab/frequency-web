@@ -18,9 +18,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 
-export const MY_MEMBERSHIPS_CAP = 100
+const MY_MEMBERSHIPS_CAP = 100
 
-export type MySpaceMembership = {
+type MySpaceMembership = {
   id: string
   spaceId: string
   spaceName: string

@@ -45,7 +45,7 @@ export type DecayReport = {
   stoppedOnBudget: boolean
 }
 
-export interface DecayOptions {
+interface DecayOptions {
   dryRun: boolean
   /** Real circles one run walks for neighbour decay (default 500, the long-standing cap). */
   limit?: number

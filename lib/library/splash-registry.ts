@@ -21,7 +21,7 @@ import { listSplashTemplates, type SplashTemplate } from './splash-templates'
 // of the page that mounts the lane. VOICE (CONTENT-VOICE §10): plain labels, no em/en dashes.
 
 /** The two splash surfaces the lane governs. */
-export type SplashSource = 'micro-site' | 'qr'
+type SplashSource = 'micro-site' | 'qr'
 
 /** One live splash as the governance list shows it (identity + status/target/schedule + a deep-link
  *  OUT to the real editor). Presentational, serializable — safe to hand to the client lane. */

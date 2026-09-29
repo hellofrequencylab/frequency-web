@@ -13,7 +13,7 @@ import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 
 export const COLLABORATOR_HOST_FEATURE = 'space_collaborators' as const
 
-export type CollaboratorHostWallKind = 'space' | 'event-home' | 'event-host-space'
+type CollaboratorHostWallKind = 'space' | 'event-home' | 'event-host-space'
 
 /** The same seam the Space writers, the event-share writers, and the locked
  *  preview ask. PURE sentence, IO wall. */

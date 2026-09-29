@@ -31,7 +31,7 @@ import {
 // row is written through it, and no id it reads comes from the browser: the doors hand in ids
 // their own session already proved (the Plan, the share, the to-do).
 
-export type PlanMomentInput =
+type PlanMomentInput =
   | {
       event: 'plan.share'
       moment: PlanShareMoment
@@ -64,7 +64,7 @@ export type PlanMomentInput =
       todoTitle: string
     }
 
-export interface PlanMomentResult {
+interface PlanMomentResult {
   recipients: number
   enqueued: number
 }

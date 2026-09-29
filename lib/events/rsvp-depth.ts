@@ -40,7 +40,7 @@ type UntypedSingle = {
 export type RsvpStatus = 'going' | 'not_going' | 'maybe' | 'waitlist'
 export type ApprovalStatus = 'none' | 'pending' | 'approved'
 
-export interface SetRsvpArgs {
+interface SetRsvpArgs {
   eventId: string
   profileId: string
   status: RsvpStatus
@@ -161,7 +161,7 @@ export async function eventRequiresApproval(eventId: string): Promise<boolean> {
 
 /** One seat waiting on the host. `profileId` is null for a signed-out guest, which is why
  *  `rsvpId` exists — it is the only identifier both kinds of seat share. */
-export type PendingApproval = {
+type PendingApproval = {
   rsvpId: string
   profileId: string | null
   guestName: string | null

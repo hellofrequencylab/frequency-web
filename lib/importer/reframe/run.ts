@@ -25,7 +25,7 @@ import { REFRAME_SYSTEM, REFRAME_TOOL, REFRAME_TOOL_NAME, buildGroundingBlock } 
 import { checkVoice, voiceReason, type VoiceVerdict } from './voice-check'
 import type { ReframedCopy } from './apply'
 
-export const REFRAME_FEATURE = 'business-import-reframe'
+const REFRAME_FEATURE = 'business-import-reframe'
 
 /** The result of a reframe run: the raw voiced copy the model returned + the per-field voice verdict
  *  + the USD spent. Null when AI is unavailable (the pipeline then keeps the verified draft as-is). */

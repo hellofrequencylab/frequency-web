@@ -22,10 +22,10 @@ export interface EmailEventLite {
 }
 
 /** How recent the last touch is, bucketed for a plain badge (no raw day counts on the card). */
-export type RecencyBand = 'none' | 'today' | 'this_week' | 'this_month' | 'stale'
+type RecencyBand = 'none' | 'today' | 'this_week' | 'this_month' | 'stale'
 
 /** The per-contact engagement rollup surfaced on the card's stat row. */
-export interface EngagementStats {
+interface EngagementStats {
   /** Outbound email + in-house messages we sent them. */
   sent: number
   /** Email opens (from email_events). */

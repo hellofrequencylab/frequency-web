@@ -80,7 +80,7 @@ export interface SpaceDripSequence {
 // the runner enrolls nobody while the sequence is off, so turning the sequence on is what goes live.
 
 /** One step of a template (a subject + body + how long to wait before it sends). */
-export interface SpaceAutomationTemplateStep {
+interface SpaceAutomationTemplateStep {
   subject: string
   body: string
   delayHours: number

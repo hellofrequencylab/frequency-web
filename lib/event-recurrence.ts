@@ -275,9 +275,9 @@ type TierCatalogColumn = (typeof TIER_CATALOG_COLUMNS)[number]
 
 /** The tier SELECT: the row's own identity plus every catalog column. `sold` is NOT read, because
  *  nothing downstream of this module may write it. */
-export const ANCHOR_TIER_SELECT = ['id', 'event_id', ...TIER_CATALOG_COLUMNS].join(', ')
+const ANCHOR_TIER_SELECT = ['id', 'event_id', ...TIER_CATALOG_COLUMNS].join(', ')
 
-export type AnchorTicketTier = { id?: string; event_id?: string } & Partial<
+type AnchorTicketTier = { id?: string; event_id?: string } & Partial<
   Record<TierCatalogColumn, unknown>
 >
 
@@ -805,7 +805,7 @@ const OCCURRENCE_ATTACHMENT_TABLES = [
 /** The calendar day an instant falls on, in the wall-clock-as-UTC convention every date in this
  *  module uses. The materialiser dedupes on this, so retirement has to compare on it too, or a
  *  stored timestamp that differs by a millisecond or a timezone round-trip reads as a new date. */
-export function occurrenceDayKey(iso: string): string {
+function occurrenceDayKey(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10)
 }
 

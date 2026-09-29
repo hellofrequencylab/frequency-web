@@ -22,7 +22,7 @@ export type MapPinKind = 'event' | 'circle' | 'space' | 'place'
  *  outside Tailwind, so the canvas resolves the CSS custom property at mount. */
 export type MapPinTone = 'primary' | 'secondary'
 
-export type MapPinPaint = {
+type MapPinPaint = {
   /** The DAWN custom property. Read at mount; this is the value that actually ships. */
   token: string
   /** Concrete colour for the one engine that cannot accept a custom property. */
@@ -53,7 +53,7 @@ export const MAP_PIN_KINDS: Record<MapPinKind, MapPinPaint> = {
 }
 
 /** The pre-ADR-1022 tone escape hatch, kept so no migrated surface changes colour. */
-export const MAP_PIN_TONES: Record<MapPinTone, MapPinPaint> = {
+const MAP_PIN_TONES: Record<MapPinTone, MapPinPaint> = {
   // token-ok: mirrors --color-primary
   primary: { token: '--color-primary', fallback: '#E2912F', legend: 'Places', noun: 'Place' },
   // token-ok: mirrors --color-info

@@ -22,7 +22,7 @@ function key(): string {
 }
 
 export type RecraftLane = 'vector' | 'raster'
-export type RecraftImage = { url: string; isSvg: boolean }
+type RecraftImage = { url: string; isSvg: boolean }
 
 /** Wrap bytes as a Blob for multipart upload. Copies into a fresh ArrayBuffer so the part type is
  *  a plain ArrayBuffer (a bare Uint8Array's buffer can be typed as SharedArrayBuffer). */
@@ -135,7 +135,7 @@ export async function removeBackground(bytes: Uint8Array, filename = 'image.png'
 /** How Recraft makes a raster larger. `crisp` raises the resolution without changing what is in the
  *  picture (list price $0.004); `creative` also redraws small detail and faces (list price $0.25, about
  *  sixty times more), so the Studio runs crisp and creative stays a deliberate choice. */
-export type UpscaleMode = 'crisp' | 'creative'
+type UpscaleMode = 'crisp' | 'creative'
 
 const UPSCALE_PATH: Record<UpscaleMode, string> = {
   crisp: '/images/crispUpscale',

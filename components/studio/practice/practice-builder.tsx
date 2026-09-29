@@ -181,11 +181,17 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   // Multi-Focus: focus_details is keyed by pillar id; the KEYS are the selected Focuses.
   // A legacy row may have a domain_id but no focus_details yet — seed that primary Pillar
   // as a selected Focus so the editor shows it (and re-saving fills focus_details).
-  const [focusDetails, setFocusDetails] = useState<Record<string, FocusDetail>>(() => {
-    const seed: Record<string, FocusDetail> = { ...props.focusDetails }
-    if (props.domainId && !seed[props.domainId]) seed[props.domainId] = { instructions: '', timing: '' }
-    return seed
-  })
+  //
+  // The stored primary goes FIRST. focus_details is jsonb, which keeps no key order (Postgres sorts
+  // object keys), so the map arrives in id order and its first key need not be the primary. The
+  // primary is read as the first key below and every Focus save re-derives domain_id from it, so
+  // without this an edit to any Focus could silently move the primary, and with a Pillar split
+  // (LIVE-641) clear the split whenever the second Pillar's id sorted first.
+  const [focusDetails, setFocusDetails] = useState<Record<string, FocusDetail>>(() =>
+    props.domainId
+      ? { [props.domainId]: { instructions: '', timing: '' }, ...props.focusDetails }
+      : { ...props.focusDetails },
+  )
   const [subcategoryId, setSubcategoryId] = useState(props.subcategoryId ?? '')
   const [headerImage, setHeaderImage] = useState(props.headerImage ?? '')
   // Smart default: an existing practice without a tier reads as Standard (the 12⚡ middle).

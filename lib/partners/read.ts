@@ -19,7 +19,7 @@ export interface PartnerSummary {
   description: string | null
 }
 
-export interface PartnerOffer {
+interface PartnerOffer {
   id: string
   title: string
   description: string | null
@@ -27,7 +27,7 @@ export interface PartnerOffer {
   validUntil: string | null
 }
 
-export interface PartnerDetail extends PartnerSummary {
+interface PartnerDetail extends PartnerSummary {
   address: string | null
   website: string | null
   offers: PartnerOffer[]

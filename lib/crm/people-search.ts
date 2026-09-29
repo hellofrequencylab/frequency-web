@@ -30,7 +30,7 @@ export type LeadHit = {
   href: string | null
 }
 
-export type SearchLeadsOptions = {
+type SearchLeadsOptions = {
   /** Include network-shared captures from OTHER stewards (locality-gated). Stewards/staff only. */
   includeNetwork?: boolean
   limit?: number

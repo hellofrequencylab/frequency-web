@@ -22,7 +22,7 @@ const XFADE_SEC = 6 // the seam blend (clamped to 40% of the track for short cli
 /** The ambient gain at 100% volume. Raised well above the old fixed 0.4 so a member who wants
  *  the background louder can actually get there, while the top of the slider still sits under
  *  the bell + a speaking voice. The member's 0..1 volume scales this. */
-export const AMBIENT_MAX_GAIN = 0.9
+const AMBIENT_MAX_GAIN = 0.9
 
 /** Fallback volume when a caller passes none (0..1). Mirrors lib/on-air DEFAULT_AMBIENT_VOLUME. */
 const DEFAULT_VOLUME = 0.7
@@ -81,7 +81,7 @@ export interface AmbientHandle {
   stop(): void
 }
 
-export interface AmbientOptions {
+interface AmbientOptions {
   /** Opening fade length. Defaults to the sit fade-in; previews pass a short one. */
   fadeInSec?: number
   /** If set, auto fade-out and stop this many seconds after playback begins.

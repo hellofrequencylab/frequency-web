@@ -35,7 +35,7 @@ import { getFoundingStatus } from '@/lib/founding/status'
 import { activeAgreementForSpace } from '@/lib/billing/manual-agreements'
 
 /** Where a member or a Space stands in the beta push. Plain data; safe to hand to a client island. */
-export interface BetaState {
+interface BetaState {
   /** Is the beta grace window still open? While it is, every capability stays granted (ADR-874). */
   graceActive: boolean
   /** The instant memberships start (ms epoch), or null when no window is configured. The ONE source

@@ -22,7 +22,7 @@ function db(): SupabaseClient {
 
 export type FunnelStatus = 'draft' | 'active' | 'archived'
 
-export interface FunnelStageLink {
+interface FunnelStageLink {
   id: string
   refType: StageRefType
   refId: string | null

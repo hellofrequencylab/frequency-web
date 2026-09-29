@@ -31,10 +31,10 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 /** 'member' = an individual Founding Member; 'business' = a Founding Business (per-city cohort). */
 export type FoundingKind = 'member' | 'business'
 /** reserved -> active (at graduation) -> lapsed (if a founder ever falls out). */
-export type FoundingState = 'reserved' | 'active' | 'lapsed'
+type FoundingState = 'reserved' | 'active' | 'lapsed'
 
 /** A durable founding row (the fields the app reads). Mirrors the migration columns. */
-export interface FoundingRecord {
+interface FoundingRecord {
   id: string
   profileId: string | null
   spaceId: string | null
@@ -148,7 +148,7 @@ export async function foundingActiveFor(subjects: {
 /** A seller reference (a marketplace listing's owner), the subset the charter-badge resolver needs.
  *  Mirrors the SellerRef shape in lib/commerce/seller-verification.ts so a card grid can resolve both
  *  the verified and the Founding mark in parallel. */
-export interface FoundingSellerRef {
+interface FoundingSellerRef {
   id: string
   ownerProfileId?: string | null
   ownerSpaceId?: string | null

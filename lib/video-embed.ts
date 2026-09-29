@@ -3,9 +3,9 @@
 // video link", so a lesson body that carries a YouTube / Vimeo / direct-file URL
 // renders as an inline player in the course. Pure + unit-tested: no IO, no React.
 
-export type VideoProvider = 'youtube' | 'vimeo' | 'file'
+type VideoProvider = 'youtube' | 'vimeo' | 'file'
 
-export interface VideoEmbed {
+interface VideoEmbed {
   provider: VideoProvider
   /** The original URL as written, so callers can de-dupe a body that is only the link. */
   url: string
