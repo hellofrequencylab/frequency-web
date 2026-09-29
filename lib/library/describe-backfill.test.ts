@@ -8,14 +8,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // is already there, even if two describes race. And the columns are written SEPARATELY, because they
 // go null independently: one guarded update carrying both would drop both whenever either was set.
 
-type Update = { table: string; patch: Record<string, unknown>; eqs: [string, unknown][]; isNull: string[] }
+type Update = {
+  table: string
+  patch: Record<string, unknown>
+  eqs: [string, unknown][]
+  isNull: string[]
+  filters: [string, string, unknown][]
+}
 const updates: Update[] = []
 let updateError: { message: string } | null = null
 /** Rows the update reports back. Empty is what a BLOCKED guard returns: no error, nothing changed. */
 let updatedRows: { id: string }[] = [{ id: 'asset-1' }]
 
 function builder(table: string) {
-  const call: Update = { table, patch: {}, eqs: [], isNull: [] }
+  const call: Update = { table, patch: {}, eqs: [], isNull: [], filters: [] }
   const api: Record<string, unknown> = {
     update: (patch: Record<string, unknown>) => {
       call.patch = patch
@@ -30,6 +36,10 @@ function builder(table: string) {
       call.isNull.push(col)
       return api
     },
+    filter: (col: string, op: string, val: unknown) => {
+      call.filters.push([col, op, val])
+      return api
+    },
     select: () => api,
     then: (resolve: (v: unknown) => unknown) =>
       Promise.resolve(resolve({ data: updateError ? null : updatedRows, error: updateError })),
@@ -39,7 +49,7 @@ function builder(table: string) {
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (t: string) => builder(t) }) }))
 
-const { backfillLibraryAssetDescriptor } = await import('./store')
+const { backfillLibraryAssetDescriptor, fillLibraryAssetDescription } = await import('./store')
 
 beforeEach(() => {
   updates.length = 0
@@ -83,5 +93,42 @@ describe('backfillLibraryAssetDescriptor', () => {
     updatedRows = []
     expect(await backfillLibraryAssetDescriptor('asset-1', { blurhash: 'LEHV6n', colors: ['#aabbcc'] })).toEqual([])
     expect(updates).toHaveLength(2)
+  })
+})
+
+// LIVE-587 / ADR-1589 — the same contract for what Vera proposes. Three columns, three guarded
+// updates: tags only while EMPTY, alt and category only while NULL. A person who typed one of them
+// keeps it and Vera fills the rest; a written tag set carries the vera tag.
+describe('fillLibraryAssetDescription', () => {
+  it('writes tags, alt and category separately, each guarded on empty', async () => {
+    const written = await fillLibraryAssetDescription('asset-1', {
+      tags: ['Dog', 'beach', 'dog'],
+      alt: ' A dog on a beach. ',
+      category: 'Animals',
+    })
+    expect(written).toEqual(['tags', 'alt', 'category'])
+    expect(updates).toHaveLength(3)
+    expect(updates[0]).toMatchObject({
+      patch: { tags: ['dog', 'beach', 'vera'] },
+      eqs: [['id', 'asset-1']],
+      filters: [['tags', 'eq', '{}']],
+      isNull: [],
+    })
+    expect(updates[1]).toMatchObject({ patch: { alt: 'A dog on a beach.' }, isNull: ['alt'] })
+    expect(updates[2]).toMatchObject({ patch: { category: 'Animals' }, isNull: ['category'] })
+  })
+
+  it('does not add a second vera tag, and writes nothing for an empty proposal', async () => {
+    await fillLibraryAssetDescription('asset-1', { tags: ['vera', 'sky'] })
+    expect(updates[0].patch).toEqual({ tags: ['vera', 'sky'] })
+    updates.length = 0
+    expect(await fillLibraryAssetDescription('asset-1', { tags: [], alt: '  ', category: null })).toEqual([])
+    expect(updates).toHaveLength(0)
+  })
+
+  it('reports nothing written when every guard blocked the update (a person already named it)', async () => {
+    updatedRows = []
+    expect(await fillLibraryAssetDescription('asset-1', { tags: ['sky'], alt: 'Sky.', category: 'Nature' })).toEqual([])
+    expect(updates).toHaveLength(3)
   })
 })

@@ -8,7 +8,9 @@ import { completeText, completeRaw, AiUnavailableError } from '@/lib/ai/complete
 import type { ModelTier } from '@/lib/ai/models'
 import { withVoice } from '@/lib/ai/voice'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
-import { getRootSpaceId } from '@/lib/library/store'
+import { categoryFacets, getLibraryTagTarget, getRootSpaceId } from '@/lib/library/store'
+import { describeLibraryImage, isTaggableImage } from '@/lib/ai/library-tag'
+import { VERA_TAG } from '@/lib/library/types'
 import { sanitizeSvg, extractSvg } from '@/lib/library/svg-sanitize'
 
 // Studio-gated: every action below carries the page's OWN gate —
@@ -395,4 +397,34 @@ export async function reviewLoomSvg(input: {
     if (e instanceof AiUnavailableError) return { error: 'AI is unavailable right now.' }
     return { error: 'Could not review that. Try again in a moment.' }
   }
+}
+
+/** Describe with Vera (LIVE-587, ADR-1589): the Studio drawer asks her to name ONE image on demand.
+ *  She PROPOSES tags (carrying the vera tag), one sentence of alt text and a category from the ones
+ *  that image's Space already uses. Nothing is saved here: the drawer puts her words only into the
+ *  fields that are still empty, the operator reads them, and the drawer's own Save writes them. So a
+ *  field a person already filled is never touched, and nothing reaches the row unseen. */
+export async function describeWithVera(
+  assetId: string,
+): Promise<{ ok: true; alt: string | null; tags: string[]; category: string | null } | { error: string }> {
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
+  const id = (assetId ?? '').trim()
+  if (!id) return { error: 'Missing asset.' }
+
+  const target = await getLibraryTagTarget(id)
+  if (!target || !isTaggableImage(target)) {
+    return { error: 'Vera can name a JPEG, PNG, WebP or GIF stored in the Loom, up to about 3.5 MB.' }
+  }
+  const categories = (await categoryFacets(target.spaceId).catch(() => [])).map((f) => f.category)
+  const res = await describeLibraryImage(target.url ?? '', target.mime, { categories, actorId: ctx.profileId })
+  if (!res.ok) {
+    return {
+      error:
+        res.reason === 'unavailable'
+          ? 'Vera is resting right now. Try again in a bit.'
+          : 'Vera could not read that image. Fill the fields yourself, or try again.',
+    }
+  }
+  const { alt, tags, category } = res.tagging
+  return { ok: true, alt, tags: tags.length ? [...tags, VERA_TAG] : [], category }
 }

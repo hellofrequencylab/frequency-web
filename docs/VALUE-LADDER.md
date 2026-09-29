@@ -96,7 +96,9 @@ take_rate = buyerIsSellersAudience(buyer, seller) ? 0 : NETWORK_RATE[tier]
 ```
 
 Audience is a **relationship, proven by a row with a timestamp** — a follow, an active membership, a
-CRM contact, a personal contact, or a prior settled purchase (`lib/commerce/seller-audience.ts`).
+CRM contact, a personal contact, or a prior settled purchase (`lib/commerce/seller-audience.ts`). A
+person selling without a Space also owns their accepted friends and the active members of every Space
+they own (ADR-1584).
 Not a cookie. A cookie cannot survive a phone-to-laptop switch and cannot answer a host asking "why
 did you charge me for that sale?"
 

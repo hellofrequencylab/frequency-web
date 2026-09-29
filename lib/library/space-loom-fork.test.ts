@@ -106,6 +106,17 @@ function bucket(name: string) {
   }
 }
 
+/** The budget gate's answer (loomAdmits, LIVE-629), and what it was asked. */
+let admits: unknown = { ok: true }
+const admitted: [string, number][] = []
+vi.mock('./quota', () => ({
+  loomAdmits: async (spaceId: string, bytes: number) => {
+    admitted.push([spaceId, bytes])
+    if (admits instanceof Error) throw admits
+    return admits
+  },
+}))
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (t: string) => builder(t), storage: { from: (b: string) => bucket(b) } }),
 }))
@@ -145,6 +156,8 @@ beforeEach(() => {
   priorFork = null
   ownRow = null
   listRows = []
+  admits = { ok: true }
+  admitted.length = 0
 })
 
 describe('the shared shelf never widens past the root Space’s public rows', () => {
@@ -231,10 +244,27 @@ describe('forkLibraryAsset copies the object and writes parent_id', () => {
     expect(storage.uploads).toHaveLength(0)
   })
 
-  it('lets the door’s budget refuse before anything is stored', async () => {
-    const res = await forkLibraryAsset(SPACE_A, MASTER, PROFILE, { admit: async (n) => (n > 0 ? 'Over the limit.' : null) })
-    expect(res).toEqual({ error: 'Over the limit.' })
+  it('asks the Space’s storage budget with the copy’s size before anything is stored', async () => {
+    await forkLibraryAsset(SPACE_A, MASTER, PROFILE)
+    expect(admitted).toEqual([[SPACE_A, 4]])
+  })
+
+  it('over budget: returns the gate’s sentence and stores nothing', async () => {
+    admits = { ok: false, error: 'This library is full.' }
+    expect(await forkLibraryAsset(SPACE_A, MASTER, PROFILE)).toEqual({ error: 'This library is full.' })
     expect(storage.uploads).toHaveLength(0)
+    expect(calls.some((c) => c.insert)).toBe(false)
+  })
+
+  it('a budget gate that throws refuses (fail closed) and never throws out', async () => {
+    admits = new Error('boom')
+    expect(await forkLibraryAsset(SPACE_A, MASTER, PROFILE)).toHaveProperty('error')
+    expect(storage.uploads).toHaveLength(0)
+  })
+
+  it('an edit of a shared asset over budget is refused, not written to the master', async () => {
+    admits = { ok: false, error: 'This library is full.' }
+    expect(await forkIfShared(SPACE_A, MASTER, PROFILE)).toEqual({ error: 'This library is full.' })
     expect(calls.some((c) => c.insert)).toBe(false)
   })
 })
