@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { asJson } from '@/lib/supabase/json'
 import { ALL_ELEMENTS } from './element-catalog'
 import { SEARCH_CANDIDATE_CAP, mergeCandidates, rankLibraryMatches } from './search-rank'
+import { LIBRARY_DOWNLOAD_POLICIES, isLibraryAssetExpired, type LibraryDownloadPolicy } from './types'
 
 // Server-only data access for The Loom / Loom Studio. Service-role only; callers gate access.
 // See docs/LIBRARY.md. (Until HYG-054, 2026-09-06 this went through an untyped admin handle on a
@@ -87,11 +88,33 @@ export type LibraryGalleryItem = {
   config: Record<string, unknown> | null
   /** Tiny placeholder for instant grids (ingest, PROG-D1); null on rows ingested before it. */
   blurhash: string | null
+  /** ── The three protection hooks (20260920000000, PROG-D6 / LIVE-576). Stored and shown from this
+   *  row on; what Protected DOES (the private bucket) is LIVE-577, what the policy gates (the download
+   *  door) is LIVE-578. An `expiresAt` in the past is a licence that ran out: the Studio still shows the
+   *  row, badged, so its owner can renew or archive it; every pick reader leaves it out. */
+  isProtected: boolean
+  downloadPolicy: LibraryDownloadPolicy
+  expiresAt: string | null
   createdAt: string
 }
 
 const SELECT =
-  'id, kind, status, title, slug, alt, category, description, tags, url, mime, bytes, width, height, storage_path, config, blurhash, created_at'
+  'id, kind, status, title, slug, alt, category, description, tags, url, mime, bytes, width, height, storage_path, config, blurhash, is_protected, download_policy, expires_at, created_at'
+
+/** The stored `download_policy`, narrowed to the closed set; anything else reads as `open`, which is
+ *  the column default and the CHECK constraint's first value. */
+function readDownloadPolicy(v: unknown): LibraryDownloadPolicy {
+  return (LIBRARY_DOWNLOAD_POLICIES as readonly string[]).includes(String(v)) ? (v as LibraryDownloadPolicy) : 'open'
+}
+
+/** The expiry predicate every reader that OFFERS an asset for placement carries, as a PostgREST `or`:
+ *  no licence end, or one still in the future. Exported so the tests and any new pick reader use the
+ *  one string (a second spelling is how one picker keeps offering what the others stopped). The
+ *  Studio's own browse (`searchLibraryAssets`) deliberately does NOT apply it: hiding a row from its
+ *  owner is how a library loses things, so the grid badges an expired row instead. */
+export function notExpiredOr(now: Date = new Date()): string {
+  return `expires_at.is.null,expires_at.gt.${now.toISOString()}`
+}
 
 function toItem(r: Record<string, unknown>): LibraryGalleryItem {
   return {
@@ -112,6 +135,9 @@ function toItem(r: Record<string, unknown>): LibraryGalleryItem {
     storagePath: (r.storage_path as string | null) ?? null,
     config: (r.config as Record<string, unknown> | null) ?? null,
     blurhash: (r.blurhash as string | null) ?? null,
+    isProtected: r.is_protected === true,
+    downloadPolicy: readDownloadPolicy(r.download_policy),
+    expiresAt: (r.expires_at as string | null) ?? null,
     createdAt: String(r.created_at ?? ''),
   }
 }
@@ -304,6 +330,8 @@ export async function searchSpaceLibraryImages(
       // The space's own assets OR any public shared-library asset. A PostgREST `or` with an
       // `and(...)` group keeps the public branch scoped to visibility='public'.
       .or(`space_id.eq.${spaceId},visibility.eq.public`)
+      // Separate `.or()` calls AND together, so this is (scope) AND (licence not run out).
+      .or(notExpiredOr())
 
     const text = (q ?? '').replace(/[,()*]/g, ' ').trim()
     if (text) query = query.or(`title.ilike.%${text}%,description.ilike.%${text}%,category.ilike.%${text}%`)
@@ -546,7 +574,19 @@ export async function deleteSpaceLibraryAsset(
 /** One pickable Loom asset for the universal image picker: the served URL + the label + its `kind`
  *  (image | icon | element | …, so the picker can render/scope by family) + whether it was
  *  AI-generated (an "Element") + its tags (for the Tags facet). */
-export type LoomPickAsset = { id: string; title: string; url: string; alt: string | null; kind: string; generated: boolean; tags: string[]; category: string | null }
+export type LoomPickAsset = {
+  id: string
+  title: string
+  url: string
+  alt: string | null
+  kind: string
+  generated: boolean
+  tags: string[]
+  category: string | null
+  /** The protection flag (LIVE-576), carried so a picker can render a proof instead of the master
+   *  once LIVE-580 lands. An expired asset never reaches this type: the readers filter it out. */
+  isProtected: boolean
+}
 
 /** Shape a raw library_assets row into a LoomPickAsset. AI-generated ("Element") is derived from the
  *  Recraft/Vera provenance the generators stamp (tags include 'generated', or config.source is set). */
@@ -563,6 +603,7 @@ function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
     generated,
     tags,
     category: (r.category as string | null) ?? null,
+    isProtected: r.is_protected === true,
   }
 }
 
@@ -591,9 +632,12 @@ export async function listLoomScopeImages(
     const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
     let query = db()
       .from('library_assets')
-      .select('id, title, url, alt, kind, tags, config, category')
+      .select('id, title, url, alt, kind, tags, config, category, is_protected, expires_at')
       .in('kind', kinds)
       .neq('status', 'archived')
+      // A licensed asset whose expires_at has passed is not offered for placement, in any scope
+      // (LIVE-576). Its owner still sees it in the Studio, badged Expired, to renew or archive.
+      .or(notExpiredOr())
     if ('createdBy' in scope) {
       // OWNER Loom ("My uploads") = every genuine upload across MY profile AND the Spaces I OWN. Ownership
       // is a UNION (created_by = me OR the asset lives in one of my owned spaces), so a page/space owner
@@ -617,7 +661,12 @@ export async function listLoomScopeImages(
     const text = (opts.q ?? '').replace(/[,()*]/g, ' ').trim()
     const limit = Math.min(opts.limit ?? 120, 200)
     const shape = (data: unknown) => {
-      let rows = ((data as Array<Record<string, unknown>> | null) ?? []).map(toPickAsset).filter((a) => a.url.length > 0)
+      let rows = ((data as Array<Record<string, unknown>> | null) ?? [])
+        // The SQL predicate above is the gate; this is the second wall, so a search arm added later
+        // without `.or(notExpiredOr())` still cannot hand the picker a licence that ran out.
+        .filter((r) => !isLibraryAssetExpired((r.expires_at as string | null) ?? null))
+        .map(toPickAsset)
+        .filter((a) => a.url.length > 0)
       if (opts.generatedOnly) rows = rows.filter((a) => a.generated)
       return rows
     }

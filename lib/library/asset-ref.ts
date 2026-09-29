@@ -199,3 +199,55 @@ export function applyAssetUrls(value: unknown, urlById: ReadonlyMap<string, stri
   }
   return changed ? next : value
 }
+
+// ── Global swap (PROG-D4's remainder, LIVE-451, ADR-1560) ────────────────────
+
+/** What a swap re-points a ref TO: the new asset's id and its CURRENT url, so the cache a
+ *  rewritten ref carries is fresh on the day it is written (a stale one would render the old
+ *  picture until the next refresh). */
+export type AssetSwapTarget = { assetId: string; url: string }
+
+/**
+ * Deep-rewrite every AssetRef whose `assetId` is `fromId` so it references `to` instead, and say
+ * how many were rewritten. Every OTHER value is returned as-is: a ref to any other asset, a legacy
+ * URL string, an unrelated `{ url }` config blob (isAssetRef refuses it), a ref's own `alt`. That
+ * is the whole safety property of a global swap: asset A becomes asset B, and asset C is not
+ * touched. Identity-preserving like applyAssetUrls, so a document without a ref to `fromId` comes
+ * back as the same object and a caller can skip the write.
+ */
+export function swapAssetRefs(
+  value: unknown,
+  fromId: string,
+  to: AssetSwapTarget,
+): { value: unknown; swapped: number } {
+  const tally = { n: 0 }
+  const out = swapWalk(value, fromId, to, tally)
+  return { value: out, swapped: tally.n }
+}
+
+function swapWalk(value: unknown, fromId: string, to: AssetSwapTarget, tally: { n: number }): unknown {
+  if (isAssetRef(value)) {
+    if (value.assetId !== fromId) return value
+    tally.n += 1
+    return { ...value, assetId: to.assetId, url: to.url }
+  }
+  if (!value || typeof value !== 'object') return value
+  if (isReactElement(value)) return value
+  if (Array.isArray(value)) {
+    let changed = false
+    const next = value.map((el) => {
+      const out = swapWalk(el, fromId, to, tally)
+      if (out !== el) changed = true
+      return out
+    })
+    return changed ? next : value
+  }
+  let changed = false
+  const next: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    const out = swapWalk(v, fromId, to, tally)
+    if (out !== v) changed = true
+    next[k] = out
+  }
+  return changed ? next : value
+}

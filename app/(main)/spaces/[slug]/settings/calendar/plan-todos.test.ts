@@ -20,6 +20,7 @@ vi.mock('@/lib/calendar/plans-store', () => ({
   attachEntryToPlan: vi.fn(),
   createPenciledPlanRows: vi.fn(),
   getSpacePlan: vi.fn(),
+  listSharedPlanIds: vi.fn(async () => []),
   insertPlaybook: vi.fn(),
   insertSpacePlan: vi.fn(),
   listPlaybooks: vi.fn(),

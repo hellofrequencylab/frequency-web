@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildVevent, renderCalendar } from '@/lib/events/ics'
-import { entryFeedFields, type FeedEntryRow } from './entry-feed'
+import { readFileSync } from 'node:fs'
+import { entryFeedFields, sharedFeedSummary, withSharedPlanRows, type FeedEntryRow } from './entry-feed'
 
 // THE PRIVATE FEED CARRIES A SERIES AS ONE VEVENT (PROG-CAL13). A repeating Pencil is emitted once,
 // with its RRULE and one EXDATE per deliberately skipped day, in the entry's own zone and in the same
@@ -82,5 +83,37 @@ describe('entryFeedFields on a one-off entry', () => {
     const block = buildVevent(entryFeedFields(bare, url), NOW)
     expect(block.some((l) => l.startsWith('RRULE'))).toBe(false)
     expect(block).toContain('DTSTART:20261006T020000Z')
+  })
+})
+
+// SHARED PLANS ON A GUEST'S PHONES (PROG-CAL7, LIVE-546). The fold prefixes a shared row with its
+// host, keeps own rows first and unprefixed, never doubles, and drops a row whose host it cannot
+// name; the route reads accepted shares only and keys the host rows by the shared plan ids.
+describe('withSharedPlanRows', () => {
+  const own = { ...biweekly, id: 'own-1', title: 'Sound bath', plan_id: null as string | null }
+  const theirs = { ...biweekly, id: 'their-1', title: 'Autumn retreat', plan_id: 'plan-1' as string | null }
+  const nameless = { ...biweekly, id: 'their-2', title: 'Orphan', plan_id: 'plan-9' as string | null }
+  const hosts = new Map([['plan-1', 'The Green Room']])
+
+  it('keeps own rows first and unprefixed, prefixes shared rows with the host, drops the unplaceable', () => {
+    const out = withSharedPlanRows([own], [theirs, nameless, { ...own }], (r) => (r.plan_id ? hosts.get(r.plan_id) : null))
+    expect(out.map((r) => [r.id, r.title])).toEqual([
+      ['own-1', 'Sound bath'],
+      ['their-1', 'The Green Room: Autumn retreat'],
+    ])
+    expect(sharedFeedSummary('Lab', 'Doors')).toBe('Lab: Doors')
+  })
+
+  it('the route reads accepted shares whose guest is the feed Space and keys the host rows by those plans', () => {
+    const route = readFileSync('app/calendar/private/[token]/route.ts', 'utf8')
+    const at = route.indexOf("from('space_plan_shares')")
+    expect(at).toBeGreaterThan(-1)
+    const read = route.slice(at, at + 200)
+    expect(read).toContain(".eq('guest_space_id', row.space_id)")
+    expect(read).toContain(".eq('status', 'accepted')")
+    expect(route).toContain(".in('plan_id', livePlanIds)")
+    expect(route).toContain("listTasksInPlans(livePlanIds, 200)")
+    expect(route).toContain("withSharedPlanRows(")
+    expect(route).not.toMatch(/from\('space_calendar_entries'\)[^;]*\.eq\('space_id', hostIds/)
   })
 })

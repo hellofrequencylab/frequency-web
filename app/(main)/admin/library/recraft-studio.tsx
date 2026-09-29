@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Wand2, Loader2, Wand, Eraser, Shapes, History, RotateCcw } from 'lucide-react'
+import { Wand2, Loader2, Wand, Eraser, Shapes, History, RotateCcw, Maximize2 } from 'lucide-react'
 import {
   recraftEditAsset,
   listAssetVersions,
@@ -12,15 +12,19 @@ import {
 
 // Recraft edit ops for a file-backed asset (in the detail drawer). Each op is non-destructive — it
 // snapshots a version first (see AssetVersions). Hidden unless the studio is enabled + the asset has
-// a file URL.
+// a file URL. Upscale (LIVE-589) is raster only: on a vector the chip stays visible, disabled, and
+// says why, so an operator is never left guessing where it went.
 export function RecraftEditRow({
   assetId,
   hasFile,
+  isVector = false,
   enabled,
   chipCls,
 }: {
   assetId: string
   hasFile: boolean
+  /** The file is an SVG (see isVectorFile in lib/loom/urls). A vector needs no upscale. */
+  isVector?: boolean
   enabled: boolean
   chipCls: string
 }) {
@@ -53,6 +57,15 @@ export function RecraftEditRow({
         </button>
         <button
           type="button"
+          disabled={busy || isVector}
+          onClick={() => run('upscale')}
+          aria-describedby={isVector ? `upscale-note-${assetId}` : undefined}
+          className={`${chipCls} disabled:cursor-not-allowed disabled:opacity-70`}
+        >
+          <Maximize2 className="h-4 w-4" /> Upscale
+        </button>
+        <button
+          type="button"
           disabled={busy}
           onClick={() => {
             const p = window.prompt('Describe the variation (what to change)')
@@ -63,6 +76,11 @@ export function RecraftEditRow({
           <Wand2 className="h-4 w-4" /> Variation
         </button>
       </div>
+      {isVector && (
+        <p id={`upscale-note-${assetId}`} className="text-meta text-subtle">
+          This one is a vector, so it is already sharp at any size and needs no upscale.
+        </p>
+      )}
       {err && <p className="text-body-sm text-danger">{err}</p>}
     </div>
   )

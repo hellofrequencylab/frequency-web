@@ -45,6 +45,7 @@ const ROW_COLS =
 /** The untyped query-builder shape listTasks chains over (crm_tasks is not in generated types yet). */
 interface TaskQuery {
   eq: (col: string, val: string) => TaskQuery
+  in: (col: string, vals: readonly string[]) => TaskQuery
   order: (col: string, opts: { ascending: boolean }) => TaskQuery
   limit: (n: number) => Promise<{ data: TaskRow[] | null; error: unknown }>
 }
@@ -139,6 +140,7 @@ export async function updateTaskStatus(
 /** The untyped update-builder shape the scoped writer chains over. */
 interface ScopedUpdateQuery {
   eq: (col: string, val: string) => ScopedUpdateQuery
+  in: (col: string, vals: readonly string[]) => ScopedUpdateQuery
   select: (cols: string) => PromiseLike<{ data: { id: string }[] | null; error: unknown }>
 }
 
@@ -243,6 +245,90 @@ export async function getTaskInScope(taskId: string, spaceId: string): Promise<C
     return mapTaskRow(data[0])
   } catch {
     return null
+  }
+}
+
+// ── ACROSS THE SHARE (PROG-CAL7 Together, LIVE-544) ─────────────────────────────────────────────
+//
+// A to-do belongs to its Plan's host Space (`space_id`), and a Plan can be shared with a guest
+// Space through an ACCEPTED share. The guest reaches those to-dos by PLAN id, never by Space id,
+// and every helper below binds its read or write to the plan ids the caller proved (the accepted
+// shares of its own Space, read on the session in lib/calendar/plans-store.ts), so an id from the
+// browser matches no row outside that set. Same authz delegation as the Space-scoped helpers.
+
+/** The to-dos of the given Plans, newest first. Empty when no Plan is named. */
+export async function listTasksInPlans(planIds: readonly string[], limit = 500): Promise<CrmTask[]> {
+  const ids = [...new Set(planIds.filter(Boolean))]
+  if (ids.length === 0) return []
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { select: (c: string) => TaskQuery }
+    }
+    const { data, error } = await db
+      .from('crm_tasks')
+      .select(ROW_COLS)
+      .in('plan_id', ids)
+      .order('created_at', { ascending: false })
+      .limit(Math.min(Math.max(limit, 1), 500))
+    if (error || !data) return []
+    return data.map(mapTaskRow)
+  } catch {
+    return []
+  }
+}
+
+/** One task, by id, on one of the given Plans. Null outside that set. */
+export async function getTaskInPlans(taskId: string, planIds: readonly string[]): Promise<CrmTask | null> {
+  const ids = [...new Set(planIds.filter(Boolean))]
+  if (!taskId || ids.length === 0) return null
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { select: (c: string) => TaskQuery }
+    }
+    const { data, error } = await db.from('crm_tasks').select(ROW_COLS).eq('id', taskId).in('plan_id', ids).limit(1)
+    if (error || !data?.[0]) return null
+    return mapTaskRow(data[0])
+  } catch {
+    return null
+  }
+}
+
+/** Move one task to a status INSIDE the given Plans: the guest's completion door. */
+export async function updateTaskStatusInPlans(taskId: string, status: TaskStatus, planIds: readonly string[]): Promise<boolean> {
+  const id = typeof taskId === 'string' ? taskId.trim() : ''
+  const ids = [...new Set(planIds.filter(Boolean))]
+  const patch = taskStatusPatch(status)
+  if (!id || ids.length === 0 || !patch) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (p: Record<string, unknown>) => ScopedUpdateQuery }
+    }
+    const { data, error } = await db.from('crm_tasks').update(patch).eq('id', id).in('plan_id', ids).select('id')
+    return !error && !!data?.length
+  } catch {
+    return false
+  }
+}
+
+/** Hand one task of one Plan to a person, or to nobody (null). The Plan id is the scope the caller
+ *  proved (its own Plan, or an accepted share); the assignee was checked against both teams. */
+export async function assignTaskInPlan(taskId: string, assigneeProfileId: string | null, planId: string): Promise<boolean> {
+  const id = typeof taskId === 'string' ? taskId.trim() : ''
+  const plan = typeof planId === 'string' ? planId.trim() : ''
+  if (!id || !plan) return false
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { update: (p: Record<string, unknown>) => ScopedUpdateQuery }
+    }
+    const { data, error } = await db
+      .from('crm_tasks')
+      .update({ assignee_profile_id: assigneeProfileId, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('plan_id', plan)
+      .select('id')
+    return !error && !!data?.length
+  } catch {
+    return false
   }
 }
 
