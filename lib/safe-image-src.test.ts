@@ -61,9 +61,9 @@ describe('safeImageSrc', () => {
   })
 })
 
-// The narrow sibling used by the three upload-preview sinks (Beta induction avatar,
-// onboarding avatar step, feed composer attachment). Its whole job is to be TIGHTER than
-// safeImageSrc, so the tests that matter are the ones where the two disagree.
+// The narrow sibling used by every upload-preview sink (lib/safe-image-src.ts names them). Its
+// whole job is to be TIGHTER than safeImageSrc, so the tests that matter are the ones where the
+// two disagree.
 
 describe('safeUploadPreviewSrc', () => {
   it('allows the only two shapes an upload preview can actually be', () => {
@@ -89,4 +89,79 @@ describe('safeUploadPreviewSrc', () => {
     expect(safeUploadPreviewSrc(undefined)).toBeNull()
     expect(safeUploadPreviewSrc('')).toBeNull()
   })
+
+  it('allows what a browser and the uploader really produce', () => {
+    expect(safeUploadPreviewSrc('blob:https://app.local/550e8400-e29b-41d4-a716-446655440000')).toBe(
+      'blob:https://app.local/550e8400-e29b-41d4-a716-446655440000',
+    )
+    expect(safeUploadPreviewSrc('blob:http://localhost:3000/550E8400-E29B-41D4-A716-446655440000')).toBe(
+      'blob:http://localhost:3000/550E8400-E29B-41D4-A716-446655440000',
+    )
+    // lib/storage/profile-images.ts: the public URL plus a cache-busting query.
+    const uploaded = 'https://abc.supabase.co/storage/v1/object/public/avatars/0b6f-4e/avatar.jpg?t=1790000000000'
+    expect(safeUploadPreviewSrc(uploaded)).toBe(uploaded)
+    // The parser's serialisation is what comes back, so case and IDN hosts are normalised.
+    expect(safeUploadPreviewSrc('HTTPS://CDN.EXAMPLE.COM/A.JPG')).toBe('https://cdn.example.com/A.JPG')
+    expect(safeUploadPreviewSrc('https://bücher.example/a.jpg')).toBe('https://xn--bcher-kva.example/a.jpg')
+  })
+
+  // HYG-137. A blob: URL's path is opaque, so the URL parser hands it back as written: before the
+  // whole-string allowlist, every one of these came out of safeUploadPreviewSrc verbatim, quotes
+  // and angle brackets included.
+  it('refuses a blob: URL whose id carries markup or anything createObjectURL never writes', () => {
+    for (const hostile of [
+      'blob:https://app.local/"><img src=x onerror=alert(1)>',
+      "blob:https://app.local/x' onerror='alert(1)",
+      'blob:https://app.local/a b<c>',
+      'blob:https://app.local/a`b',
+      'blob:https://app.local/',
+      'blob:https://app.local/a/b',
+      'blob:https://[::1]:3000/9f2c-1',
+      'blob:https://app.local/9f2c-1#x',
+      'blob:javascript:alert(1)',
+      'blob:blob:https://app.local/9f2c-1',
+      'blob:data:text/html,<script>alert(1)</script>',
+    ]) {
+      expect(safeUploadPreviewSrc(hostile), hostile).toBeNull()
+    }
+  })
+
+  it('refuses every script-bearing, inline or off-origin shape an attacker would try', () => {
+    for (const hostile of [
+      'javascript:alert(1)',
+      'JaVaScRiPt:alert(1)',
+      '\tjavascript:alert(1)',
+      'java\nscript:alert(1)',
+      ' javascript:alert(document.cookie)',
+      'vbscript:msgbox(1)',
+      'data:text/html,<script>alert(1)</script>',
+      'data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==',
+      'data:image/svg+xml,<svg onload=alert(1)>',
+      'file:///etc/passwd',
+      '//evil.test/a.jpg',
+      '/\\evil.test/a.jpg',
+      'https://user:pw@evil.test/a.jpg',
+      'https://cdn.example.com/a.jpg#"><script>',
+      "https://cdn.example.com/it's.jpg",
+    ]) {
+      expect(safeUploadPreviewSrc(hostile), hostile).toBeNull()
+    }
+  })
+
+  it('never returns a character that could end or open an HTML attribute or tag', () => {
+    const tries = [
+      'blob:https://app.local/9f2c-1',
+      'https://cdn.example.com/a"b<c>d e`f.jpg',
+      'https://cdn.example.com/a.jpg?x="<>&y=1',
+      'https://cdn.example.com/%22%3E%3Cscript%3E.jpg',
+      'blob:https://app.local/"><img src=x onerror=alert(1)>',
+    ]
+    for (const t of tries) {
+      const out = safeUploadPreviewSrc(t)
+      if (out !== null) expect(out, t).not.toMatch(/["'<>`\s\\]/)
+    }
+    // The encoded forms survive as encoded text, which is inert in a src.
+    expect(safeUploadPreviewSrc('https://cdn.example.com/a"b.jpg')).toBe('https://cdn.example.com/a%22b.jpg')
+  })
 })
+

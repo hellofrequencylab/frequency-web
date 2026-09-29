@@ -87,35 +87,40 @@ export function safeImageSrc(src: string | null | undefined): string | null {
 // SVG loaded through <img> is script-disabled in every browser) but because a preview
 // has no reason to carry inline bytes, and a guard that permits what the caller cannot
 // produce is a guard with slack in it.
-// KNOWN CODEQL FALSE POSITIVES, and why they cannot be fixed in code.
 //
-// CodeQL does not model either function as a sanitizer, so every <img> they feed is
-// reported as js/xss-through-dom, "DOM text reinterpreted as HTML". The path it draws
-// is real but inert:
+// THE LAST STEP IS A WHOLE-STRING ALLOWLIST, and that is deliberate (HYG-137, ADR-1620).
 //
-//   <input type="file">  →  e.target.files[0]   (CodeQL: DOM text)
-//   URL.createObjectURL(file)                   (CodeQL: taint survives)
-//   <img src={…}>                               (CodeQL: HTML sink)
+// The first version ended in a prefix test, `/^(?:blob:|https?:)/`, on the parser's output. Two
+// things were wrong with that. First, the parser does not escape an opaque path: a blob: URL is
+// handed back as written, so `blob:https://app.local/"><img src=x onerror=alert(1)>` came out of
+// this function verbatim. Nothing can mint that string (createObjectURL writes a UUID there) and
+// React escapes attribute values, so it never ran, but a URL sanitizer that returns a quote and an
+// angle bracket is not doing the job its name claims. Second, CodeQL could not see a sanitizer at
+// all. Its js/xss-through-dom query follows `input.files` through URL.createObjectURL to the
+// <img src>, and a regexp test only stops that flow when the pattern is anchored at BOTH ends and
+// has no wildcard in it (no `.`, no `[^…]`, no `\S`). So every preview sink was reported as "DOM
+// text reinterpreted as HTML", and the old advice here was to dismiss the alerts one by one.
 //
-// `createObjectURL` embeds nothing from the file. It returns a browser-minted
-// `blob:<origin>/<uuid>` — the filename, the bytes and the MIME type never appear in
-// the string, so there is no attacker-controlled character to escape. The taint label
-// belongs to the File, not to the URL that identifies it. An <img> src also cannot
-// execute script the way an href can, which is the premise this whole file rests on.
+// Both regexps below are anchored at both ends and list every character they accept, so the value
+// that reaches a src is one of these two shapes and nothing else:
 //
-// DO NOT try to silence these with `// codeql[js/xss-through-dom]` comments. That was
-// tried on all nine sites, placed on the exact lines CodeQL reports, and the count did
-// not move: inline suppression comments are an LGTM legacy feature that GitHub code
-// scanning does not honour. The only supported routes are dismissing each alert in the
-// Security tab or excluding the query in .github/workflows/codeql.yml — and excluding
-// it repo-wide would also blind us to a genuine innerHTML finding, which is the one
-// thing this query is worth keeping for. So: dismiss, and leave the query armed.
+//   blob:   blob:<http(s) origin>/<id>   the id is letters, digits and hyphens (a UUID in every
+//                                        browser), which is all createObjectURL ever writes there
+//   http(s) <scheme>://<host>[:port]/<path>[?query], the parser's serialisation, which has already
+//                                        percent-encoded quotes, angle brackets, backticks and
+//                                        spaces; no credentials, no fragment
 //
-// Also worth recording: adding these guards RAISED the alert count 5 → 7. Routing four
-// more surfaces through one shared helper is exactly what let CodeQL connect the path
-// across files. The code got stricter and the report got louder at the same time.
+// A value outside them renders no preview (the callers fall back to initials or nothing), which is
+// the honest failure for an image. If CodeQL reports an upload preview again, the sink is not going
+// through this function, or someone loosened a pattern: fix that, do not dismiss the alert.
+const BLOB_PREVIEW_SRC = /^blob:https?:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?\/[a-z0-9-]{1,64}$/i
+const UPLOADED_PREVIEW_SRC =
+  /^https?:\/\/[a-z0-9.-]+(?::[0-9]{1,5})?\/[a-z0-9._~%!$&()*+,;=:@/-]*(?:\?[a-z0-9._~%!$&()*+,;=:@/?-]*)?$/i
+
 export function safeUploadPreviewSrc(src: string | null | undefined): string | null {
   const safe = safeImageSrc(src)
   if (!safe) return null
-  return /^(?:blob:|https?:)/i.test(safe) ? safe : null
+  if (BLOB_PREVIEW_SRC.test(safe)) return safe
+  if (UPLOADED_PREVIEW_SRC.test(safe)) return safe
+  return null
 }
