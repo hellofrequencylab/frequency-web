@@ -11,6 +11,7 @@ import { isProfileRef } from '@/lib/qr/public-url'
 import { hasPublicTwin } from '@/lib/nav/public-twin'
 import { memberEventRewrite } from '@/lib/nav/member-event-rewrite'
 import { memberSpaceRewrite } from '@/lib/nav/member-space-rewrite'
+import { shouldWriteMarker } from '@/lib/nav/marker-cookie'
 import { frontDoorRedirect } from '@/lib/nav/front-door'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { isFunnelSplashPath } from '@/lib/funnels/definitions'
@@ -126,8 +127,13 @@ export async function proxy(request: NextRequest) {
   //
   // Set on `supabaseResponse`, which every redirect branch below already copies its cookies from,
   // so a member redirected to their feed arrives with the marker in hand.
+  //
+  // Written when the browser lacks it, and refreshed on a full page load; NEVER re-sent on a Server
+  // Action or an RSC request that already carries it (LIVE-649, ADR-1617). A cookie set here on an
+  // action makes Next report "cookies changed", and the client then drops its whole prefetch cache
+  // and re-prefetches every visible Link: one request per Link per heartbeat. lib/nav/marker-cookie.ts.
   if (user) {
-    supabaseResponse.cookies.set(ACCOUNT_COOKIE, '1', {
+    if (shouldWriteMarker(request, ACCOUNT_COOKIE, '1')) supabaseResponse.cookies.set(ACCOUNT_COOKIE, '1', {
       path: '/', maxAge: ACCOUNT_COOKIE_MAX_AGE, sameSite: 'lax',
     })
   } else if (request.cookies.get(ACCOUNT_COOKIE)) {
@@ -152,8 +158,9 @@ export async function proxy(request: NextRequest) {
   // block is a no-op and first-touch behaves exactly as it did before. Nothing about the existing
   // default changed for anyone the law does not cover.
   const priorConsentRegion = requiresPriorConsent(request.headers.get('x-vercel-ip-country'))
+  // Same rule as the account marker above (LIVE-649): only when missing, or on a full page load.
   if (priorConsentRegion) {
-    supabaseResponse.cookies.set(CONSENT_REGION_COOKIE, '1', {
+    if (shouldWriteMarker(request, CONSENT_REGION_COOKIE, '1')) supabaseResponse.cookies.set(CONSENT_REGION_COOKIE, '1', {
       path: '/', maxAge: CONSENT_MAX_AGE, sameSite: 'lax',
     })
   } else if (request.cookies.get(CONSENT_REGION_COOKIE)) {
