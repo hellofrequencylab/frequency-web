@@ -571,6 +571,25 @@ export async function deleteSpaceLibraryAsset(
   return { bucket: row.storage_bucket ?? null, path: row.storage_path ?? null }
 }
 
+/** One page of the stored sizes of a Space's FILE-BACKED Loom rows (storage_path set), ordered by
+ *  id, for the storage budget (LIVE-567, lib/library/quota.ts `loomStorageUsed`). A READ; the caller
+ *  authorizes the Space. Null on a failed read, never a partial page: the budget refuses on null. */
+export async function listLibraryAssetBytesPage(
+  spaceId: string,
+  from: number,
+  to: number,
+): Promise<{ bytes: number | null }[] | null> {
+  const { data, error } = await db()
+    .from('library_assets')
+    .select('id, bytes')
+    .eq('space_id', spaceId)
+    .not('storage_path', 'is', null)
+    .order('id', { ascending: true })
+    .range(from, to)
+  if (error || !Array.isArray(data)) return null
+  return (data as { bytes: number | null }[]).map((r) => ({ bytes: r.bytes }))
+}
+
 /** One pickable Loom asset for the universal image picker: the served URL + the label + its `kind`
  *  (image | icon | element | …, so the picker can render/scope by family) + whether it was
  *  AI-generated (an "Element") + its tags (for the Tags facet). */

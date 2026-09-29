@@ -288,7 +288,16 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
 - `space_id = <entity>` → that **entity's own** Loom.
 - Effective view for a space = its rows ∪ root's, badged "Frequency" vs "Yours". Using a shared
   asset **references** it; editing **forks** a private copy (`parent_id` → master). No space→space
-  sharing in v1; per-plan storage quota via entitlements.
+  sharing in v1.
+- **Storage budget** ([ADR-1585](DECISIONS.md)). A Space's Loom has a cap: `lib/library/quota.ts`
+  `loomQuotaFor` reads it from `LOOM_STORAGE_CAP_BYTES` by plan tier (a larger-library entitlement is
+  deferred to the owner). `loomStorageUsed` sums `bytes` over the Space's
+  file-backed rows; a NULL size is reported as unknown, never as zero. `uploadLoomImage` refuses past
+  the cap, and refuses when the sum cannot be read. The root Space (and so a personal upload) is
+  uncapped, as are the Loom Studio and email studio doors, which write to it. The Space Loom Studio
+  shows the meter. Two other doors write into a Space and do not read the budget yet: the page
+  editor's field upload (`lib/page-editor/loom-field-actions.ts`) and the AI cover
+  (`lib/loom/cover-actions.ts`); the importer and event copies store no size.
 
 ## Build sequence (D1–D7)
 
