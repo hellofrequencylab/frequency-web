@@ -74,14 +74,16 @@ export default async function SpaceManagePage({
   // description + the members/plan/mode strip) pushed the search + menu far down the page; dropping it puts
   // the menu right under the search, matching the admin workspace exactly. Wide, no on-page Settings bar.
   return (
-    <div className="mx-auto w-full max-w-7xl">
+    <div className="mx-auto w-full max-w-7xl max-md:pb-18">
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
       {/* Search first (a fast finder over every tool + setting), then the category menu + section content
           (SpaceManageBoard renders the HubNav tabs + the active section), exactly like the admin workspace. */}
       <div className="mb-5">
         <HubSearch items={hubSearchItems(space.slug)} />
       </div>
-      <SpaceManageBoard slug={slug} section={section} />
+      {/* thumbBar: the daily doors at the bottom edge of a phone (LIVE-704), only on this standalone page.
+          The wrapper's max-md:pb-18 is the room that bar takes above the lane (console-thumb-bar.tsx). */}
+      <SpaceManageBoard slug={slug} section={section} thumbBar />
       {/* Pending "where does this event live" requests a Space steward can approve. Only a manager
           (not a staff previewer) acts on them; the actions re-check steward caps server-side. */}
       {canManage && (
