@@ -13,6 +13,11 @@
 // Established members who already chose a name fail that equality, so they do not grow
 // a new step overnight. A collision fallback (random uuid suffix, not the auth id) is
 // rare and reads as chosen — fail-open, same as "already named".
+//
+// The same reconstruction exists in SQL: convert_signup_leads_for_me
+// (supabase/migrations/20270345008700_conversion_spends_the_lead_name.sql, LIVE-450) applies
+// a converted lead's name to the profile only while the profile still passes this mint
+// test. identity.test.ts pins both copies to the trigger's formula.
 
 /** The trigger's handle alphabet: `lower(regexp_replace(local_part, '[^a-z0-9]', '', 'g'))`. */
 export function sanitizeHandleBase(localPart: string): string {
