@@ -331,8 +331,7 @@
             "OWN-087",
             "DEF-A2P",
             "LIVE-455",
-            "OWN-088",
-            "OWN-089"
+            "OWN-088"
           ]
         }
       ],
@@ -20054,7 +20053,7 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1624; owner replan 2026-09-29 ~18:45Z"
       },
-      "detail": "FILED AND CLOSED 2026-09-29 (ADR-1624). Owner replan 2026-09-29 ~18:45Z: \"The only things I want deferred are W4, W9, and W11.\" Then, by multiple choice: mobile \"I want the mobile site to be active but iOS dev to remain parked\"; DEF-DOMAIN \"Split into rows\"; the owner rows \"Unpark all but launch\".\n\nWHAT CHANGED. (1) DEF-DOMAIN closed as decomposed into 55 rows after a re-test of every item (the built ones are listed in its close). (2) LIVE-234 (W0, P0), DEF-A2P and LIVE-455 (owner-timed) and PROG-GD6 (W7) are open again, parkedUntil notes removed, ownerAction kept. LIVE-464 stays parked for launch day. (3) DEF-MOBILE is retitled as the native app and stays parked; WM is the active mobile-site lane with four rows (LIVE-701 to LIVE-704). (4) Six follow-ups found today: LIVE-705 and LIVE-706 (split orders cannot be fulfilled, and send no seller notice), HYG-140 (compiler cache growth), HYG-141 (perf-baseline times a redirect), HYG-142 (safeImageSrc, the CodeQL follow-up to HYG-137), HYG-143 (the 36 open CodeQL alerts as a set). The two QUEUE follow-ups (LIVE-550 export paging, LIVE-221 member check) were already filed and done as LIVE-626 and LIVE-627, so nothing was filed for them. (5) The wave names say that only W4, W9 and W11 are deferred.\n\n── OWNER RULING 2026-09-29 ~19:10-19:20Z: the owner answered the ruling rows by multiple choice, recorded verbatim on each row. LIVE-662 \"Custom fields only\", LIVE-666 \"Up to 3 Channels\", LIVE-673 \"Sponsors with goods\", LIVE-680 \"Retire it\", LIVE-681 \"Merge into Practices\", LIVE-703 \"After first RSVP\": re-scoped and buildable, ownerAction removed. LIVE-670 \"Keep self-reported\", LIVE-694 \"Keep off\", OWN-086 (Lab bridge out): closed as ruled. LIVE-683 \"Remove at launch\": parked to 2026-12-14. OWN-085 \"Draft the AUP for review\": blocked on LIVE-707. New rows from the same session: LIVE-707 to LIVE-712, HYG-144, OWN-088, OWN-089.",
+      "detail": "FILED AND CLOSED 2026-09-29 (ADR-1624). Owner replan 2026-09-29 ~18:45Z: \"The only things I want deferred are W4, W9, and W11.\" Then, by multiple choice: mobile \"I want the mobile site to be active but iOS dev to remain parked\"; DEF-DOMAIN \"Split into rows\"; the owner rows \"Unpark all but launch\".\n\nWHAT CHANGED. (1) DEF-DOMAIN closed as decomposed into 55 rows after a re-test of every item (the built ones are listed in its close). (2) LIVE-234 (W0, P0), DEF-A2P and LIVE-455 (owner-timed) and PROG-GD6 (W7) are open again, parkedUntil notes removed, ownerAction kept. LIVE-464 stays parked for launch day. (3) DEF-MOBILE is retitled as the native app and stays parked; WM is the active mobile-site lane with four rows (LIVE-701 to LIVE-704). (4) Six follow-ups found today: LIVE-705 and LIVE-706 (split orders cannot be fulfilled, and send no seller notice), HYG-140 (compiler cache growth), HYG-141 (perf-baseline times a redirect), HYG-142 (safeImageSrc, the CodeQL follow-up to HYG-137), HYG-143 (the 36 open CodeQL alerts as a set). The two QUEUE follow-ups (LIVE-550 export paging, LIVE-221 member check) were already filed and done as LIVE-626 and LIVE-627, so nothing was filed for them. (5) The wave names say that only W4, W9 and W11 are deferred.\n\n── OWNER RULING 2026-09-29 ~19:10-19:20Z: the owner answered the ruling rows by multiple choice, recorded verbatim on each row. LIVE-662 \"Custom fields only\", LIVE-666 \"Up to 3 Channels\", LIVE-673 \"Sponsors with goods\", LIVE-680 \"Retire it\", LIVE-681 \"Merge into Practices\", LIVE-703 \"After first RSVP\": re-scoped and buildable, ownerAction removed. LIVE-670 \"Keep self-reported\", LIVE-694 \"Keep off\", OWN-086 (Lab bridge out): closed as ruled. LIVE-683 \"Remove at launch\": parked to 2026-12-14. OWN-085 \"Draft the AUP for review\": blocked on LIVE-707. New rows from the same session: LIVE-707 to LIVE-712, HYG-144, OWN-088. Skew Protection (ruled \"1 hour\") is off on the project (Vercel API 2026-09-29), so the ruling needs no change and no row is filed.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const d=require(\"./docs/BUILD-BACKLOG.json\");const by=new Map(d.entries.map((e)=>[e.id,e]));const fail=(m)=>{console.error(m);process.exit(1)};const waves=d.meta.slate.waves;const on=(id)=>waves.some((w)=>(w.ids||[]).includes(id));const tok=(w)=>w.name.split(\" · \")[0].trim();const filed=[\"LIVE-651\",\"LIVE-652\",\"LIVE-653\",\"LIVE-654\",\"LIVE-655\",\"LIVE-656\",\"LIVE-657\",\"LIVE-658\",\"LIVE-659\",\"LIVE-660\",\"LIVE-661\",\"LIVE-662\",\"LIVE-663\",\"LIVE-664\",\"LIVE-665\",\"LIVE-666\",\"LIVE-667\",\"LIVE-668\",\"LIVE-669\",\"LIVE-670\",\"LIVE-671\",\"LIVE-672\",\"LIVE-673\",\"LIVE-674\",\"LIVE-675\",\"LIVE-676\",\"LIVE-677\",\"LIVE-678\",\"LIVE-679\",\"LIVE-680\",\"LIVE-681\",\"LIVE-682\",\"LIVE-683\",\"LIVE-684\",\"LIVE-685\",\"LIVE-686\",\"LIVE-687\",\"LIVE-688\",\"LIVE-689\",\"LIVE-690\",\"LIVE-691\",\"LIVE-692\",\"LIVE-693\",\"LIVE-694\",\"LIVE-695\",\"LIVE-696\",\"LIVE-697\",\"LIVE-698\",\"LIVE-699\",\"LIVE-700\",\"OWN-085\",\"OWN-086\",\"OWN-087\",\"HYG-139\",\"LIVE-701\",\"LIVE-702\",\"LIVE-703\",\"LIVE-704\",\"LIVE-705\",\"LIVE-706\",\"HYG-140\",\"HYG-141\",\"HYG-142\",\"HYG-143\"];const miss=filed.filter((k)=>!by.has(k));if(miss.length)fail(\"rows the replan filed are gone: \"+miss.join(\", \"));const dd=by.get(\"DEF-DOMAIN\");if(!dd||dd.status!==\"done\")fail(\"DEF-DOMAIN is not closed as decomposed\");for(const id of [\"LIVE-234\",\"DEF-A2P\",\"PROG-GD6\",\"LIVE-455\"]){const e=by.get(id);if(!e)fail(id+\" is missing\");if(e.status===\"parked\")fail(id+\" is parked again, against the owner ruling Unpark all but launch\");if(e.status===\"open\"&&!on(id))fail(id+\" is open but sits on no wave\");if(/parkedUntil/.test(e.notes||\"\"))fail(id+\" still carries a parkedUntil note\")}if(by.get(\"DEF-MOBILE\").status!==\"parked\")fail(\"DEF-MOBILE (the native app) is no longer parked; the owner kept iOS dev parked\");const wm=waves.find((w)=>tok(w)===\"WM\");if(!wm)fail(\"no WM wave\");const mob=[\"LIVE-701\",\"LIVE-702\",\"LIVE-703\",\"LIVE-704\"];for(const id of mob){const e=by.get(id);if(e&&e.status===\"open\"&&!wm.ids.includes(id))fail(id+\" is an open mobile-site row off the WM wave\")}if(/PARKED/.test(wm.name))fail(\"the WM wave still reads as parked; it is the active mobile-site lane\");for(const t of [\"W4\",\"W9\",\"W11\"]){const w=waves.find((x)=>tok(x)===t);if(!w||!/PARKED|parked|deferred/i.test(w.name))fail(t+\" no longer reads as deferred\")}console.log(\"ok\")'",
@@ -20206,25 +20205,6 @@
         "checked": "2026-09-29"
       },
       "ownerAction": "account"
-    },
-    {
-      "id": "OWN-089",
-      "title": "A tab pinned to an old deployment can call it indefinitely: Vercel Skew Protection is not set to a one-hour maximum age",
-      "status": "open",
-      "priority": "P1",
-      "lane": "owner",
-      "size": "XS",
-      "source": {
-        "file": "vercel.json",
-        "ref": "Project Settings, Skew Protection; ruling \"1 hour\"; LIVE-649 context"
-      },
-      "detail": "FILED 2026-09-29 by HYG-138 (ADR-1624) from the owner rulings of 2026-09-29 ~19:10-19:20Z. Ruling \"1 hour\". LIVE-649 measured a tab pinned to a retired deployment sending about 22 requests a second. THE ASK: in the Vercel project settings, enable Skew Protection with a maximum age of 1 hour, so a stale client is moved to the current deployment within the hour. The orchestrator walks the owner through it.",
-      "verify": {
-        "kind": "manual",
-        "evidence": "Filed 2026-09-29. Closes when the setting reads 1 hour (owner screenshot or the orchestrator's read).",
-        "checked": "2026-09-29"
-      },
-      "ownerAction": "config"
     }
   ]
 }
