@@ -29,6 +29,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **The privacy policy says what the product does today.** Download your data and delete your account yourself in Settings, Account and privacy; you do not need to email us. It names every service that handles your data, including Anthropic for Vera, Sentry for error reports, and Twilio for texts, and it covers push notifications, location, and the camera.
+
 - **A Space's Calendar and its Events are one page now, not two menu rows.** Open **Calendar** on any Space. What is next is featured at the top under **Up next**, soonest first, and the month sits below it. **Events** in the menu used to scroll you to a strip on the Space's home page while **Calendar** took you to the month, for the same gatherings.
 
 - **Anyone can change how they read a Space calendar.** **Grid** and **List** switch the same month between the calendar grid and a plain list of dates. Only the people who run the Space could do that before, so everyone else got the grid and no way out of it. If the Space publishes times it is closed, chips let you show just events or just those.
