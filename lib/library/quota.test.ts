@@ -34,9 +34,19 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
+// The owning Space loomAdmits reads (LIVE-629). A throw here stands for a failed Space read.
+let ownerSpace: { id: string; type?: string; plan?: string } | null | 'throw' = null
+vi.mock('@/lib/spaces/store', () => ({
+  getSpaceById: async () => {
+    if (ownerSpace === 'throw') throw new Error('boom')
+    return ownerSpace
+  },
+}))
+
 import {
   LOOM_STORAGE_CAP_BYTES,
   formatLoomBytes,
+  loomAdmits,
   loomBudgetVerdict,
   loomMeter,
   loomQuotaFor,
@@ -48,6 +58,7 @@ import { SPACE_PLANS } from '@/lib/pricing/plans'
 const GB = 1024 * 1024 * 1024
 
 beforeEach(() => {
+  ownerSpace = null
   pages = []
   ranges.length = 0
   filters.length = 0
@@ -145,6 +156,42 @@ describe('loomStorageUsed: the sum', () => {
   })
 })
 
+describe('loomAdmits: the one gate every Space write asks (LIVE-629, ADR-1602)', () => {
+  it('under the cap: admitted, after reading the owning Space and its sum', async () => {
+    ownerSpace = { id: 'space-1', type: 'business', plan: 'free' }
+    pages = [{ data: [{ bytes: 100 }], error: null }]
+    expect(await loomAdmits('space-1', 100)).toEqual({ ok: true })
+    expect(filters).toContain('eq:space_id=space-1')
+  })
+  it('past the cap: refused, naming used and cap', async () => {
+    ownerSpace = { id: 'space-1', type: 'business', plan: 'free' }
+    pages = [{ data: [{ bytes: GB }], error: null }]
+    const v = await loomAdmits('space-1', 1)
+    expect(v.ok).toBe(false)
+    if (!v.ok) expect(v.error).toContain('1 GB of 1 GB used')
+  })
+  it('a failed sum refuses', async () => {
+    ownerSpace = { id: 'space-1', type: 'business', plan: 'free' }
+    pages = [{ data: null, error: { message: 'boom' } }]
+    const v = await loomAdmits('space-1', 1)
+    expect(v.ok).toBe(false)
+    if (!v.ok) expect(v.error).toMatch(/Could not check/)
+  })
+  it('a missing or unreadable Space refuses, and so does no id', async () => {
+    ownerSpace = null
+    expect((await loomAdmits('space-1', 1)).ok).toBe(false)
+    ownerSpace = 'throw'
+    expect((await loomAdmits('space-1', 1)).ok).toBe(false)
+    expect((await loomAdmits('', 1)).ok).toBe(false)
+  })
+  it('the root Space is uncapped and never reads the sum', async () => {
+    ownerSpace = { id: 'root', type: 'root', plan: 'free' }
+    pages = [{ data: null, error: { message: 'would refuse if read' } }]
+    expect(await loomAdmits('root', 50 * GB)).toEqual({ ok: true })
+    expect(ranges).toEqual([])
+  })
+})
+
 describe('the meter and the words', () => {
   it('formats bytes the way a person reads them', () => {
     expect(formatLoomBytes(0)).toBe('0 MB')
@@ -175,15 +222,31 @@ describe('the wiring', () => {
     const start = src.indexOf('export async function uploadLoomImage(')
     const body = src.slice(start, src.indexOf('\n}', start))
     const dedupe = body.indexOf('findLibraryAssetBySha256(')
-    const quota = body.indexOf('loomQuotaFor(')
-    const sum = body.indexOf('loomStorageUsed(')
+    const gate = body.indexOf('loomAdmits(')
     const store = body.indexOf('.upload(')
     expect(dedupe).toBeGreaterThan(-1)
-    expect(quota).toBeGreaterThan(dedupe)
-    expect(sum).toBeGreaterThan(quota)
-    expect(store).toBeGreaterThan(sum)
+    expect(gate).toBeGreaterThan(dedupe)
+    expect(store).toBeGreaterThan(gate)
     // The refusal is a returned error, never a throw.
     expect(body).toMatch(/if \(!verdict\.ok\) return \{ error: verdict\.error \}/)
+  })
+  it('every Space write door asks the same gate before storage, and none re-assembles it (LIVE-629)', () => {
+    const doors: [string, string][] = [
+      ['lib/loom/picker-actions.ts', 'export async function uploadLoomImage('],
+      ['lib/page-editor/loom-field-actions.ts', 'export async function uploadToLoom('],
+      ['lib/loom/cover-actions.ts', 'export async function generateEntityCoverAction('],
+    ]
+    for (const [file, head] of doors) {
+      const src = strip(readFileSync(file, 'utf8'))
+      const start = src.indexOf(head)
+      expect(start, file).toBeGreaterThan(-1)
+      // '\n}\n' is the function's own close (the cover's input type closes on '\n}):').
+      const body = src.slice(start, src.indexOf('\n}\n', start))
+      const gate = body.indexOf('loomAdmits(')
+      expect(gate, file).toBeGreaterThan(-1)
+      expect(body.indexOf('.upload('), file).toBeGreaterThan(gate)
+      expect(body, file).not.toMatch(/loomBudgetVerdict\(/)
+    }
   })
   it('the Space Loom Studio shows the meter', () => {
     const src = readFileSync('components/spaces/loom/space-loom-studio.tsx', 'utf8')

@@ -31,7 +31,7 @@ export const MOVEMENT_MODES: { mode: MovementMode; label: string; blurb: string 
  *  work success, rest warning). `seconds` 0 = an open count-up phase (Play). */
 export type PhaseKind = 'prepare' | 'work' | 'rest'
 
-export interface MovementPhase {
+interface MovementPhase {
   kind: PhaseKind
   /** Seconds this phase runs. 0 means open-ended (count up until the member stops). */
   seconds: number
@@ -87,7 +87,7 @@ export function clampRounds(r: number): number {
  *  to phases; the numbers are the defaults the setup screen seeds + lets them tune. */
 export type StrengthPresetKind = 'tabata' | 'emom' | 'amrap' | 'circuit'
 
-export interface StrengthPreset {
+interface StrengthPreset {
   kind: StrengthPresetKind
   label: string
   blurb: string
@@ -111,14 +111,14 @@ export function strengthPresetByKind(kind: string | null | undefined): StrengthP
 
 /** Back-compat alias. The old engine called these Workout; stored configs +
  *  existing imports still use the Workout kind name, so keep it pointing at Strength. */
-export type WorkoutPresetKind = StrengthPresetKind
+type WorkoutPresetKind = StrengthPresetKind
 
 // --- Yoga presets (hold + transition flow) ----------------------------------
 
 /** A Yoga flow style: how long each pose is held and the breath/transition between. */
 export type YogaPresetKind = 'yin' | 'vinyasa' | 'gentle'
 
-export interface YogaPreset {
+interface YogaPreset {
   kind: YogaPresetKind
   label: string
   blurb: string
@@ -197,7 +197,7 @@ export function buildWalk(opts: { minutes: number; intervalMin?: number }): Move
 /** Run = a single brisk timed block (one work phase); the shared pre-roll warm-up is the count-in.
  *  Same shape as Walk; split cues fire on the minute (intervalMin) as a live-screen cue,
  *  not extra phases, so the block stays one clean countdown. */
-export function buildRun(opts: { minutes: number; intervalMin?: number }): MovementPlan {
+function buildRun(opts: { minutes: number; intervalMin?: number }): MovementPlan {
   const seconds = clampSeconds(opts.minutes * 60)
   return {
     mode: 'run',
@@ -232,7 +232,7 @@ export function buildYoga(preset: YogaPreset): MovementPlan {
 /** Stretch = a steady, gentle mobility block: one timed work phase; the pre-roll warm-up is
  *  the count-in. Soft "switch sides" cues fire on the minute (intervalMin) as a
  *  live-screen cue, not extra phases, so the block stays one calm countdown. */
-export function buildStretch(opts: { minutes: number; intervalMin?: number }): MovementPlan {
+function buildStretch(opts: { minutes: number; intervalMin?: number }): MovementPlan {
   const seconds = clampSeconds(opts.minutes * 60)
   return {
     mode: 'stretch',
@@ -424,7 +424,7 @@ export function timerPreview(input: {
  *  array is the repeating block, walked `rounds` times. An open-ended work phase
  *  (seconds 0, Play) never completes — remaining stays null and the screen counts up.
  */
-export interface MovementPosition {
+interface MovementPosition {
   /** The phase the member is in right now. */
   phase: MovementPhase
   /** 1-based round (1..rounds). Always 1 for single-pass plans. */

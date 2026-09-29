@@ -25,7 +25,7 @@ export const DEFAULT_PERSONA: PersonaId = 'visitor'
 /** The marketing track a persona is routed to — what we *show* them and where
  *  "Learn more" points (an existing pillar page for now; dedicated track pages
  *  are future work, see ADR-125). */
-export interface PersonaTrack {
+interface PersonaTrack {
   /** One-line promise on the lead-flow card + the induction payoff. */
   headline: string
   /** The three things we show this persona (their marketing track, in plain words). */

@@ -7,12 +7,12 @@
 // The create form, the /events index facets, and the discover hub catalog all read this
 // module too (check:vocab keeps it that way — no surface hand-copies these lists).
 
-export interface EventOption {
+interface EventOption {
   value: string
   label: string
 }
 
-export type EventAttendanceMode = 'in_person' | 'online' | 'hybrid'
+type EventAttendanceMode = 'in_person' | 'online' | 'hybrid'
 
 /** What the event *is* — friendly Title Case, no jargon. */
 export const CATEGORY_OPTIONS: EventOption[] = [
@@ -63,10 +63,10 @@ export const ATTENDANCE_OPTIONS: { value: EventAttendanceMode; label: string }[]
 export const CATEGORY_VALUES: ReadonlySet<string> = new Set(CATEGORY_OPTIONS.map((o) => o.value))
 export const VISIBILITY_VALUES: ReadonlySet<string> = new Set(VISIBILITY_OPTIONS.map((o) => o.value))
 /** The non-empty energy tags the column accepts; '' maps to null (no tag). */
-export const ENERGY_VALUES: ReadonlySet<string> = new Set(
+const ENERGY_VALUES: ReadonlySet<string> = new Set(
   ENERGY_OPTIONS.map((o) => o.value).filter(Boolean),
 )
-export const ATTENDANCE_VALUES: ReadonlySet<string> = new Set(ATTENDANCE_OPTIONS.map((o) => o.value))
+const ATTENDANCE_VALUES: ReadonlySet<string> = new Set(ATTENDANCE_OPTIONS.map((o) => o.value))
 
 /** Normalize an untrusted energy value to a stored value: a valid tag, or null. */
 export function coerceEnergyTag(raw: unknown): string | null {

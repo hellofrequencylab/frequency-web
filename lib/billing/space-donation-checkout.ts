@@ -40,7 +40,7 @@ import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 /** Gift bounds. The floor keeps a gift above the card fee that would eat it; the ceiling is the same
  *  sanity bound the ask editor already clamps a suggested amount to. */
 export const DONATION_MIN_CENTS = 100
-export const DONATION_MAX_CENTS = 100_000_000
+const DONATION_MAX_CENTS = 100_000_000
 
 /** Member-facing copy for a gift that could not start. One string so every failure arm agrees. */
 const DONATION_START_FAILED = 'Could not start your gift. Please try again.'
@@ -360,7 +360,7 @@ export async function abandonSpaceDonationFromSession(session: Stripe.Checkout.S
  * Like the settle, the status flip throws rather than swallowing: a refund the DB refuses to record
  * would be acked 200 and lost.
  */
-export async function recordSpaceDonationRefund(paymentIntentId: string | null): Promise<void> {
+async function recordSpaceDonationRefund(paymentIntentId: string | null): Promise<void> {
   if (!paymentIntentId) return
   const { data: updated, error } = await db()
     .from('space_donations')

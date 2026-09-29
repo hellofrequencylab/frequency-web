@@ -39,7 +39,7 @@ export async function getWelcomeTargets(limit = 12): Promise<WelcomeTarget[]> {
   }))
 }
 
-export interface WelcomeResult {
+interface WelcomeResult {
   awarded: boolean
   gems: number
   error: string | null

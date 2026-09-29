@@ -33,7 +33,7 @@ type Loose = {
   }
 }
 
-export interface LeadDealInput {
+interface LeadDealInput {
   spaceId: string
   contactId: string
   /** The Space's type + Focus, so a first-ever deal seeds the right Mode preset stages. */

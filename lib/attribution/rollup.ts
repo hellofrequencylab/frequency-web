@@ -16,7 +16,7 @@ export interface ChannelRollupRow {
   share: number
 }
 
-export interface AcquisitionRollup {
+interface AcquisitionRollup {
   rows: ChannelRollupRow[]
   /** Distinct members carrying any source_* tag. */
   attributed: number

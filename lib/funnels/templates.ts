@@ -39,7 +39,7 @@ export const REF_TYPE_META: Record<StageRefType, { label: string; pointer: 'id' 
 
 /** A suggested stage in a template: its kind, a label, and (optionally) a default
  *  link to an existing component the operator can keep or replace. */
-export interface TemplateStage {
+interface TemplateStage {
   kind: FunnelStageKind
   label: string
   /** A default soft reference; key-pointer types (page/lead_flow/custom) only, since
@@ -48,7 +48,7 @@ export interface TemplateStage {
   link?: { refType: Extract<StageRefType, 'page' | 'lead_flow' | 'custom'>; refKey: string }
 }
 
-export interface FunnelTemplate {
+interface FunnelTemplate {
   key: string
   label: string
   /** One-line "what this funnel is for" on the template card. */

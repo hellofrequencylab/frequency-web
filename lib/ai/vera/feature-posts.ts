@@ -25,7 +25,7 @@ interface Candidate {
   body: string
 }
 
-export interface RefreshResult {
+interface RefreshResult {
   /** 'updated' when the featured set changed, 'skipped' when left untouched. */
   status: 'updated' | 'skipped'
   /** Ids now featured (only meaningful when status === 'updated'). */

@@ -27,7 +27,7 @@ export interface EventQuestion {
   position: number
 }
 
-export interface EventQuestionAnswer {
+interface EventQuestionAnswer {
   id: string
   questionId: string
   eventId: string

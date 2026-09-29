@@ -40,14 +40,14 @@ async function assertCanTargetSpace(spaceId: string): Promise<boolean> {
   return spaces.some((s) => s.id === spaceId)
 }
 
-export interface StageImportInput {
+interface StageImportInput {
   targetKind: ImportTargetKind
   spaceId?: string | null
   filename?: string | null
   source: ParsedSource
 }
 
-export interface StageImportData {
+interface StageImportData {
   id: string
   mapping: ColumnMapping[]
   /** Whether a remembered mapping (same file shape) was applied. */
@@ -113,7 +113,7 @@ export async function stageImport(input: StageImportInput): Promise<ActionResult
 
 const MAX_ZIP_BYTES = 20 * 1024 * 1024 // 20 MB archive
 
-export interface ZipSourcesData {
+interface ZipSourcesData {
   /** One parsed source per readable CSV entry (the client merges them). */
   sources: ParsedSource[]
   /** The CSV entry names we pulled in. */

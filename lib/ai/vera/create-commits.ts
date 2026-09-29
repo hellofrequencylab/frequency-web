@@ -33,12 +33,12 @@ import { createBlankCircleDraft } from '@/lib/circles/draft'
 import type { CreateCommitInput } from './create-entity'
 
 /** What a registered commit returns: where to send the member once the thing exists. */
-export interface CreateCommitResult {
+interface CreateCommitResult {
   /** The surface that now owns the new thing (its builder). Null when there is nowhere to go. */
   href: string | null
 }
 
-export type CreateCommit = (input: CreateCommitInput) => Promise<CreateCommitResult>
+type CreateCommit = (input: CreateCommitInput) => Promise<CreateCommitResult>
 
 // ── Draft readers (PURE, total) ──────────────────────────────────────────────────────────────
 // The draft arrives keyed by the manifest's own field paths, so reading it is a dotted-path walk.

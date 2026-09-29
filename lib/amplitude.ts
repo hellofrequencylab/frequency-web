@@ -42,7 +42,7 @@ export function amplitudeLevel(amplitude: number): number {
   return l
 }
 
-export interface AmplitudeProgress {
+interface AmplitudeProgress {
   amplitude: number
   level: number
   /** Amplitude into the current level (toward the next). */

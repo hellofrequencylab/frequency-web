@@ -21,7 +21,7 @@ export interface WinbackCandidate {
   displayName: string | null
 }
 
-export interface WinbackDraft {
+interface WinbackDraft {
   subject: string
   body: string
 }

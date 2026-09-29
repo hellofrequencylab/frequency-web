@@ -16,7 +16,7 @@ import type { SeedMood } from './moods'
 
 /** Social handles only — we NEVER store credentials (docs §7). A handle drives an
  *  oEmbed lookup + a web search; it is not a scrape key. */
-export interface IntakeSocialHandles {
+interface IntakeSocialHandles {
   instagram?: string
   facebook?: string
   linkedin?: string
@@ -27,7 +27,7 @@ export interface IntakeSocialHandles {
 }
 
 /** Optional operator nudges that seed the harvest queries and disambiguate the extract. */
-export interface IntakeHints {
+interface IntakeHints {
   name?: string
   category?: string
   city?: string
@@ -80,7 +80,7 @@ export interface IntakeInputs {
 // ── Harvested sources (docs §3.3) ─────────────────────────────────────────────────
 
 /** The kind of a raw harvested source, one entry per fetch. */
-export type HarvestedSourceKind =
+type HarvestedSourceKind =
   | 'page' //          a crawled website subpage (readable text)
   | 'search_result' // a web-search hit (title + snippet)
   | 'oembed' //        an oEmbed payload for a social handle / url

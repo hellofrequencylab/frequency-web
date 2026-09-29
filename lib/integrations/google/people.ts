@@ -7,7 +7,7 @@ const PEOPLE_ENDPOINT = 'https://people.googleapis.com/v1/people/me/connections'
 const PERSON_FIELDS = 'names,emailAddresses,phoneNumbers,organizations,urls,addresses'
 
 /** The subset of a People API person we read. All fields optional — Google omits empty ones. */
-export interface RawPerson {
+interface RawPerson {
   names?: { displayName?: string; metadata?: { primary?: boolean } }[]
   emailAddresses?: { value?: string; metadata?: { primary?: boolean } }[]
   phoneNumbers?: { value?: string; metadata?: { primary?: boolean } }[]
@@ -17,7 +17,7 @@ export interface RawPerson {
 }
 
 /** A person flattened to the CreateContactInput-shaped fields the import writes. */
-export interface NormalizedContact {
+interface NormalizedContact {
   displayName: string | null
   email: string | null
   phone: string | null

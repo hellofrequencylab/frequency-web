@@ -34,7 +34,7 @@ export interface JourneyArc {
   expression: 'done' | 'pending'
 }
 
-export interface SeasonMapData {
+interface SeasonMapData {
   journeys: JourneyArc[]
   /** The Journey to act on now: in-window, else the next upcoming, else the last. */
   current: JourneyArc | null

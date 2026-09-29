@@ -27,7 +27,7 @@ export interface ChurnSample {
 
 /** Per-band calibration: of the members the model put in this band, what FRACTION actually went
  *  dormant? A well-calibrated model has high -> ~1, low -> ~0. */
-export interface BandCalibration {
+interface BandCalibration {
   band: ChurnRisk
   /** Members the model assigned to this band. */
   count: number
@@ -36,7 +36,7 @@ export interface BandCalibration {
 }
 
 /** The full backtest report: the headline hit-rate + the per-band calibration + a plain verdict. */
-export interface BacktestReport {
+interface BacktestReport {
   /** Total samples scored. */
   samples: number
   /** Hit-rate: the fraction of samples where the prediction matched reality (high/medium predicted

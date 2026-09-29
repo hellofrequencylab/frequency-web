@@ -6,12 +6,12 @@
 // Pure + dependency-free (the registry is injected) so it's unit-tested and
 // runs under Node's TS type-stripping without import-extension friction.
 
-export interface FeatureRoute {
+interface FeatureRoute {
   key: string
   routes: string[]
 }
 
-export interface ArticleRef {
+interface ArticleRef {
   category: string
   slug: string
   featureKeys: string[]

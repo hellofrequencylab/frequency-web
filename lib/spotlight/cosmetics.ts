@@ -11,7 +11,7 @@
 // so a client bundle (the rail) can import this file for the picker filter without dragging a
 // database client along.
 
-export interface EarnedCosmetic {
+interface EarnedCosmetic {
   id: string
   /** The store item slug that unlocks this cosmetic. Unset = free. */
   requiredItem?: string

@@ -36,7 +36,7 @@ import { getStages, type CrmStage, type StageKind } from '@/lib/crm/pipeline'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** A generous cap so a hostile write can never store an unbounded stage name; trims on write. */
-export const MAX_STAGE_NAME = 60
+const MAX_STAGE_NAME = 60
 
 /** The three stage kinds a pipeline column can carry. */
 export const STAGE_KINDS: readonly StageKind[] = ['open', 'won', 'lost'] as const

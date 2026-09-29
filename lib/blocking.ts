@@ -12,7 +12,7 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-export interface BlockedProfile {
+interface BlockedProfile {
   id: string
   display_name: string
   handle: string
@@ -20,7 +20,7 @@ export interface BlockedProfile {
 }
 
 /** The outcome of a block or unblock write (scan2 L5-12): `ok: false` means the row did NOT change. */
-export type BlockWriteResult = { ok: true } | { ok: false; error: string }
+type BlockWriteResult = { ok: true } | { ok: false; error: string }
 
 // 2026-09-05 (scan2 L5-12): both writes below used to be discarded and the function returned void,
 // so the caller reported success and revalidated into a blocked state that was not real. The block

@@ -161,7 +161,7 @@ export function receiptText(c: ReceiptContent): string {
 
 // ── The payer's half ───────────────────────────────────────────────────────────────────────────
 
-export interface MoneyReceiptOptions {
+interface MoneyReceiptOptions {
   /** The address to send to, when the caller already holds one (a signed-out donor's Stripe
    *  address). Leave null and `profileId` resolves the proven account address instead. */
   to?: string | null
@@ -217,7 +217,7 @@ export async function sendMoneyReceipt(opts: MoneyReceiptOptions): Promise<boole
 
 // ── The receiver's half ────────────────────────────────────────────────────────────────────────
 
-export interface EarnerNoticeOptions {
+interface EarnerNoticeOptions {
   /** The person who received the money. A Space's notice goes to its owner. */
   recipientProfileId: string
   /** The payer, when they have an account: the bell renders their name in front of `bellBody`. */

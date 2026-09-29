@@ -14,9 +14,9 @@ import type {
 } from './marketing-intel'
 
 export type Momentum = 'accelerating' | 'steady' | 'slowing'
-export type GrowthMetric = 'new_members' | 'new_circles' | 'new_events'
+type GrowthMetric = 'new_members' | 'new_circles' | 'new_events'
 
-export interface MetricProjection {
+interface MetricProjection {
   /** Projected total across the next `weeksAhead` weeks (clamped at 0). */
   projectedTotal: number
   /** Projected value for the next single week (clamped at 0). */
@@ -24,7 +24,7 @@ export interface MetricProjection {
   momentum: Momentum
 }
 
-export interface GrowthForecast {
+interface GrowthForecast {
   weeksAhead: number
   /** True only when there were >= 2 data points to fit a trend. */
   grounded: boolean
@@ -33,7 +33,7 @@ export interface GrowthForecast {
   new_events: MetricProjection
 }
 
-export interface DemandGap {
+interface DemandGap {
   pillar: string
   interest: string
   interest_slug: string
@@ -44,7 +44,7 @@ export interface DemandGap {
   reason: string
 }
 
-export interface StaleLeader {
+interface StaleLeader {
   profile_id: string
   leader: string | null
   role: string

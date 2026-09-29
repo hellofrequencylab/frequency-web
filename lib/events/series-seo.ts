@@ -41,7 +41,7 @@ export const SITEMAP_EVENT_ROW_CAP = 2000
 
 /** Cap on the rows `countUpcomingPublicSeries` scans. Same reasoning; the count degrades to a floor
  *  (never an inflated number) if the community ever outgrows it. */
-export const SERIES_COUNT_ROW_CAP = 2000
+const SERIES_COUNT_ROW_CAP = 2000
 
 export interface SitemapEventEntry {
   slug: string
@@ -83,7 +83,7 @@ const ONE_OFF_FACTS: SeriesSeoFacts = { inSeries: false, isAnchor: false, ordina
 
 /** The row `seriesSeoFacts` needs. `generateMetadata` already fetches the event, so it hands this in
  *  and the function costs it nothing extra for the common case. */
-export interface SeriesSeoRow {
+interface SeriesSeoRow {
   id: string
   starts_at: string | null
   recurrence_type?: string | null

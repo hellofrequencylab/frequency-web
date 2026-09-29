@@ -58,7 +58,7 @@ function socialOrderIndex(platform: string): number {
  *  = no charge; `contact` = price on request. */
 export type ServicePriceModel = 'fixed' | 'from' | 'free' | 'contact'
 /** A subscription cadence for a recurring service (a one-off charge is `once`). */
-export type ServiceRecurring = 'once' | 'weekly' | 'monthly'
+type ServiceRecurring = 'once' | 'weekly' | 'monthly'
 /** Whether a service shows publicly. `listed` (default) appears on the space storefront; `private`
  *  is reachable only by direct link and never renders publicly. */
 export type ServiceVisibility = 'private' | 'listed'

@@ -49,7 +49,7 @@ export type Geocoder = (address: EventAddress) => Promise<GeoPoint | null>
 
 /** Is there enough in this address to even attempt a geocode? Avoids calling the
  *  provider for empty/online events. */
-export function hasGeocodableAddress(address: EventAddress): boolean {
+function hasGeocodableAddress(address: EventAddress): boolean {
   return Boolean(
     address.street?.trim() ||
       address.city?.trim() ||
@@ -153,7 +153,7 @@ export async function saveEventLocation(
 }
 
 /** A row from public.nearby_events. */
-export interface NearbyEvent {
+interface NearbyEvent {
   id: string
   slug: string
   title: string

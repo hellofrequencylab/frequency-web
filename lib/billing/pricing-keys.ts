@@ -177,7 +177,7 @@ export type OrderSource = 'self' | 'network'
 /** The three SPACE rungs a plan can stand on. `paid` is every paid plan (Business, and the Collective +
  *  Independent labels that fold into it); `nonprofit` is the verified 501(c)(3) zero; `free` is the
  *  reference rate and the default-deny rung. */
-export type TakeRateRung = 'free' | 'paid' | 'nonprofit'
+type TakeRateRung = 'free' | 'paid' | 'nonprofit'
 
 /** The rungs in ladder order, top rate first. The enumeration the console and the display readers walk. */
 export const TAKE_RATE_RUNGS: readonly TakeRateRung[] = ['free', 'paid', 'nonprofit']

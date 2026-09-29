@@ -6,7 +6,7 @@
 
 /** The presence flags that make a roster row complete. Each `true` flag adds its weight. All optional so a
  *  caller only sets what it knows (an absent flag counts as not-present). */
-export interface CompletenessSignals {
+interface CompletenessSignals {
   /** A real display name, NOT just the email local-part. The strongest "this is a real contact" signal. */
   hasRealName?: boolean
   hasPhone?: boolean

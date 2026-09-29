@@ -4,7 +4,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export interface CollaboratorCard {
+interface CollaboratorCard {
   id: string
   handle: string
   displayName: string

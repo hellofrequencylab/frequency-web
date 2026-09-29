@@ -343,7 +343,7 @@ export async function personalizePractice(input: {
 
 /** Re-coerce every field. A version with no steps is not a personalized practice, so it is null
  *  and the wizard keeps the template's own content. */
-export function coerceClaim(raw: unknown): PracticeSuggestion | null {
+function coerceClaim(raw: unknown): PracticeSuggestion | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   const title = sparkStr(r.title, 80)

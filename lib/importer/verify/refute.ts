@@ -20,7 +20,7 @@ import { recordAiUsage, featureOverBudget } from '@/lib/ai/usage'
 import type { HarvestedSource } from '../intake'
 import type { FieldVerdict, RefuterVerdict } from './gate'
 
-export const VERIFY_FEATURE = 'business-import-verify'
+const VERIFY_FEATURE = 'business-import-verify'
 const TOOL_NAME = 'verify_field'
 
 const VERIFY_TOOL: Anthropic.Tool = {

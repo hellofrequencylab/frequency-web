@@ -45,7 +45,7 @@ export interface VeraMessage {
   text: string
 }
 
-export interface VeraClaudeResult {
+interface VeraClaudeResult {
   reply: string
   proposals: ProposedToolCall[]
   /** 1–3 quick-reply chips for the next turn (ONBOARDING-BUILD-LIST §1.5). */
@@ -164,7 +164,7 @@ export function parseAssistantContent(content: ContentBlock[]): {
 }
 
 /** Who Vera is answering — drives how much operational ground she'll cover. */
-export interface VeraViewer {
+interface VeraViewer {
   /** True for staff (admin/janitor, ADR-208) — an operator running the place. */
   isOperator: boolean
   /** A short role label for the prompt (e.g. 'janitor', 'host', 'member'). */

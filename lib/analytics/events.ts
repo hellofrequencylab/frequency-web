@@ -7,9 +7,9 @@
 // verified practice) are recorded server-side only and can NEVER be spoofed by a
 // client POST.
 
-export type AnalyticsCategory = 'navigation' | 'feature' | 'lifecycle' | 'engagement'
+type AnalyticsCategory = 'navigation' | 'feature' | 'lifecycle' | 'engagement'
 
-export interface AnalyticsEventDef {
+interface AnalyticsEventDef {
   name: string
   category: AnalyticsCategory
   description: string

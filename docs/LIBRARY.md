@@ -287,6 +287,10 @@ own rows, any signed-in caller reads `visibility = 'public'` assets, writes go t
   `swapLibraryAssetRefs` in `lib/library/usage.ts` ([ADR-1560](DECISIONS.md)): a walk over the index's
   rows, one write per stored row, that re-points every `{ assetId }` ref from one asset to another and
   leaves every other value as it was. "Swap everywhere" in the drawer's usage panel is the door.
+  The Space Loom Studio has the same guard on its own delete ([ADR-1586](DECISIONS.md)):
+  `deleteSpaceLoomImage` refuses an image still placed on a page, and on a failed read, and the
+  Studio's one-image editor shows the page count beside Remove. That editor edits title, alt and
+  tags through `normalizeAssetMeta` (`lib/library/asset-meta.ts`), the rule the admin drawer uses.
 - **One picker at every upload point.** The universal control is `components/loom/loom-picker.tsx`
   (16 consumers: page editor, entity blocks, Studio spark, branding, events, QR, email). The old
   "Upload / Pick / Paste URL" tri-mode plan was superseded by the owner directive recorded in the
@@ -301,15 +305,25 @@ own rows, any signed-in caller reads `visibility = 'public'` assets, writes go t
 - Effective view for a space = its rows ∪ root's, badged "Frequency" vs "Yours". Using a shared
   asset **references** it; editing **forks** a private copy (`parent_id` → master). No space→space
   sharing in v1.
-- **Storage budget** ([ADR-1585](DECISIONS.md)). A Space's Loom has a cap: `lib/library/quota.ts`
-  `loomQuotaFor` reads it from `LOOM_STORAGE_CAP_BYTES` by plan tier (a larger-library entitlement is
-  deferred to the owner). `loomStorageUsed` sums `bytes` over the Space's
-  file-backed rows; a NULL size is reported as unknown, never as zero. `uploadLoomImage` refuses past
-  the cap, and refuses when the sum cannot be read. The root Space (and so a personal upload) is
-  uncapped, as are the Loom Studio and email studio doors, which write to it. The Space Loom Studio
-  shows the meter. Two other doors write into a Space and do not read the budget yet: the page
-  editor's field upload (`lib/page-editor/loom-field-actions.ts`) and the AI cover
-  (`lib/loom/cover-actions.ts`); the importer and event copies store no size.
+- **Storage budget** ([ADR-1585](DECISIONS.md), [ADR-1602](DECISIONS.md)). A Space's Loom has a cap:
+  `lib/library/quota.ts` `loomQuotaFor` reads it from `LOOM_STORAGE_CAP_BYTES` by plan tier (a
+  larger-library entitlement is deferred to the owner). `loomStorageUsed` sums `bytes` over the Space's
+  file-backed rows; a NULL size is reported as unknown, never as zero. `loomAdmits(spaceId, bytes)` is
+  the one gate: it reads the owning Space, the cap, the sum and the verdict, and refuses past the cap
+  or when anything cannot be read. Every door that stores new bytes into a Space's Loom asks it before
+  storage and returns its refusal: `uploadLoomImage` (the picker and the Space Loom Studio),
+  `uploadToLoom` (the page editor's field, every kind, since the sum weighs audio and video rows too)
+  and `generateEntityCoverAction` (the AI cover, asked once before Vera draws and again with the
+  cover's size). The root Space (and so a personal upload) is uncapped, as are the Loom Studio and
+  email studio doors, which write to it. The Space Loom Studio shows the meter. The importer and
+  event copies catalog an object already stored and carry no size.
+- Built ([ADR-1587](DECISIONS.md), LIVE-569): the shared set is the root **by id** and public, never
+  any Space's public row. The picker's space scope shows its own images first, then the Frequency
+  ones (badged). The Space Loom Studio has a Frequency library shelf with **Make it yours**
+  (`forkSharedLoomImage` → `forkLibraryAsset`), which copies the stored object to the Space's own
+  path and inserts with `parent_id` = the master; a Space edit of a shared image forks first
+  (`forkIfShared`). A fork is a copy of the file, never a second row on the master's path, and it asks
+  `loomAdmits` before the copy is stored, like every other door that stores new bytes.
 
 ## Build sequence (D1–D7)
 

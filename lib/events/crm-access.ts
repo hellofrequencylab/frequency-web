@@ -33,13 +33,13 @@ import { resolveHostingSpaceIdFromRow } from './host-space'
 // access split that no billing flag can flip, and creating a Business Space is free, so there
 // is nothing to paywall. Copy is plain, no em dashes (docs/CONTENT-VOICE.md).
 
-export type EventCrmTier = 'staff' | 'business' | 'personal'
+type EventCrmTier = 'staff' | 'business' | 'personal'
 
 /** What the event row contributes to the decision. `hostSpaceId` is the ADR-819 hosting
  *  resolution ALREADY applied by the caller: resolveHostingSpaceId (null = personally or
  *  platform hosted). Times are the anchor's own columns (recurrence kept simple, owner ruling:
  *  the anchor's ends_at, or starts_at plus a day when ends_at is null). */
-export interface EventCrmAccessEvent {
+interface EventCrmAccessEvent {
   id: string
   hostSpaceId: string | null
   startsAt: string | null
@@ -47,7 +47,7 @@ export interface EventCrmAccessEvent {
 }
 
 /** The viewer facts the pure resolver needs (the IO loader below assembles them). */
-export interface EventCrmViewerFacts {
+interface EventCrmViewerFacts {
   /** Platform staff on the STAFF axis (profiles.web_role admin/janitor, ADR-208). */
   staff: boolean
   /** The viewer manages the event's host Space AND that Space is a real Business / Non Profit
@@ -66,7 +66,7 @@ export interface ResolveEventCrmAccessInput {
   now?: Date
 }
 
-export interface EventCrmAccess {
+interface EventCrmAccess {
   tier: EventCrmTier
   /** The roster stays readable for every tier that can open the surface. Always true: the lock
    *  never hides the list ("tracked and visible to both"). */
@@ -299,7 +299,7 @@ export const loadEventCrmAccess = cache(async (eventId: string): Promise<EventCr
 // ── IO: the re-invite target list + validation ────────────────────────────────────────────
 
 /** An upcoming event the viewer may invite a list to (they host it or cohost it). */
-export interface ReinviteTarget {
+interface ReinviteTarget {
   id: string
   slug: string
   title: string

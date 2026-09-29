@@ -55,7 +55,7 @@ export const CHROME_CACHE_TAGS = {
   platformFlags: 'platform-flags',
 } as const
 
-export type ChromeCacheTag = (typeof CHROME_CACHE_TAGS)[keyof typeof CHROME_CACHE_TAGS]
+type ChromeCacheTag = (typeof CHROME_CACHE_TAGS)[keyof typeof CHROME_CACHE_TAGS]
 
 /** How long a cached row set may live without a tag invalidation (seconds). */
 export const CROSS_REQUEST_CEILING_SECONDS = 600

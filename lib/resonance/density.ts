@@ -17,7 +17,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export type DensityRefreshResult = {
+type DensityRefreshResult = {
   /** Rows written to resonance_density_cells (the function's return value). 0 on failure. */
   cells: number
   /** The PostgREST / thrown error message when the refresh failed. Absent on success. */

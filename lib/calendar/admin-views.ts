@@ -28,7 +28,7 @@ export const CALENDAR_ADMIN_VIEW_DEFS: readonly {
   { view: 'workflow', label: 'Workflow', blurb: 'Every Plan, grouped by its production stage.' },
 ] as const
 
-export function isCalendarAdminView(value: string | null | undefined): value is CalendarAdminView {
+function isCalendarAdminView(value: string | null | undefined): value is CalendarAdminView {
   return CALENDAR_ADMIN_VIEWS.includes(value as CalendarAdminView)
 }
 
@@ -55,7 +55,7 @@ export function firstSearchParam(raw: string | string[] | null | undefined): str
  *  a parameter that looked wired and was not, and the gap behind a docs line claiming a pasted link
  *  restored the month. A link lands on the month the page derives. Putting the month back means
  *  deciding what a Back press after six month steps does, which is a ruling, not a field. */
-export type AdminViewExtras = {
+type AdminViewExtras = {
   item?: string | null
   plan?: string | null
   console?: boolean

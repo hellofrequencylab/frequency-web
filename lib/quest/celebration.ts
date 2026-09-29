@@ -24,7 +24,7 @@ import { rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
 const SEEN_MARKER_KEY = 'lastSeenJourneyCompletionId'
 
 /** The "what comes next" pointer the season-complete beat re-lights the goal with. */
-export interface NextSeasonPointer {
+interface NextSeasonPointer {
   /** The upcoming season's name when one is scheduled (e.g. "Bloom"), else null. */
   name: string | null
   /** Its start date (ISO) when known, else null. */
@@ -32,7 +32,7 @@ export interface NextSeasonPointer {
 }
 
 /** The celebration the hub should fire — everything the HeroMoment needs. */
-export interface UnseenCompletion {
+interface UnseenCompletion {
   /** The `journey_completions` row id — the token the mark-seen action records. */
   completionId: string
   /** The Journey just finished, named for the celebration. */

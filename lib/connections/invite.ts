@@ -29,7 +29,7 @@ export async function scanInviteEnabled(): Promise<boolean> {
   }
 }
 
-export type InviteResult =
+type InviteResult =
   | { sent: true }
   | { sent: false; reason: 'disabled' | 'no_email' | 'already_invited' | 'unsubscribed' | 'no_referral' | 'error' }
 

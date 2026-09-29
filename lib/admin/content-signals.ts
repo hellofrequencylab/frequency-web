@@ -100,7 +100,7 @@ export async function rankedJourneys(): Promise<RankedJourney[]> {
 
 // --- Practices ---------------------------------------------------------------
 
-export interface RankedPracticeSignal {
+interface RankedPracticeSignal {
   id: string
   title: string
   created_by: string | null
@@ -161,7 +161,7 @@ export async function rankedPractices(limit = 200): Promise<RankedPracticeSignal
 
 // --- Challenges ---------------------------------------------------------------
 
-export interface ChallengeCompletion {
+interface ChallengeCompletion {
   challenge_id: string
   started: number
   completed: number

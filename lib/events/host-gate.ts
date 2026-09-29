@@ -13,7 +13,7 @@ import { isPlatformStaff } from '@/lib/auth'
 // isEventCohost at the call sites that admit them (ADR-834 keeps the two relations distinct).
 
 /** The facts the pure gate decides over. */
-export interface HostGateFacts {
+interface HostGateFacts {
   /** events.host_id (null on a seeded, still-unclaimed listing). */
   hostId: string | null
   /** The signed-in caller's profile id (null = anonymous). */

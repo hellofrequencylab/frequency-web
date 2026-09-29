@@ -19,7 +19,7 @@
 
 import { outboundDb } from './db'
 
-export type OutboundAuditAction =
+type OutboundAuditAction =
   | 'mark_ready'
   | 'approve'
   | 'schedule'
@@ -34,9 +34,9 @@ export type OutboundAuditAction =
   | 'admit_wave'
   | 'graduate_beta'
 
-export type OutboundAuditTargetType = 'campaign' | 'phase' | 'platform'
+type OutboundAuditTargetType = 'campaign' | 'phase' | 'platform'
 
-export interface LogOutboundActionInput {
+interface LogOutboundActionInput {
   actorProfileId: string | null
   action: OutboundAuditAction | string
   targetType: OutboundAuditTargetType | string
@@ -61,7 +61,7 @@ export async function logOutboundAction(input: LogOutboundActionInput): Promise<
   }
 }
 
-export interface OutboundAuditRow {
+interface OutboundAuditRow {
   id: string
   actorProfileId: string | null
   action: string
@@ -71,7 +71,7 @@ export interface OutboundAuditRow {
   createdAt: string | null
 }
 
-export interface ListOutboundAuditOptions {
+interface ListOutboundAuditOptions {
   targetType?: string
   targetId?: string
   limit?: number

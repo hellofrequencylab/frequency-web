@@ -22,10 +22,10 @@ import { usedSeats, baseSeatAllowance, getSpaceSeatRow } from '@/lib/spaces/seat
 
 /** The largest licensed operator-seat count this editor will set in one change (mirrors the checkout
  *  picker's bound; a sane ceiling, not a plan limit). */
-export const MAX_OPERATOR_SEATS = 25
+const MAX_OPERATOR_SEATS = 25
 
 /** The Stripe mutation needed to reach a target seat count given the CURRENT operator_seat item. PURE. */
-export type SeatChange =
+type SeatChange =
   | { kind: 'noop' }
   | { kind: 'add'; quantity: number }
   | { kind: 'update'; itemId: string; quantity: number }
@@ -51,7 +51,7 @@ export function resolveSeatChange(
 }
 
 /** The result of a seat change: the target that was applied, or a clean error string. */
-export type UpdateSeatsResult = { ok: true; seats: number } | { ok: false; error: string }
+type UpdateSeatsResult = { ok: true; seats: number } | { ok: false; error: string }
 
 /**
  * Set a paying Space's licensed operator-seat count to `targetSeats` (clamped 0..MAX_OPERATOR_SEATS) by

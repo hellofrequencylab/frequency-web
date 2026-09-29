@@ -10,7 +10,7 @@ export interface ScanRow {
   medium?: string | null
 }
 
-export interface ScanGeoRow {
+interface ScanGeoRow {
   lat: number | null
   lng: number | null
   city: string | null
@@ -46,14 +46,14 @@ export function summarizeLocations(rows: ScanGeoRow[]): ScanLocation[] {
   return [...byKey.values()].sort((a, b) => b.scans - a.scans)
 }
 
-export interface CodeScanStat {
+interface CodeScanStat {
   codeId: string
   total: number
   /** Distinct signed-in scanners (anonymous scans can't be de-duped). */
   unique: number
 }
 
-export interface ScanSummary {
+interface ScanSummary {
   total: number
   unique: number
   /** Scans split by arrival channel. `qr` covers printed codes (and legacy rows);
@@ -174,7 +174,7 @@ export function scanSummaryFromRpc(
 // the same scan rows the Studio dashboards aggregate, scoped to a folder and
 // reduced to the three numbers an operator scans in place.
 
-export interface PageScanSummary {
+interface PageScanSummary {
   total: number
   /** Distinct signed-in scanners across this page's codes. */
   unique: number

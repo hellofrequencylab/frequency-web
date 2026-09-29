@@ -46,7 +46,7 @@ export interface JourneyTrophy {
 }
 
 /** One season the member played — its stamped summary. */
-export interface SeasonTrophy {
+interface SeasonTrophy {
   /** Season number (the season_trophies.season key). */
   season: number
   /** The season's name (from the seasons table), or null if unnamed. */
@@ -74,7 +74,7 @@ export interface SeasonBlock {
   trophies: JourneyTrophy[]
 }
 
-export interface TrophyCaseData {
+interface TrophyCaseData {
   /** Every season the member has a record in, newest first. */
   seasons: SeasonBlock[]
   /** Total finished Journeys across all seasons (the case's headline count). */

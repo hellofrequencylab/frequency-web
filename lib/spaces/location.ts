@@ -14,7 +14,7 @@ export type SpaceLocationPrecision = 'exact' | 'approximate'
 
 export const SPACE_LOCATION_PRECISIONS: readonly SpaceLocationPrecision[] = ['exact', 'approximate']
 
-export function isSpaceLocationPrecision(v: unknown): v is SpaceLocationPrecision {
+function isSpaceLocationPrecision(v: unknown): v is SpaceLocationPrecision {
   return v === 'exact' || v === 'approximate'
 }
 

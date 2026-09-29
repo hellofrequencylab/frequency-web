@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { slugify } from '@/lib/utils'
 import { isLoomPublicImageUrl } from '@/lib/loom/urls'
+import { updatePractice, type PracticeEdit } from '@/lib/practices'
+import { getPillars } from '@/lib/pillars'
 
 // The practice detail route is id-based (/practices/[id]); the settings drawer also matches the
 // bespoke /practices/new. Guard so a non-uuid id never hits the uuid PK (Postgres 22P02).
@@ -31,13 +33,21 @@ export async function getPracticeAdminData(id: string) {
   const db = await createClient()
   const { data: practice } = await db
     .from('practices')
-    .select('id, slug, title, summary, description, header_image, duration_min, category')
+    .select('id, slug, title, summary, description, header_image, duration_min, category, domain_id, secondary_domain_id, primary_pct')
     .eq('id', id)
     .maybeSingle()
   if (!practice) return null
 
   const caps = await getPracticeCapabilities(practice.id)
   if (!caps.has('practice.editSettings')) return null
+
+  // The split's choices (LIVE-641): every Pillar but the primary, since the secondary is never the
+  // primary. With no primary there is nothing to split, so there are no choices.
+  const pillars = await getPillars()
+  const mainPillar = pillars.find((p) => p.id === practice.domain_id)?.name ?? null
+  const splitPillars = mainPillar
+    ? pillars.filter((p) => p.id !== practice.domain_id).map((p) => ({ value: p.id, label: p.name }))
+    : []
 
   // header_image is already a public URL (site-media bucket), so no getPublicUrl
   // resolution is needed — unlike events, which store a storage path.
@@ -50,6 +60,12 @@ export async function getPracticeAdminData(id: string) {
     header_image: practice.header_image,
     duration_min: practice.duration_min,
     category: practice.category,
+    secondary_domain_id: practice.secondary_domain_id,
+    primary_pct: practice.primary_pct,
+    /** The primary Pillar's name, for the split's hints (null = no primary yet). */
+    mainPillar,
+    /** The loaded `pillars` choices for the Second Pillar control. */
+    splitPillars,
   }
 }
 
@@ -81,6 +97,20 @@ export async function updatePracticeSettings(id: string, slug: string | null, fd
     })
     .eq('id', id)
   if (error) throw new Error(error.message)
+
+  // The Pillar split (LIVE-641, ADR-1604) is stored through updatePractice, the one write that
+  // keeps it true against the primary Pillar and the Focus set (lib/practices/split.ts). The
+  // capability was checked above.
+  const split: PracticeEdit = {}
+  if (fd.has('secondary_domain_id'))
+    split.secondary_domain_id = ((fd.get('secondary_domain_id') as string) ?? '').trim() || null
+  if (fd.has('primary_pct')) {
+    const pct = ((fd.get('primary_pct') as string) ?? '').trim()
+    split.primary_pct = pct ? Number(pct) : null
+  }
+  if (Object.keys(split).length > 0 && !(await updatePractice(id, split))) {
+    throw new Error('The Pillar split did not save. Try again.')
+  }
 
   revalidatePath(`/practices/${id}`)
   if (slug) revalidatePath(`/practices/${slug}`)

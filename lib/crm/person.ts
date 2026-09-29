@@ -69,10 +69,10 @@ export type Capture = {
   notes: { id: string; body: string; kind: string; createdAt: string | null }[]
 }
 
-export type ScanEvent = { id: string; codeTitle: string | null; scannedAt: string }
-export type LedgerEvent = { id: string; source: string; eventType: string; createdAt: string }
-export type ContactActivity = { id: string; kind: string; body: string; createdAt: string }
-export type DealRef = { id: string; title: string; status: string; value: number; currency: string }
+type ScanEvent = { id: string; codeTitle: string | null; scannedAt: string }
+type LedgerEvent = { id: string; source: string; eventType: string; createdAt: string }
+type ContactActivity = { id: string; kind: string; body: string; createdAt: string }
+type DealRef = { id: string; title: string; status: string; value: number; currency: string }
 
 export type Person = {
   contact: ContactCore
@@ -116,7 +116,7 @@ function mapContactCore(c: Record<string, unknown>): ContactCore {
 const CONTACT_COLS =
   'id, email, display_name, consent_state, engagement_score, profile_id, source, meta, first_seen_at, last_seen_at, created_at'
 
-export async function getContactCore(id: string): Promise<ContactCore | null> {
+async function getContactCore(id: string): Promise<ContactCore | null> {
   const { data } = await db().from('contacts').select(CONTACT_COLS).eq('id', id).maybeSingle()
   return data ? mapContactCore(data as Record<string, unknown>) : null
 }

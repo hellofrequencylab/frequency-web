@@ -8,7 +8,7 @@ export const PLAN_STAGES = ['pencil', 'plan', 'production'] as const
 export type PlanStage = (typeof PLAN_STAGES)[number]
 
 export const PLAN_TARGETS = ['event', 'journey', 'program', 'maintenance'] as const
-export type PlanTargetKind = (typeof PLAN_TARGETS)[number]
+type PlanTargetKind = (typeof PLAN_TARGETS)[number]
 
 export interface PlanLink {
   url: string
@@ -83,7 +83,7 @@ export function planStage(value: string | null | undefined): PlanStage | null {
 /** The entry stage a Plan stage IS. A Plan and the dates on it are the same three steps under two
  *  spellings (`plan` in `space_plans.stage`, `planning` in `space_calendar_entries.stage`), so the
  *  word and the colour come from one row of lib/calendar/registry.ts for both. */
-export const PLAN_STAGE_ENTRY: Record<PlanStage, EntryStage> = {
+const PLAN_STAGE_ENTRY: Record<PlanStage, EntryStage> = {
   pencil: 'pencil',
   plan: 'planning',
   production: 'production',
@@ -110,7 +110,7 @@ export function planStagePresentation(stage: string): CalendarPresentation {
   return calendarPresentation({ stage: PLAN_STAGE_ENTRY[stage as PlanStage] ?? stage }, 'team')
 }
 
-export function planTarget(value: string | null | undefined): PlanTargetKind | null {
+function planTarget(value: string | null | undefined): PlanTargetKind | null {
   return PLAN_TARGETS.includes(value as PlanTargetKind) ? (value as PlanTargetKind) : null
 }
 

@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto'
 // and `colors` — are computed in the BROWSER (lib/library/image-describe.ts) and travel in as data.
 
 /** What ingest learned about one file, and the bytes that should actually be stored. */
-export type IngestedImage = {
+type IngestedImage = {
   /** The bytes to upload — identical to the input unless private metadata was stripped. */
   bytes: Uint8Array
   /** Hex sha256 of `bytes` (the STORED form), so dedupe compares what is really on disk. */

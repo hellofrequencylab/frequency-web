@@ -75,7 +75,7 @@ export interface SparkSpec<T, C = undefined> {
 }
 
 /** One invocation of a declared spark. */
-export interface SparkRun<C = undefined> {
+interface SparkRun<C = undefined> {
   /** The user turn: plain text, or content blocks when the draft reads images. */
   content: string | Anthropic.MessageParam['content']
   /** Facts the coercer needs that the model must not supply. Omitted when the spec needs none. */

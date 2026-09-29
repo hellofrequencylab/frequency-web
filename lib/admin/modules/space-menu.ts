@@ -24,7 +24,7 @@ import {
 
 /** The authoritative per-viewer gate for the Space menu, resolved server-side once and shared by both
  *  owner surfaces (the console passes it here; the rail's trigger passes the same inputs as `spaceFns`). */
-export interface SpaceMenuGate {
+interface SpaceMenuGate {
   /** May this viewer use the given per-Space function? (A staff previewer sees all — see
    *  `usableSpaceFunctions`.) Drives every SERVICE module's gate. */
   canUse: (fn: SpaceFunctionKey) => boolean

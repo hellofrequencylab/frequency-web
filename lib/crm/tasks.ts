@@ -332,7 +332,7 @@ export async function assignTaskInPlan(taskId: string, assigneeProfileId: string
   }
 }
 
-export interface ListTasksFilter {
+interface ListTasksFilter {
   spaceId?: string | null
   contactId?: string | null
   planId?: string | null

@@ -57,7 +57,7 @@ export interface LifecycleFunnel {
   dormant: number
 }
 
-export const ZERO_HEALTH: HealthSummary = {
+const ZERO_HEALTH: HealthSummary = {
   members: 0,
   meanHealth: 0,
   resonant: 0,
@@ -66,7 +66,7 @@ export const ZERO_HEALTH: HealthSummary = {
   weeklyActive: 0,
 }
 
-export const ZERO_FUNNEL: LifecycleFunnel = {
+const ZERO_FUNNEL: LifecycleFunnel = {
   new: 0,
   activated: 0,
   engaged: 0,

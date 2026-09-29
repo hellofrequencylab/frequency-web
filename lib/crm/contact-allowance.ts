@@ -46,14 +46,14 @@ import {
 } from '@/lib/pricing/space-allowance'
 
 /** The meter key the contact list is priced on. One string, one place. */
-export const CONTACT_METER_KEY = 'space_crm'
+const CONTACT_METER_KEY = 'space_crm'
 
 /**
  * Count a Space's contacts in ONE filtered head query. FAIL-SAFE to 0: a failed count must never
  * invent usage that refuses a write (0 is always inside any allowance), matching the direction every
  * other pricing read fails in.
  */
-export async function countSpaceContacts(spaceId: string): Promise<number> {
+async function countSpaceContacts(spaceId: string): Promise<number> {
   const id = (spaceId ?? '').trim()
   if (!id) return 0
   try {
@@ -76,7 +76,7 @@ export async function countSpaceContacts(spaceId: string): Promise<number> {
  * floor (the effective cap is never below the Space's current count), so a full list stops the NEXT
  * contact and never touches the ones already there.
  */
-export async function spaceContactAllowance(spaceId: string): Promise<SpaceAllowanceVerdict> {
+async function spaceContactAllowance(spaceId: string): Promise<SpaceAllowanceVerdict> {
   let gatesLive = false
   try {
     gatesLive = await featureGatesLive()

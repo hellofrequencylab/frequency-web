@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { listLibraryAssetBytesPage } from '@/lib/library/store'
+import { getSpaceById } from '@/lib/spaces/store'
 import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,9 +27,17 @@ import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
 //
 // The numbers live in LOOM_STORAGE_CAP_BYTES; changing a cap is one line here. No migration: the bytes column is already written on every ingested upload.
 //
+//   · loomAdmits(spaceId, n)    THE ONE GATE every Space-scoped write that stores new bytes calls
+//                               before storage (LIVE-629, ADR-1602): it reads the owning Space,
+//                               then the cap, the sum and the verdict above. A write door never
+//                               re-assembles those three itself. Today: uploadLoomImage (the
+//                               picker), uploadToLoom (the page editor's field) and
+//                               generateEntityCoverAction (the AI cover).
+//
 // READS ONLY. `loomStorageUsed` reads `bytes` for a caller-supplied Space id and writes nothing;
 // every caller authorizes the Space first (uploadLoomImage and
-// loomQuotaMeter via resolveScope, the Space Loom Studio page via canManageSpaceLoom).
+// loomQuotaMeter via resolveScope, uploadToLoom via authorizeSpaceEditor, the AI cover via
+// resolveWriteScope, the Space Loom Studio page via canManageSpaceLoom).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MB = 1024 * 1024
@@ -48,11 +57,11 @@ const SUM_PAGE = 1000
 const SUM_MAX_PAGES = 200
 
 /** A Space's Loom cap. `capped: false` only for the root Space. */
-export type LoomQuota = { capped: false } | { capped: true; capBytes: number }
+type LoomQuota = { capped: false } | { capped: true; capBytes: number }
 
 /** What loomQuotaFor needs from a Space: its type (root is uncapped) and its plan label. The
  *  `Space` from lib/spaces/store fits. */
-export interface LoomQuotaSpace {
+interface LoomQuotaSpace {
   type?: string | null
   plan?: string | null
 }
@@ -67,7 +76,7 @@ export function loomQuotaFor(space: LoomQuotaSpace | null | undefined): LoomQuot
 /** What a Space stores: the counted bytes, how many file-backed rows were counted, and how many
  *  carry no size (`unknown`). `ok: false` means the sum could not be read, which callers treat as
  *  "cannot prove there is room", never as zero. */
-export type LoomUsage = { ok: true; bytes: number; files: number; unknown: number } | { ok: false }
+type LoomUsage = { ok: true; bytes: number; files: number; unknown: number } | { ok: false }
 
 /** Fold a list of `bytes` values into counted bytes + an unknown count. PURE. A non-number, a
  *  negative or a non-finite value is UNKNOWN, not zero. */
@@ -122,27 +131,38 @@ function trim(v: number): string {
   return v >= 100 ? String(Math.round(v)) : v.toFixed(1).replace(/\.0$/, '')
 }
 
+type LoomBudgetVerdict = { ok: true } | { ok: false; error: string }
+
+/** The refusal when the budget cannot be read (a failed Space read or a failed sum). */
+const LOOM_BUDGET_UNREAD =
+  'Could not check how much room this library has left, so the upload is paused. Try again in a moment.'
+
 /** May `incomingBytes` more land in this Loom? PURE. Uncapped: yes. A failed sum: no (deny on the
  *  unknown). Used + incoming past the cap: no, naming what is used and what the cap is. Exactly at
  *  the cap is allowed. The words are the refusal the upload action returns. */
-export function loomBudgetVerdict(
-  quota: LoomQuota,
-  usage: LoomUsage,
-  incomingBytes: number,
-): { ok: true } | { ok: false; error: string } {
+export function loomBudgetVerdict(quota: LoomQuota, usage: LoomUsage, incomingBytes: number): LoomBudgetVerdict {
   if (!quota.capped) return { ok: true }
-  if (!usage.ok) {
-    return {
-      ok: false,
-      error: 'Could not check how much room this library has left, so the upload is paused. Try again in a moment.',
-    }
-  }
+  if (!usage.ok) return { ok: false, error: LOOM_BUDGET_UNREAD }
   const incoming = Number.isFinite(incomingBytes) && incomingBytes > 0 ? incomingBytes : 0
   if (usage.bytes + incoming <= quota.capBytes) return { ok: true }
   return {
     ok: false,
     error: `This library is full: ${formatLoomBytes(usage.bytes)} of ${formatLoomBytes(quota.capBytes)} used. Remove images you no longer need to make room.`,
   }
+}
+
+/** May `incomingBytes` more land in this Space's Loom? The one gate a Space-scoped write calls
+ *  BEFORE it stores anything (LIVE-629, ADR-1602). Reads the owning Space, then asks
+ *  loomQuotaFor + loomStorageUsed + loomBudgetVerdict. Never throws. FAILS CLOSED: a missing id, a
+ *  Space that cannot be read, or a failed sum refuses. The root Space is uncapped and skips the sum.
+ *  The caller returns `error` as its own returned refusal, never a throw. */
+export async function loomAdmits(spaceId: string, incomingBytes: number): Promise<LoomBudgetVerdict> {
+  if (!spaceId) return { ok: false, error: LOOM_BUDGET_UNREAD }
+  const space = await getSpaceById(spaceId).catch(() => null)
+  if (!space) return { ok: false, error: LOOM_BUDGET_UNREAD }
+  const quota = loomQuotaFor(space)
+  if (!quota.capped) return { ok: true }
+  return loomBudgetVerdict(quota, await loomStorageUsed(spaceId), incomingBytes)
 }
 
 /** The Space Loom Studio's meter, already in words so the client imports nothing from here.

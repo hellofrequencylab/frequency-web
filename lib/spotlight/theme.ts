@@ -28,9 +28,9 @@ export const SPOTLIGHT_FONTS: { id: SpotlightFontId; label: string; stack: strin
 ]
 const FONT_BY_ID = new Map(SPOTLIGHT_FONTS.map((f) => [f.id, f.stack]))
 
-export type CardRadius = 'sm' | 'md' | 'lg' | 'xl'
-export type CardShadow = 'none' | 'soft' | 'strong'
-export type CardStyle = 'solid' | 'glass'
+type CardRadius = 'sm' | 'md' | 'lg' | 'xl'
+type CardShadow = 'none' | 'soft' | 'strong'
+type CardStyle = 'solid' | 'glass'
 const RADIUS_PX: Record<CardRadius, string> = { sm: '6px', md: '12px', lg: '18px', xl: '28px' }
 const SHADOW_CSS: Record<CardShadow, string> = {
   none: 'none',
@@ -38,7 +38,7 @@ const SHADOW_CSS: Record<CardShadow, string> = {
   strong: '0 10px 30px rgba(0,0,0,0.18)',
 }
 
-export interface GradientStop { color: string; pos: number }
+interface GradientStop { color: string; pos: number }
 export interface SpotlightGradient {
   type: 'linear' | 'radial'
   angle: number // 0–360 (linear only)
@@ -48,12 +48,12 @@ export interface SpotlightGradient {
   /** Animation duration in seconds, 4–40. */
   speed: number
 }
-export type SpotlightBg =
+type SpotlightBg =
   | { kind: 'none' }
   | { kind: 'solid'; color: string }
   | { kind: 'gradient'; gradient: SpotlightGradient }
 
-export interface SpotlightCard {
+interface SpotlightCard {
   radius: CardRadius
   shadow: CardShadow
   style: CardStyle
@@ -220,7 +220,7 @@ function withAlpha(hex: string, alpha: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`
 }
 
-export interface SpotlightThemeStyles {
+interface SpotlightThemeStyles {
   /** Does the member have any custom theme set? (false → render unchanged.) */
   hasTheme: boolean
   /** CSS custom-property overrides + background for the page wrapper. */

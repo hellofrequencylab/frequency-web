@@ -16,7 +16,7 @@ import { STYLE_PRESETS, DEFAULT_STYLE, type QrStyle } from './style'
 
 export type MemberCodePurpose = 'connect' | 'referral' | 'gift_zap'
 
-export interface MemberCodeRow {
+interface MemberCodeRow {
   id: string
   slug: string
   purpose: MemberCodePurpose
