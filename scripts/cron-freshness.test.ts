@@ -7,8 +7,10 @@ import {
   freshByMinutes,
   handlerWiring,
   isDeploymentRuntime,
+  loadPartition,
   main,
   monitorFor,
+  monitoringFor,
   parseSchedule,
   readModel,
   renderMarkdown,
@@ -44,16 +46,25 @@ function crons(n = MIN_JOBS + 5) {
 
 const wrapped = (job: string) => `import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'\nexport const GET = withCronHeartbeat('${job}', async () => new Response('ok'))\n`
 
-/** The seam the real run uses: vercel.json on one side, the route tree + env on the other. */
+type Partition = { monitored: string[]; unmonitored: Array<{ job: string; reason: string }> }
+
+/** The seam the real run uses: vercel.json on one side, the route tree + env on the other, and
+ *  the declared partition (lib/observability/slos.ts) supplied here so no test spawns node. The
+ *  default declares every job monitored, so cases about wiring and env stay about that. */
 function io(over: {
   crons?: Array<{ path: string; schedule: string }>
   route?: (job: string) => string | null
   dirs?: string[]
   env?: Record<string, string>
   vercelJson?: string
+  partition?: Partition | ((jobs: string[]) => Partition)
 } = {}): Io {
   const list = over.crons ?? crons()
   const jobs = list.map((c) => c.path.split('/').pop() as string)
+  const partition =
+    typeof over.partition === 'function'
+      ? over.partition(jobs)
+      : over.partition ?? { monitored: jobs, unmonitored: [] }
   const route = over.route ?? ((job: string) => wrapped(job))
   const files = new Map<string, string>()
   for (const job of jobs) {
@@ -70,6 +81,7 @@ function io(over: {
     exists: (p: string) => p === 'vercel.json' || files.has(p),
     readdir: () => over.dirs ?? jobs,
     env: over.env ?? {},
+    partition,
   }
 }
 
@@ -215,8 +227,9 @@ describe('the monitor half, which this process cannot observe', () => {
   })
 
   it('never claims a clean bill of health from a resolving base key alone', () => {
-    // A base ping key resolves a URL for all 27 jobs. The Healthchecks free tier holds 20 and
-    // rejects the rest, so "covered" here is resolution, not provisioning, and the report says so.
+    // A base ping key resolves a URL for all 27 jobs, all declared monitored. The Healthchecks
+    // free tier holds 20 and rejects the rest, so "covered" here is resolution, not provisioning,
+    // and the report says so.
     const env = { CRON_HEARTBEAT_BASE_URL: 'https://hc-ping.com/k' }
     const a = assess(readModel(io({ crons: crons(MONITOR_CAPACITY + 7), env })), env)
     expect(a.coverage).toBe('covered')
@@ -228,6 +241,81 @@ describe('the monitor half, which this process cannot observe', () => {
     const env = { CRON_HEARTBEAT_BASE_URL: 'https://hc-ping.com/k' }
     const a = assess(readModel(io({ crons: crons(MONITOR_CAPACITY), env })), env)
     expect(a.overCapacity).toBe(false)
+  })
+
+  it('measures capacity against the DECLARED monitored set, not the fleet, since an opt-out asks for no check', () => {
+    const env = { CRON_HEARTBEAT_BASE_URL: 'https://hc-ping.com/k' }
+    const partition = (jobs: string[]) => ({
+      monitored: jobs.slice(0, MONITOR_CAPACITY),
+      unmonitored: jobs.slice(MONITOR_CAPACITY).map((job) => ({ job, reason: 'a derivation; a backfill repairs it' })),
+    })
+    const a = assess(readModel(io({ crons: crons(MONITOR_CAPACITY + 7), env, partition })), env)
+    expect(a.monitored).toHaveLength(MONITOR_CAPACITY)
+    expect(a.optedOut).toHaveLength(7)
+    expect(a.overCapacity).toBe(false)
+  })
+})
+
+// LIVE-548 / ADR-1574. The monitored set used to exist only as check names in the Healthchecks
+// account and as an env value in Vercel, so this script could only ever say whether a base URL
+// resolved. Now it reads the declaration in lib/observability/slos.ts and says, per job, whether
+// its silence is meant to page. The half that is a fact about the tree is strict: a scheduled
+// job in neither list fails the run.
+describe('the declared partition, which says which jobs are supposed to page', () => {
+  it('classifies a job as monitored, opted out (with its reason) or undeclared', () => {
+    const partition = { monitored: ['a'], unmonitored: [{ job: 'b', reason: 'a derivation' }] }
+    expect(monitoringFor('a', partition)).toEqual({ state: 'monitored', reason: null })
+    expect(monitoringFor('b', partition)).toEqual({ state: 'opted-out', reason: 'a derivation' })
+    expect(monitoringFor('c', partition)).toEqual({ state: 'undeclared', reason: null })
+  })
+
+  it('an UNDECLARED scheduled job fails the run and is named, because nobody decided to watch it', () => {
+    const partition = (jobs: string[]) => ({ monitored: jobs.filter((j) => j !== 'process-queue'), unmonitored: [] })
+    const a = assess(readModel(io({ partition })), {})
+    expect(a.undeclared.map((j) => j.job)).toEqual(['process-queue'])
+    expect(a.failed).toBe(true)
+    const out = renderMarkdown(a)
+    expect(out).toContain('neither CRON_MONITORED nor CRON_UNMONITORED')
+    expect(out).toContain('`process-queue`')
+    expect(renderText(a)).toContain('UNDECLARED')
+  })
+
+  it('a declared name that vercel.json no longer schedules fails too: a stale declaration is a check paging about nothing', () => {
+    const partition = (jobs: string[]) => ({ monitored: [...jobs, 'retired-job'], unmonitored: [] })
+    const a = assess(readModel(io({ partition })), {})
+    expect(a.declaredNotScheduled).toEqual(['retired-job'])
+    expect(a.failed).toBe(true)
+    expect(renderMarkdown(a)).toContain('`retired-job`')
+  })
+
+  it('THE CONTROL: a complete partition with opt-outs is not a failure, and the report counts both sides', () => {
+    const partition = (jobs: string[]) => ({
+      monitored: jobs.slice(0, 3),
+      unmonitored: jobs.slice(3).map((job) => ({ job, reason: 'silence chosen' })),
+    })
+    const a = assess(readModel(io({ partition })), {})
+    expect(a.failed).toBe(false)
+    expect(a.undeclared).toEqual([])
+    expect(renderMarkdown(a)).toContain(`Declared (lib/observability/slos.ts): 3 monitored, ${crons().length - 3} opted out.`)
+    expect(renderText(a)).toContain('opted out')
+  })
+
+  it('undeclared is a fact about the tree, so it exits 1 like broken wiring', () => {
+    const log = console.log
+    console.log = () => {}
+    try {
+      const partition = (jobs: string[]) => ({ monitored: jobs.slice(1), unmonitored: [] })
+      expect(main(['--markdown'], io({ partition }))).toBe(1)
+    } finally {
+      console.log = log
+    }
+  })
+
+  it('the default loader reads the SHIPPED slos.ts, and it agrees with the module vitest imports', async () => {
+    const loaded = loadPartition()
+    const real = await import('../lib/observability/slos')
+    expect(loaded.monitored).toEqual([...real.CRON_MONITORED])
+    expect(loaded.unmonitored).toEqual([...real.CRON_UNMONITORED])
   })
 })
 
@@ -274,6 +362,15 @@ describe('the live tree', () => {
     expect(out).toContain('space-follower-event-reminders')
     expect(out).toContain('Fresh-by')
   })
+
+  it('every scheduled cron is declared monitored or opted out, and the monitored set is the twenty checks that exist', () => {
+    const a = assess(readModel(), {})
+    expect(a.undeclared.map((j) => j.job)).toEqual([])
+    expect(a.declaredNotScheduled).toEqual([])
+    expect(a.monitored).toHaveLength(20)
+    expect(a.monitored.length + a.optedOut.length).toBe(a.jobs.length)
+    for (const j of a.optedOut) expect(j.monitoring.reason, j.job).toBeTruthy()
+  })
 })
 
 describe('exit codes, which decide what the weekly sweep opens an issue about', () => {
@@ -318,5 +415,8 @@ describe('exit codes, which decide what the weekly sweep opens an issue about', 
     expect(parsed.jobCount).toBe(crons().length)
     expect(parsed.coverage).toBe('not-established')
     expect(parsed.jobs[0].heartbeat).toBe('wrapped')
+    expect(parsed.jobs[0].monitoring).toBe('monitored')
+    expect(parsed.monitored).toHaveLength(crons().length)
+    expect(parsed.undeclared).toEqual([])
   })
 })
