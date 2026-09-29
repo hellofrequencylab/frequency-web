@@ -36,7 +36,7 @@
 | Failure mode | Pages a human today | Signal that exists but pages nobody |
 |---|---|---|
 | Cron failure | Healthchecks check for the 20 monitored jobs | `cron.run` lines for the other 9 |
-| Queue backlog | nothing (LIVE-547 adds it) | the Deliverability widget, `[outbox]` log lines |
+| Queue backlog | Sentry `error` capture tagged `cron_job: process-queue`, and the `process-queue` Healthchecks check fail-pinged, both on the first drain after a dead-letter appears or the oldest due job passes 10 minutes (LIVE-547) | `queue.health` lines every drain, the Deliverability widget, `[outbox]` log lines |
 | Webhook failure | Stripe's own failed-delivery email, after its retries | `[stripe-webhook]` log lines, Sentry group |
 | Database degradation | Sentry error-rate alert, if armed | weekly `db-usage` reading, red preview builds |
 | AI outage | nothing, by design | `ai_usage` going quiet, a feature pinned at its cap |
@@ -106,16 +106,28 @@ period; `cron.run` shows `ok:true` with `over_budget:false`; and if wiring chang
 
 ## 2. Queue backlog
 
-**Serves** the `freshness.queue-lag` row (10 minutes, page). Nothing computes it today; LIVE-547
-wires the pager and the reading. Until then the age of the oldest pending row is the number.
+**Serves** the `freshness.queue-lag` row (10 minutes, page). `app/api/cron/process-queue/route.ts`
+computes it after every drain through `queueHealth()` in `lib/queue/outbox.ts`: the lag is the minutes
+the oldest DUE pending job has waited past its `run_after` (a job parked by backoff or a closed quota
+is waiting by design, not lag). The threshold is read from `lib/observability/slos.ts`
+(`getSlo('freshness.queue-lag')`), never a literal in the cron (LIVE-547, ADR-1571).
 
 **What says it is happening.**
 
-- **Nothing pages yet** (LIVE-547 adds it).
+- **What pages.** On the first drain after a dead-letter appears, the oldest due job passes the
+  10-minute target, or the health read itself fails, `process-queue` captures a Sentry message at
+  `error` level (`[process-queue] queue health breached: ...`, tagged `cron_job: process-queue`, the
+  three numbers in `extra`, one issue per breach kind) and sets `x-cron-slo-breach` on its 200, which
+  `lib/observability/cron-heartbeat.ts` turns into a `/fail` ping on the `process-queue` Healthchecks
+  check. The check stays down while the breach lasts and comes back up on the first clean drain. The
+  drain itself is never failed for it, so a paged run still reports what it processed.
+- **The reading**, every two minutes whatever the outcome: one `queue.health` line in the Vercel logs
+  with `pending`, `dead_lettered`, `lag_min`, `oldest_due_age_min`, `measured` and `breach`, and a
+  `cron.slo_breach` warn line from the wrapper on a breached run.
 - **The Deliverability page** at `/admin/marketing/deliverability`
   (`app/(main)/admin/marketing/deliverability/page.tsx`, marketing staff). The Queue health block
-  (`components/widgets/marketing/deliverability-health.tsx`) shows Pending in queue and
-  Dead-lettered; the dead-letter block (`components/widgets/marketing/deliverability-dead-letters.tsx`)
+  (`components/widgets/marketing/deliverability-health.tsx`) shows Pending in queue, Dead-lettered
+  and Oldest due job waiting, the same `queueHealth()` reading the cron pages on; the dead-letter block (`components/widgets/marketing/deliverability-dead-letters.tsx`)
   lists the parked jobs with their last error.
 - **Vercel logs** from `app/api/cron/process-queue/route.ts` and `lib/queue/outbox.ts`:
   `[process-queue] N job(s) dead-lettered this drain`, `[outbox] dead-lettered job ...`,
@@ -128,9 +140,11 @@ wires the pager and the reading. Until then the age of the oldest pending row is
 
 **What to open first.**
 
-1. **agent** The Deliverability page, or the same two numbers read-only through the Supabase MCP:
-   `select status, kind, count(*), min(created_at) from notification_queue where status in ('pending','processing','failed') group by 1, 2 order by 1, 2;`
-   The `min(created_at)` of the pending rows is the queue lag.
+1. **agent** The `queue.health` line from the latest drain, or the Deliverability page, or the same
+   numbers read-only through the Supabase MCP:
+   `select status, kind, count(*), min(created_at), min(run_after) filter (where run_after <= now()) from notification_queue where status in ('pending','processing','failed') group by 1, 2 order by 1, 2;`
+   `now() - min(run_after)` over the due pending rows is the queue lag the SLO is judged on;
+   `min(created_at)` says how old the backlog is.
 2. **agent** `lib/queue/outbox.ts`: the retry policy (`nextRetry`, `retryDelayFor`), the two lanes
    (`transactional` first, `bulk` paced at `BULK_DUE_RATE_PER_MIN`), the terminal states
    (`DEAD_LETTER_STATUS` is `failed`, `DISCARDED_STATUS` is `discarded`), and the header on the
