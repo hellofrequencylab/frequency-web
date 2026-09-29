@@ -78,3 +78,8 @@ test/e2e/.degraded-capture.jsonl
 # restored in CI by the ci.yml lint job's "Restore ESLint cache" step, keyed on
 # eslint.config.mjs + pnpm-lock.yaml. Machine-local and per-checkout — never committed.
 .eslintcache
+
+# Load and soak reports (LIVE-551, ADR-1621). scripts/load-soak.mjs writes one per real run into the
+# working directory. A reading belongs in OBSERVABILITY-BASELINES §2b with its data volume and region,
+# never as a committed file.
+load-soak-*.json
