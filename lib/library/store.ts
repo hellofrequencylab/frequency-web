@@ -1,7 +1,11 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { asJson } from '@/lib/supabase/json'
+import { slugify } from '@/lib/utils'
 import type { Database } from '@/lib/database.types'
+// A cycle on purpose, and a safe one: quota.ts reads a Space's bytes through this module and this
+// module asks quota.ts's one gate before a fork stores bytes. Neither touches the other at load time.
+import { loomAdmits } from './quota'
 import { ALL_ELEMENTS } from './element-catalog'
 import { SEARCH_CANDIDATE_CAP, mergeCandidates, rankLibraryMatches } from './search-rank'
 import { LIBRARY_DOWNLOAD_POLICIES, VERA_TAG, isLibraryAssetExpired, type LibraryDownloadPolicy } from './types'
@@ -442,6 +446,11 @@ export async function insertSpaceLibraryImage(input: {
   /** How the asset was made (the generator, the prompt, the entity it was drawn for). Stored as-is
    *  on library_assets.config, which is also a provenance signal `toPickAsset` reads. Omitted = {}. */
   config?: Record<string, unknown> | null
+  /** The master this row was FORKED from (library_assets.parent_id, LIVE-569): set only by
+   *  forkLibraryAsset, when a Space makes a Frequency shared image its own. Omitted = an original. */
+  parentId?: string | null
+  /** Alt text carried over from a master on a fork. A fresh upload has none yet (the editor fills it). */
+  alt?: string | null
 }): Promise<string | null> {
   const { data, error } = await db()
     .from('library_assets')
@@ -468,11 +477,164 @@ export async function insertSpaceLibraryImage(input: {
       ...(input.source ? { source: input.source } : {}),
       ...(input.tags?.length ? { tags: [...input.tags] } : {}),
       ...(input.config ? { config: asJson(input.config) } : {}),
+      ...(input.parentId ? { parent_id: input.parentId } : {}),
+      ...(input.alt ? { alt: input.alt } : {}),
     })
     .select('id')
     .maybeSingle()
   if (error) return null
   return (data as { id?: unknown } | null)?.id ? String((data as { id: unknown }).id) : null
+}
+
+/** The answer to "make this shared image ours" (LIVE-569). `reused` = the Space already held a fork of
+ *  this master, so nothing was copied and that row is the answer (one master, one copy per Space). */
+export type LibraryForkResult = { id: string; url: string; reused: boolean } | { error: string }
+
+const FORK_MASTER_COLS =
+  'id, space_id, visibility, status, kind, title, slug, alt, tags, mime, storage_bucket, storage_path, ' +
+  'sha256, width, height, blurhash, colors, orig_width, orig_height, is_protected, expires_at'
+
+/**
+ * FORK a Frequency shared asset into a Space's OWN Loom (LIVE-569, ADR-1587; docs/LIBRARY.md Scoping:
+ * "editing forks a private copy, parent_id to the master"). The first writer of `parent_id`.
+ *
+ * Only a master the ROOT Space owns AND marks public can be forked, whatever the caller authorized:
+ * this function re-reads the master and refuses anything else, so a Space can never copy a third
+ * Space's row or an unlisted root row by id. Protected and expired masters are refused too (a fork
+ * would hand out the master file a proof exists to hold back, or a licence that ran out).
+ *
+ * 🔴 The OBJECT IS COPIED, never shared: the new row gets its own path under `<spaceId>/` in the same
+ * bucket, because deleteSpaceLibraryAsset removes the stored object, and two rows on one path would
+ * let a Space delete the master's file. The row goes in through insertSpaceLibraryImage (the upload
+ * seam), visibility 'space', source 'curated', parent_id = the master, created_by = `by`.
+ *
+ * BUDGETED like every door that stores new bytes into a Space's Loom: loomAdmits (LIVE-629, ADR-1602)
+ * is asked with the copy's size BEFORE the upload, and its refusal (past the cap, or a budget that
+ * could not be read) is returned as the sentence. Idempotent: a Space that already forked this master
+ * gets that row back. The caller authorizes the Space. FAIL-SAFE:
+ * every miss is a sentence, never a throw, and a failed insert removes the copied object.
+ */
+export async function forkLibraryAsset(
+  spaceId: string,
+  masterId: string,
+  by: string | null,
+): Promise<LibraryForkResult> {
+  if (!spaceId || !masterId) return { error: 'Nothing to copy.' }
+  try {
+    const rootId = await getRootSpaceId()
+    if (!rootId) return { error: 'Could not find the Frequency library. Try again.' }
+    if (rootId === spaceId) return { error: 'This image is already in this library.' }
+
+    const { data: m } = await db().from('library_assets').select(FORK_MASTER_COLS).eq('id', masterId).maybeSingle()
+    const master = m as Record<string, unknown> | null
+    if (!master) return { error: 'That image is no longer in the Frequency library.' }
+    if (master.space_id !== rootId || master.visibility !== 'public') {
+      return { error: 'Only an image from the Frequency library can be made yours.' }
+    }
+    if (master.status === 'archived') return { error: 'That image is no longer in the Frequency library.' }
+    if (master.kind !== 'image') return { error: 'Only images can be made yours for now.' }
+    if (master.is_protected === true) return { error: 'This image is protected. You can place it, but not copy it.' }
+    if (isLibraryAssetExpired((master.expires_at as string | null) ?? null)) {
+      return { error: 'The licence on this image has run out, so it cannot be copied.' }
+    }
+    const bucket = typeof master.storage_bucket === 'string' ? master.storage_bucket : ''
+    const srcPath = typeof master.storage_path === 'string' ? master.storage_path : ''
+    if (!bucket || !srcPath) return { error: 'This image has no stored file to copy.' }
+
+    // One copy per Space per master: answer with the fork that is already there.
+    const { data: prior } = await db()
+      .from('library_assets')
+      .select('id, url')
+      .eq('space_id', spaceId)
+      .eq('parent_id', masterId)
+      .neq('status', 'archived')
+      .limit(1)
+      .maybeSingle()
+    const had = prior as { id?: unknown; url?: string | null } | null
+    if (had?.id && had.url) return { id: String(had.id), url: had.url, reused: true }
+
+    const store = db().storage.from(bucket)
+    const { data: blob, error: dlErr } = await store.download(srcPath)
+    if (dlErr || !blob) return { error: 'Could not read that image to copy it. Try again.' }
+    const bytes = new Uint8Array(await blob.arrayBuffer())
+
+    const verdict = await loomAdmits(spaceId, bytes.byteLength)
+    if (!verdict.ok) return { error: verdict.error }
+
+    const mime = typeof master.mime === 'string' && master.mime ? master.mime : 'image/jpeg'
+    const ext = (srcPath.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+    const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
+    const path = `${spaceId}/fork-${stamp}.${ext}`
+    const { error: upErr } = await store.upload(path, bytes, { contentType: mime, upsert: false })
+    if (upErr) return { error: 'Could not copy that image. Try again.' }
+    const { data: pub } = store.getPublicUrl(path)
+
+    const num = (v: unknown) => (typeof v === 'number' ? v : null)
+    const title = String(master.title ?? '') || 'Image'
+    const slug = slugify(`${String(master.slug ?? title)}-${stamp}`).slice(0, 160)
+    const id = await insertSpaceLibraryImage({
+      spaceId,
+      title,
+      slug,
+      storageBucket: bucket,
+      storagePath: path,
+      url: pub.publicUrl,
+      mime,
+      bytes: bytes.byteLength,
+      kind: 'image',
+      visibility: 'space',
+      source: 'curated',
+      createdBy: by,
+      parentId: masterId,
+      alt: typeof master.alt === 'string' ? master.alt : null,
+      tags: Array.isArray(master.tags) ? (master.tags as unknown[]).filter((t): t is string => typeof t === 'string') : null,
+      sha256: typeof master.sha256 === 'string' ? master.sha256 : null,
+      width: num(master.width),
+      height: num(master.height),
+      blurhash: typeof master.blurhash === 'string' ? master.blurhash : null,
+      colors: Array.isArray(master.colors) ? (master.colors as unknown[]).filter((c): c is string => typeof c === 'string') : null,
+      origWidth: num(master.orig_width),
+      origHeight: num(master.orig_height),
+    })
+    if (!id) {
+      await store.remove([path]).catch(() => undefined)
+      return { error: 'Could not add the copy to your library. Try again.' }
+    }
+    return { id, url: pub.publicUrl, reused: false }
+  } catch {
+    return { error: 'Could not copy that image. Try again.' }
+  }
+}
+
+/**
+ * FORK-ON-EDIT (LIVE-569, ADR-1587): the row a Space may edit when it asks to edit `assetId`. Its own
+ * row is itself. A Frequency shared master is forked first (forkLibraryAsset, which refuses anything
+ * that is not a root public row) and the COPY is the row to edit, so a Space never writes a root row
+ * and is never simply refused either. `forked` tells the caller the id changed. The caller authorizes
+ * the Space; the edit itself stays bound to space_id.
+ */
+export async function forkIfShared(
+  spaceId: string,
+  assetId: string,
+  by: string | null,
+): Promise<{ id: string; forked: boolean } | { error: string }> {
+  if (!spaceId || !assetId) return { error: 'Nothing to edit.' }
+  try {
+    const { data, error } = await db()
+      .from('library_assets')
+      .select('id')
+      .eq('id', assetId)
+      .eq('space_id', spaceId)
+      .maybeSingle()
+    // A failed read is not "not ours": forking on an error would copy a row the Space may own.
+    if (error) return { error: 'Could not open that image. Try again.' }
+    if (data) return { id: assetId, forked: false }
+  } catch {
+    return { error: 'Could not open that image. Try again.' }
+  }
+  const fork = await forkLibraryAsset(spaceId, assetId, by)
+  if ('error' in fork) return fork
+  return { id: fork.id, forked: true }
 }
 
 /** The little an authorizer needs to know about an asset before it may be described (HYG-021). */
@@ -749,6 +911,9 @@ export type LoomPickAsset = {
    *  none (LIVE-588: importer seeds, event-photo copies). NULL = known missing; absent = not read
    *  (a row an uploader just added locally, which posted its own descriptor). */
   blurhash?: string | null
+  /** Whose row this is, for a Space scope (LIVE-569): true = the Space's own ("Yours"), false = the
+   *  Frequency shared library, offered by reference ("Frequency"). Absent in the personal scope. */
+  ownedByViewer?: boolean
 }
 
 /** Shape a raw library_assets row into a LoomPickAsset. AI-generated ("Element") is derived from the
@@ -779,15 +944,57 @@ function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
 // seed/import are held back. Keep in lockstep with the source CHECK constraint.
 const OWNER_SCOPE_SOURCE_OR = 'source.is.null,source.in.(upload,event-claim,recraft,vera,generated,curated)'
 
+/** How a Space scope treats the Frequency shared library (LIVE-569, ADR-1587). Omitted = the Space's
+ *  own rows only (every caller before this row). 'with' = its own rows UNIONED with the root Space's
+ *  PUBLIC rows (docs/LIBRARY.md Scoping: "its rows ∪ root's"), its own FIRST, so a large shared
+ *  library never pushes a Space's uploads off the first screen. 'only' = the root's public rows
+ *  alone, for the Studio's Frequency shelf. Never a third Space's rows, and never a root row that is
+ *  not public: the predicate names the root by id, not just `visibility = public`. */
+export type LoomSharedMode = 'with' | 'only'
+
 /** IMAGE assets in one Loom SCOPE, RANKED when a query is given (stemmed FTS ∪ trigram, ordered by
  *  lib/library/search-rank.ts) and newest-first when it is not; optionally filtered by a single tag,
  *  and by whether to keep only AI-generated "Elements". A scope is either the OWNER's Loom
  *  (`createdBy` = them, UNIONED with the spaces they own via `spaceIds`) or ONE space's own assets
- *  (`spaceId`). FAIL-SAFE to []. */
+ *  (`spaceId`), which `opts.shared` can widen to the Frequency shared library (LoomSharedMode); each
+ *  Space-scope pick carries `ownedByViewer` so the two sets are badged apart. FAIL-SAFE to []. */
 export async function listLoomScopeImages(
   scope: { createdBy: string; spaceIds?: string[] } | { spaceId: string },
-  opts: { q?: string; tag?: string; kinds?: string[]; generatedOnly?: boolean; limit?: number } = {},
+  opts: {
+    q?: string
+    tag?: string
+    kinds?: string[]
+    generatedOnly?: boolean
+    limit?: number
+    shared?: LoomSharedMode
+  } = {},
 ): Promise<LoomPickAsset[]> {
+  const spaceScope = 'spaceId' in scope ? scope.spaceId : null
+  // 'with' is the two sets, each read and ranked on its own, the Space's own first.
+  if (spaceScope && opts.shared === 'with') {
+    const [own, shelf] = await Promise.all([
+      listLoomScopeImages(scope, { ...opts, shared: undefined }),
+      listLoomScopeImages(scope, { ...opts, shared: 'only' }),
+    ])
+    return [...own, ...shelf]
+  }
+  // The shared library is the ROOT Space's public rows, so the root is resolved only when asked. The
+  // root's own Studio has no separate shelf (its rows ARE the shared library), and a missing root
+  // reads as "no shared library", never as a wider query.
+  let rootId: string | null = null
+  if (spaceScope && opts.shared === 'only') {
+    try {
+      rootId = await getRootSpaceId()
+    } catch {
+      rootId = null
+    }
+  }
+  const sharedRoot = rootId && rootId !== spaceScope ? rootId : null
+  if (spaceScope && opts.shared === 'only' && !sharedRoot) return []
+  /** The second wall on every returned row: the shelf holds only the root's public rows. */
+  const inScope = (r: Record<string, unknown>) =>
+    !sharedRoot || (r.space_id === sharedRoot && r.visibility === 'public')
+
   // Every arm shares one scope; only the text predicate differs, so the scope is built per call
   // rather than reused — a PostgREST builder is not re-runnable once awaited.
   const scoped = () => {
@@ -796,7 +1003,7 @@ export async function listLoomScopeImages(
     const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
     let query = db()
       .from('library_assets')
-      .select('id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash')
+      .select('id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash, space_id, visibility')
       .in('kind', kinds)
       .neq('status', 'archived')
       // A licensed asset whose expires_at has passed is not offered for placement, in any scope
@@ -814,6 +1021,9 @@ export async function listLoomScopeImages(
         ? `created_by.eq.${scope.createdBy},space_id.in.(${ownedIds.join(',')})`
         : `created_by.eq.${scope.createdBy}`
       query = query.or(ownership).or(OWNER_SCOPE_SOURCE_OR)
+    } else if (sharedRoot) {
+      // The root BY ID and public: a third Space that marked a row public is still not offered here.
+      query = query.eq('space_id', sharedRoot).eq('visibility', 'public')
     } else {
       query = query.eq('space_id', scope.spaceId)
     }
@@ -829,7 +1039,8 @@ export async function listLoomScopeImages(
         // The SQL predicate above is the gate; this is the second wall, so a search arm added later
         // without `.or(notExpiredOr())` still cannot hand the picker a licence that ran out.
         .filter((r) => !isLibraryAssetExpired((r.expires_at as string | null) ?? null))
-        .map(toPickAsset)
+        .filter(inScope)
+        .map((r) => (spaceScope ? { ...toPickAsset(r), ownedByViewer: !sharedRoot } : toPickAsset(r)))
         .filter((a) => a.url.length > 0)
       if (opts.generatedOnly) rows = rows.filter((a) => a.generated)
       return rows

@@ -14,6 +14,13 @@ const state = {
   deleted: [] as string[],
   updated: [] as unknown[],
   usageReads: 0,
+  /** LIVE-569: which row an edit lands on. `own` = the id is this Space's; `shared` = a Frequency master
+   *  that the store forks first; `refused` = neither (another Space's row), so forkIfShared refuses. */
+  target: 'own' as 'own' | 'shared' | 'refused',
+  /** The store fork's budget answer (forkLibraryAsset asks loomAdmits itself; tested in
+   *  lib/library/space-loom-fork.test.ts). Here: the refusal the door must hand back unchanged. */
+  budgetRefusal: null as string | null,
+  forkCalls: [] as [string, string][],
 }
 
 vi.mock('@/lib/auth', () => ({ getCallerProfile: async () => state.caller }))
@@ -38,6 +45,20 @@ vi.mock('@/lib/library/store', () => ({
   listLoomScopeTags: async () => [],
   insertSpaceLibraryImage: async () => null,
   findLibraryAssetBySha256: async () => null,
+  // The real fork-on-edit seam's contract (lib/library/store.ts forkIfShared): its own row is itself; a
+  // shared master is copied if the budget admits it; anything else is refused.
+  forkIfShared: async (spaceId: string, id: string) => {
+    state.forkCalls.push([spaceId, id])
+    if (state.target === 'own') return { id, forked: false }
+    if (state.target === 'refused') return { error: 'Only an image from the Frequency library can be made yours.' }
+    if (state.budgetRefusal) return { error: state.budgetRefusal }
+    return { id: `copy-of-${id}`, forked: true }
+  },
+  forkLibraryAsset: async (spaceId: string, id: string) => {
+    state.forkCalls.push([spaceId, id])
+    if (state.budgetRefusal) return { error: state.budgetRefusal }
+    return { id: `copy-of-${id}`, url: 'https://cdn/copy.jpg', reused: false }
+  },
   updateSpaceLibraryAssetMeta: async (...args: unknown[]) => {
     state.updated.push(args)
     return state.updateOut
@@ -51,7 +72,7 @@ vi.mock('@/lib/library/usage', () => ({
 }))
 vi.mock('@/lib/elements/store', () => ({ resolveElement: async () => null }))
 
-import { deleteSpaceLoomImage, updateSpaceLoomImageMeta, spaceLoomImageUsage } from './picker-actions'
+import { deleteSpaceLoomImage, updateSpaceLoomImageMeta, spaceLoomImageUsage, forkSharedLoomImage } from './picker-actions'
 
 beforeEach(() => {
   state.caller = { id: 'u1' }
@@ -62,6 +83,9 @@ beforeEach(() => {
   state.deleted = []
   state.updated = []
   state.usageReads = 0
+  state.target = 'own'
+  state.budgetRefusal = null
+  state.forkCalls = []
 })
 
 describe('deleteSpaceLoomImage: the safe delete', () => {
@@ -98,7 +122,7 @@ describe('deleteSpaceLoomImage: the safe delete', () => {
 describe('updateSpaceLoomImageMeta: rename, caption, retag', () => {
   it('writes the validated words to this Space and returns them', async () => {
     const out = await updateSpaceLoomImageMeta('camp', 'a1', { title: ' Lake ', alt: 'A lake at dawn', tags: 'Lake, dawn' })
-    expect(out).toEqual({ ok: true, title: 'Lake', alt: 'A lake at dawn', tags: ['lake', 'dawn'] })
+    expect(out).toEqual({ ok: true, id: 'a1', forked: false, title: 'Lake', alt: 'A lake at dawn', tags: ['lake', 'dawn'] })
     expect(state.updated).toEqual([['space-1', 'a1', { title: 'Lake', alt: 'A lake at dawn', tags: ['lake', 'dawn'] }]])
   })
   it('an empty title is refused before any write', async () => {
@@ -109,6 +133,13 @@ describe('updateSpaceLoomImageMeta: rename, caption, retag', () => {
     state.updateOut = 'missing'
     expect(await updateSpaceLoomImageMeta('camp', 'b9', { title: 'x' })).toEqual({ error: 'That image is not in this library.' })
   })
+  it('an id that is neither this Space’s nor a Frequency master is refused before any write (LIVE-569)', async () => {
+    state.target = 'refused'
+    expect(await updateSpaceLoomImageMeta('camp', 'b9', { title: 'x' })).toEqual({
+      error: 'Only an image from the Frequency library can be made yours.',
+    })
+    expect(state.updated).toEqual([])
+  })
   it('the same door as the delete: below the bar, or signed out, nothing is written', async () => {
     state.canManage = false
     expect(await updateSpaceLoomImageMeta('camp', 'a1', { title: 'x' })).toEqual({ error: 'You cannot manage that library.' })
@@ -116,6 +147,38 @@ describe('updateSpaceLoomImageMeta: rename, caption, retag', () => {
     state.caller = null
     expect(await updateSpaceLoomImageMeta('camp', 'a1', { title: 'x' })).toEqual({ error: 'Sign in to manage this library.' })
     expect(state.updated).toEqual([])
+  })
+})
+
+describe('fork on edit (LIVE-569): editing a Frequency shared image edits the Space’s copy', () => {
+  it('forks the master first and writes the words to the COPY, never the master', async () => {
+    state.target = 'shared'
+    const out = await updateSpaceLoomImageMeta('camp', 'm1', { title: 'Our sunrise' })
+    expect(out).toEqual({ ok: true, id: 'copy-of-m1', forked: true, title: 'Our sunrise', alt: null, tags: null })
+    expect(state.updated).toEqual([['space-1', 'copy-of-m1', { title: 'Our sunrise' }]])
+    expect(state.forkCalls).toEqual([['space-1', 'm1']])
+  })
+  it('over the storage budget, the fork is refused with the gate’s sentence and nothing is written', async () => {
+    state.target = 'shared'
+    state.budgetRefusal = 'This library is full.'
+    expect(await updateSpaceLoomImageMeta('camp', 'm1', { title: 'x' })).toEqual({ error: 'This library is full.' })
+    expect(state.updated).toEqual([])
+  })
+})
+
+describe('forkSharedLoomImage: Make it yours', () => {
+  it('copies through the store for this Space', async () => {
+    expect(await forkSharedLoomImage('camp', 'm1')).toEqual({ id: 'copy-of-m1', url: 'https://cdn/copy.jpg', reused: false })
+    expect(state.forkCalls).toEqual([['space-1', 'm1']])
+  })
+  it('over budget, returns the refusal', async () => {
+    state.budgetRefusal = 'This library is full.'
+    expect(await forkSharedLoomImage('camp', 'm1')).toEqual({ error: 'This library is full.' })
+  })
+  it('the Studio door: below the bar, nothing is copied', async () => {
+    state.canManage = false
+    expect(await forkSharedLoomImage('camp', 'm1')).toEqual({ error: 'You cannot manage that library.' })
+    expect(state.forkCalls).toEqual([])
   })
 })
 

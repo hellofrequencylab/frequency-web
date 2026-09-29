@@ -312,6 +312,13 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   cover's size). The root Space (and so a personal upload) is uncapped, as are the Loom Studio and
   email studio doors, which write to it. The Space Loom Studio shows the meter. The importer and
   event copies catalog an object already stored and carry no size.
+- Built ([ADR-1587](DECISIONS.md), LIVE-569): the shared set is the root **by id** and public, never
+  any Space's public row. The picker's space scope shows its own images first, then the Frequency
+  ones (badged). The Space Loom Studio has a Frequency library shelf with **Make it yours**
+  (`forkSharedLoomImage` → `forkLibraryAsset`), which copies the stored object to the Space's own
+  path and inserts with `parent_id` = the master; a Space edit of a shared image forks first
+  (`forkIfShared`). A fork is a copy of the file, never a second row on the master's path, and it asks
+  `loomAdmits` before the copy is stored, like every other door that stores new bytes.
 
 ## Build sequence (D1–D7)
 
