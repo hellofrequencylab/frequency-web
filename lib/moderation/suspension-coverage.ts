@@ -126,6 +126,8 @@ export const SUSPENSION_EXEMPT: Record<string, string> = {
   space_plans:
     'operator-authored planning record (ADR-1386), team-only and never public; a Plan reaches the\n     public only by a person pressing publish in the event Spark, which is a `events` write and IS covered',
   space_plan_playbooks: 'operator-authored template for the above; never public, never a member post',
+  space_plan_comments:
+    'operator-authored thread under a Plan (ADR-1553, LIVE-542): written by the host team or an accepted\n     co-host team from the calendar settings, read by those two teams only, never public; the same\n     verdict as the Plan it hangs off',
   // Private to the member: a suspension blocks contribution to the community, not the member's
   // own settings, notes and logs. Blocking these would also break the account-management flows.
   network_contact_notes: 'private CRM note visible only to its author',

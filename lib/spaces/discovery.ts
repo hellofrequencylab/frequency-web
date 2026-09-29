@@ -381,20 +381,28 @@ async function upcomingEventCountsFor(spaceIds: string[]): Promise<CountsRead> {
   }
 }
 
-// ── The nightly rollup's two extra signals (LIVE-263) ────────────────────────────────────────────
+// ── The nightly rollup's three extra signals (LIVE-263, LIVE-456) ────────────────────────────────
 //
-// `gatherings` (held) and `rooms` (open Circles) are the two signals the directory cannot get from
-// the counts it already fetches: one needs the PAST event window, the other a whole extra table.
-// The nightly rollup (lib/spaces/standing-rollup.ts) computes both for every networked Space and
-// stores them in `space_standing`; this read pulls them back in ONE batched query, the same shape
-// as every count above.
+// `gatherings` (held), `rooms` (open Circles) and `attendance` (people a host marked present) are
+// the three signals the directory cannot get from the counts it already fetches: one needs the
+// PAST event window, one a whole extra table, and one the two seat tables joined back onto that
+// past window. The nightly rollup (lib/spaces/standing-rollup.ts) computes all three for every
+// networked Space and stores them in `space_standing`; this read pulls them back in ONE batched
+// query, the same shape as every count above.
 //
 // FAIL-SAFE, AND THE FAIL-SAFE IS THE FEATURE: before the migration applies, or on any error, this
-// returns null, both signals are simply not measured, and the score renormalises over the three the
-// live read has. The directory degrades from v1 to v0 rather than to nothing.
+// returns null, all three signals are simply not measured, and the score renormalises over the
+// four the live read has. The directory degrades from v1 to v0 rather than to nothing. A stored row
+// that predates the attendance column reads it as 0, which is also what every row held on the day
+// the column arrived (0 marks platform-wide, 2026-09-21).
 
-/** One `space_standing` row as the directory consumes it (the two rollup-only signals). */
-type StandingRollupRow = { space_id: string; gatherings_held: number | null; rooms: number | null }
+/** One `space_standing` row as the directory consumes it (the three rollup-only signals). */
+type StandingRollupRow = {
+  space_id: string
+  gatherings_held: number | null
+  rooms: number | null
+  attendance: number | null
+}
 
 type StandingQuery = {
   select: (cols: string) => StandingQuery
@@ -410,29 +418,31 @@ function standingTable(): StandingQuery {
   return db.from('space_standing')
 }
 
-/** The rollup's gatherings-held + rooms counts per Space. `null` = the rollup is not readable, so
- *  neither signal is measured for anyone in this pass (see CountsRead). */
+/** The rollup's gatherings-held + rooms + attendance counts per Space. `null` = the rollup is not
+ *  readable, so none of the three is measured for anyone in this pass (see CountsRead). */
 async function rollupSignalsFor(
   spaceIds: string[],
-): Promise<{ gatherings: Map<string, number>; rooms: Map<string, number> } | null> {
+): Promise<{ gatherings: Map<string, number>; rooms: Map<string, number>; attendance: Map<string, number> } | null> {
   if (spaceIds.length === 0) return null
   try {
     const result = (await standingTable()
-      .select('space_id, gatherings_held, rooms')
+      .select('space_id, gatherings_held, rooms, attendance')
       .in('space_id', spaceIds)) as { data: StandingRollupRow[] | null; error: unknown }
     if (result.error || !result.data) return null
     // ZERO rows for the WHOLE page is "the rollup has not run", not "every Space has none". The
     // table can exist for days before the first nightly pass fills it, and reading that window as
-    // six measured zeros would flatten the directory instead of degrading it to the live counts.
+    // seven measured zeros would flatten the directory instead of degrading it to the live counts.
     // Once ANY row comes back the rollup has run, and a Space missing from it genuinely has none.
     if (result.data.length === 0) return null
     const gatherings = new Map<string, number>()
     const rooms = new Map<string, number>()
+    const attendance = new Map<string, number>()
     for (const row of result.data) {
       gatherings.set(row.space_id, Number(row.gatherings_held) || 0)
       rooms.set(row.space_id, Number(row.rooms) || 0)
+      attendance.set(row.space_id, Number(row.attendance) || 0)
     }
-    return { gatherings, rooms }
+    return { gatherings, rooms, attendance }
   } catch {
     return null
   }
@@ -552,6 +562,7 @@ export const listNetworkedSpaces = cache(
         const profile = readProfileData(r.preferences)
         const standingDetail = standingScore({
           gatherings: rollup ? rollup.gatherings.get(r.id) ?? 0 : null,
+          attendance: rollup ? rollup.attendance.get(r.id) ?? 0 : null,
           rooms: rollup ? rollup.rooms.get(r.id) ?? 0 : null,
           upcoming: upcomingCounts ? upcomingCounts.get(r.id) ?? 0 : null,
           audience: followerCounts ? followerCounts.get(r.id) ?? 0 : null,
