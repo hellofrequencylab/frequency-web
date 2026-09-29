@@ -900,7 +900,7 @@ function DetailDrawer({
           {/* The usage index (PROG-D4, ADR-1502): which stored block documents place this asset. Every
               kind, file-backed or not: a Vera-drawn element has a library row and can be picked into a
               block like any image. */}
-          <AssetUsagePanel assetId={asset.id} />
+          <AssetUsagePanel assetId={asset.id} kind={asset.kind} />
 
           <label className="block">
             <span className="mb-1 block eyebrow text-subtle">Title</span>
