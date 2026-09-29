@@ -21,8 +21,11 @@ import {
   fetchOpenPulls,
   findCollisions,
   idSets,
+  limitHeaders,
   main,
   newIdSets,
+  RETRY_ATTEMPTS,
+  RETRY_BUDGET_MS,
   retryDelayMs,
   retryingFetch,
 } from './check-id-collisions.mjs'
@@ -171,6 +174,14 @@ describe('the reads fail rather than skip', () => {
 // permissions defect. These prove the retry that answers it AND the never-skip contract it must
 // not weaken: retried statuses are retried, a 404 and a 401 are answers, the budget is bounded,
 // and when every attempt fails the gate still refuses to say clean.
+//
+// 2026-09-29 (HYG-133, ADR-1603): the first 60s budget was shorter than the weather. #3011 and
+// #3017 went red with "HTTP 403 (attempt 1 of 3) looks transient; retrying in 60.0s" then "the 60s
+// retry budget is spent": GitHub asked for the whole budget on its first reply. The budget is now
+// five minutes over six attempts, and these cases pin both numbers and a long wait inside them.
+
+/** Exponential backoff from 1s for every retry RETRY_ATTEMPTS allows: [1000, 2000, 4000, ...]. */
+const backoffs = Array.from({ length: RETRY_ATTEMPTS - 1 }, (_, i) => 1000 * 2 ** i)
 
 describe('the fetch helper retries a transient limit and never an answer', () => {
   const reply = (status: number, body: unknown = [], head: Record<string, string> = {}) => ({
@@ -190,7 +201,14 @@ describe('the fetch helper retries a transient limit and never an answer', () =>
     return { impl, calls }
   }
 
-  it('retries a 403, a 429 and a 5xx, three attempts at most, and reports each retry', async () => {
+  it('gives a secondary limit room to clear: at least six attempts under at least five minutes', () => {
+    expect(RETRY_ATTEMPTS).toBeGreaterThanOrEqual(6)
+    expect(RETRY_BUDGET_MS).toBeGreaterThanOrEqual(300_000)
+    // Still a cap: the checks job has a 20-minute timeout and a budget that eats it is a hang.
+    expect(RETRY_BUDGET_MS).toBeLessThanOrEqual(600_000)
+  })
+
+  it('retries a 403, a 429 and a 5xx, RETRY_ATTEMPTS at most, and reports each retry', async () => {
     for (const status of [403, 429, 503]) {
       const { impl, calls } = counting([reply(status)])
       const slept: number[] = []
@@ -202,10 +220,10 @@ describe('the fetch helper retries a transient limit and never an answer', () =>
       })
       const res = await http('https://api.github.com/x', {})
       expect(res.status).toBe(status)
-      expect(calls).toHaveLength(3)
-      expect(slept).toEqual([1000, 2000])
-      expect(lines.join('\n')).toContain(`HTTP ${status} (attempt 1 of 3)`)
-      expect(http.state).toMatchObject({ attempts: 3, retries: 2, lastStatus: status })
+      expect(calls).toHaveLength(RETRY_ATTEMPTS)
+      expect(slept).toEqual(backoffs)
+      expect(lines.join('\n')).toContain(`HTTP ${status} (attempt 1 of ${RETRY_ATTEMPTS})`)
+      expect(http.state).toMatchObject({ attempts: RETRY_ATTEMPTS, retries: RETRY_ATTEMPTS - 1, lastStatus: status })
     }
   })
 
@@ -241,7 +259,43 @@ describe('the fetch helper retries a transient limit and never an answer', () =>
     const http = retryingFetch(impl, { sleep: async (ms: number) => void slept.push(ms), now: () => 0, log: () => {} })
     await http('https://api.github.com/x', {})
     await http('https://api.github.com/y', {})
-    expect(slept.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(60_000)
+    expect(slept.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(RETRY_BUDGET_MS)
+    expect(slept.reduce((a, b) => a + b, 0)).toBe(RETRY_BUDGET_MS)
+  })
+
+  it('waits out a long retry-after inside the budget, the 2026-09-29 shape the 60s budget could not', async () => {
+    // GitHub asks for two minutes on the first reply; the old budget capped that at 60s and failed.
+    const { impl, calls } = counting([reply(403, [], { 'retry-after': '120' }), reply(200)])
+    const slept: number[] = []
+    const lines: string[] = []
+    const http = retryingFetch(impl, { sleep: async (ms: number) => void slept.push(ms), now: () => 0, log: (l: string) => lines.push(l) })
+    const res = await http('https://api.github.com/x', {})
+    expect(res.status).toBe(200)
+    expect(calls).toHaveLength(2)
+    expect(slept).toEqual([120_000])
+    expect(lines.join('\n')).toContain('retrying in 120.0s. [retry-after: 120]')
+  })
+
+  it('outlasts four one-minute secondary limits in a row, then answers', async () => {
+    const limitedFor = (n: number) => [...Array.from({ length: n }, () => reply(403, [], { 'retry-after': '60' })), reply(200)]
+    const { impl, calls } = counting(limitedFor(4))
+    const slept: number[] = []
+    const http = retryingFetch(impl, { sleep: async (ms: number) => void slept.push(ms), now: () => 0, log: () => {} })
+    expect((await http('https://api.github.com/x', {})).status).toBe(200)
+    expect(calls).toHaveLength(5)
+    expect(slept).toEqual([60_000, 60_000, 60_000, 60_000])
+  })
+
+  it('says when GitHub asked for more than the budget left, and prints the quota headers it sent', async () => {
+    const { impl } = counting([reply(403, [], { 'retry-after': '3600', 'x-ratelimit-remaining': '812' })])
+    const lines: string[] = []
+    const http = retryingFetch(impl, { sleep: async () => {}, now: () => 0, log: (l: string) => lines.push(l) })
+    await http('https://api.github.com/x', {})
+    const out = lines.join('\n')
+    expect(out).toContain(`retrying in ${(RETRY_BUDGET_MS / 1000).toFixed(1)}s (asked for 3600.0s, capped by the ${RETRY_BUDGET_MS / 1000}s budget).`)
+    expect(out).toContain('[retry-after: 3600, x-ratelimit-remaining: 812]')
+    expect(out).toContain(`the ${RETRY_BUDGET_MS / 1000}s retry budget is spent`)
+    expect(limitHeaders(reply(503))).toBe('')
   })
 })
 
@@ -350,7 +404,7 @@ describe('main under a rate limit: retries, then fails loudly rather than answer
     expect(slept).toEqual([1000])
     expect(calls.length).toBeGreaterThan(1)
     const out = logged.join('\n')
-    expect(out).toContain('HTTP 403 (attempt 1 of 3) looks transient; retrying in 1.0s.')
+    expect(out).toContain(`HTTP 403 (attempt 1 of ${RETRY_ATTEMPTS}) looks transient; retrying in 1.0s.`)
     expect(out).toContain('✓ check:id-collisions')
   })
 
@@ -362,7 +416,7 @@ describe('main under a rate limit: retries, then fails loudly rather than answer
     expect(logged.join('\n')).toContain('✓ check:id-collisions')
   })
 
-  it('three 403s: three attempts, then exit 1 with the loud never-skip message', async () => {
+  it('403 on every attempt: RETRY_ATTEMPTS tries, then exit 1 with the loud never-skip message', async () => {
     const { impl, calls } = limited(403, 99)
     const slept: number[] = []
     const err = await main(env, impl, { sleep: async (ms: number) => void slept.push(ms), now: () => 0 }).then(
@@ -370,15 +424,28 @@ describe('main under a rate limit: retries, then fails loudly rather than answer
       (e: unknown) => e as Error,
     )
     expect(err).toBeInstanceOf(Error)
-    expect(calls).toHaveLength(3)
-    expect(slept).toEqual([1000, 2000])
+    expect(calls).toHaveLength(RETRY_ATTEMPTS)
+    expect(slept).toEqual(backoffs)
     expect(err?.message).toContain('HTTP 403')
-    expect(err?.message).toContain('3 attempt(s), last status 403')
+    expect(err?.message).toContain(`${RETRY_ATTEMPTS} attempt(s), last status 403`)
     expect(err?.message).toContain('secondary rate limiting, not a permissions defect')
     const loud = couldNotRun(err)
     expect(loud).toContain('the cross-PR arm could not RUN')
     expect(loud).toContain('gate that answers "clean" when it could not look')
-    expect(loud).toContain('3 attempt(s), last status 403')
+    expect(loud).toContain(`${RETRY_ATTEMPTS} attempt(s), last status 403`)
+  })
+
+  it('a PR that introduces no ids does not spend the pulls listing', async () => {
+    // The base tip is served as this checkout's own files, so the PR introduces nothing against it.
+    const calls: string[] = []
+    const mirror = (async (url: string) => {
+      calls.push(String(url))
+      const text = readFileSync(String(url).includes(`/contents/${BACKLOG}`) ? BACKLOG : LEDGER, 'utf8')
+      return { ok: true, status: 200, headers: { get: () => null }, json: async () => [], text: async () => text }
+    }) as unknown as typeof fetch
+    await main(env, mirror, { sleep: async () => {}, now: () => 0 })
+    expect(calls.some((u) => u.includes('/pulls?state=open'))).toBe(false)
+    expect(logged.join('\n')).toContain('the pulls listing was not read')
   })
 
   it('reads the other PR ONCE when its files listing names only the backlog', async () => {
