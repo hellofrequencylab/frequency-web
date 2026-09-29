@@ -140,7 +140,6 @@ vi.mock('@/lib/journeys/tier-gate', () => ({ checkJourneyTier: vi.fn(async () =>
 vi.mock('./order-receipt', () => ({ sendOrderReceipts: vi.fn(async () => {}) }))
 
 import { createCommerceCheckout, refundCommerceOrder } from './checkout'
-import { STORE_CHECKS_OUT_ALONE } from './funds-flow'
 
 const BASE = {
   entity_id: 'ent-1',
@@ -253,7 +252,7 @@ describe('a cart from two sellers is one order and one charge on the platform (s
   it('the Frequency Store beside another seller is refused before any write or any Stripe call', async () => {
     sellsHandler([MUG_A, STORE_TEE])
     const res = await createCommerceCheckout({ items: [{ productId: 'p-a', qty: 1 }, { productId: 'p-s', qty: 1 }], buyerProfileId: 'buyer-1' })
-    expect(res.error).toBe(STORE_CHECKS_OUT_ALONE)
+    expect(res.error).toBe('Frequency Store items check out on their own. Please buy them separately.')
     expect(orderInsert()).toBeUndefined()
     expect(stripeFake.checkout.sessions.create).not.toHaveBeenCalled()
   })

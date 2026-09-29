@@ -272,7 +272,13 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   const plan = planFundsFlow(
     lines.map((l) => ({ seller: l.product, currency: l.product.currency || 'usd', qty: l.qty, unitCents: l.unitCents })),
   )
-  if ('error' in plan) return { error: plan.error }
+  if ('refused' in plan) {
+    if (plan.refused === 'mixed_currency') return { error: 'Please check out items in one currency at a time.' }
+    if (plan.refused === 'store_with_others') {
+      return { error: 'Frequency Store items check out on their own. Please buy them separately.' }
+    }
+    return { error: 'Your cart is empty.' }
+  }
   const cartCurrency = plan.currency
   // Each seller's own product row (the first line it sold), which carries what the seam does not read:
   // the ledger entity, and the fields resolveCharge prices from. One group on a destination plan.

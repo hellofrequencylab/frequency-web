@@ -18,7 +18,7 @@
 //   separate     two or more sellers. One charge on the platform carrying `transfer_group`, no
 //                `transfer_data`, no `on_behalf_of`, no `application_fee_amount` (the platform keeps
 //                its fee by transferring less). The transfers themselves are LIVE-622's ledger.
-//   error        a cart the money cannot honestly pay: two currencies (ADR-1500: an
+//   refused      a cart the money cannot honestly pay: two currencies (ADR-1500: an
 //                `application_fee_amount` is an integer in ONE currency, and a gross summed across
 //                two is a number in none), or the Frequency Store beside another seller (the
 //                platform is not a transfer destination; its share would have to be "the remainder",
@@ -67,7 +67,7 @@ export interface FundsFlowGroup {
 export type FundsFlowPlan =
   | { mode: 'destination'; currency: string; grossCents: number; seller: FundsFlowSeller; groups: [FundsFlowGroup] }
   | { mode: 'separate'; currency: string; grossCents: number; groups: FundsFlowGroup[] }
-  | { error: string }
+  | { refused: FundsFlowRefusal }
 
 /** One seller's share of a separate plan, once the builder has priced it. */
 export interface SellerSplit {
@@ -77,10 +77,9 @@ export interface SellerSplit {
   stripeAccountId: string
 }
 
-/** The two refusals this seam owns. One string each so every failure arm agrees (ADR-1500 kept its
- *  sentence; the Store sentence is new and lives only here). */
-export const ONE_CURRENCY_PER_CART = 'Please check out items in one currency at a time.'
-export const STORE_CHECKS_OUT_ALONE = 'Frequency Store items check out on their own. Please buy them separately.'
+/** Why the seam refused a cart, as a code. The seam decides; the checkout door owns the sentence a
+ *  buyer reads, beside every other refusal it words (ADR-1500's currency sentence stays at the door). */
+export type FundsFlowRefusal = 'empty' | 'mixed_currency' | 'store_with_others'
 
 /** The identity of a seller, as the refusal at the old door keyed it: kind plus both owner ids. */
 export function sellerKey(s: FundsFlowSeller): string {
@@ -91,15 +90,15 @@ export function sellerKey(s: FundsFlowSeller): string {
  * Decide the funds flow for a priced cart. Pure.
  *
  * Groups the lines by seller (kind + owner ids), sums each seller's gross, and returns
- * `destination` for one seller, `separate` for more, or an error for a cart the money cannot pay
+ * `destination` for one seller, `separate` for more, or a refusal code for a cart the money cannot pay
  * as one charge. Group order is first-appearance order, so the builder's writes are deterministic.
  */
 export function planFundsFlow(lines: readonly FundsFlowLine[]): FundsFlowPlan {
-  if (!lines.length) return { error: 'Your cart is empty.' }
+  if (!lines.length) return { refused: 'empty' }
 
   const currency = (lines[0].currency || 'usd').toLowerCase()
   if (lines.some((l) => (l.currency || 'usd').toLowerCase() !== currency)) {
-    return { error: ONE_CURRENCY_PER_CART }
+    return { refused: 'mixed_currency' }
   }
 
   const groups: FundsFlowGroup[] = []
@@ -125,7 +124,7 @@ export function planFundsFlow(lines: readonly FundsFlowLine[]): FundsFlowPlan {
   // one seller among several: its share would be whatever is left after the transfers, a fee no
   // rung prices. The Store sells on its own.
   if (groups.some((g) => g.seller.owner_kind === 'platform')) {
-    return { error: STORE_CHECKS_OUT_ALONE }
+    return { refused: 'store_with_others' }
   }
   return { mode: 'separate', currency, grossCents, groups }
 }

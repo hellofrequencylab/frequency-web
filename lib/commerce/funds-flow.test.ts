@@ -3,8 +3,6 @@ import {
   planFundsFlow,
   splitTotals,
   sellerKey,
-  ONE_CURRENCY_PER_CART,
-  STORE_CHECKS_OUT_ALONE,
   type FundsFlowLine,
 } from './funds-flow'
 
@@ -82,13 +80,9 @@ describe('planFundsFlow — two sellers are separate charges and transfers', () 
 })
 
 describe('planFundsFlow — the carts the money cannot pay as one charge', () => {
-  it('refuses a cart in two currencies with the ADR-1500 sentence, whether one seller or two', () => {
-    expect(planFundsFlow([line(spaceA, 100, 1, 'cad'), line(spaceA, 100, 1, 'usd')])).toEqual({
-      error: ONE_CURRENCY_PER_CART,
-    })
-    expect(planFundsFlow([line(spaceA, 100, 1, 'cad'), line(spaceB, 100, 1, 'usd')])).toEqual({
-      error: ONE_CURRENCY_PER_CART,
-    })
+  it('refuses a cart in two currencies (ADR-1500), whether one seller or two', () => {
+    expect(planFundsFlow([line(spaceA, 100, 1, 'cad'), line(spaceA, 100, 1, 'usd')])).toEqual({ refused: 'mixed_currency' })
+    expect(planFundsFlow([line(spaceA, 100, 1, 'cad'), line(spaceB, 100, 1, 'usd')])).toEqual({ refused: 'mixed_currency' })
   })
 
   it('treats currency case as spelling, not as a second currency', () => {
@@ -97,13 +91,11 @@ describe('planFundsFlow — the carts the money cannot pay as one charge', () =>
   })
 
   it('never mixes the Frequency Store into a separate plan', () => {
-    expect(planFundsFlow([line(store, 100), line(spaceA, 100)])).toEqual({ error: STORE_CHECKS_OUT_ALONE })
-    expect(planFundsFlow([line(spaceA, 100), line(maker, 100), line(store, 100)])).toEqual({
-      error: STORE_CHECKS_OUT_ALONE,
-    })
+    expect(planFundsFlow([line(store, 100), line(spaceA, 100)])).toEqual({ refused: 'store_with_others' })
+    expect(planFundsFlow([line(spaceA, 100), line(maker, 100), line(store, 100)])).toEqual({ refused: 'store_with_others' })
   })
 
   it('an empty cart is refused before anything is grouped', () => {
-    expect(planFundsFlow([])).toEqual({ error: 'Your cart is empty.' })
+    expect(planFundsFlow([])).toEqual({ refused: 'empty' })
   })
 })
