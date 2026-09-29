@@ -98,7 +98,7 @@ export function UpsellTease({
     const spent = teaseCapSpent(readSeen()[target], cap)
     // Count this appearance toward the cap so the next success moment stays quiet.
     if (!spent) markSeen(target, cap)
-    // Defer the state flip out of the synchronous effect body (mirrors components/teaser-gate.tsx) so
+    // Defer the state flip out of the synchronous effect body (as the retired teaser gate did) so
     // it does not trigger a cascading render — and so the first paint matches the server (nothing shown).
     queueMicrotask(() => {
       setDismissed(spent)
