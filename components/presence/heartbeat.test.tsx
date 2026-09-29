@@ -12,7 +12,8 @@ import { createRoot, type Root } from 'react-dom/client'
 const pingPresence = vi.fn(async () => {})
 vi.mock('./actions', () => ({ pingPresence: () => pingPresence() }))
 
-const { PresenceHeartbeat, MIN_GAP_MS, MAX_BACKOFF_MS, mayPing, resetPresenceGateForTests } = await import('./heartbeat')
+const { PresenceHeartbeat, resetPresenceGateForTests } = await import('./heartbeat')
+const { MIN_GAP_MS, MAX_BACKOFF_MS, mayPing } = await import('./presence-gate')
 
 let container: HTMLDivElement
 let root: Root | null = null
