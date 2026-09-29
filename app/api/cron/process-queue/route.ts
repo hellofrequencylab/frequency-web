@@ -3,15 +3,27 @@
 // declaration is applied, not merely written down.
 // Drains the durable job queue (lib/queue/outbox) with retries + backoff.
 // Register a handler per job `kind` below as flows migrate onto the queue.
+//
+// After every drain, whatever it processed, the route reads the queue's health (lib/queue/outbox
+// queueHealth) and emits ONE `queue.health` line with the three numbers, the same discipline as
+// `cron.run`. When the reading breaches (a dead-letter exists, or the oldest due job is older than the
+// queue-lag SLO in lib/observability/slos.ts) the run reports it on the two paths that already page:
+// a Sentry capture tagged by job (H0-4) and the heartbeat /fail ping (H0-5), which the wrapper sends
+// when it sees CRON_SLO_BREACH_HEADER on the 200. The drain is never failed for it: a 500 would make
+// the next cron redo work that was fine (LIVE-547, ADR-1571).
 
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
-import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { CRON_SLO_BREACH_HEADER, withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
-import { processQueue } from '@/lib/queue/outbox'
+import { log } from '@/lib/log'
+import { processQueue, queueHealth, queueHealthBreaches, QUEUE_LAG_SLO_ID } from '@/lib/queue/outbox'
 import { queueHandlers } from '@/lib/queue/handlers'
 
 export const dynamic = 'force-dynamic'
+
+const JOB = 'process-queue'
 
 async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
@@ -26,7 +38,35 @@ async function handler(req: NextRequest) {
     if (result.failed > 0) {
       console.error(`[process-queue] ${result.failed} job(s) dead-lettered this drain`)
     }
-    return NextResponse.json({ ok: true, ...result, budget: summary })
+
+    // The health reading, on every drain. `queueHealth` never throws, so a failed read still lets the
+    // drain report what it processed; it arrives as `measured: false`, which is itself a breach.
+    const health = await queueHealth()
+    const breaches = queueHealthBreaches(health)
+    log.info('queue.health', {
+      job: JOB,
+      pending: health.pending,
+      dead_lettered: health.deadLettered,
+      lag_min: health.lagMin,
+      oldest_due_age_min: health.oldestDueAgeMin,
+      measured: health.measured,
+      breach: breaches.length > 0,
+    })
+
+    const headers: Record<string, string> = {}
+    if (breaches.length > 0) {
+      const reason = breaches.join('; ')
+      // Stable message + fingerprint, numbers in `extra`: a breach that lasts an hour is one Sentry
+      // issue with thirty events, not thirty issues. `cron_job` is the tag the throw path already uses.
+      Sentry.captureMessage(`[${JOB}] queue health breached: ${reason}`, {
+        level: 'error',
+        tags: { route: `cron.${JOB}`, cron_job: JOB, slo: QUEUE_LAG_SLO_ID },
+        fingerprint: ['cron-slo-breach', JOB, ...breaches],
+        extra: { ...health, breaches, drain: result },
+      })
+      headers[CRON_SLO_BREACH_HEADER] = reason
+    }
+    return NextResponse.json({ ok: true, ...result, budget: summary, health, breaches }, { headers })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(`[process-queue] drain failed: ${msg}`)
@@ -35,4 +75,5 @@ async function handler(req: NextRequest) {
   }
 }
 
+// The literal, not JOB: scripts/cron-freshness.mjs reads the job name out of this call.
 export const GET = withCronHeartbeat('process-queue', handler)

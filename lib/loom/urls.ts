@@ -12,3 +12,13 @@ export function isLoomPublicImageUrl(url: string): boolean {
     return false
   }
 }
+
+/** Is this Loom file a vector (SVG)? Read from the stored mime first, then the url's extension.
+ *  The Studio's Upscale chip and the upscale op both ask it (LIVE-589): a vector is sharp at any
+ *  size, and Recraft's upscale endpoints take a raster only. PURE, so client and server share it. */
+export function isVectorFile(mime: string | null | undefined, url: string | null | undefined): boolean {
+  if (mime && /svg/i.test(mime)) return true
+  if (!url) return false
+  const path = url.split(/[?#]/)[0] ?? ''
+  return /\.svgz?$/i.test(path)
+}

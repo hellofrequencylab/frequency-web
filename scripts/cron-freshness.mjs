@@ -15,7 +15,11 @@
 //   ✅ ESTABLISHED FROM THE REPO ALONE, so it is checked strictly:
 //        · every cron in vercel.json has a route handler,
 //        · that handler is WRAPPED in withCronHeartbeat, under the SAME job name,
-//        · every schedule parses to a real interval, so the fresh-by window is a fact.
+//        · every schedule parses to a real interval, so the fresh-by window is a fact,
+//        · every cron is DECLARED monitored or opted out in lib/observability/slos.ts
+//          (CRON_MONITORED / CRON_UNMONITORED, LIVE-548 / ADR-1574), so the report says which
+//          jobs are supposed to page rather than only whether a base URL resolves. A scheduled
+//          job named in neither list is a job nobody decided to watch, and that fails the run.
 //      A job failing any of those can never ping ANY monitor, no matter what env is set. That is
 //      the deepest form of paging-blind and it is a pure function of the tree.
 //
@@ -62,10 +66,52 @@
 //   CRON_HEARTBEAT_URL_<SLUG>      per-job monitor URL (SLUG = job name upper-snake)
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 export const VERCEL_JSON = 'vercel.json'
 export const CRON_DIR = 'app/api/cron'
+export const PARTITION_MODULE = 'lib/observability/slos.ts'
+
+/**
+ * The declared monitored set, read from the SHIPPED module and never from a copy of it. The
+ * partition lives in TypeScript; this script is plain node, and a direct `import()` of a .ts
+ * file from a typeless package prints a MODULE_TYPELESS_PACKAGE_JSON warning on stderr that
+ * the maintenance step would fold into the report. So it is read the way the backlog probes
+ * read the tree (scripts/probe-ts.mjs, LIVE-475): a child node with type stripping and the
+ * `@/` resolver, printing JSON. ~100 ms, once per run; the tests pass a partition through the
+ * io seam and never spawn.
+ *
+ * Throws when the module cannot be read or exports no partition: a report that cannot read the
+ * contract must fail rather than print a table with the column blank.
+ *
+ * @returns {{ monitored: string[], unmonitored: Array<{ job: string, reason: string }> }}
+ */
+export function loadPartition() {
+  const code =
+    'import("@/lib/observability/slos.ts").then((m) => {' +
+    ' process.stdout.write(JSON.stringify({ monitored: m.CRON_MONITORED, unmonitored: m.CRON_UNMONITORED })) })'
+  let out
+  try {
+    out = execFileSync(
+      process.execPath,
+      ['--experimental-strip-types', '--no-warnings', '--import', './scripts/probe-ts.mjs', '-e', code],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 20_000 },
+    )
+  } catch (e) {
+    throw new Error(`could not read the monitored set from ${PARTITION_MODULE}: ${e instanceof Error ? e.message : String(e)}`)
+  }
+  let parsed
+  try {
+    parsed = JSON.parse(out)
+  } catch {
+    throw new Error(`${PARTITION_MODULE} printed no JSON for the monitored set`)
+  }
+  if (!Array.isArray(parsed.monitored) || !Array.isArray(parsed.unmonitored)) {
+    throw new Error(`${PARTITION_MODULE} exports no CRON_MONITORED / CRON_UNMONITORED partition`)
+  }
+  return parsed
+}
 
 /**
  * THE FLOOR. A gate that scans nothing reports a clean bill of health, and here that would be
@@ -97,7 +143,22 @@ const defaultIo = () => ({
   readdir: (d) => readdirSync(d).map(String),
   exists: existsSync,
   env: process.env,
+  /** The declared partition; the default reads the shipped slos.ts (see loadPartition). */
+  partition: undefined,
 })
+
+/**
+ * How a job stands in the declared partition (lib/observability/slos.ts):
+ *   'monitored'   CRON_MONITORED names it; its dead-man's switch is expected to page.
+ *   'opted-out'   CRON_UNMONITORED names it with a reason; its silence was chosen.
+ *   'undeclared'  vercel.json schedules it and neither list names it. Nobody decided.
+ */
+export function monitoringFor(job, partition) {
+  if (partition.monitored.includes(job)) return { state: 'monitored', reason: null }
+  const opt = partition.unmonitored.find((u) => (typeof u === 'string' ? u : u && u.job) === job)
+  if (opt) return { state: 'opted-out', reason: typeof opt === 'string' ? null : opt.reason || null }
+  return { state: 'undeclared', reason: null }
+}
 
 /** job name ('weekly-digest') to env-var suffix ('WEEKLY_DIGEST'). Mirrors envSlug() in
  *  lib/observability/cron-heartbeat.ts so coverage is checked against the exact var the wrapper
@@ -276,6 +337,7 @@ export function isDeploymentRuntime(env) {
  *  that would make the corpus a lie: see MIN_JOBS. */
 export function readModel(io = {}) {
   const merged = { ...defaultIo(), ...io }
+  const partition = merged.partition ?? loadPartition()
   let parsed
   try {
     parsed = JSON.parse(merged.read(VERCEL_JSON))
@@ -301,6 +363,7 @@ export function readModel(io = {}) {
       freshByMin: schedule.parsed ? freshByMinutes(schedule.minutes) : null,
       wiring: handlerWiring(job, merged),
       monitor: monitorFor(job, merged.env),
+      monitoring: monitoringFor(job, partition),
     }
   })
   if (jobs.length < MIN_JOBS) {
@@ -320,7 +383,21 @@ export function readModel(io = {}) {
   const scheduled = new Set(jobs.map((j) => j.job))
   const unscheduled = dirs.filter((d) => !scheduled.has(d) && !d.includes('.')).sort()
 
-  return { jobs: jobs.sort((a, b) => (a.intervalMin ?? Infinity) - (b.intervalMin ?? Infinity)), unscheduled }
+  // The partition's other direction: a name the repo declares that vercel.json no longer
+  // schedules is a stale declaration, and a stale allow-list of silence is the one this row
+  // exists to prevent (a deleted job's slot is a check paging about nothing, or an opt-out
+  // that outlives its reason).
+  const declared = [
+    ...partition.monitored,
+    ...partition.unmonitored.map((u) => (typeof u === 'string' ? u : u && u.job)),
+  ]
+  const declaredNotScheduled = declared.filter((n) => !scheduled.has(n)).sort()
+
+  return {
+    jobs: jobs.sort((a, b) => (a.intervalMin ?? Infinity) - (b.intervalMin ?? Infinity)),
+    unscheduled,
+    declaredNotScheduled,
+  }
 }
 
 /**
@@ -340,10 +417,13 @@ export function readModel(io = {}) {
  * @param {Record<string, string | undefined>} [env] a plain env bag; `process.env` is one
  */
 export function assess(model, env = process.env) {
-  const { jobs, unscheduled } = model
+  const { jobs, unscheduled, declaredNotScheduled = [] } = model
   const unparsedJobs = jobs.filter((j) => !j.parsed)
   const badWiring = jobs.filter((j) => j.wiring.state !== 'wrapped')
   const uncovered = jobs.filter((j) => !j.monitor)
+  const undeclared = jobs.filter((j) => j.monitoring.state === 'undeclared')
+  const monitored = jobs.filter((j) => j.monitoring.state === 'monitored')
+  const optedOut = jobs.filter((j) => j.monitoring.state === 'opted-out')
   const runtime = isDeploymentRuntime(env)
 
   let coverage
@@ -354,8 +434,11 @@ export function assess(model, env = process.env) {
   // still only unobserved-here. Report it as partial rather than calling those jobs blind.
   else coverage = 'partial'
 
+  // Capacity is measured against the MONITORED set, not the fleet: an opt-out asks for no
+  // check. Before the partition existed this compared the whole fleet and could only ever
+  // say "some lose, chosen by ping order"; now it says whether the declared set fits.
   const viaBase = jobs.some((j) => j.monitor === 'base')
-  const overCapacity = viaBase && MONITOR_CAPACITY > 0 && jobs.length > MONITOR_CAPACITY
+  const overCapacity = viaBase && MONITOR_CAPACITY > 0 && monitored.length > MONITOR_CAPACITY
 
   return {
     jobs,
@@ -363,13 +446,23 @@ export function assess(model, env = process.env) {
     unparsedJobs,
     badWiring,
     uncovered,
+    undeclared,
+    monitored,
+    optedOut,
+    declaredNotScheduled,
     coverage,
     runtime,
     overCapacity,
     capacity: MONITOR_CAPACITY,
     // Everything here is a fact about the tree. Nothing about a dashboard can fail this run.
-    failed: unparsedJobs.length > 0 || badWiring.length > 0,
+    failed: unparsedJobs.length > 0 || badWiring.length > 0 || undeclared.length > 0 || declaredNotScheduled.length > 0,
   }
+}
+
+const MONITORING_NOTE = {
+  monitored: 'monitored',
+  'opted-out': 'opted out',
+  undeclared: 'UNDECLARED',
 }
 
 const WIRING_NOTE = {
@@ -388,18 +481,21 @@ export function renderText(a) {
   lines.push('='.repeat(88))
 
   const jw = 32
-  lines.push(`${'Job'.padEnd(jw)}${'Cadence'.padEnd(14)}${'Fresh-by'.padStart(9)}   ${'Heartbeat'.padEnd(14)}Monitor`)
+  lines.push(`${'Job'.padEnd(jw)}${'Cadence'.padEnd(14)}${'Fresh-by'.padStart(9)}   ${'Heartbeat'.padEnd(14)}${'Declared'.padEnd(12)}Monitor`)
   lines.push('-'.repeat(88))
   for (const r of a.jobs) {
     const monitor = r.monitor ? `configured (${r.monitor})` : a.runtime ? 'NONE, paging-blind' : 'not observable here'
     const cadence = r.parsed ? r.cadence : 'UNPARSED'
     lines.push(
       `${r.job.padEnd(jw)}${cadence.padEnd(14)}${(r.parsed ? fmtMinutes(r.freshByMin) : '?').padStart(9)}   ` +
-        `${WIRING_NOTE[r.wiring.state].padEnd(14)}${monitor}`,
+        `${WIRING_NOTE[r.wiring.state].padEnd(14)}${MONITORING_NOTE[r.monitoring.state].padEnd(12)}${monitor}`,
     )
   }
   lines.push('-'.repeat(88))
-  lines.push(`${a.jobs.length} jobs · ${a.jobs.length - a.badWiring.length} wired to the heartbeat`)
+  lines.push(
+    `${a.jobs.length} jobs · ${a.jobs.length - a.badWiring.length} wired to the heartbeat · ` +
+      `${a.monitored.length} declared monitored · ${a.optedOut.length} opted out · ${a.undeclared.length} undeclared`,
+  )
   lines.push(`Coverage: ${coverageSentence(a)}.`)
   lines.push('')
   for (const line of findings(a)) lines.push(line)
@@ -420,6 +516,11 @@ export function renderMarkdown(a) {
       : `✅ Cron heartbeat wiring: all ${a.jobs.length} jobs are wrapped in \`withCronHeartbeat\` under their own name, and every schedule parses.`,
   )
   lines.push('')
+  lines.push(
+    `Declared (lib/observability/slos.ts): ${a.monitored.length} monitored, ${a.optedOut.length} opted out` +
+      (a.undeclared.length ? `, 🔴 ${a.undeclared.length} undeclared` : '') +
+      '.',
+  )
   lines.push(`Coverage: ${coverageSentence(a)}.`)
   lines.push('')
   for (const line of findings(a)) lines.push(line)
@@ -462,6 +563,22 @@ function findings(a) {
     }
     lines.push('')
   }
+  if (a.undeclared.length) {
+    lines.push(
+      `🔴 ${a.undeclared.length} scheduled job(s) are in neither CRON_MONITORED nor CRON_UNMONITORED (${PARTITION_MODULE}): ` +
+        a.undeclared.map((j) => `\`${j.job}\``).join(', ') +
+        '. A job added and never classified is a job nobody decided to watch. Name it in one list, with a reason if it is the second.',
+    )
+    lines.push('')
+  }
+  if (a.declaredNotScheduled.length) {
+    lines.push(
+      `🔴 ${a.declaredNotScheduled.length} declared name(s) that ${VERCEL_JSON} does not schedule: ` +
+        a.declaredNotScheduled.map((n) => `\`${n}\``).join(', ') +
+        '. A stale declaration is a check paging about nothing, or an opt-out that outlived its reason.',
+    )
+    lines.push('')
+  }
   if (a.unparsedJobs.length) {
     lines.push(`🔴 ${a.unparsedJobs.length} schedule(s) did not parse, so their fresh-by window would be fiction:`)
     for (const j of a.unparsedJobs) lines.push(`- \`${j.job}\`: \`${j.schedule}\` (${j.why})`)
@@ -478,11 +595,10 @@ function findings(a) {
   }
   if (a.overCapacity) {
     lines.push(
-      `⚠️ ${a.jobs.length} jobs share one base ping key, and the monitor account holds ${a.capacity} checks ` +
-        '(docs/FINALIZE-PLAN.md §7c). A URL that resolves is not a check that exists: the first ' +
-        `${a.capacity} to ping take the slots and the other ${a.jobs.length - a.capacity} are rejected, chosen by ` +
-        'schedule order rather than by what a silent death costs. Upgrade the tier, or pin the ones ' +
-        'that matter with `CRON_HEARTBEAT_URL_<SLUG>`.',
+      `⚠️ ${a.monitored.length} jobs are declared monitored and share one base ping key, and the monitor account holds ${a.capacity} checks ` +
+        '(docs/FINALIZE-PLAN.md §7c). A URL that resolves is not a check that exists: ' +
+        `${a.monitored.length - a.capacity} of the declared set cannot have a check. Upgrade the tier, move jobs to ` +
+        'CRON_UNMONITORED with a reason, or pin the ones that matter with `CRON_HEARTBEAT_URL_<SLUG>`.',
     )
     lines.push('')
   }
@@ -518,6 +634,10 @@ export function main(argv = process.argv.slice(2), io = {}) {
           deploymentRuntime: a.runtime,
           uncovered: a.uncovered.map((r) => r.job),
           unscheduledHandlers: a.unscheduled,
+          monitored: a.monitored.map((r) => r.job),
+          optedOut: a.optedOut.map((r) => r.job),
+          undeclared: a.undeclared.map((r) => r.job),
+          declaredNotScheduled: a.declaredNotScheduled,
           overCapacity: a.overCapacity,
           jobs: a.jobs.map((r) => ({
             job: r.job,
@@ -527,6 +647,8 @@ export function main(argv = process.argv.slice(2), io = {}) {
             intervalMin: r.intervalMin,
             freshByMin: r.freshByMin,
             heartbeat: r.wiring.state,
+            monitoring: r.monitoring.state,
+            optOutReason: r.monitoring.reason,
             monitorConfigured: r.monitor !== null,
             monitorSource: r.monitor,
           })),

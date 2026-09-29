@@ -14,6 +14,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordVersion } from '@/lib/library/versions'
 import { classifyLoomUpload, fallbackMimeFor } from '@/lib/library/upload-kinds'
+import { ingestImageBytes } from '@/lib/library/ingest'
 
 // Studio-gated: every action below carries the page's OWN gate —
 // `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes. See the door
@@ -59,12 +60,15 @@ export async function replaceLibraryAssetFile(
   const ext = (file.name.split('.').pop() || target.kind).toLowerCase().replace(/[^a-z0-9]/g, '')
   const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
   const path = `${asset.space_id}/${stamp}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
   const contentType = file.type || fallbackMimeFor(target.kind)
+  // INGEST (ADR-1121, LIVE-579): a replacement is an upload, so it strips private metadata and the
+  // row's checksum and dimensions follow the NEW file. Audio/video pass through untouched (no strip
+  // exists for them) and keep only the checksum; ingest-coverage.test.ts holds this.
+  const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), file.type)
 
   const { error: upErr } = await admin.storage
     .from(target.bucket)
-    .upload(path, bytes, { contentType, upsert: false })
+    .upload(path, ingested.bytes, { contentType, upsert: false })
   if (upErr) return { error: upErr.message }
 
   const { data: pub } = admin.storage.from(target.bucket).getPublicUrl(path)
@@ -76,7 +80,9 @@ export async function replaceLibraryAssetFile(
       storage_path: path,
       url: pub.publicUrl,
       mime: contentType,
-      bytes: file.size,
+      bytes: ingested.bytes.byteLength,
+      sha256: ingested.sha256,
+      ...(target.kind === 'image' ? { width: ingested.width, height: ingested.height } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
