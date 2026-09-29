@@ -263,6 +263,13 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
     and the Space Loom Studio run `useDescribeOnView` (`lib/library/describe-on-view.ts`), which after
     paint takes up to six rows on the page whose `blurhash` is null and sends each, one at a time,
     through that same shared path. A row nobody has ever opened stays without; a cron never can.
+  - **Vera names what nobody named** ([ADR-1589](DECISIONS.md), `LIVE-587`). An upload lands with
+    alt null and no tags, so it is findable only by its filename. `describeLibraryImage`
+    (`lib/ai/library-tag.ts`, Haiku vision, `library-tag` cap) proposes up to eight tags, one sentence
+    of alt text and a category from the ones the Space already uses; `fillLibraryAssetDescription`
+    writes each only where it is still empty and marks a written tag set with the `vera` tag. The
+    nightly `tag-library` cron (03:05 UTC, before `embed-library`) sweeps 40 unnamed images a run;
+    Describe with Vera in the Studio drawer fills the empty fields for one image and Save writes them.
 
 - **Search is ranked over two indexes** ([ADR-1121](DECISIONS.md)). A query runs BOTH arms the schema
   already carries and merges them: full text (`search_tsv @@ websearch_to_tsquery`, stemmed and
@@ -275,6 +282,10 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   `swapLibraryAssetRefs` in `lib/library/usage.ts` ([ADR-1560](DECISIONS.md)): a walk over the index's
   rows, one write per stored row, that re-points every `{ assetId }` ref from one asset to another and
   leaves every other value as it was. "Swap everywhere" in the drawer's usage panel is the door.
+  The Space Loom Studio has the same guard on its own delete ([ADR-1586](DECISIONS.md)):
+  `deleteSpaceLoomImage` refuses an image still placed on a page, and on a failed read, and the
+  Studio's one-image editor shows the page count beside Remove. That editor edits title, alt and
+  tags through `normalizeAssetMeta` (`lib/library/asset-meta.ts`), the rule the admin drawer uses.
 - **One picker at every upload point.** The universal control is `components/loom/loom-picker.tsx`
   (16 consumers: page editor, entity blocks, Studio spark, branding, events, QR, email). The old
   "Upload / Pick / Paste URL" tri-mode plan was superseded by the owner directive recorded in the
@@ -288,7 +299,26 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
 - `space_id = <entity>` → that **entity's own** Loom.
 - Effective view for a space = its rows ∪ root's, badged "Frequency" vs "Yours". Using a shared
   asset **references** it; editing **forks** a private copy (`parent_id` → master). No space→space
-  sharing in v1; per-plan storage quota via entitlements.
+  sharing in v1.
+- **Storage budget** ([ADR-1585](DECISIONS.md), [ADR-1602](DECISIONS.md)). A Space's Loom has a cap:
+  `lib/library/quota.ts` `loomQuotaFor` reads it from `LOOM_STORAGE_CAP_BYTES` by plan tier (a
+  larger-library entitlement is deferred to the owner). `loomStorageUsed` sums `bytes` over the Space's
+  file-backed rows; a NULL size is reported as unknown, never as zero. `loomAdmits(spaceId, bytes)` is
+  the one gate: it reads the owning Space, the cap, the sum and the verdict, and refuses past the cap
+  or when anything cannot be read. Every door that stores new bytes into a Space's Loom asks it before
+  storage and returns its refusal: `uploadLoomImage` (the picker and the Space Loom Studio),
+  `uploadToLoom` (the page editor's field, every kind, since the sum weighs audio and video rows too)
+  and `generateEntityCoverAction` (the AI cover, asked once before Vera draws and again with the
+  cover's size). The root Space (and so a personal upload) is uncapped, as are the Loom Studio and
+  email studio doors, which write to it. The Space Loom Studio shows the meter. The importer and
+  event copies catalog an object already stored and carry no size.
+- Built ([ADR-1587](DECISIONS.md), LIVE-569): the shared set is the root **by id** and public, never
+  any Space's public row. The picker's space scope shows its own images first, then the Frequency
+  ones (badged). The Space Loom Studio has a Frequency library shelf with **Make it yours**
+  (`forkSharedLoomImage` → `forkLibraryAsset`), which copies the stored object to the Space's own
+  path and inserts with `parent_id` = the master; a Space edit of a shared image forks first
+  (`forkIfShared`). A fork is a copy of the file, never a second row on the master's path, and it asks
+  `loomAdmits` before the copy is stored, like every other door that stores new bytes.
 
 ## Build sequence (D1–D7)
 
@@ -313,7 +343,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
-   Background removal and upscale (LIVE-589) are shipped; the rest is decomposed into LIVE-586 to LIVE-588 ([ADR-1563](DECISIONS.md)).
+   Background removal and upscale (LIVE-589), describe on view (LIVE-588) and auto-tag (LIVE-587) are shipped; the hybrid rank (LIVE-586) is the one child left ([ADR-1563](DECISIONS.md)).
 
 ## Non-goals (v1)
 

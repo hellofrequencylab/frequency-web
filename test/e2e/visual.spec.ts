@@ -67,6 +67,7 @@ import {
   dropTouchBeforeFullPageCapture,
   headerBandSurfaces,
   masksFor,
+  maskSelectorsFor,
   operatorDenialReason,
   operatorLandedElsewhere,
   operatorSurfaces,
@@ -251,6 +252,7 @@ async function capture(
     throw await explainCaptureFailure(page, error, label, {
       before,
       attachments: test.info().attachments,
+      maskSelectors: maskSelectorsFor(surface),
     })
   }
   // A green capture still records what the window saw while the shutter was open, so the

@@ -177,7 +177,19 @@ describe('diff and bands', () => {
     const r = diffImages(base, changed)
     if (r.dimensionMismatch) throw new Error('unexpected mismatch')
     expect(r.differing).toBe(3 * 40)
-    expect(r.bands).toEqual([{ from: 10, to: 12, rows: 3, pixels: 120 }])
+    expect(r.bands).toEqual([{ from: 10, to: 12, rows: 3, pixels: 120, left: 0, right: 39 }])
+  })
+
+  it('names the columns a band sits in, so a rail and the page beside it read apart (ADR-1598)', () => {
+    // A block painted only across x 5-9 on rows 3-4: the band is those rows, and its columns
+    // are the block's, not the picture's width.
+    const changed = solid(40, 30, [250, 250, 250, 255])
+    for (let y = 3; y <= 4; y++) {
+      for (let x = 5; x <= 9; x++) changed.data.set([20, 20, 20, 255], (y * 40 + x) * 4)
+    }
+    const r = diffImages(base, changed)
+    if (r.dimensionMismatch) throw new Error('unexpected mismatch')
+    expect(r.bands).toEqual([{ from: 3, to: 4, rows: 2, pixels: 10, left: 5, right: 9 }])
   })
 
   it('sorts several bands by weight, heaviest first', () => {
