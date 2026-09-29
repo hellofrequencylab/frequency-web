@@ -39,6 +39,10 @@ vi.mock('next/link', () => ({
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/entry-actions', () => ({
   loadStaffCalendarMonth: async () => [],
 }))
+vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/task-actions', () => ({
+  assignPlanTodo: async () => ({ data: undefined }),
+  listPlanAssignees: async () => ({ data: [] }),
+}))
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   listPlanTodos: async () => [],
   planReadiness: async () => ({ gaps: [], href: '/events/new?plan=plan-1' }),
