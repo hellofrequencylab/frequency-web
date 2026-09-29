@@ -4,8 +4,9 @@
 // The counterpart to the popup LoomPicker: instead of picking ONE image and closing, an operator browses,
 // uploads, searches, filters by tag, and DELETES the Space's own images in place. It reuses the exact
 // space-scoped, re-authorized server actions the picker uses (`loomImages` / `uploadLoomImage`) plus the
-// Studio-only `deleteSpaceLoomImage`, so read/write audience stays owner/admin/editor — a regular member
-// never reaches this surface (the /manage console gates it), they only ever get the popup picker.
+// Studio-only `deleteSpaceLoomImage`. The page and that delete both decide on the Space's `loom` function
+// (canManageSpaceLoom, LIVE-566): the switch and min-role bar the Space set in /manage, code default editor.
+// A regular member never reaches this surface; they only ever get the popup picker.
 //
 // Presentational shell; every read/write re-gates server-side. Large photos are shrunk in the browser first
 // (shared with the picker) so they clear Vercel's serverless body limit. FAIL-SAFE throughout.
