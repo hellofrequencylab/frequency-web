@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-652",
+  "patch": {
+    "status": "done",
+    "closed": "2026-09-29"
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-09-29 (ADR-1640). Premise re-tested first: reportContent validated the target type and that an id was sent, then inserted through the admin client. Between Missing report target and from('reports').insert it read only reports (the duplicate-pending check). WHAT CLOSED IT: reportTargetExists does one keyed read per type (posts for post and comment, dispatches, profiles, events, spotlight_guestbook) before the insert; a missing row or a non-UUID id returns fail('Invalid report target'), the same line as a bad type. Comments are posts with parent_id set. No migration: reports.target_id stays a UUID with no FK. Tests: app/(main)/feed/report-actions.test.ts (source-shape of the missing read, one case per type). PROBE: the existing cmd now passes."
+  }
+}

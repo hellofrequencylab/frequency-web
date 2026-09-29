@@ -81,6 +81,8 @@
     "backlog": "node scripts/check-backlog.mjs --report",
     "packets": "node scripts/agent-packets.mjs",
     "fold": "node scripts/maintenance/fold-ledger-docs.mjs",
+    "ledger:view": "node scripts/ledger.mjs view",
+    "ledger:from-diff": "node scripts/ledger.mjs from-diff",
     "check:backlog": "node scripts/check-backlog.mjs",
     "check:one-list": "node scripts/check-one-list.mjs",
     "check:adr": "node scripts/check-adr.mjs",

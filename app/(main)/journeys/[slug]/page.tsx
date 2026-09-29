@@ -21,7 +21,7 @@ import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { getJourneyOffer, seatLine, isSoldOut, productIdsForJourneyPlan } from '@/lib/journeys/paid'
 import { checkJourneyTier } from '@/lib/journeys/tier-gate'
 import { BuyButton } from '../../marketplace/buy-button'
-import { getProductReviews, getMyProductReview } from '@/lib/commerce/reviews'
+import { getProductReviews, getMyProductReview, hasPurchasedProduct } from '@/lib/commerce/reviews'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { ListingQna } from '@/components/marketplace/listing-qna'
@@ -142,14 +142,15 @@ export default async function JourneyPlanPage({
   const rawOffer = await getJourneyOffer(plan.id)
   const lineageIds = await productIdsForJourneyPlan(plan.id)
   const reviewProductId = rawOffer?.productId ?? lineageIds[0] ?? null
-  const [reviews, myReview, comments, operator] = reviewProductId
+  const [reviews, myReview, comments, operator, purchased] = reviewProductId
     ? await Promise.all([
         getProductReviews(reviewProductId),
         getMyProductReview(reviewProductId, profileId),
         getListingComments('product', reviewProductId),
         isPlatformStaff(),
+        profileId ? hasPurchasedProduct(profileId, reviewProductId) : Promise.resolve(false),
       ])
-    : [null, null, [] as ListingComment[], false]
+    : [null, null, [] as ListingComment[], false, false]
   const offer = rawOffer
     ? {
         productId: rawOffer.productId,
@@ -340,7 +341,7 @@ export default async function JourneyPlanPage({
               reviews={reviews}
               myReview={myReview}
               signedIn={!!profileId}
-              canReview={!!profileId && !!rawOffer && !canManageJourney}
+              canReview={!!profileId && !!rawOffer && !canManageJourney && purchased}
               canModerate={operator}
             />
           )}
