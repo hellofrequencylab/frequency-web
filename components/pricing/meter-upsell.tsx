@@ -9,12 +9,12 @@ import {
 
 // METER UPSELL — THE in-context upsell surface for a metered feature (docs/VALUE-LADDER.md Phase 4).
 //
-// ONE IDIOM, ON PURPOSE. The repo already carries three gating idioms (CrewGate, UpsellTease,
-// TeaserGate) plus four bespoke localStorage nudges, and that proliferation is the problem this
-// component exists to stop being made worse. So this adds no new mechanism: it is a thin server seam
-// over the SAME primitives every other meter surface uses. `nearAllowanceLimit` decides when (80%,
-// the shared goal-gradient threshold), `feature-meters.ts` supplies the allowances, and
-// `lib/pricing/meter-upsell.ts` writes the sentences. Nothing here invents a number or a rule.
+// ONE IDIOM, ON PURPOSE. The repo already carries two gating idioms (CrewGate, UpsellTease; a third,
+// TeaserGate, was retired by LIVE-680) plus four bespoke localStorage nudges, and that proliferation
+// is the problem this component exists to stop being made worse. So this adds no new mechanism: it
+// is a thin server seam over the SAME primitives every other meter surface uses.
+// `nearAllowanceLimit` decides when (80%, the shared goal-gradient threshold), `feature-meters.ts`
+// supplies the allowances, and `lib/pricing/meter-upsell.ts` writes the sentences. Nothing here invents a number or a rule.
 //
 // IT NEVER BLOCKS AND NEVER CHARGES. This is display + navigation only: no server action, no
 // mutation, no checkout. The CTA is a plain Link to the billing / upgrade surface. A member over an
