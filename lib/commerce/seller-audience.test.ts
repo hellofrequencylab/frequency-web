@@ -225,3 +225,75 @@ describe("a PROFILE seller's own audience is the profile plus every Space they o
     expect(reads.some((r) => r.table === 'spaces')).toBe(false)
   })
 })
+
+describe("a Space's own audience includes its TIER members, not only its staff (ADR-1600, LIVE-627)", () => {
+  const OWNER = '11111111-1111-4111-8111-111111111111'
+  const BUYER = '22222222-2222-4222-8222-222222222222'
+  const SPACE = '33333333-3333-4333-8333-333333333333'
+  const ELSEWHERE = '44444444-4444-4444-8444-444444444444'
+
+  // A tiny table store: each read answers the rows whose columns match every eq / in filter, so a
+  // case states the database it needs as rows and the classifier's own filters decide what counts.
+  // A lapsed row only stays out because the classifier asks for `status = 'active'`.
+  function db(tables: Record<string, Array<Record<string, unknown>>>) {
+    return (t: string, f: Filters): Answer => {
+      const hits = (tables[t] ?? []).filter((row) =>
+        Object.entries(f).every(([k, v]) => {
+          const [op, col] = k.split(':') as [string, string]
+          if (op === 'eq') return row[col] === v
+          if (op === 'in') return (v as unknown[]).includes(row[col])
+          return true
+        }),
+      )
+      return { data: hits.map((row, i) => ({ id: `r${i}`, ...row })), error: null }
+    }
+  }
+  const tier = (status: string, space = SPACE) => ({ space_id: space, member_profile_id: BUYER, status })
+
+  beforeEach(() => {
+    reads.length = 0
+    rows = () => ({ data: [], error: null })
+  })
+
+  it("an active tier member is that Space's own audience, so its sale to them is 0%", async () => {
+    rows = db({ space_memberships: [tier('active')] })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'space_tier_member', degraded: false })
+  })
+
+  it.each(['cancelled', 'waitlist'])('a %s tier membership is not a membership, so the sale stays network', async (status) => {
+    rows = db({ space_memberships: [tier(status)] })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+  })
+
+  it("a tier membership in ANOTHER Space does not make the buyer this Space's audience", async () => {
+    rows = db({ space_memberships: [tier('active', ELSEWHERE)] })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+  })
+
+  it('staff on the Space roster still count, under their own signal', async () => {
+    rows = db({ space_members: [{ space_id: SPACE, profile_id: BUYER, status: 'active' }] })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'space_member', degraded: false })
+  })
+
+  it('a failed tier-membership read is a non-answer, so the sale fails safe to 0%', async () => {
+    rows = (t) => (t === 'space_memberships' ? { data: null, error: { message: 'boom' } } : { data: [], error: null })
+    const v = await buyerIsSellersAudience({ sellerSpaceId: SPACE, sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: null, degraded: true })
+  })
+
+  it("a profile seller's owned-Space audience takes in that Space's tier members the same way", async () => {
+    rows = db({ spaces: [{ id: SPACE, owner_profile_id: OWNER }], space_memberships: [tier('active')] })
+    const v = await buyerIsSellersAudience({ sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'owned_space_member', degraded: false })
+  })
+
+  it("a lapsed tier member of a profile seller's owned Space stays network", async () => {
+    rows = db({ spaces: [{ id: SPACE, owner_profile_id: OWNER }], space_memberships: [tier('cancelled')] })
+    const v = await buyerIsSellersAudience({ sellerProfileId: OWNER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+  })
+})

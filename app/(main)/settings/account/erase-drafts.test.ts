@@ -27,7 +27,7 @@ describe('the account section mounts the control in the danger zone', () => {
     const zone = section.indexOf('Danger zone')
     expect(zone).toBeGreaterThan(-1)
     expect(section.indexOf('<EraseDrafts />')).toBeGreaterThan(zone)
-    expect(section.indexOf('<DeleteAccount />')).toBeGreaterThan(zone)
+    expect(section.search(/<DeleteAccount\b/)).toBeGreaterThan(zone)
   })
 })
 
