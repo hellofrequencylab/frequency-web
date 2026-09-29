@@ -194,6 +194,20 @@ export async function loomImages(
   return { assets, tags }
 }
 
+/** The Space Loom Studio's storage meter (LIVE-567): what this Space's Loom stores against its cap,
+ *  in words. Gated like the Studio's other actions (the caller must manage the Space; the personal
+ *  'mine' scope has no meter). A failed read is `read: false`, never a throw, so the meter can never
+ *  block the page. Null when the caller cannot manage the Space. */
+export async function loomQuotaMeter(spaceKey: string): Promise<LoomMeter | null> {
+  const caller = await getCallerProfile()
+  if (!caller) return null
+  const scope = await resolveScope(caller.id, spaceKey)
+  if (!scope || !('spaceId' in scope)) return null
+  const space = await getSpaceById(scope.spaceId).catch(() => null)
+  if (!space) return null
+  return loomMeter(loomQuotaFor(space), await loomStorageUsed(scope.spaceId))
+}
+
 /** Upload an image into a Loom scope (service-role, so it never hits the browser-session RLS trap) and
  *  return its public URL + id. A space scope attaches the asset to that Space (space_id); a personal
  *  upload attaches to the root library but is stamped created_by the caller, so it always surfaces
@@ -290,20 +304,6 @@ export async function uploadLoomImage(
     return { error: 'Could not save the image to your Loom. Try again.' }
   }
   return { url: pub.publicUrl, id }
-}
-
-/** The Space Loom Studio's storage meter (LIVE-567): what this Space's Loom stores against its cap,
- *  in words. Gated like the Studio's other actions (the caller must manage the Space; the personal
- *  'mine' scope has no meter). A failed read is `read: false`, never a throw, so the meter can never
- *  block the page. Null when the caller cannot manage the Space. */
-export async function loomQuotaMeter(spaceKey: string): Promise<LoomMeter | null> {
-  const caller = await getCallerProfile()
-  if (!caller) return null
-  const scope = await resolveScope(caller.id, spaceKey)
-  if (!scope || !('spaceId' in scope)) return null
-  const space = await getSpaceById(scope.spaceId).catch(() => null)
-  if (!space) return null
-  return loomMeter(loomQuotaFor(space), await loomStorageUsed(scope.spaceId))
 }
 
 /** Delete an image from a SPACE's Loom (the Loom Studio's remove control). Gated: the caller must MANAGE
