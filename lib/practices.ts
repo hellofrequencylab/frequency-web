@@ -33,7 +33,7 @@ import { resolveMemberDay, memberDay } from '@/lib/member-day'
 import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
 import { normalizePrimaryPct, type PillarSplit } from '@/lib/practices/attribution'
-import { resolveSplitWrite } from '@/lib/practices/split'
+import { keepPrimary, resolveSplitWrite } from '@/lib/practices/split'
 import { residualFacetCounts, type FacetBaseRow } from '@/lib/practices/residual-facets'
 import { coerceTermWeeks, cleanCue, termWindow, withinActiveCap } from '@/lib/practices/adoption'
 import { BREATH_PATTERNS } from '@/lib/on-air'
@@ -71,7 +71,8 @@ export interface FocusDetail {
 }
 
 /** A practice's per-Focus details, keyed by pillar id. The KEYS are the selected
- *  Focuses (presence = selected); `domain_id` mirrors the FIRST key for back-compat. */
+ *  Focuses (presence = selected). The column is jsonb, which keeps no key order, so the keys say
+ *  nothing about which Focus is primary: that is `domain_id` (LIVE-650, ADR-1618). */
 export type FocusDetails = Record<string, FocusDetail>
 
 export interface Practice {
@@ -124,8 +125,9 @@ export interface Practice {
   reward_note: string | null
   /** Fallback per-log payout tier when reward_zaps is null: 'light' (8⚡) | 'standard' (12⚡) | 'heavy' (15⚡). */
   weight_class: string | null
-  /** The PRIMARY Pillar (domains.id), or null if uncategorized. Mirrors the first
-   *  selected Focus in `focus_details`, kept for back-compat (Pillar filtering + cards). */
+  /** The PRIMARY Pillar (domains.id), or null if uncategorized. The one place the primary is
+   *  read from: it is one of the `focus_details` keys, never "the first" of them (jsonb keeps no
+   *  key order; LIVE-650, ADR-1618). Drives Pillar filtering, cards and the Zap split. */
   domain_id: string | null
   /** Per-Focus instructions + timing, keyed by pillar id. The keys are the selected
    *  Focuses (a practice can belong to multiple). Defaults to {} on legacy rows. */
@@ -1634,7 +1636,8 @@ export interface PracticeEdit {
   domain_id?: string | null
   /** The practice's Focuses (Pillars) with per-Focus instructions + timing, keyed by
    *  pillar id. Presence of a key = that Focus is selected (a practice can have many).
-   *  When written, `domain_id` is set to the first key for back-compat (Pillar filtering). */
+   *  When written, `domain_id` keeps the declared primary (this patch's, else the row's) while it
+   *  is still a key, and only falls back to a key when it left the set (`keepPrimary`, LIVE-650). */
   focus_details?: Record<string, { instructions: string; timing: string }> | null
   subcategory_id?: string | null
   /** The second Pillar this practice's Zaps count toward (ADR-438; LIVE-641). Null clears the
@@ -1650,11 +1653,9 @@ export interface PracticeEdit {
   weight_class?: WeightClass
 }
 
-/** Normalize a focus_details patch into a clean, bounded map (and pick its primary
- *  pillar for domain_id). Trims/caps the free-text so a bad client can't write junk. */
-function cleanFocusDetails(
-  raw: Record<string, { instructions: string; timing: string }>,
-): { focus_details: FocusDetails; primary: string | null } {
+/** Normalize a focus_details patch into a clean, bounded map. Trims/caps the free-text so a bad
+ *  client can't write junk. It picks no primary: key order is not meaning (LIVE-650). */
+function cleanFocusDetails(raw: Record<string, { instructions: string; timing: string }>): FocusDetails {
   const out: FocusDetails = {}
   // Pillar ids are UUIDs. Only accept UUID-shaped keys, which rejects '__proto__' /
   // 'constructor' / 'prototype' (remote property-injection / prototype-pollution guard).
@@ -1666,8 +1667,7 @@ function cleanFocusDetails(
       timing: (detail?.timing ?? '').slice(0, 80),
     }
   }
-  const keys = Object.keys(out)
-  return { focus_details: out, primary: keys[0] ?? null }
+  return out
 }
 
 /** The three payout tiers a practice log can carry. 'standard' is the default. */
@@ -1693,6 +1693,26 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   const loadCurrent = async (): Promise<Practice | null> => {
     if (cachedCurrent === undefined) cachedCurrent = await getPractice(id)
     return cachedCurrent
+  }
+  // The row's Pillar columns, read AT MOST ONCE: the Focus clause needs the stored primary and the
+  // split clause needs all four.
+  type PillarRow = {
+    domain_id: string | null
+    secondary_domain_id: string | null
+    primary_pct: number | null
+    focus_details: FocusDetails | null
+  }
+  let cachedPillars: PillarRow | null | undefined
+  const loadPillars = async (): Promise<PillarRow | null> => {
+    if (cachedPillars === undefined) {
+      const { data } = await db()
+        .from('practices')
+        .select('domain_id, secondary_domain_id, primary_pct, focus_details')
+        .eq('id', id)
+        .maybeSingle()
+      cachedPillars = (data as unknown as PillarRow | null) ?? null
+    }
+    return cachedPillars
   }
   // The title actually being written (already trimmed + capped), kept so the slug re-mint just below
   // slugifies exactly what lands in the column rather than the raw patch.
@@ -1792,13 +1812,17 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40) ?? DEFAULT_PRACTICE_ICON
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
   if (patch.domain_id !== undefined) update.domain_id = patch.domain_id || null
-  // Multi-Focus: write the per-Focus map and keep domain_id as the FIRST selected
-  // Focus (back-compat for Pillar filtering + cards). A focus_details patch wins on
-  // domain_id, since both describe the same Focus set.
+  // Multi-Focus: write the per-Focus map, and keep the primary it is measured against. The primary
+  // is domain_id, never the map's first key: focus_details is jsonb, which keeps no key order, so a
+  // map read back from the row arrives in id order and its first key is whichever Pillar id sorts
+  // first. The declared primary (this patch's domain_id, else the row's) stays while it is still a
+  // Focus; only a primary that left the set is replaced (LIVE-650, ADR-1618).
   if (patch.focus_details !== undefined) {
-    const { focus_details, primary } = cleanFocusDetails(patch.focus_details ?? {})
+    const focus_details = cleanFocusDetails(patch.focus_details ?? {})
     update.focus_details = focus_details as unknown as Json
-    update.domain_id = primary
+    const declared =
+      patch.domain_id !== undefined ? (update.domain_id ?? null) : ((await loadPillars())?.domain_id ?? null)
+    update.domain_id = keepPrimary(declared, focus_details)
   }
   if (patch.subcategory_id !== undefined) update.subcategory_id = patch.subcategory_id || null
   // The Pillar split (ADR-438; LIVE-641, ADR-1604). Resolved whenever this write chooses a split
@@ -1807,17 +1831,7 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   // primary, and a secondary whose Focus was removed would credit a Pillar the practice no longer
   // says it develops. The unchanged halves come from the row as it stands.
   if (patch.secondary_domain_id !== undefined || patch.primary_pct !== undefined || update.domain_id !== undefined) {
-    const { data: splitRow } = await db()
-      .from('practices')
-      .select('domain_id, secondary_domain_id, primary_pct, focus_details')
-      .eq('id', id)
-      .maybeSingle()
-    const current = splitRow as unknown as {
-      domain_id: string | null
-      secondary_domain_id: string | null
-      primary_pct: number | null
-      focus_details: FocusDetails | null
-    } | null
+    const current = await loadPillars()
     const authored = patch.secondary_domain_id !== undefined
     const split = resolveSplitWrite({
       primary: update.domain_id !== undefined ? (update.domain_id as string | null) : (current?.domain_id ?? null),
