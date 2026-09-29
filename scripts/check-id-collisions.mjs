@@ -30,9 +30,10 @@
 // reasoning: this repo's named failure mode is a local green that means nothing (the ripgrep
 // probes, check:og-trace). A network error, a non-2xx page, a PR whose head cannot be read, or
 // an unparseable file is a FAILURE, exit 1, never a skip: a gate that cannot look must not say
-// clean. A TRANSIENT limit (403 / 429 / 5xx) is RETRIED first, under one ~60s budget for the
-// whole run, and only then reported as that failure: see the retry section below, which records
-// the 2026-09-21 20:31 UTC rate limit that blocked #2840.
+// clean. A TRANSIENT limit (403 / 429 / 5xx) is RETRIED first, under one ~5 minute budget for
+// the whole run, and only then reported as that failure: see the retry section below, which
+// records the 2026-09-21 20:31 UTC rate limit that blocked #2840 and the 2026-09-29 overnight
+// limits that outlasted the first 60s budget (HYG-133, ADR-1603).
 //
 // Pure node. No grep, no ripgrep, no shell pipelines (scripts/backlog-contract.test.ts records
 // why: `rg` was on dev boxes and not on the runner, and eight probes inverted at once). The one
@@ -162,14 +163,28 @@ function headers(token, accept) {
 // What does NOT change is the never-skip contract: when every attempt fails, the read still
 // throws, main still exits 1, and the loud message still says the arm could not look — now with
 // the attempt count and the last status, so a rate limit reads as a rate limit.
+//
+// ── THE FIRST BUDGET WAS SHORTER THAN THE WEATHER (HYG-133, ADR-1603) ──────────────────────────
+// On 2026-09-29 the overnight fan-out kept a dozen PRs pushing at once, and the required `checks`
+// job went red on them with `GET pulls (page 1): HTTP 403`: #3011 at 10:29Z (job 109363950749)
+// and #3017 at 11:25Z (job 109382855470), twice. The log read "HTTP 403 (attempt 1 of 3) looks
+// transient; retrying in 60.0s" and then "the 60s retry budget is spent": GitHub asked for at
+// least the whole budget on the FIRST reply, so the gate spent one wait and answered with the
+// second 403. GitHub documents that a secondary limit can need more than a minute to clear, so a
+// 60s budget turns every such limit into a red on every open PR. The budget is now five minutes
+// across six attempts, still capped (a 20-minute job cannot be held hostage), still the whole
+// run, and the retry line now prints what GitHub asked for and its quota headers, so the next
+// red says whether it was a secondary limit or the primary quota running out. The fail-closed
+// contract above is untouched: when the budget is spent the read still throws.
 
 /** Statuses worth a second look. 403 and 429 are GitHub's rate-limit signals; 5xx is the API
  *  having a moment. 401 (bad token) and 404 (not there) are answers and are absent on purpose. */
 export const RETRY_STATUSES = new Set([403, 429, 500, 502, 503, 504])
-/** Attempts per request, first try included: one try plus two retries. */
-export const RETRY_ATTEMPTS = 3
-/** Total wait this gate may add across ALL its requests in one run. */
-export const RETRY_BUDGET_MS = 60_000
+/** Attempts per request, first try included: one try plus five retries (HYG-133; was 3). */
+export const RETRY_ATTEMPTS = 6
+/** Total wait this gate may add across ALL its requests in one run: five minutes, because a
+ *  secondary rate limit can take longer than one minute to clear (HYG-133, ADR-1603; was 60s). */
+export const RETRY_BUDGET_MS = 300_000
 /** First backoff step; doubles per attempt (1s, 2s, …). */
 export const RETRY_BASE_MS = 1_000
 
@@ -180,6 +195,15 @@ function headerValue(res, name) {
   } catch {
     return null
   }
+}
+
+/** The rate-limit headers a retry line should carry, so a red log says which limit it met: a
+ *  `retry-after` with quota left is a secondary limit, `x-ratelimit-remaining: 0` is the primary
+ *  quota. Empty when the response carried none of them. */
+export function limitHeaders(res) {
+  const names = ['retry-after', 'x-ratelimit-remaining', 'x-ratelimit-reset', 'x-ratelimit-resource']
+  const seen = names.map((name) => [name, headerValue(res, name)]).filter(([, v]) => v !== null)
+  return seen.length ? ` [${seen.map(([k, v]) => `${k}: ${v}`).join(', ')}]` : ''
 }
 
 /** `retry-after` in ms: a delta in seconds, or an HTTP date. Null when absent or unreadable. */
@@ -227,8 +251,13 @@ export function retryingFetch(fetchImpl = fetch, options = {}) {
         log(`  HTTP ${res.status} on attempt ${attempt}: the ${budgetMs / 1000}s retry budget is spent, so this is the answer.`)
         return res
       }
-      const delay = Math.max(0, Math.min(retryDelayMs({ res, attempt, nowMs: now(), base }), left))
-      log(`  HTTP ${res.status} (attempt ${attempt} of ${attempts}) looks transient; retrying in ${(delay / 1000).toFixed(1)}s.`)
+      const wanted = retryDelayMs({ res, attempt, nowMs: now(), base })
+      const delay = Math.max(0, Math.min(wanted, left))
+      log(
+        `  HTTP ${res.status} (attempt ${attempt} of ${attempts}) looks transient; retrying in ${(delay / 1000).toFixed(1)}s` +
+          `${wanted > delay ? ` (asked for ${(wanted / 1000).toFixed(1)}s, capped by the ${budgetMs / 1000}s budget)` : ''}.` +
+          limitHeaders(res),
+      )
       await sleep(delay)
       state.waitedMs += delay
       state.retries += 1
@@ -390,14 +419,16 @@ async function compare({ env, repo, base, token, fetchImpl }) {
       `${mine.rows.size} backlog id(s) [${[...mine.rows].join(', ')}].`,
   )
 
+  // A PR that introduces no ids cannot collide, so it does not spend the pulls listing either:
+  // every read this gate skips is one fewer toward the secondary limit (HYG-133, ADR-1603).
+  if (mine.adrs.size === 0 && mine.rows.size === 0) {
+    console.log('  This PR introduces no ids, so it cannot collide with another open PR; the pulls listing was not read.')
+    return
+  }
+
   const pulls = await fetchOpenPulls({ repo, base, token, fetchImpl })
   const me = pulls.find((p) => p.number === myNumber) ?? { number: myNumber, createdAt: null }
   const others = pulls.filter((p) => p.number !== myNumber)
-
-  if (mine.adrs.size === 0 && mine.rows.size === 0) {
-    console.log(`  This PR introduces no ids, so it cannot collide with any of the ${others.length} other open PR(s).`)
-    return
-  }
 
   const compared = []
   for (const pr of others) {
