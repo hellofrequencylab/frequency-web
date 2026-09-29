@@ -52,10 +52,9 @@
 //   --since <date>    the fallback lower bound when the seed is unreachable (default: SEED_DATE)
 // Exits 1 on an id with no row, a stale exception, or a read this gate could not complete in CI.
 
-import { readFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import path from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
+import { ROWS_DIR, fragmentIdsFromPaths, readBacklogView } from './lib/ledger.mjs'
 
 export const BACKLOG = 'docs/BUILD-BACKLOG.json'
 
@@ -201,7 +200,17 @@ export function chooseRef(env = process.env, cwd = process.cwd()) {
 /** The row ids in the one list AS COMMITTED at `ref` (`git show <ref>:<path>`), the rows that
  *  answer for the commits merged there. Throws when the file is not at that ref. */
 export function rowsAtRef({ ref, backlogPath = BACKLOG, cwd = process.cwd() }) {
-  return rowIds(git(['show', `${ref}:${backlogPath}`], cwd))
+  const rows = rowIds(git(['show', `${ref}:${backlogPath}`], cwd))
+  // Plus the rows that ref carries as ledger fragments (HYG-145, ADR-1635): a fragment's id is its
+  // file name, so the tree listing is enough.
+  let listed = ''
+  try {
+    listed = git(['ls-tree', '-r', '--name-only', ref, '--', ROWS_DIR], cwd)
+  } catch {
+    listed = ''
+  }
+  for (const id of fragmentIdsFromPaths(listed.split('\n').filter(Boolean)).rows) rows.add(id)
+  return rows
 }
 
 // ── CLI ───────────────────────────────────────────────────────────────────────────────────────
@@ -229,7 +238,9 @@ export function main(argv = process.argv.slice(2), env = process.env, cwd = proc
 
   let rows
   try {
-    rows = rowIds(readFileSync(path.resolve(cwd, backlogPath), 'utf8'))
+    // The merged view: the base file plus docs/ledger/rows fragments (HYG-145, ADR-1635).
+    const view = readBacklogView({ root: cwd, backlog: backlogPath })
+    rows = new Set((view.doc.entries ?? []).map((e) => e?.id).filter((id) => typeof id === 'string'))
   } catch (err) {
     console.error(red(`✗ check:shipped-ids — could not read ${backlogPath}: ${err.message}`))
     return 1
