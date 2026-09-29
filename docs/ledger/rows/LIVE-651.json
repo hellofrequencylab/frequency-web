@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-651",
+  "patch": {
+    "status": "done",
+    "closed": "2026-09-29"
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-09-29 (ADR-1639). PREMISE RE-TESTED on this tree: joinRoom selected id and visibility only, refused private, and upserted a room_members row through the admin client for everything else, so the probe failed naming SEC-5. SHIPPED: joinRoom reads scope_id with visibility. A public room stays open to anyone signed in. A private room still needs an invite. A circle, hub, nexus, outpost or channel room asks belongsToRoomScope before the upsert (active memberships row, or the Circle host / Hub guide / Nexus mentor; a Channel asks topical_channel_memberships). Missing scope_id, a missing scope row, an inactive membership, or an unknown visibility is a plain refusal. No migration. PROBE: failed on this tree before the change; passes here. Tests: lib/messages/room-scope.test.ts, one case per visibility."
+  }
+}

@@ -6,8 +6,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
+import { belongsToRoomScope, joinRoomRefusal } from '@/lib/messages/room-scope'
 
-type RoomVisibility = 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
+type RoomVisibility = 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost' | 'channel'
 
 // Phase C: search a room's history (semantic when AI is on, else substring). The
 // RPC re-checks the caller can see the room, so an unauthorized roomId returns 0.
@@ -116,13 +117,33 @@ export async function joinRoom(roomId: string) {
   const admin = createAdminClient()
   const { data: room } = await admin
     .from('rooms')
-    .select('id, visibility')
+    .select('id, visibility, scope_id')
     .eq('id', roomId)
     .maybeSingle()
 
   if (!room) throw new Error('Room not found')
-  if (room.visibility === 'private') {
-    throw new Error('This room is private. You need an invite to join.')
+  const visibility = (room as { visibility: string }).visibility
+  const scopeId = (room as { scope_id: string | null }).scope_id
+  if (visibility === 'private') {
+    throw new Error(joinRoomRefusal('private'))
+  }
+  // LIVE-651 / SEC-5: a circle, hub, nexus, outpost or channel room is for people who
+  // already belong to that scope. Public stays open. Anything else fails closed.
+  if (
+    visibility === 'circle' ||
+    visibility === 'hub' ||
+    visibility === 'nexus' ||
+    visibility === 'outpost' ||
+    visibility === 'channel'
+  ) {
+    const inScope = await belongsToRoomScope(admin, {
+      visibility,
+      scopeId,
+      profileId: caller.id,
+    })
+    if (!inScope) throw new Error(joinRoomRefusal(visibility))
+  } else if (visibility !== 'public') {
+    throw new Error(joinRoomRefusal(visibility))
   }
 
   // Insert membership (UNIQUE on PK prevents duplicates)

@@ -23,7 +23,7 @@ Two complete, wired messaging systems already exist.
 
 Additional facts:
 
-- **Rooms** support visibility `public` / `private` / `circle` / `hub` / `nexus` / `channel` plus `scope_id`; threads via `parent_id`; semantic search embeddings; admin roles.
+- **Rooms** support visibility `public` / `private` / `circle` / `hub` / `nexus` / `outpost` / `channel` plus `scope_id`; threads via `parent_id`; semantic search embeddings; admin roles. `joinRoom` lets anyone signed in into a public room, refuses a private room without an invite, and for a scoped room checks the caller belongs to that Circle / Hub / Nexus / Outpost / Channel before writing `room_members` (LIVE-651).
 - **Group DMs** have been migrated onto private Rooms.
 
 ### Gaps today
