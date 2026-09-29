@@ -920,16 +920,20 @@ apply. The page keeps its own lockup; only the stanza moved.
 
 **The count is the probe's, not this paragraph's.** `PROG-P5`'s verify probe (ADR-1498) runs a
 comment-blind census of every `DetailTemplate` render site (wrappers resolved to their callers)
-and prints how many resolve through this module or render `PageHero` in their `hero` slot. A
-surface that hand-rolls its own cover node fails that probe unless it is one of the **two ruled
-compositions** the probe freezes as a shrink-only set: the Space profile hero
-(`app/(main)/spaces/[slug]/(profile)/layout.tsx`, an overlaid lockup in the page theme heading
-face on the fixed cover-height ladder, ADR-526 / ADR-578) and the event poster band behind
-`EventDetailTemplate` (an aspect-shaped band with the height tier as a ceiling, ADR-1248). Both
-are off the grammar by ruling, not neglect; folding either is an owner ruling with screenshots
-(`LIVE-447`). A cover that is a LIVE node rather than a URL — the Starter Circle's drawn scene,
-the Around You map — goes through `PageHero`'s `background` slot inside `hero`, still with the
-resolver supplying height and overlay.
+and prints how many resolve through this module, render `PageHero` in their `hero` slot, or
+render a composition that itself renders `PageHero` (`PosterBand`, read from its source on every
+run). A surface that hand-rolls its own cover node fails that probe. **The ruled set is empty**
+since ADR-1579 (owner ruling 2026-09-29, `LIVE-447`): the two compositions ADR-1498 kept off the
+grammar folded onto it through two `PageHero` slots rather than a redesign. `frame` gives the band
+a FIXED frame from the cover ladder (`lib/layout/cover-height.ts`) in place of the header element's
+min-height ladder: the Space profile hero passes its tier height; the event poster band
+(`components/media/poster-band.tsx`, now a thin wrapper over `PageHero` the way `MarketHero` is)
+passes the poster's own aspect with the tier as a ceiling (ADR-1248) and paints the poster through
+`background`. `lockup` renders a caller-owned lockup at the identity inset, so the Space name keeps
+the page theme heading face (`font-section`, ADR-578) and its follow chip / tagline choreography,
+while `PageHero` owns the cover, the None / Shade / Blend overlay (`heroOverlayForScrim`) and the
+band chrome. A cover that is a LIVE node rather than a URL — the Starter Circle's drawn scene, the
+Around You map, the poster — goes through `PageHero`'s `background` slot inside `hero`.
 
 ### The admin-settings scope kit (9 touch-points)
 

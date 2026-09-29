@@ -174,8 +174,48 @@ describe('the treatment: one fit, every width — full bleed, cropped, aimed', (
     expect(markup).not.toContain('blur-2xl')
     expect(markup).not.toContain('background-image')
     expect(markup.match(/<img/g) ?? []).toHaveLength(1)
-    // And exactly one child element inside the frame: the poster.
-    expect(markup.match(/<div/g) ?? []).toHaveLength(1)
+    // And the poster is the only IMAGE in the frame. (This used to pin "exactly one <div>"; since
+    // ADR-1579 the frame is PageHero's, whose own layers are divs — the background layer, the
+    // content layer, the light strip — and none of them is a second decode of the poster.)
+    expect(markup).not.toContain('data-hero-cover')
+  })
+
+  // ── ON THE PAGEHERO GRAMMAR (ADR-1579) ────────────────────────────────────────────────────────
+  // Owner ruling 2026-09-29: "both onto PageHero". The band is now a thin wrapper over the canonical
+  // PageHero: it decides the SHAPE and hands it over as `frame`, and paints the poster through the
+  // `background` slot. PROG-P5's census reads a <PosterBand> as on the grammar for exactly as long
+  // as this file renders <PageHero>, so that is pinned here too, on comment-free source.
+  it('🔴 composes the canonical PageHero rather than painting a band of its own', () => {
+    const code = band.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    expect(code).toContain('<PageHero')
+    expect(code).toContain('frame={{')
+    expect(code).toContain('background={')
+    // The root element is PageHero's section, carrying the band's grammar chrome …
+    expect(markup.startsWith('<section')).toBe(true)
+    expect(markup).toContain('border border-border')
+    expect(markup).toContain('light-strip')
+    // … and the frame's own shape on that same element, so the size the tier decides is the
+    // section's, not a box nested inside a min-height band.
+    const rootClass = markup.match(/class="([^"]*)"/)?.[1] ?? ''
+    expect(rootClass).toContain(posterHeightClass('standard'))
+    expect(rootClass, 'a fixed frame replaces the min-height ladder, it does not sit under it').not.toMatch(/min-h-/)
+    expect(rootClass, 'the frame owns the radius; PageHero must not add a second rounded-* beside it').not.toContain('rounded-3xl')
+  })
+
+  it('the shaped path puts the aspect ratio on the SECTION, with the tier as its ceiling', () => {
+    const shapedMarkup = renderToStaticMarkup(
+      <PosterBand
+        src="https://example.test/p.png"
+        heightClass={posterHeightClass('standard')}
+        maxHeightClass={posterMaxHeightClass('standard')}
+        aspect={1400 / 600}
+      />,
+    )
+    const root = shapedMarkup.slice(0, shapedMarkup.indexOf('>') + 1)
+    expect(root.startsWith('<section')).toBe(true)
+    expect(root).toContain('aspect-ratio:2.3333333333333335')
+    expect(root).toContain(posterMaxHeightClass('standard').split(' ')[0])
+    expect(root).not.toContain(posterHeightClass('standard').split(' ')[0] + ' ')
   })
 })
 

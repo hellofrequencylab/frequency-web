@@ -14,6 +14,14 @@ import { HeroAdaptiveText } from './hero-adaptive-text'
 //                header for Journeys and personal profiles (they used to fall back to a plain band).
 //   • minimal  — cover + scrim only (no overlaid copy), for surfaces that genuinely want a quiet band.
 //
+// Two slots reach past the variants (ADR-1579, owner ruling 2026-09-29: "both onto PageHero"). `frame`
+// gives the band a FIXED frame from the cover ladder (lib/layout/cover-height.ts) instead of the header
+// element's min-height ladder: a tier height for the Space profile hero, the poster's own aspect with the
+// tier as a ceiling for the event poster band (components/media/poster-band.tsx, ADR-1248). `lockup` puts
+// a caller-owned lockup where the identity lockup would go, so the Space name keeps the page theme heading
+// face (`font-section`, ADR-578) instead of this component's uppercase display face. Both were the two
+// compositions PROG-P5's census ruled off the grammar (ADR-1498); with these two slots there are none.
+//
 // FIRST PAINT, stated plainly because it is the part most easily got wrong (ADR-894):
 // the SERVER renders every zone UNMEASURED — no `data-media-tone`, no `data-media-plate` — and
 // the CSS answers that with the per-glyph halo and NO plate, i.e. the known-good pre-ADR-830
@@ -74,6 +82,24 @@ export interface PageHeroProps {
    *  drags the name's tone toward a chip in the opposite corner. Rendered for every variant that
    *  paints a cover; `minimal` included, since a cover with no lockup can still be labelled. */
   corner?: React.ReactNode
+  /** A caller-owned overlaid lockup, anchored bottom-left in the identity lockup's place and at its
+   *  inset (ADR-1579). For a surface whose lockup the three variants cannot spell: the Space profile
+   *  hero renders its brand chip, its follow chip and its name in the page theme heading face here.
+   *  The node OWNS the page's `<h1>`; `title` is then not rendered (pass the same name, for the
+   *  props to read true). The scrim is the identity one (the top of the photo stays crisp), and
+   *  the overlay's legibility class (`on-image-text` / `on-fade-text`) wraps the node exactly as it
+   *  wraps the identity lockup. Wins over `variant`. */
+  lockup?: React.ReactNode
+  /** A FIXED frame for the band, in place of the header element's min-height ladder (ADR-1579).
+   *  `className` replaces the section's own `rounded-3xl` and carries the size from
+   *  lib/layout/cover-height.ts: a tier height (`h-72 sm:h-[22rem]`, the Space profile hero) or a
+   *  tier CEILING (`max-h-52 sm:max-h-[22rem]`) beside `style.aspectRatio`, which is how the poster
+   *  band takes the artwork's own shape up to its tier (ADR-1248). It is one class string rather than
+   *  a class appended to the section because this repo's `cn` has no tailwind-merge: two `rounded-*`
+   *  or two `w-*` utilities on one element are settled by emission order, not by the caller (the
+   *  collision components/media/poster-band.tsx records). With a frame the content layer fills the
+   *  section (`h-full`) and `size` is not read. */
+  frame?: { className: string; style?: React.CSSProperties }
   /** The layout variant (see the file header). Defaults to the shipped centered `overlay`. */
   variant?: PageHeroVariant
   /** Does this hero own the page's `<h1>`? Default TRUE, which is right everywhere the hero IS the
@@ -198,6 +224,8 @@ export function PageHero({
   search,
   actions,
   leading,
+  lockup,
+  frame,
   variant = 'overlay',
   heading = true,
   size,
@@ -217,9 +245,15 @@ export function PageHero({
   const resolvedSize: PageHeroSize = size ?? (variant === 'identity' ? 'standard' : variant === 'minimal' ? 'short' : 'large')
   // Resolve the overlay: explicit overlayStyle wins; else map the legacy `overlay` boolean.
   const oStyle: HeroOverlayStyle = overlayStyle ?? (overlay === false ? 'none' : 'shadow')
+  // A caller-owned lockup sits where the identity lockup sits, so it takes the identity scrim: the
+  // top of the photo stays crisp and the ink gathers under the copy.
+  const bottomLockup = variant === 'identity' || !!lockup
+  // The content layer's height: the header element's min-height rung, or — under a fixed `frame` —
+  // the whole section, whose height the frame already decided.
+  const bandH = frame ? 'h-full' : HEADER_MIN_H[resolvedSize]
   const scrimBg =
     oStyle === 'shadow'
-      ? shadowScrim(overlayColor || 'var(--color-ink)', variant === 'identity')
+      ? shadowScrim(overlayColor || 'var(--color-ink)', bottomLockup)
       : oStyle === 'fade'
         ? fadeScrim(overlayColor || 'var(--color-canvas)')
         : null
@@ -251,7 +285,10 @@ export function PageHero({
   const subtitleBelow = variant === 'identity' && subtitle
   return (
     <>
-    <section className={`relative overflow-hidden rounded-3xl border border-border${adaptiveText ? ' hero-adaptive-text' : ''}`}>
+    <section
+      className={`relative overflow-hidden ${frame ? frame.className : 'rounded-3xl'} border border-border${adaptiveText ? ' hero-adaptive-text' : ''}`}
+      style={frame?.style}
+    >
       {/* Cover: a LIVE media node, a real photo, or the neutral gradient placeholder when
           null/absent. The three are one layer, so the scrim, the glow and the lockup below sit on
           whichever of them rendered and none of them has to know which it was. */}
@@ -293,7 +330,14 @@ export function PageHero({
         <div className="absolute left-5 top-5 z-20 sm:left-8 sm:top-8">{corner}</div>
       )}
 
-      {variant === 'minimal' ? (
+      {lockup ? (
+        // A caller-owned lockup (ADR-1579): the identity geometry — bottom-anchored, the identity
+        // inset on both breakpoints, the overlay's legibility class — around a node this component
+        // does not read. The node owns the h1; nothing from `title` renders here.
+        <div className={`relative z-10 flex ${bandH} flex-col justify-end px-5 py-5 sm:px-8 sm:py-8${legible}`}>
+          {lockup}
+        </div>
+      ) : variant === 'minimal' ? (
         // Cover + scrim only. Normally the page still needs its heading, so an sr-only h1 carries it
         // (a11y + SEO) — PageHero IS the page heading on those surfaces.
         //
@@ -302,7 +346,7 @@ export function PageHero({
         // the sr-only h1 there ships TWO h1s with the same text, which is why DetailTemplate could
         // not use PageHero for its standard cover and every operator cover control (height, focal
         // point, overlay) was unreachable on Detail pages.
-        <div className={`relative z-10 ${HEADER_MIN_H[resolvedSize]}`}>
+        <div className={`relative z-10 ${bandH}`}>
           {heading ? <h1 className="sr-only">{title}</h1> : null}
         </div>
       ) : variant === 'identity' ? (
@@ -311,7 +355,7 @@ export function PageHero({
         // usable width and gives the band ~17px of height back, which is what lets the cluster
         // wrap inside the 15rem min-height instead of growing the cover. The `sm:` pair below is
         // untouched, so from 640px up this element's padding is byte-identical to before.
-        <div className={`relative z-10 flex ${HEADER_MIN_H[resolvedSize]} flex-col justify-end px-5 py-5 sm:px-8 sm:py-8${legible}`}>
+        <div className={`relative z-10 flex ${bandH} flex-col justify-end px-5 py-5 sm:px-8 sm:py-8${legible}`}>
           {/* Space-page parity: the leading avatar/icon + identity anchored bottom-LEFT, the actions
               bottom-RIGHT, both over the cover. Stats/meta live BELOW in the DetailTemplate band. */}
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
@@ -362,7 +406,7 @@ export function PageHero({
         </div>
       ) : (
         // Overlay (default): centered content, fixed min-height so every hero is the same size.
-        <div className={`relative z-10 mx-auto flex ${HEADER_MIN_H[resolvedSize]} max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:py-12${legible}`}>
+        <div className={`relative z-10 mx-auto flex ${bandH} max-w-3xl flex-col items-center justify-center px-6 py-8 text-center sm:py-12${legible}`}>
           {/* This branch is NOT reachable only by the directory heroes. A surface that passes
               `variant={header.layout}` hands the choice to the operator, and an operator flipping
               /admin/elements to `overlay` lands the adaptive profile header right here. So the
