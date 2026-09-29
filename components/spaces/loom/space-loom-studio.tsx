@@ -95,7 +95,7 @@ export function SpaceLoomStudio({
           }
           if ('error' in res) { setError(res.error); continue }
           setAssets((prev) => [
-            { id: res.id, title: file.name, url: res.url, alt: null, kind: 'image', generated: false, tags: [], category: null },
+            { id: res.id, title: file.name, url: res.url, alt: null, kind: 'image', generated: false, tags: [], category: null, isProtected: false },
             ...prev.filter((a) => a.id !== res.id),
           ])
         }

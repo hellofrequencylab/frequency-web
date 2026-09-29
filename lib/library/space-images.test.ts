@@ -11,6 +11,7 @@ const SPACE_A = 'aaaaaaaa-0000-4000-a000-00000000000a'
 
 type Call = {
   table: string
+  selects: string[]
   ors: string[]
   eqs: [string, unknown][]
   textSearches: [string, string][]
@@ -23,10 +24,13 @@ const calls: Call[] = []
 let maybeSingleRow: Record<string, unknown> | null = { id: 'new-asset' }
 
 function builder(table: string) {
-  const call: Call = { table, ors: [], eqs: [], textSearches: [] }
+  const call: Call = { table, selects: [], ors: [], eqs: [], textSearches: [] }
   calls.push(call)
   const api: Record<string, unknown> = {
-    select: () => api,
+    select: (cols?: string) => {
+      if (typeof cols === 'string') call.selects.push(cols)
+      return api
+    },
     eq: (col: string, val: unknown) => {
       call.eqs.push([col, val])
       return api
@@ -68,6 +72,7 @@ import {
   listLoomScopeImages,
   findLibraryAssetBySha256,
   searchLibraryAssets,
+  notExpiredOr,
 } from './store'
 
 const PROFILE_A = 'bbbbbbbb-0000-4000-b000-00000000000b'
@@ -270,5 +275,54 @@ describe('text search runs BOTH indexed arms', () => {
   it('ranks the picker too', async () => {
     await listLoomScopeImages({ spaceId: SPACE_A }, { q: 'lavender' })
     expect(calls.some((c) => c.textSearches.some(([col]) => col === 'search_tsv'))).toBe(true)
+  })
+})
+
+// ── LIVE-576 (ADR-1577): a licence that ran out is offered by no picker, and stays in the Studio. ──
+// The three protection hooks (is_protected, download_policy, expires_at) were in the schema from
+// 20260920000000 and read by nothing. These lock the consequence, not the columns: every reader
+// that OFFERS an asset for placement carries the expiry predicate; the Studio's own browse does not
+// (its owner must still see the row to renew or archive it); and the pick shape carries the flag.
+describe('LIVE-576: expired licences leave every pick reader and stay in the Studio', () => {
+  const carriesExpiry = (o: string) => o.startsWith('expires_at.is.null,expires_at.gt.')
+  const assetCalls = () => calls.filter((c) => c.table === 'library_assets')
+
+  it('notExpiredOr is the one spelling: null OR a future timestamptz', () => {
+    const now = new Date('2026-09-29T04:30:00.000Z')
+    expect(notExpiredOr(now)).toBe('expires_at.is.null,expires_at.gt.2026-09-29T04:30:00.000Z')
+  })
+
+  it('listLoomScopeImages (the picker) excludes expired rows in a SPACE scope', async () => {
+    await listLoomScopeImages({ spaceId: SPACE_A })
+    expect(assetCalls().every((c) => c.ors.some(carriesExpiry))).toBe(true)
+  })
+
+  it('listLoomScopeImages excludes expired rows in the OWNER scope too, on both search arms', async () => {
+    await listLoomScopeImages({ createdBy: PROFILE_A, spaceIds: [SPACE_A] }, { q: 'lavender' })
+    const arms = assetCalls()
+    expect(arms.length).toBeGreaterThanOrEqual(2)
+    expect(arms.every((c) => c.ors.some(carriesExpiry))).toBe(true)
+  })
+
+  it('the picker reads is_protected (a proof can stand in for a protected master, LIVE-580) and expires_at', async () => {
+    await listLoomScopeImages({ spaceId: SPACE_A })
+    expect(assetCalls().some((c) => c.selects.some((cols) => /\bis_protected\b/.test(cols) && /\bexpires_at\b/.test(cols)))).toBe(true)
+  })
+
+  it('searchSpaceLibraryImages (events, email studio, Airwaves) excludes expired rows', async () => {
+    await searchSpaceLibraryImages(SPACE_A, 'logo')
+    const search = assetCalls()[0]
+    expect(search.ors.some(carriesExpiry)).toBe(true)
+    // And the scope OR it always carried is still there, ANDed with the expiry, not replaced by it.
+    expect(search.ors.some((o) => o.includes(`space_id.eq.${SPACE_A}`) && o.includes('visibility.eq.public'))).toBe(true)
+  })
+
+  it('the Studio browse (searchLibraryAssets) does NOT hide an expired row from its owner', async () => {
+    await searchLibraryAssets({ spaceId: SPACE_A })
+    expect(assetCalls().every((c) => !c.ors.some(carriesExpiry))).toBe(true)
+    // But it reads the three hooks, so the grid can badge the row instead.
+    expect(
+      assetCalls().some((c) => c.selects.some((cols) => /\bis_protected\b/.test(cols) && /\bdownload_policy\b/.test(cols) && /\bexpires_at\b/.test(cols))),
+    ).toBe(true)
   })
 })
