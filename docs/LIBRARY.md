@@ -164,8 +164,13 @@ under the table before building against either.
 >   writers.
 
 Typed contract: `lib/library/types.ts`; rendition + crop-frame presets (targets for the on-the-fly
-resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-role only** for now
-(like `public.pages`); per-space client RLS lands with the tenancy phase.
+resolver, not a table schema): `lib/library/renditions.ts`. Access: `library_assets`,
+`library_collections`, `library_collection_items` and `library_versions` carry per-Space client RLS
+(`20270345009500`, [ADR-1594](DECISIONS.md), [LIVE-570](BUILD-BACKLOG.json)): the Space team reads its
+own rows, any signed-in caller reads `visibility = 'public'` assets, writes go through
+`private.can_write_space_content`, and a version is insert-only. `library_styles` stays
+**service-role only**. The app still reads and writes on the admin client until
+[LIVE-571](BUILD-BACKLOG.json) moves the Space Loom onto the session client.
 
 ## Best-practice architecture
 
