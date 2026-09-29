@@ -140,7 +140,9 @@ export async function GET(request: Request) {
             // CONVERT-ON-SIGN-IN, the seat claim's CRM twin and the same seam for the same reason:
             // auth.uid() is the caller and auth.users.email_confirmed_at was just stamped. It joins
             // every `signup_leads` row held by this proven address to the member it turned out to
-            // be — including the one the signed-out event RSVP form captured beside the seat.
+            // be — including the one the signed-out event RSVP form captured beside the seat. On
+            // the call that stamps, the SQL also spends the lead's name onto a profile that is still
+            // the signup trigger's mint (LIVE-450), so the guest keeps the name they typed.
             //
             // SESSION client, like the claim above: the function resolves the profile from
             // auth.uid(), so under the service-role client it would match nothing and convert
