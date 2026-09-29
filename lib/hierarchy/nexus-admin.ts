@@ -51,36 +51,6 @@ export async function updateNexusSettings(id: string, slug: string, fd: FormData
   revalidatePath('/admin/nexuses')
 }
 
-// Field-level patch for the inline tuning layer (ADR-138). Allowlisted; re-checks
-// nexus.manage, same as the full settings form.
-const INLINE_FIELDS = ['name'] as const
-type InlineField = (typeof INLINE_FIELDS)[number]
-
-export async function updateNexusField(id: string, slug: string, field: InlineField, value: string) {
-  if (!INLINE_FIELDS.includes(field)) throw new Error('Invalid field')
-
-  const caps = await getNexusCapabilities(id)
-  if (!caps.has('nexus.manage')) throw new Error('Unauthorized')
-
-  const trimmed = value.trim()
-  if (!trimmed) throw new Error('Name is required')
-
-  const admin = createAdminClient()
-  const { error } = await admin.from('nexuses').update({ name: trimmed }).eq('id', id)
-  if (error) {
-    console.error('[updateNexusField] nexuses name update failed', {
-      code: error.code,
-      message: error.message,
-      nexusId: id,
-      field,
-    })
-    throw new Error('That Nexus name did not save. Try again in a moment.')
-  }
-
-  revalidatePath(`/spaces/${slug}`)
-  revalidatePath('/admin/nexuses')
-}
-
 // ─── People (the 'people' spine module) ────────────────────────────────────────
 // The hubs inside this nexus, the members behind each, and the mentor who leads them. Read
 // re-resolves nexus.manage server-side (the admin client bypasses RLS, so THIS gate is the

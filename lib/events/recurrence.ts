@@ -23,7 +23,6 @@ import {
   repeatUntilDate,
   nextRepeatOccurrence,
   parseRepeat,
-  repeatChipLabel,
   repeatFor,
   type RepeatRule,
 } from './repeat-rule'
@@ -59,12 +58,6 @@ interface RecurrenceRow {
 export function recurrenceLineFor(row: RecurrenceRow): string | null {
   const rule = repeatFor(row)
   return rule ? describeRepeat(rule, row.starts_at) : null
-}
-
-/** The SHORT cadence label for a card or a chip ("Every 2 weeks", "Thursdays", "Third Thursday").
- *  Null for a one-time event. */
-export function recurrenceChipFor(row: RecurrenceRow): string | null {
-  return repeatChipLabel(repeatFor(row), row.starts_at)
 }
 
 /** The anchor fields the read helpers need. */

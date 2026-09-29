@@ -94,11 +94,6 @@ export function loadStripeBrowser(): Promise<Stripe> {
   return pending
 }
 
-/** Test seam: drops the memo so a following test loads fresh. Never called in app code. */
-export function __resetStripeBrowserForTests(): void {
-  pending = null
-}
-
 /**
  * Start loading Stripe.js NOW, without waiting for anyone to need it (LIVE-363).
  *

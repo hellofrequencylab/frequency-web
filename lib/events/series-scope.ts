@@ -22,8 +22,6 @@
 /** What a host chose to apply their edit to. */
 export type SeriesScope = 'this' | 'future'
 
-export const SERIES_SCOPES: readonly SeriesScope[] = ['this', 'future']
-
 /** The default, and it is deliberately the NARROW one. A host who does not read the control gets
  *  the change they can see, on the date they are looking at; the wide answer is the one that
  *  silently rewrites dates off screen, so it is the one that has to be chosen. */

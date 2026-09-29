@@ -192,10 +192,6 @@ export const CALENDAR_LAYERS: readonly CalendarLayer[] = [
   { key: 'todos', label: 'To-dos', chipClass: CALENDAR_PRESENTATIONS.todos.chipClass, private: true },
 ] as const
 
-export function calendarLayer(key: CalendarLayerKey | null | undefined): CalendarLayer {
-  return CALENDAR_LAYERS.find((l) => l.key === key) ?? CALENDAR_LAYERS[0]
-}
-
 /** A kind of private entry. Mirrors the `kind` check on public.space_calendar_entries. */
 export type EntryKind = 'pencil' | 'unavailable' | 'private'
 

@@ -290,11 +290,3 @@ export async function resolveEventBroadcastReach(
     guestEmails: unionSegmentGuestEmails(segments, keys),
   }
 }
-
-/** The member half of `resolveEventBroadcastReach`, kept for callers that key on a profile. */
-export async function resolveEventBroadcastAudience(
-  eventId: string,
-  selectedKeys: readonly string[],
-): Promise<string[]> {
-  return (await resolveEventBroadcastReach(eventId, selectedKeys)).profileIds
-}

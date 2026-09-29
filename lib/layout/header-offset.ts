@@ -25,9 +25,6 @@
 /** The token every header offset must be measured from. */
 export const APP_HEADER_H = 'var(--app-header-h)'
 
-/** Files that legitimately DEFINE the header's geometry rather than consume it. */
-export const HEADER_GEOMETRY_OWNERS = ['app/globals.css'] as const
-
 /** A hand-written header offset: 3.5rem combined with the top inset, or a viewport-height calc
  *  that subtracts a bare 3.5rem/4.5rem instead of the token. Both are the drift LIVE-492 fixed. */
 const HAND_WRITTEN_HEADER_OFFSET =
