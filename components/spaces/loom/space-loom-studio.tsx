@@ -16,6 +16,8 @@ import { loomImages, uploadLoomImage, deleteSpaceLoomImage } from '@/lib/loom/pi
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { appendImageDescriptor, describeImage } from '@/lib/library/image-describe'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
+import { describeGeneratedAsset } from '@/lib/library/describe-generated'
+import { useDescribeOnView } from '@/lib/library/describe-on-view'
 import type { LoomPickAsset } from '@/lib/library/store'
 import { Input } from '@/components/ui/field'
 
@@ -38,6 +40,12 @@ export function SpaceLoomStudio({
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [loading, startLoad] = useTransition()
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Describe on view (LIVE-588, ADR-1590): the importer seeds land in a Space's Loom with no browser
+  // in the flow, so no blurhash and no palette. The operator looking at them here is that browser:
+  // the first few such rows are decoded from the image already on screen and posted through the one
+  // generated-asset path, whose write only ever fills a hole. `blurhash` absent = not read, skipped.
+  useDescribeOnView(assets, describeGeneratedAsset)
 
   const refresh = useCallback(
     (opts: { q: string; tag: string | null }) => {
