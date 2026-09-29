@@ -16,6 +16,13 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 export const MARKETPLACE_ENTRY_COOKIE = 'fq_mkt'
 /** Long enough for a browse-then-buy session. Not first-touch: a store visit does not clear it. */
 export const MARKETPLACE_ENTRY_MAX_AGE = 60 * 60 * 24 * 7
+/**
+ * How stale `iat` may get before a repeat view re-signs the stamp only to slide its window
+ * (LIVE-711, ADR-1633). Every write is a Set-Cookie, and a Set-Cookie on a Server Action response
+ * makes the client drop its whole router cache (LIVE-649). So a view that changes nothing is written
+ * at most once an hour, and the window still ends seven days after the last view, to the hour.
+ */
+export const MARKETPLACE_ENTRY_REFRESH_MS = 60 * 60 * 1000
 const MAX_PRODUCTS = 20
 const MAX_SLUGS = 10
 const CLOCK_SKEW_MS = 60 * 1000
@@ -112,11 +119,30 @@ export function verifyStamp(value: string | null | undefined, now = Date.now()):
   }
 }
 
-/** Apply a newly viewed discovery surface onto the existing cookie value. */
+function sameList(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i])
+}
+
+/**
+ * Apply a newly viewed discovery surface onto the existing cookie value. Returns the value to
+ * write, or null when the proxy should write nothing: not a discovery path, or (LIVE-711) the
+ * browser already holds a valid stamp whose products and Journeys, order included, this view
+ * would not change and whose `iat` is under an hour old. Order is compared because it is the
+ * recency order the caps evict by, so a skipped write never changes what a later view keeps.
+ */
 export function stampMarketplaceView(pathname: string, existingCookie: string | undefined, now = Date.now()): string | null {
   const view = viewFromPathname(pathname)
   if (!view) return null
-  const merged = mergeStamp(verifyStamp(existingCookie, now), view, now)
+  const existing = verifyStamp(existingCookie, now)
+  const merged = mergeStamp(existing, view, now)
+  if (
+    existing &&
+    sameList(existing.p, merged.p) &&
+    sameList(existing.j, merged.j) &&
+    now - existing.iat < MARKETPLACE_ENTRY_REFRESH_MS
+  ) {
+    return null
+  }
   return signStamp(merged)
 }
 
