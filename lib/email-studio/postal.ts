@@ -21,5 +21,6 @@ export const PLATFORM_POSTAL_LINE = `${ORG_LEGAL_NAME}, ${POSTAL_ADDRESS}`
  *  correct here: the email renders in mail clients, outside the DAWN shell, where CSS tokens do not resolve.
  *  The constant carries no HTML-special characters, so it is printed as is. */
 export function postalFooterHtml(): string {
+  // token-ok: email HTML renders in mail clients, where CSS custom properties do not resolve
   return `<p style="font-size:12px;color:#999;line-height:1.6;margin:8px 0 0;">${PLATFORM_POSTAL_LINE}</p>`
 }
