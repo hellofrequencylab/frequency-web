@@ -14,7 +14,7 @@ import { ReachReceipt } from '@/components/spaces/reach-receipt'
 //
 // It exists because of what shipped beside it. The Space directory used to order by `.order('name')`
 // and now orders by an earned standing score (LIVE-262/263). A ranking nobody can see reads as
-// favouritism, so the six signals that decide the order are printed here in the same words, with
+// favouritism, so the seven signals that decide the order are printed here in the same words, with
 // the one next move beside each, plus the promise in writing: placement is earned and cannot be
 // bought. Nothing on this page reads a plan, a tier, or a payment, because nothing in the score does.
 //
@@ -55,7 +55,7 @@ export default async function SpaceReachPage({ params }: { params: Promise<{ slu
   const entry = index >= 0 ? listing[index] : null
   const placement = index >= 0 ? { position: index + 1, total: listing.length } : null
 
-  // Prefer the nightly rollup's detail (all six signals). Before it has run, fall back to the live
+  // Prefer the nightly rollup's detail (all seven signals). Before it has run, fall back to the live
   // directory read's detail (the four it can measure), so the page is useful on day one. With
   // neither, the levers list renders its own honest empty state.
   const detail = stored?.detail ?? entry?.standingDetail ?? null

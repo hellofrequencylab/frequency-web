@@ -21,7 +21,9 @@ import {
 //   2. Saturation + the harmonic mean behave like their originals in lib/resonance/score.ts.
 //   3. RENORMALISATION means "not measured", never "measured as zero" — the distinction that stops
 //      the score rewarding emptiness.
-//   4. The attendance gap is declared, not weighted: there is no attendance signal at all.
+//   4. Attendance is the SEVENTH signal (LIVE-456), fed by the host mark and nothing else: it sits
+//      in the DOING half under gatherings held, and a reader that cannot measure it scores exactly
+//      as before it existed.
 
 const SOURCE = readFileSync(path.join(import.meta.dirname, 'standing.ts'), 'utf8')
 
@@ -62,17 +64,40 @@ describe('🔴 the cardinal invariant: exposure is earned, never sold', () => {
     expect(/^\s*import\s/m.test(SOURCE)).toBe(false)
   })
 
-  it('declares exactly six signals, and attendance is not one of them', () => {
-    expect([...STANDING_SIGNALS]).toEqual(['gatherings', 'upcoming', 'rooms', 'audience', 'commons', 'care'])
-    // 🔴 LIVE-263: event attendance has NO independent record on this platform (no `checked_in`
-    // column; it exists only as an engagement-ledger row written by the path that pays Zaps). It is
-    // therefore not a signal at all, rather than a signal quietly weighted at zero. If someone adds
-    // an attendance column and a signal to match, this line is where they come to say so.
-    expect(STANDING_SIGNALS).not.toContain('attendance')
-    expect(/attendance/i.test(code)).toBe(false)
+  it('declares exactly seven signals, and attendance is the seventh (LIVE-456)', () => {
+    expect([...STANDING_SIGNALS]).toEqual([
+      'gatherings',
+      'attendance',
+      'upcoming',
+      'rooms',
+      'audience',
+      'commons',
+      'care',
+    ])
+    // 🔴 LIVE-263 left attendance OUT because it had no independent record (only the engagement-
+    // ledger row written by the path that pays Zaps). PROG-GD4 (ADR-1332) gave it one, the host
+    // mark `attended_at` on the two seat tables, and LIVE-456 declared it. The feeder is pinned in
+    // standing-rollup.test.ts: it reads the host mark and never the ledger.
+    expect(STANDING_SIGNALS).toContain('attendance')
+    expect(DOING_SIGNALS).toContain('attendance')
+    expect(BELONGING_SIGNALS).not.toContain('attendance')
   })
 
-  it('splits the six into the two halves with no signal in both or neither', () => {
+  it('attendance sits under gatherings held, and the six weights that predate it did not move', () => {
+    // A host attests attendance and could in principle mark a room nobody was in; the gathering
+    // itself is the harder thing to fake, so it keeps the lead of the DOING half.
+    expect(STANDING_WEIGHTS.attendance).toBeLessThan(STANDING_WEIGHTS.gatherings)
+    expect(STANDING_WEIGHTS.attendance).toBeGreaterThan(STANDING_WEIGHTS.upcoming)
+    // The renormalisation promise, kept literally: the weights LIVE-263 shipped are still these.
+    expect(STANDING_WEIGHTS.gatherings).toBe(0.45)
+    expect(STANDING_WEIGHTS.upcoming).toBe(0.3)
+    expect(STANDING_WEIGHTS.rooms).toBe(0.25)
+    expect(STANDING_WEIGHTS.commons).toBe(0.4)
+    expect(STANDING_WEIGHTS.audience).toBe(0.35)
+    expect(STANDING_WEIGHTS.care).toBe(0.25)
+  })
+
+  it('splits the seven into the two halves with no signal in both or neither', () => {
     const halves = [...DOING_SIGNALS, ...BELONGING_SIGNALS]
     expect(halves.slice().sort()).toEqual([...STANDING_SIGNALS].sort())
     expect(new Set(halves).size).toBe(STANDING_SIGNALS.length)
@@ -146,11 +171,43 @@ describe('standingScore: renormalisation is about the READER, not the Space', ()
   })
 
   it('never punishes a Space for a signal NOBODY has yet: adding an unmeasured signal changes nothing', () => {
-    // This is the whole reason attendance can be left out of v1 without re-tuning a weight. Adding
+    // This is the whole reason attendance could join without re-tuning a weight. Adding
     // `gatherings: null` (the shape of an unreadable signal) leaves the score untouched.
     const a = standingScore({ upcoming: 2, audience: 10, commons: 8 })
     const b = standingScore({ upcoming: 2, audience: 10, commons: 8, gatherings: null, rooms: null })
     expect(b.score).toBeCloseTo(a.score, 12)
+  })
+
+  it('a reader that cannot measure attendance (the live directory read) scores as it did before the seventh signal', () => {
+    // The directory's live read fetches no seat table, so attendance is absent for it, not zero.
+    // Its numbers must be the numbers LIVE-263 shipped, or the seventh signal re-ranked the
+    // directory on the day it was declared, before a single mark existed.
+    const before = standingScore({ gatherings: 3, upcoming: 2, rooms: 1, audience: 5, commons: 10, care: 0.5 })
+    const withUnmeasured = standingScore({
+      gatherings: 3,
+      attendance: null,
+      upcoming: 2,
+      rooms: 1,
+      audience: 5,
+      commons: 10,
+      care: 0.5,
+    })
+    expect(withUnmeasured.score).toBeCloseTo(before.score, 12)
+    expect(withUnmeasured.present).not.toContain('attendance')
+    expect(withUnmeasured.doing.present).toEqual(['gatherings', 'upcoming', 'rooms'])
+  })
+
+  it('🔴 a Space whose gatherings were attended outranks one that gathered for nobody, at the same everything else', () => {
+    // The row's own words: "a Space that fills a room is scored the same as one that gathers for
+    // nobody" was the defect. With the seventh signal measured, it is not.
+    const full = standingScore({ gatherings: 4, attendance: 10, upcoming: 1, rooms: 1, audience: 5, commons: 5, care: 0.5 })
+    const empty = standingScore({ gatherings: 4, attendance: 0, upcoming: 1, rooms: 1, audience: 5, commons: 5, care: 0.5 })
+    expect(full.score).toBeGreaterThan(empty.score)
+    expect(full.signals.attendance).toBeGreaterThan(0)
+    expect(empty.signals.attendance).toBe(0)
+    // Measured as zero is still MEASURED: the signal is present on both, so both are scored on the
+    // same set and the comparison is fair.
+    expect(empty.present).toContain('attendance')
   })
 })
 
