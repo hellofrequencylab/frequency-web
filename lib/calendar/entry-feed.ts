@@ -26,6 +26,40 @@ export interface FeedEntryRow {
   status: string
   recurrence_rule?: string | null
   exception_dates?: readonly string[] | null
+  /** The Plan the entry belongs to, when it does. The private feed keys a co-host's shared dates
+   *  on it (LIVE-546); a read that did not project it renders the row as the feed Space's own. */
+  plan_id?: string | null
+}
+
+// SHARED PLANS ON A GUEST'S PHONES (PROG-CAL7 Together, LIVE-546). A co-host Space's private feed
+// carries the dates and to-dos of the Plans shared with it, SHARED PLANS ONLY (the row's own
+// default answers PROG-CAL7's open question: never the host's whole private layer), each summary
+// prefixed with the host Space's name so a subscriber can tell whose date it is. The route resolves
+// the ACCEPTED shares whose guest is the feed Space and reads the host rows keyed by those plan ids;
+// this fold prefixes and merges them, own rows first, and drops a shared row whose host it cannot
+// name rather than serve a date nobody can place.
+
+/** The summary a shared row reads as on the subscriber's phone. */
+export function sharedFeedSummary(hostName: string, title: string): string {
+  return `${hostName}: ${title}`
+}
+
+/** Own rows first, then the shared rows with their host's name in front, never doubled. */
+export function withSharedPlanRows<T extends { id: string; title: string }>(
+  own: readonly T[],
+  shared: readonly T[],
+  hostNameFor: (row: T) => string | null | undefined,
+): T[] {
+  const seen = new Set(own.map((r) => r.id))
+  const out: T[] = [...own]
+  for (const row of shared) {
+    if (seen.has(row.id)) continue
+    const host = hostNameFor(row)
+    if (!host) continue
+    seen.add(row.id)
+    out.push({ ...row, title: sharedFeedSummary(host, row.title) })
+  }
+  return out
 }
 
 /** The wall clock of a skipped day: the master's stored time of day on that date, as UTC parts,

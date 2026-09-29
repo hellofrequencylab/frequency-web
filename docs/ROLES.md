@@ -86,7 +86,7 @@ on top of normal Community membership.
 
 | Partner | Who | Unlocks | Money |
 |---|---|---|---|
-| 📣 **Collaborator** | influencers, authors, teachers, speakers **with an audience** | bring-your-audience tools; their Practices/Journeys in a **featured directory**; **influencer program** (kickbacks tied to their activity + gamification) | affiliate kickbacks |
+| 📣 **Collaborator** | influencers, authors, teachers, speakers **with an audience** | bring-your-audience tools; their Practices/Journeys in a **featured directory**; **influencer program** (rewards tied to their activity + gamification) | rewards only; no affiliate money, by owner ruling (ADR-1569) |
 | 🧘 **Practitioner** | healers, breathwork, yogis **running their own client network** | **host paywalled Programs** (Practices + Journeys) + **gamify clients' progress**; private Channel + private Circles, under the Frequency brand | Stripe Connect (verified) |
 | 🏪 **Business** | local businesses | business **listing** + network integration; **loyalty rewards**; **CRM**, **web builder**, deep business tools | payments + loyalty |
 | 🏢 **Organization** | nonprofits / orgs | a full suite tied to whoever's tagged with the org: their own **branded Space website**, CRM, gamification, promotion | tenant billing |

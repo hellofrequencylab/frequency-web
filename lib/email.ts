@@ -1318,6 +1318,65 @@ Unsubscribe from match emails: ${unsubscribeUrl}
   }
 }
 
+// ── A Plan share, offered or answered (PROG-CAL7 Together, LIVE-545) ──────────
+// Built, not sent: the notification router transports it on the `lifecycle` category once the
+// approver's own switch and the suppression list have been read; lib/calendar/plan-notify.ts is
+// the one caller. Voice: plain, who and what, and where to answer or look.
+
+export interface PlanShareEmailParams {
+  to: string
+  recipientName: string
+  recipientProfileId: string
+  /** `requested`: the other Space offered a Plan. `accepted` / `declined`: they answered ours. */
+  moment: 'requested' | 'accepted' | 'declined'
+  /** The Space on the other side, by name. */
+  otherSpaceName: string
+  planTitle: string
+  /** Site-relative path of the recipient's own calendar settings (made absolute here). */
+  calendarPath: string
+}
+
+export function buildPlanShareEmail(params: PlanShareEmailParams): EmailPayload {
+  const { to, recipientName, recipientProfileId, moment, otherSpaceName, planTitle, calendarPath } = params
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: BASE_URL, profileId: recipientProfileId, category: 'lifecycle' })
+  const url = `${BASE_URL}${calendarPath}`
+  const subject =
+    moment === 'requested'
+      ? `${otherSpaceName} wants to work "${planTitle}" with you`
+      : moment === 'accepted'
+        ? `${otherSpaceName} said yes to "${planTitle}"`
+        : `${otherSpaceName} passed on "${planTitle}"`
+  const lead =
+    moment === 'requested'
+      ? `${otherSpaceName} offered to work the Plan "${planTitle}" together. Say yes or no from your calendar settings; nothing lands on your board until you do.`
+      : moment === 'accepted'
+        ? `${otherSpaceName} is working "${planTitle}" with you now. Both teams see the Plan, its to-dos and the thread under it.`
+        : `${otherSpaceName} passed on "${planTitle}" this time. You can offer it again later.`
+  const cta = moment === 'requested' ? 'Answer the offer' : 'Open the calendar'
+  const name = escapeHtml(recipientName)
+  return {
+    to,
+    subject,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html: emailShell(`
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+        Working together
+      </p>
+      <h1 style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p style="${pStyle}">Hi ${name}, ${escapeHtml(lead)}</p>
+      <a href="${url}" style="${btnStyle}">${cta} &rarr;</a>
+    `),
+    text: `${subject}
+
+Hi ${recipientName}, ${lead}
+
+${cta}: ${url}
+
+Unsubscribe from these emails: ${unsubscribeUrl}
+`,
+  }
+}
+
 export async function sendBookingCancelledEmail(params: {
   to: string
   recipientName: string

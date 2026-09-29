@@ -58,6 +58,9 @@ export interface CrmTask {
   updatedAt: string
   planId: string | null
   dueOffsetDays: number | null
+  /** Set on a to-do of a Plan another Space shared with the viewer's Space (LIVE-544): that host
+   *  Space's name, so the inbox can say whose Plan it is. Absent on this Space's own rows. */
+  sharedFrom?: string | null
 }
 
 /** The snake_case row shape written to `crm_tasks` (what the insert sends). */
