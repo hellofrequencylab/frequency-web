@@ -50105,7 +50105,7 @@ Until now `DEF-MOBILE` held everything an app would need, parked to 2027-01-05, 
 **Decision.**
 
 1. **The split.** `DEF-MOBILE` is the native Expo/React Native build only: the project and its native modules (camera/QR, NFC, geofence registration, the push client), device attestation on the earning paths (FOUNDATION-HARDENING M1-3), the sync-engine pilot (M1-5), and store submission (M1-6). It stays parked to 2027-01-05. Everything the app plugs into is active now on WM:
-   - `LIVE-715`: the versioned contract (`/api/v1`, `lib/contract` view models, a cookie-or-bearer caller helper, `docs/APP-CONTRACT.md`). This goes first; the rest depend on it.
+   - `LIVE-715`: the versioned contract (`/api/v1`, shared app-contract view models in the module LIVE-715 adds, a cookie-or-bearer caller helper, `docs/APP-CONTRACT.md`). This goes first; the rest depend on it.
    - `LIVE-716`: the core-loop endpoints (feed, Circles, events and RSVP, the practice log, messages, notifications, profile).
    - `LIVE-717`: the capability model sent to a client.
    - `LIVE-718`: native sign-in. The four post-sign-in claims move out of the web callback into one shared step. It also covers the redirect scheme and the token-refresh rules.
