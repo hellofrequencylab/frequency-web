@@ -86,7 +86,7 @@ export interface PageHeroProps {
    *  inset (ADR-1579). For a surface whose lockup the three variants cannot spell: the Space profile
    *  hero renders its brand chip, its follow chip and its name in the page theme heading face here.
    *  The node OWNS the page's `<h1>`; `title` is then not rendered (pass the same name, for the
-   *  props to read true). The scrim is the identity one (the top of the photo stays crisp), and
+   *  props to read true). The scrim is the identity one (lighter at the top, densest under the copy), and
    *  the overlay's legibility class (`on-image-text` / `on-fade-text`) wraps the node exactly as it
    *  wraps the identity lockup. Wins over `variant`. */
   lockup?: React.ReactNode
@@ -245,8 +245,8 @@ export function PageHero({
   const resolvedSize: PageHeroSize = size ?? (variant === 'identity' ? 'standard' : variant === 'minimal' ? 'short' : 'large')
   // Resolve the overlay: explicit overlayStyle wins; else map the legacy `overlay` boolean.
   const oStyle: HeroOverlayStyle = overlayStyle ?? (overlay === false ? 'none' : 'shadow')
-  // A caller-owned lockup sits where the identity lockup sits, so it takes the identity scrim: the
-  // top of the photo stays crisp and the ink gathers under the copy.
+  // A caller-owned lockup sits where the identity lockup sits, so it takes the identity scrim: lighter
+  // at the top of the photo, densest under the copy.
   const bottomLockup = variant === 'identity' || !!lockup
   // The content layer's height: the header element's min-height rung, or — under a fixed `frame` —
   // the whole section, whose height the frame already decided.

@@ -190,13 +190,16 @@ describe('the treatment: one fit, every width — full bleed, cropped, aimed', (
     expect(code).toContain('<PageHero')
     expect(code).toContain('frame={{')
     expect(code).toContain('background={')
-    // The root element is PageHero's section, carrying the band's grammar chrome …
-    expect(markup.startsWith('<section')).toBe(true)
-    expect(markup).toContain('border border-border')
-    expect(markup).toContain('light-strip')
+    // The outermost element is PageHero's section (next/image hoists a preload <link> ahead of it,
+    // which paints nothing), carrying the band's grammar chrome …
+    const section = markup.slice(markup.indexOf('<section'))
+    expect(markup.indexOf('<section')).toBeGreaterThan(-1)
+    expect(markup.slice(0, markup.indexOf('<section'))).not.toContain('<div')
+    expect(section).toContain('border border-border')
+    expect(section).toContain('light-strip')
     // … and the frame's own shape on that same element, so the size the tier decides is the
     // section's, not a box nested inside a min-height band.
-    const rootClass = markup.match(/class="([^"]*)"/)?.[1] ?? ''
+    const rootClass = section.match(/class="([^"]*)"/)?.[1] ?? ''
     expect(rootClass).toContain(posterHeightClass('standard'))
     expect(rootClass, 'a fixed frame replaces the min-height ladder, it does not sit under it').not.toMatch(/min-h-/)
     expect(rootClass, 'the frame owns the radius; PageHero must not add a second rounded-* beside it').not.toContain('rounded-3xl')
@@ -211,11 +214,15 @@ describe('the treatment: one fit, every width — full bleed, cropped, aimed', (
         aspect={1400 / 600}
       />,
     )
-    const root = shapedMarkup.slice(0, shapedMarkup.indexOf('>') + 1)
-    expect(root.startsWith('<section')).toBe(true)
+    const at = shapedMarkup.indexOf('<section')
+    expect(at).toBeGreaterThan(-1)
+    const root = shapedMarkup.slice(at, shapedMarkup.indexOf('>', at) + 1)
     expect(root).toContain('aspect-ratio:2.3333333333333335')
     expect(root).toContain(posterMaxHeightClass('standard').split(' ')[0])
-    expect(root).not.toContain(posterHeightClass('standard').split(' ')[0] + ' ')
+    // The fixed tier HEIGHT is not also there: the ceiling replaces it (compared as whole tokens,
+    // since `max-h-52` contains the substring `h-52`).
+    const tokens = (root.match(/class="([^"]*)"/)?.[1] ?? '').split(/\s+/)
+    expect(tokens).not.toContain(posterHeightClass('standard').split(' ')[0])
   })
 })
 

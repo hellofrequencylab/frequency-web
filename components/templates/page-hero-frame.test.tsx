@@ -79,7 +79,7 @@ describe('lockup — a caller-owned lockup at the identity inset', () => {
     expect(markup).not.toContain('sr-only')
   })
 
-  it('takes the identity scrim under shade, so the top of the photo stays crisp', () => {
+  it('takes the identity scrim under shade, lighter at the top than the centered hero', () => {
     const shaded = renderToStaticMarkup(
       <PageHero title="Seed Studio" coverImage={null} overlayStyle="shadow" lockup={<h1>Seed Studio</h1>} />,
     )
