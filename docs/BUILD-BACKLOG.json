@@ -2350,6 +2350,25 @@
       }
     },
     {
+      "id": "LIVE-648",
+      "title": "A blank practice icon writes null into the NOT NULL icon column, so the builder's \"Use default\" fails the whole practice save",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "XS",
+      "closed": "2026-09-29",
+      "source": {
+        "file": "lib/practices.ts",
+        "ref": "LIVE-647 finding (ADR-1610 §4): updatePractice writes STR(patch.icon) as string; filed 2026-09-29"
+      },
+      "detail": "FILED 2026-09-29 from the LIVE-647 finding (ADR-1610 §4). `practices.icon` is `text NOT NULL DEFAULT 'sparkles'` (migration 20260605000000). updatePractice wrote `STR(patch.icon, 40)`, which is null for a blank or whitespace icon, so Postgres rejects the update and the whole save returns no row. The practice builder's \"Use default\" button saves `{ icon: '', header_image: null }`, so the member sees \"Could not save\": the icon does not reset and the header image does not clear. tsc could not see it because LIVE-647 kept the old behaviour behind an `as string` cast on that write. RE-TESTED 2026-09-29 on main 8d2011089 from the repo (no DB access overnight; how often it fired in production is not measured overnight).\n\nCLOSED 2026-09-29 (ADR-1612). A blank icon now writes the column default: `STR(patch.icon, 40) ?? DEFAULT_PRACTICE_ICON` ('sparkles'). Fallback, not skip, because the UI already means the default: the builder labels the action \"Use default\" and draws Sparkles for a blank icon, the Studio manifest reads a blank icon as 'sparkles', and createPractice sends no icon so a new practice lands on the same default. The `as string` cast on that write is removed, so TablesUpdate<'practices'> now checks it and a reintroduced null fails tsc. The forkPractice icon cast stays (it copies a row the column already guarantees non-null). New lib/practices-blank-icon.test.ts (4 tests; 2 fail on main) drives the real updatePractice against a mocked NOT NULL column. No migration.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst norm=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\" \").replace(/^\\s*\\/\\/.*$/gm,\" \")\nlet src;try{src=norm(fs.readFileSync(\"lib/practices.ts\",\"utf8\"))}catch(e){process.exit(79)}\nconst i=src.indexOf(\"export async function updatePractice(\");if(i<0)process.exit(79)\nconst j=src.indexOf(\"\\nexport \",i+10);const up=src.slice(i,j<0?undefined:j)\nconst m=up.match(/if\\s*\\(patch\\.icon\\s*!==\\s*undefined\\)\\s*update\\.icon\\s*=\\s*([^\\n]+)/)\nif(!m)fail(\"updatePractice no longer writes an icon clause the probe can read (LIVE-648)\")\nconst expr=m[1].trim()\nif(/\\bas\\s+(string|never|any|unknown)\\b/.test(expr))fail(\"updatePractice casts the icon write (\"+expr+\"), so tsc cannot see the null the NOT NULL column rejects (LIVE-648)\")\nconst s=src.match(/const STR\\s*=\\s*\\([^)]*\\)[^=]*=>\\s*(\\{[\\s\\S]*?\\n\\})/)\nif(!s)process.exit(79)\nconst consts=[...src.matchAll(/^const ([A-Z_][A-Z0-9_]*)\\s*=\\s*(\\x27[^\\x27\\n]*\\x27)\\s*$/gm)].map((c)=>\"const \"+c[1]+\"=\"+c[2]+\";\").join(\"\")\nconst run=(icon)=>Function(\"patch\",consts+\"const STR=(v,max)=>\"+s[1]+\";return (\"+expr.replace(/\\bas\\s+\\w+/g,\"\")+\")\")({icon})\nfor(const v of [\"\",\" \",null]){const out=run(v);if(out==null||out===\"\")fail(\"a blank icon (\"+JSON.stringify(v)+\") makes updatePractice write \"+JSON.stringify(out)+\" to practices.icon, which is NOT NULL, so the builder Use default button fails the whole save (LIVE-648)\")}\nif(run(\" leaf \")!==\"leaf\")fail(\"a chosen icon is no longer written as chosen (LIVE-648)\")\nconsole.log(\"ok\")'",
+        "note": "Reads the icon clause out of updatePractice, refuses a type cast on it, and evaluates it (with STR and the module string constants) for a blank, a whitespace and a null icon: each must write a non-empty icon. Failed on main (the as string cast); mutation-fired with the cast removed (writes null) and with a ?? '' fallback (writes empty). lib/practices-blank-icon.test.ts drives the real updatePractice against a mocked NOT NULL column."
+      }
+    },
+    {
       "id": "PROG-SPOT",
       "title": "Spotlight: Guestbook and stickers/decals",
       "status": "done",
