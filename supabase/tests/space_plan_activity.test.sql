@@ -85,6 +85,7 @@ select throws_ok(
      values ('00000000-0000-4000-e410-000000000001', '00000000-0000-4000-b410-000000000001',
              '00000000-0000-4000-c410-00000000000a', 'rewrote_history', 'x') $$,
   '23514',
+  null,
   'a kind outside the closed set is refused by the check');
 
 -- ── The accepted guest ───────────────────────────────────────────────────────────────────────────
