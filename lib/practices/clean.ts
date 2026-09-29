@@ -10,17 +10,15 @@
 //                              logged / stale), each row scored by computeQualityScore.
 //   2.4 promoteTagToCanonical / mergeTags / listAllTags — tag governance.
 //
-// Server-only. The practices/* tables + the Phase-2 RPC are ahead of the generated Database
-// types, so this module reads/writes through the untyped admin handle (ADR-246), the same
-// convention as lib/practices.ts. Mutations are caller-trusted: the curator gate lives at the
+// Server-only, through the typed admin handle, the same convention as lib/practices.ts
+// (LIVE-647). Mutations are caller-trusted: the curator gate lives at the
 // action layer (app/(main)/admin/content/actions.ts) — see the // authz-delegated note below.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getGlobalTrustScores } from '@/lib/trust/store'
 import { computeQualityScore, isStale, type QualityScore } from './quality'
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 
@@ -142,11 +140,11 @@ export async function listReviewQueue(opts: { limit?: number } = {}): Promise<Re
 /** The single nearest existing practice to a seed via the vector RPC, when it clears the
  *  near-identical threshold; null when the seed has no embedding or nothing is close enough. */
 async function nearestDuplicate(
-  client: SupabaseClient,
+  client: ReturnType<typeof db>,
   practiceId: string,
 ): Promise<{ id: string; title: string; similarity: number } | null> {
   const { data: seedRow } = await client.from('practices').select('embedding').eq('id', practiceId).maybeSingle()
-  const embedding = (seedRow as { embedding: string | number[] | null } | null)?.embedding
+  const embedding = seedRow?.embedding
   if (!embedding) return null
   const { data, error } = await client.rpc('match_practices', {
     query_embedding: embedding,
@@ -176,7 +174,7 @@ export interface MergeResult {
  * old slug as a redirect; and archives + unpublishes + stamps merged_into on the source.
  * Re-point, never delete — history lives on the canonical.
  *
- * The RPC is service_role-only and reached through the untyped admin handle (ADR-246). It
+ * The RPC is service_role-only, so it is reached through the admin handle. It
  * throws on a bad merge (self-merge, missing id, already-merged), which surfaces as the
  * error message the action returns.
  *
