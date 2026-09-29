@@ -232,8 +232,9 @@ broken. The important ones:
   webhook seating branch — do not enable as-is).
 - 🔴 **On hold:** `/sites/[slug]` external Space websites (renderer exists in git
   history) · Side Quests (documented, zero code) · `quest_chains` tables (legacy,
-  no readers) · outpost stewardship (no-op) · flyer PDF downloads · the nested
-  `resonance/` venue-world sub-app (separate scaffold project, not routed).
+  no readers) · outpost stewardship (no-op) · flyer PDF downloads. The nested
+  `resonance/` venue-world sub-app moved to `hellofrequencylab/development`
+  (`apps/resonance`) on 2026-09-29 (ADR-1580).
 - **Retired-but-live routes:** `/vault` → `/crew/store`, `/people` → `/network`,
   funnels + automations pages reachable by deep link only (menus retired).
 

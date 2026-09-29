@@ -28,8 +28,6 @@ export default defineConfig({
     include: ['**/*.test.ts', '**/*.test.tsx'],
     // `**/node_modules/**` (not just top-level) and `.claude/**` keep nested
     // installs and agent worktrees (.claude/worktrees/*) out of the run.
-    // `resonance/**` is the standalone embeddable project: it has its own vitest
-    // (and `@/` alias) and must never be collected by Frequency's run.
-    exclude: ['**/node_modules/**', '.next/**', '.claude/**', 'resonance/**'],
+    exclude: ['**/node_modules/**', '.next/**', '.claude/**'],
   },
 })

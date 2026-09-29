@@ -85,6 +85,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'practice-edit': 4,          // apply plain-language edits to a built Practice (Opus; low-volume, fail-safe)
   'practice-publish-screen': 1, // advisory pre-publish quality read on one practice (Haiku; operator-triggered, one-shot)
   'practice-curate': 1,        // Vera drafts an empty card hook and tags on one library practice, curator-accepted (Haiku; operator-triggered, LIVE-644)
+  'practice-remix': 1,         // three "Remix it" directions when a member opens Remix on a practice (Haiku; one short call per open, LIVE-645)
   // ── Events (poster scan is Sonnet vision — the costliest of this group) ───────────────────────
   'event-poster-scan': 4,      // vision OCR of an event poster, plus the text assist (Sonnet vision)
   'event-spark': 3,            // draft an event from a few wizard answers or a pasted flyer (Sonnet; structured, on-demand)
