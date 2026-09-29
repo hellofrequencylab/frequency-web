@@ -51,11 +51,15 @@ export async function replaceLibraryAssetFile(
   // Load the current asset so the replacement stays scoped to its Space and we know its current kind.
   const { data: assetRow } = await handle
     .from('library_assets')
-    .select('id, space_id, kind')
+    .select('id, space_id, kind, is_protected')
     .eq('id', id)
     .maybeSingle()
-  const asset = assetRow as { id: string; space_id: string; kind: string } | null
+  const asset = assetRow as { id: string; space_id: string; kind: string; is_protected: boolean } | null
   if (!asset) return { error: 'That asset no longer exists.' }
+  // A protected asset's file lives in the private bucket (LIVE-577, ADR-1595). The upload below writes
+  // to the PUBLIC bucket the classifier names, so a replace here would quietly put a new original on
+  // the open web under a Protected row. Refuse instead; the operator releases it first.
+  if (asset.is_protected) return { error: 'This asset is protected. Switch Protected off to replace its file.' }
 
   // Snapshot the CURRENT file into a version BEFORE the swap, so the replace is reversible.
   const rawNote = formData.get('note')
