@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
+import { resolveSpacePayoutPrompt } from '@/lib/billing/payout-prompt-resolve'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
@@ -14,6 +15,12 @@ import { ServiceSpark } from './service-spark'
 // previewer is READ ONLY on the console, so they are denied here rather than shown a create form they
 // cannot submit. `createSpaceProductAction` re-checks all three server-side regardless (server actions
 // are addressable on their own), so this render gate is convenience, not the boundary.
+//
+// GETTING PAID IS OFFERED HERE (LIVE-538, ADR-1539): this is where a bookable service gets its price,
+// its price model and its deposit, so it is the Space's first sell attempt for bookings. The page
+// resolves the one Connect prompt for the SPACE payee (the owner is who Stripe pays, ADR-819, so an
+// editor reads who has to act instead of being handed a button for the wrong account) and the Spark
+// renders its card on the first screen. Null once the owner is ready (ADR-1158).
 
 export const metadata = { title: 'New service' }
 
@@ -32,5 +39,18 @@ export default async function NewSpaceServicePage({ params }: { params: Promise<
   const caps = await getSpaceCapabilities(space, viewerProfileId)
   if (!spaceFunctionAccess(space, 'shop', caps.role)) notFound()
 
-  return <ServiceSpark slug={slug} spaceId={space.id} spaceName={space.brandName ?? space.name} />
+  const payoutPrompt = await resolveSpacePayoutPrompt({
+    space,
+    viewerProfileId,
+    channels: ['bookings'],
+  })
+
+  return (
+    <ServiceSpark
+      slug={slug}
+      spaceId={space.id}
+      spaceName={space.brandName ?? space.name}
+      payoutPrompt={payoutPrompt}
+    />
+  )
 }
