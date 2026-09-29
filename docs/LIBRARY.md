@@ -300,15 +300,18 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
 - Effective view for a space = its rows ∪ root's, badged "Frequency" vs "Yours". Using a shared
   asset **references** it; editing **forks** a private copy (`parent_id` → master). No space→space
   sharing in v1.
-- **Storage budget** ([ADR-1585](DECISIONS.md)). A Space's Loom has a cap: `lib/library/quota.ts`
-  `loomQuotaFor` reads it from `LOOM_STORAGE_CAP_BYTES` by plan tier (a larger-library entitlement is
-  deferred to the owner). `loomStorageUsed` sums `bytes` over the Space's
-  file-backed rows; a NULL size is reported as unknown, never as zero. `uploadLoomImage` refuses past
-  the cap, and refuses when the sum cannot be read. The root Space (and so a personal upload) is
-  uncapped, as are the Loom Studio and email studio doors, which write to it. The Space Loom Studio
-  shows the meter. Two other doors write into a Space and do not read the budget yet: the page
-  editor's field upload (`lib/page-editor/loom-field-actions.ts`) and the AI cover
-  (`lib/loom/cover-actions.ts`); the importer and event copies store no size.
+- **Storage budget** ([ADR-1585](DECISIONS.md), [ADR-1602](DECISIONS.md)). A Space's Loom has a cap:
+  `lib/library/quota.ts` `loomQuotaFor` reads it from `LOOM_STORAGE_CAP_BYTES` by plan tier (a
+  larger-library entitlement is deferred to the owner). `loomStorageUsed` sums `bytes` over the Space's
+  file-backed rows; a NULL size is reported as unknown, never as zero. `loomAdmits(spaceId, bytes)` is
+  the one gate: it reads the owning Space, the cap, the sum and the verdict, and refuses past the cap
+  or when anything cannot be read. Every door that stores new bytes into a Space's Loom asks it before
+  storage and returns its refusal: `uploadLoomImage` (the picker and the Space Loom Studio),
+  `uploadToLoom` (the page editor's field, every kind, since the sum weighs audio and video rows too)
+  and `generateEntityCoverAction` (the AI cover, asked once before Vera draws and again with the
+  cover's size). The root Space (and so a personal upload) is uncapped, as are the Loom Studio and
+  email studio doors, which write to it. The Space Loom Studio shows the meter. The importer and
+  event copies catalog an object already stored and carry no size.
 
 ## Build sequence (D1–D7)
 
