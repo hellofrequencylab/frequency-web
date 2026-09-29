@@ -5,6 +5,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database, Json } from '@/lib/database.types'
+import { getSlo, meetsSlo } from '@/lib/observability/slos'
 
 export interface QueueJob {
   id: string
@@ -537,6 +538,104 @@ export async function countDeadLettered(kind?: string): Promise<number> {
     return 0
   }
   return count ?? 0
+}
+
+// ── Queue health: the three numbers that reach a pager (LIVE-547, ADR-1571) ───────────────────
+//
+// countPending and countDeadLettered above had one reader, an admin widget a person has to open,
+// and the queue-lag SLO in lib/observability/slos.ts (10 min, onBreach: page) was computed nowhere:
+// the only created_at read in this file was the retry ceiling. The 359 dead-letters of the 2026-07-17
+// campaign were found by a person, hours later. This reader is asked after every drain by
+// app/api/cron/process-queue, which logs the numbers and, on a breach, reports on the two paths that
+// already page (Sentry, tagged by job, and the heartbeat /fail ping through the wrapper).
+
+/** The SLO this reader is measured against. The target lives in slos.ts, never here. */
+export const QUEUE_LAG_SLO_ID = 'freshness.queue-lag'
+
+export interface QueueHealth {
+  /** Jobs still waiting to be drained, due or not. */
+  pending: number
+  /** Jobs in the terminal dead-letter state; each one needs an operator to requeue or discard it. */
+  deadLettered: number
+  /** Minutes the oldest DUE pending job has waited past its run_after: how far the worker is behind.
+   *  0 when nothing is due. This, not created_at age, is what the lag SLO is compared against: a job
+   *  parked by backoff or by a closed quota is waiting by design, and paging on it every two minutes
+   *  for the hours a daily quota takes to reset is the alert fatigue LIVE-091 exists to avoid. */
+  lagMin: number
+  /** Minutes since that same due job was first enqueued, its backoff history included. null when
+   *  nothing is due. Reported beside the lag so the log says how old the backlog really is. */
+  oldestDueAgeMin: number | null
+  /** false when any of the three reads failed. An unmeasured queue is not a healthy one. */
+  measured: boolean
+}
+
+const minutesBetween = (fromIso: string | null | undefined, now: Date): number | null => {
+  const ms = fromIso ? Date.parse(fromIso) : NaN
+  if (!Number.isFinite(ms)) return null
+  return Math.max(0, Math.round((now.getTime() - ms) / 60_000))
+}
+
+/**
+ * Read the queue's health: dead-letter count, pending count, and the lag of the oldest due job.
+ * Three reads on the service role, in parallel. Never throws: a failed read logs and leaves
+ * `measured: false`, so the drain that asked can still return what it processed.
+ */
+export async function queueHealth(now: Date = new Date()): Promise<QueueHealth> {
+  const health: QueueHealth = { pending: 0, deadLettered: 0, lagMin: 0, oldestDueAgeMin: null, measured: true }
+  try {
+    const client = db()
+    const [pendingRes, deadRes, oldestRes] = await Promise.all([
+      client.from('notification_queue').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      client
+        .from('notification_queue')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', DEAD_LETTER_STATUS),
+      // The oldest job the drain OWES: pending and already due. Ordered by run_after so the lag is the
+      // time since the worker should have picked it up, not the time since it was enqueued.
+      client
+        .from('notification_queue')
+        .select('created_at, run_after')
+        .eq('status', 'pending')
+        .lte('run_after', now.toISOString())
+        .order('run_after', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ])
+    for (const [name, res] of [['pending', pendingRes], ['deadLettered', deadRes], ['oldest due', oldestRes]] as const) {
+      if (res.error) {
+        console.error(`[outbox] queueHealth ${name} read failed: ${res.error.message}`)
+        health.measured = false
+      }
+    }
+    health.pending = pendingRes.count ?? 0
+    health.deadLettered = deadRes.count ?? 0
+    const oldest = oldestRes.data as { created_at?: string | null; run_after?: string | null } | null
+    if (oldest) {
+      health.lagMin = minutesBetween(oldest.run_after, now) ?? 0
+      health.oldestDueAgeMin = minutesBetween(oldest.created_at, now)
+    }
+  } catch (err) {
+    console.error(`[outbox] queueHealth failed: ${err instanceof Error ? err.message : String(err)}`)
+    health.measured = false
+  }
+  return health
+}
+
+/**
+ * Why a health reading breaches, in stable words, or an empty list when it is clean. Pure. The words
+ * are stable on purpose: they become the Sentry fingerprint and the heartbeat header, so a breach that
+ * lasts an hour is one issue, not thirty. The lag threshold is READ from slos.ts (`getSlo`), never a
+ * second literal, so the code and the published SLO cannot disagree; an SLO that has gone missing is
+ * itself a breach, because a deleted target would otherwise silently stop paging.
+ */
+export function queueHealthBreaches(health: QueueHealth): string[] {
+  const out: string[] = []
+  if (!health.measured) out.push('queue health could not be read')
+  if (health.deadLettered > 0) out.push('dead-letters above zero')
+  const slo = getSlo(QUEUE_LAG_SLO_ID)
+  if (!slo) out.push(`${QUEUE_LAG_SLO_ID} is not declared in lib/observability/slos.ts`)
+  else if (!meetsSlo(slo, health.lagMin)) out.push(`queue lag over the ${slo.target} ${slo.unit} SLO`)
+  return out
 }
 
 /**

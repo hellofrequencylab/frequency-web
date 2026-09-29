@@ -161,6 +161,19 @@ export interface CronHeartbeatOptions {
   budgetMs?: number
 }
 
+/** A response header a cron handler sets when the RUN finished but an SLO the job owns is breached
+ *  (LIVE-547, ADR-1571): the value is the reason, in stable words. The wrapper then pings the monitor's
+ *  `/fail` endpoint instead of the alive endpoint and leaves the response alone, so the check stays
+ *  down for as long as the breach lasts and the first clean run brings it back up.
+ *
+ *  Why a header and not the two obvious alternatives. A handler that returned 500 to reach the fail
+ *  path would make the next cron redo work that was fine (and would count a healthy drain as a failed
+ *  run). A handler that fail-pinged on its own would be followed by this wrapper's alive-ping a few
+ *  milliseconds later, so the monitor would flap down and up on every two-minute drain while the
+ *  breach lasted. The header lets the handler say "done, but not well" and lets the ONE place that
+ *  pings decide which endpoint hears it. Ignored on a 4xx or 5xx: those already have their rule. */
+export const CRON_SLO_BREACH_HEADER = 'x-cron-slo-breach'
+
 export function withCronHeartbeat<R extends Request = Request>(
   jobName: string,
   handler: CronHandler<R>,
@@ -218,7 +231,13 @@ export function withCronHeartbeat<R extends Request = Request>(
       // rejectUnauthorizedCron), NOT the job dying — don't fail-ping those, or a
       // legitimate Vercel-Cron 401-probe would page a human. Everything <500 that
       // isn't a 4xx (i.e. 2xx/3xx) is a healthy run → alive-ping.
-      if (res.status >= 500) {
+      //
+      // A 2xx carrying CRON_SLO_BREACH_HEADER is a run that finished with an SLO breached: fail-ping
+      // instead of alive-ping (see the header's block), and say why on its own line so one query
+      // over `cron.slo_breach` finds every such run.
+      const breach = res.status < 400 ? res.headers.get(CRON_SLO_BREACH_HEADER) : null
+      if (res.status >= 500 || breach) {
+        if (breach) log.warn('cron.slo_breach', { job: jobName, breach })
         await pingHeartbeat(jobName, { fail: true })
       } else if (res.status < 400) {
         await pingHeartbeat(jobName)
