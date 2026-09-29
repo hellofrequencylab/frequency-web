@@ -259,7 +259,10 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
     `blurhash`/`colors` only where they are null and validates them exactly as the upload path does.
     One shared client path (`lib/library/describe-generated.ts`) serves both generators. The importer
     seeds and the event-photo copies have no browser anywhere in the flow (an apply, a cron, a claim),
-    so they stay without, and that is the whole remaining gap.
+    so they are described ON VIEW instead ([ADR-1590](DECISIONS.md), `LIVE-588`): the Loom Studio grid
+    and the Space Loom Studio run `useDescribeOnView` (`lib/library/describe-on-view.ts`), which after
+    paint takes up to six rows on the page whose `blurhash` is null and sends each, one at a time,
+    through that same shared path. A row nobody has ever opened stays without; a cron never can.
 
 - **Search is ranked over two indexes** ([ADR-1121](DECISIONS.md)). A query runs BOTH arms the schema
   already carries and merges them: full text (`search_tsv @@ websearch_to_tsquery`, stemmed and
