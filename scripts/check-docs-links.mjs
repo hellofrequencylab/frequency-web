@@ -17,6 +17,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
+import { ADR_DIR } from './lib/ledger.mjs'
 
 const ROOT = process.cwd()
 // Markdown link whose target ends in .md (optionally with a #anchor). Relative only.
@@ -54,9 +55,12 @@ export function runCheck(io = {}) {
       const target = m[1]
       if (/^[a-z]+:/i.test(target)) continue // http(s), mailto — out of scope
       links++
+      // An ADR fragment's text lands in docs/DECISIONS.md when it is compacted, so its links are
+      // written from docs/ and resolved from there (HYG-145, ADR-1635).
+      const from = file.split('\\').join('/').startsWith(`${ADR_DIR}/`) ? 'docs' : dirname(file)
       const abs = target.startsWith('/')
         ? join(ROOT, target)
-        : resolve(ROOT, dirname(file), target)
+        : resolve(ROOT, from, target)
       if (!exists(abs)) broken.push({ file, target })
     }
   }

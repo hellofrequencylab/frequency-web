@@ -51,6 +51,7 @@ import { execFileSync } from 'node:child_process'
 import { HEADING } from './check-adr.mjs'
 import { listPullRequestFiles } from './pr-size-gate.mjs'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
+import { LEDGER_DIR, fragmentIdsFromPaths, readBacklogView, readDecisionsView } from './lib/ledger.mjs'
 
 export const LEDGER = 'docs/DECISIONS.md'
 export const BACKLOG = 'docs/BUILD-BACKLOG.json'
@@ -341,14 +342,63 @@ async function baseText({ base, path, repo, token, fetchImpl }) {
  *  dozen-open-PR run from ~100 MB towards ~40 MB, which is the pressure that produced the 403.
  *  `files` is the PR's own files listing, which the caller already pays for. */
 export async function fetchNewIdsForPull({ pr, files, baseSets, token, fetchImpl = fetch }) {
+  // LEDGER FRAGMENTS (HYG-145, ADR-1635): a fragment's id IS its file name, so a PR that writes
+  // docs/ledger/rows/<ID>.json or docs/ledger/adr/ADR-<n>.md names its ids in the files listing the
+  // caller already paid for. No download. An edit fragment names a row that is on the base tip,
+  // so subtracting the base below leaves only the rows and ADRs it genuinely introduces.
+  const frag = fragmentIdsFromPaths(files)
+  const fragNew = newIdSets(frag, baseSets)
+  const fragTouched = frag.rows.size > 0 || frag.adrs.size > 0
   const named = WATCHED.filter((path) => files.includes(path))
-  if (named.length === 0) return { adrs: new Set(), rows: new Set(), touched: false, read: [] }
+  if (named.length === 0) return { ...fragNew, touched: fragTouched, read: [] }
   const texts = await Promise.all(
     named.map((path) => fetchFileAt({ repo: pr.headRepo, path, ref: pr.headSha, token, fetchImpl })),
   )
   const at = (path) => (named.includes(path) ? texts[named.indexOf(path)] : '')
   const head = idSets({ ledger: at(LEDGER), backlog: at(BACKLOG) })
-  return { ...newIdSets(head, baseSets), touched: true, read: named }
+  const fromFiles = newIdSets(head, baseSets)
+  return {
+    adrs: new Set([...fromFiles.adrs, ...fragNew.adrs]),
+    rows: new Set([...fromFiles.rows, ...fragNew.rows]),
+    touched: true,
+    read: named,
+  }
+}
+
+/** Fragment paths on the base tip: `git ls-tree` when the workflow fetched the ref, else the
+ *  contents API directory listings (a 404 is "no fragments there"). */
+async function baseFragmentPaths({ base, repo, token, fetchImpl }) {
+  try {
+    const out = execFileSync('git', ['ls-tree', '-r', '--name-only', `origin/${base}`, '--', LEDGER_DIR], {
+      encoding: 'utf8',
+      maxBuffer: 16 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+    return out.split('\n').filter(Boolean)
+  } catch {
+    const paths = []
+    for (const dir of [`${LEDGER_DIR}/rows`, `${LEDGER_DIR}/adr`]) {
+      const res = await fetchImpl(`${API}/repos/${repo}/contents/${dir}?ref=${encodeURIComponent(`heads/${base}`)}`, {
+        headers: headers(token, 'application/vnd.github+json'),
+      })
+      if (res.status === 404) continue
+      if (!res.ok) throw new Error(`GET contents/${dir}@heads/${base} (${repo}): HTTP ${res.status}`)
+      const body = await res.json()
+      if (Array.isArray(body)) for (const f of body) if (typeof f?.path === 'string') paths.push(f.path)
+    }
+    return paths
+  }
+}
+
+/** This checkout's ids, from the merged view: both base files plus every fragment. */
+export function treeIdSets(root = '.') {
+  let rows
+  try {
+    rows = new Set((readBacklogView({ root }).doc.entries ?? []).map((e) => e?.id).filter((id) => typeof id === 'string'))
+  } catch {
+    rows = backlogIds(readTree(`${root}/${BACKLOG}`))
+  }
+  return { adrs: declaredAdrs(readDecisionsView(root).text), rows }
 }
 
 function readTree(path) {
@@ -409,8 +459,15 @@ async function compare({ env, repo, base, token, fetchImpl }) {
 
   const baseLedger = await baseText({ base, path: LEDGER, repo, token, fetchImpl })
   const baseBacklog = await baseText({ base, path: BACKLOG, repo, token, fetchImpl })
-  const baseSets = idSets({ ledger: baseLedger.text, backlog: baseBacklog.text })
-  const headSets = idSets({ ledger: readTree(LEDGER), backlog: readTree(BACKLOG) })
+  // The base tip's ids are its two files PLUS its fragments' file names; this checkout's are the
+  // merged view the in-tree gates read (HYG-145, ADR-1635).
+  const baseFrag = fragmentIdsFromPaths(await baseFragmentPaths({ base, repo, token, fetchImpl }))
+  const baseFiles = idSets({ ledger: baseLedger.text, backlog: baseBacklog.text })
+  const baseSets = {
+    adrs: new Set([...baseFiles.adrs, ...baseFrag.adrs]),
+    rows: new Set([...baseFiles.rows, ...baseFrag.rows]),
+  }
+  const headSets = treeIdSets()
   const mine = newIdSets(headSets, baseSets)
 
   console.log(
@@ -448,7 +505,7 @@ async function compare({ env, repo, base, token, fetchImpl }) {
         (pr.touched
           ? `introduces ${pr.adrs.size} ADR(s) [${[...pr.adrs].map((a) => `ADR-${a}`).join(', ')}], ${pr.rows.size} row(s) ` +
             `[${[...pr.rows].join(', ')}] (read ${pr.read.join(' + ')})`
-          : 'touches neither file'),
+          : 'touches neither file nor a ledger fragment'),
     )
   }
 

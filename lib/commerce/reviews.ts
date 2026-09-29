@@ -187,10 +187,8 @@ export async function productRatingsFor(productIds: string[]): Promise<Map<strin
 }
 
 /** Whether a member has a SETTLED order (paid / fulfilled) that includes this product — the
- *  verified-purchase signal. With payments OFF no order ever settles, so this returns false and
- *  reviews carry verified_purchase = false. TODO(payments-on): once host_payouts_enabled is
- *  live, GATE review creation on this returning true (a real buyer), not just any signed-in
- *  member. Fail-safe to false. */
+ *  verified-purchase signal, and the gate on review creation (LIVE-697). A Journey sibling
+ *  counts (productIdsSharingJourney). Fail-safe to false. */
 export async function hasPurchasedProduct(profileId: string, productId: string): Promise<boolean> {
   if (!profileId || !productId) return false
   try {
@@ -209,8 +207,8 @@ export async function hasPurchasedProduct(profileId: string, productId: string):
 }
 
 /** Insert / update a member's review (upsert on product_id + reviewer_profile_id). The caller
- *  MUST already be authorized (a signed-in member who is not the seller). verified_purchase is
- *  derived, not client-supplied. Returns true on success. */
+ *  MUST already be authorized (a signed-in member who is not the seller and who has a settled
+ *  order). verified_purchase is derived, not client-supplied. Returns true on success. */
 export async function upsertProductReview(input: {
   productId: string
   reviewerProfileId: string

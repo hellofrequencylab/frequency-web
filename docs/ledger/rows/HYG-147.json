@@ -1,0 +1,20 @@
+{
+  "id": "HYG-147",
+  "title": "check-id-collisions assigns rows a value it always overwrites (CodeQL alert 289)",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "closed": "2026-09-29",
+  "source": {
+    "file": "scripts/check-id-collisions.mjs",
+    "ref": "treeIdSets, CodeQL code-scanning alert 289 on #3040 (HYG-145)"
+  },
+  "detail": "FILED AND CLOSED 2026-09-29. MEASURED: CodeQL raised js/useless-assignment-to-local on #3040 at scripts/check-id-collisions.mjs treeIdSets: `let rows = new Set()` is overwritten on both the try and the catch path, so the initial value is dead. #3040 merged before the fix landed. WHAT CLOSED IT: `let rows` is declared without an initial value; behaviour is unchanged (both paths still assign it). Filed as a ledger fragment (ADR-1635).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(\"HYG-147 FAILED: \"+m);process.exit(1)}\nconst src=fs.readFileSync(\"scripts/check-id-collisions.mjs\",\"utf8\")\nconst i=src.indexOf(\"export function treeIdSets\")\nif(i<0)fail(\"treeIdSets is gone from scripts/check-id-collisions.mjs\")\nconst body=src.slice(i,src.indexOf(\"\\n}\\n\",i))\nif(/let rows\\s*=/.test(body))fail(\"treeIdSets gives rows an initial value that every path overwrites (CodeQL js/useless-assignment-to-local, alert 289)\")\nimport(\"./scripts/check-id-collisions.mjs\").then((m)=>{const s=m.treeIdSets();if(!(s.rows instanceof Set)||s.rows.size<40||s.adrs.size<800)fail(\"treeIdSets no longer reads the merged ledger: \"+s.rows.size+\" rows, \"+s.adrs.size+\" ADRs\");console.log(\"HYG-147 ok\")}).catch((e)=>fail(String(e)))'",
+    "note": "Fails if treeIdSets gives rows an initial value again (the alert), and if treeIdSets stops returning the merged row and ADR sets. Fails on main at e2f8f3226."
+  },
+  "wave": "W2"
+}
