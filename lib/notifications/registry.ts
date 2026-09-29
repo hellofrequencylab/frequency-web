@@ -23,7 +23,14 @@ import type { PushPayload } from '@/lib/push'
 /** The domain events the registry can route. Adding a notification = add a key here +
  *  its context shape in `NotificationContexts` + a row in `NOTIFICATION_REGISTRY`. The
  *  compiler then forces the three to stay in lock-step. */
-export type NotificationEvent = 'event.dispatch' | 'booking.reminder' | 'guestbook.sign' | 'housing.match'
+export type NotificationEvent =
+  | 'event.dispatch'
+  | 'booking.reminder'
+  | 'guestbook.sign'
+  | 'housing.match'
+  | 'plan.share'
+  | 'plan.comment'
+  | 'plan.assign'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -43,6 +50,16 @@ export interface NotificationContexts {
    *  from lib/email's builder; `tag` collapses a repeat push for the same counterpart on the
    *  device, on top of the once-per-pair claim the caller already made. */
   'housing.match': { title: string; body: string; url: string; tag: string; email?: EmailPayload }
+  /** A Plan share offered, accepted or declined between two Spaces (PROG-CAL7, LIVE-545). The
+   *  caller (lib/calendar/plan-notify.ts) authors the copy in-voice, hands the URL of the
+   *  recipient's own calendar settings, and renders the email from lib/email's builder when the
+   *  recipient has an address. `lifecycle`: a Space's working relationships changing hands. */
+  'plan.share': { title: string; body: string; url: string; tag: string; email?: EmailPayload }
+  /** A comment on a shared Plan or one of its to-dos (LIVE-545). `comments`, push: the
+   *  recipient's own push_comments switch decides; `tag` collapses a burst on one thread. */
+  'plan.comment': { title: string; body: string; url: string; tag: string }
+  /** A to-do on a shared Plan handed to the recipient (LIVE-545). `comments`, push. */
+  'plan.assign': { title: string; body: string; url: string; tag: string }
 }
 
 /** Per-channel rendered payloads. A type renders only the channels it declares; a channel
@@ -131,6 +148,38 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     render: (ctx) => ({
       push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
       ...(ctx.email ? { email: ctx.email } : {}),
+    }),
+  },
+
+  // THE THREE MOMENTS ON A SHARED PLAN (PROG-CAL7 Together, LIVE-545). One send per moment,
+  // to the other team, never to the person who did the thing; the caller resolves WHO
+  // (lib/calendar/plan-notify.ts) and the registry owns WHAT and the gate mapping. No new
+  // category and no new column: a share rides `lifecycle` (a Space's working relationships
+  // changing), a comment and a hand-over ride `comments`, the closest thing to a reply on
+  // your own work, so the switches the grid already wires decide every channel.
+  'plan.share': {
+    event: 'plan.share',
+    category: 'lifecycle',
+    channels: ['email', 'push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+      ...(ctx.email ? { email: ctx.email } : {}),
+    }),
+  },
+  'plan.comment': {
+    event: 'plan.comment',
+    category: 'comments',
+    channels: ['push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+    }),
+  },
+  'plan.assign': {
+    event: 'plan.assign',
+    category: 'comments',
+    channels: ['push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
     }),
   },
 }
