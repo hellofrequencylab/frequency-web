@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { Coins, Receipt, Wallet } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
+import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -19,6 +20,14 @@ import { StorefrontTab } from './storefront-tab'
 // gate + chrome + stats; the tab bar is URL-driven (?tab=); each tab renders in its own Suspense. Selling
 // is a Business-account feature, so the console gates on isConsoleSpaceType (business / nonprofit) exactly
 // like the /manage console; free-vs-paid is the take rate (5% vs 3%), not a lock. No em or en dashes.
+//
+// GETTING PAID IS OFFERED WHERE THE PRICE IS TYPED (LIVE-538, ADR-1539). The Catalog tab is the
+// console's DEFAULT tab and the one ItemForm takes a price on, and the Service Spark returns here; the
+// one Connect prompt used to sit on the Storefront tab only, a tab an operator opens to rename it. So
+// this page, which already holds the space and the viewer, mounts the shared prompt above the tab body
+// for orders and bookings (a service sells through this same console) on every tab EXCEPT Storefront,
+// which keeps its own whenReady status card: a ready owner still finds the dashboard link there, and a
+// not-ready owner never reads two cards on one screen. Null once the owner is ready (ADR-1158).
 
 export const metadata = { title: 'Shop' }
 
@@ -76,6 +85,17 @@ export default async function SpaceShopConsolePage({
         </p>
       )}
       <ShopTabs consoleHref={consoleHref} active={activeTab} />
+
+      {activeTab !== 'storefront' && (
+        <Suspense fallback={null}>
+          <SpacePayoutSetupPrompt
+            space={space}
+            viewerProfileId={viewerProfileId}
+            channels={['orders', 'bookings']}
+            className="mt-4"
+          />
+        </Suspense>
+      )}
 
       <Suspense fallback={<TabSkeleton />}>
         {activeTab === 'catalog' && <CatalogTab slug={slug} spaceId={space.id} readOnly={readOnly} />}

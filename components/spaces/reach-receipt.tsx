@@ -9,7 +9,7 @@ import type { StandingLever } from '@/lib/spaces/standing'
 // WHAT DID THE NETWORK SEND ME, and WHAT WOULD SEND MORE.
 //
 // Why this page exists at all. The Space directory now orders by an earned standing score instead of
-// the alphabet, and a ranking nobody can see reads as favouritism. So the same six signals that
+// the alphabet, and a ranking nobody can see reads as favouritism. So the same seven signals that
 // decide the order are printed here, for the operator, in the same words, with the one next move
 // beside each. That is the difference between a ranking and a black box, and it is the whole reason
 // earned exposure is a promise worth making.
@@ -123,7 +123,7 @@ export function ReachReceipt({
       <section aria-labelledby="reach-more">
         <SectionHeader id="reach-more" title="What would send more" />
         <p className="mb-4 text-body-sm text-muted">
-          The directory orders Spaces by these six things and nothing else. They are listed weakest first, so the top
+          The directory orders Spaces by these seven things and nothing else. They are listed weakest first, so the top
           of this list is the next thing worth doing.
         </p>
 
@@ -161,7 +161,7 @@ export function ReachReceipt({
         <ul className="mt-3 space-y-2 text-body-sm text-muted">
           <li>
             <strong className="font-semibold text-text">Placement is earned, and it cannot be bought.</strong> No plan,
-            no tier, no ad slot, no payment of any kind moves a Space up this list. The six signals above are the whole
+            no tier, no ad slot, no payment of any kind moves a Space up this list. The seven signals above are the whole
             formula. A free Space and a paying Space are ranked by exactly the same numbers.
           </li>
           <li>
