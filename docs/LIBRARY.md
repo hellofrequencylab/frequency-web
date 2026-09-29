@@ -263,6 +263,13 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
     and the Space Loom Studio run `useDescribeOnView` (`lib/library/describe-on-view.ts`), which after
     paint takes up to six rows on the page whose `blurhash` is null and sends each, one at a time,
     through that same shared path. A row nobody has ever opened stays without; a cron never can.
+  - **Vera names what nobody named** ([ADR-1589](DECISIONS.md), `LIVE-587`). An upload lands with
+    alt null and no tags, so it is findable only by its filename. `describeLibraryImage`
+    (`lib/ai/library-tag.ts`, Haiku vision, `library-tag` cap) proposes up to eight tags, one sentence
+    of alt text and a category from the ones the Space already uses; `fillLibraryAssetDescription`
+    writes each only where it is still empty and marks a written tag set with the `vera` tag. The
+    nightly `tag-library` cron (03:05 UTC, before `embed-library`) sweeps 40 unnamed images a run;
+    Describe with Vera in the Studio drawer fills the empty fields for one image and Save writes them.
 
 - **Search is ranked over two indexes** ([ADR-1121](DECISIONS.md)). A query runs BOTH arms the schema
   already carries and merges them: full text (`search_tsv @@ websearch_to_tsquery`, stemmed and
@@ -275,6 +282,10 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   `swapLibraryAssetRefs` in `lib/library/usage.ts` ([ADR-1560](DECISIONS.md)): a walk over the index's
   rows, one write per stored row, that re-points every `{ assetId }` ref from one asset to another and
   leaves every other value as it was. "Swap everywhere" in the drawer's usage panel is the door.
+  The Space Loom Studio has the same guard on its own delete ([ADR-1586](DECISIONS.md)):
+  `deleteSpaceLoomImage` refuses an image still placed on a page, and on a failed read, and the
+  Studio's one-image editor shows the page count beside Remove. That editor edits title, alt and
+  tags through `normalizeAssetMeta` (`lib/library/asset-meta.ts`), the rule the admin drawer uses.
 - **One picker at every upload point.** The universal control is `components/loom/loom-picker.tsx`
   (16 consumers: page editor, entity blocks, Studio spark, branding, events, QR, email). The old
   "Upload / Pick / Paste URL" tri-mode plan was superseded by the owner directive recorded in the
@@ -325,7 +336,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
-   Background removal and upscale (LIVE-589) are shipped; the rest is decomposed into LIVE-586 to LIVE-588 ([ADR-1563](DECISIONS.md)).
+   Background removal and upscale (LIVE-589), describe on view (LIVE-588) and auto-tag (LIVE-587) are shipped; the hybrid rank (LIVE-586) is the one child left ([ADR-1563](DECISIONS.md)).
 
 ## Non-goals (v1)
 
