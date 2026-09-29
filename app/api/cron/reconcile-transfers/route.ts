@@ -7,6 +7,9 @@
  * them: a paid split order the settle never planned is planned, every planned or failed transfer
  * under the attempt ceiling is retried under its original idempotency key, and every transfer over
  * the ceiling is logged as stuck, one line each (lib/commerce/transfers.ts reconcileTransfers).
+ * Then the refund side (LIVE-623, ADR-1615): every transfer a split refund still owes back is
+ * reversed again, and every one over the same ceiling is logged as stuck
+ * (lib/commerce/split-refund.ts reconcileSplitReversals).
  * Idempotent and bounded; safe to run at any time. Requires CRON_SECRET.
  */
 
@@ -15,6 +18,7 @@ import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
 import { reconcileTransfers } from '@/lib/commerce/transfers'
+import { reconcileSplitReversals } from '@/lib/commerce/split-refund'
 import { log, briefError } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -26,9 +30,10 @@ async function handler(req: NextRequest) {
   try {
     const budget = cronBudget(100)
     const result = await reconcileTransfers({ limit: budget.items, exhausted: budget.exhausted })
-    const summary = budget.summary(result.orders, result.remainingOrders)
-    log.info('cron.reconcile_transfers', { ...result, ...summary })
-    return NextResponse.json({ ok: true, ...result, budget: summary })
+    const reversals = await reconcileSplitReversals({ limit: budget.items, exhausted: budget.exhausted })
+    const summary = budget.summary(result.orders + reversals.orders, result.remainingOrders + reversals.remainingOrders)
+    log.info('cron.reconcile_transfers', { ...result, reversals, ...summary })
+    return NextResponse.json({ ok: true, ...result, reversals, budget: summary })
   } catch (err) {
     log.error('cron.reconcile_transfers.failed', { error: briefError(err) })
     return NextResponse.json({ error: 'transfer reconcile failed' }, { status: 500 })

@@ -1488,6 +1488,9 @@ export type Database = {
           owner_profile_id: string | null
           owner_space_id: string | null
           platform_fee_cents: number
+          refund_reversal_cents: number
+          reversal_attempts: number
+          reversal_owed_cents: number | null
           reversed_cents: number
           seller_key: string
           source_charge_id: string | null
@@ -1508,6 +1511,9 @@ export type Database = {
           owner_profile_id?: string | null
           owner_space_id?: string | null
           platform_fee_cents?: number
+          refund_reversal_cents?: number
+          reversal_attempts?: number
+          reversal_owed_cents?: never
           reversed_cents?: number
           seller_key: string
           source_charge_id?: string | null
@@ -1528,6 +1534,9 @@ export type Database = {
           owner_profile_id?: string | null
           owner_space_id?: string | null
           platform_fee_cents?: number
+          refund_reversal_cents?: number
+          reversal_attempts?: number
+          reversal_owed_cents?: never
           reversed_cents?: number
           seller_key?: string
           source_charge_id?: string | null

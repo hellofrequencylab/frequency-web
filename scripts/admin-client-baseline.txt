@@ -252,6 +252,12 @@
 # under: the Stripe webhook (the settle, transfer.created, transfer.reversed) and the reconcile-transfers
 # cron. Nothing here is reachable from a request a member makes, and nothing leaves it but counts and
 # log lines; a seller's read of their share (LIVE-624) is authorized before it reaches this module.
+# lib/commerce/split-refund.ts (added 2026-09-29, LIVE-623): the pro rata reversal of a split order's
+# seller transfers on a refund or a lost dispute. It writes the same service-role-only table as
+# lib/commerce/transfers.ts (commerce_order_transfers) and reads commerce_orders by id or PaymentIntent;
+# its callers are the refund recorder (already authorized as the order's seller or an operator), the
+# Stripe webhook (charge.refunded, charge.dispute.closed) and the reconcile-transfers cron, none of
+# which has a member session to run under. Nothing leaves it but counts and log lines.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -663,6 +669,7 @@ lib/commerce/reports.ts
 lib/commerce/reviews.ts
 lib/commerce/seller-audience.ts
 lib/commerce/seller-verification.ts
+lib/commerce/split-refund.ts
 lib/commerce/ticket-projection.ts
 lib/commerce/transfers.ts
 lib/commerce/variants.ts
