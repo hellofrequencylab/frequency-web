@@ -172,8 +172,14 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access: `library_ass
 (`20270345009500`, [ADR-1594](DECISIONS.md), [LIVE-570](BUILD-BACKLOG.json)): the Space team reads its
 own rows, any signed-in caller reads `visibility = 'public'` assets, writes go through
 `private.can_write_space_content`, and a version is insert-only. `library_styles` stays
-**service-role only**. The app still reads and writes on the admin client until
-[LIVE-571](BUILD-BACKLOG.json) moves the Space Loom onto the session client.
+**service-role only**. The Space Loom reads through that wall ([LIVE-571](BUILD-BACKLOG.json),
+[ADR-1613](DECISIONS.md)): `lib/library/space-loom-store.ts` lists one Space's images and tags, checks
+that an id is the Space's own, and saves a title, alt or tags on the caller's session, with no import
+of the admin client. The Space Loom Studio page, its actions and the picker's Space scope all read
+there. Still on the service role, each for a stated reason: the picker's personal scope (a personal
+upload lives in the root Space, which the per-Space policies do not open to its uploader), the upload,
+the fork copy and the delete (each is half a storage write; storage policies are PROG-D6), version
+history, and the admin Loom Studio.
 
 ## Best-practice architecture
 
