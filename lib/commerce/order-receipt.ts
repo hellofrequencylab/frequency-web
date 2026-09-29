@@ -18,8 +18,14 @@
 // (the Frequency Store), so only the buyer half runs; there is no operator waiting on a bell for a
 // first-party sale.
 
+//
+// A SPLIT order (owner_kind 'split', LIVE-621) names no single seller either, so today only the buyer
+// half runs and the receipt names Frequency, the merchant of record. Each seller's own notice for
+// their share is LIVE-624's surface, once LIVE-622 has paid it.
+
 import 'server-only'
 
+import type { OrderOwnerKind } from './types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { appUrl } from '@/lib/billing/stripe'
 import { journeyWelcomeDoor } from '@/lib/journeys/sales-path'
@@ -42,7 +48,7 @@ export const ORDER_SOLD_NOTIFICATION_TYPE = 'commerce_order_sold'
 /** The settled order, as the webhook already holds it. Everything else is read here. */
 export interface SettledOrder {
   id: string
-  ownerKind: 'platform' | 'profile' | 'space'
+  ownerKind: OrderOwnerKind
   ownerProfileId: string | null
   ownerSpaceId: string | null
   buyerProfileId: string | null
