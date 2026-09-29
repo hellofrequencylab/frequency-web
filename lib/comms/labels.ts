@@ -28,7 +28,7 @@ export const PRIORITY_LABELS: Record<ConversationPriority, string> = {
 export const OPEN_CONVERSATION_STATUSES: readonly string[] = ['open', 'in_progress', 'waiting', 'snoozed']
 
 /** How a message came in, as the member-plain caption under each bubble (owner-locked labels). */
-export const CHANNEL_LABELS: Record<string, string> = {
+const CHANNEL_LABELS: Record<string, string> = {
   in_app: 'Site Message',
   email: 'Email',
   sms: 'Text',

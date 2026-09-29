@@ -46,7 +46,7 @@ export async function leaderDownlineReach(leaderProfileId: string): Promise<numb
   return (await segmentForLeaderDownline(leaderProfileId)).length
 }
 
-export interface LeaderSendResult {
+interface LeaderSendResult {
   total: number
   sent: number
   skipped: number

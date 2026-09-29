@@ -61,7 +61,7 @@ export type CampaignStatus = 'draft' | 'scheduled' | 'sent'
 
 /** One Space campaign as the app consumes it (camelCased). `body` is plain text (blank lines become
  *  paragraphs at send, like the global composer). scheduledFor / sentAt are ISO strings or null. */
-export interface SpaceCampaign {
+interface SpaceCampaign {
   id: string
   subject: string
   body: string

@@ -8,23 +8,23 @@
 // Everything here is structural. Nothing is a global declaration, so this cannot leak
 // `google` into the ambient namespace of unrelated modules.
 
-export type GoogleLatLngLiteral = { lat: number; lng: number }
+type GoogleLatLngLiteral = { lat: number; lng: number }
 
 export type GoogleListener = { remove(): void }
 
-export type GooglePadding = { top: number; right: number; bottom: number; left: number }
+type GooglePadding = { top: number; right: number; bottom: number; left: number }
 
-export interface GoogleLatLng {
+interface GoogleLatLng {
   lat(): number
   lng(): number
 }
 
-export interface GoogleLatLngBounds {
+interface GoogleLatLngBounds {
   extend(point: GoogleLatLngLiteral): GoogleLatLngBounds
   isEmpty(): boolean
 }
 
-export type GoogleMapMouseEvent = { latLng: GoogleLatLng | null }
+type GoogleMapMouseEvent = { latLng: GoogleLatLng | null }
 
 export interface GoogleMap {
   setCenter(c: GoogleLatLngLiteral): void
@@ -52,7 +52,7 @@ export interface GoogleCircle {
   setMap(map: GoogleMap | null): void
 }
 
-export type GoogleMapOptions = {
+type GoogleMapOptions = {
   center: GoogleLatLngLiteral
   zoom: number
   mapId?: string
@@ -66,7 +66,7 @@ export type GoogleMapOptions = {
   disableDoubleClickZoom?: boolean
 }
 
-export type GoogleSymbol = {
+type GoogleSymbol = {
   path: number | string
   scale?: number
   fillColor?: string
@@ -78,14 +78,14 @@ export type GoogleSymbol = {
 /** Text drawn INSIDE a marker. This is how the Google canvas prints a cluster count: a classic
  *  Marker takes no DOM element, and AdvancedMarkerElement (which does) would force a Cloud Map
  *  ID onto every deployment — the trade the canvas header already rejects for ordinary pins. */
-export type GoogleMarkerLabel = {
+type GoogleMarkerLabel = {
   text: string
   color?: string
   fontSize?: string
   fontWeight?: string
 }
 
-export type GoogleMarkerOptions = {
+type GoogleMarkerOptions = {
   map: GoogleMap
   position: GoogleLatLngLiteral
   title?: string
@@ -95,7 +95,7 @@ export type GoogleMarkerOptions = {
   zIndex?: number
 }
 
-export type GoogleCircleOptions = {
+type GoogleCircleOptions = {
   map: GoogleMap
   center: GoogleLatLngLiteral
   radius: number

@@ -91,7 +91,7 @@ const AUDIT_TARGET: Record<ApprovableType, 'campaign'> = {
   campaign: 'campaign',
 }
 
-export interface ApprovableRef {
+interface ApprovableRef {
   type: ApprovableType
   id: string
 }

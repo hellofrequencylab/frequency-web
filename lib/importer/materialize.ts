@@ -67,7 +67,7 @@ import {
 
 /** Where to materialize: create a NEW Space (the operator seeder default), or update an
  *  EXISTING Space by id (a re-run / an operator-picked target). */
-export type MaterializeTarget =
+type MaterializeTarget =
   | { kind: 'create'; ownerProfileId: string }
   | { kind: 'update'; spaceId: string }
 
@@ -111,7 +111,7 @@ export interface MaterializeOptions {
 }
 
 /** What the materializer seeded (or would have). */
-export interface MaterializeResult {
+interface MaterializeResult {
   ok: boolean
   spaceId?: string
   slug?: string

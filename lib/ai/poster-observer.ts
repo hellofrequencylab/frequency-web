@@ -42,7 +42,7 @@ const RECENT_EVENTS_PER_POSTER = 6
 // How many posts make a poster worth reviewing even with a healthy band.
 const HIGH_VOLUME_POSTED = 5
 
-export type ReviewKind = 'tip' | 'flag'
+type ReviewKind = 'tip' | 'flag'
 
 /**
  * Pure selection predicate: does this poster's pattern need Vera's attention?
@@ -54,7 +54,7 @@ export function needsReview(quality: PosterQuality): boolean {
   return quality.band === 'watch' || quality.band === 'throttled' || quality.posted >= HIGH_VOLUME_POSTED
 }
 
-export interface PosterReviewCandidate {
+interface PosterReviewCandidate {
   posterId: string
   quality: PosterQuality
 }

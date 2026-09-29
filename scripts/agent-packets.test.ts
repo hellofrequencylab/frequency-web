@@ -77,6 +77,11 @@ describe('agent packets (ADR-1412)', () => {
   it('refuses parked 16-to-7 nav and owner-gated rows unless asked', () => {
     expect(PARKED_IDS.has('LIVE-241')).toBe(true)
     expect(PARKED_IDS.has('LIVE-412')).toBe(true)
+    // ADR-1573: the editor group, Etsy, mobile, the domain register and the phone door park to 2027-01-05.
+    for (const id of ['PROG-E0', 'PROG-E10', 'PROG-W6', 'DEF-ETSY', 'DEF-MOBILE', 'DEF-DOMAIN', 'PROG-GD6']) {
+      expect(PARKED_IDS.has(id), id).toBe(true)
+      expect(isWorkable({ id, status: 'open', lane: 'live' }), id).toBe(false)
+    }
     expect(isWorkable({ id: 'LIVE-241', status: 'open', lane: 'live' })).toBe(false)
     expect(isWorkable({ id: 'LIVE-412', status: 'open', lane: 'hygiene' })).toBe(false)
     expect(isWorkable({ id: 'LIVE-410', status: 'open', lane: 'live' })).toBe(true)

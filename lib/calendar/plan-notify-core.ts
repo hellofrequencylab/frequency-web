@@ -5,7 +5,7 @@
 
 export type PlanShareMoment = 'requested' | 'accepted' | 'declined'
 
-export interface PlanMomentCopy {
+interface PlanMomentCopy {
   title: string
   body: string
 }

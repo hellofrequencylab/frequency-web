@@ -61,7 +61,7 @@ export type TierPriceRow = {
  *  `minPricedCents` is null when the event HAS tiers but none of them costs anything, which is a
  *  different state from having no tiers at all (that is the absence of a summary). The two render
  *  differently, which is why `tierCount` is carried separately rather than inferred. */
-export type TierSummary = {
+type TierSummary = {
   tierCount: number
   minPricedCents: number | null
   hasFlexible: boolean

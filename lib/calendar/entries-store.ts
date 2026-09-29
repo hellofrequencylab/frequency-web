@@ -68,7 +68,7 @@ async function db(): Promise<Untyped> {
   return (await createClient()) as unknown as Untyped
 }
 
-export const entryFormatters: EntryFormatters = {
+const entryFormatters: EntryFormatters = {
   timeLabel: (iso, tz) => formatEventWhen(iso, tz, { style: 'time', withZone: false }),
   whenLabel: (iso, tz) => formatEventWhen(iso, tz, { style: 'full' }),
   dateLabel: (iso, tz) => formatEventWhen(iso, tz, { style: 'date' }),

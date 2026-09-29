@@ -46,11 +46,14 @@ import {
   extForMime,
 } from '@/lib/library/export-svg'
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
-import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
+import { editLoomSvg, saveElementSvg, reviewLoomSvg, describeWithVera, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
+import { isVectorFile } from '@/lib/loom/urls'
 import { AssetAvPanel } from './asset-av-panel'
 import { AssetUsagePanel } from './asset-usage-panel'
 import { createBrandStyle } from './recraft-actions'
+import { describeGeneratedAsset } from '@/lib/library/describe-generated'
+import { useDescribeOnView } from '@/lib/library/describe-on-view'
 import {
   addAssetsToCollection,
   removeAssetsFromCollection,
@@ -204,6 +207,21 @@ export function LoomGrid({
   const [openId, setOpenId] = useState<string | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
   const selected = assets.find((a) => a.id === openId) ?? null
+
+  // Describe on view (LIVE-588, ADR-1590): an imported seed or an event-photo copy was filed with no
+  // browser in the flow, so it has no blurhash and no palette. This grid IS a browser looking at it,
+  // so the first few such rows on the page are decoded from the grid rendition already on screen and
+  // posted through the one generated-asset path, whose write only ever fills a hole.
+  useDescribeOnView(
+    assets.map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      url: a.url ? renditionUrl(a.url, 'grid') : null,
+      blurhash: a.blurhash,
+      mime: a.mime,
+    })),
+    describeGeneratedAsset,
+  )
 
   function toggle(id: string) {
     setSel((prev) => {
@@ -623,6 +641,48 @@ function DetailDrawer({
   const [expiresOn, setExpiresOn] = useState(dayOf(asset.expiresAt))
   const expired = isLibraryAssetExpired(asset.expiresAt)
 
+  // Describe with Vera (LIVE-587, ADR-1589): she proposes, the empty fields take it, Save writes it.
+  // A field a person already filled is never touched, here or by the nightly tag-library cron.
+  const [naming, setNaming] = useState(false)
+  const [namingNote, setNamingNote] = useState<string | null>(null)
+  const canName = asset.kind === 'image' && !!asset.url && !isVectorFile(asset.mime, asset.url)
+  const hasHole = !alt.trim() || !tags.trim() || !category.trim()
+
+  async function nameWithVera() {
+    setErr(null)
+    setNamingNote(null)
+    setNaming(true)
+    try {
+      const res = await describeWithVera(asset.id)
+      if ('error' in res) {
+        setErr(res.error)
+        return
+      }
+      const filled: string[] = []
+      if (!alt.trim() && res.alt) {
+        setAlt(res.alt)
+        filled.push('alt text')
+      }
+      if (!tags.trim() && res.tags.length) {
+        setTags(res.tags.join(', '))
+        filled.push('tags')
+      }
+      if (!category.trim() && res.category) {
+        setCategory(res.category)
+        filled.push('category')
+      }
+      setNamingNote(
+        filled.length
+          ? `Vera filled the ${filled.join(', ')}. Read it over, then Save.`
+          : 'Vera had nothing to add to the empty fields.',
+      )
+    } catch {
+      setErr('Vera could not read that image. Fill the fields yourself, or try again.')
+    } finally {
+      setNaming(false)
+    }
+  }
+
   function save() {
     setErr(null)
     start(async () => {
@@ -958,7 +1018,13 @@ function DetailDrawer({
 
           {/* Managed image studio (Recraft): non-destructive edits + version history. Hidden unless
               a key is configured; edit ops need a file-backed image. */}
-          <RecraftEditRow assetId={asset.id} hasFile={!!asset.url} enabled={recraftEnabled} chipCls={chipCls} />
+          <RecraftEditRow
+            assetId={asset.id}
+            hasFile={!!asset.url}
+            isVector={isVectorFile(asset.mime, asset.url)}
+            enabled={recraftEnabled}
+            chipCls={chipCls}
+          />
           {recraftEnabled && <AssetVersions assetId={asset.id} />}
 
           {/* Media manager (Airwaves P2): replace-file for any file-backed asset + a usage map for A/V. */}
@@ -985,6 +1051,22 @@ function DetailDrawer({
             <span className="mb-1 block eyebrow text-subtle">Tags</span>
             <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="comma, separated" />
           </label>
+          {canName && (hasHole || namingNote) && (
+            <div data-loom-describe-with-vera>
+              {hasHole && (
+                <button
+                  type="button"
+                  onClick={nameWithVera}
+                  disabled={naming || pending}
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-muted hover:bg-surface-elevated disabled:opacity-50"
+                >
+                  {naming ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
+                  Describe with Vera
+                </button>
+              )}
+              {namingNote && <p className="mt-2 text-body-sm text-signal-strong" role="status">{namingNote}</p>}
+            </div>
+          )}
 
           {/* Protection (PROG-D6, LIVE-576): the three hooks the schema has carried since the DAM landed,
               finally reachable by a person. Stored and shown today; the private bucket a protected asset

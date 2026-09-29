@@ -12,7 +12,7 @@ import { listAcceptedCollaborations } from './collaborations'
 import { listSpaceCalendarEvents, type SpaceCalendarEvent } from '@/lib/events/store'
 
 /** A calendar event tagged with the space it belongs to (this space or an accepted collaborator). */
-export interface SharedCalendarEvent extends SpaceCalendarEvent {
+interface SharedCalendarEvent extends SpaceCalendarEvent {
   /** The name of the space this event belongs to. */
   sourceName: string
   /** True when the event is this space's own (vs. a collaborator's). */

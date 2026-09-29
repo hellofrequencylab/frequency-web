@@ -22,10 +22,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 /** A place-tree tier. Kept in lock-step with the broadcast `audience_scope` grammar (minus global). */
 export type PlaceType = 'circle' | 'hub' | 'nexus'
 
-export const PLACE_TYPES: readonly PlaceType[] = ['circle', 'hub', 'nexus']
+const PLACE_TYPES: readonly PlaceType[] = ['circle', 'hub', 'nexus']
 
 /** A parsed place selector: which tier, and the id of the entity within it. */
-export interface PlaceSelector {
+interface PlaceSelector {
   type: PlaceType
   id: string
 }

@@ -52,9 +52,12 @@ host or Space through **Stripe Connect**. Three rules come first (ADR-913):
 
 Every order that is not a tip is classified as `self` (the seller's own audience) or `network` (the
 network sourced it: referral, discovery, the marketplace). **Own-audience is a relationship, not a
-cookie**: the buyer follows the Space, is an active Space member, is in its Space Contacts, is in the
-seller's own contact list, or has bought from them before. Any one of those makes the order `self` and
-the fee 0%. Network orders pay the ladder for the seller's tier:
+cookie**: the buyer follows the Space, is on its team or holds an active membership in one of its tiers
+([ADR-1600](DECISIONS.md)), is in its Space Contacts, is in the seller's own contact list, or has
+bought from them before. A person selling without a Space is measured against their profile plus
+every Space they own: their accepted friends and the active members of any Space they own count too
+([ADR-1584](DECISIONS.md)). Any one of those makes the order `self` and the fee 0%. Network orders pay
+the ladder for the seller's tier:
 
 | Seller | Network-sourced take-rate | Own audience |
 |---|---|---|

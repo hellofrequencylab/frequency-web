@@ -16,7 +16,7 @@ import { normalizePrice, type Price } from '@/lib/commerce/types'
 
 /** A Recording is audio or video. Mirrors recordings.media_kind (CHECK). */
 export type MediaKind = 'audio' | 'video'
-export const MEDIA_KINDS: readonly MediaKind[] = ['audio', 'video']
+const MEDIA_KINDS: readonly MediaKind[] = ['audio', 'video']
 
 /** How widely a Recording is exposed. Mirrors recordings.visibility (CHECK). The DB + app gate walls
  *  only `private` to Space members; `space` vs `public` finer gating rides the player + Price. */
@@ -26,7 +26,7 @@ export const RECORDING_VISIBILITIES: readonly RecordingVisibility[] = ['public',
 /** The host types a Recording can attach to (requirement #3). Mirrors recording_attachments.host_kind
  *  (CHECK). `journey_item` is a specific lesson block; `space` is the whole Space surface. */
 export type RecordingHostKind = 'space' | 'journey' | 'journey_item' | 'practice' | 'event' | 'product'
-export const RECORDING_HOST_KINDS: readonly RecordingHostKind[] = [
+const RECORDING_HOST_KINDS: readonly RecordingHostKind[] = [
   'space',
   'journey',
   'journey_item',
@@ -37,12 +37,12 @@ export const RECORDING_HOST_KINDS: readonly RecordingHostKind[] = [
 
 /** A Show's lifecycle. Mirrors podcast_shows.status (CHECK). */
 export type ShowStatus = 'draft' | 'published' | 'archived'
-export const SHOW_STATUSES: readonly ShowStatus[] = ['draft', 'published', 'archived']
+const SHOW_STATUSES: readonly ShowStatus[] = ['draft', 'published', 'archived']
 
 /** Whether a Show's feed is the public one or a private tokenized feed (P4). Mirrors
  *  podcast_shows.feed_visibility (CHECK). */
 export type FeedVisibility = 'public' | 'private'
-export const FEED_VISIBILITIES: readonly FeedVisibility[] = ['public', 'private']
+const FEED_VISIBILITIES: readonly FeedVisibility[] = ['public', 'private']
 
 /** Narrow an arbitrary value to a MediaKind, or null (default-deny). PURE. */
 export function asMediaKind(raw: unknown): MediaKind | null {

@@ -16,12 +16,12 @@
 // (being executable) is the one that gets checked against — keep the doc in step.
 
 /** How a breached SLO is handled (OBSERVABILITY-BASELINES.md §4b). */
-export type SloAction =
+type SloAction =
   | 'page' // wired signal + a human is expected to respond immediately
   | 'track' // drift is reviewed; a sustained breach opens an investigation
 
 /** The kind of objective, so consumers can group/format them sensibly. */
-export type SloKind = 'availability' | 'latency' | 'error-rate' | 'freshness'
+type SloKind = 'availability' | 'latency' | 'error-rate' | 'freshness'
 
 export type Slo = {
   /** Stable identifier, dot-namespaced like log events (e.g. `latency.read-hot-paths`). */
@@ -121,7 +121,7 @@ export const SLOS: readonly Slo[] = [
   },
   {
     id: 'freshness.cron',
-    label: 'Cron freshness (each of 18 jobs ran within its schedule + grace)',
+    label: 'Cron freshness (every scheduled cron ran within its schedule + grace)',
     kind: 'freshness',
     target: 100,
     unit: '%',
@@ -137,14 +137,17 @@ export const SLOS: readonly Slo[] = [
 /**
  * Per-cron freshness windows (OBSERVABILITY-BASELINES.md §4a). A job is FRESH when
  * its last success heartbeat (H0-5) arrived within `freshByMinutes` of now — defined
- * as `schedule interval + 1 interval` of grace. The full 18-job schedule list is the
- * source of truth in `vercel.json`; this is the freshness CONTRACT the heartbeat
- * monitor pages against, grouped by the urgency of each job's silence.
+ * as `schedule interval + 1 interval` of grace. The schedule list is the source of
+ * truth in `vercel.json`; this is the freshness CONTRACT the heartbeat monitor pages
+ * against, grouped by the urgency of each job's silence. `slos.test.ts` holds the two
+ * in lockstep: every scheduled cron appears here exactly once, so a cron added without
+ * a window fails a test instead of going unwatched (the list read 18 jobs while
+ * vercel.json scheduled 29, for three months, until LIVE-548 made that a test).
  *
  * `jobs` lists the route segments under app/api/cron/ that share each window, so the
  * mapping back to vercel.json (and to withCronHeartbeat's `jobName`) stays obvious.
  */
-export type CronFreshnessWindow = {
+type CronFreshnessWindow = {
   /** Group label, e.g. 'every 2 min', 'daily'. */
   group: string
   /** Minutes within which a fresh job must have last succeeded (interval + grace). */
@@ -165,8 +168,8 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'every 5 min',
     freshByMinutes: 10,
-    jobs: ['publish-scheduled'],
-    why: 'scheduled content goes live on time',
+    jobs: ['publish-scheduled', 'space-campaigns', 'space-drips', 'conversation-batches'],
+    why: 'scheduled content goes live on time; operator-scheduled sends leave on time',
   },
   {
     group: 'every 10 min',
@@ -177,31 +180,47 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'every 15 min',
     freshByMinutes: 30,
-    jobs: ['nurture', 'event-reminders'],
+    jobs: ['nurture', 'event-reminders', 'space-follower-event-reminders'],
     why: 'member re-engagement + event attendance',
   },
   {
     group: 'every 30 min',
     freshByMinutes: 60,
-    jobs: ['referral-release', 'embed-events'],
-    why: 'referral payouts + event search freshness',
+    jobs: ['referral-release', 'embed-events', 'journey-drips'],
+    why: 'referral payouts + event search freshness + Journey drips',
   },
   {
-    group: 'daily / weekly',
+    group: 'hourly',
+    freshByMinutes: 120,
+    jobs: ['journey-prompt', 'practice-lifecycle'],
+    why: 'the daily Journey prompt at each member\'s local morning (ADR-1225); practice state transitions',
+  },
+  {
+    group: 'daily',
     freshByMinutes: 60 * 24 + 60, // one day + one hour grace
     jobs: [
-      'journey-prompt',
+      'vera-owner-brief',
       'embed-help',
+      'embed-library',
+      'tag-library',
       'lifecycle-triggers',
       'event-occurrences',
       'refresh-traits',
       'enforce-retention',
-      'weekly-digest',
       'demo-decay',
       'embed-practices',
       'summarize-vera-memory',
+      'billing-renewals',
+      'signup-lead-recovery',
+      'onboarding-throughput',
     ],
-    why: 'digest delivery, retention, embeddings',
+    why: 'renewals, retention, lifecycle, embeddings, the daily readings',
+  },
+  {
+    group: 'weekly',
+    freshByMinutes: 60 * 24 * 7 + 60 * 24, // one week + one day grace
+    jobs: ['weekly-digest'],
+    why: 'digest delivery; a miss is visible to every recipient',
   },
 ]
 
@@ -237,7 +256,7 @@ export function meetsSlo(slo: Slo, value: number): boolean {
 // not budgets, so `errorBudget` returns null for them rather than inventing a number.
 
 /** A computed error-budget snapshot for one ratio SLO at one measured value. */
-export type ErrorBudget = {
+type ErrorBudget = {
   /** The SLO this budget is derived from. */
   sloId: string
   /**
@@ -332,4 +351,82 @@ export function isCronFresh(
   if (windowMin == null || lastSuccessMs == null) return false
   const ageMin = (nowMs - lastSuccessMs) / 60_000
   return ageMin >= 0 && ageMin <= windowMin
+}
+
+// ── The monitored set (LIVE-548, ADR-1574) ──────────────────────────────────────────
+//
+// The dead-man's switch (lib/observability/cron-heartbeat.ts) pings a monitor per job,
+// and the monitor pages when a ping stops arriving. Which jobs HAVE a monitor used to
+// live in two places outside this repository: as check names in the Healthchecks
+// account, and as the CRON_HEARTBEAT_SKIP env value in Vercel. So the repo could not
+// compare intent with reality, and two monitored jobs 404ed on every ping for two weeks
+// into warn lines nobody queried (OWN-070). This partition is the intent, in the tree.
+//
+// THE RULE: every cron in vercel.json is named in exactly ONE of these two lists, and
+// an opt-out carries its reason. `slos.test.ts` and `scripts/cron-freshness.mjs` both
+// fail a job that is scheduled and named in neither, so a cron added next month fails a
+// test until someone decides whether its silence pages. The heartbeat wrapper reads
+// CRON_MONITORED to decide whether a rejected ping is a warn line (an opt-out that still
+// pings, expected) or a Sentry event (a monitored job whose monitor is gone, the failure
+// this exists to say out loud).
+//
+// THE ORDER of CRON_MONITORED is OWN-005's ranking by the cost of a silent failure, and
+// the twenty are the twenty checks that exist in the account (OWN-005, OWN-065). The
+// opt-outs are OWN-005's bottom eight, every one an embedding or an AI derivation whose
+// silent failure degrades a reading gradually and is repaired by a backfill, plus the
+// one daily instrument that joined the fleet after the ranking (LIVE-311).
+//
+// Moving a job across the line is a code change here AND an account change there (a
+// check created or deleted, CRON_HEARTBEAT_SKIP edited). Neither alone is the move.
+
+/** A cron that deliberately has no monitor, and the one-line reason silence was chosen. */
+type UnmonitoredCron = {
+  /** Cron route segment (matches app/api/cron/<job> and vercel.json `path`). */
+  job: string
+  /** Why a silent failure here does not page anyone. One line. */
+  reason: string
+}
+
+/** Jobs whose dead-man's switch is expected to page. Order is OWN-005's ranking. */
+export const CRON_MONITORED: readonly string[] = [
+  'process-queue',
+  'billing-renewals',
+  'event-reminders',
+  'space-follower-event-reminders',
+  'referral-release',
+  'event-occurrences',
+  'enforce-retention',
+  'season-go-live',
+  'publish-scheduled',
+  'lifecycle-triggers',
+  'signup-lead-recovery',
+  'journey-drips',
+  'journey-prompt',
+  'practice-lifecycle',
+  'space-campaigns',
+  'space-drips',
+  'nurture',
+  'conversation-batches',
+  'weekly-digest',
+  'demo-decay',
+]
+
+/** Jobs that deliberately have no monitor. Silence is chosen here, one line each. */
+export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
+  { job: 'embed-events', reason: 'embedding derivation; a miss degrades event search gradually and a backfill repairs it' },
+  { job: 'embed-room-messages', reason: 'embedding derivation; a miss degrades room search gradually and a backfill repairs it' },
+  { job: 'embed-practices', reason: 'embedding derivation; a miss degrades practice search gradually and a backfill repairs it' },
+  { job: 'embed-library', reason: 'embedding derivation; a miss degrades library search gradually and a backfill repairs it' },
+  { job: 'tag-library', reason: 'AI derivation (LIVE-587); an image left unnamed tonight is still unnamed tomorrow and the next run names it' },
+  { job: 'embed-help', reason: 'embedding derivation; a miss degrades help search gradually and a backfill repairs it' },
+  { job: 'summarize-vera-memory', reason: 'AI derivation; a missed summary is caught up by the next run, nothing is lost' },
+  { job: 'refresh-traits', reason: 'AI derivation; traits go stale by a day and the next run recomputes them' },
+  { job: 'vera-owner-brief', reason: 'mails one person, the owner, who notices its absence tomorrow; self-monitoring' },
+  { job: 'onboarding-throughput', reason: 'a read-only daily reading (LIVE-311); a miss delays a log line and the next run reads the same state' },
+]
+
+/** Is this cron expected to page when it goes quiet? False for an opt-out and for a job
+ *  this file has never heard of: an undeclared job is a test failure, not a monitored one. */
+export function isCronMonitored(jobName: string): boolean {
+  return CRON_MONITORED.includes(jobName)
 }

@@ -17,7 +17,7 @@ import { playbookForChurnRisk, playbookForNextBestAction, type Playbook } from '
 
 /** The minimal score shape the resolver needs (a subset of MemberScores). The two strings are read
  *  loosely off the matview, so they may be null or an unknown value; the resolver normalizes both. */
-export interface ResolveScoresInput {
+interface ResolveScoresInput {
   /** The churn band string ('low' | 'medium' | 'high'), or null/unknown. */
   churnRisk: string | null
   /** The next_best_action string ('reengage' | … | 'none'), or null/unknown. */

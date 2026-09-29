@@ -46,7 +46,7 @@ import type { BusinessProfile } from './schema'
 /** The kinds of claim that keep prose gated. */
 export type ProseClaim = 'price' | 'phone' | 'address' | 'hours' | 'rating' | 'health' | 'superlative'
 
-export interface ProseScanResult {
+interface ProseScanResult {
   /** True when the prose carries no claim, so it is safe to auto-publish. */
   clean: boolean
   /** Every claim kind detected, stable-ordered, de-duplicated. */
@@ -65,7 +65,7 @@ export const PROSE_CLAIM_ORDER: readonly ProseClaim[] = [
 ]
 
 /** One inspectable detection rule: what it catches, in words, plus the pattern that catches it. */
-export interface ProseClaimRule {
+interface ProseClaimRule {
   claim: ProseClaim
   /** A plain description of the shape, so the rule set reads as documentation. */
   describes: string

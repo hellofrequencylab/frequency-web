@@ -20,7 +20,7 @@ export const COVER_ASPECT_MIN = 0.2
 export const COVER_ASPECT_MAX = 5
 
 /** The theme key. One constant, so the writer and the reader cannot drift apart. */
-export const COVER_ASPECT_KEY = 'coverAspect'
+const COVER_ASPECT_KEY = 'coverAspect'
 
 /** Narrow an untrusted value to a usable cover aspect, or null. Finite, positive, inside the
  *  bounds, rounded to four decimals so a stored value does not carry float noise. Pure + total. */

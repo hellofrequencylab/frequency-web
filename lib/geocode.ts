@@ -37,7 +37,7 @@ export type PlaceResult = PlaceSuggestion & {
 }
 
 /** The geocoding backends behind venue search, in preference order. */
-export type PlaceProvider = 'google' | 'nominatim' | 'photon'
+type PlaceProvider = 'google' | 'nominatim' | 'photon'
 
 const PHOTON_URL = 'https://photon.komoot.io/api/'
 

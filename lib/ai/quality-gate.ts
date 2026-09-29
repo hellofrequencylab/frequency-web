@@ -53,7 +53,7 @@ export interface QualityVerdict {
 
 /** The plain lines a member reads when the gate could not run. Each standard supplies its own so
  *  the copy tells the truth about THAT entity ("your Journey is still live in the library"). */
-export interface PendingCopy {
+interface PendingCopy {
   /** The kill switch is off, or AI is not configured. */
   paused: string
   /** The daily budget for this gate is spent. */
@@ -66,7 +66,7 @@ export interface PendingCopy {
  * ONE entity's quality standard. This is the opt-in: declare a standard, call the gate, and the
  * entity has a pre-publish read. Nothing else about the entity changes.
  */
-export interface QualityStandard {
+interface QualityStandard {
   /** The entity id (matches the Studio manifest / registry key and the AI feature prefix). */
   entity: string
   /** Member-facing name, used in the prompt and the fallback rubric. */
@@ -170,7 +170,7 @@ const rubricCache = new Map<string, string>()
 const RUBRIC_DIR = join(process.cwd(), 'content', 'leader-training', 'authoring')
 
 /** Load a standard's rubric doc, falling back to its compact inline standard. Never throws. */
-export async function loadRubric(standard: QualityStandard): Promise<string> {
+async function loadRubric(standard: QualityStandard): Promise<string> {
   if (!standard.rubricFile) return standard.fallbackRubric
   const path = join(RUBRIC_DIR, standard.rubricFile)
   const cached = rubricCache.get(path)
@@ -310,7 +310,7 @@ export const DEFAULT_PASS_SCORE = 70
 export const ENTITY_REVIEW_FEATURE = 'entity-review'
 
 /** The generic fail-closed copy for an entity, built from its name. Plain, no em dashes. */
-export function defaultPendingCopy(label: string): PendingCopy {
+function defaultPendingCopy(label: string): PendingCopy {
   const thing = label.toLowerCase()
   return {
     paused: `Vera's read is paused right now, so this ${thing} has not been checked yet. Nothing is lost. Ask for the read again later.`,

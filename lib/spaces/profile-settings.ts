@@ -28,7 +28,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** The editable profile fields. Every field is optional on the wire; an empty string clears the
  *  column (null), a present string is validated before it is written. */
-export interface UpdateSpaceProfileInput {
+interface UpdateSpaceProfileInput {
   brandName?: string | null
   /** A DAWN token NAME from TOKEN_ALLOWLIST (e.g. '--color-primary') or a 6-digit hex ('#E2912F'),
    *  or '' / null to clear. */

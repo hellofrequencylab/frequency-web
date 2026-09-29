@@ -64,7 +64,7 @@ export async function recordTrustSignal(input: RecordTrustSignalInput): Promise<
 }
 
 /** Replay a profile's signals → overwrite its trust_scores projection. Recomputable. */
-export async function recomputeTrustScore(profileId: string): Promise<void> {
+async function recomputeTrustScore(profileId: string): Promise<void> {
   const db = createAdminClient()
   const { data, error } = await db
     .from('trust_signals')

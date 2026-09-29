@@ -27,7 +27,7 @@
 // no narrated feelings.
 
 /** The address parts a row can offer. Every field optional: rows arrive half-filled. */
-export type AddressParts = {
+type AddressParts = {
   venueName?: string | null
   street?: string | null
   city?: string | null

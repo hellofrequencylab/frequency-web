@@ -30,7 +30,7 @@ export interface SelectChain extends PromiseLike<Res<Row[] | null>> {
   maybeSingle(): Promise<Res<Row | null>>
 }
 
-export interface InsertChain extends PromiseLike<Res<Row[] | null>> {
+interface InsertChain extends PromiseLike<Res<Row[] | null>> {
   select(cols?: string): { maybeSingle(): Promise<Res<{ id?: string } | null>> }
 }
 
@@ -39,7 +39,7 @@ export interface WriteChain extends PromiseLike<Res<null>> {
   in(col: string, vals: readonly unknown[]): WriteChain
 }
 
-export interface OutboundTable {
+interface OutboundTable {
   select(cols?: string): SelectChain
   insert(rows: Row | Row[]): InsertChain
   update(vals: Row): WriteChain

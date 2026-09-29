@@ -34,7 +34,7 @@ import { log, briefError } from '@/lib/log'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
 
 /** What one scheduled-send pass reports. */
-export interface SendDueResult {
+interface SendDueResult {
   /** Due campaigns the pass looked at (before claiming). */
   due: number
   /** Campaigns this pass successfully CLAIMED (scheduled -> sending) and processed. */

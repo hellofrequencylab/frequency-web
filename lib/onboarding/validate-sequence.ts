@@ -15,7 +15,7 @@
 import type { SequenceDef } from './sequence-schema'
 import { isStepType, isSequenceActionKey } from './step-types'
 
-export type SequenceValidation = { ok: true } | { ok: false; errors: string[] }
+type SequenceValidation = { ok: true } | { ok: false; errors: string[] }
 
 export function validateSequenceDef(def: SequenceDef): SequenceValidation {
   const errors: string[] = []

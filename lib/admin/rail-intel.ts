@@ -10,7 +10,7 @@
 import type { RailArchetype } from '@/lib/layout/page-chrome'
 
 /** The signals available for scoring one search result, all derived from data the rail already holds. */
-export interface ResultSignals {
+interface ResultSignals {
   /** The result's section is currently MOUNTED on this page (an on-page scope match). */
   onPage?: boolean
   /** The result's area is INCOMPLETE (a completeness gap maps to its slot). */

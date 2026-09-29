@@ -25,14 +25,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /** Sum of Gems a member has spent in the Vault Store. */
-export function sumRedemptions(
+function sumRedemptions(
   rows: Array<{ gems_spent: number | null }> | null | undefined,
 ): number {
   return (rows ?? []).reduce((s, r) => s + (r.gems_spent ?? 0), 0)
 }
 
 /** Sum of Gems a member has GIFTED away (the outflow of the Gift Gems sink). */
-export function sumGiftsSent(
+function sumGiftsSent(
   rows: Array<{ amount: number | null }> | null | undefined,
 ): number {
   return (rows ?? []).reduce((s, r) => s + (r.amount ?? 0), 0)

@@ -21,7 +21,7 @@ import type { SpaceFunctionKey } from './functions'
 import type { SpaceType } from './types'
 
 /** One commerce sub-surface that composes onto the unified Offerings page. */
-export interface OfferingSection {
+interface OfferingSection {
   /** The anchor id on the Offerings page (also the old route's redirect target: #<anchor>). */
   anchor: string
   /** The per-Space function the section's body re-checks (the console gate = the section gate). */

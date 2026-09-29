@@ -37,7 +37,7 @@ import { syncTierCircleAccess } from '@/lib/spaces/tier-circle'
 import { sendSpaceMembershipReceipts, sendSpacePlanReceipt } from './subscription-receipt'
 
 /** The metadata kinds the space subscription webhook handles. */
-export type SubscriptionKind = 'space_plan' | 'space_membership'
+type SubscriptionKind = 'space_plan' | 'space_membership'
 
 /** The reconciled payment_status (space_memberships.payment_status / a space plan's status) for a
  *  Stripe subscription status. PURE. active/trialing → 'active'; past_due/unpaid → 'past_due';
@@ -81,7 +81,7 @@ export function planForSubscription(
  *  status. PURE. active/trialing keep their own labels (a trial is recorded as 'trialing' so the
  *  surface can show the trial); past_due/unpaid -> past_due; canceled/expired -> canceled; else
  *  pending. */
-export function itemStatusForSubscription(
+function itemStatusForSubscription(
   status: Stripe.Subscription.Status | string | null | undefined,
 ): 'active' | 'trialing' | 'past_due' | 'canceled' | 'pending' {
   if (status === 'trialing') return 'trialing'
@@ -422,7 +422,7 @@ function writeErrorMessage(error: WriteError): string {
  *  never follow its `.updated`, and an `.updated` can never follow its `.deleted`. So the rank is
  *  the type's position in that lifecycle, and 0 means "no lifecycle evidence" — an unranked type
  *  never loses a same-second tie (it is admitted rather than dropped). */
-export const SPACE_PLAN_EVENT_RANKS: Readonly<Record<string, number>> = {
+const SPACE_PLAN_EVENT_RANKS: Readonly<Record<string, number>> = {
   'customer.subscription.created': 1,
   'customer.subscription.updated': 2,
   'customer.subscription.deleted': 3,
@@ -435,7 +435,7 @@ export function spacePlanEventRank(type: string | null | undefined): number {
 
 /** The identifying bits of the Stripe event driving a space_plan reconcile. `id` and `type` are
  *  optional so a caller that has only a timestamp still gets the (weaker) created-only guard. */
-export type SpacePlanEventRef = {
+type SpacePlanEventRef = {
   /** `event.created`, unix seconds — the primary ordering key. */
   created: number
   /** `event.type` — the same-second tiebreaker, via spacePlanEventRank. */

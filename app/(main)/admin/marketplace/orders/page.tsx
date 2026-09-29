@@ -5,7 +5,8 @@ import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { listAllOrders, orderStatusCounts, type CommerceOrder } from '@/lib/commerce/orders'
-import { refundOrderAction } from '../actions'
+import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
+import { refundOrderAction, setOrderFulfillmentAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Orders · Admin' }
@@ -19,15 +20,23 @@ const OWNER_LABEL: Record<string, string> = { platform: 'Shop', profile: 'Maker'
 function OrderRow({ o }: { o: CommerceOrder }) {
   const when = new Date(o.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
   const refundable = o.status === 'paid' || o.status === 'fulfilled'
+  // Frequency is the seller on a Store order, so the operator holds its door; a Space's or a maker's
+  // order shows where it stands and nothing more (their console is the door, LIVE-606).
+  const platformOrder = o.ownerKind === 'platform'
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface px-4 py-3">
-      <div className="min-w-0">
+      <div className="min-w-0 grow">
         <p className="truncate text-body-sm text-text">
           {o.items.map((it) => `${it.title}${it.qty > 1 ? ` ×${it.qty}` : ''}`).join(', ') || 'Order'}
         </p>
         <p className="text-meta text-subtle">
           {OWNER_LABEL[o.ownerKind] ?? o.ownerKind} · {when} · <span className="uppercase tracking-wide">{o.status}</span>
         </p>
+        <OrderFulfilmentControl
+          order={o}
+          action={platformOrder ? setOrderFulfillmentAction.bind(null, o.id) : undefined}
+          readOnly={!platformOrder}
+        />
       </div>
       <div className="flex items-center gap-3">
         <span className="text-right text-body-sm">

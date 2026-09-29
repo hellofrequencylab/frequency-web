@@ -19,7 +19,7 @@ import { createEventIntake } from './store'
 
 /** One classified chat item, as the staging action hands it over. `extraction` is untrusted
  *  (it round-tripped through the operator's browser), so it is re-coerced on the way in. */
-export interface ChatEventStageInput {
+interface ChatEventStageInput {
   operatorId: string
   extraction: unknown
   /** The `ref` line numbers of the messages this event was read from. */

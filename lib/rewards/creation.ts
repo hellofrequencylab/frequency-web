@@ -36,7 +36,7 @@ function db(): SupabaseClient {
 }
 
 /** The three creatable asset kinds the economy rewards. */
-export type CreationAssetType = 'journey' | 'event' | 'practice'
+type CreationAssetType = 'journey' | 'event' | 'practice'
 
 /** The small Gem token paid on FIRST publish, per asset type (REWARDS-ECONOMY.md §4). */
 const TOKEN_GEMS: Record<CreationAssetType, number> = {
@@ -215,7 +215,7 @@ async function claimAndPay(
   return true
 }
 
-export interface ValidatedCreationResult {
+interface ValidatedCreationResult {
   paid: boolean
   zaps: number
   gems: number

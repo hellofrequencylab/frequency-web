@@ -127,7 +127,7 @@ const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/
 const DAY_MS = 86_400_000
 /** The longest single entry staff can create (a season-long closure is still one entry). */
-export const MAX_ENTRY_DAYS = 366
+const MAX_ENTRY_DAYS = 366
 
 function dateMs(date: string): number | null {
   const m = DATE_RE.exec(date)

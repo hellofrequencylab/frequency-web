@@ -21,7 +21,7 @@ export type StarterSeed = Pick<CircleTemplate, 'id' | 'slug' | 'name' | 'card' |
 
 /** A projected virtual Starter Circle for one viewer. The page maps this onto its
  *  own card/marker shapes; nothing here is stored. */
-export interface StarterProjection {
+interface StarterProjection {
   /** Stable synthetic id (not a real circle id) — `starter-<slug>`. */
   id: string
   templateId: string
@@ -78,7 +78,7 @@ function offsetWithinRadius(
   return { lat: lat + dLat, lng: lng + dLng }
 }
 
-export interface ProjectInput {
+interface ProjectInput {
   templates: StarterSeed[]
   /** The viewer's location to scatter around. */
   viewer: { lat: number; lng: number }

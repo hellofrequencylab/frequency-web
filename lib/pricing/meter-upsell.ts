@@ -77,7 +77,7 @@ export function meterRateBps(axis: GateAxis, tier: string, rates: MeterRateLadde
 
 /** The three plain sentences an in-context meter upsell shows, plus the next rung's label for the CTA.
  *  Serializable, so the server seam can hand it straight to a presentational component. */
-export interface MeterUpsellCopy {
+interface MeterUpsellCopy {
   featureKey: string
   /** The meter's dimension noun ("Contacts", "Email sends"), for the surface's own heading. */
   dimension: string
@@ -151,7 +151,7 @@ export const METER_UPSELL_PROMISE =
 /** The single CTA label every in-context meter upsell uses. Plain, navigational, never a checkout. */
 export const METER_UPSELL_CTA = 'See plans'
 
-export interface MeterUpsellInput {
+interface MeterUpsellInput {
   /** The pricing feature key (a PLACEHOLDER_METER_LIMITS row, e.g. 'space_crm', 'circle_host'). */
   featureKey: string
   /** The viewer's CURRENT tier on the meter's axis (the Space plan, or the membership tier). */
@@ -228,7 +228,7 @@ export function buildMeterUpsell(input: MeterUpsellInput): MeterUpsellCopy | nul
 // mount the axis-wide meter ladder. A row whose axis disagrees with the meter's own axis fails too.
 
 /** How a meter's upsell reaches the member. */
-export type MeterUpsellKind =
+type MeterUpsellKind =
   /** A dedicated surface at the point of use: the member sees it while doing the thing being metered. */
   | 'in-context'
   /** The axis-wide allowance ladder (the Space plan-and-usage hub, or the member upgrade page), which
@@ -236,7 +236,7 @@ export type MeterUpsellKind =
    *  real count is not cheaply in scope at the authoring surface. */
   | 'ladder'
 
-export interface MeterUpsellSurface {
+interface MeterUpsellSurface {
   /** The repo-relative file that mounts the upsell for this meter. Asserted to exist. */
   mount: string
   /** How it reaches the member. Drives what the guard test asserts about `mount`. */

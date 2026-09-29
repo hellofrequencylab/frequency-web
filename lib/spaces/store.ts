@@ -226,7 +226,7 @@ export async function listSpaces(): Promise<Space[]> {
 }
 
 /** The canonical root Space (the Frequency app itself). */
-export async function getRootSpace(): Promise<Space | null> {
+async function getRootSpace(): Promise<Space | null> {
   // COLS_FULL carries `feature_roles` (untyped, ADR-246) so the cast handles it.
   const { data } = (await createAdminClient()
     .from('spaces')

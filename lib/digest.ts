@@ -12,7 +12,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 
-export type DigestDispatch = {
+type DigestDispatch = {
   id:           string
   title:        string
   excerpt:      string | null
@@ -20,7 +20,7 @@ export type DigestDispatch = {
   authorName:   string
 }
 
-export type DigestEvent = {
+type DigestEvent = {
   id:        string
   title:     string
   startsAt:  string
@@ -28,7 +28,7 @@ export type DigestEvent = {
   url:       string
 }
 
-export type DigestPayload = {
+type DigestPayload = {
   profileId:        string
   displayName:      string
   email:            string

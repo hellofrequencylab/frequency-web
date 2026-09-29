@@ -59,7 +59,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 const WEIGHT_LABELS: Record<string, string> = { light: 'Light', standard: 'Standard', heavy: 'Heavy' }
 
-export interface AdminPracticesContext {
+interface AdminPracticesContext {
   /** Headline counts for the StatCard band. */
   stats: {
     inLibrary: number

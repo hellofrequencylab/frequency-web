@@ -307,7 +307,9 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       buyerProfileId: input.buyerProfileId,
       sellerProfileId: g.seller.owner_profile_id,
       // A Space shop: the relationship check (ADR-913) asks the SPACE's followers / members / CRM too,
-      // not just the owner profile. Null for a profile or platform seller, which is correct.
+      // not just the owner profile. Null for a profile or platform seller, and that is NOT a narrower
+      // audience: with no Space the check measures the profile plus every Space the seller owns
+      // (friends, and active members of their Spaces), per ADR-1584 (LIVE-221, owner ruling 2026-09-29).
       sellerSpaceId: g.seller.owner_kind === 'space' ? g.seller.owner_space_id ?? null : null,
     })
     const charge = await resolveCharge(g.seller, g.grossCents, source)

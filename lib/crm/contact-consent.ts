@@ -29,8 +29,8 @@ export type ContactPurpose = 'transactional' | 'marketing'
 /** The address-level marketing-consent state on the `contacts` hub. */
 export type ContactConsentState = 'unknown' | 'subscribed' | 'unsubscribed'
 
-export type ConsentDecisionReason = 'ok' | 'suppressed' | 'unsubscribed' | 'not_opted_in'
-export interface ConsentDecision {
+type ConsentDecisionReason = 'ok' | 'suppressed' | 'unsubscribed' | 'not_opted_in'
+interface ConsentDecision {
   allowed: boolean
   reason: ConsentDecisionReason
 }
@@ -132,7 +132,7 @@ export async function setContactsConsent(
 
 // ── GLOBAL STOP — propagate one opt-out across every channel at once ──────────────────────────────
 
-export interface GlobalStopInput {
+interface GlobalStopInput {
   /** The email to opt out everywhere (suppressed globally + contacts flipped to unsubscribed). */
   email?: string | null
   /** The phone to opt out (every member's sms_consent for this number flipped to opted_out). */
@@ -143,7 +143,7 @@ export interface GlobalStopInput {
   source?: string
 }
 
-export interface GlobalStopResult {
+interface GlobalStopResult {
   /** The email was suppressed + any matching contacts flipped to unsubscribed. */
   emailStopped: boolean
   /** How many (profile, phone) SMS-consent rows were flipped to opted_out. */

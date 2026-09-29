@@ -317,7 +317,7 @@ function present(v: unknown): boolean {
   return true
 }
 
-export interface CreateDraftCheck {
+interface CreateDraftCheck {
   ok: boolean
   /** Plain sentences, all of them, so a caller can show every problem in one pass. */
   errors: string[]

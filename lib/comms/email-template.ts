@@ -18,7 +18,7 @@ export function textToInnerHtml(text: string): string {
 }
 
 /** A signature as an inner HTML block (RFC 3676 `-- ` delimiter), or '' for none. */
-export function signatureInnerHtml(signature: string | null): string {
+function signatureInnerHtml(signature: string | null): string {
   const sig = (signature ?? '').trim()
   if (!sig) return ''
   // token-ok: inline styles in a server-rendered email body (no CSS vars available in email)

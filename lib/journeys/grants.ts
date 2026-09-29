@@ -104,7 +104,7 @@ export async function grantJourneyRewards(opts: {
 
 /** Pay the bonus Zaps for completing one extra-credit block, EXACTLY ONCE (keyed by item id).
  *  Returns the Zaps newly awarded, or 0 if already granted / invalid. */
-export async function grantExtraCreditZaps(
+async function grantExtraCreditZaps(
   profileId: string,
   itemId: string,
   amount: number,

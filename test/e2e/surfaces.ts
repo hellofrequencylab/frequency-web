@@ -663,38 +663,43 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
  *    readings of 0 in `a11y-baselines.json` (the zero-tolerance join rule, made explicit) that
  *    the first staff-session run measures for real (HYG-027, ADR-1239).
  */
+/** The operator roster as surfaces. The first-screen list it reads is declared below, with the
+ *  note that records the one trade it ever carried. */
+export function operatorSurfaces(): readonly Surface[] {
+  return OPERATOR_PATHS.map(({ path }) => ({
+    path,
+    slug: slugFor(path),
+    audience: 'operator' as const,
+    ...(VIEWPORT_ONLY_OPERATOR_PATHS.includes(path) ? { viewportOnly: true } : {}),
+  }))
+}
+
 /**
- * `/admin/qr` PHOTOGRAPHS ITS FIRST SCREEN ONLY, and this is the one place in the file that
- * records why, because `viewportOnly` is a coverage trade and a silent one reads as coverage.
+ * THE OPERATOR SURFACES PHOTOGRAPHED FIRST-SCREEN ONLY. Empty since 2026-09-28, and the one
+ * place in the file that records why an entry ever stood here, because `viewportOnly` is a
+ * coverage trade and a silent one reads as coverage.
  *
- * THE MEASUREMENT. Four consecutive PRs went red here on four unrelated diffs, none of which
- * touches anything this page renders: #2873 (flaky, lucky on the retry), #2874, #2875, #2878.
- * Every run the same pair of heights, 14521 and 14567, and the same differing-pixel count.
+ * `/admin/qr` STOOD HERE from 2026-09-23 to 2026-09-28 (LIVE-476, ADR-1568) and is photographed
+ * whole again. What put it here: four consecutive PRs went red on four unrelated diffs (#2873,
+ * #2874, #2875, #2878), every run the same pair of full-page heights at 390, 14521 and 14567,
+ * never two consecutive stable frames, so no baseline could be right. The first-screen capture
+ * settled that at the cost of ~13,700px below the fold.
  *
- * IT IS NOT DRIFT AND A RECAPTURE CANNOT FIX IT. `toHaveScreenshot` compares each capture with
- * the PREVIOUS capture to prove the page is still, and gets the flip back, so it never takes
- * two consecutive stable frames. The page is BOTH heights; a baseline is one of them. Whichever
- * we committed would be red from the other side, which is why the obvious move was refused.
+ * WHAT THE FLIP WAS, measured rather than argued, one surface over (LIVE-492, #2941): a
+ * full-page `toHaveScreenshot` on a project with `hasTouch` drops Chromium's touch emulation
+ * after its first shot and never gets it back, so the first capture photographs the
+ * coarse-pointer layout (`--tap-min: 44px`) and every later one the fine layout. The 46px is
+ * the sum of the tap floors that release: this page's kit controls (`Button`, `Select`,
+ * `Checkbox` carry `tap-target`) sit below the fold, where the 2026-09-23 arithmetic located the
+ * insertion (identical above y~13,500), and its 37 raw `<button>`s carry no floor at all, which
+ * is why the top of the page never moved. The same arithmetic ruled the floor out by assuming
+ * it would land at the TOP; it lands where the kit controls are. `capture()` now drops touch
+ * emulation before the shutter on exactly those captures (`dropTouchBeforeFullPageCapture`), so
+ * the two heights are one, and the four `admin-qr--*` baselines are full-page again, recaptured
+ * on the runner with the drop in place.
  *
- * WHAT IS RULED OUT, so nobody re-walks it. By arithmetic over the committed PNG (the comparator
- * pads both images and diffs the whole canvas, so the pixel count inverts): a 46px band entering
- * at the TOP would differ by ~996,772 pixels against the ~47,000 observed, which puts the
- * insertion at the foot of the Analytics block and makes every frame identical above y~13,500.
- * That kills the coarse-pointer touch floor, the `--tab-bar-clearance` asymmetry and every
- * `<Suspense fallback={null}>` on the surface. Two further theories died with evidence: the
- * chart's empty state was made dimension-invariant and the flip survived it, and `fullPage` was
- * shown NOT to resize the layout viewport in playwright-core 1.63 (`captureBeyondViewport`, no
- * `setDeviceMetricsOverride` in that path), which refutes the viewport-unit explanation. Its
- * arithmetic refutes it too: that model predicts a delta of 46 + X where X is zero on DESKTOP,
- * the viewport that passes, and >=112.5 on mobile, the one that fails.
- *
- * WHY THE FLAG RATHER THAN A SKIP. This is the same remedy `/feed` carries, for the reason the
- * flag exists: a page whose full-page height is not a function of its own content cannot be
- * photographed whole, and a picture of the first screen is still a real gate on the chrome, the
- * heading, the stat cards and the controls, which is what this surface was chosen for (it leads
- * the operator tree on raw buttons). What is given up is ~13,700px below the fold, stated here
- * rather than performed silently. The flip keeps its own row; when it is found, delete this
- * entry and the surface goes back to full-page in the same change.
+ * The list stays so the next surface that needs the trade can take it with the reason written
+ * at the site; `Surface.viewportOnly` says when that is the right trade and when it is not.
  */
 //
 // ── 🔴 `/admin/library` WAS ADDED HERE ON 2026-09-25 AND TAKEN BACK OUT THE SAME DAY ─────
@@ -738,16 +743,7 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
 // The earlier note here said: "If a stable first-screen diff appears here later, that is a new
 // finding and a new row, not a reason to downgrade quietly." One appeared. This is that row, and
 // the downgrade is neither quiet nor a guess.
-const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = ['/admin/qr']
-
-export function operatorSurfaces(): readonly Surface[] {
-  return OPERATOR_PATHS.map(({ path }) => ({
-    path,
-    slug: slugFor(path),
-    audience: 'operator' as const,
-    ...(VIEWPORT_ONLY_OPERATOR_PATHS.includes(path) ? { viewportOnly: true } : {}),
-  }))
-}
+const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = []
 
 /**
  * THE OPERATOR SURFACES THAT ARE PHOTOGRAPHED BUT DO NOT VOTE (owner ruling 2026-09-23).
@@ -761,7 +757,10 @@ export function operatorSurfaces(): readonly Surface[] {
  * unchanged, and the capture still runs on every pull request in the `@advisory` step. The one
  * thing that changes is which step's exit code the result lands in. A path that stopped being
  * photographed altogether would be the HYG-026 silence again, so `visual-tiers.test.ts` asserts
- * in-tree, on every pull request, that each path here has an advisory describe capturing it.
+ * in-tree, on every pull request, that the wiring matches the roster: an entry here needs an
+ * operator advisory describe in visual.spec.ts capturing it (tagged `@visual` and `@advisory`,
+ * never `@shell`) and the blocking operator loop filtering it out; an EMPTY roster needs
+ * neither, and a describe that loops nothing is refused, because it reads as coverage.
  *
  * ⚠️ AND THE COVERAGE LEDGER HAS TO BE TOLD. `shell-reporter.ts` counts `@shell` tests against
  * `operatorSurfaces()`, and the advisory describes are deliberately NOT `@shell` (the same
@@ -773,69 +772,32 @@ export function operatorSurfaces(): readonly Surface[] {
  * `summarizeShellCoverage`, which reports these as advisory rather than as missing.
  *
  * The row is the debt. Clear the row, delete the entry, and the surface votes again.
+ *
+ * ── THE QR STUDIO STOOD HERE from 2026-09-23 to 2026-09-28 (LIVE-476) and votes again ──────
+ * It was the first passenger and is the last to leave: LIVE-492 (#2949) and LIVE-504 (#2955)
+ * take theirs out first, this change merges after them, and the describe goes with the last
+ * entry. It was put here by owner ruling after four pull requests that touched nothing it
+ * renders went red on it, and both of its readings are now fixed at their cause (ADR-1568). The full-page height flip (14521 / 14567 at 390) was the shutter dropping the
+ * touch emulation after its first capture, which `dropTouchBeforeFullPageCapture` now does
+ * before it (LIVE-492, #2941); the first-screen note above has the arithmetic. The stable
+ * first-screen desktop diff (951 px dawn-light, 1029 px dawn-dark, mobile green,
+ * theme-dependent, identical on a one-line docs commit) was the operator info rail: shared admin chrome that renders at xl and above only, prints live `profiles` counts,
+ * and sits at the same position on every admin page, which is why the dawn-dark reading landed
+ * on /admin/library's to the pixel (LIVE-504) and why the mobile looks never saw it. The
+ * `admin-rail` mask (LIVE-513, 2026-09-27) is one box over it, and since that recapture the
+ * surface has passed all four advisory looks in every pr-compare run (last read: run
+ * 36491355506, 2026-09-28 22:34Z). The 2026-09-23 ruling-out on the row was right about what
+ * it froze, `qr_scans`; the table it did not freeze was `profiles`, which the rail reads and
+ * the page does not.
  */
 export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
-  // LIVE-476. Four consecutive pull requests that touched nothing this page renders went red
-  // here. First the full-page height flip (14521 ↔ 14567), settled by the first-screen-only
-  // capture above; then, on the first screen, a small STABLE desktop diff: 951 px dawn-light,
-  // 1029 px dawn-dark, identical across three attempts, mobile green. The cause is NOT KNOWN.
-  // Live tallies are ruled out by measurement, not by argument: the four StatCards on this page
-  // read `qr_scans`, which has had no new row since 2026-09-18 and none at all since the
-  // baseline was captured, so the numbers in the picture are frozen.
-  '/admin/qr': 'LIVE-476',
-  // LIVE-492, and the OWNER AUTHORISED this downgrade on 2026-09-24 after the second cause was
-  // ruled out. `pr-compare` is a required status check, so a surface that cannot be photographed
-  // truthfully was making EVERY pull request in the repository unmergeable.
-  //
-  // IT IS TWO FAILURES, NOT ONE, and reading the run as one cost an attempt. Four cases fail and
-  // they split by viewport:
-  //
-  //   MOBILE (390) is the camera-induced flip: "changed height DURING capture: 7752 and 7756, a
-  //   4px difference". `toHaveScreenshot` compares each capture with the previous one to prove the
-  //   page is still and gets the flip back, so it never takes two consecutive stable frames. The
-  //   page is BOTH heights and a baseline is one of them, which is why a recapture is refused here
-  //   for the same reason it was refused on /admin/qr.
-  //
-  //   DESKTOP (1280) is NOT a flip at all. Its call log reads "captured a stable screenshot" with
-  //   no dimension mismatch, and then a STABLE diff: 982 px dawn-light, 1008 px dawn-dark,
-  //   identical across all three attempts. Compare LIVE-476's reading on /admin/qr's first screen
-  //   -- 951 px dawn-light, 1029 px dawn-dark, also stable across three. Same defect class, same
-  //   magnitude, one surface over. The cause of THAT one is still not known either.
-  //
-  // 🔴 SO `viewportOnly` WOULD NOT HAVE FIXED THIS SURFACE. It addresses a height that is not a
-  // function of the page's own content, and the desktop half is not that -- it is a stable
-  // difference inside a stable frame, which a first-screen capture would carry straight through.
-  // The advisory tier is the only remedy that covers both halves, which settles a choice this
-  // entry would otherwise look like it made on taste.
-  //
-  // WHAT IS RULED OUT, so nobody re-walks it:
-  //  · THE HEADER OFFSET. Four hand-written copies of the app header's height had dropped
-  //    env(safe-area-inset-top), so the shell asked for 100vh + inset. That is a real defect and
-  //    it is fixed (LIVE-493) -- and it is NOT this. `pr-compare` on 34577e9, the commit carrying
-  //    the fix, failed IDENTICALLY: same four cases, same pair of heights.
-  //  · THE MECHANISM THE DIAGNOSTIC NAMES. `captureFlipMessage` blames boxes sized against the
-  //    viewport height, and this file already refutes that one surface up: `fullPage` was shown
-  //    NOT to resize the layout viewport in playwright-core 1.63 (`captureBeyondViewport`, no
-  //    `setDeviceMetricsOverride` in that path). The message asserts it anyway, which is a finding
-  //    of its own and cost a whole pull request.
-  //  · THE ARITHMETIC AGREES. 4px is far too small for any box it named: the vault drawer's
-  //    `max-h-[50dvh]` would swing ~3,400px on a 7752px document, and two of the five render at 0.
-  //
-  // STILL UNWALKED: script reading `innerHeight`, or an IntersectionObserver that fires when the
-  // whole document is suddenly in view -- the two leads the diagnostic's OTHER branch names. This
-  // surface is module-driven (`PageModules`), so either would live in the modules rather than the
-  // page.
-  //
-  // AND EVEN IF IT HAD, `viewportOnly` IS THE WRONG TRADE HERE. It gives up everything below the
-  // first screen, and on this surface that is ~7,100px of a dense table -- the 43 raw <button>
-  // population this page was CHOSEN for. It would have kept the vote and thrown away the subject.
-  // Advisory keeps the whole picture, still captures it, still reports it, and gives up only the
-  // vote. That is the trade this file's own rule asks for: a gate that cannot fire truthfully
-  // stays advisory.
-  //
-  // The row is the debt and it stays OPEN. Clear LIVE-492, delete this entry, and the surface
-  // votes again.
-  '/admin/content/practices': 'LIVE-492',
+  // /admin/content/practices STOOD HERE from 2026-09-24 to 2026-09-28 (LIVE-492) and votes
+  // again. What put it here was read on the runner rather than guessed, and both halves are
+  // fixed at their cause (ADR-1545): the 4px mobile flip was the shutter dropping the touch
+  // emulation after its first shot, which `dropTouchBeforeFullPageCapture` now does before it;
+  // the stable pixel diff was two live modules, the Needs-attention rows reordering and the
+  // stat band's counts, each now one `data-visual-mask` box (VISUAL_MASK_SITES). The entry's
+  // long note, with the ruled-out header offset (LIVE-493) and the arithmetic, is in the row.
   // /admin/library STOOD HERE from 2026-09-25 to 2026-09-28 (LIVE-504) and votes again. Its two
   // readings were the two halves of the class `dropTouchBeforeFullPageCapture` measures (LIVE-492): the mobile flip (390x5634 <->
   // 390x5642) was the shutter dropping the touch emulation after its first shot, which capture()
@@ -846,8 +808,10 @@ export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
   // full account, including what its own ruling-out did and did not cover.
 }
 
-/** The advisory operator paths, as a list. `visual.spec.ts` filters both operator loops on this
- *  so the blocking loop and the advisory describe can never drift apart. */
+/** The advisory operator paths, as a list. visual.spec.ts no longer filters on it (the operator
+ *  advisory describe retired with its last passenger, LIVE-476); it stays exported because the
+ *  LIVE-504 probe reads the roster between the map and this line, and so the day another surface
+ *  needs the trade the list is already here. `visual-tiers.test.ts` holds roster and wiring in step. */
 export const ADVISORY_OPERATOR_PATHS: readonly string[] = Object.keys(ADVISORY_OPERATOR_SURFACES)
 
 /* ── The narrow phone, and the header band (HYG-057, ADR-1270) ──────────────── */
@@ -1306,11 +1270,21 @@ export const VISUAL_MASK_SITES: readonly {
   // The measured swap was 55.25px and the observed flip is 46px, so this closes a real
   // dimension flip on the surface WITHOUT being proven to be the whole of that flip; the
   // `settleHeight` report below is what will name the next one instead of guessing at it.
+  // (It was not the whole of it. The 46px was the touch drop, LIVE-492; see LIVE-476.)
+  //
+  // BOTH BRANCHES SINCE 2026-09-28 (LIVE-476, ADR-1568). The surface is photographed whole
+  // again, so the empty state is in the picture, and it carries the same mask: the box holds
+  // the height, the mask holds the paint. Read from `qr_scans` rather than predicted: rows on
+  // 2026-08-28 (1), 2026-09-01 (3) and 2026-09-18 (1), so the window reads 4 today, 1 from
+  // 2026-10-01 and 0 from 2026-10-18, when an unmasked empty state would have swapped a
+  // magenta box for a line of text on whichever pull request ran next. The four StatCards
+  // above stay unmasked under the rule two paragraphs up; the 30-day one changes a digit on
+  // those two dates, and the band reader names it if that ever clears 400 px.
   {
     value: 'qr-daily-scans',
     file: 'app/(main)/admin/qr/analytics.tsx',
     kind: 'live',
-    why: 'The daily scans bar chart. The 30-day window slides, so every bar steps one column left at the UTC day boundary with no code between two pictures — 3533 differing pixels across one midnight. The box is `h-28` and fixed, so the mask holds it.',
+    why: 'The daily scans section, chart and empty state alike. The 30-day window slides, so every bar steps one column left at the UTC day boundary with no code between two pictures — 3533 differing pixels across one midnight — and when it empties the chart gives way to a line of text. Both branches are the same `mt-4 h-28` box, so the mask holds it in either state.',
   },
   // ── /admin/content/practices, the per-row usage tallies (2026-09-22) ────────────────────────
   // The same defect as qr-daily-scans one surface further on, and this one was already FAILING
@@ -1334,6 +1308,26 @@ export const VISUAL_MASK_SITES: readonly {
     file: 'app/(main)/admin/content/practices/practices-table.tsx',
     kind: 'live',
     why: 'Per-row practice usage: `logs_30d` is a rolling 30-day count of member logs, with `logs_total` and `adopters` beside it in the desktop cell. Real logging moves digits across a dense table between any two captures — 4179-4405 pixels on PR #2855, on a diff that touches nothing this surface renders. Both sites are `tabular-nums`, so the box is fixed and the mask holds it.',
+  },
+  // ── /admin/content/practices, the two live modules the runner named (LIVE-492, 2026-09-28) ──
+  // Read from the runner rather than inferred: the band reader in explainCaptureFailure printed,
+  // for all four looks against the 2026-09-27 baseline, twelve to thirteen 14px bands and named
+  // the box under each. Eleven sat on Needs-attention row titles (`span.min-w-0.truncate "Heart
+  // Coherence Breathing"` inside `a.inline-flex.items-center`), one on the stat band's values
+  // (`p.font-medium.text-muted "In the library"`, "Public"). 7727 to 7846 differing pixels, stable
+  // across three attempts each, mobile and desktop alike. The rows reorder because the quality
+  // score decays with freshness; the counts move with curation. Neither is a box that resizes.
+  {
+    value: 'practice-attention-list',
+    file: 'components/widgets/practices/admin/needs-attention.tsx',
+    kind: 'live',
+    why: 'The Needs-attention rows, worst quality first. The score carries a freshness term, so the rows REORDER between two honest captures a day apart: twelve 14px bands on row titles on 2026-09-28, each a title that had moved. The list is capped at PANEL_LIMIT rows, so the box holds while the library has that many gaps.',
+  },
+  {
+    value: 'practice-stat-band',
+    file: 'components/widgets/practices/admin/stats.tsx',
+    kind: 'live',
+    why: 'The five headline counts (library size, public, awaiting review, featured, never logged). Curation moves them between captures: one 14px band across the values on 2026-09-28. One box over the band, since a widening digit moves what sits to its right inside the card.',
   },
   // ── /settings and the Space console, the account-data bands (HYG-121, 2026-09-22) ─────────
   // OWN-081 added ONE space_members row for the e2e account and twelve captures went red: two
@@ -1419,11 +1413,15 @@ function envMaskSelectors(): readonly string[] {
     .filter(Boolean)
 }
 
+/** The mask SELECTORS for a surface: global + per-surface + env. The band reader reads the same
+ *  list, so a box the camera paints over is never named as what moved (ADR-1598). */
+export function maskSelectorsFor(surface: Surface): readonly string[] {
+  return [...GLOBAL_MASK_SELECTORS, ...(surface.masks ?? []), ...envMaskSelectors()]
+}
+
 /** The `mask` locators for a surface: global + per-surface + env. */
 export function masksFor(page: Page, surface: Surface): Locator[] {
-  return [...GLOBAL_MASK_SELECTORS, ...(surface.masks ?? []), ...envMaskSelectors()].map(
-    (selector) => page.locator(selector),
-  )
+  return maskSelectorsFor(surface).map((selector) => page.locator(selector))
 }
 
 /* ── Navigation helpers ───────────────────────────────────────────────────── */
@@ -1868,6 +1866,13 @@ export interface SnapshotBox {
   h: number
   top: number
   d: string
+  /** Horizontal extent, CSS px. Optional so a snapshot recorded without it still reads. */
+  left?: number
+  w?: number
+  /** Inside a box the camera paints over (a mask selector matches it or an ancestor). The
+   *  band reader skips these: a masked box is magenta in both pictures, so it is never what
+   *  moved, and naming it sent CHROME-DRIFT after a list that had been masked since LIVE-513. */
+  masked?: boolean
 }
 
 export type BoxSnapshot = Record<string, SnapshotBox>
@@ -1878,9 +1883,20 @@ export type BoxSnapshot = Record<string, SnapshotBox>
  * Out-of-flow boxes (`fixed` / `absolute`) are not recorded because they cannot move the
  * document's height, but the walk descends through them. Empty on a page with no body.
  */
-export async function boxSnapshot(page: Page): Promise<BoxSnapshot> {
+export async function boxSnapshot(
+  page: Page,
+  maskSelectors: readonly string[] = GLOBAL_MASK_SELECTORS,
+): Promise<BoxSnapshot> {
   return await page.evaluate(
-    ({ nodeCap, textCap }) => {
+    ({ nodeCap, textCap, masks }) => {
+      const isMasked = (el: Element): boolean =>
+        masks.some((sel) => {
+          try {
+            return el.closest(sel) !== null
+          } catch {
+            return false
+          }
+        })
       const describe = (el: Element): string => {
         const tag = el.tagName.toLowerCase()
         const id = el.id ? `#${el.id}` : ''
@@ -1895,7 +1911,7 @@ export async function boxSnapshot(page: Page): Promise<BoxSnapshot> {
         const text = (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, textCap)
         return `${tag}${id}${cls}${text ? ` "${text}"` : ''}`
       }
-      const out: Record<string, { h: number; top: number; d: string }> = {}
+      const out: Record<string, { h: number; top: number; d: string; left: number; w: number; masked?: boolean }> = {}
       if (!document.body) return out
       const scrollTop = window.scrollY || 0
       const stack: { el: Element; path: string }[] = [{ el: document.body, path: 'body' }]
@@ -1917,6 +1933,9 @@ export async function boxSnapshot(page: Page): Promise<BoxSnapshot> {
               h: Math.round(rect.height * 100) / 100,
               top: Math.round((rect.top + scrollTop) * 100) / 100,
               d: describe(kid),
+              left: Math.round(rect.left * 100) / 100,
+              w: Math.round(rect.width * 100) / 100,
+              ...(isMasked(kid) ? { masked: true } : {}),
             }
           }
           stack.push({ el: kid, path })
@@ -1924,7 +1943,7 @@ export async function boxSnapshot(page: Page): Promise<BoxSnapshot> {
       }
       return out
     },
-    { nodeCap: NODE_WALK_CAP, textCap: MOVER_TEXT_CAP },
+    { nodeCap: NODE_WALK_CAP, textCap: MOVER_TEXT_CAP, masks: [...maskSelectors] },
   )
 }
 
@@ -2049,6 +2068,9 @@ export interface DiffBand {
   to: number
   rows: number
   pixels: number
+  /** Leftmost / rightmost differing column in the band, inclusive (ADR-1598). */
+  left?: number
+  right?: number
 }
 
 export interface BandReading {
@@ -2097,6 +2119,15 @@ const tagOf = (desc: string): string => (desc.match(/^[a-z0-9-]+/i)?.[0] ?? '').
  * so a table row wins over the table and the table over the shell, plus the smallest box under
  * it that carries TEXT, so the reader gets words and not only a tag. SVG internals are skipped
  * in favour of the `<svg>` they belong to. Pure.
+ *
+ * TWO FILTERS, both from CHROME-DRIFT (ADR-1598). On PR #2949 every desktop operator surface
+ * named the admin info rail's "Just joined" list under its four largest bands, and the list had
+ * been inside the `admin-rail` mask since LIVE-513: the committed PNGs show that column as one
+ * magenta box. The pixels were on the LEFT rail, in the same rows, and the reader could not say
+ * so because it matched rows and nothing else. So a box inside a mask is never named (it is the
+ * same magenta in both pictures), and when the band carries its columns and the box its
+ * horizontal extent, the box must overlap those columns too. Either half missing (an older
+ * snapshot, a hand-built band) falls back to rows alone, which is what this did before.
  */
 export function boxesInBands(
   snapshot: BoxSnapshot,
@@ -2105,10 +2136,14 @@ export function boxesInBands(
 ): { band: DiffBand; boxes: (SnapshotBox & { path: string })[] }[] {
   const all = Object.entries(snapshot)
     .map(([path, box]) => ({ path, ...box }))
-    .filter((b) => !SVG_INTERNAL_TAGS.has(tagOf(b.d)))
+    .filter((b) => !SVG_INTERNAL_TAGS.has(tagOf(b.d)) && !b.masked)
+  const acrossColumns = (b: SnapshotBox, band: DiffBand): boolean =>
+    band.left === undefined || band.right === undefined || b.left === undefined || b.w === undefined
+      ? true
+      : b.left <= band.right && b.left + b.w >= band.left
   return bands.map((band) => {
     const overlapping = all
-      .filter((b) => b.top <= band.to && b.top + b.h >= band.from)
+      .filter((b) => b.top <= band.to && b.top + b.h >= band.from && acrossColumns(b, band))
       .sort((x, y) => x.h - y.h || y.path.split('>').length - x.path.split('>').length)
     const boxes = overlapping.slice(0, Math.max(0, perBand - 1))
     const worded = overlapping.find((b) => b.d.includes(' "') && !boxes.includes(b))
@@ -2173,11 +2208,12 @@ export function bandsMessage(
 ): string {
   const shown = named.slice(0, BAND_CAP).map(({ band, boxes }) => {
     const rows = band.from === band.to ? `row ${band.from}` : `rows ${band.from}-${band.to}`
+    const cols = band.left === undefined || band.right === undefined ? '' : ` x ${band.left}-${band.right}`
     const under =
       boxes.length > 0
         ? ` under ${andList(boxes.map((b) => `${b.d} (top ${Math.round(b.top)}, ${Math.round(b.h)}px tall)`))}`
-        : ' under no in-flow box the snapshot recorded'
-    return `${rows} (${band.pixels} px)${under}`
+        : ' under no unmasked in-flow box the snapshot recorded'
+    return `${rows}${cols} (${band.pixels} px)${under}`
   })
   const more = reading.bands.length > BAND_CAP ? `, and ${reading.bands.length - BAND_CAP} smaller` : ''
   return [
@@ -2207,6 +2243,9 @@ export function attachedImagePair(
 export interface CaptureContext {
   before?: BoxSnapshot
   attachments?: readonly { name: string; path?: string }[]
+  /** The surface's mask selectors (`maskSelectorsFor`), so the band reader skips what the camera
+   *  painted over. Omitted, the global list applies. */
+  maskSelectors?: readonly string[]
 }
 
 /* ── THE FLIP THE WAIT CANNOT SEE: a height that only moves WHILE THE SHUTTER IS OPEN ─────
@@ -2427,6 +2466,53 @@ export function capturedHeights(text: string): number[] {
 }
 
 /**
+ * The distinct heights the CAMERA produced: the `received` half of each `Expected an image …,
+ * received …` line, in first-seen order. Pure.
+ *
+ * 🔴 TWO DISTINCT HEIGHTS IN THE LOG ARE NOT A FLIP BY THEMSELVES (CHROME-DRIFT, ADR-1598).
+ * On PR #2949 `/admin` read "changed height DURING capture: 1372 and 1293" on every attempt, and
+ * the call log said the same thing each time: `Expected an image 1280px by 1372px, received
+ * 1280px by 1293px`. 1372 is the committed baseline and 1293 is the page, which never moved: the
+ * page had simply become 79px shorter than its picture. A flip is the camera disagreeing with
+ * ITSELF, so it is two distinct RECEIVED heights (the PR #2878 log alternates them, 14567 then
+ * 14521). One received height against a different expected height is a page that changed size
+ * since the baseline, and `baselineHeightMessage` says so.
+ */
+export function receivedHeights(text: string): number[] {
+  const heights: number[] = []
+  for (const match of text.matchAll(/received (\d+)px by (\d+)px/g)) {
+    const height = Number(match[2])
+    if (Number.isFinite(height) && !heights.includes(height)) heights.push(height)
+  }
+  return heights
+}
+
+/** The committed baseline's height, from the first `Expected an image W px by H px` line, or
+ *  null when the log carries none. Pure. */
+export function expectedHeight(text: string): number | null {
+  const match = /Expected an image (\d+)px by (\d+)px/.exec(text)
+  return match ? Number(match[2]) : null
+}
+
+/**
+ * The sentence for a page that held ONE height through the shutter, and that height is not the
+ * baseline's. Pure. It says what is known (the page is N px shorter or taller than the committed
+ * picture on every capture, so the pixel compare never ran) and the one thing a mask cannot do,
+ * hold a height, so nobody reaches for a mask. What it does NOT do is name the box: a baseline
+ * has no DOM to diff against. The measured case is a desktop operator page shorter than the
+ * left rail, where the rail's length (the DB `left_rail` menu) sets the page's (ADR-1598).
+ */
+export function baselineHeightMessage(label: string, expected: number, received: number): string {
+  const spread = Math.abs(received - expected)
+  const direction = received < expected ? 'shorter' : 'taller'
+  return [
+    `${label} is ${received}px tall on every capture against a ${expected}px baseline, ${spread}px ${direction}.`,
+    'This is NOT a flip: the camera agreed with itself, and the page changed height since the baseline was taken, so the pixel compare never ran.',
+    'A mask cannot hold a height. Find the in-flow box that is a different size than it was in the committed picture (on a page shorter than a rail, the rail sets the height), or recapture if the change is intended.',
+  ].join(' ')
+}
+
+/**
  * The sentence for a height that only moved while the shutter was open. Pure.
  *
  * It says WHY the wait was silent, because the first question anybody will ask of this message
@@ -2492,11 +2578,16 @@ export async function explainCaptureFailure(
 ): Promise<unknown> {
   const text = error instanceof Error ? `${error.message}` : String(error)
   const heights = capturedHeights(text)
+  const received = receivedHeights(text)
+  const baseline = expectedHeight(text)
   const parts: string[] = []
   // Every read below is best-effort by design: if the page has gone (closed, crashed, navigated)
   // we must still rethrow the real failure rather than replace it with our own stack.
   const samples = await readViewportProbe(page).catch(() => [] as ViewportSample[])
-  if (heights.length >= 2) {
+  if (received.length === 1 && baseline !== null && baseline !== received[0]) {
+    // One camera height, not the baseline's: a page that changed size, not a flip (ADR-1598).
+    parts.push(baselineHeightMessage(label, baseline, received[0]!))
+  } else if (heights.length >= 2) {
     const boxes = await viewportDependentBoxes(page).catch(() => [] as ViewportBox[])
     const after = context.before ? await boxSnapshot(page).catch(() => null) : null
     const movers = context.before && after ? smallestEnclosing(diffBoxes(context.before, after)) : []
@@ -2518,7 +2609,7 @@ export async function explainCaptureFailure(
       reading = null
     }
     if (reading && reading.bands.length > 0) {
-      const snapshot = await boxSnapshot(page).catch(() => null)
+      const snapshot = await boxSnapshot(page, context.maskSelectors).catch(() => null)
       const named = snapshot ? boxesInBands(snapshot, reading.bands.slice(0, BAND_CAP)) : []
       parts.push(`${parts.length === 0 ? `${label}: ` : ''}${bandsMessage(reading, named)}`)
     }

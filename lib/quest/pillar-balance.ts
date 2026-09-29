@@ -26,7 +26,7 @@ export interface BalancePractice {
 }
 
 /** The four per-Pillar daily Zap totals plus whether they are all equal. */
-export interface PillarZapBalance {
+interface PillarZapBalance {
   mind: number
   body: number
   spirit: number

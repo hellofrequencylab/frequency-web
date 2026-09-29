@@ -21,7 +21,7 @@ import { logTouchpoint } from '@/lib/crm/lead-capture'
 export type ContactConsentState = 'unknown' | 'subscribed' | 'unsubscribed'
 
 /** What to do with an opt-in REQUEST, given the contact's current state. Pure + tested. */
-export type OptinRequestAction =
+type OptinRequestAction =
   | 'send_confirm' // unknown / new — issue a confirm email
   | 'skip_unsubscribed' // hard opt-out — do nothing, never resurrect on a passive request
   | 'skip_suppressed' // bounced/complained address — never re-mail
@@ -44,7 +44,7 @@ export function decideOptinRequest(input: {
 }
 
 /** The result of a CONFIRM click. Pure + tested. */
-export type OptinConfirmStatus =
+type OptinConfirmStatus =
   | 'confirmed' // flipped (or already) subscribed
   | 'kept_unsubscribed' // honored a prior hard opt-out — did not resurrect
   | 'invalid' // bad/expired token or no email
@@ -104,7 +104,7 @@ async function findContactByEmail(email: string): Promise<ExistingContact | null
 }
 
 /** The public shape returned to the funnel action so it can enqueue the confirm email. */
-export interface OptinRequestOutcome {
+interface OptinRequestOutcome {
   action: OptinRequestAction
   /** Set only for `send_confirm`: the normalized email to send the confirm link to. */
   emailToConfirm: string | null

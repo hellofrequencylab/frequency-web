@@ -16,7 +16,7 @@
 import { encodeBlurhash, isValidBlurhash } from './blurhash'
 
 /** What the browser can say about an image that the server cannot cheaply learn. */
-export type ImageDescriptor = {
+type ImageDescriptor = {
   /** The SOURCE file's dimensions, before any upload downscale — `library_assets.orig_*`. */
   origWidth: number
   origHeight: number
@@ -28,7 +28,7 @@ export type ImageDescriptor = {
 
 /** The form-field names the descriptor travels under. One constant, so the writer and the reader
  *  cannot drift apart. */
-export const DESCRIPTOR_FIELDS = {
+const DESCRIPTOR_FIELDS = {
   blurhash: 'blurhash',
   colors: 'colors',
   origWidth: 'origWidth',
@@ -158,7 +158,7 @@ export function appendImageDescriptor(form: FormData, descriptor: ImageDescripto
 }
 
 /** The parsed, VALIDATED descriptor fields on a posted form. */
-export type IncomingDescriptor = {
+type IncomingDescriptor = {
   blurhash: string | null
   colors: string[] | null
   origWidth: number | null

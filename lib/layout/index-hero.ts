@@ -27,7 +27,7 @@ import type { PageHeroVariant } from '@/components/templates/page-hero'
 // rather than to an error boundary over a browse page.
 
 /** The precedence ladder, as data. `image` null = no section cover, i.e. the neutral gradient band. */
-export interface IndexHeroDefault {
+interface IndexHeroDefault {
   /** The route or route-prefix this default covers ('/journeys' also covers '/journeys/x').
    *
    *  A segment may be the wildcard `_` (`PREFIX_WILDCARD`), which matches any ONE route segment:
@@ -209,7 +209,7 @@ export function indexHeroKeyFor(route: string): string {
 }
 
 /** What a page can say about its own hero, over and above the route defaults. */
-export interface IndexHeroOptions {
+interface IndexHeroOptions {
   /** The page-content hero (ADR-180) — sits BELOW the operator's Settings header image and ABOVE
    *  the section default.
    *
@@ -228,7 +228,7 @@ export interface IndexHeroOptions {
 }
 
 /** The spreadable `IndexTemplate` prop bag for an overlay hero band. */
-export interface IndexHeroProps {
+interface IndexHeroProps {
   heroImage: string | null
   heroFocus: string | null
   heroOverlay: true
@@ -342,7 +342,7 @@ export async function resolveIndexHero(
 
 /** The spreadable `MarketHero` prop bag — the editable-index twin of `IndexHeroProps`. Same four
  *  rungs, same focal-point rule; only the prop NAMES differ, because `MarketHero` predates them. */
-export interface MarketHeroProps {
+interface MarketHeroProps {
   image: string
   focal: string | null
   variant: PageHeroVariant

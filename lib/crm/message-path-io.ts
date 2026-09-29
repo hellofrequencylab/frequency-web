@@ -97,7 +97,7 @@ async function resolveLabels(refs: PathRef[]): Promise<PathLabels> {
   return labels
 }
 
-export interface LoadMessagePathInput {
+interface LoadMessagePathInput {
   /** Every identity row that stitches to this person (profile id, contact id, capture ids). */
   subjectIds: string[]
   /** The member's display name (the inbound sender label in the fold). */

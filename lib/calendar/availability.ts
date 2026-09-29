@@ -27,17 +27,17 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const DAY_MS = 86_400_000
 
 /** The columns of a Space event the busy-day rule reads. */
-export interface BusyEventRow {
+interface BusyEventRow {
   starts_at: string | null
   ends_at: string | null
   is_cancelled: boolean | null
 }
 
 /** The columns of a private entry the busy-day rule reads (a subset of EntryRow). */
-export type BusyEntryRow = Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day' | 'status'>
+type BusyEntryRow = Pick<EntryRow, 'starts_at' | 'ends_at' | 'all_day' | 'status'>
 
 /** Suggestions look at most 60 days past the start day (`suggestDates`), so 90 covers them with room. */
-export const AVAILABILITY_WINDOW_DAYS = 90
+const AVAILABILITY_WINDOW_DAYS = 90
 
 function dayMs(dayKey: string): number | null {
   if (!DATE_RE.test(dayKey)) return null

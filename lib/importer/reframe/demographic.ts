@@ -26,7 +26,7 @@ import { withVoice } from '@/lib/ai/voice'
 import type { BusinessProfile } from '../schema'
 import { buildGroundingBlock } from './prompt'
 
-export const DEMOGRAPHIC_FEATURE = 'business-import-demographic'
+const DEMOGRAPHIC_FEATURE = 'business-import-demographic'
 
 export const DEMOGRAPHIC_TOOL_NAME = 'save_demographic'
 
@@ -37,7 +37,7 @@ export const DEMOGRAPHIC_MAX_LEN = 400
  * The forced structured-output tool: a single plain-language read of the primary audience + positioning.
  * One optional string, so a thin business yields nothing rather than a fabricated persona.
  */
-export const DEMOGRAPHIC_TOOL: Anthropic.Tool = {
+const DEMOGRAPHIC_TOOL: Anthropic.Tool = {
   name: DEMOGRAPHIC_TOOL_NAME,
   description: 'Save a short, plain read of who this business primarily serves and how it is positioned.',
   input_schema: {
@@ -53,7 +53,7 @@ export const DEMOGRAPHIC_TOOL: Anthropic.Tool = {
   },
 }
 
-export const DEMOGRAPHIC_SYSTEM = `You analyze a verified business and name its primary audience and market positioning for an internal copywriting brief.
+const DEMOGRAPHIC_SYSTEM = `You analyze a verified business and name its primary audience and market positioning for an internal copywriting brief.
 
 You are given a VERIFIED FACTS block. Read its language, category, offerings, and story, then answer two things in plain words:
 1. Who is this business primarily for? Describe their situation, not a stereotype (e.g. "busy parents who want a quick honest haircut", not "millennials"). If the facts imply more than one audience, name the primary one.

@@ -94,7 +94,7 @@ export function targetForEntitlementKey(key: string): BetaNoticeTarget | null {
 // ── The visibility rule ───────────────────────────────────────────────────────────────────────
 
 /** Everything the decision needs, all resolved by the caller. */
-export interface BetaNoticeVisibility {
+interface BetaNoticeVisibility {
   /** Is the beta grace window still open? (lib/pricing/beta.ts betaGraceActive) */
   graceActive: boolean
   /** Is checkout actually sellable? (billingLive) An invite to subscribe needs a real checkout. */
@@ -131,7 +131,7 @@ export function shouldShowBetaNotice(v: BetaNoticeVisibility): boolean {
 export const BETA_NOTICE_HREF = '/pricing'
 
 /** The CTA label. Plain, no urgency. */
-export const BETA_NOTICE_CTA = 'See the plans'
+const BETA_NOTICE_CTA = 'See the plans'
 
 /** The rendered notice: everything the client island needs, resolved server-side. Plain data. */
 export interface BetaNotice {
@@ -204,7 +204,7 @@ export const BETA_NOTICE_QUIET_MS = 14 * 24 * 60 * 60 * 1000
 
 /** The per-tier meter the island stores: how many times it has been shown, and the instant it is
  *  allowed to speak again. */
-export interface BetaNoticeMeter {
+interface BetaNoticeMeter {
   seen: number
   until: number
 }

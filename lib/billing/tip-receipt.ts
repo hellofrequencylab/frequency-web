@@ -21,7 +21,7 @@ import { displayNameFor, receiptAmount, receiptDate, sendMoneyReceipt } from './
 const LOG = '[tip receipt]'
 
 /** The settled tip, as the recorder holds it (the same row shape notifyTipRecipient takes). */
-export interface SettledTip {
+interface SettledTip {
   id: string
   to_profile_id: string
   from_profile_id: string | null

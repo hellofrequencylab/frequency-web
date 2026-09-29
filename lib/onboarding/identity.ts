@@ -32,7 +32,7 @@ export function mintedHandleFor(authUserId: string, displayName: string): string
   return `${base}_${suffix}`
 }
 
-export type IdentityProfile = {
+type IdentityProfile = {
   displayName: string | null | undefined
   handle: string | null | undefined
   authUserId: string | null | undefined

@@ -18,7 +18,7 @@
 // member under that word; the operator readout calls them Funnels.
 
 /** Which ledger table a step's marker lives in. */
-export type JourneyStream = 'engagement' | 'interaction'
+type JourneyStream = 'engagement' | 'interaction'
 
 /**
  * How much of the marker is real, verified against prod on 2026-08-04:
@@ -28,14 +28,14 @@ export type JourneyStream = 'engagement' | 'interaction'
  *  - `unimplemented` — nothing emits this marker. The step is a KNOWN HOLE; the funnel
  *                      reports it as such instead of pretending a zero is a drop-off.
  */
-export type MarkerCoverage = 'observed' | 'emitted' | 'unimplemented'
+type MarkerCoverage = 'observed' | 'emitted' | 'unimplemented'
 
 /** Who a step counts. `engagement_events` is keyed by profile; the anonymous vitals
  *  stream is keyed only by an ephemeral per-tab session id — the two can never be
  *  joined, which is exactly why the funnel reports the seam instead of hiding it. */
-export type StepIdentity = 'actor' | 'session'
+type StepIdentity = 'actor' | 'session'
 
-export interface JourneyStep {
+interface JourneyStep {
   key: string
   /** Operator-facing label. Plain, no em dashes (docs/CONTENT-VOICE.md). */
   label: string
@@ -286,7 +286,7 @@ export function stepsAreLinked(prev: JourneyStep, next: JourneyStep): boolean {
 /** The step spec handed to the `journey_funnel` RPC. SQL holds no copy of the registry;
  *  it receives this and walks it. Keys are the SQL side's contract — keep in sync with
  *  supabase/migrations/20270207000000_insights_journey_and_vitals_rpcs.sql. */
-export interface FunnelStepSpec {
+interface FunnelStepSpec {
   key: string
   stream: JourneyStream
   markers: readonly string[]
@@ -307,7 +307,7 @@ export function toFunnelSpec(journey: Journey): FunnelStepSpec[] {
 // ── The funnel read-model (pure) ────────────────────────────────────────────────
 
 /** One row as the RPC returns it. */
-export interface JourneyFunnelRow {
+interface JourneyFunnelRow {
   stepKey: string
   subjects: number
 }

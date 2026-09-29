@@ -15,7 +15,7 @@ import { listPublicPlans } from '@/lib/journey-plans'
 // separate question (journeysOfferedBySpace below), so neither rule can quietly widen the other.
 
 /** The facts the pure gate decides over. */
-export interface RunGateFacts {
+interface RunGateFacts {
   /** circles.host_id (null on a Space Circle nobody hosts personally yet). */
   circleHostId: string | null
   /** The signed-in caller's profile id (null = anonymous). */
@@ -56,7 +56,7 @@ export function canStartRunForCircle(facts: RunGateFacts): boolean {
 }
 
 /** What the IO front door resolved, so a caller that passes can reuse the facts. */
-export interface RunGateResult {
+interface RunGateResult {
   allowed: boolean
   circleSlug: string | null
   /** The Circle's owning space_id, with the ROOT space normalized to null (= a member's own
@@ -129,7 +129,7 @@ export async function resolveRunGate(
  */
 /** One option in the "Start a journey run" picker — the shape the Circle page's
  *  `RunnableJourney` already carries. */
-export interface RunnableJourneyOption {
+interface RunnableJourneyOption {
   id: string
   title: string
   slug: string

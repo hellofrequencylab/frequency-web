@@ -13,7 +13,7 @@ export interface MemberCompletion {
   journeyComplete: boolean
 }
 
-export interface PhaseCohort {
+interface PhaseCohort {
   phaseId: string
   /** How many members have completed this phase. */
   completed: number

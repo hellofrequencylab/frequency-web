@@ -27,7 +27,7 @@ import {
 /** The subset of a member's Spotlight each block component reads, keyed by block. Kept React-free so
  *  every block imports the SAME shape and the pure resolver + its test share it. Built from a resolved
  *  SpotlightData by `resolveMemberBlockData`. */
-export interface MemberBlockData {
+interface MemberBlockData {
   /** The About body (the member's bio), or null when they have none. */
   about: string | null
   /** Authoritative gamification values (resolved server-side, never member-supplied) for `stats`. */

@@ -277,7 +277,7 @@ export function planCrawlFromDiscovery(
 
 /** How many discovered page images we capture beyond the logo + the og:image hero. The other two
  *  slots of HARVEST_BUDGET.maxImages stay reserved for those two roles. */
-export const GALLERY_IMAGE_BUDGET = Math.max(0, HARVEST_BUDGET.maxImages - 2)
+const GALLERY_IMAGE_BUDGET = Math.max(0, HARVEST_BUDGET.maxImages - 2)
 
 /** Filename / path fragments that mark an image as site CHROME rather than a photo of the
  *  business: brand marks, ui sprites, tracking pixels, spacers, member avatars, award badges. */
@@ -423,7 +423,7 @@ export function socialUrl(platform: string, handle: string): string | null {
 
 /** One planned oEmbed lookup: the platform, the profile url, and the oEmbed endpoint (null when
  *  the platform has no public oEmbed — the url is still recorded as a plain social link). */
-export interface OembedPlan {
+interface OembedPlan {
   platform: string
   profileUrl: string
   oembedEndpoint: string | null

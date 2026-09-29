@@ -136,7 +136,7 @@ export interface BelongingLink {
 }
 
 /** Already-resolved entity refs. A null ref means "this Event has no such tie". */
-export interface BelongingRefs {
+interface BelongingRefs {
   circle: { name: string | null; slug: string | null } | null
   space: { name: string | null; slug: string | null } | null
   journey: { title: string | null; slug: string | null; visibility: string | null } | null

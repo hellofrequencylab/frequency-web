@@ -464,7 +464,7 @@ export async function getSpaceFaqs(spaceId: string): Promise<SpaceFaqItem[]> {
  *  (Phase 4) can read the shared cover/logo/name off `metadata.space`. All raw + tolerant: the reader
  *  builds the SpaceIdentity + resolves the live highlight counts. Omit it (the pre-Phase-4 call) and
  *  the Profile blocks fall back to their editor placeholders, so this is fully additive. */
-export interface SpaceContentInput {
+interface SpaceContentInput {
   /** The display brand name (brand name preferred, else the plain Space name). */
   name: string
   /** The raw `spaces.type` value, turned into a plain badge label. */
@@ -570,7 +570,7 @@ export async function getSpaceContentData(
 /** The live highlight counts (members / offerings / ...) for the SpaceHighlights strip, from the same
  *  resolver the hero stats read, so the strip never disagrees with the hero.
  *  Only the positive counts ride through (honest at day zero). FAIL-SAFE to []. */
-export async function getSpaceHighlights(spaceId: string): Promise<SpaceHighlight[]> {
+async function getSpaceHighlights(spaceId: string): Promise<SpaceHighlight[]> {
   try {
     const stats = await resolveProfileStats(spaceId)
     return stats.filter((s) => s.value > 0).map((s) => ({ label: s.label, value: s.value }))
@@ -583,7 +583,7 @@ export async function getSpaceHighlights(spaceId: string): Promise<SpaceHighligh
  *  operator-configurable SpaceStats block, from the SAME resolver as the hero/highlights, so the two
  *  never disagree. The block selects WHICH metrics to show + hides any that resolve to zero, so this
  *  carries the whole set (including zeros) but never invents a number. FAIL-SAFE to []. */
-export async function getSpaceStats(spaceId: string): Promise<SpaceStat[]> {
+async function getSpaceStats(spaceId: string): Promise<SpaceStat[]> {
   try {
     const stats = await resolveProfileStats(spaceId)
     return stats.map((s) => ({ metric: s.metric, label: s.label, value: s.value }))

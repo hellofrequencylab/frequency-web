@@ -15,7 +15,7 @@ import { sunSign, signCompatibility } from '@/lib/astrology/signs'
 // match signal (never prominent, per the owner).
 const STREAK_SIGNAL_MIN = 3
 
-export interface FeedPersonSuggestion extends PersonSuggestion {
+interface FeedPersonSuggestion extends PersonSuggestion {
   /** The viewer and this member both keep a meaningful daily streak. */
   bothStreaking: boolean
   /** This member is verified (ADR-418). Null/false until a verification flow ships. */

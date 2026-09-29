@@ -19,7 +19,7 @@ export function leadFlowPath(slug: string): string {
 }
 
 /** Is `path` a /start lead flow we actually have? */
-export function isLeadFlowPath(path: string): boolean {
+function isLeadFlowPath(path: string): boolean {
   const m = LEAD_FLOW_RE.exec(path)
   if (!m) return false
   return listLeadFlows().some((f) => f.slug === m[1])
@@ -31,7 +31,7 @@ export function isValidEntryDestination(path: string): boolean {
   return isLeadFlowPath(path) || CIRCLE_EVENT_RE.test(path) || isKnownDestination(path)
 }
 
-export interface DestinationOption {
+interface DestinationOption {
   value: string
   label: string
 }

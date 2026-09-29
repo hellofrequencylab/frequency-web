@@ -23,7 +23,7 @@
 // present when `next build` runs; setting it as a runtime-only value leaves every map
 // silently on MapLibre with no error.
 
-export type MapProvider = 'google' | 'maplibre'
+type MapProvider = 'google' | 'maplibre'
 
 // Static member access — required for the build-time inline (see the note above).
 const BROWSER_KEY = (process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY ?? '').trim()

@@ -36,13 +36,13 @@ const FEATURE = 'messaging-generator'
 const TIER = 'sonnet' as const
 
 /** How many emails a generated sequence may hold (bounds the model + the persisted drafts). */
-export const MIN_SEQUENCE_STEPS = 2
+const MIN_SEQUENCE_STEPS = 2
 export const MAX_SEQUENCE_STEPS = 6
 
 // ── Public shapes ────────────────────────────────────────────────────────────────────────────────────
 
 /** The plain, model-authored copy for ONE email, BEFORE it is assembled into a block layout. Pure data. */
-export interface DraftEmailContent {
+interface DraftEmailContent {
   subject: string
   preheader: string
   /** The in-body opening headline (the Heading block). */
@@ -60,12 +60,12 @@ export type GeneratedEmail = EmailDoc
 
 /** One step of a generated sequence: the email plus its place + cadence. `delayHours` is the delay AFTER the
  *  previous step (0 for the first). `stepLabel` is a short name for the step (e.g. "Welcome"). */
-export interface GeneratedSequenceStep extends GeneratedEmail {
+interface GeneratedSequenceStep extends GeneratedEmail {
   stepLabel: string
   delayHours: number
 }
 
-export interface GeneratedSequence {
+interface GeneratedSequence {
   steps: GeneratedSequenceStep[]
 }
 

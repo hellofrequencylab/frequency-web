@@ -33,7 +33,7 @@ const PRIMARY = "#E2912F";
 // module was the last of four holding the glob open, so it had to move with the other three or the
 // directory would have shipped regardless. See that module's header.
 
-export interface ClaimCardInput {
+interface ClaimCardInput {
   /** The entity's own name (the business / event / listing title). */
   name: string;
   /** The DESIGNATOR pill, top left: "Coach", "Practitioner", "Business", "Non Profit", "Event". */

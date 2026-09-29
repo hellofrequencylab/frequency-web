@@ -62,9 +62,9 @@ export function keyboardMoveDelta(key: string, shiftKey: boolean): number | null
   }
 }
 
-export type MoveRefusal = 'bad-day' | 'other-month' | 'repeats' | 'published' | 'not-an-entry' | 'same-day'
+type MoveRefusal = 'bad-day' | 'other-month' | 'repeats' | 'published' | 'not-an-entry' | 'same-day'
 
-export type PlannedMove = {
+type PlannedMove = {
   ok: true
   entryId: string
   title: string
@@ -76,7 +76,7 @@ export type PlannedMove = {
   line: string
 }
 
-export type RefusedMove = { ok: false; reason: MoveRefusal; line: string }
+type RefusedMove = { ok: false; reason: MoveRefusal; line: string }
 
 export type EntryMove = PlannedMove | RefusedMove
 

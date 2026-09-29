@@ -24,7 +24,7 @@ const TIMEOUT_MS = 3500
 
 /** The image types Satori can size from a base64 data URL. Emitting any other declared type into a
  *  Satori `<img src>` crashes the render (see the header). */
-export type InlineImageType = 'image/png' | 'image/jpeg' | 'image/gif' | 'image/svg+xml'
+type InlineImageType = 'image/png' | 'image/jpeg' | 'image/gif' | 'image/svg+xml'
 
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 const JPEG_MAGIC = [0xff, 0xd8, 0xff]

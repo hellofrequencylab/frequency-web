@@ -419,7 +419,7 @@ export function renderCalendar(opts: {
 }
 
 /** The anchor shape the EXDATE math needs (stored wall-clock + cadence). */
-export interface ExdateAnchor {
+interface ExdateAnchor {
   starts_at: string
   recurrence_type: string | null | undefined
   recurrence_until: string | null | undefined
@@ -507,7 +507,7 @@ export interface FeedGroupRow {
 /** One rendering instruction: emit `row` as a VEVENT with this `rrule` (null for a one-off) and these
  *  `exdates` (empty for a one-off; wall-clock Dates for the TZID local form when `rrule` is set). The
  *  route maps `row` to its own VEVENT fields. */
-export interface FeedRenderPlan<T> {
+interface FeedRenderPlan<T> {
   row: T
   rrule: string | null
   exdates: Date[]
