@@ -25,8 +25,13 @@ gets its own Loom**. It grows for years without a code deploy per asset.
   transitive dependency. That is a re-confirmation to make knowingly, not a decision to reverse
   from a scan, so HYG-109 puts the numbers and the zero-dependency alternative (native canvas crop
   over the existing `CROP_FRAMES`) in front of the owner. Nothing changes until it is answered.
-- **Privacy:** build a **full** protection system, but **develop it later** — only the schema
-  hooks land now (`is_protected`, `download_policy`, `expires_at`, private-bucket-ready).
+- **Privacy:** build a **full** protection system, but **develop it later** — the schema hooks
+  landed first (`is_protected`, `download_policy`, `expires_at`, private-bucket-ready), and since
+  [LIVE-576](BUILD-BACKLOG.json) ([ADR-1577](DECISIONS.md)) the product reads and sets them: the
+  Studio drawer's Protection section writes all three, every pick reader (`listLoomScopeImages`,
+  `searchSpaceLibraryImages`) leaves out a row whose `expires_at` has passed, and the Studio grid
+  badges that row Expired instead of hiding it from its owner. The private bucket, the download
+  door and proofing are LIVE-577 to LIVE-580 ([ADR-1562](DECISIONS.md)).
 - **Scope:** **every asset is space-scoped.** Frequency's shared/master library is the **root
   space's** Loom (`space_id` is NOT NULL). A child space's effective library = its own ∪ root's.
 - **Transforms:** **on-the-fly** (a width/format request against the master). **Editing an image
@@ -294,7 +299,8 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
 5. **D5 — Per-space Looms** (space-scoped libraries, fork-on-edit, quotas, per-space console,
    client RLS, entitlements/flags).
 6. **D6 — Privacy system** (private bucket, signed URLs, storage RLS, download gating + audit,
-   EXIF strip, optional watermark) — full build, done later.
+   EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
+   LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
 
 ## Non-goals (v1)
