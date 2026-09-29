@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Locks the three properties the row names:
 //   1. The shared shelf never widens past the ROOT Space's PUBLIC rows (never a third Space, never an
 //      unlisted root row), and 'with' puts the Space's own rows first.
+//      (Proved on the session store since LIVE-571: lib/library/space-loom-store.test.ts.)
 //   2. A fork COPIES the object to the Space's own path, writes parent_id = the master, and lands in
 //      the Space (never the master's space_id, never public).
 //   3. Fork-on-edit: editing a shared asset yields a copy's id; editing an own asset yields itself.
@@ -121,7 +122,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (t: string) => builder(t), storage: { from: (b: string) => bucket(b) } }),
 }))
 
-import { listLoomScopeImages, forkLibraryAsset, forkIfShared } from './store'
+import { forkLibraryAsset, forkIfShared } from './store'
 
 const MASTER_ROW = {
   id: MASTER,
@@ -160,47 +161,8 @@ beforeEach(() => {
   admitted.length = 0
 })
 
-describe('the shared shelf never widens past the root Space’s public rows', () => {
-  it("'only' reads the root by id AND public, never an OR on visibility alone", async () => {
-    await listLoomScopeImages({ spaceId: SPACE_A }, { shared: 'only' })
-    const q = calls.find((c) => c.table === 'library_assets')!
-    expect(q.eqs).toContainEqual(['space_id', ROOT])
-    expect(q.eqs).toContainEqual(['visibility', 'public'])
-    expect(q.eqs.some(([c, v]) => c === 'space_id' && v === SPACE_A)).toBe(false)
-    expect(q.ors.some((o) => o.includes('visibility.eq.public'))).toBe(false)
-  })
-
-  it('drops any row the query hands back that is not a root public row (the second wall)', async () => {
-    listRows = [
-      { id: 'r1', url: 'https://cdn/r1.jpg', title: 'root public', space_id: ROOT, visibility: 'public' },
-      { id: 'r2', url: 'https://cdn/r2.jpg', title: 'root unlisted', space_id: ROOT, visibility: 'space' },
-      { id: 'b1', url: 'https://cdn/b1.jpg', title: 'third space', space_id: SPACE_B, visibility: 'public' },
-    ]
-    const got = await listLoomScopeImages({ spaceId: SPACE_A }, { shared: 'only' })
-    expect(got.map((a) => a.id)).toEqual(['r1'])
-    expect(got[0].ownedByViewer).toBe(false)
-  })
-
-  it("'with' reads the Space's own rows and the shelf separately, own first, badged apart", async () => {
-    listRows = [{ id: 'x', url: 'https://cdn/x.jpg', title: 'x', space_id: ROOT, visibility: 'public' }]
-    const got = await listLoomScopeImages({ spaceId: SPACE_A }, { shared: 'with' })
-    const reads = calls.filter((c) => c.table === 'library_assets')
-    expect(reads).toHaveLength(2)
-    expect(reads.some((c) => c.eqs.some(([k, v]) => k === 'space_id' && v === SPACE_A))).toBe(true)
-    expect(reads.some((c) => c.eqs.some(([k, v]) => k === 'space_id' && v === ROOT))).toBe(true)
-    // The same fake row answers both reads: the first copy is badged the Space's own, the second Frequency.
-    expect(got.map((a) => a.ownedByViewer)).toEqual([true, false])
-  })
-
-  it('the root Space has no separate shelf (its own rows are the shared library)', async () => {
-    expect(await listLoomScopeImages({ spaceId: ROOT }, { shared: 'only' })).toEqual([])
-  })
-
-  it('the personal scope ignores the flag', async () => {
-    await listLoomScopeImages({ createdBy: PROFILE }, { shared: 'only' })
-    expect(calls.some((c) => c.table === 'spaces')).toBe(false)
-  })
-})
+// The shared shelf (root public rows only, 'with' own-first, no shelf for the root, badged apart) reads on
+// the caller's session since LIVE-571: listSpaceLoomImages, proved in lib/library/space-loom-store.test.ts.
 
 describe('forkLibraryAsset copies the object and writes parent_id', () => {
   it('copies to the Space’s own path, inserts into the Space with parent_id = the master', async () => {
