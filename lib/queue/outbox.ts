@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database, Json } from '@/lib/database.types'
 import { getSlo, meetsSlo } from '@/lib/observability/slos'
 
-export interface QueueJob {
+interface QueueJob {
   id: string
   kind: string
   payload: Record<string, unknown>
@@ -91,7 +91,7 @@ const RATE_LIMIT_DEFER_MAX_AGE_MS = 60 * 60_000
 
 /** What the drain decided to do with a failed job, and — the part nextRetry could not express —
  *  whether the attempt counts. `countsAsAttempt: false` is the deferral: same job, later clock. */
-export interface RetryDecision {
+interface RetryDecision {
   status: 'failed' | 'pending'
   delayMs: number
   /** false ⇒ leave `attempts` untouched. The job did not fail, it was too early. */
@@ -452,7 +452,7 @@ export async function processQueue(
 }
 
 /** A dead-lettered job, as the operator DLQ surface shows it. */
-export interface DeadLetteredJob {
+interface DeadLetteredJob {
   id: string
   kind: string
   attempts: number
@@ -462,7 +462,7 @@ export interface DeadLetteredJob {
 }
 
 /** Group of dead-letters per kind — the at-a-glance health summary. */
-export interface DeadLetterSummary {
+interface DeadLetterSummary {
   kind: string
   count: number
 }

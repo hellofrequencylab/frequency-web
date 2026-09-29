@@ -14,7 +14,7 @@ import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 
 /** A phase's focus copy (the phase block's body) keyed by the phase item id — so each week of
  *  the player reads as a chapter, not a bare heading. */
-export type PhaseFocusMap = Map<string, string>
+type PhaseFocusMap = Map<string, string>
 
 /** The per-Pillar coverage of a Journey (always all four, zero-filled), for the balance read. */
 export interface PillarBalanceSlice {
@@ -26,7 +26,7 @@ export interface PillarBalanceSlice {
  *  every `practice` block (keyed by ITEM id, so the player can look up the selected lesson), each
  *  phase's focus copy, the normalized meeting, and the four-Pillar balance. One extra read per
  *  distinct practice (batched + de-duped), plus the pillars taxonomy. */
-export interface JourneyLearnExtras {
+interface JourneyLearnExtras {
   /** The library practice behind each `practice` block, keyed by the block's ITEM id. */
   practiceByItem: Map<string, RankedPractice>
   /** Each phase's focus copy (phase block body), keyed by the phase item id. */
@@ -94,7 +94,7 @@ export async function getJourneyLearnExtras(slug: string): Promise<JourneyLearnE
 
 /** The Journey's four-Pillar coverage, zero-filled and in display order (mirrors the discovery
  *  PillarBalanceBlock, but returns the full Pillar so a step can render its name + badge). */
-export function buildPillarBalance(items: JourneyPlanItem[], pillars: Pillar[]): PillarBalanceSlice[] {
+function buildPillarBalance(items: JourneyPlanItem[], pillars: Pillar[]): PillarBalanceSlice[] {
   const coverage = new Map(planPillarMap(items).map((s) => [s.domainId, s.count]))
   return pillars.map((pillar) => ({ pillar, count: coverage.get(pillar.id) ?? 0 }))
 }

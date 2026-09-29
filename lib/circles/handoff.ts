@@ -77,7 +77,7 @@ export interface CircleOffer {
   createdAt: string
 }
 
-export interface OfferResult {
+interface OfferResult {
   ok: boolean
   reason: string
   circleSlug: string | null

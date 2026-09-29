@@ -73,7 +73,7 @@ async function resolveMemberIdentity(profileId: string): Promise<{ name: string 
   }
 }
 
-export type ChatAuthor = 'visitor' | 'staff' | 'system'
+type ChatAuthor = 'visitor' | 'staff' | 'system'
 export interface ChatMessage {
   id: string
   author: ChatAuthor

@@ -29,7 +29,7 @@ import { isLoomPublicImageUrl, isVectorFile } from '@/lib/loom/urls'
 import { VERA_TAG } from '@/lib/library/types'
 
 /** The ledger key, the budget cap key (lib/ai/budget.ts) and the rate-limit key. */
-export const LIBRARY_TAG_FEATURE = 'library-tag'
+const LIBRARY_TAG_FEATURE = 'library-tag'
 
 /** The most tags Vera may propose (the vera tag is added on top by the write). */
 export const MAX_VERA_TAGS = 8
@@ -45,13 +45,13 @@ type ImageMediaType = (typeof MEDIA_TYPES)[number]
 export const TAGGABLE_MIMES: readonly string[] = MEDIA_TYPES
 
 /** What Vera proposes for one image, already validated. */
-export type LibraryTagging = {
+type LibraryTagging = {
   alt: string | null
   tags: string[]
   category: string | null
 }
 
-export type DescribeImageResult =
+type DescribeImageResult =
   | { ok: true; tagging: LibraryTagging }
   /** `unavailable`: AI is off, the cap is spent or the actor is throttled, so a sweep should stop.
    *  `failed`: this one image could not be read, so a sweep moves on to the next. */

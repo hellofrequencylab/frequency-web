@@ -150,7 +150,7 @@ export type FieldPlacement = 'spark' | 'inline' | 'rail'
  * a start, a place, a price) has nothing to derive from, so it declares its later plane here or
  * is asked once and never edited (ADR-1281).
  */
-export type EditPlane = Exclude<FieldPlacement, 'spark'>
+type EditPlane = Exclude<FieldPlacement, 'spark'>
 
 /**
  * WHEN a `required` field must be present (ADR-1280):
@@ -164,7 +164,7 @@ export type EditPlane = Exclude<FieldPlacement, 'spark'>
  * shape), so the Spark still always asks for it: deferring WHEN it is enforced never makes it
  * optional to ask.
  */
-export type RequiredAt = 'create' | 'publish'
+type RequiredAt = 'create' | 'publish'
 
 // ── Field definition ─────────────────────────────────────────────────────────────────────
 
@@ -241,7 +241,7 @@ export interface FieldDef {
  * Both forms produce the REAL persisted path, which is the whole point: the row key a board
  * shows and the ledger key a server re-checks have to be the same string.
  */
-export type RepeatOver = 'array' | 'map'
+type RepeatOver = 'array' | 'map'
 
 /**
  * The `path` a repeat field uses to mean THE ITEM ITSELF, for a collection of bare scalars
@@ -337,7 +337,7 @@ export type SparkAccepts = 'url' | 'document' | 'image' | 'paste'
  *  - `citation`    — a fact needs a source snippet or a human confirm.
  *  - `adversarial` — plus the Opus refuter pass over every commercial fact (the Business Seeder).
  */
-export type VerifyMode = 'none' | 'citation' | 'adversarial'
+type VerifyMode = 'none' | 'citation' | 'adversarial'
 
 /** The steering dials the entity's Spark and re-seed expose (all kernel behaviour). */
 export interface SteerCapabilities {
@@ -373,7 +373,7 @@ export interface EntityManifest {
 // ── Validation (what `pnpm check:studio` and the drift-guard tests assert) ────────────────
 
 /** One thing wrong with a manifest, as a plain sentence. */
-export type ManifestProblem = string
+type ManifestProblem = string
 
 /**
  * Validate a manifest against the kernel's rules. PURE and total: returns the problems rather

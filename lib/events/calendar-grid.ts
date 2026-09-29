@@ -87,7 +87,7 @@ export const SHORT_MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Ju
 // the backlog probe that guards them can RUN them instead of grepping for them.
 
 /** What the grid draws for itself, given a host that says it owns the chrome. */
-export interface CalendarChrome {
+interface CalendarChrome {
   /** The month title (and the aria-live that reads it). */
   monthTitle: boolean
   /** Previous / Today / Next. */

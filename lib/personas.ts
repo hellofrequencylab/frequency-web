@@ -106,7 +106,7 @@ export async function getPersonaQueue(): Promise<PersonaQueueRow[]> {
 
 // ── Queue analytics + the dormant payout binding (EM2-5) ─────────────────────
 
-export interface PersonaQueueStats {
+interface PersonaQueueStats {
   /** Awaiting a verify decision (the operator's to-do count). */
   pending: number
   /** Verified — tools on. */
@@ -127,7 +127,7 @@ export function personaQueueStats(rows: readonly PersonaQueueRow[]): PersonaQueu
   return stats
 }
 
-export type ConnectBindingState = 'dormant' | 'pending' | 'bound'
+type ConnectBindingState = 'dormant' | 'pending' | 'bound'
 
 /** The per-persona Stripe Connect / payout binding status for one queue row, for the
  *  operator readout. The binding is the money gate at `active` and is intentionally

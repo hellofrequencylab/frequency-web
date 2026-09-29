@@ -50,7 +50,7 @@ function metNote(at: string | null): string {
   return at ? `Met via QR at ${at}.` : 'Met via QR.'
 }
 
-export interface MetContextInput {
+interface MetContextInput {
   /** The event/Space name where they met, if the code carried one. */
   at?: string | null
   /** The day they met (defaults to today). */

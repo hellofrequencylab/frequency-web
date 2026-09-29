@@ -31,10 +31,10 @@ import { resolveHostingSpaceIdFromRow } from './host-space'
 // for a currently-private event); the LEAK gate lives in the calendar READERS (store + RPC) that decide
 // what surfaces publicly.
 
-export type ShareStatus = 'pending' | 'accepted' | 'declined' | 'revoked'
+type ShareStatus = 'pending' | 'accepted' | 'declined' | 'revoked'
 
 /** Which side of a share must act on a pending row: the target space's stewards, or the event's host. */
-export type ShareSide = 'target-space' | 'event-host'
+type ShareSide = 'target-space' | 'event-host'
 
 /** A raw event_space_shares row. */
 export interface ShareRow {
@@ -63,7 +63,7 @@ export interface EventShareView {
 }
 
 /** One incoming share request as a TARGET SPACE's steward inbox renders it (the event to host). */
-export interface IncomingShareRequest {
+interface IncomingShareRequest {
   id: string
   eventId: string
   eventTitle: string

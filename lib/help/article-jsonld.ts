@@ -45,7 +45,7 @@ export function helpArticleImage(coverImage?: string | null): string {
   return coverImage || HELP_FALLBACK_IMAGE
 }
 
-export type HelpArticleJsonLdInput = {
+type HelpArticleJsonLdInput = {
   article: Pick<HelpArticle, 'title' | 'description' | 'slug' | 'published' | 'updated' | 'faq'>
   category: Pick<HelpCategory, 'slug' | 'title'>
   /** The operator's /help Settings image, when one is set (PROG-P5, ADR-1136). */

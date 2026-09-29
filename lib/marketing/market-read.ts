@@ -15,7 +15,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 const DAY = 24 * 60 * 60 * 1000
 
-export type MarketSignal = {
+type MarketSignal = {
   totalMembers: number
   newThisWeek: number
   newWithoutCircle: number

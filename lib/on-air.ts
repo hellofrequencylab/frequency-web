@@ -9,7 +9,7 @@
 // inhale, holds, settles on the exhale. Counts are member-adjustable later
 // (P3 custom slider); these three cover the daily cases.
 
-export type BreathKind = 'in' | 'hold' | 'out'
+type BreathKind = 'in' | 'hold' | 'out'
 
 export interface BreathPhase {
   kind: BreathKind
@@ -118,7 +118,7 @@ export function cycleSeconds(pattern: BreathPattern): number {
   return pattern.phases.reduce((s, p) => s + p.seconds, 0)
 }
 
-export interface BreathPosition {
+interface BreathPosition {
   phase: BreathPhase
   /** Seconds into the current phase. */
   phaseElapsed: number
@@ -190,7 +190,7 @@ export type SessionMode = 'timer' | 'stillness' | 'ritual' | 'breath' | 'journal
 
 /** Which underlying path a mode runs on. 'timer' = the silent countdown (Meditate / Stillness /
  *  Ritual / Journal share it); 'breath' = the guided rings; 'log' = the instant log, no countdown. */
-export type SessionEngine = 'timer' | 'breath' | 'log'
+type SessionEngine = 'timer' | 'breath' | 'log'
 
 /** Whether a mode shows the breath visualizer (vs. the plain countdown). */
 export function isBreathMode(mode: SessionMode): boolean {
@@ -213,7 +213,7 @@ export function engineForMode(mode: SessionMode): SessionEngine {
 /** Per-mode framing: the button label, the setup subline, and the default minutes a fresh
  *  pick seeds. Meditate / Stillness / Ritual / Journal are timer variants with their own
  *  copy + default length; the engine they run is the same silent countdown. */
-export interface SessionModeMeta {
+interface SessionModeMeta {
   mode: SessionMode
   label: string
   /** A short, plain subline shown under the mode row (no narrated feelings, no em dashes). */
@@ -324,7 +324,7 @@ export function bellToneBySlug(slug: string | null | undefined): BellTone {
 // into a seamless crossfade-to-self loop and fades it in. `credit` keeps the
 // source on record (these are licensed Epidemic Sound tracks); it's never shown
 // to a member.
-export interface AmbientTrack {
+interface AmbientTrack {
   slug: string
   /** Member-facing name (setup chip). Plain words. */
   name: string
@@ -351,10 +351,10 @@ export type BellVolume = number
 
 /** The bell synth-peak multiplier at 100% volume. A touch above the old "loud" preset (1.5)
  *  so the top of the slider is clearly loud, while the soft-attack synth stays clip-free. */
-export const BELL_MAX_GAIN = 1.6
+const BELL_MAX_GAIN = 1.6
 
 /** Default bell volume for a fresh member (0..1). Lands just above the old "medium". */
-export const DEFAULT_BELL_VOLUME = 0.7
+const DEFAULT_BELL_VOLUME = 0.7
 
 // Old string presets → the 0..1 scale, chosen so quiet/medium/loud migrate to the SAME gain
 // they always had (0.6 / 1.0 / 1.5 once multiplied by BELL_MAX_GAIN = 1.6).
@@ -501,7 +501,7 @@ export const DEFAULT_PREFS: OnAirPrefs = {
 // import the type without pulling server code into the bundle.
 // ---------------------------------------------------------------------------
 
-export interface RevealBonus {
+interface RevealBonus {
   label: string
   kind: 'zaps' | 'gems'
   amount: number
@@ -637,7 +637,7 @@ export function statSessionLabel(kind: DispatchKind | null | undefined): string 
   }
 }
 
-export interface SessionDispatchState {
+interface SessionDispatchState {
   /** Titles of the member's adopted practices NOT yet logged today (any order). */
   practicesLeft: string[]
   /** The next gathering the member RSVP'd to (going/maybe), if any. */

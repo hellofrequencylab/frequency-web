@@ -57,7 +57,7 @@ export const EDITABLE_PAGES = [
   { slug: 'what-is-frequency', title: 'What is Frequency', path: '/what-is-frequency' },
 ] as const
 
-export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']
+type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']
 
 export function pathForSlug(slug: string): string {
   return EDITABLE_PAGES.find((p) => p.slug === slug)?.path ?? '/'

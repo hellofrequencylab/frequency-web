@@ -21,7 +21,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 
-export type SpaceDiscussionHub = {
+type SpaceDiscussionHub = {
   id: string
   slug: string
   name: string

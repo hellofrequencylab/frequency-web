@@ -21,7 +21,7 @@ export const PLAN_ACTIVITY_KINDS = [
   'field',
   'comment',
 ] as const
-export type PlanActivityKind = (typeof PLAN_ACTIVITY_KINDS)[number]
+type PlanActivityKind = (typeof PLAN_ACTIVITY_KINDS)[number]
 
 export const PLAN_ACTIVITY_SUMMARY_MAX = 500
 /** How many rows the drawer shows: the latest, newest first. */

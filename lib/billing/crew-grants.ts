@@ -38,13 +38,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveEffectiveTier, type EffectiveTier } from '@/lib/core/entitlement'
 
 /** The table the grants live in (public.entitlement_grants). */
-export const GRANTS_TABLE = 'entitlement_grants'
+const GRANTS_TABLE = 'entitlement_grants'
 
 /** The only tier this engine grants today. The column is wider so a future rung needs no migration. */
-export const GRANTED_TIER = 'crew' as const
+const GRANTED_TIER = 'crew' as const
 
 /** Provenance: WHY the row exists. One source today; the column keeps the door open. */
-export const GRANT_SOURCE = 'space_membership' as const
+const GRANT_SOURCE = 'space_membership' as const
 
 // ── Untyped admin-client seam (entitlement_grants is not in the generated types yet, ADR-246;
 //    the same one-loose-thenable-chain idiom lib/spaces/tier-circle.ts uses) ────────────────────
@@ -172,7 +172,7 @@ export async function isSpaceOperator(spaceId: string, profileId: string): Promi
 
 // ── The write side ──────────────────────────────────────────────────────────────────────────────
 
-export interface CrewGrantSyncInput {
+interface CrewGrantSyncInput {
   spaceId: string
   profileId: string
   /** The tier being granted, or (for a revoke) the tier whose grant is being undone. */
@@ -191,7 +191,7 @@ export type CrewGrantReason =
   | 'tier_missing'
   | 'error'
 
-export interface CrewGrantSyncResult {
+interface CrewGrantSyncResult {
   granted: boolean
   reason: CrewGrantReason
 }

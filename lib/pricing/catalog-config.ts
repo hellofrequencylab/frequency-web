@@ -127,7 +127,7 @@ export const ADDON_ENABLED_KEY = 'catalog.addon_enabled' as const
 
 /** The CODE-DEFAULT config for one catalog item (the Phase B CATALOG amounts, no explicit yearly
  *  override so the yearly derives two-months-free). PURE. */
-export function catalogItemConfigDefault(item: CatalogItem): CatalogItemConfig {
+function catalogItemConfigDefault(item: CatalogItem): CatalogItemConfig {
   return {
     monthlyListCents: item.month.listCents,
     monthlyFoundingCents: item.month.foundingCents,

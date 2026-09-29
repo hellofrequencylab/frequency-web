@@ -22,7 +22,7 @@ import type { FactGuest } from '@/components/events/event-fact-panel'
 import type { WarmProofAttendee } from '@/components/events/warm-proof'
 
 /** The bits of the event a module needs (the page keeps the full row for its fixed header/Join). */
-export interface EventLite {
+interface EventLite {
   id: string
   slug: string
   title: string
@@ -62,7 +62,7 @@ export interface SoldTicket {
 }
 
 /** The warm-proof social counts the page already computed, for the `event-warm-proof` module. */
-export interface WarmProofData {
+interface WarmProofData {
   going: number
   fromYourCircles: number
   maybe: number
@@ -73,7 +73,7 @@ export interface WarmProofData {
 }
 
 /** The critical-info card inputs the page already computed, for the `event-facts` module. */
-export interface EventFactsData {
+interface EventFactsData {
   whenLine: string
   isOnline: boolean
   location: string | null

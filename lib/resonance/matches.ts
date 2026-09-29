@@ -26,12 +26,12 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /** A person's matching consent. Opt-IN default is FALSE (a person-to-person surface is opt-in, like
  *  email_marketing in lib/consent/scopes.ts): say nothing and you are not in the pool. */
-export interface MatchingConsent {
+interface MatchingConsent {
   optedIn: boolean
   optedOutAsTarget: boolean
 }
 
-export const NO_MATCHING_CONSENT: MatchingConsent = { optedIn: false, optedOutAsTarget: false }
+const NO_MATCHING_CONSENT: MatchingConsent = { optedIn: false, optedOutAsTarget: false }
 
 /** Read one person's matching consent. FAIL-SAFE + opt-IN default: an absent row, a missing table
  *  (pre-migration), or any error reads as NOT opted in. */
@@ -106,7 +106,7 @@ export async function setTargetOptOut(selfProfileId: string, optedOut: boolean):
 // ── The double-opt-in match record ────────────────────────────────────────────────
 
 /** The state of one pairing's bilateral opt-in. */
-export interface MatchState {
+interface MatchState {
   aPid: string
   bPid: string
   aOptin: boolean
@@ -115,7 +115,7 @@ export interface MatchState {
 }
 
 /** Read the match state for a pair (canonical order applied). FAIL-SAFE: nulls/false when absent. */
-export async function getMatchState(x: string, y: string): Promise<MatchState | null> {
+async function getMatchState(x: string, y: string): Promise<MatchState | null> {
   if (!UUID_RE.test(x) || !UUID_RE.test(y) || x === y) return null
   const { a, b } = orderPair(x, y)
   try {

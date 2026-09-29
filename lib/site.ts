@@ -58,7 +58,7 @@ export const SITE_DESCRIPTION =
 //   • "Discover" — the live community (Circles / Events / Topics)
 //   • "About"    — the mission + site pages (members get a mission-focused subset)
 // `desc` powers the subtitle line in the dropdown panels.
-export type NavLink = { label: string; href: string; desc?: string }
+type NavLink = { label: string; href: string; desc?: string }
 
 // ── DISCOVER_NAV was retired here on 2026-08-25 (HYG-019). ───────────────────
 // It was a hand-maintained list of the five /discover destinations, and the record
@@ -118,10 +118,10 @@ export const SITE_NAV: NavLink[] = PRIMARY_NAV;
 // for the DB-backed `header` surface (lib/menus): operators edit the LIVE menu in
 // /admin/menu, adding pages and categories, and the live seed mirrors this shape.
 // Copy carries no em or en dashes.
-export type MegaNavItem = { label: string; href: string; desc?: string };
-export type MegaNavGroup = { heading?: string; items: MegaNavItem[] };
-export type MegaNavFeatured = { title: string; desc: string; href: string; cta?: string };
-export type PublicMegaMenu = {
+type MegaNavItem = { label: string; href: string; desc?: string };
+type MegaNavGroup = { heading?: string; items: MegaNavItem[] };
+type MegaNavFeatured = { title: string; desc: string; href: string; cta?: string };
+type PublicMegaMenu = {
   label: string;
   /** A plain link (no dropdown). Used when the panel has no `items` and no `sections`. */
   href?: string;

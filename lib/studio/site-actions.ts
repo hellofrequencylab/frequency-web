@@ -13,7 +13,7 @@ import type { CommunityRole } from '@/lib/core/roles'
 
 export type SiteActionKey = 'reindex_help' | 'set_flag'
 
-export interface SiteActionDef {
+interface SiteActionDef {
   key: SiteActionKey
   label: string
   description: string
@@ -41,8 +41,8 @@ export const SITE_ACTIONS: Record<SiteActionKey, SiteActionDef> = {
 }
 
 /** Flags the Studio is permitted to toggle — a deliberately small, reversible set. */
-export const TOGGLEABLE_FLAGS = ['ai_enabled', 'demo_mode'] as const
-export type ToggleableFlag = (typeof TOGGLEABLE_FLAGS)[number]
+const TOGGLEABLE_FLAGS = ['ai_enabled', 'demo_mode'] as const
+type ToggleableFlag = (typeof TOGGLEABLE_FLAGS)[number]
 
 export function isSiteAction(key: unknown): key is SiteActionKey {
   return typeof key === 'string' && key in SITE_ACTIONS

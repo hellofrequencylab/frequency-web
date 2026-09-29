@@ -71,7 +71,7 @@
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 /** The frequencies the subset admits. */
-export const REPEAT_FREQS = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const
+const REPEAT_FREQS = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const
 export type RepeatFreq = (typeof REPEAT_FREQS)[number]
 
 /** RFC 5545 weekday codes, in the order `Date.getUTCDay()` returns (Sunday = 0). */
@@ -290,10 +290,10 @@ export function formatRepeat(rule: RepeatRule): string {
 
 /** The cadence values `events.recurrence_type` may hold. 'yearly' joined the CHECK with the rule
  *  column; every row written before that carries one of the original four. */
-export type RecurrenceEnum = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+type RecurrenceEnum = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
 
 /** Narrow any value to a cadence enum. Total. */
-export function asRecurrenceEnum(v: unknown): RecurrenceEnum {
+function asRecurrenceEnum(v: unknown): RecurrenceEnum {
   return v === 'daily' || v === 'weekly' || v === 'monthly' || v === 'yearly' ? v : 'none'
 }
 
@@ -340,7 +340,7 @@ export function coarseRecurrence(rule: RepeatRule | null | undefined): Recurrenc
 
 /** The columns any reader has in hand. `recurrence_rule` is nullable and is absent on every row
  *  written before ADR-1299. */
-export interface RepeatSource {
+interface RepeatSource {
   starts_at: string | null | undefined
   recurrence_type?: string | null
   recurrence_rule?: string | null
@@ -416,7 +416,7 @@ function weekStart(d: Date): Date {
   return out
 }
 
-export interface ExpandOptions {
+interface ExpandOptions {
   /** Stop at this instant, inclusive. Required: an unbounded expansion is never what a caller
    *  wants, and making it mandatory is what stops one being written by accident. */
   through: Date

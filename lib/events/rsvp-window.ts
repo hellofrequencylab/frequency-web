@@ -27,7 +27,7 @@
 
 import { eventInstant } from '@/lib/time/zone'
 
-export interface RsvpWindow {
+interface RsvpWindow {
   /** Stored wall clock (UTC parts) for the moment RSVPs open, or null for "already open". */
   opensAt: string | null
   /** Stored wall clock (UTC parts) for the moment RSVPs close, or null for "never closes". */
@@ -43,7 +43,7 @@ export const NO_RSVP_WINDOW: RsvpWindow = { opensAt: null, closesAt: null }
  *   'pending' — the window has not opened yet.
  *   'closed'  — the window has passed.
  */
-export type RsvpWindowState = 'open' | 'pending' | 'closed'
+type RsvpWindowState = 'open' | 'pending' | 'closed'
 
 /** Read the window off an `events.details` bag. Anything unexpected reads as no window. */
 export function readRsvpWindow(details: unknown): RsvpWindow {

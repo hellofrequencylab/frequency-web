@@ -9,10 +9,10 @@ import tablerInfo from '@iconify-json/tabler/info.json'
 // set. Pure metadata (reads the packages' info.json) — safe to import anywhere.
 
 /** A role in the house system: `house` = the primary family, `coverage` = the gap-filler. */
-export type IconSetRole = 'house' | 'coverage'
+type IconSetRole = 'house' | 'coverage'
 
 /** One installed icon set as the lane shows it. Serializable. */
-export interface IconSetInfo {
+interface IconSetInfo {
   /** Iconify prefix ('ph', 'tabler') — the namespace in an icon name `prefix:name`. */
   prefix: string
   name: string

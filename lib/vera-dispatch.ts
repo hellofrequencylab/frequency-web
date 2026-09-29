@@ -25,7 +25,7 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-export interface VeraDispatch {
+interface VeraDispatch {
   day: string
   kind: string
   copy: string

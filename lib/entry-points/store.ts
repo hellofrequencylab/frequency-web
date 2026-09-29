@@ -9,7 +9,7 @@ import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { getEntryTemplate, type EntrySlots, type EntryTemplateId } from './templates'
 
-export interface EntryPoint {
+interface EntryPoint {
   id: string
   slug: string
   title: string
@@ -83,7 +83,7 @@ export async function countMyEntryPoints(ownerId: string): Promise<number> {
   return count ?? 0
 }
 
-export interface EntryPointWithOwner extends EntryPoint {
+interface EntryPointWithOwner extends EntryPoint {
   ownerId: string | null
   ownerName: string | null
 }

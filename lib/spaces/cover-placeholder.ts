@@ -5,7 +5,7 @@
 // (opengraph-image) both pick from here, so a shared link previews the SAME photo the page shows.
 // PURE (no React / Next / Supabase), safe in any runtime.
 
-export const COVER_PLACEHOLDERS = [
+const COVER_PLACEHOLDERS = [
   '/images/site/outdoor-group.jpg',
   '/images/site/sunset.jpg',
   '/images/site/lab-lounge.jpg',

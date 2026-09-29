@@ -12,7 +12,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export interface QuestJourneyCard {
+interface QuestJourneyCard {
   slug: string
   title: string
   emoji: string | null
@@ -20,7 +20,7 @@ export interface QuestJourneyCard {
   practiceCount: number
 }
 
-export interface SeasonalQuestView {
+interface SeasonalQuestView {
   id: string
   slug: string
   name: string

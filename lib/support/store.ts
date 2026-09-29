@@ -98,7 +98,7 @@ async function signedScreenshot(path: string | null): Promise<string | null> {
 
 // ── Member self-service ───────────────────────────────────────────────────────
 
-export interface NewTicketInput {
+interface NewTicketInput {
   profileId: string
   type: TicketType
   subject: string
@@ -199,7 +199,7 @@ export async function supportSummaryForVera(profileId: string, limit = 4): Promi
 
 // ── Admin / staff console ─────────────────────────────────────────────────────
 
-export interface TicketFilters {
+interface TicketFilters {
   status?: TicketStatus | 'all' | 'open_all'
   type?: TicketType
   assignedTo?: string

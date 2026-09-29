@@ -9,9 +9,10 @@
 //
 // Every read + write RE-RESOLVES + RE-GATES server-side (the client is never trusted): a space scope
 // requires the caller to manage that Space (canEditProfile, the same authority uploadToLoom uses);
-// 'mine' requires only a signed-in caller. The ONE exception is the Studio-only deleteSpaceLoomImage,
-// which decides on the Space's `loom` function (canManageSpaceLoom, LIVE-566): the Studio is the
-// management door and the picker is the editing door, so switching the Studio off never stops an edit.
+// 'mine' requires only a signed-in caller. The ONE exception is the Studio-only actions at the foot of
+// this file (deleteSpaceLoomImage, updateSpaceLoomImageMeta, spaceLoomImageUsage), which decide on the
+// Space's `loom` function (canManageSpaceLoom, LIVE-566): the Studio is the management door and the
+// picker is the editing door, so switching the Studio off never stops an edit.
 // Uploads run through the service-role admin client, so they never depend on a live browser Storage
 // session token — the fragile path that returned "new row violates row-level security policy".
 // FAIL-SAFE throughout.
@@ -21,20 +22,27 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, getSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
+import { normalizeAssetMeta } from '@/lib/library/asset-meta'
+import { findLibraryAssetUsage } from '@/lib/library/usage'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import {
+  getLibraryAsset,
+  updateSpaceLibraryAssetMeta,
   listLoomScopeImages,
   listLoomScopeTags,
   insertSpaceLibraryImage,
   findLibraryAssetBySha256,
   deleteSpaceLibraryAsset,
+  forkLibraryAsset,
+  forkIfShared,
   type LoomPickAsset,
+  type LoomSharedMode,
 } from '@/lib/library/store'
 import { withLoomProofs } from '@/lib/library/asset-urls'
 import { removeLibraryProof } from '@/lib/library/proof-object'
 import { LIBRARY_PRIVATE_BUCKET } from '@/lib/library/protect-move'
 import { ingestImageBytes } from '@/lib/library/ingest'
-import { loomQuotaFor, loomStorageUsed, loomBudgetVerdict, loomMeter, type LoomMeter } from '@/lib/library/quota'
+import { loomQuotaFor, loomStorageUsed, loomAdmits, loomMeter, type LoomMeter } from '@/lib/library/quota'
 import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, effectiveMime, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 import { resolveElement } from '@/lib/elements/store'
@@ -181,11 +189,33 @@ async function resolveScope(
   }
 }
 
+/** MAKE IT YOURS (LIVE-569, ADR-1587): copy one Frequency shared image into a Space's own Loom, so the
+ *  Space can rename, caption, retag or remove its copy without touching the master. The Space-side door
+ *  to forkLibraryAsset, gated like the Studio's other doors on the Space's `loom` function
+ *  (canManageSpaceLoom, LIVE-566), because making a copy is managing the library, not placing an image.
+ *  The store re-reads the master and refuses one that is not the root Space's AND public, whatever id
+ *  arrived, and asks the storage budget (loomAdmits) before the copy is stored. Returns the copy's id and
+ *  URL (an earlier copy of the same master is the answer, not a second one). FAIL-SAFE: every miss is a
+ *  sentence. */
+export async function forkSharedLoomImage(
+  spaceKey: string,
+  assetId: string,
+): Promise<{ id: string; url: string; reused: boolean } | { error: string }> {
+  const caller = await getCallerProfile()
+  if (!caller) return { error: 'Sign in to manage this library.' }
+  if (!assetId) return { error: 'Nothing to copy.' }
+  const ctx = await loomSpaceAndRole(caller.id, spaceKey)
+  if (!ctx || !canManageSpaceLoom(ctx.space, ctx.role)) return { error: 'You cannot manage that library.' }
+  return forkLibraryAsset(ctx.space.id, assetId, caller.id)
+}
+
 /** The images in one scope for the picker grid, plus that scope's tag facets. `view='elements'` keeps
- *  only AI-generated images. Gated + FAIL-SAFE. */
+ *  only AI-generated images. `shared` widens a SPACE scope to the Frequency shared library (LIVE-569):
+ *  'with' for the picker (its own rows and the root's public ones, badged apart by `ownedByViewer`),
+ *  'only' for the Studio's Frequency shelf; the personal scope ignores it. Gated + FAIL-SAFE. */
 export async function loomImages(
   scopeKey: string,
-  opts: { q?: string; tag?: string; kinds?: string[]; generatedOnly?: boolean } = {},
+  opts: { q?: string; tag?: string; kinds?: string[]; generatedOnly?: boolean; shared?: LoomSharedMode } = {},
 ): Promise<{ assets: LoomPickAsset[]; tags: string[] }> {
   const caller = await getCallerProfile()
   if (!caller) return { assets: [], tags: [] }
@@ -195,12 +225,12 @@ export async function loomImages(
   // ['icon'] for the Icons view, ['image','element'] + generatedOnly for Elements, etc.
   const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
   const [rows, tags] = await Promise.all([
-    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, includeProtected: true }),
-    listLoomScopeTags(scope, kinds),
+    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, shared: opts.shared, includeProtected: true }),
+    opts.shared === 'only' ? Promise.resolve([] as string[]) : listLoomScopeTags(scope, kinds),
   ])
   // PROOFS, NOT MASTERS (LIVE-580, ADR-1623): a protected row leaves here with a signed link to its
-  // stored 480px proof as its url and no storage key, and the picker renders it without letting it be placed. The
-  // master of a protected asset never reaches a picker, so it can never be stored in a page.
+  // stored 480px proof as its url and no storage key, and the picker renders it without letting it
+  // be placed. The master of a protected asset never reaches a picker, so it is never stored in a page.
   const assets = await withLoomProofs(rows)
   return { assets, tags }
 }
@@ -264,18 +294,13 @@ export async function uploadLoomImage(
   const existing = await findLibraryAssetBySha256(spaceId, ingested.sha256)
   if (existing?.url) return { url: existing.url, id: existing.id }
 
-  // BUDGET (LIVE-567, ADR-1585): one bucket serves every Space, so a Space's Loom has a cap. Read
-  // the owning Space's cap and what it already stores BEFORE storage; refuse past the cap. A failed
-  // Space read or a failed sum refuses too: a quota that fails open is not a quota. The root Space
-  // (and so a personal upload) is uncapped and skips the sum. A dedupe hit above stores nothing, so
-  // it is answered before the budget is asked.
-  const owner = await getSpaceById(spaceId).catch(() => null)
-  if (!owner) return { error: 'Could not check how much room this library has left, so the upload is paused. Try again in a moment.' }
-  const quota = loomQuotaFor(owner)
-  if (quota.capped) {
-    const verdict = loomBudgetVerdict(quota, await loomStorageUsed(spaceId), ingested.bytes.byteLength)
-    if (!verdict.ok) return { error: verdict.error }
-  }
+  // BUDGET (LIVE-567, ADR-1585): one bucket serves every Space, so a Space's Loom has a cap. Ask the
+  // one gate (loomAdmits, LIVE-629 / ADR-1602: the owning Space's cap and what it already stores)
+  // BEFORE storage; refuse past the cap. A failed Space read or a failed sum refuses too: a quota
+  // that fails open is not a quota. The root Space (and so a personal upload) is uncapped and skips
+  // the sum. A dedupe hit above stores nothing, so it is answered before the budget is asked.
+  const verdict = await loomAdmits(spaceId, ingested.bytes.byteLength)
+  if (!verdict.ok) return { error: verdict.error }
 
   const { error: upErr } = await admin.storage
     .from(target.bucket)
@@ -317,12 +342,46 @@ export async function uploadLoomImage(
   return { url: pub.publicUrl, id }
 }
 
+/** The Space a Studio-only action names (`spaceKey`, id or slug) and the caller's role on it, for the
+ *  action to put through canManageSpaceLoom (LIVE-566, ADR-1578) at its own door. The personal 'mine'
+ *  scope is not a Space, so it never resolves here. FAIL-SAFE: any error reads as no Space. */
+async function loomSpaceAndRole(callerId: string, spaceKey: string) {
+  try {
+    const space = spaceKey === 'mine' ? null : await spaceForScopeKey(spaceKey)
+    if (!space) return null
+    const caps = await getSpaceCapabilities(space, callerId)
+    return { space, role: caps.role }
+  } catch {
+    return null
+  }
+}
+
+/** Is `assetId` one of this Space's own Loom rows? A read bound to space_id; a failed read is NO.
+ *  Asked before a usage read, so a Space never learns where another Space's image is placed. */
+async function spaceHoldsAsset(spaceId: string, assetId: string): Promise<boolean> {
+  try {
+    return !!(await getLibraryAsset(spaceId, assetId))
+  } catch {
+    return false
+  }
+}
+
+/** The refusal a Space delete returns while the image is still placed (LIVE-568). The admin door's
+ *  sentence, less its "Archive it instead": the Space Studio has no archive. */
+function placedRefusal(pages: number): string {
+  return `This image is on ${pages} page${pages === 1 ? '' : 's'}. Take it off ${pages === 1 ? 'that page' : 'those pages'} first, then remove it here.`
+}
+
 /** Delete an image from a SPACE's Loom (the Loom Studio's remove control). Gated on the Space's `loom`
  *  FUNCTION through canManageSpaceLoom (LIVE-566, ADR-1578): the switch and the min-role bar the Space set,
  *  NOT the picker's `canEditProfile` scope, because this is the Studio's management door and the picker is
  *  the editing door (ADR-1559 §4). Only a Space (by id or slug) is deletable here: the personal 'mine' scope
  *  is not a Space, so it is rejected (a person's cross-space uploads are managed where they live).
- *  Best-effort removes the stored object too. FAIL-SAFE: any error resolving the Space reads as no access. */
+ *
+ *  SAFE DELETE (LIVE-568, ADR-1586): the admin door's guard (PROG-D4, ADR-1502). The usage index is read
+ *  first; an image still placed on a page is refused with the count, and a FAILED read refuses too
+ *  (deleting what you could not prove unused is the destructive half of ADR-979). Best-effort removes the
+ *  stored object after the row. FAIL-SAFE: any error resolving the Space reads as no access. */
 export async function deleteSpaceLoomImage(
   spaceKey: string,
   assetId: string,
@@ -330,17 +389,13 @@ export async function deleteSpaceLoomImage(
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Sign in to manage this library.' }
   if (!assetId) return { error: 'Nothing to remove.' }
-  let spaceId: string | null = null
-  try {
-    const space = spaceKey === 'mine' ? null : await spaceForScopeKey(spaceKey)
-    if (space) {
-      const caps = await getSpaceCapabilities(space, caller.id)
-      if (canManageSpaceLoom(space, caps.role)) spaceId = space.id
-    }
-  } catch {
-    spaceId = null
-  }
-  if (!spaceId) return { error: 'You cannot manage that library.' }
+  const ctx = await loomSpaceAndRole(caller.id, spaceKey)
+  if (!ctx || !canManageSpaceLoom(ctx.space, ctx.role)) return { error: 'You cannot manage that library.' }
+  const spaceId = ctx.space.id
+  if (!(await spaceHoldsAsset(spaceId, assetId))) return { error: 'That image is not in this library.' }
+  const usage = await findLibraryAssetUsage(assetId)
+  if (!usage.ok) return { error: 'Could not check where this image is used, so it stays. Try again.' }
+  if (usage.pages > 0) return { error: placedRefusal(usage.pages) }
   const removed = await deleteSpaceLibraryAsset(spaceId, assetId)
   if (!removed) return { error: 'That image could not be removed. Try again.' }
   if (removed.bucket && removed.path) {
@@ -353,4 +408,58 @@ export async function deleteSpaceLoomImage(
     }
   }
   return { ok: true }
+}
+
+/** Rename, caption or retag ONE image in a Space's Loom (LIVE-568, ADR-1586): the Space Studio's
+ *  editor. Same door as the delete (canManageSpaceLoom), same validation as the Loom Studio drawer
+ *  (normalizeAssetMeta), and a write bound to space_id, so an id from another Space updates nothing.
+ *  Returns the saved words so the Studio shows what the row now holds. */
+export async function updateSpaceLoomImageMeta(
+  spaceKey: string,
+  assetId: string,
+  fields: { title?: string; alt?: string; tags?: string },
+): Promise<
+  { ok: true; id: string; forked: boolean; title: string | null; alt: string | null; tags: string[] | null } | { error: string }
+> {
+  const caller = await getCallerProfile()
+  if (!caller) return { error: 'Sign in to manage this library.' }
+  if (!assetId) return { error: 'Nothing to edit.' }
+  const ctx = await loomSpaceAndRole(caller.id, spaceKey)
+  if (!ctx || !canManageSpaceLoom(ctx.space, ctx.role)) return { error: 'You cannot manage that library.' }
+  const spaceId = ctx.space.id
+  const words = normalizeAssetMeta({ title: fields?.title, alt: fields?.alt, tags: fields?.tags })
+  if ('error' in words) return { error: words.error }
+  // FORK ON EDIT (LIVE-569, ADR-1587): a Frequency shared image is copied into this Space first (under
+  // the storage budget) and the COPY is what gets edited, so a Space never writes a root row and is
+  // never simply refused. Its own row is itself. `id` tells the Studio which row now holds the words.
+  const target = await forkIfShared(spaceId, assetId, caller.id)
+  if ('error' in target) return { error: target.error }
+  const out = await updateSpaceLibraryAssetMeta(spaceId, target.id, words.patch)
+  if (out === 'missing') return { error: 'That image is not in this library.' }
+  if (out === 'failed') return { error: 'That did not save. Try again.' }
+  return {
+    ok: true,
+    id: target.id,
+    forked: target.forked,
+    title: words.patch.title ?? null,
+    alt: words.patch.alt ?? null,
+    tags: words.patch.tags ?? null,
+  }
+}
+
+/** How many pages place ONE image of a Space's Loom (LIVE-568): the count the Studio shows next to
+ *  Remove, so a refused delete is never the first a person hears of it. Same door as the delete, and
+ *  only for this Space's own rows. Counts only: the places themselves can sit in other Spaces. A
+ *  failed read is `ok: false`, which the Studio says as "could not check", never as zero. */
+export async function spaceLoomImageUsage(
+  spaceKey: string,
+  assetId: string,
+): Promise<{ ok: true; pages: number } | { ok: false }> {
+  const caller = await getCallerProfile()
+  if (!caller || !assetId) return { ok: false }
+  const ctx = await loomSpaceAndRole(caller.id, spaceKey)
+  if (!ctx || !canManageSpaceLoom(ctx.space, ctx.role)) return { ok: false }
+  if (!(await spaceHoldsAsset(ctx.space.id, assetId))) return { ok: false }
+  const usage = await findLibraryAssetUsage(assetId)
+  return usage.ok ? { ok: true, pages: usage.pages } : { ok: false }
 }

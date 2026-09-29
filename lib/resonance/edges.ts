@@ -23,14 +23,14 @@ import { resonanceMatchCount } from '@/lib/traits/compute'
 
 /** How long a computed edge stays fresh before it ages out. The nightly refresh rewrites surviving
  *  edges, so a tie that no longer resonates simply expires (no junk drawer, the plan's rule). */
-export const EDGE_TTL_DAYS = 14
+const EDGE_TTL_DAYS = 14
 
 /** The cap on how many top edges we persist per opted-in anchor each night. Keeps the table bounded
  *  and the surfaces focused on the strongest few. */
 const EDGES_PER_ANCHOR = 8
 
 /** One stored edge as a surface reads it (camelCase). */
-export interface ResonanceEdge {
+interface ResonanceEdge {
   /** The other person on this edge (relative to the anchor the read was scoped to). */
   otherProfileId: string
   /** The reciprocal Resonance Score, 0..1. */

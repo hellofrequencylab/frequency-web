@@ -8,10 +8,10 @@
 // PURE (mime string in, target out), so it is trivially testable and carries no server-only imports.
 
 /** The file-backed Loom lanes an upload can classify into (a subset of LIBRARY_KINDS). */
-export type LoomUploadKind = 'image' | 'audio' | 'video'
+type LoomUploadKind = 'image' | 'audio' | 'video'
 
 /** Where an upload of a given kind lands: its Loom `kind`, its Storage bucket, and its byte ceiling. */
-export interface LoomUploadTarget {
+interface LoomUploadTarget {
   kind: LoomUploadKind
   bucket: string
   maxBytes: number
@@ -20,12 +20,12 @@ export interface LoomUploadTarget {
 /** The 20 MB image ceiling (unchanged from the original library-media bucket). */
 export const IMAGE_MAX_BYTES = 20 * 1024 * 1024
 /** The 500 MB A/V ceiling (recordings-media bucket, 20261150000000). Matches the bucket file_size_limit. */
-export const MEDIA_MAX_BYTES = 500 * 1024 * 1024
+const MEDIA_MAX_BYTES = 500 * 1024 * 1024
 
 /** The image bucket (unchanged). */
 export const LIBRARY_MEDIA_BUCKET = 'library-media' as const
 /** The A/V bucket (Airwaves P0). */
-export const RECORDINGS_MEDIA_BUCKET = 'recordings-media' as const
+const RECORDINGS_MEDIA_BUCKET = 'recordings-media' as const
 
 /**
  * Classify an upload by MIME type into its Loom lane, or null when the type is not an accepted Loom

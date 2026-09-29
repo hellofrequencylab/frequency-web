@@ -42,14 +42,14 @@ import { allowanceAt } from '@/lib/pricing/feature-meters'
 /** The Space context the viewer is acting under, when the Journey belongs to (or is being created
  *  for) a Space. `canEdit` = the viewer is on the Space's team with editor+ standing (resolved by
  *  the caller via the Space role ladder — never inferred here). */
-export interface JourneyAccessSpace {
+interface JourneyAccessSpace {
   /** spaces.plan (any raw label; normalized via asSpacePlan). */
   plan: string | null
   /** Does the viewer edit this Space (editor/admin/owner on the Space team)? */
   canEdit: boolean
 }
 
-export interface JourneyAccessViewer {
+interface JourneyAccessViewer {
   /** profiles.id, or null when anonymous. */
   profileId: string | null
   /** Community trust role (member < crew < host < guide < mentor). Omitted = 'member'. */
@@ -69,7 +69,7 @@ export interface JourneyAccessViewer {
  *  a personal Journey; callers must normalize the platform root space to null first (the same
  *  root-is-personal rule as lib/journeys/publish-gate.ts). Pass `authorId` whenever known — the
  *  author's own edit rights hang on it. */
-export interface JourneyAccessJourney {
+interface JourneyAccessJourney {
   /** journey_plans.id (informational; no capability keys on it). */
   planId?: string
   /** journey_plans.author_id. */

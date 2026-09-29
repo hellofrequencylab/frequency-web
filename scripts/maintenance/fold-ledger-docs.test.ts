@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { mergeBacklog, mergeDecisions, splitAdrs } from './fold-ledger-docs.mjs'
+import { mergeBacklog, mergeDecisions, splitAdrs, waveToken } from './fold-ledger-docs.mjs'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // THE CI HALF OF THE LEDGER FOLD (HYG-032).
@@ -183,6 +183,46 @@ describe('meta.slate is folded beside the entries, then reconciled against them'
     const theirs = slated([row('A')], [{ name: 'W0', ids: ['A'] }])
     const r = mergeBacklog(base, ours, theirs) as { text: string }
     expect(slateOf(r.text).flatMap((w) => w.ids)).not.toContain('LOOSE')
+  })
+
+  it('🔴 matches a wave main RENAMED by its token, keeping main’s name, instead of appending a copy (HYG-134)', () => {
+    // The 2026-09-29 shape: the backlog cull appended "── PARKED ..." to the W4 name, and a branch
+    // cut before it folded against main and appended its old "W4 · old" as a second W4.
+    const base = slated([row('A'), row('B')], [{ name: 'W4 · old', ids: ['A'] }])
+    const ours = slated([row('A'), row('B')], [{ name: 'W4 · old', ids: ['A', 'B'] }])
+    const theirs = slated([row('A'), row('B')], [{ name: 'W4 · old ── PARKED', ids: ['A'] }])
+    const r = mergeBacklog(base, ours, theirs) as { text: string }
+    const w4 = slateOf(r.text).filter((w) => waveToken(w.name) === 'W4')
+    expect(w4).toHaveLength(1)
+    expect(w4[0].name).toBe('W4 · old ── PARKED')
+    expect(w4[0].ids).toEqual(['A', 'B']) // the branch's placement still unions in
+  })
+
+  it('still appends a wave token only this branch has', () => {
+    const base = slated([row('A'), row('B')], [{ name: 'W0 · now', ids: ['A'] }])
+    const ours = slated([row('A'), row('B')], [{ name: 'W0 · now', ids: ['A'] }, { name: 'W99 · new phase', ids: ['B'] }])
+    const theirs = slated([row('A'), row('B')], [{ name: 'W0 · now, reworded', ids: ['A'] }])
+    const r = mergeBacklog(base, ours, theirs) as { text: string }
+    expect(slateOf(r.text).map((w) => w.name)).toEqual(['W0 · now, reworded', 'W99 · new phase'])
+  })
+
+  it('🔴 drops a PARKED id this branch still has on a wave main took it off, and reports it (HYG-134)', () => {
+    // Main parked P and removed it from W4; the pre-cull branch still lists it. Parked rows sit on no
+    // wave (the reason and date live on the row), so the union must not put it back.
+    const base = slated([row('A'), row('P')], [{ name: 'W4 · x', ids: ['A', 'P'] }])
+    const ours = slated([row('A'), row('P')], [{ name: 'W4 · x', ids: ['A', 'P'] }])
+    const theirs = slated([row('A'), row('P', { status: 'parked' })], [{ name: 'W4 · x', ids: ['A'] }])
+    const r = mergeBacklog(base, ours, theirs) as { text: string; slate: { parked: string[]; done: string[] } }
+    expect(slateOf(r.text)[0].ids).toEqual(['A'])
+    expect(r.slate.parked).toEqual(['P'])
+    expect(r.slate.done).toEqual([])
+  })
+
+  it('keeps a BLOCKED row on its wave — HYG-047 requires every open or blocked row placed', () => {
+    const base = slated([row('A')], [{ name: 'W0', ids: ['A'] }])
+    const blocked = slated([row('A', { status: 'blocked' })], [{ name: 'W0', ids: ['A'] }])
+    const r = mergeBacklog(base, base, blocked) as { text: string }
+    expect(slateOf(r.text)[0].ids).toEqual(['A'])
   })
 
   it('leaves a document with no slate exactly as main had it', () => {

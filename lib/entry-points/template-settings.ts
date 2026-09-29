@@ -12,7 +12,7 @@ function db(): SupabaseClient {
 }
 
 /** template_id → enabled. Absent keys mean enabled (default-on). */
-export async function listTemplateEnabled(): Promise<Record<string, boolean>> {
+async function listTemplateEnabled(): Promise<Record<string, boolean>> {
   const { data } = await db().from('entry_template_settings').select('template_id, enabled')
   const map: Record<string, boolean> = {}
   for (const r of (data as { template_id: string; enabled: boolean }[] | null) ?? []) {

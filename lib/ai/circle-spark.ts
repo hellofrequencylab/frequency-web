@@ -27,7 +27,7 @@ const TIER = 'sonnet' as const
 
 const PILLARS: readonly PillarSlug[] = ['mind', 'body', 'spirit', 'expression']
 
-export interface CircleSparkAnswers {
+interface CircleSparkAnswers {
   /** What the club is about (a topic, an activity). */
   topic: string
   /** Who it is for. */
@@ -243,7 +243,7 @@ export async function suggestCircleDraft(input: {
 }
 
 /** Re-coerce every field. Never trust the raw model shape. */
-export function coerceSuggestion(raw: unknown): CircleSuggestion | null {
+function coerceSuggestion(raw: unknown): CircleSuggestion | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   const name = sparkStr(r.name, 60).replace(/^["']+|["']+$/g, '')

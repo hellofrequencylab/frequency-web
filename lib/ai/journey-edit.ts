@@ -29,7 +29,7 @@ export interface JourneyForEdit {
   }[]
 }
 
-export type JourneyEditOp =
+type JourneyEditOp =
   | { op: 'identity'; title?: string; subtitle?: string; intro?: string }
   | { op: 'phase'; id: string; title?: string; focus?: string }
   | { op: 'practice'; id: string; title?: string; body?: string }

@@ -32,7 +32,7 @@ export interface ListingAction {
 
 /** The pickup location shown on the detail-page map. Approximate by default (never a precise pin or
  *  address) until the seller reveals the exact spot. Null when the listing has no coordinates. */
-export interface ListingPickup {
+interface ListingPickup {
   lat: number | null
   lng: number | null
   areaLabel: string | null
@@ -92,7 +92,7 @@ export interface ListingDetailView {
 
 /** Parse a short hero price ("$299") from a free-text price label, or pass through a plain word like
  *  "Free". Returns null when the label carries no price at all. */
-export function shortPrice(label: string | null | undefined): string | null {
+function shortPrice(label: string | null | undefined): string | null {
   if (!label) return null
   const dollars = label.match(/\$\s*[\d,]+(?:\.\d{1,2})?/)
   if (dollars) return dollars[0].replace(/\s+/g, '')

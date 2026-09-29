@@ -31,7 +31,7 @@ const db = () => createAdminClient() as unknown as SupabaseClient
 /** A freshly-minted account is suspect within this window of its creation. */
 const NEW_ACCOUNT_MS = 48 * 60 * 60 * 1000
 
-export interface ClaimTrustResult {
+interface ClaimTrustResult {
   /** True when the claim should pay the bonus and count toward quality. */
   valid: boolean
   /** Why it was rejected (for the ledger / debugging). null when valid. */

@@ -46,7 +46,7 @@ export interface AutonomousSendInput {
   metadata?: Record<string, unknown>
 }
 
-export type AutonomousSendOutcome =
+type AutonomousSendOutcome =
   | { status: 'sent' }
   | { status: 'proposed'; reason: string } // fell back to human approval (breaker/gate blocked, or error)
   | { status: 'blocked'; reason: string } // could not even propose (a propose write failed) — still never sent

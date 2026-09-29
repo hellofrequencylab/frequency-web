@@ -34,14 +34,14 @@ import { isJanitor } from '@/lib/core/roles'
 /** This Space's check-in node, as the surface consumes it. `secret` rides the QR URL so a forged
  *  node-id link can't claim (verifyCapture checks the match); it is owner-visible only (this surface
  *  is canEditProfile-gated). */
-export interface CheckinNode {
+interface CheckinNode {
   id: string
   /** A server-issued signing token, when the node was created with one (null otherwise). */
   secret: string | null
 }
 
 /** One person's check-in (the owner roster row): who checked in + when. */
-export interface CheckinEntry {
+interface CheckinEntry {
   /** The capture id (a stable React key). */
   id: string
   profileId: string

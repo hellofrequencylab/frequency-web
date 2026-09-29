@@ -40,7 +40,7 @@ export interface SpaceContactRow {
 
 /** A recipient the email lane may send to: the member, the Space's own contact id for them,
  *  and the address that Space holds. */
-export interface ContactRecipient {
+interface ContactRecipient {
   profileId: string
   contactId: string
   email: string

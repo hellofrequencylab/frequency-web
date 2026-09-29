@@ -34,7 +34,7 @@ function toStep(r: StepRow): NurtureStep {
   }
 }
 
-export interface SequenceWithStats {
+interface SequenceWithStats {
   sequence: NurtureSequence
   steps: NurtureStep[]
   /** Currently-active enrollments working through this sequence. */

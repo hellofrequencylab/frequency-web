@@ -31,12 +31,12 @@ export interface StripePriceRow {
 
 /** What the key in force looks like, for the provenance comparison. Either half may be null: the
  *  account when the lookup failed (compare livemode alone), livemode when billing is off. */
-export interface KeyIdentity {
+interface KeyIdentity {
   accountId: string | null
   livemode: boolean | null
 }
 
-export type PriceProvenance = 'ok' | 'unstamped' | 'foreign'
+type PriceProvenance = 'ok' | 'unstamped' | 'foreign'
 
 /** PURE: does this row belong to the key in force? `unstamped` is a row with no provenance at all
  *  (pre-HYG-049), allowed as before. `foreign` is a row whose RECORDED account or mode contradicts a

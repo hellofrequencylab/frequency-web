@@ -197,8 +197,8 @@ export function coerceDigest(
 // ── AI compression path (kernel) ───────────────────────────────────────────────
 
 /** Lowest sensible tier for internal-context compression: cheap, high-volume. */
-export const SUMMARY_TIER: ModelTier = 'haiku'
-export const SUMMARY_FEATURE = 'vera-memory'
+const SUMMARY_TIER: ModelTier = 'haiku'
+const SUMMARY_FEATURE = 'vera-memory'
 
 const TOOL_NAME = 'write_member_digest'
 

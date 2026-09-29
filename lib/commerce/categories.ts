@@ -9,13 +9,13 @@
 // the keywords. normalizeTags() lives here so the client chip input and the server writer agree on one
 // shape. Voice: plain Title Case nouns, on-canon (docs/NAMING.md + docs/CONTENT-VOICE.md), no em dashes.
 
-export interface CommerceSubcategory {
+interface CommerceSubcategory {
   /** Stored in commerce_products.category (the human label). */
   value: string
   label: string
 }
 
-export interface CommerceCategory {
+interface CommerceCategory {
   /** Stored value when a seller picks the group itself (no subcategory). */
   value: string
   label: string

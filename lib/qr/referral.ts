@@ -97,7 +97,7 @@ const REFERRAL_DAILY_CAP = 25
 export const REFERRAL_CLAIM_STALE_MINUTES = 10
 
 /** The rule_key of the referrer's payout claim for one referred member (the exactly-once lock). PURE. */
-export function referralRuleKey(referredProfileId: string): string {
+function referralRuleKey(referredProfileId: string): string {
   return `referral.activated:${referredProfileId}`
 }
 

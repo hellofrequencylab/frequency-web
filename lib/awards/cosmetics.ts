@@ -18,14 +18,14 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-export const JOURNEY_BADGES: Record<string, string> = {
+const JOURNEY_BADGES: Record<string, string> = {
   mind: 'journey-badge-mind',
   body: 'journey-badge-body',
   spirit: 'journey-badge-spirit',
   expression: 'journey-badge-expression',
 }
 
-export const FULL_SPECTRUM_BADGE = 'full-spectrum-banner'
+const FULL_SPECTRUM_BADGE = 'full-spectrum-banner'
 
 /** Grant a store item to a member (gems_spent 0). Idempotent: skips when the
  *  member already holds the item. Returns true when newly granted. */
@@ -56,7 +56,7 @@ export async function grantStoreItem(profileId: string, slug: string): Promise<b
 /** The pillar slug (mind / body / spirit / expression) for one Journey: the dominant
  *  domain_id across its practice items, resolved to a pillar slug. Null when the plan has
  *  no pillar-tagged items. Read-only; used to grant the right Journey badge on completion. */
-export async function pillarForJourney(planId: string): Promise<string | null> {
+async function pillarForJourney(planId: string): Promise<string | null> {
   const admin = db()
   const { data: items } = await admin
     .from('journey_plan_items')

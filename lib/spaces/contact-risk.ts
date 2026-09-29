@@ -63,7 +63,7 @@ export interface RiskFactor {
 
 /** The scorer's output: the clamped churn score, the derived at-risk flag, and the factors behind it
  *  (highest-weight first). Consumed by the cockpit and persisted into the projection columns. */
-export interface ContactRiskResult {
+interface ContactRiskResult {
   /** Churn / at-risk score in [0, 100]: 0 = healthy, 100 = cold. */
   score: number
   /** Derived flag: score >= AT_RISK_THRESHOLD. */

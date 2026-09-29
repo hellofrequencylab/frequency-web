@@ -24,7 +24,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 /** The verdict Vera returns. `approved` is the only status that makes a Journey ranked-eligible.
  *  `pending` is the safe fail-closed state (AI off / over budget / call failed) — never approved. */
-export interface JourneyReview {
+interface JourneyReview {
   status: 'approved' | 'rejected' | 'pending'
   /** 0–100 against the authoring standard. A passing Journey scores PASS_SCORE or above. */
   score: number

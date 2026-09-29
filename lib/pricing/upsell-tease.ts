@@ -35,7 +35,7 @@ export interface TeaseGate {
 
 /** The inputs the visibility rule needs. All resolved by the caller (the server resolves `gatesLive`
  *  + `locked`; the client island resolves `dismissed` from per-tease local state). PURE. */
-export interface TeaseVisibilityInput {
+interface TeaseVisibilityInput {
   /** Are the paid feature GATES live? (lib/pricing/settings.ts featureGatesLive()). The master gate.
    *  Deliberately not billingLive(): during the beta grace window billing sells but nothing is locked,
    *  and a tease that claims a lock in that window is untrue (ADR-874). */

@@ -13,19 +13,19 @@ import {
 } from './compose'
 import type { ComposePillar } from '@/lib/ai/journey-composition'
 
-export interface TemplateLesson {
+interface TemplateLesson {
   type: LeafType
   title: string
 }
-export interface TemplateModule {
+interface TemplateModule {
   title: string
   lessons: TemplateLesson[]
 }
-export interface TemplatePhase {
+interface TemplatePhase {
   title: string
   modules: TemplateModule[]
 }
-export interface JourneyTemplate {
+interface JourneyTemplate {
   id: string
   name: string
   description: string
@@ -106,7 +106,7 @@ export function getTemplate(id: string): JourneyTemplate | undefined {
   return JOURNEY_TEMPLATES.find((t) => t.id === id)
 }
 
-export interface TemplateBlockRow {
+interface TemplateBlockRow {
   tempId: string
   parentTempId: string | null
   blockType: 'phase' | 'module' | LeafType
@@ -132,7 +132,7 @@ export const MASTER_FRAMEWORK_ID = 'master-framework'
  *  default (false) leaves DISTINCT placeholder slots per week for Vera/the author to fill with
  *  different practices each week; `fixed: true` stamps the SAME Mind/Body/Spirit slots into every
  *  week (held fixed for the whole Journey). This is a scaffold-time choice, never persisted. */
-export interface MasterFrameworkOptions {
+interface MasterFrameworkOptions {
   weeks?: number
   fixed?: boolean
 }
@@ -154,7 +154,7 @@ interface MasterPhase {
 
 /** A full Master-Framework block row: a phase OR one of its child blocks (a ComposedRow), with the
  *  same tempId / parentTempId / sortOrder shape the create action inserts in order. */
-export interface MasterBlockRow {
+interface MasterBlockRow {
   tempId: string
   parentTempId: string | null
   /** A phase row, or a leaf/practice ComposedRow to insert under its phase. */
@@ -166,7 +166,7 @@ export interface MasterBlockRow {
  *  When `fixed` is true the same weekly practice slots repeat each week; otherwise each week gets a
  *  distinct set of placeholder slots (identical shape, filled differently later). The shape is the
  *  same either way — "fixed" only changes how the author/Vera treats the slots downstream. */
-export function masterFrameworkPhases(
+function masterFrameworkPhases(
   pillarIds: Partial<Record<ComposePillar, string>>,
   opts: MasterFrameworkOptions = {},
 ): MasterPhase[] {

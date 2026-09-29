@@ -15,7 +15,7 @@
 import type { OrderSource } from '@/lib/billing/pricing-keys'
 
 /** The pricing world a Space sits in, switched by `spaces.network_connected`. */
-export type PricingWorld = 'connected' | 'standalone'
+type PricingWorld = 'connected' | 'standalone'
 
 /** True only when the Space is explicitly network-connected (in the collective). Null/undefined (a
  *  pre-read or missing column) reads as NOT connected — default-safe: a standalone Space is never wrongly

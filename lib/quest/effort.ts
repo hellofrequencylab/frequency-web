@@ -84,7 +84,7 @@ export interface EffortEntry {
   amount: number
 }
 
-export interface EffortScore {
+interface EffortScore {
   band: EffortBand
   /** Zaps earned in the last 7 days. */
   recent: number
@@ -102,17 +102,17 @@ const DAY_MS = 86_400_000
 /** The window a row describes: "this week". */
 export const RECENT_WINDOW_DAYS = 7
 /** How many earlier weeks the usual week is drawn from. */
-export const BASELINE_WEEKS = 4
+const BASELINE_WEEKS = 4
 /** The whole span the score reads: this week plus the four before it. */
 export const WINDOW_DAYS = RECENT_WINDOW_DAYS * (1 + BASELINE_WEEKS)
 /** Weeks with activity needed before a member is compared with themselves at all. */
-export const MIN_ACTIVE_BASELINE_WEEKS = 2
+const MIN_ACTIVE_BASELINE_WEEKS = 2
 /** Ceiling on the index, so there is nothing to win by grinding. */
 export const EFFORT_INDEX_CAP = 200
 /** At or above this, the week reads as above their usual. */
-export const CLIMBING_AT = 125
+const CLIMBING_AT = 125
 /** Below this, the week reads as a lighter one. Never as a deficit, never as a position. */
-export const EASING_BELOW = 75
+const EASING_BELOW = 75
 
 /**
  * How many people have to have shown up in the same week before a list of them is a board.

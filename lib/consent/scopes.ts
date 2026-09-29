@@ -5,7 +5,7 @@
 
 export type ConsentScope = 'email_lifecycle' | 'email_marketing' | 'ai_memory' | 'analytics'
 
-export interface ConsentScopeDef {
+interface ConsentScopeDef {
   key: ConsentScope
   label: string
   description: string

@@ -35,7 +35,7 @@ export const CRON_CEILING_MS = 300_000
  *  skew. A route with a genuinely shorter unit of work passes a smaller `timeMs`. */
 export const CRON_TIME_BUDGET_MS = 240_000
 
-export interface CronBudgetSummary {
+interface CronBudgetSummary {
   /** Items this invocation actually processed. */
   processed: number
   /** Items known to be left for the next run, or null when the caller cannot count them. */
@@ -67,7 +67,7 @@ export interface CronBudget {
   summary(processed: number, remaining?: number | null): CronBudgetSummary
 }
 
-export interface CronBudgetOptions {
+interface CronBudgetOptions {
   /** Override the wall-clock allowance (default `CRON_TIME_BUDGET_MS`). */
   timeMs?: number
   /** Injectable clock for tests. */

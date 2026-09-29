@@ -29,7 +29,7 @@ import { eventSeedDraftFromExtraction, seedEventLedger } from './draft'
 import type { EventHarvestedSource, EventIntakeInputs } from './intake'
 import { createEventIntake } from './store'
 
-export interface ScanEventStageInput {
+interface ScanEventStageInput {
   operatorId: string
   /** The vision read, straight from the scan in this same request. Re-coerced regardless. */
   extraction: ExtractedEvent

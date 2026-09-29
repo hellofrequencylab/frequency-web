@@ -97,14 +97,14 @@ export interface SpaceRecipient {
  *  all still block it, and every send still carries a one-click unsubscribe. The relaxation applies
  *  ONLY in combination with topic 'events' (consentPurposeForLane enforces the pairing), and the
  *  interactive owner-composer entry strips the lane, so the generic campaign composer cannot reach it. */
-export type SpaceSendLane = 'marketing' | 'event_host'
+type SpaceSendLane = 'marketing' | 'event_host'
 
 /** The input to sendSpaceCampaign. `campaignId` links the sends to a saved campaign (optional for a
  *  one-off). subject + html are the rendered email; recipients is the resolved audience. `topic` tags
  *  the send (marketing / events / dispatches) so the per-recipient mute gate honors that topic; absent
  *  or invalid falls back to 'marketing' (the pre-topic behavior). `lane` picks the consent bar and
  *  defaults to 'marketing' — see SpaceSendLane. */
-export interface SendSpaceCampaignInput {
+interface SendSpaceCampaignInput {
   campaignId?: string
   subject: string
   html: string
@@ -114,7 +114,7 @@ export interface SendSpaceCampaignInput {
 }
 
 /** What sendSpaceCampaign reports back: how many were actually sent, skipped as suppressed, or failed. */
-export interface SendSpaceCampaignResult {
+interface SendSpaceCampaignResult {
   sent: number
   suppressed: number
   failed: number

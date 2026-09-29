@@ -23,7 +23,6 @@ import {
   repeatUntilDate,
   nextRepeatOccurrence,
   parseRepeat,
-  repeatChipLabel,
   repeatFor,
   type RepeatRule,
 } from './repeat-rule'
@@ -42,7 +41,7 @@ export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
 
 /** The columns a repeat-aware read needs. `recurrence_rule` is nullable and absent on every row
  *  written before ADR-1299, which is exactly what `repeatFor` falls back for. */
-export interface RecurrenceRow {
+interface RecurrenceRow {
   starts_at: string | null | undefined
   recurrence_type?: string | null
   recurrence_until?: string | null
@@ -61,14 +60,8 @@ export function recurrenceLineFor(row: RecurrenceRow): string | null {
   return rule ? describeRepeat(rule, row.starts_at) : null
 }
 
-/** The SHORT cadence label for a card or a chip ("Every 2 weeks", "Thursdays", "Third Thursday").
- *  Null for a one-time event. */
-export function recurrenceChipFor(row: RecurrenceRow): string | null {
-  return repeatChipLabel(repeatFor(row), row.starts_at)
-}
-
 /** The anchor fields the read helpers need. */
-export interface RecurrenceAnchor {
+interface RecurrenceAnchor {
   /** The series start (the anchor event's `starts_at`), ISO. */
   startsAt: string
   recurrenceType: RecurrenceType | null | undefined

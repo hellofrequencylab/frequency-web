@@ -26,7 +26,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 
 /** Which row the seat is. */
-export type SeatKind = 'rsvp' | 'ticket'
+type SeatKind = 'rsvp' | 'ticket'
 
 export interface SeatRef {
   kind: SeatKind
@@ -41,7 +41,7 @@ export const SEAT_TABLE = {
   ticket: 'event_tickets',
 } as const
 
-export interface SetSeatAttendedInput {
+interface SetSeatAttendedInput {
   eventId: string
   seat: SeatRef
   /** True marks the seat present; false clears a mistaken mark. */
@@ -128,7 +128,7 @@ export interface AttendedTicketRow {
   attended_at: string | null
 }
 
-export interface AttendanceRecordInput {
+interface AttendanceRecordInput {
   rsvps: readonly AttendedRsvpRow[]
   tickets: readonly AttendedTicketRow[]
   /** Profile ids with a verified self check-in for the event. */

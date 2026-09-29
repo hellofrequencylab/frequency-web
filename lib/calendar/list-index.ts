@@ -32,14 +32,14 @@ export type ListIndexItem = {
   planId: string | null
 }
 
-export function listPublicSlug(ev: CalendarEvent): string | null {
+function listPublicSlug(ev: CalendarEvent): string | null {
   if (!ev.eventId) return null
   if (ev.publicationState !== 'published') return null
   if (ev.slug.startsWith('entry-')) return null
   return ev.slug
 }
 
-export function listItemKey(ev: CalendarEvent): string {
+function listItemKey(ev: CalendarEvent): string {
   return `${ev.slug}|${ev.dayKey}`
 }
 
@@ -76,7 +76,7 @@ export function listIndexItems(events: CalendarEvent[]): ListIndexItem[] {
     })
 }
 
-export type AgendaDay = { dayKey: string; label: string; items: ListIndexItem[] }
+type AgendaDay = { dayKey: string; label: string; items: ListIndexItem[] }
 
 /** The day heading the console's agenda prints, e.g. "Tue, Sep 22". Calendar days, so UTC on purpose. */
 export function agendaDayLabel(dayKey: string): string {
@@ -111,7 +111,7 @@ export function selectListItem(items: ListIndexItem[], selectedKey: string | nul
   return items[0] ?? null
 }
 
-export type ListGlanceStat = { key: 'going'; label: string; value: number }
+type ListGlanceStat = { key: 'going'; label: string; value: number }
 
 /** The headline numbers the List viewer can stand behind without opening Manage (LIVE-468).
  *

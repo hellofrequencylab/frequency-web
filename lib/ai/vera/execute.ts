@@ -40,7 +40,7 @@ const MEMORY_TOOLS = new Set(['remember_fact', 'set_profile_field'])
  *  UI passes only when a human explicitly taps "approve and send". There is no autonomous send:
  *  no code path sets this without a human in the loop, and every send still passes the send-gate
  *  (consent + suppression) and, for intros, the double-opt-in check. */
-export interface ExecuteOptions {
+interface ExecuteOptions {
   approvedSend?: boolean
 }
 

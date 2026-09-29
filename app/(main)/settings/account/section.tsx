@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getMyProfileId } from '@/lib/auth'
 import { getBlockedProfiles } from '@/lib/blocking'
 import { getInitials } from '@/lib/utils'
+import { paidSpacesEndedByDelete } from '@/lib/account'
 import { unblockFromSettings } from './actions'
 import { DeleteAccount } from './delete-account'
 import { DownloadData } from './download-data'
@@ -15,7 +16,12 @@ import { EraseDrafts } from './erase-drafts'
 
 export async function AccountSection() {
   const myProfileId = await getMyProfileId()
-  const blocked = myProfileId ? await getBlockedProfiles(myProfileId) : []
+  // Both reads are keyed to the session's own profile. paidSpaces names the Spaces whose paid plan
+  // deleting the account would end (LIVE-628, ADR-1601), so the danger zone says so before the confirm.
+  const [blocked, paidSpaces] = await Promise.all([
+    myProfileId ? getBlockedProfiles(myProfileId) : Promise.resolve([]),
+    myProfileId ? paidSpacesEndedByDelete() : Promise.resolve([]),
+  ])
 
   return (
     <div className="space-y-8">
@@ -63,7 +69,7 @@ export async function AccountSection() {
         <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">Danger zone</p>
         <div className="space-y-3">
           <EraseDrafts />
-          <DeleteAccount />
+          <DeleteAccount paidSpaces={paidSpaces} />
         </div>
       </div>
     </div>

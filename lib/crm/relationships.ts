@@ -20,7 +20,6 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isAssignableKind } from '@/lib/crm/relationship-kinds'
-import type { ContactRelationship } from '@/lib/crm/relationship-kinds'
 
 // The vocabulary, re-exported so no existing importer changes (ADR-1074's rule: extract the leaf,
 // re-export it from the old home, then make the comment a directive).
@@ -41,75 +40,11 @@ export type {
   ContactRelationship,
 } from '@/lib/crm/relationship-kinds'
 
-/** The raw table row shape (untyped until database.types regenerates, ADR-246). */
-interface RelationshipRow {
-  id: string
-  contact_id: string
-  space_id: string | null
-  kind: string
-  status: string | null
-  since: string | null
-  meta: Record<string, unknown> | null
-}
+// ── IO reads ────────────────────────────────────────────────────────────────────
 
-/** Map a raw row to a typed record, or null when the kind is unknown (ignored on read). */
-function toRecord(row: RelationshipRow): ContactRelationship | null {
-  if (!isAssignableKind(row.kind)) return null
-  return {
-    id: row.id,
-    contactId: row.contact_id,
-    spaceId: row.space_id,
-    kind: row.kind,
-    status: row.status ?? 'active',
-    since: row.since,
-    meta: row.meta ?? {},
-  }
-}
-
-// ── IO reads (fail-safe, service-role) ──────────────────────────────────────────
-
-// 2026-09-05 (scan2 L9-13): the single-contact wrapper listRelationships(contactId) was removed; every
-// reader calls listRelationshipsForContacts directly.
-
-/**
- * BATCH read: the ACTIVE assignable relationships for a SET of contacts, keyed by contact id. ONE
- * query for the whole set (no per-contact N+1) — this is what the roster / contacts list calls.
- * FAIL-SAFE: any error or a missing table resolves to an empty map; unknown-kind rows are dropped.
- */
-export async function listRelationshipsForContacts(
-  contactIds: string[],
-): Promise<Map<string, ContactRelationship[]>> {
-  const out = new Map<string, ContactRelationship[]>()
-  const ids = [...new Set(contactIds.filter(Boolean))]
-  if (ids.length === 0) return out
-  try {
-    const admin = createAdminClient()
-    const { data, error } = await (admin as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          in: (col: string, vals: string[]) => {
-            eq: (col: string, val: string) => Promise<{ data: RelationshipRow[] | null; error: unknown }>
-          }
-        }
-      }
-    })
-      .from('contact_relationships')
-      .select('id, contact_id, space_id, kind, status, since, meta')
-      .in('contact_id', ids)
-      .eq('status', 'active')
-    if (error || !data) return out
-    for (const row of data) {
-      const rec = toRecord(row)
-      if (!rec) continue
-      const list = out.get(rec.contactId)
-      if (list) list.push(rec)
-      else out.set(rec.contactId, [rec])
-    }
-    return out
-  } catch {
-    return out
-  }
-}
+// There is no reader here. The classifier reads public.contact_relationships itself
+// (lib/crm/classification.ts) and folds the rows into `relationshipKinds`; the batch reader that
+// used to sit here had no caller and left with the SCAN-502 sweep (ADR-1583).
 
 // ── IO writes (fail-safe, service-role; validate against the registry) ───────────
 

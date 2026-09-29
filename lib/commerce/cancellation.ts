@@ -9,7 +9,7 @@
 // here is pure so the policy is trivially testable and the refund path stays fail-soft.
 
 /** Inputs to the refund computation. `startsAt`/`now` accept an ISO string or a Date. */
-export interface BookingRefundInput {
+interface BookingRefundInput {
   /** What the buyer actually paid, in cents (the settled order amount). */
   paidCents: number
   /** When the booked appointment starts. */
@@ -22,7 +22,7 @@ export interface BookingRefundInput {
   noShowFeePct?: number | null
 }
 
-export interface BookingRefundResult {
+interface BookingRefundResult {
   /** Cents to refund to the buyer. */
   refundCents: number
   /** Cents the seller keeps as the fee (paidCents - refundCents). */

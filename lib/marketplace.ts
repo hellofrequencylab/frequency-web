@@ -27,7 +27,7 @@ export { LISTING_KINDS } from './marketplace-core'
 export type { ListingKind, ListingStatus, ListingDetailField, ListingPatch } from './marketplace-core'
 import type { ListingKind, ListingStatus, ListingDetailField, ListingPatch } from './marketplace-core'
 
-export interface MarketListing {
+interface MarketListing {
   id: string
   author_id: string | null
   title: string
@@ -82,7 +82,7 @@ function computeSeededUnclaimed(row: Record<string, unknown>, seedOwnerId: strin
 
 // --- Reads ----------------------------------------------------------------
 
-export interface ListOpts {
+interface ListOpts {
   kind?: ListingKind | null
   q?: string | null
   hideDemo?: boolean
@@ -158,7 +158,7 @@ function cleanImages(images: string[] | undefined): string[] {
 /** Normalize item-detail chips: trim both parts, drop any row missing a label or value, cap at 20.
  *  Order is preserved (the chips render in the given order on the detail rail). ListingDetail and the
  *  detail-view ListingDetailField are the same {label, value} shape, so both write paths share this. */
-export function cleanDetails(details: ListingDetail[] | undefined): ListingDetail[] {
+function cleanDetails(details: ListingDetail[] | undefined): ListingDetail[] {
   return (details ?? [])
     .map((d) => ({ label: (d?.label ?? '').trim().slice(0, 40), value: (d?.value ?? '').trim().slice(0, 160) }))
     .filter((d) => d.label && d.value)

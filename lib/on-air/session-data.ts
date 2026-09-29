@@ -24,11 +24,11 @@ import type { OnAirPractice } from '@/components/on-air/session'
 
 /** The synthetic "Free sit" chip id. Selecting it runs the open timer; on completion it logs the
  *  default sit practice (so the one economy path, logPractice, is unchanged). Never a real id. */
-export const FREE_SIT_ID = '__free_sit__'
+const FREE_SIT_ID = '__free_sit__'
 
 /** The synthetic "Free Practice" chip id for the Get Moving side. Mirrors FREE_SIT_ID but logs the
  *  default MOVEMENT practice, so a generic Get Moving run banks a movement practice, never a sit. */
-export const FREE_MOVE_ID = '__free_move__'
+const FREE_MOVE_ID = '__free_move__'
 
 /** The practice a Free sit logs (the canonical short Mind sit). Resolved by slug so swapping it is
  *  data, not code. */

@@ -25,7 +25,7 @@
 
 /** A table the trigger is attached to: the actor column (a uuid FK to profiles.id) and, where a
  *  member can edit what they wrote, the content columns whose UPDATE is also a contribution. */
-export type SuspensionCoverage = {
+type SuspensionCoverage = {
   /** The column that names the member who authored the row. */
   actor: string
   /** Columns whose UPDATE is a fresh contribution (the migration uses `before update of ...`).

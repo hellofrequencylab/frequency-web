@@ -37,7 +37,7 @@ import type { ValueType } from '@/lib/crm/import/types'
 
 /** The identity + enriched fields the detail header shows. name/email come from the Space contact row;
  *  phone/company/city are best-effort enrichment from a linked capture (null when none is known). */
-export interface SpaceContactIdentity {
+interface SpaceContactIdentity {
   id: string
   name: string | null
   email: string
@@ -77,7 +77,7 @@ export interface SpaceContactInsight {
 
 /** The next-best-action play offered on the Space contact detail picker. Resolved server-side from the
  *  member's scores (the registry resolver), with the Space's effective autonomy tier baked in. */
-export interface SpaceContactPlay {
+interface SpaceContactPlay {
   /** The registry playbook id the picker runs. */
   playbookId: string
   /** The operator-facing playbook name. */

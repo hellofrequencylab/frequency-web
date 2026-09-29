@@ -456,7 +456,7 @@ export async function updateSpaceProgram(input: {
   await applyProgramCopyPatch(admin, input.channelId, program.templateId, input.patch)
 }
 
-export interface ProgramCopyPatch {
+interface ProgramCopyPatch {
   name?: string
   oneLiner?: string
   coverImage?: string | null

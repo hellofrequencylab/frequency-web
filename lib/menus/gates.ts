@@ -36,7 +36,7 @@ import type { StaffDomain, Access } from '@/lib/core/staff-roles'
 import type { MenuAccess, ResolvedCategory, ResolvedItem, ResolvedMenu } from './types'
 
 /** The gate fields the registry owns. Anything else on a row stays the operator's. */
-export type RegistryGate = {
+type RegistryGate = {
   minAccess: MenuAccess
   staffDomain?: StaffDomain
   staffLevel?: Access

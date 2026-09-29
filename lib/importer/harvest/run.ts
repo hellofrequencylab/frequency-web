@@ -37,7 +37,7 @@ import {
 import { captureImage } from './media'
 
 /** The media paths captured into site-media during harvest (feed BusinessProfile.media). */
-export interface HarvestedMedia {
+interface HarvestedMedia {
   logoUrl?: string
   heroUrl?: string
   gallery?: string[]

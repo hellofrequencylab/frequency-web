@@ -25,7 +25,7 @@ import type { MarketItem } from './types'
 /** One read-only ticketed-event projection. A MarketItem with a guaranteed `href` (the event ticket
  *  flow) and `projected: true`, so the Tickets rail renders it through the shared ProductCard while
  *  it can never route to /market/<id> (which would 404 — there is no commerce_products row). */
-export type ProjectedTicket = MarketItem & { href: string; projected: true }
+type ProjectedTicket = MarketItem & { href: string; projected: true }
 
 /** The active-tier fields we read to compute a "from" price. Mirrors event_ticket_types. */
 type TierRow = {

@@ -7,7 +7,7 @@ import { rankedJourneys, type RankedJourney } from '@/lib/admin/content-signals'
 // ONE request-cached resolver, so the ranked-journeys read + counts run once no matter how the
 // operator has arranged the blocks. Access is gated by the page (requireAdmin); this is the read.
 
-export interface AdminJourneysContext {
+interface AdminJourneysContext {
   journeys: RankedJourney[]
   /** Member submissions awaiting a decision. */
   pending: RankedJourney[]

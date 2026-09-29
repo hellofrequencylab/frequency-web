@@ -49,11 +49,7 @@ journey_drip_sends
 journey_enrollments
 journey_phase_events
 journey_runs
-library_assets
-library_collection_items
-library_collections
 library_styles
-library_versions
 listing_intake
 nodes
 notification_queue

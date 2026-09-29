@@ -21,7 +21,7 @@ export const LIBRARY_KINDS = [
   'audio', // an Airwaves audio Recording file (file-backed; referenced by recordings.loom_asset_id)
   'video', // an Airwaves video Recording file (file-backed; referenced by recordings.loom_asset_id)
 ] as const
-export type LibraryKind = (typeof LIBRARY_KINDS)[number]
+type LibraryKind = (typeof LIBRARY_KINDS)[number]
 
 /** Lifecycle, mirroring the brand-build ladder (draft → in_review → approved → final). */
 export const LIBRARY_STATUSES = ['draft', 'in_review', 'approved', 'final', 'archived'] as const
@@ -29,7 +29,7 @@ export type LibraryStatus = (typeof LIBRARY_STATUSES)[number]
 
 /** Who can see the asset within/across scopes. */
 export const LIBRARY_VISIBILITIES = ['private', 'space', 'public'] as const
-export type LibraryVisibility = (typeof LIBRARY_VISIBILITIES)[number]
+type LibraryVisibility = (typeof LIBRARY_VISIBILITIES)[number]
 
 /** Who may download the original (renditions follow their own delivery rules). */
 export const LIBRARY_DOWNLOAD_POLICIES = ['open', 'members', 'staff'] as const
@@ -60,11 +60,11 @@ export type LibraryUsageContext = (typeof LIBRARY_USAGE_CONTEXTS)[number]
 /** Parametric payload for non-file kinds. An element points back into the code registry;
  *  a template/flow carries Puck content; a theme carries a token set. Loosely typed on
  *  purpose (the shape varies by kind and grows over time). */
-export type LibraryConfig = Record<string, unknown>
+type LibraryConfig = Record<string, unknown>
 
 /** A non-destructive edit recipe (crop/rotate/adjust/output). Produced by the editor and
  *  stored on a rendition or a version; the master is never overwritten. */
-export type LibraryRecipe = {
+type LibraryRecipe = {
   crop?: { x: number; y: number; width: number; height: number } // pixels on the master
   rotate?: number
   flipH?: boolean

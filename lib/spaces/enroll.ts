@@ -54,7 +54,7 @@ export interface SpaceProgram {
 
 /** One of the owner's enrollees (the owner-only list). Carries the member id + display name plus when
  *  they enrolled, so the owner sees who is in the program. */
-export interface SpaceEnrollment {
+interface SpaceEnrollment {
   id: string
   spaceId: string
   memberProfileId: string
@@ -63,14 +63,14 @@ export interface SpaceEnrollment {
 }
 
 /** The viewer's OWN active enrollment (or null), for the enroll surface to show their status. */
-export interface MyEnrollment {
+interface MyEnrollment {
   id: string
   enrolledAt: string
 }
 
 /** The program plus a live seat count, for the member enroll surface. seatsLeft is null when the
  *  program has no cap (capacity 0); otherwise capacity minus active enrollments, floored at 0. */
-export interface ProgramWithSeats {
+interface ProgramWithSeats {
   program: SpaceProgram
   activeCount: number
   seatsLeft: number | null

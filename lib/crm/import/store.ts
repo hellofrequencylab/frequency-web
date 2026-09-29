@@ -99,9 +99,9 @@ function mapRow(r: Record<string, unknown>): ContactImportRow {
 }
 
 /** Cap on rows staged per import (guards the jsonb column + the commit loop). */
-export const MAX_IMPORT_ROWS = 5000
+const MAX_IMPORT_ROWS = 5000
 
-export interface CreateImportInput {
+interface CreateImportInput {
   createdBy: string
   targetKind: ImportTargetKind
   targetSpaceId?: string | null
@@ -149,7 +149,7 @@ export async function getImport(id: string, createdBy: string): Promise<ContactI
   }
 }
 
-export interface UpdateImportPatch {
+interface UpdateImportPatch {
   status?: ImportStatus
   mapping?: ColumnMapping[]
   validation?: ValidationResult

@@ -29,7 +29,7 @@ import { log, briefError } from '@/lib/log'
 // ── PURE: due-step selection (unit-tested, no IO) ────────────────────────────────────────────────
 
 /** What the due-phase selector needs to know about one enrollment. */
-export interface DueSelectionInput {
+interface DueSelectionInput {
   /** The drip anchor: the Run's started_at (cohort) or the enrollment's started_at (solo). */
   startedAt: string
   /** Days between phase unlocks; <= 0 means no drip (everything open, nothing to announce). */
@@ -67,7 +67,7 @@ export function selectDueDripPhases(input: DueSelectionInput): number[] {
 // ── Types the fire path reads ────────────────────────────────────────────────────────────────────
 
 /** What one drip-fire pass reports (mirrors DripRunResult in lib/spaces/drip-runner.ts). */
-export interface JourneyDripRunResult {
+interface JourneyDripRunResult {
   /** Active enrollments the pass scanned. */
   scanned: number
   /** Enrollments with at least one due, unrecorded phase. */

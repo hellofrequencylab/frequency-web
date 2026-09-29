@@ -5,7 +5,7 @@ import { calendarPresentation, entryStage, type EntryStageDef, type EntryStageTo
 // pencilLane is C2. planningLane is C3. productionLane is C4. Cancelled stays on
 // the mixed board. Private entries and Unavailable time stay on the date map.
 
-export type OperatorListItem = {
+type OperatorListItem = {
   key: string
   title: string
   whenLabel: string

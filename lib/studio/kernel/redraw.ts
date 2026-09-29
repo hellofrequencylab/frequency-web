@@ -217,7 +217,7 @@ export function redrawBrief(input: {
 }
 
 /** What one settled redraw amounts to: what the pins held, what moved, and the paths to write. */
-export interface RedrawSettlement {
+interface RedrawSettlement {
   /** The human names of the pins that were honoured, for the "kept as is" line. */
   kept: string[]
   /** Every declared path that actually moved, in manifest order, old value beside new. */

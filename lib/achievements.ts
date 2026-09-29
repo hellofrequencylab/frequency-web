@@ -112,7 +112,7 @@ export type GamificationEvent =
   // joined (ADR-154 / ADR-777). Drives the Connector achievement (10 / 25 / 100).
   | { type: 'connector_connection'; profileId: string }
 
-export interface NewAchievement {
+interface NewAchievement {
   id: string
   name: string
   description: string
