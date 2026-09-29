@@ -48985,3 +48985,22 @@ Re-tested against the tree and against production on 2026-09-28, most of it had 
 **Consequences.** ✅ A Space that fills a room can now outrank a Space that gathers for nobody, at everything else equal, and the receipt page prints the seventh lever with its one move ("mark who came"). ✅ Nothing re-ranks today: 0 marks platform-wide, and the directory's live read is unchanged. ⚠️ The scale (12) is a shape, not a measurement; it is the row to re-tune the week LIVE-455 produces marks. ⚠️ `space_standing.attendance` is applied to production only after the PR carrying it merges (`execute_sql` plus the explicit ledger row; an applied version the tree does not carry reds `check:migrations` on every other open branch). The rollup's upsert names the column, so the migration and the code deploy together.
 
 **Rows.** LIVE-456 (closed here). Untouched: LIVE-263 (the rollup itself), LIVE-455 (the field test), PROG-R11.
+
+## ADR-1569: No affiliate money: referral attribution stays a record, and nobody earns a share of a network-sourced sale (LIVE-607 ruled out)
+
+**Status:** Accepted · 2026-09-29 · backlog `LIVE-607` (closed, ruled out) · answers the multiple choice [ADR-1564](DECISIONS.md) §1 filed on that row · beside [ADR-811](DECISIONS.md) §A (the network take-rate) and [ADR-913](DECISIONS.md) (the relationship check) · numbered **1569** because 1559 to 1568 and 1571 to 1572 are held by open or merged pull requests of the same two days
+
+**Context.** `LIVE-607`, child 2 of `DEF-MONEY`, could not be coded until the owner said whether the person who brings a buyer earns any of the platform's network take. The row asked it as a multiple choice: (a) no affiliate money, referrers keep the reward-economy grant they earn today; (b) a fixed share of the network take on a referred buyer's first N orders, paid as a Stripe transfer; (c) the same share paid in Gems. The attribution half was already built and stays: `profiles.referred_by_profile_id`, `commerce_orders.source` and `attribution_ref` (`lib/commerce/order-source.ts`) say who brought the buyer, and the platform's take is computed from them.
+
+**Decision.** On 2026-09-29 at about 02:00Z the owner answered (a): **"No affiliate money."** Attribution stays a record; nobody earns a share.
+
+1. **No commission is computed, ledgered or paid.** `lib/commerce/commissions.ts`, a `referral_commissions` table, a Stripe transfer to a referrer and a `payout` row keyed on a referral are not built and are not to be filed. The platform's network take (ADR-811 §A) is the platform's in full.
+2. **The referral reward stays what it is:** the reward-economy grant on activation (`invite_accepted` / `referral_activated`, `lib/qr/referral.ts`, the referral-release cron). It is a game reward, not money, and it is not a share of anything the referred member spends.
+3. **Copy does not promise what the ruling forbids.** The Collaborator persona's "affiliate kickbacks tied to your activity" (`lib/personas-core.ts`) becomes "rewards for the members you bring in, never a cut of what they spend"; `docs/ROLES.md` says the same in its money column.
+4. **The row's probe guards the ruling** instead of asking for the build: it fails if a commission module, a commissions migration, a module that reads the referral attribution and moves money, or an affiliate / kickback / commission promise appears in `lib/`, `app/` or `components/`.
+
+**Rejected.** (b) and (c), by the owner. Deleting the attribution (it is what the take-rate and the referral funnel read). Leaving the persona copy as written (a promise no code will keep is the kind of drift the one list exists to stop).
+
+**Consequences.** `LIVE-607` closes as ruled out and leaves W8. `DEF-MONEY`'s second probe arm (a commission module or table) is now unsatisfiable by design and is re-pointed when the program row is next touched; its first arm (`LIVE-606`, fulfilment) is still open, so the program's verdict does not change today. A reversal is a new ADR that supersedes this one before any commission code is written.
+
+**Rows.** `LIVE-607` (closed here). Untouched: `DEF-MONEY`, `LIVE-606`, `LIVE-608`, `PROG-D8`.
