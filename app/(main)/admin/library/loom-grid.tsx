@@ -93,10 +93,11 @@ function ProtectionBadges({ asset, compact = false }: { asset: LibraryGalleryIte
     <span className="pointer-events-none absolute right-2 top-2 z-10 flex items-center gap-1">
       {expired && (
         <span
-          className={`inline-flex items-center gap-1 rounded-pill bg-surface/90 px-1.5 py-0.5 text-2xs font-semibold text-danger lift-1`}
+          className="inline-flex items-center gap-1 rounded-pill bg-surface/90 px-1.5 py-0.5 text-2xs font-semibold text-danger lift-1"
           title={`Licence ended ${dayOf(asset.expiresAt)}`}
         >
-          <CalendarX2 className={size} aria-hidden /> {compact ? '' : 'Expired'}
+          <CalendarX2 className={size} aria-hidden />
+          {compact ? <span className="sr-only">Expired</span> : 'Expired'}
         </span>
       )}
       {asset.isProtected && (
