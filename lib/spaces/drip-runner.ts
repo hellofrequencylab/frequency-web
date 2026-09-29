@@ -27,6 +27,7 @@ import { normalizeDelayHours } from '@/lib/spaces/automation'
 import { isError } from '@/lib/action-result'
 import { log, briefError } from '@/lib/log'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
+import { postalFooterHtml } from '@/lib/email-studio/postal'
 
 /** What one drip-fire pass reports. */
 export interface DripRunResult {
@@ -78,7 +79,7 @@ function renderStepHtml(body: string): string {
         `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`,
     )
     .join('')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p></div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
 }
 
 /** The enabled steps of a sequence, ascending by order. */

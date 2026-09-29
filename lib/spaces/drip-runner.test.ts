@@ -16,10 +16,12 @@ let sendResult: { data: { sent: number; suppressed: number; failed: number } } |
   data: { sent: 1, suppressed: 0, failed: 0 },
 }
 const sendCalls: { spaceId: string; subject: string }[] = []
+const sentHtml: string[] = []
 vi.mock('./email', () => ({
   SPACE_UNSUBSCRIBE_PLACEHOLDER: '%%U%%',
-  sendSpaceCampaignSystem: async (spaceId: string, input: { subject: string }) => {
+  sendSpaceCampaignSystem: async (spaceId: string, input: { subject: string; html: string }) => {
     sendCalls.push({ spaceId, subject: input.subject })
+    sentHtml.push(input.html)
     return sendResult
   },
 }))
@@ -198,6 +200,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 import { runDueSpaceDrips } from './drip-runner'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
+import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 
 const PAST = '2020-01-01T00:00:00Z'
 const STALE = new Date(Date.now() - SENDING_LEASE_MS - 60_000).toISOString()
@@ -254,6 +257,17 @@ describe('runDueSpaceDrips', () => {
     expect(enr.current_step).toBe(2)
     expect(enr.status).toBe('enrolled')
     expect(new Date(enr.next_run_at).getTime()).toBeGreaterThan(Date.now())
+  })
+
+  it('the sent step carries the platform postal address under its unsubscribe line (CAN-SPAM, LIVE-728)', async () => {
+    sentHtml.length = 0
+    seedEnrollment()
+    seedStep({ step_order: 1, subject: 'Step 1' })
+    await runDueSpaceDrips()
+    expect(sentHtml).toHaveLength(1)
+    const html = sentHtml[0]
+    expect(html).toContain(PLATFORM_POSTAL_LINE)
+    expect(html.indexOf(PLATFORM_POSTAL_LINE)).toBeGreaterThan(html.indexOf('%%U%%'))
   })
 
   it('marks an enrollment done after its LAST step', async () => {

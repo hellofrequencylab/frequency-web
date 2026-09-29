@@ -5,6 +5,7 @@
 // 102 KB clip. Pure + framework-free; voice canon (no em dashes in the copy it emits).
 
 import { DEFAULT_EMAIL_COLORS, escapeHtml, type EmailColors } from './render'
+import { PLATFORM_POSTAL_LINE } from './postal'
 
 const FONT_STACK = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
 
@@ -30,10 +31,6 @@ const DEFAULT_BASE_URL = 'https://frequencylocal.com'
 /** The org's legal identity for the CAN-SPAM footer. Mirrors lib/site.ts ORG_LEGAL_NAME; kept LOCAL so the
  *  email shell stays framework-free (importing lib/site pulls the whole nav registry). */
 const ORG_LEGAL_NAME = 'Frequency Labs Holdings'
-
-/** The real CAN-SPAM physical postal address for the platform (Frequency Labs Holdings). A per-Space send can
- *  override it with EmailBrand.address; the default platform shell uses this. Kept subtle in the footer. */
-const POSTAL_ADDRESS = '802 Caminito Azul, Carlsbad, CA 92011'
 
 /** The default brand tagline / one-line sender description. Mirrors lib/site.ts SITE_TAGLINE (ADR-811);
  *  kept LOCAL so the email shell stays framework-free (see ORG_LEGAL_NAME). A Space send can override it. */
@@ -92,8 +89,9 @@ function footer(input: EmailFooterInput, colors: EmailColors, baseUrl: string): 
   const name = escapeHtml(brand.wordmark ?? 'Frequency')
   // One-line description under the name. The tagline field doubles as it; '' hides the line (matches header).
   const desc = brand.tagline === undefined ? DEFAULT_TAGLINE : brand.tagline
-  // Physical postal address (CAN-SPAM). A Space send may override with brand.address; else the real platform address.
-  const addr = brand.address ? escapeHtml(brand.address) : escapeHtml(`${ORG_LEGAL_NAME}, ${POSTAL_ADDRESS}`)
+  // Physical postal address (CAN-SPAM). A Space send may override with brand.address; else the platform line from
+  // lib/email-studio/postal.ts, the one source the plain-text renderers print too (LIVE-728).
+  const addr = brand.address ? escapeHtml(brand.address) : escapeHtml(PLATFORM_POSTAL_LINE)
   const year = new Date().getFullYear()
   // PROMINENT links: the marketing/nav row reads in body ink at a clear size so members actually click through.
   const link = (href: string, label: string): string =>
