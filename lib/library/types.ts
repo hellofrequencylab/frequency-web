@@ -35,6 +35,15 @@ export type LibraryVisibility = (typeof LIBRARY_VISIBILITIES)[number]
 export const LIBRARY_DOWNLOAD_POLICIES = ['open', 'members', 'staff'] as const
 export type LibraryDownloadPolicy = (typeof LIBRARY_DOWNLOAD_POLICIES)[number]
 
+/** True when a licensed asset's `expires_at` has passed (LIVE-576). Null means no licence end, so
+ *  it never expires. Pure and dependency-free so the Studio grid (a client component) and the server
+ *  readers agree on the one definition; the readers' SQL twin is `notExpiredOr` in store.ts. */
+export function isLibraryAssetExpired(expiresAt: string | null | undefined, now: Date = new Date()): boolean {
+  if (!expiresAt) return false
+  const t = new Date(expiresAt).getTime()
+  return Number.isFinite(t) && t <= now.getTime()
+}
+
 /** Derived-file roles off one master. `custom` = an editor-produced crop/transform. */
 export const LIBRARY_RENDITION_KINDS = ['thumb', 'grid', 'hero', 'og', 'source', 'custom'] as const
 export type LibraryRenditionKind = (typeof LIBRARY_RENDITION_KINDS)[number]
