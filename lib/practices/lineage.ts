@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Practice library Phase 3 "Grow" — remix lineage reads (ADR-438 / ADR-447).
@@ -9,10 +8,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // DERIVED here (no forked_count column, like adopters) — at library scale that is cheap; a
 // materialised count is a Phase-4 optimisation if a GROUP BY ever gets hot (tracked).
 //
-// Reaches the lineage columns through the untyped admin handle (ADR-246) until the generated
-// types are regenerated — same pattern as the rest of the practice server layer.
+// Reaches the lineage columns through the typed admin handle, the same pattern as the rest of
+// the practice server layer (LIVE-647).
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 
