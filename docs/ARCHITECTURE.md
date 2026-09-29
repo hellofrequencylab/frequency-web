@@ -222,7 +222,8 @@ Every handler is wrapped twice, and both wrappers are contract-checked:
 - **Email:** `lib/email.ts` (Resend). Bulk email injects `List-Unsubscribe` headers and a
   `buildUnsubscribeUrl` link (HMAC tokens, `lib/unsubscribe-tokens.ts`, `UNSUBSCRIBE_SECRET`).
 - **Web push:** `lib/push.ts` → `sendPushToProfile(...)` (web-push + VAPID keys; prunes dead
-  subscriptions). Service worker at `public/sw.js`.
+  subscriptions). Service worker at `public/sw.js`, which also serves `public/offline.html` when a page
+  load finds no network and never caches a page or an API response (ADR-1638).
 
 ## Key lib modules
 

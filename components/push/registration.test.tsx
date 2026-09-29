@@ -20,6 +20,7 @@ let root: Root | null = null
 const unsubscribe = vi.fn(async () => true)
 const subscribe = vi.fn()
 const getSubscription = vi.fn()
+const requestPermission = vi.fn(async () => 'granted')
 
 function fakeSub(endpoint: string) {
   return {
@@ -35,6 +36,7 @@ async function flush() {
 
 beforeEach(() => {
   saveSubscription.mockReset()
+  requestPermission.mockClear()
   unsubscribe.mockClear()
   subscribe.mockReset().mockResolvedValue(fakeSub('https://push.example/new'))
   getSubscription.mockReset().mockResolvedValue(null)
@@ -45,7 +47,7 @@ beforeEach(() => {
   Object.defineProperty(window, 'PushManager', { configurable: true, value: function PushManager() {} })
   Object.defineProperty(window, 'Notification', {
     configurable: true,
-    value: { permission: 'granted', requestPermission: vi.fn(async () => 'granted') },
+    value: { permission: 'granted', requestPermission },
   })
 })
 
@@ -104,5 +106,44 @@ describe('PushRegistration', () => {
     expect(errorSpy.mock.calls.filter((c) => String(c[0]).startsWith('[push] subscription re-sync failed'))).toHaveLength(1)
     expect(unsubscribe).not.toHaveBeenCalled()
     errorSpy.mockRestore()
+  })
+
+  // LIVE-701. A page load is not a tap: iPhone Safari refuses a permission prompt with no user
+  // gesture and Chrome quiets it. The ask lives behind the "Turn on notifications" button, so this
+  // mount must never ask, whatever the permission reads.
+  it('never asks for permission on load while permission is still default', async () => {
+    Object.defineProperty(window, 'Notification', {
+      configurable: true,
+      value: { permission: 'default', requestPermission },
+    })
+    const el = await mount()
+    expect(requestPermission).not.toHaveBeenCalled()
+    expect(subscribe).not.toHaveBeenCalled()
+    expect(saveSubscription).not.toHaveBeenCalled()
+    expect(el.textContent).toBe('')
+  })
+
+  it('never asks, and never subscribes, once the browser has denied', async () => {
+    Object.defineProperty(window, 'Notification', {
+      configurable: true,
+      value: { permission: 'denied', requestPermission },
+    })
+    await mount()
+    expect(requestPermission).not.toHaveBeenCalled()
+    expect(subscribe).not.toHaveBeenCalled()
+  })
+
+  it('subscribes an already granted browser silently, with no prompt', async () => {
+    saveSubscription.mockResolvedValue({ data: undefined })
+    await mount()
+    expect(requestPermission).not.toHaveBeenCalled()
+    expect(subscribe).toHaveBeenCalledOnce()
+  })
+
+  it('does nothing at all on a browser without PushManager (an iPhone Safari tab)', async () => {
+    delete (window as unknown as Record<string, unknown>).PushManager
+    await mount()
+    expect(navigator.serviceWorker.register).not.toHaveBeenCalled()
+    expect(requestPermission).not.toHaveBeenCalled()
   })
 })

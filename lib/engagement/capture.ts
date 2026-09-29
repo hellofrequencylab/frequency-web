@@ -4,7 +4,9 @@
 //
 // Physical/in-person sources earn ZAPS (currencyForSource); the amount is the
 // node's tunable `zaps_value`. Reward is granted only on the first verified
-// capture (the ledger's idempotency_key guards against retries / double taps).
+// capture in the node's window (the ledger's idempotency_key guards against
+// retries / double taps): ever, for once-per-user and first-scan-only nodes; once
+// per member day, for a repeatable node (LIVE-654, ADR-1632).
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardZaps } from '@/lib/zaps'
@@ -13,6 +15,7 @@ import { recordEngagementEvent } from './events'
 import { currencyForSource } from './currency'
 import { trustSource } from '@/lib/trust'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
+import { resolveMemberDay } from '@/lib/member-day'
 import { isOfferLive } from '@/lib/partners/offers'
 import type { EngagementSource } from './events'
 
@@ -32,11 +35,27 @@ export interface CaptureResult {
 }
 
 /**
- * Verify and (if valid + first time) record a capture, then award the node's
- * zaps. Idempotent per (node, actor) for once-per-user / once-global nodes.
- *
- * NOTE: repeatable nodes need a request-scoped key appended to the idempotency
- * key so repeats aren't collapsed — pass it through `attempt` when that lands.
+ * The window a capture is idempotent in, as the key suffix after `node:<nodeId>:<actor>`
+ * (LIVE-654, ADR-1632). A once-per-user or first-scan-only node keeps the bare (node, actor)
+ * key: the verifier already refuses its repeats, and the ledger is the second guard. A
+ * `repeatable` node appends the member's own calendar day, so a scan on a new day credits
+ * again while a double tap or a retry the same day still collapses onto one row. The day is
+ * resolved on the server from the member's stored timezone, never taken from the device.
+ */
+export function captureWindowKey(
+  nodeId: string,
+  actorProfileId: string,
+  captureRule: string | null | undefined,
+  day: string | null,
+): string {
+  const base = `${nodeId}:${actorProfileId}`
+  return captureRule === 'repeatable' && day ? `${base}:${day}` : base
+}
+
+/**
+ * Verify and (if valid + first time in the node's window) record a capture, then
+ * award the node's zaps. Idempotent per (node, actor) for once-per-user /
+ * once-global nodes, and per (node, actor, member day) for repeatable nodes.
  */
 export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResult> {
   // 1) Server-authoritative verification (validity, signature, rule, proximity).
@@ -47,17 +66,23 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
 
   const { data: node } = await db
     .from('nodes')
-    .select('type, zaps_value, partner_id, kind, space_id')
+    .select('type, zaps_value, partner_id, kind, space_id, capture_rule')
     .eq('id', attempt.nodeId)
     .maybeSingle()
   if (!node) return { ok: false, reason: 'unknown_node' }
 
+  // The node's idempotency window: a repeatable node credits once per member day (LIVE-654).
+  const captureRule = node.capture_rule as string | null | undefined
+  const day = captureRule === 'repeatable' ? await resolveMemberDay(attempt.actorProfileId) : null
+  const windowKey = captureWindowKey(attempt.nodeId, attempt.actorProfileId, captureRule, day)
+
   const source = NODE_TYPE_SOURCE[node.type as string] ?? 'qr'
 
   // 2) Ledger, exactly-once. (Verifier already enforced once-per-user via the
-  //    captures table; this is the second guard against retries.)
+  //    captures table; this is the second guard against retries. A repeatable
+  //    node's key carries the member day, so it guards retries within a day only.)
   const { recorded, id: engagementEventId } = await recordEngagementEvent({
-    idempotencyKey: `node:${attempt.nodeId}:${attempt.actorProfileId}`,
+    idempotencyKey: `node:${windowKey}`,
     source,
     eventType: 'node_capture',
     actorProfileId: attempt.actorProfileId,
@@ -75,7 +100,8 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
 
   // 3b) A SPACE CHECK-IN also lands on the member's Space Resonance timeline (event attendance, ADR-796).
   // Only for a check-in node (never an ordinary QR/NFC/ghost capture), best-effort, and keyed on
-  // (node, actor) so a retry never double-logs. Resolve the Space owner (the book it lands in) lazily.
+  // the capture's window (node, actor, and the member day for a repeatable node) so a retry never
+  // double-logs but a check-in on a later day does. Resolve the Space owner lazily.
   if ((node.kind as string) === 'checkin' && typeof node.space_id === 'string' && node.space_id) {
     try {
       // Resolve the Space owner via the client already in hand (no new module dependency in this shared
@@ -91,7 +117,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
         memberProfileId: attempt.actorProfileId,
         channel: 'in_person',
         summary: 'Checked in',
-        idempotencyKey: `checkin:${attempt.nodeId}:${attempt.actorProfileId}`,
+        idempotencyKey: `checkin:${windowKey}`,
         metadata: { kind: 'event_checkin', nodeId: attempt.nodeId },
         // ADR-827: hard-link the touch to the ledger row that triggered it (the site event The
         // Path names). No scope: a check-in node id has no scope-vocabulary lane; the space_id
