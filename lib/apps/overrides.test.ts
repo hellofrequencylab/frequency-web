@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { Circle } from 'lucide-react'
-import { mergeAppOverrides, effectiveMinRole, scopeKeyFor, type AppOverrides } from './overrides'
+import {
+  mergeAppOverrides,
+  effectiveMinRole,
+  scopeKeyFor,
+  withGlobalDisables,
+  resolveScopeAppOverrides,
+  dropDisabledApps,
+  type AppOverrides,
+} from './overrides'
 import type { App } from './types'
 
 // docs/ADMIN-RAIL.md Phase 6. mergeAppOverrides + effectiveMinRole are PURE, so the merge contract
@@ -92,5 +100,68 @@ describe('scopeKeyFor', () => {
   it('is the scope kind', () => {
     expect(scopeKeyFor({ kind: 'global' })).toBe('global')
     expect(scopeKeyFor({ kind: 'circle', id: 'abc' })).toBe('circle')
+  })
+})
+
+// ── LIVE-686: a global disable wins on every scope ─────────────────────────────────────────────
+const OFF = { enabled: false, position: null, minRole: null }
+
+describe('withGlobalDisables (pure)', () => {
+  it('returns the scope map itself when global disables nothing', () => {
+    const own: AppOverrides = { a: { enabled: true, position: 2, minRole: 'guide' } }
+    expect(withGlobalDisables(own, {})).toBe(own)
+    expect(withGlobalDisables(own, { b: { enabled: true, position: 0, minRole: 'mentor' } })).toBe(own)
+  })
+
+  it('disables an App disabled at global, even over an explicit enable at the scope', () => {
+    const own: AppOverrides = { a: { enabled: true, position: 3, minRole: 'guide' } }
+    const out = withGlobalDisables(own, { a: OFF, b: OFF })
+    expect(out.a).toEqual({ enabled: false, position: 3, minRole: 'guide' })
+    expect(out.b).toEqual(OFF)
+    expect(own.a.enabled).toBe(true) // the input is not mutated
+  })
+
+  it('carries only the disable: a global position or role floor never reaches the scope', () => {
+    const out = withGlobalDisables({}, { a: { enabled: false, position: 9, minRole: 'mentor' } })
+    expect(out.a).toEqual(OFF)
+  })
+})
+
+describe('resolveScopeAppOverrides', () => {
+  const stored: Record<string, AppOverrides> = {
+    global: { a: OFF },
+    circle: { b: OFF },
+  }
+  const reader = () => {
+    const keys: string[] = []
+    return { keys, read: async (k: string) => (keys.push(k), stored[k] ?? {}) }
+  }
+
+  it.each(['circle', 'event', 'space', 'profile', 'hub', 'practice'])(
+    'the %s map carries the global disable',
+    async (kind) => {
+      const { keys, read } = reader()
+      const out = await resolveScopeAppOverrides(kind, read)
+      expect(out.a?.enabled).toBe(false)
+      expect(keys.sort()).toEqual(['global', kind].sort())
+      if (kind === 'circle') expect(out.b?.enabled).toBe(false)
+    },
+  )
+
+  it('the global map reads once and is the stored rows as-is', async () => {
+    const { keys, read } = reader()
+    expect(await resolveScopeAppOverrides('global', read)).toBe(stored.global)
+    expect(keys).toEqual(['global'])
+  })
+})
+
+describe('dropDisabledApps (pure)', () => {
+  it('drops only disabled Apps, keeping order, with no reorder or role floor', () => {
+    const overrides: AppOverrides = {
+      b: OFF,
+      c: { enabled: true, position: -1, minRole: 'mentor' },
+    }
+    expect(ids(dropDisabledApps(CATALOG, overrides))).toEqual(['a', 'c'])
+    expect(ids(dropDisabledApps(CATALOG, {}))).toEqual(['a', 'b', 'c'])
   })
 })
