@@ -30,7 +30,9 @@ import { swapAssetRefs, type AssetSwapTarget } from '@/lib/library/asset-ref'
 // function that only SELECTs, revoked from every browser role and granted to service_role alone,
 // so the admin client is the only way the read can reach it at all (scripts/function-grants.txt:
 // internal). The gate lives at every call site: usage-actions.ts and actions.ts carry
-// requireAdmin('janitor', { staff: 'marketing' }), the Loom Studio door (LIVE-289). The authz
+// requireAdmin('janitor', { staff: 'marketing' }), the Loom Studio door (LIVE-289); the Space Loom
+// Studio's delete and usage count in lib/loom/picker-actions.ts gate on canManageSpaceLoom and read
+// only an asset bound to that Space (LIVE-568). The authz
 // scan classes any `.rpc(` as a mutation because it cannot read the function body; this one is
 // the read-only-RPC shape lib/analytics/marketing-intel.ts is allowlisted for.
 // `swapLibraryAssetRefs` below DOES write, through the same admin client, and is caller-trusted

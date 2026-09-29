@@ -1,6 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { asJson } from '@/lib/supabase/json'
+import type { Database } from '@/lib/database.types'
 import { ALL_ELEMENTS } from './element-catalog'
 import { SEARCH_CANDIDATE_CAP, mergeCandidates, rankLibraryMatches } from './search-rank'
 import { LIBRARY_DOWNLOAD_POLICIES, VERA_TAG, isLibraryAssetExpired, type LibraryDownloadPolicy } from './types'
@@ -8,6 +9,8 @@ import { LIBRARY_DOWNLOAD_POLICIES, VERA_TAG, isLibraryAssetExpired, type Librar
 // Server-only data access for The Loom / Loom Studio. Service-role only; callers gate access.
 // See docs/LIBRARY.md. (Until HYG-054, 2026-09-06 this went through an untyped admin handle on a
 // comment saying `library_assets` was not in lib/database.types.ts yet — it had been for weeks.)
+
+type LibraryAssetUpdate = Database['public']['Tables']['library_assets']['Update']
 
 function db() {
   return createAdminClient()
@@ -663,6 +666,30 @@ export async function fillLibraryAssetDescription(
     return written
   }
   return written
+}
+
+/** Write a validated patch onto ONE asset of ONE Space. The update is bound to `space_id` as well as
+ *  `id`, so an asset that is not this Space's matches nothing: 'missing', never a cross-Space write.
+ *  The caller has authorized the Space. 'failed' is a database error. */
+export async function updateSpaceLibraryAssetMeta(
+  spaceId: string,
+  assetId: string,
+  patch: Pick<LibraryAssetUpdate, 'title' | 'alt' | 'tags'>,
+): Promise<'ok' | 'missing' | 'failed'> {
+  if (!spaceId || !assetId) return 'missing'
+  try {
+    const { data, error } = await db()
+      .from('library_assets')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', assetId)
+      .eq('space_id', spaceId)
+      .select('id')
+      .maybeSingle()
+    if (error) return 'failed'
+    return data ? 'ok' : 'missing'
+  } catch {
+    return 'failed'
+  }
 }
 
 /** Delete a library asset that belongs to a SPACE, bound to `space_id` so a caller authorized for one space
