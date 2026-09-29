@@ -540,11 +540,14 @@ describe('the reporter and the surface list actually carry the advisory roster',
     expect(src).toMatch(/advisorySurfaces:\s*ADVISORY_OPERATOR_SURFACES/)
   })
 
-  it('surfaces.ts keeps /admin/qr in the operator roster while naming it advisory', () => {
+  // The roster carried /admin/qr from 2026-09-23 to 2026-09-28 (LIVE-476). It votes again, and
+  // the roster it left is still exported and still handed to the summarizer, so the third
+  // answer is one entry away the day another surface needs it. `visual-tiers.test.ts` holds
+  // the roster and the visual.spec.ts wiring in step.
+  it('surfaces.ts keeps /admin/qr in the operator roster and still exports the advisory roster', () => {
     const src = readFileSync(join(dir, 'surfaces.ts'), 'utf8')
     expect(src).toContain("{ path: '/admin/qr',")
-    expect(src).toMatch(/ADVISORY_OPERATOR_SURFACES[\s\S]{0,1200}'\/admin\/qr':\s*'LIVE-476'/)
-    expect(src).toContain('export const ADVISORY_OPERATOR_PATHS')
+    expect(src).toMatch(/export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = \{/)
   })
 })
 

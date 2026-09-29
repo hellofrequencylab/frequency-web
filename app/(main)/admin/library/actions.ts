@@ -9,6 +9,7 @@ import { ingestImageBytes } from '@/lib/library/ingest'
 import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 import { findLibraryAssetUsage } from '@/lib/library/usage'
+import { LIBRARY_DOWNLOAD_POLICIES, type LibraryDownloadPolicy } from '@/lib/library/types'
 
 // ── THE LOOM STUDIO DOOR: every action on this route carries the PAGE's gate ─────────────────
 // `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes, because a
@@ -101,15 +102,50 @@ export async function uploadLibraryImage(
 
 const dbh = () => createAdminClient()
 
-/** Edit an asset's metadata. Tags arrive as a comma-separated string. Studio-gated. */
+/** Edit an asset's metadata. Tags arrive as a comma-separated string. Studio-gated.
+ *
+ *  THE PROTECTION FIELDS (LIVE-576, ADR-1577). `downloadPolicy` is validated against the closed set
+ *  `LIBRARY_DOWNLOAD_POLICIES` here rather than left to the CHECK constraint, so an operator reads a
+ *  sentence and not a Postgres error; `isProtected` must be a real boolean; `expiresAt` is a date the
+ *  runtime can parse, or null / '' to clear the licence end. Every field is optional and independent,
+ *  so the drawer's Save sends what it shows and an older caller that sends title and tags only is
+ *  byte-identical. Until LIVE-577 lands, Protected is stored and shown and moves nothing. */
 export async function updateLibraryAssetMeta(
   id: string,
-  fields: { title?: string; alt?: string; category?: string; tags?: string },
+  fields: {
+    title?: string
+    alt?: string
+    category?: string
+    tags?: string
+    downloadPolicy?: string
+    isProtected?: boolean
+    expiresAt?: string | null
+  },
 ): Promise<{ ok: true } | { error: string }> {
   await requireAdmin('janitor', { staff: 'marketing' })
   if (!id) return { error: 'Missing asset id.' }
 
   const patch: Database['public']['Tables']['library_assets']['Update'] = { updated_at: new Date().toISOString() }
+  if (fields.downloadPolicy !== undefined) {
+    const policy = fields.downloadPolicy.trim()
+    if (!(LIBRARY_DOWNLOAD_POLICIES as readonly string[]).includes(policy)) {
+      return { error: `Download policy must be one of ${LIBRARY_DOWNLOAD_POLICIES.join(', ')}.` }
+    }
+    patch.download_policy = policy as LibraryDownloadPolicy
+  }
+  if (fields.isProtected !== undefined) {
+    if (typeof fields.isProtected !== 'boolean') return { error: 'Protected must be on or off.' }
+    patch.is_protected = fields.isProtected
+  }
+  if (fields.expiresAt !== undefined) {
+    const raw = typeof fields.expiresAt === 'string' ? fields.expiresAt.trim() : ''
+    if (!raw) patch.expires_at = null
+    else {
+      const t = new Date(raw).getTime()
+      if (!Number.isFinite(t)) return { error: 'Expires needs a real date, or leave it blank.' }
+      patch.expires_at = new Date(t).toISOString()
+    }
+  }
   if (fields.title !== undefined) {
     const t = fields.title.trim()
     if (!t) return { error: 'Title cannot be empty.' }

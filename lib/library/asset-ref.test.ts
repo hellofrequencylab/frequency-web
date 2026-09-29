@@ -9,6 +9,7 @@ import {
   assetValueFromPick,
   assetRefToField,
   assetRefFromField,
+  swapAssetRefs,
 } from './asset-ref'
 
 // The AssetField seam (PROG-D2, ADR-1130). The properties proven here are the ones the
@@ -161,5 +162,49 @@ describe('assetRefToField / assetRefFromField', () => {
     expect(assetRefFromField(`${ID} javascript:alert(1)`)).toBeNull()
     // A url with a space in it would not round-trip, so it is refused rather than truncated.
     expect(assetRefFromField(`${ID} https://cdn/a b.jpg`)).toBeNull()
+  })
+})
+
+describe('swapAssetRefs (global swap, LIVE-451)', () => {
+  const A = 'aaaaaaaa-0000-4000-a000-00000000000a'
+  const B = 'bbbbbbbb-0000-4000-b000-00000000000b'
+  const C = 'cccccccc-0000-4000-c000-00000000000c'
+  const to = { assetId: B, url: 'https://cdn/b.png' }
+
+  it('re-points every ref to A at B with B\'s url, at any depth, and counts them', () => {
+    const doc = {
+      content: [
+        { type: 'Hero', props: { image: { assetId: A, url: 'https://cdn/a.png' } } },
+        { type: 'Gallery', props: { images: [{ assetId: A, url: 'https://cdn/a.png', alt: 'sunset' }, 'https://legacy/x.jpg'] } },
+      ],
+    }
+    const out = swapAssetRefs(doc, A, to)
+    expect(out.swapped).toBe(2)
+    expect(out.value).toEqual({
+      content: [
+        { type: 'Hero', props: { image: { assetId: B, url: 'https://cdn/b.png' } } },
+        { type: 'Gallery', props: { images: [{ assetId: B, url: 'https://cdn/b.png', alt: 'sunset' }, 'https://legacy/x.jpg'] } },
+      ],
+    })
+  })
+
+  it('leaves a ref to a third asset, a legacy string and a non-ref { url } blob byte-for-byte', () => {
+    const third = { assetId: C, url: 'https://cdn/c.png' }
+    const blob = { url: 'https://api.example/hook', method: 'POST' }
+    const doc = { a: { assetId: A, url: 'https://cdn/a.png' }, c: third, s: 'https://legacy/y.jpg', blob }
+    const before = JSON.stringify(doc)
+    const out = swapAssetRefs(doc, A, to) as { value: Record<string, unknown>; swapped: number }
+    expect(out.swapped).toBe(1)
+    expect(out.value.c).toBe(third)
+    expect(out.value.blob).toBe(blob)
+    expect(out.value.s).toBe('https://legacy/y.jpg')
+    expect(JSON.stringify(doc)).toBe(before) // the input was never mutated
+  })
+
+  it('returns the same object and zero when nothing references A', () => {
+    const doc = { c: { assetId: C, url: 'https://cdn/c.png' }, list: ['x', { url: 'u' }] }
+    const out = swapAssetRefs(doc, A, to)
+    expect(out.swapped).toBe(0)
+    expect(out.value).toBe(doc)
   })
 })

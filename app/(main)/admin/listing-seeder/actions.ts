@@ -25,6 +25,7 @@ import { revalidatePath } from 'next/cache'
 import { requireStaffCap } from '@/lib/staff'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ingestImageBytes } from '@/lib/library/ingest'
 import type { LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
 import { extractListing } from '@/lib/listing-seeder/extract'
 import { coerceListingExtraction, coerceDetails } from '@/lib/listing-seeder/coerce'
@@ -453,10 +454,12 @@ export async function uploadListingImages(intakeId: string, formData: FormData):
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
     const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
     const path = `listing-intake/${intakeId}/${stamp}.${ext}`
-    const bytes = new Uint8Array(await file.arrayBuffer())
+    // INGEST (ADR-1121, LIVE-579): a phone photo carries its GPS block in EXIF, and this bucket is
+    // public. Store the stripped bytes, never the file as it arrived; ingest-coverage.test.ts holds it.
+    const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), file.type)
     const { error: upErr } = await admin.storage
       .from(IMAGE_BUCKET)
-      .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+      .upload(path, ingested.bytes, { contentType: file.type || 'image/jpeg', upsert: false })
     if (upErr) {
       firstError ??= upErr.message
       continue
