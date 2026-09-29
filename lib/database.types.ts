@@ -14492,6 +14492,7 @@ export type Database = {
       }
       space_standing: {
         Row: {
+          attendance: number
           audience: number
           care: number
           commons: number
@@ -14503,6 +14504,7 @@ export type Database = {
           upcoming_gatherings: number
         }
         Insert: {
+          attendance?: number
           audience?: number
           care?: number
           commons?: number
@@ -14514,6 +14516,7 @@ export type Database = {
           upcoming_gatherings?: number
         }
         Update: {
+          attendance?: number
           audience?: number
           care?: number
           commons?: number
