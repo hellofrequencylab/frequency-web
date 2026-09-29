@@ -36,6 +36,12 @@ import {
   type MergeResult,
   type MergeTagsResult,
 } from '@/lib/practices/clean'
+import {
+  suggestPracticePlacement,
+  applyPlacementSuggestion,
+  type PlacementSuggestion,
+  type AcceptedPlacement,
+} from '@/lib/practices/suggest'
 import { screenPracticeForPublish, type PracticeScreenResult } from '@/lib/ai/practice-publish-screen'
 import {
   setJourneyFeatured,
@@ -414,6 +420,57 @@ export async function findPracticeDuplicatesAction(
     return ok({ candidates })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not check for duplicates.')
+  }
+}
+
+/**
+ * Suggest a Pillar and Sub Focus for ONE practice from its nearest neighbours (LIVE-643, ADR-1606):
+ * the workspace row's explicit lookup, like the near-duplicate one beside it. Curator-gated,
+ * re-checked here. Null when the practice is placed, has no embedding yet, or its neighbours do
+ * not agree. No model call.
+ */
+export async function suggestPracticePlacementAction(
+  id: string,
+): Promise<ActionResult<{ suggestion: PlacementSuggestion | null }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (typeof id !== 'string' || !id) return fail('Pick a practice.')
+  try {
+    return ok({ suggestion: await suggestPracticePlacement(id) })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not read the neighbours.')
+  }
+}
+
+/**
+ * Accept a suggested placement (LIVE-643, ADR-1606). Curator-gated, re-checked server-side. The
+ * client sends only what it was shown; applyPlacementSuggestion re-reads the suggestion, refuses one
+ * that moved, and fills ONLY the empty fields through a guarded update, so a set Pillar is never
+ * overwritten.
+ */
+export async function acceptPracticePlacementAction(
+  id: string,
+  seen: AcceptedPlacement,
+): Promise<ActionResult<{ pillar: string | null; subFocus: string | null }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (typeof id !== 'string' || !id) return fail('Pick a practice.')
+  const pillarId = typeof seen?.pillarId === 'string' && seen.pillarId ? seen.pillarId : null
+  const subFocusId = typeof seen?.subFocusId === 'string' && seen.subFocusId ? seen.subFocusId : null
+  if (!pillarId && !subFocusId) return fail('Nothing to accept.')
+  try {
+    const written = await applyPlacementSuggestion(id, { pillarId, subFocusId })
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok(written)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not file the practice.')
   }
 }
 
