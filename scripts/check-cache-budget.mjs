@@ -231,8 +231,27 @@ const VERCEL_CEILING_GB = 1.5
 // ⚠️ HEADROOM IS TIGHTER THAN THE OLDER READINGS SUGGESTED: 1.32 GB against the 1.50 GB ceiling is
 // 12% clear, where the 2026-08-18 production reads of 1.26 GB looked like 16%. That is the number
 // LIVE-029 is about.
-const PACKED_PER_RAW = 0.53
-const PACKED_PER_RAW_MEASURED = '2026-08-19'
+//
+// 🔴 RE-DERIVED 2026-09-29 (HYG-136, ADR-1619). A production build printed both halves again, and
+// 0.53 now UNDER-reads, which is the unsafe direction this file has always named:
+//
+//     ESTIMATE, this script at 0.53          1.38 GB packed
+//     PACKED, "Uploading build cache"        1.42 GB
+//
+//     implied raw     = 1.38 / 0.53 = 2.6038 GB
+//     implied ratio   = 1.42 / 2.6038 = 0.5454
+//
+// The trim point is 1.40 GB estimated. The real archive was already past it. A cache that reaches
+// Vercel over 1.50 GB is discarded WHOLE, node_modules included. Rounded UP to 0.55 from 0.5454,
+// the same rule as 0.5254 → 0.53: over-estimating costs a cold compile, under-estimating costs
+// the install cache.
+//
+// STILL A WHOLE-ARCHIVE RATIO. Vercel prints one packed number, so a per-part split cannot be
+// measured from the same pair. The mix has moved a little (compiler-heavier), not into the
+// empty-cache 0.26 regime HYG-015 forbids lowering toward. Separate ratios wait on a build that
+// prints parts we can weigh; they are not this change. Compiler-cache growth is HYG-140.
+const PACKED_PER_RAW = 0.55
+const PACKED_PER_RAW_MEASURED = '2026-09-29'
 
 // Trim below the ceiling, not at it. The reserve covers the estimate's own error and the little
 // that `next start`-shaped caches may add after this runs. It is deliberately not large: with the
