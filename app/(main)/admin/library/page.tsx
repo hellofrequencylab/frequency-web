@@ -17,7 +17,8 @@ import {
   type LibraryCollection,
   type LibraryGalleryItem,
 } from '@/lib/library/store'
-import { matchLibraryAssets, similarLibraryAssets } from '@/lib/library/embeddings'
+import { similarLibraryAssets } from '@/lib/library/embeddings'
+import { searchLibraryAssetsHybrid } from '@/lib/library/hybrid-search'
 import { recraftConfigured } from '@/lib/loom/recraft'
 import { RailGrid } from '@/components/templates'
 import { LibraryUploader } from './library-uploader'
@@ -149,9 +150,9 @@ export default async function LoomStudioPage({
   const spacesCollection = collections.find((c) => c.slug === SPACES_COLLECTION_SLUG) ?? null
   const crossSpaceCollection = !!collectionId && collectionId === spacesCollection?.id
 
-  // Main result. Three modes: "similar to X" (semantic neighbours), "most relevant" (semantic
-  // ranked by the query), or the normal paginated keyword/facet browse. Semantic modes are a
-  // single page and fall back to the keyword path when AI is off / nothing is embedded yet.
+  // Main result. Three modes: "similar to X" (semantic neighbours), "most relevant" (words and
+  // meaning fused in one query, LIVE-586), or the normal paginated keyword/facet browse. The first
+  // two are a single page. Most relevant needs no fallback: with AI off the RPC still ranks words.
   let assets: LibraryGalleryItem[] = []
   let total = 0
   let paginated = false
@@ -165,19 +166,12 @@ export default async function LoomStudioPage({
       ])
       total = assets.length
     } else if (sort === 'relevant' && q) {
-      assets = await matchLibraryAssets(scope.spaceId, q, {
+      assets = await searchLibraryAssetsHybrid(scope.spaceId, q, {
         kind: kind || undefined,
         limit: PAGE_SIZE,
         profileId: ctx.profileId,
       })
       total = assets.length
-      if (assets.length === 0) {
-        // AI off or nothing embedded → graceful keyword fallback.
-        const r = await searchLibraryAssets({ spaceId: scope.spaceId, q, kind: kind || undefined, category: category || undefined, collectionId: collectionId || undefined, crossSpace: crossSpaceCollection, page, pageSize: PAGE_SIZE })
-        assets = r.items
-        total = r.total
-        paginated = true
-      }
     } else {
       const r = await searchLibraryAssets({
         spaceId: scope.spaceId,
