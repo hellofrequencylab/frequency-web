@@ -854,6 +854,12 @@ export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
   // full account, including what its own ruling-out did and did not cover.
 }
 
+/** The advisory operator paths, as a list. visual.spec.ts no longer filters on it (the operator
+ *  advisory describe retired with its last passenger, LIVE-476); it stays exported because the
+ *  LIVE-504 probe reads the roster between the map and this line, and so the day another surface
+ *  needs the trade the list is already here. `visual-tiers.test.ts` holds roster and wiring in step. */
+export const ADVISORY_OPERATOR_PATHS: readonly string[] = Object.keys(ADVISORY_OPERATOR_SURFACES)
+
 /* ── The narrow phone, and the header band (HYG-057, ADR-1270) ──────────────── */
 
 /** The Playwright project that photographs at 320px. Named once, so a spec can ask
