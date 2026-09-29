@@ -28,7 +28,7 @@ import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
 //
 // READS ONLY. `loomStorageUsed` reads `bytes` for a caller-supplied Space id and writes nothing;
 // every caller authorizes the Space first (uploadLoomImage and
-// loomQuotaMeter via resolveScope, the Space Loom Studio page via canEditProfile).
+// loomQuotaMeter via resolveScope, the Space Loom Studio page via canManageSpaceLoom).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MB = 1024 * 1024
