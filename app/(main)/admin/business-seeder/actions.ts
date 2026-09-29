@@ -52,6 +52,7 @@ import { mintSpaceClaimToken } from '@/lib/spaces/claim'
 import { adoptSpaceAsMasterProfile } from '@/lib/importer/adopt'
 import { planSeedImages } from '@/lib/importer/vision'
 import { effectiveMime } from '@/lib/library/upload-kinds'
+import { ingestImageBytes } from '@/lib/library/ingest'
 import { withImageOrder } from '@/lib/importer/media-order'
 import type { BusinessIntakeRow } from '@/lib/importer/intake'
 import type { IntakeInputs, IntakeStatus } from '@/lib/importer/intake'
@@ -413,10 +414,12 @@ export async function uploadSeederImages(intakeId: string, formData: FormData): 
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
     const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
     const path = `intake/${intakeId}/${stamp}.${ext}`
-    const bytes = new Uint8Array(await file.arrayBuffer())
+    // INGEST (ADR-1121, LIVE-579): a phone photo carries its GPS block in EXIF, and this bucket is
+    // public. Store the stripped bytes, never the file as it arrived; ingest-coverage.test.ts holds it.
+    const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), mime)
     const { error: upErr } = await admin.storage
       .from(SEED_IMAGE_BUCKET)
-      .upload(path, bytes, { contentType: mime || 'image/jpeg', upsert: false })
+      .upload(path, ingested.bytes, { contentType: mime || 'image/jpeg', upsert: false })
     if (upErr) {
       firstError ??= upErr.message
       continue
