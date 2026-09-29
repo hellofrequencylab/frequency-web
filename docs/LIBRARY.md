@@ -329,7 +329,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
-   Background removal and upscale (LIVE-589), describe on view (LIVE-588) and auto-tag (LIVE-587) are shipped; the rest is decomposed into LIVE-586 to LIVE-588 ([ADR-1563](DECISIONS.md)).
+   Background removal and upscale (LIVE-589), describe on view (LIVE-588) and auto-tag (LIVE-587) are shipped; the hybrid rank (LIVE-586) is the one child left ([ADR-1563](DECISIONS.md)).
 
 ## Non-goals (v1)
 
