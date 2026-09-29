@@ -38,6 +38,13 @@ import {
 } from '@/lib/practices/clean'
 import { screenPracticeForPublish, type PracticeScreenResult } from '@/lib/ai/practice-publish-screen'
 import {
+  draftPracticeCuration,
+  applyPracticeCuration,
+  MAX_CURATE_TAGS,
+  type PracticeCurationDraft,
+  type PracticeCurationApplied,
+} from '@/lib/ai/practice-curate'
+import {
   setJourneyFeatured,
   setPracticeFeatured,
   setPracticeStatus,
@@ -540,6 +547,62 @@ export async function screenPracticeAction(
     return ok({ screen })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not screen the practice.')
+  }
+}
+
+/**
+ * Ask Vera to fill what a library practice left empty (LIVE-644, ADR-1607): a card hook when the
+ * summary is blank, tags when it has too few. Curator-gated. A PROPOSAL only: nothing is written
+ * until the curator accepts it through acceptPracticeCurationAction. Budget-gated inside
+ * draftPracticeCuration, which returns null when Vera cannot draft.
+ */
+export async function draftPracticeCurationAction(
+  id: string,
+): Promise<ActionResult<{ draft: PracticeCurationDraft }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!id) return fail('No practice to fill.')
+  try {
+    const draft = await draftPracticeCuration(id)
+    if (!draft) return fail('Vera cannot draft right now. Try again later, or fill it by hand.')
+    return ok({ draft })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not draft for the practice.')
+  }
+}
+
+/**
+ * Write what the curator accepted from Vera's proposal. Curator-gated. Fills only what is still
+ * empty (applyPracticeCuration re-checks at write): a hook someone wrote since the draft is kept,
+ * and every tag already on the practice stays. Inputs are re-validated here; the client never
+ * carries authority.
+ */
+export async function acceptPracticeCurationAction(
+  id: string,
+  accepted: { hook?: string | null; tags?: string[] },
+): Promise<ActionResult<{ applied: PracticeCurationApplied }>> {
+  let caller: { id: string }
+  try {
+    caller = await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!id) return fail('No practice to fill.')
+  const hook = typeof accepted?.hook === 'string' ? accepted.hook : null
+  const tags = Array.isArray(accepted?.tags)
+    ? accepted.tags.filter((t): t is string => typeof t === 'string').slice(0, MAX_CURATE_TAGS)
+    : []
+  if (!hook && tags.length === 0) return fail('Nothing to add.')
+  try {
+    const applied = await applyPracticeCuration(id, { hook, tags }, caller.id)
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ applied })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the practice.')
   }
 }
 

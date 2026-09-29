@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { needsAttention, type AttentionReason } from '@/lib/practices/clean'
+import { getPracticeFillState } from '@/lib/practices'
+import { curationGaps, CURATE_TAG_FLOOR } from '@/lib/ai/practice-curate'
+import { CurateWithVera } from './curate-with-vera'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 
@@ -29,12 +32,19 @@ function scoreTone(score: number): StatusTone {
 
 const PANEL_LIMIT = 12
 
+/** The fill-only-empty gaps for a row; a row the fill read missed offers nothing. */
+function gapsOf(state: { summary: string | null; tagCount: number } | undefined) {
+  return state ? curationGaps(state) : { hook: false, tags: false }
+}
+
 export async function PracticeNeedsAttention() {
   const items = await needsAttention({ limit: 100 })
   if (items.length === 0) return null
 
   const shown = items.slice(0, PANEL_LIMIT)
   const more = items.length - shown.length
+  // What each shown row left empty (LIVE-644): the chips name it and Vera offers to fill it.
+  const fill = await getPracticeFillState(shown.map((it) => it.id))
 
   return (
     <section className="space-y-3">
@@ -64,7 +74,18 @@ export async function PracticeNeedsAttention() {
                       {REASON[r]}
                     </StatusChip>
                   ))}
+                  {gapsOf(fill.get(it.id)).hook && (
+                    <StatusChip tone="neutral" size="sm">
+                      No card hook
+                    </StatusChip>
+                  )}
+                  {gapsOf(fill.get(it.id)).tags && (
+                    <StatusChip tone="neutral" size="sm">
+                      Under {CURATE_TAG_FLOOR} tags
+                    </StatusChip>
+                  )}
                 </div>
+                <CurateWithVera practiceId={it.id} title={it.title || 'Untitled practice'} gaps={gapsOf(fill.get(it.id))} />
               </div>
               <div
                 className="flex shrink-0 flex-col items-end"
