@@ -25,7 +25,7 @@ import type { CircleJoinReason } from '@/lib/circles/visibility'
 // the reader how to feel about a room they are standing outside of.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface CircleDoor {
+interface CircleDoor {
   /** The heading. Says what the wall IS, never "Access denied". */
   title: string
   /** One or two plain sentences: who is inside, and what would put the reader there. */

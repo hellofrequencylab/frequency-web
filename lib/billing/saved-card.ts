@@ -19,7 +19,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /** What a session must carry for a card to be savable against it. Empty = do not offer saving. */
-export type SavedCardParams = Record<string, string>
+type SavedCardParams = Record<string, string>
 
 /**
  * The saved-card parameters for a member, or `{}` when saving cannot be offered.

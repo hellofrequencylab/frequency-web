@@ -572,7 +572,7 @@ export async function setMenuColumns(menuId: string, columns: number): Promise<R
 
 // ── Categories ──────────────────────────────────────────────────────────────
 
-export type CreateCategoryInput = {
+type CreateCategoryInput = {
   menuId: string
   parentId?: string | null
   label?: string | null
@@ -624,7 +624,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<Ensure
   }
 }
 
-export type UpdateCategoryPatch = {
+type UpdateCategoryPatch = {
   label?: string | null
   position?: number
   parentId?: string | null
@@ -687,7 +687,7 @@ export async function deleteCategory(id: string): Promise<Result> {
 
 // ── Items ─────────────────────────────────────────────────────────────────────
 
-export type CreateItemInput = {
+type CreateItemInput = {
   menuId: string
   categoryId?: string | null
   label: string
@@ -962,7 +962,7 @@ export async function reorderCategories(
 
 // ── Rail cards ──────────────────────────────────────────────────────────────
 
-export type CreateRailCardInput = {
+type CreateRailCardInput = {
   menuId: string
   side: 'left' | 'right'
   title: string

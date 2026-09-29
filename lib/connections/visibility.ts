@@ -13,7 +13,7 @@
 
 import type { Visibility } from './types'
 
-export interface ResolveVisibilityInput {
+interface ResolveVisibilityInput {
   /** The tier the client asked for (untrusted). */
   requested: Visibility
   /** The Space the client asked to share with, when requesting 'shared' (untrusted). */
@@ -23,7 +23,7 @@ export interface ResolveVisibilityInput {
   operatesTargetSpace: boolean
 }
 
-export interface ResolvedVisibility {
+interface ResolvedVisibility {
   visibility: Visibility
   /** The scope to persist: a space id for a valid 'shared', else null (cleared). */
   sharedSpaceId: string | null

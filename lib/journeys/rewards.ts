@@ -10,7 +10,7 @@
 
 import type { JourneyTree } from './tree'
 
-export type JourneyRewardKind = 'phase_complete' | 'journey_complete'
+type JourneyRewardKind = 'phase_complete' | 'journey_complete'
 
 export interface JourneyRewardEvent {
   kind: JourneyRewardKind

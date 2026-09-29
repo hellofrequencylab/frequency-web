@@ -24,7 +24,7 @@ const HOST_LABEL: Record<RecordingHostKind, string> = {
 }
 
 /** One Recording that references a Loom asset, plus where it plays. */
-export interface AssetUsageRecording {
+interface AssetUsageRecording {
   recordingId: string
   title: string
   mediaKind: 'audio' | 'video'

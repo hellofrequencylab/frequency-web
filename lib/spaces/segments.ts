@@ -27,7 +27,7 @@ import { definitionToFilter, type AudienceFilter } from '@/lib/spaces/audiences'
 
 /** One saved segment as the app consumes it (camelCased). `definition` is the normalized
  *  AudienceFilter (tag / consent), never carrying a nested segmentId. */
-export interface SpaceSegment {
+interface SpaceSegment {
   id: string
   name: string
   definition: AudienceFilter

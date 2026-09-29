@@ -50,7 +50,7 @@ export function rowToListing(r: Record<string, unknown>, seedOwnerId: string | n
   }
 }
 
-export interface ListListingsOpts {
+interface ListListingsOpts {
   vertical?: ListingVertical
   q?: string
   limit?: number
@@ -79,7 +79,7 @@ export async function getListing(id: string): Promise<Listing | null> {
   return data ? rowToListing(data as Record<string, unknown>, seedOwnerId) : null
 }
 
-export interface ListingOwner {
+interface ListingOwner {
   id: string
   displayName: string
   handle: string

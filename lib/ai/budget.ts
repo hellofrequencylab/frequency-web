@@ -84,6 +84,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'practice-spark': 2,         // draft a whole Practice from a few answers (Sonnet; structured, on-demand)
   'practice-edit': 4,          // apply plain-language edits to a built Practice (Opus; low-volume, fail-safe)
   'practice-publish-screen': 1, // advisory pre-publish quality read on one practice (Haiku; operator-triggered, one-shot)
+  'practice-remix': 1,         // three "Remix it" directions when a member opens Remix on a practice (Haiku; one short call per open, LIVE-645)
   // ── Events (poster scan is Sonnet vision — the costliest of this group) ───────────────────────
   'event-poster-scan': 4,      // vision OCR of an event poster, plus the text assist (Sonnet vision)
   'event-spark': 3,            // draft an event from a few wizard answers or a pasted flyer (Sonnet; structured, on-demand)
@@ -127,7 +128,7 @@ export function dailyCapFor(feature: string, fallbackUsd = 1): number {
 // global cap in FEATURE_DAILY_CAP_USD still applies on top). A small fraction of the feature
 // cap keeps any one Space well under the surface ceiling; tuned conservatively until real usage
 // data exists.
-export const SPACE_DAILY_CAP_USD = 0.5
+const SPACE_DAILY_CAP_USD = 0.5
 
 /** The per-Space daily cap for a feature: the smaller of a fixed per-Space ceiling and the
  *  feature's own global cap (a Space can never be allowed more than the whole feature). */

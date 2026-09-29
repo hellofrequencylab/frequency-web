@@ -25,16 +25,37 @@ const FILE = 'docs/BUILD-BACKLOG.json'
 const MIG_DIR = join('supabase', 'migrations')
 
 /** Parked by name. Do not pick these up.
- *  2026-09-28 (ADR-1535): the App Platform is the ONLY program still deferred by name. Mobile
- *  (DEF-MOBILE), Etsy (DEF-ETSY), Sites (PROG-E10), member sites (PROG-W6) and theming depth
- *  (PROG-P7) are sequenced by wave, not parked; a program row is still not picked directly
- *  (isWorkable skips lane `program`), agents pick its LIVE/HYG children. */
+ *  2026-09-28 (ADR-1535): the App Platform is the ONLY program deferred by name.
+ *  2026-09-29 (ADR-1573, the backlog cull): the editor and Sites group (PROG-E0 to E10, PROG-W6),
+ *  Etsy (DEF-ETSY), mobile (DEF-MOBILE), the domain register (DEF-DOMAIN) and the phone door
+ *  (PROG-GD6) are PARKED to 2027-01-05, with the date in each row's notes; the editor group is
+ *  decomposed in an owner session, not from a scan. `isWorkable` already refuses `status: parked`;
+ *  the ids are listed here too so a row flipped open by hand is still not handed out before its
+ *  date. A program row is never picked directly (isWorkable skips lane `program`); agents pick
+ *  its LIVE/HYG children. */
 export const PARKED_IDS = new Set([
   'LIVE-241', // 16→7 member rail; cancelled by ADR-1406
   'LIVE-412', // split app-shell; parked so packets do not spawn shell-split PRs
   'PROG-A1',
   'PROG-A3',
   'PROG-A4',
+  // ADR-1573, parkedUntil 2027-01-05
+  'PROG-E0',
+  'PROG-E1',
+  'PROG-E2',
+  'PROG-E3',
+  'PROG-E4',
+  'PROG-E5',
+  'PROG-E6',
+  'PROG-E7',
+  'PROG-E8',
+  'PROG-E9',
+  'PROG-E10',
+  'PROG-W6',
+  'DEF-ETSY',
+  'DEF-MOBILE',
+  'DEF-DOMAIN',
+  'PROG-GD6',
 ])
 
 /** Branches other agents already own. Stay off them and off their PRs. */
@@ -78,7 +99,7 @@ DO NOT.
 - Ask the owner to click Merge. That is a process bug. Arm GitHub auto-merge yourself.
 - Use \`gh pr create\`. Open or update the PR with ManagePullRequest. Base branch is main.
 - Absorb another agent's PR. Stay off ${OFF_LIMITS_BRANCHES.join(', ')} and its PRs.
-- Pick parked work: 16→7 nav (LIVE-241), the shell split (LIVE-412), the App Platform (PROG-A1/A3/A4, LAST by owner ruling 2026-09-28, ADR-1535).
+- Pick parked work: 16→7 nav (LIVE-241), the shell split (LIVE-412), the App Platform (PROG-A1/A3/A4, LAST by owner ruling 2026-09-28, ADR-1535), or anything whose notes carry a parkedUntil date that has not arrived (the editor and Sites group, Etsy, mobile, the domain register, the phone door and A2P, the load harness: ADR-1573, 2027-01-05).
 - Call apply_migration or supabase db push. Prod schema is execute_sql for the DDL, then an explicit insert into supabase_migrations.schema_migrations at the FILE's own 14-digit version (docs/DATABASE.md). Never stamp wall-clock versions.
 - Send Resend if this session has no key.
 - Touch SERIAL surfaces (app-shell, nav registry, postbuild gates) while another lane is in flight on them. \`pnpm packets\` names the collision files.
@@ -91,7 +112,7 @@ LOOP.
 5. If the PR added supabase/migrations/*.sql, apply with execute_sql then ledger insert; run pnpm check:migrations --require-ledger when credentials exist.
 6. Validate the row's probe on main. Close the row in BUILD-BACKLOG.json in the SAME PR that makes the probe pass, and prune it from meta.slate.waves.
 
-PRODUCT-FIRST (ADR-1403 / ADR-1445). Calendar section first: LIVE-414 then LIVE-415 then LIVE-416–419. LIVE-410 and LIVE-376 are closed. LIVE-234 is P0 money proof, owner-gated (account / OWN-078) — do not demote it and do not pick it. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}. Do not start the App Platform. The editor (W4), Sites (W4), Etsy (W11) and mobile (WM) are sequenced by wave since ADR-1535; take them when their wave is the next open one, not before. LIVE-242 is closed.
+PRODUCT-FIRST (ADR-1403 / ADR-1445). Calendar section first: LIVE-414 then LIVE-415 then LIVE-416–419. LIVE-410 and LIVE-376 are closed. LIVE-234 is P0 money proof, owner-gated (account / OWN-078) — do not demote it and do not pick it. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}. Do not start the App Platform. The editor (W4), Sites (W4), Etsy (W11) and mobile (WM) are PARKED to 2027-01-05 by the 2026-09-29 cull (ADR-1573); the editor group is decomposed in an owner session, not by an agent. Do not pick them before the date. LIVE-242 is closed.
 
 TWO-AGENT SPLIT (2026-09-19, meta.slate.metaScanCleanup). If you are the product agent: take derived lane \`events\`. Do not take lane \`scan\`. If you are the scan follow-through agent: \`pnpm packets --lane scan\`. SCAN-636 through SCAN-644 are done. Leave LIVE-414 through LIVE-419. Do not take LIVE-234. LIVE-412 is PARKED (shell split, P3). Do not pick it.
 `

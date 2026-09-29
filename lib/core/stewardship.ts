@@ -40,7 +40,7 @@ export interface StewardshipEdge {
 
 // Ascending trust: member < crew < host < guide < mentor. THE ladder the derivation
 // ranks on; kept in lock-step with the SQL CASE in recompute_community_level().
-export const COMMUNITY_LEVELS: readonly CommunityLevel[] = [
+const COMMUNITY_LEVELS: readonly CommunityLevel[] = [
   'member', 'crew', 'host', 'guide', 'mentor',
 ] as const
 

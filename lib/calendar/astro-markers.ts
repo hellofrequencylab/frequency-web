@@ -56,9 +56,9 @@ import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 
 /** What kind of sky moment this is. `sign-ingress` covers all twelve; four of them also carry a
  *  `solarPoint`, because those four ARE the equinoxes and solstices. */
-export type AstroMarkerKind = 'new-moon' | 'full-moon' | 'sign-ingress'
+type AstroMarkerKind = 'new-moon' | 'full-moon' | 'sign-ingress'
 
-export type SolarPoint = 'march-equinox' | 'june-solstice' | 'september-equinox' | 'december-solstice'
+type SolarPoint = 'march-equinox' | 'june-solstice' | 'september-equinox' | 'december-solstice'
 
 export interface AstroMarker {
   /** 'YYYY-MM-DD' in the SPACE's zone, which is the square this belongs on. */

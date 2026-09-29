@@ -42,7 +42,7 @@ export interface PosterQuality {
 
 /** The raw per-poster counts the band math runs on. Shared with the draft store
  *  so "engaged / claimed / removed" mean exactly one thing across the feature. */
-export interface PosterCounts {
+interface PosterCounts {
   posted: number
   engaged: number
   claimed: number
@@ -256,7 +256,7 @@ async function basePostReward(): Promise<number> {
   }
 }
 
-export interface ScaledPostReward extends PosterQuality {
+interface ScaledPostReward extends PosterQuality {
   baseAmount: number
   /** The amount to award (base * multiplier, rounded). 0 means skip the award. */
   amount: number

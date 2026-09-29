@@ -32,9 +32,9 @@ import { resolveZone, zonedWallClockToInstant } from '@/lib/time/zone'
 // surface (host Manage nor the admin console) can persist a gate the checkout can't honestly
 // enforce.
 
-export type TicketPricingMode = 'fixed' | 'free' | 'pwyc' | 'sliding_scale' | 'donation'
+type TicketPricingMode = 'fixed' | 'free' | 'pwyc' | 'sliding_scale' | 'donation'
 
-export const TICKET_PRICING_MODES: TicketPricingMode[] = [
+const TICKET_PRICING_MODES: TicketPricingMode[] = [
   'fixed',
   'free',
   'pwyc',
@@ -84,7 +84,7 @@ export type TicketTierRow = {
 /** "2027-03-05T18:00" typed against `timeZone` → the true UTC instant, ISO. Null for blank or
  *  malformed input: a half-typed date must read as "no window", never as an Invalid Date that
  *  compares false against everything and quietly disables the window. */
-export function localInputToInstant(
+function localInputToInstant(
   raw: FormDataEntryValue | null,
   timeZone: string | null | undefined,
 ): string | null {
@@ -101,7 +101,7 @@ export function localInputToInstant(
 
 /** The reverse, for a form default: an instant → the `datetime-local` value that shows the same
  *  wall clock the operator originally typed in the event's zone. */
-export function instantToLocalInput(
+function instantToLocalInput(
   iso: string | null | undefined,
   timeZone: string | null | undefined,
 ): string | null {

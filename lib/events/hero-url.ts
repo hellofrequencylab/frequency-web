@@ -39,18 +39,18 @@ export const EVENT_MEDIA_BUCKET = 'event-media'
 export const EVENT_HERO_COLUMNS = ['cover_image_path', 'poster_path', 'details'] as const
 
 /** Just the fields the hero resolution reads — any wider row satisfies it. */
-export type EventHeroSource = {
+type EventHeroSource = {
   cover_image_path?: string | null
   poster_path?: string | null
   details?: EventDetailsWithMedia | null
 }
 
 /** The PRIVATE bucket the poster scanner writes to (lib/events/poster-media.ts). */
-export type EventHeroBucket = typeof EVENT_MEDIA_BUCKET | 'network-contacts'
+type EventHeroBucket = typeof EVENT_MEDIA_BUCKET | 'network-contacts'
 
 /** One candidate hero image: a storage path and the bucket that holds it. The bucket decides how a
  *  URL is built — public (`event-media`) or freshly signed (private). */
-export type EventHeroCandidate = { path: string; bucket: EventHeroBucket }
+type EventHeroCandidate = { path: string; bucket: EventHeroBucket }
 
 /**
  * THE PRECEDENCE. Every source of an event's artwork, best first:
@@ -77,7 +77,7 @@ export function eventHeroCandidates(ev: EventHeroSource | null | undefined): Eve
 }
 
 /** Storage access, injectable so the precedence can be tested without a network or a client. */
-export type EventHeroDeps = {
+type EventHeroDeps = {
   /** Public URL for a path in the `event-media` bucket. Pure string construction — no request. */
   publicUrl: (path: string) => string | null
   /** Short-lived signed URL for a path in the private poster bucket, or null. */

@@ -47,7 +47,7 @@ export function toAbsoluteSiteUrl(text: string): string {
 /** The scan medium a code's URL is tagged with. 'qr' is the default (a printed
  *  code) and carries no marker; 'nfc' appends `?m=nfc` so the `/q` resolver can
  *  attribute the tap. Used when writing a tag — the same code, channel-stamped. */
-export type ScanMedium = 'qr' | 'nfc'
+type ScanMedium = 'qr' | 'nfc'
 
 /** Stamp a code URL with its scan medium for attribution. NFC tags encode the
  *  result so a tap records `medium='nfc'`; QR returns the URL unchanged. */

@@ -68,7 +68,7 @@ export interface LessonContent {
   bonusZaps: number
 }
 
-export interface JourneyPlayerView {
+interface JourneyPlayerView {
   plan: JourneyPlan
   tree: JourneyTree
   /** Content for every renderable (non-container) lesson, keyed by item id. */

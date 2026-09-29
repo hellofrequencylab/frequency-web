@@ -29,23 +29,23 @@
 /** The narrowest shape both the admin client and the session client satisfy. The real client's
  *  `rpc` is generic over the typed function catalog; the RPC is not in the generated types yet, so
  *  the call is cast (repo convention for not-yet-typed DB objects, as lib/zaps.ts does). */
-export type ProfileMetaClient = { rpc: (...args: never[]) => unknown }
+type ProfileMetaClient = { rpc: (...args: never[]) => unknown }
 
 type RpcResult<T> = { data: T | null; error: { message: string; code?: string } | null }
 type RpcFn = (name: string, args: Record<string, unknown>) => PromiseLike<RpcResult<unknown>>
 
 /** The two top-level mirror columns the streak writers set in the same statement as their key.
  *  This is the RPC's whole allowlist; anything else is refused server-side. */
-export interface ProfileMetaColumns {
+interface ProfileMetaColumns {
   current_streak?: number
   longest_streak?: number
 }
 
-export type ProfileMeta = Record<string, unknown>
+type ProfileMeta = Record<string, unknown>
 
 /** Exactly one of `meta` / `error` is set. Read `error` before the side effect that follows the
  *  write: a stamp that did not land must not pay the Gem, fire the celebration, or bump the mirror. */
-export type ProfileMetaResult =
+type ProfileMetaResult =
   | { meta: ProfileMeta; error: null }
   | { meta: null; error: string }
 

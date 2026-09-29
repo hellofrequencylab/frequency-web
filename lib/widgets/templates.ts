@@ -13,12 +13,12 @@ export type TemplateId =
   | 'header-two-col'
   | 'header-main-side-footer'
 
-export interface TemplateSlot {
+interface TemplateSlot {
   id: string
   label: string
 }
 
-export interface TemplateMeta {
+interface TemplateMeta {
   id: TemplateId
   label: string
   description: string

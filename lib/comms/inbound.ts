@@ -270,7 +270,7 @@ export async function loadInboundMessage(
 const HYDRATION_GRACE_MS = 10 * 60 * 1000
 
 /** The literal placeholder a body-less inbound records with (also the pre-fix rows' body). */
-export const MISSING_BODY_PLACEHOLDER = '(no message body)'
+const MISSING_BODY_PLACEHOLDER = '(no message body)'
 
 /**
  * HEAL missing inbound bodies (best-effort, operator-read path). For each email message recorded with
@@ -335,7 +335,7 @@ export function isAutomatedMessage(parsed: ParsedInboundMessage): boolean {
   return false
 }
 
-export type InboundRouteStatus =
+type InboundRouteStatus =
   | 'recorded'
   | 'recorded_outbound'
   | 'duplicate'
@@ -345,7 +345,7 @@ export type InboundRouteStatus =
   | 'dropped_automated'
   | 'error'
 
-export interface InboundRouteResult {
+interface InboundRouteResult {
   status: InboundRouteStatus
   conversationId?: string
   ref?: string

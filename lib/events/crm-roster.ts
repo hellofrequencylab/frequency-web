@@ -21,7 +21,7 @@ import type { Facet, MemberSummary } from '@/components/people/member-viewer'
 const EVENT_CRM_ROSTER_CAP = 1000
 
 /** The two RSVP standings that make someone a Message Attendees row (owner ruling). */
-export type CrmRsvpStatus = 'going' | 'maybe'
+type CrmRsvpStatus = 'going' | 'maybe'
 
 /** The RSVP facet for the Message Attendees viewer. Option values are the namespaced badge
  *  tokens the roster writes, so the viewer's existing pure `matchesFacets` filters them. */

@@ -7,7 +7,7 @@
 // doc (welcome/nurture series = 4 to 6 emails, behavioral triggers, one CTA).
 
 /** The two things an operator creates. */
-export type MessagingObject = 'campaign' | 'funnel'
+type MessagingObject = 'campaign' | 'funnel'
 
 /** A suggested step in a Funnel's best-practice outline (presentational: it seeds the
  *  operator's mental model and the flow view's timing hints). */
@@ -19,7 +19,7 @@ export interface GoalStep {
   note: string
 }
 
-export interface MessagingGoal {
+interface MessagingGoal {
   key: string
   label: string
   /** Which object this goal builds. */

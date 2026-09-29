@@ -34,7 +34,7 @@ export interface CircleOutcome {
   status: string | null
   fillPct: number | null
 }
-export interface OutcomeReport {
+interface OutcomeReport {
   challenges: ChallengeOutcome[]
   quests: QuestOutcome[]
   circles: CircleOutcome[]

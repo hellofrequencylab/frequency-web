@@ -13,7 +13,7 @@ import {
   Orbit, Star, type LucideIcon,
 } from 'lucide-react'
 
-export interface JourneyIcon {
+interface JourneyIcon {
   key: string
   label: string
   Icon: LucideIcon

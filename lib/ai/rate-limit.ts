@@ -37,7 +37,7 @@ import { rateLimitOk } from '@/lib/rate-limit'
 /** The sliding-window spec `rateLimitOk` accepts (e.g. '1 m', '10 s'). */
 type Window = Parameters<typeof rateLimitOk>[3]
 
-export interface AiRateLimit {
+interface AiRateLimit {
   /** Calls allowed per actor per window. */
   limit: number
   /** The sliding window. */

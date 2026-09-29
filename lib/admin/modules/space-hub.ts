@@ -42,7 +42,7 @@ export const SPACE_HUB_SECTIONS: readonly { key: SpaceHubSection; label: string;
 ]
 
 /** The default landing tab: the command-center Home (ADR-796). */
-export const DEFAULT_HUB_SECTION: SpaceHubSection = 'dashboard'
+const DEFAULT_HUB_SECTION: SpaceHubSection = 'dashboard'
 
 /** Narrow an arbitrary `?section=` value to a known hub tab, defaulting to the command-center Home
  *  (`DEFAULT_HUB_SECTION`, ADR-796). PURE. */
@@ -115,7 +115,7 @@ export function hubSearchItems(slug: string): { label: string; href: string; sec
 // Declared as an ID LIST rather than derived, because nothing in the catalog separates these: every
 // Offerings row shares `family: 'offerings'` and `slot: 'engage'`. An id list is also the shape this
 // file already uses twice (the settings ids, the excluded ids) — one house pattern, one place to read.
-export interface SpaceHubGroup {
+interface SpaceHubGroup {
   key: string
   section: SpaceHubSection
   label: string

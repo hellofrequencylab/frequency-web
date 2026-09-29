@@ -27,7 +27,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { capabilityBundle, nextBlobsForBundle, type CapabilityBundle } from './bundles'
 
-export interface SetSpaceBundleResult {
+interface SetSpaceBundleResult {
   ok: boolean
   /** Why the write was skipped (when ok=false). */
   reason?: 'unknown_bundle' | 'not_found' | 'error'

@@ -28,7 +28,7 @@ export type TransferTarget =
   | { kind: 'person'; profileId: string }
 
 /** The facts the pure gate decides over. */
-export interface TransferGateFacts {
+interface TransferGateFacts {
   /** The signed-in caller's profile id (null = anonymous). */
   viewerProfileId: string | null
   /** Does the viewer steward the Space that owns the Circle today? False for a personal Circle. */
@@ -46,7 +46,7 @@ export interface TransferGateFacts {
   linkedTierCount: number
 }
 
-export interface TransferDecision {
+interface TransferDecision {
   allowed: boolean
   /** Why not, in plain member-facing copy. Empty when allowed. */
   reason: string
@@ -103,7 +103,7 @@ export function canTransferCircle(facts: TransferGateFacts): TransferDecision {
 }
 
 /** What the transfer wrote, for the caller's confirmation copy. */
-export interface TransferResult {
+interface TransferResult {
   ok: boolean
   reason: string
   /** The Circle's slug, for revalidation. */

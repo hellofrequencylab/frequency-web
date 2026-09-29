@@ -336,17 +336,17 @@ export function allOfferings(input: PricingGridInput): Offering[] {
 // ── The comparison grid: rows DERIVED from the key sets, gates, meters, and config ───────────────────
 
 /** How a cell reads: a plain yes, a plain no, or a value (an allowance, a price, a rate). */
-export type GridCellKind = 'yes' | 'no' | 'value'
+type GridCellKind = 'yes' | 'no' | 'value'
 
 /** One resolved cell, aligned by index to the grid's columns. */
-export interface GridCell {
+interface GridCell {
   kind: GridCellKind
   /** What the cell reads. Always a full phrase, so a screen reader row makes sense on its own. */
   text: string
 }
 
 /** One comparison row: what the capability is, and its cell per column. */
-export interface GridRow {
+interface GridRow {
   key: string
   label: string
   /** One plain line on what the capability actually is. */
@@ -355,14 +355,14 @@ export interface GridRow {
 }
 
 /** A named group of rows (the section a reader scans by). */
-export interface GridGroup {
+interface GridGroup {
   key: string
   label: string
   rows: GridRow[]
 }
 
 /** One column of a comparison grid: the offering it describes, reduced to what a cell resolves against. */
-export interface GridColumn {
+interface GridColumn {
   id: string
   label: string
   axis: GateAxis
@@ -480,7 +480,7 @@ function seatsCell(column: GridColumn, input: PricingGridInput): GridCell {
 }
 
 /** Resolve one cell for one row + column. THE single place a cell is decided. PURE. */
-export function resolveCell(source: RowSource, column: GridColumn, input: PricingGridInput): GridCell {
+function resolveCell(source: RowSource, column: GridColumn, input: PricingGridInput): GridCell {
   switch (source.from) {
     case 'entitlement':
       return entitlementCell(source.key, column)
@@ -877,7 +877,7 @@ const MEMBER_GROUPS: GroupDef[] = [
 // ── Building the grids ───────────────────────────────────────────────────────────────────────────────
 
 /** Turn an offering into the column a cell resolves against. PURE. */
-export function offeringColumn(offering: Offering): GridColumn {
+function offeringColumn(offering: Offering): GridColumn {
   return { id: offering.id, label: offering.label, axis: offering.axis, tier: offering.tier }
 }
 

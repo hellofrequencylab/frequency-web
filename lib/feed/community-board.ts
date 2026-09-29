@@ -58,7 +58,7 @@ export const BOARD_POST_VISIBILITIES = ['public', 'cluster'] as const
  *  ask is wider than the slots or a busy Circle room could starve the Space's announcements. */
 const BOARD_ACTIVITY_ASK = 12
 
-export interface BoardGathering {
+interface BoardGathering {
   id: string
   title: string
   slug: string
@@ -69,7 +69,7 @@ export interface BoardGathering {
   circleSlug: string | null
 }
 
-export interface BoardSpacePost {
+interface BoardSpacePost {
   id: string
   body: string
   createdAt: string

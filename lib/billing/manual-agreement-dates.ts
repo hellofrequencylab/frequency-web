@@ -18,7 +18,7 @@
 export type AgreementInterval = 'month' | 'year'
 
 /** One rung of the reminder ladder (which touch is owed right now). */
-export type DueBucket = 'reminder_30' | 'reminder_7' | 'overdue'
+type DueBucket = 'reminder_30' | 'reminder_7' | 'overdue'
 
 /** The reminder-relevant slice of an agreement row (camelCase, as the IO layer maps it). */
 export interface AgreementDueFields {
@@ -44,7 +44,7 @@ export function parseDateUTC(dateISO: string | null | undefined): Date | null {
 }
 
 /** Format a UTC instant back to YYYY-MM-DD. PURE. */
-export function formatDateUTC(date: Date): string {
+function formatDateUTC(date: Date): string {
   const y = date.getUTCFullYear()
   const m = String(date.getUTCMonth() + 1).padStart(2, '0')
   const d = String(date.getUTCDate()).padStart(2, '0')

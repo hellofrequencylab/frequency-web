@@ -6,7 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export interface AdminAuditEntry {
+interface AdminAuditEntry {
   actorId: string | null
   /** Dotted action key, e.g. 'role.assign', 'persona.verified'. */
   action: string
@@ -34,7 +34,7 @@ export async function logAdminAction(entry: AdminAuditEntry): Promise<void> {
   }
 }
 
-export interface AdminAuditRow {
+interface AdminAuditRow {
   id: string
   action: string
   targetType: string | null

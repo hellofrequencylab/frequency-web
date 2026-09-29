@@ -23,7 +23,7 @@ export const LAUNCH_CAMPAIGN_KEYS = ['announce', 'enrollment_open', 'last_call',
 export type LaunchCampaignKey = (typeof LAUNCH_CAMPAIGN_KEYS)[number]
 
 /** The derived send times, one per series key. All in the future relative to `now`. */
-export type LaunchSchedule = Record<LaunchCampaignKey, Date>
+type LaunchSchedule = Record<LaunchCampaignKey, Date>
 
 /** One pre-drafted campaign the publisher reviews/edits/schedules on the launch surface. */
 export interface LaunchCampaignDraft {
@@ -85,7 +85,7 @@ export function deriveLaunchSchedule(now: Date, windowStartsAt: string | null): 
 }
 
 /** What the drafts need to know about the Journey. */
-export interface LaunchDraftInput {
+interface LaunchDraftInput {
   title: string
   /** Absolute URL of the Journey page (the caller resolves the app origin). */
   journeyUrl: string

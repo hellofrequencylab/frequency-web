@@ -23,9 +23,9 @@ const TRAINING_DIR = path.join(process.cwd(), 'content', 'leader-training')
 /** The route base these docs render under (the host+ /lead surface). */
 export const TRAINING_BASE = '/lead/training-library'
 
-export type TrainingStatus = 'published' | 'draft'
+type TrainingStatus = 'published' | 'draft'
 
-export interface TrainingDoc {
+interface TrainingDoc {
   category: string
   slug: string
   title: string
@@ -39,7 +39,7 @@ export interface TrainingDoc {
   body: string
 }
 
-export interface TrainingCategory {
+interface TrainingCategory {
   slug: string
   title: string
   description: string

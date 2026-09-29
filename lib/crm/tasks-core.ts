@@ -190,7 +190,7 @@ export function sortTasks(tasks: readonly CrmTask[]): CrmTask[] {
 }
 
 /** A small count summary for the Tasks header StatCards. Pure. */
-export interface TaskCounts {
+interface TaskCounts {
   open: number
   overdue: number
   snoozed: number

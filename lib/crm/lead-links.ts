@@ -19,7 +19,7 @@ import { signingSecret } from '@/lib/signing-secret'
 
 /** Default lifetime of a capture link. Long enough to print on a flyer or leave in a link-in-bio,
  *  short enough that a forgotten link stops sealing leads on its own. */
-export const LEAD_LINK_TTL_DAYS = 120
+const LEAD_LINK_TTL_DAYS = 120
 
 /** The doors that use a public capture LINK. Two doors are excluded and for different reasons:
  *  `space_qr` uses the cookie path instead, and `contact_form` is rendered INTO a Space's own public

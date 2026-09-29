@@ -55,13 +55,13 @@ export interface RecoveryCandidate {
 }
 
 /** The row the runner reads: the rule's columns plus what the note needs. */
-export interface RecoveryLeadRow extends RecoveryCandidate {
+interface RecoveryLeadRow extends RecoveryCandidate {
   first_name: string | null
   display_name: string | null
   payload: Json
 }
 
-export const RECOVERY_SELECT =
+const RECOVERY_SELECT =
   'id, email, first_name, display_name, source, step_reached, updated_at, converted_at, recovery_sent_at, payload'
 
 /** The newest `updated_at` a lead may have and still be cold, as an ISO string for the query. */
@@ -108,7 +108,7 @@ export function recoveryResumeUrl(baseUrl: string, payload: Json): string {
   return /^[a-z0-9][a-z0-9-]{0,63}$/.test(seq) ? `${root}/join?seq=${seq}` : `${root}/join`
 }
 
-export interface RecoveryRunResult {
+interface RecoveryRunResult {
   /** Rows the driving query returned. */
   scanned: number
   /** Rows the pure rule kept (the query and the rule agree unless the clock moved between them). */
@@ -123,7 +123,7 @@ export interface RecoveryRunResult {
   remaining: number
 }
 
-export interface RecoveryRunOptions {
+interface RecoveryRunOptions {
   /** The most leads one invocation takes: the cron budget's `items`. */
   limit: number
   /** True once the invocation's wall-clock is spent: the cron budget's `exhausted`. */

@@ -12,7 +12,7 @@ import { signedUrl } from './store'
 const db = () => createAdminClient()
 
 /** A member-profile summary used to populate a merged contact card. */
-export interface MatchedProfile {
+interface MatchedProfile {
   id: string
   displayName: string | null
   handle: string | null

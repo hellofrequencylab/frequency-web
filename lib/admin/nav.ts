@@ -17,8 +17,8 @@ import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } fro
 import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-roles'
 import { ADMIN_NAV_SPECS, studioLeaf } from '@/lib/nav/studio'
 
-export type AdminNavLink = { label: string; href: string }
-export type AdminNavGroup = { heading?: string; items: AdminNavLink[] }
+type AdminNavLink = { label: string; href: string }
+type AdminNavGroup = { heading?: string; items: AdminNavLink[] }
 
 export type AdminNavSection = {
   href: string

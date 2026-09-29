@@ -51,7 +51,7 @@ const NOT_YOUR_INVITE = 'That seat was offered to someone else.'
 const INVITE_SELF = 'You already hold a seat on your own bundle.'
 const NO_SEATS = 'Every seat on this bundle is taken or already offered.'
 
-export interface SeatInviteDecision {
+interface SeatInviteDecision {
   allowed: boolean
   reason: string
 }
@@ -121,7 +121,7 @@ export function canAnswerBundleSeatInvite(facts: {
 // ── The shapes the surfaces read ──────────────────────────────────────────────────────────────
 
 /** One person on a bundle, seated. */
-export interface BundleSeatPerson {
+interface BundleSeatPerson {
   profileId: string
   displayName: string
   handle: string
@@ -131,7 +131,7 @@ export interface BundleSeatPerson {
 }
 
 /** One outstanding offer, from either side of it. */
-export interface BundleSeatInvite {
+interface BundleSeatInvite {
   id: string
   ownerProfileId: string
   toProfileId: string
@@ -145,7 +145,7 @@ export interface BundleSeatInvite {
 }
 
 /** Everything the owner's seat manager renders. */
-export interface BundleSeatBoard {
+interface BundleSeatBoard {
   /** Does the viewer own a LIVE bundle? False for everyone else, which hides the whole surface. */
   ownsBundle: boolean
   /** The seat count the bundle was bought with. */
@@ -167,7 +167,7 @@ const EMPTY_BOARD: BundleSeatBoard = {
   seatsOpen: 0,
 }
 
-export interface SeatInviteResult {
+interface SeatInviteResult {
   ok: boolean
   reason: string
 }

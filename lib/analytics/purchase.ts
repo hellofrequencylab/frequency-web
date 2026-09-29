@@ -2,7 +2,7 @@
 // The webhook is the only writer — checkout happens on Stripe's domain (or an Elements form
 // whose success never navigates), so a client-side purchase event cannot fire.
 
-export type PurchaseConversion = {
+type PurchaseConversion = {
   event: 'commerce.purchase'
   shopEvent: 'shop.order_completed' | null
   props: Record<string, unknown>

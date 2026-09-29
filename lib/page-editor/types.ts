@@ -30,7 +30,7 @@ export type Metadata = { [key: string]: any }
 
 /** A block's resolved props. Deliberately open (`any`-valued, matching Puck): blocks
  *  read their own keys, and generic tree code manipulates props without narrowing. */
-export type DefaultComponentProps = { [key: string]: any }
+type DefaultComponentProps = { [key: string]: any }
 
 // ── Field model ──────────────────────────────────────────────────────────────
 // The field kinds a block declares in its `fields` schema, mirrored from Puck's
@@ -67,15 +67,15 @@ export type NumberField = BaseField & {
   max?: number
   step?: number
 }
-export type SelectField = BaseField & {
+type SelectField = BaseField & {
   type: 'select'
   options: FieldOptions
 }
-export type RadioField = BaseField & {
+type RadioField = BaseField & {
   type: 'radio'
   options: FieldOptions
 }
-export type ArrayField = BaseField & {
+type ArrayField = BaseField & {
   type: 'array'
   arrayFields: Fields<any>
   defaultItemProps?: DefaultComponentProps
@@ -83,11 +83,11 @@ export type ArrayField = BaseField & {
   max?: number
   min?: number
 }
-export type ObjectField = BaseField & {
+type ObjectField = BaseField & {
   type: 'object'
   objectFields: Fields<any>
 }
-export type CustomFieldRenderProps<Value = unknown> = {
+type CustomFieldRenderProps<Value = unknown> = {
   field: CustomField
   name: string
   id: string
@@ -95,17 +95,17 @@ export type CustomFieldRenderProps<Value = unknown> = {
   onChange: (value: Value) => void
   readOnly?: boolean
 }
-export type CustomField = BaseField & {
+type CustomField = BaseField & {
   type: 'custom'
   render: (props: CustomFieldRenderProps<any>) => ReactNode
   contentEditable?: boolean
 }
-export type SlotField = BaseField & {
+type SlotField = BaseField & {
   type: 'slot'
   allow?: string[]
   disallow?: string[]
 }
-export type ExternalField = BaseField & {
+type ExternalField = BaseField & {
   type: 'external'
   placeholder?: string
   fetchList: (params: { query: string; filters: Record<string, any> }) => Promise<any[] | null>
@@ -144,7 +144,7 @@ export type ComponentConfig<Props extends DefaultComponentProps = DefaultCompone
 }
 
 /** The root wrapper config (renders once, wraps the content zone as `children`). */
-export type RootConfig = {
+type RootConfig = {
   render?: (props: any) => ReactNode
   fields?: Fields
   defaultProps?: DefaultComponentProps
@@ -179,7 +179,7 @@ export type ContentItem = {
 }
 
 /** The root node's stored data: either `{ props: {...} }` or the props laid flat. */
-export type RootData = {
+type RootData = {
   props?: DefaultComponentProps
   readOnly?: Partial<Record<string, boolean>>
   [key: string]: unknown

@@ -604,7 +604,7 @@ export function childrenOf(parent: string | null | undefined): NavNode[] {
 // are member DESTINATIONS opt in, the settings forms stay out.
 
 /** One palette destination: a registry node flattened to what the ⌘K row renders. */
-export type PaletteDestination = {
+type PaletteDestination = {
   /** The registry node id (stable key). */
   id: string
   label: string
@@ -703,7 +703,7 @@ export function calmSpine(): SpineTab[] {
 // (headerMenu) rebuild from ONE source without re-walking the flat list.
 
 /** One public header trigger + its dropdown sub-links (empty ⇒ a plain link). */
-export type HeaderTrigger = {
+type HeaderTrigger = {
   node: NavNode
   /** The dropdown sub-links; empty when the trigger is a plain link. */
   items: NavNode[]
@@ -736,7 +736,7 @@ export function marketingFooterLinks(): NavNode[] {
 }
 
 /** One column of the member sitemap footer: its title + the links under it. */
-export type FooterColumn = {
+type FooterColumn = {
   title: string
   links: NavNode[]
 }
@@ -767,7 +767,7 @@ export function footerColumns(): FooterColumn[] {
 // (the top-right dropdown + the bottom-left card) read the same grouping.
 
 /** One labeled account-menu section: its label + the profile nodes under it, in order. */
-export type ProfileSection = {
+type ProfileSection = {
   label: string
   nodes: NavNode[]
 }

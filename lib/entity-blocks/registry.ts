@@ -22,7 +22,7 @@ export type EntityKind = 'member' | 'space' | 'email'
  *                display of connected data; the operator toggles/orders it, never authors its content.
  *  - `content` — free-form, operator-AUTHORED (a heading, a paragraph, a link list, an image).
  */
-export type EntityBlockCategory = 'data' | 'content'
+type EntityBlockCategory = 'data' | 'content'
 
 /** A block in the unified catalog. Each is (or becomes) a Loom App applicable to the entity kinds it
  *  supports. `requiresFunction` gates a space DATA block on a SPACE_FUNCTION being enabled (member

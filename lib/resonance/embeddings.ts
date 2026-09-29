@@ -36,7 +36,7 @@ function toVectorLiteral(v: number[]): string {
 /** The content signal a person's resonance embedding is built from: the names of the Pillars,
  *  Journeys, and practices they engage. Pure text, so the SAME gte-small model embeds it as the
  *  rest of the system. */
-export interface ResonanceContentSignal {
+interface ResonanceContentSignal {
   /** Pillar names (Mind / Body / Spirit / Expression) the person engages, via their practices. */
   pillars: string[]
   /** Journey plan titles the person is enrolled in or completed. */
@@ -47,7 +47,7 @@ export interface ResonanceContentSignal {
 
 /** Compose the embedding source text from a person's content signal. PURE. Capped so a hostile or
  *  unusually rich profile can never build an unbounded embed payload. */
-export function buildResonanceText(s: ResonanceContentSignal): string {
+function buildResonanceText(s: ResonanceContentSignal): string {
   return [...s.pillars, ...s.journeys, ...s.practices]
     .map((x) => (x ?? '').trim())
     .filter(Boolean)
@@ -85,7 +85,7 @@ export async function embedPerson(profileId: string, signal: ResonanceContentSig
 }
 
 /** One nearest-neighbour by resonance embedding: a candidate profile + its cosine similarity. */
-export interface ResonanceNeighbor {
+interface ResonanceNeighbor {
   profileId: string
   /** Cosine similarity in [0, 1] (1 = identical taste). */
   similarity: number
@@ -146,7 +146,7 @@ export async function embeddingLayerAvailable(): Promise<boolean> {
  *  behind their adopted practices, their Journey plan titles, and their practice titles. Mirrors the
  *  traversal in lib/resonance/candidates.ts (loadAnchorEdges) but resolves human NAMES, since the
  *  embedding is over text. FAIL-SAFE: empty arrays on any error (embedPerson then no-ops on empty). */
-export async function buildPersonSignal(profileId: string): Promise<ResonanceContentSignal> {
+async function buildPersonSignal(profileId: string): Promise<ResonanceContentSignal> {
   const empty: ResonanceContentSignal = { pillars: [], journeys: [], practices: [] }
   if (!profileId) return empty
   try {

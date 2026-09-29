@@ -11,7 +11,7 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-export interface EmailStats {
+interface EmailStats {
   windowDays: number
   byType: Record<string, number>
   suppressed: number
@@ -37,7 +37,7 @@ export async function getEmailStats(windowDays = 30): Promise<EmailStats> {
   return { windowDays, byType, suppressed: suppressed ?? 0, deliveryRate }
 }
 
-export interface StudioCounts {
+interface StudioCounts {
   contacts: number
   campaigns: number
 }

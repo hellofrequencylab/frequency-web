@@ -7,7 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { upcomingEventFloor } from './upcoming-floor'
 
-export interface MembershipIncludedEvent {
+interface MembershipIncludedEvent {
   id: string
   slug: string
   title: string

@@ -7,7 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listAcceptedCollaborations } from './collaborations'
 
-export type VenueHoldStatus = 'pending' | 'accepted' | 'declined' | 'cancelled'
+type VenueHoldStatus = 'pending' | 'accepted' | 'declined' | 'cancelled'
 
 /** A raw space_venue_holds row (typed table; status narrowed to the VenueHoldStatus vocabulary). */
 export interface VenueHoldRow {
@@ -27,7 +27,7 @@ export interface VenueHoldRow {
 type PartnerSpace = { id: string; slug: string; name: string }
 
 /** A hold shaped for a surface, from `forSpaceId`'s perspective. */
-export interface VenueHoldView {
+interface VenueHoldView {
   id: string
   status: VenueHoldStatus
   /** Is `forSpaceId` the VENUE (the approver) or the REQUESTER of this hold? */

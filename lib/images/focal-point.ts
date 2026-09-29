@@ -12,7 +12,7 @@
 /** The centered default — today's `object-cover` behavior. Unset focal point === this. */
 export const DEFAULT_OBJECT_POSITION = '50% 50%'
 
-export interface FocalXY {
+interface FocalXY {
   /** Horizontal position, 0 (left) → 100 (right). */
   x: number
   /** Vertical position, 0 (top) → 100 (bottom). The primary axis. */

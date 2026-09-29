@@ -1484,6 +1484,7 @@ export type Database = {
           currency: string
           entity_id: string
           fulfillment_status: string
+          funds_flow: string
           guest_email: string | null
           id: string
           metadata: Json
@@ -1508,6 +1509,7 @@ export type Database = {
           currency?: string
           entity_id: string
           fulfillment_status?: string
+          funds_flow?: string
           guest_email?: string | null
           id?: string
           metadata?: Json
@@ -1532,6 +1534,7 @@ export type Database = {
           currency?: string
           entity_id?: string
           fulfillment_status?: string
+          funds_flow?: string
           guest_email?: string | null
           id?: string
           metadata?: Json
@@ -18051,6 +18054,22 @@ export type Database = {
           display_name: string
           handle: string
           id: string
+        }[]
+      }
+      search_library_assets: {
+        Args: {
+          match_count?: number
+          p_embedding?: string
+          p_kind?: string
+          p_query: string
+          p_space_id: string
+        }
+        Returns: {
+          fts_rank: number
+          id: string
+          rrf_score: number
+          trgm_rank: number
+          vec_rank: number
         }[]
       }
       set_event_geog: {

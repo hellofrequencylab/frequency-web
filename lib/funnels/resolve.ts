@@ -17,7 +17,7 @@ import type { VeraCopy } from '@/lib/onboarding/funnel-script'
 // editor, and the builder all go through here so what they render is what's live.
 
 /** A blank Funnel cloned from the default flow — the wizard's starting point. */
-export function blankFunnel(slug: string, audience = 'New version'): Funnel {
+function blankFunnel(slug: string, audience = 'New version'): Funnel {
   const base = getFunnel(DEFAULT_FUNNEL)
   return {
     ...base,
@@ -108,7 +108,7 @@ function withNicheDefaultDestination(seq: Funnel): Funnel {
   return dest ? { ...seq, destination: dest } : seq
 }
 
-export interface FunnelSummary {
+interface FunnelSummary {
   slug: string
   audience: string
   source: 'code' | 'custom'

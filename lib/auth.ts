@@ -75,7 +75,7 @@ export const getCachedUser = cache(async (): Promise<User | null> => {
 export const VIEWER_PROFILE_COLUMNS =
   'id, display_name, handle, avatar_url, community_role, community_level, web_role, membership_tier, current_season_zaps, lifetime_gems, current_streak, meta, home_lat, home_lng, feed_radius_m'
 
-export type ViewerProfileRow = Pick<
+type ViewerProfileRow = Pick<
   Database['public']['Tables']['profiles']['Row'],
   | 'id'
   | 'display_name'

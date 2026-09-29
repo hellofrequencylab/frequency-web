@@ -11,7 +11,7 @@
 // The database trigger stays: someone with no Space still lands on the root, which is right.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type HostableSpaceRef = {
+type HostableSpaceRef = {
   id: string
 }
 

@@ -52,7 +52,7 @@ const NC_LINK_COL = 'network_contacts.linked_contact_id' satisfies `network_cont
 /** One resolved recipient. EXACTLY the shape the send seam's `recipients` input consumes
  *  (sendSpaceCampaign(spaceId, { ..., recipients: { contactId?, email }[] })): the marketing
  *  contact id (for suppression / unsubscribe mapping) plus the email to send to. */
-export interface AudienceRecipient {
+interface AudienceRecipient {
   contactId: string
   email: string
 }
@@ -63,16 +63,16 @@ export interface AudienceRecipient {
  *  join lands; today they are ACCEPTED + STORED but do not yet narrow (the consent-facet precedent). */
 
 /** How deeply a member is engaged with the Space (the `engagement_depth` trait, banded). */
-export const ENGAGEMENT_DEPTH_VALUES = ['shallow', 'moderate', 'deep'] as const
+const ENGAGEMENT_DEPTH_VALUES = ['shallow', 'moderate', 'deep'] as const
 export type EngagementDepth = (typeof ENGAGEMENT_DEPTH_VALUES)[number]
 
 /** The member's resonance tier (the Resonance Health roll-up, banded green/amber/red). */
-export const RESONANCE_TIER_VALUES = ['resonant', 'cooling', 'at_risk'] as const
+const RESONANCE_TIER_VALUES = ['resonant', 'cooling', 'at_risk'] as const
 export type ResonanceTier = (typeof RESONANCE_TIER_VALUES)[number]
 
 /** The member's predicted churn-risk band (from the `churn_risk` prediction). */
-export const CHURN_RISK_VALUES = ['low', 'medium', 'high'] as const
-export type ChurnRiskBand = (typeof CHURN_RISK_VALUES)[number]
+const CHURN_RISK_VALUES = ['low', 'medium', 'high'] as const
+type ChurnRiskBand = (typeof CHURN_RISK_VALUES)[number]
 
 /** The audience selection. `tag` (when a non-empty string) narrows to contacts carrying that tag;
  *  omitted / null / empty = every contact in the Space. Additive: new facets (a saved segment, a

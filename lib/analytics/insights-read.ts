@@ -87,7 +87,7 @@ export interface RawVitalRow {
 
 export const VITALS_WINDOW_DAYS = 28
 
-export interface VitalCell {
+interface VitalCell {
   metric: BudgetedMetric
   p75: number | null
   samples: number
@@ -107,7 +107,7 @@ export interface RouteVitals {
   cells: VitalCell[]
 }
 
-export interface VitalsReadout {
+interface VitalsReadout {
   windowDays: number
   routes: RouteVitals[]
   /** Counts by status across every route, for the headline row. */

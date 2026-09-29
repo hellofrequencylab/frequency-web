@@ -100,7 +100,7 @@ export async function mintListingClaimToken(
 // ── Resolve ─────────────────────────────────────────────────────────────────────
 
 /** A resolved, still-claimable listing behind a token (what the claim page renders). */
-export interface ResolvedListingClaim {
+interface ResolvedListingClaim {
   kind: ListingSeedKind
   listingId: string
   title: string
@@ -142,7 +142,7 @@ export async function resolveListingClaim(token: string): Promise<ResolvedListin
 // ── Transfer ───────────────────────────────────────────────────────────────────
 
 /** The outcome of a successful claim: which vertical + listing changed hands. */
-export interface ClaimedListing {
+interface ClaimedListing {
   kind: ListingSeedKind
   listingId: string
 }

@@ -426,7 +426,7 @@ export function can(caps: ReadonlySet<Capability>, cap: Capability): boolean {
 // actionable reason — the upsell layer renders "join this circle" / "upgrade to
 // unlock" / "host a circle to unlock" from it.
 
-export type CapabilityGapReason = 'needs-membership' | 'needs-paid-tier' | 'needs-role'
+type CapabilityGapReason = 'needs-membership' | 'needs-paid-tier' | 'needs-role'
 
 /**
  * For each capability ABSENT from `resolveCapabilities(viewer, scope)`, the reason

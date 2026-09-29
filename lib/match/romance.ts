@@ -15,13 +15,13 @@ import { sunSign, signCompatibility } from '@/lib/astrology/signs'
 // computed at save time by the settings action, never here.
 import { chartCompatibility } from '@/lib/astrology/synastry'
 
-export interface RomanceMatch extends PersonSuggestion {
+interface RomanceMatch extends PersonSuggestion {
   verified: boolean
   /** A quiet astrology note when both opted in + have birth dates, else null. */
   astroReason: string | null
 }
 
-export interface RomanceLane {
+interface RomanceLane {
   /** The viewer has romance mode on (drives whether the surface renders at all). */
   enabled: boolean
   /** The viewer is verified. Unverified members can browse but don't appear to others

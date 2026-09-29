@@ -70,7 +70,7 @@ export type SessionClient = {
 }
 
 /** A seat that just became this member's, with everything the landing decision needs. */
-export interface ClaimedSeat {
+interface ClaimedSeat {
   slug: string
   startsAt: string
   endsAt: string | null

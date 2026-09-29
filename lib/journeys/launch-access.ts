@@ -22,7 +22,7 @@ import { resolveJourneyAccess, type JourneyAccess } from './journey-access'
 
 /** The viewer as the caller already knows them (getCallerProfile's shape, loosened so either the
  *  page or an action can pass what it has). */
-export interface LaunchViewer {
+interface LaunchViewer {
   profileId: string
   role?: CommunityRole | null
   webRole?: WebRole | null

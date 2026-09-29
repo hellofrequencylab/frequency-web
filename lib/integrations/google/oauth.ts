@@ -30,7 +30,7 @@ export function buildAuthUrl(opts: {
   return `${AUTH_ENDPOINT}?${params.toString()}`
 }
 
-export interface GoogleTokens {
+interface GoogleTokens {
   accessToken: string
   expiresIn: number
   scope: string

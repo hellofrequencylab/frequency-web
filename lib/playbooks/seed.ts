@@ -60,7 +60,7 @@ export function buildSeedRows(): PlaybookSeedRow[] {
   }))
 }
 
-export interface SeedResult {
+interface SeedResult {
   ok: boolean
   /** How many platform playbook rows were upserted (0 on a failed/absent table). */
   upserted: number

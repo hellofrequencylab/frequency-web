@@ -31,14 +31,14 @@ import { SITE_NAME } from '@/lib/site'
 // Satori has NO access to the CSS token system, so the few colors it needs are literals mirroring
 // the existing event cards: events indigo #6366f1 accent, near-black ground, white display type.
 
-export const EVENT_CARD_SIZE = { width: 1200, height: 630 } as const
+const EVENT_CARD_SIZE = { width: 1200, height: 630 } as const
 
 const INDIGO = '#6366f1'
 
 /** The one focal point a card falls back to when the operator set none. */
-export const DEFAULT_COVER_FOCUS = '50% 50%'
+const DEFAULT_COVER_FOCUS = '50% 50%'
 
-export type EventCardInput = {
+type EventCardInput = {
   /** The event's title, or the identity-free fallback string the caller chose. */
   title: string
   /** The formatted date line, or null. */

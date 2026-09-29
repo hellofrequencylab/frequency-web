@@ -4,7 +4,7 @@
 export type TicketType = 'bug' | 'question' | 'feedback' | 'idea'
 export type TicketStatus = 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed'
 export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent'
-export type AuthorKind = 'member' | 'staff' | 'vera' | 'system'
+type AuthorKind = 'member' | 'staff' | 'vera' | 'system'
 
 // Page + activity data captured client-side at report time. Everything optional so a
 // partial capture never blocks a report.

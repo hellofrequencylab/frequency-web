@@ -419,7 +419,7 @@ async function processLead(
   return { events: events.length, sent, remaining, stoppedOnBudget }
 }
 
-export interface FollowerReminderRunResult {
+interface FollowerReminderRunResult {
   '7d': { events: number; sent: number }
   '24h': { events: number; sent: number }
   '2h': { events: number; sent: number }

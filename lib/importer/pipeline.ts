@@ -30,13 +30,13 @@ import type { BusinessIntakeRow } from './intake'
 
 /** The hard per-import USD cap (docs §9e). Configurable via env; defaults to ~$1.50. The pipeline
  *  fails the import to 'review' with partial results rather than spending past it. */
-export function importCapUsd(): number {
+function importCapUsd(): number {
   const raw = Number(process.env.BUSINESS_IMPORT_CAP_USD)
   return Number.isFinite(raw) && raw > 0 ? raw : 1.5
 }
 
 /** Injectable stage deps so the whole pipeline is testable without a network / model / DB. */
-export interface PipelineDeps {
+interface PipelineDeps {
   harvest?: typeof harvest
   extractProfile?: typeof extractProfile
   verify?: typeof verify
@@ -46,7 +46,7 @@ export interface PipelineDeps {
 }
 
 /** The outcome of a research run, for the job log + the review board. */
-export interface ResearchOutcome {
+interface ResearchOutcome {
   ok: boolean
   status: BusinessIntakeRow['status']
   /** A short, human reason (for the job log). */

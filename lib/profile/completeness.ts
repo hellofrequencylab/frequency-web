@@ -21,14 +21,14 @@ export interface CompletenessInput {
 }
 
 /** One scored profile item + the nudge to fill it. */
-export interface CompletenessGap {
+interface CompletenessGap {
   /** Stable field key (for tests + deep-linking). */
   field: string
   /** A member-facing, on-canon nudge to fill this gap (no em dashes; Spotlight is a proper noun). */
   nudge: string
 }
 
-export interface CompletenessResult {
+interface CompletenessResult {
   /** Whole-number percent 0..100 (filled / total, rounded). */
   percent: number
   /** How many items are filled. */

@@ -45,7 +45,7 @@ export const SIGNAL_GLYPH: Record<ReviewSignal, string> = {
 }
 
 /** Below this, even a verified fact only earns amber. */
-export const LOW_CONFIDENCE = 0.5
+const LOW_CONFIDENCE = 0.5
 
 /**
  * A field is CLEARED to publish when some entry is a `fact` that has been verified (by the
@@ -72,7 +72,7 @@ export function strongestEntry(entries: LedgerEntry[] | undefined): LedgerEntry 
  * A CONTRADICTED entry: the verifier encodes a refuted claim as a non-fact at confidence 0.
  * Only meaningful for commercial facts, where it blocks the apply until a human resolves it.
  */
-export function isContradicted(entry: LedgerEntry | undefined): boolean {
+function isContradicted(entry: LedgerEntry | undefined): boolean {
   if (!entry) return false
   const verifiedFact = entry.kind === 'fact' && !!entry.verifiedBy
   return !verifiedFact && (entry.confidence ?? 0) <= 0

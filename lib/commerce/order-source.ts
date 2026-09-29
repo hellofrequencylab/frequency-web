@@ -18,7 +18,7 @@ const REF_COOKIE = 'fq_ref' // person-to-person referral (lib/qr/referral.ts)
  *  small (default self): only a referral is a clear network-sourced signal from the channel cookie. */
 const NETWORK_CHANNELS = new Set(['referral'])
 
-export interface OrderSourceResult {
+interface OrderSourceResult {
   source: OrderSource
   attributionRef: string | null
 }

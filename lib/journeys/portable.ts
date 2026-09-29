@@ -65,20 +65,20 @@ export const PORTABLE_SCHEMA_VERSION = 1 as const
 
 /** Hook's content_type union (mirror of hook/types/database.ts `ContentType`). Kept here as a
  *  local literal so this module stays dependency-free — Frequency must not import Hook code. */
-export type HookContentType = 'video' | 'text' | 'file' | 'quiz'
+type HookContentType = 'video' | 'text' | 'file' | 'quiz'
 
 /** The block_type a portable LEAF (lesson) can carry — the Frequency leaf set (containers
  *  'phase'/'module' are expressed by the node `kind`, never here). 'section' is the legacy
  *  alias kept for back-compat with pre-v2 rows. */
-export type PortableLeafType =
+type PortableLeafType =
   | 'lesson' | 'video' | 'reading' | 'exercise' | 'reflection' | 'check' | 'resource' | 'practice' | 'section'
 
 /** One node in the portable items tree. A container ('phase'/'module') has children; a 'lesson'
  *  leaf carries the content. The tree mirrors Frequency's Phase → Module → Lesson exactly and
  *  maps cleanly onto Hook's modules → lessons (phases flatten into modules on the Hook side). */
-export type PortableItem = PortablePhase | PortableModule | PortableLesson
+type PortableItem = PortablePhase | PortableModule | PortableLesson
 
-export interface PortablePhase {
+interface PortablePhase {
   kind: 'phase'
   title: string
   /** Phase intro copy (journey_plan_items.body). */
@@ -86,14 +86,14 @@ export interface PortablePhase {
   children: PortableItem[]
 }
 
-export interface PortableModule {
+interface PortableModule {
   kind: 'module'
   title: string
   note: string | null
   children: PortableLesson[]
 }
 
-export interface PortableLesson {
+interface PortableLesson {
   kind: 'lesson'
   /** The Frequency leaf block_type — the source of truth for round-tripping. */
   block_type: PortableLeafType
@@ -250,7 +250,7 @@ export function toPortable(
 
 /** The plan-identity fields a new Journey is created with. Matches `createPlan`'s input (title +
  *  summary) plus the delivery cadence the create/edit path persists via `updatePlan`. */
-export interface PortablePlanFields {
+interface PortablePlanFields {
   title: string
   summary: string | null
   dripIntervalDays: number
@@ -259,7 +259,7 @@ export interface PortablePlanFields {
 /** One flat block row ready for the EXISTING importer loop (create-actions.ts): inserted in array
  *  order (parents before children), with `parentTempId` resolved to the real inserted id via an
  *  id map — the identical contract `templateToBlocks` / `masterFrameworkToBlocks` already use. */
-export interface PortableBlockRow {
+interface PortableBlockRow {
   tempId: string
   parentTempId: string | null
   blockType: 'phase' | 'module' | PortableLeafType
@@ -270,7 +270,7 @@ export interface PortableBlockRow {
   sortOrder: number
 }
 
-export interface FromPortableResult {
+interface FromPortableResult {
   plan: PortablePlanFields
   /** Ordered flat rows; insert in order, mapping each tempId → the real inserted id for child refs. */
   blocks: PortableBlockRow[]
@@ -342,7 +342,7 @@ export function fromPortable(portable: PortableJourney): FromPortableResult {
 // shape (NOT a Hook import) — the federated contract is serialization + mapping only, no cross-DB
 // code. A Hook-side importer consumes this; we never reach into Hook's database.
 
-export interface HookLessonOutline {
+interface HookLessonOutline {
   title: string
   content_type: HookContentType
   content_body: string | null
@@ -350,13 +350,13 @@ export interface HookLessonOutline {
   drip_days_after_enrollment: number
 }
 
-export interface HookModuleOutline {
+interface HookModuleOutline {
   title: string
   position: number
   lessons: HookLessonOutline[]
 }
 
-export interface HookCourseOutline {
+interface HookCourseOutline {
   title: string
   description: string | null
   modules: HookModuleOutline[]

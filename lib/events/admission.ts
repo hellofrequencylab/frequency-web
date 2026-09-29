@@ -31,7 +31,7 @@
 
 /** The two columns the rule needs. Structural, so any row shape carrying them can be passed —
  *  including the untyped `as unknown as` read surfaces (ADR-246) these columns are read through. */
-export interface AdmissionFields {
+interface AdmissionFields {
   status?: string | null
   approval_status?: string | null
 }

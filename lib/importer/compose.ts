@@ -193,7 +193,7 @@ const GALLERY_GAPS = enumValues('gallery', 'gap')
 
 /** One CARD inside a features / cardGrid block. `icon` is a short token (a numeral "1" for a step, or a
  *  Lucide icon name); `imageIndex` references a SELECTABLE photo by index, never a url. */
-export interface ComposedCard {
+interface ComposedCard {
   title?: string
   text?: string
   icon?: string
@@ -204,7 +204,7 @@ export interface ComposedCard {
  *  the SELECTABLE photos (the non-cover gallery), resolved to a URL here. The control fields (layout,
  *  columns, shape, rounded, shadow, mediaSide, aspect, view, gap) are validated against the block's real
  *  field schema. `buttonLabel` is the CTA's text; the DESTINATION is never the model's to choose. */
-export interface ComposedBlock {
+interface ComposedBlock {
   block: string
   eyebrow?: string
   title?: string
