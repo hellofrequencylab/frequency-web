@@ -48908,9 +48908,9 @@ Premise re-tested before building ([ADR-1082](DECISIONS.md)): the row's own prob
 
 **Consequences.** `LIVE-543` closes on its probe (the migration set creates the table with no update or delete policy, all four door files call the writer, the drawer reads it). `todo_assigned` waits for LIVE-544's assign door; LIVE-545 fans notifications out from these rows. The migration is applied after merge with `execute_sql` and a ledger insert at its own version.
 
-## ADR-1556: A to-do crosses the share by Plan id, and is handed to a person from the two teams' list, never from the browser (LIVE-544)
+## ADR-1567: A to-do crosses the share by Plan id, and is handed to a person from the two teams' list, never from the browser (LIVE-544)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-544` (child 4 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1555](DECISIONS.md) (the record) · numbered 1556 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552 to 1554 by #2964, #2968 and #2970, the children this one stands on (ADR-1509)
+**Status:** Accepted · 2026-09-28 · `LIVE-544` (child 4 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1566](DECISIONS.md) (the record) · numbered 1567 because 1556 went to #2956 while this one waited in the stack, 1557 and 1558 are #2972 and #2973 further up this stack, 1559 to 1566 are claimed by pull requests opened since or renumbered around it, and 1552 (#2964), 1553 (#2968) and 1566 (#2970) are the children this one stands on (ADR-1509)
 
 **Context.** `crm_tasks` is a Space-scoped, service-role table: `listTasks` keys on `space_id`, `updateTaskStatusInScope` binds its write to the Space the action proved, and nothing in the calendar set `assignee_profile_id`. So a to-do on a Plan shared with a guest Space was invisible to the guest after the handshake, could not be ticked by them, and could be handed to nobody on either side. PROG-CAL7 promises "tasks assignable to members of either Space".
 
