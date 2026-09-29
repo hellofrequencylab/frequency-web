@@ -139,7 +139,9 @@ cycle, and **refuses** any shape it does not understand instead of guessing a wi
   (§7a); what is still missing is a channel that reaches a human faster than a weekly issue, plus a
   read-only `HEALTHCHECKS_API_KEY` if the sweep is ever to check that pings actually arrived.
 - **db-tests green** → run `db-tests` from the Actions tab; once a fresh full apply passes, flip the `pull_request` trigger in `db-tests.yml` (Phase 5).
-- **Confirm PITR/backups** on the Supabase plan + note the restore runbook.
+- **Confirm PITR/backups** on the Supabase plan (`OWN-082`: read the tier, rehearse one restore,
+  write tier, retention, RPO and a measured RTO). The restore runbook is section 4 of
+  [`RUNBOOKS.md`](RUNBOOKS.md), which says UNKNOWN for all four until that row closes.
 
 ## 6. Non-goals (deliberate)
 
