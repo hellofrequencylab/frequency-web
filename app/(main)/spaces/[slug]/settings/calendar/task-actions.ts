@@ -4,8 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { listTasks, updateTaskStatusInScope, type CrmTask } from '@/lib/crm/tasks'
+import { getTaskInScope, listTasks, updateTaskStatusInScope, type CrmTask } from '@/lib/crm/tasks'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
+import { recordPlanActivity } from '@/lib/calendar/plan-activity-store'
 
 // THE SPACE TO-DO INBOX, server half (PROG-CAL4 "My tasks").
 //
@@ -54,6 +55,18 @@ export async function setSpaceTaskDone(
     spaceId: editor.spaceId,
   })
   if (!moved) return fail('That to-do could not be updated.')
+  // A to-do that belongs to a Plan writes the Plan's record (LIVE-543), so the other team learns
+  // it was done from the inbox as surely as from the drawer. A CRM follow-up has no Plan and no row.
+  const task = await getTaskInScope(taskId, editor.spaceId)
+  if (task?.planId) {
+    await recordPlanActivity({
+      planId: task.planId,
+      actorProfileId: editor.profileId,
+      actorSpaceId: editor.spaceId,
+      kind: 'todo_done',
+      summary: done ? `Ticked off "${task.title}".` : `Put "${task.title}" back on the list.`,
+    })
+  }
   revalidatePath(`/spaces/${slug}/settings/calendar`)
   revalidatePath(`/spaces/${slug}/calendar`)
   return ok()
