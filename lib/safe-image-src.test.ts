@@ -1,52 +1,48 @@
 import { describe, it, expect } from 'vitest'
 import { safeImageSrc, safeUploadPreviewSrc } from './safe-image-src'
 
-// Locks the <img src> allowlist. The dangerous cases are the point: a src that arrives from a
-// DB column or a Puck field must not be able to carry a script-bearing scheme through.
+const BLOB = 'blob:https://app.local/550e8400-e29b-41d4-a716-446655440000'
+const PNG = 'data:image/png;base64,iVBORw0KGgo='
+const REMOTE = 'https://abc.supabase.co/storage/v1/object/public/avatars/a.jpg'
 
 describe('safeImageSrc', () => {
-  it('allows the four legitimate shapes', () => {
-    expect(safeImageSrc('blob:https://app.local/9f2c-1')).toBe('blob:https://app.local/9f2c-1')
-    expect(safeImageSrc('data:image/png;base64,iVBORw0KGgo=')).toBe('data:image/png;base64,iVBORw0KGgo=')
-    expect(safeImageSrc('data:image/svg+xml,%3Csvg/%3E')).toBe('data:image/svg+xml,%3Csvg/%3E')
-    expect(safeImageSrc('https://cdn.example.com/a.jpg')).toBe('https://cdn.example.com/a.jpg')
+  it('allows the four legitimate shapes, unchanged', () => {
+    expect(safeImageSrc('/images/hero.png')).toBe('/images/hero.png')
+    expect(safeImageSrc('/api/og?title=x')).toBe('/api/og?title=x')
+    expect(safeImageSrc(PNG)).toBe(PNG)
+    expect(safeImageSrc(REMOTE)).toBe(REMOTE)
     expect(safeImageSrc('http://cdn.example.com/a.jpg')).toBe('http://cdn.example.com/a.jpg')
-    expect(safeImageSrc('/images/site/hero.jpg')).toBe('/images/site/hero.jpg')
+    expect(safeImageSrc(BLOB)).toBe(BLOB)
   })
 
-  it('rejects script-bearing and non-image schemes', () => {
+  it('rejects script-bearing schemes, inline SVG, and a protocol-relative host', () => {
     expect(safeImageSrc('javascript:alert(1)')).toBeNull()
     expect(safeImageSrc('  javascript:alert(1)')).toBeNull()
     expect(safeImageSrc('JavaScript:alert(1)')).toBeNull()
-    expect(safeImageSrc('vbscript:msgbox')).toBeNull()
+    expect(safeImageSrc('vbscript:msgbox(1)')).toBeNull()
     expect(safeImageSrc('file:///etc/passwd')).toBeNull()
-    // data: that is not an image (an HTML payload) stays out.
     expect(safeImageSrc('data:text/html,<script>alert(1)</script>')).toBeNull()
-    // An opaque-origin blob — what a sandboxed document mints. A blob: URL carries its
-    // creator's origin inside it, and `null` there means we cannot say who made it.
+    expect(safeImageSrc('data:image/svg+xml,<svg onload=alert(1)>')).toBeNull()
+    expect(safeImageSrc('data:image/svg+xml,%3Csvg/%3E')).toBeNull()
+    expect(safeImageSrc('//evil.test/a.jpg')).toBeNull()
+    expect(safeImageSrc('//evil.test')).toBeNull()
     expect(safeImageSrc('blob:null/9f2c-1')).toBeNull()
   })
 
+  it('rejects a blob path or a data body that carries a quote or an angle bracket', () => {
+    expect(safeImageSrc('blob:https://app.local/"><img src=x onerror=alert(1)>')).toBeNull()
+    expect(safeImageSrc("blob:https://app.local/x' onerror='alert(1)")).toBeNull()
+    expect(safeImageSrc('data:image/png;base64,AAAA"><img src=x onerror=alert(1)>')).toBeNull()
+  })
+
   it('does not answer differently on the server than in the browser', () => {
-    // This ran through `typeof window !== 'undefined'` once, which made every server render
-    // silently drop blob previews. The allowlist must depend only on its argument.
     expect(typeof window).toBe('undefined')
-    expect(safeImageSrc('blob:https://app.local/9f2c-1')).toBe('blob:https://app.local/9f2c-1')
+    expect(safeImageSrc(BLOB)).toBe(BLOB)
   })
 
-  it("normalises a same-origin path rather than passing the caller's string through", () => {
-    // The value that reaches the DOM is the URL parser's, never the input. A guard that hands back
-    // its argument unchanged is not a guard, it is a spelling check.
-    expect(safeImageSrc('/loom/../loom/a.jpg')).toBe('/loom/a.jpg')
-    expect(safeImageSrc('/loom/a b.jpg')).toBe('/loom/a%20b.jpg')
+  it('refuses a same-origin path with a space, and does not re-serialise a matching one', () => {
     expect(safeImageSrc('/loom/a.jpg?width=400')).toBe('/loom/a.jpg?width=400')
-  })
-
-  it('refuses a protocol-relative value, which starts with a slash but points off-origin', () => {
-    // `//evil.test/a.jpg` inherits the page scheme and loads from another host. It used to pass
-    // through untouched on the strength of its leading slash.
-    expect(safeImageSrc('//evil.test/a.jpg')).toBeNull()
-    expect(safeImageSrc('//evil.test')).toBeNull()
+    expect(safeImageSrc('/loom/a b.jpg')).toBeNull()
   })
 
   it('treats empty and absent values as no image', () => {
@@ -57,26 +53,19 @@ describe('safeImageSrc', () => {
   })
 
   it('trims, so a padded value is not rejected for whitespace alone', () => {
-    expect(safeImageSrc('  https://cdn.example.com/a.jpg  ')).toBe('https://cdn.example.com/a.jpg')
+    expect(safeImageSrc(`  ${REMOTE}  `)).toBe(REMOTE)
   })
 })
 
-// The narrow sibling used by the three upload-preview sinks (Beta induction avatar,
-// onboarding avatar step, feed composer attachment). Its whole job is to be TIGHTER than
-// safeImageSrc, so the tests that matter are the ones where the two disagree.
-
 describe('safeUploadPreviewSrc', () => {
   it('allows the only two shapes an upload preview can actually be', () => {
-    // createObjectURL output, and the http(s) URL the file gets once it has uploaded.
-    expect(safeUploadPreviewSrc('blob:https://app.local/9f2c-1')).toBe('blob:https://app.local/9f2c-1')
-    expect(safeUploadPreviewSrc('https://cdn.example.com/a.jpg')).toBe('https://cdn.example.com/a.jpg')
+    expect(safeUploadPreviewSrc(BLOB)).toBe(BLOB)
+    expect(safeUploadPreviewSrc(REMOTE)).toBe(REMOTE)
   })
 
   it('is stricter than safeImageSrc on the shapes a preview cannot produce', () => {
-    // Both of these are legitimate for a general <img src> and safeImageSrc allows them.
-    // A preview has no route to either, so permitting them would be slack in the guard.
-    expect(safeImageSrc('data:image/png;base64,iVBORw0KGgo=')).not.toBeNull()
-    expect(safeUploadPreviewSrc('data:image/png;base64,iVBORw0KGgo=')).toBeNull()
+    expect(safeImageSrc(PNG)).not.toBeNull()
+    expect(safeUploadPreviewSrc(PNG)).toBeNull()
 
     expect(safeImageSrc('/logo.png')).not.toBeNull()
     expect(safeUploadPreviewSrc('/logo.png')).toBeNull()

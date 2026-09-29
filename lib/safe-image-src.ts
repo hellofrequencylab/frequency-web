@@ -7,64 +7,35 @@
 // components away. The allowlist makes the safe cases explicit and everything else render
 // nothing, which is the honest failure for an image.
 //
+// CodeQL js/xss-through-dom models one sanitizer shape: `if (RE.test(v)) return v`, with RE
+// anchored at both ends and no wildcards (HYG-142, ADR-1637). A parse-then-scheme-check is
+// not that shape. `new URL()` leaves a blob: path and a data: body opaque, so a quote or an
+// angle bracket in either used to come back out of `toString()` and land on the <img>. The
+// four literals below are the allowlist; every non-null return is a test against one of them.
+//
 // Allowed, and why each is here:
-//   blob:            object URLs from URL.createObjectURL — local upload previews
-//   data:image/…     inline raster/vector, used by the QR and OG surfaces
-//   http(s)://       remote media (Supabase storage, Loom, operator-supplied covers)
-//   /path            same-origin assets under public/
-// Everything else — javascript:, vbscript:, file:, a bare word — resolves to null.
+//   IMAGE_PATH     same-origin assets under public/ (a leading slash, never //host)
+//   IMAGE_DATA     raster data:image/png|jpeg|gif|webp|avif;base64 (no svg, no quotes)
+//   IMAGE_HTTP     remote media (Supabase storage, Loom, operator-supplied covers)
+//   IMAGE_BLOB     object URLs from URL.createObjectURL — origin plus a UUID, nothing else
+// Everything else — javascript:, vbscript:, file:, a blob with a quote, a data: SVG — is null.
 
-/** A base that cannot resolve, used only to turn a relative path into a parsed URL. `.invalid` is
- *  reserved by RFC 2606, so nothing is fetchable from it even if one ever leaked into a `src`.
- *  FIXED, and deliberately not `window.location.origin`: an allowlist that answers differently on
- *  the server than in the browser is the trap this file already learned about with blob: below. */
-const RELATIVE_BASE = 'https://relative.invalid'
+const IMAGE_PATH =
+  /^\/[A-Za-z0-9._~?#@!$&'()*+,;=%-][A-Za-z0-9._/~?#@!$&'()*+,;=%-]*$/
+const IMAGE_DATA = /^data:image\/(?:png|jpeg|jpg|gif|webp|avif);base64,[A-Za-z0-9+/=]+$/
+const IMAGE_HTTP =
+  /^https?:\/\/[A-Za-z0-9.-]+(?::[0-9]{1,5})?(?:\/[A-Za-z0-9._~/?#@!$&'()*+,;=%-]*)?$/
+const IMAGE_BLOB =
+  /^blob:https?:\/\/[A-Za-z0-9.-]+\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
 
 export function safeImageSrc(src: string | null | undefined): string | null {
   if (!src) return null
   const s = src.trim()
   if (!s) return null
-
-  // Same-origin absolute path under public/app routes. PARSED, never passed through: it resolves
-  // against a base that cannot exist, and it only counts as a path if the result's origin is still
-  // that base. That refuses what a leading slash can hide — `//host/x` is protocol-relative and
-  // points off-origin — and what comes back is the parser's normalised path, not the caller's
-  // string. Returning the input verbatim here was the one raw pass-through left in this file.
-  if (s.startsWith('/')) {
-    try {
-      const u = new URL(s, RELATIVE_BASE)
-      return u.origin === RELATIVE_BASE ? `${u.pathname}${u.search}` : null
-    } catch {
-      return null
-    }
-  }
-
-  // Data URLs are only allowed for images.
-  if (s.startsWith('data:')) {
-    return /^data:image\/[a-z0-9.+-]+[,;]/i.test(s) ? s : null
-  }
-
-  // Parse rather than prefix-match, and hand back the URL parser's own serialisation: a
-  // string that survives `new URL()` and comes back out of `toString()` is a URL by
-  // construction, not by our reading of it.
-  try {
-    const u = new URL(s)
-    if (u.protocol === 'http:' || u.protocol === 'https:') return u.toString()
-    // A blob: URL carries its creator's origin inside it, so `u.origin` is that inner
-    // origin. Requiring http(s) there rejects `blob:null/…`, which is what a sandboxed or
-    // otherwise opaque-origin document produces.
-    //
-    // Deliberately NOT compared against window.location.origin. A blob: URL is only
-    // resolvable in the origin that minted it, so a cross-origin one is already inert in
-    // an <img> — the comparison buys no safety, and reaching for `window` would make this
-    // function answer differently on the server than in the browser. A helper whose result
-    // depends on where it runs is a trap for the next caller, and every server render
-    // would silently get null.
-    if (u.protocol === 'blob:' && /^https?:\/\//.test(u.origin)) return u.toString()
-  } catch {
-    return null
-  }
-
+  if (IMAGE_PATH.test(s)) return s
+  if (IMAGE_DATA.test(s)) return s
+  if (IMAGE_HTTP.test(s)) return s
+  if (IMAGE_BLOB.test(s)) return s
   return null
 }
 
@@ -75,47 +46,13 @@ export function safeImageSrc(src: string | null | undefined): string | null {
 // until this helper each guarded it differently: one used safeImageSrc, one an ad-hoc
 // /^(?:blob:|https?:\/\/)/i regex, and the rest nothing at all.
 //
-// The first version of this comment claimed THREE surfaces and named the onboarding step
-// as covered. It was not: `app/onboarding/form.tsx` still rendered the raw state value,
-// and CodeQL flagged it. Counting the shape by memory instead of by grep is exactly how
-// the unguarded one happens, which is the thing this helper exists to stop.
-//
 // An upload preview is only ever a blob: URL from createObjectURL, or the http(s) URL
 // the file got after it uploaded. Nothing else is reachable, so nothing else is allowed:
 // no data:, no same-origin /path. That is deliberately STRICTER than safeImageSrc.
-// data: is excluded not because an <img> would run a data:image/svg+xml (it will not —
-// SVG loaded through <img> is script-disabled in every browser) but because a preview
-// has no reason to carry inline bytes, and a guard that permits what the caller cannot
-// produce is a guard with slack in it.
-// KNOWN CODEQL FALSE POSITIVES, and why they cannot be fixed in code.
-//
-// CodeQL does not model either function as a sanitizer, so every <img> they feed is
-// reported as js/xss-through-dom, "DOM text reinterpreted as HTML". The path it draws
-// is real but inert:
-//
-//   <input type="file">  →  e.target.files[0]   (CodeQL: DOM text)
-//   URL.createObjectURL(file)                   (CodeQL: taint survives)
-//   <img src={…}>                               (CodeQL: HTML sink)
-//
-// `createObjectURL` embeds nothing from the file. It returns a browser-minted
-// `blob:<origin>/<uuid>` — the filename, the bytes and the MIME type never appear in
-// the string, so there is no attacker-controlled character to escape. The taint label
-// belongs to the File, not to the URL that identifies it. An <img> src also cannot
-// execute script the way an href can, which is the premise this whole file rests on.
-//
-// DO NOT try to silence these with `// codeql[js/xss-through-dom]` comments. That was
-// tried on all nine sites, placed on the exact lines CodeQL reports, and the count did
-// not move: inline suppression comments are an LGTM legacy feature that GitHub code
-// scanning does not honour. The only supported routes are dismissing each alert in the
-// Security tab or excluding the query in .github/workflows/codeql.yml — and excluding
-// it repo-wide would also blind us to a genuine innerHTML finding, which is the one
-// thing this query is worth keeping for. So: dismiss, and leave the query armed.
-//
-// Also worth recording: adding these guards RAISED the alert count 5 → 7. Routing four
-// more surfaces through one shared helper is exactly what let CodeQL connect the path
-// across files. The code got stricter and the report got louder at the same time.
 export function safeUploadPreviewSrc(src: string | null | undefined): string | null {
   const safe = safeImageSrc(src)
   if (!safe) return null
-  return /^(?:blob:|https?:)/i.test(safe) ? safe : null
+  if (IMAGE_BLOB.test(safe)) return safe
+  if (IMAGE_HTTP.test(safe)) return safe
+  return null
 }
