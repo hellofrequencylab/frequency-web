@@ -27,11 +27,11 @@ each notice actually depends on.
 
 | Switch | Where | Effect |
 |---|---|---|
-| `BETA_OPEN_ACCESS` | `lib/core/beta.ts:16` | Master grant + all copy routed through `beta-notices.ts`. Flip to `false`. |
+| `BETA_OPEN_ACCESS` | `lib/core/beta.ts:16` | Master grant + all copy routed through `beta-notices.ts`. ✅ `false` since launch (LIVE-464, [ADR-1622](DECISIONS.md)). |
 | `BETA_GRANTED_TIER` | `lib/core/beta.ts` | The tier granted during beta (`crew`). Leave; it stops applying once the flag is off. |
 | `billingLive()` | `lib/pricing/settings` (DB `platform_settings`) | Gates the `/upgrade` + `/settings/billing` beta banners and founder-reservation actions. Turn on when billing goes live. |
 | `betaEndsAt()` | `lib/platform-flags.ts` (DB) | The countdown clock (`beta-countdown-banner`). Auto-hides after the date. |
-| `FUNNEL_INDUCTION_ACTIVE`, `BETA_MEMBERS_GET_CREW` | `lib/onboarding/funnel-script.ts` | The Funnels induction (ADR-1090). `BETA_MEMBERS_GET_CREW` flips at GA; the Funnels machinery itself stays. |
+| `FUNNEL_INDUCTION_ACTIVE`, `BETA_MEMBERS_GET_CREW` | `lib/onboarding/funnel-script.ts` | The Funnels induction (ADR-1090). ✅ Both `false` since launch (LIVE-464, [ADR-1622](DECISIONS.md)): `/onboarding` stops forwarding into `/join`, and new members default to Member. The Funnels machinery itself stays. |
 | ~~`ALERT_KEY`~~ | ~~`components/layout/site-alert-bar.tsx`~~ | ✅ **Retired 2026-08-26** (ADR-1166). The strip is operator-written now and its dismissal key is derived from the message, so there is no constant to bump. |
 
 ## 3. The inventory (edit at launch)

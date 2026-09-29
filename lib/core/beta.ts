@@ -1,4 +1,4 @@
-// Beta launch switch (flips OFF at launch, 21 December 2026, LIVE-465) — "get people in and let them try everything".
+// Beta launch switch, OFF since launch (21 December 2026, LIVE-464, ADR-1622; it read true through the Beta) — "get people in and let them try everything".
 //
 // While this is true, every signed-in member is treated as the paid Crew TIER, so all
 // premium member features unlock (the Vault cash-in, Studio, Support console, Connections /
@@ -13,7 +13,7 @@
 // The DB is untouched (real `membership_tier` / `community_role` are preserved), so flipping
 // this back to false restores normal tier + role gating with no migration. Remove this flag
 // and its read sites when real membership tiers launch (ADR in docs/DECISIONS.md).
-export const BETA_OPEN_ACCESS = true
+export const BETA_OPEN_ACCESS = false
 
 /** The tier every signed-in member is granted while {@link BETA_OPEN_ACCESS} is on. */
 export const BETA_GRANTED_TIER = 'crew' as const

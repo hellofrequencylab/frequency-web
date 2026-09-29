@@ -27,11 +27,12 @@ door — there is no separate `/sign-up` route. What remains genuinely beta-scop
 | Why it blocks at all | It IS the sign-up: the account does not exist until the last beat | Members must explore freely |
 | Vera | **Hot** register, scripted | Cool register, eventually live |
 
-The induction is the live sign-up path behind one flag: `FUNNEL_INDUCTION_ACTIVE` in
-`lib/onboarding/funnel-script.ts`. While it is `true`, `/onboarding` redirects into `/join`, and
-`app/(main)/layout.tsx` routes any signed-in user whose `meta.onboarding_completed` is not `true`
-to `/onboarding` (no loop: `/onboarding` is outside the `(main)` layout). Flipping the flag off
-falls back to the ADR-047 non-blocking model.
+One flag decides whether `/onboarding` forwards into the induction: `FUNNEL_INDUCTION_ACTIVE` in
+`lib/onboarding/funnel-script.ts`. It read `true` through the Beta, when `/onboarding` redirected
+into `/join`. It is `false` since launch (21 December 2026, LIVE-464, [ADR-1622](DECISIONS.md)):
+`/onboarding` serves the ADR-047 non-blocking model, and `/join` and every `/join/[slug]` Funnel
+stay reachable as front doors in their own right. The member shell no longer routes anyone to
+`/onboarding` for an unfinished induction ([ADR-1371](DECISIONS.md)).
 
 ## One template, audience-targeted Funnels ([ADR-1051](DECISIONS.md) → ADR-162/617)
 
@@ -197,17 +198,16 @@ rule is `selectRecoveryLeads` in `lib/crm/signup-lead-recovery.ts`; the note is
 
 ## The renders
 
-The "vector renders" of each section are **inline SVG components**, not commissioned art:
-`components/onboarding/renders/{feed,circles,events}-render.tsx`.
+Through the Beta the "vector renders" of each section were inline SVG product mockups under
+`components/onboarding/renders/` (eight screens plus the shared browser-window frame). They were
+disposable by design and were **deleted at launch** (LIVE-464, [ADR-1622](DECISIONS.md)), together
+with the three Loom catalog rows that indexed them.
 
-- DAWN tokens only (`fill="var(--brand)"`, `text-primary`, …): theme + brand-color for free, no hex.
-- Animated with the existing `slideUp` keyframe + CSS transitions; **respect `prefers-reduced-motion`**.
-- **Only the core triad** (Feed/Circles/Events): showing all 18 nav areas would violate "quick."
-- Cheap to replace: swapped in the same PR as the flow when the design changes.
-
-The reel is **renders only** (no photography); they crossfade on a timer. To add a real product
-**screenshot** later, drop the file in `public/` and add a `kind:'image'` entry to `REEL` (the type
-still supports it), no component changes.
+A reel slide or a niche Funnel's core feature that still names a `render` (the `REEL`, the persona
+reels, and `art.kind: 'render'` stored by the splash editor) now draws a quiet titled panel in the
+same 540 by 348 slot, so no stored Funnel breaks. To show a real product **screenshot**, drop the
+file in `public/` and use a `kind:'image'` entry (the types still support it), no component
+changes.
 
 ## Accessibility & UX rules (the "do everything" checklist)
 
@@ -245,8 +245,7 @@ live (`onboarding.funnel_entered`, ADR-617 Phase 1); the bounce dashboard is pen
 | `lib/funnels/destination.ts` | Safe-path validation for completion destinations |
 | `app/(main)/pages/splash/` | **Default Funnel** editor (the `beta-default` override, live preview) |
 | `app/(main)/pages/sequences/` | **Funnels** manager: create, build, publish, share link + QR |
-| `components/onboarding/renders/{feed,circles,events}-render.tsx` | Section renders |
-| `app/onboarding/page.tsx` | Redirects to `/join` while the flag is on |
+| `app/onboarding/page.tsx` | The steady-state onboarding; redirected to `/join` while the flag was on (off since launch, ADR-1622) |
 
 ## If the induction ever comes down
 

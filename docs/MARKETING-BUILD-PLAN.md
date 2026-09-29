@@ -53,7 +53,7 @@ every page as a published Puck layout.
 | **Editable slugs registry** | `lib/page-editor/data.ts` (`EDITABLE_PAGES`) | Add a slug here + a template + a public route to make a new editable page |
 | **Page templates (seeds)** | `lib/page-editor/templates/*.ts` | Author default content as Puck `Data`; loads into the editor; publish to go live |
 | **Marketing component library** | `components/marketing/marketing-ui.tsx`, `motion.tsx`, `vector-art.tsx` | Hardcoded pages (home/about) and Puck block internals |
-| **Beta-onboarding vector renders** | `components/onboarding/renders/*`, `components/onboarding/welcome-art.tsx` | The *style reference* for the new illustration kit (inline SVG, DAWN tokens, no external art) |
+| **Beta-onboarding vector renders** | `components/onboarding/welcome-art.tsx` (the `components/onboarding/renders/*` mockups were deleted at launch, ADR-1622) | The *style reference* for the new illustration kit (inline SVG, DAWN tokens, no external art) |
 | **JSON-LD builders** | `lib/jsonld.ts` + `components/json-ld.tsx` (escapes injection) | Organization/Website/Breadcrumb/FAQ/Event/Journey schema; extend with Article + HowTo |
 | **Dynamic sitemap (redaction-safe, activity-gated)** | `app/sitemap.ts` | Already lists pillars/pricing/discover/help; new pages auto-extend |
 | **robots** | `app/robots.ts` | Wildcard-allows all crawlers (AI bots included); add explicit AI-bot allows + a curated `/llms.txt` |
@@ -154,8 +154,8 @@ mirror that exactly.
 - **Set (one per core concept / feature):** `lead` (a builder setting up chairs), `practice`
   (a calm timer / breath), `spread` (ripples outward), `circle`, `feed`, `events`, `journey`,
   `mindless`, `quest`, `lab`, `community`, `belonging`. Extend as pages need.
-- **Reference:** `components/onboarding/welcome-art.tsx` (8 spot illustrations) and
-  `components/onboarding/renders/*` (3 mockup renders) are the working pattern to copy.
+- **Reference:** `components/onboarding/welcome-art.tsx` (8 spot illustrations) is the working
+  pattern to copy (the `components/onboarding/renders/*` mockups were deleted at launch, ADR-1622).
 
 ---
 

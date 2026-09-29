@@ -10,7 +10,7 @@
 // except for the onboarding/On-Air pieces that were folded into that kit and want a
 // non-default category. See docs/LIBRARY.md.
 
-export type ElementRegistry = 'illustration' | 'icon' | 'spot' | 'circle-template' | 'texture' | 'render'
+export type ElementRegistry = 'illustration' | 'icon' | 'spot' | 'circle-template' | 'texture'
 
 export type PillarSlug = 'mind' | 'body' | 'spirit' | 'expression'
 
@@ -65,15 +65,6 @@ const CIRCLE_TEMPLATES: ElementDef[] = [
   { registry: 'circle-template', name: 'the-writers-room', title: "The Writers' Room", category: 'Circle templates', pillar: 'expression', tags: ['circle-template', 'expression', 'writing'] },
 ]
 
-// Beta-induction product-page mockups (components/onboarding/renders/*) — landscape browser
-// "screens" of the app. Removed with the induction at launch, 21 December 2026 (ADR-068, LIVE-465); catalogued at
-// the owner's request so they're browsable while they exist.
-const ONBOARDING_SCREENS: ElementDef[] = [
-  { registry: 'render', name: 'feed', title: 'Feed screen', category: 'Onboarding screens', tags: ['onboarding', 'screen', 'induction', 'temporary', 'feed'] },
-  { registry: 'render', name: 'circles', title: 'Circles screen', category: 'Onboarding screens', tags: ['onboarding', 'screen', 'induction', 'temporary', 'circles'] },
-  { registry: 'render', name: 'events', title: 'Events screen', category: 'Onboarding screens', tags: ['onboarding', 'screen', 'induction', 'temporary', 'events'] },
-]
-
 // Abstract brand textures (components/marketing/vector-art.tsx) — currentColor motifs.
 const TEXTURES: ElementDef[] = [
   { registry: 'texture', name: 'frequency-arcs', title: 'Frequency arcs', category: 'Textures', tags: ['texture', 'abstract', 'frequency', 'brand'] },
@@ -109,7 +100,6 @@ export const REGISTRY_NAMES: Record<Exclude<ElementRegistry, 'illustration'>, Se
   icon: new Set([...ON_AIR_ICONS, ...FUNNEL_ICONS].map((d) => d.name)),
   spot: new Set([...SPOT_ART, ...FUNNEL_SPOTS].map((d) => d.name)),
   'circle-template': new Set(CIRCLE_TEMPLATES.map((d) => d.name)),
-  render: new Set(ONBOARDING_SCREENS.map((d) => d.name)),
   texture: new Set(TEXTURES.map((d) => d.name)),
 }
 
@@ -127,6 +117,5 @@ export const ALL_ELEMENTS: ElementDef[] = [
   ...FUNNEL_SPOTS,
   ...FUNNEL_ICONS,
   ...CIRCLE_TEMPLATES,
-  ...ONBOARDING_SCREENS,
   ...TEXTURES,
 ]

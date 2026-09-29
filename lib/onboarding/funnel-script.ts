@@ -6,18 +6,19 @@
 // this becomes her fallback script. Client-safe (no server imports).
 
 /** Master switch. While true, `/onboarding` redirects into `/join`, so the Funnels
- *  induction is the mandatory opening sequence. Flipping it off falls back to the
- *  steady-state onboarding model (ADR-047). */
-export const FUNNEL_INDUCTION_ACTIVE = true
+ *  induction is the mandatory opening sequence. OFF since launch (21 December 2026,
+ *  LIVE-464, ADR-1622): `/onboarding` is the steady-state onboarding model (ADR-047)
+ *  again, and `/join` stays reachable as the Funnels front door. */
+export const FUNNEL_INDUCTION_ACTIVE = false
 
 /** BETA PROGRAM flag, not a Funnels one (the name keeps its beta_ because the
  *  program it describes is still called the Beta): during the Beta, every member
  *  gets Crew for free — they can downgrade to Member anytime (/upgrade).
- *  Flip OFF at Launch: new members default to Member, and unpaid members lose
+ *  OFF since Launch (LIVE-464, ADR-1622): new members default to Member, and unpaid members lose
  *  the Crew surfaces (see ADR-084). 🔴 They do NOT lose the game: spending Gems
  *  and the full rewards loop were opened to every signed-in member by ADR-1295
  *  (owner ruling 2026-09-09), so flipping this off no longer touches the Quest. */
-export const BETA_MEMBERS_GET_CREW = true
+export const BETA_MEMBERS_GET_CREW = false
 
 /** Bumped if the flow materially changes, so we can tell cohorts apart. Written to
  *  the STORED `meta.beta.version` key — the key keeps its name so every cohort
@@ -45,6 +46,8 @@ export const HEARD_ABOUT = [
  * "renders" of features and atmospheric imagery of the place. Data-driven so
  * real product screenshots can be slotted in later (just add `kind:'image'`
  * entries pointing at the screenshot files) without touching the component.
+ * The vector mockups were deleted at launch (LIVE-464, ADR-1622); a `render`
+ * slide now draws a quiet panel carrying its title.
  */
 export type ReelSlide =
   | { kind: 'render'; render: 'feed' | 'circles' | 'events'; title: string; line: string }

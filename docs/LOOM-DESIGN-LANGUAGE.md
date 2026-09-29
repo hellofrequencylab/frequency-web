@@ -1,7 +1,7 @@
 # The Loom design language — the "induction vibe"
 
 > The reference aesthetic for everything Vera draws in The Loom. Distilled from the beta-induction
-> product-screen renders (`components/onboarding/renders/*`, ADR-068) — the flat, warm, filled look
+> product-screen renders (`components/onboarding/renders/*`, ADR-068; deleted at launch, ADR-1622) — the flat, warm, filled look
 > the owner wants as the base for all new icons and graphics. This spec is the source; it is wired
 > into Vera's generation + redraw prompts (`app/(main)/admin/library/vera-actions.ts`). It does NOT
 > restyle existing art — it steers new output.

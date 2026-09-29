@@ -23,9 +23,6 @@ import {
 } from '@/components/feed/zap-menu-art'
 import { TemplateHeaderArt } from '@/components/circles/template-art'
 import { FrequencyArcs, RippleRings, CircleConstellation, OrganicBlob } from '@/components/marketing/vector-art'
-import { FeedRender } from '@/components/onboarding/renders/feed-render'
-import { CirclesRender } from '@/components/onboarding/renders/circles-render'
-import { EventsRender } from '@/components/onboarding/renders/events-render'
 import {
   HeroProductGraphic,
   ScatteredStackGraphic,
@@ -84,14 +81,6 @@ const TEXTURES: Record<string, IconFn> = {
   'organic-blob': OrganicBlob,
 }
 
-// Beta-induction product-page mockups (landscape browser "screens"). They render a bare
-// <svg> and take an `animate` flag (off in the catalog); no className.
-const RENDERS: Record<string, (p: { animate?: boolean }) => ReactNode> = {
-  feed: FeedRender,
-  circles: CirclesRender,
-  events: EventsRender,
-}
-
 function isIllustrationName(name: string): name is IllustrationName {
   return (illustrationNames as readonly string[]).includes(name)
 }
@@ -101,7 +90,7 @@ export function isRenderableElement(registry: unknown, name: unknown): boolean {
   if (typeof name !== 'string') return false
   if (registry === 'illustration' || registry == null) return isIllustrationName(name)
   if (registry === 'circle-template') return REGISTRY_NAMES['circle-template'].has(name)
-  if (registry === 'icon' || registry === 'spot' || registry === 'texture' || registry === 'render') {
+  if (registry === 'icon' || registry === 'spot' || registry === 'texture') {
     return REGISTRY_NAMES[registry].has(name)
   }
   return false
@@ -136,15 +125,6 @@ export function renderRegistryElement(
   if (registry === 'texture') {
     const Tex = TEXTURES[name]
     return Tex ? <Tex className="h-full w-auto text-primary" /> : null
-  }
-
-  if (registry === 'render') {
-    const Screen = RENDERS[name]
-    return Screen ? (
-      <div className="w-full [&>svg]:h-auto [&>svg]:w-full">
-        <Screen animate={false} />
-      </div>
-    ) : null
   }
 
   if (registry === 'circle-template') {

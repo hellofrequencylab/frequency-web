@@ -128,10 +128,6 @@ const ELEMENT_SEEDS: readonly ElementSeed[] = [
   { registry: 'circle-template', name: 'the-makers', title: 'The Makers', category: 'Circle templates', pillar: 'expression', tags: ['circle-template', 'expression', 'art'] },
   { registry: 'circle-template', name: 'sound', title: 'Sound', category: 'Circle templates', pillar: 'expression', tags: ['circle-template', 'expression', 'music'] },
   { registry: 'circle-template', name: 'the-writers-room', title: "The Writers' Room", category: 'Circle templates', pillar: 'expression', tags: ['circle-template', 'expression', 'writing'] },
-  // Beta-induction product-page mockups (temporary; catalogued while they exist).
-  { registry: 'render', name: 'feed', title: 'Feed screen', category: 'Onboarding screens', tags: ['onboarding', 'screen', 'induction', 'temporary', 'feed'] },
-  { registry: 'render', name: 'circles', title: 'Circles screen', category: 'Onboarding screens', tags: ['onboarding', 'screen', 'induction', 'temporary', 'circles'] },
-  { registry: 'render', name: 'events', title: 'Events screen', category: 'Onboarding screens', tags: ['onboarding', 'screen', 'induction', 'temporary', 'events'] },
   // Abstract brand textures.
   { registry: 'texture', name: 'frequency-arcs', title: 'Frequency arcs', category: 'Textures', tags: ['texture', 'abstract', 'frequency', 'brand'] },
   { registry: 'texture', name: 'ripple-rings', title: 'Ripple rings', category: 'Textures', tags: ['texture', 'abstract', 'ripple', 'brand'] },

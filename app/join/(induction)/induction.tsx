@@ -27,14 +27,6 @@ import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
 // Avatar can't ride the auth-redirect in a cookie, so the deferred (signed-out)
 // flow parks its data URL in localStorage and the /complete page uploads it.
 const PENDING_AVATAR_KEY = 'fq_pending_avatar'
-import { FeedRender } from '@/components/onboarding/renders/feed-render'
-import { CirclesRender } from '@/components/onboarding/renders/circles-render'
-import { EventsRender } from '@/components/onboarding/renders/events-render'
-import { BookingRender } from '@/components/onboarding/renders/booking-render'
-import { CheckinRender } from '@/components/onboarding/renders/checkin-render'
-import { DonateRender } from '@/components/onboarding/renders/donate-render'
-import { TicketsRender } from '@/components/onboarding/renders/tickets-render'
-import { CrmRender } from '@/components/onboarding/renders/crm-render'
 import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
 import { Dialog } from '@/components/ui/dialog'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
@@ -109,7 +101,6 @@ const HANDLE_RE = /^[a-z0-9_]+$/
 // Same shape the server validates with (lead-actions.ts / subscribe). Client-side it only decides
 // whether to bother calling; the action re-checks, because a client check is a courtesy not a gate.
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
-const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender, booking: BookingRender, checkin: CheckinRender, donate: DonateRender, tickets: TicketsRender, crm: CrmRender }
 const BEAT_COUNT = INDUCTION_BEAT_COUNT // 0 intro · 1 reel · 2 identity+place · 3 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
@@ -118,6 +109,17 @@ const BEAT_LABELS = ['Who you are', 'A quick tour', 'Your profile', 'Step in']
 // No separator — "Daniel Tyack" → "danieltyack".
 function suggestHandle(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
+}
+
+/** The slot the induction's product mockups filled until launch (LIVE-464, ADR-1622 deleted them).
+ *  A reel slide or core feature that still names a `render` gets this panel: it keeps the 540 by 348
+ *  frame's shape and repeats the title the caption beside it already reads, so it is decorative. */
+function ScreenPanel({ title }: { title: string }) {
+  return (
+    <div aria-hidden className="flex h-full w-full items-center justify-center rounded-card border border-border bg-surface p-8">
+      <span className="text-balance text-center text-display-card font-bold text-muted">{title}</span>
+    </div>
+  )
 }
 
 function ArrowRight() {
@@ -625,17 +627,15 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
     }
   }
 
-  // Resolve a core feature's art (Beat 1, niche funnel). A `render` reuses the induction's product
-  // mockups (feed / circles / events / booking / checkin / donate / tickets / crm); an `image`
-  // renders directly. FAIL-SAFE: an unknown render key stored in the DB (e.g. one from a newer build)
-  // falls back to the events mockup rather than mounting an undefined component and crashing the flow.
-  function renderCoreArt(art: FunnelCoreFeature['art'], active: boolean) {
+  // Resolve a core feature's art (Beat 1, niche funnel). An `image` renders directly. A `render` named
+  // one of the induction's product mockups, which were deleted at launch (LIVE-464, ADR-1622), so a
+  // stored `render` key now draws the quiet titled panel instead of a screen that no longer exists.
+  function renderCoreArt(art: FunnelCoreFeature['art'], title: string) {
     if (art.kind === 'image') {
       // eslint-disable-next-line @next/next/no-img-element
       return <img src={art.src} alt="" className="h-full w-full rounded-card border border-border object-cover" />
     }
-    const C = RENDERS[art.render] ?? EventsRender
-    return <C animate={active} />
+    return <ScreenPanel title={title} />
   }
 
   function renderAvatar() {
@@ -891,7 +891,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
                         const active = i === coreIndex
                         return (
                           <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                            {renderCoreArt(c.art, active)}
+                            {renderCoreArt(c.art, c.title)}
                           </div>
                         )
                       })}
@@ -928,10 +928,9 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
                     <div className="relative w-full max-w-xl shrink-0" style={{ aspectRatio: '540 / 348' }}>
                       {reel.map((s, i) => {
                         const active = i === reelIndex
-                        const C = s.kind === 'render' ? RENDERS[s.render] : null
                         return (
                           <div key={i} className={`absolute inset-0 transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                            {C && <C animate={active} />}
+                            {s.kind === 'render' && <ScreenPanel title={s.title} />}
                           </div>
                         )
                       })}
