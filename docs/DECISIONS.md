@@ -16764,7 +16764,7 @@ The durable rule: **when two columns mean different things, the names, the write
 
 ## ADR-913 — Frequency charges once for the introduction: relationship attribution replaces cookies, and a tip carries no fee (2026-07-30)
 
-**Status.** Accepted, owner rulings 2026-07-30. **Parts 1-4 stand; part 5 was reversed the next day by [ADR-914](#adr-914)**, which says so itself. Makes the differential take-rate of ADR-811 §A the live charging path; supersedes ADR-786's "tips stay flat" and ADR-552's flat paying-state trio on that path.
+**Status.** Accepted, owner rulings 2026-07-30. **Parts 1-4 stand; part 5 was reversed the next day by [ADR-914](#adr-914)**, which says so itself. Part 2 is amended by [ADR-1584](DECISIONS.md) (2026-09-29): with no Space on the sale, a profile seller's own audience also takes in their accepted friends and the active members of every Space they own. Makes the differential take-rate of ADR-811 §A the live charging path; supersedes ADR-786's "tips stay flat" and ADR-552's flat paying-state trio on that path.
 
 🔴 **Written retroactively on 2026-08-04, reconstructed — not remembered.** The decision shipped in commit `1b5e8783` (PR #1999) and was cited into 33 code sites and 13 docs the same day; the ledger entry was skipped, and the ADRs that PR *did* write (914-917, 919) came from later commits, so nobody noticed. Every clause below traces to that commit's own message or the code comments it left. Confirmed absent from every commit on every ref before writing this. `scripts/check-adr.mjs` counts headings and guards duplicates, so it cannot see a cited-but-missing number.
 
@@ -49418,3 +49418,26 @@ Premise re-tested first. LIVE-447's probe failed naming both files. The Space la
 **Consequences.** `export.test.ts` holds one case per new table, each asserting its only filter is the caller id on the named column, plus one proving the reductions leave no other member's id behind. The settings copy under Download your data names the new sections. Known limit, unchanged by this row and now wider: each section is one read, and PostgREST caps a response at `max_rows` (1,000, `supabase/config.toml`) for the service role too, so a member past a thousand rows in one section (notifications first) gets a silently short section. Paging every section with a ceiling is its own row, not this one. Erasure is `LIVE-549` and is untouched.
 
 **Rows.** `LIVE-550` (closed here). `LIVE-549` (open, untouched). `DEF-HARDEN` (open, proven by its children).
+
+## ADR-1584: A profile seller's own audience is the profile plus every Space they own, so a person and a Space are measured the same way (LIVE-221)
+
+**Status:** Accepted · 2026-09-29 · owner ruling 2026-09-29 ("Profile plus Spaces they own") · backlog `LIVE-221` (closed here) · amends [ADR-913](DECISIONS.md) part 2 (which relationships make a buyer "already yours") · re-tested first per [ADR-1082](DECISIONS.md) · numbered 1584 by the orchestrator's assignment for this wave
+
+**Context.** `buyerIsSellersAudience` (`lib/commerce/seller-audience.ts`) decides whether a sale is `self` (0% on every tier) or falls through to the network rate. Re-tested on `main` at 214e4bee3 on 2026-09-29: `lib/commerce/checkout.ts` passes `sellerSpaceId: null` for a profile seller, so the check ran the Space signals (follows, active `space_members`, CRM `contacts`) for a Space sale and only `personal_contact` and `prior_purchase` for a profile sale. The same buyer of the same thing classified `network` from a person and `self` from a Space, undocumented at the call site. Profile selling has been open since OWN-046 (2026-09-08), so every individual seller hit this path. The premise held.
+
+A profile is not followable. Only a Space has followers (`space_follows`); no profile-follow table exists in `supabase/migrations`. The only relationship a person holds with a profile is a friendship (`friendships`, mutual, `pending` then `accepted`, surfaced at `/network/friends`).
+
+**Decision.**
+
+1. **With no Space on the sale, the seller's own audience is their profile plus every Space they own.** Two signals join the classifier, both run only when `sellerSpaceId` is empty and `sellerProfileId` is set:
+   - `friend`: an ACCEPTED friendship between seller and buyer. This is what "profile followers" means in this schema. A pending request is not a relationship yet.
+   - `owned_space_member`: an active `space_members` row for the buyer in any Space whose `spaces.owner_profile_id` is the seller. Same table, same `status = 'active'` rule as the Space path's `space_member`, so "member" means one thing on both paths.
+2. **A Space sale is unchanged.** It is measured against that Space (plus the owner's personal contacts and prior purchases, as before). The owner's friends and other Spaces do not widen a Space's audience; that was not ruled.
+3. **The fail-safe direction holds.** Both reads return a non-answer on error (`found()`, and a `null` from `isMemberOfOwnedSpace`), so a failed read degrades to 0%, never to a charge. The membership read is written in the classifier rather than through `getSpaceMembership` (`lib/spaces/membership.ts`) because that store maps a read error to `null`, which here would read as "not a member" and charge on a database hiccup.
+4. **The signal is on the receipt.** `classifyOrderSource` records `own:friend` or `own:owned_space_member` in `attributionRef`, so "why wasn't I charged" and "why was I charged" both have an answer from a row.
+
+**Rejected.** Passing the owner's Spaces as `sellerSpaceId` from `checkout.ts` (a sale has one hosting Space; a list would change the input contract for every money path). Counting followers and CRM contacts of the owned Spaces too (the ruling names members; widening further is a new ruling). A profile-follow table (no such product surface exists; a table nobody can write is a signal that never fires). Leaving the asymmetry and documenting it (the owner ruled it the other way).
+
+**Consequences.** A profile seller selling to a friend, or to an active member of a Space they run, is charged 0% from this merge. The classifier gains at most three reads on a profile sale (friendship, owned Spaces, members), run in parallel with the others, so latency stays at the slowest single read. `docs/PRICING-OPERATIONS.md` and `docs/VALUE-LADDER.md` list the two signals. ⚠️ Found while re-testing and NOT changed here: the Space path's `space_member` reads `space_members` (the staff roster, viewer to admin), while a paying tier member lives in `space_memberships`; a tier join writes a Space contact with `profile_id` NULL (the membrane law), so a tier member who does not also follow the Space can classify `network` on that Space's own sale. That is a Space-path question for its own row, and this change reads members exactly the way the Space path does so a fix there reaches both.
+
+**Rows.** `LIVE-221` (closed here, `ownerAction` ruling answered 2026-09-29). `OWN-046`, `LIVE-219` cited, untouched.
