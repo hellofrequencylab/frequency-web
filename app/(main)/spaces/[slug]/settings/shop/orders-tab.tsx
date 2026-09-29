@@ -2,11 +2,15 @@ import { Receipt, Wallet, Landmark, RotateCcw } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/ui/stat-card'
 import { listSpaceOrders, spaceEarningsSummary } from '@/lib/commerce/orders'
+import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
+import { setOrderFulfillmentAction } from './shop-actions'
 
 // The Orders tab of the Shop console (ADR-596). A Space's sales + earnings, scoped by owner_space_id
 // (listOrdersForSeller filters owner_profile_id, which is null for a Space, so a Space's orders are
-// invisible through the maker path). Read-only. While billing is gated OFF there are no settled orders,
-// so this shows a calm "no orders yet" state. No em or en dashes.
+// invisible through the maker path). Each order that needs sending carries the seller's fulfilment door
+// (LIVE-606): mark it shipped with a carrier and tracking, then delivered, then complete. A staff
+// preview (`readOnly`) sees the state and no door. While billing is gated OFF there are no settled
+// orders, so this shows a calm "no orders yet" state. No em or en dashes.
 
 function usd(cents: number): string {
   return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -26,7 +30,7 @@ const STATUS_LABEL: Record<string, string> = {
   failed: 'Failed',
 }
 
-export async function OrdersTab({ spaceId }: { spaceId: string }) {
+export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: string; slug: string; readOnly?: boolean }) {
   const [orders, earnings] = await Promise.all([listSpaceOrders(spaceId, { limit: 50 }), spaceEarningsSummary(spaceId)])
 
   if (orders.length === 0) {
@@ -52,17 +56,24 @@ export async function OrdersTab({ spaceId }: { spaceId: string }) {
 
       <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {orders.map((o) => (
-          <li key={o.id} className="flex items-center justify-between gap-3 p-4">
-            <div className="min-w-0">
-              <p className="truncate text-body-sm font-medium text-text">
-                {o.items[0]?.title ?? 'Order'}
-                {o.items.length > 1 ? ` +${o.items.length - 1}` : ''}
-              </p>
-              <p className="text-meta text-muted">
-                {when(o.paidAt ?? o.createdAt)} · {STATUS_LABEL[o.status] ?? o.status}
-              </p>
+          <li key={o.id} className="p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-body-sm font-medium text-text">
+                  {o.items[0]?.title ?? 'Order'}
+                  {o.items.length > 1 ? ` +${o.items.length - 1}` : ''}
+                </p>
+                <p className="text-meta text-muted">
+                  {when(o.paidAt ?? o.createdAt)} · {STATUS_LABEL[o.status] ?? o.status}
+                </p>
+              </div>
+              <p className="shrink-0 text-body-sm font-semibold text-text">{usd(o.amountCents)}</p>
             </div>
-            <p className="shrink-0 text-body-sm font-semibold text-text">{usd(o.amountCents)}</p>
+            <OrderFulfilmentControl
+              order={o}
+              action={setOrderFulfillmentAction.bind(null, slug, o.id)}
+              readOnly={readOnly}
+            />
           </li>
         ))}
       </ul>

@@ -5,6 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OrderStatus, OwnerKind, FulfillmentStatus } from './types'
+import { fulfilmentFromShipping, orderNeedsFulfilment, orderShips, type OrderFulfilment } from './fulfilment'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -16,6 +17,9 @@ export interface OrderItem {
   qty: number
   unitCents: number
   subtotalCents: number
+  /** The product's kind at read time (physical, digital, service, booking, ticket, journey), or null
+   *  when the product is gone. Decides whether the seller has anything to send (LIVE-606). */
+  productKind: string | null
 }
 
 export interface CommerceOrder {
@@ -29,6 +33,12 @@ export interface CommerceOrder {
   currency: string
   status: OrderStatus
   fulfillmentStatus: FulfillmentStatus
+  /** Carrier, tracking and the step timestamps the seller stamped into `shipping` (LIVE-606). */
+  fulfilment: OrderFulfilment
+  /** True when at least one line is something the seller sends (a physical or digital good). */
+  needsFulfilment: boolean
+  /** True when a line physically ships, so a carrier and tracking number apply. */
+  ships: boolean
   createdAt: string
   paidAt: string | null
   refundedAt: string | null
@@ -37,11 +47,22 @@ export interface CommerceOrder {
 
 const ORDER_COLS =
   'id, buyer_profile_id, owner_kind, owner_profile_id, owner_space_id, amount_cents, platform_fee_cents, ' +
-  'currency, status, fulfillment_status, created_at, paid_at, refunded_at, ' +
-  'commerce_order_items(id, title, qty, unit_cents, subtotal_cents)'
+  'currency, status, fulfillment_status, shipping, created_at, paid_at, refunded_at, ' +
+  // The product's kind rides along through the product_id join so a surface can tell a mug from a
+  // booking without a second read; a deleted product reads null and defaults to "needs sending".
+  'commerce_order_items(id, title, qty, unit_cents, subtotal_cents, commerce_products(product_kind))'
 
 function rowToOrder(r: Record<string, unknown>): CommerceOrder {
   const rawItems = Array.isArray(r.commerce_order_items) ? r.commerce_order_items : []
+  const items = (rawItems as Record<string, unknown>[]).map((it) => ({
+    id: it.id as string,
+    title: it.title as string,
+    qty: it.qty as number,
+    unitCents: it.unit_cents as number,
+    subtotalCents: it.subtotal_cents as number,
+    productKind: ((it.commerce_products as { product_kind?: string | null } | null)?.product_kind as string | undefined) ?? null,
+  }))
+  const kinds = items.map((it) => it.productKind)
   return {
     id: r.id as string,
     buyerProfileId: (r.buyer_profile_id as string) ?? null,
@@ -53,16 +74,13 @@ function rowToOrder(r: Record<string, unknown>): CommerceOrder {
     currency: (r.currency as string) ?? 'usd',
     status: r.status as OrderStatus,
     fulfillmentStatus: (r.fulfillment_status as FulfillmentStatus) ?? 'none',
+    fulfilment: fulfilmentFromShipping(r.shipping),
+    needsFulfilment: orderNeedsFulfilment(kinds),
+    ships: orderShips(kinds),
     createdAt: r.created_at as string,
     paidAt: (r.paid_at as string) ?? null,
     refundedAt: (r.refunded_at as string) ?? null,
-    items: (rawItems as Record<string, unknown>[]).map((it) => ({
-      id: it.id as string,
-      title: it.title as string,
-      qty: it.qty as number,
-      unitCents: it.unit_cents as number,
-      subtotalCents: it.subtotal_cents as number,
-    })),
+    items,
   }
 }
 
