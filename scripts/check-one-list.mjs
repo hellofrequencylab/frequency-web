@@ -92,7 +92,7 @@ const actual = tracked.filter((p) => {
   if (p.startsWith('node_modules/')) return false
   // Only the doc roots. design_handoff/ is DAWN's contract surface, not a task list, and every
   // file under it would otherwise match on the directory name alone.
-  const inScope = p.startsWith('docs/') || p.startsWith('resonance/docs/') || !p.includes('/')
+  const inScope = p.startsWith('docs/') || !p.includes('/')
   if (!inScope) return false
   const base = p.split('/').pop()
   return PLANNING_NAME.test(base)

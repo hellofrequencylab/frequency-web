@@ -364,6 +364,10 @@ A **separate Next.js app**: own `package.json`, `tsconfig`, `next.config`, `supa
 no gate in this repo watches it. **Out of scope for this conversion and correctly so.** It needs
 its own DAWN adoption decision; do not fold its debt into this app's scoreboard.
 
+> **Left this repo 2026-09-29 ([ADR-1580](DECISIONS.md)).** The app now lives in
+> `hellofrequencylab/development` as `apps/resonance`, where its palette was re-pointed onto that
+> repo's tokens. Nothing of Phase 8 remains here.
+
 ---
 
 ## 3. What governs all of it

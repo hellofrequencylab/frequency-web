@@ -1,6 +1,7 @@
 import { BookOpen } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getAdminPracticesContext } from '@/lib/admin/practices-context'
+import { unplacedPracticeIds } from '@/lib/practices/suggest'
 import { PracticesTable } from '@/app/(main)/admin/content/practices/practices-table'
 import { PracticesFacets } from '@/app/(main)/admin/content/practices/practices-facets'
 import {
@@ -20,6 +21,9 @@ import {
 export async function PracticeAdminLibrary() {
   const { library } = await getAdminPracticesContext()
   const { rows, filter, total, showingFrom, showingTo, pagination, facetRail, hasActiveFilter } = library
+  // The rows in view missing a Pillar or a Sub Focus get the placement lookup (LIVE-643): one
+  // keyed read, so the suggestion itself only runs when a curator taps it.
+  const unplacedIds = rows.length ? await unplacedPracticeIds(rows.map((r) => r.id)) : []
 
   return (
     // The library — the filters live in a full-width disclosure ABOVE the table (owner fix,
@@ -54,6 +58,7 @@ export async function PracticeAdminLibrary() {
             showingFrom={showingFrom}
             showingTo={showingTo}
             pagination={pagination}
+            unplacedIds={unplacedIds}
           />
         )}
       </div>

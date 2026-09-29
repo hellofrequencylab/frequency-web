@@ -14,7 +14,7 @@
     ]
   },
   "_notDeliberatelyOmitted": {
-    "auth_allow_anonymous_sign_ins": "FIXED by the owner (disabled), and ADR-1054 settles that it STAYS disabled — resonance/ was the only thing asking for it and no longer does. NOT accepted: if it comes back, the sweep must surface it. Pinned by supabase/anonymous-sign-ins-policy.test.ts.",
+    "auth_allow_anonymous_sign_ins": "FIXED by the owner (disabled), and ADR-1054 settles that it STAYS disabled — the Resonance app was the only thing asking for it, no longer does, and has left this repo (ADR-1580). NOT accepted: if it comes back, the sweep must surface it. Pinned by supabase/anonymous-sign-ins-policy.test.ts.",
     "auth_leaked_password_protection": "FIXED by the owner (enabled). NOT accepted — if it regresses, surface it."
   }
 }
