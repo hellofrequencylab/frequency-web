@@ -199,6 +199,9 @@ Mobile is a prime first beneficiary when you pilot a sync engine on one surface
    (owner ruling, [ADR-1637](DECISIONS.md)). The app build itself stays parked; the
    contract, auth, push, capture and store-readiness work it plugs into is active in
    `docs/BUILD-BACKLOG.json` (wave WM).
+   **Payments in the app go through Apple In-App Purchase** (owner ruling 2026-09-29,
+   [ADR-1637](DECISIONS.md)): Crew and the Space plans bought in the iOS app grant the same
+   entitlements as Stripe through the same resolver; the web keeps Stripe checkout.
 2. **Authorization-convergence pace**: how aggressively to migrate from
    admin-client/app-authz to RLS + RPC. Real cost; do it surface-by-surface
    (public/discover already started).
