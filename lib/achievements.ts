@@ -111,6 +111,9 @@ export type GamificationEvent =
   // A real connection landed for this member — a captured event guest RSVP'd / attended /
   // joined (ADR-154 / ADR-777). Drives the Connector achievement (10 / 25 / 100).
   | { type: 'connector_connection'; profileId: string }
+  // This member greeted a newcomer and the `welcomes` row landed (ADR-186 P3b,
+  // lib/connections/welcomes.ts). Drives The Welcomer (welcome_member criterion).
+  | { type: 'welcome_member'; profileId: string }
 
 interface NewAchievement {
   id: string
@@ -201,7 +204,8 @@ async function evaluateAchievements(admin: AdminClient, event: GamificationEvent
     .eq('profile_id', event.profileId)
 
   const earnedIds = new Set((userAchievements ?? []).map(ua => ua.achievement_id))
-  const stats = await getUserStats(admin, event.profileId)
+  // The welcome count costs two reads and only a welcome can move it, so read it only then.
+  const stats = await getUserStats(admin, event.profileId, { welcomes: event.type === 'welcome_member' })
   const newlyUnlocked: NewAchievement[] = []
 
   for (const achievement of allAchievements) {
@@ -246,7 +250,8 @@ function isRelevantEvent(criteria: AchievementCriteria, event: GamificationEvent
   switch (criteria.type) {
     case 'circle_join':    return event.type === 'circle_join'
     case 'referral':       return event.type === 'referral'
-    case 'welcome_member': return event.type === 'post_create'
+    // A landed welcome (ADR-186), never a post: posting says nothing about greeting anyone.
+    case 'welcome_member': return event.type === 'welcome_member'
     case 'event_attend':   return event.type === 'event_attend'
     case 'event_host':     return event.type === 'event_host'
     case 'post_create':    return event.type === 'post_create'
@@ -290,9 +295,60 @@ interface UserStats {
   playbooksCompleted: number
   /** Real connections captured (event_guests RSVP'd going/maybe) — the Connector count. */
   connectionCount: number
+  /** Newcomers this member was the FIRST to welcome (the `welcomes` table, ADR-186). */
+  firstWelcomeCount: number
 }
 
-async function getUserStats(admin: AdminClient, profileId: string): Promise<UserStats> {
+type WelcomeRow = { welcomer_id: string; newcomer_id: string; created_at: string }
+
+/**
+ * How many newcomers `profileId` was the first to welcome. The Welcomer's catalogue line is
+ * "Be the first to welcome 5 new members", so a welcome counts only when no other member's
+ * welcome of that newcomer landed earlier (a same-instant tie counts for both). `rows` must
+ * hold every welcome of each newcomer this member welcomed. Pure, exported for tests.
+ */
+export function countFirstWelcomes(profileId: string, rows: WelcomeRow[]): number {
+  const earliest = new Map<string, number>()
+  for (const r of rows) {
+    const t = new Date(r.created_at).getTime()
+    const prev = earliest.get(r.newcomer_id)
+    if (prev === undefined || t < prev) earliest.set(r.newcomer_id, t)
+  }
+  const firsts = new Set<string>()
+  for (const r of rows) {
+    if (r.welcomer_id !== profileId) continue
+    if (new Date(r.created_at).getTime() <= (earliest.get(r.newcomer_id) ?? Infinity)) firsts.add(r.newcomer_id)
+  }
+  return firsts.size
+}
+
+// Two reads: this member's welcomes, then every welcome of those newcomers (a newcomer is
+// welcomable for 14 days by members sharing a circle, so the second read stays small).
+// FAIL-SAFE to 0 so a failed read never breaks achievement evaluation.
+async function getFirstWelcomeCount(admin: AdminClient, profileId: string): Promise<number> {
+  try {
+    const { data: mine, error } = await admin
+      .from('welcomes')
+      .select('newcomer_id')
+      .eq('welcomer_id', profileId)
+    if (error || !mine?.length) return 0
+    const newcomers = [...new Set(mine.map((r) => r.newcomer_id))]
+    const { data: all, error: allErr } = await admin
+      .from('welcomes')
+      .select('welcomer_id, newcomer_id, created_at')
+      .in('newcomer_id', newcomers)
+    if (allErr || !all) return 0
+    return countFirstWelcomes(profileId, all)
+  } catch {
+    return 0
+  }
+}
+
+async function getUserStats(
+  admin: AdminClient,
+  profileId: string,
+  opts: { welcomes?: boolean } = {},
+): Promise<UserStats> {
   const [profile, memberships, rsvps, hostedEvents, posts, topPost, completions, streaks, inviteLinks] =
     await Promise.all([
       admin.from('profiles')
@@ -377,6 +433,8 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     connectionCount = 0
   }
 
+  const firstWelcomeCount = opts.welcomes ? await getFirstWelcomeCount(admin, profileId) : 0
+
   type InviteLinkRow = { used_count: number | null }
   const totalReferrals = (inviteLinks.data ?? []).reduce(
     (sum, link) => sum + ((link as InviteLinkRow).used_count ?? 0), 0
@@ -403,6 +461,7 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     amplitude: Number(p?.amplitude ?? 0),
     playbooksCompleted,
     connectionCount,
+    firstWelcomeCount,
   }
 }
 
@@ -415,7 +474,7 @@ function isCriteriaMet(
     case 'circle_join':
       return stats.circleCount >= criteria.count
     case 'welcome_member':
-      return false
+      return stats.firstWelcomeCount >= criteria.count
     case 'event_attend':
       return stats.eventAttendCount >= criteria.count
     case 'event_host':

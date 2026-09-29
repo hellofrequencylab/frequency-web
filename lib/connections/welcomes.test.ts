@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   welcomesInsertError: null as null | { message: string },
   notificationsInsert: vi.fn(async (_row: Record<string, unknown>) => ({ error: null as null | { message: string } })),
   awardGems: vi.fn(async () => ({ awarded: true, amount: 5 })),
+  gamification: vi.fn(async (_e: Record<string, unknown>) => []),
   calls: [] as string[],
 }))
 
@@ -20,6 +21,12 @@ vi.mock('@/lib/gems', () => ({
   awardGems: (...args: unknown[]) => {
     mocks.calls.push('awardGems')
     return (mocks.awardGems as unknown as (...a: unknown[]) => Promise<unknown>)(...args)
+  },
+}))
+vi.mock('@/lib/achievements', () => ({
+  processGamificationEvent: (e: Record<string, unknown>) => {
+    mocks.calls.push('gamification')
+    return mocks.gamification(e)
   },
 }))
 vi.mock('@/lib/connections/connection-settings', () => ({
@@ -80,6 +87,7 @@ beforeEach(() => {
   mocks.calls.length = 0
   mocks.notificationsInsert.mockClear()
   mocks.awardGems.mockClear()
+  mocks.gamification.mockClear()
 })
 
 describe('recordWelcome', () => {
@@ -90,6 +98,7 @@ describe('recordWelcome', () => {
     expect(r.error).toMatch(/permission denied/)
     expect(mocks.notificationsInsert).not.toHaveBeenCalled()
     expect(mocks.awardGems).not.toHaveBeenCalled()
+    expect(mocks.gamification).not.toHaveBeenCalled()
   })
 
   it('a duplicate welcome is a quiet no-op: no gem, no second notification', async () => {
@@ -98,6 +107,8 @@ describe('recordWelcome', () => {
     expect(r).toEqual({ awarded: false, gems: 0, error: null })
     expect(mocks.notificationsInsert).not.toHaveBeenCalled()
     expect(mocks.awardGems).not.toHaveBeenCalled()
+    // a repeat welcome is not a new one, so The Welcomer is not re-checked
+    expect(mocks.gamification).not.toHaveBeenCalled()
   })
 
   it('a landed welcome notifies the newcomer, naming the welcomer, and THEN pays the presser', async () => {
@@ -112,7 +123,19 @@ describe('recordWelcome', () => {
       reference_id: 'welcomer-1',
       body: 'welcomed you to Frequency',
     })
-    expect(mocks.calls).toEqual(['welcomes.insert', 'notifications.insert', 'awardGems'])
+    expect(mocks.calls).toEqual(['welcomes.insert', 'notifications.insert', 'awardGems', 'gamification'])
+  })
+
+  it('a landed welcome checks The Welcomer badge for the welcomer (LIVE-653)', async () => {
+    await recordWelcome('newcomer-1')
+    expect(mocks.gamification).toHaveBeenCalledTimes(1)
+    expect(mocks.gamification.mock.calls[0][0]).toEqual({ type: 'welcome_member', profileId: 'welcomer-1' })
+  })
+
+  it('a failed badge check does not undo the welcome or the reward', async () => {
+    mocks.gamification.mockRejectedValueOnce(new Error('boom'))
+    const r = await recordWelcome('newcomer-1')
+    expect(r).toEqual({ awarded: true, gems: 5, error: null })
   })
 
   it('a refused notification insert does not undo the welcome or the reward', async () => {
