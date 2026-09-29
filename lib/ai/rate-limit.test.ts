@@ -123,7 +123,6 @@ const UNLIMITED_DOORS: Record<string, string> = {
   'lib/dashboard/person-band.ts': 'server-rendered dashboard band, no per-request actor threaded',
   'lib/circles/social-fuel.ts': 'fired by a milestone hook, not by a member request',
   'lib/vera-dispatch.ts': 'cron dispatch, no per-request actor',
-  'lib/library/embeddings.ts': 'embedding backfill + cron reindex, no per-request actor',
 
   // Operator-only surfaces reached from /admin or an importer run. They loop by design (an import
   // walks many rows for one operator), so a per-actor window would break the legitimate batch. The
@@ -143,6 +142,7 @@ const UNLIMITED_DOORS: Record<string, string> = {
   'lib/importer/vision.ts': 'operator business importer, batch by design',
   'lib/listing-seeder/extract.ts': 'operator listing seeder, batch by design',
   'lib/loom/cover-actions.ts': 'operator Loom cover generation',
+  'lib/library/hybrid-search.ts': 'operator Loom Studio search; free gte-small embed, and over the cap it ranks words, never refuses',
   'lib/ai/messaging-generator.ts': 'operator campaign builder, one call per build',
   'lib/studio/recommendations.ts': 'operator Studio recommendations',
   'lib/whatsapp/extract.ts': 'operator WhatsApp import dry-run, batch by design',
