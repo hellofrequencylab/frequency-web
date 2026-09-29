@@ -20,6 +20,7 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { compare, parseLedger, repoRows } from './maintenance/ledger-parity.mjs'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
+import { loadBacklog as loadMergedBacklog } from './lib/ledger.mjs'
 
 const FILE = 'docs/BUILD-BACKLOG.json'
 const MIG_DIR = join('supabase', 'migrations')
@@ -89,7 +90,7 @@ const PATH_IN_TEXT =
 
 export const AGENT_PROMPT = `You are a Frequency cloud agent on hellofrequencylab/frequency-web.
 
-ONE LIST. Status lives only in docs/BUILD-BACKLOG.json. Never open a new plan/TODO/roadmap/audit markdown. pnpm check:one-list freezes that set.
+ONE LIST. Status lives only in docs/BUILD-BACKLOG.json plus its fragments in docs/ledger/ (ADR-1635). Never open a new plan/TODO/roadmap/audit markdown. pnpm check:one-list freezes that set.
 
 YOUR PACKET. Run \`pnpm packets --lane <LANE>\` (or \`pnpm packets --json\`) and pick ONE open row from that lane. Re-test the row's premise before writing code (ADR-1082). If the premise expired, close or re-point the row; do not build the old story.
 
@@ -110,17 +111,17 @@ LOOP.
 3. Commit, push, ManagePullRequest (ready, not draft). Immediately arm squash auto-merge with \`gh pr merge --auto --squash <n>\`. That is the one \`gh\` write this loop uses. Subscribe to the PR/CI. Required checks: checks, analyze, lint, test, Vercel, db-tests. pr-compare is advisory.
 4. Do not merge red; \`--auto\` will not. After GitHub merges, read the production build log: postbuild is the artifact truth (six gates). CI never builds.
 5. If the PR added supabase/migrations/*.sql, apply with execute_sql then ledger insert; run pnpm check:migrations --require-ledger when credentials exist.
-6. Validate the row's probe on main. Close the row in BUILD-BACKLOG.json in the SAME PR that makes the probe pass, and prune it from meta.slate.waves.
+6. Validate the row's probe on main. Close the row in the SAME PR that makes the probe pass, as a fragment: docs/ledger/rows/<ID>.json holding {"id","patch":{"status":"done","closed":...,"verify":...},"append":{"detail":...}}, and the ADR as docs/ledger/adr/ADR-<n>.md. Never edit docs/BUILD-BACKLOG.json or docs/DECISIONS.md in a feature PR; a closed row leaves its wave by itself (ADR-1635).
 
 PRODUCT-FIRST (ADR-1403 / ADR-1445). Calendar section first: LIVE-414 then LIVE-415 then LIVE-416–419. LIVE-410 and LIVE-376 are closed. LIVE-234 is P0 money proof, owner-gated (account / OWN-078) — do not demote it and do not pick it. LIVE-408 needs an owner ruling. Journey sales (LIVE-392+) is claimed by ${FOREIGN_LANE_CLAIMS.journey}. Do not start the App Platform. The editor (W4), Sites (W4), Etsy (W11) and mobile (WM) are PARKED to 2027-01-05 by the 2026-09-29 cull (ADR-1573); the editor group is decomposed in an owner session, not by an agent. Do not pick them before the date. LIVE-242 is closed.
 
 TWO-AGENT SPLIT (2026-09-19, meta.slate.metaScanCleanup). If you are the product agent: take derived lane \`events\`. Do not take lane \`scan\`. If you are the scan follow-through agent: \`pnpm packets --lane scan\`. SCAN-636 through SCAN-644 are done. Leave LIVE-414 through LIVE-419. Do not take LIVE-234. LIVE-412 is PARKED (shell split, P3). Do not pick it.
 `
 
+/** The merged view: the base file plus docs/ledger fragments (HYG-145, ADR-1635). */
 export function loadBacklog(root = '.') {
-  const path = join(root, FILE)
-  if (!existsSync(path)) throw new Error(`${FILE} is missing`)
-  return JSON.parse(readFileSync(path, 'utf8'))
+  if (!existsSync(join(root, FILE))) throw new Error(`${FILE} is missing`)
+  return loadMergedBacklog(root)
 }
 
 function waveIndex(doc) {

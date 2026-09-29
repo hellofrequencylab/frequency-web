@@ -35,6 +35,7 @@ import {
 } from '../actions'
 import { PracticeFeatureToggle, PracticePublicToggle } from '../content-controls'
 import { PracticeDuplicatesButton } from './practice-duplicates'
+import { PracticePlacementButton } from './practice-placement'
 import { Checkbox } from '@/components/ui/checkbox'
 
 export interface LibraryRow {
@@ -215,6 +216,7 @@ export function PracticesTable({
   showingFrom,
   showingTo,
   pagination,
+  unplacedIds = [],
 }: {
   rows: LibraryRow[]
   /** The current filter, mirrored from the URL — drives the "act on the whole filtered set" path. */
@@ -225,9 +227,12 @@ export function PracticesTable({
   showingTo: number
   /** Server pagination: a keyset "Load more" href (score sort) OR prev/next page hrefs. */
   pagination: LibraryPagination
+  /** Rows in view missing a Pillar or a Sub Focus: each gets the placement lookup (LIVE-643). */
+  unplacedIds?: string[]
 }) {
   const [pending, start] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const unplaced = new Set(unplacedIds)
   const [feedback, setFeedback] = useState<{ tone: StatusTone; text: string } | null>(null)
   const router = useRouter()
 
@@ -538,6 +543,7 @@ export function PracticesTable({
                     >
                       <ExternalLink className="h-3 w-3" aria-hidden />
                     </Link>
+                    {unplaced.has(p.id) && <PracticePlacementButton id={p.id} title={p.title} />}
                     {p.isHouse && (
                       <span className="hidden shrink-0 lg:inline-flex">
                         <StatusChip tone="info" size="sm">House</StatusChip>
