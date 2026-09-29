@@ -74,6 +74,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { availableParallelism } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { waveToken, SLATED_STATUSES } from './maintenance/fold-ledger-docs.mjs'
 
 const FILE = 'docs/BUILD-BACKLOG.json'
 
@@ -517,6 +518,42 @@ function daysSince(iso) {
   return Math.floor((Date.now() - then) / 86_400_000)
 }
 
+/** The slate's waves are keyed by their token, and hold only sequenced work (HYG-134).
+ *
+ *  Two ways a wave list lies without HYG-047's probe noticing, both produced by a real fold on
+ *  2026-09-29 (a pre-cull branch folded against main after #3024):
+ *    - two waves share a token ("W4 · ..." twice), because the fold matched waves by their full
+ *      prose name and main had reworded three of them;
+ *    - a wave lists a PARKED id. HYG-047 counts only `done` as finished, so eleven ids main had
+ *      parked and taken off the waves came back on them and every gate stayed green.
+ *  A parked row carries its reason and date on the row and sits on no wave; only open or blocked
+ *  rows are sequenced. waveToken and SLATED_STATUSES come from the fold itself, so the tool that
+ *  writes the slate and the gate that reads it cannot disagree about what a wave is. */
+function validateSlateWaves(doc) {
+  const waves = doc.meta?.slate?.waves
+  if (!Array.isArray(waves)) return []
+  const problems = []
+  const by = new Map((doc.entries ?? []).map((e) => [e.id, e]))
+  const tokens = new Map()
+  for (const w of waves) {
+    const t = waveToken(w.name)
+    tokens.set(t, (tokens.get(t) ?? 0) + 1)
+    for (const id of w.ids ?? []) {
+      const r = by.get(id)
+      if (r && !SLATED_STATUSES.includes(r.status)) {
+        problems.push(
+          `meta.slate wave "${t}" lists ${id}, whose row is ${r.status}. Only ${SLATED_STATUSES.join('/')} rows sit on a wave; ` +
+            'take it off (a parked row keeps its reason on the row). HYG-134',
+        )
+      }
+    }
+  }
+  for (const [t, n] of tokens) {
+    if (n > 1) problems.push(`meta.slate has ${n} waves with the token "${t}" — one wave, one token. HYG-134`)
+  }
+  return problems
+}
+
 /** Owner 2026-09-19: calendar C0–C5 is product next. LIVE-414 must list before
  *  other product-next ids while that row is open. Fixtures without
  *  meta.slate.metaScanCleanup are unchanged (backlog-contract ballast). */
@@ -592,7 +629,7 @@ function validateSlateCalendarFirst(doc) {
 const doc = load()
 const entries = doc.entries
 
-const structural = [...validate(entries), ...validateSlateCalendarFirst(doc)]
+const structural = [...validate(entries), ...validateSlateCalendarFirst(doc), ...validateSlateWaves(doc)]
 if (structural.length) {
   console.error(red(`✗ backlog contract: ${structural.length} structural problem(s) in ${FILE}\n`))
   for (const p of structural) console.error(`   ${p}`)

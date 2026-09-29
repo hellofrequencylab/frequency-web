@@ -153,11 +153,37 @@ export function mergeBacklog(base, ours, theirs) {
   return { text, count: merged.length, added: merged.length - T.size, bothChanged, slate: slateFold?.dropped }
 }
 
+/** The key a wave is known by: the token before its first " · " ("W4 · THIRD TO LAST ..." -> "W4"),
+ *  or the whole name when it has none ("owner-timed").
+ *
+ *  🔴 A WAVE'S NAME IS PROSE, AND KEYING BY IT DUPLICATED WAVES (HYG-134). The fold used to match
+ *  waves by their full `name`. The 2026-09-29 backlog cull (#3024) appended "── PARKED 2026-09-29 ..."
+ *  to the WM, W4 and W11 names, so a branch cut before it folded against main and appended its old
+ *  copies of those three waves as if they were new ones. The token is what the docs cite and what
+ *  a human means by "the same wave"; the rest of the name is commentary main is free to rewrite.
+ *  check-backlog.mjs imports this so the gate and the tool cannot disagree about what a wave is. */
+export function waveToken(name) {
+  const s = String(name ?? '')
+  const i = s.indexOf(' · ')
+  return (i === -1 ? s : s.slice(0, i)).trim()
+}
+
+/** A row that is sequenced work: the statuses HYG-047 requires to sit on a wave. Everything else
+ *  (done, parked) sits on NO wave — a parked row carries its date and reason on the row itself,
+ *  which is the convention the W4/W9/W11 names state ("its ids are on the rows, status parked"). */
+export const SLATED_STATUSES = ['open', 'blocked']
+
 /** Fold `meta.slate` beside the entries, then reconcile it against them.
  *
  *  ⚠️ THE RECONCILE READS THE MERGED ENTRIES, NEVER EITHER SIDE'S. A row's status is settled by the
  *  fold above; asking `ours` or `theirs` would re-open a question that has already been answered,
  *  and would answer it differently depending on which side happened to close the row.
+ *
+ *  Waves match by waveToken(), never by the full name, and main's wave object (its name included)
+ *  wins; only the ids are unioned. A token only this branch has is a new phase and still appends.
+ *
+ *  It drops every id whose merged row is not sequenced work — done AND parked (HYG-134: dropping only
+ *  `done` let a pre-cull branch re-add the eleven ids main had just parked and taken off the waves).
  *
  *  It deliberately does NOT place an unplaced open row. HYG-047 fails on one, and that failure is
  *  correct: which wave a row belongs to is a judgement about build ORDER, and inventing one to go
@@ -165,25 +191,29 @@ export function mergeBacklog(base, ours, theirs) {
 function foldSlate(ourSlate, theirSlate, mergedById) {
   if (!theirSlate?.waves) return null
 
-  const ourWaves = new Map((ourSlate?.waves ?? []).map((w) => [w.name, w]))
+  const ourWaves = new Map((ourSlate?.waves ?? []).map((w) => [waveToken(w.name), w]))
   const named = new Set()
   const waves = []
   for (const w of theirSlate.waves) {
-    named.add(w.name)
+    const token = waveToken(w.name)
+    named.add(token)
     const ids = [...(w.ids ?? [])]
-    for (const id of ourWaves.get(w.name)?.ids ?? []) if (!ids.includes(id)) ids.push(id)
+    for (const id of ourWaves.get(token)?.ids ?? []) if (!ids.includes(id)) ids.push(id)
     waves.push({ ...w, ids })
   }
   // A wave only this branch has — a new phase — keeps its own placement.
-  for (const w of ourSlate?.waves ?? []) if (!named.has(w.name)) waves.push({ ...w, ids: [...(w.ids ?? [])] })
+  for (const w of ourSlate?.waves ?? []) {
+    if (!named.has(waveToken(w.name))) waves.push({ ...w, ids: [...(w.ids ?? [])] })
+  }
 
-  const dropped = { done: [], phantom: [], duplicate: [] }
+  const dropped = { done: [], parked: [], phantom: [], duplicate: [] }
   const placed = new Set()
   for (const w of waves) {
     w.ids = w.ids.filter((id) => {
       const r = mergedById.get(id)
       if (!r) return dropped.phantom.push(id), false // names no row at all
       if (r.status === 'done') return dropped.done.push(id), false // finished; not active work
+      if (!SLATED_STATUSES.includes(r.status)) return dropped.parked.push(id), false // parked: on the row, not a wave
       if (placed.has(id)) return dropped.duplicate.push(id), false // the union placed it twice
       return placed.add(id), true
     })
@@ -341,6 +371,7 @@ function main() {
       // reported success, and HYG-047 reported the consequence several commands later.
       const s = r.slate
       if (s?.done.length) console.log(`  meta.slate: dropped ${s.done.length} finished row(s) — ${s.done.join(', ')}`)
+      if (s?.parked.length) console.log(`  meta.slate: dropped ${s.parked.length} parked row(s) — ${s.parked.join(', ')}`)
       if (s?.phantom.length) console.log(`  meta.slate: dropped ${s.phantom.length} id(s) naming no row — ${s.phantom.join(', ')}`)
       if (s?.duplicate.length) console.log(`  meta.slate: dropped ${s.duplicate.length} duplicate placement(s) — ${s.duplicate.join(', ')}`)
     }
