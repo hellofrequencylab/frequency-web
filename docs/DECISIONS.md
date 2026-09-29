@@ -49096,3 +49096,19 @@ Re-tested 2026-09-28: every code fact still holds on `main`. The refusal is at `
 **Consequences.** `pnpm packets --lane money` can hand out `LIVE-621` today; `LIVE-622` is blocked by it, `LIVE-623` and `LIVE-624` by `LIVE-622`. Two migrations are named in the lane's range (`20270345009600`, `20270345009610`) and applied only after merge. Child ids start at 621 because the DEF-MONEY children took 606–608 and the other decompositions of the afternoon took 547–551, 566–571, 576+ and 586+; the gap is deliberate.
 
 **Rows.** `PROG-D8` (decomposed, probe rewritten). `LIVE-621`, `LIVE-622`, `LIVE-623`, `LIVE-624` filed. `DEF-MONEY`, `LIVE-608` untouched here.
+
+## ADR-1557: The three moments on a shared Plan ride the categories the preference grid already wires, one send each, never to the person who acted (LIVE-545)
+
+**Status:** Accepted · 2026-09-28 · `LIVE-545` (child 5 of 6 of `PROG-CAL7`) · builds on [ADR-627](DECISIONS.md) (the registry), [ADR-1552](DECISIONS.md) (the handshake), [ADR-1553](DECISIONS.md) (the thread) and [ADR-1567](DECISIONS.md) (shared to-dos) · numbered 1557 because 1545 to 1551 are claimed by pull requests opened before this lane's and 1552, 1553, 1566 and 1567 by #2964, #2968, #2970 and #2971 (the last two renumbered around #2951 and #2956), the children this one stands on (ADR-1509)
+
+**Context.** After four children a share could be offered and answered, a Plan commented on, and a to-do handed across, and the other team found out about each by looking. The registry routed four events and none was a Plan. PROG-CAL7 asks for "notifications through the existing notification preferences".
+
+**Decision.**
+
+1. **Three registry rows, no new category, no new column.** `plan.share` rides `lifecycle` (a Space's working relationships changing hands; email and push, both wired), `plan.comment` and `plan.assign` ride `comments` (the closest thing to a reply on your own work; push, the wired channel). Every send goes through `routeNotification` and the send gate, so a switched-off channel is not reached, a per-Space mute holds (the gate subject is the recipient's Space), and one-click unsubscribe carries the category. No comment email emitter exists and none is added, so `wired.ts` is unchanged.
+2. **One seam, best effort, after the write.** `notifyPlanMoment` resolves who and routes; a door calls it after its own write and its activity row, and carries on whatever happens. A recipient whose profile cannot be read costs that send, never the change. Each failure logs one line.
+3. **Who.** An offer goes to the guest Space's approvers (the same set that answers a collaboration request); an answer, yes or no, to the host's approvers. A comment goes to the other side's editors (owner plus active editor, moderator and admin members) and, under a to-do, to the person it was handed to. A hand-over goes to the assignee. The actor is never a recipient, and a person on both teams hears once.
+4. **The admin client resolves recipients only.** An approver's address lives on auth.users and a teammate's display name may sit across a regional wall, so the seam reads those through the service role, writes nothing, and reads no id the browser sent: the doors hand in ids their own session proved. The admin-client baseline is raised by one with that reason.
+5. **One send per moment, never a digest.** `tag` collapses a burst on one thread, one share or one Plan on the device. In-app joins when that channel graduates onto the outbox.
+
+**Consequences.** `LIVE-545` closes on its probe. The email copy sits in `buildPlanShareEmail` beside the other category emails; the push copy in `lib/calendar/plan-notify-core.ts`, pure and tested, in the house voice. `PROG-CAL7` has one arm left, the private feed (LIVE-546).

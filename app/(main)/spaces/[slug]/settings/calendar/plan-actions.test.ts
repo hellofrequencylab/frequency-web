@@ -250,3 +250,43 @@ describe('a to-do on a shared Plan reaches the guest, and is handed over only in
     expect(drawer).toContain('options={assignees}')
   })
 })
+
+// THE THREE MOMENTS REACH THE OTHER TEAM (PROG-CAL7 Together, LIVE-545). Source-level: the
+// failure this guards is a door that changes a shared Plan and tells nobody, or a moment routed
+// around the registry so a member's switches are never read.
+describe('a share, a comment and a hand-over are routed through the registry from the doors', () => {
+  const dir = 'app/(main)/spaces/[slug]/settings/calendar/'
+  const plans = readFileSync(dir + 'plan-actions.ts', 'utf8')
+  const tasks = readFileSync(dir + 'task-actions.ts', 'utf8')
+  const body = (src: string, name: string) => {
+    const at = src.indexOf(`export async function ${name}(`)
+    expect(at, `${name} exists`).toBeGreaterThan(-1)
+    return src.slice(at, src.indexOf('\n}', at))
+  }
+
+  it('each door names its moment at the call site, after its own write landed', () => {
+    const offer = body(plans, 'sharePlanWithSpace')
+    expect(offer).toContain("notifyPlanMoment({ event: 'plan.share', moment: 'requested'")
+    expect(offer.indexOf('insertPlanShare(')).toBeLessThan(offer.indexOf("event: 'plan.share'"))
+    const answer = body(plans, 'respondToPlanShare')
+    expect(answer).toContain("event: 'plan.share', moment: answer")
+    expect(answer.indexOf('answerPlanShareRow(')).toBeLessThan(answer.indexOf("event: 'plan.share'"))
+    const comment = body(plans, 'postPlanComment')
+    expect(comment).toContain("event: 'plan.comment'")
+    expect(comment.indexOf('insertPlanComment(')).toBeLessThan(comment.indexOf("event: 'plan.comment'"))
+    const assign = body(tasks, 'assignPlanTodo')
+    expect(assign).toContain("event: 'plan.assign'")
+    expect(assign.indexOf('assignTaskInPlan(')).toBeLessThan(assign.indexOf("event: 'plan.assign'"))
+  })
+
+  it('the seam routes through the registry, drops the actor, and never throws into a door', () => {
+    const seam = readFileSync('lib/calendar/plan-notify.ts', 'utf8')
+    expect(seam).toContain("import { routeNotification } from '@/lib/notifications/router'")
+    expect(seam).not.toMatch(/enqueue\(|sendPush\(|enqueueEmail\(/)
+    expect(seam).toContain('recipientsWithoutActor(')
+    expect(seam).toContain("log.warn('calendar.plan_notify.failed'")
+    expect(seam).toContain('listSpaceCollaborationApprovers(to.id)')
+    const registry = readFileSync('lib/notifications/registry.ts', 'utf8')
+    for (const ev of ['plan.share', 'plan.comment', 'plan.assign']) expect(registry).toContain(`'${ev}': {`)
+  })
+})

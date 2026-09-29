@@ -37,6 +37,25 @@ describe('resolveNotificationType — pure registry lookup', () => {
     })
   })
 
+  it('maps the three shared-Plan moments onto the categories the grid already wires (PROG-CAL7, LIVE-545)', () => {
+    const share = resolveNotificationType('plan.share')
+    expect(share.category).toBe('lifecycle')
+    expect(share.channels).toEqual(['email', 'push'])
+    expect(share.transactional ?? false).toBe(false)
+    const email = { to: 'a@b.c', subject: 'S', html: '<p>x</p>' } as EmailPayload
+    expect(share.render({ title: 'T', body: 'B', url: '/spaces/lab/settings/calendar', tag: 'plan-share:p:requested', email })).toEqual({
+      push: { title: 'T', body: 'B', url: '/spaces/lab/settings/calendar', tag: 'plan-share:p:requested' },
+      email,
+    })
+    expect(share.render({ title: 'T', body: 'B', url: '/x', tag: 't' })).toEqual({ push: { title: 'T', body: 'B', url: '/x', tag: 't' } })
+    for (const event of ['plan.comment', 'plan.assign'] as const) {
+      const t = resolveNotificationType(event)
+      expect(t.category).toBe('comments')
+      expect(t.channels).toEqual(['push'])
+      expect(t.render({ title: 'T', body: 'B', url: '/x', tag: 't' })).toEqual({ push: { title: 'T', body: 'B', url: '/x', tag: 't' } })
+    }
+  })
+
   it('throws on an unknown event (a catalogue bug, not a runtime denial)', () => {
     expect(() => resolveNotificationType('nope.nope' as NotificationEvent)).toThrow(/no registry entry/)
   })
