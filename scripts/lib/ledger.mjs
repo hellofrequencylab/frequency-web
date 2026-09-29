@@ -449,7 +449,8 @@ export function foldEdit(existing, edit) {
   return out
 }
 
-/** The edit that closes a row: status, date, probe, and a paragraph onto `detail`. */
+/** The edit that closes a row: status, date, probe, and a paragraph onto `detail`.
+ *  @param {{ id: string, date: string, verify?: object | null, note?: string | null, status?: string }} opts */
 export function closeEdit({ id, date, verify, note, status = 'done' }) {
   const patch = { status }
   if (status === 'done') patch.closed = date
@@ -461,6 +462,7 @@ export function closeEdit({ id, date, verify, note, status = 'done' }) {
 
 /** The next free id for each prefix and the next free ADR number, over the merged view. Ids
  *  claimed on other open PRs are not visible here; check:id-collisions is the arm that sees them. */
+/** @param {string} [root] @param {string[]} [prefixes] @returns {{ adr: number, rows: Record<string, string> }} */
 export function nextFree(root = '.', prefixes = []) {
   const doc = readBacklogView({ root }).doc
   const text = readDecisionsView(root).text
@@ -469,6 +471,7 @@ export function nextFree(root = '.', prefixes = []) {
     const m = ADR_HEADING.exec(line)
     if (m) adr = Math.max(adr, parseInt(m[1], 10))
   }
+  /** @type {Record<string, string>} */
   const rows = {}
   const want = prefixes.length ? prefixes : [...new Set(doc.entries.map((e) => String(e.id).split('-')[0]))]
   for (const p of want) {
