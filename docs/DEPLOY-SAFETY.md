@@ -315,7 +315,7 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
 3. Migrations: is every file in `supabase/migrations/` actually applied, and does the applied ledger
    contain nothing the repo lacks? A revert can leave the DB **ahead of** the code.
 4. After merge: **watch the production deployment reach READY.** A merge is a deploy.
-5. If it fails: revert first, diagnose after. Restoring the last known-good tree is not giving up, it is buying the time to find the cause with production up. That part of 2026-08-11 was done right.
+5. If it fails: revert first, diagnose after. Restoring the last known-good tree is not giving up, it is buying the time to find the cause with production up. That part of 2026-08-11 was done right. The order of operations under pressure is [`RUNBOOKS.md`](RUNBOOKS.md) section 6.
 
 ---
 
