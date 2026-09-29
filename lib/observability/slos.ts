@@ -186,8 +186,8 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'every 30 min',
     freshByMinutes: 60,
-    jobs: ['referral-release', 'embed-events', 'journey-drips'],
-    why: 'referral payouts + event search freshness + Journey drips',
+    jobs: ['referral-release', 'embed-events', 'journey-drips', 'reconcile-transfers'],
+    why: 'referral payouts + event search freshness + Journey drips + split-order seller transfers',
   },
   {
     group: 'hourly',
@@ -374,7 +374,8 @@ export function isCronFresh(
 // the twenty are the twenty checks that exist in the account (OWN-005, OWN-065). The
 // opt-outs are OWN-005's bottom eight, every one an embedding or an AI derivation whose
 // silent failure degrades a reading gradually and is repaired by a backfill, plus the
-// one daily instrument that joined the fleet after the ranking (LIVE-311).
+// one daily instrument that joined the fleet after the ranking (LIVE-311) and the
+// transfer reconciler (LIVE-622) whose next run retries the same rows.
 //
 // Moving a job across the line is a code change here AND an account change there (a
 // check created or deleted, CRON_HEARTBEAT_SKIP edited). Neither alone is the move.
@@ -423,6 +424,7 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'refresh-traits', reason: 'AI derivation; traits go stale by a day and the next run recomputes them' },
   { job: 'vera-owner-brief', reason: 'mails one person, the owner, who notices its absence tomorrow; self-monitoring' },
   { job: 'onboarding-throughput', reason: 'a read-only daily reading (LIVE-311); a miss delays a log line and the next run reads the same state' },
+  { job: 'reconcile-transfers', reason: 'retries planned and failed split-order transfers (LIVE-622); a miss delays a seller payout by one cadence and the next run retries the same rows' },
 ]
 
 /** Is this cron expected to page when it goes quiet? False for an opt-out and for a job

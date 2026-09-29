@@ -35,6 +35,7 @@ import { receiptEmailFor } from '@/lib/billing/receipt-address'
 import { commercePaymentMethodParams } from './payment-methods'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { sendOrderReceipts } from './order-receipt'
+import { ensureTransfersForOrder } from './transfers'
 import type { CheckoutInput, CommerceVariant, OrderOwnerKind, ServiceConfig } from './types'
 import { SHIP_TO_COUNTRIES, cartNeedsShipping, shippingDetailsFromSession } from './shipping'
 
@@ -631,6 +632,14 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   }[]
 
   for (const row of rows) {
+    // LIVE-622: a separate order's sellers are paid by transfer against the charge, after the
+    // paid flip and before stock moves. A destination order is a no-op. Fail-soft: the money
+    // has already landed on the platform, the reconciler retries a planned or failed row, and
+    // a throw here would 500 a settled payment into a redelivery that flips no rows.
+    await ensureTransfersForOrder(row.id).catch((err) => {
+      console.error('[commerce] split transfers failed', { orderId: row.id, err })
+    })
+
     // Enforce inventory for this paid order: decrement_commerce_stock_atomic
     // (migration 20260819000000) locks each tracked-stock product, subtracts this
     // order's quantities, and is idempotent per order (a retried/concurrent settle

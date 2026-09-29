@@ -45,6 +45,7 @@ const receipts = vi.hoisted(() => ({ order: vi.fn(async (_a: Record<string, unkn
 vi.mock('./order-receipt', () => ({ sendOrderReceipts: receipts.order, ORDER_SOLD_NOTIFICATION_TYPE: 'x' }))
 
 vi.mock('@/lib/finance/record', () => ({ recordFinancialTransaction: vi.fn(async () => ({ recorded: true })) }))
+vi.mock('./transfers', () => ({ ensureTransfersForOrder: vi.fn(async () => ({ created: 0, failed: 0, skipped: 0 })) }))
 vi.mock('@/lib/spaces/booking', () => ({
   confirmBookingByOrder: vi.fn(async () => {}),
   cancelBookingByOrder: vi.fn(async () => {}),

@@ -60,6 +60,9 @@ vi.mock('@/lib/commerce/checkout', () => ({
   recordCommerceRefundFromCharge: async () => { H.calls.push('orderRefund') },
   abandonCommerceOrderFromSession: async () => { H.calls.push('abandon') },
 }))
+vi.mock('@/lib/commerce/transfers', () => ({
+  recordTransferReversed: async () => { H.calls.push('transferReversed') },
+}))
 vi.mock('@/lib/analytics/track', () => ({
   track: async (
     event: string,
@@ -330,6 +333,19 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     })
     await post()
     expect(H.trackCalls).toEqual([])
+  })
+
+  it('routes transfer.reversed to the transfer ledger, so a dashboard reversal is not forgotten', async () => {
+    H.event = plainEvent('transfer.reversed')
+    await post()
+    expect(H.calls).toEqual(['transferReversed'])
+  })
+
+  it('acks transfer.created without paying anyone twice', async () => {
+    H.event = plainEvent('transfer.created')
+    const res = await post()
+    expect(res.status).toBe(200)
+    expect(H.calls).toHaveLength(0)
   })
 
   it('acks an unhandled event type with 200', async () => {

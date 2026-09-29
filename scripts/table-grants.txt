@@ -56,6 +56,7 @@ circles                              authenticated
 client_notes                         authenticated
 commerce_disputes                    authenticated
 commerce_order_items                 authenticated
+commerce_order_transfers             internal
 commerce_orders                      authenticated
 commerce_products                    authenticated
 commerce_reviews                     public

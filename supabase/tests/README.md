@@ -30,7 +30,7 @@ forever on a status nothing will report.
 ## What's here / what to add
 
 - `rls_enabled.test.sql` — smoke test: RLS is ON for every security-critical table. ✅ seeded.
-- `money_trust_vera_policy_matrix.test.sql` -- the DENY MATRIX for all 47 money / trust / Vera
+- `money_trust_vera_policy_matrix.test.sql` -- the DENY MATRIX for all 48 money / trust / Vera
   tables, read out of `pg_policies` after a fresh apply: the commands listed as denied must have
   no permissive policy, and the commands left allowed must still have one. Its rows are kept in
   step with `scripts/rls-deny-surface.txt` by `pnpm check:rls-deny`, which parses this file.

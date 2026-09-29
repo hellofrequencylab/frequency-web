@@ -67,6 +67,7 @@ import {
   recordCommerceRefundFromCharge,
   abandonCommerceOrderFromSession,
 } from '@/lib/commerce/checkout'
+import { recordTransferReversed } from '@/lib/commerce/transfers'
 import { track } from '@/lib/analytics/track'
 import { purchaseConversionFromSession } from '@/lib/analytics/purchase'
 
@@ -390,6 +391,19 @@ export async function POST(req: Request) {
         // A membership subscription invoice was paid (first payment or a renewal).
         // Record it as Foundation dues on the partitioned ledger (idempotent per invoice).
         await recordMembershipDuesFromInvoice(event.data.object as Stripe.Invoice)
+        break
+      }
+
+      case 'transfer.created':
+        // Confirmation only. The row flipped to created when we called transfers.create; a
+        // redelivered event must not pay anyone twice.
+        break
+
+      case 'transfer.reversed': {
+        // A reversal made from the Stripe dashboard (or LIVE-623) is otherwise acked and
+        // forgotten, so the ledger would say a seller holds money they no longer hold.
+        const transfer = event.data.object as Stripe.Transfer
+        await recordTransferReversed(transfer)
         break
       }
 

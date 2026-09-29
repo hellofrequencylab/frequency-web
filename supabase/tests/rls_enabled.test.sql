@@ -20,6 +20,7 @@ select is(
       and c.relkind = 'r'
       and c.relname = any (array[
         'financial_transactions',
+        'commerce_order_transfers',
         'page_settings',
         'page_chrome_overrides',
         'trust_signals',

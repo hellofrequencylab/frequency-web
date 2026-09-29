@@ -164,6 +164,12 @@
 # lib/profiles/account-email, because auth.users is not readable any other way. receipt-email.ts is
 # the single compose-and-send seam; the four per-loop modules hold only the facts their own loop
 # knows, which is what keeps this entry five narrow files instead of one wide one.
+# lib/commerce/transfers.ts (added 2026-09-29, LIVE-622, ADR-1636): the transfer ledger for a
+# split commerce order. commerce_order_transfers is RLS-on with ZERO policies (deny-all, see
+# scripts/rls-deny-all.txt) and grants revoked from anon/authenticated, matching
+# financial_transactions. The caller is Stripe: settle runs from the webhook / on-page
+# recorder, the reconciler is a cron, and a reversal arrives as transfer.reversed. There is
+# no session to prefer. Every write is bound to an order id the paid row already holds.
 # Added 2026-09-15 (ADR-1372, member benefits): lib/spaces/benefits-store.ts. The sibling of
 # lib/spaces/memberships.ts, which is on this list for the same reason and reads the same subsystem.
 # Added 2026-09-20 (ADR-1472, LIVE-423): lib/spaces/my-memberships.ts. space_memberships
@@ -658,6 +664,7 @@ lib/commerce/reviews.ts
 lib/commerce/seller-audience.ts
 lib/commerce/seller-verification.ts
 lib/commerce/ticket-projection.ts
+lib/commerce/transfers.ts
 lib/commerce/variants.ts
 lib/comms/bulk-dm.ts
 lib/comms/contact-preferences.ts

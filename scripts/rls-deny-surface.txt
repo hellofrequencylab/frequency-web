@@ -33,7 +33,7 @@
 #              difference between "denied" and "already done".
 #   select  -> zero rows, same reason.
 #
-# 47 classed (32 money, 11 trust, 4 vera) + 15 carrier = 62, seeded 2026-09-23 from
+# 48 classed (33 money, 11 trust, 4 vera) + 15 carrier = 63, seeded 2026-09-23 from
 # lib/database.types.ts and the migration replay. The classed count is floored in the gate.
 
 # ── money ───────────────────────────────────────────────────────────────────────────────────────
@@ -41,6 +41,7 @@
 # belongs to, and NO write policy at all, because every write arrives through a Stripe webhook or
 # a server action on the service-role client. So the usual matrix is insert,update,delete.
 commerce_order_items                 money      insert,update,delete
+commerce_order_transfers             money      select,insert,update,delete
 commerce_orders                      money      insert,update,delete
 commerce_products                    money      insert,update,delete
 commerce_variants                    money      insert,update,delete

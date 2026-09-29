@@ -147,6 +147,19 @@ ADR-201)
 > `lib/marketplace.ts` (admin handle + app-code authz); `/market`. Contact hands off to
 > the seller's profile/DMs, no in-app payment.
 
+**Shop & paid commerce**
+`commerce_products`, `commerce_orders`, `commerce_order_items`, `commerce_order_transfers`,
+`commerce_variants`, `commerce_reviews`, `commerce_disputes`
+
+> **`commerce_order_transfers`** (LIVE-622, [ADR-1636](DECISIONS.md)): one intended Stripe
+> transfer per seller of a *separate-charges* order. A destination charge is atomic (the
+> money splits as it lands); a split cart takes the payment onto the platform and then one
+> transfer per seller against the charge. Status `planned | created | failed | reversed`.
+> Service-role only (RLS on, no member policy), like `financial_transactions`. Written at
+> settle (`lib/commerce/transfers.ts`), retried by `/api/cron/reconcile-transfers` every 30
+> minutes, and marked reversed on the `transfer.reversed` webhook. A destination order never
+> has a row. File `20270345009800`; apply after merge under [ADR-1111](DECISIONS.md).
+
 > **`density_by_city()` RPC** (ADR-151): the Density / demand read-model. A
 > deterministic, `service_role`-only aggregate (security definer) joining circles +
 > capacity, members-in-circles, residents (+ 30-day arrivals), and active listings per

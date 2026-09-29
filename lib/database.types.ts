@@ -1475,6 +1475,85 @@ export type Database = {
           },
         ]
       }
+      commerce_order_transfers: {
+        Row: {
+          amount_cents: number
+          attempts: number
+          created_at: string
+          currency: string
+          id: string
+          last_error: string | null
+          order_id: string
+          owner_kind: string
+          owner_profile_id: string | null
+          owner_space_id: string | null
+          platform_fee_cents: number
+          reversed_cents: number
+          status: string
+          stripe_account_id: string
+          stripe_transfer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          attempts?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          last_error?: string | null
+          order_id: string
+          owner_kind: string
+          owner_profile_id?: string | null
+          owner_space_id?: string | null
+          platform_fee_cents?: number
+          reversed_cents?: number
+          status?: string
+          stripe_account_id: string
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          attempts?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          last_error?: string | null
+          order_id?: string
+          owner_kind?: string
+          owner_profile_id?: string | null
+          owner_space_id?: string | null
+          platform_fee_cents?: number
+          reversed_cents?: number
+          status?: string
+          stripe_account_id?: string
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commerce_order_transfers_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_order_transfers_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_order_transfers_owner_space_id_fkey"
+            columns: ["owner_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commerce_orders: {
         Row: {
           amount_cents: number
