@@ -95,7 +95,7 @@ export function SpaceMarketingWorkspace({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search your emails..."
             aria-label="Search your emails"
-            className="w-full rounded-control border border-border bg-canvas py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle outline-none focus:border-primary"
+            className="w-full rounded-control border border-border bg-canvas py-2 pl-9 pr-3 text-body-sm text-text placeholder:text-subtle outline-none focus:border-border-strong"
           />
         </label>
         {!readOnly && (
