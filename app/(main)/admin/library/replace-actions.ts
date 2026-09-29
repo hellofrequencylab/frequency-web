@@ -22,12 +22,16 @@ import { ingestImageBytes } from '@/lib/library/ingest'
 
 /** Replace the file behind a Loom asset. The asset id (and every reference to it) is preserved; only the
  *  stored file + its metadata (url / path / bucket / mime / bytes) change. The previous file is versioned
- *  first. Returns the new public url on success. */
+ *  first. Returns the new public url on success.
+ *
+ *  This is also the save path of the Loom crop/rotate editor (HYG-109, ADR-1592): the browser redraws
+ *  the image and posts the result here with an optional `note` ("Cropped (Square (1:1)), rotated 90°")
+ *  that labels the version, so a crop is versioned, ingested and rolled back exactly like a replace. */
 export async function replaceLibraryAssetFile(
   assetId: string,
   formData: FormData,
 ): Promise<{ ok: true; url: string } | { error: string }> {
-  await requireAdmin('janitor', { staff: 'marketing' })
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
   const id = (assetId ?? '').trim()
   if (!id) return { error: 'Missing asset id.' }
 
@@ -54,7 +58,9 @@ export async function replaceLibraryAssetFile(
   if (!asset) return { error: 'That asset no longer exists.' }
 
   // Snapshot the CURRENT file into a version BEFORE the swap, so the replace is reversible.
-  await recordVersion(id, `Replaced file (${target.kind})`)
+  const rawNote = formData.get('note')
+  const note = typeof rawNote === 'string' ? rawNote.trim().slice(0, 120) : ''
+  await recordVersion(id, note || `Replaced file (${target.kind})`, ctx.profileId)
 
   // Upload the new file to a fresh path (the old file is preserved for the version snapshot).
   const ext = (file.name.split('.').pop() || target.kind).toLowerCase().replace(/[^a-z0-9]/g, '')
