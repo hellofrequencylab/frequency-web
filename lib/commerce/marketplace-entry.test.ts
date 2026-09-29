@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
   entryPointFromStamp,
+  MARKETPLACE_ENTRY_MAX_AGE,
+  MARKETPLACE_ENTRY_REFRESH_MS,
   mergeStamp,
   signStamp,
   stampMarketplaceView,
@@ -115,6 +117,46 @@ describe('stampMarketplaceView', () => {
     const second = stampMarketplaceView('/market/prod-2', first ?? undefined, 20)
     const stamp = verifyStamp(second, 20)
     expect(stamp?.p).toEqual(['prod-2', 'prod-1'])
+  })
+
+  describe('LIVE-711 · writes only when the stamp would change', () => {
+    const HOUR = MARKETPLACE_ENTRY_REFRESH_MS
+
+    it('a repeat view of the same product writes nothing', () => {
+      const first = stampMarketplaceView('/market/prod-1', undefined, 1_000)
+      expect(first).not.toBeNull()
+      expect(stampMarketplaceView('/market/prod-1', first!, 2_000)).toBeNull()
+      expect(stampMarketplaceView('/market/prod-1/', first!, 1_000 + HOUR - 1)).toBeNull()
+    })
+
+    it('a repeat Journey view writes nothing, a new product still does', () => {
+      const first = stampMarketplaceView('/journeys/house-of-fates', undefined, 1_000)!
+      expect(stampMarketplaceView('/discover/journeys/house-of-fates', first, 2_000)).toBeNull()
+      const next = stampMarketplaceView('/market/prod-1', first, 3_000)
+      expect(verifyStamp(next, 3_000)).toEqual({ p: ['prod-1'], j: ['house-of-fates'], iat: 3_000 })
+    })
+
+    it('re-viewing an older product still moves it to the front, so the cap evicts the same one', () => {
+      const a = stampMarketplaceView('/market/a', undefined, 1_000)!
+      const ab = stampMarketplaceView('/market/b', a, 2_000)!
+      const again = stampMarketplaceView('/market/a', ab, 3_000)
+      expect(verifyStamp(again, 3_000)?.p).toEqual(['a', 'b'])
+    })
+
+    it('slides the seven-day window at most an hour behind the last view', () => {
+      const first = stampMarketplaceView('/market/prod-1', undefined, 1_000)!
+      const refreshed = stampMarketplaceView('/market/prod-1', first, 1_000 + HOUR)
+      expect(verifyStamp(refreshed, 1_000 + HOUR)?.iat).toBe(1_000 + HOUR)
+      const week = MARKETPLACE_ENTRY_MAX_AGE * 1000
+      expect(verifyStamp(refreshed, 1_000 + HOUR + week)).not.toBeNull()
+    })
+
+    it('an expired or forged cookie is written fresh, as if missing', () => {
+      const old = stampMarketplaceView('/market/prod-1', undefined, 1_000)!
+      const later = 1_000 + MARKETPLACE_ENTRY_MAX_AGE * 1000 + 1
+      expect(stampMarketplaceView('/market/prod-1', old, later)).not.toBeNull()
+      expect(stampMarketplaceView('/market/prod-1', `${old}x`, 2_000)).not.toBeNull()
+    })
   })
 })
 
