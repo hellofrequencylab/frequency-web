@@ -1,8 +1,8 @@
-// The Loom — rendition + crop-frame presets. Pure config (no IO). STAGED, not yet consumed:
-// the ingest pipeline, transform resolver, and editor that will read these land with Loom
-// D2/D3 (PROG-D2/PROG-D3); today the only importer is the types test, which pins the preset
-// shape so those phases inherit it unchanged. Defining these in one place keeps "one master,
-// many renditions" consistent everywhere. See docs/LIBRARY.md.
+// The Loom — rendition + crop-frame presets. Pure config (no IO). RENDITION_PRESETS feeds the
+// on-the-fly resolver (lib/library/rendition-url.ts, ADR-1496); CROP_FRAMES feeds the crop/rotate
+// editor through lib/library/crop-geometry.ts (HYG-109, ADR-1592). The types test pins the preset
+// shape. Defining these in one place keeps "one master, many renditions" consistent everywhere.
+// See docs/LIBRARY.md.
 
 import type { LibraryRenditionKind } from './types'
 
