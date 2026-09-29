@@ -34,6 +34,7 @@ import type { LoomMeter } from '@/lib/library/quota'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import { Dialog } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/icon-button'
 import { ProgressTrack } from '@/components/ui/progress-track'
 
 export function SpaceLoomStudio({
@@ -291,14 +292,14 @@ export function SpaceLoomStudio({
             <li key={a.id} className="group relative aspect-square overflow-hidden rounded-card border border-border bg-canvas">
               {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL, not a configured next/image domain */}
               <img src={a.url} alt={a.alt ?? a.title} loading="lazy" className="h-full w-full object-cover" />
-              <button
-                type="button"
+              <IconButton
+                label={`Edit or remove ${a.title}`}
+                variant="bordered"
                 onClick={() => openEditor(a.id)}
-                aria-label={`Edit or remove ${a.title}`}
-                className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-pill bg-canvas/90 text-text shadow-sm transition-opacity hover:bg-canvas focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                className="absolute right-1.5 top-1.5 bg-canvas/90 shadow-sm transition-opacity focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <Pencil className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             </li>
           ))}
         </ul>
@@ -314,9 +315,9 @@ export function SpaceLoomStudio({
           >
             <div className="flex items-center justify-between gap-3">
               <h2 id="space-loom-edit-title" className="text-body font-bold text-text">Edit image</h2>
-              <button type="button" onClick={() => setEditing(null)} aria-label="Close" className="text-subtle hover:text-text">
+              <IconButton label="Close" onClick={() => setEditing(null)}>
                 <X className="h-4 w-4" />
-              </button>
+              </IconButton>
             </div>
             {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL, not a configured next/image domain */}
             <img src={editingAsset.url} alt="" className="max-h-48 w-full rounded-card bg-canvas object-contain" />

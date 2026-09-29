@@ -22,11 +22,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, getSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
-import { normalizeAssetMeta, updateSpaceLibraryAssetMeta } from '@/lib/library/asset-meta'
+import { normalizeAssetMeta } from '@/lib/library/asset-meta'
 import { findLibraryAssetUsage } from '@/lib/library/usage'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import {
   getLibraryAsset,
+  updateSpaceLibraryAssetMeta,
   listLoomScopeImages,
   listLoomScopeTags,
   insertSpaceLibraryImage,

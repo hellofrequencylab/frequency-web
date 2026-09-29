@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // One asset's words (LIVE-568, ADR-1586): the one validation both Loom doors share, and the Space
-// door's write, which must be bound to space_id so an id from another Space updates nothing.
+// door's write (lib/library/store.ts), which must be bound to space_id so an id from another Space updates nothing.
 
 const calls: string[] = []
 let result: { data: unknown; error: { message: string } | null } = { data: { id: 'a1' }, error: null }
@@ -28,7 +28,8 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { normalizeAssetMeta, updateSpaceLibraryAssetMeta } from './asset-meta'
+import { normalizeAssetMeta } from './asset-meta'
+import { updateSpaceLibraryAssetMeta } from './store'
 
 beforeEach(() => {
   calls.length = 0

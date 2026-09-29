@@ -38,6 +38,10 @@ vi.mock('@/lib/library/store', () => ({
   listLoomScopeTags: async () => [],
   insertSpaceLibraryImage: async () => null,
   findLibraryAssetBySha256: async () => null,
+  updateSpaceLibraryAssetMeta: async (...args: unknown[]) => {
+    state.updated.push(args)
+    return state.updateOut
+  },
 }))
 vi.mock('@/lib/library/usage', () => ({
   findLibraryAssetUsage: async () => {
@@ -45,16 +49,6 @@ vi.mock('@/lib/library/usage', () => ({
     return state.usage
   },
 }))
-vi.mock('@/lib/library/asset-meta', async () => {
-  const real = await vi.importActual<typeof import('@/lib/library/asset-meta')>('@/lib/library/asset-meta')
-  return {
-    normalizeAssetMeta: real.normalizeAssetMeta,
-    updateSpaceLibraryAssetMeta: async (...args: unknown[]) => {
-      state.updated.push(args)
-      return state.updateOut
-    },
-  }
-})
 vi.mock('@/lib/elements/store', () => ({ resolveElement: async () => null }))
 
 import { deleteSpaceLoomImage, updateSpaceLoomImageMeta, spaceLoomImageUsage } from './picker-actions'

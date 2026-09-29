@@ -1,7 +1,4 @@
-import 'server-only'
-
 import type { Database } from '@/lib/database.types'
-import { createAdminClient } from '@/lib/supabase/admin'
 
 // ONE ASSET'S WORDS: title, alt and tags (LIVE-568, ADR-1586).
 //
@@ -11,9 +8,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 //   · the Space Loom Studio (lib/loom/picker-actions.ts updateSpaceLoomImageMeta), gated by the
 //     Space's `loom` function (canManageSpaceLoom), which may touch only that Space's rows.
 // `normalizeAssetMeta` is the validation both call, so a title that is refused in one is refused in
-// the other. `updateSpaceLibraryAssetMeta` is the Space door's write, BOUND to space_id in the
-// query itself: an id from another Space matches no row and updates nothing, whatever the caller
-// authorized (the deleteSpaceLibraryAsset shape in lib/library/store.ts).
+// the other. PURE: the Space door's write is `updateSpaceLibraryAssetMeta` in lib/library/store.ts,
+// bound to space_id in the query itself (the deleteSpaceLibraryAsset shape), so an id from another
+// Space matches no row and updates nothing, whatever the caller authorized.
 
 type AssetUpdate = Database['public']['Tables']['library_assets']['Update']
 
@@ -48,28 +45,4 @@ export function normalizeAssetMeta(fields: AssetMetaFields): { ok: true; patch: 
       .slice(0, 40)
   }
   return { ok: true, patch }
-}
-
-/** Write a validated patch onto ONE asset of ONE Space. The update is bound to `space_id` as well as
- *  `id`, so an asset that is not this Space's matches nothing: 'missing', never a cross-Space write.
- *  The caller has authorized the Space. 'failed' is a database error. */
-export async function updateSpaceLibraryAssetMeta(
-  spaceId: string,
-  assetId: string,
-  patch: AssetMetaPatch,
-): Promise<'ok' | 'missing' | 'failed'> {
-  if (!spaceId || !assetId) return 'missing'
-  try {
-    const { data, error } = await createAdminClient()
-      .from('library_assets')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', assetId)
-      .eq('space_id', spaceId)
-      .select('id')
-      .maybeSingle()
-    if (error) return 'failed'
-    return data ? 'ok' : 'missing'
-  } catch {
-    return 'failed'
-  }
 }
