@@ -18,12 +18,10 @@
 //     curator gate lives at the calling page, app/(main)/admin/content/practices/health), then
 //     feeds the rows into the pure functions above.
 //
-// The practices/* tables + the practices_ranked view are ahead of the generated Database types
-// for some computed columns, so this reads through the untyped admin handle (ADR-246), the same
-// convention as lib/practices.ts and lib/practices/clean.ts.
+// It reads through the typed admin handle, the same convention as lib/practices.ts and
+// lib/practices/clean.ts (LIVE-647).
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { attributeLogs, type AttributedLogRow, type PillarSplit } from '@/lib/practices/attribution'
 
 const DAY_MS = 86_400_000
@@ -513,7 +511,7 @@ interface LibraryHealth {
   weeks: number
 }
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 

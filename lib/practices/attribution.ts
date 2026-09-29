@@ -1,6 +1,5 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Per-Pillar Zap attribution — the Pillar split's payoff (Practice Library Phase 4, ADR-1131;
 // the split columns shipped Phase 1, ADR-438's two locked variables).
@@ -21,8 +20,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 //
 // Two layers, kept apart so the math is testable without a database (the quality.ts /
 // health.ts pattern): the PURE half (normalize / split / rollup, unit-tested in
-// attribution.test.ts) and the thin `getMemberPillarZaps` read at the bottom (untyped admin
-// handle, ADR-246 — the snapshot columns are newer than the generated types).
+// attribution.test.ts) and the thin `getMemberPillarZaps` read at the bottom (the typed admin
+// handle, LIVE-647).
 
 // ============================================================================
 // Pure: the split
@@ -119,10 +118,10 @@ export function attributeLogs(
 }
 
 // ============================================================================
-// The read (server, untyped admin handle — ADR-246)
+// The read (server, typed admin handle)
 // ============================================================================
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 
