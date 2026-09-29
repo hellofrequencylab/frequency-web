@@ -48854,7 +48854,7 @@ Premise re-tested before building ([ADR-1082](DECISIONS.md)): the row's own prob
 
 ## ADR-1566: A Plan keeps its own record of who did what, written by the door that did it, readable by both sides and rewritten by nobody (LIVE-543)
 
-**Status:** Accepted · 2026-09-28 · `LIVE-543` (child 3 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1553](DECISIONS.md) (the thread) · numbered 1566 because 1555 went to #2951 while this one waited in the stack, and 1556 to 1565 are claimed by pull requests opened since; 1552 (#2964) and 1553 (#2968) are the two children this one stands on (ADR-1509)
+**Status:** Accepted · 2026-09-28 · `LIVE-543` (child 3 of 6 of `PROG-CAL7`) · builds on [ADR-1552](DECISIONS.md) (the handshake) and [ADR-1553](DECISIONS.md) (the thread) · numbered 1566 because 1555 went to #2951 while this one waited in the stack, 1556 is #2956, 1557 and 1558 are #2972 and #2973 further up this stack, and 1559 to 1565 are claimed by pull requests opened since; 1552 (#2964) and 1553 (#2968) are the two children this one stands on (ADR-1509)
 
 **Context.** Two Spaces working one Plan had no way to learn what the other did to it: who moved a date, who finished a to-do, who changed the stage. The Vera change log records what Vera applied, keyed by batch, and nothing a person did by hand. PROG-CAL7 names "an activity log (who moved a date, who finished a task)" and its notifications fan out from that log, so the record has to exist before child 5 can send anything.
 
