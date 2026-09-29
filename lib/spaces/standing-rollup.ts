@@ -1,13 +1,24 @@
 // SPACE STANDING, the nightly rollup (LIVE-263 - docs/CORE-MODEL.md Phase 10). The v1 half of the
-// earned-exposure score: once a night, compute all six signals for every active Space and write
+// earned-exposure score: once a night, compute all seven signals for every active Space and write
 // them, plus the resolved score, to `space_standing` (migration 20270345002900).
 //
 // WHY A ROLLUP AT ALL. The directory can afford three grouped counts per page render (that is v0,
 // LIVE-262, and it still runs live so the freshest numbers win). It cannot afford to scan every
-// Space's whole event history and circle list on every browse. Those are the two signals this job
-// exists to supply: `gatherings_held` needs the PAST event window, `rooms` needs a whole extra
-// table. Everything else is recomputed here anyway so the stored row is internally consistent and
-// the operator receipt page can read one row rather than five queries.
+// Space's whole event history and circle list on every browse. Those are the three signals this
+// job exists to supply: `gatherings_held` needs the PAST event window, `rooms` needs a whole extra
+// table, and `attendance` (LIVE-456) needs the two seat tables joined back onto that past window.
+// Everything else is recomputed here anyway so the stored row is internally consistent and the
+// operator receipt page can read one row rather than five queries.
+//
+// ATTENDANCE IS THE HOST MARK, AND ONLY THE HOST MARK. `attended_at` on event_rsvps and on
+// event_tickets (PROG-GD4, ADR-1332, migration 20270345004300) is a host's observation from the
+// roster: independent of the self check-in ledger, paying nobody. This file reads that column and
+// never the engagement ledger, so "attended" here can never mean "was paid for attending", and no
+// decision about the game can move the number. Both seat tables count because a ticket holder on a
+// tickets-mode event has no RSVP row (LIVE-317); a ticket counts only while it is succeeded and
+// unrefunded, the rule the roster and lib/events/event-stats.ts already apply. The window is the
+// gatherings-held window, so a mark on a gathering outside it (or on a cancelled or unpublished
+// one) is not a mark on anything this score counts.
 //
 // WHERE IT RUNS: app/api/cron/refresh-traits, beside the trait / resonance-edge / embedding /
 // density steps, as the same kind of best-effort nightly rebuild.
@@ -73,6 +84,10 @@ type LooseQuery = {
   eq: (col: string, val: string | boolean | number) => LooseQuery
   neq: (col: string, val: string) => LooseQuery
   in: (col: string, vals: readonly string[]) => LooseQuery
+  /** `.is(col, null)`: the PostgREST spelling of `col is null`. */
+  is: (col: string, val: null) => LooseQuery
+  /** `.not(col, 'is', null)`: the PostgREST spelling of `col is not null`. */
+  not: (col: string, op: 'is', val: null) => LooseQuery
   or: (filter: string) => LooseQuery
   gt: (col: string, val: string) => LooseQuery
   gte: (col: string, val: string) => LooseQuery
@@ -104,6 +119,56 @@ function tally(rows: readonly Record<string, unknown>[], key: string): Map<strin
     const id = row[key]
     if (typeof id !== 'string') continue
     out.set(id, (out.get(id) ?? 0) + 1)
+  }
+  return out
+}
+
+/** A read result the rollup can leave unmeasured: `{ data, error }` with either side missing. */
+type SeatRead = { data: Record<string, unknown>[] | null; error: unknown }
+
+/**
+ * ATTENDANCE (LIVE-456): people a host marked present, per Space, over the gatherings the held
+ * read returned. Two reads over the two seat tables, both keyed on the held gathering ids so a
+ * mark on a gathering outside the window never counts, then each mark is credited to the Space
+ * that gathering belongs to.
+ *
+ * Returns `null` when the signal cannot be MEASURED: the held read itself failed (there is no
+ * window to count inside), or either seat read failed (half a count is not a count, and a false
+ * low would rank a Space below Spaces that were read in full). A window with no held gatherings
+ * is measured, as 0 for everyone, without touching the seat tables. Never reads the engagement
+ * ledger (the header explains why).
+ */
+async function attendanceFor(
+  heldRows: readonly Record<string, unknown>[] | null,
+): Promise<Map<string, number> | null> {
+  if (!heldRows) return null
+  const spaceOf = new Map<string, string>()
+  for (const row of heldRows) {
+    if (typeof row.id === 'string' && typeof row.space_id === 'string') spaceOf.set(row.id, row.space_id)
+  }
+  const out = new Map<string, number>()
+  if (spaceOf.size === 0) return out
+  const heldIds = [...spaceOf.keys()]
+
+  const [rsvps, tickets] = (await Promise.all([
+    // Every seat kind on the RSVP table counts once marked: a member, a guest RSVP, a free-tier
+    // guest claim. The mark is the only filter, so a seat the host later removed but had marked
+    // still reads as a person who was in the room, which is what the host attested.
+    table('event_rsvps').select('event_id').not('attended_at', 'is', null).in('event_id', heldIds),
+    // A ticket is a person only while the payment stands: succeeded and not refunded.
+    table('event_tickets')
+      .select('event_id')
+      .not('attended_at', 'is', null)
+      .eq('status', 'succeeded')
+      .is('refunded_at', null)
+      .in('event_id', heldIds),
+  ])) as [SeatRead, SeatRead]
+
+  if (rsvps.error || !rsvps.data || tickets.error || !tickets.data) return null
+  for (const row of [...rsvps.data, ...tickets.data]) {
+    const spaceId = typeof row.event_id === 'string' ? spaceOf.get(row.event_id) : undefined
+    if (!spaceId) continue
+    out.set(spaceId, (out.get(spaceId) ?? 0) + 1)
   }
   return out
 }
@@ -141,9 +206,10 @@ export async function refreshSpaceStanding(): Promise<StandingRollupResult> {
       // Gatherings HELD: published, not cancelled, already started, inside the trailing window.
       // OCCURRENCES, not series, and that is deliberate: a weekly circle that met nine times
       // gathered nine times. `upcoming` folds instead, because there the question is "how many
-      // distinct things are on the calendar", not "how many times did you show up".
+      // distinct things are on the calendar", not "how many times did you show up". The id rides
+      // along so the attendance read below can key the seat tables on exactly this window.
       table('events')
-        .select('space_id')
+        .select('id, space_id')
         .eq('is_cancelled', false)
         .eq('status', 'published')
         .gte('starts_at', heldFromIso)
@@ -189,6 +255,12 @@ export async function refreshSpaceStanding(): Promise<StandingRollupResult> {
     const audience = audienceRes.error || !audienceRes.data ? null : tally(audienceRes.data, 'space_id')
     const commons = commonsRes.error || !commonsRes.data ? null : tally(commonsRes.data, 'space_id')
 
+    // ── 2b. The seventh signal, keyed on the held window (LIVE-456) ─────────────────────────────
+    // Sequential on purpose: it needs the held ids, and it is two reads over tables the five above
+    // never touch. Unmeasured (null) whenever the held read was, or whenever either seat read
+    // fails, exactly as each signal above is.
+    const attendance = await attendanceFor(heldRes.error ? null : heldRes.data)
+
     // ── 3. Score, in the one place standing is defined ──────────────────────────────────────────
     const rows = spaces.map((s) => {
       const profile = readProfileData(s.preferences)
@@ -203,6 +275,7 @@ export async function refreshSpaceStanding(): Promise<StandingRollupResult> {
       })
       const result = standingScore({
         gatherings: held ? held.get(s.id) ?? 0 : null,
+        attendance: attendance ? attendance.get(s.id) ?? 0 : null,
         upcoming: upcoming ? upcoming.get(s.id) ?? 0 : null,
         rooms: rooms ? rooms.get(s.id) ?? 0 : null,
         audience: audience ? audience.get(s.id) ?? 0 : null,
@@ -212,6 +285,7 @@ export async function refreshSpaceStanding(): Promise<StandingRollupResult> {
       return {
         space_id: s.id,
         gatherings_held: held?.get(s.id) ?? 0,
+        attendance: attendance?.get(s.id) ?? 0,
         upcoming_gatherings: upcoming?.get(s.id) ?? 0,
         rooms: rooms?.get(s.id) ?? 0,
         audience: audience?.get(s.id) ?? 0,
@@ -247,8 +321,10 @@ export async function refreshSpaceStanding(): Promise<StandingRollupResult> {
 
 /** One Space's standing as the receipt page reads it. */
 export interface SpaceStandingRow {
-  /** The six raw counts, exactly as the rollup wrote them. */
+  /** The seven raw counts, exactly as the rollup wrote them. */
   gatheringsHeld: number
+  /** People a host marked present at those gatherings (LIVE-456). */
+  attendance: number
   upcomingGatherings: number
   rooms: number
   audience: number
@@ -272,7 +348,7 @@ export async function readSpaceStanding(spaceId: string): Promise<SpaceStandingR
   if (!spaceId) return null
   try {
     const res = (await table('space_standing')
-      .select('space_id, gatherings_held, upcoming_gatherings, rooms, audience, commons, care, computed_at')
+      .select('space_id, gatherings_held, attendance, upcoming_gatherings, rooms, audience, commons, care, computed_at')
       .eq('space_id', spaceId)
       .limit(1)) as { data: Record<string, unknown>[] | null; error: unknown }
     if (res.error || !res.data || res.data.length === 0) return null
@@ -280,6 +356,7 @@ export async function readSpaceStanding(spaceId: string): Promise<SpaceStandingR
     const n = (k: string) => Number(r[k]) || 0
     const counts = {
       gatheringsHeld: n('gatherings_held'),
+      attendance: n('attendance'),
       upcomingGatherings: n('upcoming_gatherings'),
       rooms: n('rooms'),
       audience: n('audience'),
@@ -291,6 +368,7 @@ export async function readSpaceStanding(spaceId: string): Promise<SpaceStandingR
       computedAt: typeof r.computed_at === 'string' ? r.computed_at : null,
       detail: standingScore({
         gatherings: counts.gatheringsHeld,
+        attendance: counts.attendance,
         upcoming: counts.upcomingGatherings,
         rooms: counts.rooms,
         audience: counts.audience,
