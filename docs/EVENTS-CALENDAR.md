@@ -548,7 +548,7 @@ the feed Space, reads the host entries keyed by those plan ids (same columns, `r
 and the to-dos of those Plans, and `withSharedPlanRows` (`lib/calendar/entry-feed.ts`) folds them after the
 Space's own rows with the host's name in front of each summary. A pending, declined or revoked share adds
 nothing; the host's other dates are never read; the VEVENT shape, the token and the host feed are untouched.
-With this child `PROG-CAL7` (Together) is closed: six children, ADR-1552 to ADR-1558.
+With this child `PROG-CAL7` (Together) is closed: six children: ADR-1552, ADR-1553, ADR-1566, ADR-1567, ADR-1557 and ADR-1558.
 
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
