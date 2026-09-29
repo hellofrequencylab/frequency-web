@@ -85,10 +85,14 @@ page again.
   `RECRAFT_API_KEY` is set; the Studio carries the page's gate above + is budget-gated (`recraft` cap, $0.04 raster / $0.08
   vector) and called server-side only. Clients: `create-studio.tsx`, `lib/loom/recraft.ts`; actions:
   `vera-actions.ts` + `recraft-actions.ts`.
-- **Edit (drawer)**: a file-backed asset can be edited in place with **Vectorize**, **Remove BG**, or
-  **Variation** — each **non-destructive** (snapshots the current state to `library_versions` first). A
-  **Versions** list restores any prior state with one click (rollback snapshots current first, so it's
-  reversible). Backbone: `lib/library/versions.ts`.
+- **Edit (drawer)**: a file-backed asset can be edited in place with **Vectorize**, **Remove BG**,
+  **Upscale**, or **Variation** — each **non-destructive** (snapshots the current state to
+  `library_versions` first). A **Versions** list restores any prior state with one click (rollback
+  snapshots current first, so it's reversible). Backbone: `lib/library/versions.ts`. **Upscale**
+  (LIVE-589) runs Recraft's crisp upscale (`upscaleImage`, $0.004 list) on a raster only: a vector is
+  refused by the action and the chip is disabled with a line that says why. Every edit result is
+  ingested (checksum + header dimensions), so an upscaled master records its new width and the rendition
+  resolver serves it at the right size. Creative upscale ($0.25 list) is in the client, not the Studio.
 - **Brand styles (matching sets)**: train a reusable **house style** so a whole generated set looks
   like one family ([ADR-489](DECISIONS.md)). Select 1–5 on-brand images in the grid → **"Train style"**
   in the selection bar → name it + pick the lane. The style is saved (`library_styles`, the Recraft
@@ -302,6 +306,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
+   Background removal and upscale (LIVE-589) are shipped; the rest is decomposed into LIVE-586 to LIVE-588 ([ADR-1563](DECISIONS.md)).
 
 ## Non-goals (v1)
 

@@ -48,6 +48,7 @@ import {
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
+import { isVectorFile } from '@/lib/loom/urls'
 import { AssetAvPanel } from './asset-av-panel'
 import { AssetUsagePanel } from './asset-usage-panel'
 import { createBrandStyle } from './recraft-actions'
@@ -958,7 +959,13 @@ function DetailDrawer({
 
           {/* Managed image studio (Recraft): non-destructive edits + version history. Hidden unless
               a key is configured; edit ops need a file-backed image. */}
-          <RecraftEditRow assetId={asset.id} hasFile={!!asset.url} enabled={recraftEnabled} chipCls={chipCls} />
+          <RecraftEditRow
+            assetId={asset.id}
+            hasFile={!!asset.url}
+            isVector={isVectorFile(asset.mime, asset.url)}
+            enabled={recraftEnabled}
+            chipCls={chipCls}
+          />
           {recraftEnabled && <AssetVersions assetId={asset.id} />}
 
           {/* Media manager (Airwaves P2): replace-file for any file-backed asset + a usage map for A/V. */}

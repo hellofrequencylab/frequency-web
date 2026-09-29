@@ -132,6 +132,25 @@ export async function removeBackground(bytes: Uint8Array, filename = 'image.png'
   return res.image.url
 }
 
+/** How Recraft makes a raster larger. `crisp` raises the resolution without changing what is in the
+ *  picture (list price $0.004); `creative` also redraws small detail and faces (list price $0.25, about
+ *  sixty times more), so the Studio runs crisp and creative stays a deliberate choice. */
+export type UpscaleMode = 'crisp' | 'creative'
+
+const UPSCALE_PATH: Record<UpscaleMode, string> = {
+  crisp: '/images/crispUpscale',
+  creative: '/images/creativeUpscale',
+}
+
+/** Upscale a raster image (PNG, JPEG or WebP; never an SVG). Returns the result URL. */
+export async function upscaleImage(bytes: Uint8Array, filename = 'image.png', mode: UpscaleMode = 'crisp'): Promise<string> {
+  const form = new FormData()
+  form.append('file', fileBlob(bytes), filename)
+  const res = await postForm<ImageResponse>(UPSCALE_PATH[mode], form)
+  if (!res.image?.url) throw new Error(`Recraft ${mode} upscale: no url`)
+  return res.image.url
+}
+
 /** Create a reusable brand STYLE from reference images (the key to consistent sets). Returns its id. */
 export async function createStyle(base: RecraftLane, refs: Uint8Array[]): Promise<string> {
   const form = new FormData()

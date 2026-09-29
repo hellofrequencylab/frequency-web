@@ -16,9 +16,11 @@ import {
   vectorizeImage,
   imageToImage,
   removeBackground,
+  upscaleImage,
   createStyle,
   type RecraftLane,
 } from '@/lib/loom/recraft'
+import { isVectorFile } from '@/lib/loom/urls'
 
 // Studio-gated: every action below carries the page's OWN gate —
 // `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes. See the door
@@ -33,6 +35,9 @@ const FEATURE = 'recraft'
 const BUCKET = 'library-media'
 // Recraft list price, for the budget ledger.
 const COST: Record<RecraftLane, number> = { raster: 0.04, vector: 0.08 }
+// Crisp upscale's list price (LIVE-589). Far below a raster generation, so the existing recraft cap in
+// lib/ai/budget.ts covers it with no new key.
+const UPSCALE_COST = 0.004
 
 const dbh = () => createAdminClient()
 
@@ -153,10 +158,13 @@ export async function generateWithRecraft(input: {
   }
 }
 
-export type RecraftOp = 'vectorize' | 'remove-bg' | 'variation'
+export type RecraftOp = 'vectorize' | 'remove-bg' | 'variation' | 'upscale'
 
 /** Non-destructively edit an existing file-backed asset: snapshot the current state as a version,
- *  then replace it with the Recraft result. */
+ *  then replace it with the Recraft result. `upscale` (LIVE-589) runs Recraft's crisp upscale on a
+ *  raster and is refused for a vector, which is sharp at any size. The result is ingested like every
+ *  other write (checksum, metadata strip, header dimensions), so an upscaled master records its new
+ *  width and the rendition resolver (ADR-1496) serves it at the right size everywhere. */
 export async function recraftEditAsset(input: {
   assetId: string
   op: RecraftOp
@@ -170,29 +178,45 @@ export async function recraftEditAsset(input: {
   const spaceId = await getRootSpaceId()
   if (!spaceId) return { error: 'No root space found.' }
 
-  const { data } = await dbh().from('library_assets').select('url, title').eq('id', input.assetId).eq('space_id', spaceId).maybeSingle()
-  const asset = data as { url: string | null; title: string | null } | null
+  const { data } = await dbh().from('library_assets').select('url, title, mime').eq('id', input.assetId).eq('space_id', spaceId).maybeSingle()
+  const asset = data as { url: string | null; title: string | null; mime: string | null } | null
   if (!asset?.url) return { error: 'This edit needs a file-backed image (generate one first).' }
+  if (input.op === 'upscale' && isVectorFile(asset.mime, asset.url)) {
+    return { error: 'This is a vector, so it is already sharp at any size. Upscale is for photos and other raster images.' }
+  }
 
   try {
     const src = await downloadRecraft(asset.url)
     let resultUrl: string
     if (input.op === 'vectorize') resultUrl = await vectorizeImage(src.bytes)
     else if (input.op === 'remove-bg') resultUrl = await removeBackground(src.bytes)
+    else if (input.op === 'upscale') resultUrl = await upscaleImage(src.bytes, `image.${extFor(src.contentType)}`, 'crisp')
     else resultUrl = await imageToImage({ bytes: src.bytes, prompt: (input.prompt || 'a clean variation').slice(0, 1000), strength: 0.35 })
 
     const out = await downloadRecraft(resultUrl)
-    const stored = await store(spaceId, out.bytes, out.contentType, asset.title || 'edit')
+    // INGEST (PROG-D1): checksum and header dimensions of the bytes actually stored. For an upscale the
+    // dimensions ARE the change, so the row must not keep the small master's width and height.
+    const ingested = ingestImageBytes(out.bytes, out.contentType)
+    const stored = await store(spaceId, ingested.bytes, out.contentType, asset.title || 'edit')
 
     // Snapshot the pre-edit state, then apply the new file.
-    await recordVersion(input.assetId, `Recraft ${input.op}`, g.ctx.profileId)
+    await recordVersion(input.assetId, input.op === 'upscale' ? 'Recraft upscale (crisp)' : `Recraft ${input.op}`, g.ctx.profileId)
 
-    const cost = COST[isVector ? 'vector' : 'raster']
+    const cost = input.op === 'upscale' ? UPSCALE_COST : COST[isVector ? 'vector' : 'raster']
     after(() => recordAiUsage({ feature: FEATURE, model: 'recraft-v3', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: cost, profileId: g.ctx!.profileId }))
 
     const { error } = await dbh()
       .from('library_assets')
-      .update({ storage_bucket: stored.bucket, storage_path: stored.path, url: stored.url, mime: stored.mime, bytes: stored.bytes, updated_at: new Date().toISOString() })
+      .update({
+        storage_bucket: stored.bucket,
+        storage_path: stored.path,
+        url: stored.url,
+        mime: stored.mime,
+        bytes: stored.bytes,
+        sha256: ingested.sha256,
+        ...(ingested.width ? { width: ingested.width, height: ingested.height } : {}),
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', input.assetId)
     if (error) return { error: error.message }
 
