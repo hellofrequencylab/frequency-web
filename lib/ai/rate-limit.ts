@@ -81,6 +81,7 @@ export const AI_RATE_LIMITS: Record<string, AiRateLimit> = {
   'entity-review': { limit: 5, window: '1 m' },
   'event-poster-scan': { limit: 5, window: '1 m' },
   'connection-scan': { limit: 5, window: '1 m' },
+  'library-tag': { limit: 5, window: '1 m' },     // a vision read of one Loom image from the Studio drawer (LIVE-587); the cron has no actor
   'vera-calendar': { limit: 5, window: '1 m' },   // a Sonnet tool loop of up to three rounds per ask (PROG-CAL10)
 }
 
