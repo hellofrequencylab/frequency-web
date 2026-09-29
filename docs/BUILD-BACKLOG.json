@@ -188,8 +188,7 @@
         {
           "name": "W2 · foundation first",
           "ids": [
-            "DEF-HARDEN",
-            "OWN-082"
+            "DEF-HARDEN"
           ]
         },
         {
@@ -260,7 +259,8 @@
             "OWN-062",
             "OWN-070",
             "OWN-074",
-            "OWN-077"
+            "OWN-077",
+            "OWN-084"
           ]
         }
       ],
@@ -18695,20 +18695,40 @@
     {
       "id": "OWN-082",
       "title": "Nobody has read which backup tier the database is on and no restore has ever been rehearsed, so the RPO and RTO are unknown numbers",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "owner",
       "size": "S",
+      "closed": "2026-09-29",
       "ownerAction": "account",
       "source": {
         "file": "docs/MAINTENANCE-AUTOMATION.md",
         "ref": "DEF-HARDEN H4-6 backup and disaster recovery, child 6 of 7; ADR-1561; decomposed 2026-09-28"
       },
-      "detail": "FILED 2026-09-28 as the sixth child of DEF-HARDEN (ADR-1561), and it is an owner row because nothing in the repository or the tools an agent holds can answer it. RE-TESTED BEFORE FILING (ADR-1082): the Supabase Management API read of project azsqfeonabsbmemvddqd on 2026-09-28 returns name, region (us-west-2), Postgres 17.6 and status ACTIVE_HEALTHY and no backup field at all; no doc in docs/ states a backup tier, a retention, an RPO or an RTO; docs/MAINTENANCE-AUTOMATION.md 5 has owed \"confirm PITR/backups on the Supabase plan\" since it was written; and the single shared database is the whole product (WORKFLOW.md: local, preview and production are one project). The database is small today, 60 profiles and 526 storage objects, which is the cheapest a rehearsal will ever be.\n\nTHE ASK, in the dashboard, about half an hour. (1) READ: Project Settings, Database, Backups. Note the tier (daily backups on Pro, the PITR add-on and its retention, or none on Free), the retention window and the time of the last backup. The implied RPO is the backup interval (24 h for dailies, about 2 min for PITR). (2) REHEARSE ONCE: restore the latest backup into a scratch project (or download it and `pg_restore` it locally), time it from click to a query that returns a known row, and delete the scratch project when done. That time is the RTO, measured rather than hoped. (3) WRITE the four facts with the date into the database section of docs/RUNBOOKS.md (HYG-131) or, until that file exists, into docs/DATABASE.md: tier, retention, RPO, RTO, and the one-line restore procedure that worked. If the tier is Free, say so; the row then also carries the decision whether to upgrade, and that is a ruling, not a default.\n\nNo agent can do steps 1 or 2, and no probe can read them; this row closes on the written numbers and reopens if the plan changes.",
+      "detail": "FILED 2026-09-28 as the sixth child of DEF-HARDEN (ADR-1561), and it is an owner row because nothing in the repository or the tools an agent holds can answer it. RE-TESTED BEFORE FILING (ADR-1082): the Supabase Management API read of project azsqfeonabsbmemvddqd on 2026-09-28 returns name, region (us-west-2), Postgres 17.6 and status ACTIVE_HEALTHY and no backup field at all; no doc in docs/ states a backup tier, a retention, an RPO or an RTO; docs/MAINTENANCE-AUTOMATION.md 5 has owed \"confirm PITR/backups on the Supabase plan\" since it was written; and the single shared database is the whole product (WORKFLOW.md: local, preview and production are one project). The database is small today, 60 profiles and 526 storage objects, which is the cheapest a rehearsal will ever be.\n\nTHE ASK, in the dashboard, about half an hour. (1) READ: Project Settings, Database, Backups. Note the tier (daily backups on Pro, the PITR add-on and its retention, or none on Free), the retention window and the time of the last backup. The implied RPO is the backup interval (24 h for dailies, about 2 min for PITR). (2) REHEARSE ONCE: restore the latest backup into a scratch project (or download it and `pg_restore` it locally), time it from click to a query that returns a known row, and delete the scratch project when done. That time is the RTO, measured rather than hoped. (3) WRITE the four facts with the date into the database section of docs/RUNBOOKS.md (HYG-131) or, until that file exists, into docs/DATABASE.md: tier, retention, RPO, RTO, and the one-line restore procedure that worked. If the tier is Free, say so; the row then also carries the decision whether to upgrade, and that is a ruling, not a default.\n\nNo agent can do steps 1 or 2, and no probe can read them; this row closes on the written numbers and reopens if the plan changes.\n\nCLOSED 2026-09-29 (ADR-1625). All four facts read from the owner's dashboard screenshots (Database, Backups) or timed in a rehearsal, with the restored copy checked by the orchestrator's read-only SQL; nothing inferred from the plan name. TIER: organisation on Pro; scheduled backups DAILY and PHYSICAL, taken about 11:45 to 11:51 UTC. RETENTION: 8 backups listed (22 to 29 Sep 2026), about 7 days. POINT-IN-TIME RECOVERY: not enabled (\"available as an add-on\"); owner ruling 2026-09-29 \"Daily is enough\", recorded as ADR-1625 with the revisit at 1,000 profiles or regular paid orders, whichever is first. RPO: up to 24 hours, shown: the copy from the 29 Sep 11:48:49 UTC backup held 745 migration ledger rows ending at 20270345009410, production 748 ending at 20270345009700, because 9500, 9600 and 9700 were applied at 16:28Z after the backup. RTO (database, click to ready): 12 minutes. Restore to new project clicked 18:14Z (11:14 PDT), ready 18:26Z; the copy (\"Frequency Temp\", wfgnxpvxddrzqyykrktn) verified 18:39Z: profiles 60 (= live), newest profile 2026-09-27 16:48 (= live), storage.objects 526 rows (= live, metadata only), 255 MB against live 261 MB. The owner deletes the scratch project (a paid-tier project cannot be paused; it bills at the same compute, $14.83 a month shown). WHOLE-SITE RTO is longer than 12 minutes and unmeasured: per Supabase's own dialog a restore does not carry storage files or storage settings, Edge Functions, auth settings and API keys, extensions and database settings, or read replicas, and per the Backups page database backups do not include objects stored via the Storage API. So a real move also needs the three Vercel Supabase variables re-pointed, auth settings re-entered, supabase/functions/embed redeployed, and the files, which have no backup anywhere: filed as OWN-084 (ownerAction ruling, it costs money). WRITTEN: docs/RUNBOOKS.md section 7 (Restore from backup: the dated facts table, the step-by-step restore with \"never click Restore in the Scheduled backups list; that overwrites production\", the not-restored list, a quarterly rehearsal cadence with the next before launch day), section 4's UNKNOWN paragraph replaced by a pointer, and docs/MAINTENANCE-AUTOMATION.md section 5 marked done with a pointer. Reopens if the plan, the backup schedule or the PITR add-on changes.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-28: OPEN. Management API get_project returns no backup field; grep for PITR, RPO, RTO and backup tier across docs/*.md finds no statement of any of the four; MAINTENANCE-AUTOMATION.md 5 still lists the confirmation as owed; no restore has been rehearsed in the record. Closes when tier, retention, RPO and a measured RTO are written with a date into docs/RUNBOOKS.md (or DATABASE.md until it exists), each read from the dashboard or timed in a rehearsal, not inferred from the plan name.",
-        "checked": "2026-09-28"
+        "evidence": "2026-09-29: CLOSED. docs/RUNBOOKS.md section 7 states, dated 2026-09-29: tier Pro with daily physical backups (dashboard), retention about 7 days / 8 listed (dashboard), PITR not enabled by ruling (ADR-1625), RPO up to 24 h (shown by the restored ledger ending at 20270345009410 against live 20270345009700), and RTO 12 minutes for the database, click to ready, timed in a restore-to-new-project rehearsal (18:14Z to 18:26Z, copy verified 18:39Z). Whole-site RTO stated as longer and unmeasured; storage files have no backup (OWN-084). Reopens if the plan, the backup schedule or the PITR add-on changes.",
+        "checked": "2026-09-29"
+      }
+    },
+    {
+      "id": "OWN-084",
+      "title": "Uploaded files have no backup anywhere: a restore brings back the storage rows but not the avatars, post images and Loom originals they describe",
+      "status": "open",
+      "priority": "P2",
+      "lane": "owner",
+      "size": "S",
+      "ownerAction": "ruling",
+      "source": {
+        "file": "docs/RUNBOOKS.md",
+        "ref": "section 7, Not restored; OWN-082 rehearsal 2026-09-29; ADR-1625"
+      },
+      "detail": "FILED 2026-09-29 by OWN-082 (ADR-1625). MEASURED, NOT INFERRED: the Supabase Backups page says \"Database backups do not include objects stored via the Storage API\", and the restore dialog lists storage objects and storage settings among what a restore does not carry. The rehearsal copy restored all 526 storage.objects rows (equal to live) and none of the files they describe. So every uploaded file (avatars, post images, Loom originals and renditions, library-media) exists in one place only, and a deleted bucket, a bad delete loop or a lost project loses it for good. Searched the backlog before filing: no row covers a file backup.\n\nTHE ASK, a ruling because every option costs money or a new account: (a) a scheduled copy of the storage buckets to a second provider (an S3-compatible bucket such as Cloudflare R2 or AWS S3, driven by a GitHub Actions job over Supabase Storage's S3-compatible endpoint), which needs a new account, a credential in the repo secrets and a monthly storage bill; (b) a copy to a second bucket inside the same Supabase project, cheap but it dies with the project and so only covers a bad delete; (c) accept the risk for now, like PITR in ADR-1625, with a revisit trigger. Whichever is picked, the rehearsal cadence in RUNBOOKS section 7 then also rehearses a file restore.\n\nNot agent work until ruled. A ruling of (a) or (b) turns into a build row with a probe; (c) closes this row with the revisit trigger written into an ADR.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-29: OPEN. docs/RUNBOOKS.md section 7 states no backup of storage files exists (Backups page wording; rehearsal copy had 526 storage.objects rows and no files). Closes on the owner's ruling: a file backup that has run once, or the risk accepted in an ADR with a revisit trigger.",
+        "checked": "2026-09-29"
       }
     },
     {
