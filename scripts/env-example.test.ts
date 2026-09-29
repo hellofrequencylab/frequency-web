@@ -32,6 +32,10 @@ const DARK_UNLESS_SET = [
   'GOOGLE_MAPS_API_KEY', // app/api/geocode/venues/route.ts prefers Google when set
   'NEXT_PUBLIC_VAPID_PUBLIC_KEY', // lib/push.ts configure()
   'VAPID_PRIVATE_KEY',
+  'R2_ACCOUNT_ID', // lib/backup/r2.ts r2ConfigFromEnv(): the storage copy runs only with all four
+  'R2_ACCESS_KEY_ID',
+  'R2_SECRET_ACCESS_KEY',
+  'R2_BACKUP_BUCKET',
 ]
 
 describe('.env.example ships every dark-unless-set key BLANK', () => {
