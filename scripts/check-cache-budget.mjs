@@ -222,7 +222,7 @@ const VERCEL_CEILING_GB = 1.5
 // size makes the gate fire early, which costs a cold compile; under-estimating loses the entire
 // cache. Those errors are not symmetric, so the rounding is not either.
 //
-// 🔴 RE-DERIVED 2026-09-29 (HYG-136, ADR-1637). A production build printed both halves again, and
+// 🔴 RE-DERIVED 2026-09-29 (HYG-136, ADR-1638). A production build printed both halves again, and
 // 0.53 under-read in the direction that loses the whole cache:
 //
 //     ESTIMATE, this script                     1.38 GB packed  (at 0.53 ⇒ raw 1.38/0.53 = 2.604 GB)

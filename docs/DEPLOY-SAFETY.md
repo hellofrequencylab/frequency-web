@@ -224,7 +224,7 @@ Everything below follows from that, and §9's wrong verdict followed from not ha
   different builds. ADR-1113 closed that caveat on 2026-08-24 (`HYG-015`) with five PAIRED
   readings around 0.53. A 2026-09-29 production pair then printed 1.38 GB estimated against a
   1.42 GB upload (implied 0.5454), which is the unsafe direction: the real archive had already
-  passed the 1.40 GB trim point. HYG-136 / ADR-1637 re-derived and rounded **up** to 0.55. Still
+  passed the 1.40 GB trim point. HYG-136 / ADR-1638 re-derived and rounded **up** to 0.55. Still
   one whole-archive ratio: Vercel uploads one archive, so this gate cannot take two packed
   readings. Compiler-cache growth that makes the trim fire often is HYG-140, not a raised ceiling.
   🔴 **Do not "correct" this back toward 0.264.** That is the node_modules-only mix; near the
