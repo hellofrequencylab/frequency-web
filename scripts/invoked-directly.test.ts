@@ -1,6 +1,15 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { readFileSync, readdirSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  readFileSync,
+  readdirSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
@@ -35,6 +44,15 @@ import { invokedDirectly } from './lib/invoked-directly.mjs'
 //
 // ⚠️ Linux `mkdtemp` returns a real path, so "run it out of a temp dir" reproduces nothing on CI —
 // that is a macOS accident (`/var` → `/private/var`). The link below is created explicitly.
+//
+// 🔴 AND EVERY STAGING ROOT IS realpathSync'd, WHICH IS THAT SAME ACCIDENT BITING THE CONTROLS
+// (HYG-130). Each hostile case here is paired with one that runs the OLD guard on a PLAIN path to
+// show the fixture is a failing one — without it, the hostile case would pass merely because nothing
+// could ever fail there. But the plain path was built by a bare `mkdtemp`, which on macOS is under
+// `/var`, which IS a symlink: the control was never plain, the old guard went silently green in it
+// too, and all of those cases FAILED on every macOS machine while passing on CI. A control that
+// cannot fail is precisely the defect this file exists to catch, arrived one level up inside the
+// proof itself. Resolving the root is what makes the plain path genuinely plain.
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname), '..')
@@ -149,7 +167,7 @@ afterAll(() => {
  *  gives argv[1] under `link/` and import.meta.url under `real/` — one symlink, both mechanisms of
  *  "the two spellings of one file" in play, and NOT dependent on any platform accident. */
 function stageBehindSymlink(script: string, mutate?: (src: string) => string): string {
-  const tmp = mkdtempSync(join(tmpdir(), 'invoked-directly-'))
+  const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'invoked-directly-')))
   temps.push(tmp)
   const real = join(tmp, 'real')
   mkdirSync(real, { recursive: true })
@@ -167,7 +185,7 @@ function stageBehindSymlink(script: string, mutate?: (src: string) => string): s
  *  concatenated url carries a raw space while `import.meta.url` carries `%20`, and the two can never
  *  be equal. Same silent exit 0, from a checkout path rather than a link. */
 function stageUnderSpacePath(script: string, mutate?: (src: string) => string): string {
-  const tmp = mkdtempSync(join(tmpdir(), 'invoked-directly-'))
+  const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'invoked-directly-')))
   temps.push(tmp)
   const dir = join(tmp, 'a dir with spaces')
   mkdirSync(join(dir, 'empty'), { recursive: true })
@@ -286,7 +304,7 @@ describe.each(DEPLOY_GATES)('AND WHEN ITS PATH HAS A SPACE IN IT: $script', ({ s
   })
 
   it('and that same spelling DOES fail from a path with no space, so the condition can fail', () => {
-    const tmp = mkdtempSync(join(tmpdir(), 'invoked-directly-plain-'))
+    const tmp = realpathSync(mkdtempSync(join(tmpdir(), 'invoked-directly-plain-')))
     temps.push(tmp)
     mkdirSync(join(tmp, 'empty'), { recursive: true })
     symlinkSync(join(SCRIPTS, 'lib'), join(tmp, 'lib'), 'dir')
