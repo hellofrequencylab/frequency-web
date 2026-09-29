@@ -264,7 +264,7 @@ survey counted the editors and nobody had before.
 | # | Change | Note |
 |---|---|---|
 | 8.1 | Directory sort: `name` → **v0 standing** computed from counts already fetched | No migration, no query change |
-| 8.2 | `space_standing` rollup on the nightly `refresh-traits` cron, copying `resonance_density_cells` | Six saturated signals, renormalised over present ones |
+| 8.2 | `space_standing` rollup on the nightly `refresh-traits` cron, copying `resonance_density_cells` | Six saturated signals, renormalised over present ones; attendance joined as the seventh once the host mark existed (LIVE-456) |
 | 8.3 | Wire the four dormant `featured_at` columns | ⚠️ add to **every** select branch — `check-row-type-select-parity.test.ts:23-27` |
 | 8.4 | Operator receipt page at `space.reach`: *what did the network send me, and what would send more* | The reason to open the app on a Tuesday |
 

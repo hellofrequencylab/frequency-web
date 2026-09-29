@@ -9,7 +9,7 @@
 // this file, and none may ever be added. Every signal below is a thing a Space DID: it gathered
 // people, it kept a room open, someone chose to follow it, someone joined it, the operator filled
 // in the page. A Space on the free wedge and a Space on the top plan are scored by exactly the same
-// six numbers. `lib/spaces/standing.test.ts` pins that with a source-shape guard, so a paid signal
+// seven numbers. `lib/spaces/standing.test.ts` pins that with a source-shape guard, so a paid signal
 // cannot be added here without a red test.
 //
 // PURE — no IO, no Supabase/Next imports, no clock — so the SAME formula serves both feeders:
@@ -41,22 +41,29 @@
 // columns for all of them), so renormalisation never advantages one Space over another. It exists
 // for one job only: to let the score exist before every signal does.
 //
-// Which is exactly how the ATTENDANCE GAP is handled, honestly and in the open:
+// Which is exactly how ATTENDANCE arrived, and why nothing else had to move when it did:
 //
-// 🔴 **ATTENDANCE IS NOT IN THIS SCORE, AND IT IS NOT A ZERO EITHER.** Whether anyone actually
-// turned up to a gathering has NO independent record on this platform: there is no `checked_in`
-// column, and the only trace is an engagement-ledger row written by the path that pays Zaps, which
-// means "attended" and "was paid for attending" are the same fact and neither can be read for a
-// Space that does not run Zaps. Weighting it would be inventing data. So it is simply not declared
-// as a signal: `gatherings` counts gatherings HELD (a published, non-cancelled gathering whose
-// start time has passed), which is a claim we can actually stand behind. The day an independent
-// attendance record exists, it is added as a seventh signal and every Space is re-scored against
-// it at once; no weight below needs to change, because they renormalise.
+// 🔴 **ATTENDANCE IS THE SEVENTH SIGNAL, AND IT WAITED FOR AN INDEPENDENT RECORD.** Until
+// 2026-09-14 whether anyone turned up to a gathering had no record of its own here: the only trace
+// was an engagement-ledger row written by the path that pays Zaps, so "attended" and "was paid for
+// attending" were one fact, unreadable for a Space that does not run Zaps, and weighting it would
+// have been inventing data. It was therefore not declared at all, rather than declared and weighted
+// at zero. PROG-GD4 (ADR-1332) gave attendance that record: `attended_at` on `event_rsvps` and on
+// `event_tickets`, a mark the HOST makes from the roster, independent of the check-in ledger and
+// paying nobody. LIVE-456 adds it here as `attendance`: people a host marked present at this
+// Space's gatherings in the same trailing window `gatherings` counts. It joins the DOING half with
+// its own weight and scale, and no existing weight moved, because the halves renormalise over the
+// signals present: a reader that cannot measure it (the live directory read) scores exactly as it
+// did the day before. The ENGAGEMENT LEDGER IS STILL NEVER READ for this; the host mark is the whole
+// record, so no decision about the game can move the number.
 //
-// ── THE SIX SIGNALS, one line each, and why none of them can be bought ───────────────────────────
+// ── THE SEVEN SIGNALS, one line each, and why none of them can be bought ─────────────────────────
 //
 //   gatherings — gatherings this Space actually HELD in the trailing window. Earned by hosting;
 //                money cannot make a date pass with a published gathering on it.
+//   attendance — people a host marked present at those gatherings. Earned by being worth turning
+//                up for, and attested by the host from the roster (ADR-1332), not by the platform's
+//                own reward path.
 //   upcoming   — gatherings on the calendar ahead. Earned by planning the next one.
 //   rooms      — listed, joinable Circles the Space keeps open. Earned by tending a standing place.
 //   audience   — members who chose to follow it. Earned; a follow is another person's decision.
@@ -67,11 +74,19 @@
 // None is purchasable, and none is a proxy for a purchase: a paid Space and a free Space run the
 // same gathering, keep the same room, and are followed by the same people.
 
-/** The six signals a standing score is composed from. */
-export type StandingSignal = 'gatherings' | 'upcoming' | 'rooms' | 'audience' | 'commons' | 'care'
+/** The seven signals a standing score is composed from. */
+export type StandingSignal =
+  | 'gatherings'
+  | 'attendance'
+  | 'upcoming'
+  | 'rooms'
+  | 'audience'
+  | 'commons'
+  | 'care'
 
 export const STANDING_SIGNALS: readonly StandingSignal[] = [
   'gatherings',
+  'attendance',
   'upcoming',
   'rooms',
   'audience',
@@ -84,7 +99,12 @@ export const STANDING_SIGNALS: readonly StandingSignal[] = [
  * what the world put back. A Space that gathers constantly for nobody, and a Space with a following
  * that never opens its doors, are both one-sided, and the harmonic mean says so.
  */
-export const DOING_SIGNALS: readonly StandingSignal[] = ['gatherings', 'upcoming', 'rooms'] as const
+export const DOING_SIGNALS: readonly StandingSignal[] = [
+  'gatherings',
+  'attendance',
+  'upcoming',
+  'rooms',
+] as const
 export const BELONGING_SIGNALS: readonly StandingSignal[] = ['audience', 'commons', 'care'] as const
 
 /** Relative weight of each signal INSIDE its half. Renormalised over whichever are present, so
@@ -92,6 +112,11 @@ export const BELONGING_SIGNALS: readonly StandingSignal[] = ['audience', 'common
 export const STANDING_WEIGHTS: Record<StandingSignal, number> = {
   // DOING — a gathering that happened is the hardest thing on this list to fake, so it leads.
   gatherings: 0.45,
+  // People in the room outrank a date on the calendar and a standing room, and sit just under the
+  // gathering itself: a host attests it, and a host could in principle mark a room nobody was in,
+  // so it never leads the half. Added 2026-09-28 (LIVE-456); the three weights above and below it
+  // did not move.
+  attendance: 0.35,
   upcoming: 0.3,
   rooms: 0.25,
   // BELONGING — joining is a bigger act than following, and both outrank a filled-in page.
@@ -111,6 +136,11 @@ export const STANDING_WEIGHTS: Record<StandingSignal, number> = {
  */
 export const STANDING_SCALES: Record<Exclude<StandingSignal, 'care'>, number> = {
   gatherings: 4,
+  // Twelve people marked present across the window reads ~0.63. A room of a dozen over a year is a
+  // real, small community; it is deliberately above `gatherings` so one well-attended date does not
+  // saturate, and it was set at 0 marks platform-wide (first reading 2026-09-21), so it is a shape
+  // to re-tune once the field test (LIVE-455) produces marks, not a measurement.
+  attendance: 12,
   upcoming: 2,
   rooms: 2,
   audience: 10,
@@ -137,6 +167,8 @@ export const HALF_FLOOR = 0.15
 export interface StandingInput {
   /** Gatherings HELD (published, not cancelled, already started) in the trailing window. */
   gatherings?: number | null
+  /** People a host marked present (`attended_at`, ADR-1332) at those held gatherings. */
+  attendance?: number | null
   /** Published, non-cancelled gatherings still ahead. */
   upcoming?: number | null
   /** Listed, joinable Circles this Space runs. */
@@ -164,7 +196,7 @@ export interface StandingResult {
   signals: Record<StandingSignal, number | null>
   /** Every signal that was measured, in declaration order. */
   present: StandingSignal[]
-  /** What this Space puts into the world (gatherings, upcoming, rooms). */
+  /** What this Space puts into the world (gatherings, attendance, upcoming, rooms). */
   doing: StandingHalf
   /** What the world put back (audience, commons, care). */
   belonging: StandingHalf
@@ -246,6 +278,7 @@ function floored(value: number): number {
 export function standingScore(input: StandingInput): StandingResult {
   const signals = {
     gatherings: signalValue('gatherings', input),
+    attendance: signalValue('attendance', input),
     upcoming: signalValue('upcoming', input),
     rooms: signalValue('rooms', input),
     audience: signalValue('audience', input),
@@ -357,6 +390,11 @@ const LEVER_COPY: Record<StandingSignal, { label: string; measures: string; move
     label: 'Gatherings held',
     measures: 'Gatherings you have actually run, counted after they happen.',
     move: 'Run one gathering and let it happen. Held counts more than planned.',
+  },
+  attendance: {
+    label: 'People in the room',
+    measures: 'People you marked present at your gatherings, from the roster.',
+    move: 'After each gathering, open the roster and mark who came.',
   },
   upcoming: {
     label: 'On the calendar',
