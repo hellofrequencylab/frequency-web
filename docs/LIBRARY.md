@@ -61,11 +61,14 @@ page again.
 - **Grid** (right): searchable, sorted, paginated (48/page). Three view modes — **Cards** (default),
   **Compact**, and **List** (URL `?view=`). Click a card to open the detail drawer.
 - **Semantic search** (Phase 1, [RESEARCH-ASSET-GEN.md](RESEARCH-ASSET-GEN.md)): a **"Most relevant"**
-  sort runs meaning-based search (query embedding → nearest assets), and **"Find similar"** in the
-  drawer (`?similar=<id>`) surfaces an asset's neighbours. Powered by the reserved
-  `library_assets.embedding` (384‑d, key‑free gte‑small via `embedText()`), the `match_library_assets`
-  / `similar_library_assets` RPCs, and the `embed-library` cron (content‑hash gated). Degrades to
-  keyword search when AI is off or nothing is embedded yet.
+  sort ranks words and meaning in one query, and **"Find similar"** in the drawer
+  (`?similar=<id>`) surfaces an asset's neighbours. Most relevant is `search_library_assets`
+  (LIVE-586, [ADR-1597](DECISIONS.md)), called from `lib/library/hybrid-search.ts`: a full-text arm
+  (`ts_rank` over `search_tsv`), a title trigram arm and a cosine arm over
+  `library_assets.embedding` (384‑d, key‑free gte‑small via `embedText()`), fused by reciprocal rank
+  (k = 60), so an exact title beats a vague neighbour and a typo still gets meaning. With AI off or
+  over budget the embedding is left out and the two word arms still rank. Find similar is
+  `similar_library_assets`; the `embed-library` cron keeps embeddings fresh (content‑hash gated).
 - **Bulk edits**: select cards (or the whole page), then **add to collection**, **set category**,
   **add tags**, **archive**, or **delete** across the selection.
 - **Design with Vera**: every SVG element has a "Design with Vera" panel in the drawer with two
@@ -313,7 +316,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
-   Background removal and upscale (LIVE-589) are shipped; the rest is decomposed into LIVE-586 to LIVE-588 ([ADR-1563](DECISIONS.md)).
+   Background removal and upscale (LIVE-589), describe on view (LIVE-588) and the hybrid Most relevant rank (LIVE-586) are shipped; auto-tag (LIVE-587) is open ([ADR-1563](DECISIONS.md)).
 
 ## Non-goals (v1)
 

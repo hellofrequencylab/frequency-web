@@ -130,6 +130,11 @@
 # column-backed image companions. library_assets is RLS deny-all (scripts/rls-deny-all.txt),
 # so a session client cannot refresh a cached url. Same posture as lib/library/resolve-refs.ts
 # (PROG-D2): fail-open to the cache, one query, no writes.
+# lib/library/hybrid-search.ts (added 2026-09-29, LIVE-586): the Studio's Most relevant sort, split
+# out of lib/library/embeddings.ts (already listed) with the cosine-only matcher it replaces. It
+# calls search_library_assets, which is EXECUTE-revoked from anon and authenticated and granted to
+# service_role only, over library_assets, which is RLS deny-all (scripts/rls-deny-all.txt). Reads
+# only; hydrates through store.ts. The file count for lib/library is +1, the matcher count is flat.
 # lib/billing/ticket-sale-notify.ts (added 2026-09-15, LIVE-345): the HOST's side of a ticket sale,
 # the exact sibling of lib/billing/tips-notify.ts already in this list and under the identical
 # posture: the caller is STRIPE. It runs from recordTicketFromSession inside the webhook, so there
@@ -814,6 +819,7 @@ lib/library.ts
 lib/library/asset-urls.ts
 lib/library/embeddings.ts
 lib/library/event-loom.ts
+lib/library/hybrid-search.ts
 lib/library/resolve-refs.ts
 lib/library/splash-registry.ts
 lib/library/store.ts
