@@ -296,6 +296,9 @@ describe('the assertions above can actually fail', () => {
     expect(TRIM_RAW).toBeGreaterThan(1e9)
     expect(PACKED_PER_RAW).toBeGreaterThan(0)
     expect(PACKED_PER_RAW).toBeLessThan(1)
+    // HYG-136: 2026-09-29 production pair estimated 1.38 GB at 0.53 and uploaded 1.42 GB.
+    // Under-reading is the unsafe direction. Round-up lives in the script; the floor is the pair.
+    expect(PACKED_PER_RAW).toBeGreaterThanOrEqual(1.42 / (1.38 / 0.53))
   })
 })
 
