@@ -314,6 +314,13 @@ route tree by the copy cascade with the reserved site row `'*'` set from `/admin
 > the note, so a lead is mailed at most once; NULL means never mailed. The partial index
 > `signup_leads_recovery_due_idx` covers exactly the cron's read (unconverted, unmailed, by
 > `updated_at`). Note the `set_updated_at` trigger: the stamp itself moves `updated_at`.
+> `convert_signup_leads_for_me()` (migration `20270345003300`, authenticated only) is the second
+> conversion door, proved by the caller's confirmed `auth.users` address rather than by a claim
+> token; the auth callback calls it at every sign-in. Since `20270345008700` (ADR-1537, LIVE-450)
+> the call that stamps also spends the lead's `display_name` (else `first_name`) onto
+> `profiles.display_name`, but only while the profile is still the signup trigger's mint (the
+> `lib/onboarding/identity.ts` test, reconstructed in SQL); a chosen name or handle is never
+> overwritten. Apply `20270345008700` after merge.
 
 > **My Contacts CRM · Phase 1** (ADR-361; migration `20260723000000_network_contacts_crm_p1.sql`,
 > additive). `network_contact_reminders` is the owner-scoped follow-up table

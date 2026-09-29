@@ -25,8 +25,13 @@ gets its own Loom**. It grows for years without a code deploy per asset.
   transitive dependency. That is a re-confirmation to make knowingly, not a decision to reverse
   from a scan, so HYG-109 puts the numbers and the zero-dependency alternative (native canvas crop
   over the existing `CROP_FRAMES`) in front of the owner. Nothing changes until it is answered.
-- **Privacy:** build a **full** protection system, but **develop it later** — only the schema
-  hooks land now (`is_protected`, `download_policy`, `expires_at`, private-bucket-ready).
+- **Privacy:** build a **full** protection system, but **develop it later** — the schema hooks
+  landed first (`is_protected`, `download_policy`, `expires_at`, private-bucket-ready), and since
+  [LIVE-576](BUILD-BACKLOG.json) ([ADR-1577](DECISIONS.md)) the product reads and sets them: the
+  Studio drawer's Protection section writes all three, every pick reader (`listLoomScopeImages`,
+  `searchSpaceLibraryImages`) leaves out a row whose `expires_at` has passed, and the Studio grid
+  badges that row Expired instead of hiding it from its owner. The private bucket, the download
+  door and proofing are LIVE-577 to LIVE-580 ([ADR-1562](DECISIONS.md)).
 - **Scope:** **every asset is space-scoped.** Frequency's shared/master library is the **root
   space's** Loom (`space_id` is NOT NULL). A child space's effective library = its own ∪ root's.
 - **Transforms:** **on-the-fly** (a width/format request against the master). **Editing an image
@@ -80,10 +85,14 @@ page again.
   `RECRAFT_API_KEY` is set; the Studio carries the page's gate above + is budget-gated (`recraft` cap, $0.04 raster / $0.08
   vector) and called server-side only. Clients: `create-studio.tsx`, `lib/loom/recraft.ts`; actions:
   `vera-actions.ts` + `recraft-actions.ts`.
-- **Edit (drawer)**: a file-backed asset can be edited in place with **Vectorize**, **Remove BG**, or
-  **Variation** — each **non-destructive** (snapshots the current state to `library_versions` first). A
-  **Versions** list restores any prior state with one click (rollback snapshots current first, so it's
-  reversible). Backbone: `lib/library/versions.ts`.
+- **Edit (drawer)**: a file-backed asset can be edited in place with **Vectorize**, **Remove BG**,
+  **Upscale**, or **Variation** — each **non-destructive** (snapshots the current state to
+  `library_versions` first). A **Versions** list restores any prior state with one click (rollback
+  snapshots current first, so it's reversible). Backbone: `lib/library/versions.ts`. **Upscale**
+  (LIVE-589) runs Recraft's crisp upscale (`upscaleImage`, $0.004 list) on a raster only: a vector is
+  refused by the action and the chip is disabled with a line that says why. Every edit result is
+  ingested (checksum + header dimensions), so an upscaled master records its new width and the rendition
+  resolver serves it at the right size. Creative upscale ($0.25 list) is in the client, not the Studio.
 - **Brand styles (matching sets)**: train a reusable **house style** so a whole generated set looks
   like one family ([ADR-489](DECISIONS.md)). Select 1–5 on-brand images in the grid → **"Train style"**
   in the selection bar → name it + pick the lane. The style is saved (`library_styles`, the Recraft
@@ -224,6 +233,10 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   **checksum + dedupe** → read dimensions → write the catalog row. One function does the server half:
   `ingestImageBytes` in `lib/library/ingest.ts`, called by every upload site with the bytes it is
   about to store.
+  - **Enforced by a test** ([ADR-1562](DECISIONS.md) §3, `LIVE-579`). `lib/library/ingest-coverage.test.ts`
+    walks `lib/`, `app/` and `components/` for every file that `.upload(`s into `library-media` (by the
+    constant, the literal or `classifyLoomUpload`) and fails naming the file when it skips the strip.
+    Its exception list is empty and carries a reason column for the day one is needed.
   - **Order matters.** The checksum is taken AFTER the strip, so it describes the object that is
     really on disk — and two exports of one photo that differ only in metadata dedupe to one asset.
     Dedupe reads `(space_id, sha256)`, the pair `library_assets_sha256_idx` indexes; it is
@@ -255,7 +268,10 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   `lib/library/search-rank.ts`, because PostgREST can filter on a tsvector but cannot `order by
   ts_rank` — no migration, and `rankLibraryMatches` is the one seam a `search_library_assets` RPC
   would replace if a Loom outgrew the candidate cap.
-- **Usage index** powers "used on N pages," archive-not-destroy, and global swap.
+- **Usage index** powers "used on N pages," archive-not-destroy, and global swap. The swap is
+  `swapLibraryAssetRefs` in `lib/library/usage.ts` ([ADR-1560](DECISIONS.md)): a walk over the index's
+  rows, one write per stored row, that re-points every `{ assetId }` ref from one asset to another and
+  leaves every other value as it was. "Swap everywhere" in the drawer's usage panel is the door.
 - **One picker at every upload point.** The universal control is `components/loom/loom-picker.tsx`
   (16 consumers: page editor, entity blocks, Studio spark, branding, events, QR, email). The old
   "Upload / Pick / Paste URL" tri-mode plan was superseded by the owner directive recorded in the
@@ -291,8 +307,10 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
 5. **D5 — Per-space Looms** (space-scoped libraries, fork-on-edit, quotas, per-space console,
    client RLS, entitlements/flags).
 6. **D6 — Privacy system** (private bucket, signed URLs, storage RLS, download gating + audit,
-   EXIF strip, optional watermark) — full build, done later.
+   EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
+   LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
+   Background removal and upscale (LIVE-589) are shipped; the rest is decomposed into LIVE-586 to LIVE-588 ([ADR-1563](DECISIONS.md)).
 
 ## Non-goals (v1)
 

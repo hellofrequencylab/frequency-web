@@ -57,7 +57,17 @@ export function Analytics({ data }: { data: AnalyticsData }) {
           // and no mask holds a height"). A surface whose height depends on live data cannot hold
           // a full-page baseline, so the fix is to make the section dimension-invariant rather
           // than to mask it. Keep the two boxes identical if you touch either one.
-          <div className="mt-4 flex h-28 items-center justify-center rounded-control border border-dashed border-border bg-surface-elevated/40 px-4 text-center">
+          //
+          // AND THE SAME MASK, since 2026-09-28 (LIVE-476, ADR-1568): the surface is photographed
+          // whole again, so this branch is in the picture. The box holds the height; the mask
+          // holds the paint. Without it the window emptying swaps a magenta box for a line of
+          // text, thousands of pixels, on whichever pull request runs next. Read from the table
+          // rather than predicted: `qr_scans` holds rows on 2026-08-28 (1), 2026-09-01 (3) and
+          // 2026-09-18 (1), so this branch renders from 2026-10-18 until the next scan.
+          <div
+            data-visual-mask="qr-daily-scans"
+            className="mt-4 flex h-28 items-center justify-center rounded-control border border-dashed border-border bg-surface-elevated/40 px-4 text-center"
+          >
             <p className="text-meta text-muted">No scans yet in this window.</p>
           </div>
         ) : (

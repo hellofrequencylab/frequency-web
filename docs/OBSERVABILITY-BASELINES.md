@@ -252,7 +252,7 @@ column names where the number is read from (all already wired or read from the v
 | **p95 latency, practice-log write** | **< 1000 ms** | 28d | Sentry perf | The write does an insert + idempotent ledger award; a slightly looser bar than reads, still sub-second-ish. |
 | **Error rate** (5xx + unhandled, per request) | **< 0.5%** | 28d | Sentry (H0-4) | 1 in 200 requests. Tight enough that a real regression pages; loose enough to absorb transient upstream blips. |
 | **Queue lag** (`process-queue` email worker backlog age) | **< 10 min** | live | worker log + heartbeat | The worker runs every 2 min; a backlog older than ~5 cycles means it is falling behind and a human should look (H4-2). |
-| **Cron freshness** (each of 28 jobs ran within its schedule + grace) | **100% of jobs fresh** | per job | cron heartbeat (H0-5) dead-man's-switch — 🔴 **NOT CURRENTLY WORKING, see `OWN-065`** | A silently-dead cron is the exact future problem H0-5 exists to prevent. Grace = one interval. Any stale job = page. ⚠️ **As of 2026-09-08 no job can page**: every heartbeat ping is rejected `HTTP 404`, measured across all 27 live crons. The jobs themselves are fresh; the instrument named in this row is not running, so this target is currently unmeasured rather than met. |
+| **Cron freshness** (every scheduled job ran within its schedule + grace) | **100% of jobs fresh** | per job | cron heartbeat (H0-5) dead-man's-switch — 🔴 **NOT CURRENTLY WORKING, see `OWN-065`** | A silently-dead cron is the exact future problem H0-5 exists to prevent. Grace = one interval. Any stale job = page. ⚠️ **As of 2026-09-08 no job can page**: every heartbeat ping is rejected `HTTP 404`, measured across all 27 live crons. The jobs themselves are fresh; the instrument named in this row is not running, so this target is currently unmeasured rather than met. |
 
 ### 4a. Per-cron freshness windows
 
@@ -269,9 +269,24 @@ The frequent jobs are the ones whose silence is most dangerous:
 | `referral-release` / `embed-events` | every 30 min | 60 min | referral payouts + event search freshness |
 | daily jobs (`weekly-digest`, `lifecycle-triggers`, `enforce-retention`, embed-* nightly, etc.) | daily / weekly | 1 interval + grace | digest delivery, retention, embeddings |
 
-The full 18-job list is the source of truth in `vercel.json`; this table groups them by
-the urgency of their silence. The heartbeat monitor (H0-5) owns the paging; this row sets
-the contract it pages against.
+The schedule list is the source of truth in `vercel.json`; this table groups the jobs by
+the urgency of their silence, and `CRON_FRESHNESS` in `lib/observability/slos.ts` is the
+executable copy, held to `vercel.json` by `slos.test.ts` (every scheduled cron exactly once;
+the list read 18 while `vercel.json` scheduled 29 until LIVE-548 made that a test). The
+heartbeat monitor (H0-5) owns the paging; this row sets the contract it pages against.
+
+**Which jobs are supposed to page (LIVE-548, ADR-1574).** The same module declares the
+monitored set: `CRON_MONITORED` (the twenty checks that exist, in OWN-005's order by cost of
+a silent failure) and `CRON_UNMONITORED` (each opt-out with a one-line reason). Together they
+partition `vercel.json` exactly, and both `slos.test.ts` and `scripts/cron-freshness.mjs`
+fail a scheduled cron named in neither list, so a cron added next month fails until someone
+decides whether its silence pages. The heartbeat wrapper reads the same list: a rejected or
+failed ping for a job in `CRON_MONITORED` is a Sentry event tagged by job (once per job per
+process) as well as the `cron.heartbeat.ping_failed` warn line, because a monitored job whose
+monitor is unreachable has no dead-man's switch. An opt-out that still pings keeps the warn
+line and escalates nothing. Moving a job across the line is a code change here AND an account
+change there (a check created or deleted, `CRON_HEARTBEAT_SKIP` edited); neither alone is the
+move.
 
 **Checking the contract.** `scripts/cron-freshness.mjs` reads `vercel.json`, derives each
 job's fresh-by window (2 × interval per the rule above), and reports whether a heartbeat
