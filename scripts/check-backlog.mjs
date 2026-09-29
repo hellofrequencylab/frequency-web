@@ -627,7 +627,7 @@ function compactionNotice() {
   if (fragmentsRead) console.log(dim(`  ${fragmentsRead} row fragment(s) merged from ${ROWS_DIR} (HYG-145).`))
   if (due) {
     console.log(
-      yellow(`  ⚠ ${n} ledger fragments are waiting (more than ${COMPACT_AT}). Open a housekeeping PR that folds them into ${FILE} and docs/DECISIONS.md.`),
+      yellow(`  ⚠ ${n} ledger fragments are waiting (more than ${COMPACT_AT}). Open a housekeeping PR that runs \`pnpm ledger:compact\` to fold them into ${FILE} and docs/DECISIONS.md.`),
     )
   }
 }

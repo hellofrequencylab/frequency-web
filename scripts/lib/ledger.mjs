@@ -391,3 +391,100 @@ export function fragmentCount(root = '.') {
   const n = listDir(join(root, ROWS_DIR), '.json').length + listDir(join(root, ADR_DIR), '.md').length
   return { n, due: n > COMPACT_AT }
 }
+
+// ── Compaction (HYG-148) ──────────────────────────────────────────────────────────────────────
+//
+// Folds every fragment into the two base files and names the fragment files to delete. The new
+// base files ARE the merged view, serialised the way the base files always were (the JSON as
+// JSON.stringify(doc, null, 2) with no trailing newline; the ADR ledger as the merged text), so:
+//   - loadBacklog / loadDecisions read identically before and after;
+//   - a second compaction changes nothing (byte-stable, idempotent).
+// A broken fragment refuses the whole compaction: folding a list that is not the list would bake
+// the breakage into the base file where no gate names the fragment any more.
+
+/** { backlogText, decisionsText, remove: [paths], rows, adrs } for `root`. Throws LedgerError on a
+ *  broken fragment. Pure over the tree: it writes nothing. */
+export function compactLedger(root = '.') {
+  const backlog = readBacklogView({ root })
+  const decisions = readDecisionsView(root)
+  const problems = [...backlog.problems, ...decisions.problems]
+  if (problems.length) throw new LedgerError(`refusing to compact broken fragments:\n  ${problems.join('\n  ')}`)
+  return {
+    backlogText: JSON.stringify(backlog.doc, null, 2),
+    decisionsText: decisions.text,
+    remove: [...backlog.fragments.map((f) => f.path), ...decisions.fragments.map((f) => f.path)],
+    rows: backlog.fragments.length,
+    adrs: decisions.fragments.length,
+  }
+}
+
+// ── Fragment builders for the helpers (HYG-148) ──────────────────────────────────────────────
+
+/** Fold an edit into whatever fragment this branch already holds for the row, so a row keeps ONE
+ *  file however many helpers touch it. `existing` is the parsed fragment or null. An existing full
+ *  row takes the edit in place (it is still a new row); an existing edit merges patch over patch
+ *  and concatenates appends. */
+export function foldEdit(existing, edit) {
+  if (existing && !isEdit(existing)) {
+    const row = JSON.parse(JSON.stringify(existing))
+    const wave = row.wave
+    delete row.wave
+    const probe = { entries: [row], meta: { slate: { waves: [] } } }
+    const { wave: nextWave, ...rest } = edit
+    const r = applyRowFragments(probe, [{ path: '(edit)', id: row.id, body: rest, problem: null }])
+    if (r.problems.length) throw new LedgerError(r.problems.join('\n'))
+    const out = r.doc.entries[0]
+    const w = Object.prototype.hasOwnProperty.call(edit, 'wave') ? nextWave : wave
+    if (w !== undefined && w !== null) out.wave = w
+    return out
+  }
+  const out = existing ? JSON.parse(JSON.stringify(existing)) : { id: edit.id }
+  if (edit.patch) out.patch = { ...(out.patch ?? {}), ...edit.patch }
+  for (const [k, v] of Object.entries(edit.append ?? {})) {
+    out.append = out.append ?? {}
+    const cur = out.append[k]
+    out.append[k] = cur === undefined ? v : Array.isArray(cur) ? [...cur, ...v] : cur + v
+  }
+  if (Object.prototype.hasOwnProperty.call(edit, 'wave')) out.wave = edit.wave
+  return out
+}
+
+/** The edit that closes a row: status, date, probe, and a paragraph onto `detail`.
+ *  @param {{ id: string, date: string, verify?: object | null, note?: string | null, status?: string }} opts */
+export function closeEdit({ id, date, verify, note, status = 'done' }) {
+  const patch = { status }
+  if (status === 'done') patch.closed = date
+  if (verify) patch.verify = verify
+  const edit = { id, patch }
+  if (note) edit.append = { detail: `\n\n${note}` }
+  return edit
+}
+
+/** The next free id for each prefix and the next free ADR number, over the merged view. Ids
+ *  claimed on other open PRs are not visible here; check:id-collisions is the arm that sees them. */
+/** @param {string} [root] @param {string[]} [prefixes] @returns {{ adr: number, rows: Record<string, string> }} */
+export function nextFree(root = '.', prefixes = []) {
+  const doc = readBacklogView({ root }).doc
+  const text = readDecisionsView(root).text
+  let adr = 0
+  for (const line of text.split('\n')) {
+    const m = ADR_HEADING.exec(line)
+    if (m) adr = Math.max(adr, parseInt(m[1], 10))
+  }
+  /** @type {Record<string, string>} */
+  const rows = {}
+  const want = prefixes.length ? prefixes : [...new Set(doc.entries.map((e) => String(e.id).split('-')[0]))]
+  for (const p of want) {
+    let max = 0
+    // A prefix comes from the command line, so it is matched as text, never compiled into a RegExp.
+    const head = `${p}-`
+    for (const e of doc.entries) {
+      const id = String(e.id)
+      if (!id.startsWith(head)) continue
+      const tail = id.slice(head.length)
+      if (/^\d+$/.test(tail)) max = Math.max(max, parseInt(tail, 10))
+    }
+    if (max) rows[p] = `${p}-${String(max + 1).padStart(3, '0')}`
+  }
+  return { adr: adr + 1, rows }
+}
