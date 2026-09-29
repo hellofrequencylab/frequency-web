@@ -2,25 +2,36 @@
 
 // THE SPACE LOOM STUDIO — the full-page image-library manager for one Space (SPACE_MODULES `space.loom`).
 // The counterpart to the popup LoomPicker: instead of picking ONE image and closing, an operator browses,
-// uploads, searches, filters by tag, and DELETES the Space's own images in place. It reuses the exact
-// space-scoped, re-authorized server actions the picker uses (`loomImages` / `uploadLoomImage`) plus the
-// Studio-only `deleteSpaceLoomImage`. The page and that delete both decide on the Space's `loom` function
+// uploads, searches, filters by tag, EDITS one image's title, alt and tags, and DELETES the Space's own
+// images in place. It reuses the exact space-scoped, re-authorized server actions the picker uses
+// (`loomImages` / `uploadLoomImage`) plus the Studio-only `deleteSpaceLoomImage`, `updateSpaceLoomImageMeta`
+// and `spaceLoomImageUsage` (LIVE-568). The page and those three decide on the Space's `loom` function
 // (canManageSpaceLoom, LIVE-566): the switch and min-role bar the Space set in /manage, code default editor.
+// The editor shows how many pages place the image beside Remove, and the delete refuses while that count
+// is above zero (the admin Studio's guard), so removing a photo never blanks a live page.
 // A regular member never reaches this surface; they only ever get the popup picker.
 //
 // Presentational shell; every read/write re-gates server-side. Large photos are shrunk in the browser first
 // (shared with the picker) so they clear Vercel's serverless body limit. FAIL-SAFE throughout.
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
-import { Upload, Loader2, Search, Trash2, ImageIcon, X } from 'lucide-react'
-import { loomImages, uploadLoomImage, deleteSpaceLoomImage } from '@/lib/loom/picker-actions'
+import { Upload, Loader2, Search, Pencil, ImageIcon, X } from 'lucide-react'
+import {
+  loomImages,
+  uploadLoomImage,
+  deleteSpaceLoomImage,
+  updateSpaceLoomImageMeta,
+  spaceLoomImageUsage,
+} from '@/lib/loom/picker-actions'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { appendImageDescriptor, describeImage } from '@/lib/library/image-describe'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { describeGeneratedAsset } from '@/lib/library/describe-generated'
 import { useDescribeOnView } from '@/lib/library/describe-on-view'
 import type { LoomPickAsset } from '@/lib/library/store'
-import { Input } from '@/components/ui/field'
+import { Field, Input, Textarea } from '@/components/ui/field'
+import { Dialog } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 export function SpaceLoomStudio({
   spaceId,
@@ -41,6 +52,11 @@ export function SpaceLoomStudio({
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [loading, startLoad] = useTransition()
   const fileRef = useRef<HTMLInputElement>(null)
+  // The one-image editor (LIVE-568): which card is open, and how many pages place it (null = could not
+  // check). `usage` for another id, or none, reads as still checking.
+  const [editing, setEditing] = useState<string | null>(null)
+  const [usage, setUsage] = useState<{ id: string; pages: number | null } | null>(null)
+  const [saving, startSave] = useTransition()
 
   // Describe on view (LIVE-588, ADR-1590): the importer seeds land in a Space's Loom with no browser
   // in the flow, so no blurhash and no palette. The operator looking at them here is that browser:
@@ -59,6 +75,49 @@ export function SpaceLoomStudio({
     },
     [spaceId],
   )
+
+  const openEditor = useCallback(
+    (id: string) => {
+      setError(null)
+      setEditing(id)
+      spaceLoomImageUsage(spaceId, id)
+        .then((res) => setUsage({ id, pages: res.ok ? res.pages : null }))
+        .catch(() => setUsage({ id, pages: null }))
+    },
+    [spaceId],
+  )
+
+  const saveMeta = useCallback(
+    (id: string, form: FormData) => {
+      setError(null)
+      startSave(async () => {
+        const res = await updateSpaceLoomImageMeta(spaceId, id, {
+          title: String(form.get('title') ?? ''),
+          alt: String(form.get('alt') ?? ''),
+          tags: String(form.get('tags') ?? ''),
+        }).catch(() => ({ error: 'That did not save. Try again.' }))
+        if ('error' in res) { setError(res.error); return }
+        setAssets((prev) =>
+          prev.map((a) => (a.id === id ? { ...a, title: res.title ?? a.title, alt: res.alt, tags: res.tags ?? a.tags } : a)),
+        )
+        setEditing(null)
+      })
+    },
+    [spaceId],
+  )
+
+  // The open card, and its page count: undefined while checking, null when the check failed. A failed
+  // check never reads as zero (ADR-979); the delete refuses on it too.
+  const editingAsset = editing ? assets.find((a) => a.id === editing) ?? null : null
+  const placedOn = editingAsset && usage?.id === editingAsset.id ? usage.pages : undefined
+  const usageWords =
+    placedOn === undefined
+      ? 'Checking where it is used…'
+      : placedOn === null
+        ? 'Could not check where this is used.'
+        : placedOn === 0
+          ? 'Not on any page yet.'
+          : `On ${placedOn} page${placedOn === 1 ? '' : 's'}. Take it off first to remove it.`
 
   // Reload when the tag filter changes (search has its own debounce below).
   useEffect(() => {
@@ -212,16 +271,61 @@ export function SpaceLoomStudio({
               <img src={a.url} alt={a.alt ?? a.title} loading="lazy" className="h-full w-full object-cover" />
               <button
                 type="button"
-                onClick={() => remove(a.id)}
-                disabled={pendingDelete === a.id}
-                aria-label={`Remove ${a.title}`}
-                className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-pill bg-canvas/90 text-danger opacity-0 shadow-sm transition-opacity hover:bg-canvas focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
+                onClick={() => openEditor(a.id)}
+                aria-label={`Edit or remove ${a.title}`}
+                className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-pill bg-canvas/90 text-text shadow-sm transition-opacity hover:bg-canvas focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
               >
-                {pendingDelete === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                <Pencil className="h-3.5 w-3.5" />
               </button>
             </li>
           ))}
         </ul>
+      )}
+
+      {/* The one-image editor (LIVE-568): title, alt and tags, and Remove with the page count beside it. */}
+      {editingAsset && (
+        <Dialog open onClose={() => setEditing(null)} ariaLabelledBy="space-loom-edit-title" className="max-w-md">
+          <form
+            key={editingAsset.id}
+            onSubmit={(e) => { e.preventDefault(); saveMeta(editingAsset.id, new FormData(e.currentTarget)) }}
+            className="w-full space-y-4 rounded-card border border-border bg-surface p-5 lift-3"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="space-loom-edit-title" className="text-body font-bold text-text">Edit image</h2>
+              <button type="button" onClick={() => setEditing(null)} aria-label="Close" className="text-subtle hover:text-text">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL, not a configured next/image domain */}
+            <img src={editingAsset.url} alt="" className="max-h-48 w-full rounded-card bg-canvas object-contain" />
+            <Field label="Title">
+              <Input name="title" defaultValue={editingAsset.title} required maxLength={200} />
+            </Field>
+            <Field label="Alt text" hint="Say what the photo shows, for anyone who cannot see it. Your pages use these words.">
+              <Textarea name="alt" rows={2} defaultValue={editingAsset.alt ?? ''} maxLength={500} />
+            </Field>
+            <Field label="Tags" hint="Separate tags with commas.">
+              <Input name="tags" defaultValue={editingAsset.tags.join(', ')} />
+            </Field>
+            {error && <p className="text-2xs text-danger">{error}</p>}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <Button
+                  type="button"
+                  variant="dangerOutline"
+                  size="sm"
+                  onClick={() => void remove(editingAsset.id)}
+                  loading={pendingDelete === editingAsset.id}
+                  disabled={placedOn !== undefined && placedOn !== null && placedOn > 0}
+                >
+                  Remove
+                </Button>
+                <span data-loom-usage className="text-2xs text-muted">{usageWords}</span>
+              </div>
+              <Button type="submit" size="sm" loading={saving}>Save</Button>
+            </div>
+          </form>
+        </Dialog>
       )}
     </div>
   )

@@ -9,9 +9,10 @@
 //
 // Every read + write RE-RESOLVES + RE-GATES server-side (the client is never trusted): a space scope
 // requires the caller to manage that Space (canEditProfile, the same authority uploadToLoom uses);
-// 'mine' requires only a signed-in caller. The ONE exception is the Studio-only deleteSpaceLoomImage,
-// which decides on the Space's `loom` function (canManageSpaceLoom, LIVE-566): the Studio is the
-// management door and the picker is the editing door, so switching the Studio off never stops an edit.
+// 'mine' requires only a signed-in caller. The ONE exception is the Studio-only actions at the foot of
+// this file (deleteSpaceLoomImage, updateSpaceLoomImageMeta, spaceLoomImageUsage), which decide on the
+// Space's `loom` function (canManageSpaceLoom, LIVE-566): the Studio is the management door and the
+// picker is the editing door, so switching the Studio off never stops an edit.
 // Uploads run through the service-role admin client, so they never depend on a live browser Storage
 // session token — the fragile path that returned "new row violates row-level security policy".
 // FAIL-SAFE throughout.
@@ -21,8 +22,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, getSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
+import { normalizeAssetMeta, updateSpaceLibraryAssetMeta } from '@/lib/library/asset-meta'
+import { findLibraryAssetUsage } from '@/lib/library/usage'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import {
+  getLibraryAsset,
   listLoomScopeImages,
   listLoomScopeTags,
   insertSpaceLibraryImage,
@@ -282,12 +286,46 @@ export async function uploadLoomImage(
   return { url: pub.publicUrl, id }
 }
 
+/** The Space a Studio-only action names (`spaceKey`, id or slug) and the caller's role on it, for the
+ *  action to put through canManageSpaceLoom (LIVE-566, ADR-1578) at its own door. The personal 'mine'
+ *  scope is not a Space, so it never resolves here. FAIL-SAFE: any error reads as no Space. */
+async function loomSpaceAndRole(callerId: string, spaceKey: string) {
+  try {
+    const space = spaceKey === 'mine' ? null : await spaceForScopeKey(spaceKey)
+    if (!space) return null
+    const caps = await getSpaceCapabilities(space, callerId)
+    return { space, role: caps.role }
+  } catch {
+    return null
+  }
+}
+
+/** Is `assetId` one of this Space's own Loom rows? A read bound to space_id; a failed read is NO.
+ *  Asked before a usage read, so a Space never learns where another Space's image is placed. */
+async function spaceHoldsAsset(spaceId: string, assetId: string): Promise<boolean> {
+  try {
+    return !!(await getLibraryAsset(spaceId, assetId))
+  } catch {
+    return false
+  }
+}
+
+/** The refusal a Space delete returns while the image is still placed (LIVE-568). The admin door's
+ *  sentence, less its "Archive it instead": the Space Studio has no archive. */
+function placedRefusal(pages: number): string {
+  return `This image is on ${pages} page${pages === 1 ? '' : 's'}. Take it off ${pages === 1 ? 'that page' : 'those pages'} first, then remove it here.`
+}
+
 /** Delete an image from a SPACE's Loom (the Loom Studio's remove control). Gated on the Space's `loom`
  *  FUNCTION through canManageSpaceLoom (LIVE-566, ADR-1578): the switch and the min-role bar the Space set,
  *  NOT the picker's `canEditProfile` scope, because this is the Studio's management door and the picker is
  *  the editing door (ADR-1559 §4). Only a Space (by id or slug) is deletable here: the personal 'mine' scope
  *  is not a Space, so it is rejected (a person's cross-space uploads are managed where they live).
- *  Best-effort removes the stored object too. FAIL-SAFE: any error resolving the Space reads as no access. */
+ *
+ *  SAFE DELETE (LIVE-568, ADR-1586): the admin door's guard (PROG-D4, ADR-1502). The usage index is read
+ *  first; an image still placed on a page is refused with the count, and a FAILED read refuses too
+ *  (deleting what you could not prove unused is the destructive half of ADR-979). Best-effort removes the
+ *  stored object after the row. FAIL-SAFE: any error resolving the Space reads as no access. */
 export async function deleteSpaceLoomImage(
   spaceKey: string,
   assetId: string,
@@ -295,17 +333,13 @@ export async function deleteSpaceLoomImage(
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Sign in to manage this library.' }
   if (!assetId) return { error: 'Nothing to remove.' }
-  let spaceId: string | null = null
-  try {
-    const space = spaceKey === 'mine' ? null : await spaceForScopeKey(spaceKey)
-    if (space) {
-      const caps = await getSpaceCapabilities(space, caller.id)
-      if (canManageSpaceLoom(space, caps.role)) spaceId = space.id
-    }
-  } catch {
-    spaceId = null
-  }
-  if (!spaceId) return { error: 'You cannot manage that library.' }
+  const ctx = await loomSpaceAndRole(caller.id, spaceKey)
+  if (!ctx || !canManageSpaceLoom(ctx.space, ctx.role)) return { error: 'You cannot manage that library.' }
+  const spaceId = ctx.space.id
+  if (!(await spaceHoldsAsset(spaceId, assetId))) return { error: 'That image is not in this library.' }
+  const usage = await findLibraryAssetUsage(assetId)
+  if (!usage.ok) return { error: 'Could not check where this image is used, so it stays. Try again.' }
+  if (usage.pages > 0) return { error: placedRefusal(usage.pages) }
   const removed = await deleteSpaceLibraryAsset(spaceId, assetId)
   if (!removed) return { error: 'That image could not be removed. Try again.' }
   if (removed.bucket && removed.path) {
@@ -316,4 +350,49 @@ export async function deleteSpaceLoomImage(
     }
   }
   return { ok: true }
+}
+
+/** Rename, caption or retag ONE image in a Space's Loom (LIVE-568, ADR-1586): the Space Studio's
+ *  editor. Same door as the delete (canManageSpaceLoom), same validation as the Loom Studio drawer
+ *  (normalizeAssetMeta), and a write bound to space_id, so an id from another Space updates nothing.
+ *  Returns the saved words so the Studio shows what the row now holds. */
+export async function updateSpaceLoomImageMeta(
+  spaceKey: string,
+  assetId: string,
+  fields: { title?: string; alt?: string; tags?: string },
+): Promise<{ ok: true; title: string | null; alt: string | null; tags: string[] | null } | { error: string }> {
+  const caller = await getCallerProfile()
+  if (!caller) return { error: 'Sign in to manage this library.' }
+  if (!assetId) return { error: 'Nothing to edit.' }
+  const ctx = await loomSpaceAndRole(caller.id, spaceKey)
+  if (!ctx || !canManageSpaceLoom(ctx.space, ctx.role)) return { error: 'You cannot manage that library.' }
+  const spaceId = ctx.space.id
+  const words = normalizeAssetMeta({ title: fields?.title, alt: fields?.alt, tags: fields?.tags })
+  if ('error' in words) return { error: words.error }
+  const out = await updateSpaceLibraryAssetMeta(spaceId, assetId, words.patch)
+  if (out === 'missing') return { error: 'That image is not in this library.' }
+  if (out === 'failed') return { error: 'That did not save. Try again.' }
+  return {
+    ok: true,
+    title: words.patch.title ?? null,
+    alt: words.patch.alt ?? null,
+    tags: words.patch.tags ?? null,
+  }
+}
+
+/** How many pages place ONE image of a Space's Loom (LIVE-568): the count the Studio shows next to
+ *  Remove, so a refused delete is never the first a person hears of it. Same door as the delete, and
+ *  only for this Space's own rows. Counts only: the places themselves can sit in other Spaces. A
+ *  failed read is `ok: false`, which the Studio says as "could not check", never as zero. */
+export async function spaceLoomImageUsage(
+  spaceKey: string,
+  assetId: string,
+): Promise<{ ok: true; pages: number } | { ok: false }> {
+  const caller = await getCallerProfile()
+  if (!caller || !assetId) return { ok: false }
+  const ctx = await loomSpaceAndRole(caller.id, spaceKey)
+  if (!ctx || !canManageSpaceLoom(ctx.space, ctx.role)) return { ok: false }
+  if (!(await spaceHoldsAsset(ctx.space.id, assetId))) return { ok: false }
+  const usage = await findLibraryAssetUsage(assetId)
+  return usage.ok ? { ok: true, pages: usage.pages } : { ok: false }
 }
