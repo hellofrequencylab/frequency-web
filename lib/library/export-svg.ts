@@ -2,7 +2,8 @@
 // classes (fill-primary, stroke-signal, …) that only resolve against the app's CSS, so to
 // export a standalone file we read the COMPUTED colors off the live DOM and inline them.
 // That yields a self-contained SVG (and, rasterized, a PNG) that opens correctly anywhere.
-// Photo/image assets download by fetching the URL as a blob. All functions run in the browser.
+// Photo/image assets download through the server door instead (see below). The exports run in the
+// browser; extForMime is pure and also used on the server.
 
 const PRESENTATION_PROPS = [
   'fill',
@@ -119,18 +120,11 @@ export async function rasterizeSvgElement(source: SVGSVGElement, width = 512): P
   })
 }
 
-/** Download a file-backed asset by URL. Falls back to opening it if the fetch is blocked. */
-export async function downloadImageUrl(url: string, filename: string): Promise<void> {
-  try {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(String(res.status))
-    triggerDownload(await res.blob(), filename)
-  } catch {
-    window.open(url, '_blank', 'noopener')
-  }
-}
+// A file-backed asset is NOT downloaded from here any more: a browser fetch of its url asked no
+// policy and wrote nothing down. It goes through the server door, /api/library/download/<id>
+// (lib/library/download-door.ts, LIVE-578, ADR-1596). This module keeps the DOM exports only.
 
-/** Best-effort file extension from a mime type. */
+/** Best-effort file extension from a mime type. Pure; the download door names its attachment with it. */
 export function extForMime(mime: string | null): string {
   if (!mime) return 'img'
   const m: Record<string, string> = {

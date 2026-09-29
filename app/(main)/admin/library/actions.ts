@@ -20,6 +20,7 @@ import {
   protectRefusal,
   type ProtectVersionRow,
 } from '@/lib/library/protect-move'
+import { readLibraryDownloadRecord } from '@/lib/library/download-door'
 
 // ── THE LOOM STUDIO DOOR: every action on this route carries the PAGE's gate ─────────────────
 // `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes, because a
@@ -441,4 +442,13 @@ export async function deleteLibraryAsset(id: string): Promise<{ ok: true } | { e
   if (error) return { error: error.message }
   revalidatePath('/admin/library')
   return { ok: true }
+}
+
+/** The download record the drawer shows under [data-loom-downloads] (LIVE-578, ADR-1596): how many
+ *  times the file went through the download door, and when last. Studio-gated, so staff only. */
+export async function libraryDownloadRecord(
+  id: string,
+): Promise<{ count: number; lastAt: string | null } | null> {
+  await requireAdmin('janitor', { staff: 'marketing' })
+  return readLibraryDownloadRecord(id)
 }

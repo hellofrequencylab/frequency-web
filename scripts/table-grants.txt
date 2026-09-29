@@ -23,7 +23,7 @@
 # `public` table with an anon-readable stripe_customer_id column). `internal` is the load-bearing
 # one, and it is the only verdict that fails closed. If you are unsure, write `internal`.
 #
-# 39 public · 166 authenticated · 84 internal · 289 total (space_plan_activity 2026-09-28, LIVE-543: the Plan own record, append only, both sides on the caller session; space_plan_comments 2026-09-28, LIVE-542: the thread under a shared Plan, read and written by both sides on the caller session; space_vera_changes 2026-09-23, PROG-CAL11 slice 3: the Vera change log, read and written by the team on the caller session; space_plans + shares + playbooks + private feeds 2026-09-19, ADR-1468; space_calendar_day_notes moved public to authenticated 2026-09-16, ADR-1387; space_calendar_entries + space_calendar_day_notes added 2026-09-16, ADR-1385/1386; recounted 2026-09-15 with the
+# 39 public · 167 authenticated · 84 internal · 290 total (library_downloads 2026-09-29, LIVE-578: the Loom download record, append only, service-role insert and staff read; space_plan_activity 2026-09-28, LIVE-543: the Plan own record, append only, both sides on the caller session; space_plan_comments 2026-09-28, LIVE-542: the thread under a shared Plan, read and written by both sides on the caller session; space_vera_changes 2026-09-23, PROG-CAL11 slice 3: the Vera change log, read and written by the team on the caller session; space_plans + shares + playbooks + private feeds 2026-09-19, ADR-1468; space_calendar_day_notes moved public to authenticated 2026-09-16, ADR-1387; space_calendar_entries + space_calendar_day_notes added 2026-09-16, ADR-1385/1386; recounted 2026-09-15 with the
 # space_member_benefits recovery, which added three service-role-only tables; before it the line
 # read 81 internal / 276 total, itself recounted 2026-09-15 with LIVE-334,
 # which dropped the retired `channels` + `channel_memberships` rows; the line read 272 and had been
@@ -150,6 +150,7 @@ lead_touchpoints                     authenticated
 library_assets                       internal
 library_collection_items             internal
 library_collections                  internal
+library_downloads                    authenticated
 library_styles                       internal
 library_versions                     internal
 listing_comments                     public

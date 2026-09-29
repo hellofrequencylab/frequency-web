@@ -7153,6 +7153,45 @@ export type Database = {
           },
         ]
       }
+      library_downloads: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          policy: string
+          profile_id: string | null
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          policy: string
+          profile_id?: string | null
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          policy?: string
+          profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_downloads_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_downloads_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       library_styles: {
         Row: {
           base_style: string | null
