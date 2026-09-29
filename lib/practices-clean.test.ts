@@ -77,6 +77,16 @@ function from(table: string) {
     neq: (c: string, v: unknown) => { preds.push((r) => r[c] !== v); return api },
     in: (c: string, vs: readonly unknown[]) => { const s = new Set(vs); preds.push((r) => s.has(r[c])); return api },
     is: (c: string, v: null) => { preds.push((r) => (r[c] ?? null) === v); return api },
+    // PostgREST's or(): comma-separated `col.op.value` terms, `is.null` and `eq.<v>` only.
+    or: (expr: string) => {
+      const terms = expr.split(',').map((t) => {
+        const [col, op, ...rest] = t.split('.')
+        const val = rest.join('.')
+        return (r: Row) => (op === 'is' ? (r[col] ?? null) === null : String(r[col] ?? '') === val && r[col] != null)
+      })
+      preds.push((r) => terms.some((t) => t(r)))
+      return api
+    },
     order: (col: string, opts?: { ascending?: boolean }) => { orders.push({ col, asc: opts?.ascending !== false }); return api },
     limit: (n: number) => { limitN = n; return Promise.resolve(terminal(sorted(matched()).slice(0, n))) },
     async maybeSingle() { return { data: sorted(matched())[0] ?? null, error: null } },
@@ -135,6 +145,7 @@ import {
   mergePractices,
   mergeTags,
   listReviewQueue,
+  needsAttention,
   resolvePracticeSlugRedirect,
 } from './practices/clean'
 
@@ -235,5 +246,44 @@ describe('listReviewQueue — ordering', () => {
 
   it('returns [] when nothing is pending', async () => {
     expect(await listReviewQueue()).toEqual([])
+  })
+})
+
+describe('needsAttention — an empty card hook surfaces whatever its usage (LIVE-644)', () => {
+  const ranked = (id: string, over: Row = {}): Row => ({
+    id,
+    title: id,
+    status: 'approved',
+    is_public: true,
+    domain_id: 'd-mind',
+    subcategory_id: 'sc-1',
+    header_image: 'https://img/x.jpg',
+    body: 'Sit. Breathe.',
+    summary: 'A hook someone wrote.',
+    duration_min: 5,
+    adopters: 1,
+    logs_30d: 0,
+    logs_total: 0,
+    created_at: '2026-01-01T00:00:00Z',
+    ...over,
+  })
+
+  it('reads a well-used, fresh practice with no hook past the least-used window and lists it first', async () => {
+    const now = new Date().toISOString()
+    store.practices_ranked = [
+      ranked('quiet-a', { created_at: '2026-02-01T00:00:00Z' }),
+      ranked('quiet-b', { created_at: '2026-03-01T00:00:00Z' }),
+      // Logged all month and touched today: no other reason would ever bring it to the panel.
+      ranked('busy-hookless', { summary: null, logs_total: 400, logs_30d: 40, created_at: '2025-06-01T00:00:00Z' }),
+    ]
+    store.practices = store.practices_ranked.map((r) => ({ id: r.id, updated_at: now }))
+    store.practice_tags = ['t1', 't2', 't3'].map((tag_id) => ({ practice_id: 'quiet-b', tag_id }))
+
+    const items = await needsAttention({ limit: 2 })
+    expect(items[0]?.id).toBe('busy-hookless')
+    expect(items[0]?.reasons).toContain('hookless')
+    expect(items.find((i) => i.id === 'busy-hookless')?.reasons).toContain('undertagged')
+    expect(items.find((i) => i.id === 'quiet-a')?.reasons).toContain('undertagged')
+    expect(items.find((i) => i.id === 'quiet-b')?.reasons ?? []).not.toContain('undertagged')
   })
 })
