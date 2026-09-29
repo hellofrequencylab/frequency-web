@@ -425,6 +425,51 @@ describe('check:backlog — the probe/status contract', () => {
     expect(out).toMatch(/open row has no priority/)
   })
 
+  describe('meta.slate waves: one wave per token, sequenced work only (HYG-134)', () => {
+    const openRow = (id: string, status = 'open') => ({
+      id,
+      title: `${id} fixture`,
+      status,
+      lane: 'live',
+      size: 'S',
+      priority: 'P2',
+      verify: { kind: 'manual', evidence: 'fixture', checked: '2026-09-29' },
+    })
+    const withWaves = (entries: unknown[], waves: { name: string; ids: string[] }[]) => {
+      mkdirSync(path.join(dir, 'docs'), { recursive: true })
+      writeFileSync(
+        path.join(dir, 'docs/BUILD-BACKLOG.json'),
+        JSON.stringify({ meta: { slate: { waves } }, entries: [...ballast(), ...entries] }, null, 2),
+      )
+    }
+
+    it('FAILS two waves sharing a token, the shape a name-keyed fold produced on 2026-09-29', () => {
+      withWaves([openRow('A')], [
+        { name: 'W4 · old ── PARKED 2026-09-29', ids: ['A'] },
+        { name: 'W4 · old', ids: [] },
+      ])
+      const { code, out } = run(BACKLOG_GUARD, dir)
+      expect(code).toBe(1)
+      expect(out).toMatch(/2 waves with the token "W4"/)
+    })
+
+    it('FAILS a wave listing a PARKED id, which HYG-047 counts as active', () => {
+      withWaves([openRow('A'), openRow('P', 'parked')], [{ name: 'W4 · x', ids: ['A', 'P'] }])
+      const { code, out } = run(BACKLOG_GUARD, dir)
+      expect(code).toBe(1)
+      expect(out).toMatch(/wave "W4" lists P, whose row is parked/)
+    })
+
+    it('PASSES distinct tokens holding open and blocked rows', () => {
+      withWaves([openRow('A'), openRow('B', 'blocked')], [
+        { name: 'W4 · x', ids: ['A'] },
+        { name: 'W40 · y', ids: ['B'] },
+        { name: 'owner-timed', ids: [] },
+      ])
+      expect(run(BACKLOG_GUARD, dir).code).toBe(0)
+    })
+  })
+
   it('does not probe parked rows at all', () => {
     // A parked row whose probe WOULD pass must not be reported: "you could do this now" is true of
     // everything parked and therefore says nothing.
