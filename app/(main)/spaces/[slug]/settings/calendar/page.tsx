@@ -30,7 +30,7 @@ import { incomingFromRow, type ShareSubject, type SharedPlanView } from '@/lib/c
 import { SharedPlansPanel } from './shared-plans-panel'
 import { CalendarPlansPanel } from './calendar-plans-panel'
 import { SpaceTodosPanel } from './space-todos-panel'
-import { listTasks } from '@/lib/crm/tasks'
+import { listTasksWithShared } from '@/lib/calendar/shared-tasks'
 
 // THE SPACE CALENDAR CONSOLE (Events EC2/EC3/EC5, upgraded 2026-07-25). The MANAGEMENT calendar for a
 // space's events: the month grid AND the chronological list (the calendar's own toggle), every item
@@ -114,7 +114,7 @@ export default async function SpaceCalendarConsolePage({
   // THE TEAM'S TO-DOS (PROG-CAL4 "My tasks"). One list for Plan to-dos and CRM follow-ups
   // alike: both are crm_tasks rows (ADR-1386 owner ruling 3). Read here, behind the same
   // manager gate the Plans read sits behind, and scoped to this Space's own id.
-  const todos = featureLocked || !canManage ? [] : await listTasks({ spaceId: space.id, limit: 500 })
+  const todos = featureLocked || !canManage ? [] : await listTasksWithShared(space.id)
 
   // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT).
   // Recurrence is materialised (ADR-007), so a weekly series is ~9 rows inside the cron's 60-day

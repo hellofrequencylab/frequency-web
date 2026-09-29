@@ -524,6 +524,24 @@ entry-actions and vera-calendar-actions; a Vera line whose door records itself (
 written twice. `listPlanActivity` reads the latest twenty for either side, and the drawer shows them newest
 first under `[data-plan-activity]`. Proof of the lock: `supabase/tests/space_plan_activity.test.sql`.
 
+SHARED TO-DOS (`LIVE-544`, ADR-1567). A to-do belongs to its Plan's host Space (`crm_tasks.space_id`),
+and a guest holding an accepted share reaches it by PLAN id: `listTasksWithShared` (`lib/calendar/shared-tasks.ts`)
+is one list, the Space's own rows then the to-dos of every Plan shared with it marked `sharedFrom` the host, read
+by the inbox (`listSpaceTasks`), the calendar settings page and the due-date layer alike. Every widened
+service-role read or write is bound to plan ids the session proved first through `listSharedPlanIds`.
+`assignPlanTodo` hands a to-do to a person on either team (the host's owner and active members, and each
+accepted guest's), taken from `assigneeChoicesForPlan` and never from the browser, binds the write to the
+proven Plan and records `todo_assigned`. The drawer's to-do list renders for both sides with a picker per row;
+the guest ticks and hands over, the host alone adds and re-anchors.
+
+WHO HEARS (`LIVE-545`, ADR-1557). Three moments on a shared Plan reach the other team through the notification
+registry and the send gate, so a member's own switches decide every channel: `plan.share` (`lifecycle`, email
+and push: an offer to the guest's approvers, an answer to the host's), `plan.comment` and `plan.assign`
+(`comments`, push: the other side's editors and the person a to-do was handed to; the assignee). One seam,
+`notifyPlanMoment` (`lib/calendar/plan-notify.ts`), best effort after each door's write; the actor is never a
+recipient; the link is the recipient's own calendar settings and the gate subject is their Space. One send per
+moment, never a digest.
+
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
 carries `plan_id`, and the Pencil is retired in the same step so the calendar shows one card. The
