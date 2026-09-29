@@ -271,6 +271,25 @@ Baselines live in `test/e2e/__screenshots__/visual.spec.ts/` and are named
 Member-shell files are the `app-*` ones (`app-feed`, `app-room`, `app-settings`,
 `app-space-console`) and are captured only with `capture_shell` ticked.
 
+### What a full-page mobile baseline photographs (ADR-1545)
+
+A full-page capture on a project with `hasTouch` (`mobile`, `narrow`) drops Chromium's
+touch emulation after its first shot and never gets it back, so `(pointer: coarse)` reads
+false from then on and every `tap-target` loses its 44px floor. `toHaveScreenshot` captures
+until two agree, which is why every committed full-page mobile baseline is the fine-pointer
+layout and why the first capture of every comparison used to disagree with it by a few
+pixels of height. `capture()` now drops touch emulation before the shutter on those
+captures (`dropTouchBeforeFullPageCapture` in `surfaces.ts`, with the measurement), so
+the retry is gone and the baselines are unchanged. First-screen (`viewportOnly`) captures
+keep touch on; their baselines are coarse renderings. The 44px floors are therefore in no
+full-page mobile photograph; `a11y.spec.ts` and `overflow.spec.ts` run with touch on and
+measure them as boxes.
+
+When a capture fails, the message now names what moved: the box that measured differently
+after the failure than before the shutter, what the window saw while it was open, and,
+for a stable pixel diff, the row bands the pixels sit in with the elements under them
+(decoded from the matcher's own attachments, so no artifact download is needed).
+
 ### Reading a capture before taking it (ADR-1273)
 
 A capture rewrites **every** PNG whose page renders differently from the day that

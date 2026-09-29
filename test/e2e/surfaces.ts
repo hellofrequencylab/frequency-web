@@ -783,59 +783,13 @@ export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
   // read `qr_scans`, which has had no new row since 2026-09-18 and none at all since the
   // baseline was captured, so the numbers in the picture are frozen.
   '/admin/qr': 'LIVE-476',
-  // LIVE-492, and the OWNER AUTHORISED this downgrade on 2026-09-24 after the second cause was
-  // ruled out. `pr-compare` is a required status check, so a surface that cannot be photographed
-  // truthfully was making EVERY pull request in the repository unmergeable.
-  //
-  // IT IS TWO FAILURES, NOT ONE, and reading the run as one cost an attempt. Four cases fail and
-  // they split by viewport:
-  //
-  //   MOBILE (390) is the camera-induced flip: "changed height DURING capture: 7752 and 7756, a
-  //   4px difference". `toHaveScreenshot` compares each capture with the previous one to prove the
-  //   page is still and gets the flip back, so it never takes two consecutive stable frames. The
-  //   page is BOTH heights and a baseline is one of them, which is why a recapture is refused here
-  //   for the same reason it was refused on /admin/qr.
-  //
-  //   DESKTOP (1280) is NOT a flip at all. Its call log reads "captured a stable screenshot" with
-  //   no dimension mismatch, and then a STABLE diff: 982 px dawn-light, 1008 px dawn-dark,
-  //   identical across all three attempts. Compare LIVE-476's reading on /admin/qr's first screen
-  //   -- 951 px dawn-light, 1029 px dawn-dark, also stable across three. Same defect class, same
-  //   magnitude, one surface over. The cause of THAT one is still not known either.
-  //
-  // 🔴 SO `viewportOnly` WOULD NOT HAVE FIXED THIS SURFACE. It addresses a height that is not a
-  // function of the page's own content, and the desktop half is not that -- it is a stable
-  // difference inside a stable frame, which a first-screen capture would carry straight through.
-  // The advisory tier is the only remedy that covers both halves, which settles a choice this
-  // entry would otherwise look like it made on taste.
-  //
-  // WHAT IS RULED OUT, so nobody re-walks it:
-  //  · THE HEADER OFFSET. Four hand-written copies of the app header's height had dropped
-  //    env(safe-area-inset-top), so the shell asked for 100vh + inset. That is a real defect and
-  //    it is fixed (LIVE-493) -- and it is NOT this. `pr-compare` on 34577e9, the commit carrying
-  //    the fix, failed IDENTICALLY: same four cases, same pair of heights.
-  //  · THE MECHANISM THE DIAGNOSTIC NAMES. `captureFlipMessage` blames boxes sized against the
-  //    viewport height, and this file already refutes that one surface up: `fullPage` was shown
-  //    NOT to resize the layout viewport in playwright-core 1.63 (`captureBeyondViewport`, no
-  //    `setDeviceMetricsOverride` in that path). The message asserts it anyway, which is a finding
-  //    of its own and cost a whole pull request.
-  //  · THE ARITHMETIC AGREES. 4px is far too small for any box it named: the vault drawer's
-  //    `max-h-[50dvh]` would swing ~3,400px on a 7752px document, and two of the five render at 0.
-  //
-  // STILL UNWALKED: script reading `innerHeight`, or an IntersectionObserver that fires when the
-  // whole document is suddenly in view -- the two leads the diagnostic's OTHER branch names. This
-  // surface is module-driven (`PageModules`), so either would live in the modules rather than the
-  // page.
-  //
-  // AND EVEN IF IT HAD, `viewportOnly` IS THE WRONG TRADE HERE. It gives up everything below the
-  // first screen, and on this surface that is ~7,100px of a dense table -- the 43 raw <button>
-  // population this page was CHOSEN for. It would have kept the vote and thrown away the subject.
-  // Advisory keeps the whole picture, still captures it, still reports it, and gives up only the
-  // vote. That is the trade this file's own rule asks for: a gate that cannot fire truthfully
-  // stays advisory.
-  //
-  // The row is the debt and it stays OPEN. Clear LIVE-492, delete this entry, and the surface
-  // votes again.
-  '/admin/content/practices': 'LIVE-492',
+  // /admin/content/practices STOOD HERE from 2026-09-24 to 2026-09-28 (LIVE-492) and votes
+  // again. What put it here was read on the runner rather than guessed, and both halves are
+  // fixed at their cause (ADR-1545): the 4px mobile flip was the shutter dropping the touch
+  // emulation after its first shot, which `dropTouchBeforeFullPageCapture` now does before it;
+  // the stable pixel diff was two live modules, the Needs-attention rows reordering and the
+  // stat band's counts, each now one `data-visual-mask` box (VISUAL_MASK_SITES). The entry's
+  // long note, with the ruled-out header offset (LIVE-493) and the arithmetic, is in the row.
   // /admin/library STOOD HERE from 2026-09-25 to 2026-09-28 (LIVE-504) and votes again. Its two
   // readings were the two halves of the class `dropTouchBeforeFullPageCapture` measures (LIVE-492): the mobile flip (390x5634 <->
   // 390x5642) was the shutter dropping the touch emulation after its first shot, which capture()
@@ -1334,6 +1288,26 @@ export const VISUAL_MASK_SITES: readonly {
     file: 'app/(main)/admin/content/practices/practices-table.tsx',
     kind: 'live',
     why: 'Per-row practice usage: `logs_30d` is a rolling 30-day count of member logs, with `logs_total` and `adopters` beside it in the desktop cell. Real logging moves digits across a dense table between any two captures — 4179-4405 pixels on PR #2855, on a diff that touches nothing this surface renders. Both sites are `tabular-nums`, so the box is fixed and the mask holds it.',
+  },
+  // ── /admin/content/practices, the two live modules the runner named (LIVE-492, 2026-09-28) ──
+  // Read from the runner rather than inferred: the band reader in explainCaptureFailure printed,
+  // for all four looks against the 2026-09-27 baseline, twelve to thirteen 14px bands and named
+  // the box under each. Eleven sat on Needs-attention row titles (`span.min-w-0.truncate "Heart
+  // Coherence Breathing"` inside `a.inline-flex.items-center`), one on the stat band's values
+  // (`p.font-medium.text-muted "In the library"`, "Public"). 7727 to 7846 differing pixels, stable
+  // across three attempts each, mobile and desktop alike. The rows reorder because the quality
+  // score decays with freshness; the counts move with curation. Neither is a box that resizes.
+  {
+    value: 'practice-attention-list',
+    file: 'components/widgets/practices/admin/needs-attention.tsx',
+    kind: 'live',
+    why: 'The Needs-attention rows, worst quality first. The score carries a freshness term, so the rows REORDER between two honest captures a day apart: twelve 14px bands on row titles on 2026-09-28, each a title that had moved. The list is capped at PANEL_LIMIT rows, so the box holds while the library has that many gaps.',
+  },
+  {
+    value: 'practice-stat-band',
+    file: 'components/widgets/practices/admin/stats.tsx',
+    kind: 'live',
+    why: 'The five headline counts (library size, public, awaiting review, featured, never logged). Curation moves them between captures: one 14px band across the values on 2026-09-28. One box over the band, since a widening digit moves what sits to its right inside the card.',
   },
   // ── /settings and the Space console, the account-data bands (HYG-121, 2026-09-22) ─────────
   // OWN-081 added ONE space_members row for the e2e account and twelve captures went red: two
