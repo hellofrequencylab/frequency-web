@@ -27,6 +27,7 @@
 
 import * as Sentry from '@sentry/nextjs'
 import { setObservabilityTags } from '@/lib/observability/tags'
+import { isCronMonitored } from '@/lib/observability/slos'
 import { log } from '@/lib/log'
 
 // A Next.js route handler: takes the Request and returns a Response. Generic over
@@ -89,18 +90,67 @@ export function resolveHeartbeatUrl(jobName: string): string | null {
   return null
 }
 
+/** Jobs this process has already escalated a heartbeat gap for (LIVE-548). One Sentry event
+ *  per job per process is the rate limit: a monitored job whose monitor is gone says so once
+ *  per deploy instead of once per run, and the per-run record stays in the warn line. */
+const escalatedJobs = new Set<string>()
+
+/** Clears the once-per-process escalation memory. Test seam only. */
+export function resetHeartbeatEscalationForTests(): void {
+  escalatedJobs.clear()
+}
+
 /** Fire a heartbeat ping. Best-effort and crash-proof: failures to ping are logged
  *  but never thrown, so the monitor transport can't affect the cron's own outcome.
  *  A ping that is REJECTED (a non-2xx answer) is logged too — `fetch` does not throw
  *  on one, so without the status check a monitor saying "no" is indistinguishable
  *  from a monitor saying "yes". `fail` appends the `/fail` suffix used by
- *  Healthchecks-style monitors. */
+ *  Healthchecks-style monitors.
+ *
+ *  🔴 FOR A JOB IN `CRON_MONITORED`, A PING THAT DOES NOT LAND IS ESCALATED (LIVE-548,
+ *  ADR-1574). The warn line below is the record; it is not a signal. Two monitored jobs
+ *  404ed on every ping for two weeks into `cron.heartbeat.ping_failed` lines nobody
+ *  queried (OWN-070), and for those two weeks their dead-man's switch was dead: a job
+ *  that dies looks exactly like a job that is healthy and unwired. So when the job is one
+ *  the repo says is monitored (lib/observability/slos.ts), a rejected or failed ping is
+ *  also a Sentry event tagged by job, once per job per process. An opt-out that still
+ *  pings (not yet in CRON_HEARTBEAT_SKIP) keeps its warn line and escalates nothing:
+ *  its silence was chosen, and the line is the expected one. */
 async function pingHeartbeat(
   jobName: string,
   opts: { fail?: boolean } = {},
 ): Promise<void> {
   const url = resolveHeartbeatUrl(jobName)
-  if (!url) return // unconfigured → no-op
+  if (!url) {
+    // A monitored job named in CRON_HEARTBEAT_SKIP has no monitor and the repo says it
+    // should: the two declarations disagree, and neither side can see the other. Say so
+    // once per process; it is a configuration fact, not a run outcome, so no Sentry event.
+    if (heartbeatOptOut(jobName) && isCronMonitored(jobName) && !escalatedJobs.has(`skip:${jobName}`)) {
+      escalatedJobs.add(`skip:${jobName}`)
+      log.warn('cron.heartbeat.monitored_but_skipped', {
+        job: jobName,
+        error: 'CRON_MONITORED names this job and CRON_HEARTBEAT_SKIP silences it; one of them is wrong',
+      })
+    }
+    return // unconfigured → no-op
+  }
+
+  /** The escalation. Textually inside this function on purpose: the row's probe reads
+   *  the body of `pingHeartbeat` for the Sentry call, so a refactor that moves it out
+   *  fails the ledger rather than silently un-wiring it. */
+  const escalate = (error: string, status: number | null) => {
+    if (!isCronMonitored(jobName) || escalatedJobs.has(jobName)) return
+    escalatedJobs.add(jobName)
+    try {
+      Sentry.captureMessage(`cron heartbeat for monitored job "${jobName}" did not land: ${error}`, {
+        level: 'error',
+        tags: { route: `cron.${jobName}`, cron_job: jobName, heartbeat_fail: String(opts.fail === true) },
+        extra: { job: jobName, fail: opts.fail === true, status, error },
+      })
+    } catch {
+      // The escalation is a fail-safe on a fail-safe. It never takes the cron down.
+    }
+  }
 
   const target = opts.fail ? `${url}/fail` : url
   try {
@@ -122,16 +172,19 @@ async function pingHeartbeat(
     // query over `cron.heartbeat.ping_failed` finds both kinds of failure; `status`
     // is what tells them apart (a transport error has no status).
     if (!res.ok) {
+      const error = `monitor rejected the ping (HTTP ${res.status})`
       log.warn('cron.heartbeat.ping_failed', {
         job: jobName,
         fail: opts.fail === true,
         status: res.status,
-        error: `monitor rejected the ping (HTTP ${res.status})`,
+        error,
       })
+      escalate(error, res.status)
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     log.warn('cron.heartbeat.ping_failed', { job: jobName, fail: opts.fail === true, error: message })
+    escalate(message, null)
   }
 }
 
