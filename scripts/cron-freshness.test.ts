@@ -335,8 +335,8 @@ describe('the floor', () => {
   it('sits under the live corpus with real headroom', () => {
     const { jobs } = readModel()
     // 28 since 2026-09-08: signup-lead-recovery joined the 27 (ADR-1274).
-    // 29 since 2026-09-14: onboarding-throughput joined (LIVE-311).
-    expect(jobs.length).toBe(29)
+    // 29 since 2026-09-14: onboarding-throughput joined (LIVE-311). 30 since 2026-09-29: tag-library (LIVE-587).
+    expect(jobs.length).toBe(30)
     expect(jobs.length).toBeGreaterThan(MIN_JOBS)
   })
 })

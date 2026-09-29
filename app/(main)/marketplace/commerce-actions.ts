@@ -15,10 +15,11 @@ import {
 import { createCommerceCheckout, recordCommerceOrderFromSessionId } from '@/lib/commerce/checkout'
 import { onPageCheckoutAvailable } from '@/lib/billing/stripe-browser'
 import { canListNew } from '@/lib/commerce/selling'
+import { setOrderFulfillment } from '@/lib/commerce/fulfilment'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
-import type { ProductKind, ProductStatus } from '@/lib/commerce/types'
+import type { ProductKind, ProductStatus, FulfillmentStatus } from '@/lib/commerce/types'
 import {
   MARKETPLACE_ENTRY_COOKIE,
   entryPointFromStamp,
@@ -334,4 +335,30 @@ export async function deleteMyProductAction(id: string): Promise<void> {
   await deleteProduct(id)
   revalidatePath('/market/manage')
   revalidatePath('/market')
+}
+
+/** A maker moves one of their own sales along the fulfilment ladder (LIVE-606, ADR-1575): shipped
+ *  with a carrier and tracking number, then delivered, then complete. Signed in is the caller
+ *  check; the writer binds the update to owner_profile_id, so another maker's order id finds
+ *  nothing. A refusal is logged with the writer's sentence and the console re-renders where the
+ *  order stands. */
+export async function setMyOrderFulfillmentAction(
+  orderId: string,
+  status: FulfillmentStatus,
+  formData: FormData,
+): Promise<void> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return
+  const result = await setOrderFulfillment(
+    orderId,
+    {
+      status,
+      carrier: String(formData.get('carrier') ?? ''),
+      tracking: String(formData.get('tracking') ?? ''),
+    },
+    { kind: 'profile', profileId },
+  )
+  if (!result.ok) console.warn('[market] fulfilment refused', { orderId, status, reason: result.error })
+  revalidatePath('/market/manage')
+  revalidatePath('/orders')
 }

@@ -46,7 +46,7 @@ import {
   extForMime,
 } from '@/lib/library/export-svg'
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
-import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
+import { editLoomSvg, saveElementSvg, reviewLoomSvg, describeWithVera, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
 import { isVectorFile } from '@/lib/loom/urls'
 import { AssetAvPanel } from './asset-av-panel'
@@ -641,6 +641,48 @@ function DetailDrawer({
   const [expiresOn, setExpiresOn] = useState(dayOf(asset.expiresAt))
   const expired = isLibraryAssetExpired(asset.expiresAt)
 
+  // Describe with Vera (LIVE-587, ADR-1589): she proposes, the empty fields take it, Save writes it.
+  // A field a person already filled is never touched, here or by the nightly tag-library cron.
+  const [naming, setNaming] = useState(false)
+  const [namingNote, setNamingNote] = useState<string | null>(null)
+  const canName = asset.kind === 'image' && !!asset.url && !isVectorFile(asset.mime, asset.url)
+  const hasHole = !alt.trim() || !tags.trim() || !category.trim()
+
+  async function nameWithVera() {
+    setErr(null)
+    setNamingNote(null)
+    setNaming(true)
+    try {
+      const res = await describeWithVera(asset.id)
+      if ('error' in res) {
+        setErr(res.error)
+        return
+      }
+      const filled: string[] = []
+      if (!alt.trim() && res.alt) {
+        setAlt(res.alt)
+        filled.push('alt text')
+      }
+      if (!tags.trim() && res.tags.length) {
+        setTags(res.tags.join(', '))
+        filled.push('tags')
+      }
+      if (!category.trim() && res.category) {
+        setCategory(res.category)
+        filled.push('category')
+      }
+      setNamingNote(
+        filled.length
+          ? `Vera filled the ${filled.join(', ')}. Read it over, then Save.`
+          : 'Vera had nothing to add to the empty fields.',
+      )
+    } catch {
+      setErr('Vera could not read that image. Fill the fields yourself, or try again.')
+    } finally {
+      setNaming(false)
+    }
+  }
+
   function save() {
     setErr(null)
     start(async () => {
@@ -1011,6 +1053,22 @@ function DetailDrawer({
             <span className="mb-1 block eyebrow text-subtle">Tags</span>
             <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="comma, separated" />
           </label>
+          {canName && (hasHole || namingNote) && (
+            <div data-loom-describe-with-vera>
+              {hasHole && (
+                <button
+                  type="button"
+                  onClick={nameWithVera}
+                  disabled={naming || pending}
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-muted hover:bg-surface-elevated disabled:opacity-50"
+                >
+                  {naming ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
+                  Describe with Vera
+                </button>
+              )}
+              {namingNote && <p className="mt-2 text-body-sm text-signal-strong" role="status">{namingNote}</p>}
+            </div>
+          )}
 
           {/* Protection (PROG-D6, LIVE-576): the three hooks the schema has carried since the DAM landed,
               finally reachable by a person. Stored and shown today; the private bucket a protected asset

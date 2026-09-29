@@ -1,5 +1,35 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
+
+// ── A table-level fake of the admin client, for the behavioural cases at the end ────────────
+//
+// Every read the classifier makes is `from(table)…filters…` awaited as a thenable. The fake records
+// each query's table and filters and answers from `rows(table, filters)`, so a case states the
+// database it needs in one function and every other table answers "no rows".
+type Filters = Record<string, unknown>
+type Answer = { data: unknown[] | null; error: unknown }
+let rows: (table: string, f: Filters) => Answer = () => ({ data: [], error: null })
+const reads: Array<{ table: string; f: Filters }> = []
+function query(table: string) {
+  const f: Filters = {}
+  const q = {
+    select: () => q,
+    limit: () => q,
+    eq: (k: string, v: unknown) => ((f[`eq:${k}`] = v), q),
+    in: (k: string, v: unknown) => ((f[`in:${k}`] = v), q),
+    or: (v: string) => ((f.or = v), q),
+    not: () => q,
+    is: () => q,
+    then: (ok: (a: Answer) => unknown, bad?: (e: unknown) => unknown) => {
+      reads.push({ table, f })
+      return Promise.resolve(rows(table, f)).then(ok, bad)
+    },
+  }
+  return q
+}
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: query }) }))
+
+import { buyerIsSellersAudience } from './seller-audience'
 
 // ── "Once you have your contact, Frequency doesn't take a cut" (ADR-913) ────────────────────
 //
@@ -112,5 +142,86 @@ describe('every money path asks the question', () => {
     expect(tips).toContain('const fee = 0')
     expect(tips).not.toContain('classifyOrderSource')
     expect(tips).not.toContain('platformFeeCents')
+  })
+})
+
+describe("a PROFILE seller's own audience is the profile plus every Space they own (ADR-1584, LIVE-221)", () => {
+  const SELLER = '11111111-1111-4111-8111-111111111111'
+  const BUYER = '22222222-2222-4222-8222-222222222222'
+  const OWNED = '33333333-3333-4333-8333-333333333333'
+  const OTHER = '44444444-4444-4444-8444-444444444444'
+
+  beforeEach(() => {
+    reads.length = 0
+    rows = () => ({ data: [], error: null })
+  })
+
+  it('a stranger to the profile and to every Space it owns still classifies network', async () => {
+    rows = (t) => (t === 'spaces' ? { data: [{ id: OWNED }], error: null } : { data: [], error: null })
+    const v = await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+  })
+
+  it("an accepted friend of the seller's profile is their own audience", async () => {
+    rows = (t, f) =>
+      t === 'friendships' && f['eq:status'] === 'accepted' && f['eq:user_a_id'] === SELLER && f['eq:user_b_id'] === BUYER
+        ? { data: [{ id: 'f1' }], error: null }
+        : { data: [], error: null }
+    const v = await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'friend', degraded: false })
+  })
+
+  it('reads the friendship in canonical pair order whichever side is the seller', async () => {
+    // The table's CHECK is user_a_id < user_b_id, so the lower id is always user_a.
+    rows = (t, f) =>
+      t === 'friendships' && f['eq:user_a_id'] === SELLER && f['eq:user_b_id'] === BUYER
+        ? { data: [{ id: 'f1' }], error: null }
+        : { data: [], error: null }
+    const swapped = await buyerIsSellersAudience({ sellerProfileId: BUYER, buyerProfileId: SELLER })
+    expect(swapped).toEqual({ isOwnAudience: true, signal: 'friend', degraded: false })
+  })
+
+  it('an active member of a Space the seller owns is their own audience', async () => {
+    rows = (t, f) => {
+      if (t === 'spaces' && f['eq:owner_profile_id'] === SELLER) return { data: [{ id: OWNED }], error: null }
+      if (
+        t === 'space_members' &&
+        (f['in:space_id'] as string[] | undefined)?.includes(OWNED) &&
+        f['eq:profile_id'] === BUYER &&
+        f['eq:status'] === 'active'
+      )
+        return { data: [{ id: 'm1' }], error: null }
+      return { data: [], error: null }
+    }
+    const v = await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: 'owned_space_member', degraded: false })
+  })
+
+  it('a seller who owns no Space never asks space_members', async () => {
+    await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(reads.some((r) => r.table === 'spaces')).toBe(true)
+    expect(reads.some((r) => r.table === 'space_members')).toBe(false)
+  })
+
+  it('a failed read of the owned Spaces is a non-answer, so the sale fails safe to 0%', async () => {
+    rows = (t) => (t === 'spaces' ? { data: null, error: { message: 'boom' } } : { data: [], error: null })
+    const v = await buyerIsSellersAudience({ sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: true, signal: null, degraded: true })
+  })
+
+  it("a SPACE sale is still measured against that Space, not the owner's friends or other Spaces", async () => {
+    // The seller is a friend of the buyer and the buyer is a member of the seller's OTHER Space, but
+    // not of the Space on this sale: every one of those reads would say yes if the Space path asked.
+    rows = (t, f) => {
+      if (t === 'friendships') return { data: [{ id: 'f' }], error: null }
+      if (t === 'spaces') return { data: [{ id: OTHER }], error: null }
+      if (t === 'space_members' && f['eq:space_id'] === OWNED) return { data: [], error: null }
+      if (t === 'space_members') return { data: [{ id: 'm' }], error: null }
+      return { data: [], error: null }
+    }
+    const v = await buyerIsSellersAudience({ sellerSpaceId: OWNED, sellerProfileId: SELLER, buyerProfileId: BUYER })
+    expect(v).toEqual({ isOwnAudience: false, signal: null, degraded: false })
+    expect(reads.some((r) => r.table === 'friendships')).toBe(false)
+    expect(reads.some((r) => r.table === 'spaces')).toBe(false)
   })
 })
