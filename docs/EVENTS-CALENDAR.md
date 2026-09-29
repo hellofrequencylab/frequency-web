@@ -542,6 +542,14 @@ and push: an offer to the guest's approvers, an answer to the host's), `plan.com
 recipient; the link is the recipient's own calendar settings and the gate subject is their Space. One send per
 moment, never a digest.
 
+THE GUEST'S FEED (`LIVE-546`, ADR-1558). A co-host team subscribing to its own private token feed gets the dates
+and to-dos of the Plans shared with it, SHARED PLANS ONLY: the route resolves the accepted shares whose guest is
+the feed Space, reads the host entries keyed by those plan ids (same columns, `removed_at is null`, not cancelled)
+and the to-dos of those Plans, and `withSharedPlanRows` (`lib/calendar/entry-feed.ts`) folds them after the
+Space's own rows with the host's name in front of each summary. A pending, declined or revoked share adds
+nothing; the host's other dates are never read; the VEVENT shape, the token and the host feed are untouched.
+With this child `PROG-CAL7` (Together) is closed: six children: ADR-1552, ADR-1553, ADR-1566, ADR-1567, ADR-1557 and ADR-1558.
+
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
 carries `plan_id`, and the Pencil is retired in the same step so the calendar shows one card. The
