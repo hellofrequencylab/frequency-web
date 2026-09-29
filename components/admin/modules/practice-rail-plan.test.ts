@@ -14,19 +14,22 @@ import {
 // THE PRACTICE RAIL DERIVES FROM ITS MANIFEST (ADR-1240, closing the Practice half of HYG-050).
 //
 // Three properties, each of which the hand-written rail lacked:
-//   1. the rail renders EXACTLY the seven fields it rendered before the derivation, by zone;
+//   1. the rail renders EXACTLY the fields it renders, by zone (the seven it rendered before the
+//      derivation, plus the Pillar split pair LIVE-641 added to the settings save);
 //   2. every written column is honoured, so no save path writes a column the rail cannot show;
 //   3. a placement change on the manifest changes the rail, with no edit to the module.
 // Plus a source-shape guard: the module file declares no field of its own.
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('the Practice rail plan', () => {
-  it('renders the same seven fields the hand-written rail rendered, in the same three zones', () => {
+  it('renders the seven fields the hand-written rail rendered plus the Pillar split, in three zones', () => {
     expect(PRACTICE_RAIL.cover.fields.map((f) => f.path)).toEqual(['header_image'])
     expect(PRACTICE_RAIL.settings.fields.map((f) => f.path)).toEqual([
       'title',
       'summary',
       'description',
+      'secondary_domain_id',
+      'primary_pct',
       'category',
       'duration_min',
     ])
@@ -37,6 +40,12 @@ describe('the Practice rail plan', () => {
     expect(PRACTICE_RAIL.cover.dropped).toEqual([])
     expect(PRACTICE_RAIL.settings.dropped).toEqual([])
     expect(PRACTICE_RAIL.permalink.dropped).toEqual([])
+  })
+
+  it('carries the Pillar split as the manifest declares it: a loaded Pillar and a number (LIVE-641)', () => {
+    const byPath = new Map(PRACTICE_RAIL.settings.fields.map((f) => [f.path, f]))
+    expect(byPath.get('secondary_domain_id')).toMatchObject({ kind: 'reference', optionsFrom: 'pillars' })
+    expect(byPath.get('primary_pct')?.kind).toBe('number')
   })
 
   it('writes each column on exactly one save path', () => {
@@ -57,7 +66,7 @@ describe('the Practice rail plan', () => {
     // The three content fields are declared inline (they ARE the page) and are hosted by the rail.
     // Drop `hostInline` and they leave: that is the whole change when the canvas lands.
     const unhosted = railForm(PRACTICE_MANIFEST, PRACTICE_SETTINGS_WRITES)
-    expect(unhosted.fields.map((f) => f.path)).toEqual(['category', 'duration_min'])
+    expect(unhosted.fields.map((f) => f.path)).toEqual(['secondary_domain_id', 'primary_pct', 'category', 'duration_min'])
     expect(unhosted.dropped.map((d) => d.path)).toEqual(['title', 'summary', 'description'])
     expect(unhosted.dropped.every((d) => d.reason === 'inline')).toBe(true)
   })
@@ -71,7 +80,14 @@ describe('the Practice rail plan', () => {
       ),
     }
     const form = railForm(moved, PRACTICE_SETTINGS_WRITES, { hostInline: true })
-    expect(form.fields.map((f) => f.path)).toEqual(['title', 'summary', 'description', 'category'])
+    expect(form.fields.map((f) => f.path)).toEqual([
+      'title',
+      'summary',
+      'description',
+      'secondary_domain_id',
+      'primary_pct',
+      'category',
+    ])
     expect(form.dropped).toEqual([{ path: 'duration_min', reason: 'spark-only' }])
   })
 })

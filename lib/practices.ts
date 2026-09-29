@@ -33,6 +33,7 @@ import { resolveMemberDay, memberDay } from '@/lib/member-day'
 import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
 import { normalizePrimaryPct, type PillarSplit } from '@/lib/practices/attribution'
+import { resolveSplitWrite } from '@/lib/practices/split'
 import { coerceTermWeeks, cleanCue, termWindow, withinActiveCap } from '@/lib/practices/adoption'
 import { BREATH_PATTERNS } from '@/lib/on-air'
 import {
@@ -1547,6 +1548,13 @@ export interface PracticeEdit {
    *  When written, `domain_id` is set to the first key for back-compat (Pillar filtering). */
   focus_details?: Record<string, { instructions: string; timing: string }> | null
   subcategory_id?: string | null
+  /** The second Pillar this practice's Zaps count toward (ADR-438; LIVE-641). Null clears the
+   *  split. Stored only through `resolveSplitWrite` (lib/practices/split.ts): never the primary,
+   *  always one of the Focuses (a new one is added), and gone when its Focus is removed. */
+  secondary_domain_id?: string | null
+  /** The primary Pillar's share of each log's Zaps, 50 to 100 (75 when unset). Meaningful only
+   *  beside a secondary; with none it stores the column default. */
+  primary_pct?: number | null
   /** Payout weight for a log (Rewards Economy v2): 'light' (8⚡) | 'standard' (12⚡) |
    *  'heavy' (15⚡). Unlike the reward_zaps amount, this IS author-editable — it's the
    *  effort tier of the practice, which the author knows best (drives practiceLogAction). */
@@ -1701,6 +1709,38 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
     update.domain_id = primary
   }
   if (patch.subcategory_id !== undefined) update.subcategory_id = patch.subcategory_id || null
+  // The Pillar split (ADR-438; LIVE-641, ADR-1604). Resolved whenever this write chooses a split
+  // OR moves what the split is measured against (the primary, the Focus set), because the stored
+  // secondary has to stay true against both: the database refuses a secondary equal to the
+  // primary, and a secondary whose Focus was removed would credit a Pillar the practice no longer
+  // says it develops. The unchanged halves come from the row as it stands.
+  if (patch.secondary_domain_id !== undefined || patch.primary_pct !== undefined || update.domain_id !== undefined) {
+    const { data: splitRow } = await db()
+      .from('practices')
+      .select('domain_id, secondary_domain_id, primary_pct, focus_details')
+      .eq('id', id)
+      .maybeSingle()
+    const current = splitRow as unknown as {
+      domain_id: string | null
+      secondary_domain_id: string | null
+      primary_pct: number | null
+      focus_details: FocusDetails | null
+    } | null
+    const authored = patch.secondary_domain_id !== undefined
+    const split = resolveSplitWrite({
+      primary: update.domain_id !== undefined ? (update.domain_id as string | null) : (current?.domain_id ?? null),
+      focus:
+        update.focus_details !== undefined
+          ? (update.focus_details as unknown as FocusDetails)
+          : (current?.focus_details ?? {}),
+      secondary: authored ? patch.secondary_domain_id : (current?.secondary_domain_id ?? null),
+      primaryPct: patch.primary_pct !== undefined ? patch.primary_pct : (current?.primary_pct ?? null),
+      authored,
+    })
+    update.secondary_domain_id = split.secondary_domain_id
+    update.primary_pct = split.primary_pct
+    if (split.focus_details) update.focus_details = split.focus_details as unknown as Json
+  }
   // Weight class drives the per-log Zap payout (light 8 / standard 12 / heavy 15).
   // Time-vs-points (ADR-442): clamp the stored tier to the highest one the practice's
   // required length earns, so a short practice can never bank Heavy. Lower tiers stay
