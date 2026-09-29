@@ -12,6 +12,7 @@ const rpcCalls: Array<{ fn: string; args: Record<string, unknown> }> = []
 const fromTables: string[] = []
 const rewardGrantInserts: Array<Record<string, unknown>> = []
 const rewardGrantDeletes: number[] = []
+const achievementInserts: Array<Record<string, unknown>> = []
 const awardZapsCalls: Array<{ profileId: string; amount: number }> = []
 const awardGemsCalls: Array<{ profileId: string; action: string; amount?: number }> = []
 
@@ -46,6 +47,7 @@ function fromImpl(table: string) {
   return {
     select: () => chain(() => tableData[table] ?? { data: [], error: null }),
     insert: (payload: Record<string, unknown>) => {
+      if (table === 'user_achievements') achievementInserts.push(payload)
       if (table === 'reward_grants') {
         rewardGrantInserts.push(payload)
         return chain(() => ({ data: null, error: rewardGrantInsertError }))
@@ -82,13 +84,14 @@ vi.mock('@/lib/gems', () => ({
   },
 }))
 
-import { recordStreakActivity, processGamificationEvent } from '@/lib/achievements'
+import { recordStreakActivity, processGamificationEvent, countFirstWelcomes } from '@/lib/achievements'
 
 beforeEach(() => {
   rpcCalls.length = 0
   fromTables.length = 0
   rewardGrantInserts.length = 0
   rewardGrantDeletes.length = 0
+  achievementInserts.length = 0
   awardZapsCalls.length = 0
   awardGemsCalls.length = 0
   rpcResults = {}
@@ -190,5 +193,77 @@ describe('challenge advancement (wiring via processGamificationEvent)', () => {
 
     expect(rewardGrantInserts).toHaveLength(1)
     expect(rewardGrantDeletes).toHaveLength(1) // claim released so a retry can re-pay
+  })
+})
+
+// LIVE-653: The Welcomer ({ type: 'welcome_member', count: 5 }, "Be the first to welcome 5 new
+// members") returned false for every member. It now counts newcomers this member was the first to
+// welcome in the `welcomes` table (ADR-186), and a landed welcome is the event that checks it.
+describe('The Welcomer (welcome_member criterion)', () => {
+  const welcomer = {
+    id: 'a-welcomer',
+    slug: 'welcomer',
+    name: 'The Welcomer',
+    description: 'Be the first to welcome 5 new members',
+    icon: 'hand-metal',
+    tier: 'silver',
+    zaps_reward: 25,
+    criteria: { type: 'welcome_member', count: 5 },
+  }
+  const at = (m: number) => new Date(Date.UTC(2026, 8, 1, 12, m)).toISOString()
+  const mine = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ welcomer_id: 'p1', newcomer_id: `n${i}`, created_at: at(10 + i) }))
+
+  it('counts only the newcomers this member welcomed first', () => {
+    const rows = [
+      ...mine(3),
+      { welcomer_id: 'p2', newcomer_id: 'n0', created_at: at(1) }, // p2 beat p1 to n0
+      { welcomer_id: 'p2', newcomer_id: 'n1', created_at: at(59) }, // p1 beat p2 to n1
+    ]
+    expect(countFirstWelcomes('p1', rows)).toBe(2)
+    expect(countFirstWelcomes('p2', rows)).toBe(1)
+    expect(countFirstWelcomes('p3', rows)).toBe(0)
+  })
+
+  it('a same-instant tie counts for both welcomers', () => {
+    const rows = [
+      { welcomer_id: 'p1', newcomer_id: 'n0', created_at: at(5) },
+      { welcomer_id: 'p2', newcomer_id: 'n0', created_at: at(5) },
+    ]
+    expect(countFirstWelcomes('p1', rows)).toBe(1)
+    expect(countFirstWelcomes('p2', rows)).toBe(1)
+  })
+
+  it('unlocks on the fifth first welcome and pays its catalogue reward once', async () => {
+    tableData['achievements'] = { data: [welcomer], error: null }
+    tableData['welcomes'] = { data: mine(5), error: null }
+
+    const unlocked = await processGamificationEvent({ type: 'welcome_member', profileId: 'p1' })
+
+    expect(unlocked.map((a) => a.id)).toEqual(['a-welcomer'])
+    expect(achievementInserts).toEqual([{ profile_id: 'p1', achievement_id: 'a-welcomer' }])
+    // an online act pays gems (ADR-139); the amount is the catalogue's zaps_reward, unchanged
+    await Promise.resolve()
+    expect(awardGemsCalls).toEqual([{ profileId: 'p1', action: 'achievement', amount: 25 }])
+  })
+
+  it('does not unlock at four first welcomes', async () => {
+    tableData['achievements'] = { data: [welcomer], error: null }
+    tableData['welcomes'] = { data: mine(4), error: null }
+
+    const unlocked = await processGamificationEvent({ type: 'welcome_member', profileId: 'p1' })
+
+    expect(unlocked).toEqual([])
+    expect(achievementInserts).toEqual([])
+  })
+
+  it('a post is not a welcome: post_create neither checks the badge nor reads welcomes', async () => {
+    tableData['achievements'] = { data: [welcomer], error: null }
+    tableData['welcomes'] = { data: mine(5), error: null }
+
+    const unlocked = await processGamificationEvent({ type: 'post_create', profileId: 'p1' })
+
+    expect(unlocked).toEqual([])
+    expect(fromTables).not.toContain('welcomes')
   })
 })
