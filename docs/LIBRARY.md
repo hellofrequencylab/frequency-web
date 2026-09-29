@@ -30,8 +30,22 @@ gets its own Loom**. It grows for years without a code deploy per asset.
   [LIVE-576](BUILD-BACKLOG.json) ([ADR-1577](DECISIONS.md)) the product reads and sets them: the
   Studio drawer's Protection section writes all three, every pick reader (`listLoomScopeImages`,
   `searchSpaceLibraryImages`) leaves out a row whose `expires_at` has passed, and the Studio grid
-  badges that row Expired instead of hiding it from its owner. The private bucket, the download
-  door and proofing are LIVE-577 to LIVE-580 ([ADR-1562](DECISIONS.md)).
+  badges that row Expired instead of hiding it from its owner. Since
+  [LIVE-577](BUILD-BACKLOG.json) ([ADR-1595](DECISIONS.md)) **Protected moves the file**:
+  `protectLibraryAsset` copies the current object and every version's object from `library-media`
+  into the private `library-private` bucket (`20270345009550`, `public = false`, no storage policy
+  for anon or authenticated, service role only), rewrites the asset and version rows to follow,
+  and removes the public copies; switching it off moves them back. A protected row's `url` is
+  **null** (never a signed value, which would be a stored expiry, and never a bare path, which
+  every reader would paint as a relative image), and `signedLibraryAssetUrl` in
+  `lib/library/asset-urls.ts` is the one signing function: the Studio mints a one-hour signed URL
+  per protected row at render time. **A protected asset is a download or a proof, not a page
+  image**: protecting refuses while the usage index or any of the six column image references
+  (HYG-068) points at the asset, when another row shares the file, and for a seed or import row
+  (its Space may paint the importer's object by address), every pick reader already drops a row with no url, and the
+  AssetRef refresh and the column-image readers skip it, so they stay fail-open and untouched.
+  Audio and video refuse (recordings-media has no private twin), and so does a replace or a
+  Recraft edit of a protected file. The download door and proofing are LIVE-578 and LIVE-580.
 - **Scope:** **every asset is space-scoped.** Frequency's shared/master library is the **root
   space's** Loom (`space_id` is NOT NULL). A child space's effective library = its own ∪ root's.
 - **Transforms:** **on-the-fly** (a width/format request against the master). **Editing an image
@@ -350,6 +364,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
 6. **D6 — Privacy system** (private bucket, signed URLs, storage RLS, download gating + audit,
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
+   LIVE-577 shipped: the private bucket, the protect move and the one signing function.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
    Background removal and upscale (LIVE-589), describe on view (LIVE-588), auto-tag (LIVE-587) and the hybrid Most relevant rank (LIVE-586) are shipped ([ADR-1563](DECISIONS.md)).
 

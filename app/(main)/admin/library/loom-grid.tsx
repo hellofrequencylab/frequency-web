@@ -894,7 +894,9 @@ function DetailDrawer({
           </p>
 
           <div className="flex flex-wrap gap-2">
-            {asset.url && (
+            {/* A protected asset's url here is a signed one minted for this view (LIVE-577): it expires, so
+                it is not an address to copy into a page. */}
+            {asset.url && !asset.isProtected && (
               <button
                 type="button"
                 onClick={copyUrl}
@@ -1104,8 +1106,8 @@ function DetailDrawer({
               onChange={(e) => setIsProtected(e.target.checked)}
             />
             <p className="text-meta text-subtle">
-              Protected marks the original as not for the open web. Today the mark is stored and shown; the locked
-              bucket it moves into comes next.
+              Protected moves the original into a locked bucket, off the open web. You still see it here. An
+              image placed on a page cannot be protected until it is swapped out there.
             </p>
           </div>
 
