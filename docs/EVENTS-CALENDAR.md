@@ -515,7 +515,7 @@ the guest's read-only drawer included, and folds each to-do's thread behind Note
 author when the session can read the profile and falls back to the Space, because profiles RLS is regional.
 Proof of the lock: `supabase/tests/space_plan_comments.test.sql`.
 
-THE RECORD (`LIVE-543`, ADR-1555). Every door that changes a Plan writes one row to `space_plan_activity`
+THE RECORD (`LIVE-543`, ADR-1566). Every door that changes a Plan writes one row to `space_plan_activity`
 (`20270345009410`) after its change lands: who, from which Space, what kind (a closed set) and the sentence
 the door reported. The same two helpers gate select and insert for the host and an accepted guest; there is
 no update or delete policy, the way the Vera log has none. `recordPlanActivity` (`lib/calendar/plan-activity-store.ts`,
@@ -524,7 +524,7 @@ entry-actions and vera-calendar-actions; a Vera line whose door records itself (
 written twice. `listPlanActivity` reads the latest twenty for either side, and the drawer shows them newest
 first under `[data-plan-activity]`. Proof of the lock: `supabase/tests/space_plan_activity.test.sql`.
 
-SHARED TO-DOS (`LIVE-544`, ADR-1556). A to-do belongs to its Plan's host Space (`crm_tasks.space_id`),
+SHARED TO-DOS (`LIVE-544`, ADR-1567). A to-do belongs to its Plan's host Space (`crm_tasks.space_id`),
 and a guest holding an accepted share reaches it by PLAN id: `listTasksWithShared` (`lib/calendar/shared-tasks.ts`)
 is one list, the Space's own rows then the to-dos of every Plan shared with it marked `sharedFrom` the host, read
 by the inbox (`listSpaceTasks`), the calendar settings page and the due-date layer alike. Every widened
