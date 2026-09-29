@@ -692,7 +692,7 @@ describe('main reads the other PRs through git: ONE REST call on the normal path
     await main(env, rest(calls, { 2842: ['docs/ledger/rows/HYG-145.json'] }), { sleep: async () => {}, now: () => 0, git })
     expect(calls.filter((u) => /\/pulls\/\d+\/files/.test(u))).toEqual([expect.stringContaining('/pulls/2842/files')])
     const out = logged.join('\n')
-    expect(out).toContain("git: git fetch of refs/pull/2842/head failed (fatal: couldn't find remote ref refs/pull/2842/head)")
+    expect(out).toContain("git: git fetch of refs/pull/2842/head failed (fatal: couldn't find remote ref refs/pull/2842/head); #2842 is read through REST instead.")
     expect(out).toContain('2 of 3 other open PR(s) read through git')
     expect(out).toContain('backlog id HYG-145 is also introduced by open PR #2842')
     expect(process.exitCode).toBe(1)

@@ -446,7 +446,7 @@ export function fetchPullHeads({ numbers, git = runGit }) {
       git(args([n]))
       fetched.add(n)
     } catch (err) {
-      notes.push(`git fetch of refs/pull/${n}/head failed (${firstLine(err)})`)
+      notes.push(`git fetch of refs/pull/${n}/head failed (${firstLine(err)}); #${n} is read through REST instead`)
     }
   }
   return { fetched, notes }
@@ -610,7 +610,7 @@ async function compare({ env, repo, base, token, fetchImpl, git }) {
       try {
         theirs = gitNewIdsForPull({ rev: prRef(pr.number), baseSets, baseOids, cache, git })
       } catch (err) {
-        notes.push(`git read of #${pr.number}'s head failed (${firstLine(err)})`)
+        notes.push(`git read of #${pr.number}'s head failed (${firstLine(err)}); it is read through REST instead`)
       }
     }
     if (!theirs) {
@@ -626,7 +626,7 @@ async function compare({ env, repo, base, token, fetchImpl, git }) {
     compared.push({ number: pr.number, title: pr.title, createdAt: pr.createdAt, ...theirs })
   }
 
-  for (const note of notes) console.log(`  git: ${note}; that PR is read through the REST API instead.`)
+  for (const note of notes) console.log(`  git: ${note}.`)
   console.log(
     `  ${others.length - viaRest} of ${others.length} other open PR(s) read through git (no REST call each); ` +
       `${viaRest} through the REST files listing.`,
