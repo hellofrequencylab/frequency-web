@@ -43,15 +43,22 @@ interface Visitor {
   /** An already-recorded consent choice, if any. */
   consent?: 'granted' | 'denied'
   url?: string
+  /** Extra cookies the browser already holds, as a Cookie header fragment. */
+  cookies?: string
+  /** Send the request as a Server Action POST instead of a page GET. */
+  action?: boolean
 }
 
 /** Run the real proxy for an anonymous visitor and return every cookie it tried to set. */
 async function visit(v: Visitor): Promise<Map<string, string>> {
   const headers = new Headers({ referer: 'https://news.example.com/story' })
   if (v.country) headers.set('x-vercel-ip-country', v.country)
-  if (v.consent) headers.set('cookie', `fq_consent=${v.consent}`)
+  const cookie = [v.consent ? `fq_consent=${v.consent}` : '', v.cookies ?? ''].filter(Boolean).join('; ')
+  if (cookie) headers.set('cookie', cookie)
+  if (v.action) headers.set('next-action', 'probe-action-id')
   const request = new NextRequest(v.url ?? 'https://frequencylocal.com/events/spring-social?utm_campaign=spring', {
     headers,
+    method: v.action ? 'POST' : 'GET',
   })
   const response = await proxy(request)
   const set = new Map<string, string>()
@@ -156,5 +163,18 @@ describe('LIVE-220 · the proxy stamps a Market view and not a storefront', () =
       url: `https://frequencylocal.com/store/${productId}`,
     })
     expect(cookies.get('fq_mkt') ?? '').toBe('')
+  })
+
+  // LIVE-711 (ADR-1633): a Set-Cookie on a Server Action response drops the client's router cache
+  // (LIVE-649), so a view that leaves the stamp unchanged must not re-sign it.
+  it('does not re-send fq_mkt on a repeat view or a Server Action on the same product', async () => {
+    const url = `https://frequencylocal.com/market/${productId}`
+    const first = (await visit({ country: 'US', url })).get('fq_mkt') ?? ''
+    expect(first).not.toBe('')
+    const held = `fq_mkt=${first}`
+    expect((await visit({ country: 'US', url, cookies: held })).has('fq_mkt')).toBe(false)
+    expect((await visit({ country: 'US', url, cookies: held, action: true })).has('fq_mkt')).toBe(false)
+    const other = `https://frequencylocal.com/market/66666666-7777-8888-9999-000000000000`
+    expect((await visit({ country: 'US', url: other, cookies: held })).get('fq_mkt') ?? '').not.toBe('')
   })
 })
