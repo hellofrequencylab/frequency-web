@@ -49296,3 +49296,44 @@ Three shapes were available for the paging half, and the wrapper that already pi
 **Consequences.** ✅ A dead-letter or a due job older than ten minutes pages within one drain (two minutes) on Sentry and on the Healthchecks check for `process-queue`, and the page clears itself when an operator requeues or discards the dead-letters or the backlog drains. ✅ The queue-lag SLO has a number every two minutes in `queue.health`. ⚠️ A transient read failure pages once (`measured: false` is a breach by design: a reader that fails silently is the invisible regression AGENTS.md names); the next drain clears it. ⚠️ Whether Sentry and Healthchecks actually reach a phone is account configuration (OWN-005, OWN-065, OWN-070) and the runbook for what to do when it pages is HYG-131. `LIVE-548` edits `slos.ts` and `pingHeartbeat` for the cron partition; this change touched neither, so the two merge cleanly in either order.
 
 **Rows.** `LIVE-547` closed here. `DEF-HARDEN` unchanged (proven by its children). `LIVE-548`, `HYG-131`, `OWN-070` untouched and cited.
+
+## ADR-1593: Practice library Phase 4 is mostly built: the census names what exists, and seven rows carry what does not (PROG-PRAC4 decomposed into LIVE-641 to LIVE-647)
+
+**Status:** Accepted · 2026-09-29 · backlog `PROG-PRAC4`, `LIVE-641`, `LIVE-642`, `LIVE-643`, `LIVE-644`, `LIVE-645`, `LIVE-646`, `LIVE-647` · numbered **1593** as pre-assigned by the overnight orchestrator: 1577 is the highest on `main`, and 1570, 1575, 1576, 1578, 1579, 1582 and 1584 are claimed by pull requests open when this was pushed (#3005, #2997, #3000, #2995, #2996, #3001, #3004) · extends [ADR-1082](DECISIONS.md) (re-test the premise), [ADR-1131](DECISIONS.md) (the Phase 4 census this one continues) and [ADR-1492](DECISIONS.md) (a program row gets a probe) · beside [ADR-438](DECISIONS.md) (the split), [ADR-446](DECISIONS.md) (the pre-screen), [ADR-447](DECISIONS.md) (the remix engine) and [ADR-1502](DECISIONS.md) (saved views)
+
+**Context.** `PROG-PRAC4` ("valuation authority, Vera curation, health dashboard") was re-censused on 2026-08-25 by ADR-1131, which retired one deliverable, found another shipped, shipped a third's server half, and left a four-part "remaining sequence" in the row's prose. Prose is not something `pnpm packets` can hand out, and the owner asked that the backlog carry no row for anything already built. So every capability the row and its spec name (`docs/BUILD-LIST.md` §Phase 4 and the Phase-1 carry-overs it inherited) was checked against `main` before anything was filed. Production counts were not measured overnight (no DB access); every finding below is from the code, the migrations and `lib/database.types.ts`.
+
+**What already exists, and is not filed.**
+
+| Capability | Where it lives |
+|---|---|
+| 4.3 Library health dashboard | `lib/practices/health.ts` + `/admin/content/practices/health` (#2193): growth, coverage by Pillar and sub focus, adoption funnel, performers, review SLA, contributors |
+| 4.1a Valuation authority | Retired by ADR-1131: `clampTierToDuration` at create and `achievedTier` at log already make points creator-proof |
+| 4.1b Per-Pillar ledger, server half | Migration `20270324000000`, the snapshot in `logPractice`, `lib/practices/attribution.ts` |
+| Vera voice-check | The ADR-446 pre-screen, `lib/ai/practice-publish-screen.ts`, now surfaced in `review-queue-panel.tsx` |
+| Vera Pillar suggestion and summary at create | The practice spark drafts `pillar` and `summary` (`lib/ai/practice-spark.ts`) |
+| `database.types.ts` regen | Every column the phase added is in the generated types today |
+| Phase-2 "in flight" UI | Shipped: `merge-panel.tsx`, `needs-attention.tsx`, `tag-governance-panel.tsx`, `review-queue-panel.tsx` in `components/widgets/practices/admin/` (the ⏳ markers in BUILD-LIST §Phase 2 are stale; status lives in the JSON) |
+
+**What is not filed, by ruling or for want of a consumer.** Server-backed saved views: ADR-1502 already ruled that a shared view earns a table only when operators ask for one, and both saved-view surfaces (practices, Loom) are localStorage by that ruling. The `DataTable` selection slot: 1.8 decided the practices table is bespoke, `components/admin/data-table.tsx` says selection belongs in a client wrapper, and no table uses one. Either comes back as a row the day someone needs it.
+
+**Decision.**
+
+1. **Seven children, one per slice that is still missing**, each a `cmd` probe on the code site it changes, each failing today:
+   - `LIVE-641` (M, P2) split authoring: the manifest, `PracticeEdit` and `updatePractice` carry `secondary_domain_id` and `primary_pct` through one normaliser that reuses the attribution constants. Nothing writes the split today.
+   - `LIVE-642` (M, P2) the ledger on screen: `getMemberPillarZaps` in the member Pillar balance module, and a "where Zaps land" section on the health dashboard using the same `attributeLogs` math. The ledger has no caller today.
+   - `LIVE-643` (S, P3) placement from the embedding: a pure neighbour vote over `match_practices` suggests a Pillar and sub focus for a practice missing them, and a curator accepts it. No model call.
+   - `LIVE-644` (M, P3) Vera fills an empty card hook and tags on a library practice, under its own budget key and the voice primer, curator-accepted, never overwriting.
+   - `LIVE-645` (M, P3) Remix it: Vera offers three directions when a member remixes a practice, and the chosen one is applied through the existing practice-edit path.
+   - `LIVE-646` (S, P3) residual facet counts on the practices workspace, so a count predicts the rows it links to.
+   - `LIVE-647` (M, P3, hygiene) the seven practice modules stop erasing the generated `Database` type, the practice twin of HYG-054.
+2. **Vera curation is three rows, not one**, because the three pieces fail apart and cost apart: a placement suggestion is embedding arithmetic with no budget, a fill is a model draft with one, and remix directions are a member-facing surface where the other two are curator tools. "Auto-suggest Pillar" and "auto-summary" are built at create, so the rows cover only what happens after create.
+3. **The split and its surface are P2 and the rest P3.** The ledger has been written on every log since ADR-1131 and read by nobody; making it visible and authorable is the payoff ADR-438 locked. The curation rows serve a library that is small today; the owner re-ranks with one field.
+4. **No gates and no chain.** None of the seven waits on a ruling or on another. `LIVE-642` does not wait for `LIVE-641`: until the split can be authored every snapshot is single-Pillar, which is true data.
+5. **The program row gets a probe with one arm per child** (ADR-1492), each the first arm of that child's own probe, so `PROG-PRAC4` closes only when all seven have. It replaces the manual census reading of 2026-08-25.
+
+**Rejected.** One "Vera curation" child (three pieces, three failure modes, one probe that cannot say which). Filing server-backed saved views and the `DataTable` selection slot to finish the carry-over list (ADR-1502 already ruled on the first; neither has a consumer). Leaving the untyped handles as convert-on-touch (HYG-054 set the precedent that a "drop the cast after regen" marker with no owning row gets one).
+
+**Consequences.** The rows sit in wave W7 beside the program row, where `PROG-PRAC4` already was. Every child is agent-workable today. At most one migration is named, and only if `LIVE-646` picks the RPC route; it would be applied after merge.
+
+**Rows.** `PROG-PRAC4` (decomposed, probe rewritten). `LIVE-641` to `LIVE-647` filed. `LIVE-587`, `HYG-054` untouched and cited.
