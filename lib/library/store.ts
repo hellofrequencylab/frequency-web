@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { asJson } from '@/lib/supabase/json'
 import { ALL_ELEMENTS } from './element-catalog'
 import { SEARCH_CANDIDATE_CAP, mergeCandidates, rankLibraryMatches } from './search-rank'
-import { LIBRARY_DOWNLOAD_POLICIES, isLibraryAssetExpired, type LibraryDownloadPolicy } from './types'
+import { LIBRARY_DOWNLOAD_POLICIES, VERA_TAG, isLibraryAssetExpired, type LibraryDownloadPolicy } from './types'
 
 // Server-only data access for The Loom / Loom Studio. Service-role only; callers gate access.
 // See docs/LIBRARY.md. (Until HYG-054, 2026-09-06 this went through an untyped admin handle on a
@@ -545,6 +545,119 @@ export async function backfillLibraryAssetDescriptor(
         .is('colors', null)
         .select('id')
       if (wrote(data, error)) written.push('colors')
+    }
+  } catch {
+    return written
+  }
+  return written
+}
+
+/** What the naming read needs to know about one image (LIVE-587). */
+export type LibraryTagTarget = {
+  id: string
+  spaceId: string
+  url: string | null
+  mime: string | null
+  bytes: number | null
+}
+
+function toTagTarget(r: { id: string; space_id: string; url: string | null; mime: string | null; bytes: number | null }): LibraryTagTarget {
+  return { id: r.id, spaceId: r.space_id, url: r.url, mime: r.mime, bytes: r.bytes }
+}
+
+/** One image row, for the Studio drawer's Describe with Vera. Null for a missing or non-image row.
+ *  FAIL-SAFE to null. */
+export async function getLibraryTagTarget(assetId: string): Promise<LibraryTagTarget | null> {
+  try {
+    const { data } = await db()
+      .from('library_assets')
+      .select('id, space_id, url, mime, bytes, kind')
+      .eq('id', assetId)
+      .maybeSingle()
+    return data && data.kind === 'image' ? toTagTarget(data) : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The images nobody has named, newest first, for the tag-library cron (LIVE-587): live image rows
+ * whose tags are EMPTY and whose alt is NULL, served from the Loom's own public Storage, of a raster
+ * type the vision read takes and no bigger than it can send. The type and size filters live in the
+ * query rather than after it, so a row the read would refuse never takes a place in the batch.
+ * FAIL-SAFE to [].
+ */
+export async function listLibraryImagesToTag(
+  limit: number,
+  opts: { mimes: readonly string[]; maxBytes: number },
+): Promise<LibraryTagTarget[]> {
+  try {
+    const { data } = await db()
+      .from('library_assets')
+      .select('id, space_id, url, mime, bytes')
+      .eq('kind', 'image')
+      .neq('status', 'archived')
+      .is('alt', null)
+      .filter('tags', 'eq', '{}')
+      .like('url', '%/storage/v1/object/public/%')
+      .in('mime', [...opts.mimes])
+      .or(`bytes.is.null,bytes.lte.${Math.floor(opts.maxBytes)}`)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    return (data ?? []).map(toTagTarget)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * FILL what Vera proposed for one image (LIVE-587, ADR-1589), on the pattern ADR-1254 set for a
+ * machine-written field.
+ *
+ * 🔴 IT ONLY EVER FILLS A HOLE. `tags` is written only while the row's tags are empty, `alt` only
+ * `.is('alt', null)`, `category` only `.is('category', null)`, each in its own guarded update because
+ * they go empty independently (backfillLibraryAssetDescriptor, the same reason). A person who typed
+ * one of the three keeps it; Vera fills the others. A written tag set carries VERA_TAG, so what she
+ * named is one filter away from a person checking it. Returns the columns actually written (a guard
+ * that blocked the write returns zero rows and no error). FAIL-SAFE to what was written so far.
+ */
+export async function fillLibraryAssetDescription(
+  assetId: string,
+  proposal: { tags?: readonly string[] | null; alt?: string | null; category?: string | null },
+): Promise<string[]> {
+  const written: string[] = []
+  const wrote = (data: unknown, error: unknown) => !error && Array.isArray(data) && data.length > 0
+  try {
+    const tags = [...new Set((proposal.tags ?? []).map((t) => t.trim().toLowerCase()).filter(Boolean))]
+    if (tags.length) {
+      const withMark = tags.includes(VERA_TAG) ? tags : [...tags, VERA_TAG]
+      const { data, error } = await db()
+        .from('library_assets')
+        .update({ tags: withMark })
+        .eq('id', assetId)
+        .filter('tags', 'eq', '{}')
+        .select('id')
+      if (wrote(data, error)) written.push('tags')
+    }
+    const alt = proposal.alt?.trim()
+    if (alt) {
+      const { data, error } = await db()
+        .from('library_assets')
+        .update({ alt: alt.slice(0, 500) })
+        .eq('id', assetId)
+        .is('alt', null)
+        .select('id')
+      if (wrote(data, error)) written.push('alt')
+    }
+    const category = proposal.category?.trim()
+    if (category) {
+      const { data, error } = await db()
+        .from('library_assets')
+        .update({ category: category.slice(0, 80) })
+        .eq('id', assetId)
+        .is('category', null)
+        .select('id')
+      if (wrote(data, error)) written.push('category')
     }
   } catch {
     return written
