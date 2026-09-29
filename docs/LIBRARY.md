@@ -16,22 +16,34 @@ gets its own Loom**. It grows for years without a code deploy per asset.
 
 ## Owner decisions (2026-07-01)
 
-- **In-browser editor:** **Filerobot Image Editor** (OSS) — crop with aspect frames, rotate,
-  adjust, filters, compress. ⚠️ **Still the standing choice, now with a price tag attached**
-  ([HYG-109](BUILD-BACKLOG.json), [ADR-1496](DECISIONS.md)). This was picked before anyone measured
-  what it installs: ~6.8 MB across seven packages — `konva`, `styled-components`, and
-  `@scaleflex/ui` + `@scaleflex/icons` pinned at `3.0.0-beta.10` — none of them in the tree, one a
-  second styling runtime beside Tailwind 4, one a third-party design system arriving as a
-  transitive dependency. That is a re-confirmation to make knowingly, not a decision to reverse
-  from a scan, so HYG-109 puts the numbers and the zero-dependency alternative (native canvas crop
-  over the existing `CROP_FRAMES`) in front of the owner. Nothing changes until it is answered.
+- **In-browser editor:** the **native Canvas 2D crop/rotate editor** ([HYG-109](BUILD-BACKLOG.json),
+  [ADR-1592](DECISIONS.md)): crop to a `CROP_FRAMES` frame or freeform, quarter-turn rotate, and
+  straighten, with zero dependencies, loaded through `next/dynamic` from the asset drawer, saving
+  through `replaceLibraryAssetFile` so `recordVersion` runs first. **Owner ruling 2026-09-29:
+  "Native is enough."** Filerobot is not added; this supersedes the 2026-07-01 Filerobot pick and
+  its 2026-09-22 re-confirmation ([ADR-1496](DECISIONS.md)). [HYG-132](BUILD-BACKLOG.json), which
+  asked native vs Filerobot, closed on that ruling.
 - **Privacy:** build a **full** protection system, but **develop it later** — the schema hooks
   landed first (`is_protected`, `download_policy`, `expires_at`, private-bucket-ready), and since
   [LIVE-576](BUILD-BACKLOG.json) ([ADR-1577](DECISIONS.md)) the product reads and sets them: the
   Studio drawer's Protection section writes all three, every pick reader (`listLoomScopeImages`,
   `searchSpaceLibraryImages`) leaves out a row whose `expires_at` has passed, and the Studio grid
-  badges that row Expired instead of hiding it from its owner. The private bucket, the download
-  door and proofing are LIVE-577 to LIVE-580 ([ADR-1562](DECISIONS.md)).
+  badges that row Expired instead of hiding it from its owner. Since
+  [LIVE-577](BUILD-BACKLOG.json) ([ADR-1595](DECISIONS.md)) **Protected moves the file**:
+  `protectLibraryAsset` copies the current object and every version's object from `library-media`
+  into the private `library-private` bucket (`20270345009550`, `public = false`, no storage policy
+  for anon or authenticated, service role only), rewrites the asset and version rows to follow,
+  and removes the public copies; switching it off moves them back. A protected row's `url` is
+  **null** (never a signed value, which would be a stored expiry, and never a bare path, which
+  every reader would paint as a relative image), and `signedLibraryAssetUrl` in
+  `lib/library/asset-urls.ts` is the one signing function: the Studio mints a one-hour signed URL
+  per protected row at render time. **A protected asset is a download or a proof, not a page
+  image**: protecting refuses while the usage index or any of the six column image references
+  (HYG-068) points at the asset, when another row shares the file, and for a seed or import row
+  (its Space may paint the importer's object by address), every pick reader already drops a row with no url, and the
+  AssetRef refresh and the column-image readers skip it, so they stay fail-open and untouched.
+  Audio and video refuse (recordings-media has no private twin), and so does a replace or a
+  Recraft edit of a protected file. The download door and proofing are LIVE-578 and LIVE-580.
 - **Scope:** **every asset is space-scoped.** Frequency's shared/master library is the **root
   space's** Loom (`space_id` is NOT NULL). A child space's effective library = its own ∪ root's.
 - **Transforms:** **on-the-fly** (a width/format request against the master). **Editing an image
@@ -61,11 +73,14 @@ page again.
 - **Grid** (right): searchable, sorted, paginated (48/page). Three view modes — **Cards** (default),
   **Compact**, and **List** (URL `?view=`). Click a card to open the detail drawer.
 - **Semantic search** (Phase 1, [RESEARCH-ASSET-GEN.md](RESEARCH-ASSET-GEN.md)): a **"Most relevant"**
-  sort runs meaning-based search (query embedding → nearest assets), and **"Find similar"** in the
-  drawer (`?similar=<id>`) surfaces an asset's neighbours. Powered by the reserved
-  `library_assets.embedding` (384‑d, key‑free gte‑small via `embedText()`), the `match_library_assets`
-  / `similar_library_assets` RPCs, and the `embed-library` cron (content‑hash gated). Degrades to
-  keyword search when AI is off or nothing is embedded yet.
+  sort ranks words and meaning in one query, and **"Find similar"** in the drawer
+  (`?similar=<id>`) surfaces an asset's neighbours. Most relevant is `search_library_assets`
+  (LIVE-586, [ADR-1597](DECISIONS.md)), called from `lib/library/hybrid-search.ts`: a full-text arm
+  (`ts_rank` over `search_tsv`), a title trigram arm and a cosine arm over
+  `library_assets.embedding` (384‑d, key‑free gte‑small via `embedText()`), fused by reciprocal rank
+  (k = 60), so an exact title beats a vague neighbour and a typo still gets meaning. With AI off or
+  over budget the embedding is left out and the two word arms still rank. Find similar is
+  `similar_library_assets`; the `embed-library` cron keeps embeddings fresh (content‑hash gated).
 - **Bulk edits**: select cards (or the whole page), then **add to collection**, **set category**,
   **add tags**, **archive**, or **delete** across the selection.
 - **Design with Vera**: every SVG element has a "Design with Vera" panel in the drawer with two
@@ -132,7 +147,7 @@ under the table before building against either.
 | Table | Purpose | Notable columns |
 |---|---|---|
 | `library_assets` | The **master** record | `kind`, `title`, `slug`, `description`, `category`, `tags[]`, `colors[]`; `space_id` (NOT NULL; **root space = shared**); file payload (`storage_*`/`url`/`mime`/`width`/`height`/`bytes`) or parametric `config jsonb`; ingest meta (`sha256`, `alt`, `blurhash`, `focal_x/y`, `orig_width/height`); protection hooks (`is_protected`, `download_policy`, `expires_at`); `search_tsv` + `embedding vector(384)` |
-| `library_versions` | Non-destructive edit history | `version`, `recipe jsonb` (a full **asset snapshot** — url/storage/mime/dims/config — from any edit source: a Recraft edit, a Vera SVG save, or a Filerobot recipe), `is_current` (one per asset), `note`; see `lib/library/versions.ts` |
+| `library_versions` | Non-destructive edit history | `version`, `recipe jsonb` (a full **asset snapshot** — url/storage/mime/dims/config — from any edit source: a Recraft edit, a Vera SVG save, a file replace, or a crop/rotate save), `is_current` (one per asset), `note`; see `lib/library/versions.ts` |
 | `library_styles` | Trained Recraft brand styles for matching sets ([ADR-489](DECISIONS.md)) | `name`, `recraft_style_id`, `lane` (vector/raster), `ref_count`; space-scoped, service-role/fail-closed; see `lib/library/styles.ts` |
 | `library_collections` + `_items` | Arbitrary groupings ("Q3 sales funnel"), space-scoped | `title`, `slug`; items are many-to-many with `sort` |
 
@@ -164,8 +179,13 @@ under the table before building against either.
 >   writers.
 
 Typed contract: `lib/library/types.ts`; rendition + crop-frame presets (targets for the on-the-fly
-resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-role only** for now
-(like `public.pages`); per-space client RLS lands with the tenancy phase.
+resolver, not a table schema): `lib/library/renditions.ts`. Access: `library_assets`,
+`library_collections`, `library_collection_items` and `library_versions` carry per-Space client RLS
+(`20270345009500`, [ADR-1594](DECISIONS.md), [LIVE-570](BUILD-BACKLOG.json)): the Space team reads its
+own rows, any signed-in caller reads `visibility = 'public'` assets, writes go through
+`private.can_write_space_content`, and a version is insert-only. `library_styles` stays
+**service-role only**. The app still reads and writes on the admin client until
+[LIVE-571](BUILD-BACKLOG.json) moves the Space Loom onto the session client.
 
 ## Best-practice architecture
 
@@ -225,7 +245,7 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   of the reference is that one master re-points everywhere. Measured: a 2,243,106-byte master
   returns 28,578 bytes at width 480, auto-negotiated to WebP. Billing is per distinct **origin**
   image per cycle, not per request.
-- **Non-destructive editing.** Every edit (Recraft op, Vera SVG save, Filerobot recipe) first
+- **Non-destructive editing.** Every edit (Recraft op, Vera SVG save, replace, crop/rotate) first
   **snapshots** the asset's current state into a new `library_versions` row (`lib/library/versions.ts`
   `recordVersion`) and flips `is_current`, then overwrites the live row. Rollback restores a snapshot
   (and snapshots current first, so it's reversible). The prior states are never lost.
@@ -331,10 +351,11 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    `site-media`).
 3. **D3 — Editor + versions.** Shipped and closed ([ADR-1496](DECISIONS.md)): version-on-edit and
    rollback-via-`is_current` were already live (`lib/library/versions.ts`, three edit sources), and
-   the on-the-fly rendition resolver landed with the row. 🔴 The in-browser **crop/rotate editor is
-   NOT built** and is now [HYG-109](BUILD-BACKLOG.json), an owner ruling: Filerobot costs ~6.8 MB
-   across seven packages including `konva`, `styled-components` and a beta-pinned `@scaleflex/ui`,
-   versus a native-canvas crop over the existing `CROP_FRAMES` with no dependency.
+   the on-the-fly rendition resolver landed with the row. The in-browser **crop/rotate editor**
+   shipped native ([HYG-109](BUILD-BACKLOG.json), [ADR-1592](DECISIONS.md)):
+   `app/(main)/admin/library/loom-crop-editor.tsx` over `lib/library/crop-geometry.ts`, no
+   dependency, lazy-loaded, saving through the replace seam. The owner ruled native is enough
+   (2026-09-29, [HYG-132](BUILD-BACKLOG.json)); Filerobot is not added.
 4. **D4 — Organization at scale** (collections, saved views, tag governance; usage index + safe
    delete + global swap).
 5. **D5 — Per-space Looms** (space-scoped libraries, fork-on-edit, quotas, per-space console,
@@ -342,8 +363,9 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
 6. **D6 — Privacy system** (private bucket, signed URLs, storage RLS, download gating + audit,
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
+   LIVE-577 shipped: the private bucket, the protect move and the one signing function.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
-   Background removal and upscale (LIVE-589), describe on view (LIVE-588) and auto-tag (LIVE-587) are shipped; the hybrid rank (LIVE-586) is the one child left ([ADR-1563](DECISIONS.md)).
+   Background removal and upscale (LIVE-589), describe on view (LIVE-588), auto-tag (LIVE-587) and the hybrid Most relevant rank (LIVE-586) are shipped ([ADR-1563](DECISIONS.md)).
 
 ## Non-goals (v1)
 

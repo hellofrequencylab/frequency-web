@@ -17,7 +17,9 @@ import {
   type LibraryCollection,
   type LibraryGalleryItem,
 } from '@/lib/library/store'
-import { matchLibraryAssets, similarLibraryAssets } from '@/lib/library/embeddings'
+import { similarLibraryAssets } from '@/lib/library/embeddings'
+import { searchLibraryAssetsHybrid } from '@/lib/library/hybrid-search'
+import { signedLibraryAssetUrl } from '@/lib/library/asset-urls'
 import { recraftConfigured } from '@/lib/loom/recraft'
 import { RailGrid } from '@/components/templates'
 import { LibraryUploader } from './library-uploader'
@@ -149,9 +151,9 @@ export default async function LoomStudioPage({
   const spacesCollection = collections.find((c) => c.slug === SPACES_COLLECTION_SLUG) ?? null
   const crossSpaceCollection = !!collectionId && collectionId === spacesCollection?.id
 
-  // Main result. Three modes: "similar to X" (semantic neighbours), "most relevant" (semantic
-  // ranked by the query), or the normal paginated keyword/facet browse. Semantic modes are a
-  // single page and fall back to the keyword path when AI is off / nothing is embedded yet.
+  // Main result. Three modes: "similar to X" (semantic neighbours), "most relevant" (words and
+  // meaning fused in one query, LIVE-586), or the normal paginated keyword/facet browse. The first
+  // two are a single page. Most relevant needs no fallback: with AI off the RPC still ranks words.
   let assets: LibraryGalleryItem[] = []
   let total = 0
   let paginated = false
@@ -165,19 +167,12 @@ export default async function LoomStudioPage({
       ])
       total = assets.length
     } else if (sort === 'relevant' && q) {
-      assets = await matchLibraryAssets(scope.spaceId, q, {
+      assets = await searchLibraryAssetsHybrid(scope.spaceId, q, {
         kind: kind || undefined,
         limit: PAGE_SIZE,
         profileId: ctx.profileId,
       })
       total = assets.length
-      if (assets.length === 0) {
-        // AI off or nothing embedded → graceful keyword fallback.
-        const r = await searchLibraryAssets({ spaceId: scope.spaceId, q, kind: kind || undefined, category: category || undefined, collectionId: collectionId || undefined, crossSpace: crossSpaceCollection, page, pageSize: PAGE_SIZE })
-        assets = r.items
-        total = r.total
-        paginated = true
-      }
     } else {
       const r = await searchLibraryAssets({
         spaceId: scope.spaceId,
@@ -195,6 +190,14 @@ export default async function LoomStudioPage({
       paginated = true
     }
   }
+
+  // A protected asset's file is in the private bucket and its row carries no url (LIVE-577,
+  // ADR-1595), so the grid and the drawer would show the person who protected it a blank tile. Mint a
+  // short-lived signed URL per protected row, for this render only: it is handed to the grid and
+  // never written back, because a stored signed URL is a stored expiry.
+  assets = await Promise.all(
+    assets.map(async (a) => (a.isProtected && !a.url ? { ...a, url: await signedLibraryAssetUrl(a) } : a)),
+  )
 
   const pageResult = { items: assets, total }
   const totalPages = paginated ? Math.max(1, Math.ceil(total / PAGE_SIZE)) : 1

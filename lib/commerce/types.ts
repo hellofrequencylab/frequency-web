@@ -6,6 +6,12 @@
 import type { CheckoutUi } from '@/lib/billing/checkout-ui'
 
 export type OwnerKind = 'platform' | 'profile' | 'space'
+/** What `commerce_orders.owner_kind` may hold: a product's seller kind, or 'split' for a separate-charges
+ *  order paying more than one seller (LIVE-621, ADR-1576). A product is never 'split'; an order can be. */
+export type OrderOwnerKind = OwnerKind | 'split'
+/** Which Stripe funds flow an order took (`commerce_orders.funds_flow`): destination = one seller paid as
+ *  the money lands; separate = a charge on the platform, one transfer per seller to follow. */
+export type FundsFlow = 'destination' | 'separate'
 export type ProductKind = 'physical' | 'digital' | 'service' | 'booking' | 'ticket' | 'journey'
 /** A physical listing's condition (Phase 0). null = unset (services/bookings/tickets have none).
  *  Role gate (R3): individuals may list 'used' only; Business Spaces + the Store may list either. */
