@@ -23,6 +23,7 @@
 // (app/(main)/admin/content/actions.ts suggestPracticePlacementAction / acceptPracticePlacementAction).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { TablesUpdate } from '@/lib/database.types'
 
 function db() {
   return createAdminClient()
@@ -256,11 +257,8 @@ export async function applyPlacementSuggestion(
     .maybeSingle()
   if (!row) throw new Error('That practice is gone.')
 
-  const update: {
-    domain_id?: string
-    focus_details?: Record<string, { instructions: string; timing: string }>
-    subcategory_id?: string
-  } = {}
+  // Typed by its table, like every practice-module payload since LIVE-647 (ADR-1610).
+  const update: TablesUpdate<'practices'> = {}
   if (fresh.pillar) {
     update.domain_id = fresh.pillar.id
     const fd = row.focus_details
