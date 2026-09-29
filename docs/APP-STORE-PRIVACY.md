@@ -48,7 +48,7 @@ Advertising or Marketing, Third-Party Advertising, Other Purposes.
 
 | Apple type | Collected | Linked | Tracking | Purpose | Evidence |
 |---|---|---|---|---|---|
-| Payment Info | No (Stripe collects it) | n/a | No | n/a | Card entry is Stripe Elements or Checkout; we hold `profiles.stripe_customer_id` only. The iOS app will sell plans through Apple in-app purchase (ADR-1637). |
+| Payment Info | No (Stripe collects it) | n/a | No | n/a | Card entry is Stripe Elements or Checkout; we hold `profiles.stripe_customer_id` only. The iOS app will sell plans through Apple in-app purchase (ADR-1650). |
 | Credit Info | No | n/a | No | n/a | |
 | Other Financial Info | Yes, hosts only | Yes | No | App Functionality | Hosts who get paid: `profiles.stripe_account_id` and payout flags; Stripe Connect holds the identity and bank details. |
 
