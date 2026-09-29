@@ -78,7 +78,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Practices blocks (/practices) — the personal sections above the fixed library ──
   { id: 'practices-stats', label: 'Practice stats', description: 'The headline band: your practices, days practiced, current and longest streak, and the library size.' },
   { id: 'practices-activity', label: 'Your activity', description: 'The member’s practice as a bar chart with Days, Weeks, and Months views.' },
-  { id: 'practices-balance', label: 'Pillar balance', description: 'How the member’s adopted practices spread across the four Pillars.' },
+  { id: 'practices-balance', label: 'Pillar balance', description: 'How the member’s adopted practices spread across the four Pillars, and the Zaps their logs earned in each.' },
   { id: 'practices-mine', label: 'Your practices', description: 'The member’s adopted and built practices, each with its log and edit controls.' },
   { id: 'practices-library', label: 'Practice library', description: 'The full, faceted community library, filterable by Pillar, tag, and search, paginated.' },
 
