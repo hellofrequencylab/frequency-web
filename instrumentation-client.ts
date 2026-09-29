@@ -23,6 +23,14 @@
 // client hook cannot live in the shared module) and lib/observability/sentry.ts for the gate.
 
 import type { RouterTransitionHook } from '@/lib/observability/sentry-client'
+import { installPrefetchFuse } from '@/lib/nav/prefetch-fuse'
+
+// The prefetch fuse (LIVE-649, ADR-1617). Installed HERE because this module runs before the app
+// hydrates, so the router's very first Link prefetch already goes through it. It caps how often one
+// tab may prefetch a route (and prefetches in all), so no invalidation loop inside the router can
+// turn an idle tab into a request flood again. A local import with no npm dependency: it adds a
+// few hundred bytes to the baseline chunk, not a package. See lib/nav/prefetch-fuse.ts.
+if (typeof window !== 'undefined') installPrefetchFuse(window)
 
 /** Set once the Sentry chunk has loaded; stays undefined when Sentry is disabled. */
 let routerTransitionHook: RouterTransitionHook | undefined
