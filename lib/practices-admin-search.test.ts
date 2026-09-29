@@ -14,7 +14,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 //   • keyset pagination walks the whole set in (score desc, id asc) order, page by page,
 //     with NO 200-row cap — >200 rows are reachable
 //   • the keyset cursor boundary is exact (no row repeated, none skipped across pages)
-//   • facet counts are correct (pillar / status / flags / computed)
+//   • library facet totals are correct (pillar / status / flags / computed)
+//   • residual facet counts (LIVE-646): every count equals the row total of the view its
+//     option links to, under any mix of active filters
 //   • archive sets BOTH status='archived' AND is_public=false
 //   • restore returns archived → approved (and never touches a non-archived row)
 //   • bulk-on-filtered resolves the right ids for the filter and respects ADMIN_BULK_MAX
@@ -195,6 +197,7 @@ import {
   searchAdminPractices,
   countAdminPractices,
   searchAdminFacets,
+  libraryFacetTotals,
   resolveAdminPracticeIds,
   archivePractices,
   restorePractices,
@@ -312,10 +315,10 @@ describe('countAdminPractices', () => {
   })
 })
 
-describe('searchAdminFacets', () => {
+describe('libraryFacetTotals', () => {
   it('returns correct global counts for flags + computed gaps', async () => {
     seed(48)
-    const f = await searchAdminFacets({ includeHidden: true })
+    const f = await libraryFacetTotals({ includeHidden: true })
     expect(f.flag.public).toBe(store.practices.filter((p) => p.is_public).length)
     expect(f.flag.template).toBe(store.practices.filter((p) => p.is_template).length)
     expect(f.flag.featured).toBe(store.practices.filter((p) => p.featured_at != null).length)
@@ -325,6 +328,137 @@ describe('searchAdminFacets', () => {
     // Pillar buckets sum to the universe (including the null/no-Pillar bucket).
     const pillarSum = f.pillar.reduce((s, b) => s + b.count, 0)
     expect(pillarSum).toBe(48)
+  })
+})
+
+// --- Residual ("minus-self") facet counts (LIVE-646, ADR-1609) ----------------
+
+type Opts = Parameters<typeof countAdminPractices>[0] & object
+
+// A library varied on every counted axis, with tags, so filters overlap in every way.
+function seedVaried(n: number) {
+  seed(n)
+  const statuses = ['approved', 'pending', 'draft', null]
+  const weights = ['light', 'standard', 'heavy', null]
+  for (let i = 0; i < n; i++) {
+    const patch: Row = {
+      status: statuses[i % 4],
+      weight_class: weights[(i >> 1) % 4],
+      subcategory_id: i % 5 === 0 ? null : `s-${i % 3}`,
+      featured_at: i % 12 === 0 ? '2026-01-01T00:00:00Z' : null,
+    }
+    Object.assign(store.practices_ranked[i], patch)
+    Object.assign(store.practices[i], patch)
+  }
+  store.practice_tag_defs = [
+    { id: 't-calm', slug: 'calm', label: 'Calm' },
+    { id: 't-focus', slug: 'focus', label: 'Focus' },
+    { id: 't-sleep', slug: 'sleep', label: 'Sleep' },
+  ]
+  let link = 0
+  for (let i = 0; i < n; i++) {
+    const id = `p-${String(i).padStart(4, '0')}`
+    if (i % 2 === 0) store.practice_tags.push({ id: `l-${link++}`, practice_id: id, tag_id: 't-calm' })
+    if (i % 3 === 0) store.practice_tags.push({ id: `l-${link++}`, practice_id: id, tag_id: 't-focus' })
+    if (i % 7 === 0) store.practice_tags.push({ id: `l-${link++}`, practice_id: id, tag_id: 't-sleep' })
+  }
+}
+
+// The row total of the view an option links to: the rows the table's own filters resolve.
+// resolveAdminPracticeIds applies `featured` too (countAdminPractices documents that it cannot).
+async function viewTotal(opts: Opts): Promise<number> {
+  return (await resolveAdminPracticeIds(opts)).ids.length
+}
+
+// Every option on the rail, as the filter set choosing it produces (a dropdown REPLACES its own
+// param, a toggle ADDS itself).
+async function expectEveryCountIsItsViewTotal(filters: Opts) {
+  const f = await searchAdminFacets(filters)
+  const lists: [keyof typeof f, keyof Opts][] = [
+    ['pillar', 'pillarId'], ['subcategory', 'subId'], ['status', 'status'],
+    ['weight', 'weightClass'], ['creator', 'creatorId'], ['tag', 'tag'],
+  ]
+  let checked = 0
+  for (const [group, param] of lists) {
+    for (const b of f[group] as { key: string; count: number }[]) {
+      if (b.key === '__none__') continue
+      expect({ group, key: b.key, count: b.count }).toEqual({
+        group, key: b.key, count: await viewTotal({ ...filters, [param]: b.key }),
+      })
+      checked++
+    }
+  }
+  const toggles: [keyof typeof f.computed, keyof Opts][] = [
+    ['no_image', 'noImage'], ['no_body', 'noBody'], ['never_logged', 'neverLogged'], ['no_pillar', 'noPillar'],
+  ]
+  for (const [key, param] of toggles) {
+    expect({ key, count: f.computed[key] }).toEqual({ key, count: await viewTotal({ ...filters, [param]: true }) })
+  }
+  const flags: [keyof typeof f.flag, keyof Opts][] = [
+    ['public', 'isPublic'], ['template', 'isTemplate'], ['featured', 'featured'],
+  ]
+  for (const [key, param] of flags) {
+    expect({ key, count: f.flag[key] }).toEqual({ key, count: await viewTotal({ ...filters, [param]: true }) })
+  }
+  expect(checked).toBeGreaterThan(0)
+  return f
+}
+
+describe('searchAdminFacets: residual counts (LIVE-646)', () => {
+  it('with no filter, every count is its view total and the groups cover the library', async () => {
+    seedVaried(60)
+    const f = await expectEveryCountIsItsViewTotal({ includeHidden: true })
+    expect(f.pillar.reduce((s, b) => s + b.count, 0)).toBe(60)
+  })
+
+  it('under one filter, the filtered group ignores itself and every other group narrows', async () => {
+    seedVaried(60)
+    const f = await expectEveryCountIsItsViewTotal({ includeHidden: true, status: 'pending' })
+    // Status still offers every status the library has (minus-self)...
+    expect(f.status.map((b) => b.key).sort()).toEqual(['approved', 'draft', 'pending'])
+    // ...while Pillar counts only the pending rows, which is what the table is showing.
+    const pending = await countAdminPractices({ includeHidden: true, status: 'pending' })
+    expect(f.pillar.reduce((s, b) => s + b.count, 0)).toBe(pending)
+    const library = await libraryFacetTotals({ includeHidden: true })
+    expect(pending).toBeLessThan(library.pillar.reduce((s, b) => s + b.count, 0))
+  })
+
+  it('under a stack of filters on every kind of axis, every count is still its view total', async () => {
+    seedVaried(96)
+    const stacks: Opts[] = [
+      { includeHidden: true, pillarId: 'd-1', tag: 'focus', weightClass: 'light' },
+      { includeHidden: true, subId: 's-1', noBody: true, creatorId: 'u-1' },
+      { includeHidden: true, featured: false, isPublic: true, neverLogged: true },
+      { includeHidden: false, status: 'pending', weightClass: 'heavy', tag: 'focus' },
+    ]
+    for (const filters of stacks) {
+      // Each stack leaves rows on screen, so the check is not vacuous.
+      expect(await viewTotal(filters)).toBeGreaterThan(0)
+      await expectEveryCountIsItsViewTotal(filters)
+    }
+  })
+
+  it('keys tags by slug, the value the tag filter takes', async () => {
+    seedVaried(30)
+    const f = await searchAdminFacets({ includeHidden: true })
+    expect(f.tag.map((b) => b.key).sort()).toEqual(['calm', 'focus', 'sleep'])
+  })
+
+  it('keeps the selected option on the rail at 0 when the other filters leave it no rows', async () => {
+    seedVaried(40)
+    // No practice has both "No Pillar" and a Pillar, so the selected Pillar has no rows.
+    const f = await searchAdminFacets({ includeHidden: true, pillarId: 'd-0', noPillar: true })
+    expect(f.pillar.find((b) => b.key === 'd-0')).toEqual({ key: 'd-0', count: 0 })
+    expect(await viewTotal({ includeHidden: true, pillarId: 'd-0', noPillar: true })).toBe(0)
+  })
+
+  it('reads past one page of max_rows', async () => {
+    seedVaried(2300)
+    const f = await searchAdminFacets({ includeHidden: true })
+    expect(f.status.reduce((s, b) => s + b.count, 0)).toBe(
+      store.practices_ranked.filter((r) => r.status != null).length,
+    )
+    expect(f.tag.find((b) => b.key === 'calm')?.count).toBe(1150)
   })
 })
 

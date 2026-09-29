@@ -5,6 +5,7 @@ import {
   searchAdminPractices,
   countAdminPractices,
   searchAdminFacets,
+  libraryFacetTotals,
   listSubcategories,
   type AdminPracticeSearchOpts,
   type AdminPracticeSort,
@@ -112,18 +113,23 @@ export const getAdminPracticesContext = cache(async (): Promise<AdminPracticesCo
     includeHidden: true,
   }
 
-  const [libraryResult, total, facets, pillars, subcategories]: [
+  // Two facet reads, two questions (LIVE-646, ADR-1609): the rail's counts are RESIDUAL (each group
+  // under every active filter but its own, so a count is the row total of the view it links to);
+  // the stats band's are the whole library's, whatever is filtered.
+  const [libraryResult, total, facets, totals, pillars, subcategories]: [
     AdminPracticeSearchResult, number, Awaited<ReturnType<typeof searchAdminFacets>>,
+    Awaited<ReturnType<typeof libraryFacetTotals>>,
     Awaited<ReturnType<typeof getPillars>>, Awaited<ReturnType<typeof listSubcategories>>,
   ] = await Promise.all([
     searchAdminPractices({ ...filterOpts, sort, cursor, page, pageSize: PAGE_SIZE }),
     countAdminPractices(filterOpts),
-    searchAdminFacets({ includeHidden: true }),
+    searchAdminFacets(filterOpts),
+    libraryFacetTotals({ includeHidden: true }),
     getPillars(),
     listSubcategories(),
   ])
 
-  const pendingCount = facets.status.find((s) => s.key === 'pending')?.count ?? 0
+  const pendingCount = totals.status.find((s) => s.key === 'pending')?.count ?? 0
 
   // Resolve the facet rail's option labels (the counts come back keyed by id/slug). Creator +
   // tag labels need a small extra read; everything else maps from the taxonomy we already have.
@@ -235,11 +241,11 @@ export const getAdminPracticesContext = cache(async (): Promise<AdminPracticesCo
 
   return {
     stats: {
-      inLibrary: facets.status.reduce((n, s) => n + s.count, 0),
-      publicCount: facets.flag.public,
+      inLibrary: totals.status.reduce((n, s) => n + s.count, 0),
+      publicCount: totals.flag.public,
       pendingCount,
-      featuredCount: facets.flag.featured,
-      neverLogged: facets.computed.never_logged,
+      featuredCount: totals.flag.featured,
+      neverLogged: totals.computed.never_logged,
     },
     library: { rows, filter, total, showingFrom, showingTo, pagination, facetRail, hasActiveFilter },
   }

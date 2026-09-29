@@ -34,6 +34,7 @@ import { resolveMemberDay, memberDay } from '@/lib/member-day'
 import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
 import { normalizePrimaryPct, type PillarSplit } from '@/lib/practices/attribution'
+import { residualFacetCounts, type FacetBaseRow } from '@/lib/practices/residual-facets'
 import { coerceTermWeeks, cleanCue, termWindow, withinActiveCap } from '@/lib/practices/adoption'
 import { BREATH_PATTERNS } from '@/lib/on-air'
 import {
@@ -709,17 +710,17 @@ export async function countAdminPractices(opts: AdminPracticeSearchOpts = {}): P
 
 // --- Admin facet counts (the curation rail) -------------------------------
 //
-// Phase 1 item 1.3 (PRACTICE-LIBRARY §5). The rail shows grouped counts across the
-// whole library so an operator can see, at a glance, how many practices sit under each
-// Pillar / status / weight / flag / computed-gap, and jump to them.
+// Phase 1 item 1.3 (PRACTICE-LIBRARY §5). The rail shows grouped counts so an operator can see
+// how many practices sit under each Pillar / status / weight / flag / computed-gap, and jump to
+// them. Two reads, two questions:
 //
-// CAVEAT (documented design choice): these are GLOBAL counts over the admin-visible
-// universe, NOT counts of "the current filter set minus this facet" (the textbook
-// faceted-search behavior). Computing per-facet residual counts means one grouped query
-// per facet on every rail render, which is wasteful for a single-operator workspace; the
-// global counts answer "what's in the library" — which is the curation question — and the
-// "showing N of M" line (countAdminPractices) already reflects the active filter. Residual
-// faceting is a Phase-2 refinement if operators ask for it. The RPC carries the same note.
+//   • searchAdminFacets(filters): RESIDUAL ("minus-self") counts for the rail (LIVE-646,
+//     ADR-1609). Each group is counted under every active filter except its own, so a count is
+//     the row total of the view its option links to. Computed in the app from one read of the
+//     base set (lib/practices/residual-facets.ts), through the same filter builder as the table.
+//   • libraryFacetTotals(): GLOBAL counts over the admin-visible universe via the
+//     practice_admin_facets RPC, for the headline stats ("in library", "pending"), which describe
+//     the library whatever is filtered.
 
 /** One facet bucket: a key within a facet group and how many practices fall in it. */
 interface FacetCount {
@@ -740,12 +741,100 @@ export interface AdminPracticeFacets {
   computed: { no_image: number; no_body: number; never_logged: number; no_pillar: number }
 }
 
+/** One page of the facet base read: PostgREST's max_rows (supabase/config.toml). */
+const FACET_PAGE = 1000
+
+/** The practices_ranked columns the residual counter reads. `body` is not among them: a step
+ *  text is long, and the counter only needs to know it is missing, which a second, id-only read
+ *  asks with the table's own `is('body', null)`. */
+const FACET_BASE_COLS =
+  'id, domain_id, subcategory_id, status, weight_class, created_by, is_public, is_template, ' +
+  'featured_at, header_image, logs_total'
+
+/** Every practices_ranked row matching `opts`, through applyAdminFilters, a page at a time in id
+ *  order. Null on a read error (logged). */
+async function readAllAdminFiltered<T>(cols: string, opts: AdminPracticeSearchOpts): Promise<T[] | null> {
+  const out: T[] = []
+  for (let from = 0; ; from += FACET_PAGE) {
+    const q = db().from('practices_ranked').select(cols) as unknown as AdminFilterBuilder
+    const filtered = await applyAdminFilters(q, opts)
+    if (filtered === null) return out
+    const { data, error } = await (filtered.q as unknown as {
+      order: (c: string, o: { ascending: boolean }) => {
+        range: (a: number, b: number) => Promise<{ data: unknown; error: unknown }>
+      }
+    }).order('id', { ascending: true }).range(from, from + FACET_PAGE - 1)
+    if (error) {
+      log.error('practices.admin_facets_read_failed', { error: (error as { message?: string }).message })
+      return null
+    }
+    const page = (data as T[] | null) ?? []
+    out.push(...page)
+    if (page.length < FACET_PAGE) return out
+  }
+}
+
 /**
- * Read the curation rail's facet counts via the practice_admin_facets RPC (one round-trip
- * for the whole rail). Global over the admin-visible universe (see CAVEAT above). The RPC
- * is reached through the untyped admin handle (ADR-246) until the types are regenerated.
+ * The rail's residual facet counts for a filter set (LIVE-646, ADR-1609): every group counted
+ * under every active filter except its own. Reads the base set (the universe narrowed only by the
+ * uncounted filters: free text, hidden, demo) through applyAdminFilters, plus which of those rows
+ * have no steps and the tag slugs they carry, and counts in lib/practices/residual-facets.ts.
+ * Tag buckets are keyed by SLUG, the value the tag filter takes. Empty on a read error.
  */
 export async function searchAdminFacets(
+  filters: AdminPracticeSearchOpts = {},
+): Promise<AdminPracticeFacets> {
+  const base: AdminPracticeSearchOpts = {
+    q: filters.q, includeHidden: filters.includeHidden, hideDemo: filters.hideDemo,
+  }
+  const [baseRows, noBodyRows] = await Promise.all([
+    readAllAdminFiltered<Omit<FacetBaseRow, 'no_body'>>(FACET_BASE_COLS, base),
+    readAllAdminFiltered<{ id: string }>('id', { ...base, noBody: true }),
+  ])
+  if (baseRows === null || noBodyRows === null) return residualFacetCounts([], new Map(), filters)
+  const noBody = new Set(noBodyRows.map((r) => r.id))
+  const rows: FacetBaseRow[] = baseRows.map((r) => ({ ...r, no_body: noBody.has(r.id) }))
+
+  // Tag slugs per practice: the defs are a small vocabulary; the links are read whole, a page at
+  // a time, and kept only for rows in the base set (an .in() over thousands of ids would not fit
+  // in a URL).
+  const tagSlugsByPractice = new Map<string, string[]>()
+  const { data: defRows } = await db().from('practice_tag_defs').select('id, slug')
+  const slugOf = new Map(((defRows as { id: string; slug: string }[] | null) ?? []).map((d) => [d.id, d.slug]))
+  if (slugOf.size > 0 && rows.length > 0) {
+    const inBase = new Set(rows.map((r) => r.id))
+    for (let from = 0; ; from += FACET_PAGE) {
+      const { data, error } = await (db().from('practice_tags').select('practice_id, tag_id') as unknown as {
+        order: (c: string, o: { ascending: boolean }) => {
+          range: (a: number, b: number) => Promise<{ data: unknown; error: unknown }>
+        }
+      }).order('id', { ascending: true }).range(from, from + FACET_PAGE - 1)
+      if (error) {
+        log.error('practices.admin_facet_tags_read_failed', { error: (error as { message?: string }).message })
+        break
+      }
+      const links = (data as { practice_id: string; tag_id: string }[] | null) ?? []
+      for (const l of links) {
+        const slug = slugOf.get(l.tag_id)
+        if (!slug || !inBase.has(l.practice_id)) continue
+        const list = tagSlugsByPractice.get(l.practice_id)
+        if (list) list.push(slug)
+        else tagSlugsByPractice.set(l.practice_id, [slug])
+      }
+      if (links.length < FACET_PAGE) break
+    }
+  }
+
+  return residualFacetCounts(rows, tagSlugsByPractice, filters)
+}
+
+/**
+ * Whole-library facet counts via the practice_admin_facets RPC (one round-trip), for the
+ * workspace's headline stats. Not scoped to any filter: the stats band describes the library.
+ * Tag buckets here are keyed by tag id. The RPC is reached through the untyped admin handle
+ * (ADR-246) until the types are regenerated.
+ */
+export async function libraryFacetTotals(
   opts: { includeHidden?: boolean } = {},
 ): Promise<AdminPracticeFacets> {
   const out: AdminPracticeFacets = {
