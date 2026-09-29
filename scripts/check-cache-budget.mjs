@@ -222,17 +222,30 @@ const VERCEL_CEILING_GB = 1.5
 // size makes the gate fire early, which costs a cold compile; under-estimating loses the entire
 // cache. Those errors are not symmetric, so the rounding is not either.
 //
-// STILL A WHOLE-ARCHIVE RATIO, and that limit has not changed: node_modules and the Turbopack cache
-// do not compress alike, and nothing available here separates them. A tree whose MIX shifts a long
-// way from 933 MiB node_modules + ~1.4 GiB turbopack can still drift. Every run prints the raw
-// figure it measured, so re-derive from the pair on any build where the mix looks different. Do not
-// tune it to make a run green.
+// 🔴 RE-DERIVED 2026-09-29 (HYG-136, ADR-1637). A production build printed both halves again, and
+// 0.53 under-read in the direction that loses the whole cache:
 //
-// ⚠️ HEADROOM IS TIGHTER THAN THE OLDER READINGS SUGGESTED: 1.32 GB against the 1.50 GB ceiling is
-// 12% clear, where the 2026-08-18 production reads of 1.26 GB looked like 16%. That is the number
-// LIVE-029 is about.
-const PACKED_PER_RAW = 0.53
-const PACKED_PER_RAW_MEASURED = '2026-08-19'
+//     ESTIMATE, this script                     1.38 GB packed  (at 0.53 ⇒ raw 1.38/0.53 = 2.604 GB)
+//     PACKED,   "Uploading build cache"         1.42 GB
+//     implied PACKED_PER_RAW                    1.42 / 2.604  ⇒  0.5454
+//
+// The real archive was already past the 1.40 GB trim point while the estimate said it had not.
+// Headroom against the 1.50 GB ceiling was 0.08 GB. Rounded UP to 0.55 rather than to the measured
+// 0.5454, same rule as 2026-08-19: over-estimating costs a cold compile; under-estimating loses
+// node_modules with the rest.
+//
+// STILL A WHOLE-ARCHIVE RATIO. node_modules and the Turbopack cache do not compress alike, and
+// Vercel uploads one archive, so this file cannot take two packed readings. The mix has moved
+// (compiler-heavy: node_modules held near 959 MiB while turbopack grew), which is why 0.53 drifted,
+// but splitting the constant without two packed numbers would be fiction. The remedy for trims
+// that fire often is the compiler cache's growth (HYG-140), not a second ratio and not a raised
+// ceiling. Every run still prints the raw figure, so re-derive from the pair when the mix moves
+// again. Do not tune it to make a run green.
+//
+// ⚠️ HEADROOM IS TIGHTER THAN THE 2026-08-19 READING: 1.42 GB against the 1.50 GB ceiling is 5%
+// clear. That is the number HYG-140 is about.
+const PACKED_PER_RAW = 0.55
+const PACKED_PER_RAW_MEASURED = '2026-09-29'
 
 // Trim below the ceiling, not at it. The reserve covers the estimate's own error and the little
 // that `next start`-shaped caches may add after this runs. It is deliberately not large: with the

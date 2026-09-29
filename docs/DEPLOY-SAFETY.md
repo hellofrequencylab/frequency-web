@@ -218,16 +218,18 @@ Everything below follows from that, and §9's wrong verdict followed from not ha
   build can do and deleting it is not ([ADR-1086](DECISIONS.md)).
 - **The threshold is in Vercel's units, and it says so.** Vercel weighs the **packed** archive; this
   script can only see raw bytes, and the two ran **~2:1 apart** while a comment claimed ~3%. The
-  conversion is one named constant, `PACKED_PER_RAW = 0.53` (`scripts/check-cache-budget.mjs`,
-  `PACKED_PER_RAW_MEASURED = '2026-08-19'`). ✅ **It is settled, not provisional** — this paragraph
+  conversion is one named constant, `PACKED_PER_RAW = 0.55` (`scripts/check-cache-budget.mjs`,
+  `PACKED_PER_RAW_MEASURED = '2026-09-29'`). ✅ **It is settled, not provisional** — this paragraph
   used to say `0.50` and call it provisional because the raw and packed readings came from
-  different builds. ADR-1113 closed exactly that caveat on 2026-08-24 (`HYG-015`) with five
-  PAIRED readings, each printing an estimate beside its own build's `Uploading build cache` line:
-  the implied ratio came out 0.524–0.526 against the constant of 0.53, i.e. accurate to 1% and
-  rounded toward firing the trim early. Four later paired readings agree, two of them exact.
+  different builds. ADR-1113 closed that caveat on 2026-08-24 (`HYG-015`) with five PAIRED
+  readings around 0.53. A 2026-09-29 production pair then printed 1.38 GB estimated against a
+  1.42 GB upload (implied 0.5454), which is the unsafe direction: the real archive had already
+  passed the 1.40 GB trim point. HYG-136 / ADR-1637 re-derived and rounded **up** to 0.55. Still
+  one whole-archive ratio: Vercel uploads one archive, so this gate cannot take two packed
+  readings. Compiler-cache growth that makes the trim fire often is HYG-140, not a raised ceiling.
   🔴 **Do not "correct" this back toward 0.264.** That is the node_modules-only mix; near the
-  threshold the cache is compiler-heavy by definition, which is the mix 0.53 was derived on. A
-  probe holds it in a two-sided 0.52–0.54 band.
+  threshold the cache is compiler-heavy by definition, which is the mix 0.55 was derived on. A
+  probe holds it in a two-sided 0.54–0.56 band.
 
 ### 11. The bytes a member's phone parses are an artifact too. 🔒 `check:shell-weight`
 
