@@ -59,4 +59,20 @@ describe('the rule stays pinned to the trigger (LIVE-349)', () => {
     expect(sql).toContain("base_handle := 'member'")
     expect(sql).toContain("final_handle := base_handle || '_' || substr(replace(new.id::text, '-', ''), 1, 6)")
   })
+
+  // LIVE-450: the conversion door reconstructs the same mint in SQL before it spends a lead's name
+  // onto a profile. If the trigger's formula ever moves, this pin and the one above fail together,
+  // which is the point: three copies of one formula (trigger, identity.ts, conversion) must agree,
+  // or a real member's chosen name could be read as the mint and overwritten.
+  it('the conversion door mirrors the same mint in SQL before spending a lead name (LIVE-450)', () => {
+    const sql = readFileSync(
+      'supabase/migrations/20270345008700_conversion_spends_the_lead_name.sql',
+      'utf8',
+    )
+    expect(sql).toContain("when p.display_name = 'New Member' then 'member'")
+    expect(sql).toContain("lower(regexp_replace(p.display_name, '[^a-z0-9]', '', 'g'))")
+    expect(sql).toContain("|| '_' || substr(replace(auth.uid()::text, '-', ''), 1, 6)")
+    // The spend is gated on the stamp landing THIS call and on the lead carrying a name.
+    expect(sql).toContain("if v_n > 0 and v_lead_name is not null")
+  })
 })

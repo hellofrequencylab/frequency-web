@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { PlanDrawer } from './plan-drawer'
 import type { SpacePlan } from '@/lib/calendar/plans'
 import type { PlanCommentView } from '@/lib/calendar/plan-comments'
+import type { PlanActivityView } from '@/lib/calendar/plan-activity'
 import type { CrmTask } from '@/lib/crm/tasks'
 
 // LIVE-467, findings 5, 6 and 7, in the drawer:
@@ -36,8 +37,16 @@ const mocks = vi.hoisted(() => ({
   revokePlanShare: vi.fn(async () => ({ data: undefined })),
   listPlanTodos: vi.fn(async () => [] as unknown[]),
   listPlanComments: vi.fn(async () => ({ data: [] as unknown[] })),
+  listPlanActivity: vi.fn(async () => ({ data: [] as unknown[] })),
   postPlanComment: vi.fn(async () => ({ data: { id: 'c-new' } })),
   removePlanComment: vi.fn(async () => ({ data: undefined })),
+  assignPlanTodo: vi.fn(async () => ({ data: undefined })),
+  listPlanAssignees: vi.fn(async () => ({ data: [] as { value: string; label: string }[] })),
+}))
+
+vi.mock('./task-actions', () => ({
+  assignPlanTodo: mocks.assignPlanTodo,
+  listPlanAssignees: mocks.listPlanAssignees,
 }))
 
 vi.mock('./plan-actions', () => ({
@@ -50,6 +59,7 @@ vi.mock('./plan-actions', () => ({
   revokePlanShare: mocks.revokePlanShare,
   listPlanTodos: mocks.listPlanTodos,
   listPlanComments: mocks.listPlanComments,
+  listPlanActivity: mocks.listPlanActivity,
   postPlanComment: mocks.postPlanComment,
   removePlanComment: mocks.removePlanComment,
   listPlanLinkableEvents: async () => [],
@@ -92,6 +102,11 @@ beforeEach(() => {
   mocks.listPlanTodos.mockResolvedValue([])
   mocks.listPlanComments.mockReset()
   mocks.listPlanComments.mockResolvedValue({ data: [] })
+  mocks.listPlanActivity.mockReset()
+  mocks.listPlanActivity.mockResolvedValue({ data: [] })
+  mocks.assignPlanTodo.mockClear()
+  mocks.listPlanAssignees.mockReset()
+  mocks.listPlanAssignees.mockResolvedValue({ data: [] })
   mocks.postPlanComment.mockClear()
   mocks.removePlanComment.mockClear()
   mocks.planReadiness.mockReset()
@@ -402,5 +417,83 @@ describe('PlanDrawer: the thread under the Plan and under a to-do', () => {
     const box = thread.querySelector('textarea[aria-label="Write a comment"]') as HTMLTextAreaElement
     expect(box.placeholder).toContain('The Green Room')
     expect(document.querySelector('[data-plan-todo-notes]')).toBeNull()
+  })
+})
+
+// THE RECORD (PROG-CAL7 Together, LIVE-543). The drawer shows what anyone did to the Plan, newest
+// first, under [data-plan-activity], for both sides, and nothing when there is nothing yet.
+describe('PlanDrawer: the activity record', () => {
+  const act1: PlanActivityView = {
+    id: 'a-1',
+    planId: 'plan-1',
+    kind: 'stage',
+    summary: 'Moved the Plan to Production.',
+    createdAt: '2026-09-28T10:00:00Z',
+    actorProfileId: 'profile-2',
+    actorName: null,
+    spaceName: 'The Green Room',
+    mine: false,
+  }
+
+  it('renders the record with who did it, read only, for the guest too', async () => {
+    mocks.listPlanActivity.mockResolvedValue({ data: [act1, { ...act1, id: 'a-2', kind: 'comment', summary: 'Commented on the Plan.', mine: true }] })
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} readOnly sharedFrom="The Green Room" />)
+    await flush()
+    const record = document.querySelector('[data-plan-activity]')!
+    expect(record).not.toBeNull()
+    expect(record.querySelectorAll('[data-plan-activity-row]').length).toBe(2)
+    expect(record.textContent).toContain('Someone at The Green Room')
+    expect(record.textContent).toContain('Moved the Plan to Production.')
+    expect(record.textContent).toContain('You')
+    expect(record.querySelector('button, textarea, input')).toBeNull()
+  })
+
+  it('shows no record section while nothing has happened', async () => {
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} />)
+    await flush()
+    expect(mocks.listPlanActivity).toHaveBeenCalledWith('lab', 'plan-1')
+    expect(document.querySelector('[data-plan-activity]')).toBeNull()
+  })
+})
+
+// HANDING A TO-DO ACROSS THE SHARE (PROG-CAL7 Together, LIVE-544). Every to-do row carries a
+// picker of both teams by name; picking one calls the assign door with the to-do and the person;
+// the guest's read-only drawer lists the shared Plan's to-dos and can hand one over too.
+describe('PlanDrawer: who does a to-do', () => {
+  const people = [
+    { value: '22222222-2222-4222-8222-222222222222', label: 'Mara (Lab)' },
+    { value: '33333333-3333-4333-8333-333333333333', label: 'Zed (The Green Room)' },
+  ]
+
+  it('offers both teams by name on each to-do and hands the to-do to the person picked', async () => {
+    mocks.listPlanTodos.mockResolvedValue([task])
+    mocks.listPlanAssignees.mockResolvedValue({ data: people })
+    await mount(<PlanDrawer slug="lab" plan={plan} open onClose={() => {}} />)
+    await flush()
+    const select = document.querySelector(`select[data-plan-todo-assignee="${task.id}"]`) as HTMLSelectElement
+    expect(select).not.toBeNull()
+    expect([...select.options].map((o) => o.textContent)).toEqual(['Nobody yet', 'Mara (Lab)', 'Zed (The Green Room)'])
+    expect(select.value).toBe('')
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
+      setter.call(select, people[1].value)
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await flush()
+    expect(mocks.assignPlanTodo).toHaveBeenCalledWith('lab', task.id, people[1].value)
+    expect(select.value).toBe(people[1].value)
+  })
+
+  it('the guest reads the shared Plan to-dos in the read-only drawer, with the picker and without the add form', async () => {
+    mocks.listPlanTodos.mockResolvedValue([{ ...task, assigneeProfileId: people[0].value }])
+    mocks.listPlanAssignees.mockResolvedValue({ data: people })
+    await mount(<PlanDrawer slug="green-room" plan={plan} open onClose={() => {}} readOnly sharedFrom="Lab" />)
+    await flush()
+    expect(mocks.listPlanTodos).toHaveBeenCalledWith('green-room', 'plan-1')
+    const list = document.querySelector('[data-plan-todos]')!
+    expect(list.textContent).toContain('Book the hall')
+    const select = list.querySelector(`select[data-plan-todo-assignee="${task.id}"]`) as HTMLSelectElement
+    expect(select.value).toBe(people[0].value)
+    expect(document.querySelector('input[aria-label="New to-do"]')).toBeNull()
   })
 })

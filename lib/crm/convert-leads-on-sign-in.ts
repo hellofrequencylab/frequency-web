@@ -34,6 +34,13 @@ import 'server-only'
 //
 // Idempotent by construction (the SQL only touches unconverted rows), so a second sign-in converts
 // nothing and is not an error.
+//
+// ── THE NAME IS SPENT IN THE SAME CALL (LIVE-450) ────────────────────────────────────────────────
+// Since 20270345008700 the function also applies the converted lead's display_name (else
+// first_name) to the caller's profile, but only on the call that stamped and only while the profile
+// is still the signup trigger's mint (the lib/onboarding/identity.ts test, mirrored in SQL). A
+// chosen name or handle is never overwritten. It lives in the SQL rather than here because the lead
+// row is service-role-only and this module holds the SESSION client on purpose.
 
 /**
  * The narrow structural handle this module needs from the SESSION-scoped Supabase client. Untyped

@@ -14,6 +14,11 @@ const mocks = vi.hoisted(() => ({
   respondToPlanShare: vi.fn(async () => ({ data: undefined })),
 }))
 
+vi.mock('./task-actions', () => ({
+  assignPlanTodo: async () => ({ data: undefined }),
+  listPlanAssignees: async () => ({ data: [] }),
+}))
+
 vi.mock('./plan-actions', () => ({
   respondToPlanShare: mocks.respondToPlanShare,
   // The read-only drawer makes none of these calls; they exist so the module resolves.
@@ -25,6 +30,7 @@ vi.mock('./plan-actions', () => ({
   listPlanShares: async () => ({ data: { options: [], shares: [] } }),
   revokePlanShare: async () => ({ data: undefined }),
   listPlanComments: async () => ({ data: [] }),
+  listPlanActivity: async () => ({ data: [] }),
   postPlanComment: async () => ({ data: { id: 'c' } }),
   removePlanComment: async () => ({ data: undefined }),
   listPlanTodos: async () => [],

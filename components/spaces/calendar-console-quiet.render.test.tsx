@@ -39,6 +39,10 @@ vi.mock('next/link', () => ({
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/entry-actions', () => ({
   loadStaffCalendarMonth: async () => [],
 }))
+vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/task-actions', () => ({
+  assignPlanTodo: async () => ({ data: undefined }),
+  listPlanAssignees: async () => ({ data: [] }),
+}))
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   listPlanTodos: async () => [],
   planReadiness: async () => ({ gaps: [], href: '/events/new?plan=plan-1' }),
@@ -52,6 +56,7 @@ vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/plan-actions', () => ({
   sharePlanWithSpace: async () => ({ data: { id: 'share-1' } }),
   revokePlanShare: async () => ({ data: undefined }),
   listPlanComments: async () => ({ data: [] }),
+  listPlanActivity: async () => ({ data: [] }),
 }))
 vi.mock('@/app/(main)/spaces/[slug]/settings/calendar/vera-calendar-actions', () => ({
   veraCalendarCommand: async () => ({ error: 'not in this test' }),

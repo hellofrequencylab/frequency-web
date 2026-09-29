@@ -515,6 +515,41 @@ the guest's read-only drawer included, and folds each to-do's thread behind Note
 author when the session can read the profile and falls back to the Space, because profiles RLS is regional.
 Proof of the lock: `supabase/tests/space_plan_comments.test.sql`.
 
+THE RECORD (`LIVE-543`, ADR-1566). Every door that changes a Plan writes one row to `space_plan_activity`
+(`20270345009410`) after its change lands: who, from which Space, what kind (a closed set) and the sentence
+the door reported. The same two helpers gate select and insert for the host and an accepted guest; there is
+no update or delete policy, the way the Vera log has none. `recordPlanActivity` (`lib/calendar/plan-activity-store.ts`,
+session client, best effort and logged on failure) is the one writer, called from plan-actions, task-actions,
+entry-actions and vera-calendar-actions; a Vera line whose door records itself (stage, to-do, archive) is not
+written twice. `listPlanActivity` reads the latest twenty for either side, and the drawer shows them newest
+first under `[data-plan-activity]`. Proof of the lock: `supabase/tests/space_plan_activity.test.sql`.
+
+SHARED TO-DOS (`LIVE-544`, ADR-1567). A to-do belongs to its Plan's host Space (`crm_tasks.space_id`),
+and a guest holding an accepted share reaches it by PLAN id: `listTasksWithShared` (`lib/calendar/shared-tasks.ts`)
+is one list, the Space's own rows then the to-dos of every Plan shared with it marked `sharedFrom` the host, read
+by the inbox (`listSpaceTasks`), the calendar settings page and the due-date layer alike. Every widened
+service-role read or write is bound to plan ids the session proved first through `listSharedPlanIds`.
+`assignPlanTodo` hands a to-do to a person on either team (the host's owner and active members, and each
+accepted guest's), taken from `assigneeChoicesForPlan` and never from the browser, binds the write to the
+proven Plan and records `todo_assigned`. The drawer's to-do list renders for both sides with a picker per row;
+the guest ticks and hands over, the host alone adds and re-anchors.
+
+WHO HEARS (`LIVE-545`, ADR-1557). Three moments on a shared Plan reach the other team through the notification
+registry and the send gate, so a member's own switches decide every channel: `plan.share` (`lifecycle`, email
+and push: an offer to the guest's approvers, an answer to the host's), `plan.comment` and `plan.assign`
+(`comments`, push: the other side's editors and the person a to-do was handed to; the assignee). One seam,
+`notifyPlanMoment` (`lib/calendar/plan-notify.ts`), best effort after each door's write; the actor is never a
+recipient; the link is the recipient's own calendar settings and the gate subject is their Space. One send per
+moment, never a digest.
+
+THE GUEST'S FEED (`LIVE-546`, ADR-1558). A co-host team subscribing to its own private token feed gets the dates
+and to-dos of the Plans shared with it, SHARED PLANS ONLY: the route resolves the accepted shares whose guest is
+the feed Space, reads the host entries keyed by those plan ids (same columns, `removed_at is null`, not cancelled)
+and the to-dos of those Plans, and `withSharedPlanRows` (`lib/calendar/entry-feed.ts`) folds them after the
+Space's own rows with the host's name in front of each summary. A pending, declined or revoked share adds
+nothing; the host's other dates are never read; the VEVENT shape, the token and the host feed are untouched.
+With this child `PROG-CAL7` (Together) is closed: six children: ADR-1552, ADR-1553, ADR-1566, ADR-1567, ADR-1557 and ADR-1558.
+
 **Production** (`PROG-CAL3`, shipped). "Make it a Production" opens the event Spark (`lib/studio/entities/event.ts`)
 prefilled by a pure mapping from the plan and the chosen Pencil onto the manifest's field keys. The event
 carries `plan_id`, and the Pencil is retired in the same step so the calendar shows one card. The

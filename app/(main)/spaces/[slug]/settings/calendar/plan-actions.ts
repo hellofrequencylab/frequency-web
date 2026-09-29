@@ -26,8 +26,10 @@ import {
   insertPlanShare,
   listPlanShareRows,
   listSharedPlanIds,
+  listPlansSharedWith,
   revokePlanShareRow,
 } from '@/lib/calendar/plans-store'
+import { resolveShareSubjects } from '@/lib/calendar/plan-share-subjects'
 import {
   insertPlanComment,
   listPlanCommentRows,
@@ -36,13 +38,18 @@ import {
   resolveCommentSpaces,
 } from '@/lib/calendar/plan-comments-store'
 import { mapPlanCommentRow, orderThread, parseCommentBody, type PlanCommentView } from '@/lib/calendar/plan-comments'
+import { listPlanActivityRows, recordPlanActivity } from '@/lib/calendar/plan-activity-store'
+import { latestActivity, mapPlanActivityRow, type PlanActivityView } from '@/lib/calendar/plan-activity'
+import { notifyPlanMoment } from '@/lib/calendar/plan-notify'
 import { mapPlanShareRow, parseShareAnswer, shareOptions, type PlanShareView } from '@/lib/calendar/plan-shares'
 import { listAcceptedCollaborations } from '@/lib/spaces/collaborations'
 import { copyPlaybookToPlan, runItAgain } from '@/lib/calendar/playbooks'
 import {
   createTask,
   listTasks,
+  listTasksInPlans,
   reanchorTaskDuesInScope,
+  updateTaskStatusInPlans,
   updateTaskStatusInScope,
   type CrmTask,
 } from '@/lib/crm/tasks'
@@ -118,6 +125,13 @@ export async function saveSpacePlan(
     const moved = await transitionPlanStageForEditor(editor.spaceId, planId, stage)
     if ('error' in moved) return fail(moved.error)
   }
+  await recordPlanActivity({
+    planId: res.data.id,
+    actorProfileId: editor.profileId,
+    actorSpaceId: editor.spaceId,
+    kind: 'field',
+    summary: planId ? 'Saved the Plan details.' : `Started "${parsed.data.title}".`,
+  })
   revalidate(slug)
   return ok({ id: res.data.id })
 }
@@ -139,6 +153,13 @@ export async function transitionPlanStage(
   if (!UUID_RE.test(planId)) return fail('That Plan no longer exists.')
   const moved = await transitionPlanStageForEditor(editor.spaceId, planId, stage)
   if ('error' in moved) return fail(moved.error)
+  await recordPlanActivity({
+    planId,
+    actorProfileId: editor.profileId,
+    actorSpaceId: editor.spaceId,
+    kind: 'stage',
+    summary: stage === 'cancelled' ? 'Marked the Plan Cancelled.' : `Moved the Plan to ${planStageTransition(stage)?.label ?? stage}.`,
+  })
   revalidate(slug)
   return ok()
 }
@@ -155,6 +176,7 @@ export async function archiveSpacePlan(slug: string, planId: string): Promise<Ac
   // Pencilled dates go, event-backed dates unlink, then archived_at is stamped (plans-store.ts).
   const res = await archiveSpacePlanRows(editor.spaceId, planId)
   if ('error' in res) return fail(res.error)
+  await recordPlanActivity({ planId, actorProfileId: editor.profileId, actorSpaceId: editor.spaceId, kind: 'field', summary: 'Archived the Plan.' })
   revalidate(slug)
   return ok()
 }
@@ -265,6 +287,7 @@ export async function addPlanTodo(
     editor.spaceId,
   )
   if (!created) return fail('That to-do could not be saved.')
+  await recordPlanActivity({ planId, actorProfileId: editor.profileId, actorSpaceId: editor.spaceId, kind: 'todo_added', summary: `Added the to-do "${title.trim()}".` })
   revalidate(slug)
   return ok()
 }
@@ -305,6 +328,13 @@ export async function reanchorPlanTodos(
 export async function listPlanTodos(slug: string, planId?: string): Promise<CrmTask[]> {
   const editor = await resolveEditor(slug)
   if (!editor) return []
+  // A guest reading a Plan shared with it sees that Plan's to-dos too (LIVE-544): the read is
+  // bound to the one plan id the session proved through the accepted share.
+  if (planId && UUID_RE.test(planId)) {
+    const side = await planSide(slug, planId)
+    if ('error' in side) return []
+    if (side.side === 'guest') return listTasksInPlans([planId], 200)
+  }
   const all = await listTasks({ spaceId: editor.spaceId, planId: planId ?? null, limit: 200 })
   return all
 }
@@ -321,14 +351,25 @@ export async function setPlanTodoDone(
   todoId: string,
   done: boolean,
 ): Promise<ActionResult<void>> {
-  const editor = await editorPlan(slug, planId)
+  // The host is proven the way every Plan write is; a guest is proven through its accepted share
+  // (LIVE-544), and ticks inside the one shared Plan it proved. Either way an id from elsewhere
+  // matches no row.
+  const own = await editorPlan(slug, planId)
+  const editor = 'error' in own ? await planSide(slug, planId) : { ...own, side: 'host' as const }
   if ('error' in editor) return fail(editor.error)
   if (typeof todoId !== 'string' || !UUID_RE.test(todoId)) return fail('That to-do no longer exists.')
-  const moved = await updateTaskStatusInScope(todoId, done ? 'done' : 'open', {
-    spaceId: editor.spaceId,
-    planId,
-  })
+  const moved =
+    editor.side === 'host'
+      ? await updateTaskStatusInScope(todoId, done ? 'done' : 'open', { spaceId: editor.spaceId, planId })
+      : await updateTaskStatusInPlans(todoId, done ? 'done' : 'open', [planId])
   if (!moved) return fail('That to-do could not be updated.')
+  await recordPlanActivity({
+    planId,
+    actorProfileId: editor.profileId,
+    actorSpaceId: editor.spaceId,
+    kind: 'todo_done',
+    summary: done ? 'Ticked off a to-do.' : 'Put a to-do back on the list.',
+  })
   revalidate(slug)
   return ok()
 }
@@ -396,6 +437,7 @@ export async function attachEventToPlan(
   if (!UUID_RE.test(planId) || !UUID_RE.test(eventId)) return fail('Pick an event to link.')
   const res = await setEventPlan(eventId, planId, editor.spaceId)
   if ('error' in res) return fail(res.error)
+  await recordPlanActivity({ planId, actorProfileId: editor.profileId, actorSpaceId: editor.spaceId, kind: 'date_added', summary: 'Linked an event already on the calendar to the Plan.' })
   revalidate(slug)
   revalidatePath('/events', 'layout')
   return ok()
@@ -521,8 +563,18 @@ async function planAttendance(spaceId: string, planId: string): Promise<number |
 export async function acceptVeraChecklist(slug: string, planId: string, titles: string[]): Promise<ActionResult<void>> {
   const editor = await editorPlan(slug, planId)
   if ('error' in editor) return fail(editor.error)
-  for (const title of titles.slice(0, 20)) {
+  const accepted = titles.slice(0, 20)
+  for (const title of accepted) {
     await createTask({ createdBy: editor.profileId, title, planId }, editor.spaceId)
+  }
+  if (accepted.length > 0) {
+    await recordPlanActivity({
+      planId,
+      actorProfileId: editor.profileId,
+      actorSpaceId: editor.spaceId,
+      kind: 'todo_added',
+      summary: `Added ${accepted.length} to-do${accepted.length === 1 ? '' : 's'} Vera suggested.`,
+    })
   }
   revalidate(slug)
   return ok()
@@ -578,6 +630,10 @@ export async function sharePlanWithSpace(
   // PENDING, spelled here: the guest answers from their own calendar, never the host for them.
   const inserted = await insertPlanShare({ planId, guestSpaceId, requestedBy: editor.profileId, status: 'pending' })
   if ('error' in inserted) return fail(inserted.error)
+  const guestName = collaborators.find((c) => c.id === guestSpaceId)?.name ?? 'a Space you collaborate with'
+  await recordPlanActivity({ planId, actorProfileId: editor.profileId, actorSpaceId: editor.spaceId, kind: 'shared', summary: `Offered the Plan to ${guestName}.` })
+  // The guest's approvers hear about the offer through their own switches (LIVE-545).
+  await notifyPlanMoment({ event: 'plan.share', moment: 'requested', planId, planTitle: plan.title, toSpaceId: guestSpaceId, fromSpaceId: editor.spaceId, actorProfileId: editor.profileId })
   revalidate(slug)
   return ok({ id: inserted.id })
 }
@@ -588,8 +644,22 @@ export async function respondToPlanShare(slug: string, shareId: string, rawAnswe
   if (!editor) return fail('You do not have access to this calendar.')
   const answer = parseShareAnswer(rawAnswer)
   if (!answer || !UUID_RE.test(shareId)) return fail('Say yes or no to the share.')
+  const share = await getPlanShareRow(shareId)
   const answered = await answerPlanShareRow(shareId, editor.spaceId, answer, editor.profileId)
   if ('error' in answered) return fail(answered.error)
+  // A yes is recorded on the Plan the guest may now read; a no leaves the guest outside the record,
+  // by the same lock that keeps a pending Space from reading it. The host sees the state on its list.
+  if (answer === 'accepted' && share) {
+    await recordPlanActivity({ planId: share.plan_id, actorProfileId: editor.profileId, actorSpaceId: editor.spaceId, kind: 'share_answered', summary: 'Said yes to working the Plan together.' })
+  }
+  // The host's approvers hear the answer either way (LIVE-545). The Plan's title and host come
+  // off the session read the guest may make on an accepted Plan, or the offer's resolver before.
+  if (share) {
+    const subject = (await resolveShareSubjects([share.plan_id])).get(share.plan_id)
+    if (subject) {
+      await notifyPlanMoment({ event: 'plan.share', moment: answer, planId: share.plan_id, planTitle: subject.title, toSpaceId: subject.hostSpaceId, fromSpaceId: editor.spaceId, actorProfileId: editor.profileId })
+    }
+  }
   revalidate(slug)
   return ok()
 }
@@ -605,6 +675,7 @@ export async function revokePlanShare(slug: string, shareId: string): Promise<Ac
   if (!plan) return fail('That Plan is not on this calendar.')
   const revoked = await revokePlanShareRow(shareId, plan.id, editor.profileId)
   if ('error' in revoked) return fail(revoked.error)
+  await recordPlanActivity({ planId: plan.id, actorProfileId: editor.profileId, actorSpaceId: editor.spaceId, kind: 'share_revoked', summary: 'Took a share back.' })
   revalidate(slug)
   return ok()
 }
@@ -640,13 +711,17 @@ export async function rotatePrivateCalendarFeed(slug: string): Promise<ActionRes
 async function planSide(
   slug: string,
   planId: string,
-): Promise<{ spaceId: string; profileId: string; side: 'host' | 'guest' } | { error: string }> {
+): Promise<{ spaceId: string; profileId: string; side: 'host' | 'guest'; planTitle: string; hostSpaceId: string } | { error: string }> {
   const editor = await resolveEditor(slug)
   if (!editor) return { error: 'You do not have access to this calendar.' }
   if (typeof planId !== 'string' || !UUID_RE.test(planId)) return { error: 'That Plan no longer exists.' }
-  if (await getSpacePlan(editor.spaceId, planId)) return { ...editor, side: 'host' }
+  const own = await getSpacePlan(editor.spaceId, planId)
+  if (own) return { ...editor, side: 'host', planTitle: own.title, hostSpaceId: own.spaceId }
   const shared = await listSharedPlanIds(editor.spaceId)
-  if (shared.includes(planId)) return { ...editor, side: 'guest' }
+  if (shared.includes(planId)) {
+    const plan = (await listPlansSharedWith(editor.spaceId)).find((p) => p.id === planId)
+    if (plan) return { ...editor, side: 'guest', planTitle: plan.title, hostSpaceId: plan.spaceId }
+  }
   return { error: 'That Plan no longer exists.' }
 }
 
@@ -708,6 +783,9 @@ export async function postPlanComment(
     body: parsed.body,
   })
   if ('error' in res) return fail(res.error)
+  await recordPlanActivity({ planId, actorProfileId: side.profileId, actorSpaceId: side.spaceId, kind: 'comment', summary: task ? 'Left a note on a to-do.' : 'Commented on the Plan.' })
+  // The other team's editors, and the person a to-do was handed to, hear about it (LIVE-545).
+  await notifyPlanMoment({ event: 'plan.comment', planId, planTitle: side.planTitle, hostSpaceId: side.hostSpaceId, authorSpaceId: side.spaceId, actorProfileId: side.profileId, taskId: task, body: parsed.body })
   return ok({ id: res.id })
 }
 
@@ -720,4 +798,31 @@ export async function removePlanComment(slug: string, planId: string, commentId:
   const marked = await removePlanCommentRow(commentId)
   if (!marked) return fail('Only the person who wrote a comment can take it back.')
   return ok()
+}
+
+// ── THE RECORD (PROG-CAL7 Together, LIVE-543) ────────────────────────────────────────────────────
+
+/** The latest activity on the Plan, newest first, for either side of an accepted share. */
+export async function listPlanActivity(slug: string, planId: string): Promise<ActionResult<PlanActivityView[]>> {
+  const side = await planSide(slug, planId)
+  if ('error' in side) return fail(side.error)
+  const rows = await listPlanActivityRows(planId)
+  const [actors, spaces] = await Promise.all([
+    resolveCommentAuthors(rows.map((r) => r.actor_profile_id).filter((id): id is string => id !== null)),
+    resolveCommentSpaces(rows.map((r) => r.actor_space_id)),
+  ])
+  return ok(
+    latestActivity(
+      rows.map((r) =>
+        mapPlanActivityRow(
+          r,
+          {
+            actorName: r.actor_profile_id ? (actors.get(r.actor_profile_id) ?? null) : null,
+            spaceName: spaces.get(r.actor_space_id) ?? null,
+          },
+          side.profileId,
+        ),
+      ),
+    ),
+  )
 }

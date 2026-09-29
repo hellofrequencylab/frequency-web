@@ -255,7 +255,10 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   `lib/library/search-rank.ts`, because PostgREST can filter on a tsvector but cannot `order by
   ts_rank` — no migration, and `rankLibraryMatches` is the one seam a `search_library_assets` RPC
   would replace if a Loom outgrew the candidate cap.
-- **Usage index** powers "used on N pages," archive-not-destroy, and global swap.
+- **Usage index** powers "used on N pages," archive-not-destroy, and global swap. The swap is
+  `swapLibraryAssetRefs` in `lib/library/usage.ts` ([ADR-1560](DECISIONS.md)): a walk over the index's
+  rows, one write per stored row, that re-points every `{ assetId }` ref from one asset to another and
+  leaves every other value as it was. "Swap everywhere" in the drawer's usage panel is the door.
 - **One picker at every upload point.** The universal control is `components/loom/loom-picker.tsx`
   (16 consumers: page editor, entity blocks, Studio spark, branding, events, QR, email). The old
   "Upload / Pick / Paste URL" tri-mode plan was superseded by the owner directive recorded in the

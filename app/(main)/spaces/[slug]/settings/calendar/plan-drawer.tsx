@@ -37,7 +37,11 @@ import {
   sharePlanWithSpace,
   veraPlanProposal,
   listPlanComments,
+  listPlanActivity,
 } from './plan-actions'
+import { actorWords, type PlanActivityView } from '@/lib/calendar/plan-activity'
+import { assignPlanTodo, listPlanAssignees } from './task-actions'
+import type { AssigneeChoice } from '@/lib/calendar/shared-tasks-core'
 import { PlanCommentThread } from './plan-comment-thread'
 import { countByTask, type PlanCommentView } from '@/lib/calendar/plan-comments'
 import { describeOffset, offsetFromForm } from '@/lib/calendar/relative-schedule'
@@ -103,6 +107,10 @@ export function PlanDrawer({
   // THE THREAD (LIVE-542): every comment of the Plan, and which to-do's thread is unfolded.
   const [comments, setComments] = useState<PlanCommentView[]>([])
   const [openThread, setOpenThread] = useState<string | null>(null)
+  // THE RECORD (LIVE-543): the latest things anyone did to the Plan, newest first.
+  const [activity, setActivity] = useState<PlanActivityView[]>([])
+  // WHO A TO-DO CAN GO TO (LIVE-544): both teams when the Plan is shared, this team alone otherwise.
+  const [assignees, setAssignees] = useState<AssigneeChoice[]>([])
   const [linkableEvents, setLinkableEvents] = useState<
     { id: string; title: string; whenLabel: string; planId: string | null }[]
   >([])
@@ -128,6 +136,8 @@ export function PlanDrawer({
     setShares([])
     setComments([])
     setOpenThread(null)
+    setActivity([])
+    setAssignees([])
     setLinkableEvents([])
     setLinkEventId('')
   }
@@ -142,6 +152,29 @@ export function PlanDrawer({
       })
       .catch(() => {
         if (live) setComments([])
+      })
+    listPlanActivity(slug, plan.id)
+      .then((res) => {
+        if (live && !isError(res)) setActivity(res.data)
+      })
+      .catch(() => {
+        if (live) setActivity([])
+      })
+    // The to-dos and the people they can go to load for both sides too (LIVE-544): a guest sees
+    // the shared Plan's list, ticks one, and hands one across.
+    listPlanTodos(slug, plan.id)
+      .then((next) => {
+        if (live) setTodos(next)
+      })
+      .catch(() => {
+        if (live) setTodos([])
+      })
+    listPlanAssignees(slug, plan.id)
+      .then((res) => {
+        if (live && !isError(res)) setAssignees(res.data)
+      })
+      .catch(() => {
+        if (live) setAssignees([])
       })
     return () => {
       live = false
@@ -159,13 +192,6 @@ export function PlanDrawer({
       })
       .catch(() => {
         if (live) setShareChoices([])
-      })
-    listPlanTodos(slug, plan.id)
-      .then((next) => {
-        if (live) setTodos(next)
-      })
-      .catch(() => {
-        if (live) setTodos([])
       })
     planReadiness(slug, plan.id, entryId ?? null)
       .then((r) => {
@@ -210,6 +236,10 @@ export function PlanDrawer({
   const refresh = async (planId: string) => {
     setTodos(await listPlanTodos(slug, planId))
     await refreshReadiness(planId)
+  }
+  const refreshActivity = async (planId: string) => {
+    const res = await listPlanActivity(slug, planId)
+    if (!isError(res)) setActivity(res.data)
   }
   const refreshComments = async (planId: string) => {
     const res = await listPlanComments(slug, planId)
@@ -259,6 +289,21 @@ export function PlanDrawer({
         ? 'Ready for the next step'
         : `${gaps.length} ${gaps.length === 1 ? 'item' : 'items'} still needed`
 
+  // HAND IT OVER (LIVE-544). The row shows the new name at once and puts the old one back if the
+  // server refused, so the picker never claims a hand-over that did not land.
+  const assignTodo = (todoId: string, profileId: string) => {
+    if (!plan) return
+    setError(null)
+    const was = todos.find((t) => t.id === todoId)?.assigneeProfileId ?? null
+    setTodos((cur) => cur.map((t) => (t.id === todoId ? { ...t, assigneeProfileId: profileId || null } : t)))
+    start(async () => {
+      const res = await assignPlanTodo(slug, todoId, profileId || null)
+      if (isError(res)) {
+        setError(res.error)
+        setTodos((cur) => cur.map((t) => (t.id === todoId ? { ...t, assigneeProfileId: was } : t)))
+      } else await refreshActivity(plan.id)
+    })
+  }
   const toggleTodo = (todoId: string, done: boolean) => {
     if (!plan) return
     setError(null)
@@ -383,8 +428,7 @@ export function PlanDrawer({
           </div>
         ))}
 
-        {!readOnly && (<>
-        <div className="space-y-2">
+        <div className="space-y-2" data-plan-todos>
           <p className={labelClasses}>To-dos</p>
           <ul className="space-y-1 text-body-sm text-text">
             {todos.map((t) => {
@@ -407,17 +451,31 @@ export function PlanDrawer({
                         </span>
                       }
                     />
-                    {/* Each to-do has its own thread (LIVE-542), folded until asked for. */}
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      aria-expanded={openThread === t.id}
-                      data-plan-todo-notes={t.id}
-                      onClick={() => setOpenThread((cur) => (cur === t.id ? null : t.id))}
-                    >
-                      {notes > 0 ? `Notes (${notes})` : 'Notes'}
-                    </Button>
+                    <span className="flex items-center gap-2">
+                      {/* WHO DOES IT (LIVE-544): a person on either team, by name, or nobody yet. */}
+                      <Select
+                        aria-label={`Assign "${t.title}"`}
+                        data-plan-todo-assignee={t.id}
+                        value={t.assigneeProfileId ?? ''}
+                        emptyLabel="Nobody yet"
+                        options={assignees}
+                        disabled={pending}
+                        wrapperClassName="w-auto"
+                        onChange={(e) => assignTodo(t.id, e.target.value)}
+                        onKeyDown={enterDoesNothing}
+                      />
+                      {/* Each to-do has its own thread (LIVE-542), folded until asked for. */}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        aria-expanded={openThread === t.id}
+                        data-plan-todo-notes={t.id}
+                        onClick={() => setOpenThread((cur) => (cur === t.id ? null : t.id))}
+                      >
+                        {notes > 0 ? `Notes (${notes})` : 'Notes'}
+                      </Button>
+                    </span>
                   </div>
                   {openThread === t.id && (
                     <div className="pl-6" data-plan-todo-comments={t.id}>
@@ -435,6 +493,7 @@ export function PlanDrawer({
               )
             })}
           </ul>
+          {!readOnly && (<>
           <div className="flex gap-2">
             <Input
               aria-label="New to-do"
@@ -495,7 +554,10 @@ export function PlanDrawer({
             Leave the days blank for a to-do that stays where you put it. Anything with a count moves
             when the date moves.
           </p>
+          </>)}
         </div>
+
+        {!readOnly && (<>
 
         {/* THE REPAIR DOOR (PROG-CAL3). `plan_id` was create-only: `updateEvent` never touched it and
             nothing could put an event back on its Plan, so one wrong link could only be fixed in
@@ -712,6 +774,23 @@ export function PlanDrawer({
             placeholder={sharedFrom ? `A word for ${sharedFrom} and your team.` : 'A word for everyone working this Plan.'}
           />
         </div>
+
+        {/* THE RECORD (PROG-CAL7 Together, LIVE-543). What anyone on either side did to the Plan,
+            written by the door that did it, newest first. Read only by design: the record is a
+            fact about what happened, never a sentence to edit. */}
+        {activity.length > 0 && (
+          <div className="grid gap-1" data-plan-activity>
+            <p className={labelClasses}>Activity</p>
+            <ul className="space-y-1 text-body-sm text-text">
+              {activity.map((a) => (
+                <li key={a.id} data-plan-activity-row={a.kind}>
+                  <span className="text-muted">{`${actorWords(a)} · ${shortDateLabel(a.createdAt)} · `}</span>
+                  {a.summary}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {notice && (
           <p role="status" className="text-body-sm text-text" data-plan-notice>
