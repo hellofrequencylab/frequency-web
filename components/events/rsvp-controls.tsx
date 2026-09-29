@@ -14,6 +14,7 @@ import { IconButton } from '@/components/ui/icon-button'
 import { Select } from '@/components/ui/select'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { PushNudge } from '@/components/push/permission-card'
 
 // Detail-page RSVP controls (event Detail template). Three warm states a member
 // can move between — Going · Interested (maybe) · (Join waitlist when full) —
@@ -378,6 +379,10 @@ export function RsvpControls({
           body of their "RSVP'd" entry in the event conversation. Only a confirmed
           attendee posts to the feed, so the note field shows only when going. */}
       {isGoing && <RsvpNote eventId={eventId} slug={slug} initialNote={initialNote} />}
+
+      {/* A Going RSVP is the moment a reminder earns its ask: a one-time card, asked only by its
+          button (LIVE-701). */}
+      {isGoing && <PushNudge context="rsvp" />}
 
       {questionnaireBlock}
     </div>
