@@ -392,7 +392,7 @@ async function baseFragmentPaths({ base, repo, token, fetchImpl }) {
 
 /** This checkout's ids, from the merged view: both base files plus every fragment. */
 export function treeIdSets(root = '.') {
-  let rows = new Set()
+  let rows
   try {
     rows = new Set((readBacklogView({ root }).doc.entries ?? []).map((e) => e?.id).filter((id) => typeof id === 'string'))
   } catch {

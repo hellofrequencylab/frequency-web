@@ -13,9 +13,9 @@ import { useViewer } from '@/components/layout/viewer-chrome'
 import { isStaff } from '@/lib/core/roles'
 
 // The reviews block on a Market listing / Space Shop item (Phase 8). Public read: the rating summary
-// + the review wall. A signed-in member (not the seller) leaves ONE review they can revise
-// (submitProductReviewAction upserts). An operator may hide a review (reversible). Semantic DAWN
-// tokens only, voice canon (no em dashes).
+// + the review wall. A signed-in buyer (not the seller) leaves ONE review they can revise
+// (submitProductReviewAction upserts, and refuses without a settled order: LIVE-697). An operator
+// may hide a review (reversible). Semantic DAWN tokens only, voice canon (no em dashes).
 
 /** A read-only row of 5 stars filled to `value` (rounded). */
 export function Stars({ value, className = 'h-4 w-4' }: { value: number; className?: string }) {
@@ -51,7 +51,11 @@ export function ProductReviews({
 }) {
   const viewer = useViewer()
   const isSignedIn = viewer.signedIn || signedIn
-  const allowReview = isSignedIn && (canReview || viewer.signedIn)
+  // ISR listings pass signedIn={false} canReview={false}; the viewer chrome hydrates the form and
+  // the action is the wall. Member pages that already know pass canReview as the full gate, and a
+  // false there is not overridden (a non-buyer, or the seller, must not see a form that always fails).
+  const hydrateFromViewer = !signedIn && !canReview
+  const allowReview = isSignedIn && (canReview || (hydrateFromViewer && viewer.signedIn))
   const allowModerate = canModerate || isStaff(viewer.webRole)
 
   return (
