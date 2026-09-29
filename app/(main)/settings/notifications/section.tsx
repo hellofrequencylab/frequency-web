@@ -7,6 +7,7 @@ import {
 } from '@/lib/notification-preferences'
 import { hasConsent } from '@/lib/consent/consent'
 import { NotificationsForm } from './form'
+import { PushSettingsCard } from '@/components/push/permission-card'
 import { SmsForm, type SmsFormState } from './sms-form'
 import { SubjectMutesForm } from './mutes-form'
 import { listMuteSubjects } from './mute-subjects'
@@ -113,6 +114,9 @@ export async function NotificationsSection() {
   return (
     <div>
       <NotificationsForm initial={initial} />
+      {/* Push reaches a device only after the member turns it on HERE, with a tap (LIVE-701): a
+          prompt with no gesture is refused on iPhone and quieted in Chrome. */}
+      <PushSettingsCard />
       {/* SMS is server-gated two ways: the A2P env flags (isSmsProvisioned) AND the
           consent ledger actually existing (smsTableReady). Pass the combined boolean so
           the client form renders a "Coming soon" state until BOTH are true. */}

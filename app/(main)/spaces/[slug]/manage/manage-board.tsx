@@ -14,6 +14,8 @@ import { SpaceDashboard } from '@/components/spaces/dashboard/space-dashboard'
 import { SpaceMarketing } from '@/components/spaces/marketing/space-marketing'
 import { betaWindow } from '@/lib/pricing/beta-state'
 import { betaStartLabel } from '@/lib/pricing/beta-notice'
+import { ConsoleThumbBar } from '@/components/spaces/console-thumb-bar'
+import { thumbActionsFor } from '@/lib/spaces/console-thumb'
 import { SpaceManageConsole } from './console'
 import { SpaceIdentityEditor } from './identity-editor'
 
@@ -31,9 +33,14 @@ export async function SpaceManageBoard({
   slug,
   section: rawSection,
   sectionHref,
+  thumbBar = false,
 }: {
   slug: string
   section?: string
+  /** Render the phone thumb bar (LIVE-704): the daily doors pinned above the tab bar below md. Only the
+   *  standalone /manage page asks for it; the in-place Manage panel under a Space's profile header does
+   *  not, so a Space page never grows a second bottom bar. */
+  thumbBar?: boolean
   /** How the hub tabs link between sections. Omitted = the standalone `/manage?section=` page; the in-place
    *  Manage panel passes an override so the tabs soft-nav under the profile header (no reload). */
   sectionHref?: (key: SpaceHubSection) => string
@@ -141,20 +148,23 @@ export async function SpaceManageBoard({
   const graceEndsLabel = graceActive ? betaStartLabel(graceEndsAtMs) : null
 
   return (
-    <SpaceManageConsole
-      slug={space.slug}
-      modules={modules}
-      emphasis={emphasis}
-      section={section}
-      dashboardEmbed={dashboardEmbed}
-      crmEmbed={crmEmbed}
-      marketingEmbed={marketingEmbed}
-      canDelete={canDelete}
-      spaceId={space.id}
-      sectionHref={sectionHref}
-      identityEditor={identityEditor}
-      graceEndsLabel={graceEndsLabel}
-    />
+    <>
+      <SpaceManageConsole
+        slug={space.slug}
+        modules={modules}
+        emphasis={emphasis}
+        section={section}
+        dashboardEmbed={dashboardEmbed}
+        crmEmbed={crmEmbed}
+        marketingEmbed={marketingEmbed}
+        canDelete={canDelete}
+        spaceId={space.id}
+        sectionHref={sectionHref}
+        identityEditor={identityEditor}
+        graceEndsLabel={graceEndsLabel}
+      />
+      {thumbBar && <ConsoleThumbBar actions={thumbActionsFor(modules, space.slug)} />}
+    </>
   )
 }
 

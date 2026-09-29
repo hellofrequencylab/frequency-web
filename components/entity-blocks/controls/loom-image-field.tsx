@@ -7,11 +7,10 @@ import { assetRefUrl, assetValueFromPick, type AssetValue } from '@/lib/library/
 import { safeImageSrc } from '@/lib/safe-image-src'
 
 // The `<img src>` guard is NOT written here. Every src in the product whose value did not come from
-// a source literal goes through the one allowlist in lib/safe-image-src.ts: it parses rather than
-// prefix-matches, hands back the parser's own normalised string, and refuses anything that is not
-// http(s), a same-origin path, a blob:, or a data:image. A second copy in this file would be a
-// second thing to get right, and CodeQL flagged this control precisely because its private copy
-// returned a relative path verbatim.
+// a source literal goes through the one allowlist in lib/safe-image-src.ts: an anchored regexp
+// test, then the same string back, never a parser-normalised rewrite (HYG-142). A second copy in
+// this file would be a second thing to get right, and CodeQL flagged this control precisely
+// because its private copy returned a relative path verbatim.
 //
 // Relative paths keep working, deliberately. The preview renders behind `safeValue ? …`, so a value
 // this guard refuses shows the "Choose a photo" empty state, and a legitimate photo refused here
