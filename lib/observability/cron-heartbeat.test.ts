@@ -14,6 +14,7 @@ vi.mock('@sentry/nextjs', () => ({
 import {
   DEFAULT_CRON_BUDGET_MS,
   CRON_CEILING_MS,
+  CRON_SLO_BREACH_HEADER,
   withCronHeartbeat,
   resolveHeartbeatUrl,
   resetHeartbeatEscalationForTests,
@@ -169,6 +170,41 @@ describe('withCronHeartbeat — configured success', () => {
     expect(res.status).toBe(500)
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(fetchMock.mock.calls[0][0]).toBe('https://hc.example/ping/weekly-digest/fail')
+  })
+})
+
+// LIVE-547 (ADR-1571). A run that FINISHED but left an SLO breached (a dead-letter in the queue, a
+// due job older than the lag target) says so on a response header. The wrapper then tells the
+// dead-man's switch /fail instead of alive, so the check stays down while the breach lasts, and the
+// response itself is untouched: a 500 would make the next cron redo work that was fine, and a handler
+// that fail-pinged on its own would be followed by this wrapper's alive-ping and flap the monitor.
+describe('withCronHeartbeat — a 2xx carrying CRON_SLO_BREACH_HEADER', () => {
+  beforeEach(() => {
+    process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
+  })
+  const breached = () =>
+    new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { [CRON_SLO_BREACH_HEADER]: 'dead-letters above zero' },
+    })
+
+  it('pings /fail, not alive, and leaves the 200 alone', async () => {
+    const res = await withCronHeartbeat('process-queue', vi.fn().mockResolvedValue(breached()))(req())
+    expect(res.status).toBe(200)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock.mock.calls[0][0]).toBe('https://hc.example/ping/process-queue/fail')
+    expect(captureException).not.toHaveBeenCalled() // the handler captured its own message
+  })
+
+  it('THE CONTROL: the same 200 without the header still alive-pings', async () => {
+    await withCronHeartbeat('process-queue', vi.fn().mockResolvedValue(okRes()))(req())
+    expect(fetchMock.mock.calls[0][0]).toBe('https://hc.example/ping/process-queue')
+  })
+
+  it('ignores the header on a 4xx, which never pings either way', async () => {
+    const denied = new Response(null, { status: 401, headers: { [CRON_SLO_BREACH_HEADER]: 'x' } })
+    await withCronHeartbeat('process-queue', vi.fn().mockResolvedValue(denied))(req())
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
 

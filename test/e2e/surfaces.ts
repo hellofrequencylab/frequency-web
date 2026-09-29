@@ -663,38 +663,43 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
  *    readings of 0 in `a11y-baselines.json` (the zero-tolerance join rule, made explicit) that
  *    the first staff-session run measures for real (HYG-027, ADR-1239).
  */
+/** The operator roster as surfaces. The first-screen list it reads is declared below, with the
+ *  note that records the one trade it ever carried. */
+export function operatorSurfaces(): readonly Surface[] {
+  return OPERATOR_PATHS.map(({ path }) => ({
+    path,
+    slug: slugFor(path),
+    audience: 'operator' as const,
+    ...(VIEWPORT_ONLY_OPERATOR_PATHS.includes(path) ? { viewportOnly: true } : {}),
+  }))
+}
+
 /**
- * `/admin/qr` PHOTOGRAPHS ITS FIRST SCREEN ONLY, and this is the one place in the file that
- * records why, because `viewportOnly` is a coverage trade and a silent one reads as coverage.
+ * THE OPERATOR SURFACES PHOTOGRAPHED FIRST-SCREEN ONLY. Empty since 2026-09-28, and the one
+ * place in the file that records why an entry ever stood here, because `viewportOnly` is a
+ * coverage trade and a silent one reads as coverage.
  *
- * THE MEASUREMENT. Four consecutive PRs went red here on four unrelated diffs, none of which
- * touches anything this page renders: #2873 (flaky, lucky on the retry), #2874, #2875, #2878.
- * Every run the same pair of heights, 14521 and 14567, and the same differing-pixel count.
+ * `/admin/qr` STOOD HERE from 2026-09-23 to 2026-09-28 (LIVE-476, ADR-1568) and is photographed
+ * whole again. What put it here: four consecutive PRs went red on four unrelated diffs (#2873,
+ * #2874, #2875, #2878), every run the same pair of full-page heights at 390, 14521 and 14567,
+ * never two consecutive stable frames, so no baseline could be right. The first-screen capture
+ * settled that at the cost of ~13,700px below the fold.
  *
- * IT IS NOT DRIFT AND A RECAPTURE CANNOT FIX IT. `toHaveScreenshot` compares each capture with
- * the PREVIOUS capture to prove the page is still, and gets the flip back, so it never takes
- * two consecutive stable frames. The page is BOTH heights; a baseline is one of them. Whichever
- * we committed would be red from the other side, which is why the obvious move was refused.
+ * WHAT THE FLIP WAS, measured rather than argued, one surface over (LIVE-492, #2941): a
+ * full-page `toHaveScreenshot` on a project with `hasTouch` drops Chromium's touch emulation
+ * after its first shot and never gets it back, so the first capture photographs the
+ * coarse-pointer layout (`--tap-min: 44px`) and every later one the fine layout. The 46px is
+ * the sum of the tap floors that release: this page's kit controls (`Button`, `Select`,
+ * `Checkbox` carry `tap-target`) sit below the fold, where the 2026-09-23 arithmetic located the
+ * insertion (identical above y~13,500), and its 37 raw `<button>`s carry no floor at all, which
+ * is why the top of the page never moved. The same arithmetic ruled the floor out by assuming
+ * it would land at the TOP; it lands where the kit controls are. `capture()` now drops touch
+ * emulation before the shutter on exactly those captures (`dropTouchBeforeFullPageCapture`), so
+ * the two heights are one, and the four `admin-qr--*` baselines are full-page again, recaptured
+ * on the runner with the drop in place.
  *
- * WHAT IS RULED OUT, so nobody re-walks it. By arithmetic over the committed PNG (the comparator
- * pads both images and diffs the whole canvas, so the pixel count inverts): a 46px band entering
- * at the TOP would differ by ~996,772 pixels against the ~47,000 observed, which puts the
- * insertion at the foot of the Analytics block and makes every frame identical above y~13,500.
- * That kills the coarse-pointer touch floor, the `--tab-bar-clearance` asymmetry and every
- * `<Suspense fallback={null}>` on the surface. Two further theories died with evidence: the
- * chart's empty state was made dimension-invariant and the flip survived it, and `fullPage` was
- * shown NOT to resize the layout viewport in playwright-core 1.63 (`captureBeyondViewport`, no
- * `setDeviceMetricsOverride` in that path), which refutes the viewport-unit explanation. Its
- * arithmetic refutes it too: that model predicts a delta of 46 + X where X is zero on DESKTOP,
- * the viewport that passes, and >=112.5 on mobile, the one that fails.
- *
- * WHY THE FLAG RATHER THAN A SKIP. This is the same remedy `/feed` carries, for the reason the
- * flag exists: a page whose full-page height is not a function of its own content cannot be
- * photographed whole, and a picture of the first screen is still a real gate on the chrome, the
- * heading, the stat cards and the controls, which is what this surface was chosen for (it leads
- * the operator tree on raw buttons). What is given up is ~13,700px below the fold, stated here
- * rather than performed silently. The flip keeps its own row; when it is found, delete this
- * entry and the surface goes back to full-page in the same change.
+ * The list stays so the next surface that needs the trade can take it with the reason written
+ * at the site; `Surface.viewportOnly` says when that is the right trade and when it is not.
  */
 //
 // ── 🔴 `/admin/library` WAS ADDED HERE ON 2026-09-25 AND TAKEN BACK OUT THE SAME DAY ─────
@@ -738,16 +743,7 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
 // The earlier note here said: "If a stable first-screen diff appears here later, that is a new
 // finding and a new row, not a reason to downgrade quietly." One appeared. This is that row, and
 // the downgrade is neither quiet nor a guess.
-const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = ['/admin/qr']
-
-export function operatorSurfaces(): readonly Surface[] {
-  return OPERATOR_PATHS.map(({ path }) => ({
-    path,
-    slug: slugFor(path),
-    audience: 'operator' as const,
-    ...(VIEWPORT_ONLY_OPERATOR_PATHS.includes(path) ? { viewportOnly: true } : {}),
-  }))
-}
+const VIEWPORT_ONLY_OPERATOR_PATHS: readonly string[] = []
 
 /**
  * THE OPERATOR SURFACES THAT ARE PHOTOGRAPHED BUT DO NOT VOTE (owner ruling 2026-09-23).
@@ -761,7 +757,10 @@ export function operatorSurfaces(): readonly Surface[] {
  * unchanged, and the capture still runs on every pull request in the `@advisory` step. The one
  * thing that changes is which step's exit code the result lands in. A path that stopped being
  * photographed altogether would be the HYG-026 silence again, so `visual-tiers.test.ts` asserts
- * in-tree, on every pull request, that each path here has an advisory describe capturing it.
+ * in-tree, on every pull request, that the wiring matches the roster: an entry here needs an
+ * operator advisory describe in visual.spec.ts capturing it (tagged `@visual` and `@advisory`,
+ * never `@shell`) and the blocking operator loop filtering it out; an EMPTY roster needs
+ * neither, and a describe that loops nothing is refused, because it reads as coverage.
  *
  * ⚠️ AND THE COVERAGE LEDGER HAS TO BE TOLD. `shell-reporter.ts` counts `@shell` tests against
  * `operatorSurfaces()`, and the advisory describes are deliberately NOT `@shell` (the same
@@ -773,16 +772,25 @@ export function operatorSurfaces(): readonly Surface[] {
  * `summarizeShellCoverage`, which reports these as advisory rather than as missing.
  *
  * The row is the debt. Clear the row, delete the entry, and the surface votes again.
+ *
+ * ── THE QR STUDIO STOOD HERE from 2026-09-23 to 2026-09-28 (LIVE-476) and votes again ──────
+ * It was the first passenger and is the last to leave: LIVE-492 (#2949) and LIVE-504 (#2955)
+ * take theirs out first, this change merges after them, and the describe goes with the last
+ * entry. It was put here by owner ruling after four pull requests that touched nothing it
+ * renders went red on it, and both of its readings are now fixed at their cause (ADR-1568). The full-page height flip (14521 / 14567 at 390) was the shutter dropping the
+ * touch emulation after its first capture, which `dropTouchBeforeFullPageCapture` now does
+ * before it (LIVE-492, #2941); the first-screen note above has the arithmetic. The stable
+ * first-screen desktop diff (951 px dawn-light, 1029 px dawn-dark, mobile green,
+ * theme-dependent, identical on a one-line docs commit) was the operator info rail: shared admin chrome that renders at xl and above only, prints live `profiles` counts,
+ * and sits at the same position on every admin page, which is why the dawn-dark reading landed
+ * on /admin/library's to the pixel (LIVE-504) and why the mobile looks never saw it. The
+ * `admin-rail` mask (LIVE-513, 2026-09-27) is one box over it, and since that recapture the
+ * surface has passed all four advisory looks in every pr-compare run (last read: run
+ * 36491355506, 2026-09-28 22:34Z). The 2026-09-23 ruling-out on the row was right about what
+ * it froze, `qr_scans`; the table it did not freeze was `profiles`, which the rail reads and
+ * the page does not.
  */
 export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
-  // LIVE-476. Four consecutive pull requests that touched nothing this page renders went red
-  // here. First the full-page height flip (14521 ↔ 14567), settled by the first-screen-only
-  // capture above; then, on the first screen, a small STABLE desktop diff: 951 px dawn-light,
-  // 1029 px dawn-dark, identical across three attempts, mobile green. The cause is NOT KNOWN.
-  // Live tallies are ruled out by measurement, not by argument: the four StatCards on this page
-  // read `qr_scans`, which has had no new row since 2026-09-18 and none at all since the
-  // baseline was captured, so the numbers in the picture are frozen.
-  '/admin/qr': 'LIVE-476',
   // /admin/content/practices STOOD HERE from 2026-09-24 to 2026-09-28 (LIVE-492) and votes
   // again. What put it here was read on the runner rather than guessed, and both halves are
   // fixed at their cause (ADR-1545): the 4px mobile flip was the shutter dropping the touch
@@ -800,8 +808,10 @@ export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {
   // full account, including what its own ruling-out did and did not cover.
 }
 
-/** The advisory operator paths, as a list. `visual.spec.ts` filters both operator loops on this
- *  so the blocking loop and the advisory describe can never drift apart. */
+/** The advisory operator paths, as a list. visual.spec.ts no longer filters on it (the operator
+ *  advisory describe retired with its last passenger, LIVE-476); it stays exported because the
+ *  LIVE-504 probe reads the roster between the map and this line, and so the day another surface
+ *  needs the trade the list is already here. `visual-tiers.test.ts` holds roster and wiring in step. */
 export const ADVISORY_OPERATOR_PATHS: readonly string[] = Object.keys(ADVISORY_OPERATOR_SURFACES)
 
 /* ── The narrow phone, and the header band (HYG-057, ADR-1270) ──────────────── */
@@ -1260,11 +1270,21 @@ export const VISUAL_MASK_SITES: readonly {
   // The measured swap was 55.25px and the observed flip is 46px, so this closes a real
   // dimension flip on the surface WITHOUT being proven to be the whole of that flip; the
   // `settleHeight` report below is what will name the next one instead of guessing at it.
+  // (It was not the whole of it. The 46px was the touch drop, LIVE-492; see LIVE-476.)
+  //
+  // BOTH BRANCHES SINCE 2026-09-28 (LIVE-476, ADR-1568). The surface is photographed whole
+  // again, so the empty state is in the picture, and it carries the same mask: the box holds
+  // the height, the mask holds the paint. Read from `qr_scans` rather than predicted: rows on
+  // 2026-08-28 (1), 2026-09-01 (3) and 2026-09-18 (1), so the window reads 4 today, 1 from
+  // 2026-10-01 and 0 from 2026-10-18, when an unmasked empty state would have swapped a
+  // magenta box for a line of text on whichever pull request ran next. The four StatCards
+  // above stay unmasked under the rule two paragraphs up; the 30-day one changes a digit on
+  // those two dates, and the band reader names it if that ever clears 400 px.
   {
     value: 'qr-daily-scans',
     file: 'app/(main)/admin/qr/analytics.tsx',
     kind: 'live',
-    why: 'The daily scans bar chart. The 30-day window slides, so every bar steps one column left at the UTC day boundary with no code between two pictures — 3533 differing pixels across one midnight. The box is `h-28` and fixed, so the mask holds it.',
+    why: 'The daily scans section, chart and empty state alike. The 30-day window slides, so every bar steps one column left at the UTC day boundary with no code between two pictures — 3533 differing pixels across one midnight — and when it empties the chart gives way to a line of text. Both branches are the same `mt-4 h-28` box, so the mask holds it in either state.',
   },
   // ── /admin/content/practices, the per-row usage tallies (2026-09-22) ────────────────────────
   // The same defect as qr-daily-scans one surface further on, and this one was already FAILING

@@ -12,11 +12,11 @@ import path from 'node:path'
 //                                               hold the chrome; six PRs on 2026-09-19 ran
 //                                               this step green while the public tier was red.
 //   ADVISORY (@visual AND @advisory)             does not block. /discover (LIVE-373): live
-//                                               Circles / events / posts set the height. And
-//                                               /admin/qr (LIVE-476): four pull requests that
-//                                               touched nothing it renders went red on it and
-//                                               the cause is still unknown. Both are still
-//                                               CAPTURED every run. Advisory is not skipped.
+//                                               Circles / events / posts set the height. It is
+//                                               still CAPTURED every run. Advisory is not
+//                                               skipped. Three operator surfaces rode this tier
+//                                               2026-09-23 to 2026-09-28 (LIVE-476, LIVE-492,
+//                                               LIVE-504); all three block again.
 //
 // This file exists because the arrangement is expressed in three places that cannot see each
 // other -- three npm scripts and three workflow steps -- and every one of the assertions below
@@ -109,20 +109,44 @@ describe('the workflow wires the tiers the way the tiers are meant to behave', (
   })
 
   // 🔴 A REPORT THAT NAMES ONE OF TWO SURFACES IS WORSE THAN NO REPORT, because a reader who
-  // sees /discover and nothing else concludes the /admin/qr capture did not run. It ran. The
-  // summary step is the only place a human is shown an advisory diff, so every surface on the
-  // tier has to be named there, with the row that owns it.
+  // sees /discover and nothing else concludes the other capture did not run. The summary step
+  // is the only place a human is shown an advisory diff, so every surface on the tier has to be
+  // named there, with the row that owns it: /discover today, plus whatever the operator
+  // advisory roster carries (empty once #2949 and #2955 have taken LIVE-492 and LIVE-504 out; it
+  // named /admin/qr and LIVE-476 while that surface rode the tier).
   it('the advisory summary names EVERY surface on the tier, with its row', () => {
     const idx = e2eYml.indexOf('- name: Report the advisory tier')
     expect(idx, 'the advisory report step moved or was renamed').toBeGreaterThan(-1)
     const step = e2eYml.slice(idx, idx + 1600)
-    for (const named of ['/discover', 'LIVE-373', '/admin/qr', 'LIVE-476']) {
+    for (const named of ['/discover', 'LIVE-373']) {
       expect(step, `the advisory summary does not name ${named}`).toContain(named)
+    }
+    for (const [path, row] of Object.entries(advisoryOperatorRoster())) {
+      expect(step, `the advisory summary does not name ${path}`).toContain(path)
+      expect(step, `the advisory summary does not name ${row} beside ${path}`).toContain(row)
     }
     // The one instruction that must not be missing: a recapture would bury an unexplained diff.
     expect(step).toContain('Do NOT')
   })
 })
+
+/** The operator advisory roster as the tree declares it, read from the source of surfaces.ts
+ *  with comments blanked so a closed note cannot count as an entry. Each entry is a quoted path
+ *  mapped to a quoted row id. */
+function advisoryOperatorRoster(): Record<string, string> {
+  const src = fs.readFileSync(path.join(ROOT, 'test', 'e2e', 'surfaces.ts'), 'utf8')
+  const open = src.indexOf('export const ADVISORY_OPERATOR_SURFACES: Readonly<Record<string, string>> = {')
+  expect(open, 'ADVISORY_OPERATOR_SURFACES is gone from surfaces.ts').toBeGreaterThan(-1)
+  const close = src.indexOf('\n}', open)
+  expect(close, 'ADVISORY_OPERATOR_SURFACES never closes').toBeGreaterThan(open)
+  const body = src
+    .slice(open, close)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '')
+  const roster: Record<string, string> = {}
+  for (const m of body.matchAll(/'([^']+)':\s*'([^']+)'/g)) roster[m[1]] = m[2]
+  return roster
+}
 
 describe('the positive control: @shell is genuinely shared, so the bare grep really is a trap', () => {
   it('a11y and overflow still tag shell suites, and they are not visual', () => {
@@ -155,19 +179,22 @@ describe('the positive control: @shell is genuinely shared, so the bare grep rea
     ).toBe(true)
   })
 
-  // ── LIVE-476: /admin/qr, SAME SHAPE, DIFFERENT CAUSE ────────────────────────────────────
+  // ── THE OPERATOR ADVISORY ROSTER AND ITS WIRING, HELD IN STEP ──────────────────────────────
   //
-  // /discover's height is the listed set, which is at least an explanation. /admin/qr has none:
-  // four consecutive pull requests that touch nothing it renders went red on a small, stable,
-  // desktop-only diff, and the diff image has never been read. That is a gate firing on people
-  // who did not cause it, and this repo's rule for that is written above the /discover describe.
+  // /admin/qr rode the advisory tier from 2026-09-23 to 2026-09-28 (LIVE-476), then
+  // /admin/content/practices (LIVE-492) and /admin/library (LIVE-504). Each was photographed in
+  // a second operator describe, tagged @visual and @advisory and never @shell, and filtered out
+  // of the blocking loop by the same list, so the two loops could not drift apart. All three
+  // vote again: the first two leave the roster in #2949 and #2955, and the change that retired
+  // the describe and the filter merges after them, so the roster it leaves behind is empty.
   //
-  // 🔴 THE ASSERTION THAT MATTERS IS THE LAST ONE. Advisory means photographed-and-not-voting.
-  // A change that dropped the surface from the blocking loop and forgot the advisory describe
-  // would satisfy every other line here and silently stop photographing an operator surface,
-  // which is HYG-026 all over again. So the describe's EXISTENCE is asserted in-tree, on every
-  // pull request, not left to a run nobody reads.
-  it('LIVE-476: /admin/qr is out of the blocking operator loop and photographed in the advisory tier', () => {
+  // 🔴 THE HAZARD IS THE SAME IN BOTH DIRECTIONS. Advisory means photographed-and-not-voting. A
+  // change that put a surface in the roster, dropped it from the blocking loop and forgot the
+  // describe would silently stop photographing an operator surface, which is HYG-026 all over
+  // again. And a describe left looping an EMPTY roster reads as coverage while collecting
+  // nothing. So the wiring is asserted in-tree against the roster, on every pull request, and
+  // the assertion says which way it failed.
+  it('the operator advisory describe and the blocking-loop filter exist exactly when the roster has an entry', () => {
     const vis = fs.readFileSync(path.join(ROOT, 'test', 'e2e', 'visual.spec.ts'), 'utf8')
     const surfaces = fs.readFileSync(path.join(ROOT, 'test', 'e2e', 'surfaces.ts'), 'utf8')
 
@@ -175,21 +202,35 @@ describe('the positive control: @shell is genuinely shared, so the bare grep rea
     // coverage ledger all still see it. Shrinking OPERATOR_PATHS would be the quiet version.
     expect(
       surfaces.includes("{ path: '/admin/qr',"),
-      '/admin/qr was removed from OPERATOR_PATHS: advisory means photographed, not dropped',
-    ).toBe(true)
-    expect(surfaces).toMatch(/ADVISORY_OPERATOR_SURFACES[\s\S]{0,1200}'\/admin\/qr':\s*'LIVE-476'/)
-
-    // Out of the blocking loop, by the shared list rather than by a literal, so the two loops
-    // cannot drift apart.
-    expect(
-      vis.includes('!ADVISORY_OPERATOR_PATHS.includes(s.path)'),
-      'the blocking operator loop still photographs the advisory surfaces',
+      '/admin/qr was removed from OPERATOR_PATHS: a surface leaves the advisory tier by voting again, not by being dropped',
     ).toBe(true)
 
+    const roster = advisoryOperatorRoster()
     const advisory = vis.match(
       /test\.describe\('visual · operator console · advisory',\s*\{\s*tag:\s*\[([^\]]+)\]/,
     )
-    expect(advisory, 'visual.spec.ts has no advisory operator describe: the surface stopped being photographed').toBeTruthy()
+    const filtered = vis.includes('!ADVISORY_OPERATOR_PATHS.includes(s.path)')
+
+    if (Object.keys(roster).length === 0) {
+      expect(
+        advisory,
+        'ADVISORY_OPERATOR_SURFACES is empty but visual.spec.ts still has an operator advisory describe: it loops nothing and reads as coverage',
+      ).toBeNull()
+      expect(
+        filtered,
+        'ADVISORY_OPERATOR_SURFACES is empty but the blocking operator loop still filters on it',
+      ).toBe(false)
+      expect(
+        vis.includes('for (const surface of operatorSurfaces())'),
+        'the blocking operator loop no longer photographs every operator surface',
+      ).toBe(true)
+      return
+    }
+
+    // Out of the blocking loop, by the shared list rather than by a literal, so the two loops
+    // cannot drift apart.
+    expect(filtered, `the roster names ${Object.keys(roster).join(', ')} but the blocking operator loop still photographs them`).toBe(true)
+    expect(advisory, 'the roster has an entry and visual.spec.ts has no advisory operator describe: that surface stopped being photographed').toBeTruthy()
     expect(advisory![1]).toContain('@visual')
     expect(advisory![1]).toContain('@advisory')
     expect(

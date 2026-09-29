@@ -122,7 +122,9 @@ export interface EventDetailTemplateProps {
   notices?: ReactNode
 
   // ── header lockup (handed straight to DetailTemplate) ─────────────────────────────────────────
-  /** The full-bleed cover band: uploaded cover, scanned poster, or the date placeholder. */
+  /** The full-bleed cover band: uploaded cover, scanned poster, or the date placeholder. A poster
+   *  comes as <PosterBand>, which composes the canonical PageHero (ADR-1579), so every event
+   *  surface that fills this slot with one is on the cover grammar PROG-P5's census measures. */
   cover?: ReactNode
   /** The single back affordance. Never hand-roll a second one above the template. */
   back?: { href: string; label: string }
