@@ -11,6 +11,8 @@ import { FULFILLMENT_LABEL, FULFILLMENT_STEP_LABEL, nextFulfillmentStep } from '
 // step it offers comes from nextFulfillmentStep, so a digital order is delivered, never shipped,
 // and a walked ladder offers nothing. Server component: the form posts to the bound server action
 // the parent verified its caller for, so this file decides nothing about who may act.
+// On a split order each seller's share has its own control (LIVE-705): the parent hands in the
+// share's view (its lines, its step) and, on the operator's page, a label naming whose share it is.
 
 /** A server action already bound to its surface and order: `(status, formData)`. */
 export type FulfilmentAction = (status: FulfillmentStatus, formData: FormData) => Promise<void>
@@ -19,11 +21,14 @@ export function OrderFulfilmentControl({
   order,
   action,
   readOnly = false,
+  label,
 }: {
   order: CommerceOrder
   /** Omit (or pass readOnly) to show the state without a door, e.g. a staff preview. */
   action?: FulfilmentAction
   readOnly?: boolean
+  /** Whose share this is, when one order carries a control per seller (LIVE-705). */
+  label?: string
 }) {
   // A service, booking, ticket or Journey is never sent; a refunded or failed order has nothing to send.
   if (!order.needsFulfilment) return null
@@ -36,6 +41,7 @@ export function OrderFulfilmentControl({
     <div data-order-fulfilment-control className="mt-3 border-t border-border pt-3">
       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm">
         <Truck className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+        {label && <span className="text-muted">{label}:</span>}
         <span className="font-medium text-text">{FULFILLMENT_LABEL[order.fulfillmentStatus]}</span>
         {f.carrier && <span className="text-muted">via {f.carrier}</span>}
         {f.tracking &&

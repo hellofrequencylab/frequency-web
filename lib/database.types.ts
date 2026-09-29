@@ -1481,6 +1481,8 @@ export type Database = {
           attempts: number
           created_at: string
           currency: string
+          fulfillment_status: string
+          fulfilment: Json | null
           id: string
           last_error: string | null
           order_id: string
@@ -1501,6 +1503,8 @@ export type Database = {
           attempts?: number
           created_at?: string
           currency?: string
+          fulfillment_status?: string
+          fulfilment?: Json | null
           id?: string
           last_error?: string | null
           order_id: string
@@ -1521,6 +1525,8 @@ export type Database = {
           attempts?: number
           created_at?: string
           currency?: string
+          fulfillment_status?: string
+          fulfilment?: Json | null
           id?: string
           last_error?: string | null
           order_id?: string

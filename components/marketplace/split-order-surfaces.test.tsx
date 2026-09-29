@@ -7,15 +7,22 @@ import { renderToStaticMarkup } from 'react-dom/server'
 //   - The operator's /admin/marketplace/orders renders EVERY transfer row of a split order under
 //     [data-order-transfers], with a retry door on the rows that have not landed, and renders no such
 //     section for a destination order (whose ledger it never even asks for).
+//   - Each seller ships their own share (LIVE-705, ADR-1652): the operator page carries one door per
+//     share of a split order, bound to that share's row, showing that seller's step and lines.
 
-const { listAllOrders, orderStatusCounts, sellerNames, listOrderTransfers, retryOrderTransferAction } = vi.hoisted(() => {
+const { listAllOrders, orderStatusCounts, sellerNames, splitShareFulfilments, listOrderTransfers, retryOrderTransferAction, setShareFulfillmentAction } = vi.hoisted(() => {
   const retry = Object.assign(vi.fn(), { bind: (_: unknown, id: string) => Object.assign(async () => {}, { boundTo: id }) })
+  const shareDoor = Object.assign(vi.fn(), {
+    bind: vi.fn((_: unknown, orderId: string, shareId: string) => Object.assign(async () => {}, { boundTo: `${orderId}/${shareId}` })),
+  })
   return {
     listAllOrders: vi.fn(),
     orderStatusCounts: vi.fn(),
     sellerNames: vi.fn(),
+    splitShareFulfilments: vi.fn(),
     listOrderTransfers: vi.fn(),
     retryOrderTransferAction: retry,
+    setShareFulfillmentAction: shareDoor,
   }
 })
 
@@ -30,12 +37,14 @@ vi.mock('@/lib/commerce/orders', async (orig) => ({
   listAllOrders,
   orderStatusCounts,
   sellerNames,
+  splitShareFulfilments,
 }))
 vi.mock('@/lib/commerce/transfers', () => ({ listOrderTransfers, MAX_TRANSFER_ATTEMPTS: 8 }))
 vi.mock('@/app/(main)/admin/marketplace/actions', () => ({
   refundOrderAction: { bind: () => async () => {} },
   setOrderFulfillmentAction: { bind: () => async () => {} },
   retryOrderTransferAction,
+  setShareFulfillmentAction,
 }))
 
 import { OrderShareNote } from './order-share-note'
@@ -178,6 +187,38 @@ describe('/admin/marketplace/orders: the split section is for split orders only'
     orderStatusCounts.mockResolvedValue({ paid: 2 })
     sellerNames.mockResolvedValue(new Map())
     listOrderTransfers.mockResolvedValue(ROWS)
+    splitShareFulfilments.mockResolvedValue(new Map())
+  })
+
+  it('carries one fulfilment door per share of a split order, each bound to its own row (LIVE-705)', async () => {
+    const empty = { carrier: null, tracking: null, trackingUrl: null, note: null, shippedAt: null, deliveredAt: null, completedAt: null }
+    const SPACE = { kind: 'space' as const, profileId: null, spaceId: 'space-a' }
+    const MAKER = { kind: 'profile' as const, profileId: 'profile-b', spaceId: null }
+    const line = (id: string, title: string, seller: typeof SPACE | typeof MAKER) => ({
+      id, title, qty: 1, unitCents: 100, subtotalCents: 100, productKind: 'physical', seller,
+    })
+    listAllOrders.mockResolvedValue([
+      { ...split, needsFulfilment: true, ships: true, items: [line('i-mug', 'Stoneware mug', SPACE), line('i-print', 'Riso print', MAKER)] },
+    ])
+    sellerNames.mockResolvedValue(new Map([['space:space-a', 'Riverbend Studio'], ['profile:profile-b', 'Mara Okafor']]))
+    splitShareFulfilments.mockResolvedValue(
+      new Map([
+        ['o-split', [
+          { shareId: 't-a', seller: SPACE, fulfillmentStatus: 'shipped', fulfilment: { ...empty, carrier: 'USPS', tracking: '9400 1' } },
+          { shareId: 't-b', seller: MAKER, fulfillmentStatus: 'none', fulfilment: empty },
+        ]],
+      ]),
+    )
+    const out = html(await MarketplaceOrdersPage())
+    expect(count(out, 'data-order-fulfilment-control')).toBe(2)
+    expect(out).toContain('Riverbend Studio:')
+    expect(out).toContain('Mara Okafor:')
+    // The Space's share is shipped, so its door offers delivered; the maker's has not left, so shipped.
+    expect(out).toContain('Mark delivered')
+    expect(out).toContain('Mark shipped')
+    expect(setShareFulfillmentAction.bind).toHaveBeenCalledWith(null, 'o-split', 't-a')
+    expect(setShareFulfillmentAction.bind).toHaveBeenCalledWith(null, 'o-split', 't-b')
+    expect(splitShareFulfilments).toHaveBeenCalledWith(['o-split'])
   })
 
   it('renders every transfer of the split order and no section for the destination order', async () => {
