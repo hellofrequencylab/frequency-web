@@ -2,14 +2,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // Mock the Sentry SDK so the test asserts capture behaviour without a real client.
 const captureException = vi.fn()
+const captureMessage = vi.fn()
 vi.mock('@sentry/nextjs', () => ({
   captureException: (...args: unknown[]) => captureException(...args),
+  captureMessage: (...args: unknown[]) => captureMessage(...args),
   setTag: vi.fn(),
   setContext: vi.fn(),
   withScope: (fn: () => unknown) => fn(),
 }))
 
-import { DEFAULT_CRON_BUDGET_MS, CRON_CEILING_MS, withCronHeartbeat, resolveHeartbeatUrl } from '@/lib/observability/cron-heartbeat'
+import {
+  DEFAULT_CRON_BUDGET_MS,
+  CRON_CEILING_MS,
+  CRON_SLO_BREACH_HEADER,
+  withCronHeartbeat,
+  resolveHeartbeatUrl,
+  resetHeartbeatEscalationForTests,
+} from '@/lib/observability/cron-heartbeat'
+import { CRON_MONITORED, CRON_UNMONITORED } from '@/lib/observability/slos'
 
 // A fresh env per test so configured/unconfigured paths are isolated.
 //
@@ -34,6 +44,8 @@ let fetchMock: ReturnType<typeof vi.fn>
 beforeEach(() => {
   clearEnv()
   captureException.mockReset()
+  captureMessage.mockReset()
+  resetHeartbeatEscalationForTests()
   fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }))
   vi.stubGlobal('fetch', fetchMock)
 })
@@ -161,6 +173,41 @@ describe('withCronHeartbeat — configured success', () => {
   })
 })
 
+// LIVE-547 (ADR-1571). A run that FINISHED but left an SLO breached (a dead-letter in the queue, a
+// due job older than the lag target) says so on a response header. The wrapper then tells the
+// dead-man's switch /fail instead of alive, so the check stays down while the breach lasts, and the
+// response itself is untouched: a 500 would make the next cron redo work that was fine, and a handler
+// that fail-pinged on its own would be followed by this wrapper's alive-ping and flap the monitor.
+describe('withCronHeartbeat — a 2xx carrying CRON_SLO_BREACH_HEADER', () => {
+  beforeEach(() => {
+    process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
+  })
+  const breached = () =>
+    new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { [CRON_SLO_BREACH_HEADER]: 'dead-letters above zero' },
+    })
+
+  it('pings /fail, not alive, and leaves the 200 alone', async () => {
+    const res = await withCronHeartbeat('process-queue', vi.fn().mockResolvedValue(breached()))(req())
+    expect(res.status).toBe(200)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock.mock.calls[0][0]).toBe('https://hc.example/ping/process-queue/fail')
+    expect(captureException).not.toHaveBeenCalled() // the handler captured its own message
+  })
+
+  it('THE CONTROL: the same 200 without the header still alive-pings', async () => {
+    await withCronHeartbeat('process-queue', vi.fn().mockResolvedValue(okRes()))(req())
+    expect(fetchMock.mock.calls[0][0]).toBe('https://hc.example/ping/process-queue')
+  })
+
+  it('ignores the header on a 4xx, which never pings either way', async () => {
+    const denied = new Response(null, { status: 401, headers: { [CRON_SLO_BREACH_HEADER]: 'x' } })
+    await withCronHeartbeat('process-queue', vi.fn().mockResolvedValue(denied))(req())
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
 describe('withCronHeartbeat — failure (throw)', () => {
   it('captures to Sentry and RE-THROWS so the route still 5xxs', async () => {
     process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
@@ -209,6 +256,124 @@ describe('withCronHeartbeat — monitor outage never breaks the cron', () => {
     await expect(
       withCronHeartbeat('process-queue', vi.fn().mockRejectedValue(boom))(req()),
     ).rejects.toThrow('handler failure') // not the ping error
+  })
+})
+
+// ── LIVE-548 / ADR-1574: a rejected ping for a MONITORED job is a signal, not a line ────────────
+//
+// OWN-070: two of the twenty monitored crons 404ed on every ping for two weeks, into warn lines
+// nobody queried. For those two weeks their dead-man's switch was dead and nothing said so. These
+// tests pin the escalation and, more importantly, its two edges: an opt-out that still pings gets
+// the warn line and NOTHING else (its 404 is the expected one), and the event fires once per job
+// per process, so a dead monitor is one Sentry issue and not one per run.
+describe('withCronHeartbeat — a monitored job whose ping does not land escalates to Sentry', () => {
+  const monitored = CRON_MONITORED[0] // process-queue
+  const optedOut = CRON_UNMONITORED[0].job // embed-events
+
+  beforeEach(() => {
+    process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
+  })
+
+  it('the partition the test leans on is the real one', () => {
+    expect(monitored).toBe('process-queue')
+    expect(CRON_MONITORED).not.toContain(optedOut)
+  })
+
+  it('a rejected ping (non-2xx) for a monitored job captures a Sentry message tagged by job', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
+    const res = await withCronHeartbeat(monitored, vi.fn().mockResolvedValue(okRes()))(req())
+
+    expect(res.status).toBe(200) // the cron's own outcome is untouched
+    expect(captureMessage).toHaveBeenCalledOnce()
+    const [message, ctx] = captureMessage.mock.calls[0] as [string, Record<string, unknown>]
+    expect(message).toContain(monitored)
+    expect(message).toContain('404')
+    expect(ctx).toMatchObject({
+      level: 'error',
+      tags: { route: `cron.${monitored}`, cron_job: monitored },
+      extra: { status: 404 },
+    })
+  })
+
+  it('a transport failure for a monitored job escalates too, with no status', async () => {
+    fetchMock.mockRejectedValue(new Error('monitor unreachable'))
+    await withCronHeartbeat(monitored, vi.fn().mockResolvedValue(okRes()))(req())
+
+    expect(captureMessage).toHaveBeenCalledOnce()
+    const [message, ctx] = captureMessage.mock.calls[0] as [string, Record<string, unknown>]
+    expect(message).toContain('monitor unreachable')
+    expect(ctx).toMatchObject({ extra: { status: null } })
+  })
+
+  it('THE CONTROL: an opt-out that still pings gets the warn line and no Sentry event', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    let lines: string[] = []
+    try {
+      await withCronHeartbeat(optedOut, vi.fn().mockResolvedValue(okRes()))(req())
+      lines = [...warn.mock.calls, ...logSpy.mock.calls].flat().filter((a): a is string => typeof a === 'string')
+    } finally {
+      warn.mockRestore()
+      logSpy.mockRestore()
+    }
+    expect(captureMessage).not.toHaveBeenCalled()
+    // The record survives: the same line as before, so one query still finds every rejection.
+    expect(lines.some((l) => l.includes('cron.heartbeat.ping_failed'))).toBe(true)
+  })
+
+  it('escalates once per job per process, not once per run', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
+    const wrapped = withCronHeartbeat(monitored, vi.fn().mockResolvedValue(okRes()))
+    await wrapped(req())
+    await wrapped(req())
+    await wrapped(req())
+    expect(captureMessage).toHaveBeenCalledOnce()
+
+    // A different monitored job is its own issue.
+    fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
+    await withCronHeartbeat(CRON_MONITORED[1], vi.fn().mockResolvedValue(okRes()))(req())
+    expect(captureMessage).toHaveBeenCalledTimes(2)
+  })
+
+  it('a ping that lands escalates nothing', async () => {
+    await withCronHeartbeat(monitored, vi.fn().mockResolvedValue(okRes()))(req())
+    expect(captureMessage).not.toHaveBeenCalled()
+  })
+
+  it('the fail-ping path escalates as well, and says it was the /fail ping', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
+    await withCronHeartbeat(monitored, vi.fn().mockResolvedValue(errRes()))(req())
+    expect(captureMessage).toHaveBeenCalledOnce()
+    expect(captureMessage.mock.calls[0][1]).toMatchObject({ tags: { heartbeat_fail: 'true' } })
+  })
+
+  it('a monitored job silenced by CRON_HEARTBEAT_SKIP is named once, and pings nothing', async () => {
+    process.env.CRON_HEARTBEAT_SKIP = monitored
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    let lines: string[] = []
+    try {
+      const wrapped = withCronHeartbeat(monitored, vi.fn().mockResolvedValue(okRes()))
+      await wrapped(req())
+      await wrapped(req())
+      lines = [...warn.mock.calls, ...logSpy.mock.calls].flat().filter((a): a is string => typeof a === 'string')
+    } finally {
+      warn.mockRestore()
+      logSpy.mockRestore()
+    }
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(captureMessage).not.toHaveBeenCalled()
+    expect(lines.filter((l) => l.includes('cron.heartbeat.monitored_but_skipped'))).toHaveLength(1)
+  })
+
+  it('never lets the escalation take the cron down', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 404 }))
+    captureMessage.mockImplementation(() => {
+      throw new Error('sentry exploded')
+    })
+    const res = await withCronHeartbeat(monitored, vi.fn().mockResolvedValue(okRes()))(req())
+    expect(res.status).toBe(200)
   })
 })
 

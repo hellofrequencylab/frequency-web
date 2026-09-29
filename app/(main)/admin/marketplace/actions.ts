@@ -6,12 +6,13 @@ import { getCallerProfile } from '@/lib/auth'
 import { authorizeAction } from '@/lib/admin/guard'
 import { createProduct, setProductStatus, updateProduct, deleteProduct } from '@/lib/commerce/products'
 import { refundCommerceOrder } from '@/lib/commerce/checkout'
+import { setOrderFulfillment } from '@/lib/commerce/fulfilment'
 import { setReportStatus, type ReportStatus } from '@/lib/commerce/reports'
 import { setDisputeStatus, orderForDispute } from '@/lib/commerce/disputes'
 import { hideProductReview, unhideProductReview } from '@/lib/commerce/reviews'
 import { setPlatformFlag } from '@/lib/platform-flags'
 import { areaFlagKey, type MarketArea } from '@/lib/marketplace/visibility'
-import type { ProductStatus } from '@/lib/commerce/types'
+import type { ProductStatus, FulfillmentStatus } from '@/lib/commerce/types'
 
 // Operator actions for the Marketplace admin (Shop catalog, orders, T&S). Platform-staff
 // gated (web_role admin/janitor, OR the 'platform' staff domain). The first-party Shop is
@@ -80,6 +81,22 @@ export async function refundOrderAction(id: string): Promise<void> {
   const res = await refundCommerceOrder(id)
   if (res.error) throw new Error(res.error)
   revalidatePath('/admin/marketplace/orders')
+}
+
+/** Move a Frequency Store order along the fulfilment ladder (LIVE-606, ADR-1575). Frequency is the
+ *  seller on an `owner_kind = 'platform'` order, so platform staff are its fulfilment desk; the
+ *  writer binds the update to that owner kind, so a Space's or a maker's order id finds nothing
+ *  here (their own doors are their consoles). A refusal is surfaced, the way refundOrderAction does. */
+export async function setOrderFulfillmentAction(id: string, status: FulfillmentStatus, formData: FormData): Promise<void> {
+  await requireOperator()
+  const result = await setOrderFulfillment(
+    id,
+    { status, carrier: String(formData.get('carrier') ?? ''), tracking: String(formData.get('tracking') ?? '') },
+    { kind: 'platform' },
+  )
+  if (!result.ok) throw new Error(result.error)
+  revalidatePath('/admin/marketplace/orders')
+  revalidatePath('/orders')
 }
 
 /** Triage a marketplace report (reviewing / actioned / dismissed). */

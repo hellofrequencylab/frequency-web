@@ -48,9 +48,12 @@ import {
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
+import { isVectorFile } from '@/lib/loom/urls'
 import { AssetAvPanel } from './asset-av-panel'
 import { AssetUsagePanel } from './asset-usage-panel'
 import { createBrandStyle } from './recraft-actions'
+import { describeGeneratedAsset } from '@/lib/library/describe-generated'
+import { useDescribeOnView } from '@/lib/library/describe-on-view'
 import {
   addAssetsToCollection,
   removeAssetsFromCollection,
@@ -204,6 +207,21 @@ export function LoomGrid({
   const [openId, setOpenId] = useState<string | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
   const selected = assets.find((a) => a.id === openId) ?? null
+
+  // Describe on view (LIVE-588, ADR-1590): an imported seed or an event-photo copy was filed with no
+  // browser in the flow, so it has no blurhash and no palette. This grid IS a browser looking at it,
+  // so the first few such rows on the page are decoded from the grid rendition already on screen and
+  // posted through the one generated-asset path, whose write only ever fills a hole.
+  useDescribeOnView(
+    assets.map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      url: a.url ? renditionUrl(a.url, 'grid') : null,
+      blurhash: a.blurhash,
+      mime: a.mime,
+    })),
+    describeGeneratedAsset,
+  )
 
   function toggle(id: string) {
     setSel((prev) => {
@@ -958,7 +976,13 @@ function DetailDrawer({
 
           {/* Managed image studio (Recraft): non-destructive edits + version history. Hidden unless
               a key is configured; edit ops need a file-backed image. */}
-          <RecraftEditRow assetId={asset.id} hasFile={!!asset.url} enabled={recraftEnabled} chipCls={chipCls} />
+          <RecraftEditRow
+            assetId={asset.id}
+            hasFile={!!asset.url}
+            isVector={isVectorFile(asset.mime, asset.url)}
+            enabled={recraftEnabled}
+            chipCls={chipCls}
+          />
           {recraftEnabled && <AssetVersions assetId={asset.id} />}
 
           {/* Media manager (Airwaves P2): replace-file for any file-backed asset + a usage map for A/V. */}

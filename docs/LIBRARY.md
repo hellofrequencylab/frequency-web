@@ -85,10 +85,14 @@ page again.
   `RECRAFT_API_KEY` is set; the Studio carries the page's gate above + is budget-gated (`recraft` cap, $0.04 raster / $0.08
   vector) and called server-side only. Clients: `create-studio.tsx`, `lib/loom/recraft.ts`; actions:
   `vera-actions.ts` + `recraft-actions.ts`.
-- **Edit (drawer)**: a file-backed asset can be edited in place with **Vectorize**, **Remove BG**, or
-  **Variation** — each **non-destructive** (snapshots the current state to `library_versions` first). A
-  **Versions** list restores any prior state with one click (rollback snapshots current first, so it's
-  reversible). Backbone: `lib/library/versions.ts`.
+- **Edit (drawer)**: a file-backed asset can be edited in place with **Vectorize**, **Remove BG**,
+  **Upscale**, or **Variation** — each **non-destructive** (snapshots the current state to
+  `library_versions` first). A **Versions** list restores any prior state with one click (rollback
+  snapshots current first, so it's reversible). Backbone: `lib/library/versions.ts`. **Upscale**
+  (LIVE-589) runs Recraft's crisp upscale (`upscaleImage`, $0.004 list) on a raster only: a vector is
+  refused by the action and the chip is disabled with a line that says why. Every edit result is
+  ingested (checksum + header dimensions), so an upscaled master records its new width and the rendition
+  resolver serves it at the right size. Creative upscale ($0.25 list) is in the client, not the Studio.
 - **Brand styles (matching sets)**: train a reusable **house style** so a whole generated set looks
   like one family ([ADR-489](DECISIONS.md)). Select 1–5 on-brand images in the grid → **"Train style"**
   in the selection bar → name it + pick the lane. The style is saved (`library_styles`, the Recraft
@@ -229,6 +233,10 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   **checksum + dedupe** → read dimensions → write the catalog row. One function does the server half:
   `ingestImageBytes` in `lib/library/ingest.ts`, called by every upload site with the bytes it is
   about to store.
+  - **Enforced by a test** ([ADR-1562](DECISIONS.md) §3, `LIVE-579`). `lib/library/ingest-coverage.test.ts`
+    walks `lib/`, `app/` and `components/` for every file that `.upload(`s into `library-media` (by the
+    constant, the literal or `classifyLoomUpload`) and fails naming the file when it skips the strip.
+    Its exception list is empty and carries a reason column for the day one is needed.
   - **Order matters.** The checksum is taken AFTER the strip, so it describes the object that is
     really on disk — and two exports of one photo that differ only in metadata dedupe to one asset.
     Dedupe reads `(space_id, sha256)`, the pair `library_assets_sha256_idx` indexes; it is
@@ -251,7 +259,10 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
     `blurhash`/`colors` only where they are null and validates them exactly as the upload path does.
     One shared client path (`lib/library/describe-generated.ts`) serves both generators. The importer
     seeds and the event-photo copies have no browser anywhere in the flow (an apply, a cron, a claim),
-    so they stay without, and that is the whole remaining gap.
+    so they are described ON VIEW instead ([ADR-1590](DECISIONS.md), `LIVE-588`): the Loom Studio grid
+    and the Space Loom Studio run `useDescribeOnView` (`lib/library/describe-on-view.ts`), which after
+    paint takes up to six rows on the page whose `blurhash` is null and sends each, one at a time,
+    through that same shared path. A row nobody has ever opened stays without; a cron never can.
 
 - **Search is ranked over two indexes** ([ADR-1121](DECISIONS.md)). A query runs BOTH arms the schema
   already carries and merges them: full text (`search_tsv @@ websearch_to_tsquery`, stemmed and
@@ -302,6 +313,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
+   Background removal and upscale (LIVE-589) are shipped; the rest is decomposed into LIVE-586 to LIVE-588 ([ADR-1563](DECISIONS.md)).
 
 ## Non-goals (v1)
 
