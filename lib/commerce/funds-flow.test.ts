@@ -24,7 +24,13 @@ function line(seller: FundsFlowLine['seller'], unitCents: number, qty = 1, curre
 describe('planFundsFlow — one seller is a destination charge, as today', () => {
   it('a single Space cart plans destination with that seller and the summed gross', () => {
     const plan = planFundsFlow([line(spaceA, 1000, 2), line(spaceA, 500)])
-    expect(plan).toEqual({ mode: 'destination', currency: 'usd', grossCents: 2500, seller: spaceA })
+    expect(plan).toEqual({
+      mode: 'destination',
+      currency: 'usd',
+      grossCents: 2500,
+      seller: spaceA,
+      groups: [{ key: 'space::sp-a', seller: spaceA, grossCents: 2500, firstLine: 0 }],
+    })
   })
 
   it('the Frequency Store on its own is destination too (a plain platform charge downstream)', () => {
@@ -48,8 +54,8 @@ describe('planFundsFlow — two sellers are separate charges and transfers', () 
       currency: 'usd',
       grossCents: 1850,
       groups: [
-        { key: 'space::sp-a', seller: spaceA, grossCents: 1250 },
-        { key: 'profile:pr-1:', seller: maker, grossCents: 600 },
+        { key: 'space::sp-a', seller: spaceA, grossCents: 1250, firstLine: 0 },
+        { key: 'profile:pr-1:', seller: maker, grossCents: 600, firstLine: 1 },
       ],
     })
   })

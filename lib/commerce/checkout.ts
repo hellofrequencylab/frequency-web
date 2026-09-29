@@ -274,7 +274,9 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   )
   if ('error' in plan) return { error: plan.error }
   const cartCurrency = plan.currency
-  const sellerGroups = plan.mode === 'destination' ? [{ seller: plan.seller, grossCents: plan.grossCents }] : plan.groups
+  // Each seller's own product row (the first line it sold), which carries what the seam does not read:
+  // the ledger entity, and the fields resolveCharge prices from. One group on a destination plan.
+  const sellerGroups = plan.groups.map((g) => ({ seller: lines[g.firstLine].product, grossCents: g.grossCents }))
 
   // R2 (Phase 0): only a seller `canTakePayments` admits may take in-app money; a connect-only listing
   // never opens a Stripe session, the buyer contacts the seller instead. Checked per seller, because a
@@ -319,7 +321,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     console.error('[commerce] split share with no destination account', { sellers: priced.length })
     return { error: CHECKOUT_START_FAILED }
   }
-  const splits: SellerSplit<ProductRow>[] = head
+  const splits: SellerSplit[] = head
     ? []
     : priced.map((p) => ({
         seller: p.seller,

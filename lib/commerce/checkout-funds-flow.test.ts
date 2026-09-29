@@ -51,7 +51,12 @@ const stripeFake = vi.hoisted(() => ({
 }))
 
 const connect = vi.hoisted(() => ({
-  getConnectStatus: vi.fn(async (profileId: string) => ({ accountId: `acct_${profileId}`, ready: true })),
+  getConnectStatus: vi.fn(
+    async (profileId: string): Promise<{ accountId: string | null; ready: boolean }> => ({
+      accountId: `acct_${profileId}`,
+      ready: true,
+    }),
+  ),
   payoutsLive: vi.fn(async () => true),
 }))
 

@@ -37,7 +37,7 @@ import type { OwnerKind, FundsFlow } from './types'
 export type { FundsFlow }
 
 /** The seller half of a product row, as `commerce_products` carries it. Any object with these three
- *  fields (a product row does) can be a seller here; the plan hands the same object back. */
+ *  fields (a product row does) can be a seller here. */
 export interface FundsFlowSeller {
   owner_kind: OwnerKind
   owner_profile_id: string | null
@@ -45,29 +45,33 @@ export interface FundsFlowSeller {
 }
 
 /** One priced cart line. `unitCents` is the effective unit price (variant override applied). */
-export interface FundsFlowLine<S extends FundsFlowSeller = FundsFlowSeller> {
-  seller: S
+export interface FundsFlowLine {
+  seller: FundsFlowSeller
   currency: string
   qty: number
   unitCents: number
 }
 
-/** The lines of one seller, summed. `seller` is the first line's seller object, handed back so the
- *  builder can price it without a second lookup. */
-export interface FundsFlowGroup<S extends FundsFlowSeller = FundsFlowSeller> {
+/** The lines of one seller, summed. `firstLine` is the index, in the lines the plan was handed, of
+ *  this seller's first line, so the builder can find its own row for the seller (a product row, with
+ *  the entity and currency the seam does not read) without a cast or a second lookup. */
+export interface FundsFlowGroup {
   key: string
-  seller: S
+  seller: FundsFlowSeller
   grossCents: number
+  firstLine: number
 }
 
-export type FundsFlowPlan<S extends FundsFlowSeller = FundsFlowSeller> =
-  | { mode: 'destination'; currency: string; grossCents: number; seller: S }
-  | { mode: 'separate'; currency: string; grossCents: number; groups: FundsFlowGroup<S>[] }
+/** A plan names its groups in both modes (one group for a destination plan), so the builder walks
+ *  the same list either way and branches on `mode` only where the money differs. */
+export type FundsFlowPlan =
+  | { mode: 'destination'; currency: string; grossCents: number; seller: FundsFlowSeller; groups: [FundsFlowGroup] }
+  | { mode: 'separate'; currency: string; grossCents: number; groups: FundsFlowGroup[] }
   | { error: string }
 
 /** One seller's share of a separate plan, once the builder has priced it. */
-export interface SellerSplit<S extends FundsFlowSeller = FundsFlowSeller> {
-  seller: S
+export interface SellerSplit {
+  seller: FundsFlowSeller
   grossCents: number
   platformFeeCents: number
   stripeAccountId: string
@@ -90,7 +94,7 @@ export function sellerKey(s: FundsFlowSeller): string {
  * `destination` for one seller, `separate` for more, or an error for a cart the money cannot pay
  * as one charge. Group order is first-appearance order, so the builder's writes are deterministic.
  */
-export function planFundsFlow<S extends FundsFlowSeller>(lines: readonly FundsFlowLine<S>[]): FundsFlowPlan<S> {
+export function planFundsFlow(lines: readonly FundsFlowLine[]): FundsFlowPlan {
   if (!lines.length) return { error: 'Your cart is empty.' }
 
   const currency = (lines[0].currency || 'usd').toLowerCase()
@@ -98,24 +102,24 @@ export function planFundsFlow<S extends FundsFlowSeller>(lines: readonly FundsFl
     return { error: ONE_CURRENCY_PER_CART }
   }
 
-  const groups: FundsFlowGroup<S>[] = []
-  const byKey = new Map<string, FundsFlowGroup<S>>()
-  for (const line of lines) {
+  const groups: FundsFlowGroup[] = []
+  const byKey = new Map<string, FundsFlowGroup>()
+  lines.forEach((line, index) => {
     const key = sellerKey(line.seller)
     const cents = Math.max(0, Math.floor(line.unitCents)) * Math.max(1, Math.floor(line.qty))
     const group = byKey.get(key)
     if (group) {
       group.grossCents += cents
     } else {
-      const g: FundsFlowGroup<S> = { key, seller: line.seller, grossCents: cents }
+      const g: FundsFlowGroup = { key, seller: line.seller, grossCents: cents, firstLine: index }
       byKey.set(key, g)
       groups.push(g)
     }
-  }
+  })
 
   const grossCents = groups.reduce((sum, g) => sum + g.grossCents, 0)
   if (groups.length === 1) {
-    return { mode: 'destination', currency, grossCents, seller: groups[0].seller }
+    return { mode: 'destination', currency, grossCents, seller: groups[0].seller, groups: [groups[0]] }
   }
   // The platform is the account the charge lands on, never a transfer destination, so it cannot be
   // one seller among several: its share would be whatever is left after the transfers, a fee no
