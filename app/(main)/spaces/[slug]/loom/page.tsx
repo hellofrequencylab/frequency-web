@@ -6,6 +6,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
 import { listLoomScopeImages, listLoomScopeTags } from '@/lib/library/store'
+import { loomMeter, loomQuotaFor, loomStorageUsed } from '@/lib/library/quota'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { SpaceLoomStudio } from '@/components/spaces/loom/space-loom-studio'
@@ -34,10 +35,14 @@ export default async function SpaceLoomStudioPage({ params }: { params: Promise<
   if (!canManageSpaceLoom(space, caps.role)) notFound()
 
   const brandName = space.brandName ?? space.name
-  const [initialAssets, initialTags] = await Promise.all([
+  // The storage meter (LIVE-567): what this Loom stores against its cap. loomStorageUsed never
+  // throws, so a failed read renders as words in the Studio and never holds the page.
+  const [initialAssets, initialTags, usage] = await Promise.all([
     listLoomScopeImages({ spaceId: space.id }, { kinds: ['image'] }),
     listLoomScopeTags({ spaceId: space.id }, ['image']),
+    loomStorageUsed(space.id),
   ])
+  const initialMeter = loomMeter(loomQuotaFor(space), usage)
 
   // The shared hero band (LIVE-117, ADR-1261): the '/spaces/_/loom' row, short utility band, rung 1
   // on this Space's own pathname.
@@ -52,7 +57,12 @@ export default async function SpaceLoomStudioPage({ params }: { params: Promise<
       description="Every image in your space's library. Upload new photos, search and filter by tag, and remove what you no longer need. These are the images the Loom picker offers everywhere you edit this space."
     >
       <div className="max-w-5xl">
-        <SpaceLoomStudio spaceId={space.id} initialAssets={initialAssets} initialTags={initialTags} />
+        <SpaceLoomStudio
+          spaceId={space.id}
+          initialAssets={initialAssets}
+          initialTags={initialTags}
+          initialMeter={initialMeter}
+        />
       </div>
     </IndexTemplate>
   )

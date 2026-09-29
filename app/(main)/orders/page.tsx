@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Receipt, ShoppingBag } from 'lucide-react'
+import { Receipt, ShoppingBag, Truck } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -9,9 +9,11 @@ import { getMyProfileId } from '@/lib/auth'
 import { listOrdersForBuyer, type CommerceOrder } from '@/lib/commerce/orders'
 import { disputesForOrders, type CommerceDispute } from '@/lib/commerce/disputes'
 import { DisputeButton } from '@/components/marketplace/dispute-button'
+import { FULFILLMENT_LABEL } from '@/lib/commerce/fulfilment-state'
 
 // My Orders — a member's purchase history across Makers + Shop. Checkout's success_url
-// lands here. Connect-only verticals (General / Housing) never create orders.
+// lands here. Connect-only verticals (General / Housing) never create orders. An order that needs
+// sending shows where it stands and the tracking link once the seller marks it shipped (LIVE-606).
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'My orders' }
@@ -32,6 +34,10 @@ function OrderCard({ order, dispute }: { order: CommerceOrder; dispute: Commerce
   const when = new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   // A dispute makes sense on a completed purchase, not a failed / cancelled checkout.
   const disputable = order.status === 'paid' || order.status === 'fulfilled'
+  // Shipping state only for a settled order with something to send: a booking or a Journey is never
+  // "not sent yet", and a refunded order is not on its way anywhere.
+  const shippingState = disputable && order.needsFulfilment
+  const f = order.fulfilment
   return (
     <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-3">
@@ -51,6 +57,21 @@ function OrderCard({ order, dispute }: { order: CommerceOrder; dispute: Commerce
           </li>
         ))}
       </ul>
+      {shippingState && (
+        <p data-order-fulfilment className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
+          <Truck className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="font-medium text-text">{FULFILLMENT_LABEL[order.fulfillmentStatus]}</span>
+          {f.carrier && <span>via {f.carrier}</span>}
+          {f.tracking &&
+            (f.trackingUrl ? (
+              <a href={f.trackingUrl} target="_blank" rel="noreferrer" className="text-primary underline-offset-2 hover:underline">
+                Track {f.tracking}
+              </a>
+            ) : (
+              <span>{f.tracking}</span>
+            ))}
+        </p>
+      )}
       <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
         <span className="text-body-sm font-semibold text-text">Total</span>
         <span className="text-body-sm font-semibold text-text">{usd(order.amountCents, order.currency)}</span>

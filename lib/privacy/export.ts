@@ -27,6 +27,32 @@
 //   • consent_records ..... profile_id = me        (my consent history)
 //   • network_contacts .... owner_id = me          (CRM rows I own)
 //   • network_contact_notes/tags ... contact_id IN (my own contacts)
+//   • messages ............ sender_id = me         (direct messages I SENT; never the other side's)
+//   • room_messages ....... author_id = me         (what I wrote in a room; embedding left out)
+//   • friendships ......... user_a_id = me  OR  user_b_id = me  (two reads, deduped by id; the
+//                                            other half is reduced to a handle, see below)
+//   • notifications ....... recipient_id = me      (addressed to me; the actor reduced to a handle)
+//   • space_members ....... profile_id = me        (my role on a Space's team, and since when)
+//   • space_memberships ... member_profile_id = me (the Spaces I joined as a member, tier and date)
+//   • crm_activities ...... created_by = me        (the CRM activities I logged)
+//
+// THE OTHER PERSON IS A HANDLE, NEVER A ROW (ADR-1582). Three of those reads name a second
+// member: the other half of a friendship, whoever introduced it, the actor on a notification, the
+// member who invited me to a Space. Each is embedded as that member's public `handle` through a
+// many-to-one join on the FK column (`profiles!user_b_id(handle)`), and the raw profile id is
+// dropped from the row, so the file says who without exporting anything else of theirs. The join
+// cannot widen the read: the row it hangs off is already filtered to me.
+//
+// HOW THE TABLE LIST WAS CHOSEN, so the next reader re-runs it instead of trusting a number. On
+// 2026-09-28, production `information_schema` (table_constraints of type FOREIGN KEY joined to
+// constraint_column_usage where table_name = 'profiles', schema public) counted 212 tables keyed
+// to a profile. Most are about a member THROUGH a Space or a system (a Space's CRM contact, a
+// moderation log, a delivery row) and do not belong in a personal export. The rule is: a table
+// joins this file when the member would say the row is theirs (they wrote it, it was addressed to
+// them, or they are one side of it) and it is keyed to them by its own column. Anything keyed to a
+// Space rather than a person stays out. The census named six; re-running it for "the Spaces I
+// belong to" turned up that `space_members` holds only TEAM roles (viewer to admin), while a member
+// who joined a Space is a `space_memberships` row (ADR-1395), so both are read.
 //
 // ONE read filters on something other than the id itself, and it is called out here
 // rather than buried: the unclaimed-guest-seat read matches `guest_email` against the
@@ -51,7 +77,7 @@ export type MemberExport = {
   meta: {
     /** Schema version of THIS export shape, bumped if the section set changes. */
     format: 'frequency.member-export'
-    version: 1
+    version: 2
     /** The member this export belongs to (echoed for the downloader's records). */
     profileId: string
     /** ISO timestamp the export was assembled. */
@@ -76,6 +102,20 @@ export type MemberExport = {
     /** Unfinished Spark wizard answers, staged so a draft follows the author across devices. */
     studioDrafts: Record<string, unknown>[]
     consentRecords: Record<string, unknown>[]
+    /** Direct messages the member sent. */
+    messages: Record<string, unknown>[]
+    /** What the member wrote in rooms. */
+    roomMessages: Record<string, unknown>[]
+    /** Friendships the member is one half of; the other half is `friend_handle`. */
+    friendships: Record<string, unknown>[]
+    /** Notifications addressed to the member; whoever acted is `actor_handle`. */
+    notifications: Record<string, unknown>[]
+    /** The member's role on each Space team they are part of, with the date it started. */
+    spaceRoles: Record<string, unknown>[]
+    /** The Spaces the member joined as a member, with tier, status and joined date. */
+    spaceMemberships: Record<string, unknown>[]
+    /** CRM activities the member logged. */
+    crmActivities: Record<string, unknown>[]
   }
 }
 
@@ -95,11 +135,59 @@ export const MEMBER_EXPORT_SECTIONS = [
   'aiMemberContext',
   'studioDrafts',
   'consentRecords',
+  'messages',
+  'roomMessages',
+  'friendships',
+  'notifications',
+  'spaceRoles',
+  'spaceMemberships',
+  'crmActivities',
 ] as const
 
 export type MemberExportSection = (typeof MEMBER_EXPORT_SECTIONS)[number]
 
 type Rows = Record<string, unknown>[]
+
+/** The one field a joined profile carries into the file: its public handle. */
+function handleOf(joined: unknown): string | null {
+  if (!joined || typeof joined !== 'object') return null
+  const handle = (joined as { handle?: unknown }).handle
+  return typeof handle === 'string' ? handle : null
+}
+
+/**
+ * A friendship row as the member sees it: no profile ids, the other half as a handle, and
+ * whether the member was the one who asked. `me` is the caller id the row was filtered on.
+ */
+export function reduceFriendship(row: Record<string, unknown>, me: string): Record<string, unknown> {
+  const { user_a_id, user_b_id: _b, requested_by, a, b, introducer, ...rest } = row
+  return {
+    ...rest,
+    friend_handle: handleOf(user_a_id === me ? b : a),
+    requested_by_me: requested_by === me,
+    introduced_by_handle: handleOf(introducer),
+  }
+}
+
+// Column lists for the six person-keyed tables (ADR-1582). Each names what the member would
+// recognise and leaves out internals: room_messages.embedding (a vector), notifications.dedupe_key.
+const FRIENDSHIP_COLUMNS =
+  'id, status, edge_type, how_met, met_at, met_context, requested_at, responded_at, circle_id, event_id, user_a_id, user_b_id, requested_by, a:profiles!user_a_id(handle), b:profiles!user_b_id(handle), introducer:profiles!introduced_by(handle)'
+const NOTIFICATION_COLUMNS =
+  'id, type, body, reference_type, reference_id, read_at, created_at, actor:profiles!actor_id(handle)'
+const SPACE_ROLE_COLUMNS =
+  'id, space_id, role, status, created_at, space:spaces!space_id(name, slug), inviter:profiles!invited_by(handle)'
+const SPACE_MEMBERSHIP_COLUMNS =
+  'id, space_id, status, billing_interval, started_at, created_at, space:spaces!space_id(name, slug), tier:space_membership_tiers!tier_id(name)'
+
+/** A joined Space as two flat fields, so the file reads without an id lookup. */
+function spaceFields(space: unknown): { space_name: string | null; space_slug: string | null } {
+  const s = (space && typeof space === 'object' ? space : {}) as { name?: unknown; slug?: unknown }
+  return {
+    space_name: typeof s.name === 'string' ? s.name : null,
+    space_slug: typeof s.slug === 'string' ? s.slug : null,
+  }
+}
 
 /**
  * Assemble the caller's OWN personal data into one JSON object.
@@ -141,6 +229,14 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     aiContextRes,
     studioDrafts,
     consentRecords,
+    messages,
+    roomMessages,
+    friendshipsAsA,
+    friendshipsAsB,
+    notificationRows,
+    spaceRoleRows,
+    spaceMembershipRows,
+    crmActivities,
   ] = await Promise.all([
     db.from('profiles').select('*').eq('id', profileId).maybeSingle(),
     rows(db.from('posts').select('*').eq('author_id', profileId)),
@@ -167,7 +263,63 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     db.from('ai_member_context').select('*').eq('profile_id', profileId).maybeSingle(),
     rows(untyped.from('studio_draft').select('*').eq('profile_id', profileId)),
     rows(db.from('consent_records').select('*').eq('profile_id', profileId)),
+    // The six person-keyed tables (LIVE-550, ADR-1582). Same shape as the fifteen above: one
+    // owner column, compared to the caller id and nothing else. The embedded joins read a single
+    // public column of the OTHER member, hung off a row that is already mine.
+    rows(
+      db.from('messages').select('id, conversation_id, body, created_at').eq('sender_id', profileId),
+    ),
+    rows(
+      db
+        .from('room_messages')
+        .select('id, room_id, parent_id, body, media_url, created_at')
+        .eq('author_id', profileId),
+    ),
+    rows(db.from('friendships').select(FRIENDSHIP_COLUMNS).eq('user_a_id', profileId)),
+    rows(db.from('friendships').select(FRIENDSHIP_COLUMNS).eq('user_b_id', profileId)),
+    rows(db.from('notifications').select(NOTIFICATION_COLUMNS).eq('recipient_id', profileId)),
+    rows(db.from('space_members').select(SPACE_ROLE_COLUMNS).eq('profile_id', profileId)),
+    rows(
+      db
+        .from('space_memberships')
+        .select(SPACE_MEMBERSHIP_COLUMNS)
+        .eq('member_profile_id', profileId),
+    ),
+    rows(db.from('crm_activities').select('*').eq('created_by', profileId)),
   ])
+
+  // A friendship is one row with the member on either side, so it can only come back from one of
+  // the two reads; the id dedupe is there so a malformed self-row cannot list twice.
+  const seenFriendshipIds = new Set<unknown>()
+  const friendships = [...friendshipsAsA, ...friendshipsAsB]
+    .filter((r) => {
+      if (seenFriendshipIds.has(r.id)) return false
+      seenFriendshipIds.add(r.id)
+      return true
+    })
+    .map((r) => reduceFriendship(r, profileId))
+
+  const notifications = notificationRows.map(({ actor, ...rest }) => ({
+    ...rest,
+    actor_handle: handleOf(actor),
+  }))
+
+  const spaceRoles = spaceRoleRows.map(({ space, inviter, created_at, ...rest }) => ({
+    ...rest,
+    ...spaceFields(space),
+    joined_at: created_at,
+    invited_by_handle: handleOf(inviter),
+  }))
+
+  const spaceMemberships = spaceMembershipRows.map(({ space, tier, started_at, ...rest }) => {
+    const t = (tier && typeof tier === 'object' ? tier : {}) as { name?: unknown }
+    return {
+      ...rest,
+      ...spaceFields(space),
+      tier_name: typeof t.name === 'string' ? t.name : null,
+      joined_at: started_at,
+    }
+  })
 
   // The third kind of seat: an UNCLAIMED guest RSVP, still sitting at profile_id NULL with
   // guest_email set to this member's address. Neither read above can see it, so without this the
@@ -249,7 +401,7 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
   return {
     meta: {
       format: 'frequency.member-export',
-      version: 1,
+      version: 2,
       profileId,
       generatedAt: new Date().toISOString(),
       sections: MEMBER_EXPORT_SECTIONS,
@@ -270,6 +422,13 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
       aiMemberContext: (aiContextRes.data as Record<string, unknown> | null) ?? null,
       studioDrafts,
       consentRecords,
+      messages,
+      roomMessages,
+      friendships,
+      notifications,
+      spaceRoles,
+      spaceMemberships,
+      crmActivities,
     },
   }
 }

@@ -648,6 +648,7 @@ lib/circles/templates-data.ts
 lib/circles/transfer.ts
 lib/commerce/checkout.ts
 lib/commerce/disputes.ts
+lib/commerce/fulfilment.ts
 lib/commerce/journey-fulfilment.ts
 lib/commerce/order-receipt.ts
 lib/commerce/orders.ts
