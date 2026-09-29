@@ -4,12 +4,22 @@ import { revalidatePath } from 'next/cache'
 import type { Database } from '@/lib/database.types'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { asJson } from '@/lib/supabase/json'
 import { getRootSpaceId, insertSpaceLibraryImage, findLibraryAssetBySha256 } from '@/lib/library/store'
 import { ingestImageBytes } from '@/lib/library/ingest'
 import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 import { findLibraryAssetUsage } from '@/lib/library/usage'
 import { LIBRARY_DOWNLOAD_POLICIES, type LibraryDownloadPolicy } from '@/lib/library/types'
+import { recordVersion } from '@/lib/library/versions'
+import {
+  LIBRARY_PRIVATE_BUCKET,
+  LIBRARY_PUBLIC_BUCKET,
+  PROTECT_REFUSAL,
+  planProtectMove,
+  protectRefusal,
+  type ProtectVersionRow,
+} from '@/lib/library/protect-move'
 
 // ── THE LOOM STUDIO DOOR: every action on this route carries the PAGE's gate ─────────────────
 // `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes, because a
@@ -109,7 +119,12 @@ const dbh = () => createAdminClient()
  *  sentence and not a Postgres error; `isProtected` must be a real boolean; `expiresAt` is a date the
  *  runtime can parse, or null / '' to clear the licence end. Every field is optional and independent,
  *  so the drawer's Save sends what it shows and an older caller that sends title and tags only is
- *  byte-identical. Until LIVE-577 lands, Protected is stored and shown and moves nothing. */
+ *  byte-identical.
+ *
+ *  PROTECTED MOVES THE FILE (LIVE-577, ADR-1595). `isProtected` is not written here as a bare flag
+ *  any more: it is handed to `protectLibraryAsset`, which moves the file into or out of the private
+ *  bucket and sets the flag in the same step. It runs FIRST, so a refused protect (the asset is on a
+ *  page, it is audio, the copy failed) saves nothing and the operator reads why. */
 export async function updateLibraryAssetMeta(
   id: string,
   fields: {
@@ -133,9 +148,8 @@ export async function updateLibraryAssetMeta(
     }
     patch.download_policy = policy as LibraryDownloadPolicy
   }
-  if (fields.isProtected !== undefined) {
-    if (typeof fields.isProtected !== 'boolean') return { error: 'Protected must be on or off.' }
-    patch.is_protected = fields.isProtected
+  if (fields.isProtected !== undefined && typeof fields.isProtected !== 'boolean') {
+    return { error: 'Protected must be on or off.' }
   }
   if (fields.expiresAt !== undefined) {
     const raw = typeof fields.expiresAt === 'string' ? fields.expiresAt.trim() : ''
@@ -161,8 +175,221 @@ export async function updateLibraryAssetMeta(
       .slice(0, 40)
   }
 
+  // Every field above is validated before anything moves, so a bad date cannot strand a moved file.
+  if (fields.isProtected !== undefined) {
+    const moved = await protectLibraryAsset(id, fields.isProtected)
+    if ('error' in moved) return moved
+  }
+
   const { error } = await dbh().from('library_assets').update(patch).eq('id', id)
   if (error) return { error: error.message }
+  revalidatePath('/admin/library')
+  return { ok: true }
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const MOVE_FAILED = 'Could not move the file, so nothing changed. Try again.'
+
+/** How many live page images point at this asset through a column reference (HYG-068's six TEXT
+ *  image columns, 20270345006300). The block-document usage index does not see these, and a Space
+ *  logo or a profile header is as live as a block. Null when any count could not be read. */
+async function countColumnImageHolders(id: string): Promise<number | null> {
+  const admin = createAdminClient()
+  const reads = await Promise.all([
+    admin.from('spaces').select('id', { count: 'exact', head: true }).or(`brand_logo_asset_id.eq.${id},cover_image_asset_id.eq.${id}`),
+    admin.from('page_content').select('route', { count: 'exact', head: true }).eq('hero_image_asset_id', id),
+    admin.from('page_settings').select('route', { count: 'exact', head: true }).or(`og_image_asset_id.eq.${id},header_image_asset_id.eq.${id}`),
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('header_image_asset_id', id),
+  ])
+  let total = 0
+  for (const r of reads) {
+    if (r.error || typeof r.count !== 'number') return null
+    total += r.count
+  }
+  return total
+}
+
+/** Protect an asset, or release it (LIVE-577, ADR-1595). Protected MOVES the file: the current
+ *  object and every version's object are copied from `library-media` into the private
+ *  `library-private` bucket, the rows follow, and the public copies are removed, so the original is
+ *  no longer one public URL away. Off moves them back. Studio-gated.
+ *
+ *  REFUSED, with the row unchanged: audio or video (no private twin for recordings-media yet), a
+ *  code-drawn element, a file outside the Loom buckets, a seed or import filed from the importer's
+ *  object, a file another Loom row or version shares, an asset placed on any page or used as a
+ *  page image (protecting it would blank that image; a protected asset is a download or a proof,
+ *  never a page image), a usage read that failed, and any half-step through the copy and the row
+ *  writes: every step taken is undone when a later one fails. The last step, removing the old
+ *  objects, is the one exception, said at the step. A version is recorded first, so the move shows
+ *  in the history like every other edit; the reverse of the move is this action with `on` false. */
+export async function protectLibraryAsset(id: string, on: boolean): Promise<{ ok: true } | { error: string }> {
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
+  if (!id || !UUID_RE.test(id)) return { error: 'Missing asset id.' }
+  if (typeof on !== 'boolean') return { error: 'Protected must be on or off.' }
+
+  const admin = createAdminClient()
+  const { data: rowData, error: readErr } = await admin
+    .from('library_assets')
+    .select('id, kind, storage_bucket, storage_path, url, is_protected, source')
+    .eq('id', id)
+    .maybeSingle()
+  if (readErr) return { error: MOVE_FAILED }
+  if (!rowData) return { error: 'That asset no longer exists.' }
+  const row = rowData as {
+    id: string
+    kind: string
+    storage_bucket: string | null
+    storage_path: string | null
+    url: string | null
+    is_protected: boolean
+    source: string | null
+  }
+  const refusal = protectRefusal(row, on)
+  if (refusal) return { error: refusal }
+
+  // Nothing to move (already where the flag says): set the flag, and that is the whole edit.
+  const first = planProtectMove(row, [], on, () => '')
+  if (first.ok && !first.move) {
+    if (on && row.storage_bucket === LIBRARY_PRIVATE_BUCKET && row.storage_path) {
+      // Finish a move whose last step failed (step 4 below): sweep any public copy left at the same
+      // paths. Removing an object that is not there is not an error, so this is safe to repeat.
+      const { data: leftovers } = await admin.from('library_versions').select('storage_path').eq('asset_id', id).eq('storage_bucket', LIBRARY_PRIVATE_BUCKET)
+      const paths = [row.storage_path, ...((leftovers ?? []) as Array<{ storage_path: string | null }>).map((v) => v.storage_path)]
+      await admin.storage.from(LIBRARY_PUBLIC_BUCKET).remove([...new Set(paths.filter((p): p is string => !!p))])
+    }
+    if (row.is_protected === on) return { ok: true }
+    const { error } = await admin.from('library_assets').update({ is_protected: on, updated_at: new Date().toISOString() }).eq('id', id)
+    if (error) return { error: error.message }
+    revalidatePath('/admin/library')
+    return { ok: true }
+  }
+
+  // Protecting pulls the file off the open web, so a page that paints it would go blank. Refuse
+  // while anything live points at it; a failed read refuses too (ADR-979: unread is not unused).
+  if (on) {
+    const usage = await findLibraryAssetUsage(id)
+    if (!usage.ok) return { error: 'Could not check where this asset is used. Try again.' }
+    const columns = await countColumnImageHolders(id)
+    if (columns === null) return { error: 'Could not check where this asset is used. Try again.' }
+    const places = usage.pages + columns
+    if (places > 0) {
+      return {
+        error: `This asset is on ${places} page${places === 1 ? '' : 's'}. Swap it out there first, then protect it.`,
+      }
+    }
+  }
+
+  const readVersions = async (): Promise<ProtectVersionRow[] | null> => {
+    const { data, error } = await admin
+      .from('library_versions')
+      .select('id, storage_bucket, storage_path, recipe')
+      .eq('asset_id', id)
+    if (error) return null
+    return ((data ?? []) as Array<Record<string, unknown>>).map((v) => ({
+      id: String(v.id),
+      storage_bucket: (v.storage_bucket as string | null) ?? null,
+      storage_path: (v.storage_path as string | null) ?? null,
+      recipe: v.recipe && typeof v.recipe === 'object' ? (v.recipe as Record<string, unknown>) : null,
+    }))
+  }
+  const publicUrlFor = (path: string) => admin.storage.from(LIBRARY_PUBLIC_BUCKET).getPublicUrl(path).data.publicUrl
+
+  // Only an object this asset alone owns may move: removing a file another Loom row or another
+  // asset's version points at would pull that one off the web as well.
+  const before = await readVersions()
+  if (!before) return { error: MOVE_FAILED }
+  const preview = planProtectMove(row, before, on, publicUrlFor)
+  if (!preview.ok) return { error: preview.error }
+  if (!preview.move) return { ok: true }
+  const [otherAssets, otherVersions] = await Promise.all([
+    admin
+      .from('library_assets')
+      .select('id', { count: 'exact', head: true })
+      .eq('storage_bucket', preview.from)
+      .in('storage_path', preview.paths)
+      .neq('id', id),
+    admin
+      .from('library_versions')
+      .select('id', { count: 'exact', head: true })
+      .eq('storage_bucket', preview.from)
+      .in('storage_path', preview.paths)
+      .neq('asset_id', id),
+  ])
+  if (otherAssets.error || otherVersions.error) return { error: 'Could not check where this asset is used. Try again.' }
+  if ((otherAssets.count ?? 0) + (otherVersions.count ?? 0) > 0) return { error: PROTECT_REFUSAL.shared }
+
+  // The move is an edit: record the state before it, like every other edit, so the history shows it.
+  await recordVersion(id, on ? 'Before protect' : 'Before unprotect', ctx.profileId)
+
+  // Re-read so the version just recorded moves with the rest (its snapshot names the old bucket).
+  const versions = await readVersions()
+  if (!versions) return { error: MOVE_FAILED }
+  const plan = planProtectMove(row, versions, on, publicUrlFor)
+  if (!plan.ok) return { error: plan.error }
+  if (!plan.move) return { ok: true }
+
+  // 1. Copy every object into the other bucket. A failed copy removes the copies already made.
+  const copied: string[] = []
+  const dropCopies = async () => {
+    if (copied.length) await admin.storage.from(plan.to).remove(copied)
+  }
+  for (const path of plan.paths) {
+    const { error } = await admin.storage.from(plan.from).copy(path, path, { destinationBucket: plan.to })
+    if (error) {
+      await dropCopies()
+      return { error: MOVE_FAILED }
+    }
+    copied.push(path)
+  }
+
+  // 2. The asset row follows, guarded on the bucket it was read in, so a concurrent move loses.
+  const now = () => new Date().toISOString()
+  const { data: moved, error: assetErr } = await admin
+    .from('library_assets')
+    .update({ ...plan.asset, updated_at: now() })
+    .eq('id', id)
+    .eq('storage_bucket', plan.from)
+    .select('id')
+  if (assetErr || !moved || moved.length !== 1) {
+    await dropCopies()
+    return { error: MOVE_FAILED }
+  }
+
+  // 3. Each version row follows, so a rollback restores a file that exists. Undo on any failure.
+  const rewritten: typeof plan.versions = []
+  const undoRows = async () => {
+    for (const v of rewritten) {
+      await admin.from('library_versions').update({ storage_bucket: v.before.storage_bucket, recipe: asJson(v.before.recipe) }).eq('id', v.id)
+    }
+    await admin.from('library_assets').update({ ...plan.assetBefore, updated_at: now() }).eq('id', id)
+  }
+  for (const v of plan.versions) {
+    const { error } = await admin
+      .from('library_versions')
+      .update({ storage_bucket: v.after.storage_bucket, recipe: asJson(v.after.recipe) })
+      .eq('id', v.id)
+    if (error) {
+      await undoRows()
+      await dropCopies()
+      return { error: MOVE_FAILED }
+    }
+    rewritten.push(v)
+  }
+
+  // 4. Only now do the old objects go. This one step is NOT undone on failure: a remove that errored
+  //    may still have deleted some objects, and undoing would then drop the only copy. The rows and
+  //    the copies already agree, so the operator is told, and the next protect of this asset sweeps
+  //    the leftovers (the already-private branch above).
+  const { error: removeErr } = await admin.storage.from(plan.from).remove(plan.paths)
+  if (removeErr) {
+    revalidatePath('/admin/library')
+    return {
+      error: on
+        ? 'Protected, but the public copy could not be removed yet. Save again to finish.'
+        : 'Released, but the private copy could not be removed yet. It is not public, so nothing is exposed.',
+    }
+  }
+
   revalidatePath('/admin/library')
   return { ok: true }
 }
