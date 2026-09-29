@@ -18,7 +18,7 @@ import type { BroadcastSegment } from '@/components/comms/broadcast-types'
 //                      ledger, the exact query loadEventCoreStats runs)
 //
 // Every segment is deduped by profile id; the composer unions selected segments client-side
-// for the live count, and resolveEventBroadcastAudience re-unions them server-side at send
+// for the live count, and resolveEventBroadcastReach re-unions them server-side at send
 // (never trusting client ids). Service-role reads behind the caller's event-manage gate.
 // FAIL-SAFE: any read degrades to an empty segment, never a throw.
 //

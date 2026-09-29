@@ -247,7 +247,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
             <Check className="w-3 h-3" /> Saved
           </span>
         ) : (
-          <span>Push notifications require granting your browser permission on first toggle.</span>
+          <span>Push reaches a device once you turn it on there, in the card below.</span>
         )}
       </div>
     </div>

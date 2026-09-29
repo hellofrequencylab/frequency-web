@@ -4,7 +4,7 @@ description: Turn what you know into a guided program. Let Vera draft a balanced
 category: sharing
 order: 3
 published: 2026-06-06
-updated: 2026-09-20
+updated: 2026-09-29
 audience: member
 featureKeys: [journeys]
 status: published
@@ -146,7 +146,8 @@ takes about two minutes. You can still set the price while that finishes.
 
 People who are not enrolled see the sales page (the story, the outline, the price, and any
 reviews). They see the lessons after they pay or, for a free Journey, after they start it.
-Changing the price keeps those reviews on the Journey.
+Changing the price keeps those reviews on the Journey. Only people who bought the Journey can
+leave a review.
 
 ## Run it with a Circle
 

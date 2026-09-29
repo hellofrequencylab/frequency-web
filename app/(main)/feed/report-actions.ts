@@ -54,6 +54,48 @@ async function reportTargetMatches(
   return !!data && (data as { target_type: string }).target_type === type && (data as { target_id: string }).target_id === id
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// SEC-4 completeness (LIVE-652): the type allowlist above only names the KIND. A
+// forged id still landed in the queue as a target a moderator could not open.
+// One keyed read per type; a missing row uses the same refusal as a bad type so
+// the two holes are not distinguishable. Comments live in posts with parent_id
+// set; a top-level post is parent_id null.
+async function reportTargetExists(
+  admin: ReturnType<typeof createAdminClient>,
+  type: TargetType,
+  id: string,
+): Promise<boolean> {
+  if (!UUID_RE.test(id)) return false
+  switch (type) {
+    case 'post': {
+      const { data } = await admin.from('posts').select('id').eq('id', id).is('parent_id', null).maybeSingle()
+      return !!data
+    }
+    case 'comment': {
+      const { data } = await admin.from('posts').select('id').eq('id', id).not('parent_id', 'is', null).maybeSingle()
+      return !!data
+    }
+    case 'dispatch': {
+      const { data } = await admin.from('dispatches').select('id').eq('id', id).maybeSingle()
+      return !!data
+    }
+    case 'member': {
+      const { data } = await admin.from('profiles').select('id').eq('id', id).maybeSingle()
+      return !!data
+    }
+    case 'event': {
+      const { data } = await admin.from('events').select('id').eq('id', id).maybeSingle()
+      return !!data
+    }
+    case 'guestbook': {
+      const { data } = await admin.from('spotlight_guestbook').select('id').eq('id', id).maybeSingle()
+      return !!data
+    }
+  }
+  return false
+}
+
 // ── Report content ──────────────────────────────────────────────────────────
 
 export async function reportContent(
@@ -71,6 +113,9 @@ export async function reportContent(
   if (!targetId?.trim()) return fail('Missing report target')
 
   const admin = createAdminClient()
+  if (!(await reportTargetExists(admin, targetType, targetId))) {
+    return fail('Invalid report target')
+  }
 
   // Prevent duplicate reports from the same user on the same target
   const { data: existing } = await admin

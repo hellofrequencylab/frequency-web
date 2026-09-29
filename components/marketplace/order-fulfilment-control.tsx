@@ -48,7 +48,10 @@ export function OrderFulfilmentControl({
           ))}
       </p>
       {next && (
-        <form action={action!.bind(null, next)} className="mt-2 flex flex-wrap items-end gap-2">
+        // On a phone the door is a stack, full width (LIVE-704): the two fields and the step button each
+        // take the row, so "Mark shipped" is a thumb-wide target under the fields instead of a small button
+        // wrapped beside a 208px input. From sm the row sits side by side as before.
+        <form action={action!.bind(null, next)} className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
           {next === 'shipped' && (
             <>
               <label className="flex flex-col gap-1 text-meta text-muted">
@@ -58,16 +61,16 @@ export function OrderFulfilmentControl({
                   defaultValue={f.carrier ?? ''}
                   placeholder="USPS, UPS, FedEx"
                   maxLength={60}
-                  className={`${fieldClasses} w-40 text-body-sm`}
+                  className={`${fieldClasses} w-full text-body-sm sm:w-40`}
                 />
               </label>
               <label className="flex flex-col gap-1 text-meta text-muted">
                 Tracking number
-                <input name="tracking" defaultValue={f.tracking ?? ''} maxLength={120} className={`${fieldClasses} w-52 text-body-sm`} />
+                <input name="tracking" defaultValue={f.tracking ?? ''} maxLength={120} className={`${fieldClasses} w-full text-body-sm sm:w-52`} />
               </label>
             </>
           )}
-          <button type="submit" className={buttonClasses('secondary', 'sm')}>
+          <button type="submit" className={buttonClasses('secondary', 'sm', 'w-full sm:w-auto')}>
             {FULFILLMENT_STEP_LABEL[next]}
           </button>
         </form>
