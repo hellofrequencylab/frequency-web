@@ -25,6 +25,8 @@
 // performance / Vercel Analytics (see OBSERVABILITY-BASELINES.md §2a) and pasted into
 // the doc by hand. This harness gives a repeatable floor, not the full RUM picture.
 
+import { invokedDirectly } from './lib/invoked-directly.mjs'
+
 const args = new Set(process.argv.slice(2))
 const asJson = args.has('--json')
 const plansOnly = args.has('--plans')
@@ -37,7 +39,7 @@ const WARMUP = Number(process.env.PERF_BASELINE_WARMUP || 5)
 // hint for where to sample; `sql` is the EXPLAIN target for the query plan. Routes that
 // require an authenticated session are flagged so the operator knows the floor sample
 // undercounts and the real number comes from RUM.
-const HOT_PATHS = [
+export const HOT_PATHS = [
   {
     id: 'feed',
     label: 'Feed',
@@ -67,10 +69,13 @@ const HOT_PATHS = [
   {
     id: 'people-directory',
     label: 'People directory',
-    route: '/people',
+    // /network, not /people. ADR-172 moved the directory into the Network hub and /people is now
+    // a bare redirect(), so sampling it timed a 307 and never touched the directory query
+    // (HYG-141). perf-baseline.test.ts fails if any concrete route here is a redirect-only page.
+    route: '/network',
     authed: true,
-    entry: 'lib/feed/feed-people.ts, lib/people-suggestions.ts',
-    sql: '-- profile list + connection-state join. Capture EXPLAIN ANALYZE of the\n-- directory query as role authenticated; flag any per-row connection subquery.',
+    entry: 'app/(main)/network/page.tsx (directoryPromise), lib/people-suggestions.ts',
+    sql: "-- directory listing: the SERVICE-ROLE read in app/(main)/network/page.tsx directoryPromise,\n-- so capture it as service_role (no RLS applies to this read). Add AND NOT p.is_demo when demo\n-- mode is off or the viewer hides demo content:\nEXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) SELECT p.id, p.display_name, p.handle, p.avatar_url, p.community_role, p.is_system, p.last_seen_at, p.is_demo, p.entity_types, r.name FROM profiles p LEFT JOIN nexus_regions r ON r.id = p.nexus_region_id WHERE p.is_active ORDER BY p.display_name LIMIT 500;\n-- then the members_near RPC body (proximity banding) and the lib/people-suggestions.ts\n-- memberships / friendships reads, also service_role; flag any per-row connection subquery.",
   },
   {
     id: 'practice-log-write',
@@ -168,7 +173,11 @@ async function main() {
   console.log('\nNext: run with --plans to capture query plans; fill OBSERVABILITY-BASELINES §2b/§2c.')
 }
 
-main().catch((err) => {
-  console.error('perf-baseline failed:', err instanceof Error ? err.message : String(err))
-  process.exitCode = 1
-})
+// Imported by perf-baseline.test.ts for HOT_PATHS only; run main() just when invoked as a script,
+// so a test import never samples anything even with PERF_BASELINE_BASE_URL set.
+if (invokedDirectly(import.meta.url)) {
+  main().catch((err) => {
+    console.error('perf-baseline failed:', err instanceof Error ? err.message : String(err))
+    process.exitCode = 1
+  })
+}
