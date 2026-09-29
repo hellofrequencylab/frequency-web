@@ -476,9 +476,13 @@ export function nextFree(root = '.', prefixes = []) {
   const want = prefixes.length ? prefixes : [...new Set(doc.entries.map((e) => String(e.id).split('-')[0]))]
   for (const p of want) {
     let max = 0
+    // A prefix comes from the command line, so it is matched as text, never compiled into a RegExp.
+    const head = `${p}-`
     for (const e of doc.entries) {
-      const m = new RegExp(`^${p}-(\\d+)$`).exec(e.id)
-      if (m) max = Math.max(max, parseInt(m[1], 10))
+      const id = String(e.id)
+      if (!id.startsWith(head)) continue
+      const tail = id.slice(head.length)
+      if (/^\d+$/.test(tail)) max = Math.max(max, parseInt(tail, 10))
     }
     if (max) rows[p] = `${p}-${String(max + 1).padStart(3, '0')}`
   }
