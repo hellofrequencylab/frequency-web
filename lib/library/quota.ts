@@ -2,7 +2,6 @@ import 'server-only'
 
 import { listLibraryAssetBytesPage } from '@/lib/library/store'
 import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
-import { spaceHasEntitlement, type SpaceLike } from '@/lib/spaces/entitlements'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE SPACE LOOM BUDGET (LIVE-567, ADR-1585).
@@ -11,11 +10,10 @@ import { spaceHasEntitlement, type SpaceLike } from '@/lib/spaces/entitlements'
 // Space stores or refused the next upload: a single Space could upload until the project ran
 // out. This is the budget, in three parts:
 //
-//   · loomQuotaFor(space)       PURE. The cap: a constant per plan tier (asSpacePlan), raised
-//                               by one default-deny entitlement key, `loom.storage.large`, which
-//                               rides the Business depth set (lib/pricing/plans.ts) so a paid tier
-//                               gets the bigger library without a schema change. The root Space
-//                               (Frequency's own library, and where personal uploads land) has no cap.
+//   · loomQuotaFor(space)       PURE. The cap: a constant per plan tier (asSpacePlan). The root
+//                               Space (Frequency's own library, and where personal uploads land)
+//                               has no cap. A larger-library entitlement key is deferred to the
+//                               owner (ADR-1585): what it costs and what it holds is a pricing call.
 //   · loomStorageUsed(spaceId)  The sum of `library_assets.bytes` over the Space's FILE-BACKED rows
 //                               (storage_path set), read a page at a time through lib/library/store
 //                               (the service-role seam, callers gate). A NULL `bytes` (the
@@ -26,8 +24,7 @@ import { spaceHasEntitlement, type SpaceLike } from '@/lib/spaces/entitlements'
 //                               roles reversed). The meter is the other way round: a failed read
 //                               shows words, it never blocks the page.
 //
-// The numbers live in LOOM_STORAGE_CAP_BYTES and LOOM_STORAGE_LARGE_BYTES; changing a cap is
-// one line here. No migration: the bytes column is already written on every ingested upload.
+// The numbers live in LOOM_STORAGE_CAP_BYTES; changing a cap is one line here. No migration: the bytes column is already written on every ingested upload.
 //
 // READS ONLY. `loomStorageUsed` reads `bytes` for a caller-supplied Space id and writes nothing;
 // every caller authorizes the Space first (uploadLoomImage and
@@ -37,9 +34,6 @@ import { spaceHasEntitlement, type SpaceLike } from '@/lib/spaces/entitlements'
 const MB = 1024 * 1024
 const GB = 1024 * MB
 
-/** The entitlement key that grants the larger Loom. Default-deny: only an explicit `true` counts. */
-export const LOOM_STORAGE_LARGE_KEY = 'loom.storage.large' as const
-
 /** The Loom storage cap per Space plan tier, in bytes. Owner-tunable: one line per tier. */
 export const LOOM_STORAGE_CAP_BYTES: Record<SpacePlan, number> = {
   free: 1 * GB,
@@ -47,9 +41,6 @@ export const LOOM_STORAGE_CAP_BYTES: Record<SpacePlan, number> = {
   nonprofit: 10 * GB,
   independent: 10 * GB,
 }
-
-/** The cap a Space holding `loom.storage.large` gets, whatever its tier says (never lowers one). */
-export const LOOM_STORAGE_LARGE_BYTES = 10 * GB
 
 /** The rows one page of the sum reads, and the most pages it will read before it calls the sum
  *  failed. 200 x 1000 rows is far past any Space today; hitting it is a refusal, not a guess. */
@@ -59,23 +50,18 @@ const SUM_MAX_PAGES = 200
 /** A Space's Loom cap. `capped: false` only for the root Space. */
 export type LoomQuota = { capped: false } | { capped: true; capBytes: number }
 
-/** What loomQuotaFor needs from a Space: its type (root is uncapped), its plan label, and its
- *  entitlements blob (for `loom.storage.large`). The `Space` from lib/spaces/store fits. */
-export interface LoomQuotaSpace extends SpaceLike {
+/** What loomQuotaFor needs from a Space: its type (root is uncapped) and its plan label. The
+ *  `Space` from lib/spaces/store fits. */
+export interface LoomQuotaSpace {
   type?: string | null
   plan?: string | null
 }
 
-/** The Loom cap for a Space. PURE. The root Space has none; every other Space gets its tier's cap,
- *  raised to LOOM_STORAGE_LARGE_BYTES when it holds `loom.storage.large`. A missing Space or an
- *  unknown plan reads as free (default-deny). */
+/** The Loom cap for a Space. PURE. The root Space has none; every other Space gets its tier's cap.
+ *  A missing Space or an unknown plan reads as free (default-deny). */
 export function loomQuotaFor(space: LoomQuotaSpace | null | undefined): LoomQuota {
   if (space?.type === 'root') return { capped: false }
-  const tierCap = LOOM_STORAGE_CAP_BYTES[asSpacePlan(space?.plan)]
-  const capBytes = spaceHasEntitlement(space, LOOM_STORAGE_LARGE_KEY)
-    ? Math.max(tierCap, LOOM_STORAGE_LARGE_BYTES)
-    : tierCap
-  return { capped: true, capBytes }
+  return { capped: true, capBytes: LOOM_STORAGE_CAP_BYTES[asSpacePlan(space?.plan)] }
 }
 
 /** What a Space stores: the counted bytes, how many file-backed rows were counted, and how many

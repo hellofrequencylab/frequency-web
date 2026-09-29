@@ -79,7 +79,6 @@ const BUSINESS_DEPTH = {
   multi_pipeline: true,
   team: true,
   program: true,
-  'loom.storage.large': true,
 }
 const COLLECTIVE_DEPTH = BUSINESS_DEPTH
 const INDEPENDENT_DEPTH = { ...BUSINESS_DEPTH, whitelabel: true }

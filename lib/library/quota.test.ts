@@ -2,8 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 
 // The Space Loom budget (LIVE-567, ADR-1585). What matters, in order: a NULL size is unknown and
-// never weighs zero, the cap follows the tier and the `loom.storage.large` key, the root Space is
-// uncapped, a failed sum REFUSES (a quota that fails open is not a quota), and exactly-at-the-cap is
+// never weighs zero, the cap follows the plan tier, the root Space is uncapped, a failed sum REFUSES (a quota that fails open is not a quota), and exactly-at-the-cap is
 // allowed while one byte past it is not.
 
 let pages: { data: unknown; error: { message: string } | null }[] = []
@@ -37,8 +36,6 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 import {
   LOOM_STORAGE_CAP_BYTES,
-  LOOM_STORAGE_LARGE_BYTES,
-  LOOM_STORAGE_LARGE_KEY,
   formatLoomBytes,
   loomBudgetVerdict,
   loomMeter,
@@ -46,7 +43,7 @@ import {
   loomStorageUsed,
   sumLoomBytes,
 } from './quota'
-import { BUSINESS_DEPTH_ENTITLEMENT_KEYS } from '@/lib/pricing/plans'
+import { SPACE_PLANS } from '@/lib/pricing/plans'
 
 const GB = 1024 * 1024 * 1024
 
@@ -85,30 +82,17 @@ describe('loomQuotaFor: the cap', () => {
     // A legacy label narrows through asSpacePlan like every other plan read.
     expect(loomQuotaFor({ plan: 'collective' })).toEqual({ capped: true, capBytes: LOOM_STORAGE_CAP_BYTES.business })
   })
-  it('the larger-library key raises a free Space, from the billing namespace or a hand-grant', () => {
-    const billing = { plan: 'free', entitlements: { billing: { [LOOM_STORAGE_LARGE_KEY]: true } } }
-    const hand = { plan: 'free', entitlements: { [LOOM_STORAGE_LARGE_KEY]: true } }
-    expect(loomQuotaFor(billing)).toEqual({ capped: true, capBytes: LOOM_STORAGE_LARGE_BYTES })
-    expect(loomQuotaFor(hand)).toEqual({ capped: true, capBytes: LOOM_STORAGE_LARGE_BYTES })
-  })
-  it('the key is default-deny: a non-true value or a hand revoke grants nothing', () => {
-    expect(loomQuotaFor({ plan: 'free', entitlements: { [LOOM_STORAGE_LARGE_KEY]: 'yes' } })).toEqual({
-      capped: true,
-      capBytes: LOOM_STORAGE_CAP_BYTES.free,
-    })
-    const revoked = { plan: 'free', entitlements: { [LOOM_STORAGE_LARGE_KEY]: false, billing: { [LOOM_STORAGE_LARGE_KEY]: true } } }
-    expect(loomQuotaFor(revoked)).toEqual({ capped: true, capBytes: LOOM_STORAGE_CAP_BYTES.free })
-  })
-  it('the key never lowers a tier cap', () => {
-    const q = loomQuotaFor({ plan: 'independent', entitlements: { [LOOM_STORAGE_LARGE_KEY]: true } })
-    expect(q).toEqual({ capped: true, capBytes: Math.max(LOOM_STORAGE_CAP_BYTES.independent, LOOM_STORAGE_LARGE_BYTES) })
+  it('an entitlements blob changes nothing: the larger-library key is deferred to the owner', () => {
+    const granted = { plan: 'free', entitlements: { 'loom.storage.large': true } }
+    expect(loomQuotaFor(granted)).toEqual({ capped: true, capBytes: LOOM_STORAGE_CAP_BYTES.free })
   })
   it('the root Space has no cap', () => {
     expect(loomQuotaFor({ type: 'root', plan: 'free' })).toEqual({ capped: false })
   })
-  it('a paid tier gets the larger library through its depth set', () => {
-    expect(BUSINESS_DEPTH_ENTITLEMENT_KEYS).toContain(LOOM_STORAGE_LARGE_KEY)
-    expect(LOOM_STORAGE_LARGE_BYTES).toBeGreaterThan(LOOM_STORAGE_CAP_BYTES.free)
+  it('every tier has a cap, and a paid tier holds more than free', () => {
+    for (const plan of SPACE_PLANS) expect(LOOM_STORAGE_CAP_BYTES[plan]).toBeGreaterThan(0)
+    expect(LOOM_STORAGE_CAP_BYTES.business).toBeGreaterThan(LOOM_STORAGE_CAP_BYTES.free)
+    expect(LOOM_STORAGE_CAP_BYTES.nonprofit).toBeGreaterThan(LOOM_STORAGE_CAP_BYTES.free)
   })
 })
 
