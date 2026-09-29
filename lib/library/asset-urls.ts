@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { LIBRARY_PRIVATE_BUCKET } from './protect-move'
 import { renditionUrl } from './rendition-url'
 import type { LoomPickAsset } from './store'
+import { libraryProofPath, writeLibraryProof } from './proof-object'
 
 /**
  * Live Loom urls for a set of library_assets ids, one query. Empty input is a no-op so a
@@ -67,29 +68,20 @@ export async function signedLibraryAssetUrl(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THE PROOF (LIVE-580, ADR-1623; owner ruling 2026-09-29: "Width-capped proof, no watermark").
+// THE PROOF (LIVE-580, ADR-1623; owner rulings 2026-09-29 "Width-capped proof, no watermark" and
+// "Store a small proof file").
 //
-// A protected asset is shown as a PROOF, never as its original: a signed URL minted with a storage
-// transform (the grid preset's width, resize contain), so storage serves the private object resized
-// and nothing in this app decodes a pixel (the og-trace budget, docs/DEPLOY-SAFETY.md). The master
-// leaves the bucket only through the download door (LIVE-578).
-//
-// ⚠️ WHAT THE CAP BINDS, stated honestly. Storage puts the transform inside the signed token, so the
-// holder cannot widen the proof by editing the query. It does NOT stop the same token opening the
-// object endpoint: supabase/storage's getSignedObject verifies the same download scope and ignores
-// the token's transformations, so a proof URL with `/render/image/sign/` swapped for
-// `/object/sign/` serves the master until the token expires. That is why a proof lives minutes, not
-// the hour a Studio signature lives, and why every reader that gets one is already a manager of the
-// asset (staff in the Studio, an editor or owner in the picker). A cap that holds against a knowing
-// holder needs a stored proof object, which HYG-017's "nothing writes derivative files" rules out;
-// that is an owner question, recorded in ADR-1623, not a silent gap.
+// A protected asset is shown as a PROOF, never as its original. The proof is its own object in
+// `library-private` at `proofs/<storage_path>` (lib/library/proof-object.ts), written when the asset
+// is protected and lazily for one that has none. This signs THAT object and never the master: the
+// token names the proof's path, storage checks it on every route, so no edit of a proof link reaches
+// the original. The master leaves the bucket only through the download door (LIVE-578).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** A proof's width: the grid preset (RENDITION_PRESETS.grid, a browser gallery card). */
-export const LIBRARY_PROOF_WIDTH = 480
+export { LIBRARY_PROOF_WIDTH } from './proof-object'
 
-/** How long a proof lives: one sitting in a grid. Short on purpose (see the header above). */
-export const LIBRARY_PROOF_TTL_SECONDS = 15 * 60
+/** How long a proof link lives: the Studio signature's hour, and never longer however it is asked. */
+export const LIBRARY_PROOF_TTL_SECONDS = LIBRARY_SIGNED_URL_TTL_SECONDS
 
 /** The fields `proofLibraryAssetUrl` reads. `kind` is optional: audio and video have no proof. */
 export type ProofableLibraryAsset = SignableLibraryAsset & { kind?: string | null }
@@ -98,13 +90,13 @@ const isVectorPath = (p: string | null) => typeof p === 'string' && /\.svgz?$/i.
 
 /**
  * The display URL for a Loom asset that may be protected (LIVE-580). A protected image whose file is
- * private gets a width-capped signed proof; a protected row whose file is still public (flagged before
- * its drawer was saved) gets the public grid rendition, never the master; every unprotected asset gets
- * `renditionUrl(url, 'grid')`, the thumbnail it always had.
+ * private gets a signed link to its stored proof, written first if it is missing; every unprotected
+ * asset gets `renditionUrl(url, 'grid')`, the thumbnail it always had.
  *
- * Null when no proof can be shown: a protected vector (a proof of an SVG is the SVG, and rasterising it
- * is a decode), a protected row with no file, or a failed mint. The Studio renders its no-image
- * placeholder for null. Never store what this returns: it expires.
+ * Null when no proof can be shown: a protected row whose file is still public (flagged before its
+ * drawer was saved: any link to it is a link to a public master), a protected vector (rasterising it
+ * is a decode), a protected row with no file, or a proof that could not be written or signed. Every
+ * surface renders its no-image placeholder for null. Never store what this returns: it expires.
  */
 export async function proofLibraryAssetUrl(
   asset: ProofableLibraryAsset,
@@ -113,21 +105,23 @@ export async function proofLibraryAssetUrl(
   // Audio and video cannot be private (protectLibraryAsset refuses them), and an image transform of
   // one is a broken player: served as they are.
   if (asset.kind === 'audio' || asset.kind === 'video') return asset.url
-  if (asset.url) {
-    if (asset.isProtected && isVectorPath(asset.url)) return null
-    return renditionUrl(asset.url, 'grid')
+  if (!asset.isProtected) return asset.url ? renditionUrl(asset.url, 'grid') : null
+  if (asset.url || !asset.storagePath || isVectorPath(asset.storagePath)) return null
+  const proofPath = libraryProofPath(asset.storagePath)
+  const ttl = Math.min(ttlSeconds, LIBRARY_PROOF_TTL_SECONDS)
+  const sign = async () => {
+    try {
+      const { data } = await createAdminClient().storage.from(LIBRARY_PRIVATE_BUCKET).createSignedUrl(proofPath, ttl)
+      return data?.signedUrl ?? null
+    } catch {
+      return null
+    }
   }
-  if (!asset.isProtected || !asset.storagePath || isVectorPath(asset.storagePath)) return null
-  try {
-    const { data } = await createAdminClient()
-      .storage.from(LIBRARY_PRIVATE_BUCKET)
-      .createSignedUrl(asset.storagePath, Math.min(ttlSeconds, LIBRARY_PROOF_TTL_SECONDS), {
-        transform: { width: LIBRARY_PROOF_WIDTH, resize: 'contain' },
-      })
-    return data?.signedUrl ?? null
-  } catch {
-    return null
-  }
+  // Signing a missing object fails, which is the cheap "is there a proof yet" test: write it, then sign.
+  const first = await sign()
+  if (first) return first
+  if (!(await writeLibraryProof(asset.storagePath))) return null
+  return sign()
 }
 
 /**

@@ -31,6 +31,8 @@ import {
   type LoomPickAsset,
 } from '@/lib/library/store'
 import { withLoomProofs } from '@/lib/library/asset-urls'
+import { removeLibraryProof } from '@/lib/library/proof-object'
+import { LIBRARY_PRIVATE_BUCKET } from '@/lib/library/protect-move'
 import { ingestImageBytes } from '@/lib/library/ingest'
 import { loomQuotaFor, loomStorageUsed, loomBudgetVerdict, loomMeter, type LoomMeter } from '@/lib/library/quota'
 import { readImageDescriptor } from '@/lib/library/image-describe'
@@ -196,8 +198,8 @@ export async function loomImages(
     listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, includeProtected: true }),
     listLoomScopeTags(scope, kinds),
   ])
-  // PROOFS, NOT MASTERS (LIVE-580, ADR-1623): a protected row leaves here with a width-capped signed
-  // proof as its url and no storage key, and the picker renders it without letting it be placed. The
+  // PROOFS, NOT MASTERS (LIVE-580, ADR-1623): a protected row leaves here with a signed link to its
+  // stored 480px proof as its url and no storage key, and the picker renders it without letting it be placed. The
   // master of a protected asset never reaches a picker, so it can never be stored in a page.
   const assets = await withLoomProofs(rows)
   return { assets, tags }
@@ -344,6 +346,8 @@ export async function deleteSpaceLoomImage(
   if (removed.bucket && removed.path) {
     try {
       await createAdminClient().storage.from(removed.bucket).remove([removed.path])
+      // A protected image's stored proof goes with it (LIVE-580).
+      if (removed.bucket === LIBRARY_PRIVATE_BUCKET) await removeLibraryProof(removed.path)
     } catch {
       /* best-effort: the row is already gone, a lingering object is harmless */
     }

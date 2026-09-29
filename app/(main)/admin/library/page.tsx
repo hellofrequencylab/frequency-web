@@ -199,9 +199,9 @@ export default async function LoomStudioPage({
 
   // A protected asset is shown as a PROOF, never its original (LIVE-580, ADR-1623): its file is in
   // the private bucket and its row carries no url (LIVE-577, ADR-1595), so each protected row gets a
-  // width-capped signed rendition for this render only, handed to the grid and the drawer and never
-  // written back (a stored signed URL is a stored expiry). A row flagged Protected whose file is still
-  // public gets the public grid rendition, not the master. The original leaves only by the download door.
+  // signed link to its stored 480px proof object for this render only, handed to the grid and the
+  // drawer and never written back (a stored signed URL is a stored expiry). No link to the master is
+  // ever minted here. The original leaves only by the download door.
   assets = await Promise.all(
     assets.map(async (a) => (a.isProtected ? { ...a, url: await proofLibraryAssetUrl(a) } : a)),
   )

@@ -39,7 +39,7 @@ export default async function SpaceLoomStudioPage({ params }: { params: Promise<
   // The storage meter (LIVE-567): what this Loom stores against its cap. loomStorageUsed never
   // throws, so a failed read renders as words in the Studio and never holds the page.
   // A protected image shows as its proof (LIVE-580): withLoomProofs swaps each protected row's url
-  // for a width-capped signed rendition and drops the storage key before the list reaches the browser.
+  // for a signed link to its stored 480px proof and drops the storage key before the list reaches the browser.
   const [initialAssets, initialTags, usage] = await Promise.all([
     listLoomScopeImages({ spaceId: space.id }, { kinds: ['image'], includeProtected: true }).then(withLoomProofs),
     listLoomScopeTags({ spaceId: space.id }, ['image']),
