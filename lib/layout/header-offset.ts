@@ -30,7 +30,7 @@ export const HEADER_GEOMETRY_OWNERS = ['app/globals.css'] as const
 
 /** A hand-written header offset: 3.5rem combined with the top inset, or a viewport-height calc
  *  that subtracts a bare 3.5rem/4.5rem instead of the token. Both are the drift LIVE-492 fixed. */
-export const HAND_WRITTEN_HEADER_OFFSET =
+const HAND_WRITTEN_HEADER_OFFSET =
   /calc\(\s*3\.5rem\s*\+\s*env\(safe-area-inset-top\)\s*\)|calc\(\s*100v?dvh?\s*-\s*[34]\.5rem\s*\)|calc\(100vh-[34]\.5rem\)|calc\(3\.5rem\+env\(safe-area-inset-top\)\)/
 
 /** True when `source` re-derives the app header's height by hand instead of using the token. */

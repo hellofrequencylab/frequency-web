@@ -22,7 +22,7 @@ export interface EmailDoc {
 
 /** One curated MERGE-TAG variable the composer offers (the picker UI comes later). `token` is the dotted
  *  name used inside `{{ ... }}` (see applyMergeTags); `label` is the human name; `example` seeds a preview. */
-export interface MergeTagVar {
+interface MergeTagVar {
   token: string
   label: string
   example: string

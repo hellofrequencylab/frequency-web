@@ -37,7 +37,7 @@ import {
 export type ChannelCategory = SubjectKey
 
 /** One category: its stored key, the label people read, the card/hero icon, and the chip accent. */
-export type ChannelCategoryChoice = SubjectChoice
+type ChannelCategoryChoice = SubjectChoice
 
 /** The categories, in the order the settings select lists them — THE shared subject list. */
 export const CHANNEL_CATEGORIES: readonly ChannelCategoryChoice[] = SUBJECTS

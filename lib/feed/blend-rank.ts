@@ -27,7 +27,7 @@ export interface BlendableItem {
   post_type?: string | null
 }
 
-export interface BlendWeights {
+interface BlendWeights {
   proximity: number
   graph: number
   engagement: number
@@ -36,7 +36,7 @@ export interface BlendWeights {
 
 // The default blend. Graph leads (resonance is the point), recency + proximity
 // matter, engagement is the lightest nudge. Tunable per call.
-export const DEFAULT_BLEND_WEIGHTS: BlendWeights = {
+const DEFAULT_BLEND_WEIGHTS: BlendWeights = {
   proximity: 0.25,
   graph: 0.3,
   engagement: 0.2,

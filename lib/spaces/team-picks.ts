@@ -9,7 +9,7 @@ import { resolveMemberCards, type SpaceTeamMember } from '@/lib/spaces/content-d
 
 /** Collect every network member id chosen in a SpaceTeam block across the doc (top-level blocks plus
  *  SpaceLayout main / side slots). Pure + tolerant: unknown shapes contribute nothing. */
-export function collectTeamMemberIds(data: Data): string[] {
+function collectTeamMemberIds(data: Data): string[] {
   const ids: string[] = []
   const fromBlock = (b: unknown): void => {
     const block = b as { type?: unknown; props?: Record<string, unknown> } | null

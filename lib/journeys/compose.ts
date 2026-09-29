@@ -145,7 +145,7 @@ async function compositionRows(
 
 /** Light bonus Zaps for a weekly Expression Challenge — kept small so the heavy capstone (the Close
  *  phase) reads as the real finish. The capstone uses the standard extra-credit default. */
-export const MASTER_WEEKLY_BONUS_ZAPS = 10
+const MASTER_WEEKLY_BONUS_ZAPS = 10
 
 /** The three weekly Pillar practices in a master week (the anchor lives in Onboarding, Expression
  *  is the weekly Challenge, so these are the rotating slots). */

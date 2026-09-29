@@ -100,7 +100,7 @@ export type AdminDomainKey =
   | 'operations'
 
 // The legacy `lib/admin/nav.ts` section slugs (the admin sub-header top-level tabs).
-export type AdminNavKey =
+type AdminNavKey =
   | 'dashboard'
   | 'community'
   | 'leadership'
@@ -115,10 +115,10 @@ export type AdminNavKey =
 /** Which legacy `ADMIN_GROUPS` domain a leaf renders under, and (optionally) the titled
  *  sub-section the dashboard buckets it beneath. A leaf can appear in several domains
  *  (the folded Growth/Programs roll-ups duplicate links from their sub-workspaces). */
-export type AdminGroupTag = { domain: AdminDomainKey; section?: string }
+type AdminGroupTag = { domain: AdminDomainKey; section?: string }
 
 /** Which legacy `ADMIN_NAV` section + heading a leaf renders under in the mega sub-nav. */
-export type AdminNavTag = { section: AdminNavKey; heading?: string }
+type AdminNavTag = { section: AdminNavKey; heading?: string }
 
 /** One operator destination — declared ONCE, projected onto the registry (studio spine),
  *  the ADMIN_GROUPS dashboards, and the ADMIN_NAV sub-header. */
@@ -629,9 +629,9 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
  *  cases where the sub-header shows a shorter tab label than the leaf's canonical name
  *  (e.g. "Onboarding" for the Onboarding & referral controls page, "Market catalog" for
  *  the Market console). */
-export type AdminNavLeafRef = { leaf: string; label?: string }
-export type AdminNavGroupSpec = { heading?: string; leaves: readonly AdminNavLeafRef[] }
-export type AdminNavSectionSpec = {
+type AdminNavLeafRef = { leaf: string; label?: string }
+type AdminNavGroupSpec = { heading?: string; leaves: readonly AdminNavLeafRef[] }
+type AdminNavSectionSpec = {
   href: string
   label: string
   min: CommunityRole

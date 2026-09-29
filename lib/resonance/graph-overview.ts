@@ -25,7 +25,7 @@ import type { ResonanceReason } from './score'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 /** The metric row's numbers, all fail-safe to zeros. */
-export interface GraphOverview {
+interface GraphOverview {
   /** People currently opted in to matching (resonance_consent.opted_in = true). The pool size. */
   consentedMembers: number
   /** Live (not expired) edges between two currently-consented people. The graph's density. */
@@ -35,7 +35,7 @@ export interface GraphOverview {
   degraded: boolean
 }
 
-export const ZERO_GRAPH_OVERVIEW: GraphOverview = { consentedMembers: 0, edges: 0, degraded: true }
+const ZERO_GRAPH_OVERVIEW: GraphOverview = { consentedMembers: 0, edges: 0, degraded: true }
 
 /** One end of a connection, named for the list (the per-node drill to Member Intelligence). */
 export interface ConnectionParty {

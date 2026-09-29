@@ -12,7 +12,7 @@ import { getCurrentSeason } from '@/lib/seasons'
 
 type StoreData = Awaited<ReturnType<typeof getStoreData>>
 
-export interface VaultData {
+interface VaultData {
   profileId: string | null
   zaps: number
   streak: number

@@ -21,7 +21,7 @@ import { loadStripe } from '@stripe/stripe-js/pure'
 import type { Stripe } from '@stripe/stripe-js'
 
 /** Public by design -- a publishable key is meant to ship to the browser. */
-export const PUBLISHABLE_KEY_ENV = 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'
+const PUBLISHABLE_KEY_ENV = 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'
 
 /**
  * The key, or null when it is not configured.
@@ -31,7 +31,7 @@ export const PUBLISHABLE_KEY_ENV = 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'
  * time; a computed key is not substituted and reads as undefined in the browser no matter what the
  * environment holds. The constant above exists for error messages and tests, never for the read.
  */
-export function publishableKey(): string | null {
+function publishableKey(): string | null {
   const key = (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '').trim()
   return key || null
 }

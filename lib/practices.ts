@@ -138,7 +138,7 @@ export interface Practice {
 }
 
 /** A library tag (canonical or member/Vera folksonomy) as shown on a practice. */
-export interface PracticeTag {
+interface PracticeTag {
   slug: string
   label: string
 }
@@ -308,7 +308,7 @@ export async function getPublicPractice(slugOrId: string): Promise<PublicPractic
 // the database against the `practices_ranked` view (count: 'exact' + .range), so
 // a page only ever fetches + enriches one screen of rows. URL-driven from the page.
 
-export interface LibrarySearchOpts {
+interface LibrarySearchOpts {
   q?: string | null
   pillarId?: string | null
   subId?: string | null
@@ -324,7 +324,7 @@ export interface LibrarySearchOpts {
   hideDemo?: boolean
 }
 
-export interface LibrarySearchResult {
+interface LibrarySearchResult {
   rows: RankedPractice[]
   total: number
   page: number
@@ -461,7 +461,7 @@ export interface AdminPracticeSearchOpts {
 
 /** One admin curation row: the practice's library fields + its usage signal + the
  *  table-only enrichments (featured_at, creator) the view doesn't carry. */
-export interface AdminPracticeRow {
+interface AdminPracticeRow {
   id: string
   title: string
   created_by: string | null
@@ -722,7 +722,7 @@ export async function countAdminPractices(opts: AdminPracticeSearchOpts = {}): P
 // faceting is a Phase-2 refinement if operators ask for it. The RPC carries the same note.
 
 /** One facet bucket: a key within a facet group and how many practices fall in it. */
-export interface FacetCount {
+interface FacetCount {
   key: string
   count: number
 }
@@ -887,7 +887,7 @@ export async function restorePractices(ids: string[]): Promise<number> {
 
 /** A practice creator's display identity, for author attribution on cards + the
  *  detail page. handle is the /people/{handle} key; null = no human author. */
-export type PracticeCreator = { id: string; handle: string | null; display_name: string | null; avatar_url: string | null }
+type PracticeCreator = { id: string; handle: string | null; display_name: string | null; avatar_url: string | null }
 
 /** Batch-resolve the creators (profiles) for a set of `created_by` ids in ONE query.
  *  Returns a Map keyed by profile id; ids that aren't real profiles are simply absent.
@@ -1167,21 +1167,21 @@ export async function getRankedPractice(slugOrId: string): Promise<RankedPractic
 //   · circles  — only non-archived; demo circles hidden unless demo mode is on AND
 //     the viewer hasn't opted out (mirrors app/(main)/circles/page.tsx)
 
-export interface PracticeJourneyLink {
+interface PracticeJourneyLink {
   slug: string
   title: string
   /** Times this journey has been adopted (the library's popularity signal). */
   adoptCount: number
 }
 
-export interface PracticeCircleLink {
+interface PracticeCircleLink {
   slug: string
   name: string
   /** Active members in the circle. */
   memberCount: number
 }
 
-export interface PracticeBacklinks {
+interface PracticeBacklinks {
   journeys: PracticeJourneyLink[]
   circles: PracticeCircleLink[]
 }
@@ -1928,7 +1928,7 @@ export async function setCirclePractice(
 /** How an adoption is shaped at write time (ADR-920). Omitted entirely = the legacy call:
  *  an ongoing self adoption with no term (journey enrollment and internal callers pass
  *  explicit shapes as the phases land). */
-export interface AdoptOptions {
+interface AdoptOptions {
   /** Preset weeks (2/4/8) or null = ongoing. Coerced through coerceTermWeeks. */
   termWeeks?: number | null
   /** 'self' (default) or 'journey' (enrollment-written; requires journeyPlanId). */
@@ -2087,7 +2087,7 @@ export async function adoptPracticesForJourney(
 }
 
 /** Why a commitment ended (mirrors the DB check). */
-export type RetireReason = 'completed' | 'phase_ended' | 'dropped' | 'swapped'
+type RetireReason = 'completed' | 'phase_ended' | 'dropped' | 'swapped'
 
 /** Reconcile a member's journey-sourced rows for ONE plan against the target set (current leg
  *  union anchors, computed by lib/journeys/leg-targets.ts): retire rows that fell out of the
@@ -2246,7 +2246,7 @@ export async function dropMemberPractice(
 
 // --- Activity history -----------------------------------------------------
 
-export interface PracticeLogEntry {
+interface PracticeLogEntry {
   logged_for: string
   title: string | null
 }
@@ -2377,7 +2377,7 @@ export async function getPartialMapToday(
  *  were retired (ADR-253) — daily logs no longer grant journey/co-op rewards — so this now
  *  carries only the surviving daily-loop bonus (Spark, the v3 variable layer). Kept under the
  *  `journey` key for a stable toast/action contract (on-air/actions → reveal.tsx). */
-export interface LogBonusResult {
+interface LogBonusResult {
   bonuses: { label: string; kind: 'zaps' | 'gems'; amount: number }[]
   zaps: number
   gems: number

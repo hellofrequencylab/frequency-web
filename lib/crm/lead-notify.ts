@@ -36,7 +36,7 @@ const PREVIEW_MAX = 300
 
 type Admin = ReturnType<typeof createAdminClient>
 
-export interface LeadNotifyInput {
+interface LeadNotifyInput {
   spaceId: string
   spaceSlug: string
   spaceName: string

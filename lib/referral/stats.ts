@@ -16,14 +16,14 @@ export interface ReferrerRow {
   zaps: number
 }
 
-export interface ReferralActivityRow {
+interface ReferralActivityRow {
   id: string
   name: string
   handle: string
   at: string | null
 }
 
-export interface ReferralStats {
+interface ReferralStats {
   signups: number
   activated: number
   pending: number

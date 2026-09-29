@@ -19,7 +19,7 @@ import { readZipEntries } from './zip'
 /** Rows to read from the sheet (matches the pipeline's staging cap). */
 const MAX_ROWS = 5000
 
-export interface XlsxParseResult {
+interface XlsxParseResult {
   source: ParsedSource | null
   /** A calm, member-safe reason when the workbook could not be read (null on success). */
   error: string | null

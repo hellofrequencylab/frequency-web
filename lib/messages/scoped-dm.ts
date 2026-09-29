@@ -38,13 +38,13 @@ import type { Capability } from '@/lib/core/capabilities'
 // access; the rate limiter fails closed in production when unconfigured (lib/rate-limit).
 
 /** A hub/nexus place-tree scope for the subtree membership gate. */
-export interface PlaceTreeScope {
+interface PlaceTreeScope {
   kind: 'hub' | 'nexus'
   id: string
 }
 
 /** The scope a DM is being opened FROM (the surface the leader is standing on). */
-export interface ScopedDmInput {
+interface ScopedDmInput {
   scope: { kind: 'event' | 'circle' | 'hub' | 'nexus' | 'space'; id: string }
   targetProfileId: string
 }

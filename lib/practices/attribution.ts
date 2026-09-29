@@ -81,7 +81,7 @@ export interface AttributedLogRow {
  *  from logs with no resolvable Pillar (a no-Pillar practice, or a deleted one with no
  *  snapshot). `total` is the wallet-side sum, and the conservation invariant holds:
  *  Σ byPillar + unattributed === total. */
-export interface PillarZapTotals {
+interface PillarZapTotals {
   byPillar: Record<string, number>
   unattributed: number
   total: number

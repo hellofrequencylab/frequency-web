@@ -39,9 +39,9 @@ import type { BroadcastSegment } from '@/components/comms/broadcast-types'
 // `guestEmails`.
 
 /** The always-first segment: the Message Attendees audience (going or maybe). */
-export const ATTENDEES_SEGMENT_KEY = 'attendees'
+const ATTENDEES_SEGMENT_KEY = 'attendees'
 export const TICKET_HOLDERS_SEGMENT_KEY = 'tickets'
-export const CHECKED_IN_SEGMENT_KEY = 'checked-in'
+const CHECKED_IN_SEGMENT_KEY = 'checked-in'
 
 /** Read caps, mirroring the CRM roster's posture (lib/events/crm-roster.ts). */
 const TICKET_ROWS_CAP = 2000
@@ -51,7 +51,7 @@ const CHECKIN_ROWS_CAP = 2000
 
 /** The columns a ticket row may carry into `ticketSegments`. All optional and unknown-typed so
  *  the untyped admin read can be handed straight in (ADR-246). */
-export type TicketAudienceRow = {
+type TicketAudienceRow = {
   buyer_profile_id?: unknown
   ticket_type_id?: unknown
   guest_email?: unknown
@@ -61,7 +61,7 @@ export type TicketAudienceRow = {
 
 /** Lowercase + trim, the same normalisation reserve_ticket_atomic applies on write and the
  *  cancellation notice applies on read, so one address held two ways matches itself. */
-export function normalizeGuestEmail(raw: unknown): string | null {
+function normalizeGuestEmail(raw: unknown): string | null {
   if (typeof raw !== 'string') return null
   const email = raw.trim().toLowerCase()
   return email ? email : null
@@ -269,7 +269,7 @@ export async function loadEventBroadcastSegments(eventId: string): Promise<Broad
  *  on their ticket (LIVE-320). The two lists are disjoint by construction (a claimed ticket is a
  *  member row); the per-address overlap between a member's account email and a guest address is
  *  the caller's to resolve with `guestEmailsNotHeldByMembers` once member emails are known. */
-export interface EventBroadcastReach {
+interface EventBroadcastReach {
   profileIds: string[]
   guestEmails: string[]
 }

@@ -59,7 +59,7 @@ function revalidateLanding(slug: string) {
 
 // ── FAQ (operator-gated) ─────────────────────────────────────────────────────────────────────────
 
-export interface FaqInput {
+interface FaqInput {
   question: string
   answer: string
   position?: number
@@ -142,7 +142,7 @@ export async function deleteSpaceFaq(slug: string, id: string): Promise<ActionRe
 
 // ── Reviews (member-gated: signed-in member, author = caller, NOT the owner) ──────────────────────
 
-export interface ReviewInput {
+interface ReviewInput {
   rating: number
   body: string
 }

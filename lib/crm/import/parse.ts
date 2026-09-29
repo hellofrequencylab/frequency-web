@@ -72,7 +72,7 @@ function normalizeArrayParsed(data: unknown): ParsedSource {
 
 /** Parse a chosen CSV File into headers + row objects. Resolves even on a partial parse (bad
  *  rows are dropped by Papa, never thrown), so a messy file still onboards. */
-export function parseCsvFile(file: File): Promise<ParsedSource> {
+function parseCsvFile(file: File): Promise<ParsedSource> {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: false,
@@ -111,7 +111,7 @@ export const EXTRACTED_HEADERS = ['Name', 'Email', 'Phone', 'Company', 'Notes'] 
 
 /** A contact lifted from free text (mirrors ai.ts ExtractedContact, redeclared here so this
  *  CLIENT-safe module never imports the server-only AI kernel). */
-export interface ExtractedContactLike {
+interface ExtractedContactLike {
   name?: string
   email?: string
   phone?: string
@@ -184,7 +184,7 @@ function extensionOf(name: string): string {
 
 /** What a local parse produced: the parsed source + which adapter handled it (so the caller can
  *  message "we read your notes" vs "we read your spreadsheet"). */
-export interface LocalParse {
+interface LocalParse {
   source: ParsedSource
   kind: 'csv' | 'vcard' | 'json' | 'notes'
 }

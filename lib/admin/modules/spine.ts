@@ -48,7 +48,7 @@ export const SPINE_ORDER: readonly AdminSlot[] = [
 ] as const
 
 /** A spine category's browse chrome: its noun label (voice canon — no em dashes) + Lucide icon. */
-export interface SpineMeta {
+interface SpineMeta {
   label: string
   Icon: LucideIcon
 }
@@ -114,7 +114,7 @@ interface SpineApp {
 }
 
 /** One populated spine category: its slot and the ordered ids of the apps that landed in it. */
-export interface SpineGroup {
+interface SpineGroup {
   slot: AdminSlot
   appIds: string[]
 }
@@ -174,7 +174,7 @@ export function tierForApp(a: { category: AdminSlot | 'element'; tier?: RailTier
 }
 
 /** One populated (tier, slot) section: its band, its spine slot, and the ordered ids of its apps. */
-export interface TierSlotGroup {
+interface TierSlotGroup {
   tier: RailTier
   slot: AdminSlot
   appIds: string[]

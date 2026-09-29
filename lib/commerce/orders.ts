@@ -11,7 +11,7 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-export interface OrderItem {
+interface OrderItem {
   id: string
   title: string
   qty: number

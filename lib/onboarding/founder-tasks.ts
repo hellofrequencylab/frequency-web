@@ -15,11 +15,11 @@ import { FOUNDER_TASKS, type FounderTaskCopy, type FounderTaskKey } from '@/lib/
 
 export type { FounderTaskKey } from '@/lib/onboarding/founder-config'
 
-export interface FounderTask extends FounderTaskCopy {
+interface FounderTask extends FounderTaskCopy {
   done: boolean
 }
 
-export interface FounderTasks {
+interface FounderTasks {
   tasks: FounderTask[]
   doneCount: number
   total: number

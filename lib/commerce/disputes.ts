@@ -18,7 +18,7 @@ function db(): SupabaseClient {
 export type DisputeStatus = 'open' | 'reviewing' | 'resolved_refund' | 'resolved_denied' | 'cancelled'
 
 /** The live (unresolved) statuses that make up the operator work queue. */
-export const OPEN_DISPUTE_STATUSES: readonly DisputeStatus[] = ['open', 'reviewing'] as const
+const OPEN_DISPUTE_STATUSES: readonly DisputeStatus[] = ['open', 'reviewing'] as const
 
 export interface CommerceDispute {
   id: string

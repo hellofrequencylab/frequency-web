@@ -40,7 +40,7 @@ type AdminHandle = { from(table: string): Q }
 
 export type GuestRsvpStatus = 'going' | 'maybe' | 'declined'
 
-export interface EventGuestInput {
+interface EventGuestInput {
   /** The QR owner — resolved from the signed token, never the client. */
   inviterProfileId: string
   /** The stamped event — resolved from the signed token, never the client. */
@@ -53,7 +53,7 @@ export interface EventGuestInput {
   meta?: Record<string, unknown>
 }
 
-export interface EventGuestResult {
+interface EventGuestResult {
   /** True when the PRIORITY legs (guest + personal book) both landed. */
   ok: boolean
   guestId: string | null

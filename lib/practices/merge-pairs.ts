@@ -21,7 +21,7 @@ export interface MergeCandidateInput {
 
 /** One suggested merge: fold the duplicate INTO the canonical. Direction is the default
  *  (pending → existing); the curator can flip it in the panel before confirming. */
-export interface MergePair {
+interface MergePair {
   /** The practice that folds away (re-points its FKs onto the canonical, then archives). */
   duplicate: { id: string; title: string }
   /** The practice that is kept (kept slug + history). */

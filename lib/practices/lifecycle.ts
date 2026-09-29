@@ -95,7 +95,7 @@ export function completionBody(title: string, termWeeks: number | null): string 
 
 // ── IO ──────────────────────────────────────────────────────────────────────────────
 
-export interface LifecycleSweepResult {
+interface LifecycleSweepResult {
   completionsRetired: number
   completionNotices: number
   remindersSent: number
@@ -108,7 +108,7 @@ export interface LifecycleSweepResult {
   stoppedOnBudget: boolean
 }
 
-export interface LifecycleSweepOptions {
+interface LifecycleSweepOptions {
   /** Rows one phase reads (default SWEEP_CAP). Applied to every phase's driving query. */
   limit?: number
   /** Wall-clock check from the cron budget; true means stop before the next row. */
@@ -118,11 +118,11 @@ export interface LifecycleSweepOptions {
 /** Days of silence before an ONGOING self adoption earns the one quiet "still keeping this?"
  *  prompt. Two weeks: one missed day is noise (Lally), a fortnight of silence is a real
  *  signal the list is carrying dead weight against the few-held-practices aim. */
-export const STALE_AFTER_DAYS = 14
+const STALE_AFTER_DAYS = 14
 
 /** The UTC hour the once-daily staleness pass runs in (a quiet hour; the prompt's exact
  *  arrival time carries no meaning, so once a day anywhere is right and hourly was a tax). */
-export const STALE_SWEEP_UTC_HOUR = 4
+const STALE_SWEEP_UTC_HOUR = 4
 
 /** Chunk size for `.in()` id lists: keeps every request's URL and response comfortably under
  *  PostgREST's limits (a 2000-uuid GET was the review's confirmed silent-failure mode). */

@@ -18,7 +18,7 @@ function phoneKey(phone: string | null): string | null {
   return digits.length > 10 ? digits.slice(-10) : digits
 }
 
-export interface ImportResult {
+interface ImportResult {
   added: number
   skipped: number
   total: number

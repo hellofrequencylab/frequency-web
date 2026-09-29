@@ -29,7 +29,7 @@ function digitCount(s: string): number {
   return n
 }
 
-export interface RedactionResult {
+interface RedactionResult {
   /** The body with phones + emails replaced by plain placeholders. */
   redacted: string
   /** The original contact strings that were lifted out (deduped, trimmed). */

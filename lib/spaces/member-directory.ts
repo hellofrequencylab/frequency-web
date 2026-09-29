@@ -23,9 +23,9 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getMyMembership } from '@/lib/spaces/memberships'
 import type { Space } from '@/lib/spaces/types'
 
-export const DIRECTORY_CAP = 200
+const DIRECTORY_CAP = 200
 
-export type DirectoryPerson = {
+type DirectoryPerson = {
   profileId: string
   displayName: string
   handle: string

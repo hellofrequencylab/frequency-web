@@ -32,7 +32,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 /** How many days of the send the engagement timeline draws (a display cap, not an attribution rule —
  *  attribution is now by campaign id, so this only bounds how far the sparkline extends). */
-export const TIMELINE_WINDOW_DAYS = 30
+const TIMELINE_WINDOW_DAYS = 30
 
 /** The Resend event types we tally, as stored in `email_events.event_type` (the webhook strips
  *  the `email.` prefix). `unsubscribed` is included for forward-compatibility: Resend does not
@@ -60,7 +60,7 @@ export interface EventCounts {
 }
 
 /** The three engagement rates, each a FRACTION in [0, 1] (a component renders them as %). */
-export interface CampaignRates {
+interface CampaignRates {
   /** opened / delivered. Soft upper bound — inflated by Apple MPP; weight clickRate. */
   openRate: number
   /** clicked / delivered. The reliable engagement signal. */
@@ -76,7 +76,7 @@ export interface CampaignRates {
  *                sent / delivered come from the recorded recipient_count; open / click are
  *                UNAVAILABLE (0). The panel must NOT present those zeros as engagement.
  */
-export type AttributionMode = 'exact' | 'legacy'
+type AttributionMode = 'exact' | 'legacy'
 
 /** Everything the analytics panel needs for one campaign: raw counts, rates, and flags. Superset
  *  of the documented { sent, delivered, ... } shape. */
@@ -330,7 +330,7 @@ export async function getMarketingEmailOverview(): Promise<MarketingEmailOvervie
 }
 
 /** One day of the engagement timeline: an ISO date (YYYY-MM-DD) with that day's open + click tallies. */
-export interface CampaignTimelinePoint {
+interface CampaignTimelinePoint {
   day: string
   opened: number
   clicked: number

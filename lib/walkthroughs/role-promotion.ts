@@ -22,7 +22,7 @@ import { ROLE_HIERARCHY, roleRank, type CommunityRole } from '@/lib/core/roles'
 // The advancement steps we ship a tour for. The 'crew' rung is a deprecated no-op
 // (lib/core/roles), so the ladder a member actually climbs is member → host → guide →
 // mentor. We ship one tour per non-trivial step up that ladder.
-export type PromotionStep = 'host' | 'guide' | 'mentor'
+type PromotionStep = 'host' | 'guide' | 'mentor'
 
 /** The slug each promotion tour stores its per-member progress under (the key in
  *  profiles.meta.walkthroughs[slug]). Stable, lowercase-alphanumeric-with-hyphens so
@@ -34,12 +34,12 @@ export const ROLE_PROMOTION_SLUG: Record<PromotionStep, string> = {
 }
 
 /** Reverse lookup: progress slug → the role it celebrates. */
-export const SLUG_TO_PROMOTION_STEP: Record<string, PromotionStep> = Object.fromEntries(
+const SLUG_TO_PROMOTION_STEP: Record<string, PromotionStep> = Object.fromEntries(
   (Object.entries(ROLE_PROMOTION_SLUG) as [PromotionStep, string][]).map(([step, slug]) => [slug, step]),
 )
 
 /** Every role-promotion slug — the set the feed surfacing + progress reads gate on. */
-export const ROLE_PROMOTION_SLUGS: readonly string[] = Object.values(ROLE_PROMOTION_SLUG)
+const ROLE_PROMOTION_SLUGS: readonly string[] = Object.values(ROLE_PROMOTION_SLUG)
 
 // ── Tour content ─────────────────────────────────────────────────────────────────
 // Voice: warm, plain, a camp counselor you respect (docs/CONTENT-VOICE.md). No em

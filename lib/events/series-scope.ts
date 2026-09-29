@@ -35,7 +35,7 @@ export function parseSeriesScope(raw: unknown): SeriesScope {
 }
 
 /** What is being edited. */
-export interface SeriesShape {
+interface SeriesShape {
   /** The row the host opened. */
   id: string
   /** Its anchor, when the row is one materialised date OF a series. Null when it is not. */
@@ -44,7 +44,7 @@ export interface SeriesShape {
   isAnchor: boolean
 }
 
-export interface SeriesWritePlan {
+interface SeriesWritePlan {
   /** True when this row belongs to a series at all, so the control has a question to ask. */
   inSeries: boolean
   /** Where the repeat rule may be written, or null when this save must not touch it.

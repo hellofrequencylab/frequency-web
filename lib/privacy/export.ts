@@ -160,13 +160,13 @@ export const MEMBER_EXPORT_SECTIONS = [
   'crmActivities',
 ] as const
 
-export type MemberExportSection = (typeof MEMBER_EXPORT_SECTIONS)[number]
+type MemberExportSection = (typeof MEMBER_EXPORT_SECTIONS)[number]
 
 type Rows = Record<string, unknown>[]
 
 /** Why a section stopped short. See `meta.truncated`. */
-export type MemberExportTruncationReason = 'ceiling' | 'read_failed'
-export type MemberExportTruncation = {
+type MemberExportTruncationReason = 'ceiling' | 'read_failed'
+type MemberExportTruncation = {
   section: MemberExportSection
   reason: MemberExportTruncationReason
 }
@@ -186,7 +186,7 @@ export const EXPORT_PAGE_SIZE = 1000
 export const EXPORT_READ_CEILING = 25_000
 
 /** One paged read's outcome: every row it reached, and why it stopped short if it did. */
-export type PagedRead = { rows: Rows; truncated: MemberExportTruncationReason | null }
+type PagedRead = { rows: Rows; truncated: MemberExportTruncationReason | null }
 
 type PageResponse = { data: Rows | null; error: unknown }
 /**
@@ -258,7 +258,7 @@ function handleOf(joined: unknown): string | null {
  * A friendship row as the member sees it: no profile ids, the other half as a handle, and
  * whether the member was the one who asked. `me` is the caller id the row was filtered on.
  */
-export function reduceFriendship(row: Record<string, unknown>, me: string): Record<string, unknown> {
+function reduceFriendship(row: Record<string, unknown>, me: string): Record<string, unknown> {
   const { user_a_id, user_b_id: _b, requested_by, a, b, introducer, ...rest } = row
   return {
     ...rest,

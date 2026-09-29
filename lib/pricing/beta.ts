@@ -100,7 +100,7 @@ export function effectiveCatalogAmounts(amounts: CatalogAmounts, betaActive: boo
 export type LoadoutChargeArm = 'lock' | 'founding' | 'list'
 
 /** The three facts the charge decision needs. Resolved by the caller (IO), decided here (pure). */
-export interface LoadoutChargeInput {
+interface LoadoutChargeInput {
   /** The Space's grandfathered locked price id for THIS item, or null/blank when it holds none
    *  (`readLockedPriceId`, which already fail-safes a lapsed / canceled item to null). */
   lockedPriceId?: string | null

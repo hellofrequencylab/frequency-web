@@ -25,9 +25,9 @@ export function journeyWrongTierMessage(spaceName: string, tierName: string): st
   return `This Journey is for the ${tierName} membership at ${spaceName}.`
 }
 
-export const JOURNEY_TIER_UNAVAILABLE_MESSAGE = 'This Journey is not available.'
+const JOURNEY_TIER_UNAVAILABLE_MESSAGE = 'This Journey is not available.'
 
-export type JourneyTierCheck = { ok: true } | { ok: false; error: string; href: string | null }
+type JourneyTierCheck = { ok: true } | { ok: false; error: string; href: string | null }
 
 /**
  * Does this membership clear a Journey's optional tier gate? PURE.

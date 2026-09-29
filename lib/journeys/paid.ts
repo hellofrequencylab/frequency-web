@@ -18,7 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export const SEATS_VISIBLE_AT = 5
 
 /** The sellable face of a Journey, or null when it is free. */
-export interface JourneyOffer {
+interface JourneyOffer {
   productId: string
   priceCents: number
   currency: string

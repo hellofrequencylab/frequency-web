@@ -27,15 +27,15 @@ import { awardZaps } from '@/lib/zaps'
 
 /** Probability that an eligible member's call fires a Spark. Low by design — the whole
  *  point is that it's rare and unpredictable. Tunable (ADR-305 open follow-up). */
-export const SPARK_RATE = 0.04
+const SPARK_RATE = 0.04
 
 /** Spark is Gems by default (continuous + spendable, so a lucky roll never touches
  *  season rank). The small bonus size. */
-export const SPARK_GEMS = 5
+const SPARK_GEMS = 5
 
-export type SparkCurrency = 'gems' | 'zaps'
+type SparkCurrency = 'gems' | 'zaps'
 
-export interface SparkContext {
+interface SparkContext {
   /** Where the Spark fired (e.g. 'practice_log') — stored for analysis. */
   source?: string
   /** Which currency to grant. Defaults to Gems (rank-safe). */
@@ -44,7 +44,7 @@ export interface SparkContext {
   day?: string
 }
 
-export interface SparkResult {
+interface SparkResult {
   /** A Spark fired and was paid. */
   sparked: boolean
   currency: SparkCurrency

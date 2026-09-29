@@ -49,10 +49,10 @@ export type ItemDrift =
   | { state: 'custom' }
 
 /** The operator-owned fields the edited diff inspects. */
-export type EditedField = 'label' | 'subheading' | 'visibility'
+type EditedField = 'label' | 'subheading' | 'visibility'
 
 /** A code default no live row points at, split by the `synced_default_keys` baseline. */
-export type AbsentDefault = {
+type AbsentDefault = {
   label: string
   href: string
   /** retired = in the baseline, the sync will never bring it back; missing = new, the next sync adds it. */
@@ -61,7 +61,7 @@ export type AbsentDefault = {
   mislabelledAs?: string
 }
 
-export type MenuDrift = {
+type MenuDrift = {
   /** Live item id → its drift state. The fixed pinned rail row is skipped (it has no DB row). */
   items: Record<string, ItemDrift>
   /** Code defaults absent from this menu, in code-default order. */

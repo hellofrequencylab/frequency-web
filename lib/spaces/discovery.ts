@@ -55,7 +55,7 @@ import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 
 /** The one resolved action a directory card paints (the operator-configured header CTA, resolved to a
  *  real surface label + href off the Space base path). */
-export interface NetworkedSpaceAction {
+interface NetworkedSpaceAction {
   label: string
   href: string
 }
@@ -131,7 +131,7 @@ export const SPACE_SORTS: readonly SpaceSort[] = ['standing', 'name', 'newest', 
 export const DEFAULT_SPACE_SORT: SpaceSort = 'standing'
 
 /** The filters the directory passes in. All optional; absent = unfiltered. */
-export interface DiscoveryFilters {
+interface DiscoveryFilters {
   /** Narrow to one entity type (practitioner / business / organization / coaching / event_space). */
   type?: string
   /** Free-text query over name / brand name / slug (case-insensitive substring). */
@@ -158,7 +158,7 @@ export interface DiscoveryFilters {
 }
 
 /** Optional pagination window for the paged directory read. Absent = the whole (bounded) set. */
-export interface DiscoveryPage {
+interface DiscoveryPage {
   /** Max rows in the returned page. Absent = no slice (return from `offset` to the end). */
   limit?: number
   /** Rows to skip before the page (0-based). Absent = 0. */
@@ -166,7 +166,7 @@ export interface DiscoveryPage {
 }
 
 /** True when `value` is one of the four known sorts. PURE. */
-export function isSpaceSort(value: unknown): value is SpaceSort {
+function isSpaceSort(value: unknown): value is SpaceSort {
   return typeof value === 'string' && (SPACE_SORTS as readonly string[]).includes(value)
 }
 
@@ -625,7 +625,7 @@ export const listNetworkedSpaces = cache(
 
 /** A page of the directory: the sliced rows + the TOTAL matching the filters (so the UI can render a
  *  pager for 12 / 24 / 48 per page). */
-export interface NetworkedSpacePage {
+interface NetworkedSpacePage {
   spaces: NetworkedSpace[]
   /** Total networked Spaces matching the filters, BEFORE the page slice. */
   total: number
@@ -714,7 +714,7 @@ function declaredPageSlugs(preferences: unknown): string[] {
 
 /** One advertisable profile tab: the Space's slug + the path segment under it. `segment` is a
  *  single path segment (`shop`, or an operator page slug); the caller joins it. */
-export interface SpaceProfileTabRoute {
+interface SpaceProfileTabRoute {
   slug: string
   segment: string
   /** The Space row's `updated_at` (LIVE-197), or null. Carried so the tab entries take the same

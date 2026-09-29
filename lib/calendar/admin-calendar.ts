@@ -67,7 +67,7 @@ async function listOwnedEventRows(spaceId: string, now: Date): Promise<OwnedRow[
   return [...past, ...upcoming].sort((a, b) => (a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : 0))
 }
 
-export interface AdminCalendar {
+interface AdminCalendar {
   events: CalendarEvent[]
   /** Every event under the Space, for the console's counts and its manage table. */
   ownedRows: OwnedRow[]

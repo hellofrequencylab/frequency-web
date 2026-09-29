@@ -222,7 +222,7 @@ export async function setSpaceSeatQuantity(spaceId: string, seatQuantity: number
 
 /** The outcome of a seat check: `allowed` true means the operator seat may be taken; false carries a
  *  clean, member-facing reason + the seat usage so the surface can say "X of Y seats used". */
-export interface SeatCheck {
+interface SeatCheck {
   allowed: boolean
   /** A clean failure message when not allowed (voice rules, no em dashes). */
   reason?: string

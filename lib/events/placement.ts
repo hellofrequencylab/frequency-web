@@ -17,7 +17,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export type PlacementTargetType = 'space' | 'circle'
 
 /** A resolvable placement target (Space or Circle) with display fields. */
-export interface PlacementTargetRef {
+interface PlacementTargetRef {
   type: PlacementTargetType
   id: string
   name: string
@@ -34,7 +34,7 @@ export interface PlacementView {
 }
 
 /** One row of a steward's pending-placement inbox. */
-export interface PendingPlacementRequest {
+interface PendingPlacementRequest {
   id: string
   eventId: string
   eventTitle: string
@@ -204,7 +204,7 @@ export function clearPlacementPatch(current: {
 // tested, rather than restated at each call site until the copies drift.
 
 /** A Journey (journey_plans) an Event can be linked to, as the picker + editor field render it. */
-export interface JourneyRef {
+interface JourneyRef {
   id: string
   title: string
   slug: string

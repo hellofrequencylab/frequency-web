@@ -29,7 +29,7 @@ interface StepRow {
   subject: string; body: string; enabled: boolean; block_json: unknown
 }
 
-export interface NurtureRunResult {
+interface NurtureRunResult {
   processed: number
   sent: number
   completed: number

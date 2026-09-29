@@ -27,7 +27,7 @@ import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { routeSpaceSubscription } from './space-subscriptions'
 import type { BillingInterval } from '@/lib/spaces/membership-pricing'
 
-export interface SpaceMembershipCheckoutResult {
+interface SpaceMembershipCheckoutResult {
   url?: string
   /** An on-page (elements) session's secret. EXACTLY ONE of this and `url` is ever set: an elements
    *  session has no url, and a hosted one has no secret. Branch on what came back, never on what was

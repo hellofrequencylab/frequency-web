@@ -199,7 +199,7 @@ export interface SlotHeaderState {
 
 /** The editor's full view of a scope's layout: the chosen interior template, every module in
  *  slot/render order, and each slot's optional row header (keyed by slot id). */
-export interface LayoutEditorState {
+interface LayoutEditorState {
   template: TemplateId
   items: LayoutEditorItem[]
   /** Per-slot row header (text + on/off), keyed by slot id. A slot with no header is absent. */

@@ -298,7 +298,7 @@ export function spaceCanUseAdvancedSegments(space: SpaceLike | null | undefined)
 
 /** What a person may do on a Space. Derived from owner + their space-member role; consumed by the
  *  profile/settings surfaces (the profile agents read this). */
-export interface SpaceCapabilities {
+interface SpaceCapabilities {
   /** Is the viewer the Space owner? (spaces.owner_profile_id). */
   isOwner: boolean
   /** Is the viewer a Space admin? (owner, OR an active `admin` member). */
@@ -397,7 +397,7 @@ export async function getSpaceCapabilities(
  *  An owner surface renders when `canManage || staffViewing`, and 404s for everyone else (no
  *  existence leak). Only the EXECUTIVE admin (janitor / web_role) gets the staff preview — a Site
  *  Admin does not reach into another operator's owner back-end. */
-export interface SpaceManageAccess {
+interface SpaceManageAccess {
   /** May the viewer edit (owner / admin / editor). The existing canEditProfile authority. */
   canManage: boolean
   /** Is the viewer a janitor PREVIEWING a Space they do not manage (read-only)? */

@@ -16,7 +16,7 @@ import { config } from '@/lib/page-editor/config'
 // The quick panel is the one surface that reads + writes it.
 
 /** A Puck top-level block: a type + its props, plus the optional quick-panel `hidden` flag. */
-export interface SpaceBlock {
+interface SpaceBlock {
   type: string
   props?: Record<string, unknown>
   /** Quick-panel visibility flag. `true` = hidden from the public page. Absent = visible. */
@@ -25,7 +25,7 @@ export interface SpaceBlock {
 
 /** One row the Page panel renders for a top-level block: its stable id, its human label, its
  *  position, and whether it is hidden. PURE view-model (no React). */
-export interface SpaceBlockRow {
+interface SpaceBlockRow {
   /** The block's stable Puck id (props.id), or a positional fallback when a block has none. */
   id: string
   /** The block's TYPE (e.g. 'SpaceLayout'), for the icon + a stable key. */

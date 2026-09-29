@@ -10,7 +10,7 @@ import type { ResonanceTier } from '@/lib/traits/compute'
 export type TierTone = 'success' | 'warning' | 'danger'
 
 /** How the platform / Space reads overall, from the mean Resonance Health. */
-export type HealthVerdict = 'healthy' | 'mixed' | 'strained'
+type HealthVerdict = 'healthy' | 'mixed' | 'strained'
 
 /** Band the mean health into a one-word standing for the verdict line. PURE. Matches the
  *  resonanceTier thresholds so the sentence agrees with the colored stat. */

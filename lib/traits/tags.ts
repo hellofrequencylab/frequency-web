@@ -11,7 +11,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTagKey } from './registry'
 
-export interface AssignTagOptions {
+interface AssignTagOptions {
   source?: string
   assignedBy?: string | null
   expiresAt?: string | null

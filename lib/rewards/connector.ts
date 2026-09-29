@@ -30,9 +30,9 @@ import { processGamificationEvent } from '@/lib/achievements'
 
 // ── PURE: the reward economy (source of truth for connector amounts) ─────────────
 
-export type ConnectorOutcome = 'capture' | 'rsvp' | 'attend' | 'join'
+type ConnectorOutcome = 'capture' | 'rsvp' | 'attend' | 'join'
 
-export interface ConnectorReward {
+interface ConnectorReward {
   /** Zaps paid to the inviter for this outcome (external / in-person → zaps). */
   zaps: number
   /** Gems paid on top (only the join outcome carries a 💎 bonus). */
@@ -59,7 +59,7 @@ export const CONNECTOR_DAILY_CAP = 25
 
 /** The gem action key the join 💎 bonus is paid under (needs a gem_config row —
  *  seeded in the connector migration; a missing row makes the gem leg a safe no-op). */
-export const CONNECTOR_JOIN_GEM_ACTION = 'connector_join'
+const CONNECTOR_JOIN_GEM_ACTION = 'connector_join'
 
 // ── PURE: the "real connection" predicate + the Connector achievement tiers ──────
 
@@ -82,7 +82,7 @@ export function outcomeIsRealConnection(outcome: ConnectorOutcome): boolean {
   return outcome === 'rsvp' || outcome === 'attend' || outcome === 'join'
 }
 
-export interface ConnectorTier {
+interface ConnectorTier {
   slug: string
   threshold: number
 }
@@ -109,13 +109,13 @@ export function connectorRuleKey(outcome: ConnectorOutcome, inviterProfileId: st
 }
 
 /** PURE: the start-of-UTC-day ISO timestamp for a moment (the daily-cap window floor). */
-export function utcDayStart(at: Date = new Date()): string {
+function utcDayStart(at: Date = new Date()): string {
   return `${at.toISOString().slice(0, 10)}T00:00:00.000Z`
 }
 
 // ── IO: the grant engine (fail-safe, idempotent, daily-capped) ───────────────────
 
-export interface GrantConnectorInput {
+interface GrantConnectorInput {
   /** The inviter (QR owner) being rewarded — resolved server-side, never the client. */
   inviterProfileId: string
   outcome: ConnectorOutcome
@@ -125,7 +125,7 @@ export interface GrantConnectorInput {
   meta?: Record<string, unknown>
 }
 
-export interface GrantConnectorResult {
+interface GrantConnectorResult {
   granted: boolean
   /** True when skipped because this (outcome, inviter, guest) was already paid. */
   duplicate?: boolean

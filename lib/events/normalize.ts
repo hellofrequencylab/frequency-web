@@ -35,13 +35,13 @@ function str(v: unknown, max = 200): string {
 }
 
 /** One tag → trimmed, single-spaced, lowercased, leading-'#' stripped, capped. */
-export function normalizeEventTag(raw: unknown): string {
+function normalizeEventTag(raw: unknown): string {
   const s = typeof raw === 'string' ? raw.trim().replace(/\s+/g, ' ') : ''
   return s.replace(/^#+/, '').trim().toLowerCase().slice(0, 40)
 }
 
 /** Normalize, drop empties, dedupe (first spelling wins), cap count. */
-export function dedupeEventTags(tags: unknown, max = 6): string[] {
+function dedupeEventTags(tags: unknown, max = 6): string[] {
   const arr = Array.isArray(tags) ? tags : []
   const out: string[] = []
   const seen = new Set<string>()

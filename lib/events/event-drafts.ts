@@ -38,7 +38,7 @@ const emptyToNull = (v: string | null | undefined): string | null => {
   return s.length ? s : null
 }
 
-export interface EventDraft {
+interface EventDraft {
   id: string
   title: string | null
   description: string | null
@@ -320,7 +320,7 @@ export async function resendClaimInvite(
 
 // ── Create / read / update drafts (owner-scoped) ─────────────────────────────
 
-export interface DraftInput {
+interface DraftInput {
   title?: string
   description?: string
   startsAt?: string | null
@@ -427,7 +427,7 @@ export async function listMyUnfinishedEventDrafts(
   return ((data ?? []) as unknown as Record<string, unknown>[]).map(mapDraft)
 }
 
-export interface DraftPatch {
+interface DraftPatch {
   title?: string
   description?: string | null
   startsAt?: string | null
@@ -822,7 +822,7 @@ export async function claimEvent(
 
 // ── Remove + clawback (staff / service) ──────────────────────────────────────
 
-export interface RemoveResult {
+interface RemoveResult {
   removed: boolean
   /** The Zaps clawed back from the poster for this event (0 if none / already done). */
   clawedBack: number

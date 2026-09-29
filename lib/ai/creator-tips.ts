@@ -20,13 +20,13 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-export type TipStatus = 'draft' | 'approved' | 'sent' | 'dismissed'
-export type TipContentType = 'journey' | 'practice' | 'challenge' | 'event'
+type TipStatus = 'draft' | 'approved' | 'sent' | 'dismissed'
+type TipContentType = 'journey' | 'practice' | 'challenge' | 'event'
 // 'tip' is a coaching nudge destined for the creator; 'flag' is an internal
 // spam/quality flag for the admin (poster observer) that is NEVER sent.
-export type TipKind = 'tip' | 'flag'
+type TipKind = 'tip' | 'flag'
 
-export interface CreatorTip {
+interface CreatorTip {
   id: string
   creator_id: string
   content_type: TipContentType

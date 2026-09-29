@@ -35,7 +35,7 @@ import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 /** Per-week activity for ONE Circle: how many of its members were active that week, and the
  *  Circle's active-member size that week (the quorum denominator). Ordered most-recent week first
  *  by the caller; index 0 is the current week. PURE input. */
-export interface CircleWeekActivity {
+interface CircleWeekActivity {
   /** Distinct members of the Circle who were active (logged a practice) that week. */
   activeMembers: number
   /** The Circle's active membership that week (the denominator for the quorum). */
@@ -45,7 +45,7 @@ export interface CircleWeekActivity {
 /** A Circle keeps its cooperative streak in a week when at least this FRACTION of its members
  *  were active together. Cooperative, not "everyone or bust": a Circle stays lit when most of
  *  it shows up. */
-export const CIRCLE_QUORUM_FRACTION = 0.5
+const CIRCLE_QUORUM_FRACTION = 0.5
 /** A Circle needs at least this many members before a cooperative streak is meaningful (two is
  *  the floor for "together"). Below it, the streak is 0 (a solo member is not a Circle streak). */
 export const CIRCLE_MIN_SIZE = 2
@@ -139,7 +139,7 @@ export function structuralRiskBoost(risk: StructuralRisk): number {
 // ── IO: the Circle-feed celebration (peer recognition, Vera-drafted) ─────────────
 
 /** What was achieved, for the celebration draft. Plain, in-voice; proper nouns carry the magic. */
-export interface CelebrationContext {
+interface CelebrationContext {
   /** The member's handle (the @mention the Circle sees), without the leading @. */
   handle: string
   /** The kind of milestone: a finished Journey, or reaching Master rank. */
@@ -245,7 +245,7 @@ export async function celebrateInCircleFeed(profileId: string, ctx: CelebrationC
 // ── IO: the one-tap "nudge a Circle-mate about to break theirs" ───────────────────
 
 /** The result of a nudge: whether it reached the mate, and a short reason when it did not. */
-export interface NudgeResult {
+interface NudgeResult {
   nudged: boolean
   reason: 'sent' | 'not_circle_mates' | 'not_at_risk' | 'error'
 }

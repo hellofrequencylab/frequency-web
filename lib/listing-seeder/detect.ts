@@ -59,7 +59,7 @@ function score(text: string, signals: readonly RegExp[]): number {
   return hits
 }
 
-export interface ListingKindDetection {
+interface ListingKindDetection {
   /** The detected vertical, or null when the paste is empty, ambiguous, or a tie. */
   kind: ListingSeedKind | null
   /** 'high' only when one kind clearly wins (enough signals AND a clear margin); else 'low'. */

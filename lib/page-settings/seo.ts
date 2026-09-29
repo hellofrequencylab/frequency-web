@@ -4,7 +4,7 @@ import { normalizeObjectPosition } from '@/lib/images/focal-point'
 // dependency-free so it is unit-tested and shared by the save action. Bounds the text and
 // rejects an unsafe share-image URL (no javascript:, no plain http) before anything is stored.
 
-export interface SeoInput {
+interface SeoInput {
   title?: string | null
   description?: string | null
   /** Compact social-share / OG image (link previews). */
@@ -76,7 +76,7 @@ export type SeoPane = 'basics' | 'meta'
 
 /** The storable field KEYS each pane owns. The save path normalizes the full input, then
  *  writes back ONLY these keys (merged over the existing row), so the other pane is untouched. */
-export const SEO_PANE_FIELDS: Record<SeoPane, readonly (keyof SeoFields)[]> = {
+const SEO_PANE_FIELDS: Record<SeoPane, readonly (keyof SeoFields)[]> = {
   basics: ['seo_title', 'header_image_url', 'header_image_asset_id', 'header_image_focal'],
   meta: ['seo_description', 'og_image_url', 'og_image_asset_id'],
 }

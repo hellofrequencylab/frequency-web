@@ -37,7 +37,7 @@ export interface RouterDeps {
 }
 
 /** Per-send options (frequency cap seed). Passed through to the gate; omit for an uncapped send. */
-export interface RouteOptions {
+interface RouteOptions {
   /** Sends already made in the window + the hard cap, for a frequency-capped type. */
   frequency?: { sentInWindow: number; cap: number }
 }
@@ -45,7 +45,7 @@ export interface RouteOptions {
 /** What happened on one channel. `enqueued` is true only when the gate allowed AND a job was
  *  written; `reason` is the gate's verdict (or 'skipped' when the type rendered no payload for
  *  this channel, so no gate was even run). */
-export interface ChannelOutcome {
+interface ChannelOutcome {
   channel: NotificationChannel
   reason: SendGateReason | 'skipped'
   enqueued: boolean

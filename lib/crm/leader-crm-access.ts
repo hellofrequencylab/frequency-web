@@ -22,7 +22,7 @@ import {
 // bypasses RLS, so this gate — not RLS — is the authority; every caller re-runs it per request.
 
 /** The resolved, capability-checked scope a leader CRM surface operates on. */
-export interface LeaderCrmScope {
+interface LeaderCrmScope {
   id: string
   slug: string
   name: string

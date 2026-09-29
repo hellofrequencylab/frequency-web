@@ -65,7 +65,7 @@
 /** Where a calendar item came from. `events` is the public layer; the rest are private. */
 export type CalendarLayerKey = 'events' | 'pencil' | 'private' | 'unavailable' | 'todos'
 
-export interface CalendarLayer {
+interface CalendarLayer {
   key: CalendarLayerKey
   /** Toggle label in the staff calendar. */
   label: string
@@ -83,7 +83,7 @@ const PENCIL_CHIP_CLASS = 'border border-dashed border-border-strong bg-surface 
 const CHIP_HOVER = 'hover:ring-1 hover:ring-current'
 
 /** One row of CALENDAR_PRESENTATIONS. A stage where the item has one, otherwise its layer. */
-export type CalendarPresentationKey =
+type CalendarPresentationKey =
   | 'event'
   | 'draft'
   | 'pencil'
@@ -332,7 +332,7 @@ export function calendarPrintsWord(audience: CalendarAudience): boolean {
 }
 
 /** The little a presentation needs to know about an item. A `CalendarEvent` satisfies it. */
-export interface PresentableItem {
+interface PresentableItem {
   layer?: CalendarLayerKey | null
   stage?: string | null
   isCancelled?: boolean | null

@@ -117,7 +117,7 @@ export const DEFAULT_PREFERENCES: NotificationPreferences = {
 // Per-category frequency map (one `freq_<category>` per NotificationCategory). Kept
 // separate from the boolean grid so the historical NotificationPreferences shape is
 // unchanged for existing callers; the DB row carries both (same table).
-export type CategoryFrequencies = Record<`freq_${NotificationCategory}`, NotificationFrequency>
+type CategoryFrequencies = Record<`freq_${NotificationCategory}`, NotificationFrequency>
 
 export const DEFAULT_FREQUENCIES: CategoryFrequencies = {
   freq_dispatches: 'realtime',
@@ -154,7 +154,7 @@ export async function getPreferences(profileId: string): Promise<NotificationPre
 // Read the member's per-category delivery cadence. Missing row / missing columns /
 // any error -> all `realtime` (today's behaviour), so this is safe on a pre-Phase-6
 // row and never accidentally defers a send.
-export async function getFrequencies(profileId: string): Promise<CategoryFrequencies> {
+async function getFrequencies(profileId: string): Promise<CategoryFrequencies> {
   try {
     const admin = createAdminClient()
     const { data } = await admin

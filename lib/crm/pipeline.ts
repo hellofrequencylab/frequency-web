@@ -455,7 +455,7 @@ async function resolveContactLabels(ids: string[], spaceId: string): Promise<Map
   return map
 }
 
-export type PipelineMetrics = {
+type PipelineMetrics = {
   openCount: number
   openValue: number
   wonValue: number

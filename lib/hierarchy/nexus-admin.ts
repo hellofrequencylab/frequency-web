@@ -87,7 +87,7 @@ export async function updateNexusField(id: string, slug: string, field: InlineFi
 // authority); returns null for anyone else. Reuses the SAME hubs-by-nexus read the nexus detail page
 // runs (app/(main)/nexuses/[slug]/page.tsx).
 
-export interface NexusHubRow {
+interface NexusHubRow {
   id: string
   name: string
   slug: string

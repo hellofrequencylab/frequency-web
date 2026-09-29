@@ -20,7 +20,7 @@ const EXT_BY_TYPE: Record<string, string> = {
   'image/webp': 'webp',
 }
 
-export type ProfileImageKind = 'avatar' | 'header'
+type ProfileImageKind = 'avatar' | 'header'
 
 /**
  * Upload a profile image to the public `avatars` bucket and return its public URL

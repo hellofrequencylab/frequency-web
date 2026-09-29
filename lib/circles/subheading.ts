@@ -31,7 +31,7 @@
 
 /** The facts the rule reads. A loose shape on purpose: it is fed from `CircleDetail`, from a
  *  `SpaceCircle` row, and from tests, and none of the three should have to build a class. */
-export interface CircleSubheadingFacts {
+interface CircleSubheadingFacts {
   /** `circles.about`, the Circle's own description. */
   about?: string | null
   /** `circles.type`: an online Circle has no place to name. */

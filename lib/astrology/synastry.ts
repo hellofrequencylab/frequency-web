@@ -62,7 +62,7 @@ const PAIR_REASON: Record<string, string> = {
   'mercury:mercury': 'your Mercuries sit at an easy angle',
 }
 
-export interface ChartCompatibility {
+interface ChartCompatibility {
   score: number // 0..1
   /** A short, plain, never-overstated reason. */
   reason: string

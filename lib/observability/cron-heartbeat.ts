@@ -209,7 +209,7 @@ export const CRON_CEILING_MS = 300_000
  *  beside its handler, where the number is reviewed with the work it bounds. */
 export const DEFAULT_CRON_BUDGET_MS = CRON_CEILING_MS / 5
 
-export interface CronHeartbeatOptions {
+interface CronHeartbeatOptions {
   /** The stated per-invocation budget for this route, in ms. Defaults to DEFAULT_CRON_BUDGET_MS. */
   budgetMs?: number
 }

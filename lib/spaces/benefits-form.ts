@@ -261,7 +261,7 @@ export function draftEffectLine(
 // ── PURE: draft to wire ─────────────────────────────────────────────────────────────────────────
 
 /** A converted set, or the first thing an operator has to fix. */
-export type BenefitConversion =
+type BenefitConversion =
   | { ok: true; benefits: MemberBenefit[] }
   | { ok: false; error: string }
 

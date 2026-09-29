@@ -22,10 +22,10 @@ import { getJourneyOffer } from './paid'
 import { journeyHasRoom, JOURNEY_FULL_MESSAGE } from './journey-access'
 import { checkJourneyTier } from './tier-gate'
 
-export type FreeEnrolCheck = { ok: true } | { ok: false; error: string }
+type FreeEnrolCheck = { ok: true } | { ok: false; error: string }
 
 /** Copy for a Journey that costs money. Names the next step, never the wall (CONTENT-VOICE). */
-export const JOURNEY_NEEDS_PURCHASE_MESSAGE = 'This Journey is paid. Open its page to get access.'
+const JOURNEY_NEEDS_PURCHASE_MESSAGE = 'This Journey is paid. Open its page to get access.'
 
 /**
  * May `profileId` enrol in `planId` without paying?

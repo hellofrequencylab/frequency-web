@@ -27,7 +27,7 @@ function db(): { from: (t: string) => any } {
 /** Which slice of the inbox the operator is looking at (URL-as-state on the workspace). */
 export type ConversationScope = 'mine' | 'unassigned' | 'all'
 
-export interface ConversationListFilter {
+interface ConversationListFilter {
   scope: ConversationScope
   /** The signed-in operator/leader — defines "Mine". */
   viewerProfileId: string
@@ -89,7 +89,7 @@ export interface ConversationThreadMessage {
 
 /** A thing the conversation is attached to (event, circle, campaign...), for the reader's context band.
  *  `href` is null when the reference exists but has no linkable page. */
-export interface ConversationContextRef {
+interface ConversationContextRef {
   label: string
   href: string | null
 }

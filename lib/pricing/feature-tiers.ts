@@ -316,7 +316,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
 /** One rung of a feature's tier ladder: the tier id, its canon label, its placeholder price label + cents,
  *  the plain unlock line, and whether it is the free floor. Plain data, serializable (safe to pass from a
  *  server component into the client selector). */
-export interface FeatureTierStep {
+interface FeatureTierStep {
   tier: string
   label: string
   /** The formatted placeholder price ("Free", "$19/mo", "from $199/mo", ...). Preview only. */

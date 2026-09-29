@@ -260,7 +260,7 @@ export function setupPresetForMode(
 }
 
 /** The blobs a bundle resolves to, ready for the writer to persist. */
-export interface BundleBlobs {
+interface BundleBlobs {
   /** The next `spaces.entitlements`, with an off-switch written for every excluded function. */
   entitlements: Record<string, unknown>
   /** The next `spaces.feature_roles`, with the bundle's floors merged in. */

@@ -63,7 +63,7 @@ export async function loadCircleCrmRoster(circleId: string): Promise<MemberSumma
 }
 
 /** A hub/nexus scope for the subtree rosters below. */
-export interface PlaceTreeCrmScope {
+interface PlaceTreeCrmScope {
   kind: 'hub' | 'nexus'
   id: string
 }

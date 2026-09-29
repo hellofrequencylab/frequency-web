@@ -86,7 +86,7 @@ export async function updateHubField(id: string, slug: string, field: InlineFiel
 // returns null for anyone else so the module renders nothing. Reuses the SAME circles-by-hub read the
 // hub detail page runs (app/(main)/hubs/[slug]/page.tsx).
 
-export interface HubCircleRow {
+interface HubCircleRow {
   id: string
   name: string
   slug: string
