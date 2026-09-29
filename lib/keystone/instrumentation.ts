@@ -19,7 +19,7 @@ import type { SeedReadiness } from './density-rollup'
 
 // The keystone funnel's event types (the global -> local conversion path). Stable
 // handles so the funnel rollup (lib/funnels) and the verification read can match them.
-export const KEYSTONE_EVENTS = {
+const KEYSTONE_EVENTS = {
   /** A member's feed/discovery resolved a local-activity STATE — the global layer placed
    *  them in a locality. The first rung: a global signup is now "located" somewhere. */
   localityResolved: 'keystone_locality_resolved',
@@ -32,7 +32,7 @@ export const KEYSTONE_EVENTS = {
   localActivitySeeded: 'keystone_local_activity_seeded',
 } as const
 
-export type KeystoneEventType = (typeof KEYSTONE_EVENTS)[keyof typeof KEYSTONE_EVENTS]
+type KeystoneEventType = (typeof KEYSTONE_EVENTS)[keyof typeof KEYSTONE_EVENTS]
 
 export type FounderAction = 'circle' | 'event' | 'invite'
 

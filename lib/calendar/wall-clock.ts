@@ -33,7 +33,7 @@ export interface StoredSpan {
 }
 
 /** A repair: the wall clock the row should have stored, in the convention's spelling. */
-export interface WallClockSpan {
+interface WallClockSpan {
   starts_at: string
   ends_at: string
 }

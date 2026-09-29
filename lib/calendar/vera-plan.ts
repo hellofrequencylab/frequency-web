@@ -62,7 +62,7 @@ export function readinessNudges(gaps: readonly string[]): string[] {
  *  marks and self check-ins, lib/events/attendance.ts) and null ONLY when that record is empty.
  *  There is no "ran late" here on purpose: nothing in the data records when an event actually
  *  ended, so a sentence about it would be invented. */
-export interface VeraRecapInput {
+interface VeraRecapInput {
   title: string
   attendance: number | null
 }

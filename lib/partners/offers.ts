@@ -10,7 +10,7 @@
 
 import type { Database } from '@/lib/database.types'
 
-export type PartnerOfferInsert = Database['public']['Tables']['partner_offers']['Insert']
+type PartnerOfferInsert = Database['public']['Tables']['partner_offers']['Insert']
 
 export interface OfferInput {
   /** Present on an edit; absent on a new offer. */
@@ -25,9 +25,9 @@ export interface OfferInput {
 }
 
 export const OFFER_TITLE_MAX = 120
-export const OFFER_TEXT_MAX = 1000
+const OFFER_TEXT_MAX = 1000
 
-export type OfferRowResult =
+type OfferRowResult =
   | { ok: true; row: Omit<PartnerOfferInsert, 'partner_id'> }
   | { ok: false; error: string }
 

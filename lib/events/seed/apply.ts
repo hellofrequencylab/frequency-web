@@ -26,7 +26,7 @@ import { coerceEventDetails, coerceDomain, coerceIsoDate } from '@/lib/events/no
 import type { EventSeedDraft } from './intake'
 import { getEventIntake, markEventIntakeApplied, setEventIntakeStatus } from './store'
 
-export type ApplyEventIntakeResult =
+type ApplyEventIntakeResult =
   | { ok: true; eventId: string; alreadyApplied: boolean }
   | { ok: false; error: string }
 

@@ -11,7 +11,7 @@
 
 /** One curated Lucide site-icon offered in the picker: its kebab-case token `name` plus extra search
  *  `keywords` (space-separated) so a search matches synonyms, not just the literal name. */
-export interface LucideIconEntry {
+interface LucideIconEntry {
   name: string
   keywords: string
 }
@@ -19,7 +19,7 @@ export interface LucideIconEntry {
 /** The curated Lucide set the picker searches and the renderer can draw. Kept intentionally small + relevant
  *  (community / events / offerings / money / nature / play) so the bundle stays lean and the search stays
  *  useful. Each `name` is a real lucide-react icon (kebab-case) mirrored by block-icon.tsx's component map. */
-export const LUCIDE_ICONS: readonly LucideIconEntry[] = [
+const LUCIDE_ICONS: readonly LucideIconEntry[] = [
   { name: 'star', keywords: 'favorite rating best top' },
   { name: 'heart', keywords: 'love like favorite care' },
   { name: 'heart-handshake', keywords: 'care support community give' },
@@ -133,14 +133,14 @@ export function isLucideIconName(token: unknown): token is string {
 }
 
 /** One emoji offered in the picker: the `char` stored as the token plus search `keywords`. */
-export interface EmojiEntry {
+interface EmojiEntry {
   char: string
   keywords: string
 }
 
 /** A bundled, curated emoji set (kept small + relevant to community / events / offerings copy). The stored
  *  token is the emoji character itself, which every renderer prints as text. */
-export const EMOJI_ICONS: readonly EmojiEntry[] = [
+const EMOJI_ICONS: readonly EmojiEntry[] = [
   { char: '✨', keywords: 'sparkles magic new shine special' },
   { char: '⭐', keywords: 'star favorite rating best' },
   { char: '🌟', keywords: 'star glowing special shine' },

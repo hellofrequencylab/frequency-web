@@ -123,10 +123,18 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from(table: string) {
       const rows = table === 'practice_logs' ? store.logs : store.practices
+      // PostgREST's max_rows: an unranged select returns at most 1000 rows, and a range is
+      // clamped to 1000 too, so a read that does not page loses everything past row 1000.
+      const MAX_ROWS = 1000
       const builder = {
         select: () => builder,
         eq: (_c: string, _v: unknown) => builder,
-        gt: (_c: string, _v: number) => Promise.resolve({ data: rows, error: null }),
+        gt: (_c: string, _v: number) => builder,
+        order: (_c: string, _o?: unknown) => builder,
+        range: (from: number, to: number) =>
+          Promise.resolve({ data: rows.slice(from, Math.min(to + 1, from + MAX_ROWS)), error: null }),
+        then: (resolve: (v: { data: unknown[]; error: null }) => unknown) =>
+          resolve({ data: rows.slice(0, MAX_ROWS), error: null }),
         in: (_c: string, ids: string[]) => {
           practicesQueried.push(ids)
           return Promise.resolve({
@@ -171,5 +179,19 @@ describe('getMemberPillarZaps', () => {
     const out = await getMemberPillarZaps('profile-1')
     expect(out.byPillar).toEqual({ [MIND]: 15 })
     expect(practicesQueried).toEqual([])
+  })
+
+  it('pages past the 1,000-row cap, so a member with many logs is counted in full (LIVE-642)', async () => {
+    store.logs = Array.from({ length: 2500 }, (_, i) => ({
+      practice_id: `p${i}`,
+      zaps_awarded: 2,
+      pillar_id: i % 2 === 0 ? MIND : BODY,
+      secondary_pillar_id: null,
+      primary_pct: 100,
+    }))
+    const out = await getMemberPillarZaps('profile-1')
+    expect(out.total).toBe(5000)
+    expect(out.byPillar).toEqual({ [MIND]: 2500, [BODY]: 2500 })
+    expect(out.complete).toBe(true)
   })
 })

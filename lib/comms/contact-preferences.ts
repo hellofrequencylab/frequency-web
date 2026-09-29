@@ -28,7 +28,7 @@ export { CONTACT_TOPICS } from './contact-topics'
 export type { ContactPreferenceState } from './contact-topics'
 import type { ContactPreferenceState } from './contact-topics'
 
-export interface ContactPreferenceKey {
+interface ContactPreferenceKey {
   email: string
   /** The Space this preference is scoped to. */
   spaceId: string
@@ -66,7 +66,7 @@ export async function isContactTopicMuted(key: ContactPreferenceKey): Promise<bo
   }
 }
 
-export interface ContactPreferenceRow {
+interface ContactPreferenceRow {
   topic: NotificationTopic
   channel: NotificationChannel
   state: ContactPreferenceState
@@ -101,7 +101,7 @@ export async function getContactPreferences(
   }
 }
 
-export interface SetContactPreferenceInput extends ContactPreferenceKey {
+interface SetContactPreferenceInput extends ContactPreferenceKey {
   state: ContactPreferenceState
   /** Optional linked contact/network_contact id (attribution only; the email is the key). */
   contactId?: string | null

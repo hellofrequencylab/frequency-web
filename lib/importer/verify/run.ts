@@ -35,7 +35,7 @@ export interface VerifyResult extends VerificationSplit {
 }
 
 /** Injectable refuter so the orchestrator is testable without a network / model. */
-export interface VerifyDeps {
+interface VerifyDeps {
   refuteField?: typeof refuteField
 }
 

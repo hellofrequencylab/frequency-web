@@ -32,7 +32,7 @@ function capFromSize(label: string | null): number {
   return Math.min(50, Math.max(2, max || 12))
 }
 
-export interface RemixResult {
+interface RemixResult {
   circleId: string
   slug: string
 }

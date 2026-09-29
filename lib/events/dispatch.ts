@@ -25,7 +25,7 @@ import type { PreferenceSubject } from '@/lib/notification-preferences'
 // typed. Authorize the caller as host/cohost before calling (RLS would also gate a
 // client write, but this runs on the admin client).
 
-export interface ComposeEventDispatchArgs {
+interface ComposeEventDispatchArgs {
   eventId: string
   /** The host/cohost composing (must be pre-authorized). */
   authorId: string
@@ -50,7 +50,7 @@ export interface ComposeEventDispatchArgs {
  *   'send-failed'  the records exist (the update is on the event page) but a fan-out threw, so
  *                  some or all of the push / email / SMS did not go out.
  */
-export type ComposeEventDispatchStatus = 'ok' | 'write-failed' | 'send-failed'
+type ComposeEventDispatchStatus = 'ok' | 'write-failed' | 'send-failed'
 
 export interface ComposeEventDispatchResult {
   status: ComposeEventDispatchStatus

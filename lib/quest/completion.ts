@@ -146,7 +146,7 @@ export function isJourneyFinished(
   return distinctDays >= QUEST.DAYS_TO_FINISH_JOURNEY && (!expressionRequired || expressionDone)
 }
 
-export interface JourneyEligibility {
+interface JourneyEligibility {
   distinctDays: number
   daysRequired: number
   /** Whether this Journey counts toward rank at all (official, or a Vera-approved library Journey). */

@@ -10,7 +10,7 @@ import type { ClassifiedItem, WhatsAppMessage } from './types'
 // Only still images become listing photos / flyers (skip audio, video, pdf, vcf).
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|heic|heif)$/i
 
-export interface GatherOptions {
+interface GatherOptions {
   /** How many messages on each side of the item's own messages to sweep for photos. */
   window?: number
   /** Cap the images attached to any one item. */

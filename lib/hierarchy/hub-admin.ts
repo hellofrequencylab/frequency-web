@@ -50,43 +50,13 @@ export async function updateHubSettings(id: string, slug: string, fd: FormData) 
   revalidatePath('/admin/hubs')
 }
 
-// Field-level patch for the inline tuning layer (ADR-138). Allowlisted; re-checks
-// hub.manage, same as the full settings form.
-const INLINE_FIELDS = ['name'] as const
-type InlineField = (typeof INLINE_FIELDS)[number]
-
-export async function updateHubField(id: string, slug: string, field: InlineField, value: string) {
-  if (!INLINE_FIELDS.includes(field)) throw new Error('Invalid field')
-
-  const caps = await getHubCapabilities(id)
-  if (!caps.has('hub.manage')) throw new Error('Unauthorized')
-
-  const trimmed = value.trim()
-  if (!trimmed) throw new Error('Name is required')
-
-  const admin = createAdminClient()
-  const { error } = await admin.from('hubs').update({ name: trimmed }).eq('id', id)
-  if (error) {
-    console.error('[updateHubField] hubs name update failed', {
-      code: error.code,
-      message: error.message,
-      hubId: id,
-      field,
-    })
-    throw new Error('That Hub name did not save. Try again in a moment.')
-  }
-
-  revalidatePath(`/spaces/${slug}`)
-  revalidatePath('/admin/hubs')
-}
-
 // ─── People (the 'people' spine module) ────────────────────────────────────────
 // The circles inside this hub, how full each is, and the guide who leads them. Read re-resolves
 // hub.manage server-side (the admin client bypasses RLS, so THIS gate — not RLS — is the authority);
 // returns null for anyone else so the module renders nothing. Reuses the SAME circles-by-hub read the
 // hub detail page runs (app/(main)/hubs/[slug]/page.tsx).
 
-export interface HubCircleRow {
+interface HubCircleRow {
   id: string
   name: string
   slug: string

@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // Read through the admin client behind app-code authz, matching lib/profile-zaps.ts (retired) — the
 // profile page already uses the admin client, and both tables allow crew+/host+ reads.
 
-export interface ProfileAchievement {
+interface ProfileAchievement {
   slug: string
   name: string
   description: string | null
@@ -15,7 +15,7 @@ export interface ProfileAchievement {
   tier: string | null
   unlockedAt: string | null
 }
-export interface ProfileItem {
+interface ProfileItem {
   slug: string
   name: string
   description: string | null

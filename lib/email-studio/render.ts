@@ -693,7 +693,7 @@ export function sanitizeEmailRichContent(layout: EntityLayout): EntityLayout {
 
 const MERGE_TAG_RE = /\{\{\s*([a-zA-Z0-9_.]+)\s*(?:\|\s*"([^"]*)")?\s*\}\}/g
 
-export interface ApplyMergeTagsOptions {
+interface ApplyMergeTagsOptions {
   /** Per-token default used when neither `vars[token]` nor an inline "..." fallback supplies a value. */
   fallbacks?: Record<string, string>
   /** When true (default), HTML-escape the substituted value. Pass false only for a plain-text pass. */

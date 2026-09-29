@@ -90,7 +90,7 @@ export interface CalendarRepeatSeries {
   pendingDayKeys: string[]
 }
 
-export interface CalendarRepeatsPlan {
+interface CalendarRepeatsPlan {
   /** One entry per series, ordered by its next date. */
   series: CalendarRepeatSeries[]
   /** Event ids that are a LATER date of their series: dot in the grid, not a card. */
@@ -100,14 +100,14 @@ export interface CalendarRepeatsPlan {
 }
 
 /** How far ahead the strip computes dates. A year, matching the operator listing horizon. */
-export const REPEAT_LOOKAHEAD_DAYS = 365
+const REPEAT_LOOKAHEAD_DAYS = 365
 
 /** Ceiling on how many dates one series may contribute to a window. Mirrors the engine's own
  *  MAX_REPEAT_OCCURRENCES, so a malformed rule cannot spin here either. */
 const MAX_STEPS = 4000
 
 /** The date portion of a stored `starts_at` (the event-local day), or null when unusable. */
-export function dayKeyOf(startsAt: string | null | undefined): string | null {
+function dayKeyOf(startsAt: string | null | undefined): string | null {
   if (typeof startsAt !== 'string') return null
   const m = /^(\d{4}-\d{2}-\d{2})/.exec(startsAt)
   return m ? m[1] : null

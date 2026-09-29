@@ -11,7 +11,7 @@ import { assetRefUrl, type AssetValue } from '@/lib/library/asset-ref'
 // is `{ src }[]` where each src is an AssetRef ({ assetId, url }) for a library pick or a legacy URL string
 // (ADR-1130); the block's renderer still receives plain strings via the BlockRender unwrap.
 
-export type GalleryImage = { src: AssetValue }
+type GalleryImage = { src: AssetValue }
 
 function GalleryImagesField({
   value,

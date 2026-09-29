@@ -193,6 +193,28 @@ export function bandsOf(rowCounts) {
   return bands.sort((p, q) => q.pixels - p.pixels)
 }
 
+/** Each band's COLUMN extent: the leftmost and rightmost differing pixel across its rows.
+ *  A band is a run of rows, and a row of a desktop capture holds the left rail, the page and the
+ *  right rail side by side; without the columns a band on the rail and a band on the page read
+ *  the same (ADR-1598). Mutates the bands in place (and returns them), so bandsOf's own shape and
+ *  its inferred type stay what they were. */
+export function withColumns(bands, rowLeft, rowRight) {
+  for (const band of bands) {
+    let left = Infinity
+    let right = -1
+    for (let y = band.from; y <= band.to; y++) {
+      if (rowRight[y] < 0) continue
+      if (rowLeft[y] < left) left = rowLeft[y]
+      if (rowRight[y] > right) right = rowRight[y]
+    }
+    if (right >= 0) {
+      band.left = left
+      band.right = right
+    }
+  }
+  return bands
+}
+
 /** Compare two decoded images. Returns the differing-pixel count and its row bands, or a
  *  dimension mismatch — which is what Playwright reports too, before any pixel is examined. */
 export function diffImages(a, b, { threshold = DEFAULT_THRESHOLD } = {}) {
@@ -201,15 +223,25 @@ export function diffImages(a, b, { threshold = DEFAULT_THRESHOLD } = {}) {
   }
   const maxDelta = 35215 * threshold * threshold
   const rows = new Uint32Array(a.height)
+  const rowLeft = new Int32Array(a.height).fill(-1)
+  const rowRight = new Int32Array(a.height).fill(-1)
   let differing = 0
   const w = a.width
   for (let y = 0; y < a.height; y++) {
     let n = 0
-    for (let x = 0; x < w; x++) if (colorDelta(a.data, b.data, (y * w + x) * 4) > maxDelta) n++
+    for (let x = 0; x < w; x++) {
+      if (colorDelta(a.data, b.data, (y * w + x) * 4) > maxDelta) {
+        if (n === 0) rowLeft[y] = x
+        rowRight[y] = x
+        n++
+      }
+    }
     rows[y] = n
     differing += n
   }
-  return { dimensionMismatch: false, width: a.width, height: a.height, differing, bands: bandsOf(rows) }
+  const bands = bandsOf(rows)
+  withColumns(bands, rowLeft, rowRight)
+  return { dimensionMismatch: false, width: a.width, height: a.height, differing, bands }
 }
 
 // ── Sources: a directory or a git ref ──────────────────────────────────────────────────────────
@@ -308,7 +340,8 @@ export function main(argv = process.argv.slice(2)) {
     const flag = r.differing > opts.budget ? 'over' : 'under'
     console.log(`  ${r.name}  ${r.width}x${r.height}  ${r.differing} px (${flag} ${opts.budget}) in ${r.bands.length} band${r.bands.length === 1 ? '' : 's'}`)
     for (const band of r.bands.slice(0, opts.top)) {
-      console.log(`      rows ${band.from}-${band.to} (${band.rows}): ${band.pixels} px`)
+      const cols = band.right === undefined ? '' : `, columns ${band.left}-${band.right}`
+      console.log(`      rows ${band.from}-${band.to} (${band.rows})${cols}: ${band.pixels} px`)
     }
   }
   console.log(`\n  ${summary.files} files · ${summary.identical} identical · ${summary.underBudget} under budget · ${summary.overBudget} over budget · ${summary.dimensionMoved} moved dimensions · ${summary.missing} missing`)

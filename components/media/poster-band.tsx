@@ -1,6 +1,16 @@
 import Image from 'next/image'
+import { PageHero } from '@/components/templates/page-hero'
 
 // POSTER BAND — the cover band for a surface whose cover is ARTWORK rather than scenery.
+//
+// ── ON THE PAGEHERO GRAMMAR SINCE ADR-1579 (owner ruling 2026-09-29: "both onto PageHero") ──────
+// This component is a thin wrapper over the canonical PageHero, the way MarketHero is: it decides the
+// band's SHAPE (the fit arc below, ADR-1248) and hands that shape to PageHero as its `frame`, with the
+// poster painted through PageHero's `background` slot (the same seam the Around You map and the Starter
+// Circle's drawn scene use). PageHero owns the section, the border and the light strip; nothing here
+// paints a band of its own. The three event surfaces keep rendering <PosterBand>, so the fit the owner
+// settled in three reports is unchanged, and the census in PROG-P5's probe reads a PosterBand as on the
+// grammar for exactly as long as this file renders <PageHero>.
 //
 // ── ONE FIT, EVERY WIDTH: FULL BLEED, CROPPED AT THE HOST'S FOCAL POINT ─────────────────────────
 // Owner, 2026-09-10: *"It should be full bleed and cropped to the selected area."*
@@ -129,22 +139,33 @@ export function PosterBand({
   const shaped = typeof aspect === 'number' && Number.isFinite(aspect) && aspect > 0 && !!maxHeightClass
   const sizeClass = shaped ? maxHeightClass : heightClass
   return (
-    <div
-      className={`relative ${sizeClass} ${widthClass} overflow-hidden ${radiusClass} bg-surface-elevated ${className}`}
-      style={shaped ? { aspectRatio: String(aspect) } : undefined}
-    >
-      {/* THE POSTER, full bleed at every width, aimed by the host's focal point wherever the tier
-          clamps the band shorter than the artwork. No backdrop: a covering band has no bars. */}
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        sizes="(max-width: 1024px) 100vw, 1344px"
-        className="object-cover"
-        style={{ objectPosition: focus ?? undefined }}
-        preload
-        unoptimized={unoptimized}
-      />
-    </div>
+    // The canonical band (ADR-1579). `minimal` + `heading={false}`: the page's h1 lives in the
+    // DetailTemplate band below, exactly as every resolver-adopted entity cover. No overlay: a poster
+    // is artwork, and the band never scrimmed it. The frame is this component's whole decision — the
+    // tier height, or the artwork's own ratio with the tier as a ceiling — and PageHero paints it.
+    <PageHero
+      variant="minimal"
+      heading={false}
+      title={alt}
+      overlayStyle="none"
+      frame={{
+        className: `${sizeClass} ${widthClass} overflow-hidden ${radiusClass} bg-surface-elevated ${className}`,
+        style: shaped ? { aspectRatio: String(aspect) } : undefined,
+      }}
+      background={
+        // THE POSTER, full bleed at every width, aimed by the host's focal point wherever the tier
+        // clamps the band shorter than the artwork. No backdrop: a covering band has no bars.
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          sizes="(max-width: 1024px) 100vw, 1344px"
+          className="object-cover"
+          style={{ objectPosition: focus ?? undefined }}
+          preload
+          unoptimized={unoptimized}
+        />
+      }
+    />
   )
 }

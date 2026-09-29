@@ -17,7 +17,7 @@ import { asHeaderSize } from '@/lib/layout/header-sizes'
 import type { PageHeroSize, PageHeroVariant, HeroOverlayStyle } from '@/components/templates/page-hero'
 
 /** The effective, ready-to-render header config for a surface. */
-export interface HeaderElementConfig {
+interface HeaderElementConfig {
   layout: PageHeroVariant
   height: PageHeroSize
   /** Apply the operator focal point on the cover. */
@@ -31,7 +31,7 @@ export interface HeaderElementConfig {
 }
 
 /** A surface's intrinsic baseline, used unless the operator has set a master/space value. */
-export interface HeaderDefaults {
+interface HeaderDefaults {
   layout?: PageHeroVariant
   height?: PageHeroSize
   /** Whether this surface draws the ink overlay by default (profiles ship overlay-off). */

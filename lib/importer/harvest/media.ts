@@ -45,7 +45,7 @@ function extFor(contentType: string): string {
 }
 
 /** The result of capturing one image url into site-media. */
-export interface CapturedImage {
+interface CapturedImage {
   /** The public url of the uploaded copy (feeds BusinessProfile.media). */
   publicUrl: string
   /** The storage path (under the intake prefix). */

@@ -202,7 +202,7 @@ function reasonForGate(gate: AppGate): string {
 
 /** An attainable-but-locked App: the App plus the one-line reason (+ optional CTA) the rail shows in
  *  place of its editor. Fail-closed: a locked App NEVER exposes its editor — the row is inert. */
-export interface LockedApp {
+interface LockedApp {
   app: App
   reason: string
   cta?: { label: string; href: string }

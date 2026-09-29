@@ -20,7 +20,7 @@ export const REACTIONS = [
   { key: '🙏🏽', label: 'Grateful' },
 ] as const
 
-export type ReactionKey = (typeof REACTIONS)[number]['key']
+type ReactionKey = (typeof REACTIONS)[number]['key']
 
 /** The bare allowed set, for fast membership checks (client + server validation). */
 export const REACTION_KEYS: readonly string[] = REACTIONS.map((r) => r.key)

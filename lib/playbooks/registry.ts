@@ -43,11 +43,11 @@ export type PlaybookActionTool =
 
 /** Whether an action reaches a MEMBER (outbound) or stays IN-PRODUCT. The single fact
  *  that decides whether an action may live in an `auto` playbook. */
-export type ActionSurface = 'in_product' | 'outbound'
+type ActionSurface = 'in_product' | 'outbound'
 
 /** One step in a playbook's governed sequence. A pure descriptor — it names a tool and
  *  its surface; the actual execution is the existing confirm-then-execute path. */
-export interface PlaybookAction {
+interface PlaybookAction {
   /** The governed tool this step invokes (must be in the Vera allow-list). */
   tool: PlaybookActionTool
   /** Where the step lands. `outbound` steps are draft-and-approve, never auto. */

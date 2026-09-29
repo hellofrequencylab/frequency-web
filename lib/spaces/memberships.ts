@@ -106,7 +106,7 @@ export interface SpaceMembership {
 
 /** The viewer's OWN open membership (or null), for the join surface to show their current tier.
  *  `status` distinguishes a live membership from a waitlist spot (ADR-824). */
-export interface MyMembership {
+interface MyMembership {
   id: string
   tierId: string
   tierName: string

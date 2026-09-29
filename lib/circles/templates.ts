@@ -79,7 +79,7 @@ export const CIRCLE_TEMPLATES_FLAG = 'circle_templates_enabled' as const
 // The baked-in best-practice instruction boxes shown in EVERY Circle builder
 // (edit mode only). A template may attach its own extra callouts on top. Voice:
 // plain sentences, proper nouns carry the magic, no em dashes, skeptic test.
-export const STANDARD_CALLOUTS: readonly CircleCallout[] = [
+const STANDARD_CALLOUTS: readonly CircleCallout[] = [
   {
     anchor: 'identity',
     title: 'Name it for the people, not the topic',

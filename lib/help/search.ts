@@ -7,7 +7,7 @@
 import type { HelpSearchEntry } from './content'
 
 /** Score an entry against a query. Title hits weigh most; any term miss = 0. */
-export function scoreHelpEntry(entry: HelpSearchEntry, q: string): number {
+function scoreHelpEntry(entry: HelpSearchEntry, q: string): number {
   const hay = `${entry.title} ${entry.description} ${entry.categoryTitle} ${entry.excerpt}`.toLowerCase()
   const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
   let s = 0

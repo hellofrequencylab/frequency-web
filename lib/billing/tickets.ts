@@ -78,7 +78,7 @@ import { ticketSalesWindowError } from '@/lib/events/sales-window'
 import { eventInstant, resolveZone } from '@/lib/time/zone'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 
-export const TICKET_MAX_QTY = 10
+const TICKET_MAX_QTY = 10
 
 /** The env key holding a Stripe payment method configuration (`pmc_…`) scoped to INSTANT methods,
  *  used for ticket checkouts only. Optional; see `ticketPaymentMethodParams`. */
@@ -87,7 +87,7 @@ export const TICKET_PMC_ENV = 'STRIPE_TICKET_PAYMENT_METHOD_CONFIGURATION'
 /** The instant set, named explicitly, for the fallback branch. Apple Pay and Google Pay are not
  *  payment method TYPES: they ride on `card` and Checkout offers them automatically on a supported
  *  device, so listing `card` lists them. Link is its own type and has to be named or it disappears. */
-export const TICKET_INSTANT_METHODS = ['card', 'link'] as const
+const TICKET_INSTANT_METHODS = ['card', 'link'] as const
 
 /**
  * The payment-method half of a TICKET Checkout Session, and the only place in this repo that
@@ -164,7 +164,7 @@ export function ticketTotalCents(priceCents: number, qty: number): number {
  *
  *  Returns `{ unitCents }` on success or `{ error }` when the buyer's amount is
  *  below the enforced floor for a buyer-chosen mode. */
-export function resolveUnitCents(opts: {
+function resolveUnitCents(opts: {
   mode: PricingMode
   priceCents: number | null
   minCents: number | null
@@ -185,7 +185,7 @@ export function resolveUnitCents(opts: {
   return { unitCents: chosen }
 }
 
-export interface TicketResult {
+interface TicketResult {
   url?: string
   /**
    * The Checkout Session client secret, returned INSTEAD of `url` when the caller asked for
@@ -1820,7 +1820,7 @@ export async function recordTicketFromSessionId(sessionId: string): Promise<numb
   return session.amount_total ?? null
 }
 
-export interface RefundResult {
+interface RefundResult {
   ok?: true
   error?: string
 }

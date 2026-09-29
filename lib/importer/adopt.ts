@@ -96,7 +96,7 @@ export function profileFromSpace(
   return { draft, ledger, images }
 }
 
-export type AdoptResult = { ok: true; intakeId: string; created: boolean } | { ok: false; error: string }
+type AdoptResult = { ok: true; intakeId: string; created: boolean } | { ok: false; error: string }
 
 /**
  * Adopt a hand-made Space into an editable master profile, IDEMPOTENTLY: if an intake already links the

@@ -31,7 +31,7 @@ import type { BillingPeriod } from './pricing-keys'
  *  the failure mode is a truncated roster: money taken for seats the webhook can never read back. */
 const METADATA_VALUE_MAX = 500
 
-export interface BundleCheckoutResult {
+interface BundleCheckoutResult {
   url?: string
   /** An on-page (elements) session's secret. EXACTLY ONE of this and `url` is ever set. */
   clientSecret?: string

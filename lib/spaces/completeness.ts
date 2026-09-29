@@ -15,7 +15,7 @@
 /** One checked item on the readiness checklist. `key` is a stable id (for React keys / analytics),
  *  `label` is the operator-facing name of the field, `hint` is the plain "why it matters / where to
  *  add it" nudge, and `done` is whether it is filled. */
-export interface CompletenessItem {
+interface CompletenessItem {
   key: string
   label: string
   hint: string
@@ -25,7 +25,7 @@ export interface CompletenessItem {
 /** The resolved completeness report: the score (0-100, whole number), the raw done/total counts, and
  *  the full ordered checklist (done + missing), so a caller can render a meter + the "what's missing"
  *  nudges. `missing` is the checklist filtered to the not-yet-done items, ordered as the checklist. */
-export interface CompletenessReport {
+interface CompletenessReport {
   /** 0-100, rounded to a whole percent. 100 when every tracked field is filled. */
   score: number
   /** How many tracked fields are filled. */

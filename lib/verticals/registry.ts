@@ -18,14 +18,14 @@ import { maker } from './maker'
 import { shop } from './shop'
 
 /** A vertical's own scope (its kind + whatever ids/state its resolver needs). */
-export interface ModuleScope {
+interface ModuleScope {
   /** The vertical's scope kind, e.g. 'market'. */
   kind: string
   [key: string]: unknown
 }
 
 /** Resolves a vertical's namespaced capabilities for the viewer in one of its scopes. */
-export type ModuleCapabilityResolver = (viewer: Viewer, scope: ModuleScope) => Set<string>
+type ModuleCapabilityResolver = (viewer: Viewer, scope: ModuleScope) => Set<string>
 
 /** A nav area plus where to place it. `after` names the nav key it follows so the area
  *  lands in its exact spot — the shell groups nav by *consecutive* section runs, so a

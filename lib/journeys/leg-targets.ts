@@ -19,7 +19,7 @@ export interface BlockRowWithSettings extends BlockRow {
   settings?: { anchor?: boolean } | null
 }
 
-export interface LegTargets {
+interface LegTargets {
   /** Current-leg practice ids UNION the anchors — the full set a member should hold now. */
   targetIds: string[]
   /** The anchor subset (journey-long through-line). */

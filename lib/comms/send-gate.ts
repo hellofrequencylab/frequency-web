@@ -38,9 +38,9 @@ export type SendCategory = NotificationCategory | 'marketing' | 'transactional'
 // frequency — only the hard suppression list (bounce/complaint = undeliverable) can
 // stop it. Enforced here in code so a broken preference read can never silence a
 // security email. Stated in the settings UI too.
-export const TRANSACTIONAL_CATEGORY = 'transactional' as const
+const TRANSACTIONAL_CATEGORY = 'transactional' as const
 
-export function isTransactional(category: SendCategory): boolean {
+function isTransactional(category: SendCategory): boolean {
   return category === TRANSACTIONAL_CATEGORY
 }
 
@@ -122,7 +122,7 @@ export function consentScopeForCategory(category: SendCategory): ConsentScope | 
   }
 }
 
-export interface ResolveSendOptions {
+interface ResolveSendOptions {
   /** The recipient's email — required to check suppression on the `email` channel. */
   email?: string | null
   /** Sends already made in the window + the hard cap. Omit for an uncapped send. */

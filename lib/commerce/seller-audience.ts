@@ -22,9 +22,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export type AudienceSignal =
   | 'self' // the buyer IS the seller
   | 'follows' // follows the Space
-  | 'space_member' // an active member of the Space
+  | 'space_member' // on the Space's staff roster (space_members: viewer to admin)
+  | 'space_tier_member' // holds an ACTIVE tier membership in the Space (space_memberships, ADR-1600)
   | 'crm_contact' // already in the Space's CRM
   | 'personal_contact' // in the seller's OWN contact list (a Crew host with no Space)
+  | 'friend' // a PROFILE seller's accepted friend: the profile's own followers (ADR-1584)
+  | 'owned_space_member' // staff or an active tier member of any Space a PROFILE seller owns (ADR-1584, ADR-1600)
   | 'prior_purchase' // has bought from this seller before
 
 export interface AudienceVerdict {
@@ -64,7 +67,8 @@ async function found(run: () => PromiseLike<{ data: unknown; error: unknown }>):
  * `sellerSpaceId` is the hosting Space when there is one; `sellerProfileId` is the person who receives
  * the money (for a Space sale that is the Space owner). BOTH are consulted, because a Crew host with
  * no Space still has an audience — their own contact list — and a Space sale should also honour a
- * relationship the owner holds personally.
+ * relationship the owner holds personally. With no Space on the sale (a PROFILE seller) the audience
+ * also takes in the profile's friends and the members of every Space the seller owns (ADR-1584).
  *
  * Checks run cheapest-exact-match first and short-circuit, so the common case (a follower) costs one
  * indexed lookup.
@@ -114,6 +118,35 @@ export async function buyerIsSellersAudience(input: {
             .limit(1),
         ),
     })
+    // ── A SPACE'S MEMBERS ARE ITS TIER MEMBERS TOO, NOT ONLY ITS STAFF (ADR-1600, LIVE-627) ──
+    //
+    // `space_members` above is the staff roster (viewer < editor < moderator < admin, the people who
+    // run the Space). The people who JOIN a tier live in `space_memberships`, keyed on
+    // `member_profile_id`, and a tier join writes a Space contact with `profile_id` NULL (the
+    // membrane law), so without this read a paying member who does not also follow the Space was
+    // charged the network rate on that Space's own sale. ADR-913 names "an active member"; the owner
+    // rule is "any member associated with their space gets a ZERO take rate".
+    //
+    // Same lifecycle rule as isSpacePaidMember (lib/circles/space-entry.ts), the DB twin
+    // private.is_space_paid_member and the ticket gate: `status = 'active'` only. A waitlist spot
+    // is not a membership and a cancelled one (Stripe flips `status` on cancel) is lapsed.
+    // `payment_status` is deliberately not read, matching every other consumer. Written through
+    // `found()` rather than isSpacePaidMember because that helper reads an error as "not a member",
+    // which here would charge on a database hiccup. A separate signal, not a wider `space_member`,
+    // so staff and tier members stay two facts on the receipt (ADR-1092 keeps them apart).
+    checks.push({
+      signal: 'space_tier_member',
+      run: () =>
+        found(() =>
+          db()
+            .from('space_memberships')
+            .select('id')
+            .eq('space_id', space)
+            .eq('member_profile_id', buyer)
+            .eq('status', 'active')
+            .limit(1),
+        ),
+    })
     checks.push({
       signal: 'crm_contact',
       run: () =>
@@ -139,6 +172,43 @@ export async function buyerIsSellersAudience(input: {
             .eq('linked_profile_id', buyer)
             .limit(1),
         ),
+    })
+  }
+
+  // ── A PROFILE SELLER'S OWN AUDIENCE IS THE PROFILE PLUS EVERY SPACE THEY OWN (ADR-1584) ──
+  //
+  // Owner ruling 2026-09-29 (LIVE-221, "Profile plus Spaces they own"). Before it, a profile sale
+  // (no Space on the checkout) was measured against the seller's contact list and prior purchases
+  // only, so the same buyer of the same thing classified `network` from a person and 0% from a
+  // Space. Now a profile seller also owns:
+  //   - their profile's followers. A profile is not followable (only a Space is), so the profile's
+  //     follow graph is its accepted friendships: a person who asked for, or accepted, a connection
+  //     with the seller. Pending is not a relationship yet.
+  //   - the active members of any Space they own (`spaces.owner_profile_id`), read the way the
+  //     Space path reads them (staff in `space_members`, tier members in `space_memberships`,
+  //     ADR-1600), so "member" means one thing on both paths.
+  // Gated on `!space` ON PURPOSE: a Space sale is measured against THAT Space, as before. The
+  // owner's other Spaces do not widen a Space's audience; that was not ruled.
+  if (seller && !space) {
+    // Canonical pair order (user_a_id < user_b_id, the table's CHECK), the same spelling
+    // lib/blocking.ts uses, so no id is interpolated into a filter string.
+    const [a, b] = seller < buyer ? [seller, buyer] : [buyer, seller]
+    checks.push({
+      signal: 'friend',
+      run: () =>
+        found(() =>
+          db()
+            .from('friendships')
+            .select('id')
+            .eq('user_a_id', a)
+            .eq('user_b_id', b)
+            .eq('status', 'accepted')
+            .limit(1),
+        ),
+    })
+    checks.push({
+      signal: 'owned_space_member',
+      run: () => isMemberOfOwnedSpace({ seller, buyer }),
     })
   }
 
@@ -174,6 +244,57 @@ export async function buyerIsSellersAudience(input: {
   // A read failed and nothing else matched: we cannot honestly say Frequency introduced them.
   if (sawFailure) return DEGRADED
   return NOT_OWN
+}
+
+/**
+ * Is this buyer an active member of any Space the seller owns? (ADR-1584, ADR-1600)
+ *
+ * "Member" is the Space path's meaning: on the staff roster (`space_members`) OR holding an active
+ * tier membership (`space_memberships`). Either is a yes; a failed read with no yes is a non-answer.
+ *
+ * Two steps, the seller's Space ids first and then two bounded member lookups, for the same
+ * reason `hasPriorSettledPurchase` avoids an embedded join: a wrong relationship name answers [],
+ * and [] here means "charge them". Deliberately NOT `getSpaceMembership` from
+ * lib/spaces/membership.ts: that store maps a read error to null, which reads as "not a member" and
+ * would charge on a database hiccup. Here an error is a NON-answer (null), so the fail-safe holds.
+ */
+async function isMemberOfOwnedSpace(args: { seller: string; buyer: string }): Promise<boolean | null> {
+  try {
+    const { data: owned, error: ownedErr } = await db()
+      .from('spaces')
+      .select('id')
+      .eq('owner_profile_id', args.seller)
+      .limit(200)
+    if (ownedErr) return null
+    const ids = ((owned as { id: string }[] | null) ?? []).map((s) => s.id)
+    if (ids.length === 0) return false
+
+    const [staff, tier] = await Promise.all([
+      found(() =>
+        db()
+          .from('space_members')
+          .select('id')
+          .in('space_id', ids)
+          .eq('profile_id', args.buyer)
+          .eq('status', 'active')
+          .limit(1),
+      ),
+      found(() =>
+        db()
+          .from('space_memberships')
+          .select('id')
+          .in('space_id', ids)
+          .eq('member_profile_id', args.buyer)
+          .eq('status', 'active')
+          .limit(1),
+      ),
+    ])
+    if (staff === true || tier === true) return true
+    if (staff === null || tier === null) return null
+    return false
+  } catch {
+    return null
+  }
 }
 
 /**

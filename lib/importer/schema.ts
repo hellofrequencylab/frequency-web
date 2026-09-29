@@ -22,7 +22,7 @@ export type BusinessType = 'business' | 'nonprofit'
 
 /** How a service is priced (mirrors ServicePriceModel in lib/spaces/profile-data.ts, so
  *  an offering maps straight onto a SpaceOffering). */
-export type OfferingPriceModel = 'fixed' | 'from' | 'free' | 'contact'
+type OfferingPriceModel = 'fixed' | 'from' | 'free' | 'contact'
 
 /** One offering (display-only in v1, §1 non-goals). Maps to a SpaceOffering row on
  *  `spaces.preferences.profileData.offerings[]`. */
@@ -39,14 +39,14 @@ export interface ProfileOffering {
 
 /** One team member. Free-text name + role (NOT a resolved member profile — see the
  *  materializer's team seam note). `avatarPath` is a site-media path when supplied. */
-export interface ProfileTeamMember {
+interface ProfileTeamMember {
   name: string
   role?: string
   avatarPath?: string
 }
 
 /** One event to seed as an `events` row (space_id-stamped). */
-export interface ProfileEvent {
+interface ProfileEvent {
   title: string
   /** ISO 8601 start instant. */
   startsAt?: string
@@ -59,7 +59,7 @@ export interface ProfileEvent {
 /** One testimonial / review. Author is free text (NOT a resolved member profile — see
  *  the materializer's reviews seam note; individual review rows need a real author
  *  profile, so P0 seeds the rating SUMMARY and holds per-review rows as a P1+ seam). */
-export interface ProfileReview {
+interface ProfileReview {
   author?: string
   text: string
   /** 1..5 stars. */
@@ -67,7 +67,7 @@ export interface ProfileReview {
 }
 
 /** One FAQ entry -> a `space_faqs` row. */
-export interface ProfileFaq {
+interface ProfileFaq {
   q: string
   a: string
 }
@@ -79,7 +79,7 @@ export interface ProfileSocial {
 }
 
 /** Contact + hours block -> spaces.preferences.profileData (SpaceProfileData). */
-export interface ProfileContact {
+interface ProfileContact {
   address?: string
   phone?: string
   email?: string
@@ -90,7 +90,7 @@ export interface ProfileContact {
 }
 
 /** An operator/owner star-rating summary -> profileData.rating / ratingCount. */
-export interface ProfileRating {
+interface ProfileRating {
   /** e.g. "4.8". */
   value?: string
   /** e.g. "126 reviews" or a bare count "126". */

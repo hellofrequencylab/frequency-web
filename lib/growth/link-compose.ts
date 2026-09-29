@@ -92,14 +92,14 @@ export function buildTrackedUrl(target: string, utm: UtmParams): string {
   return `${url.pathname}${url.search}${url.hash}`
 }
 
-export interface ComposeInput {
+interface ComposeInput {
   title: string
   /** The raw destination the operator typed: an http(s) URL or a site-relative path. */
   target: string
   utm: UtmParams
 }
 
-export interface ComposedLink {
+interface ComposedLink {
   title: string
   /** The destination with UTM applied, ready to store as qr_codes.target_url. */
   trackedUrl: string

@@ -150,7 +150,7 @@ export function helpCurriculumSteps(
  * authoring surface renders this; `taggedSteps` shows what a tag-driven curriculum
  * WOULD produce, so an author can see registry vs. tags side by side.
  */
-export interface TierCurriculumView {
+interface TierCurriculumView {
   role: CommunityRole
   def: TrainingDef | null
   taggedSteps: TrainingStep[]

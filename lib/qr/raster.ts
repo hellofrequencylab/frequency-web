@@ -64,7 +64,7 @@ async function inlineLogo(src: string): Promise<string | null> {
  * renderer (shapes, no fonts needed). `fontBuffers` remains so a caller that draws
  * text can pass faces; resvg-wasm ships with none. One wasm init for the process.
  */
-export async function rasterizeSvg(
+async function rasterizeSvg(
   svg: string,
   opts: { width: number; fontBuffers?: Uint8Array[]; defaultFontFamily?: string },
 ): Promise<Buffer> {

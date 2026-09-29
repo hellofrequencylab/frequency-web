@@ -60,7 +60,7 @@ export interface StepControls {
 }
 
 /** What every step component receives. `content` is already parsed through the type's schema. */
-export interface StepViewProps {
+interface StepViewProps {
   content: Record<string, unknown>
   draft: OnboardingDraft
   patch: (patch: Partial<OnboardingDraft>) => void

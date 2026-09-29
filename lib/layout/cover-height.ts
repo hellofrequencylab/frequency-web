@@ -116,7 +116,7 @@ function heightTokenRem(token: string): number {
 /** Which half of the poster ladder a preview is aiming. Phone tokens are the first class in
  *  POSTER_HEIGHT_CLASS; desktop is the `sm:` class. LIVE-272: passing a phone WIDTH into a desktop
  *  HEIGHT is the wrong frame (412/374, not 412/221). */
-export type PosterBandSurface = 'desktop' | 'phone'
+type PosterBandSurface = 'desktop' | 'phone'
 
 /** The event page's centre-column width. The focal picker and the 24-cover survey share this
  *  figure so a retune moves both. */

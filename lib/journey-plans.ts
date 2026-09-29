@@ -1290,7 +1290,7 @@ export async function deletePlansByAuthors(authorIds: string[]): Promise<void> {
 
 // --- Pillar map -----------------------------------------------------------
 
-export interface PlanPillarSlice {
+interface PlanPillarSlice {
   domainId: string | null
   count: number
 }
@@ -1353,7 +1353,7 @@ export async function uncompleteLesson(profileId: string, itemId: string): Promi
 /** Everything the (discovery) Journey page needs for one plan by slug: the plan + items, plus
  *  whether the viewer has adopted it (an adopted learner is redirected to the v2 player). Null
  *  if the plan is gone. The v2 progress surface lives in lib/journeys/progress.ts (ADR-253). */
-export interface JourneyView {
+interface JourneyView {
   plan: JourneyPlan
   items: JourneyPlanItem[]
   adopted: boolean

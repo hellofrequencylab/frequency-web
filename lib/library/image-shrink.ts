@@ -157,7 +157,7 @@ export function isHeicFile(file: File): boolean {
 }
 
 /** Plain-language inline message for a HEIC that could not be converted in this browser. */
-export const HEIC_CONVERT_FAILED_MESSAGE =
+const HEIC_CONVERT_FAILED_MESSAGE =
   'That photo could not be converted for upload. Save it as a JPEG and try again.'
 
 // The conversion target: ample for a full-bleed header, and shrinkImageForUpload re-shrinks the JPEG

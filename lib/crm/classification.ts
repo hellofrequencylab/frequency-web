@@ -23,7 +23,7 @@ import { isAssignableKind } from './relationships'
 export type ContactStatus = 'member' | 'subscriber' | 'lead'
 
 /** What the classifier decides about one contact. */
-export interface ContactClassification {
+interface ContactClassification {
   /** The primary status: member (has a profile) > subscriber (opted in) > lead (everyone else). */
   status: ContactStatus
   /** The community trust rung from the profile (member/host/guide/mentor/…), null for a non-member. */
@@ -122,7 +122,7 @@ export interface ClassifyContext {
 }
 
 /** The minimal contact row the classifier reads. */
-export interface ClassifyRow {
+interface ClassifyRow {
   profileId: string | null
   consentState: string | null
 }

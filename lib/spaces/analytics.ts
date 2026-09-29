@@ -36,7 +36,7 @@ const CTA_CLICK = 'space.cta_click'
 
 /** The per-space profile read-out the Space Home dashboard shows. Counts are over the trailing
  *  window; a profile view is already one bucket per (viewer, day) at write time. */
-export interface SpaceProfileStats {
+interface SpaceProfileStats {
   windowDays: number
   profileViews: number
   ctaClicks: number

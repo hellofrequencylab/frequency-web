@@ -22,7 +22,7 @@ const SIG_EOCD = 0x06054b50 // End Of Central Directory
 const SIG_CDH = 0x02014b50 // Central Directory Header
 const SIG_LFH = 0x04034b50 // Local File Header
 
-export interface ZipCsvEntry {
+interface ZipCsvEntry {
   /** The entry's path inside the archive, verbatim (e.g. "Contacts abc123.csv"). */
   name: string
   /** The decoded UTF-8 text of the CSV. */
@@ -30,23 +30,23 @@ export interface ZipCsvEntry {
 }
 
 /** A CSV entry we chose to skip, with a short reason (surfaced so nothing is silently dropped). */
-export interface ZipSkip {
+interface ZipSkip {
   name: string
   reason: string
 }
 
-export interface ZipReadResult {
+interface ZipReadResult {
   entries: ZipCsvEntry[]
   skipped: ZipSkip[]
 }
 
 /** A raw (undecoded) entry pulled from a ZIP: its path + its inflated bytes. */
-export interface ZipRawEntry {
+interface ZipRawEntry {
   name: string
   bytes: Buffer
 }
 
-export interface ZipRawReadResult {
+interface ZipRawReadResult {
   entries: ZipRawEntry[]
   skipped: ZipSkip[]
 }

@@ -27,7 +27,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /** The grant as stored on a Space: whether it is set, and the audit stamps that say who set it when. */
-export interface SpaceBetaPriceGrant {
+interface SpaceBetaPriceGrant {
   granted: boolean
   /** ISO instant the grant was last turned ON, or null (never granted, or granted pre-audit). */
   grantedAt: string | null
@@ -39,7 +39,7 @@ export interface SpaceBetaPriceGrant {
  *  query failed — and is deliberately DISTINCT from a `ok` read of `granted: false`. Callers that
  *  charge money collapse both to "no grant" (fail-safe, never under-charge); the operator surface
  *  renders them differently, because "not deployed" is an instruction and "not granted" is a state. */
-export type SpaceBetaPriceGrantRead =
+type SpaceBetaPriceGrantRead =
   | { kind: 'ok'; grant: SpaceBetaPriceGrant }
   | { kind: 'unavailable'; reason: 'not_deployed' | 'not_found' | 'error'; message: string }
 
@@ -118,7 +118,7 @@ export async function spaceHasBetaPriceGrant(spaceId: string | null | undefined)
 }
 
 /** The result of a grant write: ok, or a human-readable reason it did not happen. */
-export type SpaceBetaPriceGrantWrite = { ok: true } | { ok: false; error: string }
+type SpaceBetaPriceGrantWrite = { ok: true } | { ok: false; error: string }
 
 /**
  * Grant or revoke the private beta price for a Space (operator). Service-role; the CALLER authorizes

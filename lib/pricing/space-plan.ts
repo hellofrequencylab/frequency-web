@@ -22,7 +22,7 @@ import {
 import { BILLING_NAMESPACE } from '@/lib/spaces/entitlements'
 import { billingLive } from './settings'
 
-export interface SetSpacePlanResult {
+interface SetSpacePlanResult {
   ok: boolean
   /** Why the write was skipped (when ok=false). 'billing_off' | 'not_found' | 'error'. */
   reason?: 'billing_off' | 'not_found' | 'error'

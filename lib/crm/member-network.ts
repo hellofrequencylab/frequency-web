@@ -64,7 +64,7 @@ export function managedCount(network: MemberNetwork): number {
 // ── The pure assembler (unit-tested) ──────────────────────────────────────────
 
 /** The minimal raw row shapes the assembler reads (only the fields it maps). */
-export interface RawNetworkRows {
+interface RawNetworkRows {
   circles?: { id: string; slug: string | null; name: string | null; status?: string | null }[] | null
   events?: { id: string; slug: string | null; title: string | null; starts_at?: string | null; is_cancelled?: boolean | null }[] | null
   spaces?: { id: string; slug: string | null; name: string | null; status?: string | null }[] | null

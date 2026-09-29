@@ -33,7 +33,7 @@ export function isSendingLeaseStale(
   return nowMs - started > SENDING_LEASE_MS
 }
 
-export interface MessagingStatusMeta {
+interface MessagingStatusMeta {
   key: MessagingStatus
   /** Operator-facing label. */
   label: string

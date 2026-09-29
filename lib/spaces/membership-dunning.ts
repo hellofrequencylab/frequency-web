@@ -10,8 +10,6 @@
 // the admin-client ratchet (ADR-923). Display only: it does not revoke Circle access,
 // Journey enrol, or member tickets. pending is never past due.
 
-export type SpaceMembershipPayment = 'pending' | 'active' | 'past_due' | 'canceled'
-
 export type PastDueSpaceMembership = {
   membershipId: string
   spaceId: string

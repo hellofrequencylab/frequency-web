@@ -16,7 +16,7 @@ import { asSpacePlan } from './plans'
 
 /** The facts the pure rule needs: the caller's personal tier, how many active spaces they already own,
  *  and whether any of those is on a paid plan. */
-export interface SpaceCreationContext {
+interface SpaceCreationContext {
   tier: EntitlementTier | null | undefined
   ownedSpaceCount: number
   ownsPaidSpace: boolean

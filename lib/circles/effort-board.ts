@@ -34,7 +34,7 @@ function db(): SupabaseClient {
 }
 
 /** One member's contribution to the circle's shared total. */
-export interface CircleContribution {
+interface CircleContribution {
   profileId: string
   zaps: number
 }
@@ -69,7 +69,7 @@ export interface CircleBoardMember extends EffortCandidate {
   streak: number
 }
 
-export interface CircleBoardData extends EffortBoard<CircleBoardMember> {
+interface CircleBoardData extends EffortBoard<CircleBoardMember> {
   /** Zaps earned through this circle this season. Never filtered by opt-out. */
   total: number
   /** How many members have added to that total. Never filtered by opt-out. */

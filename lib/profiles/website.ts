@@ -15,7 +15,7 @@
 // The label is the hostname without a leading "www.", so the line reads "example.com" rather than
 // the full path the member pasted. PURE: no React, no Next, no Supabase.
 
-export type SafeWebsite = { href: string; label: string }
+type SafeWebsite = { href: string; label: string }
 
 const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i
 

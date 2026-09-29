@@ -10,18 +10,15 @@
 // variant rather than that one. This column and the full-text search_vector both stay
 // exactly as they are, so re-adding such a variant is a create-or-replace over them.
 //
-// Server-only (admin client). The embedding column predates the regenerated DB types
-// for the rest of Phase 1, so writes go through the untyped admin handle (ADR-246, repo
-// convention — see lib/events/embeddings.ts). Degrades gracefully: embedPractice never
+// Server-only (the typed admin client, LIVE-647). Degrades gracefully: embedPractice never
 // throws and no-ops when AI/embeddings are unavailable, so createPractice/updatePractice
 // can call it inline without ever blocking or breaking the write.
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { embedText } from '@/lib/ai/embed'
 import { aiAvailable } from '@/lib/ai/usage'
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 
@@ -40,7 +37,7 @@ type EmbeddablePractice = {
 /** Compose the embedding source text from a practice's descriptive fields. Pure.
  *  Mirrors the search_vector generated column (title + summary + body) so the two
  *  retrieval halves index the same text. */
-export function buildPracticeText(
+function buildPracticeText(
   p: Pick<EmbeddablePractice, 'title' | 'summary' | 'body'>,
 ): string {
   return [p.title, p.summary, p.body]
@@ -88,7 +85,7 @@ export async function embedPractice(practiceId: string): Promise<void> {
  * returns how many were embedded. Skips archived rows (they never surface in search).
  *
  * The embedding column lives ON practices (not a side table), so "missing" = the column
- * is null. We read candidates through the untyped admin handle and filter for a null
+ * is null. We read candidates through the admin handle and filter for a null
  * embedding via PostgREST's `.is('embedding', null)`.
  */
 export async function backfillPracticeEmbeddings(limit = 100): Promise<{ embedded: number }> {

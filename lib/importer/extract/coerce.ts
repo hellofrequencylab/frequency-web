@@ -33,7 +33,7 @@ export interface RawExtractedField {
 }
 
 /** A raw offering the model extracted (with its own per-field citation for price). */
-export interface RawOffering {
+interface RawOffering {
   title?: RawExtractedField
   blurb?: RawExtractedField
   price?: RawExtractedField
@@ -89,7 +89,7 @@ function normalizeForMatch(s: string | undefined): string {
 }
 
 /** Clamp a confidence into 0..1; default to a modest 0.5 when absent/garbage. PURE. */
-export function clampConfidence(c: number | undefined, fallback = 0.5): number {
+function clampConfidence(c: number | undefined, fallback = 0.5): number {
   if (typeof c !== 'number' || !Number.isFinite(c)) return fallback
   return Math.min(1, Math.max(0, c))
 }

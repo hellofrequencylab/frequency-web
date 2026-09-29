@@ -28,7 +28,7 @@
 
 /** The minimal scope shape this resolver reads — the page's admin scope (lib/layout/page-chrome
  *  AdminScope). `id` is the entity's URL slug on an entity-detail scope, absent on the global scope. */
-export interface EntitySurfaceScope {
+interface EntitySurfaceScope {
   kind: string
   id?: string
 }

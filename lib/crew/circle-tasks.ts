@@ -16,7 +16,7 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-export interface CircleTaskAssignee {
+interface CircleTaskAssignee {
   id: string
   displayName: string
   handle: string

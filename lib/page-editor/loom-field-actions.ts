@@ -6,6 +6,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { insertSpaceLibraryImage, findLibraryAssetBySha256 } from '@/lib/library/store'
 import { ingestImageBytes } from '@/lib/library/ingest'
+import { loomAdmits } from '@/lib/library/quota'
 import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 
@@ -84,6 +85,13 @@ export async function uploadToLoom(
   const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), file.type)
   const duplicate = await findLibraryAssetBySha256(spaceId, ingested.sha256)
   if (duplicate?.url) return { url: duplicate.url, id: duplicate.id }
+
+  // BUDGET (LIVE-629, ADR-1602): the same gate as the picker's upload door (loomAdmits, ADR-1585).
+  // After the dedupe (a duplicate stores nothing) and BEFORE storage. Every kind counts: an audio or
+  // video file is a file-backed row in this Space's Loom, so the sum already weighs it. A failed
+  // Space read or a failed sum refuses; the refusal is returned, never thrown.
+  const verdict = await loomAdmits(spaceId, ingested.bytes.byteLength)
+  if (!verdict.ok) return { error: verdict.error }
 
   const { error: upErr } = await admin.storage
     .from(target.bucket)

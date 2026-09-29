@@ -68,7 +68,7 @@ export interface ConnectStatus {
   ready: boolean
 }
 
-export interface ProfileConnectRow {
+interface ProfileConnectRow {
   stripe_account_id: string | null
   stripe_charges_enabled: boolean | null
   stripe_payouts_enabled: boolean | null
@@ -194,7 +194,7 @@ export async function getConnectReadyMap(profileIds: string[]): Promise<Record<s
  * Separated out because the decision is the only interesting part and mocking a Supabase client to
  * reach it would test the mock (SCAN-532's lesson, one directory over).
  */
-export type ConnectReadOutcome =
+type ConnectReadOutcome =
   | { kind: 'unknown'; message: string }
   | { kind: 'existing'; accountId: string }
   | { kind: 'create'; displayName: string | null }

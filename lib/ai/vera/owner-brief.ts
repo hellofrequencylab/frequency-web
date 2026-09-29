@@ -37,7 +37,7 @@ const FREQUENCY_CAP = 1
 
 // ── Compose ──────────────────────────────────────────────────────────────────────
 
-export interface OwnerBrief {
+interface OwnerBrief {
   subject: string
   /** The brief body (inner HTML). The unsubscribe footer is added per-recipient at send time. */
   html: string
@@ -150,7 +150,7 @@ function briefText(intro: string, cards: TodayCard[], laterCount: number): strin
 
 // ── Send ───────────────────────────────────────────────────────────────────────
 
-export interface OwnerBriefRecipient {
+interface OwnerBriefRecipient {
   profileId: string
   email: string
   /** The Space this brief scopes to (per-Space owner brief), or null for the platform brief. */
@@ -158,7 +158,7 @@ export interface OwnerBriefRecipient {
   spaceName?: string | null
 }
 
-export type OwnerBriefSendReason =
+type OwnerBriefSendReason =
   | 'ok'
   | 'no_email'
   | 'nothing_to_surface'

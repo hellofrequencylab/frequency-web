@@ -68,7 +68,7 @@ export interface StartConversationMessageInput {
   scope?: InteractionScopeRef | null
 }
 
-export interface StartConversationMessageResult {
+interface StartConversationMessageResult {
   ref: string
   conversationId: string
 }

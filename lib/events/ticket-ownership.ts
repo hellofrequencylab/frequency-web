@@ -22,7 +22,7 @@
 // A signed-in buyer loses nothing: the page awaits the reconcile BEFORE it reads `hasTicket`, so
 // by the time ownership is derived the row it wrote for that profile is already there.
 
-export interface TicketOwnershipInput {
+interface TicketOwnershipInput {
   /** The signed-in viewer's profile id, or null for a signed-out reader. */
   viewerProfileId: string | null
   /** `hasTicket(event.id, viewerProfileId)` — the DB row for THIS profile. Ignored when signed out. */
@@ -32,7 +32,7 @@ export interface TicketOwnershipInput {
   reconciledCents: number | null
 }
 
-export interface TicketOwnership {
+interface TicketOwnership {
   /** Registration-grade: unhides the venue, the join link, and the RSVP row. */
   ownsTicket: boolean
   /** Message-grade: "your ticket is confirmed". Never feed this into `viewerRegistered`. */

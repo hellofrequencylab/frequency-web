@@ -32,13 +32,13 @@ import { getIntake } from '../store'
 import type { IntakeStatus } from '../intake'
 
 /** The bucket the harvest uploads into (./media.ts BUCKET). */
-export const STAGING_BUCKET = 'site-media'
+const STAGING_BUCKET = 'site-media'
 /** The root folder every intake's staging prefix sits under. */
-export const STAGING_ROOT = 'importer'
+const STAGING_ROOT = 'importer'
 /** An intake that never reached `applied` and has not been touched for this long is abandoned. */
 export const STAGING_ABANDON_DAYS = 30
 /** Per-invocation caps for the nightly age-out (LIVE-190 spirit: bounded work per run). */
-export const STAGING_SWEEP_MAX_FOLDERS = 50
+const STAGING_SWEEP_MAX_FOLDERS = 50
 export const STAGING_SWEEP_MAX_OBJECTS = 200
 /** One list call reads at most this many objects of a prefix; a harvest writes far fewer. */
 const LIST_PAGE = 1000
@@ -54,13 +54,13 @@ export function stagingPrefix(intakeId: string): string | null {
 }
 
 /** One object under a staging prefix: its full bucket path plus when it was written. */
-export interface StagingObject {
+interface StagingObject {
   path: string
   createdAt: string | null
 }
 
-export type StagingMode = 'materialized' | 'abandoned'
-export type StagingVerdict = StagingMode | 'live'
+type StagingMode = 'materialized' | 'abandoned'
+type StagingVerdict = StagingMode | 'live'
 
 /**
  * Walk any JSON-shaped value (a draft, an inputs bag, a raw-sources cache) and collect every
@@ -150,7 +150,7 @@ export interface StagingStorage {
 }
 
 /** A reader for the intake row's lifecycle facts (the store's getIntake by default). */
-export type StagingIntakeReader = (
+type StagingIntakeReader = (
   intakeId: string,
 ) => Promise<{ status: IntakeStatus; updatedAt: string; draft: unknown; inputs: unknown } | null>
 
@@ -168,7 +168,7 @@ async function listStagingObjects(storage: StagingStorage, prefix: string): Prom
     .map((f) => ({ path: `${prefix}${f.name}`, createdAt: f.created_at }))
 }
 
-export interface StagingSweepResult {
+interface StagingSweepResult {
   removed: number
   kept: number
   /** Set when the storage client refused; the sweep is best-effort and the caller carries on. */
@@ -208,7 +208,7 @@ export async function sweepIntakeStaging(
   }
 }
 
-export interface StagingAgeOutResult {
+interface StagingAgeOutResult {
   foldersSeen: number
   removed: number
   kept: number

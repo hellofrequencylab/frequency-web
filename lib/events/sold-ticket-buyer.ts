@@ -14,14 +14,14 @@
 //           the host can refund, so it stays on the list with an honest label rather than
 //           borrowing "A member".
 
-export type SoldTicketBuyerKind = 'member' | 'guest' | 'gone'
+type SoldTicketBuyerKind = 'member' | 'guest' | 'gone'
 
-export interface SoldTicketBuyerInput {
+interface SoldTicketBuyerInput {
   buyer: { display_name: string | null; handle: string | null } | null
   guestEmail: string | null | undefined
 }
 
-export interface SoldTicketBuyer {
+interface SoldTicketBuyer {
   kind: SoldTicketBuyerKind
   /** what the row prints: a name, an address, or the fallback for a buyer nobody can name */
   label: string

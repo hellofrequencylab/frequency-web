@@ -173,6 +173,7 @@ export const ENTITY_WRITES = new Map([
   // ── Copies. The source row is the consent; there is no draft to review. ─────────────────────
   ['lib/circles/remix.ts::remixTemplate', { role: 'copy', entity: 'circle', why: 'Remixes an existing template Circle into a private draft the member owns.' }],
   ['lib/journey-plans.ts::forkPlan', { role: 'copy', entity: 'journey', why: 'Forks an existing Journey the member can already see.' }],
+  ['lib/practices.ts::forkPractice', { role: 'copy', entity: 'practice', why: 'Forks (remixes or claims) an existing practice into a private copy the member owns, with remixed_from and root_practice_id set.' }],
   ['lib/journey-plans.ts::duplicatePlan', { role: 'copy', entity: 'journey', why: 'Duplicates a Journey the member already owns.' }],
   ['lib/commerce/products.ts::duplicateProduct', { role: 'copy', entity: 'product', why: 'The Catalog Duplicate action: a private copy of a row the seller already owns.' }],
   ['app/(main)/admin/content/actions.ts::cloneSeasonAction', { role: 'copy', entity: 'journey', why: 'Operator clone of a whole season of Journeys.' }],

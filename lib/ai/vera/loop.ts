@@ -12,13 +12,13 @@ import { conciergeReply, type ConciergeReply, type ConciergeStage, type Proposed
 import { requiresConfirmation, validateToolCall } from './tools'
 import type { MemberContext } from '@/lib/ai/memory'
 
-export interface VeraTurnInput {
+interface VeraTurnInput {
   stage: ConciergeStage
   memberText: string
   memberContext?: MemberContext | null
 }
 
-export interface VeraTurn extends ConciergeReply {
+interface VeraTurn extends ConciergeReply {
   source: 'deterministic' | 'ai'
 }
 

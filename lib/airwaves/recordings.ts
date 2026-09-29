@@ -148,7 +148,7 @@ const ATTACHMENT_SELECT =
 
 /** What a caller supplies to create a Recording. `loomAssetId` is the Loom file id from
  *  copyRecordingToLoom. Price defaults to free (a mode, never 0). */
-export interface CreateRecordingInput {
+interface CreateRecordingInput {
   spaceId: string
   loomAssetId: string
   mediaKind: MediaKind

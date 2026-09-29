@@ -98,6 +98,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'studio-winback': 1,         // lapsed-member win-back draft (Haiku; low-volume, human-approved)
   'loom-illustration': 3,      // Vera draws a new Loom card as inline SVG (Sonnet; operator-facing, one-shot)
   'library-search': 1,         // semantic search over the Loom (free gte-small embeddings; cap is a safety net)
+  'library-tag': 1,            // Vera names an unnamed Loom image: tags, alt, a category (Haiku vision; ~$0.003/image, the nightly tag-library cron + the Studio drawer, LIVE-587)
   'recraft': 10,               // Recraft image/vector generation + editing ($0.04 raster / $0.08 vector; operator-facing)
   // ── Smart Business Importer (operator-facing, low-volume, per-import USD-capped) ───────────────
   'business-import-extract': 5,  // extract a BusinessProfile from harvested sources (Sonnet; structured, per import)
@@ -126,7 +127,7 @@ export function dailyCapFor(feature: string, fallbackUsd = 1): number {
 // global cap in FEATURE_DAILY_CAP_USD still applies on top). A small fraction of the feature
 // cap keeps any one Space well under the surface ceiling; tuned conservatively until real usage
 // data exists.
-export const SPACE_DAILY_CAP_USD = 0.5
+const SPACE_DAILY_CAP_USD = 0.5
 
 /** The per-Space daily cap for a feature: the smaller of a fixed per-Space ceiling and the
  *  feature's own global cap (a Space can never be allowed more than the whole feature). */

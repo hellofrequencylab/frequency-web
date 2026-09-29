@@ -21,7 +21,7 @@ import type { VitalName } from './vitals'
 
 export type BudgetClass = 'marketing' | 'app' | 'operator'
 
-export interface VitalsBudget {
+interface VitalsBudget {
   /** Largest Contentful Paint, p75, ms. */
   lcpMs: number
   /** Interaction to Next Paint, p75, ms. */

@@ -74,7 +74,7 @@ export function isEventDetailRoute(pathname: string): boolean {
 
 /** Whether a path is an entity-profile tab (the index /spaces/<slug> or a tab /spaces/<slug>/<tab>),
  *  excluding the member directory (/spaces/directory) and the wizard/settings sub-surfaces (/spaces/new, …/settings). */
-export function isEntityProfileRoute(pathname: string): boolean {
+function isEntityProfileRoute(pathname: string): boolean {
   if (!pathname.startsWith(`${ENTITY_PROFILE_ROOT}/`)) return false
   const segs = pathname.slice(1).split('/') // ['spaces', '<slug>', '<tab>'?]
   if (segs.length < 2 || segs.length > 3) return false

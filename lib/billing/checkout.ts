@@ -22,7 +22,7 @@ import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from '.
  *  unrepresentable rather than merely unreachable. */
 type PaidTier = 'crew'
 
-export interface MembershipCheckoutResult {
+interface MembershipCheckoutResult {
   url?: string
   /** An on-page (elements) session's secret. EXACTLY ONE of this and `url` is ever set: an elements
    *  session has no url, and a hosted one has no secret. Branch on what came back, never on what was

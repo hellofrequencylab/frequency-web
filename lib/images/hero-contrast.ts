@@ -35,7 +35,7 @@
 import { objectPositionToXY } from './focal-point'
 
 /** A region of the hero container, in 0..1 fractions of its width/height. */
-export interface RegionFraction {
+interface RegionFraction {
   x0: number
   y0: number
   x1: number
@@ -141,7 +141,7 @@ export function overlayAlphaInTextBand(style: HeroOverlayMode): number {
   return 0
 }
 
-export interface MediaToneInput {
+interface MediaToneInput {
   /** Average relative luminance of the sampled cover region (0..1). */
   mediaLuminance: number
   /** The active overlay mode over the cover. */
@@ -154,7 +154,7 @@ export interface MediaToneInput {
   darkTextLuminance: number
 }
 
-export interface MediaToneResult {
+interface MediaToneResult {
   /** The EFFECTIVE tone of the backdrop behind the text: 'dark' → render light copy,
    *  'light' → render dark copy. */
   tone: 'dark' | 'light'
@@ -196,7 +196,7 @@ export function resolveMediaTone({
  *  plate. Rung 1 is deliberately NOT a rectangle: the shipped `on-image-text` shadow is a
  *  per-glyph treatment that keeps a clean photo clean, and it is the pre-ADR-830 baseline we
  *  already know reads on real covers. A bar only appears when the pixels genuinely demand one. */
-export type HeroPlateRung = 0 | 1 | 2 | 3
+type HeroPlateRung = 0 | 1 | 2 | 3
 
 /** The plate's alpha per rung, ALL ZERO since the owner ruling of 2026-07-28: "I do not want the
  *  dark boxes behind header content." No rung paints a rectangle any more; the only on-media
@@ -218,7 +218,7 @@ export const HERO_HALO_CONTRAST = 3
 export const ZONE_TILE_COLS = 8
 export const ZONE_TILE_ROWS = 4
 
-export interface ZoneToneInput {
+interface ZoneToneInput {
   /** Relative luminance per tile of the cover under THIS zone (0..1, linear light). */
   tiles: number[]
   overlayStyle: HeroOverlayMode
@@ -227,7 +227,7 @@ export interface ZoneToneInput {
   darkTextLuminance: number
 }
 
-export interface ZoneToneResult {
+interface ZoneToneResult {
   /** 'dark' → the backdrop is dark, render LIGHT copy. 'light' → render dark copy. */
   tone: 'dark' | 'light'
   /** The legibility rung this zone needs (see HeroPlateRung). */
@@ -309,7 +309,7 @@ export function resolveZoneTone({
 }
 
 /** The subset of DOMRect the geometry needs, so zoneRegion stays pure and testable in node. */
-export interface BoxRect {
+interface BoxRect {
   left: number
   top: number
   width: number

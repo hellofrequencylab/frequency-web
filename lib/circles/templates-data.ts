@@ -65,7 +65,7 @@ function asCallouts(v: unknown): CircleCallout[] {
 const TEMPLATE_COLS =
   'id, slug, name, primary_pillar, identity, audience, card, one_liner, about, pillars_inside, meetup, gathering, thread, format, size_label, agreements, recommended_journey_pillar, remix_options, callouts, image_url, is_active, display_order, owner_space_id'
 
-export function rowToTemplate(row: Record<string, unknown>): CircleTemplate {
+function rowToTemplate(row: Record<string, unknown>): CircleTemplate {
   return {
     id: String(row.id),
     slug: String(row.slug),

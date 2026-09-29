@@ -21,7 +21,7 @@ import { getStaffMember } from '@/lib/staff'
 import { getCapabilityOverrides } from '@/lib/permissions'
 import { staffCan, staffSeesAdmin, type StaffDomain, type StaffRole, type Access } from '@/lib/core/staff-roles'
 
-export interface AdminContext {
+interface AdminContext {
   profileId: string
   role: CommunityRole
   /** The caller's STAFF web_role (ADR-208), independent of the community ladder. */

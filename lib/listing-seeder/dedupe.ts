@@ -53,7 +53,7 @@ export interface SimilarSeededListing {
   claimed: boolean
 }
 
-export interface FindSimilarInput {
+interface FindSimilarInput {
   kind: ListingSeedKind
   title: string
   city: string | null

@@ -51,7 +51,7 @@ export interface TextStyle {
  *  whole-block `text` bag. The render targets each role in the block's DOM: `eyebrow` by a shared marker
  *  (`data-text-role`), `heading` by heading tags, `body` by paragraph tags — see textByRoleClass. */
 export type TextRole = 'eyebrow' | 'heading' | 'body'
-export const TEXT_ROLES: readonly TextRole[] = ['eyebrow', 'heading', 'body']
+const TEXT_ROLES: readonly TextRole[] = ['eyebrow', 'heading', 'body']
 
 /** Per-block presentation: an optional card background, inner padding, alignment, vertical margins, and a
  *  reusable text-style bag. Every field is sparse — absent means the block's own default — so the stored
@@ -212,7 +212,7 @@ export type FieldType =
 /** The value set a `height` field accepts (3-way selector, C6). */
 export const HEIGHT_VALUES = ['short', 'medium', 'tall'] as const
 /** The value set a `buttonOrientation` field accepts (C6). */
-export const BUTTON_ORIENTATION_VALUES = ['row', 'stacked'] as const
+const BUTTON_ORIENTATION_VALUES = ['row', 'stacked'] as const
 
 /** One option in an enum-style primitive field (`segmented`). `label` is the accessible name; `icon` is an
  *  optional short token the control may render (voice-neutral). */
@@ -295,7 +295,7 @@ const IMAGE_ASPECT_FIELD: FieldDef = {
  *  Stored as a string so it rides the `segmented` primitive sink; the render maps it to a grid utility. */
 export const COLUMN_VALUES = ['2', '3', '4'] as const
 /** The `columns` segmented options, reused by Features + Card grid so the two never drift. */
-export const COLUMN_OPTIONS: readonly FieldOption[] = [
+const COLUMN_OPTIONS: readonly FieldOption[] = [
   { value: '2', label: '2' },
   { value: '3', label: '3' },
   { value: '4', label: '4' },
@@ -305,10 +305,10 @@ export const COLUMN_OPTIONS: readonly FieldOption[] = [
  *  names a Space DATA source the items auto-populate from (title + blurb + price + link resolved server-side
  *  by lib/entity-blocks/block-data-sources.ts). The value doubles as the data-source block id for the
  *  offering sources, so the resolver needs no second map. */
-export const FEATURE_SOURCE_VALUES = ['custom', 'offerings', 'events', 'memberships', 'tickets'] as const
-export type FeatureSource = (typeof FEATURE_SOURCE_VALUES)[number]
+const FEATURE_SOURCE_VALUES = ['custom', 'offerings', 'events', 'memberships', 'tickets'] as const
+type FeatureSource = (typeof FEATURE_SOURCE_VALUES)[number]
 /** The `source` segmented options for the Features block. */
-export const FEATURE_SOURCE_OPTIONS: readonly FieldOption[] = [
+const FEATURE_SOURCE_OPTIONS: readonly FieldOption[] = [
   { value: 'custom', label: 'Custom' },
   { value: 'offerings', label: 'Offerings' },
   { value: 'events', label: 'Events' },
@@ -318,7 +318,7 @@ export const FEATURE_SOURCE_OPTIONS: readonly FieldOption[] = [
 
 /** The Features block's five layouts (ADR-585). The renderer dispatches on this; `twoUp` is a legacy alias
  *  for `columns` (kept only for read-time back-compat, never offered). */
-export const FEATURE_LAYOUT_VALUES = ['list', 'columns', 'stats', 'cards', 'spotlight'] as const
+const FEATURE_LAYOUT_VALUES = ['list', 'columns', 'stats', 'cards', 'spotlight'] as const
 export type FeatureLayout = (typeof FEATURE_LAYOUT_VALUES)[number]
 
 /** The Features `source` of a content bag, defaulting to `custom` and validated to the known set. Pure; used
@@ -354,7 +354,7 @@ export function gridColumns(props: Record<string, unknown> | undefined): 2 | 3 |
 
 /** The Events block's three layouts (Events block upgrade). `list` is today's rows and the default,
  *  so an existing saved page renders exactly as before (sparse blob: the default is never stored). */
-export type SpaceEventsView = 'list' | 'cards' | 'calendar'
+type SpaceEventsView = 'list' | 'cards' | 'calendar'
 
 /** The Events block `view` of a content bag, defaulting to `list`, validated to the known set. Pure;
  *  the space Events section dispatches on the result. */
@@ -703,7 +703,7 @@ export const PICKER_DATA_BLOCK_IDS: readonly string[] = Object.entries(DATA_BLOC
   .map(([id]) => id)
 
 /** A content block is one whose category is `content` in the registry. */
-export function isContentBlock(block: EntityBlockDef): boolean {
+function isContentBlock(block: EntityBlockDef): boolean {
   return block.category === 'content'
 }
 
@@ -1158,7 +1158,7 @@ function sanitizeLink(raw: unknown): { label: string; url: string } | null {
  *  present only when it survives sanitize, so the stored blob stays sparse and legacy rows (icon + title +
  *  text [+ link]) round-trip unchanged. `price` + `link` are auto-filled when the item is sourced from an
  *  offering / event / tier (resolveFeatureSourceItems). */
-export interface SanitizedFeature {
+interface SanitizedFeature {
   icon: string
   /** A URL string or an AssetRef (ADR-1245); read it through safeImageUrl. */
   image?: AssetValue
@@ -1173,7 +1173,7 @@ export interface SanitizedFeature {
  *  plus a title + text, an optional whole-card link, and an optional separate button. Every sub-field is
  *  present only when it survives sanitize, so the blob stays sparse and legacy cards (icon + title + text)
  *  round-trip. */
-export interface SanitizedCard {
+interface SanitizedCard {
   icon?: string
   /** A URL string or an AssetRef (ADR-1245); read it through safeImageUrl. */
   image?: AssetValue
@@ -1243,7 +1243,7 @@ function sanitizeCard(raw: unknown): SanitizedCard | null {
 /** A sanitized product reference (Email Studio Phase 4): the picked product's id plus an optional owner hint
  *  (which catalog it came from), used by the compile path to refresh the card from the live catalog. Every
  *  field is bounded; `id` is never used as an object key. */
-export interface SanitizedProductRef {
+interface SanitizedProductRef {
   id: string
   ownerKind?: 'profile' | 'space' | 'platform'
   ownerId?: string

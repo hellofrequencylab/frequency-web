@@ -14,7 +14,7 @@ import { CONTACT_TOPICS } from '@/lib/comms/contact-topics'
  *  send loop only ever gated on 'marketing'), so back-compat is byte-identical. */
 export const DEFAULT_EMAIL_TOPIC: NotificationTopic = 'marketing'
 
-export interface EmailTopicOption {
+interface EmailTopicOption {
   key: NotificationTopic
   label: string
   help: string

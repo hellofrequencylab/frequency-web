@@ -6,7 +6,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export interface RecruiterTier {
+interface RecruiterTier {
   key: string
   label: string
   emoji: string
@@ -15,7 +15,7 @@ export interface RecruiterTier {
 }
 
 // Ascending by `min`. A recruiter's tier is the highest whose threshold they meet.
-export const RECRUITER_TIERS: RecruiterTier[] = [
+const RECRUITER_TIERS: RecruiterTier[] = [
   { key: 'scout',      label: 'Scout',      emoji: '🌱', min: 0 },
   { key: 'connector',  label: 'Connector',  emoji: '🔗', min: 3 },
   { key: 'recruiter',  label: 'Recruiter',  emoji: '📣', min: 10 },

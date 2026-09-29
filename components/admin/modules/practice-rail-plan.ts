@@ -28,8 +28,18 @@ import { railForm, type RailForm } from '@/lib/studio/kernel/edit-plan'
 /** The columns `setPracticeCoverUrl` / `removePracticeCover` write. */
 export const PRACTICE_COVER_WRITES = ['header_image'] as const
 
-/** The columns `updatePracticeSettings` writes, as the action reads them off its FormData. */
-export const PRACTICE_SETTINGS_WRITES = ['title', 'summary', 'description', 'duration_min', 'category'] as const
+/** The columns `updatePracticeSettings` writes, as the action reads them off its FormData. The
+ *  split pair (LIVE-641) rides the same autosave and is stored through `updatePractice`, whose
+ *  `resolveSplitWrite` keeps it true against the primary Pillar and the Focus set. */
+export const PRACTICE_SETTINGS_WRITES = [
+  'title',
+  'summary',
+  'description',
+  'duration_min',
+  'category',
+  'secondary_domain_id',
+  'primary_pct',
+] as const
 
 /** The column `updatePracticePermalink` writes. */
 export const PRACTICE_PERMALINK_WRITES = ['slug'] as const

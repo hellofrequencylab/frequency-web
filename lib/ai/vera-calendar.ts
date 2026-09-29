@@ -109,7 +109,7 @@ export interface VeraCalendarContext {
  *  ask. Session-only: it lives in the box's state and is never written anywhere. */
 export type VeraTranscript = CompleteMessage[]
 
-export type VeraCalendarReply =
+type VeraCalendarReply =
   | {
       kind: 'proposal'
       changes: VeraChange[]
@@ -332,7 +332,7 @@ async function attendanceResult(id: string, read: () => Promise<AttendanceHistor
   }
 }
 
-export type ProposeCalendarChangesResult = VeraCalendarReply | { error: string }
+type ProposeCalendarChangesResult = VeraCalendarReply | { error: string }
 
 const TRANSCRIPT_BLOCK_TYPES = new Set(['text', 'tool_use', 'tool_result'])
 const TRANSCRIPT_ERROR = 'That conversation with Vera could not be picked up again. Start over and ask afresh.'

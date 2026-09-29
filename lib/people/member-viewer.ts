@@ -219,7 +219,7 @@ export function sortMembers(members: MemberSummary[], sort: SortSpec | undefined
     .map((x) => x.m)
 }
 
-export interface ApplyResult {
+interface ApplyResult {
   /** The filtered + sorted rows visible up to `page * pageSize`. */
   visible: MemberSummary[]
   /** The full filtered + sorted set (its length is the match count). */

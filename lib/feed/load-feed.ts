@@ -12,7 +12,7 @@
 
 export type FeedLoad<T> = { kind: 'ok'; items: T[] } | { kind: 'error' }
 
-export type FeedRpcName = 'feed_for_viewer' | 'scoped_feed_for_viewer'
+type FeedRpcName = 'feed_for_viewer' | 'scoped_feed_for_viewer'
 
 interface RpcResponse {
   data: unknown

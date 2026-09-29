@@ -76,7 +76,7 @@ export async function createIntroduction(
   return ok()
 }
 
-export interface IntroductionRewardResult {
+interface IntroductionRewardResult {
   rewarded: number
   gems: number
 }

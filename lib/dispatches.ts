@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // circle / hub / nexus / Space they belong to. Shared by the right-rail "Dispatches"
 // widget and the community news ticker so the query lives in exactly one place.
 
-export type RecentDispatch = {
+type RecentDispatch = {
   id: string
   title: string
   audienceScope: string

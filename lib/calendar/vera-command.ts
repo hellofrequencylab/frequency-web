@@ -82,9 +82,9 @@ import { repeatLabel, type FieldDef, type RepeatDef } from '@/lib/studio/kernel/
 export type VeraMode = PlanStage
 
 /** What a `field` change sets: one scalar, or one row of a repeat (a link to add). */
-export type VeraFieldValue = ScalarFieldValue | RepeatRowValue
+type VeraFieldValue = ScalarFieldValue | RepeatRowValue
 
-export type VeraFieldTarget = 'plan' | 'entry'
+type VeraFieldTarget = 'plan' | 'entry'
 
 export type VeraChange =
   | {
@@ -116,7 +116,7 @@ export type VeraChange =
       value: VeraFieldValue
     }
 
-export type VeraChangeKind = VeraChange['kind']
+type VeraChangeKind = VeraChange['kind']
 
 export const VERA_CHANGE_KINDS: readonly VeraChangeKind[] = ['pencil', 'move', 'stage', 'retitle', 'todo', 'archive', 'field']
 
@@ -137,7 +137,7 @@ export function isDestructiveChange(change: VeraChange): boolean {
 /** The words of a destructive line's own confirmation. Both are visible: `label` beside the box and
  *  `detail` under it, inside the same `<label>`, so what a person reads is what a screen reader
  *  announces and no aria-label overrides a visible one. */
-export interface VeraConfirmation {
+interface VeraConfirmation {
   label: string
   detail: string
 }
@@ -308,7 +308,7 @@ export interface VeraClarificationOption {
   value: string
 }
 
-export interface VeraClarification {
+interface VeraClarification {
   question: string
   options: VeraClarificationOption[]
   allowFreeText: boolean
@@ -333,7 +333,7 @@ export const VERA_MODE_OPTIONS: readonly { value: VeraMode; label: string }[] = 
 
 /** One thing a person can ask Vera for, as they would type it, with the tooltip that says what
  *  she would come back with. */
-export interface VeraSuggestion {
+interface VeraSuggestion {
   /** The words, ready to send. Pressing the chip puts these in the field; it never sends them. */
   ask: string
   /** The tooltip. What the proposal would hold, and what it would not do on its own. */
@@ -628,7 +628,7 @@ export function attendanceReason(change: VeraChange, history: AttendanceHistory 
 
 /** What a `field` change would overwrite: how much text is there, and the text itself when it is
  *  short enough to read on the line. */
-export interface VeraCurrentValue {
+interface VeraCurrentValue {
   chars: number
   /** The whole current value, or null when it is too long to put on one line. */
   text: string | null
@@ -640,7 +640,7 @@ export interface VeraSubject {
   values: Readonly<Record<string, unknown>>
 }
 
-export type VeraSubjects = Record<VeraFieldTarget, Readonly<Record<string, VeraSubject>>>
+type VeraSubjects = Record<VeraFieldTarget, Readonly<Record<string, VeraSubject>>>
 
 /** The key a `field` change's current value is filed under. */
 export function veraFieldKey(target: VeraFieldTarget, id: string, path: string): string {
@@ -903,7 +903,7 @@ export interface VeraLogRecord {
 /** The most steps one record carries, and the most records the console reads back. */
 export const MAX_LOG_RECORDS = 20
 /** The longest a recorded sentence may be. Longer is cut on the way in, not on the way out. */
-export const MAX_LOG_MESSAGE = 400
+const MAX_LOG_MESSAGE = 400
 
 function logChange(raw: unknown): VeraChange | null {
   const parsed = parseVeraChanges([raw])
