@@ -159,11 +159,8 @@ describe('listLoomScopeImages: the OWNER scope spans my profile + owned spaces, 
     expect(q.ors.some((o) => o.includes(`created_by.eq.${PROFILE_A}`) && o.includes(`space_id.in.(${SPACE_A})`))).toBe(true)
   })
 
-  it('does NOT apply the source filter to a space-scoped folder (all of the space is shown)', async () => {
-    await listLoomScopeImages({ spaceId: SPACE_A })
-    const q = calls.find((c) => c.table === 'library_assets')!
-    expect(q.ors.some((o) => o.includes('source.'))).toBe(false)
-  })
+  // A SPACE scope (all of the Space, no provenance filter) reads on the caller's session since LIVE-571:
+  // listSpaceLoomImages, proved in lib/library/space-loom-store.test.ts.
 })
 
 // ── PROG-D1: ingest metadata, checksum dedupe, and the two-armed ranked search ──────────────────
@@ -273,7 +270,7 @@ describe('text search runs BOTH indexed arms', () => {
   })
 
   it('ranks the picker too', async () => {
-    await listLoomScopeImages({ spaceId: SPACE_A }, { q: 'lavender' })
+    await listLoomScopeImages({ createdBy: PROFILE_A }, { q: 'lavender' })
     expect(calls.some((c) => c.textSearches.some(([col]) => col === 'search_tsv'))).toBe(true)
   })
 })
@@ -292,8 +289,9 @@ describe('LIVE-576: expired licences leave every pick reader and stay in the Stu
     expect(notExpiredOr(now)).toBe('expires_at.is.null,expires_at.gt.2026-09-29T04:30:00.000Z')
   })
 
-  it('listLoomScopeImages (the picker) excludes expired rows in a SPACE scope', async () => {
-    await listLoomScopeImages({ spaceId: SPACE_A })
+  it('listLoomScopeImages (the picker) excludes expired rows in the OWNER scope browse', async () => {
+    // The SPACE scope's expiry is proved on the session store (lib/library/space-loom-store.test.ts).
+    await listLoomScopeImages({ createdBy: PROFILE_A })
     expect(assetCalls().every((c) => c.ors.some(carriesExpiry))).toBe(true)
   })
 
@@ -305,7 +303,7 @@ describe('LIVE-576: expired licences leave every pick reader and stay in the Stu
   })
 
   it('the picker reads is_protected (a proof can stand in for a protected master, LIVE-580) and expires_at', async () => {
-    await listLoomScopeImages({ spaceId: SPACE_A })
+    await listLoomScopeImages({ createdBy: PROFILE_A })
     expect(assetCalls().some((c) => c.selects.some((cols) => /\bis_protected\b/.test(cols) && /\bexpires_at\b/.test(cols)))).toBe(true)
   })
 
