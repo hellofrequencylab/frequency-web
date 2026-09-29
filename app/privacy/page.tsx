@@ -215,8 +215,10 @@ export default function PrivacyPage() {
             <h2 className="text-body-lg font-semibold text-text">8. Cookies</h2>
             <p className="text-muted leading-relaxed">
               We use essential cookies to maintain your login session. We also use Google Analytics
-              to understand aggregate, anonymized usage, and one attribution cookie that records
-              which page or campaign first brought you here. We configure Google Analytics with IP
+              to understand how the site is used, and one attribution cookie that records which page
+              or campaign first brought you here. Google Analytics runs only while it is on for you,
+              and some actions we record on our servers reach it with your account ID, never your
+              name or email. We configure Google Analytics with IP
               anonymization and with advertising and ad-personalization signals turned off. We do
               not use advertising cookies, and we never sell your data.
             </p>

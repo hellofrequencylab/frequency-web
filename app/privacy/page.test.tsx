@@ -50,4 +50,9 @@ describe('privacy policy', () => {
     expect(html).toContain('Last updated: September 29, 2026')
     expect(html).not.toContain('—')
   })
+
+  it('does not call Google Analytics anonymized, since server events carry the account ID', () => {
+    expect(html).not.toMatch(/anonymized usage/i)
+    expect(html.match(/with your account ID, never your name or email/g)?.length).toBe(2)
+  })
 })
