@@ -224,9 +224,9 @@ describe('ledger:from-diff, the pure halves', () => {
     // Applied to main, the fragments reproduce the branch's rows and keep main's own change.
     const applied = applyRowFragments(main, r.fragments.map((f) => frag(f.id, f.body)))
     expect(applied.problems).toEqual([])
-    const by = new Map(applied.doc.entries.map((e: Row) => [e.id, e]))
+    const by = new Map<string, Row>(applied.doc.entries.map((e: Row) => [e.id, e] as [string, Row]))
     expect(by.get('A-1')).toEqual(ours.entries[0])
-    expect(by.get('B-1').priority).toBe('P1')
+    expect(by.get('B-1')?.priority).toBe('P1')
     expect(applied.doc.meta.slate.waves[0].ids).toEqual(['B-1', 'C-1', 'N-1'])
   })
 
