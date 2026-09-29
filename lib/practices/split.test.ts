@@ -87,6 +87,27 @@ describe('resolveSplitWrite: the secondary is one of the practice Focuses', () =
     expect(Object.keys(out.focus_details ?? {})).toEqual([MIND, BODY])
   })
 
+  it('drops any Focus key that is not a Pillar id, so __proto__ or constructor never reaches the stored map', () => {
+    const focus = JSON.parse(
+      `{"__proto__": {"instructions": "x", "timing": ""}, "constructor": ${JSON.stringify(F)}, "junk": ${JSON.stringify(F)}, "${MIND}": ${JSON.stringify(F)}}`,
+    ) as SplitWriteInput['focus']
+    const out = resolveSplitWrite(input({ focus, secondary: BODY }))
+    expect(Object.keys(out.focus_details ?? {})).toEqual([MIND, BODY])
+    expect(Object.prototype.hasOwnProperty.call(out.focus_details, '__proto__')).toBe(false)
+    expect(Object.getPrototypeOf(out.focus_details)).toBe(Object.prototype)
+    expect(({} as Record<string, unknown>).instructions).toBeUndefined()
+  })
+
+  it('stores no split when the primary is not a Pillar id', () => {
+    for (const primary of ['__proto__', 'constructor', 'mind']) {
+      expect(resolveSplitWrite(input({ primary, secondary: BODY }))).toEqual({
+        secondary_domain_id: null,
+        primary_pct: PRIMARY_PCT_DEFAULT,
+        focus_details: null,
+      })
+    }
+  })
+
   it('leaves the Focus set alone when the secondary is already in it', () => {
     expect(resolveSplitWrite(input()).focus_details).toBeNull()
   })

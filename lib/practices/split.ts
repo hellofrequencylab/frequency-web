@@ -59,9 +59,9 @@ const EMPTY_FOCUS = { instructions: '', timing: '' }
 /** Resolve what one edit stores for the split. Total: any junk in, a row the CHECKs accept out. */
 export function resolveSplitWrite(input: SplitWriteInput): SplitWrite {
   const single: SplitWrite = { secondary_domain_id: null, primary_pct: PRIMARY_PCT_DEFAULT, focus_details: null }
-  const primary = input.primary
+  const primary = typeof input.primary === 'string' ? input.primary : ''
   const secondary = typeof input.secondary === 'string' ? input.secondary.trim() : ''
-  if (!primary || !UUID.test(secondary) || secondary === primary) return single
+  if (!UUID.test(primary) || !UUID.test(secondary) || secondary === primary) return single
 
   const listed = Object.prototype.hasOwnProperty.call(input.focus, secondary)
   // The Focus that carried the split was removed, so the split goes with it (rule 4).
@@ -72,12 +72,20 @@ export function resolveSplitWrite(input: SplitWriteInput): SplitWrite {
     secondaryPillarId: secondary,
     primaryPct: input.primaryPct ?? null,
   })
-  return {
-    secondary_domain_id: secondary,
-    primary_pct,
-    focus_details: listed
-      ? null
-      : // The primary's key first, so a reader that takes "the first Focus" still finds the primary.
-        { [primary]: input.focus[primary] ?? EMPTY_FOCUS, ...input.focus, [secondary]: EMPTY_FOCUS },
+  return { secondary_domain_id: secondary, primary_pct, focus_details: listed ? null : withSecondary(input.focus, primary, secondary) }
+}
+
+/** The Focus map with `secondary` added: the primary's entry first (a reader that takes "the
+ *  first Focus" still finds the primary), then every existing UUID-keyed entry once, then the
+ *  secondary. Built through a Map and `Object.fromEntries`, never a computed-key write, and any
+ *  key that is not a Pillar id (`__proto__`, `constructor`, junk) is dropped, so a stored map can
+ *  hold nothing but Pillar ids. Both ids are UUID-checked by the caller. */
+function withSecondary(focus: FocusMap, primary: string, secondary: string): FocusMap {
+  const own = (k: string) => (Object.prototype.hasOwnProperty.call(focus, k) ? focus[k] : undefined)
+  const entries = new Map<string, FocusMap[string]>([[primary, own(primary) ?? EMPTY_FOCUS]])
+  for (const [key, detail] of Object.entries(focus)) {
+    if (UUID.test(key) && !entries.has(key)) entries.set(key, detail)
   }
+  entries.set(secondary, EMPTY_FOCUS)
+  return Object.fromEntries(entries)
 }
