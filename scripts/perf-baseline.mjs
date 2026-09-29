@@ -74,8 +74,11 @@ export const HOT_PATHS = [
     // (HYG-141). perf-baseline.test.ts fails if any concrete route here is a redirect-only page.
     route: '/network',
     authed: true,
-    entry: 'app/(main)/network/page.tsx (directoryPromise), lib/people-suggestions.ts',
-    sql: "-- directory listing: the SERVICE-ROLE read in app/(main)/network/page.tsx directoryPromise,\n-- so capture it as service_role (no RLS applies to this read). Add AND NOT p.is_demo when demo\n-- mode is off or the viewer hides demo content:\nEXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) SELECT p.id, p.display_name, p.handle, p.avatar_url, p.community_role, p.is_system, p.last_seen_at, p.is_demo, p.entity_types, r.name FROM profiles p LEFT JOIN nexus_regions r ON r.id = p.nexus_region_id WHERE p.is_active ORDER BY p.display_name LIMIT 500;\n-- then the members_near RPC body (proximity banding) and the lib/people-suggestions.ts\n-- memberships / friendships reads, also service_role; flag any per-row connection subquery.",
+    entry: 'app/(main)/network/page.tsx (the member-card listing read), lib/people-suggestions.ts',
+    // The listing SQL follows the paged shape LIVE-661 gave the page: filters run in the query
+    // (lib/connections/directory-page.ts scopeDirectoryQuery) and each page is one .range().
+    // Before that, the page read 500 rows and filtered in code; the comment says how to read that.
+    sql: "-- directory listing: the SERVICE-ROLE member-card read in app/(main)/network/page.tsx, so\n-- capture it as service_role (no RLS applies to this read). Paged shape (LIVE-661): the filters run\n-- in the query and page 1 is rows 0-47. Add AND NOT p.is_demo when demo mode is off or the viewer\n-- hides demo content. On a tree that still reads 500 rows and filters in code, drop the\n-- directory_visible and ghost_mode predicates and the OFFSET, and use LIMIT 500:\nEXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) SELECT p.id, p.display_name, p.handle, p.avatar_url, p.community_role, p.is_system, p.last_seen_at, p.is_demo, p.entity_types, r.name FROM profiles p LEFT JOIN nexus_regions r ON r.id = p.nexus_region_id WHERE p.is_active AND p.directory_visible AND NOT p.ghost_mode ORDER BY p.display_name, p.id LIMIT 48 OFFSET 0;\n-- then the members_near RPC body (proximity banding) and the lib/people-suggestions.ts\n-- memberships / friendships reads, also service_role; flag any per-row connection subquery.",
   },
   {
     id: 'practice-log-write',

@@ -56,7 +56,7 @@ code that owns the query so the plan is reproducible.
 |---|---|---|---|
 | **Feed** | Loads their home feed | `lib/feed/blend-rank.ts`, `lib/feed/feed-people.ts` | `feed_for_viewer` / `scoped_feed_for_viewer` RPC |
 | **Circle detail** | Opens a Circle page | `lib/circles/*` | circle row + members + scoped posts |
-| **People directory** | Browses people / suggestions at `/network` | `app/(main)/network/page.tsx` (`directoryPromise`), `lib/people-suggestions.ts` | service-role `profiles` list (capped at 500) + `members_near` banding + suggestion joins |
+| **People directory** | Browses people / suggestions at `/network` | `app/(main)/network/page.tsx` (the member-card listing read), `lib/people-suggestions.ts` | service-role `profiles` listing (one `.range()` page of 48 since LIVE-661) + `members_near` banding + suggestion joins |
 | **Practice log write** | Logs a practice (North-Star write) | `lib/practices/*` | practice insert + ledger award (idempotent) |
 | **Events catalog** | Browses the events list | `lib/events/store.ts` | events list + scope + occurrence join |
 
