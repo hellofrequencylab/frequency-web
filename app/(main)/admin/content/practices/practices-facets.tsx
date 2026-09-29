@@ -17,8 +17,9 @@ import { PracticesFilterDisclosure } from './practices-filter-bar'
 // controls (practices-controls.tsx) and their search-param logic are unchanged. A facet with no
 // options is hidden so the bar never shows a dead control.
 //
-// Counts are GLOBAL over the admin-visible library by design (lib/practices.ts + PRACTICE-LIBRARY
-// §5): they answer "what's in the library"; the "showing N of M" line reflects the active filter.
+// Counts are RESIDUAL (LIVE-646, ADR-1609): each group is counted under every active filter except
+// its own, so the number beside an option is the row total of the view choosing it would show
+// (searchAdminFacets in lib/practices.ts). The whole-library numbers live in the stats band.
 
 export interface FacetRailData {
   pillar: FacetOption[]
