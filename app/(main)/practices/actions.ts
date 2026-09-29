@@ -30,6 +30,7 @@ import {
 import { rateLimitOk } from '@/lib/rate-limit'
 import { draftPracticeSpark, personalizePractice, type PracticeSuggestion } from '@/lib/ai/practice-spark'
 import { planPracticeEdits } from '@/lib/ai/practice-edit'
+import { suggestRemixDirections, normalizeRemixDirection, remixRequest } from '@/lib/ai/practice-remix'
 import { PRACTICE_MANIFEST } from '@/lib/studio/entities/practice'
 import {
   applyLock,
@@ -607,13 +608,44 @@ export async function setPracticeTagsAction(id: string, labels: string[]): Promi
 
 // Remix a library practice you don't own: fork a PRIVATE copy you own, adopt it
 // into your program, and open the editor on the copy.
-export async function forkPracticeAction(practiceId: string) {
+//
+// `direction` (LIVE-645) is one of Vera's "Remix it" directions the member picked in the dialog.
+// The fork is unchanged (lineage intact); the direction is then applied to the COPY through the
+// same Vera edit path the builder uses (applyVeraPracticeChangeAction), so no second editor exists.
+// If that edit fails or AI is off, the member still lands on their copy, exactly as a plain copy.
+export async function forkPracticeAction(practiceId: string, direction?: string | null) {
   const profileId = await getMyProfileId()
   if (!profileId) return
   const copy = await forkPractice(profileId, practiceId)
   if (!copy) return
   await adoptPractice(profileId, copy.id)
+  const picked = normalizeRemixDirection(direction)
+  if (picked) await applyVeraPracticeChangeAction(copy.id, remixRequest(picked))
   redirect(`/practices/${copy.id}/edit`)
+}
+
+// Vera's "Remix it" directions for the Remix dialog (LIVE-645): three short ways to take a
+// practice, generated on open and never stored. An empty list (AI off, over budget, throttled) is
+// not an error; the dialog simply stays the plain copy it always was. Only a practice the member
+// could already read (public, or their own) is sent to the model.
+export async function remixDirectionsAction(
+  practiceId: string,
+): Promise<ActionResult<{ directions: string[] }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not signed in')
+  const practice = await getPractice(practiceId)
+  if (!practice || (!practice.is_public && practice.created_by !== profileId)) return fail('Practice not found')
+  const directions = await suggestRemixDirections({
+    practice: {
+      title: practice.title ?? '',
+      summary: practice.summary,
+      cadence: practice.cadence,
+      durationMin: practice.duration_min,
+      body: practice.body,
+    },
+    profileId,
+  })
+  return ok({ directions: directions ?? [] })
 }
 
 // Vera assist for the claim wizard: personalize a template to the member's goal +

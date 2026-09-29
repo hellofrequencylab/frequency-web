@@ -9,6 +9,9 @@
 // open branch, or (b) rank the matched page in process. This is (b), and it is deliberately first:
 // it ships the ranked behaviour with zero schema surface, and if the corpus ever outgrows the
 // candidate cap the RPC is a drop-in replacement for `rankLibraryMatches` alone.
+// That RPC now exists for the Studio's "Most relevant" sort (search_library_assets, LIVE-586,
+// ADR-1597), where it fuses these two word arms with the embedding; `fuseRankedArms` below is its
+// fold. The picker's query path and the keyword sorts still rank here.
 //
 // THE TWO RETRIEVAL ARMS AND WHY BOTH EXIST. Full-text search is stemmed and word-oriented: it
 // matches "running" to "run" and ranks whole words, and it CANNOT match a fragment or a typo.
@@ -154,4 +157,31 @@ export function mergeCandidates<T extends { id: string }>(fts: readonly T[], tri
     }
   }
   return out
+}
+
+/** The reciprocal rank fusion constant. 60 is the standard value, and it is the literal the
+ *  search_library_assets RPC adds to every rank (20270345009600); the unit test pins the two. */
+export const RRF_K = 60
+
+/**
+ * Reciprocal rank fusion over ranked arms (LIVE-586). Each arm is a list of ids, best first; a row
+ * scores the sum of 1 / (k + rank) over every arm that found it, so a row found by all three arms
+ * (full text, trigram, vector) outranks a row that tops only one. Ties break on the row's best
+ * single rank, then on id, which is the order the RPC returns, so the page reads the same whether
+ * the database or this function ordered it.
+ */
+export function fuseRankedArms(arms: ReadonlyArray<ReadonlyArray<string>>, k = RRF_K): string[] {
+  const acc = new Map<string, { score: number; best: number }>()
+  for (const arm of arms) {
+    arm.forEach((id, i) => {
+      const rank = i + 1
+      const cur = acc.get(id) ?? { score: 0, best: Number.POSITIVE_INFINITY }
+      cur.score += 1 / (k + rank)
+      cur.best = Math.min(cur.best, rank)
+      acc.set(id, cur)
+    })
+  }
+  return [...acc.entries()]
+    .sort(([aId, a], [bId, b]) => b.score - a.score || a.best - b.best || (aId < bId ? -1 : aId > bId ? 1 : 0))
+    .map(([id]) => id)
 }

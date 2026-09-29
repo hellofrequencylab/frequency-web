@@ -160,7 +160,7 @@ An anchor and its children legitimately **diverge** on `visibility`, `status`, `
 | Space readers (opt-in), Spotlight, Broadcast, circle map, profile feed | The viewer's own "Going" lane |
 | `/discover` events, hubs, organizer page, city and topic counts | Every operator console: admin events, Space settings calendar, circle-manage picker, CRM, `/admin/qr` |
 | For-You candidate scope | Reminder crons, the materialiser, gates and existence checks |
-| Sitemap, `/llms.txt` count, embeddings | `resonance/` (different table, no `parent_event_id`) |
+| Sitemap, `/llms.txt` count, embeddings | The Resonance app, now in `hellofrequencylab/development` (different table, no `parent_event_id`) |
 
 ---
 
