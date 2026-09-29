@@ -1,7 +1,7 @@
 import type { SpaceModule } from '@/lib/admin/modules/space-modules'
 import { panelHrefForModule } from '@/lib/spaces/surface-hrefs'
 
-// THE SPACE CONSOLE'S THUMB ROW (LIVE-704, ADR-1639). On a phone the /manage console opens on a search
+// THE SPACE CONSOLE'S THUMB ROW (LIVE-704, ADR-1651). On a phone the /manage console opens on a search
 // bar, a wrap of section pills and a grid of rows: every daily operator action sits at the TOP of a
 // 844px screen, the one band a thumb cannot reach. This picks the few daily doors that get a bottom-edge
 // home on phones (components/spaces/console-thumb-bar.tsx, slot 0c of the mobile stacking contract).

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { ThumbAction } from '@/lib/spaces/console-thumb'
 
-// THE SPACE CONSOLE'S THUMB BAR (LIVE-704, ADR-1639): the operator's daily doors at the bottom edge of a
+// THE SPACE CONSOLE'S THUMB BAR (LIVE-704, ADR-1651): the operator's daily doors at the bottom edge of a
 // phone, where a thumb holding the phone can reach them. Below md only; at md and up the console's own
 // rows are a pointer away and the bar never renders.
 //

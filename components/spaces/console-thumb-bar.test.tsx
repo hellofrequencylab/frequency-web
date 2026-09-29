@@ -8,7 +8,7 @@ import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { spaceModuleById } from '@/lib/admin/modules/space-modules'
 import { panelHrefForModule } from '@/lib/spaces/surface-hrefs'
 
-// LIVE-704 (ADR-1639): the Space console on a phone. The consequence the row asks for is "the daily
+// LIVE-704 (ADR-1651): the Space console on a phone. The consequence the row asks for is "the daily
 // operator doors are reachable with a thumb", which is three facts: the doors come from the catalog the
 // console already gated (so the menu contract holds), they sit in slot 0c of the mobile stacking
 // contract (so the tab bar and its risers never cover them), and each is a 44px target.

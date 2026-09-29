@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures'
 import { settle } from './surfaces'
 
-// THE SPACE CONSOLE IN ONE HAND (LIVE-704, ADR-1639). The /manage console measured on a phone, at the
+// THE SPACE CONSOLE IN ONE HAND (LIVE-704, ADR-1651). The /manage console measured on a phone, at the
 // narrowest width we support, the width the visual suite photographs, and a large phone. It MEASURES
 // boxes (like overflow.spec.ts, ADR-1035) rather than comparing pixels, so it needs no baseline.
 //
