@@ -47,7 +47,7 @@ newcomers, posting, replying, reacting, and showing up day to day. They are smal
 and **capped per day** so they cannot be farmed, and they are the currency you
 **spend** in the Vault on titles, cosmetics, and more. For example:
 
-- Welcome a newcomer: **8** (up to 3 a day)
+- Welcome a newcomer: **5**, once for each newcomer you welcome
 - RSVP to an event, or join a Circle: **5**
 - Post: **3** (up to 5 a day)
 - Comment or reply: **2** (up to 8 a day)
