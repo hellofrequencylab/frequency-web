@@ -31,6 +31,7 @@ create temporary table _deny_matrix (tbl text primary key, denied text) on commi
 insert into _deny_matrix (tbl, denied) values
   -- money
   ('commerce_order_items',        'insert,update,delete'),
+  ('commerce_order_transfers',    'select,insert,update,delete'),
   ('commerce_orders',             'insert,update,delete'),
   ('commerce_products',           'insert,update,delete'),
   ('commerce_variants',           'insert,update,delete'),
@@ -82,8 +83,8 @@ insert into _deny_matrix (tbl, denied) values
 
 -- ── 0. Non-vacuity. A matrix that failed to load asserts nothing, loudly and greenly. ──────────
 select is(
-  (select count(*) from _deny_matrix), 47::bigint,
-  'the deny matrix loaded all 47 money / trust / Vera tables'
+  (select count(*) from _deny_matrix), 48::bigint,
+  'the deny matrix loaded all 48 money / trust / Vera tables'
 );
 
 -- ── 1. Every table in the matrix is a real, live table. ────────────────────────────────────────
