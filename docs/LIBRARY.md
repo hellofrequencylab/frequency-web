@@ -229,6 +229,10 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   **checksum + dedupe** → read dimensions → write the catalog row. One function does the server half:
   `ingestImageBytes` in `lib/library/ingest.ts`, called by every upload site with the bytes it is
   about to store.
+  - **Enforced by a test** ([ADR-1562](DECISIONS.md) §3, `LIVE-579`). `lib/library/ingest-coverage.test.ts`
+    walks `lib/`, `app/` and `components/` for every file that `.upload(`s into `library-media` (by the
+    constant, the literal or `classifyLoomUpload`) and fails naming the file when it skips the strip.
+    Its exception list is empty and carries a reason column for the day one is needed.
   - **Order matters.** The checksum is taken AFTER the strip, so it describes the object that is
     really on disk — and two exports of one photo that differ only in metadata dedupe to one asset.
     Dedupe reads `(space_id, sha256)`, the pair `library_assets_sha256_idx` indexes; it is
