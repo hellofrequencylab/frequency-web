@@ -20,6 +20,55 @@ const { calls, authUser, createAdminClient } = vi.hoisted(() => {
   // event_rsvps reads return DIFFERENT (overlapping) seats so the merge + dedupe is exercised too.
   const rowsFor = (table: string, col?: string): Record<string, unknown>[] => {
     if (table === 'network_contacts') return [{ id: 'c1' }, { id: 'c2' }]
+    // One friendship on each side, carrying the embedded handles the read asks for.
+    if (table === 'friendships' && col === 'user_a_id')
+      return [
+        {
+          id: 'f1',
+          user_a_id: 'me',
+          user_b_id: 'them',
+          requested_by: 'me',
+          a: { handle: 'me' },
+          b: { handle: 'river' },
+          introducer: null,
+        },
+      ]
+    if (table === 'friendships' && col === 'user_b_id')
+      return [
+        {
+          id: 'f2',
+          user_a_id: 'other',
+          user_b_id: 'me',
+          requested_by: 'other',
+          a: { handle: 'sky' },
+          b: { handle: 'me' },
+          introducer: { handle: 'river' },
+        },
+      ]
+    if (table === 'notifications')
+      return [{ id: 'n1', type: 'friend_request', actor: { handle: 'river' } }]
+    if (table === 'space_memberships')
+      return [
+        {
+          id: 'ms1',
+          space_id: 's2',
+          status: 'active',
+          started_at: '2026-06-01T00:00:00Z',
+          space: { name: 'Lantern House', slug: 'lantern-house' },
+          tier: { name: 'Regular' },
+        },
+      ]
+    if (table === 'space_members')
+      return [
+        {
+          id: 'sm1',
+          space_id: 's1',
+          role: 'member',
+          created_at: '2026-05-01T00:00:00Z',
+          space: { name: 'Stillwater', slug: 'stillwater' },
+          inviter: { handle: 'sky' },
+        },
+      ]
     if (table === 'event_rsvps') {
       if (col === 'profile_id') return [{ id: 'r1' }, { id: 'r2' }]
       // A claimed guest seat carries both identities, so r2 comes back from this read as well.
@@ -143,6 +192,83 @@ describe('buildMemberExport — owner scoping', () => {
       expect(c.col).toBe('contact_id')
       expect(c.val).toEqual(['c1', 'c2'])
     }
+  })
+})
+
+// LIVE-550 / ADR-1582: the six tables a member would call theirs. One case per table, each proving
+// the read happens and that its only filter is the caller's id on the column that makes the row
+// theirs (a message they SENT, a notification addressed TO them, and so on).
+describe('buildMemberExport — the person-keyed tables (ADR-1582)', () => {
+  const ownerFilters = (table: string) =>
+    calls.filter((c) => c.table === table && c.method === 'eq').map((c) => [c.col, c.val])
+
+  it('reads messages the caller SENT, never by conversation', async () => {
+    await buildMemberExport('me')
+    expect(ownerFilters('messages')).toEqual([['sender_id', 'me']])
+  })
+
+  it('reads room messages the caller authored', async () => {
+    await buildMemberExport('me')
+    expect(ownerFilters('room_messages')).toEqual([['author_id', 'me']])
+  })
+
+  it('reads friendships from both sides, each bound to the caller id', async () => {
+    await buildMemberExport('me')
+    expect(ownerFilters('friendships')).toEqual([
+      ['user_a_id', 'me'],
+      ['user_b_id', 'me'],
+    ])
+  })
+
+  it('reads notifications addressed to the caller', async () => {
+    await buildMemberExport('me')
+    expect(ownerFilters('notifications')).toEqual([['recipient_id', 'me']])
+  })
+
+  it('reads the Spaces the caller belongs to, as a team role and as a member', async () => {
+    await buildMemberExport('me')
+    expect(ownerFilters('space_members')).toEqual([['profile_id', 'me']])
+    expect(ownerFilters('space_memberships')).toEqual([['member_profile_id', 'me']])
+  })
+
+  it('reads the CRM activities the caller logged', async () => {
+    await buildMemberExport('me')
+    expect(ownerFilters('crm_activities')).toEqual([['created_by', 'me']])
+  })
+
+  it('reduces the other member to a handle and drops every profile id', async () => {
+    const out = await buildMemberExport('me')
+    expect(out.data.friendships).toEqual([
+      expect.objectContaining({ id: 'f1', friend_handle: 'river', requested_by_me: true, introduced_by_handle: null }),
+      expect.objectContaining({ id: 'f2', friend_handle: 'sky', requested_by_me: false, introduced_by_handle: 'river' }),
+    ])
+    for (const f of out.data.friendships) {
+      for (const k of ['user_a_id', 'user_b_id', 'requested_by', 'introduced_by', 'a', 'b', 'introducer'])
+        expect(f).not.toHaveProperty(k)
+    }
+    expect(out.data.notifications).toEqual([{ id: 'n1', type: 'friend_request', actor_handle: 'river' }])
+    expect(out.data.spaceMemberships).toEqual([
+      {
+        id: 'ms1',
+        space_id: 's2',
+        status: 'active',
+        space_name: 'Lantern House',
+        space_slug: 'lantern-house',
+        tier_name: 'Regular',
+        joined_at: '2026-06-01T00:00:00Z',
+      },
+    ])
+    expect(out.data.spaceRoles).toEqual([
+      {
+        id: 'sm1',
+        space_id: 's1',
+        role: 'member',
+        space_name: 'Stillwater',
+        space_slug: 'stillwater',
+        joined_at: '2026-05-01T00:00:00Z',
+        invited_by_handle: 'sky',
+      },
+    ])
   })
 })
 
