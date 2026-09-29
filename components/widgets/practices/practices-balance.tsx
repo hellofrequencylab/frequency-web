@@ -111,6 +111,9 @@ export async function PracticesBalance() {
                 )}
               </p>
             )}
+            {hasZaps && !zaps.complete && (
+              <p className="mt-1 text-meta text-subtle">You have more logs than we can count in one go, so these figures leave some out.</p>
+            )}
           </>
         )}
       </div>

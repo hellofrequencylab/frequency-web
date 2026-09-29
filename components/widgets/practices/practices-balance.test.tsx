@@ -37,7 +37,9 @@ vi.mock('@/lib/supabase/admin', () => ({
       const builder = {
         select: () => builder,
         eq: () => builder,
-        gt: () => Promise.resolve({ data: rows, error: null }),
+        gt: () => builder,
+        order: () => builder,
+        range: (from: number, to: number) => Promise.resolve({ data: rows.slice(from, to + 1), error: null }),
         in: (_c: string, ids: string[]) =>
           Promise.resolve({ data: rows.filter((r) => ids.includes(r.id as string)), error: null }),
       }
