@@ -12,7 +12,7 @@
 // (shared with the picker) so they clear Vercel's serverless body limit. FAIL-SAFE throughout.
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
-import { Upload, Loader2, Search, Trash2, ImageIcon, X } from 'lucide-react'
+import { Upload, Loader2, Search, Trash2, ImageIcon, X, Lock } from 'lucide-react'
 import { loomImages, uploadLoomImage, deleteSpaceLoomImage, loomQuotaMeter } from '@/lib/loom/picker-actions'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
 import { appendImageDescriptor, describeImage } from '@/lib/library/image-describe'
@@ -231,6 +231,12 @@ export function SpaceLoomStudio({
             <li key={a.id} className="group relative aspect-square overflow-hidden rounded-card border border-border bg-canvas">
               {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL, not a configured next/image domain */}
               <img src={a.url} alt={a.alt ?? a.title} loading="lazy" className="h-full w-full object-cover" />
+              {/* A protected image arrives as its proof, a small signed rendition (LIVE-580). */}
+              {a.isProtected && (
+                <span data-loom-proof className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-0.5 rounded-pill bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-muted lift-1">
+                  <Lock className="h-2.5 w-2.5" aria-hidden /> Protected
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => remove(a.id)}

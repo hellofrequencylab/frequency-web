@@ -30,6 +30,7 @@ import {
   deleteSpaceLibraryAsset,
   type LoomPickAsset,
 } from '@/lib/library/store'
+import { withLoomProofs } from '@/lib/library/asset-urls'
 import { ingestImageBytes } from '@/lib/library/ingest'
 import { loomQuotaFor, loomStorageUsed, loomBudgetVerdict, loomMeter, type LoomMeter } from '@/lib/library/quota'
 import { readImageDescriptor } from '@/lib/library/image-describe'
@@ -191,10 +192,14 @@ export async function loomImages(
   // The asset families this view wants (purpose-scoped): the picker passes ['image'] for photos,
   // ['icon'] for the Icons view, ['image','element'] + generatedOnly for Elements, etc.
   const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
-  const [assets, tags] = await Promise.all([
-    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly }),
+  const [rows, tags] = await Promise.all([
+    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, includeProtected: true }),
     listLoomScopeTags(scope, kinds),
   ])
+  // PROOFS, NOT MASTERS (LIVE-580, ADR-1623): a protected row leaves here with a width-capped signed
+  // proof as its url and no storage key, and the picker renders it without letting it be placed. The
+  // master of a protected asset never reaches a picker, so it can never be stored in a page.
+  const assets = await withLoomProofs(rows)
   return { assets, tags }
 }
 

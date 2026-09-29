@@ -46,6 +46,15 @@ gets its own Loom**. It grows for years without a code deploy per asset.
   AssetRef refresh and the column-image readers skip it, so they stay fail-open and untouched.
   Audio and video refuse (recordings-media has no private twin), and so does a replace or a
   Recraft edit of a protected file. The download door and proofing are LIVE-578 and LIVE-580.
+  Since [LIVE-580](BUILD-BACKLOG.json) ([ADR-1623](DECISIONS.md)) **a protected asset is shown
+  as a proof**: `proofLibraryAssetUrl` in `lib/library/asset-urls.ts` signs the private object
+  with a storage transform (480 px, the grid preset, resize contain) for 15 minutes, so storage
+  serves it resized and nothing here decodes a pixel. The admin Studio grid and drawer, the Space
+  Loom Studio and the picker all get the proof, never the master (`withLoomProofs` swaps the url
+  and drops the storage key before a pick list leaves the server), and the picker shows a
+  protected tile locked, so it can never be placed. No watermark (owner ruling 2026-09-29). The
+  cap binds the display, not a knowing holder: storage honours the same token at its object
+  endpoint, so a proof is short-lived and only ever handed to someone who manages the asset.
 - **Scope:** **every asset is space-scoped.** Frequency's shared/master library is the **root
   space's** Loom (`space_id` is NOT NULL). A child space's effective library = its own ∪ root's.
 - **Transforms:** **on-the-fly** (a width/format request against the master). **Editing an image
@@ -343,6 +352,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
    LIVE-577 shipped: the private bucket, the protect move and the one signing function.
+   LIVE-580 shipped: the width-capped signed proof, used by both Studios and the picker.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
    Background removal and upscale (LIVE-589), describe on view (LIVE-588) and auto-tag (LIVE-587) are shipped; the hybrid rank (LIVE-586) is the one child left ([ADR-1563](DECISIONS.md)).
 

@@ -6,6 +6,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
 import { listLoomScopeImages, listLoomScopeTags } from '@/lib/library/store'
+import { withLoomProofs } from '@/lib/library/asset-urls'
 import { loomMeter, loomQuotaFor, loomStorageUsed } from '@/lib/library/quota'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
@@ -37,8 +38,10 @@ export default async function SpaceLoomStudioPage({ params }: { params: Promise<
   const brandName = space.brandName ?? space.name
   // The storage meter (LIVE-567): what this Loom stores against its cap. loomStorageUsed never
   // throws, so a failed read renders as words in the Studio and never holds the page.
+  // A protected image shows as its proof (LIVE-580): withLoomProofs swaps each protected row's url
+  // for a width-capped signed rendition and drops the storage key before the list reaches the browser.
   const [initialAssets, initialTags, usage] = await Promise.all([
-    listLoomScopeImages({ spaceId: space.id }, { kinds: ['image'] }),
+    listLoomScopeImages({ spaceId: space.id }, { kinds: ['image'], includeProtected: true }).then(withLoomProofs),
     listLoomScopeTags({ spaceId: space.id }, ['image']),
     loomStorageUsed(space.id),
   ])
