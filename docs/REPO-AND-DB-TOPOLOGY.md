@@ -38,9 +38,10 @@ to `hook` or any other project (the only mention is a single doc line describing
 from). `supabase/config.toml` only sets the local CLI label (`project_id = "frequency-web"`); the real
 runtime binding lives in Vercel/local env, which docs repeatedly confirm is `azsqfeonabsbmemvddqd`.
 
-> The `resonance/` sub-app is designed to share the Frequency project via a dedicated `resonance` schema.
-> That is a shared-schema sub-app inside `azsqfeonabsbmemvddqd`, not a separate project. If Resonance
-> becomes its own product, give it its own project.
+> The Resonance app (formerly the nested `resonance/` sub-app) left this repo on 2026-09-29
+> ([ADR-1580](DECISIONS.md)). It lives in `hellofrequencylab/development` as `apps/resonance`, with its
+> own `resonance` schema and `resonance_app` role, and never touches `azsqfeonabsbmemvddqd`. Frequency's
+> own Resonance CRM (`lib/resonance/*`, the `resonance_*` columns) is unrelated and stays here.
 
 ---
 

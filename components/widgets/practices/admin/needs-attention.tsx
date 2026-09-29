@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
-import { needsAttention, type AttentionReason } from '@/lib/practices/clean'
+import { needsAttention, PRACTICE_TAG_FLOOR, type AttentionReason } from '@/lib/practices/clean'
+import { suggestPlacements } from '@/lib/practices/suggest'
+import { PracticePlacementAccept } from '@/app/(main)/admin/content/practices/practice-placement'
+import { CurateWithVera } from './curate-with-vera'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 
@@ -18,6 +21,8 @@ const REASON: Record<AttentionReason, string> = {
   imageless: 'No image',
   never_logged: 'Never logged',
   stale: 'Going stale',
+  hookless: 'No card hook',
+  undertagged: `Under ${PRACTICE_TAG_FLOOR} tags`,
 }
 
 /** Quality score → a calm tone (a low score is a nudge, never an alarm). */
@@ -35,6 +40,9 @@ export async function PracticeNeedsAttention() {
 
   const shown = items.slice(0, PANEL_LIMIT)
   const more = items.length - shown.length
+  // A shown row missing a Pillar or a Sub Focus carries the placement its nearest neighbours agree
+  // on, ready to accept (LIVE-643, ADR-1606). Bounded by PANEL_LIMIT: at most twelve vector lookups.
+  const placements = await suggestPlacements(shown.map((it) => it.id))
 
   return (
     <section className="space-y-3">
@@ -65,6 +73,17 @@ export async function PracticeNeedsAttention() {
                     </StatusChip>
                   ))}
                 </div>
+                {placements.has(it.id) && (
+                  <div className="mt-1.5">
+                    <PracticePlacementAccept id={it.id} suggestion={placements.get(it.id)!} />
+                  </div>
+                )}
+                {/* Vera offers to fill what the row left empty (LIVE-644). */}
+                <CurateWithVera
+                  practiceId={it.id}
+                  title={it.title || 'Untitled practice'}
+                  gaps={{ hook: it.reasons.includes('hookless'), tags: it.reasons.includes('undertagged') }}
+                />
               </div>
               <div
                 className="flex shrink-0 flex-col items-end"

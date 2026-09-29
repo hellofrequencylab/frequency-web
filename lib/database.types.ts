@@ -1484,6 +1484,7 @@ export type Database = {
           currency: string
           entity_id: string
           fulfillment_status: string
+          funds_flow: string
           guest_email: string | null
           id: string
           metadata: Json
@@ -1508,6 +1509,7 @@ export type Database = {
           currency?: string
           entity_id: string
           fulfillment_status?: string
+          funds_flow?: string
           guest_email?: string | null
           id?: string
           metadata?: Json
@@ -1532,6 +1534,7 @@ export type Database = {
           currency?: string
           entity_id?: string
           fulfillment_status?: string
+          funds_flow?: string
           guest_email?: string | null
           id?: string
           metadata?: Json
