@@ -3046,11 +3046,11 @@ export async function logPractice(input: {
     const { maybeSpark } = await import('@/lib/rewards/spark')
     const spark = await maybeSpark(profileId, { source: 'practice_log', day })
     if (spark.sparked && spark.amount > 0) {
-      const base = journey ?? { bonuses: [], zaps: 0, gems: 0 }
+      // Spark is the only bonus left in this container, so it starts from empty.
       journey = {
-        bonuses: [...base.bonuses, { label: `A Spark. Plus ${spark.amount} Gems.`, kind: 'gems', amount: spark.amount }],
-        zaps: base.zaps,
-        gems: base.gems + spark.amount,
+        bonuses: [{ label: `A Spark. Plus ${spark.amount} Gems.`, kind: 'gems', amount: spark.amount }],
+        zaps: 0,
+        gems: spark.amount,
       }
     }
   } catch {
