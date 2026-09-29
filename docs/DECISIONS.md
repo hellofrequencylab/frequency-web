@@ -49767,6 +49767,25 @@ The cull landed last on purpose. Between the audit and this PR, thirty-odd PRs m
 
 **Rows.** `LIVE-642` closed here. `LIVE-641`, `LIVE-647`, `PROG-PRAC4` untouched.
 
+## ADR-1610: The seven practice modules keep the generated Database type on their admin handle, so a misspelt practice column fails tsc instead of a request (LIVE-647)
+
+**Status:** Accepted · 2026-09-29 · backlog `LIVE-647` (closed here) · child 7 of `PROG-PRAC4` under [ADR-1593](DECISIONS.md) · the practice twin of `HYG-054` · retires the ADR-246 untyped-handle convention for `lib/practices.ts` and `lib/practices/*` · re-tested first per [ADR-1082](DECISIONS.md) · numbered 1610 by the orchestrator's assignment · no migration, no behaviour change
+
+**Context.** `lib/practices.ts`, `lib/practices/attribution.ts`, `clean.ts`, `embeddings.ts`, `health.ts`, `lifecycle.ts` and `lineage.ts` each declared `function db(): SupabaseClient` over `createAdminClient()`, which returns `SupabaseClient<Database>`. The annotation threw the schema away, and nineteen comments cited ADR-246 ("newer than the generated types") for columns `lib/database.types.ts` has carried for weeks. Re-tested on `main` at `441bb8646` from the repo (no DB access overnight): every column the practice phases added is in the generated types, as are the three RPCs the modules call (`match_practices`, `merge_practices`, `practice_admin_facets`). The row's probe failed on all seven handles.
+
+**Decision.**
+
+1. **The handle is inferred, not annotated.** Each module's `db()` is `function db() { return createAdminClient() }`, so it keeps `SupabaseClient<Database>`. `clean.ts`'s `nearestDuplicate` takes `ReturnType<typeof db>` so its caller's handle stays typed too.
+2. **Payloads are typed by their table.** The typed handle surfaced eight sites tsc had never checked. Five `Record<string, unknown>` payloads (`setPracticeFlags`, `setPracticeReward`, `createPractice`, `updatePractice`, the log stamp in `logPractice`) are now `TablesUpdate`/`TablesInsert` of their table; the two seed-embedding reads drop a `string | number[]` cast the column never returns; `forkPractice` drops its `as never` payload cast (and the comment between `.from('practices')` and `.insert(`, which had hidden the write from the create census, so `scripts/check-creates.mjs` now classifies it as a `copy`, beside `forkPlan`); `listPracticesForSpace` drops its hand-written `Chain` cast for the typed builder.
+3. **A cast that stays sits on its field and says why.** `movement_config` and `focus_details` cast to `Json` (the app interfaces have no index signature), and `icon` casts to `string` in two places, because the column is NOT NULL. Shape casts over joined rows and the admin filter builder are not schema workarounds and stay.
+4. **No behaviour change, and a finding named instead of fixed.** `updatePractice` writes `STR(icon)`, which is null for a blank icon, into a NOT NULL column, so a blank-icon patch fails the whole update at the database today. The typed handle is what exposed it. The cast keeps today's behaviour with a comment that names it; deciding what a blank icon should do is its own change.
+
+**Rejected.** Annotating `SupabaseClient<Database>` by hand (inference says the same thing and cannot drift from the admin client). Fixing the blank-icon write here (a behaviour change inside a typing row, on the file five sibling rows are editing tonight). Retyping the admin filter builder and the join-row casts (they describe a dynamic query shape, not a missing column, and rewriting them is a refactor with its own risk).
+
+**Consequences.** A misspelt practice, practice_log or lineage column in these seven modules now fails `tsc` instead of a request at run time. The ADR-246 comments are gone from the practice server layer. The row's probe reads all seven handles plus the fork and by-space casts, and failed on `main` on each.
+
+**Rows.** `LIVE-647` closed here. `PROG-PRAC4` (proven by its children) untouched.
+
 ## ADR-1607: Vera fills what a library practice left empty: a card hook when the summary is blank and tags under three, from the canonical list first, and only when a curator accepts it (LIVE-644)
 
 **Status:** Accepted · 2026-09-29 · backlog `LIVE-644` (closed here), child 4 of `PROG-PRAC4` under [ADR-1593](DECISIONS.md) · on the pattern of [ADR-446](DECISIONS.md) (the advisory pre-screen) and beside [ADR-1589](DECISIONS.md) (`LIVE-587`, the Loom's fill-only-empty rule) · corroborated by `lib/ai/practice-curate.ts`, `lib/ai/budget.ts` (`practice-curate`), `app/(main)/admin/content/actions.ts` (`draftPracticeCurationAction`, `acceptPracticeCurationAction`), `components/widgets/practices/admin/curate-with-vera.tsx`, `components/widgets/practices/admin/needs-attention.tsx`, `lib/practices.ts` (`getPracticeFillState`) and the pins in `lib/ai/practice-curate.test.ts` · number assigned by the orchestrator · re-tested first per [ADR-1082](DECISIONS.md)
