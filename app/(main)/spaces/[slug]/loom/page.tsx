@@ -4,6 +4,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceManageHref } from '@/lib/spaces/types'
+import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
 import { listLoomScopeImages, listLoomScopeTags } from '@/lib/library/store'
 import { loomMeter, loomQuotaFor, loomStorageUsed } from '@/lib/library/quota'
 import { IndexTemplate } from '@/components/templates'
@@ -12,9 +13,11 @@ import { SpaceLoomStudio } from '@/components/spaces/loom/space-loom-studio'
 
 // THE SPACE LOOM STUDIO page (SPACE_MODULES `space.loom`): the full-page image-library manager for one Space.
 // The counterpart to the popup LoomPicker — browse, upload, organize, and delete the Space's own images.
-// Owner-gated (canEditProfile = owner/admin/editor), exactly like the Practices manager: a regular member
-// never reaches this surface (the /manage console gates it), so business operators get the Studio while
-// members only ever get the popup picker. Fail closed on a missing/not-visible space (no existence leak).
+// Gated on the Space's own `loom` FUNCTION through canManageSpaceLoom (LIVE-566, ADR-1578): the on/off
+// switch in spaces.entitlements and the min-role bar in spaces.feature_roles (code default editor), the same
+// answer the /manage console uses to show or hide the tile. A Space that switched Loom Studio off, or raised
+// its bar to admin, 404s an editor here the way it always 404d a member: no existence leak. The popup picker
+// is a different door (it stays on canEditProfile), so an editor barred from the Studio still edits pages.
 
 export const metadata: Metadata = { title: 'Loom Studio' }
 export const dynamic = 'force-dynamic'
@@ -29,7 +32,7 @@ export default async function SpaceLoomStudioPage({ params }: { params: Promise<
   if (!space) notFound()
 
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  if (!caps.canEditProfile) notFound()
+  if (!canManageSpaceLoom(space, caps.role)) notFound()
 
   const brandName = space.brandName ?? space.name
   // The storage meter (LIVE-567): what this Loom stores against its cap. loomStorageUsed never
