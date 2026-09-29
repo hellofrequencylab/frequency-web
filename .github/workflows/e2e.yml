@@ -541,9 +541,10 @@ jobs:
       #     A seed is not required for the chrome the masks leave in the picture.
       #
       #   ADVISORY (@visual AND @advisory) -- /discover (LIVE-373), whose height is the listed
-      #     set, and /admin/qr (LIVE-476), which blocked four pull requests that touched nothing
-      #     it renders and whose diff nobody has yet explained. Runs, reports, uploads, and does
-      #     NOT block. A gate that cannot fire truthfully stays advisory; it does not get skipped.
+      #     set. Runs, reports, uploads, and does NOT block. A gate that cannot fire truthfully
+      #     stays advisory; it does not get skipped. Three operator surfaces rode it between
+      #     2026-09-23 and 2026-09-28 (LIVE-476, LIVE-492, LIVE-504) and all three block again
+      #     once #2949 and #2955 are on main, each fixed at its cause (LIVE-492, ADR-1568).
       #
       # always() on every visual step so a smoke/a11y failure above does not hide a pixel
       # regression here.
@@ -586,7 +587,7 @@ jobs:
       # ...............................................................................
       # ...............................................................................
 
-      - name: Visual compare -- advisory tier (live indexes, and /admin/qr)
+      - name: Visual compare -- advisory tier (live indexes)
         id: advisory_visual
         continue-on-error: true
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
@@ -601,9 +602,10 @@ jobs:
         run: pnpm test:e2e:visual:advisory
 
       # An advisory tier that fails silently is the thing it was built to avoid, so say it in
-      # the summary where a reviewer already looks. Two surfaces ride it, for two different
-      # reasons, and BOTH are named here: a reader who sees only one of them goes looking for a
-      # capture that ran. The member shell no longer reports here -- it blocks (LIVE-313).
+      # the summary where a reviewer already looks. EVERY surface on the tier is named here, with
+      # its row: a reader who sees one of two goes looking for a capture that ran. One rides it
+      # today. The member shell no longer reports here -- it blocks (LIVE-313) -- and the
+      # operator surfaces that rode it in September block again (LIVE-476, LIVE-492, LIVE-504).
       - name: Report the advisory tier
         if: ${{ always() && steps.advisory_visual.outcome == 'failure' }}
         run: |
@@ -612,13 +614,8 @@ jobs:
             echo
             echo "**/discover (LIVE-373).** These captures photograph live Circles, events and"
             echo "posts, so a height change here is usually a listed Circle rather than this PR."
-            echo "Recapture when the design moved."
-            echo
-            echo "**/admin/qr (LIVE-476).** This surface blocked four consecutive pull requests"
-            echo "that touched nothing it renders. The cause is NOT known: a small, stable"
-            echo "desktop-only diff, mobile green, live tallies ruled out by measurement. Do NOT"
-            echo "recapture it to clear this -- read the diff image and add what you learn to"
-            echo "LIVE-476, which stays open until the cause is found."
+            echo "Recapture when the design moved. Do NOT recapture to clear a diff you have not"
+            echo "read: the failure message names the box that moved and the rows the pixels sit in."
             echo
             echo "See \`Upload report + diffs\` for the pictures."
           } >> "$GITHUB_STEP_SUMMARY"

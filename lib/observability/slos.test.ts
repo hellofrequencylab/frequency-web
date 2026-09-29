@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 
 import {
   SLOS,
   CRON_FRESHNESS,
+  CRON_MONITORED,
+  CRON_UNMONITORED,
+  isCronMonitored,
   getSlo,
   meetsSlo,
   cronFreshnessMinutes,
@@ -121,17 +125,67 @@ describe('errorBudget — burn derived from the SLO contract', () => {
   })
 })
 
+/** The scheduled fleet, read from vercel.json rather than typed here. The contract below used to
+ *  assert a literal 18 while vercel.json scheduled 29, and passed for three months: a count is
+ *  not a comparison. Every test in this block compares against THIS list. */
+function scheduledCrons(): string[] {
+  const parsed = JSON.parse(readFileSync('vercel.json', 'utf8')) as { crons: Array<{ path: string }> }
+  const jobs = parsed.crons.map((c) => c.path.replace(/^\/api\/cron\//, ''))
+  // The floor, so an unreadable vercel.json cannot make an empty contract look complete.
+  expect(jobs.length).toBeGreaterThanOrEqual(15)
+  return jobs
+}
+
 describe('cron freshness windows (§4a)', () => {
-  it('covers all 18 vercel.json cron jobs exactly once', () => {
+  it('covers every vercel.json cron job exactly once, and names nothing vercel.json does not schedule', () => {
     const all = CRON_FRESHNESS.flatMap((w) => w.jobs)
+    const scheduled = scheduledCrons()
     expect(new Set(all).size).toBe(all.length) // no job double-listed
-    expect(all).toHaveLength(18)
+    expect([...all].sort()).toEqual([...scheduled].sort())
   })
 
   it('resolves a window for a known job and null for an unknown one', () => {
     expect(cronFreshnessMinutes('process-queue')).toBe(4)
-    expect(cronFreshnessMinutes('weekly-digest')).toBe(60 * 24 + 60)
+    expect(cronFreshnessMinutes('journey-prompt')).toBe(120) // hourly since ADR-1225
+    expect(cronFreshnessMinutes('billing-renewals')).toBe(60 * 24 + 60)
+    // Weekly, so a day-long window would have called it stale six days in seven.
+    expect(cronFreshnessMinutes('weekly-digest')).toBe(60 * 24 * 8)
     expect(cronFreshnessMinutes('not-a-job')).toBeNull()
+  })
+})
+
+// LIVE-548 / ADR-1574. The monitored set used to exist only as check names in the Healthchecks
+// account and as an env value in Vercel; the repo could not compare intent with reality. This
+// block is the comparison: every scheduled cron is placed exactly once, and silence is chosen
+// with a reason. A cron added next month fails here until someone decides whether it pages.
+describe('the monitored set (CRON_MONITORED / CRON_UNMONITORED)', () => {
+  it('partitions vercel.json exactly: every scheduled cron in one list, nothing in both, nothing extra', () => {
+    const scheduled = scheduledCrons()
+    const monitored = [...CRON_MONITORED]
+    const unmonitored = CRON_UNMONITORED.map((u) => u.job)
+    const all = [...monitored, ...unmonitored]
+    expect(new Set(all).size).toBe(all.length) // a job cannot be both
+    expect([...all].sort()).toEqual([...scheduled].sort())
+  })
+
+  it('every opt-out carries a reason, because silence has to be chosen', () => {
+    for (const u of CRON_UNMONITORED) {
+      expect(u.reason.trim().length, u.job).toBeGreaterThan(10)
+    }
+  })
+
+  it('the twenty monitored jobs are the twenty checks the account holds, money and irreversible commitments first (OWN-005)', () => {
+    expect(CRON_MONITORED).toHaveLength(20)
+    expect(CRON_MONITORED[0]).toBe('process-queue')
+    expect(CRON_MONITORED).toContain('billing-renewals')
+    expect(CRON_MONITORED).toContain('referral-release')
+    expect(CRON_MONITORED).toContain('space-follower-event-reminders')
+  })
+
+  it('isCronMonitored answers for a monitored job, an opt-out, and a stranger', () => {
+    expect(isCronMonitored('process-queue')).toBe(true)
+    expect(isCronMonitored('embed-events')).toBe(false)
+    expect(isCronMonitored('not-a-job')).toBe(false)
   })
 })
 

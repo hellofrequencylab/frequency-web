@@ -25,15 +25,19 @@ import {
   RefreshCw,
   Palette,
   Music,
+  Lock,
+  CalendarX2,
   Sparkles as SparklesIcon,
 } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
 import { renderRegistryElement, isRenderableElement } from '@/lib/library/element-registry'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
 import { renditionUrl } from '@/lib/library/rendition-url'
-import type { LibraryRenditionKind } from '@/lib/library/types'
+import { isLibraryAssetExpired, type LibraryDownloadPolicy, type LibraryRenditionKind } from '@/lib/library/types'
 import {
   downloadElementSvg,
   downloadElementPng,
@@ -44,6 +48,7 @@ import {
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
+import { isVectorFile } from '@/lib/loom/urls'
 import { AssetAvPanel } from './asset-av-panel'
 import { AssetUsagePanel } from './asset-usage-panel'
 import { createBrandStyle } from './recraft-actions'
@@ -62,6 +67,47 @@ function human(n: number | null): string {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
+/** The three download policies as an operator reads them (docs/NAMING.md: a member is a member). */
+const DOWNLOAD_POLICY_LABELS: Record<LibraryDownloadPolicy, string> = {
+  open: 'Anyone',
+  members: 'Members',
+  staff: 'Staff',
+}
+
+/** A timestamptz as a date an operator can read, or '' when there is none. */
+function dayOf(iso: string | null): string {
+  if (!iso) return ''
+  const t = new Date(iso)
+  return Number.isNaN(t.getTime()) ? '' : t.toISOString().slice(0, 10)
+}
+
+/** The protection state on a card or row (LIVE-576). The Studio KEEPS showing an expired asset, badged,
+ *  so its owner can renew or archive it; every picker has already stopped offering it. A protected
+ *  asset carries the lock so the drawer is not the only place that can say so. */
+function ProtectionBadges({ asset, compact = false }: { asset: LibraryGalleryItem; compact?: boolean }) {
+  const expired = isLibraryAssetExpired(asset.expiresAt)
+  if (!expired && !asset.isProtected) return null
+  const size = compact ? 'h-3 w-3' : 'h-3.5 w-3.5'
+  return (
+    <span className="pointer-events-none absolute right-2 top-2 z-10 flex items-center gap-1">
+      {expired && (
+        <span
+          className="inline-flex items-center gap-1 rounded-pill bg-surface/90 px-1.5 py-0.5 text-2xs font-semibold text-danger lift-1"
+          title={`Licence ended ${dayOf(asset.expiresAt)}`}
+        >
+          <CalendarX2 className={size} aria-hidden />
+          {compact ? <span className="sr-only">Expired</span> : 'Expired'}
+        </span>
+      )}
+      {asset.isProtected && (
+        <span className="inline-flex items-center rounded-pill bg-surface/90 p-1 text-subtle lift-1" title="Protected">
+          <Lock className={size} aria-label="Protected" />
+        </span>
+      )}
+    </span>
+  )
 }
 
 /** True when an `element` asset resolves to a drawable code element (any registry). */
@@ -229,6 +275,12 @@ export function LoomGrid({
                   <span className="min-w-0 flex-1 truncate text-body-sm text-text" title={a.title}>
                     {a.title}
                   </span>
+                  {isLibraryAssetExpired(a.expiresAt) && (
+                    <span className="inline-flex shrink-0 items-center gap-1 text-meta font-semibold text-danger">
+                      <CalendarX2 className="h-3.5 w-3.5" aria-hidden /> Expired
+                    </span>
+                  )}
+                  {a.isProtected && <Lock className="h-3.5 w-3.5 shrink-0 text-subtle" aria-label="Protected" />}
                   <span className="hidden w-20 shrink-0 truncate text-meta text-subtle sm:block">{a.kind}</span>
                   <span className="hidden w-32 shrink-0 truncate text-meta text-subtle md:block">{a.category ?? ''}</span>
                   <span className="w-16 shrink-0 text-right text-meta text-subtle">{human(a.bytes)}</span>
@@ -258,6 +310,7 @@ export function LoomGrid({
                 } ${isSel ? 'border-primary ring-2 ring-primary' : 'border-border'}`}
               >
                 <SelDot id={a.id} className={`absolute left-2 top-2 z-10 ${compact ? '[&_svg]:h-5 [&_svg]:w-5' : ''}`} />
+                <ProtectionBadges asset={a} compact={compact} />
                 <button type="button" onClick={() => setOpenId(a.id)} className="block w-full text-left">
                   <span
                     className={`block ${
@@ -565,11 +618,24 @@ function DetailDrawer({
   const [alt, setAlt] = useState(asset.alt ?? '')
   const [category, setCategory] = useState(asset.category ?? '')
   const [tags, setTags] = useState(asset.tags.join(', '))
+  // The protection controls (LIVE-576): the drawer sends what it shows, the action validates.
+  const [downloadPolicy, setDownloadPolicy] = useState<LibraryDownloadPolicy>(asset.downloadPolicy)
+  const [isProtected, setIsProtected] = useState(asset.isProtected)
+  const [expiresOn, setExpiresOn] = useState(dayOf(asset.expiresAt))
+  const expired = isLibraryAssetExpired(asset.expiresAt)
 
   function save() {
     setErr(null)
     start(async () => {
-      const res = await updateLibraryAssetMeta(asset.id, { title, alt, category, tags })
+      const res = await updateLibraryAssetMeta(asset.id, {
+        title,
+        alt,
+        category,
+        tags,
+        downloadPolicy,
+        isProtected,
+        expiresAt: expiresOn || null,
+      })
       if ('error' in res) setErr(res.error)
       else {
         router.refresh()
@@ -764,6 +830,8 @@ function DetailDrawer({
             {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ''}
             {asset.bytes ? ` · ${human(asset.bytes)}` : ''}
             {asset.status !== 'approved' ? ` · ${asset.status}` : ''}
+            {asset.isProtected ? ' · protected' : ''}
+            {expired ? <span className="font-semibold text-danger">{` · expired ${dayOf(asset.expiresAt)}`}</span> : ''}
           </p>
 
           <div className="flex flex-wrap gap-2">
@@ -891,7 +959,13 @@ function DetailDrawer({
 
           {/* Managed image studio (Recraft): non-destructive edits + version history. Hidden unless
               a key is configured; edit ops need a file-backed image. */}
-          <RecraftEditRow assetId={asset.id} hasFile={!!asset.url} enabled={recraftEnabled} chipCls={chipCls} />
+          <RecraftEditRow
+            assetId={asset.id}
+            hasFile={!!asset.url}
+            isVector={isVectorFile(asset.mime, asset.url)}
+            enabled={recraftEnabled}
+            chipCls={chipCls}
+          />
           {recraftEnabled && <AssetVersions assetId={asset.id} />}
 
           {/* Media manager (Airwaves P2): replace-file for any file-backed asset + a usage map for A/V. */}
@@ -918,6 +992,47 @@ function DetailDrawer({
             <span className="mb-1 block eyebrow text-subtle">Tags</span>
             <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="comma, separated" />
           </label>
+
+          {/* Protection (PROG-D6, LIVE-576): the three hooks the schema has carried since the DAM landed,
+              finally reachable by a person. Stored and shown today; the private bucket a protected asset
+              moves into is LIVE-577 and the door the download policy gates is LIVE-578. */}
+          <div data-loom-protection className="space-y-3 rounded-2xl border border-border bg-surface-elevated/50 p-3">
+            <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
+              <Lock className="h-4 w-4 text-subtle" aria-hidden />
+              Protection
+            </p>
+            <label className="block">
+              <span className="mb-1 block eyebrow text-subtle">Who may download the original</span>
+              <Select
+                value={downloadPolicy}
+                onChange={(e) => setDownloadPolicy(e.target.value as LibraryDownloadPolicy)}
+              >
+                {(Object.keys(DOWNLOAD_POLICY_LABELS) as LibraryDownloadPolicy[]).map((p) => (
+                  <option key={p} value={p}>
+                    {DOWNLOAD_POLICY_LABELS[p]}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <label className="block">
+              <span className="mb-1 block eyebrow text-subtle">Expires</span>
+              <Input type="date" value={expiresOn} onChange={(e) => setExpiresOn(e.target.value)} />
+              <span className="mt-1 block text-meta text-subtle">
+                {expired
+                  ? 'The licence ended. Pickers stopped offering it; renew the date or archive it.'
+                  : 'For a licensed asset. After this date no picker offers it; it stays here for you.'}
+              </span>
+            </label>
+            <Checkbox
+              label="Protected"
+              checked={isProtected}
+              onChange={(e) => setIsProtected(e.target.checked)}
+            />
+            <p className="text-meta text-subtle">
+              Protected marks the original as not for the open web. Today the mark is stored and shown; the locked
+              bucket it moves into comes next.
+            </p>
+          </div>
 
           {err && <p className="text-body-sm text-danger">{err}</p>}
 

@@ -50,11 +50,13 @@ import {
  *  describes in visual.spec.ts and a11y.spec.ts, and to the `operator console` describe in
  *  visual.spec.ts (ADR-1128).
  *
- *  ⚠️ NOT applied to the ADVISORY operator describe, on purpose and for the same reason
+ *  ⚠️ NEVER applied to an ADVISORY operator describe, on purpose and for the same reason
  *  /discover carries no `@shell`: a capture that rides the non-blocking step must not be able to
  *  make this reporter call the authed app covered. Those surfaces reach the ledger through
- *  `ADVISORY_OPERATOR_SURFACES` below, which is how the banner can say "photographed, advisory,
- *  LIVE-476" instead of the false "unphotographed". */
+ *  `ADVISORY_OPERATOR_SURFACES` below, which is how the banner could say "photographed,
+ *  advisory, LIVE-476" instead of the false "unphotographed" while that roster had passengers
+ *  (2026-09-23 to 2026-09-28). It empties once LIVE-492 (#2949) and LIVE-504 (#2955) are on
+ *  main, which the change that retired the describe merges after, and the wiring stays. */
 const SHELL_TAG = '@shell'
 
 /** Every authed surface path this reporter can attribute an observation to.
