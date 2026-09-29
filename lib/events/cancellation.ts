@@ -338,7 +338,7 @@ export interface SeriesOccurrence {
   isCancelled: boolean
 }
 
-export interface SeriesCancelPlan {
+interface SeriesCancelPlan {
   /** parent_event_id ?? id — the one series key (lib/events/series.ts). */
   seriesKey: string | null
   /** True when this row really is part of a repeating event, so a caller can decide whether to

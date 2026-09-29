@@ -49,7 +49,7 @@ export type SpaceKind = 'business' | 'practitioner' | 'coach' | 'studio' | 'make
 
 /** One kind: its stable key, the member-facing label + one-line blurb, and a lucide icon for the
  *  chip / card / picker. Copy is plain, no em dashes (CONTENT-VOICE §10). */
-export interface SpaceKindChoice {
+interface SpaceKindChoice {
   key: SpaceKind
   /** The filter/label word a member sees. */
   label: string

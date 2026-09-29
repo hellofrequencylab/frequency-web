@@ -69,7 +69,7 @@ export const ICONS = {
   chevronDown: 'lucide:chevron-down',
 } as const
 
-export type IconKey = keyof typeof ICONS
+type IconKey = keyof typeof ICONS
 
 /** The Iconify name for a semantic key. Use with <Icon name={icon('energy')} />. */
 export function icon(key: IconKey): string {

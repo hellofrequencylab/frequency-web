@@ -14,7 +14,7 @@
 
 /** A splash template kind. Reuses the reserved Loom kinds (lib/library/types.ts): a single reusable
  *  block instance is a `template`; a multi-block fragment (a whole landing) is a `flow`. */
-export type SplashTemplateKind = 'template' | 'flow'
+type SplashTemplateKind = 'template' | 'flow'
 
 /** One cataloged splash template — pure, serializable metadata (the browse-card model). */
 export interface SplashTemplate {

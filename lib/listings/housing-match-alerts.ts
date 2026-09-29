@@ -41,7 +41,7 @@ import {
 /** The 0..1 blended score a match must reach before anyone is told about it. */
 export const HOUSING_MATCH_ALERT_MIN_SCORE = 0.6
 
-export type HousingMatchKind = 'seeker' | 'listing'
+type HousingMatchKind = 'seeker' | 'listing'
 
 /** One alert to route: the recipient hears about the counterpart, once, for this kind. */
 export interface HousingMatchAlert {
@@ -141,7 +141,7 @@ export interface HousingMatchAlertDeps {
   route: typeof routeNotification
 }
 
-export interface HousingMatchAlertResult {
+interface HousingMatchAlertResult {
   candidates: number
   claimed: number
   routed: number

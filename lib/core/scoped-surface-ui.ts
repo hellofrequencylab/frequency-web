@@ -16,7 +16,7 @@ import type { AccessLevel } from './access-matrix'
 
 /** The in-scope Insight affordance for a scoped page, derived from the matrix's
  *  AccessLevel on `insight` for the viewer-in-this-scope. */
-export type InsightAffordance =
+type InsightAffordance =
   | { visible: false }
   | { visible: true; depth: 'basic' | 'full'; label: string }
 

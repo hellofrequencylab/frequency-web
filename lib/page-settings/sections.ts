@@ -17,7 +17,7 @@ import { isStaff, type WebRole } from '@/lib/core/roles'
 
 /** 'live' = wired end-to-end today · 'next' = shown in the panel, activates in a
  *  following shift (the data store / consumption path is not built yet). */
-export type PageSettingStatus = 'live' | 'next'
+type PageSettingStatus = 'live' | 'next'
 
 export interface PageSettingSection {
   /** Stable id; the panel switches its control on this. */

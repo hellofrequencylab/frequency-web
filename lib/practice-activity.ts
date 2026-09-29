@@ -18,7 +18,7 @@ const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep
 
 export type ActivityView = 'days' | 'weeks' | 'months'
 
-export interface ActivityBar {
+interface ActivityBar {
   key: string
   /** Short axis label (weekday initial · week start · month abbrev). */
   label: string

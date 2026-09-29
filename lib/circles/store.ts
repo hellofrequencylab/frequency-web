@@ -60,7 +60,7 @@ export interface SpaceCircle {
 }
 
 /** A Space's Circle plus the Journey it is running right now, if any (ADR-842). */
-export interface SpaceCircleWithRun extends SpaceCircle {
+interface SpaceCircleWithRun extends SpaceCircle {
   run: {
     id: string
     planId: string

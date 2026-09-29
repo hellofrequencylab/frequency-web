@@ -79,7 +79,7 @@ export function adminParentHref(href: string): string | null {
 }
 
 /** One rail row, reduced to what the nesting pass needs. */
-export type NestableRow = { href: string }
+type NestableRow = { href: string }
 
 /**
  * Order rows so each box is immediately followed by its own children at depth 1, preserving the

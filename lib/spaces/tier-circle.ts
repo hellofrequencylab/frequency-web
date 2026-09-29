@@ -206,7 +206,7 @@ async function revokeCircleRows(profileId: string, tierId: string): Promise<void
 
 // ── The idempotent lifecycle engine ─────────────────────────────────────────────────────────────
 
-export interface TierCircleSyncInput {
+interface TierCircleSyncInput {
   spaceId: string
   profileId: string
   /** The tier being granted, or (for a revoke) the tier whose grant is being undone. */
@@ -216,7 +216,7 @@ export interface TierCircleSyncInput {
   action: 'grant' | 'revoke'
 }
 
-export interface TierCircleSyncResult {
+interface TierCircleSyncResult {
   granted: boolean
   reason?: 'revoked' | 'no_circle' | 'already_member' | 'circle_full' | 'error' | 'circle_moved'
   /** Did this lifecycle event create a Crew grant? (LIVE-223 — additive, never read for pricing.) */

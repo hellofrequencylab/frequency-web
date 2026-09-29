@@ -125,7 +125,7 @@ export function longestPrefixRow<T extends { prefix: string }>(route: string, ro
 }
 
 /** The cascade's fields, as they land on a page. Mirrors `PageContent` (lib/page-content.ts). */
-export interface CascadeContent {
+interface CascadeContent {
   title: string
   description: string
   /** Intro copy under the header (`page_content.body`, migration 20270345002700, ADR-1284). Plain
@@ -138,9 +138,9 @@ export interface CascadeContent {
 
 /** Where each resolved field came from. `'fallback'` = the page's coded default, which is a RESULT
  *  and not a failure: an empty table is the shipped state of most routes. */
-export type CascadeOrigin = 'page' | 'section' | 'site' | 'fallback'
+type CascadeOrigin = 'page' | 'section' | 'site' | 'fallback'
 
-export interface CascadeResult extends CascadeContent {
+interface CascadeResult extends CascadeContent {
   /** The scope each field resolved at. Exposed so an operator surface can say "inherited from
    *  /events" rather than showing an empty box over a filled-in page. */
   origin: {
@@ -177,7 +177,7 @@ export interface CascadeResult extends CascadeContent {
 // The CTA inherits AS A PAIR — see `pickCascade`.
 
 /** A single scope's stored values. Blank strings and nulls both mean "this rung says nothing". */
-export type CascadeRow = Partial<Record<keyof CascadeContent, string | null>>
+type CascadeRow = Partial<Record<keyof CascadeContent, string | null>>
 
 const clean = (v: string | null | undefined): string | null => {
   const t = (v ?? '').trim()

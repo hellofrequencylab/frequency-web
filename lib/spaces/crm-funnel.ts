@@ -53,7 +53,7 @@ export interface ContactReach {
 
 /** One at-risk contact the cockpit surfaces: enough to name them, show WHY, and offer a win-back. The
  *  `factors` come straight from the pure scorer so the panel can explain the flag. */
-export interface AtRiskContact {
+interface AtRiskContact {
   id: string
   email: string
   displayName: string | null
@@ -75,7 +75,7 @@ export interface AtRiskSummary {
 /** The whole snapshot the panel renders. All counts are whole numbers; `conversionRate` is a fraction
  *  in [0, 1] (the panel renders it as a percentage). `email` is the deliverability snapshot reused
  *  from lib/spaces/email-analytics.ts. */
-export interface CrmFunnel {
+interface CrmFunnel {
   stages: FunnelStage[]
   /** Total deals across every stage (the funnel mouth). */
   totalDeals: number

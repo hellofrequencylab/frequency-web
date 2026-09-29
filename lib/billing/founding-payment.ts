@@ -39,7 +39,7 @@ import { itemKeyForCatalogKey, stripItemPortion, type ItemKey } from './space-su
 
 /** Why a subscription did or did not earn founding status. Returned, never thrown: a badge decision
  *  must not bounce a settled payment. */
-export type FoundingPaymentReason =
+type FoundingPaymentReason =
   | 'earned'
   /** Any status other than `active`: trialing, past_due, unpaid, incomplete, canceled, paused. */
   | 'not_active'
@@ -51,7 +51,7 @@ export type FoundingPaymentReason =
   /** Real money, but for a month. The badge comes with the YEAR (owner rule, 2026-07). */
   | 'not_annual'
 
-export interface FoundingPaymentSignal {
+interface FoundingPaymentSignal {
   /** Money moved for the base plan (interval-blind). */
   paid: boolean
   /** The settled base item bills ANNUALLY. */

@@ -31,7 +31,7 @@ import type { Data } from '@/lib/page-editor/types'
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** The current Space page templates (the values a new write ever stores). */
-export type SpaceTemplateId = 'single' | 'main-side' | 'two-col' | 'three-col' | 'header-side'
+type SpaceTemplateId = 'single' | 'main-side' | 'two-col' | 'three-col' | 'header-side'
 
 /** A stored layout value: a current template id, or a legacy preset kept resolvable. */
 export type LayoutPreset = SpaceTemplateId | 'stack' | 'main-rail' | 'sections'
@@ -48,7 +48,7 @@ export const SPACE_TEMPLATES: { id: SpaceTemplateId; label: string; description:
 ]
 
 /** True for any stored value we accept (a current template id or a legacy preset). */
-export function isLayoutPreset(v: unknown): v is LayoutPreset {
+function isLayoutPreset(v: unknown): v is LayoutPreset {
   return (
     v === 'single' ||
     v === 'main-side' ||
@@ -106,7 +106,7 @@ function isLayoutMapKey(key: unknown): key is string {
 
 /** The block types that move to the SIDE RAIL under the main-side / header-side templates: compact
  *  "fact" cards, not the main content flow. Everything else stays in the main column. */
-export const SIDEBAR_BLOCK_TYPES = new Set<string>([
+const SIDEBAR_BLOCK_TYPES = new Set<string>([
   'SpaceHighlights',
   'SpaceStats',
   'SpaceContact',

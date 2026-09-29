@@ -15,10 +15,10 @@
 
 /** The fields a staff member may edit on a contact. Email is excluded on purpose. */
 export const CONTACT_EDITABLE_FIELDS = ['display_name', 'city', 'source'] as const
-export type ContactEditableField = (typeof CONTACT_EDITABLE_FIELDS)[number]
+type ContactEditableField = (typeof CONTACT_EDITABLE_FIELDS)[number]
 
 /** Raw, untrusted input from the edit form (every field optional). */
-export type ContactFieldInput = Partial<Record<ContactEditableField, string | null>>
+type ContactFieldInput = Partial<Record<ContactEditableField, string | null>>
 
 /** A column patch for the typed `contacts` columns (never includes `city`/`meta`). */
 type ContactColumnPatch = {
@@ -27,7 +27,7 @@ type ContactColumnPatch = {
 }
 
 /** The result: a typed column patch, plus the `meta.city` value when `city` was given. */
-export type ContactPatch = {
+type ContactPatch = {
   /** Direct column writes (display_name, source). Empty when nothing column-y changed. */
   columns: ContactColumnPatch
   /** True only when the form actually submitted `city` (so we never blank an untouched field). */

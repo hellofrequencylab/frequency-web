@@ -58,7 +58,7 @@ function inferChannel(referredBy: string | null | undefined, beta: Record<string
   )
 }
 
-export interface BackfillResult {
+interface BackfillResult {
   scanned: number
   tagged: number
   skipped: number

@@ -90,7 +90,7 @@ export interface AssociationStat {
   peek: AssociationLink[]
 }
 
-export interface OwnAssociationGroup {
+interface OwnAssociationGroup {
   key: 'circles' | 'channels' | 'spaces' | 'journeys'
   label: string
   items: AssociationLink[]

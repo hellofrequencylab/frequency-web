@@ -28,7 +28,7 @@ import { normalizeDelayHours, type SpaceAutomationTrigger } from '@/lib/spaces/a
 
 /** What one enrollment attempt reports. `enrolled` false = a no-op (already enrolled, or nothing to
  *  enroll into); never an error (the path is fail-safe). */
-export interface EnrollResult {
+interface EnrollResult {
   enrolled: boolean
 }
 

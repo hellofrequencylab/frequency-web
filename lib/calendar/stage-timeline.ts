@@ -13,11 +13,11 @@ import { ENTRY_STAGES, entryStage, type EntryStage } from './registry'
 export const STAGE_PIPELINE: readonly EntryStage[] = ['pencil', 'planning', 'production'] as const
 
 export const PUBLISH_STEP = 'publish' as const
-export type TimelineStepKey = (typeof STAGE_PIPELINE)[number] | typeof PUBLISH_STEP
+type TimelineStepKey = (typeof STAGE_PIPELINE)[number] | typeof PUBLISH_STEP
 
-export type TimelineStepState = 'done' | 'current' | 'upcoming'
+type TimelineStepState = 'done' | 'current' | 'upcoming'
 
-export interface TimelineStep {
+interface TimelineStep {
   key: TimelineStepKey
   /** The step name staff see (docs/NAMING.md). */
   label: string
@@ -27,7 +27,7 @@ export interface TimelineStep {
   reason: string | null
 }
 
-export interface StageTimelinePlan {
+interface StageTimelinePlan {
   steps: TimelineStep[]
   /** The line under the row: what the current stage means (the registry's hint), or the exit's. */
   hint: string

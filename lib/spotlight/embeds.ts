@@ -217,7 +217,7 @@ export function parseEmbedUrl(raw: unknown): { provider: EmbedProvider; ref: str
 // `frame-src` host and carries no embed risk. Insight Timer tracks/teachers play in the Insight Timer
 // app; this renders a tasteful "Listen on Insight Timer" card. Add a host = add a row here.
 
-export type LinkCardProvider = 'insighttimer'
+type LinkCardProvider = 'insighttimer'
 
 const LINK_CARD_HOSTS: { match: RegExp; provider: LinkCardProvider; label: string }[] = [
   { match: /(^|\.)insighttimer\.com$/, provider: 'insighttimer', label: 'Insight Timer' },

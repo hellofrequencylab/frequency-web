@@ -26,7 +26,7 @@ const FEATURE = 'listing-copy'
 
 /** What the author tells Vera about the listing. Every field is optional and defended, so a thin
  *  seed (just a name) still yields a sensible draft. */
-export interface ListingCopyInput {
+interface ListingCopyInput {
   /** The commerce kind, so the copy frames a product vs a bookable service vs a ticket. */
   kind: ProductKind
   /** The working name / a few keywords the author typed (the richest grounding). */
@@ -169,7 +169,7 @@ export async function draftListingCopy(input: ListingCopyInput): Promise<Listing
 }
 
 /** Deterministic listing copy for when Vera is off — still grounded in the author's seed + kind. */
-export function fallbackListingCopy(input: ListingCopyInput): ListingCopy {
+function fallbackListingCopy(input: ListingCopyInput): ListingCopy {
   const seed = clean(input.seed, 100)
   const brand = clean(input.brandName, 80)
   const isService = input.kind === 'service' || input.kind === 'booking'

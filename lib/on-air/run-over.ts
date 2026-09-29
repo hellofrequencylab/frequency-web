@@ -43,9 +43,9 @@ export function nextCheckpointSec(targetSec: number, confirmedAtSec: number[] = 
   return Math.round(last + reconfirmIntervalSec(targetSec))
 }
 
-export type RunOverPhase = 'clear' | 'prompting' | 'abandoned'
+type RunOverPhase = 'clear' | 'prompting' | 'abandoned'
 
-export interface RunOverState {
+interface RunOverState {
   /** 'clear' — under the current checkpoint, log actual airtime, no prompt.
    *  'prompting' — past a checkpoint, still within its interval: show the confirm prompt,
    *    keep running. 'abandoned' — the checkpoint went a whole interval unanswered: the
@@ -113,7 +113,7 @@ export function clampLoggedSeconds(
 // event (the per-day idempotency key is unchanged → no double count). WAM itself is binary and
 // unaffected; the signal is for verified-airtime QUALITY (analytics + a future WAM refinement).
 
-export interface AirtimeVerification {
+interface AirtimeVerification {
   /** Seconds that will be logged — the run-over clamp (mirror of clampLoggedSeconds). */
   loggedSec: number
   /** The member was present at finalize (tapped Finish/Close) — real, attended airtime. False for

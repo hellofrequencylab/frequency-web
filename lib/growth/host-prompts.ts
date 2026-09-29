@@ -37,15 +37,15 @@ export type HostPromptKind = 'rank' | 'near_you'
  *  Journey is enough proof of value that the ask lands warm, not cold, so the
  *  celebratory "you're ready" moment fires at the FIRST graduation rung. Bump this to
  *  'adept' to hold the prompt for a second finished Journey. */
-export const HOST_PROMPT_MIN_RANK: SeasonRank = 'initiate'
+const HOST_PROMPT_MIN_RANK: SeasonRank = 'initiate'
 
 /** How many times a single (member, kind) prompt may surface before it goes quiet on
  *  its own (dismissal quiets it sooner). A few gentle appearances, then silence — the
  *  prompt never repeats forever. */
-export const HOST_PROMPT_SEEN_CAP = 3
+const HOST_PROMPT_SEEN_CAP = 3
 
 /** The resolved prompt the feed card renders. `nearBy` is present only for near_you. */
-export interface HostPrompt {
+interface HostPrompt {
   kind: HostPromptKind
   /** Headline. Plain, proper-noun-carried, never narrates the reader's feelings. */
   title: string
@@ -114,7 +114,7 @@ async function currentSeasonRank(profileId: string): Promise<SeasonRank> {
 
 /** Record that a prompt surfaced (increment its seen meter). Best-effort + non-blocking:
  *  the feed never waits on it, and a failure just means the meter does not advance. */
-export async function recordHostPromptSeen(profileId: string, kind: HostPromptKind): Promise<void> {
+async function recordHostPromptSeen(profileId: string, kind: HostPromptKind): Promise<void> {
   try {
     const client = db()
     const { data } = await client

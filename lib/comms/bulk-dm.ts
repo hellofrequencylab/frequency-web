@@ -50,7 +50,7 @@ export async function resolveDmRecipients(
   return out
 }
 
-export interface BulkDmInput {
+interface BulkDmInput {
   actorId: string
   recipientProfileIds: string[]
   subject: string
@@ -76,7 +76,7 @@ export interface BulkDmInput {
   capAlternative?: string
 }
 
-export interface BulkDmResult {
+interface BulkDmResult {
   sent: number
   skipped: number
   detail: string

@@ -44,7 +44,7 @@ export interface UpcomingEventRow {
 }
 
 /** Upcoming row plus the series key the gathering fold needs. */
-export type UpcomingGatheringRow = SeriesRow & UpcomingEventRow
+type UpcomingGatheringRow = SeriesRow & UpcomingEventRow
 
 /**
  * How many gatherings are still ahead of `now`. Filters by real instant, then folds
@@ -75,11 +75,11 @@ export function isUpcomingByInstant(row: UpcomingEventRow, now: Date = new Date(
 
 /** The real usage behind each personal (tier-axis) meter, keyed by feature key. A key is absent when
  *  its count could not be resolved, so the surface shows the ladder without inventing a number. */
-export type MemberMeterUsage = Partial<Record<string, number>>
+type MemberMeterUsage = Partial<Record<string, number>>
 
 /** Published Journeys this member owns, counted the way the live publish cap counts them: anything
  *  past 'private' (unlisted is live to a space, public is live to the library). Fail-safe null. */
-export async function memberPublishedJourneys(profileId: string): Promise<number | null> {
+async function memberPublishedJourneys(profileId: string): Promise<number | null> {
   try {
     const { count } = await createAdminClient()
       .from('journey_plans')
@@ -95,7 +95,7 @@ export async function memberPublishedJourneys(profileId: string): Promise<number
 /** ACTIVE enrollees across every Journey this member authored (an enrollment with no completed_at).
  *  Two reads on purpose: the plan-id list is small, and an embedded filter join is the kind of query
  *  that silently returns everything when it is wrong. Fail-safe null. */
-export async function memberJourneyEnrollees(profileId: string): Promise<number | null> {
+async function memberJourneyEnrollees(profileId: string): Promise<number | null> {
   try {
     const admin = createAdminClient()
     const { data } = await admin.from('journey_plans').select('id').eq('author_id', profileId)
@@ -114,7 +114,7 @@ export async function memberJourneyEnrollees(profileId: string): Promise<number 
 
 /** Circles this member hosts (host_id), excluding archived ones (the same clause lib/circles/store.ts
  *  uses). Fail-safe null. */
-export async function memberHostedCircles(profileId: string): Promise<number | null> {
+async function memberHostedCircles(profileId: string): Promise<number | null> {
   try {
     const { count } = await createAdminClient()
       .from('circles')
@@ -132,7 +132,7 @@ export async function memberHostedCircles(profileId: string): Promise<number | n
 
 /** Practices this member published: created by them and public, so others can adopt them. Archiving a
  *  practice clears is_public, so this clause alone is the published set. Fail-safe null. */
-export async function memberPublishedPractices(profileId: string): Promise<number | null> {
+async function memberPublishedPractices(profileId: string): Promise<number | null> {
   try {
     const { count } = await createAdminClient()
       .from('practices')

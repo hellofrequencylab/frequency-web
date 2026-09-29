@@ -40,9 +40,9 @@
 import { NEEDS_PAYOUT_ACCOUNT } from '@/lib/billing/payout-prompt'
 
 /** What the seller still has to do before this event can take money. `null` = nothing, sell away. */
-export type TicketSetupStep = 'connect_payouts' | null
+type TicketSetupStep = 'connect_payouts' | null
 
-export interface TicketSellerContext {
+interface TicketSellerContext {
   /**
    * Has the payee's Stripe Express account completed onboarding (`charges_enabled && payouts_enabled`)?
    *
@@ -54,7 +54,7 @@ export interface TicketSellerContext {
   payoutsReady?: boolean | null
 }
 
-export type TicketSellerVerdict = { allowed: true; step: null } | { allowed: false; step: TicketSetupStep; reason: string }
+type TicketSellerVerdict = { allowed: true; step: null } | { allowed: false; step: TicketSetupStep; reason: string }
 
 /** The one seller-facing line, so every seam says the same sentence. Not a refusal: an invitation with
  *  a next action. CONTENT-VOICE §10 — plain, no guilt, names the time cost honestly.
@@ -136,7 +136,7 @@ export function payoutScopeKey(scopeId: string | null | undefined): string {
 //     re-close the guest door LIVE-314 opened.
 //
 // Fail-closed on the tickets side, through `canSellTickets`, so an unknown payee never gets a price.
-export interface TicketPriceVisibilityContext extends TicketSellerContext {
+interface TicketPriceVisibilityContext extends TicketSellerContext {
   /** Is buying how you attend (ADR-826 'tickets' mode)? False for an RSVP-mode event, whose price
    *  is collected at the door and is therefore information rather than an offer. */
   ticketsMode: boolean

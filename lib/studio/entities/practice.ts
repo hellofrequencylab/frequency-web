@@ -17,8 +17,8 @@
 //   * `practices` columns (lib/practices.ts `Practice` + `PracticeEdit`): title, summary,
 //     description, body, cadence, duration_min, duration_locked, timer_kind, movement_config,
 //     mindless_mode, warmup_message, warmup_sec, category, icon, header_image, domain_id,
-//     focus_details, subcategory_id, weight_class, reward_zaps, reward_note, is_public,
-//     is_template, status, slug.
+//     focus_details, secondary_domain_id, primary_pct, subcategory_id, weight_class, reward_zaps,
+//     reward_note, is_public, is_template, status, slug.
 //   * `tags` is the practice_tags join, written through setPracticeTags and read back as the
 //     label list the builder edits.
 //   * `answers.*` is the CREATION payload (createPracticeFromSparkAction / PracticeSparkAnswers),
@@ -152,6 +152,15 @@ export const PRACTICE_MANIFEST: EntityManifest = {
     // develop more than one Pillar, which is what focus_details below holds.
     // A pointer to a `pillars` row, stored as its id and shown as its name, so it must be loaded.
     { path: 'domain_id', label: 'Pillar', kind: 'reference', section: 'pillars', veraDrafts: true, optionsFrom: 'pillars' },
+    // THE SPLIT (ADR-438; LIVE-641, ADR-1604): a second Pillar this practice's Zaps also count
+    // toward, and the primary's share of each log. Attribution only: the wallet total never moves.
+    // The author's call, so Vera never drafts it. The store is `resolveSplitWrite`
+    // (lib/practices/split.ts): never the primary, always one of the Focuses below (choosing a new
+    // one adds it), and 75/25 when the share is left unset.
+    { path: 'secondary_domain_id', label: 'Second Pillar', kind: 'reference', section: 'pillars', veraDrafts: false, omitWhenEmpty: true, optionsFrom: 'pillars' },
+    // A plain `number`, not a new slider kind: a kind is a kernel change every wizard inherits, and
+    // the bounds (50 to 100) and the 75 default are the write's rule, not the control's.
+    { path: 'primary_pct', label: 'Main Pillar share (%)', kind: 'number', section: 'pillars', veraDrafts: false, read: (d) => str(d.primary_pct) || '75' },
     // `focus_details` is a MAP keyed by Pillar id, so it expands as a keyed-map repeat below
     // rather than sitting here as one collapsed line (ADR-992).
     // A pointer to a `practice_subcategories` row. The surface loads the ones under the Pillar.

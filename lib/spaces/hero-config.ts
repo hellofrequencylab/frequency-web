@@ -232,7 +232,7 @@ export function heroCtaFromPreference(pref: HeaderCtaPreference | null): { label
 /** The resolved hero inputs the cover render reads: the effective height + button orientation, the effective
  *  eyebrow / heading / tagline (operator override → Space default), and the resolved CTA (label + href +
  *  external), all in ONE pure result so the layout render, a preview, and a test agree. */
-export interface ResolvedHero {
+interface ResolvedHero {
   height: HeroHeight
   buttonOrientation: HeroButtonOrientation
   eyebrow: string | null
@@ -244,7 +244,7 @@ export interface ResolvedHero {
 /** The resolved hero CTA. Wraps the header-cta resolver so both the eyebrow-less "no CTA" case and the button
  *  are one shape. `show` is false only when there is genuinely no button (never today: the default always
  *  resolves), kept so the render can branch cleanly if a future "no button" mode is added. */
-export interface ResolvedHeroCta extends ResolvedHeaderCta {
+interface ResolvedHeroCta extends ResolvedHeaderCta {
   show: boolean
 }
 

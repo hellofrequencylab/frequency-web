@@ -31,7 +31,7 @@ import type { StaffDomain, Access } from '@/lib/core/staff-roles'
 export const ADMIN_SECTION = 'Admin'
 
 /** One row of the operator rail, with everything any surface needs to render or gate it. */
-export type AdminRailEntry = {
+type AdminRailEntry = {
   /** The LEGACY NavArea key. `area_permissions` rows, the `/admin/roles` grid, `AREA_ICONS` and the
    *  request-time `navAccess` map are all keyed by this, so it is preserved exactly. */
   key: string

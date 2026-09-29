@@ -11,6 +11,9 @@ import { isError } from '@/lib/action-result'
 export function DownloadData() {
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  // Sections the export could not carry in full (ADR-1599). The file names them under
+  // meta.truncated; this line tells the member before they go looking.
+  const [short, setShort] = useState(0)
   const [pending, start] = useTransition()
 
   return (
@@ -33,6 +36,7 @@ export function DownloadData() {
             start(async () => {
               setErr(null)
               setDone(false)
+              setShort(0)
               const r = await downloadMyData()
               if (isError(r)) {
                 setErr(r.error)
@@ -50,6 +54,7 @@ export function DownloadData() {
                 a.click()
                 a.remove()
                 URL.revokeObjectURL(url)
+                setShort(r.data.export.meta.truncated.length)
                 setDone(true)
               } catch {
                 setErr('Your data was ready, but the download did not start. Please try again.')
@@ -63,6 +68,13 @@ export function DownloadData() {
         </button>
         {done && <span className="text-meta text-muted">Saved to your downloads.</span>}
       </div>
+      {done && short > 0 && (
+        <p className="mt-2 text-meta text-muted">
+          {short === 1 ? 'One part of your file stops' : `${short} parts of your file stop`} short
+          of everything we hold. The top of the file lists which ones, under truncated. If you
+          need the rest, let us know.
+        </p>
+      )}
       {err && <p className="mt-2 text-meta text-danger">{err}</p>}
     </div>
   )

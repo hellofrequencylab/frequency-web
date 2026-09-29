@@ -81,7 +81,7 @@ export function buildManageEmailsUrl(params: {
 
 /** Mint a per-Space unsubscribe token over (spaceId, email). Lowercases the email so the URL in the
  *  send and the verification at click time agree regardless of how the address was cased. */
-export function makeSpaceUnsubscribeToken(spaceId: string, email: string): string {
+function makeSpaceUnsubscribeToken(spaceId: string, email: string): string {
   const hmac = createHmac('sha256', getSecret())
   hmac.update(`space:${spaceId}:${email.trim().toLowerCase()}`)
   return hmac.digest('hex').slice(0, 32)

@@ -127,7 +127,7 @@ export function dailyCapFor(feature: string, fallbackUsd = 1): number {
 // global cap in FEATURE_DAILY_CAP_USD still applies on top). A small fraction of the feature
 // cap keeps any one Space well under the surface ceiling; tuned conservatively until real usage
 // data exists.
-export const SPACE_DAILY_CAP_USD = 0.5
+const SPACE_DAILY_CAP_USD = 0.5
 
 /** The per-Space daily cap for a feature: the smaller of a fixed per-Space ceiling and the
  *  feature's own global cap (a Space can never be allowed more than the whole feature). */

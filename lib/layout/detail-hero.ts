@@ -51,10 +51,10 @@ import type { PageHeroSize, PageHeroVariant, HeroOverlayStyle } from '@/componen
  *  slot to the host who can fill it, and its public twin, where the viewer can do nothing about it,
  *  does not. That is why `/practices` and `/discover/practices` — the same entity — take different
  *  tails. */
-export type DetailHeroTail = 'placeholder' | 'none'
+type DetailHeroTail = 'placeholder' | 'none'
 
 /** The precedence ladder, as data. One row per SECTION, keyed by route prefix. */
-export interface DetailHeroDefault {
+interface DetailHeroDefault {
   /** The section route this row covers ('/practices' also covers '/practices/<id>').
    *  It is ALSO the `page_settings` key read for rung 2 — an operator sets one image for the
    *  section in Settings and it stands behind every entity beneath it. */
@@ -129,7 +129,7 @@ export function detailHeroDefaultsFor(
 }
 
 /** What a page can say about its own entity, over and above the section defaults. */
-export interface DetailHeroOptions {
+interface DetailHeroOptions {
   /** THE ENTITY'S OWN COVER — rung 1. `circles.image_url`, `practices.header_image`,
    *  `topical_channels.cover_image`, and so on. */
   entityImage?: string | null
@@ -157,7 +157,7 @@ export interface DetailHeroOptions {
  *
  *  `coverImage: undefined` means NO cover — `DetailTemplate` keys on `coverImage !== undefined`, so
  *  spreading the bag onto a page whose ladder came up empty leaves it exactly as it was. */
-export interface DetailHeroProps {
+interface DetailHeroProps {
   coverImage: string | null | undefined
   coverFocus: string | null
   coverSize: PageHeroSize
@@ -268,7 +268,7 @@ export async function resolveDetailHero(
  *  (a profile ships scrim-off; a Journey offers its author's picked overlay), which an operator
  *  master value still overrides — as distinct from `entityOverlayStyle`, which is the entity's own
  *  TOTAL choice and beats the element (the Circle None/Shade/Blend control). */
-export interface IdentityHeroOptions {
+interface IdentityHeroOptions {
   entityImage?: string | null
   entityFocus?: string | null
   entitySize?: PageHeroSize | null
@@ -283,7 +283,7 @@ export interface IdentityHeroOptions {
 
 /** The spreadable `PageHero` prop bag for an identity-lockup band. The page keeps its own lockup
  *  (eyebrow / leading / title / subtitle / actions) — this bag is only the resolved chrome. */
-export interface IdentityHeroProps {
+interface IdentityHeroProps {
   variant: PageHeroVariant
   size: PageHeroSize
   overlayStyle: HeroOverlayStyle

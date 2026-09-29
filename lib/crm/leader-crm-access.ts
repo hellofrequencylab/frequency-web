@@ -1,28 +1,23 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
-import {
-  getCircleCapabilities,
-  getHubCapabilities,
-  getNexusCapabilities,
-} from '@/lib/core/load-capabilities'
+import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 
 // LEADER CRM ACCESS (CRM Everywhere plan Phase 4 / ADR-827). The ONE slug -> entity -> capability
-// resolver behind every Message Circle / hub / nexus CRM surface, so the page and its colocated
-// server actions gate through the SAME code path (never two hand-copied gates that can drift).
-// Mirrors the manage pages exactly: resolve by slug with the admin client (circle excludes
-// archived, same as /circles/[slug]/manage), then the one capability resolver
-// (getCircleCapabilities / getHubCapabilities / getNexusCapabilities).
+// resolver behind the Message Circle CRM surface, so the page and its colocated server actions gate
+// through the SAME code path (never two hand-copied gates that can drift). Mirrors the manage page
+// exactly: resolve by slug with the admin client (archived excluded, same as
+// /circles/[slug]/manage), then the one capability resolver (getCircleCapabilities).
 //
-// Gates per scope: circle.moderate (host, the hub's guide / nexus's mentor above it, staff);
-// hub.manage (guide, parent mentor, janitor); nexus.manage (mentor, janitor) — the same
-// capabilities the manage consoles run on.
+// Gate: circle.moderate (host, the hub's guide / nexus's mentor above it, staff), the same
+// capability the manage console runs on. The hub and nexus resolvers were never wired to a surface
+// and left with the SCAN-502 sweep (ADR-1583); a hub/nexus CRM adds its resolver back here.
 //
 // FAIL-CLOSED: returns null on a missing row OR a missing capability; the page maps null to
 // notFound() (never reveal the route) and the actions map it to a thrown Error. The admin client
 // bypasses RLS, so this gate — not RLS — is the authority; every caller re-runs it per request.
 
 /** The resolved, capability-checked scope a leader CRM surface operates on. */
-export interface LeaderCrmScope {
+interface LeaderCrmScope {
   id: string
   slug: string
   name: string
@@ -51,36 +46,4 @@ export async function resolveCircleCrm(
     memberCount: circle.member_count ?? 0,
     memberCap: circle.member_cap ?? 0,
   }
-}
-
-/** Resolve a hub CRM scope: slug -> hub -> `hub.manage` gate (guide, parent mentor, janitor —
- *  the same gate as /hubs/[slug]/manage). Null on any miss. */
-export async function resolveHubCrm(slug: string): Promise<LeaderCrmScope | null> {
-  if (!slug) return null
-  const admin = createAdminClient()
-  const { data: hub } = await admin
-    .from('hubs')
-    .select('id, name, slug')
-    .eq('slug', slug)
-    .maybeSingle()
-  if (!hub) return null
-  const caps = await getHubCapabilities(hub.id)
-  if (!caps.has('hub.manage')) return null
-  return { id: hub.id, slug: hub.slug, name: hub.name }
-}
-
-/** Resolve a nexus CRM scope: slug -> nexus -> `nexus.manage` gate (mentor, janitor — the same
- *  gate as /nexuses/[slug]/manage). Null on any miss. */
-export async function resolveNexusCrm(slug: string): Promise<LeaderCrmScope | null> {
-  if (!slug) return null
-  const admin = createAdminClient()
-  const { data: nexus } = await admin
-    .from('nexuses')
-    .select('id, name, slug')
-    .eq('slug', slug)
-    .maybeSingle()
-  if (!nexus) return null
-  const caps = await getNexusCapabilities(nexus.id)
-  if (!caps.has('nexus.manage')) return null
-  return { id: nexus.id, slug: nexus.slug, name: nexus.name }
 }

@@ -66,7 +66,7 @@ export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
 
 /** A classified audience key. A place selector is one audience type that spans the place tree
  *  (circles/hubs/nexuses) the same way a trait segment spans the Member Data Platform. */
-export type ParsedSegmentKey =
+type ParsedSegmentKey =
   | { kind: 'builtin'; slug: string }
   | { kind: 'trait'; slug: string }
   | { kind: 'place'; place: PlaceType; id: string }

@@ -12,7 +12,7 @@
 // so a genuinely-new member who has not finished onboarding never trips them. Client-safe
 // (no imports) so it can be shared by the layout gate and the onboarding pages.
 
-export interface OnboardedSignals {
+interface OnboardedSignals {
   /** The raw `profiles.meta` JSON blob. */
   meta: unknown
   /** `profiles.current_season_zaps` (optional; treated as 0 when absent). */

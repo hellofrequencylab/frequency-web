@@ -16,12 +16,12 @@
 // (being executable) is the one that gets checked against — keep the doc in step.
 
 /** How a breached SLO is handled (OBSERVABILITY-BASELINES.md §4b). */
-export type SloAction =
+type SloAction =
   | 'page' // wired signal + a human is expected to respond immediately
   | 'track' // drift is reviewed; a sustained breach opens an investigation
 
 /** The kind of objective, so consumers can group/format them sensibly. */
-export type SloKind = 'availability' | 'latency' | 'error-rate' | 'freshness'
+type SloKind = 'availability' | 'latency' | 'error-rate' | 'freshness'
 
 export type Slo = {
   /** Stable identifier, dot-namespaced like log events (e.g. `latency.read-hot-paths`). */
@@ -147,7 +147,7 @@ export const SLOS: readonly Slo[] = [
  * `jobs` lists the route segments under app/api/cron/ that share each window, so the
  * mapping back to vercel.json (and to withCronHeartbeat's `jobName`) stays obvious.
  */
-export type CronFreshnessWindow = {
+type CronFreshnessWindow = {
   /** Group label, e.g. 'every 2 min', 'daily'. */
   group: string
   /** Minutes within which a fresh job must have last succeeded (interval + grace). */
@@ -256,7 +256,7 @@ export function meetsSlo(slo: Slo, value: number): boolean {
 // not budgets, so `errorBudget` returns null for them rather than inventing a number.
 
 /** A computed error-budget snapshot for one ratio SLO at one measured value. */
-export type ErrorBudget = {
+type ErrorBudget = {
   /** The SLO this budget is derived from. */
   sloId: string
   /**
@@ -380,7 +380,7 @@ export function isCronFresh(
 // check created or deleted, CRON_HEARTBEAT_SKIP edited). Neither alone is the move.
 
 /** A cron that deliberately has no monitor, and the one-line reason silence was chosen. */
-export type UnmonitoredCron = {
+type UnmonitoredCron = {
   /** Cron route segment (matches app/api/cron/<job> and vercel.json `path`). */
   job: string
   /** Why a silent failure here does not page anyone. One line. */

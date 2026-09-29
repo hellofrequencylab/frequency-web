@@ -56,7 +56,7 @@ function untypedDb(): SupabaseClient {
 export type SmsCategory = Extract<NotificationCategory, 'dispatches' | 'events'>
 
 /** Why an SMS send was allowed or refused — in precedence order. One per decision. */
-export type SmsGateReason =
+type SmsGateReason =
   | 'ok' // every gate passed — only reachable once the legal track is live
   | 'not_provisioned' // A2P 10DLC brand/campaign env flags are not set (the default today)
   | 'platform_disabled' // the operator sms_enabled platform flag is OFF (the default)
@@ -77,7 +77,7 @@ export interface SmsGateState {
   insideQuietHours: boolean
 }
 
-export interface SmsGateDecision {
+interface SmsGateDecision {
   /** Always false today (env flags unset). True only when EVERY gate passes. */
   allowed: boolean
   reason: SmsGateReason
@@ -142,7 +142,7 @@ export const isSmsConsentTableReady = cache(async (): Promise<boolean> => {
  * never a default). Fail-closed on error. sms_consent is not in database.types yet
  * (repo cast convention).
  */
-export async function hasSmsConsent(profileId: string): Promise<boolean> {
+async function hasSmsConsent(profileId: string): Promise<boolean> {
   try {
     const { data } = await untypedDb()
       .from('sms_consent')
@@ -212,7 +212,7 @@ function localHourInZone(timeZone: string | null | undefined): number {
   }
 }
 
-export interface SendSmsArgs {
+interface SendSmsArgs {
   profileId: string
   category: SmsCategory
   /** The message body (recorded as intent; never sent while gated). */

@@ -54,19 +54,19 @@ const LOG = '[commerce fulfilment]'
 // ── The writer ─────────────────────────────────────────────────────────────────────────────────
 
 /** Who is acting, as the calling action VERIFIED it. The write is scoped to this and nothing else. */
-export type FulfilmentSeller =
+type FulfilmentSeller =
   | { kind: 'space'; spaceId: string }
   | { kind: 'profile'; profileId: string }
   | { kind: 'platform' }
 
-export interface FulfilmentInput {
+interface FulfilmentInput {
   status: FulfillmentStatus
   carrier?: string | null
   tracking?: string | null
   note?: string | null
 }
 
-export interface FulfilledOrder {
+interface FulfilledOrder {
   id: string
   fulfillmentStatus: FulfillmentStatus
   /** The order's own status after the move ('fulfilled' once delivered or completed). */
@@ -74,10 +74,10 @@ export interface FulfilledOrder {
   fulfilment: OrderFulfilment
 }
 
-export type SetOrderFulfillmentResult = { ok: true; order: FulfilledOrder } | { ok: false; error: string }
+type SetOrderFulfillmentResult = { ok: true; order: FulfilledOrder } | { ok: false; error: string }
 
 /** Injected seams so the decision is testable without a database or an outbox. */
-export interface FulfilmentDeps {
+interface FulfilmentDeps {
   client?: SupabaseClient
   notifyShipped?: typeof notifyOrderShipped
   now?: () => Date
@@ -100,7 +100,7 @@ const ORDER_COLS =
 
 /** The scope filter, applied to the read AND the write: the owner column of the verified seller and
  *  the value it must hold. PURE. */
-export function sellerScope(seller: FulfilmentSeller): [column: string, value: string] {
+function sellerScope(seller: FulfilmentSeller): [column: string, value: string] {
   if (seller.kind === 'space') return ['owner_space_id', seller.spaceId]
   if (seller.kind === 'profile') return ['owner_profile_id', seller.profileId]
   return ['owner_kind', 'platform']
@@ -216,7 +216,7 @@ export async function setOrderFulfillment(
 
 // ── The shipped notice ─────────────────────────────────────────────────────────────────────────
 
-export interface ShippedNoticeInput {
+interface ShippedNoticeInput {
   orderId: string
   ownerKind: OwnerKind
   ownerProfileId: string | null

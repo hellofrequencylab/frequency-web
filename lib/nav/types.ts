@@ -29,7 +29,7 @@ export type NavSurface = 'spine' | 'sub' | 'header' | 'footer' | 'profile' | 'pa
  *  with an optional staff capability (`staffDomain` at `staffLevel`, ADR-127). Mirrors
  *  the ResolvedItem gate + nav-areas' meetsAccess/meetsStaff pair exactly — moving where
  *  a gate is declared, never what it permits. */
-export type NavGate = {
+type NavGate = {
   minAccess: MenuAccess
   staffDomain?: StaffDomain
   /** Capability level the staff domain needs (default 'read' — reading is enough to
@@ -45,7 +45,7 @@ export type NavGate = {
 /** How a node presents for a viewer once gating resolves. `ghost` = shown muted
  *  (upsell / preview, e.g. the Vault's previewBelowAccess); `hidden` = dropped.
  *  Mirrors MenuMode; optional — absent ⇒ 'active'. */
-export type NavDisplay = 'active' | 'ghost' | 'hidden'
+type NavDisplay = 'active' | 'ghost' | 'hidden'
 
 /** A single destination in the unified registry (NAV-SYSTEM-REDESIGN §3). */
 export type NavNode = {

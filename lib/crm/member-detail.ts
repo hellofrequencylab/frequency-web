@@ -42,7 +42,7 @@ import type {
 // member only. Copy is plain, no em dashes (docs/CONTENT-VOICE.md).
 
 /** Who is reading: platform staff (everything) or a scope leader (the trimmed detail). */
-export type MemberDetailAudience = 'staff' | 'leader'
+type MemberDetailAudience = 'staff' | 'leader'
 
 /**
  * The lane The Path fold reads through (ADR-827 ruling 3). Derived when omitted: a `spaceId` call

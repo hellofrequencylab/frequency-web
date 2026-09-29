@@ -48,7 +48,7 @@ function snippet(text: string): string {
  * segment. `label` leads the title. `describe` writes the tab's own meta description from the
  * Space's brand name; omit it to fall back to the profile description.
  */
-export interface SpaceProfileTabMeta {
+interface SpaceProfileTabMeta {
   segment: string
   label: string
   describe?: (brandName: string) => string

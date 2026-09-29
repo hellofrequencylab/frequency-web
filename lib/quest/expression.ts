@@ -19,14 +19,14 @@ import { awardZaps } from '@/lib/zaps'
 import { QUEST } from '@/lib/gamification'
 import { tryCompleteJourney, type CompleteJourneyResult } from '@/lib/quest/complete'
 
-export interface CompleteExpressionOpts {
+interface CompleteExpressionOpts {
   /** In person at a Circle ('circle') pays Zaps; posted solo online ('online') pays Gems. */
   mode: 'circle' | 'online'
   /** The Circle the Expression happened at (mode === 'circle'); recorded on the grant. */
   circleId?: string
 }
 
-export interface CompleteExpressionResult {
+interface CompleteExpressionResult {
   ok: boolean
   /** false when there is no active season or no Expression Challenge for the Journey. */
   found: boolean

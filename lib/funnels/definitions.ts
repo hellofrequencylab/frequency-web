@@ -173,7 +173,7 @@ export function nicheFunnelDestination(slug: string | null | undefined): FunnelD
 // (app/join/(induction)/actions.ts applyFunnelGrants). Client-safe (pure data).
 
 /** The one-time grant a sequence confers on every account that finishes it. */
-export interface FunnelGrant {
+interface FunnelGrant {
   /** Comp the paid Crew tier (profiles.membership_tier = 'crew'). */
   crew?: boolean
   /** Award durable Founding Member status (a founding_members row + is_founding_member), which

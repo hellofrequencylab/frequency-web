@@ -44,9 +44,9 @@ export type ErasureAdmin = {
   storage: { from: (bucket: string) => BucketApi }
   from: (table: 'spaces') => SpacesUpdate
 }
-export type ErasureStripe = { customers: { del: (id: string) => Promise<unknown> } } | null
+type ErasureStripe = { customers: { del: (id: string) => Promise<unknown> } } | null
 
-export type ErasureResult = {
+type ErasureResult = {
   /** Objects removed, per bucket. */
   removed: Record<string, number>
   /** 'deleted', 'already_gone' (idempotent), 'none' (no customer), 'skipped' (billing off), 'failed'. */

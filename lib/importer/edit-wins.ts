@@ -21,7 +21,7 @@
 /** The identity columns a re-apply gates for edit-wins. Each key names both a plan.identity field and
  *  a Space object field, so the diff compares like for like. */
 export const GATED_IDENTITY_FIELDS = ['name', 'tagline', 'brandName', 'brandAccent'] as const
-export type GatedIdentityField = (typeof GATED_IDENTITY_FIELDS)[number]
+type GatedIdentityField = (typeof GATED_IDENTITY_FIELDS)[number]
 
 /** The identity values, as read off the live Space or built from the draft's plan. */
 export type IdentityValues = Partial<Record<GatedIdentityField, string | null>>

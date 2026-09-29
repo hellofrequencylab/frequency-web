@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // Practice library Phase 3 "Grow" — remix lineage reads (ADR-438 / ADR-447).
@@ -9,15 +8,15 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // DERIVED here (no forked_count column, like adopters) — at library scale that is cheap; a
 // materialised count is a Phase-4 optimisation if a GROUP BY ever gets hot (tracked).
 //
-// Reaches the lineage columns through the untyped admin handle (ADR-246) until the generated
-// types are regenerated — same pattern as the rest of the practice server layer.
+// Reaches the lineage columns through the typed admin handle, the same pattern as the rest of
+// the practice server layer (LIVE-647).
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 
 /** One practice in a remix tree (the root or any remix of it). */
-export interface LineageNode {
+interface LineageNode {
   id: string
   title: string
   created_by: string | null
@@ -27,7 +26,7 @@ export interface LineageNode {
 
 /** A practice's place in its remix lineage: the original it descends from, its direct parent,
  *  the sibling/descendant remixes off the same root, and how many remixes the root has spawned. */
-export interface PracticeLineage {
+interface PracticeLineage {
   rootId: string
   /** True when this practice IS the original (no remixed_from). */
   isOriginal: boolean
@@ -92,7 +91,7 @@ export async function getPracticeLineage(
 }
 
 /** One "most remixed" original: the root practice + how many remixes it has spawned. */
-export interface MostRemixedRow {
+interface MostRemixedRow {
   rootId: string
   title: string
   creator: string | null
@@ -132,7 +131,7 @@ export async function mostRemixed(opts: { limit?: number; includeHidden?: boolea
 
 /** One contributor's remix impact: how many originals they authored and how many remixes those
  *  originals have spawned across the community. */
-export interface ContributorImpact {
+interface ContributorImpact {
   creatorId: string
   originated: number
   remixesReceived: number

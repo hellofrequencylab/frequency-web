@@ -52,7 +52,7 @@ export const BREAKER_MIN_RUNS = 8
 /** An absolute rejection-rate ceiling: above this, the playbook trips regardless of baseline. */
 export const BREAKER_ABSOLUTE_RATE = 0.6
 /** The relative spike: tripping also requires the recent rate to exceed baseline by this margin. */
-export const BREAKER_SPIKE_MARGIN = 0.25
+const BREAKER_SPIKE_MARGIN = 0.25
 /** The default baseline when a playbook has no learned history yet (a calm prior). */
 export const BREAKER_DEFAULT_BASELINE = 0.2
 
@@ -169,7 +169,7 @@ export async function getPausedPlaybooks(opts: { spaceId?: string | null; now?: 
 /** The breaker read for a scope, carrying whether the read DEGRADED (failed). The Today filter +
  *  execute path use `degraded` to make the fail-closed-for-outbound choice explicit: on a degraded
  *  read, an outbound playbook is suppressed, an in-product `auto` one may proceed. */
-export interface BreakerStatus {
+interface BreakerStatus {
   paused: Set<string>
   /** True when the underlying playbook_runs read FAILED (so `paused` is not authoritative). */
   degraded: boolean

@@ -14,7 +14,7 @@ import { listActiveSpaceMemberIds } from '@/lib/spaces/resonance-roster'
 // per recipient. Authorize the caller as space-manage before calling (writes run
 // on the admin client; RLS keeps dispatches service-role-write only).
 
-export interface ComposeSpaceDispatchArgs {
+interface ComposeSpaceDispatchArgs {
   spaceId: string
   /** The space owner/manager composing (must be pre-authorized). */
   authorId: string
@@ -26,7 +26,7 @@ export interface ComposeSpaceDispatchArgs {
   spaceUrl?: string | null
 }
 
-export interface ComposeSpaceDispatchResult {
+interface ComposeSpaceDispatchResult {
   /** The dispatches row id, null when nothing was published (empty body / failed insert). */
   dispatchId: string | null
   /** How many push jobs were enqueued for the fan-out. */

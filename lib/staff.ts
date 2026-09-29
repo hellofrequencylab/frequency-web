@@ -20,11 +20,11 @@ export { staffCan } from '@/lib/core/staff-roles'
 // they're gated by capability via `staffCan` / `requireStaffCap`.
 const ORDER: StaffRole[] = ['analyst', 'marketer', 'admin', 'owner']
 
-export function atLeastStaff(role: StaffRole, min: StaffRole): boolean {
+function atLeastStaff(role: StaffRole, min: StaffRole): boolean {
   return ORDER.indexOf(role) >= ORDER.indexOf(min)
 }
 
-export interface StaffMember {
+interface StaffMember {
   profileId: string
   role: StaffRole
 }

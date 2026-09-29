@@ -24,7 +24,7 @@ const ALLOWED_TAGS = new Set([
 
 const MAX_BYTES = 24_000
 
-export type SvgCheck = { ok: true; svg: string } | { ok: false; error: string }
+type SvgCheck = { ok: true; svg: string } | { ok: false; error: string }
 
 /** Pull the first <svg>…</svg> out of a model response (it may wrap it in prose or fences). */
 export function extractSvg(raw: string): string | null {

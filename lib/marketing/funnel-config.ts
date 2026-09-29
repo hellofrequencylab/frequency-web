@@ -117,7 +117,7 @@ export interface FunnelPriceRow {
   featured?: boolean
 }
 
-export interface FunnelFaq {
+interface FunnelFaq {
   q: string
   a: string
 }
@@ -168,14 +168,14 @@ export const FUNNEL_CTA_LABEL: string = OPERATOR_CTA_LABEL
 export const FUNNEL_SECONDARY_LABEL = "See what's inside"
 
 /** The base assurance bar (four items). The nonprofit route overrides the last item. */
-export const ASSURANCE_BASE = [
+const ASSURANCE_BASE = [
   'Works in minutes',
   'No contracts',
   'Your contacts export any time',
   'One honest price',
 ] as const
 
-export const ASSURANCE_NONPROFIT = [
+const ASSURANCE_NONPROFIT = [
   'Works in minutes',
   'No contracts',
   'Your contacts export any time',
@@ -307,7 +307,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
 
 // ── Config #2: Studios (business:membership) ───────────────────────────────────────────────────────
 
-export const STUDIOS_FUNNEL: FunnelConfig = {
+const STUDIOS_FUNNEL: FunnelConfig = {
   slug: 'studios',
   niche: 'studios',
   hero: {
@@ -397,7 +397,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
 
 // ── Config #3: Event hosts (business:ticketed) ───────────────────────────────────────────────────────
 
-export const EVENTS_FUNNEL: FunnelConfig = {
+const EVENTS_FUNNEL: FunnelConfig = {
   slug: 'event-hosts',
   niche: 'hosts',
   hero: {
@@ -487,7 +487,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
 
 // ── Config #4: Community builders (business:cohort; the Loop is the product, so it runs prominent) ────
 
-export const COMMUNITY_FUNNEL: FunnelConfig = {
+const COMMUNITY_FUNNEL: FunnelConfig = {
   slug: 'community-builders',
   niche: 'communities',
   loopProminent: true,
@@ -581,7 +581,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
 
 // ── Config #5: Nonprofits (nonprofit:donations; the assurance bar + pricing swap to the Non Profit plan) ─
 
-export const NONPROFITS_FUNNEL: FunnelConfig = {
+const NONPROFITS_FUNNEL: FunnelConfig = {
   slug: 'nonprofits',
   niche: 'nonprofits',
   nonprofit: true,
@@ -674,7 +674,7 @@ export const NONPROFITS_FUNNEL: FunnelConfig = {
 // ── The registry (ADR-591): one config per persona door, keyed by the SAME canonical slug the pricing
 // "by who you are" strip and the persona registry use, so every strip card lands on a real, on-topic page
 // (never a 404). Adding a door = one config + one row here. ────────────────────────────────────────────
-export const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
+const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
   'coaches-and-healers': COACHES_FUNNEL,
   studios: STUDIOS_FUNNEL,
   'event-hosts': EVENTS_FUNNEL,

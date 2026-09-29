@@ -137,7 +137,7 @@ export type PayoutPromptRelation = 'self' | 'other'
 export type PayoutPromptAction = 'onboard' | 'resume' | 'manage' | 'none'
 
 /** The payee's mirrored Stripe capability flags (the shape ConnectStatus already has). */
-export interface PayoutPayeeStatus {
+interface PayoutPayeeStatus {
   accountId: string | null
   onboarded: boolean
   ready: boolean

@@ -121,7 +121,7 @@ function buildDestinations(): Destination[] {
   return [...byHref.values()]
 }
 
-export const SEARCH_DESTINATIONS: Destination[] = buildDestinations()
+const SEARCH_DESTINATIONS: Destination[] = buildDestinations()
 
 // Match destinations against a query: the label or any keyword contains it. Cheap
 // substring scan — the list is small and the query is short. Returns [] under 2 chars

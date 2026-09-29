@@ -35,7 +35,7 @@ export interface PlaybookRunRow {
 }
 
 /** The registry + run tallies the StatCard row reads, all fail-safe to zeros. */
-export interface PlaybookOverview {
+interface PlaybookOverview {
   /** How many playbooks the code registry declares (always available, never an IO read). */
   totalPlaybooks: number
   /** Terminal runs (done + dismissed + failed) recorded in the last 7 days. */
@@ -56,7 +56,7 @@ const WEEK_MS = 7 * 86_400_000
 
 /** Resolve a run's display name from the code registry (the source of truth for names), falling back
  *  to the raw slug so an unknown / retired slug still reads. PURE. */
-export function playbookDisplayName(playbookId: string): string {
+function playbookDisplayName(playbookId: string): string {
   return getPlaybook(playbookId)?.name ?? playbookId
 }
 

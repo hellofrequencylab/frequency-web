@@ -22,8 +22,6 @@
 /** What a host chose to apply their edit to. */
 export type SeriesScope = 'this' | 'future'
 
-export const SERIES_SCOPES: readonly SeriesScope[] = ['this', 'future']
-
 /** The default, and it is deliberately the NARROW one. A host who does not read the control gets
  *  the change they can see, on the date they are looking at; the wide answer is the one that
  *  silently rewrites dates off screen, so it is the one that has to be chosen. */
@@ -35,7 +33,7 @@ export function parseSeriesScope(raw: unknown): SeriesScope {
 }
 
 /** What is being edited. */
-export interface SeriesShape {
+interface SeriesShape {
   /** The row the host opened. */
   id: string
   /** Its anchor, when the row is one materialised date OF a series. Null when it is not. */
@@ -44,7 +42,7 @@ export interface SeriesShape {
   isAnchor: boolean
 }
 
-export interface SeriesWritePlan {
+interface SeriesWritePlan {
   /** True when this row belongs to a series at all, so the control has a question to ask. */
   inSeries: boolean
   /** Where the repeat rule may be written, or null when this save must not touch it.

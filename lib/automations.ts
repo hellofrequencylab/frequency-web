@@ -50,7 +50,7 @@ export function isAutomationActionType(value: unknown): value is AutomationActio
 // so the engine stays migration-free: action_config is a free-form jsonb column. An empty
 // or absent condition set means "always fire" (back-compatible with every existing rule).
 
-export const AUTOMATION_CONDITION_OPS = ['eq', 'neq', 'exists', 'absent', 'gt', 'lt'] as const
+const AUTOMATION_CONDITION_OPS = ['eq', 'neq', 'exists', 'absent', 'gt', 'lt'] as const
 export type AutomationConditionOp = (typeof AUTOMATION_CONDITION_OPS)[number]
 
 export function isAutomationConditionOp(value: unknown): value is AutomationConditionOp {
@@ -133,7 +133,7 @@ export function evaluateConditions(
 }
 
 /** Shape of action_config for the push_actor action. `url` is an optional deep-link path. */
-export interface PushActionConfig {
+interface PushActionConfig {
   title: string
   body: string
   url?: string

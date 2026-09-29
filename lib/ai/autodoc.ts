@@ -79,7 +79,7 @@ export interface AutodocChange {
  *  - `clear`      — unrelated.
  *  The middle value is the one the old boolean had no room for, and it is where an ungrounded
  *  `inaccurate` lands instead of being thrown away. */
-export type AutodocVerdict = 'inaccurate' | 'covers' | 'clear'
+type AutodocVerdict = 'inaccurate' | 'covers' | 'clear'
 
 export interface AutodocItem {
   category: string
@@ -169,9 +169,9 @@ export const AUTODOC_BATCH_SIZE = 12
 
 /** Shortest article quote that may ground a finding. A two-word quote grounds against almost any
  *  article, which would make the check read as coverage without being any. */
-export const AUTODOC_MIN_QUOTE_CHARS = 24
+const AUTODOC_MIN_QUOTE_CHARS = 24
 
-export const AUTODOC_SYSTEM = `You are a documentation reviewer for Frequency, a real-world community platform. You are given a code change AS A DIFF and the member-facing help articles that cover the areas it touches.
+const AUTODOC_SYSTEM = `You are a documentation reviewer for Frequency, a real-world community platform. You are given a code change AS A DIFF and the member-facing help articles that cover the areas it touches.
 
 Your job is NOT to guess what the change might have done. It is to find help text that the diff makes FALSE.
 
@@ -256,7 +256,7 @@ export function diffForPrompt(
 
 /** A user content block, typed structurally because this module may import nothing (see the header)
  *  — including the SDK's own types. It matches Anthropic.TextBlockParam by shape. */
-export interface AutodocBlock {
+interface AutodocBlock {
   type: 'text'
   text: string
   cache_control?: { type: 'ephemeral' }
@@ -587,7 +587,7 @@ export function splitReview(
 }
 
 /** Human-readable cause for an unreviewed article, for the separate section. */
-export function unreviewedCause(reason: AutodocUnreviewedReason): string {
+function unreviewedCause(reason: AutodocUnreviewedReason): string {
   switch (reason) {
     case 'truncated':
       return 'the model reply hit its output ceiling before reaching them'

@@ -15,10 +15,10 @@ import { signingSecret } from '@/lib/signing-secret'
 
 /** Default lifetime of an issued invite link. Long enough to walk to the form and fill
  *  it in, short enough that a forwarded /rsvp link cannot capture guests indefinitely. */
-export const EVENT_INVITE_TTL_DAYS = 30
+const EVENT_INVITE_TTL_DAYS = 30
 
 /** The verified invite: who invited (the QR owner) and to which event. */
-export interface EventInvite {
+interface EventInvite {
   inviterProfileId: string
   eventId: string
 }

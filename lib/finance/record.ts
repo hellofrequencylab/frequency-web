@@ -13,9 +13,9 @@ export const ENTITY_ID = {
   labs: '1ab50000-0000-4000-a000-000000000002',
 } as const
 
-export type RevenueType = 'dues' | 'donation' | 'commerce' | 'payout' | 'transfer' | 'refund'
+type RevenueType = 'dues' | 'donation' | 'commerce' | 'payout' | 'transfer' | 'refund'
 
-export interface RecordFinancialTxnInput {
+interface RecordFinancialTxnInput {
   /** entities.id — the legal entity this money belongs to (the hard partition). */
   entityId: string
   revenueType: RevenueType
@@ -32,7 +32,7 @@ export interface RecordFinancialTxnInput {
   idempotencyKey?: string
 }
 
-export interface RecordFinancialTxnResult {
+interface RecordFinancialTxnResult {
   /** false = duplicate idempotency_key; nothing recorded this time. */
   recorded: boolean
 }

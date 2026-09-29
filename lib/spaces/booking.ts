@@ -61,7 +61,7 @@ export interface BookingQuestion {
 }
 
 /** A stored booking answer, LABELED so the owner reads it without re-resolving the service (P3). */
-export interface BookingAnswer {
+interface BookingAnswer {
   id: string
   label: string
   value: string
@@ -434,7 +434,7 @@ export function slotLengthAt(
  *  how many distinct weekdays carry a window, and the distinct slot lengths in use. `weeklySlots` is
  *  the count of slots one full week of these windows yields (the same fully-fitting slice the
  *  generator uses), so it tracks what members actually see. Empty windows give an all-zero summary. */
-export interface AvailabilitySummary {
+interface AvailabilitySummary {
   /** Number of availability windows published. */
   windowCount: number
   /** Number of distinct weekdays that carry at least one window. */
@@ -753,7 +753,7 @@ export interface ScheduleSettings {
 }
 
 /** The neutral defaults used when a Space has no schedule row (or the P2 table is absent). */
-export const DEFAULT_SCHEDULE: ScheduleSettings = {
+const DEFAULT_SCHEDULE: ScheduleSettings = {
   id: null,
   timezone: null,
   bufferBeforeMinutes: 0,
@@ -1331,7 +1331,7 @@ export async function setSpaceServiceTypes(
 // ── P2: schedule settings (buffers / notice / window / overrides) ───────────────────────────────
 
 /** The owner-editable schedule settings + date overrides, read back for the editor. */
-export interface ScheduleForEditor {
+interface ScheduleForEditor {
   settings: ScheduleSettings
   overrides: SlotOverride[]
 }

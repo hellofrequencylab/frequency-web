@@ -17,7 +17,7 @@ import type { SiteActionKey } from './site-actions'
 
 export type Severity = 'good' | 'watch' | 'risk'
 
-export interface StudioAction {
+interface StudioAction {
   key: SiteActionKey
   params: Record<string, unknown>
   label: string
@@ -45,7 +45,7 @@ export interface StudioSignal {
   ai: { enabled: boolean }
 }
 
-export interface StudioRead {
+interface StudioRead {
   summary: string
   recs: StudioRec[]
   signal: StudioSignal
@@ -199,7 +199,7 @@ function db(): SupabaseClient {
 }
 
 /** Gather the live signal from every banked source. Best-effort per source. */
-export async function getStudioSignal(): Promise<StudioSignal> {
+async function getStudioSignal(): Promise<StudioSignal> {
   const admin = db()
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString()
 

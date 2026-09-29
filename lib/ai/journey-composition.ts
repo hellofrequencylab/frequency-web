@@ -37,17 +37,17 @@ export interface ComposeCandidate {
 }
 
 /** One filled Pillar slot: either a library pick (by id) or a freshly written practice/activity. */
-export type ComposedPractice =
+type ComposedPractice =
   | { pillar: ComposePillar; mode: 'library'; practiceId: string }
   | { pillar: ComposePillar; mode: 'create'; title: string; body: string }
 
 /** An above-and-beyond extra-credit Challenge (ADR-300 Part 2): a harder, optional bonus task. */
-export interface ComposedExtraCredit {
+interface ComposedExtraCredit {
   title: string
   body: string
 }
 
-export interface JourneyComposition {
+interface JourneyComposition {
   /** A refined Journey name, if Vera suggested one. */
   title: string | null
   /** One slot per Pillar (Mind/Body/Spirit/Expression), in Pillar order. */

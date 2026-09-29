@@ -24,12 +24,12 @@ import {
 } from './manual-agreement-dates'
 
 /** How a manual agreement is settled. */
-export const AGREEMENT_METHODS = ['cash', 'check', 'transfer', 'other'] as const
+const AGREEMENT_METHODS = ['cash', 'check', 'transfer', 'other'] as const
 export type AgreementMethod = (typeof AGREEMENT_METHODS)[number]
 
 /** The agreement lifecycle. 'active' drives reminders; 'canceled'/'settled' are history. */
-export const AGREEMENT_STATUSES = ['active', 'canceled', 'settled'] as const
-export type AgreementStatus = (typeof AGREEMENT_STATUSES)[number]
+const AGREEMENT_STATUSES = ['active', 'canceled', 'settled'] as const
+type AgreementStatus = (typeof AGREEMENT_STATUSES)[number]
 
 /** A manual billing agreement row, camelCased. Dates are YYYY-MM-DD; stamps are ISO instants. */
 export interface ManualAgreement {
@@ -139,7 +139,7 @@ export async function activeAgreementForSpace(spaceId: string | null | undefined
 }
 
 /** What the crew records to open a manual deal. */
-export interface CreateAgreementInput {
+interface CreateAgreementInput {
   spaceId: string
   plan: SpacePlan | string
   interval: AgreementInterval | string
@@ -151,7 +151,7 @@ export interface CreateAgreementInput {
   note?: string | null
 }
 
-export type AgreementResult = { ok: true; agreement: ManualAgreement } | { ok: false; error: string }
+type AgreementResult = { ok: true; agreement: ManualAgreement } | { ok: false; error: string }
 
 /** Record a manual agreement (staff seed path). Validates every field against the table's CHECKs
  *  so a bad form is a sentence, not a constraint error; refuses a second ACTIVE agreement for the

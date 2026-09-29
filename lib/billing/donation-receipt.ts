@@ -36,7 +36,7 @@ export const DONATION_RECEIVED_NOTIFICATION_TYPE = 'space_donation_received'
 const ANONYMOUS_DONOR = 'Someone'
 
 /** The settled gift, as the webhook holds it. */
-export interface SettledDonation {
+interface SettledDonation {
   id: string
   spaceId: string
   askId: string | null

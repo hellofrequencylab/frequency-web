@@ -23,7 +23,7 @@ const CLOCK_SKEW_MS = 60 * 1000
 const RESERVED_MARKET = new Set(['sell', 'manage', 'new'])
 const RESERVED_JOURNEY = new Set(['new'])
 
-export interface MarketplaceStamp {
+interface MarketplaceStamp {
   /** Product ids viewed on `/market/<id>`. */
   p: string[]
   /** Journey slugs viewed on `/journeys/<slug>` or `/discover/journeys/<slug>`. */
@@ -31,7 +31,7 @@ export interface MarketplaceStamp {
   iat: number
 }
 
-export type MarketplaceView = { productId: string } | { journeySlug: string }
+type MarketplaceView = { productId: string } | { journeySlug: string }
 
 function secret(): string {
   return (

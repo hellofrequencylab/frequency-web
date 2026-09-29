@@ -13,7 +13,7 @@ import { formatPriceCents } from '@/lib/commerce/types'
 /** The columns the succeed path selects back off the flipped row. Everything the notifier needs
  *  rides on the row itself, so a redelivered webhook cannot notify twice: the flip returns zero
  *  rows the second time and this is never called. */
-export interface SucceededTip {
+interface SucceededTip {
   id: string
   to_profile_id: string
   from_profile_id: string | null
@@ -129,7 +129,7 @@ function tipEmailText(p: { recipientName: string; tipperName: string; amount: st
 
 // ── The reader ─────────────────────────────────────────────────────────────────────────────────
 
-export interface TipReceived {
+interface TipReceived {
   id: string
   amountCents: number
   currency: string
@@ -139,7 +139,7 @@ export interface TipReceived {
   succeededAt: string | null
 }
 
-export interface TipsReceived {
+interface TipsReceived {
   /** Sum of every succeeded tip, not only the ones listed. */
   totalCents: number
   count: number

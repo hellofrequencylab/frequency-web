@@ -17,9 +17,9 @@ import {
   type InteractionScopeRef,
 } from '@/lib/crm/interactions'
 
-export type ConversationKind =
+type ConversationKind =
   | 'support' | 'crm' | 'leader' | 'broadcast' | 'dm' | 'announcement' | 'system'
-export type MessageDirection = 'inbound' | 'outbound' | 'internal'
+type MessageDirection = 'inbound' | 'outbound' | 'internal'
 export type MessageAuthorKind = 'member' | 'staff' | 'leader' | 'vera' | 'system' | 'contact'
 
 /** The Message-ID domain (the verified sending domain). Threading identity, not a routable address. */
@@ -240,7 +240,7 @@ export async function reopenConversationIfClosed(conversationId: string, current
 }
 
 /** Triage fields an operator can change from the workspace. */
-export interface ConversationFieldPatch {
+interface ConversationFieldPatch {
   status?: string
   priority?: string
   assignedTo?: string | null
@@ -322,7 +322,7 @@ export interface AppendMessageInput {
  *  replay (idempotent no-op, terminal). `null` = a transient/unknown failure the caller may retry.
  *  Distinguishing the last two matters for the inbound webhook: a duplicate is acked, a transient failure
  *  must be surfaced so the provider redelivers instead of the reply being silently lost. */
-export type AppendOutcome = { id: string } | { duplicate: true } | null
+type AppendOutcome = { id: string } | { duplicate: true } | null
 
 /** Append a message to a conversation, bump its activity, and (best-effort) mirror to the timeline.
  *  Returns `{ id }` on success, `{ duplicate: true }` on an external_message_id replay, or `null` on a

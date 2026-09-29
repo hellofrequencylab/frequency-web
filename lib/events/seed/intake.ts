@@ -34,7 +34,7 @@ export type EventIntakeSource = 'whatsapp' | 'scan' | 'paste'
 /** Consent. `isDemo` decides the publish posture and is ALWAYS true for a seeded event: it
  *  materializes as an events row with status='draft' (unlisted, in no catalog) until an
  *  operator publishes it. Mirrors IntakeConsent on the business side. */
-export interface EventIntakeConsent {
+interface EventIntakeConsent {
   isDemo: boolean
   /** Set once the real organizer has confirmed they want this event listed. */
   organizerConfirmed?: boolean
@@ -82,7 +82,7 @@ export interface EventIntakeInputs {
 // ── Harvested sources ─────────────────────────────────────────────────────────────
 
 /** The kind of a raw staged source, one entry per read. */
-export type EventSourceKind = 'chat' | 'paste' | 'poster'
+type EventSourceKind = 'chat' | 'paste' | 'poster'
 
 /** One raw source behind a staged event. The array is the cache: a re-read of the draft
  *  costs no new AI call, and every ledger citation points back at one of these snippets. */

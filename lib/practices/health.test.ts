@@ -8,13 +8,16 @@ import {
   computePerformers,
   computeReviewSla,
   computeContributors,
+  computeZapLanding,
   REVIEW_FRESH_DAYS,
   REVIEW_OVERDUE_DAYS,
   type HealthPracticeRow,
   type PillarRow,
   type SubcategoryRow,
   type ContributorProfile,
+  type ZapLogRow,
 } from './health'
+import type { PillarSplit } from './attribution'
 
 // The health dashboard's metric layer (Phase 4.3) is pure, so its boundaries are unit-tested
 // without a database: weekly bucketing, coverage gaps, the adoption funnel nesting, the
@@ -284,5 +287,80 @@ describe('computeContributors', () => {
   it('respects the limit', () => {
     const published = Array.from({ length: 5 }, (_, i) => practice({ created_by: `c-${i}` }))
     expect(computeContributors(published, [], 3)).toHaveLength(3)
+  })
+})
+
+// ── Where Zaps land (LIVE-642): the library-wide roll-up runs the member ledger's own math, so
+//    a split log lands here exactly as it does on the member's balance, and the panel conserves
+//    the total (Σ Pillars + no Pillar === total) whatever the rows hold. ──────────────────────
+
+describe('computeZapLanding', () => {
+  const pillars: PillarRow[] = [
+    { id: 'mind', name: 'Mind', slug: 'mind' },
+    { id: 'body', name: 'Body', slug: 'body' },
+    { id: 'spirit', name: 'Spirit', slug: 'spirit' },
+    { id: 'expression', name: 'Expression', slug: 'expression' },
+  ]
+  const log = (over: Partial<ZapLogRow>): ZapLogRow => ({
+    practice_id: 'p1',
+    zaps_awarded: 12,
+    pillar_id: 'mind',
+    secondary_pillar_id: null,
+    primary_pct: null,
+    ...over,
+  })
+
+  it('splits a frozen log by its snapshot and returns every Pillar in order', () => {
+    const out = computeZapLanding([log({ secondary_pillar_id: 'body', primary_pct: 75 })], new Map(), pillars)
+    expect(out.pillars.map((p) => [p.name, p.zaps])).toEqual([
+      ['Mind', 9],
+      ['Body', 3],
+      ['Spirit', 0],
+      ['Expression', 0],
+    ])
+    expect(out.pillars[0].share).toBeCloseTo(0.75)
+    expect(out.total).toBe(12)
+    expect(out.complete).toBe(true)
+  })
+
+  it('attributes a pre-freeze log by the practice current split, and never re-attributes a frozen one', () => {
+    const fallback = new Map<string, PillarSplit>([
+      ['p1', { pillarId: 'spirit', secondaryPillarId: null, primaryPct: 75 }],
+    ])
+    const out = computeZapLanding(
+      [log({ pillar_id: null, zaps_awarded: 8 }), log({ zaps_awarded: 5 })],
+      fallback,
+      pillars,
+    )
+    const by = Object.fromEntries(out.pillars.map((p) => [p.id, p.zaps]))
+    expect(by).toEqual({ mind: 5, body: 0, spirit: 8, expression: 0 })
+  })
+
+  it('conserves the total: no-Pillar and inactive-Pillar Zaps land in the remainder, never vanish', () => {
+    const out = computeZapLanding(
+      [
+        log({ zaps_awarded: 15, secondary_pillar_id: 'body', primary_pct: 50 }), // 8 / 7
+        log({ practice_id: 'gone', pillar_id: null, zaps_awarded: 4 }), // no snapshot, no practice
+        log({ pillar_id: 'retired', zaps_awarded: 6 }), // a Pillar no longer active
+        log({ zaps_awarded: 0 }), // unpaid, ignored
+        log({ zaps_awarded: null }),
+      ],
+      new Map(),
+      pillars,
+      false,
+    )
+    const shown = out.pillars.reduce((a, p) => a + p.zaps, 0)
+    expect(shown).toBe(15)
+    expect(out.unattributed).toBe(10)
+    expect(shown + out.unattributed).toBe(out.total)
+    expect(out.total).toBe(25)
+    expect(out.complete).toBe(false)
+  })
+
+  it('reads zero, not NaN, when nothing was earned', () => {
+    const out = computeZapLanding([], new Map(), pillars)
+    expect(out.total).toBe(0)
+    expect(out.unattributed).toBe(0)
+    expect(out.pillars.every((p) => p.zaps === 0 && p.share === 0)).toBe(true)
   })
 })

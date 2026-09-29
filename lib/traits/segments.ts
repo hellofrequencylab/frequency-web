@@ -14,11 +14,11 @@ export type Combinator = 'all' | 'any'
 export type TraitOp = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte'
 export type ScalarValue = number | string | boolean
 
-export interface TagPredicate {
+interface TagPredicate {
   type: 'tag'
   key: string
 }
-export interface TraitPredicate {
+interface TraitPredicate {
   type: 'trait'
   key: string
   op: TraitOp
@@ -257,7 +257,7 @@ async function takenSlugs(): Promise<string[]> {
   return ((data ?? []) as Array<{ slug: string }>).map((r) => r.slug)
 }
 
-export interface SegmentInput {
+interface SegmentInput {
   name: string
   description?: string | null
   definition: SegmentDefinition

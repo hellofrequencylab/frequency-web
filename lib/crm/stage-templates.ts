@@ -17,7 +17,7 @@ import { resolveMode } from '@/lib/spaces/modes'
 /** One seed stage in a template: a label + its kind (open / won / lost), which drives the deal status +
  *  the column tone. The first 'open' stage is where a graduated contact's deal lands. Order is the array
  *  index (callers number it). */
-export interface StageTemplate {
+interface StageTemplate {
   name: string
   kind: StageKind
 }
@@ -55,7 +55,7 @@ export type PipelineLane = 'upsell_business' | 'donation'
 
 /** One lane's operator-facing framing: its persisted source id, a plain label for the filter/chip, and
  *  the create call to action that pre-tags a new deal into the lane (CONTENT-VOICE: a plain verb). */
-export interface PipelineLaneMeta {
+interface PipelineLaneMeta {
   id: PipelineLane
   /** The plain label shown on the lane filter and the deal's lane chip. */
   label: string

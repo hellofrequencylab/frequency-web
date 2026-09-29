@@ -141,7 +141,7 @@ Hard rules:
 Call save_listing once with everything the paste supports.`
 
 /** Build the compact prompt from the paste + optional hints. Bounds the paste length (cost guard). PURE. */
-export function buildExtractPrompt(pastedText: string, hints?: ListingHints): string {
+function buildExtractPrompt(pastedText: string, hints?: ListingHints): string {
   const parts: string[] = []
   if (hints) {
     const bits = [
@@ -157,7 +157,7 @@ export function buildExtractPrompt(pastedText: string, hints?: ListingHints): st
   return parts.join('\n\n')
 }
 
-export interface ExtractListingInput {
+interface ExtractListingInput {
   kind: ListingSeedKind
   pastedText: string
   hints?: ListingHints

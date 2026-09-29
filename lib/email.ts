@@ -1225,7 +1225,7 @@ View booking: ${p.manageUrl}
 `
 }
 
-export interface BookingReminderEmailParams {
+interface BookingReminderEmailParams {
   to: string
   recipientName: string
   spaceName: string
@@ -1266,7 +1266,7 @@ View booking: ${params.manageUrl}
 // lib/listings/housing-match-alerts.ts is the one caller. Same one-click unsubscribe shape as
 // every category email. Voice: plain, one concrete fact (who, where), no feelings narrated.
 
-export interface HousingMatchEmailParams {
+interface HousingMatchEmailParams {
   to: string
   recipientName: string
   recipientProfileId: string
@@ -1323,7 +1323,7 @@ Unsubscribe from match emails: ${unsubscribeUrl}
 // approver's own switch and the suppression list have been read; lib/calendar/plan-notify.ts is
 // the one caller. Voice: plain, who and what, and where to answer or look.
 
-export interface PlanShareEmailParams {
+interface PlanShareEmailParams {
   to: string
   recipientName: string
   recipientProfileId: string

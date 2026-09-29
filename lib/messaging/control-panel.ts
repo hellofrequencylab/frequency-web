@@ -59,7 +59,7 @@ export interface RecipientTouch {
 }
 
 /** The filters the panel supports, all optional. */
-export interface ControlPanelFilters {
+interface ControlPanelFilters {
   /** A campaign or dispatch id to scope to (the "by campaign" filter). */
   ref?: string | null
   /** A person / email substring (the "by person" filter). */
@@ -68,7 +68,7 @@ export interface ControlPanelFilters {
   status?: TouchStatus | 'all' | null
 }
 
-export interface ControlPanelCounts {
+interface ControlPanelCounts {
   recipients: number
   delivered: number
   opened: number
@@ -159,7 +159,7 @@ async function readDispatchRecipients(limit: number): Promise<DispatchRecipientR
 /** The composite key for exact engagement attribution: `<campaignId>|<lowercased email>`. Keying by
  *  campaign id AND email (not email alone) prevents a different campaign's open from cross-attributing
  *  here, the same doctrine as lib/email-studio/analytics.ts. Pure. */
-export function engagementKey(campaignId: string | null | undefined, email: string): string {
+function engagementKey(campaignId: string | null | undefined, email: string): string {
   return `${campaignId ?? ''}|${email.trim().toLowerCase()}`
 }
 

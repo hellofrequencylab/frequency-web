@@ -19,7 +19,7 @@ export type PlaybookSubjectKind = 'contact' | 'network_contact' | 'profile'
 const STATUSES: readonly PlaybookRunStatus[] = ['proposed', 'done', 'dismissed', 'failed']
 const SUBJECT_KINDS: readonly PlaybookSubjectKind[] = ['contact', 'network_contact', 'profile']
 
-export interface RecordPlaybookRunInput {
+interface RecordPlaybookRunInput {
   playbookId: string
   subjectKind: PlaybookSubjectKind
   subjectId: string

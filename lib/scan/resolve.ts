@@ -4,7 +4,7 @@
 // /people/<handle> connect codes), and those existing flows do all paying and
 // cookie-setting. A foreign QR is reported, never followed.
 
-export type ScanResolution =
+type ScanResolution =
   | { ok: true; path: string }
   | { ok: false; reason: 'foreign'; host: string }
   | { ok: false; reason: 'unreadable' }

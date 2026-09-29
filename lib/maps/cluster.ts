@@ -79,7 +79,7 @@ function hasMore(point: ClusterPoint): boolean {
  *  repeating-event case: one event, more dates behind it, drawn as `1+`. The consequence both
  *  engines must honour is that a single-point bubble opens that point's popup instead of zooming,
  *  because there is nothing to split and a zoom would just walk the member away from the answer. */
-export type ClusterGroup<T extends ClusterPoint> =
+type ClusterGroup<T extends ClusterPoint> =
   | { type: 'pin'; lat: number; lng: number; point: T }
   | {
       type: 'cluster'

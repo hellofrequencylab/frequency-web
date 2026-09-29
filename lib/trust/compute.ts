@@ -14,13 +14,13 @@ export interface SignalForCompute {
   context: string
 }
 
-export interface ContextScore {
+interface ContextScore {
   context: string
   score: number
   signalCount: number
 }
 
-export interface ComputedScores {
+interface ComputedScores {
   /** Every (profile, context) row to write — includes the 'global' rollup. */
   rows: ContextScore[]
   global: number

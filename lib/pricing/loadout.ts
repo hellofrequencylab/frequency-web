@@ -27,7 +27,7 @@ import { asCatalogItemKey, type BillingInterval, type CatalogItemKey } from '@/l
 import { formatPriceCents } from '@/lib/commerce/types'
 
 /** A line in the loadout breakdown: one catalog item at the chosen interval + quantity. */
-export interface LoadoutLine {
+interface LoadoutLine {
   key: CatalogItemKey
   label: string
   /** True for the Pro base line (always present), false for an add-on line. */

@@ -31,14 +31,14 @@ import { grantFoundingStatus, type FoundingKind } from '@/lib/founding/status'
 import { isError } from '@/lib/action-result'
 
 /** Why a grant did or did not happen. Returned rather than thrown, so the webhook never fails on it. */
-export type BetaFoundingReason =
+type BetaFoundingReason =
   | 'granted'
   | 'after_cutoff'
   | 'no_window'
   | 'no_subject'
   | 'error'
 
-export interface BetaFoundingResult {
+interface BetaFoundingResult {
   granted: boolean
   reason: BetaFoundingReason
 }

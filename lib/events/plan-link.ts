@@ -29,12 +29,12 @@ import { getSpacePlan } from '@/lib/calendar/plans-store'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export type PlanLinkResolution =
+type PlanLinkResolution =
   | { ok: true; patch: Record<string, string | null>; planId: string | null }
   | { ok: false; message: string }
 
 /** No `planId` field was submitted: the column is left exactly as it is. */
-export const NO_PLAN_CHANGE: PlanLinkResolution = { ok: true, patch: {}, planId: null }
+const NO_PLAN_CHANGE: PlanLinkResolution = { ok: true, patch: {}, planId: null }
 
 /** Authorize a submitted `planId` against the Space the event lives in. `raw` is the raw FormData
  *  value, so `null` (absent) and `''` (detach) stay distinguishable. */

@@ -15,7 +15,7 @@ import type { Json } from '@/lib/database.types'
 
 export type EngagementSource = 'web' | 'task' | 'qr' | 'nfc' | 'geo' | 'p2p' | 'system'
 
-export interface RecordEngagementInput {
+interface RecordEngagementInput {
   /** Makes recording exactly-once across retries. */
   idempotencyKey: string
   source: EngagementSource
@@ -34,7 +34,7 @@ export interface RecordEngagementInput {
   gamificationEvent?: GamificationEvent
 }
 
-export interface RecordEngagementResult {
+interface RecordEngagementResult {
   /** false = duplicate idempotency_key; no reward granted this time. */
   recorded: boolean
   /** The ledger row's id — fresh on first insert, resolved by key on a duplicate (best-effort:

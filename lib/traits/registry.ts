@@ -16,14 +16,14 @@
 //                  (churn risk, activation propensity, next-best-action). PI.3 / ADR-166;
 //                  heuristic today, model/Claude-graded later. Same storage + governance.
 
-export type TraitKind = 'tag' | 'computed' | 'predicted'
-export type TraitType = 'boolean' | 'number' | 'string' | 'enum' | 'timestamp'
-export type TraitCategory = 'involvement' | 'lifecycle' | 'engagement' | 'gamification' | 'marketing'
+type TraitKind = 'tag' | 'computed' | 'predicted'
+type TraitType = 'boolean' | 'number' | 'string' | 'enum' | 'timestamp'
+type TraitCategory = 'involvement' | 'lifecycle' | 'engagement' | 'gamification' | 'marketing'
 /** Privacy class drives retention + erase + export handling (privacy-by-design). */
-export type PiiClass = 'none' | 'identity' | 'sensitive'
+type PiiClass = 'none' | 'identity' | 'sensitive'
 export type Freshness = 'static' | 'nightly' | 'realtime'
 
-export interface TraitDef {
+interface TraitDef {
   key: string
   label: string
   description: string

@@ -8,7 +8,7 @@
 // the AI kernel is live, and they're unit-tested. No em dashes in member-visible
 // copy (house style).
 
-export interface VeraWelcomeContext {
+interface VeraWelcomeContext {
   firstName: string | null
   /** Their answer to "what are you hoping to find here?" (verbatim). */
   intent: string | null

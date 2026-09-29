@@ -32,7 +32,7 @@ const DAY_MS = 24 * HOUR_MS
 const ANOMALY_WINDOW_MS = 6 * HOUR_MS
 
 /** Why an autonomous send was allowed or blocked by the breaker. One reason per decision. */
-export type BreakerReason =
+type BreakerReason =
   | 'ok'
   | 'autonomy_off' // master switch off — the global kill (the default posture)
   | 'breaker_tripped' // the breaker is disarmed (a prior anomaly trip) awaiting manual re-arm
@@ -61,7 +61,7 @@ export interface BreakerState {
   anomalySampleSize: number
 }
 
-export interface BreakerDecision {
+interface BreakerDecision {
   allowed: boolean
   reason: BreakerReason
   /** When true, this decision must LATCH the breaker OFF (disarm) — an anomaly was detected. */
@@ -93,7 +93,7 @@ export function evaluateCircuitBreaker(s: BreakerState): BreakerDecision {
 
 // ── The async resolver: gather live state, run the pure gate, latch on trip, audit ──
 
-export interface CheckBreakerInput {
+interface CheckBreakerInput {
   category: AutonomyCategory
   /** The recipient's address, for the per-recipient window count. Null → recipient count is 0. */
   recipientEmail: string | null
