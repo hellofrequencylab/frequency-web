@@ -1043,24 +1043,6 @@ export async function getPracticeTagLabels(practiceId: string): Promise<string[]
   return (map.get(practiceId) ?? []).map((t) => t.label)
 }
 
-/** For Vera's curation door (LIVE-644): each practice's card hook (summary) and how many tags it
- *  carries, in two batched reads, so the needs-attention panel can offer a fill only where
- *  something is empty. A practice missing from the result was not found. */
-export async function getPracticeFillState(
-  ids: string[],
-): Promise<Map<string, { summary: string | null; tagCount: number }>> {
-  const out = new Map<string, { summary: string | null; tagCount: number }>()
-  if (ids.length === 0) return out
-  const [{ data }, tags] = await Promise.all([
-    db().from('practices').select('id, summary').in('id', ids),
-    tagsForPractices(ids),
-  ])
-  for (const r of (data as { id: string; summary: string | null }[] | null) ?? []) {
-    out.set(r.id, { summary: r.summary, tagCount: tags.get(r.id)?.length ?? 0 })
-  }
-  return out
-}
-
 export async function getCircleActivePractice(circleId: string): Promise<Practice | null> {
   const { data } = await db()
     .from('circle_practices')

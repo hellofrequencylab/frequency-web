@@ -14,7 +14,7 @@
 // accepts or discards on the needs-attention panel. Sibling of LIVE-587 (the Loom's fill-only-empty
 // rule), not blocked by it.
 //
-// FAIL-SAFE: AI off, over the cap, a missing practice or an AiUnavailableError returns null. The
+// FAIL-SAFE: AI off, over the cap, the curator throttled, a missing practice or an AiUnavailableError returns null. The
 // caller shows that Vera could not draft and the row stays exactly as it was.
 //
 // authz-delegated: server-only; the curator gate lives at the calling actions
@@ -27,8 +27,10 @@ import {
   setPracticeTags,
   updatePractice,
 } from '@/lib/practices'
+import { PRACTICE_TAG_FLOOR } from '@/lib/practices/clean'
 import { slugify } from '@/lib/utils'
 import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { completeText, AiUnavailableError } from './complete'
 import { voiceLine, withVoice } from './voice'
 import { withPracticeShape } from './practice-shape'
@@ -37,8 +39,8 @@ import { noteList, parseModelJson, z } from './schema'
 /** The ledger key and the budget cap key (lib/ai/budget.ts). */
 const FEATURE = 'practice-curate'
 
-/** A practice with fewer tags than this gets a tag proposal. */
-export const CURATE_TAG_FLOOR = 3
+/** A practice with fewer tags than this gets a tag proposal: the needs-attention floor. */
+export const CURATE_TAG_FLOOR = PRACTICE_TAG_FLOOR
 /** The most tags one proposal carries. */
 export const MAX_CURATE_TAGS = 3
 /** The most tags in one proposal that are not already canonical. */
@@ -178,12 +180,15 @@ export function parseCurateJson(text: string): { hook: string | null; tags: stri
 
 /**
  * Draft what one library practice is missing. Returns null when Vera cannot draft (AI off, over
- * the cap, AI unavailable mid-call, or no such practice). Returns a draft with `asked` both false,
+ * the cap, the curator throttled per actor, AI unavailable mid-call, or no such practice). Returns a draft with `asked` both false,
  * and makes no model call, when nothing is empty. A PROPOSAL only: nothing is written here.
  *
  * authz-delegated: the curator gate lives at the calling action (draftPracticeCurationAction).
  */
-export async function draftPracticeCuration(practiceId: string): Promise<PracticeCurationDraft | null> {
+export async function draftPracticeCuration(
+  practiceId: string,
+  actorId?: string | null,
+): Promise<PracticeCurationDraft | null> {
   const practice = await getPractice(practiceId)
   if (!practice) return null
   const existing = await getPracticeTagLabels(practiceId)
@@ -191,6 +196,7 @@ export async function draftPracticeCuration(practiceId: string): Promise<Practic
   if (!asked.hook && !asked.tags) return { hook: null, tags: [], asked }
 
   if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
+  if (await aiRateLimited(FEATURE, actorId)) return null
 
   const canonical = (await listCanonicalTags()).map((t) => t.label).slice(0, CANONICAL_PROMPT_MAX)
   const room = asked.tags ? Math.min(MAX_CURATE_TAGS, CURATE_TAG_FLOOR - existing.length) : 0

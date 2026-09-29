@@ -37,6 +37,11 @@ vi.mock('./usage', () => ({
   recordAiUsage: () => recordAiUsage(),
 }))
 
+let throttled = false
+vi.mock('./rate-limit', () => ({
+  aiRateLimited: vi.fn(async () => throttled),
+}))
+
 vi.mock('./complete', () => ({
   completeText: (p: { system: string }) => completeText(p),
   AiUnavailableError: class AiUnavailableError extends Error {},
@@ -57,6 +62,7 @@ beforeEach(() => {
   fakePractice = { id: 'p1', title: 'Box breathing', summary: null, description: null, body: 'Four in, four out.' }
   fakeTags = []
   aiOn = true
+  throttled = false
   replyText = '{"hook":null,"tags":[]}'
   updatePractice.mockClear()
   setPracticeTags.mockClear()
@@ -114,6 +120,12 @@ describe('draftPracticeCuration', () => {
   it('degrades to null when AI is off', async () => {
     aiOn = false
     expect(await draftPracticeCuration('p1')).toBeNull()
+    expect(completeText).not.toHaveBeenCalled()
+  })
+
+  it('degrades to null when the curator is throttled', async () => {
+    throttled = true
+    expect(await draftPracticeCuration('p1', 'curator-1')).toBeNull()
     expect(completeText).not.toHaveBeenCalled()
   })
 

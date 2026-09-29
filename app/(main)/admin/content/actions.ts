@@ -559,14 +559,15 @@ export async function screenPracticeAction(
 export async function draftPracticeCurationAction(
   id: string,
 ): Promise<ActionResult<{ draft: PracticeCurationDraft }>> {
+  let caller: { id: string }
   try {
-    await requireCurator()
+    caller = await requireCurator()
   } catch {
     return fail('You need curation access for this.')
   }
   if (!id) return fail('No practice to fill.')
   try {
-    const draft = await draftPracticeCuration(id)
+    const draft = await draftPracticeCuration(id, caller.id)
     if (!draft) return fail('Vera cannot draft right now. Try again later, or fill it by hand.')
     return ok({ draft })
   } catch (e) {
