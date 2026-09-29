@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { SlidersHorizontal, ArrowUpRight } from 'lucide-react'
-import { DetailTemplate } from '@/components/templates'
+import { DetailTemplate, PageHero } from '@/components/templates'
 import { buttonClasses, buttonGeometry } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
@@ -18,6 +18,7 @@ import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { cn } from '@/lib/utils'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import { readCoverSize, readCoverScrim, readCoverFocus, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { heroOverlayForScrim } from '@/lib/layout/cover-scrim'
 import { readTagline } from '@/lib/spaces/tagline'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
@@ -510,54 +511,55 @@ export default async function SpaceProfileChromeLayout({
     </div>
   )
 
-  // HERO cover node: image + a legibility SCRIM anchored at the bottom (a dark `ink` gradient fading up
-  // to transparent) so the overlaid on-ink identity clears the WCAG ≥4.5:1 floor on ANY cover photo,
-  // while the top of the image stays crisp. ONE identity row anchors to the bottom over the scrim:
-  // avatar + name on the left, the action buttons pushed RIGHT on the same line (they wrap below the
-  // lockup only when the row runs out of room). Tokens only (ink), no hardcoded hex.
-  // 'none' draws NO scrim (the clean photo); shade/blend keep their gradient. When there is no scrim the
-  // overlaid identity leans on the `on-image-text` token shadow to stay legible over the raw photo.
-  const heroScrimGradient =
-    coverScrim === 'none' ? null : heroOnInk ? 'from-ink/80 via-ink/30 to-transparent' : 'from-canvas via-canvas/40 to-transparent'
+  // HERO cover node: the canonical PageHero (ADR-1579, owner ruling 2026-09-29: "both onto PageHero").
+  // This was the one cover composition the grammar had no slot for (ADR-1498): the name in the page theme
+  // heading face, the brand chip, a follow chip that moves between the cover and the mobile action card,
+  // a tagline that relocates below `lg`, on the FIXED cover-height ladder the operator picks from. Two
+  // PageHero slots carry it now: `frame` takes the tier height off lib/layout/cover-height.ts (never the
+  // header element, ADR-526), and `lockup` takes the identity row below as-is, so the <h1> keeps
+  // `font-section` (ADR-578) and the follow / tagline choreography is untouched. What PageHero owns from
+  // here: the cover <Image> at the operator's focal point, the None / Shade / Blend overlay through the ONE
+  // mapping (lib/layout/cover-scrim.ts, the same seam Circles use), the legibility class for the clean
+  // photo, and the band chrome every other entity cover carries. The hand-rolled bottom scrim is gone.
   const heroCoverNode = (
-    // The cover's corner rounding is themable (`--radius-cover`); the :root baseline is 24px — the same
-    // corner as --radius-card, IndexTemplate's hero and PageHero — so a `bold` Space cover agrees with
-    // every card and cover around it. Non-bold themes retune it (editorial 2px … playful 20px).
-    <div
-      className={cn(
-        'relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated',
-        coverH,
-      )}
-    >
-      {coverImage}
-      {heroScrimGradient && <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />}
-      <div className={cn('absolute inset-x-0 bottom-0 p-6 sm:p-8', coverScrim === 'none' && 'on-image-text')}>
-        {/* Mobile only: the Follow chip sits ABOVE the profile pic + title (the operator's ask). On desktop
-            Follow lives inside the name lockup, so this is suppressed there. */}
-        {viewerProfileId && <div className="mb-3 sm:hidden">{followButton(heroOnInk)}</div>}
-        {/* ONE bottom row (owner ask): the identity (logo + Follow + title + tagline) anchors to the
-            bottom-LEFT and the action buttons to the bottom-RIGHT, both aligned to the SAME bottom line
-            (items-end). The name column (min-w-0) gives way and wraps for a long name; the action cluster
-            stacks vertically when the row would be too long, its bottom button staying on the bottom row.
-            On mobile the actions move to the card below the cover, so the phone hero holds only the identity. */}
-        <div className="flex items-end justify-between gap-4">
-          <div className="flex min-w-0 items-end gap-4">
-            <div className="shrink-0">
-              <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} backdrop={logoBackdrop} />
+    <PageHero
+      title={heroHeading}
+      coverImage={coverSrc}
+      coverFocus={coverFocus}
+      overlayStyle={heroOverlayForScrim(coverScrim)}
+      // The cover's corner rounding stays themable (`--radius-cover`); the :root baseline is 24px — the same
+      // corner as --radius-card and PageHero's own — so a `bold` Space cover agrees with every card and
+      // cover around it. The frame carries the tier height so `size` (the min-height ladder) is not read.
+      frame={{ className: cn('rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH) }}
+      lockup={
+        <>
+          {/* Mobile only: the Follow chip sits ABOVE the profile pic + title (the operator's ask). On desktop
+              Follow lives inside the name lockup, so this is suppressed there. */}
+          {viewerProfileId && <div className="mb-3 sm:hidden">{followButton(heroOnInk)}</div>}
+          {/* ONE bottom row (owner ask): the identity (logo + Follow + title + tagline) anchors to the
+              bottom-LEFT and the action buttons to the bottom-RIGHT, both aligned to the SAME bottom line
+              (items-end). The name column (min-w-0) gives way and wraps for a long name; the action cluster
+              stacks vertically when the row would be too long, its bottom button staying on the bottom row.
+              On mobile the actions move to the card below the cover, so the phone hero holds only the identity. */}
+          <div className="flex items-end justify-between gap-4">
+            <div className="flex min-w-0 items-end gap-4">
+              <div className="shrink-0">
+                <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} backdrop={logoBackdrop} />
+              </div>
+              {/* `taglineHiddenOnMobile` — the second argument, which BOTH call sites used to omit, so
+                  the parameter was dead and the behaviour the comment on it describes did not exist.
+                  It matters because the lockup is bottom-anchored inside a FIXED-HEIGHT
+                  `overflow-hidden` band: every extra line of copy grows the block UPWARD and out
+                  through the top of the cover, and the <h1> is the first thing to go. The tagline is
+                  the biggest and most variable term (400 chars allowed = ~19 lines on a phone), so
+                  below `lg` it moves out of the cover to its own row underneath. */}
+              <div className="min-w-0 pb-1">{nameLockup(heroOnInk, true)}</div>
             </div>
-            {/* `taglineHiddenOnMobile` — the second argument, which BOTH call sites used to omit, so
-                the parameter was dead and the behaviour the comment on it describes did not exist.
-                It matters because the overlay is `absolute bottom-0` inside a FIXED-HEIGHT
-                `overflow-hidden` box: every extra line of copy grows the block UPWARD and out
-                through the top of the cover, and the <h1> is the first thing to go. The tagline is
-                the biggest and most variable term (400 chars allowed = ~19 lines on a phone), so
-                below `lg` it moves out of the cover to its own row underneath. */}
-            <div className="min-w-0 pb-1">{nameLockup(heroOnInk, true)}</div>
+            <div className="hidden shrink-0 items-end sm:flex">{identityActions(heroOnInk)}</div>
           </div>
-          <div className="hidden shrink-0 items-end sm:flex">{identityActions(heroOnInk)}</div>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    />
   )
 
   // HEADER cover node: the compact image band, with the logo chip hanging HALF-OFF the cover bottom-left

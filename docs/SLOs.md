@@ -59,22 +59,37 @@ current single-region beta scale, tightened as the foundation hardens."
 
 Cron freshness is **per-job** because the schedules differ widely. A job is **fresh**
 when its last success heartbeat (H0-5) arrived within `schedule interval + 1 interval`
-of grace. `CRON_FRESHNESS` in the module groups all 18 `vercel.json` jobs by the urgency
+of grace. `CRON_FRESHNESS` in the module groups every `vercel.json` job by the urgency
 of their silence; `isCronFresh(job, lastSuccessMs)` answers the question for one job.
 
 | Group | Fresh-by | Jobs | Why silence is dangerous |
 |---|---|---|---|
 | every 2 min | 4 min | `process-queue` | email + async work backlog (H4-2) |
-| every 5 min | 10 min | `publish-scheduled` | scheduled content goes live on time |
+| every 5 min | 10 min | `publish-scheduled`, `space-campaigns`, `space-drips`, `conversation-batches` | scheduled content and operator sends leave on time |
 | every 10 min | 20 min | `season-go-live`, `embed-room-messages` | season transitions; economy integrity |
-| every 15 min | 30 min | `nurture`, `event-reminders` | re-engagement + event attendance |
-| every 30 min | 60 min | `referral-release`, `embed-events` | referral payouts + search freshness |
-| daily / weekly | 1 day + 1h | 10 nightly/weekly jobs (digest, retention, embeddings, …) | digest delivery, retention, embeddings |
+| every 15 min | 30 min | `nurture`, `event-reminders`, `space-follower-event-reminders` | re-engagement + event attendance |
+| every 30 min | 60 min | `referral-release`, `embed-events`, `journey-drips` | referral payouts + search freshness + Journey drips |
+| hourly | 2 h | `journey-prompt`, `practice-lifecycle` | the local-morning prompt (ADR-1225); practice transitions |
+| daily | 1 day + 1h | 13 nightly jobs (renewals, retention, lifecycle, embeddings, the daily readings) | renewals, retention, embeddings |
+| weekly | 1 week + 1 day | `weekly-digest` | a miss is visible to every recipient |
 
-> The 18-job schedule list in [`vercel.json`](../vercel.json) is the source of truth for
-> *when* jobs run; this table is the **freshness contract** the heartbeat monitor pages
-> against. `slos.test.ts` asserts every `vercel.json` job appears here exactly once, so a
+> The schedule list in [`vercel.json`](../vercel.json) is the source of truth for *when*
+> jobs run; this table is the **freshness contract** the heartbeat monitor pages against.
+> `slos.test.ts` reads `vercel.json` and asserts every job appears here exactly once, so a
 > newly-added cron without a freshness window fails the test rather than going unwatched.
+> (It used to assert a literal 18 while `vercel.json` scheduled 29; a count is not a
+> comparison. LIVE-548.)
+
+### 3a. The monitored set (LIVE-548, ADR-1574)
+
+The same module declares **which jobs are supposed to page**: `CRON_MONITORED` (the twenty
+Healthchecks checks that exist, in OWN-005's order by the cost of a silent failure) and
+`CRON_UNMONITORED` (every opt-out with its one-line reason). The two partition `vercel.json`
+exactly; `slos.test.ts` and `scripts/cron-freshness.mjs` both fail a scheduled cron named in
+neither. `isCronMonitored(job)` is what `cron-heartbeat.ts` reads: a rejected or failed ping
+for a monitored job becomes a Sentry event tagged by job, once per job per process, beside the
+`cron.heartbeat.ping_failed` line every rejection still writes. An opt-out that still pings
+keeps its warn line and escalates nothing.
 
 ---
 
