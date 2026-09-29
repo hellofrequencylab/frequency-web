@@ -10,7 +10,7 @@ import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 
 const MANIFEST_PATHS = new Set(EVENT_MANIFEST.fields.map((f) => f.path))
 
-export interface ProductionPrefill {
+interface ProductionPrefill {
   title: string
   description: string
   location: string

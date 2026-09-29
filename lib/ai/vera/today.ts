@@ -62,7 +62,7 @@ export interface TodayCandidate {
 }
 
 /** A candidate after ranking: it carries its score and the playbook it resolves to. */
-export interface RankedCandidate extends TodayCandidate {
+interface RankedCandidate extends TodayCandidate {
   /** The composite resonance score (higher = more urgent). */
   score: number
   /** The registry playbook that fires for this candidate (never undefined: every
@@ -71,7 +71,7 @@ export interface RankedCandidate extends TodayCandidate {
 }
 
 /** The result of ranking: the top FIVE for Today, plus the overflow for "Later". */
-export interface RankedToday {
+interface RankedToday {
   today: RankedCandidate[]
   later: RankedCandidate[]
 }
@@ -175,7 +175,7 @@ export interface TodayCard {
   signals: string[]
 }
 
-export interface TodayResult {
+interface TodayResult {
   cards: TodayCard[]
   laterCount: number
 }

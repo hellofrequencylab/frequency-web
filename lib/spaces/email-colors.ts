@@ -148,7 +148,7 @@ export function nextEmailStylePreferences(
 }
 
 /** The minimal Space shape this resolver reads (so callers can pass a full `Space` or a lightweight stub). */
-export interface SpaceEmailColorInput {
+interface SpaceEmailColorInput {
   brandAccent?: string | null
   preferences?: unknown
 }

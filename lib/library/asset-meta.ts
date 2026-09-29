@@ -16,9 +16,9 @@ type AssetUpdate = Database['public']['Tables']['library_assets']['Update']
 
 /** The three fields a person edits on one asset. Tags arrive as one comma-separated string (the
  *  drawer's and the Space editor's single input). Every field is optional and independent. */
-export type AssetMetaFields = { title?: unknown; alt?: unknown; tags?: unknown }
+type AssetMetaFields = { title?: unknown; alt?: unknown; tags?: unknown }
 
-export type AssetMetaPatch = Pick<AssetUpdate, 'title' | 'alt' | 'tags'>
+type AssetMetaPatch = Pick<AssetUpdate, 'title' | 'alt' | 'tags'>
 
 /** Validate and shape title / alt / tags into a row patch. PURE. A field left undefined is not in
  *  the patch. Title: required when sent, trimmed, at most 200. Alt: trimmed, at most 500, empty

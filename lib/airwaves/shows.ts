@@ -176,7 +176,7 @@ export async function listPublicShowsBySpace(spaceIds: string[]): Promise<Map<st
 }
 
 /** One Show by id (no Space scope). null on a miss. */
-export async function getShowById(id: string): Promise<Show | null> {
+async function getShowById(id: string): Promise<Show | null> {
   const sid = (id ?? '').trim()
   if (!sid) return null
   try {
@@ -188,7 +188,7 @@ export async function getShowById(id: string): Promise<Show | null> {
 }
 
 /** One Show by (space, slug) — the public feed lookup. null on a miss. */
-export async function getShowBySlug(spaceId: string, slug: string): Promise<Show | null> {
+async function getShowBySlug(spaceId: string, slug: string): Promise<Show | null> {
   const sid = (spaceId ?? '').trim()
   const s = (slug ?? '').trim()
   if (!sid || !s) return null
@@ -208,7 +208,7 @@ export async function getShowBySlug(spaceId: string, slug: string): Promise<Show
 /** Every Episode (Recording with this show_id) for a Show, ordered for the feed: sort_order then newest
  *  published first. `publicOnly` keeps only published + public episodes (the RSS / public-page floor).
  *  FAIL-SAFE to []. */
-export async function listEpisodesForShow(showId: string, opts?: { publicOnly?: boolean }): Promise<Recording[]> {
+async function listEpisodesForShow(showId: string, opts?: { publicOnly?: boolean }): Promise<Recording[]> {
   const sid = (showId ?? '').trim()
   if (!sid) return []
   try {
@@ -230,7 +230,7 @@ export async function listEpisodesForShow(showId: string, opts?: { publicOnly?: 
 
 /** The Loom file facts an RSS enclosure / a player needs: the public URL, its MIME, and byte length
  *  (RSS `enclosure length` is required; 0 is tolerated by clients when unknown). */
-export interface AssetMeta {
+interface AssetMeta {
   url: string
   mime: string
   bytes: number

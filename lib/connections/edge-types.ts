@@ -4,9 +4,9 @@
 // it is trivially unit-testable; the write paths (friend-actions, introductions) call resolve* to get
 // the columns to stamp.
 
-export type ConnectionEdgeType = 'met_at_event' | 'introduced_by' | 'shared_circle' | 'opt_in_connect'
+type ConnectionEdgeType = 'met_at_event' | 'introduced_by' | 'shared_circle' | 'opt_in_connect'
 
-export const CONNECTION_EDGE_TYPES: readonly ConnectionEdgeType[] = [
+const CONNECTION_EDGE_TYPES: readonly ConnectionEdgeType[] = [
   'met_at_event',
   'introduced_by',
   'shared_circle',

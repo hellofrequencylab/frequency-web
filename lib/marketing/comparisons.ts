@@ -170,7 +170,7 @@ export function comparisonPath(slug: string): string {
 }
 
 /** The fully-resolved, voice-compliant copy a comparison page renders. Pure. */
-export interface ComparisonCopy {
+interface ComparisonCopy {
   /** H1, as the reader would search it: "Frequency vs Partiful". */
   h1: string
   /** Meta title (question/alternative framing an engine can lift). */

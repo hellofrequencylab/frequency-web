@@ -81,7 +81,7 @@ function toCardData(c: CircleRow): CircleCardData {
   }
 }
 
-export interface CirclesIndexParams {
+interface CirclesIndexParams {
   type?: string
   interest?: string
   sort?: string
@@ -89,7 +89,7 @@ export interface CirclesIndexParams {
   channel?: string
 }
 
-export interface CircleLocatable {
+interface CircleLocatable {
   id: string
   name: string
   slug: string
@@ -97,24 +97,24 @@ export interface CircleLocatable {
   longitude: number
   neighborhood: string | null
 }
-export interface ChannelLink {
+interface ChannelLink {
   href: string
   label: string
   count: number
   active: boolean
 }
-export interface InterestChip {
+interface InterestChip {
   id: string
   name: string
   category: string
   count: number
 }
-export interface NexusRollup {
+interface NexusRollup {
   name: string
   slug: string
   count: number
 }
-export interface CircleInterest {
+interface CircleInterest {
   id: string
   name: string
   category: string

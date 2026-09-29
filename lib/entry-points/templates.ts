@@ -9,7 +9,7 @@
 export type EntryTemplateId = 'event' | 'circle' | 'invite' | 'waitlist' | 'partner'
 
 /** The kind of destination a template points at — drives the builder's picker. */
-export type DestinationKind = 'lead_flow' | 'place' | 'custom'
+type DestinationKind = 'lead_flow' | 'place' | 'custom'
 
 /** Copy stored on qr_codes.flyer. The flyer builder is gone (LIVE-216); the column stays. */
 export interface EntrySlots {
@@ -34,7 +34,7 @@ export interface EntryTemplate {
   slots: EntrySlots
 }
 
-export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
+const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
   // ── Fill a local gathering — point at the in-person lead flow (persona-routed). ──
   event: {
     id: 'event',
@@ -112,7 +112,7 @@ export const ENTRY_TEMPLATES: Record<EntryTemplateId, EntryTemplate> = {
   },
 }
 
-export const ENTRY_TEMPLATE_ORDER: EntryTemplateId[] = ['event', 'circle', 'invite', 'waitlist', 'partner']
+const ENTRY_TEMPLATE_ORDER: EntryTemplateId[] = ['event', 'circle', 'invite', 'waitlist', 'partner']
 
 export function isEntryTemplateId(value: string | null | undefined): value is EntryTemplateId {
   return !!value && value in ENTRY_TEMPLATES

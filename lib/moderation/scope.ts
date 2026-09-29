@@ -33,12 +33,12 @@ export { isStaff, canModeratePlatform }
 /** The two columns a post-level moderation decision needs. `scope_id` is the canonical scope
  *  column the policies read; a circle-scoped post carries its circle's id there (the typed
  *  `scope_circle_id` is a derived mirror, migration 20260829000000). */
-export type PostScope = {
+type PostScope = {
   author_id: string
   scope_id: string | null
 }
 
-export type PostModerationInput = {
+type PostModerationInput = {
   /** The caller's profile id. */
   callerId: string
   /** The caller's EFFECTIVE community role (view-as aware). */

@@ -140,7 +140,7 @@ Call save_business_profile once with everything you can support.`
 
 /** Render the harvested sources into a compact, id-tagged block for the model. Bounds total
  *  length so a big crawl cannot blow the context / cost. PURE. */
-export function buildSourcesPrompt(sources: HarvestedSource[], hints?: IntakeInputs['hints']): string {
+function buildSourcesPrompt(sources: HarvestedSource[], hints?: IntakeInputs['hints']): string {
   const usable = sources.filter((s) => (s.text ?? '').trim().length > 0)
   const parts: string[] = []
   if (hints) {

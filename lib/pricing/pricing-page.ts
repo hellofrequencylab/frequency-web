@@ -50,7 +50,7 @@ import {
 
 /** A price rendered at both intervals, with the list anchor and the founding (charged) amount each. All
  *  cents, plain. The page toggles which interval is shown; both are computed once, statically. */
-export interface DualPrice {
+interface DualPrice {
   /** The monthly amounts (list anchor + founding charged). */
   month: CatalogAmounts
   /** The yearly amounts (two months free, derived in the catalog). */
@@ -68,7 +68,7 @@ export function pricingCatalog(): Record<CatalogItemKey, ResolvedCatalogItem> {
 /** The formatted monthly price strings, computed once from the code catalog. Marketing copy (metadata,
  *  FAQ answers, persona pages, funnel beats) interpolates THESE instead of hardcoding "$29"/"$19"/...,
  *  so a catalog change reflows every sentence that quotes a price. PURE data. */
-export interface PriceStrings {
+interface PriceStrings {
   /** Business list, and since the beta window closed (ADR-1060) the price a Space is charged, e.g. "$49". */
   businessList: string
   /** 🔴 THE BETA ANCHOR, WHICH IS NO LONGER CHARGED (ADR-1060). Kept because the window is one editable
@@ -112,11 +112,11 @@ export { PLAN_STORY }
 /** The price MODEL for one tier column (ADR-552). `kind` decides how the headline price reads:
  *  - `flat`   : a list anchor struck over a founding price (Business).
  *  - `perSeat`: the same, but per licensed seat (Non Profit). */
-export type TierPriceKind = 'flat' | 'perSeat' | 'from'
+type TierPriceKind = 'flat' | 'perSeat' | 'from'
 
 /** One add-on row value in a tier column: a price string for Pro, or a plain "included" / coverage note
  *  for the higher tiers. ADR-472: the AI Engine is the only metered add-on, so a tier carries one cell. */
-export interface TierAddonCell {
+interface TierAddonCell {
   /** The add-on this cell is for. */
   addon: AddonKey
   /** What the cell reads in this column (e.g. "+$20/mo", "Included"). */
@@ -298,7 +298,7 @@ export function tierListAnchor(tier: PricingTier, interval: BillingInterval): st
 
 /** One row of the "by who you are" strip: a Mode's plain label, its recommended add-on loadout, the
  *  computed monthly founding total, and the persona page it links to. Pure data. */
-export interface LoadoutStripRow {
+interface LoadoutStripRow {
   /** A stable id (the persona slug, e.g. "coaches"). */
   id: string
   /** The plain Mode label, e.g. "Coach". */
@@ -325,7 +325,7 @@ export interface LoadoutStripRow {
  *  The add-on set drives the live total via computeLoadoutTotal, so the prices are never hardcoded: a
  *  catalog change reflows every figure. Nonprofit is per-seat (no Pro loadout), so it carries an
  *  explicit per-seat headline instead of a computed Pro total. */
-export interface PersonaLoadout {
+interface PersonaLoadout {
   /** The persona slug (the /for/<slug> route + the strip id). */
   slug: string
   /** The plain Mode label. */
@@ -360,7 +360,7 @@ export function personaPath(slug: string): string {
 /** The plain monthly total LABEL for a persona loadout, e.g. "$59/mo", or the per-seat headline for the
  *  Nonprofit row ("$12/seat/mo"). PURE — the strip and the persona page render this so the math never
  *  drifts between them. */
-export function stripTotalLabel(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): string {
+function stripTotalLabel(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): string {
   if (p.perSeat) {
     // The Nonprofit door: priced from the flat Non Profit plan ($39/mo, ADR-811), not a Business loadout.
     // The `perSeat` field name is legacy (per-seat billing is retired); it now flags "the flat nonprofit
@@ -385,7 +385,7 @@ function stripAddonLabel(addon: AddonKey): string {
  *  recommended loadout adds a metered add-on shows WHERE the total comes from and never reads as a bare
  *  higher plan price. Returns null when there is nothing to break down: the flat Nonprofit plan, or a
  *  Business-only door with no add-on (the total already IS the Business plan price). PURE. */
-export function stripBreakdownLabel(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): string | null {
+function stripBreakdownLabel(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): string | null {
   if (p.perSeat || p.addons.length === 0) return null
   const cat = pricingCatalog()
   // The Business base carries the founder-window discount; the add-on (Vera AI) does not, so only
@@ -400,7 +400,7 @@ export function stripBreakdownLabel(p: PersonaLoadout, betaActive: boolean = isB
 
 /** Build one "by who you are" strip row from a persona loadout, computing its live monthly total from
  *  the CODE catalog. PURE. */
-export function loadoutStripRow(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): LoadoutStripRow {
+function loadoutStripRow(p: PersonaLoadout, betaActive: boolean = isBetaPricingActive()): LoadoutStripRow {
   const total = computeLoadoutTotal(pricingCatalog(), p.addons, 'month', 1)
   return {
     id: p.slug,
@@ -424,7 +424,7 @@ export function loadoutStrip(betaActive: boolean = isBetaPricingActive()): Loado
 // ── What needs a paid plan: READ from the gate map, never typed ──────────────────────────────────────
 
 /** One capability a Space needs a paid plan for, with the plan it opens at. */
-export interface PaidWall {
+interface PaidWall {
   /** The gate key in lib/pricing/gates.ts FEATURE_GATES. */
   gate: string
   /** The capability, in plain product voice ("selling memberships"). */
@@ -517,7 +517,7 @@ export const CREW_NOTE = (() => {
  *  optional: omitted, the summary reads the code defaults, which is what a pure/static caller wants.
  *  A route that can reach the operator's config passes it, so an edit at /admin/pricing moves the
  *  published corpus in the same revalidation as it moves /pricing. */
-export interface LadderSummaryInput {
+interface LadderSummaryInput {
   values?: PricingDefaults
   catalog?: Record<CatalogItemKey, ResolvedCatalogItem>
   betaActive?: boolean

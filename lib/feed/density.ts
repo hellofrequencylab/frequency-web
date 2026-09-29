@@ -12,7 +12,7 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { localActivityState, rippleRadiusM, type CellDensity, type LocalActivityState } from './ripple'
 
-export interface LocalActivity {
+interface LocalActivity {
   state: LocalActivityState
   density: CellDensity | null
   /** The member's chosen feed radius (meters). */

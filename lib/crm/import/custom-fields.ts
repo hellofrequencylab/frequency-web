@@ -17,7 +17,7 @@ export function humanizeFieldKey(key: string): string {
 
 /** How a custom value should render. `kind` tells the component whether to draw a link (with `href`)
  *  or plain text; `display` is the human-facing string either way. */
-export interface CustomFieldDisplay {
+interface CustomFieldDisplay {
   kind: 'text' | 'link' | 'mailto' | 'tel'
   display: string
   href?: string

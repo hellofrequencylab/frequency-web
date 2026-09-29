@@ -14,7 +14,7 @@
 
 import { PERSONA_ORDER, type PersonaId } from '@/lib/onboarding/personas'
 
-export interface LeadFlowSplash {
+interface LeadFlowSplash {
   eyebrow: string
   headline: string
   /** Sub-headline under the hero. */
@@ -101,7 +101,7 @@ export const LEAD_FLOWS: Record<string, LeadFlow> = {
   partner: PARTNER,
 }
 
-export const DEFAULT_LEAD_FLOW = 'welcome'
+const DEFAULT_LEAD_FLOW = 'welcome'
 
 /** Resolve a lead flow by slug, falling back to the default welcome router. */
 export function getLeadFlow(slug: string | null | undefined): LeadFlow {

@@ -23,7 +23,7 @@
 
 /** The three columns this module reads, exactly as `event_ticket_types` stores them (ADR-1373).
  *  Every field nullable: three NULLs is "no window", which is every existing row. */
-export interface SalesWindowFields {
+interface SalesWindowFields {
   /** Absolute open time (ISO). Wins over `sales_starts_days_before` when both are set. */
   sales_start_at?: string | null
   /** Opens this many days before the event starts. 0 is meaningful and is NOT null. */
@@ -32,9 +32,9 @@ export interface SalesWindowFields {
   sales_end_at?: string | null
 }
 
-export type SalesWindowReason = 'open' | 'not_yet' | 'closed'
+type SalesWindowReason = 'open' | 'not_yet' | 'closed'
 
-export interface SalesWindowState {
+interface SalesWindowState {
   /** May this ticket be bought right now? */
   open: boolean
   /** When it opens, or null when nothing delays it. Non-null even once it HAS opened. */

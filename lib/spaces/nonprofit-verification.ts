@@ -27,10 +27,10 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
 /** A verification's lifecycle: pending -> verified | rejected. */
-export type VerificationStatus = 'pending' | 'verified' | 'rejected'
+type VerificationStatus = 'pending' | 'verified' | 'rejected'
 
 /** One verification request as the app consumes it (camelCased). */
-export interface NonprofitVerification {
+interface NonprofitVerification {
   id: string
   spaceId: string
   /** The EIN, normalized to 9 digits (no dashes), or null if it was never captured. */
@@ -52,7 +52,7 @@ export interface PendingVerification extends NonprofitVerification {
 }
 
 /** A clean, validated submission the owner sends. */
-export interface VerificationSubmission {
+interface VerificationSubmission {
   ein: string
   orgLegalName: string
 }

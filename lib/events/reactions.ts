@@ -125,7 +125,7 @@ export async function getEventPostReactions(
 }
 
 /** What a toggle did and the post's resulting reaction state. */
-export interface ToggleResult {
+interface ToggleResult {
   ok: boolean
   /** True when this call ADDED the reaction, false when it removed it. */
   added: boolean

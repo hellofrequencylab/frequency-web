@@ -19,9 +19,9 @@ import { distanceKm } from '@/lib/distance'
 import { seriesKey } from '@/lib/events/series'
 
 // ── Hybrid weights (exported so the UI/tests can reason about the blend) ───────
-export const INTEREST_WEIGHT = 0.45 // α — semantic interest match
-export const SOCIAL_WEIGHT = 0.35 // β — who-you-know-is-going
-export const CONTEXT_WEIGHT = 0.2 // γ — proximity × time
+const INTEREST_WEIGHT = 0.45 // α — semantic interest match
+const SOCIAL_WEIGHT = 0.35 // β — who-you-know-is-going
+const CONTEXT_WEIGHT = 0.2 // γ — proximity × time
 
 // How much a circle-mate vs an accepted connection counts toward the social
 // signal. Connections (explicit ties) weigh more than co-membership.
@@ -34,7 +34,7 @@ const PROXIMITY_HALFLIFE_KM = 25
 // Time-decay: an event ~14 days out is half as urgent as one happening now.
 const TIME_HALFLIFE_DAYS = 14
 
-export interface ScoredEvent {
+interface ScoredEvent {
   eventId: string
   score: number
   interest: number

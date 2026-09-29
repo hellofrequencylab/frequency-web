@@ -62,11 +62,11 @@ export type SpaceModuleFamily = 'space' | 'audience' | 'offerings' | 'reach' | '
  *  - `always`  — a shell area (identity / page / settings / danger): shown for any manager.
  *  - `feature` — a SERVICE gated on a `SpaceFunctionKey`: shown only when that function is enabled
  *                (default ON; only an explicit `false` in `spaces.entitlements` hides it). */
-export type SpaceModuleGate = { kind: 'always' } | { kind: 'feature'; fn: SpaceFunctionKey }
+type SpaceModuleGate = { kind: 'always' } | { kind: 'feature'; fn: SpaceFunctionKey }
 
 /** How the module's body renders: `inline` (mounts its editor in the rail), `panel` (opens on-page via
  *  `?panel=`), or `link` (a link-row out to its deep route only). */
-export type SpaceModuleRender = 'inline' | 'panel' | 'link'
+type SpaceModuleRender = 'inline' | 'panel' | 'link'
 
 /** A Manage-hub tab id (ADR-785). `dashboard` is the command-center home (ADR-796); `settings` is the
  *  Profile & Settings tab (identity, team, reviews, plan & billing, danger).

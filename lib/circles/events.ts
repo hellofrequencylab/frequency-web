@@ -26,7 +26,7 @@ function eventSlug(kind: string, circleId: string): string {
   return `${kind}-${circleId.slice(0, 8)}-${Math.random().toString(36).slice(2, 6)}`
 }
 
-export interface GenerateEventsInput {
+interface GenerateEventsInput {
   circleId: string
   hostId: string
   circleName: string
@@ -38,7 +38,7 @@ export interface GenerateEventsInput {
   gatheringNote?: string
 }
 
-export interface GeneratedEvents {
+interface GeneratedEvents {
   meetupId: string | null
   gatheringId: string | null
 }

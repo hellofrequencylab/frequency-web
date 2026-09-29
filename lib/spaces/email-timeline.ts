@@ -14,7 +14,7 @@ export type ResendTimelineEventType = 'opened' | 'clicked' | 'bounced' | 'compla
 
 /** The timeline-relevant fields a Resend event maps to. The owner / Space / subject are resolved at the
  *  IO seam (from the outreach_sends row + the Space owner); this only carries the channel-shaped copy. */
-export interface ResendInteractionShape {
+interface ResendInteractionShape {
   direction: InteractionDirection
   summary: string
 }

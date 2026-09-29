@@ -1,5 +1,3 @@
-import type Stripe from 'stripe'
-
 // THE PAYMENT-METHOD HALF OF A COMMERCE CHECKOUT SESSION (LIVE-396 instalments).
 //
 // ── WHAT IT IS TODAY, MEASURED ───────────────────────────────────────────────────────────────────
@@ -76,9 +74,3 @@ export function commercePaymentMethodParams(opts: {
   // Inherit the Dashboard. This is today's behaviour and stays the default forever.
   return {}
 }
-
-/** Narrow re-export so checkout.ts can spread the result without widening its Stripe import. */
-export type CommercePaymentMethodParams = Pick<
-  Stripe.Checkout.SessionCreateParams,
-  'payment_method_configuration'
->

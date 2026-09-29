@@ -63,7 +63,7 @@ export async function endSeasonNow(): Promise<void> {
 }
 
 /** Summary of one auto-go-live sweep, returned to the cron for logging. */
-export interface SeasonGoLiveResult {
+interface SeasonGoLiveResult {
   /** Scheduled seasons whose go-live time has arrived (status='scheduled', starts_at<=now). */
   scheduledDue: number
   /** Whether the earliest due season was promoted to Live this run (0 or 1). */

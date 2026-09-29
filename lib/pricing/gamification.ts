@@ -33,7 +33,7 @@ export function asGamificationAccess(raw: unknown): GamificationAccess | null {
 
 /** The minimum profile shape this resolver needs. Accepts the override loosely (the column may
  *  not be in the generated types yet — ADR-246) and reads either casing of the tier field. */
-export interface PricingProfileLike {
+interface PricingProfileLike {
   membership_tier?: EntitlementTier | string | null
   membershipTier?: EntitlementTier | string | null
   gamification_access_override?: unknown

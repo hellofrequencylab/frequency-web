@@ -21,7 +21,7 @@
 
 import type { HarvestedSource } from './intake'
 
-export interface SourceExcerptOptions {
+interface SourceExcerptOptions {
   /** Total character cap on the whole excerpt. Default 12_000. */
   maxChars?: number
   /** Per-source character cap for a crawled page. Default 3_000. */

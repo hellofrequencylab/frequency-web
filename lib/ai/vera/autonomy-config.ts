@@ -50,7 +50,7 @@ export interface AutonomyAnomaly {
   sampleSize: number
 }
 
-export interface AutonomyTuning {
+interface AutonomyTuning {
   /** Per-category enable. BOTH default OFF: even with the master on, an owner opts each category in. */
   categories: Record<AutonomyCategory, boolean>
   caps: AutonomyCaps
@@ -58,7 +58,7 @@ export interface AutonomyTuning {
 }
 
 /** Conservative, fail-closed defaults. Categories OFF; tight caps; a low bounce/complaint tolerance. */
-export const DEFAULT_AUTONOMY_TUNING: AutonomyTuning = {
+const DEFAULT_AUTONOMY_TUNING: AutonomyTuning = {
   categories: { playbook_email: false, intro_email: false },
   caps: { recipientPerDay: 1, platformPerHour: 20, platformPerDay: 100 },
   anomaly: { bounceComplaintRate: 0.1, sampleSize: 25 },
@@ -104,7 +104,7 @@ export async function getAutonomyTuning(): Promise<AutonomyTuning> {
 }
 
 /** A partial tuning patch: any subset of categories / caps / anomaly. */
-export interface AutonomyTuningPatch {
+interface AutonomyTuningPatch {
   categories?: Partial<Record<AutonomyCategory, boolean>>
   caps?: Partial<AutonomyCaps>
   anomaly?: Partial<AutonomyAnomaly>

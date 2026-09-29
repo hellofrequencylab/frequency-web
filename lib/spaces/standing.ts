@@ -75,7 +75,7 @@
 // same gathering, keep the same room, and are followed by the same people.
 
 /** The seven signals a standing score is composed from. */
-export type StandingSignal =
+type StandingSignal =
   | 'gatherings'
   | 'attendance'
   | 'upcoming'
@@ -164,7 +164,7 @@ export const HALF_FLOOR = 0.15
  *     redistributed; the Space is not scored down for it.
  * `care` is the odd one out: it is already a fraction in [0, 1] (see `careScore`), not a count.
  */
-export interface StandingInput {
+interface StandingInput {
   /** Gatherings HELD (published, not cancelled, already started) in the trailing window. */
   gatherings?: number | null
   /** People a host marked present (`attended_at`, ADR-1332) at those held gatherings. */
@@ -182,7 +182,7 @@ export interface StandingInput {
 }
 
 /** One half of the score: its value in [0, 1] and which signals it was built from. */
-export interface StandingHalf {
+interface StandingHalf {
   /** The renormalised weighted mean over the present signals, or null when none were measured. */
   value: number | null
   present: StandingSignal[]
@@ -317,7 +317,7 @@ export function standingScore(input: StandingInput): StandingResult {
  * signal does. A field that WAS fetched and is empty (`null`, `''`, `0`) counts against the score,
  * because that is the honest reading: the operator could fill it and has not.
  */
-export interface CareInput {
+interface CareInput {
   /** spaces.tagline — the one-line positioning every card and search result shows. */
   tagline?: string | null
   /** spaces.brand_logo_url. */
@@ -367,7 +367,7 @@ export function careScore(input: CareInput): number | null {
 // ── The operator-facing explanation (LIVE-265: "what would send more") ───────────────────────────
 
 /** How a signal is doing, in the plain terms the receipt page prints. */
-export type StandingBand = 'strong' | 'building' | 'quiet' | 'unmeasured'
+type StandingBand = 'strong' | 'building' | 'quiet' | 'unmeasured'
 
 /** One line on the receipt: what the signal is, where this Space stands, and the next move. */
 export interface StandingLever {

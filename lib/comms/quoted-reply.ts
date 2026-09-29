@@ -5,7 +5,7 @@
 //
 // Sibling of lib/comms/message-body.ts (which DROPS the trail for snippets); this module KEEPS both halves.
 
-export interface QuotedReplySplit {
+interface QuotedReplySplit {
   /** The new content of the message (may be empty when the message is quote-only). */
   visible: string
   /** The quoted/threaded trail, trimmed; null when the message carries no quoted history. */

@@ -41,7 +41,7 @@ const DEFAULT_TAGLINE = 'Community collective'
 
 /** The brand + unsubscribe inputs shared by the full shell and the standalone footer builder, so the on-canvas
  *  editor and the sent email read from ONE footer source of truth. */
-export interface EmailFooterInput {
+interface EmailFooterInput {
   /** The one-click unsubscribe URL (required for compliant bulk mail; the send agent supplies it). */
   unsubscribeUrl?: string
   /** The "Manage emails" preference-page URL (the token /manage-emails page for this recipient). Kept
@@ -52,7 +52,7 @@ export interface EmailFooterInput {
   brand?: EmailBrand
 }
 
-export interface EmailDocumentShellInput extends EmailFooterInput {
+interface EmailDocumentShellInput extends EmailFooterInput {
   /** The rendered block body HTML (from renderEmailLayout). */
   body: string
   /** Optional preview / preheader text shown beside the subject in the inbox. */
@@ -175,7 +175,7 @@ export function emailDocumentShell(input: EmailDocumentShellInput): string {
 import { renderEmailLayout, type RenderEmailOptions } from './render'
 import type { EmailDoc } from './types'
 
-export interface CompileEmailOptions extends RenderEmailOptions {
+interface CompileEmailOptions extends RenderEmailOptions {
   brand?: EmailBrand
   unsubscribeUrl?: string
   /** The "Manage emails" preference-page URL for this recipient (see EmailFooterInput.manageUrl). */

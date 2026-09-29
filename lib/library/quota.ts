@@ -57,11 +57,11 @@ const SUM_PAGE = 1000
 const SUM_MAX_PAGES = 200
 
 /** A Space's Loom cap. `capped: false` only for the root Space. */
-export type LoomQuota = { capped: false } | { capped: true; capBytes: number }
+type LoomQuota = { capped: false } | { capped: true; capBytes: number }
 
 /** What loomQuotaFor needs from a Space: its type (root is uncapped) and its plan label. The
  *  `Space` from lib/spaces/store fits. */
-export interface LoomQuotaSpace {
+interface LoomQuotaSpace {
   type?: string | null
   plan?: string | null
 }
@@ -76,7 +76,7 @@ export function loomQuotaFor(space: LoomQuotaSpace | null | undefined): LoomQuot
 /** What a Space stores: the counted bytes, how many file-backed rows were counted, and how many
  *  carry no size (`unknown`). `ok: false` means the sum could not be read, which callers treat as
  *  "cannot prove there is room", never as zero. */
-export type LoomUsage = { ok: true; bytes: number; files: number; unknown: number } | { ok: false }
+type LoomUsage = { ok: true; bytes: number; files: number; unknown: number } | { ok: false }
 
 /** Fold a list of `bytes` values into counted bytes + an unknown count. PURE. A non-number, a
  *  negative or a non-finite value is UNKNOWN, not zero. */
@@ -131,7 +131,7 @@ function trim(v: number): string {
   return v >= 100 ? String(Math.round(v)) : v.toFixed(1).replace(/\.0$/, '')
 }
 
-export type LoomBudgetVerdict = { ok: true } | { ok: false; error: string }
+type LoomBudgetVerdict = { ok: true } | { ok: false; error: string }
 
 /** The refusal when the budget cannot be read (a failed Space read or a failed sum). */
 const LOOM_BUDGET_UNREAD =

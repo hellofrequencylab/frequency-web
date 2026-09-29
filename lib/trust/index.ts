@@ -11,7 +11,7 @@ export * from './compute'
 export { SIGNAL_WEIGHTS, weightFor } from './weights'
 
 /** A source-bound trust emitter. `trustSource('marketplace').signal({ profileId, signalType: 'deal_completed' })`. */
-export interface TrustSourceAdapter {
+interface TrustSourceAdapter {
   readonly source: string
   signal(input: Omit<RecordTrustSignalInput, 'source'>): Promise<RecordTrustSignalResult>
 }

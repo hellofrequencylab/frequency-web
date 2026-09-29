@@ -27,7 +27,7 @@ export { MODULE_ROLES as APP_MIN_ROLES, isModuleRole as isAppMinRole }
 
 /** One resolved override for an App at a scope. `enabled` false drops it; `position` reorders it
  *  within its category; `minRole` is the per-App role floor. Mirrors an app_overrides row. */
-export interface AppOverride {
+interface AppOverride {
   enabled: boolean
   position: number | null
   minRole: AppMinRole | null

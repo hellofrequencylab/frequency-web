@@ -75,7 +75,7 @@ export interface BlockDataItem {
 
 /** A function-backed block's data source: the three reads the editor needs. Every method is FAIL-SAFE
  *  (never throws into the caller) and BOUND to `spaceId`. `createHref` is pure (route only). */
-export interface BlockDataSource {
+interface BlockDataSource {
   /** The block type id in the unified registry (lib/entity-blocks/registry.ts). */
   block: string
   /**
@@ -489,7 +489,7 @@ export async function spaceEnabledFunctions(spaceId: string): Promise<Set<SpaceF
 /** One item the Features block renders when it sources from a Space DATA source. The shape matches the
  *  renderer's item bag (content-block-view readFeatureItems): a title + text + optional price + link + CTA
  *  label. Plain data, safe to inject into the content props that cross into the render. */
-export interface FeatureSourceItem {
+interface FeatureSourceItem {
   title: string
   text: string
   price: string
@@ -512,7 +512,7 @@ const FEATURE_SOURCE_CTA: Record<FeatureSourceBlock, string> = {
 }
 
 /** Whether a Features `source` string names a resolvable Space DATA source. Pure. */
-export function isFeatureSourceBlock(source: string): source is FeatureSourceBlock {
+function isFeatureSourceBlock(source: string): source is FeatureSourceBlock {
   return (FEATURE_SOURCE_BLOCKS as readonly string[]).includes(source)
 }
 

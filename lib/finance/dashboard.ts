@@ -7,7 +7,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export interface EntityFinance {
+interface EntityFinance {
   entityKey: string
   entityName: string
   /** 'nonprofit' | 'for_profit'. */
@@ -29,7 +29,7 @@ export interface FinanceTxn {
   sourceTable: string | null
 }
 
-export interface FinanceSummary {
+interface FinanceSummary {
   /** One row per known entity (Foundation + Labs always present, even at 0). */
   entities: EntityFinance[]
   grandTotalCents: number

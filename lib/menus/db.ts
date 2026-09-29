@@ -14,14 +14,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 /** The PostgREST result every awaited query resolves to. `data` is the row array a
  *  `.select()` returns (PostgREST returns a list unless `.single()` is used, which
  *  the menu layer never does), or null on error. */
-export type MenuQueryResult<Row = Record<string, unknown>> = {
+type MenuQueryResult<Row = Record<string, unknown>> = {
   data: Row[] | null
   error: { message: string } | null
 }
 
 /** A chainable, awaitable query builder over the untyped menu tables. Each method
  *  returns the same builder, and the builder is itself awaitable. */
-export interface MenuQuery<Row = Record<string, unknown>> extends PromiseLike<MenuQueryResult<Row>> {
+interface MenuQuery<Row = Record<string, unknown>> extends PromiseLike<MenuQueryResult<Row>> {
   select(cols: string): MenuQuery<Row>
   insert(values: Record<string, unknown> | Record<string, unknown>[]): MenuQuery<Row>
   update(values: Record<string, unknown>): MenuQuery<Row>
@@ -35,7 +35,7 @@ export interface MenuQuery<Row = Record<string, unknown>> extends PromiseLike<Me
 
 /** An untyped admin client whose `.from()` yields the chainable MenuQuery above. The
  *  row type is supplied per call (e.g. `from<MenuRow>('menus')`). */
-export interface MenuDb {
+interface MenuDb {
   from<Row = Record<string, unknown>>(table: string): MenuQuery<Row>
 }
 

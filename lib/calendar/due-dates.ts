@@ -1,5 +1,4 @@
 import type { CalendarEvent } from './item'
-import type { EntryRow } from './entries'
 
 // TASK DUE DATES as a calendar layer (ADR-1386 P4, ADR-1385 §7). One adapter: crm_tasks rows
 // to CalendarEvent. Team only. The grid does not special-case them.
@@ -30,16 +29,6 @@ export function dueTaskToCalendarItem(task: PlanDueTask): CalendarEvent | null {
     layer: 'todos',
     notes: task.planId ? 'Plan to-do' : null,
   }
-}
-
-export function dueTasksForDay(tasks: readonly PlanDueTask[], dayKey: string): CalendarEvent[] {
-  return tasks
-    .map(dueTaskToCalendarItem)
-    .filter((item): item is CalendarEvent => !!item && item.dayKey === dayKey)
-}
-
-export function entryBelongsToPlan(entry: Pick<EntryRow, 'plan_id'>, planId: string): boolean {
-  return entry.plan_id === planId
 }
 
 /** Due to-dos whose day sits in [fromDay, toDay). Team calendar only. */

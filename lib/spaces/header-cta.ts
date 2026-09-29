@@ -46,7 +46,7 @@ const FUNCTION_KEYS: readonly HeaderCtaFunction[] = [
 /** One in-house function choice: its key, the default plain label, and how it resolves to a surface off
  *  the Space's base path. `anchor` targets a Home section (`#offerings` / `#contact`); otherwise it is a
  *  sub-path off the base. */
-export interface HeaderCtaFunctionChoice {
+interface HeaderCtaFunctionChoice {
   key: HeaderCtaFunction
   /** The default button label (sentence case, no em dashes). The owner may still type their own label. */
   label: string

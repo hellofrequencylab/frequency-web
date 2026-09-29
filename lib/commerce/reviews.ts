@@ -20,7 +20,7 @@ function db(): SupabaseClient {
 // early-stage listing never comes close, so this stays exact in practice.
 const REVIEWS_CAP = 50
 
-export interface ProductReviewItem {
+interface ProductReviewItem {
   id: string
   rating: number
   body: string

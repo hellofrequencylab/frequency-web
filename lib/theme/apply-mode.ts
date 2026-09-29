@@ -64,7 +64,7 @@ export function hasAccount(): boolean {
 }
 
 /** `prefers-color-scheme: dark`. */
-export function systemPrefersDark(): boolean {
+function systemPrefersDark(): boolean {
   if (!inBrowser()) return false
   try {
     return window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -77,7 +77,7 @@ export function systemPrefersDark(): boolean {
  * Resolve the mode for RIGHT NOW — this path, this viewport, this browser — from the live
  * environment, through the same `resolveDarkMode` the pre-paint bootstrap restates.
  */
-export function resolveCurrentDark(pathname?: string): boolean {
+function resolveCurrentDark(pathname?: string): boolean {
   if (!inBrowser()) return false
   return resolveDarkMode({
     stored: readStoredMode(),
@@ -97,7 +97,7 @@ export function resolveCurrentDark(pathname?: string): boolean {
  * status bar drifted from the pre-paint value for skinned members. One pair of literals, one answer,
  * matching what the bootstrap already painted.
  */
-export function applyResolvedDark(dark: boolean): void {
+function applyResolvedDark(dark: boolean): void {
   if (!inBrowser()) return
   document.documentElement.classList.toggle('dark', dark)
   const meta = document.querySelector('meta[name="theme-color"]')

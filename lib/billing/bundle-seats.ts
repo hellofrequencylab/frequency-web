@@ -136,7 +136,7 @@ type BundleSeatingRpc = (
 }>
 
 /** The outcome of one reconcile, for the webhook's log line and for tests. */
-export interface BundleSeatingResult {
+interface BundleSeatingResult {
   /** Was this a bundle subscription at all? `false` means the caller should keep routing. */
   handled: boolean
   /** Did the RPC apply, i.e. did seating actually change state? `false` for stale / skipped / no-op. */

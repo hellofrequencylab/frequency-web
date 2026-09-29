@@ -111,7 +111,7 @@ export function parseLayout(raw: unknown): LayoutConfig {
 const slotOf = (config: LayoutConfig, slotId: string): SlotConfig => config.slots[slotId] ?? emptySlot()
 
 /** A module assigned to a slot, with its on/off + role-gate state, for the editor. */
-export interface ModuleAssignment {
+interface ModuleAssignment {
   id: string
   slot: string
   enabled: boolean

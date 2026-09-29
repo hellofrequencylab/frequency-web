@@ -24,7 +24,7 @@ import { normalizeSubject, normalizeBody } from '@/lib/spaces/campaigns'
 
 /** One saved template as the app consumes it (camelCased). subject/body are plain text (the composer
  *  prefills from them). */
-export interface SpaceEmailTemplate {
+interface SpaceEmailTemplate {
   id: string
   name: string
   subject: string

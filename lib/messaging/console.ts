@@ -39,7 +39,7 @@ export interface MessagingFunnelItem {
   href: string
 }
 
-export interface MessagingConsoleData {
+interface MessagingConsoleData {
   campaigns: MessagingCampaignItem[]
   funnels: MessagingFunnelItem[]
   counts: {

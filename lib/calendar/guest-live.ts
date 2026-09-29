@@ -21,7 +21,7 @@ export function guestLiveItems(items: readonly CalendarEvent[]): CalendarEvent[]
 }
 
 /** What the guest surface should say after guestLiveItems. First-use is only when the feed is empty. */
-export type GuestFeedState = {
+type GuestFeedState = {
   liveCount: number
   cancelledCount: number
   blockedCount: number

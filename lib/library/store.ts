@@ -151,7 +151,7 @@ function toItem(r: Record<string, unknown>): LibraryGalleryItem {
 
 export type LibrarySort = 'new' | 'old' | 'title' | 'size' | 'relevant'
 
-export type LibraryQuery = {
+type LibraryQuery = {
   spaceId: string
   q?: string
   kind?: string
@@ -358,7 +358,7 @@ export async function searchSpaceLibraryImages(
 }
 
 /** One already-catalogued asset, matched by CONTENT. */
-export type LibraryDuplicate = { id: string; url: string | null; title: string }
+type LibraryDuplicate = { id: string; url: string | null; title: string }
 
 /**
  * The asset in this space whose stored bytes hash to `sha256`, or null.
@@ -488,7 +488,7 @@ export async function insertSpaceLibraryImage(input: {
 
 /** The answer to "make this shared image ours" (LIVE-569). `reused` = the Space already held a fork of
  *  this master, so nothing was copied and that row is the answer (one master, one copy per Space). */
-export type LibraryForkResult = { id: string; url: string; reused: boolean } | { error: string }
+type LibraryForkResult = { id: string; url: string; reused: boolean } | { error: string }
 
 const FORK_MASTER_COLS =
   'id, space_id, visibility, status, kind, title, slug, alt, tags, mime, storage_bucket, storage_path, ' +
@@ -638,7 +638,7 @@ export async function forkIfShared(
 }
 
 /** The little an authorizer needs to know about an asset before it may be described (HYG-021). */
-export type LibraryDescriptorTarget = {
+type LibraryDescriptorTarget = {
   spaceId: string
   createdBy: string | null
   kind: string | null
@@ -718,7 +718,7 @@ export async function backfillLibraryAssetDescriptor(
 }
 
 /** What the naming read needs to know about one image (LIVE-587). */
-export type LibraryTagTarget = {
+type LibraryTagTarget = {
   id: string
   spaceId: string
   url: string | null
@@ -1173,7 +1173,7 @@ export async function listCollections(spaceId: string): Promise<LibraryCollectio
 /** The stable slug of the master "Spaces" collection on the root Loom. */
 export const SPACES_COLLECTION_SLUG = 'spaces'
 /** The display title of the master "Spaces" collection. */
-export const SPACES_COLLECTION_TITLE = 'Spaces'
+const SPACES_COLLECTION_TITLE = 'Spaces'
 
 /** Ensure the root Loom's "Spaces" collection exists (idempotent, keyed by the stable slug), returning
  *  its id. Creates it on first use so the folder appears the moment the first seeded image is filed.

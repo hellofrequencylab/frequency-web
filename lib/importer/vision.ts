@@ -20,7 +20,7 @@ import { stripEmDashes } from '@/lib/ai/space-copilot'
 const FEATURE = 'seed-image-plan'
 const MAX_IMAGES = 12
 
-export const IMAGE_CATEGORIES = [
+const IMAGE_CATEGORIES = [
   'logo',
   'hero',
   'exterior',
@@ -31,7 +31,7 @@ export const IMAGE_CATEGORIES = [
   'detail',
   'other',
 ] as const
-export type ImageCategory = (typeof IMAGE_CATEGORIES)[number]
+type ImageCategory = (typeof IMAGE_CATEGORIES)[number]
 
 /** How much each category is worth as the primary HERO image. A logo is never a hero; a wide
  *  exterior/interior/product shot leads best. Multiplied by the model's per-image heroScore. */
@@ -58,7 +58,7 @@ export interface SeedImagePlanItem {
 }
 
 /** The designer's output: the images best-first (hero leads), the chosen hero, and the per-image tags. */
-export interface SeedImagePlan {
+interface SeedImagePlan {
   order: string[]
   heroUrl: string | null
   items: SeedImagePlanItem[]

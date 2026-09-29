@@ -158,7 +158,7 @@ export function streakDayRun(
 
 // --- the pure deriver ------------------------------------------------------
 
-export interface DerivedStreak {
+interface DerivedStreak {
   /** Consecutive-day count ending today (if logged) or yesterday (at risk). */
   current: number
   /** A practice was logged today. */
@@ -622,7 +622,7 @@ export async function recomputePracticeStreakAfterUnlog(
 // today is already covered, it is a safe no-op (saved:false) and NO freeze is consumed. The
 // bridged day is returned so the action is reversible (revertStreakSave undoes exactly it).
 
-export interface SaveStreakResult {
+interface SaveStreakResult {
   /** A freeze was spent and a day bridged (the streak was actually saved). */
   saved: boolean
   /** The UTC day the freeze bridged (for the Undo + audit), or null when nothing was saved. */
@@ -748,7 +748,7 @@ export async function revertStreakSave(
 
 // --- buy-a-freeze sink (Rewards Economy v3, ADR-305) -----------------------
 
-export interface GrantFreezeResult {
+interface GrantFreezeResult {
   /** A freeze token was banked. */
   granted: boolean
   /** The freeze reserve after the call. */
@@ -803,7 +803,7 @@ export async function grantStreakFreeze(profileId: string): Promise<GrantFreezeR
 
 // --- rest-window writers (the "life happens" pause) ------------------------
 
-export interface SetPauseResult {
+interface SetPauseResult {
   rest: RestWindow
 }
 

@@ -40,7 +40,7 @@ export interface DensityPlace extends DensityCityRow {
   capacityCrunch: boolean
 }
 
-export interface DensityTotals {
+interface DensityTotals {
   cities: number
   circles: number
   members: number

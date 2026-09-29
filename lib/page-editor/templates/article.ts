@@ -154,7 +154,7 @@ const EMPHASIS = { scale: 'default', accent: 'none' } as const
 
 /** An editorial beat between question sections. Both variants are pure copy carriers:
  *  they exist so converting a coded article does not silently delete sentences. */
-export type ArticleBeat =
+type ArticleBeat =
   | {
       kind: 'statement'
       /** The line, in full. */
@@ -187,7 +187,7 @@ export type ArticleBeat =
 
 /** An in-section button row. Internal links inside the pillar cluster, kept as
  *  buttons rather than flattened into prose. */
-export type ArticleLink = {
+type ArticleLink = {
   label: string
   href: string
   variant?: 'primary' | 'secondary' | 'ghost'
@@ -219,7 +219,7 @@ export type ArticleCard = {
 
 /** One question-led section: the reader's question as the H2, answered in its first
  *  sentence. `answer` is the direct answer (set large); `body` is the elaboration. */
-export type ArticleSection = {
+type ArticleSection = {
   /** The H2, phrased as the reader would search it (CONTENT-VOICE §10.9). */
   question: string
   /** The direct answer, first. Rendered at Lead size. */
@@ -262,7 +262,7 @@ export type ArticleSection = {
 
 /** The ordered how-to, when the article has one. Feeds BOTH the visible steps and
  *  the HowTo node, from one place, so the two can never drift. */
-export type ArticleHowTo = {
+type ArticleHowTo = {
   /** The guide name. Also the HowTo `name`. */
   name: string
   /** Intro paragraph. Also the HowTo `description`. */

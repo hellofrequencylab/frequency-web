@@ -18,7 +18,7 @@ import { isSmsProvisioned } from '@/lib/comms/sms'
 
 const MESSAGES_API_BASE = 'https://api.twilio.com/2010-04-01/Accounts'
 
-export interface RawSmsArgs {
+interface RawSmsArgs {
   /** The destination phone number in E.164 (e.g. +15555550123). */
   to: string
   /** The message body. Twilio segments/encodes it; we send it verbatim. */

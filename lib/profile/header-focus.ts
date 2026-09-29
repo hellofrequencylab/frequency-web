@@ -52,7 +52,7 @@ export function writeProfileAvatarFocus(meta: unknown, focus: string): Record<st
 // profiles.meta so it needs no column: `headerOverlayStyle` ('none' | 'shadow' | 'fade') + an optional
 // `headerOverlayColor` (a CSS color the operator picked for shadow/fade). Profiles default to 'none' (the
 // clean cover the owner asked for); an unset value === that default.
-export type ProfileOverlayStyle = 'none' | 'shadow' | 'fade'
+type ProfileOverlayStyle = 'none' | 'shadow' | 'fade'
 const OVERLAY_STYLES: readonly ProfileOverlayStyle[] = ['none', 'shadow', 'fade']
 
 /** Read the saved header overlay STYLE out of profiles.meta, defaulting to 'none' (the clean profile cover). */

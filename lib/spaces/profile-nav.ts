@@ -24,7 +24,7 @@ import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 // and hand the result to <SpaceStickyNav>, giving the member a persistent menu whose body swaps beneath
 // it without a full reload (the "persistent shell" model). Server-only; the active-tab state stays
 // client-side in SpaceProfileTabs (usePathname), so nothing here can go stale across soft navigation.
-export interface SpaceProfileNav {
+interface SpaceProfileNav {
   /** Home + one anchor per live Home section + the operator's custom sub-pages. */
   tabs: SpaceProfileTab[]
   /** The operator's back-end links (Manage / CRM), empty for a visitor. */
@@ -53,7 +53,7 @@ function hasContactFacts(preferences: unknown): boolean {
 
 /** Who the menu is being built FOR. `null` means NOBODY: the signed-out, ISR-rendered share URL,
  *  where reading a cookie would make the route dynamic (ADR-1465 / ADR-1526). */
-export interface SpaceNavViewer {
+interface SpaceNavViewer {
   profileId: string | null
   webRole: WebRole | null
 }

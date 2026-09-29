@@ -36,7 +36,7 @@
  *  `visitor` is a signed-in reader with no membership, the state that previously got nothing. */
 export type SpaceViewer = 'anonymous' | 'visitor' | 'waitlist' | 'member'
 
-export interface SpaceFrontDoorCopy {
+interface SpaceFrontDoorCopy {
   /** The heading. Names the place or the reader's standing in it, never a demand. */
   title: string
   /** One or two plain sentences. */
@@ -45,7 +45,7 @@ export interface SpaceFrontDoorCopy {
   action: { href: string; label: string } | null
 }
 
-export interface SpaceFrontDoorInput {
+interface SpaceFrontDoorInput {
   viewer: SpaceViewer
   /** The Space's brand name, so the copy names the place rather than "this space". */
   brandName: string | null

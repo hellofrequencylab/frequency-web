@@ -21,7 +21,7 @@ import { SPOTLIGHT_FONTS, type SpotlightFontId } from '@/lib/spotlight/theme'
 // no raw font string ever reaches the DOM. `display` (Anton) is the default,
 // matching the marketing headers.
 
-export type HeaderFontId = Extract<SpotlightFontId, 'display' | 'rounded' | 'serif' | 'grotesk' | 'script'>
+type HeaderFontId = Extract<SpotlightFontId, 'display' | 'rounded' | 'serif' | 'grotesk' | 'script'>
 
 // The five faces a member may pick per header, in the order the design scope
 // lists them (display first, as the default). Labels name the face so the pick

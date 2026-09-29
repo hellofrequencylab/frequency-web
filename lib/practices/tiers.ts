@@ -51,7 +51,7 @@ export function clampTierToDuration(tier: PracticeTier, durationMin: number | nu
 export const TIER_LABELS: Record<PracticeTier, string> = { light: 'Light', standard: 'Standard', heavy: 'Heavy' }
 
 /** The allowed tier Zap amounts, ascending (8 / 12 / 15). */
-export const TIER_ZAP_VALUES: readonly number[] = TIER_ORDER.map((t) => TIER_ZAPS[t])
+const TIER_ZAP_VALUES: readonly number[] = TIER_ORDER.map((t) => TIER_ZAPS[t])
 
 /** Snap any number to the nearest allowed tier amount (8 / 12 / 15); non-finite → standard.
  *  The server uses this so a posted value can never be an arbitrary (or unlimited) number. */

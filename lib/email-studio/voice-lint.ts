@@ -19,14 +19,14 @@
 // outside their own test). The hard rule now applies through campaignAuthoredCopy on every real send.
 // from a template we would refuse. Pure and unit-tested, no imports, safe anywhere.
 
-export interface VoiceViolation {
+interface VoiceViolation {
   /** A short machine key for the rule. */
   rule: string
   /** A one-line, operator-facing explanation. */
   detail: string
 }
 
-export interface VoiceLintResult {
+interface VoiceLintResult {
   violations: VoiceViolation[]
   /** The ONE hard rule. When true, the copy is not shippable as written. */
   hasEmDash: boolean

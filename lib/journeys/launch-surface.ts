@@ -19,7 +19,7 @@ import { LAUNCH_CAMPAIGN_KEYS, type LaunchCampaignKey } from './launch-campaigns
  * gets a real draft to copy out rather than an empty locked panel. The other three beats
  * (enrollment open, last call, kickoff) are the scheduled series, which is the paid feature.
  */
-export const FREE_LAUNCH_SERIES_KEYS: readonly LaunchCampaignKey[] = ['announce']
+const FREE_LAUNCH_SERIES_KEYS: readonly LaunchCampaignKey[] = ['announce']
 
 /** Which sends this viewer may review AND schedule. The full series when the tier allows launch
  *  campaigns (resolveJourneyAccess.launchCampaignsAllowed), else the free subset. PURE. */

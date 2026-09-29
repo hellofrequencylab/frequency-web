@@ -110,7 +110,7 @@ export function buildCampaignFrom(fromName: unknown, base: string = DEFAULT_FROM
  * loadCampaignFromName: selected via a string-typed column name so the not-yet-regenerated types never trip the
  * compiler, and fail-safe (returns null pre-migration or on any error). Returns the sanitized address, or null.
  */
-export async function loadCampaignFromAddress(campaignId: string): Promise<string | null> {
+async function loadCampaignFromAddress(campaignId: string): Promise<string | null> {
   try {
     const db = createAdminClient()
     const col: string = 'from_address'
@@ -170,7 +170,7 @@ export const BRAND_REPLY_TO = 'hello@frequencylocal.com'
  * future per-campaign/per-Space override but is intentionally unused today. Fail-safe: returns undefined only
  * if the configured value is not a valid address (the send then falls back to the noreply envelope).
  */
-export async function loadCampaignReplyTo(_campaignId: string): Promise<string | undefined> {
+async function loadCampaignReplyTo(_campaignId: string): Promise<string | undefined> {
   const override = process.env.EMAIL_REPLY_TO
   const addr = (override && override.trim()) || BRAND_REPLY_TO
   return addr.includes('@') ? addr : undefined
@@ -475,66 +475,11 @@ async function loadContactNames(contactIds: string[]): Promise<Map<string, strin
   return map
 }
 
-// ── compileCampaign: render block_json -> html/text, persist, size-check ─────────
-
-export interface CompileResult {
-  html: string
-  text: string
-  subject: string
-  preheader: string
-  bytes: number
-  /** Set when the compiled HTML crosses the size guard (Gmail clip risk); null otherwise. */
-  warning: string | null
-}
-
-/**
- * Compile a campaign's `block_json` into send-ready html/text via compileEmailDoc, persist
- * `compiled_html` (+ subject / preheader) back on the row, and enforce the size guard. The
- * persisted HTML keeps merge tags intact (they resolve per recipient at send). Returns the
- * compiled artifacts + a warning when the HTML risks the Gmail clip.
- */
-export async function compileCampaign(campaignId: string): Promise<ActionResult<CompileResult>> {
-  const row = await loadCampaign(campaignId)
-  if (!row) return fail('That campaign no longer exists.')
-
-  const doc = docFromRow(row)
-  // Refresh any data-bound Product card from the live catalog before compiling, so the saved preview HTML
-  // carries the current photo / price / link (Phase 4).
-  const resolvedDoc: EmailDoc = { ...doc, layout: await resolveProductRefs(doc.layout) }
-  const compiled = compileEmailDoc(resolvedDoc)
-  const bytes = emailHtmlByteLength(compiled.html)
-  const warning = bytes > EMAIL_SIZE_WARN_BYTES ? emailSizeWarning(bytes) : null
-
-  const db = createAdminClient()
-  const { error } = await db
-    .from('campaigns')
-    .update({ compiled_html: compiled.html, subject: compiled.subject, preheader: compiled.preheader })
-    .eq('id', campaignId)
-  if (error) return fail('Could not save the compiled email.')
-
-  return ok({
-    html: compiled.html,
-    text: compiled.text,
-    subject: compiled.subject,
-    preheader: compiled.preheader,
-    bytes,
-    warning,
-  })
-}
-
-// ── resolveCampaignAudience: count only ──────────────────────────────────────────
+// ── Audience count ───────────────────────────────────────────────────────────────
 
 export interface AudienceResult {
   segment: string
   count: number
-}
-
-/** Resolve the campaign's stored segment to a recipient COUNT (pre-gate membership). The
- *  actual queued count at send can be lower once each recipient passes the send-gate. */
-export async function resolveCampaignAudience(campaignId: string): Promise<ActionResult<AudienceResult>> {
-  const row = await loadCampaign(campaignId)
-  if (!row) return fail('That campaign no longer exists.')
-  return countAudience(row.segment)
 }
 
 /** Resolve an explicit segment key to a count (used by the send-panel preview). */

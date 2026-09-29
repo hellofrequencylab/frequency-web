@@ -89,7 +89,7 @@ const CALENDAR_COLS = 'id, slug, title, starts_at, ends_at, location, time_zone,
  *  carried since 20261203000000. The .ics route already reads them to collapse a series to one
  *  RRULE; the HTML grid reads them to build its Repeats strip (LIVE-081). They are declared here so
  *  a caller cannot silently drop them again — the calendar page did exactly that for two months. */
-export type PublicCalendarEvent = SpaceCalendarEvent & {
+type PublicCalendarEvent = SpaceCalendarEvent & {
   recurrence_type: string | null
   recurrence_until: string | null
   parent_event_id: string | null
@@ -509,7 +509,7 @@ export async function listSeriesAnchors(ids: string[]): Promise<RepeatAnchorRow[
 /** Per-event engagement shown on the calendar popup: the confirmed 'going' count (social proof) and the
  *  event's cover image URL. Kept separate from the calendar feed rows so the .ics feed contract and the
  *  two feed RPCs are untouched — this is a display-only enrichment over the ids already on the grid. */
-export interface CalendarEngagement {
+interface CalendarEngagement {
   going: number
   coverUrl: string | null
   /** The host-picked focal point for that cover (events.theme.coverFocus) as a CSS

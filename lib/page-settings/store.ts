@@ -21,7 +21,7 @@ import { defaultLayoutFor } from './default-layouts'
 // `page_settings` (including `space_id` + `header_image_focal`) is in the generated DB types,
 // so every read here goes through the typed client.
 
-export interface PageSettingsRow {
+interface PageSettingsRow {
   route: string
   seo_title: string | null
   seo_description: string | null

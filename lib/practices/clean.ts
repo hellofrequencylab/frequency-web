@@ -33,7 +33,7 @@ function db(): SupabaseClient {
 // vector RPC (match_practices) — see the COST note on listReviewQueue.
 
 /** One row in the triage queue: the pending practice + its review signals. */
-export interface ReviewQueueItem {
+interface ReviewQueueItem {
   id: string
   title: string
   summary: string | null
@@ -228,7 +228,7 @@ export async function resolvePracticeSlugRedirect(oldSlug: string): Promise<stri
 export type AttentionReason = 'orphaned' | 'imageless' | 'never_logged' | 'stale'
 
 /** One needs-attention row: the practice + why it surfaced + its quality score. */
-export interface NeedsAttentionItem {
+interface NeedsAttentionItem {
   id: string
   title: string
   status: string | null
@@ -320,7 +320,7 @@ export async function needsAttention(opts: { limit?: number } = {}): Promise<Nee
 // --- 2.4 Tag governance ------------------------------------------------------
 
 /** One tag in the governance list: its def + how many practices carry it + where it came from. */
-export interface TagGovernanceRow {
+interface TagGovernanceRow {
   id: string
   slug: string
   label: string

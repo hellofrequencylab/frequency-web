@@ -26,7 +26,7 @@ export type ScalarFieldValue = string | number | boolean | null
 export type RepeatRowValue = Record<string, ScalarFieldValue>
 
 /** What a caller needs to declare for the check: the field's identity and its constraints. */
-export type CheckableField = Pick<FieldDef, 'label' | 'kind' | 'options' | 'optionsFrom' | 'required'>
+type CheckableField = Pick<FieldDef, 'label' | 'kind' | 'options' | 'optionsFrom' | 'required'>
 
 /** Kinds whose value is a LIST, which is never one scalar. A caller that wants to set one hands in
  *  the whole collection through a repeat or a dedicated control, not through this check. */

@@ -12,7 +12,7 @@
 export type HeaderSize = 'short' | 'standard' | 'large' | 'tall'
 
 /** The height tiers (ascending), for the elements-console height dropdown. */
-export const HEADER_SIZES: readonly { value: HeaderSize; label: string }[] = [
+const HEADER_SIZES: readonly { value: HeaderSize; label: string }[] = [
   { value: 'short', label: 'Short' },
   { value: 'standard', label: 'Standard' },
   { value: 'large', label: 'Large' },

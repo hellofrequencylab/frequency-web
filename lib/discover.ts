@@ -96,7 +96,7 @@ export type Domain = {
 
 // A Channel with its Interests/Topics nested beneath it, each carrying a live
 // circle count. This is the shape the Channels browse experience renders.
-export type DomainWithTopics = Domain & {
+type DomainWithTopics = Domain & {
   topics: Array<TopicalChannel & { circleCount: number }>
 }
 
@@ -129,7 +129,7 @@ export class DiscoverReadError extends Error {
 }
 
 /** One list read. `ok: false` means the query broke; `[]` with `ok: true` means genuinely empty. */
-export type ListRead<T> = { rows: T[]; ok: boolean }
+type ListRead<T> = { rows: T[]; ok: boolean }
 
 // ── Transient-failure retry (LIVE-039) ────────────────────────────────────────
 //
@@ -228,7 +228,7 @@ const RETRY_DELAYS_MS = [250, 1000, 3000]
 
 /** What one supabase-js read resolves to: the builder's own `{ data, error, status }`. Exported so
  *  a reader outside this module can hand `listReadFailClosed` a thunk that builds its query. */
-export type QueryResult = { data: unknown; error: unknown; status?: number }
+type QueryResult = { data: unknown; error: unknown; status?: number }
 
 async function attempt(
   source: string,
@@ -524,7 +524,7 @@ export async function getPublicCounts(): Promise<{ members: number; circles: num
 // recognized city name to a server-curated APPROXIMATE centroid below. No
 // per-circle coordinate ever reaches the client — only these city points.
 
-export type CityCluster = {
+type CityCluster = {
   city: string
   circles: number
   events: number

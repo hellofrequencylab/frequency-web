@@ -53,7 +53,7 @@ export type AssetUsageRow = {
 
 /** One place an asset is used, ready to render: a label, a link when the page has a public
  *  address, whether it is the live copy or a draft, and how many refs the document carries. */
-export type AssetUsagePlace = {
+type AssetUsagePlace = {
   /** Stable key for lists: store + space + doc + live/draft. */
   key: string
   label: string

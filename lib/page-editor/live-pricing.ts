@@ -22,7 +22,7 @@ import { allOfferings } from '@/lib/pricing/pricing-grid'
 // "Space Memberships: Owner-set" card) that have no offering behind them.
 
 /** One offering's resolved figures, keyed by the id a CMS card binds to. */
-export interface LivePriceRow {
+interface LivePriceRow {
   label: string
   /** The display price today ("Free", "$19/mo"), through the beta window. */
   price: string

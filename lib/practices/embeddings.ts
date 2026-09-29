@@ -40,7 +40,7 @@ type EmbeddablePractice = {
 /** Compose the embedding source text from a practice's descriptive fields. Pure.
  *  Mirrors the search_vector generated column (title + summary + body) so the two
  *  retrieval halves index the same text. */
-export function buildPracticeText(
+function buildPracticeText(
   p: Pick<EmbeddablePractice, 'title' | 'summary' | 'body'>,
 ): string {
   return [p.title, p.summary, p.body]

@@ -4,7 +4,7 @@ import type { EntryStage } from './registry'
 
 export type WorkflowStage = PlanStage | 'cancelled'
 
-export type PlanStageTransition = {
+type PlanStageTransition = {
   stage: WorkflowStage
   planStage: PlanStage
   entryStage: EntryStage
@@ -25,7 +25,7 @@ export function planStageTransition(stage: string): PlanStageTransition | null {
   return PLAN_STAGE_TRANSITIONS.find((transition) => transition.stage === stage) ?? null
 }
 
-export type WorkflowCard = {
+type WorkflowCard = {
   key: string
   plan: SpacePlan
   stage: PlanStage

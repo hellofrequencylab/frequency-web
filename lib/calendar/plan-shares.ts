@@ -17,11 +17,11 @@
 
 import type { SpacePlan } from './plans'
 
-export const PLAN_SHARE_STATUSES = ['pending', 'accepted', 'declined', 'revoked'] as const
+const PLAN_SHARE_STATUSES = ['pending', 'accepted', 'declined', 'revoked'] as const
 export type PlanShareStatus = (typeof PLAN_SHARE_STATUSES)[number]
 
 /** What a guest may answer. Revoke is the host's verb and never an answer. */
-export type PlanShareAnswer = 'accepted' | 'declined'
+type PlanShareAnswer = 'accepted' | 'declined'
 
 /** A `space_plan_shares` row as the session client returns it. */
 export interface PlanShareRow {

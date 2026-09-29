@@ -29,7 +29,7 @@ export type ProfileBlockId =
   | 'contact'
   | 'business'
 
-export interface ProfileBlockDef {
+interface ProfileBlockDef {
   id: ProfileBlockId
   label: string
   /** One plain line for the block-picker (voice canon: no em dashes). */

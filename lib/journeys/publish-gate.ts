@@ -70,7 +70,7 @@ async function countPublishedForOwner(
   }
 }
 
-export interface PublishCheck {
+interface PublishCheck {
   ok: boolean
   /** The upsell message to surface when blocked (CONTENT-VOICE, no em dashes). */
   message?: string

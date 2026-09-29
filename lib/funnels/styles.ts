@@ -8,9 +8,9 @@ import { Sparkles, Play, Users } from 'lucide-react'
 // induction), and `feature` / `demographic` are planned placeholders.
 
 export type FunnelStyleId = 'onboarding' | 'feature' | 'demographic'
-export type FunnelStyleStatus = 'live' | 'planned'
+type FunnelStyleStatus = 'live' | 'planned'
 
-export interface FunnelStyle {
+interface FunnelStyle {
   id: FunnelStyleId
   /** Tab / section label. */
   label: string

@@ -11,7 +11,7 @@ export interface EventTypeCount {
   events: number
   actors: number
 }
-export interface PropCount {
+interface PropCount {
   value: string
   n: number
 }
@@ -22,7 +22,7 @@ export interface FunnelStep {
   /** % lost vs the previous step (null for the first step). */
   dropPct: number | null
 }
-export interface EngagementDashboard {
+interface EngagementDashboard {
   windowDays: number
   practice: PracticeMetrics
   byType: EventTypeCount[]

@@ -32,7 +32,7 @@
  */
 
 /** What the header's check-in surface should be showing right now. */
-export type CheckInSurfaceState =
+type CheckInSurfaceState =
   /** Nothing to say: cancelled, the host has check-in off, or the door has closed for good. */
   | { readonly kind: 'hidden' }
   /** The doors are not open yet. The surface counts down to `startsAtMs`. */

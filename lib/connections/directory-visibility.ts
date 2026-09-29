@@ -55,7 +55,7 @@ export interface DirectoryTarget {
 /** Who is looking. `connectionIds` is the set of profile ids the viewer holds an ACCEPTED
  *  friendship with (friendships.status = 'accepted', either side). Pass `null` for a surface with
  *  no viewer identity in hand; the 'connections' tier then fails closed to "not surfaced". */
-export interface DirectoryViewer {
+interface DirectoryViewer {
   id: string
   connectionIds: ReadonlySet<string>
 }

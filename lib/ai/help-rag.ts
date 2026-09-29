@@ -25,7 +25,7 @@ export interface HelpCitation {
   href: string
 }
 
-export interface HelpAnswer {
+interface HelpAnswer {
   /** The grounded answer, or null when we deflect to a human. */
   answer: string | null
   citations: HelpCitation[]
@@ -34,7 +34,7 @@ export interface HelpAnswer {
   deflected: boolean
 }
 
-export interface HelpChunk {
+interface HelpChunk {
   category: string
   slug: string
   heading: string

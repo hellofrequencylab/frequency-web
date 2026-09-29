@@ -104,7 +104,7 @@ export function cumulativeFrom(base: number, weekly: number[]): number[] {
 }
 
 /** The growth panel: the published-library size now, per-week additions, and the running total. */
-export interface GrowthMetrics {
+interface GrowthMetrics {
   /** Total published practices today. */
   totalPublished: number
   /** Published practices added per trailing week (oldest → current). */
@@ -143,14 +143,14 @@ export function computeGrowth(published: HealthPracticeRow[], weeks: number, now
 // ============================================================================
 
 /** One sub-category's coverage: how many published practices sit under it (0 = a gap). */
-export interface SubcategoryCoverage {
+interface SubcategoryCoverage {
   id: string
   name: string
   count: number
 }
 
 /** One Pillar's coverage: its published count + per-subcategory breakdown + the empty ones. */
-export interface PillarCoverage {
+interface PillarCoverage {
   id: string
   name: string
   count: number
@@ -160,7 +160,7 @@ export interface PillarCoverage {
 }
 
 /** The coverage panel: per-Pillar rows + the count of practices with no Pillar at all. */
-export interface CoverageMetrics {
+interface CoverageMetrics {
   pillars: PillarCoverage[]
   /** Published practices with domain_id null (orphaned, not under any Pillar). */
   unpilared: number
@@ -276,7 +276,7 @@ export function computeFunnel(published: HealthPracticeRow[]): FunnelMetrics {
 // ============================================================================
 
 /** One ranked performer: the practice + its trailing-30-day usage and lifetime totals. */
-export interface PerformerRow {
+interface PerformerRow {
   id: string
   title: string
   logs_30d: number
@@ -285,7 +285,7 @@ export interface PerformerRow {
 }
 
 /** Top and bottom performers by trailing-30-day usage (the live signal, not lifetime). */
-export interface PerformerMetrics {
+interface PerformerMetrics {
   top: PerformerRow[]
   /** Published practices nobody has logged in 30 days, least-adopted first (the at-risk tail). */
   bottom: PerformerRow[]
@@ -324,7 +324,7 @@ export function computePerformers(published: HealthPracticeRow[], limit = 5): Pe
 // ============================================================================
 
 /** The review-SLA aging buckets for the pending queue (how long submissions have waited). */
-export interface ReviewSlaMetrics {
+interface ReviewSlaMetrics {
   /** Total pending practices awaiting review. */
   pending: number
   /** Pending under 2 days old. */
@@ -369,7 +369,7 @@ export function computeReviewSla(pending: { created_at: string | null }[], now =
 // ============================================================================
 
 /** One contributor row: who they are + how much of the published library they authored. */
-export interface ContributorRow {
+interface ContributorRow {
   id: string
   displayName: string
   handle: string | null
@@ -426,7 +426,7 @@ export function computeContributors(
 // ============================================================================
 
 /** Everything the health dashboard page renders, computed in one pass. */
-export interface LibraryHealth {
+interface LibraryHealth {
   growth: GrowthMetrics
   coverage: CoverageMetrics
   funnel: FunnelMetrics
