@@ -137,7 +137,7 @@ export default async function AdminPersonasPage() {
       {awaitingAccount > 0 && (
         <Banner tone="info" title={`${awaitingAccount} verified, waiting on a payout account`}>
           Their tools are on. Activate appears once the member adds a payout account in Settings under
-          Billing, and activating binds that account to the program. They see the same prompt on
+          Receive payments, and activating binds that account to the program. They see the same prompt on
           their Partner programs page.
         </Banner>
       )}

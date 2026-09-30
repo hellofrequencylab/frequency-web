@@ -81,9 +81,10 @@ describe('the payout gate at active (LIVE-696)', () => {
     // charges on without an account id is not an account
     expect(personaActivationVerdict('organization', { accountId: null, chargesEnabled: true }).ok).toBe(false)
     expect(PERSONA_NEEDS_PAYOUT).toMatch(/payout account/)
-    expect(PERSONA_NEEDS_PAYOUT).toMatch(/Billing/)
+    expect(PERSONA_NEEDS_PAYOUT).toMatch(/Receive payments/)
     expect(PERSONA_NEEDS_PAYOUT).not.toMatch(/—/)
-    expect(PERSONA_PAYOUT_HREF).toBe('/settings/billing#payouts')
+    // the deep link the nav uses; /settings/billing would redirect to #plan
+    expect(PERSONA_PAYOUT_HREF).toBe('/settings#payouts')
   })
 
   it('never gates a persona that takes no money', () => {

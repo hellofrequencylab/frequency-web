@@ -90,9 +90,9 @@ export default async function PartnerProgramsPage() {
                 <div className="mt-4 space-y-3">
                   <p className="text-body-sm leading-relaxed text-muted">
                     {meta.label} goes Active once you have a payout account that can take money. It
-                    lives in{' '}
+                    lives under{' '}
                     <Link href={PERSONA_PAYOUT_HREF} className="font-semibold text-primary-strong hover:underline">
-                      Billing settings
+                      Receive payments
                     </Link>
                     , and it is the same account every sale you make pays into.
                   </p>

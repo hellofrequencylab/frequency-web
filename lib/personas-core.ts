@@ -134,12 +134,14 @@ export interface PersonaPayout {
   chargesEnabled: boolean
 }
 
-/** Where the member adds the account: the payouts card every money path already points at. */
-export const PERSONA_PAYOUT_HREF = '/settings/billing#payouts'
+/** Where the member adds the account: the Receive payments card on /settings, the same deep link
+ *  the nav registry uses. NOT /settings/billing#payouts: that route redirects with its own `#plan`
+ *  fragment unless a `?payouts=` query rides along, so the member would land on the plan card. */
+export const PERSONA_PAYOUT_HREF = '/settings#payouts'
 
 /** What an operator reads when Activate is refused. Names the fix and where it lives. */
 export const PERSONA_NEEDS_PAYOUT =
-  'This member has no payout account that can take money yet. They add one in Settings under Billing, then you can activate.'
+  'This member has no payout account that can take money yet. They add one in Settings under Receive payments, then you can activate.'
 
 export type PersonaActivationVerdict =
   | { ok: true; bindAccountId: string | null }

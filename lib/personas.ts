@@ -146,7 +146,7 @@ type ConnectBindingState = 'none' | 'needs_account' | 'ready' | 'bound'
 /** The payout binding status for one queue row, for the operator readout (LIVE-696). A
  *  non-money persona carries no binding (`none`). A money persona reads `bound` once activation
  *  attached an account, `ready` when its member's account can take charges (Activate will bind
- *  it), and `needs_account` otherwise: the member has to add one at /settings/billing first. */
+ *  it), and `needs_account` otherwise: the member has to add one at /settings#payouts first. */
 export function connectBindingState(row: {
   persona: PartnerPersona
   stripeAccountId: string | null
