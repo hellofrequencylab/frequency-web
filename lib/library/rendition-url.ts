@@ -10,6 +10,9 @@ import type { LibraryRenditionKind } from './types'
 // `library_renditions` table (created 20260920000000, dropped 20260925000000, and
 // it stays dropped), and nothing writes derivative files. This module is the
 // resolver that ruling names, and RENDITION_PRESETS' first production consumer.
+// ONE AMENDMENT (ADR-1623, LIVE-580, owner 2026-09-29): a PROTECTED image gets one
+// stored proof object (lib/library/proof-object.ts), because a transform-signed
+// link to a private master opens the master at storage's object route.
 //
 // 🔴 IT IS A PURE STRING REWRITE. No IO, no database, no pixels, and above all NO
 // `sharp` — materialising would have meant server-side decode, and check:og-trace

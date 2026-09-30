@@ -19,7 +19,7 @@ import {
 } from '@/lib/library/store'
 import { similarLibraryAssets } from '@/lib/library/embeddings'
 import { searchLibraryAssetsHybrid } from '@/lib/library/hybrid-search'
-import { signedLibraryAssetUrl } from '@/lib/library/asset-urls'
+import { proofLibraryAssetUrl } from '@/lib/library/asset-urls'
 import { recraftConfigured } from '@/lib/loom/recraft'
 import { RailGrid } from '@/components/templates'
 import { LibraryUploader } from './library-uploader'
@@ -191,12 +191,13 @@ export default async function LoomStudioPage({
     }
   }
 
-  // A protected asset's file is in the private bucket and its row carries no url (LIVE-577,
-  // ADR-1595), so the grid and the drawer would show the person who protected it a blank tile. Mint a
-  // short-lived signed URL per protected row, for this render only: it is handed to the grid and
-  // never written back, because a stored signed URL is a stored expiry.
+  // A protected asset is shown as a PROOF, never its original (LIVE-580, ADR-1623): its file is in
+  // the private bucket and its row carries no url (LIVE-577, ADR-1595), so each protected row gets a
+  // signed link to its stored 480px proof object for this render only, handed to the grid and the
+  // drawer and never written back (a stored signed URL is a stored expiry). No link to the master is
+  // ever minted here. The original leaves only by the download door.
   assets = await Promise.all(
-    assets.map(async (a) => (a.isProtected && !a.url ? { ...a, url: await signedLibraryAssetUrl(a) } : a)),
+    assets.map(async (a) => (a.isProtected ? { ...a, url: await proofLibraryAssetUrl(a) } : a)),
   )
 
   const pageResult = { items: assets, total }

@@ -41,6 +41,9 @@ import {
   type LoomPickAsset,
   type LoomSharedMode,
 } from '@/lib/library/store'
+import { withLoomProofs } from '@/lib/library/asset-urls'
+import { removeLibraryProof } from '@/lib/library/proof-object'
+import { LIBRARY_PRIVATE_BUCKET } from '@/lib/library/protect-move'
 import {
   listSpaceLoomImages,
   listSpaceLoomTags,
@@ -229,17 +232,20 @@ export async function loomImages(
   const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
   // A Space scope reads on the caller's session (LIVE-571): the policies decide, this gate is the
   // second wall. The personal scope stays on the service role (see the file header).
-  if ('spaceId' in scope) {
-    const [assets, tags] = await Promise.all([
-      listSpaceLoomImages(scope.spaceId, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, shared: opts.shared }),
-      opts.shared === 'only' ? Promise.resolve([] as string[]) : listSpaceLoomTags(scope.spaceId, kinds),
-    ])
-    return { assets, tags }
-  }
-  const [assets, tags] = await Promise.all([
-    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly }),
-    listLoomScopeTags(scope, kinds),
-  ])
+  const [rows, tags] =
+    'spaceId' in scope
+      ? await Promise.all([
+          listSpaceLoomImages(scope.spaceId, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, shared: opts.shared, includeProtected: true }),
+          opts.shared === 'only' ? Promise.resolve([] as string[]) : listSpaceLoomTags(scope.spaceId, kinds),
+        ])
+      : await Promise.all([
+          listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, includeProtected: true }),
+          listLoomScopeTags(scope, kinds),
+        ])
+  // PROOFS, NOT MASTERS (LIVE-580, ADR-1623): a protected row leaves here with a signed link to its
+  // stored 480px proof as its url and no storage key, and the picker renders it without letting it
+  // be placed. The master of a protected asset never reaches a picker, so it is never stored in a page.
+  const assets = await withLoomProofs(rows)
   return { assets, tags }
 }
 
@@ -410,6 +416,8 @@ export async function deleteSpaceLoomImage(
   if (removed.bucket && removed.path) {
     try {
       await createAdminClient().storage.from(removed.bucket).remove([removed.path])
+      // A protected image's stored proof goes with it (LIVE-580).
+      if (removed.bucket === LIBRARY_PRIVATE_BUCKET) await removeLibraryProof(removed.path)
     } catch {
       /* best-effort: the row is already gone, a lingering object is harmless */
     }

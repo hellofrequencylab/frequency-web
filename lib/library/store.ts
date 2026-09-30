@@ -532,7 +532,7 @@ export async function forkLibraryAsset(
     }
     if (master.status === 'archived') return { error: 'That image is no longer in the Frequency library.' }
     if (master.kind !== 'image') return { error: 'Only images can be made yours for now.' }
-    if (master.is_protected === true) return { error: 'This image is protected. You can place it, but not copy it.' }
+    if (master.is_protected === true) return { error: 'This image is protected. You can see its proof, but not copy it.' }
     if (isLibraryAssetExpired((master.expires_at as string | null) ?? null)) {
       return { error: 'The licence on this image has run out, so it cannot be copied.' }
     }
@@ -882,9 +882,13 @@ export type LoomPickAsset = {
   generated: boolean
   tags: string[]
   category: string | null
-  /** The protection flag (LIVE-576), carried so a picker can render a proof instead of the master
-   *  once LIVE-580 lands. An expired asset never reaches this type: the readers filter it out. */
+  /** The protection flag (LIVE-576). A protected row reaches a browser only through withLoomProofs
+   *  (lib/library/asset-urls.ts, LIVE-580): its `url` is then a width-capped proof, and the picker
+   *  renders it without letting it be placed. An expired asset never reaches this type. */
   isProtected: boolean
+  /** Server-only: the object key, read so a protected row's proof can be signed. withLoomProofs
+   *  strips it before the list leaves the server; set only when `includeProtected` asked for it. */
+  storagePath?: string | null
   /** The stored placeholder, carried so the Space Loom Studio can describe on view a row filed with
    *  none (LIVE-588: importer seeds, event-photo copies). NULL = known missing; absent = not read
    *  (a row an uploader just added locally, which posted its own descriptor). */
@@ -946,6 +950,10 @@ export async function listLoomScopeImages(
     kinds?: string[]
     generatedOnly?: boolean
     limit?: number
+    /** Keep a protected row whose file is private (no url) so the caller can show its proof
+     *  (LIVE-580). A caller that sets this MUST pass the list through withLoomProofs before it
+     *  reaches a browser; without it such a row is dropped, as every pick reader always did. */
+    includeProtected?: boolean
   } = {},
 ): Promise<LoomPickAsset[]> {
   // Every arm shares one scope; only the text predicate differs, so the scope is built per call
@@ -966,7 +974,7 @@ export async function listLoomScopeImages(
       : `created_by.eq.${scope.createdBy}`
     let query = db()
       .from('library_assets')
-      .select('id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash')
+      .select('id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash, storage_path')
       .in('kind', kinds)
       .neq('status', 'archived')
       // A licensed asset whose expires_at has passed is not offered for placement, in any scope
@@ -986,8 +994,15 @@ export async function listLoomScopeImages(
         // The SQL predicate above is the gate; this is the second wall, so a search arm added later
         // without `.or(notExpiredOr())` still cannot hand the picker a licence that ran out.
         .filter((r) => !isLibraryAssetExpired((r.expires_at as string | null) ?? null))
-        .map(toPickAsset)
-        .filter((a) => a.url.length > 0)
+        .map((r) => {
+          const a = toPickAsset(r)
+          // The key rides only for a caller that asked for protected rows (it signs their proofs).
+          if (opts.includeProtected === true && typeof r.storage_path === 'string' && r.storage_path.length > 0) {
+            a.storagePath = r.storage_path
+          }
+          return a
+        })
+        .filter((a) => a.url.length > 0 || (a.isProtected && !!a.storagePath))
       if (opts.generatedOnly) rows = rows.filter((a) => a.generated)
       return rows
     }
