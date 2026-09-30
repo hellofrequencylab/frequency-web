@@ -59,6 +59,7 @@ vi.mock('@/lib/billing/checkout', () => ({
 vi.mock('@/lib/commerce/checkout', () => ({
   recordCommerceOrderFromSession: async () => {},
   recordCommerceRefundFromCharge: async () => {},
+  recordCommerceDisputeClosed: async () => {},
   abandonCommerceOrderFromSession: async () => {},
 }))
 vi.mock('@/lib/supabase/admin', () => ({
