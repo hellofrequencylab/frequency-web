@@ -189,6 +189,9 @@ function NodeCard({
           <div
             // // KEEP bg-white: a QR reader needs a true-white quiet zone behind the modules, so this fill is a scanner requirement rather than a themed surface.
             className="w-28 h-28 rounded-lg border border-border bg-white p-1.5 [&>svg]:w-full [&>svg]:h-full"
+            // The code signs a per-second issued-at (LIVE-688), so its modules differ on every
+            // render; the fixed w-28 h-28 box is what the visual suite masks (LIVE-736).
+            data-visual-mask="qr-node-code"
             // Server-rendered, same-origin SVG of a Frequency URL — safe to inline.
             dangerouslySetInnerHTML={{ __html: node.svg }}
           />

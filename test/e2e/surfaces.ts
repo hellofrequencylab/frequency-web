@@ -1280,6 +1280,25 @@ export const VISUAL_MASK_SITES: readonly {
   // magenta box for a line of text on whichever pull request ran next. The four StatCards
   // above stay unmasked under the rule two paragraphs up; the 30-day one changes a digit on
   // those two dates, and the band reader names it if that ever clears 400 px.
+  // ── /admin/qr, the check-in code previews (LIVE-736, 2026-09-30) ───────────────────────────
+  // MEASURED, on #3109: two captures of the same tree about 30 minutes apart (runs 36667124353
+  // and 36676490803) agreed on 114 of 118 files and differed only on the four `admin-qr` files,
+  // in 96 x 96 bands over the check-in QR codes. Nothing the page reads had moved. LIVE-688
+  // (ADR-1654) signs each node code over (node id, issued-at in unix SECONDS), and the page signs
+  // a fresh one on every render, so the URL the code encodes, and with it every module, changes
+  // from one second to the next. The issued-at is the code's security meaning, so the signing
+  // stays as it is and the picture gives up the preview instead.
+  //
+  // THE BOX IS FIXED: `w-28 h-28` on the preview's own wrapper in `NodeCard`, so the SVG inside
+  // cannot resize it and the mask holds. The card's label, badges, counts and actions stay in the
+  // picture. The other QR previews on the page (dynamic links, marketing codes, member profile
+  // codes) encode unsigned URLs, rendered the same every time, and are not masked.
+  {
+    value: 'qr-node-code',
+    file: 'app/(main)/admin/qr/qr-studio.tsx',
+    kind: 'live',
+    why: 'Each check-in code preview encodes a node URL signed over a per-second issued-at (LIVE-688), so its modules differ on every render of the same tree: 96 x 96 px bands over the codes, the only difference between two captures 30 minutes apart (#3109). The w-28 h-28 box is fixed, so the mask holds.',
+  },
   {
     value: 'qr-daily-scans',
     file: 'app/(main)/admin/qr/analytics.tsx',
