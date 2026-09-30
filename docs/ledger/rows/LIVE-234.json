@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-234",
+  "patch": {
+    "status": "parked",
+    "notes": "parkedUntil: 2026-10-23 (Returning Home, the first real sale on the calendar), or the first settled row of any unproven loop, whichever comes first. Owner ruling 2026-09-30 ~01:35Z \"Wait for real customers\" (ADR-1672)."
+  },
+  "append": {
+    "detail": "\n\n── PARKED 2026-09-30. OWNER RULING 2026-09-30 ~01:35Z (multiple choice, recorded by HYG-156, ADR-1672): \"Wait for real customers\". The five loops are proven by real buyers as they come, not by a scheduled pass of deliberate purchases. REVISIT TRIGGER: the first real sales, for example Returning Home on 2026-10-23; reopen on the first settled row of any of the four unproven loops. The probe is unchanged (five tables non-zero, counting settled rows only) and is not run while parked. The priority stays P0: the cost is unchanged, and the owner has chosen when to pay it. ⚠️ Returning Home cannot sell yet: its host still had no Stripe Connect account at 2026-09-30 01:37Z (OWN-074)."
+  }
+}

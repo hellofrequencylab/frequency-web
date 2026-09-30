@@ -366,9 +366,9 @@ function covers(reach: string[], r: Reach): boolean {
   return reach.includes(r.tag)
 }
 
-function restoredBy(text: string, r: Reach | null, sheet: Sheet): boolean {
+function restoredBy(text: string, r: Reach, sheet: Sheet): boolean {
   return sheet.restoring.some(
-    (rule) => rule.classes.every((c) => hasClass(text, c)) && (rule.reach === null || (r !== null && covers(rule.reach, r))),
+    (rule) => rule.classes.every((c) => hasClass(text, c)) && (rule.reach === null || covers(rule.reach, r)),
   )
 }
 

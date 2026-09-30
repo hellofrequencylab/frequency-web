@@ -5,7 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { canManageSpaceLoom } from '@/lib/library/space-loom-access'
-import { listLoomScopeImages, listLoomScopeTags } from '@/lib/library/store'
+import { listSpaceLoomImages, listSpaceLoomTags } from '@/lib/library/space-loom-store'
 import { withLoomProofs } from '@/lib/library/asset-urls'
 import { loomMeter, loomQuotaFor, loomStorageUsed } from '@/lib/library/quota'
 import { IndexTemplate } from '@/components/templates'
@@ -19,6 +19,8 @@ import { SpaceLoomStudio } from '@/components/spaces/loom/space-loom-studio'
 // answer the /manage console uses to show or hide the tile. A Space that switched Loom Studio off, or raised
 // its bar to admin, 404s an editor here the way it always 404d a member: no existence leak. The popup picker
 // is a different door (it stays on canEditProfile), so an editor barred from the Studio still edits pages.
+// The grid and the tag facet read on the viewer's own session (LIVE-571, ADR-1613), so the per-Space
+// policies (ADR-1594) decide what this Studio can list, and the gate above is the second wall.
 
 export const metadata: Metadata = { title: 'Loom Studio' }
 export const dynamic = 'force-dynamic'
@@ -41,8 +43,8 @@ export default async function SpaceLoomStudioPage({ params }: { params: Promise<
   // A protected image shows as its proof (LIVE-580): withLoomProofs swaps each protected row's url
   // for a signed link to its stored 480px proof and drops the storage key before the list reaches the browser.
   const [initialAssets, initialTags, usage] = await Promise.all([
-    listLoomScopeImages({ spaceId: space.id }, { kinds: ['image'], includeProtected: true }).then(withLoomProofs),
-    listLoomScopeTags({ spaceId: space.id }, ['image']),
+    listSpaceLoomImages(space.id, { kinds: ['image'], includeProtected: true }).then(withLoomProofs),
+    listSpaceLoomTags(space.id, ['image']),
     loomStorageUsed(space.id),
   ])
   const initialMeter = loomMeter(loomQuotaFor(space), usage)

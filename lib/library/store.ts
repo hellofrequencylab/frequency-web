@@ -2,7 +2,6 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { asJson } from '@/lib/supabase/json'
 import { slugify } from '@/lib/utils'
-import type { Database } from '@/lib/database.types'
 // A cycle on purpose, and a safe one: quota.ts reads a Space's bytes through this module and this
 // module asks quota.ts's one gate before a fork stores bytes. Neither touches the other at load time.
 import { loomAdmits } from './quota'
@@ -13,8 +12,8 @@ import { LIBRARY_DOWNLOAD_POLICIES, VERA_TAG, isLibraryAssetExpired, type Librar
 // Server-only data access for The Loom / Loom Studio. Service-role only; callers gate access.
 // See docs/LIBRARY.md. (Until HYG-054, 2026-09-06 this went through an untyped admin handle on a
 // comment saying `library_assets` was not in lib/database.types.ts yet — it had been for weeks.)
-
-type LibraryAssetUpdate = Database['public']['Tables']['library_assets']['Update']
+// The Space Loom's own reads and its metadata write are NOT here: they run on the caller's session in
+// lib/library/space-loom-store.ts (LIVE-571, ADR-1613), so the per-Space policies are the lock there.
 
 function db() {
   return createAdminClient()
@@ -184,13 +183,13 @@ async function collectionAssetIds(collectionId: string): Promise<string[]> {
 /** The substring/trigram arm of a text search, as a PostgREST `or` expression. `ilike '%q%'` is what
  *  the `library_assets_title_trgm_idx` (gin_trgm_ops) index serves, so this arm is the trigram one:
  *  it survives typos and matches fragments, and it ranks nothing. */
-function trigramOr(q: string): string {
+export function trigramOr(q: string): string {
   return `title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`
 }
 
 /** Await one retrieval arm, degrading to [] on ANY failure. One arm failing must not take the whole
  *  search down: an FTS hiccup should still return the trigram matches, and vice versa. */
-async function armRows(query: PromiseLike<{ data: unknown }>): Promise<Record<string, unknown>[]> {
+export async function armRows(query: PromiseLike<{ data: unknown }>): Promise<Record<string, unknown>[]> {
   try {
     const { data } = await query
     return (data as Array<Record<string, unknown>> | null) ?? []
@@ -830,29 +829,8 @@ export async function fillLibraryAssetDescription(
   return written
 }
 
-/** Write a validated patch onto ONE asset of ONE Space. The update is bound to `space_id` as well as
- *  `id`, so an asset that is not this Space's matches nothing: 'missing', never a cross-Space write.
- *  The caller has authorized the Space. 'failed' is a database error. */
-export async function updateSpaceLibraryAssetMeta(
-  spaceId: string,
-  assetId: string,
-  patch: Pick<LibraryAssetUpdate, 'title' | 'alt' | 'tags'>,
-): Promise<'ok' | 'missing' | 'failed'> {
-  if (!spaceId || !assetId) return 'missing'
-  try {
-    const { data, error } = await db()
-      .from('library_assets')
-      .update({ ...patch, updated_at: new Date().toISOString() })
-      .eq('id', assetId)
-      .eq('space_id', spaceId)
-      .select('id')
-      .maybeSingle()
-    if (error) return 'failed'
-    return data ? 'ok' : 'missing'
-  } catch {
-    return 'failed'
-  }
-}
+// The Space Studio's metadata write (title, alt, tags: LIVE-568) moved to the caller's session in
+// lib/library/space-loom-store.ts (updateSpaceLoomAssetMeta, LIVE-571), where the update policy is the lock.
 
 /** Delete a library asset that belongs to a SPACE, bound to `space_id` so a caller authorized for one space
  *  can never delete another space's asset. Returns the stored object's bucket+path for best-effort storage
@@ -922,7 +900,7 @@ export type LoomPickAsset = {
 
 /** Shape a raw library_assets row into a LoomPickAsset. AI-generated ("Element") is derived from the
  *  Recraft/Vera provenance the generators stamp (tags include 'generated', or config.source is set). */
-function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
+export function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
   const tags = Array.isArray(r.tags) ? (r.tags as unknown[]).filter((t): t is string => typeof t === 'string') : []
   const cfg = (r.config && typeof r.config === 'object' ? (r.config as Record<string, unknown>) : {}) as Record<string, unknown>
   const generated = tags.includes('generated') || typeof cfg.source === 'string'
@@ -949,92 +927,61 @@ function toPickAsset(r: Record<string, unknown>): LoomPickAsset {
 const OWNER_SCOPE_SOURCE_OR = 'source.is.null,source.in.(upload,event-claim,recraft,vera,generated,curated)'
 
 /** How a Space scope treats the Frequency shared library (LIVE-569, ADR-1587). Omitted = the Space's
- *  own rows only (every caller before this row). 'with' = its own rows UNIONED with the root Space's
- *  PUBLIC rows (docs/LIBRARY.md Scoping: "its rows ∪ root's"), its own FIRST, so a large shared
- *  library never pushes a Space's uploads off the first screen. 'only' = the root's public rows
- *  alone, for the Studio's Frequency shelf. Never a third Space's rows, and never a root row that is
- *  not public: the predicate names the root by id, not just `visibility = public`. */
+ *  own rows only. 'with' = its own rows UNIONED with the root Space's PUBLIC rows (docs/LIBRARY.md
+ *  Scoping: "its rows ∪ root's"), its own FIRST, so a large shared library never pushes a Space's
+ *  uploads off the first screen. 'only' = the root's public rows alone, for the Studio's Frequency
+ *  shelf. Never a third Space's rows, and never a root row that is not public: the predicate names the
+ *  root by id, not just `visibility = public`. The Space scope itself reads on the caller's session in
+ *  lib/library/space-loom-store.ts (listSpaceLoomImages, LIVE-571). */
 export type LoomSharedMode = 'with' | 'only'
 
-/** IMAGE assets in one Loom SCOPE, RANKED when a query is given (stemmed FTS ∪ trigram, ordered by
- *  lib/library/search-rank.ts) and newest-first when it is not; optionally filtered by a single tag,
- *  and by whether to keep only AI-generated "Elements". A scope is either the OWNER's Loom
- *  (`createdBy` = them, UNIONED with the spaces they own via `spaceIds`) or ONE space's own assets
- *  (`spaceId`), which `opts.shared` can widen to the Frequency shared library (LoomSharedMode); each
- *  Space-scope pick carries `ownedByViewer` so the two sets are badged apart. FAIL-SAFE to []. */
+/** The picker's PERSONAL Loom ("My uploads"): IMAGE assets the caller uploaded (`createdBy`) UNIONED
+ *  with every Space they own (`spaceIds`), RANKED when a query is given (stemmed FTS ∪ trigram, ordered
+ *  by lib/library/search-rank.ts) and newest-first when it is not; optionally filtered by a single tag,
+ *  and by whether to keep only AI-generated "Elements". SERVICE ROLE ON PURPOSE (LIVE-571, ADR-1613):
+ *  a personal upload lands in the ROOT Space with visibility 'space', and the per-Space policies have
+ *  no created_by arm, so a session read would hide a person's own uploads from them. ONE Space's Loom
+ *  is listSpaceLoomImages in lib/library/space-loom-store.ts, on the caller's session. FAIL-SAFE to []. */
 export async function listLoomScopeImages(
-  scope: { createdBy: string; spaceIds?: string[] } | { spaceId: string },
+  scope: { createdBy: string; spaceIds?: string[] },
   opts: {
     q?: string
     tag?: string
     kinds?: string[]
     generatedOnly?: boolean
     limit?: number
-    shared?: LoomSharedMode
     /** Keep a protected row whose file is private (no url) so the caller can show its proof
      *  (LIVE-580). A caller that sets this MUST pass the list through withLoomProofs before it
      *  reaches a browser; without it such a row is dropped, as every pick reader always did. */
     includeProtected?: boolean
   } = {},
 ): Promise<LoomPickAsset[]> {
-  const spaceScope = 'spaceId' in scope ? scope.spaceId : null
-  // 'with' is the two sets, each read and ranked on its own, the Space's own first.
-  if (spaceScope && opts.shared === 'with') {
-    const [own, shelf] = await Promise.all([
-      listLoomScopeImages(scope, { ...opts, shared: undefined }),
-      listLoomScopeImages(scope, { ...opts, shared: 'only' }),
-    ])
-    return [...own, ...shelf]
-  }
-  // The shared library is the ROOT Space's public rows, so the root is resolved only when asked. The
-  // root's own Studio has no separate shelf (its rows ARE the shared library), and a missing root
-  // reads as "no shared library", never as a wider query.
-  let rootId: string | null = null
-  if (spaceScope && opts.shared === 'only') {
-    try {
-      rootId = await getRootSpaceId()
-    } catch {
-      rootId = null
-    }
-  }
-  const sharedRoot = rootId && rootId !== spaceScope ? rootId : null
-  if (spaceScope && opts.shared === 'only' && !sharedRoot) return []
-  /** The second wall on every returned row: the shelf holds only the root's public rows. */
-  const inScope = (r: Record<string, unknown>) =>
-    !sharedRoot || (r.space_id === sharedRoot && r.visibility === 'public')
-
   // Every arm shares one scope; only the text predicate differs, so the scope is built per call
   // rather than reused — a PostgREST builder is not re-runnable once awaited.
   const scoped = () => {
     // The asset families this view wants (purpose-scoped popups): a profile-photo picker asks for
     // ['image'], a logo picker ['image','icon'], an Airwaves field ['audio','video']. Default: images.
     const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
+    // OWNER Loom ("My uploads") = every genuine upload across MY profile AND the Spaces I OWN. Ownership
+    // is a UNION (created_by = me OR the asset lives in one of my owned spaces), so a page/space owner
+    // sees every image uploaded to their pages, not only the ones they personally uploaded. The ONLY
+    // thing held back is the business importer's SEED/IMPORT placeholder content — it belongs to the
+    // space until someone claims it. Event photos, legacy NULL uploads, and everything else stay visible.
+    // PostgREST ANDs separate `.or()` calls, so this is (ownership) AND (not a seed placeholder).
+    const ownedIds = scope.spaceIds ?? []
+    const ownership = ownedIds.length
+      ? `created_by.eq.${scope.createdBy},space_id.in.(${ownedIds.join(',')})`
+      : `created_by.eq.${scope.createdBy}`
     let query = db()
       .from('library_assets')
-      .select('id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash, space_id, visibility, storage_path')
+      .select('id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash, storage_path')
       .in('kind', kinds)
       .neq('status', 'archived')
       // A licensed asset whose expires_at has passed is not offered for placement, in any scope
       // (LIVE-576). Its owner still sees it in the Studio, badged Expired, to renew or archive.
       .or(notExpiredOr())
-    if ('createdBy' in scope) {
-      // OWNER Loom ("My uploads") = every genuine upload across MY profile AND the Spaces I OWN. Ownership
-      // is a UNION (created_by = me OR the asset lives in one of my owned spaces), so a page/space owner
-      // sees every image uploaded to their pages, not only the ones they personally uploaded. The ONLY
-      // thing held back is the business importer's SEED/IMPORT placeholder content — it belongs to the
-      // space until someone claims it. Event photos, legacy NULL uploads, and everything else stay visible.
-      // PostgREST ANDs separate `.or()` calls, so this is (ownership) AND (not a seed placeholder).
-      const ownedIds = 'spaceIds' in scope ? scope.spaceIds ?? [] : []
-      const ownership = ownedIds.length
-        ? `created_by.eq.${scope.createdBy},space_id.in.(${ownedIds.join(',')})`
-        : `created_by.eq.${scope.createdBy}`
-      query = query.or(ownership).or(OWNER_SCOPE_SOURCE_OR)
-    } else if (sharedRoot) {
-      // The root BY ID and public: a third Space that marked a row public is still not offered here.
-      query = query.eq('space_id', sharedRoot).eq('visibility', 'public')
-    } else {
-      query = query.eq('space_id', scope.spaceId)
-    }
+      .or(ownership)
+      .or(OWNER_SCOPE_SOURCE_OR)
     if (opts.tag) query = query.contains('tags', [opts.tag])
     return query
   }
@@ -1047,9 +994,8 @@ export async function listLoomScopeImages(
         // The SQL predicate above is the gate; this is the second wall, so a search arm added later
         // without `.or(notExpiredOr())` still cannot hand the picker a licence that ran out.
         .filter((r) => !isLibraryAssetExpired((r.expires_at as string | null) ?? null))
-        .filter(inScope)
         .map((r) => {
-          const a = spaceScope ? { ...toPickAsset(r), ownedByViewer: !sharedRoot } : toPickAsset(r)
+          const a = toPickAsset(r)
           // The key rides only for a caller that asked for protected rows (it signs their proofs).
           if (opts.includeProtected === true && typeof r.storage_path === 'string' && r.storage_path.length > 0) {
             a.storagePath = r.storage_path
@@ -1082,26 +1028,28 @@ export async function listLoomScopeImages(
   }
 }
 
-/** The distinct image TAGS present in a Loom scope (busiest first), for the picker's Tags facet.
- *  FAIL-SAFE to []. */
+/** The distinct image TAGS in the caller's PERSONAL Loom (busiest first), for the picker's Tags facet.
+ *  Service role for the reason listLoomScopeImages gives; one Space's tags are listSpaceLoomTags in
+ *  lib/library/space-loom-store.ts. FAIL-SAFE to []. */
 export async function listLoomScopeTags(
-  scope: { createdBy: string; spaceIds?: string[] } | { spaceId: string },
+  scope: { createdBy: string; spaceIds?: string[] },
   kinds: string[] = ['image'],
 ): Promise<string[]> {
   try {
     const wanted = kinds.length ? kinds : ['image']
-    let query = db().from('library_assets').select('tags').in('kind', wanted).neq('status', 'archived')
-    if ('createdBy' in scope) {
-      // Match listLoomScopeImages: the owner Tags facet spans my uploads + my owned spaces, minus seeds.
-      const ownedIds = 'spaceIds' in scope ? scope.spaceIds ?? [] : []
-      const ownership = ownedIds.length
-        ? `created_by.eq.${scope.createdBy},space_id.in.(${ownedIds.join(',')})`
-        : `created_by.eq.${scope.createdBy}`
-      query = query.or(ownership).or(OWNER_SCOPE_SOURCE_OR)
-    } else {
-      query = query.eq('space_id', scope.spaceId)
-    }
-    const { data } = await query.limit(2000)
+    // Match listLoomScopeImages: the owner Tags facet spans my uploads + my owned spaces, minus seeds.
+    const ownedIds = scope.spaceIds ?? []
+    const ownership = ownedIds.length
+      ? `created_by.eq.${scope.createdBy},space_id.in.(${ownedIds.join(',')})`
+      : `created_by.eq.${scope.createdBy}`
+    const { data } = await db()
+      .from('library_assets')
+      .select('tags')
+      .in('kind', wanted)
+      .neq('status', 'archived')
+      .or(ownership)
+      .or(OWNER_SCOPE_SOURCE_OR)
+      .limit(2000)
     const counts = new Map<string, number>()
     for (const r of (data as Array<{ tags: unknown }> | null) ?? []) {
       if (Array.isArray(r.tags)) for (const t of r.tags) if (typeof t === 'string' && t.trim()) counts.set(t, (counts.get(t) ?? 0) + 1)

@@ -148,7 +148,7 @@ export function ConnectionPrefsForm({ initial }: { initial: ConnectionPrefsIniti
             aria-pressed={directoryVisible}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-body-sm font-medium text-text">Show me in the Community directory</p>
+              <p className="text-body-sm font-medium text-text">Show me in the Members directory</p>
               <p className="text-meta text-muted mt-0.5">
                 Let members browse and find you in the directory.
               </p>

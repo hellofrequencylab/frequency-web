@@ -1,4 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { anyChannelFilter, carriesChannel, circleChannelIds, CIRCLE_MAX_CHANNELS } from '@/lib/circles/channels'
+import { secondaryCircleIds } from '@/lib/circles/channel-carriers'
 import { getTemplateById, getActiveTemplates } from '@/lib/circles/templates-data'
 import type { CircleTemplate } from '@/lib/circles/templates'
 
@@ -22,6 +24,8 @@ export interface ChannelHomeStats {
 /** The Home stat strip: four cheap head-count reads, fetched in parallel. */
 export async function loadChannelHomeStats(channelId: string): Promise<ChannelHomeStats> {
   const admin = createAdminClient()
+  // A Circle carrying this Channel second or third counts here too (LIVE-666).
+  const secondary = await secondaryCircleIds(admin, channelId)
 
   // The channel's open room (one per channel); its 7-day message count is the
   // "room activity" pulse. Cheap: one id lookup + one head count.
@@ -51,7 +55,7 @@ export async function loadChannelHomeStats(channelId: string): Promise<ChannelHo
     admin
       .from('circles')
       .select('id', { count: 'exact', head: true })
-      .eq('topical_channel_id', channelId)
+      .or(anyChannelFilter(channelId, secondary))
       .eq('is_demo', false)
       .neq('status', 'archived'),
     admin
@@ -118,13 +122,15 @@ export interface ManagedCircle {
 }
 
 /** The circles in the channel (real, non-archived — drafts included so staff
- *  can see what is forming), biggest rooms first. */
+ *  can see what is forming), biggest rooms first. A circle carrying the channel
+ *  in any of its three places is in it (LIVE-666). */
 export async function loadChannelCircles(channelId: string): Promise<ManagedCircle[]> {
   const admin = createAdminClient()
+  const secondary = await secondaryCircleIds(admin, channelId)
   const { data } = await admin
     .from('circles')
     .select('id, name, slug, type, status, city, member_count, member_cap')
-    .eq('topical_channel_id', channelId)
+    .or(anyChannelFilter(channelId, secondary))
     .eq('is_demo', false)
     .neq('status', 'archived')
     .order('member_count', { ascending: false })
@@ -141,22 +147,24 @@ export async function loadChannelCircles(channelId: string): Promise<ManagedCirc
 }
 
 /** Circles staff could ADD to this channel (ADR-871): real, non-demo,
- *  forming|active, and not already practicing here. Biggest first, capped for
- *  the picker. The paused-channel refusal lives in the write (setCircleChannel),
- *  not here — this read only shapes the offer. */
+ *  forming|active, not already practicing here, and with room for one more
+ *  Channel (three at most, LIVE-666). Biggest first, capped for the picker. The
+ *  paused-channel refusal lives in the write (addCircleToChannel), not here —
+ *  this read only shapes the offer. */
 export async function loadAssignableCircles(
   channelId: string,
 ): Promise<{ id: string; name: string; city: string | null; memberCount: number }[]> {
   const admin = createAdminClient()
   const { data } = await admin
     .from('circles')
-    .select('id, name, city, member_count, topical_channel_id')
+    .select('id, name, city, member_count, topical_channel_id, circle_channels ( topical_channel_id, position )')
     .eq('is_demo', false)
     .in('status', ['forming', 'active'])
     .order('member_count', { ascending: false })
     .limit(200)
-  return ((data ?? []) as Record<string, unknown>[])
-    .filter((row) => row.topical_channel_id !== channelId)
+  type Row = Record<string, unknown> & Parameters<typeof circleChannelIds>[0]
+  return ((data ?? []) as unknown as Row[])
+    .filter((row) => !carriesChannel(row, channelId) && circleChannelIds(row).length < CIRCLE_MAX_CHANNELS)
     .slice(0, 100)
     .map((row) => ({
       id: String(row.id),

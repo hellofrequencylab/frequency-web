@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getNexusPeopleData, type NexusPeopleData } from '@/lib/hierarchy/nexus-admin'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "People" module (ADMIN-RAIL.md Phase 7, the 'people' spine cell for nexuses). Renders in
 // the page admin dock on /nexuses/[slug]; the server returns null unless the caller holds nexus.manage.
@@ -12,6 +13,8 @@ import { getNexusPeopleData, type NexusPeopleData } from '@/lib/hierarchy/nexus-
 export function NexusPeopleModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/nexuses\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readPeople = useEntityRailRead('nexus', 'people', getNexusPeopleData)
 
   const [data, setData] = useState<NexusPeopleData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -19,7 +22,7 @@ export function NexusPeopleModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getNexusPeopleData(slug)
+    readPeople(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -32,7 +35,7 @@ export function NexusPeopleModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readPeople])
 
   if (!slug) return null
   if (loading) {

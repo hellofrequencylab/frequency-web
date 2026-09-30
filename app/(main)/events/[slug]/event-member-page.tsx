@@ -1671,7 +1671,7 @@ export default async function EventDetailPage({
                     />
                   </Suspense>
                 )
-              ) : myProfileId && myProfileId === hostSpaceOwnerId ? (
+              ) : myProfileId === hostSpaceOwnerId ? (
                 /* The hosting space's OWNER is the payee — the server's self-purchase guard would
                    refuse their checkout, so say so instead of showing a button that errors.
                    LIVE-233: unless the payout account is the thing missing, in which case saying

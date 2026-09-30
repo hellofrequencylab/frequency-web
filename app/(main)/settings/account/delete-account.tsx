@@ -56,7 +56,7 @@ function PaidSpacesNote({ paidSpaces }: { paidSpaces: SpacePlanEndedByDelete[] |
   return (
     <div
       data-paid-spaces-warning
-      className="mt-3 rounded-lg border border-warning/40 bg-warning-bg/30 px-3 py-2 text-body-sm text-text"
+      className="mt-3 rounded-control border border-warning/40 bg-warning-bg/30 px-3 py-2 text-body-sm text-text"
     >
       <p className="font-semibold">
         {paidSpaces && paidSpaces.length > 1 ? 'This also ends paid Space plans' : 'This also ends a paid Space plan'}

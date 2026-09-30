@@ -41,7 +41,6 @@ export const KNOWN_ROUTES: { href: string; label: string }[] = [
   { href: '/channels', label: 'Channels' },
   { href: '/practices', label: 'Practices' },
   { href: '/journeys', label: 'Journeys' },
-  { href: '/library', label: 'Library' },
   { href: '/people', label: 'People' },
   { href: '/connections', label: 'Connections' },
   { href: '/messages', label: 'Messages' },

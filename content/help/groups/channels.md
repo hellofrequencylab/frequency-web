@@ -4,16 +4,16 @@ description: The focus areas every Circle is organized around, and the Programs 
 category: groups
 order: 2
 published: 2026-06-03
-updated: 2026-07-27
+updated: 2026-09-30
 audience: member
 role: host
 featureKeys: [channels]
 status: published
 ---
 
-**Channels** are the focus areas Frequency is organized around. Every Circle declares one Channel, so you can explore by what you're into, not just where you are. A Channel holds the Circles practicing it, a forum feed, and an open room. Some Channels also run a **Program** you can start a Chapter of (see below).
+**Channels** are the focus areas Frequency is organized around. Every Circle declares a primary Channel and can carry up to three, so you can explore by what you're into, not just where you are. A Channel holds the Circles practicing it, a forum feed, and an open room. Some Channels also run a **Program** you can start a Chapter of (see below).
 
-Hosts pick the Channel when they start a Circle, and can change it any time from the Circle's settings.
+Hosts pick the Channel when they start a Circle. From the Circle's settings they can change it or add up to two more, and the first one listed is the primary.
 
 ## The founding topics
 
@@ -30,7 +30,7 @@ The platform-curated Channels are:
 ## Using Channels
 
 - Browse the **Channels** page to explore a topic and see the Circles within it.
-- Each Circle belongs to one Channel, which tells you at a glance what it's about.
+- Each Circle leads with its primary Channel, which tells you at a glance what it's about. A Circle that carries more than one shows up under each of them.
 - Looking for something specific near you? Pair a Channel with the location search in the [people & Circles directory](/help/connecting/find-people).
 
 ## The open room

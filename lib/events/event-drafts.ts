@@ -764,7 +764,7 @@ export async function claimEvent(
   // only pays the poster a bonus and counts toward quality when it passes the
   // trust gate. Self-claims, reciprocal rings, and fresh sockpuppets pay nothing.
   let claimValid = false
-  let claimReason: string | null = 'no_poster'
+  let claimReason: string | null
   try {
     const trust = await isValidClaim(posterId, claimerProfileId)
     claimValid = trust.valid

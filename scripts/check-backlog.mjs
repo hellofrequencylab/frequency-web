@@ -74,7 +74,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { availableParallelism } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { waveToken, SLATED_STATUSES } from './maintenance/fold-ledger-docs.mjs'
+import { waveToken, readBacklogView, fragmentCount, COMPACT_AT, ROWS_DIR } from './lib/ledger.mjs'
 
 const FILE = 'docs/BUILD-BACKLOG.json'
 
@@ -159,24 +159,31 @@ const green = (s) => `\x1b[32m${s}\x1b[0m`
 const yellow = (s) => `\x1b[33m${s}\x1b[0m`
 const dim = (s) => `\x1b[2m${s}\x1b[0m`
 
+/** The MERGED view: the base file with every row fragment in docs/ledger/rows applied and every
+ *  done or parked id taken off the waves (HYG-145, ADR-1635). Every probe verdict below, the
+ *  stale-open arm and the regressed-done arm alike, is read against this view, so a fragment that
+ *  closes a row is judged exactly as a base-file edit would be. A broken fragment is a structural
+ *  failure, reported with the rest. */
 function load() {
-  if (!existsSync(FILE)) {
-    console.error(red(`✗ ${FILE} is missing. It is the one list; nothing else may replace it.`))
-    process.exit(1)
-  }
-  let doc
+  let view
   try {
-    doc = JSON.parse(readFileSync(FILE, 'utf8'))
+    view = readBacklogView()
   } catch (err) {
-    console.error(red(`✗ ${FILE} is not valid JSON: ${err.message}`))
+    console.error(red(`✗ ${err.message}`))
     process.exit(1)
   }
-  if (!Array.isArray(doc.entries)) {
+  if (!Array.isArray(view.doc.entries)) {
     console.error(red(`✗ ${FILE} has no "entries" array.`))
     process.exit(1)
   }
-  return doc
+  fragmentProblems = view.problems
+  fragmentsRead = view.fragments.length
+  return view.doc
 }
+
+/** Set by load(): problems in docs/ledger fragments, and how many row fragments were merged. */
+let fragmentProblems = []
+let fragmentsRead = 0
 
 /** Structural validation. A malformed row is a failure, not a skip — a row the script cannot read
  *  is a row nothing is checking, which is indistinguishable from the drift this file prevents. */
@@ -518,35 +525,24 @@ function daysSince(iso) {
   return Math.floor((Date.now() - then) / 86_400_000)
 }
 
-/** The slate's waves are keyed by their token, and hold only sequenced work (HYG-134).
+/** The slate's waves are keyed by their token (HYG-134).
  *
- *  Two ways a wave list lies without HYG-047's probe noticing, both produced by a real fold on
- *  2026-09-29 (a pre-cull branch folded against main after #3024):
- *    - two waves share a token ("W4 · ..." twice), because the fold matched waves by their full
- *      prose name and main had reworded three of them;
- *    - a wave lists a PARKED id. HYG-047 counts only `done` as finished, so eleven ids main had
- *      parked and taken off the waves came back on them and every gate stayed green.
- *  A parked row carries its reason and date on the row and sits on no wave; only open or blocked
- *  rows are sequenced. waveToken and SLATED_STATUSES come from the fold itself, so the tool that
- *  writes the slate and the gate that reads it cannot disagree about what a wave is. */
+ *  Two waves sharing a token ("W4 · ..." twice) is the shape a fold keyed by the full prose name
+ *  produced on 2026-09-29 (a pre-cull branch folded against main after #3024), and it still fails.
+ *
+ *  A wave listing a done or parked id USED to fail here too. It cannot happen any more by
+ *  construction: the loader (scripts/lib/ledger.mjs, HYG-145, ADR-1635) drops every id whose row
+ *  is not open or blocked from every wave, so closing a row never needs a wave edit and a closing
+ *  PR never touches the shared slate. waveToken comes from the loader, so the tool that reads the
+ *  slate and the gate that checks it cannot disagree about what a wave is. */
 function validateSlateWaves(doc) {
   const waves = doc.meta?.slate?.waves
   if (!Array.isArray(waves)) return []
   const problems = []
-  const by = new Map((doc.entries ?? []).map((e) => [e.id, e]))
   const tokens = new Map()
   for (const w of waves) {
     const t = waveToken(w.name)
     tokens.set(t, (tokens.get(t) ?? 0) + 1)
-    for (const id of w.ids ?? []) {
-      const r = by.get(id)
-      if (r && !SLATED_STATUSES.includes(r.status)) {
-        problems.push(
-          `meta.slate wave "${t}" lists ${id}, whose row is ${r.status}. Only ${SLATED_STATUSES.join('/')} rows sit on a wave; ` +
-            'take it off (a parked row keeps its reason on the row). HYG-134',
-        )
-      }
-    }
   }
   for (const [t, n] of tokens) {
     if (n > 1) problems.push(`meta.slate has ${n} waves with the token "${t}" — one wave, one token. HYG-134`)
@@ -624,12 +620,24 @@ function validateSlateCalendarFirst(doc) {
   return problems
 }
 
+/** Fragments are merged on every read, and past COMPACT_AT a compaction PR is due (owner ruling
+ *  2026-09-29: "When 30+ pile up"). A notice, never a failure: the view is correct at any count. */
+function compactionNotice() {
+  const { n, due } = fragmentCount()
+  if (fragmentsRead) console.log(dim(`  ${fragmentsRead} row fragment(s) merged from ${ROWS_DIR} (HYG-145).`))
+  if (due) {
+    console.log(
+      yellow(`  ⚠ ${n} ledger fragments are waiting (more than ${COMPACT_AT}). Open a housekeeping PR that runs \`pnpm ledger:compact\` to fold them into ${FILE} and docs/DECISIONS.md.`),
+    )
+  }
+}
+
 // ── main ──────────────────────────────────────────────────────────────────────────────────────
 
 const doc = load()
 const entries = doc.entries
 
-const structural = [...validate(entries), ...validateSlateCalendarFirst(doc), ...validateSlateWaves(doc)]
+const structural = [...fragmentProblems, ...validate(entries), ...validateSlateCalendarFirst(doc), ...validateSlateWaves(doc)]
 if (structural.length) {
   console.error(red(`✗ backlog contract: ${structural.length} structural problem(s) in ${FILE}\n`))
   for (const p of structural) console.error(`   ${p}`)
@@ -641,6 +649,7 @@ if (REPORT) {
   const openRows = rows.filter((e) => e.status === 'open' || e.status === 'blocked')
   console.log(`\n  THE ONE LIST — ${FILE}`)
   console.log(`  ${entries.length} entries · showing ${openRows.length} open/blocked${LANE ? ` in lane "${LANE}"` : ''}\n`)
+  compactionNotice()
   const rank = (e) => {
     const i = PRIORITY_KEYS.indexOf(e.priority)
     return i === -1 ? PRIORITY_KEYS.length : i
@@ -882,6 +891,7 @@ if (contradictions.length) {
 }
 
 console.log(green(`✓ backlog contract: ${entries.length} entries, ${probed} probe(s) agree with the tree.`))
+compactionNotice()
 console.log(`  ${openCount} open/blocked · ${parkedCount} parked · ${doneCount} done${unprovable ? ` · ${unprovable} unprovable here` : ''}`)
 printScope()
 printCost()

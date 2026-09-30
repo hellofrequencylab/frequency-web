@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { maxTierForDuration, isTierAllowed, clampTierToDuration, coerceTierZaps, tierForZaps, achievedTier, achievedTierFromMinutes, LIGHT_FLOOR_MIN, TIER_FLOOR_MIN, TIER_ZAPS } from './tiers'
+import { maxTierForDuration, isTierAllowed, clampTierToDuration, coerceTierZaps, tierForZaps, achievedTier, achievedTierFromMinutes, liveDepthCue, LIGHT_FLOOR_MIN, TIER_FLOOR_MIN, TIER_ZAPS } from './tiers'
 
 describe('practice tiers — time vs points (ADR-442)', () => {
   it('maps a duration to the highest tier it earns', () => {
@@ -88,5 +88,24 @@ describe('practice tiers — time vs points (ADR-442)', () => {
     expect(tierForZaps(TIER_ZAPS.heavy)).toBe('heavy')
     // A stored value is snapped to an allowed amount (never an arbitrary quick-log payout).
     expect(coerceTierZaps(TIER_ZAPS.heavy + 100)).toBe(TIER_ZAPS.heavy)
+  })
+})
+
+// The live "go deeper" cue, shared by the Be Still sit and the Get Moving timer (LIVE-674).
+describe('liveDepthCue (ADR-443)', () => {
+  it('is null below the Light floor', () => {
+    expect(liveDepthCue(0)).toBeNull()
+    expect(liveDepthCue(LIGHT_FLOOR_MIN * 60 - 1)).toBeNull()
+  })
+
+  it('names the tier reached and the minutes to the next one', () => {
+    expect(liveDepthCue(3 * 60)).toEqual({ reached: "You're at Light.", toNext: '2 more minutes reaches Standard.' })
+    expect(liveDepthCue(14 * 60 + 30)).toEqual({ reached: "You're at Standard.", toNext: '1 more minute reaches Heavy.' })
+    expect(liveDepthCue(10 * 60)).toEqual({ reached: "You're at Standard.", toNext: '5 more minutes reaches Heavy.' })
+  })
+
+  it('reads as the top at Heavy, with no em dash anywhere', () => {
+    expect(liveDepthCue(40 * 60)).toEqual({ reached: "You're at Heavy.", toNext: 'The deepest tier. Stay as long as you like.' })
+    for (const m of [3, 10, 20]) expect(JSON.stringify(liveDepthCue(m * 60))).not.toMatch(/—/)
   })
 })

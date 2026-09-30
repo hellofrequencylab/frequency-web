@@ -4,7 +4,7 @@ description: Where to update your profile, preferences, and account.
 category: getting-started
 order: 12
 published: 2026-06-03
-updated: 2026-09-20
+updated: 2026-09-30
 audience: member
 featureKeys: [settings, notifications]
 status: published
@@ -23,6 +23,7 @@ Settings is one page. Each area below is a section you can scroll to, in this or
 - **Profile**: your display name, handle, photo, **header image** (the banner across the top of your profile), bio, and region. This is what other members see.
 - **Appearance**: pick your look. Light or dark, the **Feel** (how dense or roomy things sit, which now changes text size and spacing across the whole site), and a **Seasonal accent** you can pin on or switch off. If more than one palette is available, you can pick that too. The account menu at the top right also carries a one-tap light and dark switch, and a link straight to this section. Light is what everyone starts on, and dark is yours once you have an account. On a phone, the public **Discover** pages stay light whichever look you pick, so a link you send looks the same to whoever opens it. Your choice is kept and comes straight back everywhere else.
 - **Notifications**: choose what you're told about and how (in-app, email, push, and text where enabled), pick how often, and mute a single Circle or Space. See [Notifications](/help/getting-started/notifications) and "Choosing what reaches you" below.
+- **Install the app**: put Frequency on your home screen so it opens like any other app. On iPhone it lists the Share steps. See [Install the app](/help/getting-started/install-the-app).
 - **Connections and location**: control how you're found by people nearby (see below).
 - **Account and privacy**: sign-in, account-level controls, and your privacy choices. This is also where you can erase your saved drafts, and where deleting your account lives.
 - **Plan and billing**: your Frequency plan, what it costs, and where your payment details live (see [Membership & the Vault](/help/membership/the-vault)). If a Space membership payment did not go through, that Space is named here. You are still a member. Update the card Stripe emailed you about, or leave from the Space.
@@ -33,7 +34,7 @@ Settings is one page. Each area below is a section you can scroll to, in this or
 Frequency helps you find people nearby, and you're always in control of how visible you are. **We never share your exact location.** Others only ever see a fuzzed area or your city, never a pin on a map.
 
 - **Ghost mode**: one tap to vanish from proximity and maps entirely.
-- **Show me in the Community directory**: whether you're listed at all.
+- **Show me in the Members directory**: whether you're listed at all.
 - **Who can find me nearby**: no one, only your connections, or the whole community.
 - **Location precision**: the most anyone can see, whether hidden, your city, or a fuzzed neighborhood area (about a mile across).
 - **Discoverability radius**: how far away someone can be and still find you. Your own slider, from a mile up to your whole region.

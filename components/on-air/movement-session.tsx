@@ -20,6 +20,9 @@
 // pays a partial (>= 50%, 1 Zap) or a full reward. A "Finish Practice" resume opens
 // mid-way (resumeFromSec already banked, secondsTarget the whole length): the clock
 // runs the REMAINING time, and the total banked is resumeFromSec + this session.
+// Auto-continue (ADR-443, LIVE-674): a Walk, Run or Stretch keeps counting past its target
+// (the clock reads +M:SS with the live tier cue under it) and the whole run banks, so the
+// deeper time earns its tier. Yoga and Strength keep their plan-bounded finish.
 //
 // VOICE (docs/CONTENT-VOICE.md): plain, warm labels. No em or en dashes. Proper
 // nouns (Tabata, EMOM) carry the magic. Tokens only, never hex (docs/THEME.md).
@@ -64,6 +67,9 @@ import {
   buildPlan,
   phaseAt,
   totalSeconds,
+  autoContinues,
+  overtimeAt,
+  movementFinishSeconds,
   clampRounds,
   clampSeconds,
   type MovementMode,
@@ -88,6 +94,7 @@ import {
   clearActiveSession,
 } from '@/lib/on-air/active-session'
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
+import { liveDepthCue } from '@/lib/practices/tiers'
 import { Button } from '@/components/ui/button'
 
 // What a saved Movement run carries beyond the shared record fields: the config the plan is
@@ -422,6 +429,8 @@ export function MovementSession({
   // The cap on what a finish can bank: the authored target on a "Finish Practice" resume
   // (targetSec), else the plan's own run length, else null for open-ended Play. The
   // server still owns the partial-vs-full economy decision; this only stops an overshoot.
+  // A Walk / Run / Stretch auto-continues and is NOT capped (movementFinishSeconds): the cap
+  // still sets its run-over gate target below, so an unattended run is clamped there instead.
   const finishCap = useMemo<number | null>(() => {
     if (bankedSec > 0 && typeof targetSec === 'number' && targetSec > 0) {
       return Math.round(targetSec)
@@ -482,6 +491,10 @@ export function MovementSession({
   const [payload, setPayload] = useState<RevealPayload | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
+  // The exact args of the last finish attempt, so the error screen's retry replays the SAME claim
+  // (the seconds banked at Stop), never a recount that would add the time spent on the error
+  // screen now that a Walk / Run / Stretch is not capped at its target (mirrors the sit, LIVE-674).
+  const lastFinish = useRef<{ seconds: number; opts?: Parameters<typeof finishWith>[1] } | null>(null)
   const audio = useRef<AudioContext | null>(null)
   const lastPhaseLabel = useRef<string | null>(null)
   const lastBeep = useRef(-1)
@@ -921,8 +934,7 @@ export function MovementSession({
     if (finishing.current) return
     finishing.current = true
     const bankedThis = clampLoggedSeconds(gateTargetRef.current, currentElapsedSec(), confirmationsRef.current)
-    const done = resumeOffset + Math.max(0, bankedThis)
-    const seconds = finishCap === null ? done : Math.min(done, finishCap)
+    const seconds = movementFinishSeconds(plan, { resumeOffset, bankedThis, finishCap })
     // Unattended auto-finalize (ADR-627): the member walked away, so this is NOT attended airtime.
     void finishWith(Math.max(0, seconds), { attended: false })
   }
@@ -942,12 +954,12 @@ export function MovementSession({
     // this session's own elapsed, run-over-gated. A member who taps Stop is PRESENT, so their tap
     // confirms the elapsed up to now (appended to the confirmations) and the actual airtime banks;
     // the gate only bites the ABSENT paths. Under 150% of target the clamp is a no-op, so the happy
-    // path is unchanged. Still capped so we never log more than the whole practice: a resume's cap
-    // is the authored target, else the plan length; open-ended Play has neither so it banks raw.
+    // path is unchanged. A Walk / Run / Stretch auto-continues, so the whole run banks and time past
+    // the target earns its tier (LIVE-674). Yoga and Strength are still capped at the whole practice:
+    // a resume's cap is the authored target, else the plan length; open-ended Play banks raw.
     const el = Math.round(e)
     const bankedThis = clampLoggedSeconds(gateTargetRef.current, el, [...confirmationsRef.current, el])
-    const done = resumeOffset + bankedThis
-    const seconds = finishCap === null ? done : Math.min(done, finishCap)
+    const seconds = movementFinishSeconds(plan, { resumeOffset, bankedThis, finishCap })
     buzz(10)
     await finishWith(Math.max(0, seconds))
   }
@@ -964,6 +976,7 @@ export function MovementSession({
       attended?: boolean
     },
   ) {
+    lastFinish.current = { seconds, opts }
     // The run is ending: drop the crash-recovery cache + the server active session (completeSession
     // also clears the row server-side as the authoritative end).
     clearLiveSession('movement')
@@ -1068,8 +1081,13 @@ export function MovementSession({
           <Button
             type="button"
             onClick={() => {
-              const done = resumeOffset + Math.round((Date.now() - startedAt) / 1000)
-              void finishWith(Math.max(0, finishCap === null ? done : Math.min(done, finishCap)))
+              const last = lastFinish.current
+              if (last) {
+                void finishWith(last.seconds, last.opts)
+                return
+              }
+              const bankedThis = Math.round((Date.now() - startedAt) / 1000)
+              void finishWith(Math.max(0, movementFinishSeconds(plan, { resumeOffset, bankedThis, finishCap })))
             }}
           >
             Try again
@@ -1086,10 +1104,21 @@ export function MovementSession({
     const tone = phaseTone(pos.phase.kind)
     const paused = pausedAt !== null
     const ended = pos.done
+    // Auto-continue (ADR-443, LIVE-674): past the target a Walk / Run / Stretch keeps counting,
+    // the clock reads +M:SS, and the live tier cue names what the time has earned. Engaged time is
+    // the plan position (banked resume + this session), the same total finish() banks, so the
+    // cue's tier matches the Zaps that will pay. Yoga and Strength still stop at "Done".
+    const continuing = ended && autoContinues(plan)
+    const overtime = continuing ? overtimeAt(plan, resumeOffset + elapsed) : 0
+    const cue = continuing ? liveDepthCue(resumeOffset + elapsed) : null
     // The final-3s danger ring: a timed phase about to change rings danger so the
     // shift is felt before it lands. Open-ended Play never rings.
     const closing = pos.remaining !== null && pos.remaining > 0 && pos.remaining <= 3
-    const clockText = pos.remaining === null ? fmt(pos.phaseElapsed) : fmt(pos.remaining)
+    const clockText = continuing
+      ? `+${fmt(overtime)}`
+      : pos.remaining === null
+        ? fmt(pos.phaseElapsed)
+        : fmt(pos.remaining)
     const warming = preroll !== null
     // The full session length the member is settling into (item #5). Shown below the timer through
     // the warm-up countdown and KEPT once the run begins. Open-ended Play has no fixed target.
@@ -1166,7 +1195,7 @@ export function MovementSession({
               <div
                 className={`flex h-56 w-56 items-center justify-center rounded-pill ring-4 transition-colors ${
                   closing ? 'ring-danger/60' : tone.ring
-                } ${ended ? 'opacity-60' : ''}`}
+                } ${ended && !continuing ? 'opacity-60' : ''}`}
               >
                 <p className={`text-7xl font-semibold tabular-nums ${closing ? 'text-danger' : tone.text}`}>
                   {clockText}
@@ -1175,8 +1204,24 @@ export function MovementSession({
 
               {/* Next up — the line that lets the member anticipate the change. */}
               <p className="h-5 text-body-sm text-subtle">
-                {ended ? 'Done' : pos.nextLabel ? `Next: ${pos.nextLabel}` : plan.openEnded ? 'Stop when you are done' : ' '}
+                {continuing
+                  ? 'Going deeper'
+                  : ended
+                    ? 'Done'
+                    : pos.nextLabel
+                      ? `Next: ${pos.nextLabel}`
+                      : plan.openEnded
+                        ? 'Stop when you are done'
+                        : ' '}
               </p>
+              {/* The live "go deeper" cue: past the target, the tier earned so far and the minutes
+                  to the next one (the same line the Be Still sit shows). */}
+              {cue && (
+                <div className="flex max-w-xs flex-col items-center gap-0.5 text-center">
+                  <p className="text-body-sm font-semibold text-move">{cue.reached}</p>
+                  <p className="text-meta text-muted">{cue.toNext}</p>
+                </div>
+              )}
               {resumeOffset > 0 && (
                 <p className="text-2xs text-muted">Picking up where you left off.</p>
               )}

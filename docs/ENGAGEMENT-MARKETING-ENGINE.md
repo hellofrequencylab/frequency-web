@@ -50,10 +50,10 @@ all instruments tuned to that tension; each one earns its place only if it moves
 not deeper into step 1. Acceptance test for any new mechanic: *does this serve activation, or just
 dwell?*
 
-**Doomscroll mode (the named release valve).** A member-toggled mode that strips the entire prompt
-layer (chores pill, Vera full-stops, task nudges) and shows **only content**. Making "just scroll" an
-honest, named choice, not the manipulated default, is the brand statement: we are not a content
-casino, we're the thing that sends you out to be social. Spec/decision: ADR-155. Build: BACKLOG §F.
+**No member toggle for the prompt layer.** ADR-155 proposed a member switch that would hide every
+prompt and show only content. The owner dropped it on 2026-09-30 ([ADR-1677](DECISIONS.md)): it is
+not built, not planned, and no page promises it. The tension is held by the acceptance test above,
+applied to each mechanic.
 
 ## Phases
 

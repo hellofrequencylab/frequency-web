@@ -9,6 +9,8 @@ import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 import { slugify } from '@/lib/utils'
 import { writeChannelCoverFocus, writeChannelHeroHeight } from '@/lib/channels/hero'
 import { isChannelCategory } from '@/lib/channels/categories'
+import { anyChannelFilter } from '@/lib/circles/channels'
+import { promoteNextChannels, secondaryCircleIds } from '@/lib/circles/channel-carriers'
 
 // In-place "Channel settings" admin module (EMBEDDED-ADMIN.md / ADR-133, PX.5). Topical channels are
 // PLATFORM-CURATED — there is no per-channel host, so both the read and every write gate on staff
@@ -90,6 +92,8 @@ export async function getChannelInsightsData(idOrSlug: string): Promise<ChannelI
     .maybeSingle()
   if (!channel) return null
 
+  // A Circle carrying this Channel second or third counts too (LIVE-666).
+  const secondary = await secondaryCircleIds(admin, channel.id)
   const [{ count: tunedIn }, { count: circleCount }] = await Promise.all([
     admin
       .from('topical_channel_memberships')
@@ -98,7 +102,7 @@ export async function getChannelInsightsData(idOrSlug: string): Promise<ChannelI
     admin
       .from('circles')
       .select('id', { count: 'exact', head: true })
-      .eq('topical_channel_id', channel.id)
+      .or(anyChannelFilter(channel.id, secondary))
       .neq('status', 'archived'),
   ])
 
@@ -317,6 +321,10 @@ export async function deleteChannel(id: string, slug: string): Promise<{ error?:
   if (!(await isChannelManager())) return { error: 'Unauthorized' }
 
   const admin = createAdminClient()
+  // The Circles this Channel is the PRIMARY of, read before the delete SETs their primary NULL: each
+  // one's next Channel moves up once it is gone (LIVE-666). A Circle carrying it second or third
+  // just loses the row (CASCADE) and keeps its primary.
+  const { data: primaryOf } = await admin.from('circles').select('id').eq('topical_channel_id', id)
   const { error } = await (admin as unknown as UntypedRpc).rpc('delete_topical_channel', {
     p_channel_id: id,
   })
@@ -328,6 +336,7 @@ export async function deleteChannel(id: string, slug: string): Promise<{ error?:
     return { error: 'This Channel could not be deleted. Try again in a moment.' }
   }
 
+  await promoteNextChannels(admin, ((primaryOf ?? []) as { id: string }[]).map((c) => c.id))
   revalidateChannel(id, slug)
   return {}
 }

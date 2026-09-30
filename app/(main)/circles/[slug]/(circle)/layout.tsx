@@ -13,6 +13,7 @@ import { CircleMemberMenu } from '@/components/circles/circle-member-menu'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { circleCapabilities } from '@/lib/circles/detail-access'
 import { CircleLocked } from '@/components/circles/circle-locked'
+import { DeviceNudge } from '@/components/push/device-nudge'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { DetailTemplate, PageHero } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
@@ -531,7 +532,13 @@ export default async function CircleDetailLayout({
         }
       >
         {canEnter ? (
-          children
+          <>
+            {/* Belonging to a Circle earns one ask for its check-ins, by a tap only (LIVE-701). The
+                card shows once per device and never on a load it cannot help. Installing is not
+                offered here: the owner ruled it for an RSVP or a post (LIVE-703). */}
+            {isMember && <DeviceNudge context="circle" className="mb-4" />}
+            {children}
+          </>
         ) : (
           // In place of `children`, and therefore covering EVERY tab beneath this shell, the same
           // way the draft gate above does. A tab strip over bodies that all render nothing is

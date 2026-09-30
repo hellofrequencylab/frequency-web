@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getHubPeopleData, type HubPeopleData } from '@/lib/hierarchy/hub-admin'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "People" module (ADMIN-RAIL.md Phase 7, the 'people' spine cell for hubs — the LP-EVENT
 // recipe applied to hubs). Renders in the page admin dock on /hubs/[slug]; the server returns null
@@ -14,6 +15,8 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 export function HubPeopleModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/hubs\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readPeople = useEntityRailRead('hub', 'people', getHubPeopleData)
 
   const [data, setData] = useState<HubPeopleData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -21,7 +24,7 @@ export function HubPeopleModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getHubPeopleData(slug)
+    readPeople(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -34,7 +37,7 @@ export function HubPeopleModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readPeople])
 
   if (!slug) return null
   if (loading) {

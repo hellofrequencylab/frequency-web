@@ -160,7 +160,7 @@ export function PwywPicker({
 
       <label className="block">
         <span className="text-meta font-medium text-muted">Another amount</span>
-        <div className="mt-1 flex items-center gap-2 rounded-card border border-border px-3 py-2 focus-within:border-primary">
+        <div className="mt-1 flex items-center gap-2 rounded-card border border-border px-3 py-2 focus-within:border-border-strong">
           <span className="text-body-sm text-muted">$</span>
           <Input
             variant="seamless"

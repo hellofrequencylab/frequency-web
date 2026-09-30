@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Zap, Flame, Users } from 'lucide-react'
 import { getCircleInsightsData, type CircleInsightsData } from '@/app/(main)/circles/admin-actions'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Insights" module (ADR-515 Phase 4, the CIRCLE rail, the 'insights' spine cell). Renders in
 // the page admin rail on /circles/[slug]; the server returns null unless the caller holds
@@ -25,6 +26,8 @@ function Stat({ label, value, Icon }: { label: string; value: string; Icon: type
 export function CircleInsightsModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readInsights = useEntityRailRead('circle', 'insights', getCircleInsightsData)
 
   const [data, setData] = useState<CircleInsightsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,7 +35,7 @@ export function CircleInsightsModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCircleInsightsData(slug)
+    readInsights(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -45,7 +48,7 @@ export function CircleInsightsModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readInsights])
 
   if (!slug) return null
   if (loading) {

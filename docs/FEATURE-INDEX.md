@@ -33,7 +33,7 @@
 |---|---|---|---|
 | **Journeys** | `/journeys` | Multi-step practice chains/arcs members progress through | ECONOMY-AND-JOURNEYS |
 | **Practices** | `/practices` | The daily-action library — adopt, log, build streaks | — |
-| **Library** | `/library` | Curated/reviewable practice content | — |
+| **Library** | `/practices` (`/library` is a 308 there, ADR-1678) | The ranked practices-and-journeys catalog (the `practices-best-of` block); the staff review queue stays at `/library/review` | — |
 | **Journal** | `/journal` | The member's Capture daily-log | — |
 
 ## 3 · Member — The Quest (gamification)

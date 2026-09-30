@@ -6,6 +6,7 @@ import { Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import { getHubAdminData, updateHubSettings } from '@/lib/hierarchy/hub-admin'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Hub settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside the page admin dock on
 // /hubs/[slug], and renders nothing unless the server grants hub.manage. The rail section header is the
@@ -18,6 +19,8 @@ const fieldLabel = labelClasses
 export function HubSettingsModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/hubs\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('hub', 'admin', getHubAdminData)
 
   const [data, setData] = useState<HubData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -25,7 +28,7 @@ export function HubSettingsModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getHubAdminData(slug).then((d) => {
+    readAdmin(slug).then((d) => {
       if (active) {
         setData(d)
         setLoading(false)
@@ -34,7 +37,7 @@ export function HubSettingsModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readAdmin])
 
   if (!slug) return null
   if (loading) {

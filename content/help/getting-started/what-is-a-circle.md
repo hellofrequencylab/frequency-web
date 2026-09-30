@@ -4,7 +4,7 @@ description: A Circle is a small local group built around one thing you practice
 category: getting-started
 order: 5
 published: 2026-06-23
-updated: 2026-09-19
+updated: 2026-09-30
 audience: member
 featureKeys: [circles, community]
 status: published
@@ -22,9 +22,10 @@ point is the meeting: a fixed night, a fixed place, the same small group. A grou
 chat is people talking about getting together. A Circle is people who got
 together last Thursday and will again this Thursday.
 
-Every Circle is organized around one **Channel**, the thing you practice:
-movement, breathwork, holistic health, creativity, human relating, and more. The
-Channel is the reason you are all in the room. It gives the first awkward five
+Every Circle is organized around a primary **Channel**, the thing you practice:
+movement, breathwork, holistic health, creativity, human relating, and more. A
+Circle can carry up to two more Channels it also practices. The primary Channel
+is the reason you are all in the room. It gives the first awkward five
 minutes a job to do.
 
 ## How big is a Circle?

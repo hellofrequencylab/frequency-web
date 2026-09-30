@@ -106,9 +106,13 @@ in small reviewable PRs. Best-practice guardrails in the last section.
   - `components/onboarding/chores-overlay.tsx`: the dismissible full-stop overlay + a persistent
     bottom-left **chores pill**; paced (≥1h, once/session) so it nudges, never nags; accessible
     (ESC/✕/backdrop, focus, reduced-motion).
-  - `app/(main)/feed/chores-actions.ts`: `claimChoresReward()`, one-time gem drop at 100% via the
-    long-dangling **`welcome_member`** gem action (also closes BACKLOG §C's "unobtainable" item);
-    idempotent on `meta.chores.rewarded`.
+  - `claimChoresReward()`, a one-time gem drop at 100% via the **`welcome_member`** gem action,
+    idempotent on `meta.chores.rewarded`. **Retired:** the chores overlay, `profile-chores.ts` and
+    its `chores-actions.ts` went with the one onboarding engine (#2510). It never made the
+    `welcome_member` *achievement* obtainable. Welcoming a newcomer lives in
+    `lib/connections/welcomes.ts` (`recordWelcome`, [ADR-186](DECISIONS.md)): it pays
+    `reward_welcome` (5 gems) once per newcomer and checks The Welcomer badge
+    ([ADR-1631](DECISIONS.md), LIVE-653).
   - Mounted in `app/(main)/layout.tsx`, **beta-gated** (`BETA_INDUCTION_ACTIVE`) so it retires to
     the non-blocking model at launch.
 - **Second pass (tweaks):**

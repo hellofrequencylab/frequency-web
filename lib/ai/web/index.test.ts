@@ -102,6 +102,23 @@ describe('htmlToText', () => {
     expect(text).toContain('Line two')
   })
 
+  // HYG-143 (CodeQL js/bad-tag-filter): a browser ends a script at `</script` plus anything up to `>`,
+  // so an end tag with attributes or a tab/newline must still drop the whole body from the text.
+  it('drops a script, style or noscript body whose end tag carries whitespace or junk', () => {
+    const cases: Array<[string, string]> = [
+      ['<p>Before</p><script>secretA()</script\t\n bar>After', 'secretA'],
+      ['<p>Before</p><style>.hidden{}</style foo>After', '.hidden'],
+      ['<p>Before</p><noscript>fallbackB</noscript\n x>After', 'fallbackB'],
+      ['<p>Before</p><SCRIPT type="x">secretC()</SCRIPT data-x>After', 'secretC'],
+    ]
+    for (const [html, body] of cases) {
+      const text = htmlToText(html)
+      expect(text).not.toContain(body)
+      expect(text).toContain('Before')
+      expect(text).toContain('After')
+    }
+  })
+
   it('decodes common entities', () => {
     expect(htmlToText('<p>Tom &amp; Jerry&#39;s</p>')).toContain("Tom & Jerry's")
   })

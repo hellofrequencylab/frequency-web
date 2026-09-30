@@ -34,7 +34,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 // from the element_settings master (role-gated), resolved server-side by loomScopes().
 const FALLBACK_CONFIG: LoomPickerConfig = {
   tabs: { images: true, icons: true, elements: true, tags: true, spaces: true, airwaves: false },
-  aiCreate: false,
   defaultScope: 'mine',
 }
 
@@ -459,7 +458,7 @@ export function LoomPicker({
                     </div>
                   )}
                   {activeView === 'elements' && (
-                    <p className="mb-2 text-2xs text-muted">Elements are images created with AI. Upload generated art here, or generate new Elements (coming soon).</p>
+                    <p className="mb-2 text-2xs text-muted">Elements are the images in this library that were made with AI.</p>
                   )}
                   {activeView === 'icons' && (
                     <p className="mb-2 text-2xs text-muted">Site icons plus any you upload. Search by name, or drop a new icon above.</p>

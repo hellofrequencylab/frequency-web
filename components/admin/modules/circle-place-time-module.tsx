@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select'
 import { RailAutosaveForm, useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
 import { COMMON_TIME_ZONES } from './event-shared-fields-module'
 import { getCirclePlaceTimeData, updateCirclePlaceTime } from '@/app/(main)/circles/admin-actions'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Place & Time" module (ADMIN-RAIL.md Phase 7, the 'place' spine cell). Renders on
 // /circles/[slug] and renders nothing unless the server grants circle.editSettings. Owns where + when the
@@ -29,6 +30,8 @@ const CircleLocationPicker = dynamic(() => import('@/components/events/event-loc
 export function CirclePlaceTimeModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readPlaceTime = useEntityRailRead('circle', 'placeTime', getCirclePlaceTimeData)
 
   const [data, setData] = useState<PlaceTimeData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,7 +42,7 @@ export function CirclePlaceTimeModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCirclePlaceTimeData(slug)
+    readPlaceTime(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -57,7 +60,7 @@ export function CirclePlaceTimeModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readPlaceTime])
 
   if (!slug) return null
   if (loading) {

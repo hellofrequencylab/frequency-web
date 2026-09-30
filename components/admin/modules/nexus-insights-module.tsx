@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getNexusInsightsData, type NexusInsightsData } from '@/lib/hierarchy/nexus-admin'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Insights" module (ADMIN-RAIL.md Phase 7, the 'insights' spine cell for nexuses). Renders
 // in the page admin dock on /nexuses/[slug]; the server returns null unless the caller holds
@@ -12,6 +13,8 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 export function NexusInsightsModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/nexuses\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readInsights = useEntityRailRead('nexus', 'insights', getNexusInsightsData)
 
   const [data, setData] = useState<NexusInsightsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -19,7 +22,7 @@ export function NexusInsightsModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getNexusInsightsData(slug)
+    readInsights(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -32,7 +35,7 @@ export function NexusInsightsModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readInsights])
 
   if (!slug) return null
   if (loading) {

@@ -1,0 +1,6 @@
+{
+  "id": "HYG-144",
+  "append": {
+    "detail": "\n\n── OWNER RULING 2026-09-30 ~01:35Z on OWN-084 / OWN-088 (multiple choice, recorded by HYG-156, ADR-1672): the second provider is \"Cloudflare R2\". The copy job reads its target from exactly these four env vars, set on Vercel Production by the owner (OWN-088), and no other names: R2_ACCOUNT_ID (the <id> in <id>.r2.cloudflarestorage.com), R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_BACKUP_BUCKET (bucket frequency-storage-backup). These are the names the build branch for this row already reads (lib/backup/r2.ts on claude/hyg-144-storage-backup-r2). Because they live on Vercel, the job takes the Vercel cron form of the two options above. Until they exist it fails dark and says so. The closing test is unchanged."
+  }
+}
