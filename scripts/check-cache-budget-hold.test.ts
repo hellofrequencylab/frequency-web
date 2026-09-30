@@ -196,6 +196,32 @@ describe('the snapshot is never weighed as cache and never uploaded', () => {
   })
 })
 
+describe('the hold can delete only its own scratch (LIVE-048)', () => {
+  it('turns itself off, and deletes nothing protected, if HOLD_ARTIFACTS ever names the fetch cache', () => {
+    const mutant = SRC.replace(
+      "const HOLD_ARTIFACTS = [HELD_DIR, 'turbopack-discarded', HELD_STATE_FILE]",
+      "const HOLD_ARTIFACTS = [HELD_DIR, 'turbopack-discarded', HELD_STATE_FILE, 'fetch-cache']",
+    )
+    expect(mutant, 'HOLD_ARTIFACTS changed shape; re-point this mutation').not.toBe(SRC)
+    const root = fixture({ live: 1.2, held: 0.8, fetchCache: 0.05 })
+    const { status, out } = run(root, GATE, mutant)
+    expect(out).toContain('so the hold is off')
+    expect(existsSync(at(root, 'fetch-cache')), 'THE 2026-08-18 DEFECT, by a new door').toBe(true)
+    expect(existsSync(at(root, HELD_DIR)), 'the snapshot must still be tidied away').toBe(false)
+    expect(status).toBe(0)
+  })
+
+  it('routes every delete of its scratch through the one guarded helper', () => {
+    const code = SRC.split('\n')
+      .filter((l) => !/^\s*(\/\/|\*)/.test(l))
+      .join('\n')
+    const deletes = code.match(/rmSync\(/g) ?? []
+    // The pnpm-orphan prune, the trim loop, and dropHoldArtifact(). Nothing else.
+    expect(deletes.length).toBe(3)
+    expect(code).toMatch(/function dropHoldArtifact\(name\) \{\n\s+if \(!HOLD_ARTIFACTS\.includes\(name\)/)
+  })
+})
+
 describe('the assertions above can actually fail', () => {
   it('with the hold disabled, the same over-budget tree loses its compiler cache', () => {
     const mutant = SRC.replace('const verdict = holdVerdict()', "const verdict = { ok: false, reason: 'mutant' }")

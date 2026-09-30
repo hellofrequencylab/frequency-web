@@ -403,7 +403,16 @@ const HELD_DIR = 'turbopack-restored'
 const HELD_STATE_FILE = 'turbopack-held.json'
 const HOLD_LIMIT = 6
 
-const OVERLAP =COMPILER_CACHE_DIRS.filter((name) => NEVER_TRIM_DIRS.includes(name))
+// The only names the hold may ever remove, and all of them are its own scratch: the snapshot,
+// the build's grown cache for the instant it is set aside, and the count file. Every hold delete
+// goes through dropHoldArtifact(), which refuses any other name, so the trim loop over
+// COMPILER_CACHE_DIRS stays the only thing that can delete a real cache directory (LIVE-048).
+const HOLD_ARTIFACTS = [HELD_DIR, 'turbopack-discarded', HELD_STATE_FILE]
+// Belt and braces, like OVERLAP below: a hold artifact that is also a protected name disables the
+// hold, and dropHoldArtifact() refuses it, instead of quietly repeating 2026-08-18.
+const HOLD_OVERLAP = HOLD_ARTIFACTS.filter((name) => NEVER_TRIM_DIRS.includes(name) || COMPILER_CACHE_DIRS.includes(name))
+
+const OVERLAP = COMPILER_CACHE_DIRS.filter((name) => NEVER_TRIM_DIRS.includes(name))
 
 /** Sum a directory tree the way a tar of it would: real files once, symlinks as links (~0). */
 function measure(rel) {
@@ -560,7 +569,7 @@ let rawTotal = nodeModules + nextCache + yarnCache
 const dropped = []
 
 // ── THE HOLD'S INPUTS (HYG-140). Read here, acted on inside the trim chain below. ────────────────
-const heldAbs = path.join(ROOT, heldRel)
+const heldAbs = path.join(cacheDir, HELD_DIR)
 const heldStatePath = path.join(cacheDir, HELD_STATE_FILE)
 /** .next/cache as Vercel will pack it: the held snapshot is links to it, so it never counts. */
 const measureCache = () => measure('.next/cache') - measure(heldRel)
@@ -589,6 +598,9 @@ function versionDirs(dir) {
 /** Whether the restored generation can stand in for this build's cache, and if not, why not. */
 function holdVerdict() {
   const current = cacheParts.find(([n]) => n === 'turbopack')
+  if (HOLD_OVERLAP.length > 0) {
+    return { ok: false, reason: `HOLD_ARTIFACTS names ${HOLD_OVERLAP.join(', ')}, a real cache directory, so the hold is off` }
+  }
   if (!existsSync(heldAbs)) {
     return { ok: false, reason: 'no restored generation was snapshotted (a cold build, or prebuild did not run)' }
   }
@@ -622,7 +634,7 @@ function holdSwap(verdict) {
   const live = path.join(cacheDir, 'turbopack')
   const discard = path.join(cacheDir, 'turbopack-discarded')
   try {
-    rmSync(discard, { recursive: true, force: true })
+    dropHoldArtifact('turbopack-discarded')
     renameSync(live, discard)
     try {
       renameSync(heldAbs, live)
@@ -630,7 +642,7 @@ function holdSwap(verdict) {
       renameSync(discard, live)
       throw err
     }
-    rmSync(discard, { recursive: true, force: true })
+    dropHoldArtifact('turbopack-discarded')
   } catch (err) {
     verdict.ok = false
     verdict.reason = `the swap failed (${err && err.message})`
@@ -723,9 +735,26 @@ if (WARN_ONLY) {
 // The snapshot is links, not cache, and it must never reach Vercel: counted in the archive it is the
 // turbopack cache a second time. The count file says how many holds in a row the upload carries.
 if (!WARN_ONLY) {
-  rmSync(heldAbs, { recursive: true, force: true })
-  if (heldNext > 0) writeFileSync(heldStatePath, `${JSON.stringify({ held: heldNext })}\n`)
-  else rmSync(heldStatePath, { force: true })
+  try {
+    dropHoldArtifact(HELD_DIR)
+    if (heldNext > 0) writeFileSync(heldStatePath, `${JSON.stringify({ held: heldNext })}\n`)
+    else dropHoldArtifact(HELD_STATE_FILE)
+  } catch (err) {
+    console.log(`\n🔴 check:cache-budget could not tidy the hold's scratch files: ${err && err.message}. See ADR-1656.\n`)
+  }
+}
+
+/**
+ * THE ONE DELETE THE HOLD HAS (HYG-140, LIVE-048). It removes a name from HOLD_ARTIFACTS, directly
+ * under .next/cache, and refuses everything else, so no edit to the hold can reach the fetch cache,
+ * next/image output or a compiler cache the trim has not chosen. Declared down here, after the trim
+ * chain, so the trim's delete stays the first one in the file (scripts/check-cache-budget-warn-only.test.ts).
+ */
+function dropHoldArtifact(name) {
+  if (!HOLD_ARTIFACTS.includes(name) || HOLD_OVERLAP.includes(name)) {
+    throw new Error(`${name} is not a hold artifact, and the hold may delete nothing else`)
+  }
+  rmSync(path.join(cacheDir, name), { recursive: true, force: true })
 }
 
 if (nodeModules > NODE_MODULES_BUDGET_GIB * GIB) {
