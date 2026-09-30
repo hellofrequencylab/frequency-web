@@ -28,6 +28,13 @@
 // their gross, the network fee, and their net. The idempotency is unchanged: the same settle flip,
 // so a second settle or a redelivered webhook sends nothing twice. A single-seller order never
 // reaches the split half and behaves exactly as before.
+//
+// A SPLIT order whose plan the settle could not write (LIVE-733, ADR-1700) had no ledger rows when
+// the settle reached here, so its sellers were told nothing. The reconciler plans it later and calls
+// `sendRecoveredSplitSaleNotices` with the rows its own plan inserted, which runs the same split half
+// for those rows' sellers only and skips the buyer (their receipt went out at the settle). The
+// idempotency is the plan's: only the call that inserted a row gets its id back, so a replay or a
+// racing run has no ids and sends nothing.
 
 import 'server-only'
 
@@ -133,7 +140,10 @@ async function resolveSeller(order: SettledOrder): Promise<{
 export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
   // A split order has its own half (LIVE-706). Everything below this line is the single-seller path,
   // unchanged.
-  if (order.ownerKind === 'split') return sendSplitOrderReceipts(order)
+  if (order.ownerKind === 'split') {
+    await sendSplitOrderReceipts(order)
+    return
+  }
   try {
     const amount = receiptAmount(order.amountCents, order.currency)
     const { summary, first } = await orderItemSummary(order.id)
@@ -339,8 +349,13 @@ function transferKey(t: OrderTransfer): string {
  *
  * Same contract as the single-seller half: best-effort on every path, logs every miss, never throws,
  * and sends only because the settle flipped this row (a replay flips nothing and reaches nothing).
+ *
+ * `recovered` (LIVE-733) is the reconciler's call for an order whose plan the settle missed: only the
+ * sellers of those transfer rows are notified, and the buyer is not written to again. Returns how many
+ * sellers were sent a notice.
  */
-async function sendSplitOrderReceipts(order: SettledOrder): Promise<void> {
+async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlySet<string>): Promise<number> {
+  let noticed = 0
   try {
     const amount = receiptAmount(order.amountCents, order.currency)
     const when = receiptDate()
@@ -352,6 +367,8 @@ async function sendSplitOrderReceipts(order: SettledOrder): Promise<void> {
     let transfers: OrderTransfer[] | null = null
     try {
       transfers = await listOrderTransfers(order.id)
+      // A recovered order: only the rows the reconciler's own plan inserted (LIVE-733).
+      if (recovered) transfers = transfers.filter((t) => recovered.has(t.id))
     } catch (err) {
       console.error(`${LOG} split order transfers unreadable; no seller was notified`, { orderId: order.id, err })
     }
@@ -384,54 +401,63 @@ async function sendSplitOrderReceipts(order: SettledOrder): Promise<void> {
     const from = named.length ? joinNames(named.map(({ seller }) => seller?.name ?? 'a seller')) : 'more than one seller'
 
     // ── The buyer's receipt: the lines, grouped under each seller's name ────────────────────────
-    const partValue = (part: SplitPart): string => {
-      const t = (transfers ?? []).find((x) => transferKey(x) === part.key)
-      const price = receiptAmount(part.itemsCents ?? (t ? t.amountCents + t.platformFeeCents : null), order.currency)
-      const summary = part.items.join(', ')
-      if (summary && price) return `${summary} (${price})`
-      return summary || price || ''
+    // A recovered order's buyer was receipted at the settle; they are not written to twice (LIVE-733).
+    if (!recovered) {
+      const partValue = (part: SplitPart): string => {
+        const t = (transfers ?? []).find((x) => transferKey(x) === part.key)
+        const price = receiptAmount(part.itemsCents ?? (t ? t.amountCents + t.platformFeeCents : null), order.currency)
+        const summary = part.items.join(', ')
+        if (summary && price) return `${summary} (${price})`
+        return summary || price || ''
+      }
+      const buyerLines: ReceiptLine[] = [
+        ...named.map(({ part, seller }) => ({ label: seller?.name ?? 'Seller', value: partValue(part) })),
+        { label: 'Also in this order', value: unattributed.join(', ') },
+        { label: 'Total', value: amount ?? '' },
+        { label: 'Date', value: when },
+      ]
+      await sendMoneyReceipt({
+        to: order.buyerEmail ?? null,
+        profileId: order.buyerProfileId,
+        subject: first ? `Your order: ${first}` : `Your order from ${from}`,
+        content: {
+          greetingName: await displayNameFor(order.buyerProfileId),
+          lead: amount ? `Your order from ${from} is paid, ${amount} in total.` : `Your order from ${from} is paid.`,
+          lines: buyerLines,
+          closing: journeySlug
+            ? [
+                order.buyerProfileId
+                  ? 'The Journey is yours now. Every phase is open, on your own or with people you bring.'
+                  : 'One step left: sign in with this address and the Journey opens. Every phase is yours, on your own or with people you bring.',
+                'My orders keeps every purchase you make on Frequency, with the seller and the total.',
+              ]
+            : [
+                'Each seller has their part of the order now and sends it on themselves, so it may arrive in more than one delivery.',
+                'My orders keeps every purchase you make on Frequency, with the seller and the total.',
+              ],
+          actionLabel: journeySlug ? 'Open your Journey' : 'See my orders',
+          actionUrl: journeySlug
+            ? `${appUrl()}${journeyWelcomeDoor(journeySlug, { email: order.buyerProfileId ? null : order.buyerEmail })}`
+            : `${appUrl()}/orders`,
+        },
+        logTag: LOG,
+        context: { orderId: order.id, side: 'buyer', split: true },
+      })
     }
-    const buyerLines: ReceiptLine[] = [
-      ...named.map(({ part, seller }) => ({ label: seller?.name ?? 'Seller', value: partValue(part) })),
-      { label: 'Also in this order', value: unattributed.join(', ') },
-      { label: 'Total', value: amount ?? '' },
-      { label: 'Date', value: when },
-    ]
-    await sendMoneyReceipt({
-      to: order.buyerEmail ?? null,
-      profileId: order.buyerProfileId,
-      subject: first ? `Your order: ${first}` : `Your order from ${from}`,
-      content: {
-        greetingName: await displayNameFor(order.buyerProfileId),
-        lead: amount ? `Your order from ${from} is paid, ${amount} in total.` : `Your order from ${from} is paid.`,
-        lines: buyerLines,
-        closing: journeySlug
-          ? [
-              order.buyerProfileId
-                ? 'The Journey is yours now. Every phase is open, on your own or with people you bring.'
-                : 'One step left: sign in with this address and the Journey opens. Every phase is yours, on your own or with people you bring.',
-              'My orders keeps every purchase you make on Frequency, with the seller and the total.',
-            ]
-          : [
-              'Each seller has their part of the order now and sends it on themselves, so it may arrive in more than one delivery.',
-              'My orders keeps every purchase you make on Frequency, with the seller and the total.',
-            ],
-        actionLabel: journeySlug ? 'Open your Journey' : 'See my orders',
-        actionUrl: journeySlug
-          ? `${appUrl()}${journeyWelcomeDoor(journeySlug, { email: order.buyerProfileId ? null : order.buyerEmail })}`
-          : `${appUrl()}/orders`,
-      },
-      logTag: LOG,
-      context: { orderId: order.id, side: 'buyer', split: true },
-    })
 
     // ── Each seller's notice, for their share only ──────────────────────────────────────────────
-    if (!transfers) return
+    if (!transfers) return noticed
     if (!transfers.length) {
       // The settle plans the rows just before this runs; none means the plan was refused or could not
-      // be written (both logged by the ledger). The reconciler plans and pays it later; nobody was told.
-      console.error(`${LOG} split order has no transfer rows; no seller was notified`, { orderId: order.id })
-      return
+      // be written (both logged by the ledger). The reconciler plans and pays it later, and sends these
+      // notices then (LIVE-733); until it does, nobody has been told.
+      console.error(
+        recovered
+          ? `${LOG} recovered split order rows not found; no seller was notified`
+          : `${LOG} split order has no transfer rows; no seller was notified`,
+        { orderId: order.id },
+      )
+      return noticed
     }
     const buyerName = (await displayNameFor(order.buyerProfileId)) ?? 'Someone'
     for (const t of transfers) {
@@ -477,10 +503,69 @@ async function sendSplitOrderReceipts(order: SettledOrder): Promise<void> {
           actionUrl: seller.consoleUrl,
         },
         logTag: LOG,
-        context: { orderId: order.id, side: 'seller', transferId: t.id },
+        context: { orderId: order.id, side: 'seller', transferId: t.id, ...(recovered ? { recovered: true } : {}) },
       })
+      noticed += 1
     }
   } catch (err) {
     console.error(`${LOG} split order receipts failed`, { orderId: order.id, err })
+  }
+  return noticed
+}
+
+// ── THE RECOVERED SPLIT ORDER (LIVE-733, ADR-1700) ───────────────────────────────────────────────
+
+/**
+ * The sale notices a split order's sellers missed because the settle's plan failed. The reconciler
+ * planned the order later (reconcileTransfers step 1) and passes the ids of the rows ITS plan
+ * inserted; each of those sellers gets the notice the settle sends, from the same split half. The
+ * buyer is not written to: their receipt went out at the settle.
+ *
+ * NEVER TWICE: a seller is notified only for a row id given here, and only the plan call that
+ * inserted a row returns its id, so a replay, a second run or a racing worker passes none. The
+ * settle could not have told them: it found no rows, and said so.
+ *
+ * Best-effort like every receipt here: never throws, logs every miss, and returns how many sellers
+ * were sent a notice, so the reconciler can say out loud when that is fewer than it planned.
+ */
+export async function sendRecoveredSplitSaleNotices(orderId: string, transferIds: string[]): Promise<number> {
+  if (!transferIds.length) return 0
+  try {
+    const { data, error } = await createAdminClient()
+      .from('commerce_orders')
+      .select('id, owner_kind, owner_profile_id, owner_space_id, buyer_profile_id, amount_cents, currency')
+      .eq('id', orderId)
+      .maybeSingle()
+    const row = data as {
+      id: string
+      owner_kind: OrderOwnerKind
+      owner_profile_id: string | null
+      owner_space_id: string | null
+      buyer_profile_id: string | null
+      amount_cents: number
+      currency: string | null
+    } | null
+    if (error || !row) {
+      console.error(`${LOG} recovered split order unreadable; no seller was notified`, {
+        orderId,
+        error: error?.message ?? 'not found',
+      })
+      return 0
+    }
+    return await sendSplitOrderReceipts(
+      {
+        id: row.id,
+        ownerKind: row.owner_kind,
+        ownerProfileId: row.owner_profile_id,
+        ownerSpaceId: row.owner_space_id,
+        buyerProfileId: row.buyer_profile_id,
+        amountCents: row.amount_cents,
+        currency: row.currency,
+      },
+      new Set(transferIds),
+    )
+  } catch (err) {
+    console.error(`${LOG} recovered split order notices failed`, { orderId, err })
+    return 0
   }
 }

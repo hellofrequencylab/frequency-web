@@ -13,7 +13,9 @@ import type Stripe from 'stripe'
 //      adopts the transfer Stripe already holds instead of making a second one;
 //   4. a destination-flow order never gets a row or a transfer;
 //   5. a fully refunded order's unpaid rows are cancelled (LIVE-623), a row over the ceiling is logged as stuck and never retried, and a
-//      reversal from the webhook converges on Stripe's cumulative amount.
+//      reversal from the webhook converges on Stripe's cumulative amount;
+//   6. a split order the reconciler plans after the settle missed it sends each seller it planned the
+//      sale notice, once, and a notice that fails is logged and holds no payout (LIVE-733).
 
 type Row = Record<string, unknown>
 
@@ -203,8 +205,18 @@ vi.mock('@/lib/log', () => ({
   briefError: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }))
 
+// The seller notices live in ./order-receipt (LIVE-706); the reconciler reaches them for an order it
+// recovers (LIVE-733). Recorded here, so "once" is the number of calls made with each row id.
+const notices = vi.hoisted(() => ({
+  send: vi.fn(async (_orderId: string, ids: string[]) => ids.length),
+}))
+vi.mock('./order-receipt', () => ({
+  sendRecoveredSplitSaleNotices: (orderId: string, ids: string[]) => notices.send(orderId, ids),
+}))
+
 import {
   planTransferShares,
+  planTransfersForOrder,
   settleSplitOrderTransfers,
   reconcileTransfers,
   recordTransferReversed,
@@ -255,6 +267,7 @@ beforeEach(() => {
   stripeState.plan.listFails = false
   logs.lines.length = 0
   vi.clearAllMocks()
+  notices.send.mockImplementation(async (_orderId: string, ids: string[]) => ids.length)
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(db.now())
 })
@@ -497,6 +510,92 @@ describe('the reconciler finds a paid split order the settle never planned', () 
     await reconcile()
     expect(transfersTo('acct_a')).toHaveLength(1)
     expect(transfersTo('acct_b')).toHaveLength(1)
+  })
+})
+
+describe('the reconciler tells the sellers of an order it recovers (LIVE-733)', () => {
+  const noticedIds = () => notices.send.mock.calls.flatMap((c) => c[1])
+
+  it('sends each seller it planned their sale notice, once, however many runs follow', async () => {
+    seedOrder()
+    later()
+    tick()
+    const run = await reconcile()
+    expect(run.plannedOrders).toBe(1)
+    expect(run.noticedSellers).toBe(2)
+    expect(notices.send).toHaveBeenCalledTimes(1)
+    expect(notices.send.mock.calls[0][0]).toBe('o-split')
+    expect(noticedIds().sort()).toEqual([bySpace('sp-a').id, bySpace('sp-b').id].sort())
+
+    // The next runs pay the rows, and tell nobody again: the order has a plan now.
+    later()
+    tick()
+    const pay = await reconcile()
+    later()
+    tick()
+    await reconcile()
+    expect(pay.noticedSellers).toBe(0)
+    expect(notices.send).toHaveBeenCalledTimes(1)
+    expect(transfersTo('acct_a')).toHaveLength(1)
+    expect(transfersTo('acct_b')).toHaveLength(1)
+  })
+
+  it('a plan another worker already wrote returns no row ids, so a racing run has nobody to notify', async () => {
+    seedOrder()
+    const first = await planTransfersForOrder('o-split')
+    const second = await planTransfersForOrder('o-split')
+    expect(first).toMatchObject({ planned: 2 })
+    expect('rowIds' in first && first.rowIds).toHaveLength(2)
+    expect(second).toEqual({ planned: 0, rowIds: [] })
+  })
+
+  it('the settle never sends a recovered notice: its own receipts cover the rows it planned', async () => {
+    seedOrder()
+    await settleSplitOrderTransfers('o-split')
+    later()
+    tick()
+    await reconcile()
+    expect(notices.send).not.toHaveBeenCalled()
+  })
+
+  it('a notice that throws is logged, and the sellers are still paid on the next run', async () => {
+    notices.send.mockRejectedValueOnce(new Error('mail is down'))
+    seedOrder()
+    later()
+    tick()
+    const run = await reconcile()
+    expect(run.plannedOrders).toBe(1)
+    expect(run.noticedSellers).toBe(0)
+    expect(logs.lines).toContainEqual(
+      expect.objectContaining({
+        level: 'error',
+        event: 'commerce.transfer.recovered_notice_failed',
+        fields: expect.objectContaining({ orderId: 'o-split', error: 'mail is down' }),
+      }),
+    )
+    later()
+    tick()
+    await reconcile()
+    expect(transfersTo('acct_a')).toHaveLength(1)
+    expect(transfersTo('acct_b')).toHaveLength(1)
+    // Nothing retries the notice into a second one.
+    expect(notices.send).toHaveBeenCalledTimes(1)
+  })
+
+  it('a seller the notices could not reach is said out loud, never counted as told', async () => {
+    notices.send.mockResolvedValueOnce(1)
+    seedOrder()
+    later()
+    tick()
+    const run = await reconcile()
+    expect(run.noticedSellers).toBe(1)
+    expect(logs.lines).toContainEqual(
+      expect.objectContaining({
+        level: 'error',
+        event: 'commerce.transfer.recovered_notice_missed',
+        fields: { orderId: 'o-split', planned: 2, noticed: 1 },
+      }),
+    )
   })
 })
 
