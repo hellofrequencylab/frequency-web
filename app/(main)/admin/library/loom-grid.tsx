@@ -43,11 +43,9 @@ import { isLibraryAssetExpired, type LibraryDownloadPolicy, type LibraryRenditio
 import {
   downloadElementSvg,
   downloadElementPng,
-  downloadImageUrl,
   rasterizeSvgElement,
-  extForMime,
 } from '@/lib/library/export-svg'
-import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
+import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset, libraryDownloadRecord } from './actions'
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, describeWithVera, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
 import { isVectorFile } from '@/lib/loom/urls'
@@ -850,9 +848,24 @@ function DetailDrawer({
     const svg = previewSvg()
     if (svg) void downloadElementPng(svg, `${asset.slug || 'card'}.png`)
   }
-  function downloadFile() {
-    if (asset.url) void downloadImageUrl(asset.url, `${asset.slug || 'image'}.${extForMime(asset.mime)}`)
-  }
+  // Download goes through the server door (LIVE-578, ADR-1596): it applies the download policy, writes
+  // the record, then redirects to the file as an attachment. A file-backed asset only; a code-drawn
+  // element exports from the DOM below. The record reads back here for the Studio, which is staff.
+  const hasFile = !!asset.url || (asset.isProtected && !!asset.storagePath)
+  const downloadHref = `/api/library/download/${asset.id}`
+  const [downloads, setDownloads] = useState<{ count: number; lastAt: string | null } | null>(null)
+  useEffect(() => {
+    if (!hasFile) return
+    let live = true
+    libraryDownloadRecord(asset.id)
+      .then((r) => {
+        if (live) setDownloads(r)
+      })
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [asset.id, hasFile])
 
   const chipCls =
     'inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated'
@@ -928,10 +941,10 @@ function DetailDrawer({
                 <ExternalLink className="h-4 w-4" /> Open
               </a>
             )}
-            {asset.url && (
-              <button type="button" onClick={downloadFile} className={chipCls}>
+            {hasFile && (
+              <a href={downloadHref} className={chipCls}>
                 <Download className="h-4 w-4" /> Download
-              </button>
+              </a>
             )}
             {isElement && (
               <>
@@ -952,6 +965,15 @@ function DetailDrawer({
               <SparklesIcon className="h-4 w-4" /> Find similar
             </a>
           </div>
+          {hasFile && downloads && (
+            <p data-loom-downloads={downloads.count} className="-mt-2 text-meta text-subtle">
+              {downloads.count === 0
+                ? 'Not downloaded yet.'
+                : `Downloaded ${downloads.count} time${downloads.count === 1 ? '' : 's'}${
+                    downloads.lastAt ? `, last on ${dayOf(downloads.lastAt)}` : ''
+                  }.`}
+            </p>
+          )}
 
           {/* Crop and rotate (HYG-109): saves through the replace seam, so the old file is a version. */}
           {croppable && cropping && asset.url && (
@@ -1106,8 +1128,8 @@ function DetailDrawer({
           )}
 
           {/* Protection (PROG-D6, LIVE-576): the three hooks the schema has carried since the DAM landed,
-              finally reachable by a person. Stored and shown today; the private bucket a protected asset
-              moves into is LIVE-577 and the door the download policy gates is LIVE-578. */}
+              finally reachable by a person. Protected moves the file into the private bucket (LIVE-577);
+              the policy is what the download door applies to whoever follows Download (LIVE-578). */}
           <div data-loom-protection className="space-y-3 rounded-card border border-border bg-surface-elevated/50 p-3">
             <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
               <Lock className="h-4 w-4 text-subtle" aria-hidden />

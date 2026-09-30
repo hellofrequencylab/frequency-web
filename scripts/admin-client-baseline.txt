@@ -130,6 +130,11 @@
 # proof of a protected Loom image in library-private, a bucket with NO storage policy for anon or
 # authenticated by decision (20270345009550, ADR-1595): service role is the only way in. Called from
 # the Studio-gated protect action and lazily from proofLibraryAssetUrl, which is already listed.
+# lib/library/download-door.ts (added 2026-09-29, LIVE-578, ADR-1596): the Loom download door. It
+# reads one library_assets row (RLS deny-all), signs a one-minute url from library-private (no
+# storage policy names that bucket, by decision), and inserts into library_downloads, whose only
+# writer is the service role (no insert policy, insert revoked from authenticated). The route
+# establishes the caller first and the door applies the asset's download policy before any of it.
 # lib/library/asset-urls.ts (added 2026-09-19, HYG-068): batched `select id, url` for the six
 # column-backed image companions. library_assets is RLS deny-all (scripts/rls-deny-all.txt),
 # so a session client cannot refresh a cached url. Same posture as lib/library/resolve-refs.ts
@@ -256,6 +261,12 @@
 # under: the Stripe webhook (the settle, transfer.created, transfer.reversed) and the reconcile-transfers
 # cron. Nothing here is reachable from a request a member makes, and nothing leaves it but counts and
 # log lines; a seller's read of their share (LIVE-624) is authorized before it reaches this module.
+# lib/commerce/split-refund.ts (added 2026-09-29, LIVE-623): the pro rata reversal of a split order's
+# seller transfers on a refund or a lost dispute. It writes the same service-role-only table as
+# lib/commerce/transfers.ts (commerce_order_transfers) and reads commerce_orders by id or PaymentIntent;
+# its callers are the refund recorder (already authorized as the order's seller or an operator), the
+# Stripe webhook (charge.refunded, charge.dispute.closed) and the reconcile-transfers cron, none of
+# which has a member session to run under. Nothing leaves it but counts and log lines.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -667,6 +678,7 @@ lib/commerce/reports.ts
 lib/commerce/reviews.ts
 lib/commerce/seller-audience.ts
 lib/commerce/seller-verification.ts
+lib/commerce/split-refund.ts
 lib/commerce/ticket-projection.ts
 lib/commerce/transfers.ts
 lib/commerce/variants.ts
@@ -829,6 +841,7 @@ lib/layout/content-cascade.ts
 lib/layout/page-chrome.ts
 lib/library.ts
 lib/library/asset-urls.ts
+lib/library/download-door.ts
 lib/library/embeddings.ts
 lib/library/event-loom.ts
 lib/library/hybrid-search.ts
