@@ -120,6 +120,10 @@
     {
       "path": "/api/cron/onboarding-throughput",
       "schedule": "50 4 * * *"
+    },
+    {
+      "path": "/api/cron/reconcile-transfers",
+      "schedule": "20,50 * * * *"
     }
   ]
 }
