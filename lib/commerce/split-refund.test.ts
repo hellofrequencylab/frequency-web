@@ -14,7 +14,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 //      already at Stripe when the cancel ran is taken back after it lands;
 //   6. a reversal that fails is owed, stops no other seller, is retried by the reconciler once, and
 //      is logged as stuck past the ceiling;
-//   7. a destination-flow order is never touched.
+//   7. a destination-flow order is never touched;
+//   8. a partial refund that writes a split order's first plan tells each seller it planned of the
+//      sale, once, and a notice that fails is logged and holds up nothing (LIVE-739).
 
 type Row = Record<string, unknown>
 
@@ -235,6 +237,15 @@ vi.mock('@/lib/log', () => ({
   briefError: (e: unknown) => (e instanceof Error ? e.message : String(e)),
 }))
 
+// The seller sale notices live in ./order-receipt (LIVE-706); a late plan reaches them through
+// noticeRecoveredSellers (LIVE-733, LIVE-739). Recorded here, so "once" is the calls made per row id.
+const notices = vi.hoisted(() => ({
+  send: vi.fn(async (_orderId: string, ids: string[]) => ids.length),
+}))
+vi.mock('./order-receipt', () => ({
+  sendRecoveredSplitSaleNotices: (orderId: string, ids: string[]) => notices.send(orderId, ids),
+}))
+
 import {
   proportionRefund,
   reverseSplitTransfers,
@@ -307,6 +318,7 @@ beforeEach(() => {
   stripeState.plan.duringCreate = null
   logs.lines.length = 0
   vi.clearAllMocks()
+  notices.send.mockImplementation(async (_orderId: string, ids: string[]) => ids.length)
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(db.now())
 })
@@ -596,6 +608,101 @@ describe('a reversal that fails is owed and retried', () => {
     seedOrder()
     db.failures.push({ table: 'commerce_orders', op: 'select', message: 'connection reset' })
     await expect(reverseSplitRefundForPaymentIntent('pi_1', 3000)).rejects.toThrow(/connection reset/)
+  })
+})
+
+describe('a partial refund that writes the first plan tells the sellers of the sale (LIVE-739)', () => {
+  const noticedIds = () => notices.send.mock.calls.flatMap((c) => c[1])
+
+  it('each seller it planned is told once, and no replay, top-up or reconciler run tells anyone again', async () => {
+    const order = seedOrder()
+    refundInPart(order)
+    const run = await reverseSplitTransfers('o-split', 1000)
+
+    expect(run).toMatchObject({ targeted: 2, noticedSellers: 2 })
+    expect(notices.send).toHaveBeenCalledTimes(1)
+    expect(notices.send.mock.calls[0][0]).toBe('o-split')
+    expect(noticedIds().sort()).toEqual([bySpace('sp-a').id, bySpace('sp-b').id].sort())
+
+    // Its own charge.refunded, a redelivery, a top-up, and the cron that pays and reverses.
+    const replay = await reverseSplitRefundForPaymentIntent('pi_1', 1000)
+    await reverseSplitRefundForPaymentIntent('pi_1', 1000)
+    await reverseSplitRefundForPaymentIntent('pi_1', 1500)
+    later()
+    const first = await reconcile()
+    later()
+    await reconcile()
+    expect(replay).toMatchObject({ noticedSellers: 0 })
+    expect(first.transfers).toMatchObject({ plannedOrders: 0, noticedSellers: 0 })
+    expect(notices.send).toHaveBeenCalledTimes(1)
+    // And the money still moves as before: both paid, then each part of $15 taken back.
+    expect(transferTo('acct_a').amount).toBe(950)
+    expect(reversedAt('acct_a')).toBe(475)
+    expect(reversedAt('acct_b')).toBe(950)
+  })
+
+  it('an order the settle or the reconciler already planned: the refund inserts nothing and tells nobody', async () => {
+    const settled = seedOrder()
+    await settleSplitOrderTransfers('o-split')
+    refundInPart(settled)
+    expect(await reverseSplitTransfers('o-split', 1000)).toMatchObject({ noticedSellers: 0 })
+
+    const recovered = seedOrder({ id: 'o-late', stripe_payment_intent_id: 'pi_late' })
+    later()
+    await reconcileTransfers({ limit: 100, now: db.now() }) // plans o-late and tells its sellers
+    expect(notices.send).toHaveBeenCalledTimes(1)
+    refundInPart(recovered)
+    expect(await reverseSplitTransfers('o-late', 1000)).toMatchObject({ targeted: 2, noticedSellers: 0 })
+    expect(notices.send).toHaveBeenCalledTimes(1)
+    expect(notices.send.mock.calls[0][0]).toBe('o-late')
+  })
+
+  it('a refund in full writes no plan, pays nobody and tells nobody', async () => {
+    const order = seedOrder()
+    refundInFull(order)
+    expect(await reverseSplitTransfers('o-split', 3000)).toMatchObject({ noticedSellers: 0, cancelled: 0 })
+    expect(db.rows('commerce_order_transfers')).toHaveLength(0)
+    expect(notices.send).not.toHaveBeenCalled()
+  })
+
+  it('a notice that throws is logged, the refund still writes its targets, and the sellers are paid and reversed', async () => {
+    notices.send.mockRejectedValueOnce(new Error('mail is down'))
+    const order = seedOrder()
+    refundInPart(order)
+    const run = await reverseSplitTransfers('o-split', 1000)
+
+    expect(run).toMatchObject({ targeted: 2, noticedSellers: 0 })
+    expect(bySpace('sp-a')).toMatchObject({ status: 'planned', refund_reversal_cents: 316 })
+    expect(bySpace('sp-b')).toMatchObject({ status: 'planned', refund_reversal_cents: 633 })
+    expect(logs.lines).toContainEqual(
+      expect.objectContaining({
+        level: 'error',
+        event: 'commerce.transfer.recovered_notice_failed',
+        fields: expect.objectContaining({ orderId: 'o-split', error: 'mail is down', via: 'split_refund' }),
+      }),
+    )
+    later()
+    await reconcile()
+    later()
+    await reconcile()
+    expect(reversedAt('acct_a')).toBe(316)
+    expect(reversedAt('acct_b')).toBe(633)
+    // Nothing retries the notice into a second one.
+    expect(notices.send).toHaveBeenCalledTimes(1)
+  })
+
+  it('a seller the notices could not reach is said out loud, never counted as told', async () => {
+    notices.send.mockResolvedValueOnce(1)
+    const order = seedOrder()
+    refundInPart(order)
+    expect(await reverseSplitTransfers('o-split', 1000)).toMatchObject({ noticedSellers: 1 })
+    expect(logs.lines).toContainEqual(
+      expect.objectContaining({
+        level: 'error',
+        event: 'commerce.transfer.recovered_notice_missed',
+        fields: { orderId: 'o-split', planned: 2, noticed: 1, via: 'split_refund' },
+      }),
+    )
   })
 })
 

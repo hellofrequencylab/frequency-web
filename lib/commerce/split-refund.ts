@@ -39,6 +39,13 @@
 // reversal that fails (the seller's balance is empty, the network) is recorded on the row, retried by
 // /api/cron/reconcile-transfers under the same ceiling as transfers, and logged as stuck past it.
 //
+// A REFUND THAT PLANS THE ORDER (LIVE-739, ADR-1702). A partial refund of a paid split order the
+// settle never planned writes the plan itself (below). The settle told nobody (it found no rows), and
+// the reconciler now skips the order (it has rows), so the refund's plan call is the only one that
+// can: each seller its insert returned is sent the settle's own sale notice through
+// noticeRecoveredSellers (./transfers), before any target is written. A notice that fails is logged
+// and holds up no reversal, no payout and nothing the buyer gets.
+//
 // NOT THE FINANCE LEDGER. The platform's revenue on a split order is its fee (ADR-1614 §4), and the
 // refund recorder in ./checkout.ts already reverses that fee pro rata. A seller's transfer was never
 // platform revenue, so its reversal is not a finance row either: the transfer table records it.
@@ -51,6 +58,7 @@ import { log, briefError } from '@/lib/log'
 import {
   listOrderTransfers,
   planTransfersForOrder,
+  noticeRecoveredSellers,
   cancelOpenTransfers,
   MAX_TRANSFER_ATTEMPTS,
   RECONCILE_STALE_MS,
@@ -248,11 +256,21 @@ export interface SplitReversalSummary {
   /** Reversals that failed and are left owed for the reconciler. */
   failed: number
   skipped: number
+  /** Sellers sent their sale notice because THIS refund wrote the order's plan (LIVE-739). */
+  noticedSellers: number
 }
 
 export type SplitReversalRefusal = 'not_found' | 'destination' | 'bad_ledger'
 
-const emptySummary = (): SplitReversalSummary => ({ targeted: 0, cancelled: 0, reversed: 0, settled: 0, failed: 0, skipped: 0 })
+const emptySummary = (): SplitReversalSummary => ({
+  targeted: 0,
+  cancelled: 0,
+  reversed: 0,
+  settled: 0,
+  failed: 0,
+  skipped: 0,
+  noticedSellers: 0,
+})
 
 interface SplitOrder {
   id: string
@@ -273,7 +291,8 @@ interface SplitOrder {
  *   - A full refund cancels every row not yet paid (nobody is owed anything), and every paid row is
  *     owed back whole.
  *   - A partial refund of an order that is still paid first writes a plan the settle never got to
- *     (idempotent), so a seller paid later is paid their share and then has this part reversed.
+ *     (idempotent), so a seller paid later is paid their share and then has this part reversed. Each
+ *     seller that plan inserted is told of the sale, once (LIVE-739): nobody else can, now.
  *   - Every target is written before any money moves; then each created row owing anything is
  *     reversed now. What fails stays owed for reconcileSplitReversals.
  *
@@ -299,7 +318,21 @@ export async function reverseSplitTransfers(
   if (refunded <= 0) return out
   const full = refunded >= order.amount_cents
 
-  if (!full && (order.status === 'paid' || order.status === 'fulfilled')) await planTransfersForOrder(orderId)
+  if (!full && (order.status === 'paid' || order.status === 'fulfilled')) {
+    const plan = await planTransfersForOrder(orderId)
+    // TELL THE SELLERS (LIVE-739, ADR-1702). Rows back means THIS call wrote the order's first plan:
+    // the settle found none and told nobody, and the reconciler skips an order that has rows, so this
+    // is the last call that can. The same notice the settle and the reconciler send, for exactly the
+    // rows inserted here, so a replayed refund, its own webhook or a racing reconciler (none of which
+    // insert anything) tells nobody twice. Sent now, before any target is written, so a database
+    // error below (which makes the webhook redeliver, and a redelivery plans nothing) cannot lose it.
+    // It never throws, and the refund and the payouts go on whatever happened to the mail. A seller
+    // is told of the sale as the settle would have told them, before any refund: the refund is not
+    // a reason to hide a sale their payout still carries (ADR-1702).
+    if ('rowIds' in plan && plan.rowIds.length) {
+      out.noticedSellers = await noticeRecoveredSellers(orderId, plan.rowIds, { via: 'split_refund' })
+    }
+  }
 
   const rows = await listOrderTransfers(orderId)
   // Every seller share, including one whose fee took its whole gross (no row; the platform kept it
