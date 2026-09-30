@@ -36,7 +36,7 @@ vi.mock('@/lib/circles/challenges', () => ({
   getCircleChallenges: async () => [],
   listAdoptableChallenges: async () => [],
 }))
-vi.mock('@/lib/channels/programs', () => ({ setCircleChannel: vi.fn(async () => {}) }))
+vi.mock('@/lib/channels/programs', () => ({ setCircleChannels: vi.fn(async () => []) }))
 vi.mock('@/lib/auth', () => ({ getMyProfileId: async () => 'host-1' }))
 
 // A table-aware query mock. Every builder method returns the node, the node is thenable (a list
