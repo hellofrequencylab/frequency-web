@@ -57,7 +57,7 @@ export function VisibilityControl({
     })
   }
 
-  const where = city ? `stewards in ${city}` : 'stewards in the same city'
+  const where = city ? `Hosts in ${city}` : 'Hosts in the same city'
   const sharedSpaceName = operatedSpaces.find((s) => s.id === spaceId)?.name ?? 'your Space'
 
   return (
@@ -121,8 +121,8 @@ export function VisibilityControl({
           <>
             Private: only you can see this contact.
             {canShare
-              ? ' Switch to Network to let local stewards find them, or Shared to give a Space team you run their card.'
-              : ' Switch to Network to let local stewards find them.'}
+              ? ' Switch to Network to let local Hosts find them, or Shared to give a Space team you run their card.'
+              : ' Switch to Network to let local Hosts find them.'}
           </>
         )}
       </p>

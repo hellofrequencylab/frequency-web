@@ -4,7 +4,7 @@ description: Scan another member's personal Frequency code in person to keep the
 category: connecting
 order: 7
 published: 2026-06-22
-updated: 2026-06-23
+updated: 2026-09-30
 audience: member
 featureKeys: [connections]
 status: published
@@ -29,7 +29,7 @@ This is your own note that you met them. It works just like saving a business ca
 
 ## Find them later
 
-Your scanned contacts gather under the **QR Scan** tab in My Contacts. Open one to add a note, a tag, or a follow-up reminder, the same as any other contact.
+Your scanned contacts gather under the **QR scan** tab in My Contacts. Open one to add a note, a tag, or a follow-up reminder, the same as any other contact.
 
 ## Good to know
 

@@ -99,7 +99,9 @@ const FACET_SAMPLE_LIMIT = 1000
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
-  title: 'Community',
+  // "Members", not "Community": NAMING.md §Connection layer names the directory Members (ADR-868),
+  // the same word as its nav row and its Network hub tab.
+  title: 'Members',
   description: 'Everyone in the community. Browse, find someone interesting, say hi.',
 }
 
