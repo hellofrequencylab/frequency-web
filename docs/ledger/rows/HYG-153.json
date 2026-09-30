@@ -1,0 +1,19 @@
+{
+  "id": "HYG-153",
+  "title": "check:adoption failed on main again after #3072: the Install the app panel counted as a bespoke browse card",
+  "status": "done",
+  "priority": "P0",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-09-30",
+  "source": {
+    "file": "scripts/adoption-baselines.json",
+    "ref": "node scripts/check-adoption.mjs on main at b9aff5df2: bespoke-cards 1 -> 2 (components/push/install-card.tsx, LIVE-703 #3072)"
+  },
+  "detail": "FILED AND CLOSED 2026-09-30. MEASURED on main at b9aff5df2: `node scripts/check-adoption.mjs` exited 1 with bespoke-cards at 2 against its baseline of 1, so HYG-149's probe read NOT DONE on main and every PR's `pnpm check:backlog` sweep failed on it. The new site is components/push/install-card.tsx from LIVE-703 (#3072), which merged beside HYG-149 (#3064) without either seeing the other. It is the Install the app panel: a line of install state plus one Install the app button (the Button primitive) or the iPhone Add to Home Screen steps, with no entity and no href, the same shape as components/push/permission-card.tsx that HYG-149 excluded. WHAT CLOSED IT: it joined the bespoke-cards exclude list with its reason, and the entry was re-frozen for the basis change at the same value of 1 (recorded 'rebased'). No baseline was raised and --allow-raise was not used. check:adoption reads every class held or shrank.\n\nCLOSED 2026-09-30 (follows ADR-1653). node scripts/check-adoption.mjs exits 0 with no --allow-raise.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/check-adoption.mjs",
+    "note": "The ratchet itself: exits 1 on main at b9aff5df2 (bespoke-cards 2 > 1) and 0 once install-card is excluded with its reason. A new bespoke card anywhere fails it again, which is the point."
+  }
+}
