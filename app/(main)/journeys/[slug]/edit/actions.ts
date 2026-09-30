@@ -1,8 +1,8 @@
 'use server'
 
 // Journeys v2 — structure editor actions (ADR-252, J4b). Author-only CRUD over the block tree:
-// add phases + lessons, edit a lesson's title/body/type/required, reorder among siblings, and
-// delete (children cascade via the parent_id FK). Direct admin-client writes behind the
+// add phases + lessons, edit a lesson's title/body/type/required, reorder within a lane of
+// siblings (arrows or drag, practices and lessons alike, LIVE-689), and delete (children cascade via the parent_id FK). Direct admin-client writes behind the
 // author guard; the v2 block types (phase/module + leaf types) need the J0 migration applied.
 
 import { revalidatePath } from 'next/cache'
@@ -29,6 +29,7 @@ import { canEditJourney } from '@/lib/journeys/authoring'
 import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import { toPortable, type PortableJourney } from '@/lib/journeys/portable'
 import { log } from '@/lib/log'
+import { laneOf, moveWithin, planSiblingOrder, type OrderWrite, type SiblingRow } from '@/lib/journeys/block-order'
 
 type BlockUpdate = Database['public']['Tables']['journey_plan_items']['Update']
 
@@ -750,50 +751,119 @@ export async function removeBlockAction(slug: string, itemId: string): Promise<A
   return ok()
 }
 
-/** Reorder a block among its siblings by swapping sort_order with its neighbor. */
+// ── ONE ORDER FOR EVERY BLOCK (LIVE-689, ADR-1681) ─────────────────────────────────────────────
+// A practice, a lesson, a check and a module are all rows of `journey_plan_items`, and sort_order
+// orders them among their siblings whatever their kind. The arrows and the builder's drag both land
+// here, on the same lane math (lib/journeys/block-order.ts), so a practice moves above a lesson the
+// same way a lesson moves above a practice, and the member's player (lib/journeys/tree.ts) reads
+// the result in exactly that order.
+
+/** A block's lane of siblings, in stored order: the rows a move or a drag may reorder it among. */
+async function loadLane(
+  admin: ReturnType<typeof createAdminClient>,
+  planId: string,
+  parentId: string | null,
+  blockType: string | null,
+): Promise<SiblingRow[] | null> {
+  let q = admin.from('journey_plan_items').select('id, sort_order, block_type').eq('plan_id', planId)
+  q = parentId ? q.eq('parent_id', parentId) : q.is('parent_id', null)
+  const { data, error } = await q.order('sort_order', { ascending: true })
+  if (error) return null
+  const lane = laneOf(parentId, blockType)
+  return ((data ?? []) as SiblingRow[]).filter((r) => laneOf(parentId, r.block_type ?? blockType) === lane)
+}
+
+/** Write a lane's new slots one row at a time (there is no reorder RPC). When a write is refused,
+ *  every row already moved is put back, last first, so a refusal never leaves two siblings on the
+ *  same slot (scan2 L5-13). A failed put-back is logged loudly. */
+async function writeLaneOrder(
+  admin: ReturnType<typeof createAdminClient>,
+  planId: string,
+  writes: OrderWrite[],
+): Promise<boolean> {
+  const landed: OrderWrite[] = []
+  for (const w of writes) {
+    const { error } = await admin
+      .from('journey_plan_items')
+      .update({ sort_order: w.to })
+      .eq('id', w.id)
+      .eq('plan_id', planId)
+    if (!error) {
+      landed.push(w)
+      continue
+    }
+    for (const back of [...landed].reverse()) {
+      const { error: revertErr } = await admin
+        .from('journey_plan_items')
+        .update({ sort_order: back.from })
+        .eq('id', back.id)
+        .eq('plan_id', planId)
+      if (revertErr) {
+        log.error('journeys.move_revert_failed', {
+          planId,
+          itemId: back.id,
+          refusedId: w.id,
+          error: revertErr.message,
+        })
+      }
+    }
+    return false
+  }
+  return true
+}
+
+/** Move a block one place up or down within its lane (the builder's arrows). */
 export async function moveBlockAction(slug: string, itemId: string, dir: 'up' | 'down'): Promise<ActionResult> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
   const admin = db()
-  const { data: self } = await admin.from('journey_plan_items').select('id, parent_id, sort_order').eq('id', itemId).eq('plan_id', a.planId).maybeSingle()
-  const s = self as { id: string; parent_id: string | null; sort_order: number } | null
+  const { data: self } = await admin
+    .from('journey_plan_items')
+    .select('id, parent_id, sort_order, block_type')
+    .eq('id', itemId)
+    .eq('plan_id', a.planId)
+    .maybeSingle()
+  const s = self as { id: string; parent_id: string | null; block_type?: string | null } | null
   if (!s) return fail('Not found.')
-  let q = admin.from('journey_plan_items').select('id, sort_order').eq('plan_id', a.planId)
-  q = s.parent_id ? q.eq('parent_id', s.parent_id) : q.is('parent_id', null)
-  const { data: sibs } = await q.order('sort_order', { ascending: true })
-  const list = (sibs ?? []) as { id: string; sort_order: number }[]
-  const idx = list.findIndex((x) => x.id === itemId)
-  const swapIdx = dir === 'up' ? idx - 1 : idx + 1
-  if (idx < 0 || swapIdx < 0 || swapIdx >= list.length) return ok() // already at the edge
-  const neighbor = list[swapIdx]
-  // 2026-09-05 (scan2 L5-13): the swap is two updates and there is no swap RPC, so both are
-  // checked. A refused FIRST write leaves the tree as it was; a refused SECOND write would leave
-  // both siblings on the neighbor's sort_order (a duplicate the tree cannot order), so the first is
-  // put back before the refusal is returned. A failed revert is logged loudly.
-  const { error: firstErr } = await admin
-    .from('journey_plan_items')
-    .update({ sort_order: neighbor.sort_order })
-    .eq('id', s.id)
-  if (firstErr) return fail('Could not move that step.')
-  const { error: secondErr } = await admin
-    .from('journey_plan_items')
-    .update({ sort_order: s.sort_order })
-    .eq('id', neighbor.id)
-  if (secondErr) {
-    const { error: revertErr } = await admin
-      .from('journey_plan_items')
-      .update({ sort_order: s.sort_order })
-      .eq('id', s.id)
-    if (revertErr) {
-      log.error('journeys.move_revert_failed', {
-        planId: a.planId,
-        itemId: s.id,
-        neighborId: neighbor.id,
-        error: revertErr.message,
-      })
-    }
-    return fail('Could not move that step.')
+  const lane = await loadLane(admin, a.planId, s.parent_id ?? null, s.block_type ?? null)
+  if (!lane) return fail('Could not move that step.')
+  const next = moveWithin(lane.map((r) => r.id), itemId, dir)
+  if (!next) return ok() // already at the edge
+  const writes = planSiblingOrder(lane, next)
+  if (!writes) return fail('Could not move that step.')
+  if (!(await writeLaneOrder(admin, a.planId, writes))) return fail('Could not move that step.')
+  done(slug)
+  return ok()
+}
+
+/** Save a whole lane's order at once (the builder's drag). `orderedIds` must be exactly the lane
+ *  its first id sits in, under `parentId`: every sibling of that lane, once. A stale or forged list
+ *  is refused and nothing is written. */
+export async function reorderBlocksAction(
+  slug: string,
+  parentId: string | null,
+  orderedIds: string[],
+): Promise<ActionResult> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  if (!Array.isArray(orderedIds) || orderedIds.length === 0 || orderedIds.length > 500) {
+    return fail('Could not save that order.')
   }
+  const admin = db()
+  const { data: first } = await admin
+    .from('journey_plan_items')
+    .select('id, parent_id, block_type')
+    .eq('id', orderedIds[0])
+    .eq('plan_id', a.planId)
+    .maybeSingle()
+  const f = first as { id: string; parent_id: string | null; block_type?: string | null } | null
+  if (!f || (f.parent_id ?? null) !== (parentId ?? null)) return fail('Could not save that order.')
+  const lane = await loadLane(admin, a.planId, f.parent_id ?? null, f.block_type ?? null)
+  if (!lane) return fail('Could not save that order.')
+  const writes = planSiblingOrder(lane, orderedIds)
+  if (!writes) return fail('This list changed while you were moving things. Refresh and try again.')
+  if (writes.length === 0) return ok()
+  if (!(await writeLaneOrder(admin, a.planId, writes))) return fail('Could not save that order.')
   done(slug)
   return ok()
 }
