@@ -356,28 +356,38 @@ export function inFlightCandidates(result, repo) {
   return result.ledgerOnly.every((l) => l.version > newestRepo) ? result.ledgerOnly : null
 }
 
-/** The open PRs that carry each ledger row's file, read through git (HYG-150's seam: one pulls
- *  listing, heads fetched with --filter=blob:none, file names from `git ls-tree`). Returns a Map of
- *  version to PR number; a row no open PR carries is absent. Throws when it cannot look. */
+/** Where each ledger row's file already is, outside this pull request's tree. First the base tip
+ *  the workflow fetched (origin/<base>): a migration PR that merged AFTER this PR's merge ref was
+ *  built has its file there, and no open PR carries it any more (HYG-159, ADR-1695: #3108 went red
+ *  at 03:54Z on 2026-09-30 because #3107 merged at 03:53Z). Then the open PRs, read through git
+ *  (HYG-150's seam: one pulls listing, heads fetched with --filter=blob:none, names from
+ *  `git ls-tree`). Returns a Map of version to the base branch name or a PR number; a row found in
+ *  neither place is absent. Throws when it cannot look. */
 export async function findInFlightCarriers({ rows, env = {}, fetchImpl = fetch, git }) {
   const repo = env.GITHUB_REPOSITORY
   const base = env.GITHUB_BASE_REF
   const token = env.GITHUB_TOKEN
-  if (!repo || !base || !token) throw new Error('no GITHUB_REPOSITORY, GITHUB_BASE_REF or GITHUB_TOKEN')
+  if (!base) throw new Error('no GITHUB_BASE_REF')
+  const wanted = new Map(rows.map((r) => [`${GIT_DIR}/${r.version}_${r.name}.sql`, r.version]))
+  const carriers = new Map()
+  const take = (names, carrier) => {
+    for (const name of names) {
+      const version = wanted.get(name)
+      if (version && !carriers.has(version)) carriers.set(version, carrier)
+    }
+  }
+  const lsTree = (rev) => git(['ls-tree', '--name-only', rev, '--', `${GIT_DIR}/`]).split('\n').filter(Boolean)
+  try {
+    take(lsTree(`origin/${base}`), base)
+  } catch {
+    // The base tip was not fetched: fall through to the open PRs, which is the stricter read.
+  }
+  if (rows.every((r) => carriers.has(r.version))) return carriers
+  if (!repo || !token) throw new Error('no GITHUB_REPOSITORY or GITHUB_TOKEN')
   const mine = Number(/^refs\/pull\/(\d+)\//.exec(env.GITHUB_REF ?? '')?.[1] ?? env.PR_NUMBER ?? 0)
   const pulls = (await fetchOpenPulls({ repo, base, token, fetchImpl })).filter((p) => p.number !== mine)
   const { fetched } = fetchPullHeads({ numbers: pulls.map((p) => p.number), git })
-  const wanted = new Map(rows.map((r) => [`${GIT_DIR}/${r.version}_${r.name}.sql`, r.version]))
-  const carriers = new Map()
-  for (const n of fetched) {
-    const names = git(['ls-tree', '--name-only', prRef(n), '--', `${GIT_DIR}/`])
-      .split('\n')
-      .filter(Boolean)
-    for (const name of names) {
-      const version = wanted.get(name)
-      if (version && !carriers.has(version)) carriers.set(version, n)
-    }
-  }
+  for (const n of fetched) take(lsTree(prRef(n)), n)
   return carriers
 }
 
@@ -386,11 +396,16 @@ function inFlightLines(rows, carriers) {
   return [
     '',
     `⚠️  check:migrations — ${rows.length} migration(s) are IN FLIGHT: applied to production, and their`,
-    '    file is on another open pull request that has not merged yet (HYG-158, ADR-1690):',
-    ...rows.map((r) => `      • ${r.version}_${r.name}.sql  (#${carriers.get(r.version)})`),
+    '    file is on another open pull request, or already merged to the base branch after this run',
+    '    began (HYG-158, ADR-1690; HYG-159, ADR-1695):',
+    ...rows.map((r) => {
+      const at = carriers.get(r.version)
+      return `      • ${r.version}_${r.name}.sql  (${typeof at === 'number' ? `#${at}` : `already on ${at}; update this branch`})`
+    }),
     '',
     `    Not failing THIS pull request: it adds or changes no file under ${DIR}, and every drifted`,
-    '      row is newer than this tree and carried by an open PR. Main, and any PR that touches a',
+    '      row is newer than this tree and carried by an open PR or already on the base branch. Main,',
+    '      and any PR that touches a',
     '      migration, still FAIL on this. If that PR is closed without merging, the next run here',
     '      fails too, because nothing carries the row any more.',
     '',
@@ -610,7 +625,7 @@ async function main() {
     }
     if (ledger.status === 'in-flight' && process.env.GITHUB_ACTIONS === 'true') {
       console.log(
-        '::warning title=check:migrations - migration in flight::Production has a migration whose PR has not merged yet. ' +
+        '::warning title=check:migrations - migration in flight::Production has a migration whose PR has not merged yet, or merged after this run began. ' +
           'This PR touches no migration, so it is not failed (HYG-158). Update this branch after that PR merges.',
       )
     }

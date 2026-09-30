@@ -120,6 +120,7 @@ density_by_city                      internal
 dm_conversation_summaries            authenticated
 enforce_circle_access_shape          public
 enforce_circle_member_cap            internal
+enforce_conversation_one_to_one      internal
 enforce_event_rsvp_capacity          internal
 enforce_space_ticket_tier_capacity   internal
 enforce_member_not_suspended         internal
