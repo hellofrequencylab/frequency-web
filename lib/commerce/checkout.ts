@@ -7,7 +7,8 @@
 //   profile  → destination charge to the maker's connected account (maker rake)
 //   space    → destination charge to the Space owner's connected account (plan rake)
 //   split    → two or more sellers in one cart: a plain charge on the platform carrying
-//              `transfer_group`, one transfer per seller to follow (LIVE-622's ledger)
+//              `transfer_group`, one transfer per seller created at settle from the ledger in
+//              ./transfers.ts (LIVE-622, ADR-1614)
 // Server-only. Flag-gated by payoutsLive() like every other billing path.
 
 import type Stripe from 'stripe'
@@ -31,6 +32,7 @@ import { canTakePayments } from './selling'
 import { getVariantsByIds } from './variants'
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
 import { planFundsFlow, splitTotals, type SellerSplit } from './funds-flow'
+import { settleSplitOrderTransfers } from './transfers'
 import { receiptEmailFor } from '@/lib/billing/receipt-address'
 import { commercePaymentMethodParams } from './payment-methods'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
@@ -617,7 +619,7 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // fact this update is holding.
     // ONE LITERAL, not a concatenation: the generated PostgREST types parse this string, and a built
     // one widens to `string` and types the result as GenericStringError[].
-    .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency')
+    .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency, funds_flow')
   const rows = (updated ?? []) as {
     id: string
     owner_kind: OrderOwnerKind
@@ -628,9 +630,17 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     platform_fee_cents: number
     buyer_profile_id: string | null
     currency: string
+    funds_flow: string | null
   }[]
 
   for (const row of rows) {
+    // PAY THE SELLERS OF A SPLIT ORDER (LIVE-622, ADR-1614). A destination charge paid its one seller
+    // as it landed; a separate order's charge paid nobody, so its transfers are planned (one ledger
+    // row per seller share) and created here, once, by the delivery that flipped the row. Never
+    // throws: a transfer that does not land stays planned or failed for the reconciler, which is
+    // also what finds a plan this call could not write.
+    if (row.funds_flow === 'separate') await settleSplitOrderTransfers(row.id)
+
     // Enforce inventory for this paid order: decrement_commerce_stock_atomic
     // (migration 20260819000000) locks each tracked-stock product, subtracts this
     // order's quantities, and is idempotent per order (a retried/concurrent settle
@@ -824,9 +834,11 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
       // The unwind follows the FUNDS FLOW (LIVE-621). A destination charge reverses its one transfer
       // and its application fee. A platform charge has neither. A SEPARATE order has neither ON THE
       // CHARGE either: its money landed on the platform and its transfers are separate objects, so
-      // `reverse_transfer` here would be refused by Stripe and dead-end the refund. Until LIVE-622
-      // creates those transfers the plain refund IS the whole unwind; LIVE-623 adds one reversal per
-      // created transfer, pro rata, beside it.
+      // `reverse_transfer` here would be refused by Stripe and dead-end the refund. The transfers
+      // LIVE-622 created at settle are rows in commerce_order_transfers; LIVE-623 reverses each one,
+      // pro rata, beside this refund. Until it lands the refund comes from the platform balance and
+      // the sellers keep their transfers, while a transfer not yet created is held (./transfers.ts
+      // pays no seller of a refunded order).
       ...(order.owner_kind === 'platform' || order.funds_flow === 'separate'
         ? {}
         : { reverse_transfer: true, refund_application_fee: true }),

@@ -24,6 +24,7 @@ beta_host_prompts
 business_intake
 challenge_qr_codes
 circle_transfer_offers
+commerce_order_transfers
 content_ratings
 creator_tips
 cron_run_markers
