@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-733",
+  "patch": {
+    "status": "done",
+    "closed": "2026-09-30",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/commerce/transfers.ts\",\"utf8\");const a=s.indexOf(\"export async function reconcileTransfers\");if(a<0){console.error(\"LIVE-733: reconcileTransfers is gone\");process.exit(1)}const b=s.indexOf(\"// 2.\",a);const step=s.slice(a,b<0?a+4000:b);if(!/plan_recovered/.test(step)){console.error(\"LIVE-733: the reconciler no longer plans a split order the settle missed\");process.exit(1)}if(!/await\\s+\\w*(Notice|notice|Notify|notify|Receipt|receipt)\\w*\\(/.test(step)){console.error(\"LIVE-733: the reconciler plans and pays a split order the settle missed, and sends its sellers no sale notice\");process.exit(1)}'",
+      "checked": "2026-09-30",
+      "note": "In-process, reads lib/commerce/transfers.ts. The step 1 block of reconcileTransfers (up to the \"// 2.\" marker) must still log plan_recovered and must await a notice call (sendRecoveredSplitSaleNotices). Fails on main at af22048b3. The behavior (each planned seller told once, the buyer not, a failed notice logged and no payout held) is locked by lib/commerce/transfers.test.ts and lib/commerce/order-receipt.test.ts."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-09-30 (ADR-1700). WHAT CHANGED: planTransfersForOrder returns the ids of the rows its own upsert inserted (rowIds). When reconcileTransfers step 1 recovers a plan, it awaits sendRecoveredSplitSaleNotices(orderId, rowIds) in lib/commerce/order-receipt.ts, which reads the order and runs the settle's own split half, sendSplitOrderReceipts, limited to those rows: a recovered seller gets the byte-identical LIVE-706 notice for their share, from the same loop, and the buyer gets nothing new (their receipt went out at the settle). ONCE: only the plan call that inserted a row gets its id, so a replay, a later run or a racing worker notifies nobody. NEVER A HELD PAYOUT: the rows are planned before the notice, a thrown notice logs commerce.transfer.recovered_notice_failed, a short one logs commerce.transfer.recovered_notice_missed, and step 2 pays either way. ReconcileSummary.noticedSellers carries the count to the cron line. Tests: lib/commerce/transfers.test.ts (recovered order notifies both sellers once across three runs; a second plan returns no ids; the settle path never sends a recovered notice; a thrown notice is logged and the sellers are still paid; a short notice is logged) and lib/commerce/order-receipt.test.ts (the recovered notices equal the settle's seller notices byte for byte, the buyer is not written to, only the given rows' sellers are told, empty ids read nothing, unreadable order or ledger sends nothing and says so). No migration. LEFT OPEN: a split order whose plan is first written by a partial refund (lib/commerce/split-refund.ts) still notifies no seller."
+  }
+}

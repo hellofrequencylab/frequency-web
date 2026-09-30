@@ -13,6 +13,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 //   7. A SPLIT order (LIVE-706) receipts the buyer with the lines grouped under each seller's name,
 //      and notifies each seller with a transfer row once, for their share only. A single-seller order
 //      never reads the transfer ledger and renders the same bytes it did before.
+//   8. A split order the reconciler planned after the settle missed it (LIVE-733) sends the sellers
+//      of the rows it is given the same notice the settle sends, and nobody else: not the buyer, not
+//      a seller whose row it was not given.
 
 const m = vi.hoisted(() => ({
   enqueueEmail: vi.fn(async (_p: Record<string, unknown>) => {}),
@@ -29,6 +32,9 @@ const m = vi.hoisted(() => ({
   itemsError: null as null | { message: string },
   /** The Journeys the order bought, as `journeySlugsForOrder` would resolve them (PROG-GD5). */
   journeySlugs: [] as string[],
+  /** commerce_orders by id, for the recovered notice's own read of the order (LIVE-733). */
+  orders: new Map<string, Record<string, unknown>>(),
+  ordersError: null as null | { message: string },
 }))
 
 vi.mock('./journey-fulfilment', () => ({ journeySlugsForOrder: async () => m.journeySlugs }))
@@ -61,6 +67,18 @@ vi.mock('@/lib/supabase/admin', () => ({
           }),
         }
       }
+      if (table === 'commerce_orders') {
+        return {
+          select: () => ({
+            eq: (_c: string, id: string) => ({
+              maybeSingle: async () => ({
+                data: m.ordersError ? null : m.orders.get(id) ?? null,
+                error: m.ordersError,
+              }),
+            }),
+          }),
+        }
+      }
       if (table === 'profiles') {
         return {
           select: () => ({
@@ -80,7 +98,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { sendOrderReceipts, ORDER_SOLD_NOTIFICATION_TYPE } from './order-receipt'
+import { sendOrderReceipts, sendRecoveredSplitSaleNotices, ORDER_SOLD_NOTIFICATION_TYPE } from './order-receipt'
 
 const spaceOrder = {
   id: 'order-1',
@@ -108,6 +126,8 @@ beforeEach(() => {
   m.transfersError = null
   m.tables.length = 0
   m.journeySlugs = []
+  m.orders.clear()
+  m.ordersError = null
 })
 
 // ── THE WELCOME (PROG-GD5) ───────────────────────────────────────────────────────────────────────
@@ -373,6 +393,82 @@ describe('sendOrderReceipts — a split order', () => {
     expect(buyer.text).toContain('Rosa Parks: $10')
     expect(m.notificationsInsert).toHaveBeenCalledTimes(2)
     warn.mockRestore()
+  })
+
+  // ── THE RECOVERED ORDER (LIVE-733) ─────────────────────────────────────────────────────────────
+  describe('sendRecoveredSplitSaleNotices', () => {
+    beforeEach(() => {
+      m.orders.set('order-2', {
+        id: 'order-2',
+        owner_kind: 'split',
+        owner_profile_id: null,
+        owner_space_id: null,
+        buyer_profile_id: 'buyer-1',
+        amount_cents: 3400,
+        currency: 'usd',
+      })
+    })
+
+    it('sends each seller it is given the exact notice the settle sends, and the buyer nothing', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-09-30T12:00:00Z'))
+      let settle: Record<string, string>[]
+      try {
+        await sendOrderReceipts(splitOrder)
+        settle = sent().filter((p) => p.to !== 'buyer@example.test')
+        vi.clearAllMocks()
+        await expect(sendRecoveredSplitSaleNotices('order-2', ['t1', 't2'])).resolves.toBe(2)
+      } finally {
+        vi.useRealTimers()
+      }
+      expect(sent().some((p) => p.to === 'buyer@example.test')).toBe(false)
+      expect(m.enqueueEmail).toHaveBeenCalledTimes(2)
+      expect(m.notificationsInsert).toHaveBeenCalledTimes(2)
+      const pick = (p: Record<string, string>) => ({ to: p.to, subject: p.subject, text: p.text, html: p.html })
+      expect(sent().map(pick)).toEqual(settle.map(pick))
+      expect(m.notificationsInsert.mock.calls.map((c) => c[0])).toEqual([
+        expect.objectContaining({ recipient_id: 'owner-1', type: ORDER_SOLD_NOTIFICATION_TYPE, reference_id: 'blue-door' }),
+        expect.objectContaining({ recipient_id: 'maker-1', type: ORDER_SOLD_NOTIFICATION_TYPE, reference_id: 'buyer-1' }),
+      ])
+      for (const p of sent()) expect(p.text).not.toContain('—')
+    })
+
+    it('a seller whose row it was not given is not told again', async () => {
+      await expect(sendRecoveredSplitSaleNotices('order-2', ['t2'])).resolves.toBe(1)
+      expect(sent().map((p) => p.to)).toEqual(['maker@example.test'])
+      expect(m.notificationsInsert).toHaveBeenCalledTimes(1)
+    })
+
+    it('no row ids reads nothing and sends nothing: a replay of the plan has none', async () => {
+      await expect(sendRecoveredSplitSaleNotices('order-2', [])).resolves.toBe(0)
+      expect(m.tables).toEqual([])
+      expect(m.enqueueEmail).not.toHaveBeenCalled()
+    })
+
+    it('an unreadable order or ledger sends nothing, says so, and never throws', async () => {
+      const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+      m.ordersError = { message: 'boom' }
+      await expect(sendRecoveredSplitSaleNotices('order-2', ['t1'])).resolves.toBe(0)
+      expect(err.mock.calls.some((c) => String(c[0]).includes('no seller was notified'))).toBe(true)
+      m.ordersError = null
+      m.transfersError = { message: 'boom' }
+      await expect(sendRecoveredSplitSaleNotices('order-2', ['t1'])).resolves.toBe(0)
+      expect(err.mock.calls.some((c) => String(c[0]).includes('split order transfers unreadable'))).toBe(true)
+      m.transfersError = null
+      await expect(sendRecoveredSplitSaleNotices('order-2', ['t-gone'])).resolves.toBe(0)
+      expect(err.mock.calls.some((c) => String(c[0]).includes('rows not found'))).toBe(true)
+      expect(m.enqueueEmail).not.toHaveBeenCalled()
+      expect(m.notificationsInsert).not.toHaveBeenCalled()
+      err.mockRestore()
+    })
+
+    it('a seller who cannot be resolved is logged and not counted as told', async () => {
+      m.spaces.clear()
+      const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+      await expect(sendRecoveredSplitSaleNotices('order-2', ['t1', 't2'])).resolves.toBe(1)
+      expect(err.mock.calls.some((c) => String(c[0]).includes('no seller to notify'))).toBe(true)
+      err.mockRestore()
+    })
   })
 })
 
