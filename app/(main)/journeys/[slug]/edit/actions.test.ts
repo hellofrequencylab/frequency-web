@@ -24,6 +24,8 @@ vi.mock('@/lib/auth', () => ({ getCallerProfile: mocks.getCallerProfile }))
 vi.mock('@/lib/journey-plans', () => ({ getPlan: mocks.getPlan }))
 vi.mock('@/lib/core/load-capabilities', () => ({ getGlobalCapabilities: mocks.getGlobalCapabilities }))
 vi.mock('@/lib/ai/journey-edit', () => ({ planJourneyEdits: mocks.planJourneyEdits }))
+// The edit gate itself (who may save) is locked in ./gate.test.ts (LIVE-732); here every caller may.
+vi.mock('@/lib/journeys/authoring', () => ({ canEditJourney: async () => true }))
 vi.mock('@/lib/pillars', () => ({ getPillars: mocks.getPillars }))
 vi.mock('@/lib/journeys/compose', () => ({
   pillarIdsBySlug: mocks.pillarIdsBySlug,
