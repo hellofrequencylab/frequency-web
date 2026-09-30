@@ -5,9 +5,10 @@
 // flags from Stripe, and read payout-readiness for the UI. Server-only.
 //
 // Per-PROFILE account: one human = one Stripe Express account (one bank + one KYC),
-// shared across every channel and persona they earn through. The per-persona
-// `profile_personas.stripe_account_id` override is reserved for the multi-legal-
-// entity case (a separate LLC) and is not wired in this phase.
+// shared across every channel and persona they earn through. Activating a money persona
+// requires this account to take charges and binds its id onto
+// `profile_personas.stripe_account_id` (LIVE-696); a separate account per legal entity
+// (a separate LLC) is not built.
 //
 // ENV-GATED, like the rest of billing: every function no-ops (returns null / an
 // empty status) when `stripe` is unconfigured, so the surface degrades cleanly

@@ -63,7 +63,6 @@ export const ELEMENTS: readonly ElementDef[] = [
       { key: 'tab.tags', label: 'Tags tab', kind: 'toggle', defaultOn: true, defaultRole: 'everyone', help: 'Browse by tag.' },
       { key: 'tab.spaces', label: 'Per-space categories', kind: 'toggle', defaultOn: true, defaultRole: 'everyone', help: 'A category for each Space you run.' },
       { key: 'tab.airwaves', label: 'Airwaves tab', kind: 'toggle', defaultOn: false, defaultRole: 'everyone', help: 'Recordings in the Loom (coming soon).' },
-      { key: 'aiCreate', label: 'AI Create', kind: 'toggle', defaultOn: false, defaultRole: 'editor', help: 'Generate a new Element with AI from inside Elements.' },
       { key: 'defaultScope', label: 'Opens on', kind: 'choice', choices: [{ value: 'mine', label: 'My uploads' }, { value: 'space', label: 'A space' }], default: 'mine', defaultRole: 'everyone', help: 'Which library the picker shows first.' },
     ],
   },
