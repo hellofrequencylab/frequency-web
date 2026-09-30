@@ -8,8 +8,8 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Self-serve partner persona claim/release (P2.7, ADR-163 System 2). Claiming lands
 // the persona in 'claimed' (pending review) — a staff operator verifies it from the
-// admin queue before its surfaces light up. Releasing suspends it. The per-persona
-// Stripe Connect binding (the money gate at 'active') is stubbed until Connect lands.
+// admin queue before its surfaces light up. Releasing suspends it. A member never sets
+// 'active' here: staff activate, and a money persona needs its payout account first (LIVE-696).
 export async function setPersona(persona: PartnerPersona, claim: boolean): Promise<ActionResult<void>> {
   const me = await getCallerProfile()
   if (!me) return fail('Sign in first.')

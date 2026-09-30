@@ -329,6 +329,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // advertising it here would trigger "Submitted URL marked noindex" in Search Console.
     { url: `${SITE_URL}/privacy`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${SITE_URL}/terms`, changeFrequency: "yearly", priority: 0.3 },
+    // The Space email acceptable-use policy, live since LIVE-729 (ADR-1673): public reference like the two above.
+    { url: `${SITE_URL}/space-email-policy`, changeFrequency: "yearly", priority: 0.3 },
     // Public double-opt-in subscribe landing (the confirm page is noindex + allowlisted in check-seo).
     { url: `${SITE_URL}/subscribe`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/help`, changeFrequency: "weekly", priority: 0.6 },
