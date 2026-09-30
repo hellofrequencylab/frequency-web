@@ -891,6 +891,10 @@ export async function updateImportField(
     return { ok: false, error: `This import is '${row.status}', not open for edits.` }
   }
 
+  // The path is an object key below (draft, contact, offering, ledger), so it must be one of the
+  // three shapes the review board ever sends before anything reads or writes with it.
+  if (!FIELD_PATH.test(path)) return { ok: false, error: 'That field path could not be updated.' }
+
   const draft = structuredClone((row.draft as unknown as BusinessProfile) ?? { name: '', type: 'business' })
   const ledger: ProvenanceLedger = structuredClone((row.ledger as ProvenanceLedger) ?? {})
 
@@ -1006,6 +1010,14 @@ function offeringPath(path: string): { index: number; key: string } | null {
 // radius of a polluted prototype is the whole process rather than this one draft. The guard is two
 // lines and costs nothing, so the trade is not close.
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
+// ...and an allowlist in front of it (HYG-143, CodeQL js/remote-property-injection, 6 alerts). The
+// denylist above answers "is this one of three bad names"; CodeQL reads only an anchored, wildcard-free
+// test as a barrier, and so should we: every ledger key the importer writes is a top-level field
+// (`tagline`), a contact field (`contact.phone`) or an offering field (`offerings[2].price`). A segment
+// must start with a letter, so `__proto__` fails here; `constructor` and `prototype` are ordinary
+// identifiers, which is why safeKey still runs at each write.
+const FIELD_PATH = /^(?:[A-Za-z][A-Za-z0-9]*|contact\.[A-Za-z][A-Za-z0-9_]*|offerings\[[0-9]{1,4}\]\.[A-Za-z][A-Za-z0-9_]*)$/
 
 /** Is this path segment safe to use as an object key? */
 function safeKey(k: string): boolean {

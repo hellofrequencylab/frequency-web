@@ -36,7 +36,20 @@ import {
   type MergeResult,
   type MergeTagsResult,
 } from '@/lib/practices/clean'
+import {
+  suggestPracticePlacement,
+  applyPlacementSuggestion,
+  type PlacementSuggestion,
+  type AcceptedPlacement,
+} from '@/lib/practices/suggest'
 import { screenPracticeForPublish, type PracticeScreenResult } from '@/lib/ai/practice-publish-screen'
+import {
+  draftPracticeCuration,
+  applyPracticeCuration,
+  MAX_CURATE_TAGS,
+  type PracticeCurationDraft,
+  type PracticeCurationApplied,
+} from '@/lib/ai/practice-curate'
 import {
   setJourneyFeatured,
   setPracticeFeatured,
@@ -418,6 +431,57 @@ export async function findPracticeDuplicatesAction(
 }
 
 /**
+ * Suggest a Pillar and Sub Focus for ONE practice from its nearest neighbours (LIVE-643, ADR-1606):
+ * the workspace row's explicit lookup, like the near-duplicate one beside it. Curator-gated,
+ * re-checked here. Null when the practice is placed, has no embedding yet, or its neighbours do
+ * not agree. No model call.
+ */
+export async function suggestPracticePlacementAction(
+  id: string,
+): Promise<ActionResult<{ suggestion: PlacementSuggestion | null }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (typeof id !== 'string' || !id) return fail('Pick a practice.')
+  try {
+    return ok({ suggestion: await suggestPracticePlacement(id) })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not read the neighbours.')
+  }
+}
+
+/**
+ * Accept a suggested placement (LIVE-643, ADR-1606). Curator-gated, re-checked server-side. The
+ * client sends only what it was shown; applyPlacementSuggestion re-reads the suggestion, refuses one
+ * that moved, and fills ONLY the empty fields through a guarded update, so a set Pillar is never
+ * overwritten.
+ */
+export async function acceptPracticePlacementAction(
+  id: string,
+  seen: AcceptedPlacement,
+): Promise<ActionResult<{ pillar: string | null; subFocus: string | null }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (typeof id !== 'string' || !id) return fail('Pick a practice.')
+  const pillarId = typeof seen?.pillarId === 'string' && seen.pillarId ? seen.pillarId : null
+  const subFocusId = typeof seen?.subFocusId === 'string' && seen.subFocusId ? seen.subFocusId : null
+  if (!pillarId && !subFocusId) return fail('Nothing to accept.')
+  try {
+    const written = await applyPlacementSuggestion(id, { pillarId, subFocusId })
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok(written)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not file the practice.')
+  }
+}
+
+/**
  * Bulk triage decision over the EXPLICIT ids the curator selected (the review queue's
  * "approve/reject these N" — the checkbox path, alongside the filtered-set path in
  * bulkPracticesByFilterAction). Curator-gated, re-checked server-side; each row goes through
@@ -540,6 +604,63 @@ export async function screenPracticeAction(
     return ok({ screen })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not screen the practice.')
+  }
+}
+
+/**
+ * Ask Vera to fill what a library practice left empty (LIVE-644, ADR-1607): a card hook when the
+ * summary is blank, tags when it has too few. Curator-gated. A PROPOSAL only: nothing is written
+ * until the curator accepts it through acceptPracticeCurationAction. Budget-gated inside
+ * draftPracticeCuration, which returns null when Vera cannot draft.
+ */
+export async function draftPracticeCurationAction(
+  id: string,
+): Promise<ActionResult<{ draft: PracticeCurationDraft }>> {
+  let caller: { id: string }
+  try {
+    caller = await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!id) return fail('No practice to fill.')
+  try {
+    const draft = await draftPracticeCuration(id, caller.id)
+    if (!draft) return fail('Vera cannot draft right now. Try again later, or fill it by hand.')
+    return ok({ draft })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not draft for the practice.')
+  }
+}
+
+/**
+ * Write what the curator accepted from Vera's proposal. Curator-gated. Fills only what is still
+ * empty (applyPracticeCuration re-checks at write): a hook someone wrote since the draft is kept,
+ * and every tag already on the practice stays. Inputs are re-validated here; the client never
+ * carries authority.
+ */
+export async function acceptPracticeCurationAction(
+  id: string,
+  accepted: { hook?: string | null; tags?: string[] },
+): Promise<ActionResult<{ applied: PracticeCurationApplied }>> {
+  let caller: { id: string }
+  try {
+    caller = await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!id) return fail('No practice to fill.')
+  const hook = typeof accepted?.hook === 'string' ? accepted.hook : null
+  const tags = Array.isArray(accepted?.tags)
+    ? accepted.tags.filter((t): t is string => typeof t === 'string').slice(0, MAX_CURATE_TAGS)
+    : []
+  if (!hook && tags.length === 0) return fail('Nothing to add.')
+  try {
+    const applied = await applyPracticeCuration(id, { hook, tags }, caller.id)
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ applied })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the practice.')
   }
 }
 

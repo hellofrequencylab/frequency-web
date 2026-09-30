@@ -9404,51 +9404,6 @@ export type Database = {
           },
         ]
       }
-      page_settings_events_backup_20260910: {
-        Row: {
-          header_image_focal: string | null
-          header_image_url: string | null
-          layout: Json | null
-          og_image_url: string | null
-          route: string | null
-          seo_description: string | null
-          seo_title: string | null
-          space_id: string | null
-          status: string | null
-          updated_at: string | null
-          updated_by: string | null
-          visibility_role: string | null
-        }
-        Insert: {
-          header_image_focal?: string | null
-          header_image_url?: string | null
-          layout?: Json | null
-          og_image_url?: string | null
-          route?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
-          space_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          visibility_role?: string | null
-        }
-        Update: {
-          header_image_focal?: string | null
-          header_image_url?: string | null
-          layout?: Json | null
-          og_image_url?: string | null
-          route?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
-          space_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          visibility_role?: string | null
-        }
-        Relationships: []
-      }
       pages: {
         Row: {
           data: Json

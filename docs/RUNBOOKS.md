@@ -1,6 +1,6 @@
 # Incident runbooks
 
-> The page you open at 03:00. Six failure modes, one section each, and every section answers the
+> The page you open at 03:00. Seven failure modes, one section each, and every section answers the
 > same questions in the same order: what says it is happening, what to open first, the repair, who
 > does each step, and how you know it is over. Technical doc, in git, per
 > [`DOCS-PROTOCOL.md`](DOCS-PROTOCOL.md). It serves the SLO table in
@@ -9,7 +9,10 @@
 >
 > **This page records no status.** No checkboxes, no done marks, no readings. What an incident
 > taught goes into an ADR in [`DECISIONS.md`](DECISIONS.md) or a row in
-> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json); what to open next time goes here.
+> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json); what to open next time goes here. The one exception is
+> the dated facts table in section 7: the backup configuration and the one rehearsal's timings are
+> what a restore decision is made from, in the hour it is made, so they live beside the procedure
+> (OWN-082, [ADR-1625](DECISIONS.md)). Re-read them when the plan changes.
 
 ## How to use this page
 
@@ -41,6 +44,7 @@
 | Database degradation | Sentry error-rate alert, if armed | weekly `db-usage` reading, red preview builds |
 | AI outage | nothing, by design | `ai_usage` going quiet, a feature pinned at its cap |
 | Deploy rollback | Vercel deploy-failed email; Sentry new-issue alert | `/api/status` `build.commit` |
+| Restore from backup | nothing: no signal detects a bad write, a dropped table or a deleted file | a member or the owner noticing; the Backups page lists what exists |
 
 ---
 
@@ -273,7 +277,8 @@ that cannot claim, and a cron that 500s on its first query.
   sweep". It is a trend, not a pager, and it says "Could not look" rather than "fine" when the token
   is gone.
 - **Not this section:** `check:migrations` failing with HTTP 401 is the `SUPABASE_ACCESS_TOKEN`
-  expiring, not the database (LIVE-273; it expires 2026-12-09).
+  expiring or being refused, not the database (LIVE-273; the current token, rotated 2026-09-30,
+  expires 2027-09-28).
 
 **What to open first.**
 
@@ -301,14 +306,17 @@ that cannot claim, and a cron that 500s on its first query.
   restart.
 - **Slow queries or CPU.** The Supabase Query Performance report and `get_advisors` for performance
   name the statement. An index is a file in `supabase/migrations/` in a PR, never a hand-applied fix
-  under pressure ([`WORKFLOW.md`](WORKFLOW.md), the one shared database).
+  under pressure ([`WORKFLOW.md`](WORKFLOW.md), the one shared database). To prove the fix holds
+  under load, run `scripts/load-soak.mjs` against the fix's preview after the incident, never during
+  it: a preview reads the same database, so load on it is load on the one that is already degraded
+  ([`OBSERVABILITY-BASELINES.md`](OBSERVABILITY-BASELINES.md) section 2d). **agent**
 - **Credentials.** The error names the variable (`lib/supabase/env.ts`). Set it in Vercel and
   redeploy. **owner**
-- **Data loss, or a restore is on the table.** Owner only, announced first: a restore replaces the
-  whole shared project. **Backup tier: UNKNOWN. Retention: UNKNOWN. RPO: UNKNOWN. RTO: UNKNOWN,
-  never measured.** OWN-082 is the row that reads the tier in the dashboard, rehearses one restore
-  and writes the four numbers into this paragraph. Until it closes, do not assume point-in-time
-  recovery exists, and do not promise a member anything shorter than a day.
+- **Data loss, or a restore is on the table.** Go to section 7. Owner only, announced first. In
+  short (read 2026-09-29): daily physical backups, about 7 days kept, **no point-in-time recovery**,
+  so up to 24 hours of writes can be lost (RPO); the database comes back in about 12 minutes as a
+  new project (RTO, measured), and the whole site takes longer than that, unmeasured. **Uploaded
+  files have no backup at all.** Do not promise a member anything shorter than a day.
 
 **How you know it is over.** A failed preview build re-run goes green (the control); `select 1`
 answers; the Sentry rate is back under 0.5% and the group has stopped; the outbox drains (section 2
@@ -426,3 +434,104 @@ right now. A merge to `main` is a deploy.
 the SHA you expect, the Sentry group has stopped, the next real deploy prints all six gates green,
 and the cause is an ADR in [`DECISIONS.md`](DECISIONS.md) if it taught a rule, or a row if it did
 not.
+
+---
+
+## 7. Restore from backup
+
+**Serves** no SLO row. This is the section for a bad write, a dropped table, a migration that
+destroyed data, or a project that is gone. Section 4 is for a database that is slow or refusing;
+come here only when the data itself is wrong or missing. Owner only, and announced first: the
+database is the whole product, and local, preview and production are one Supabase project
+([`WORKFLOW.md`](WORKFLOW.md)). Decided in [ADR-1625](DECISIONS.md) under OWN-082.
+
+**The facts, read 2026-09-29** from the owner's dashboard screenshots (Database, Backups) and timed
+in one rehearsal the same day, with the restored copy checked by read-only SQL. Re-read them when the
+plan or an add-on changes.
+
+| Fact | Value | How it was read |
+|---|---|---|
+| Project | Frequency Community, `azsqfeonabsbmemvddqd`, us-west-2, Postgres 17 | dashboard |
+| Plan | Pro (organisation) | dashboard, billing |
+| Backup tier | Scheduled backups, **daily, physical**, taken about 11:45 to 11:51 UTC | Backups page |
+| Retention | 8 backups listed (22 to 29 Sep 2026), so about **7 days** | Backups page |
+| Point-in-time recovery | **Not enabled** ("available as an add-on"). Owner ruling: daily is enough for now; revisit at 1,000 profiles or when paid orders are regular, whichever is first ([ADR-1625](DECISIONS.md)) | Backups page; ruling 2026-09-29 |
+| RPO | **Up to 24 hours.** Shown in the rehearsal: the copy from the 11:48:49 UTC backup held 745 migration ledger rows ending at `20270345009410`; production held 748 ending at `20270345009700`, because 9500, 9600 and 9700 were applied at 16:28 UTC, after the backup | rehearsal, SQL |
+| RTO, database | **12 minutes**, click to ready: Restore to new project clicked 18:14 UTC (11:14 PDT), project ready 18:26 UTC | rehearsal, timed |
+| RTO, whole site | **Longer than 12 minutes and not measured.** The steps under "Not restored" below are all manual | not rehearsed |
+| Storage files | **No backup exists.** "Database backups do not include objects stored via the Storage API." The `storage.objects` rows come back; the files they describe do not | Backups page |
+| Cost of a restore | The new project bills at the same compute ($14.83 a month shown) for as long as it exists | restore dialog |
+
+The rehearsal copy ("Frequency Temp", `wfgnxpvxddrzqyykrktn`) matched production where it should,
+checked at 18:39 UTC: 60 profiles (equal), newest profile 2026-09-27 16:48 (equal), 526
+`storage.objects` rows (equal, metadata only), database 255 MB against production's 261 MB.
+
+**What says it is happening.**
+
+- **Nothing pages.** No signal in this repo detects a bad write, a dropped table or a deleted file.
+  It arrives as a member report, an empty page that had content yesterday, or a migration PR whose
+  author says "that dropped more than I meant".
+- **The migration ledger is the fastest timeline.** `select version, name from
+  supabase_migrations.schema_migrations order by version desc limit 10;` says what ran and in what
+  order; `scripts/check-migrations.mjs` compares it with `supabase/migrations/`.
+- **The Backups page** (Database, Backups, Scheduled backups) lists the backups that exist and when
+  each was taken. That list is the menu: the newest backup older than the damage is the one to use.
+
+**What to open first.**
+
+1. **owner** Database, Backups in the Supabase dashboard for project `azsqfeonabsbmemvddqd`. Note
+   the time of the newest backup taken before the damage.
+2. **agent** The ledger query above, and the merged PRs since that backup, for what the restore
+   will undo. Every write after the backup is lost, not only the bad one.
+3. **agent** Decide whether a restore is the right tool at all. A few wrong rows are usually a
+   forward fix: read the rows out of a restored copy (steps 1 to 4 below, then stop) and write them
+   back to production in a reviewed migration or a one-off script. Only a broken or missing project
+   justifies moving the site.
+
+**The repair.** Always restore **to a new project**. Never click **Restore** beside a backup in the
+Scheduled backups list, during a rehearsal or otherwise: that restores in place and **overwrites
+production**, losing every write since that backup with no way back.
+
+1. **owner** Database, Backups, then **Restore to new project**. Pick the backup. Keep the region
+   (us-west-2) and the same compute. Read the dialog: it lists what does not come across (below).
+   Confirm and note the clock time.
+2. **owner** Wait for the new project to report ready. Measured: 12 minutes on 2026-09-29, for a
+   261 MB database.
+3. **agent** Prove the copy is the backup you meant with read-only SQL on the new project: `select
+   count(*) from profiles;`, `select max(created_at) from profiles;`, `select count(*) from
+   storage.objects;` and the ledger query above. Compare with production and with the backup time.
+4. **agent** List the migrations applied after the backup (in `supabase/migrations/`, not in the
+   copy's ledger). They must be re-applied in version order before code that expects them is
+   pointed at the copy.
+5. **owner** Only if the site is moving to the copy, reconfigure by hand everything the restore does
+   not carry:
+   - **Vercel environment:** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
+     `SUPABASE_SERVICE_ROLE_KEY` (the three `lib/supabase/env.ts` reads) set to the new project's URL
+     and keys, then redeploy. GitHub's `SUPABASE_PROJECT_REF` variable and `SUPABASE_ACCESS_TOKEN`
+     secret for the CI and maintenance reads.
+   - **Auth settings and keys:** site URL, redirect URLs, providers, SMTP and email templates. New
+     keys mean every member is signed out and signs in again.
+   - **Edge Functions:** redeploy `supabase/functions/embed`.
+   - **Extensions and database settings** that are not in a migration.
+   - **Storage:** bucket settings, and the files themselves, which exist nowhere else. Rows that
+     store absolute image URLs name the old project's host or the `api.frequencylocal.com` custom
+     domain, so the custom domain has to move to the new project for them to resolve.
+   - **Read replicas**, if any are ever added.
+6. **owner** After a rehearsal, **delete the new project** the same day (Project Settings, General).
+   It bills at production's compute for as long as it exists, and a paid-tier project cannot be
+   paused.
+
+**Not restored**, per Supabase's own restore dialog and Backups page: storage objects (the files) and
+storage settings; Edge Functions; auth settings and API keys; database extensions and settings; read
+replicas. Database backups do not include objects stored via the Storage API, so there is no copy of
+an uploaded file anywhere. OWN-084 is the ruling on paying for one.
+
+**Rehearse** once a quarter, the next before launch day (2026-12-21), and again whenever the plan,
+the compute size or the point-in-time add-on changes. A rehearsal is steps 1 to 4 and 6 against the
+newest backup: about half an hour of the owner's time, and the compute for the hour or so the copy
+exists. Write the new timings into the facts table with the date.
+
+**How you know it is over.** The site serves from the project you chose, `/api/status` answers, a
+member can sign in, the ledger query shows every migration in `supabase/migrations/` applied, and
+the cause is an ADR in [`DECISIONS.md`](DECISIONS.md) or a row. After a rehearsal: the scratch
+project is deleted and no longer bills.

@@ -17,7 +17,7 @@ import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import { CATEGORY_OPTIONS } from '@/lib/events/options'
-import { collapseSeriesRows, SERIES_WIDE_READ } from '@/lib/events/series'
+import { collapseSeries, onePerSeries, SERIES_WIDE_READ } from '@/lib/events/series'
 import { goingCountsByEvent } from '@/lib/events/going-counts'
 import { tierSummariesByEvent, priceLabelFromSummary } from '@/lib/events/tier-prices'
 import { eventPayoutReadyMap } from '@/lib/events/payout-readiness'
@@ -728,22 +728,9 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
           ? 'relevance'
           : 'date'
 
-  // Collapse repeating series (ADR-897). AFTER the facet filter and BEFORE the sort, deliberately:
-  // filtering first is what makes "the earliest eligible row" mean "the earliest occurrence INSIDE
-  // the active date facet", so `?date=weekend` elects the Saturday date rather than the series' next
-  // date generally. Folding before the sort keeps every sort branch below working on one row per
-  // representative. `listableFrom` is passed straight through as the floor so the query and the fold
-  // literally share one value and can never disagree about what counts as upcoming.
-  //
-  // Before this, one materialised daily series occupied up to 61 consecutive cards on /events and a
-  // weekly one ~9 (the production read: "Meld - Community Cowork" and "Breathe Connect Expand"
-  // filling the index).
-  const collapsedEvents = collapseSeriesRows(filteredEvents, {
-    perSeries: cardsPerSeries,
-    upcomingFrom: listableFrom,
-  })
-
-  const sortedEvents = [...collapsedEvents].sort((a, b) => {
+  // ONE comparator for the whole list. It orders the cards AND, under a stated sort, elects which
+  // date of a series stands for it (SERIES-RANK, ADR-1680), so the two can never disagree.
+  const compareEvents = (a: EventRow, b: EventRow): number => {
     if (effectiveSort === 'distance') {
       const da = eventDistanceKm(a)
       const db = eventDistanceKm(b)
@@ -776,7 +763,31 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       return b.featured_at.localeCompare(a.featured_at)
     }
     return a.starts_at.localeCompare(b.starts_at)
+  }
+
+  // Collapse repeating series (ADR-897). AFTER the facet filter and BEFORE the sort, deliberately:
+  // filtering first is what makes "the earliest eligible row" mean "the earliest occurrence INSIDE
+  // the active date facet", so `?date=weekend` elects the Saturday date rather than the series' next
+  // date generally. Folding before the sort keeps the sort below working on one row per
+  // representative. `listableFrom` is passed straight through as the floor so the query and the fold
+  // literally share one value and can never disagree about what counts as upcoming.
+  //
+  // Before this, one materialised daily series occupied up to 61 consecutive cards on /events and a
+  // weekly one ~9 (the production read: "Meld - Community Cowork" and "Breathe Connect Expand"
+  // filling the index).
+  //
+  // WHICH DATE STANDS FOR A SERIES (SERIES-RANK, ADR-1680). Soonest-first elects the next date, as it
+  // always did. Under a sort the member chose (Nearest, Most going, Best match) the same comparator
+  // elects instead, so a weekly class whose Thursday date has 40 going ranks on that 40, not on
+  // Tuesday's 3. Ties fall back to the earliest date inside the fold, so nothing moves where the
+  // dates rank alike.
+  const folded = collapseSeries(filteredEvents, {
+    perSeries: cardsPerSeries,
+    upcomingFrom: listableFrom,
+    elect: effectiveSort === 'date' ? 'earliest' : compareEvents,
   })
+
+  const sortedEvents = [...folded.rows].sort(compareEvents)
 
   const goingEvents = sortedEvents.filter((e) => myRsvps.has(e.id))
 
@@ -787,14 +798,20 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // homes doesn't apply to a public gathering. A CIRCLE event plots at its hosting
   // circle's PUBLIC city-level coordinates (ADR-186 privacy). Either way, online events
   // are skipped, and the toggle hides itself when there's nothing to map.
-  const mapPins: EventMapPin[] = sortedEvents
-    .filter((e) => e.attendance_mode !== 'online' && e.category !== 'online')
-    .map((e): EventMapPin | null => {
+  //
+  // ONE PIN PER SERIES (SERIES-PIN, ADR-1680). The card list carries up to `cardsPerSeries` dates of
+  // one series, all at one venue, so plotting it row by row stacked identical pins on one spot. The
+  // pin is the series' first card, and its popup says how many other dates there are, counted by
+  // the same fold that built the list.
+  const mapPins: EventMapPin[] = onePerSeries(sortedEvents, folded)
+    .filter(({ row: e }) => e.attendance_mode !== 'online' && e.category !== 'online')
+    .map(({ row: e, moreDates }): EventMapPin | null => {
       const base = {
         id: e.id,
         slug: e.slug,
         title: e.title,
         whenLabel: formatWhen(e.starts_at, nowDate),
+        moreDates,
       }
       // Circle event → the circle's public coordinates (privacy-safe city pin).
       if (e.scope_type === 'circle' && circleCoords[e.scope_id]) {

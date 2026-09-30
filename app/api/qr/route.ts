@@ -16,7 +16,8 @@ import { staffCan } from '@/lib/core/staff-roles'
 import { atLeastRole } from '@/lib/core/roles'
 import { getCapabilityOverrides } from '@/lib/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isSiteLink, toAbsoluteSiteUrl, shortLinkUrl, nodeUrl } from '@/lib/qr/links'
+import { isSiteLink, toAbsoluteSiteUrl, shortLinkUrl } from '@/lib/qr/links'
+import { signedNodeUrl } from '@/lib/qr/node-code'
 import { renderQrPng, renderQrSvg } from '@/lib/qr/render'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { renderStyledQrPng, styleWithInlinedLogo } from '@/lib/qr/raster'
@@ -61,10 +62,10 @@ export async function GET(request: Request) {
     }
   } else if (nodeId) {
     // A check-in code (nodes): encodes /n/<id>, styled like a dynamic link. The encoded url carries
-    // the node's `secret` (the anti-forgery gate in lib/engagement/verify.ts), so this branch hands
+    // a signed code (lib/qr/node-code.ts, the anti-forgery gate in lib/engagement/verify.ts), so this branch hands
     // out a credential — it must be gated to whoever may MANAGE nodes, exactly like /admin/qr's
     // createNode/updateNode (requireAdmin('host', { staff: 'qr' })). Without this any signed-in user
-    // could read the secret out of the returned SVG and forge check-ins (IDOR). The `code`/`text`
+    // could read a signed code out of the returned SVG and forge check-ins (IDOR). The `code`/`text`
     // branches encode only public short links, so they stay open to any signed-in caller.
     const staff = await getStaffMember().catch(() => null)
     const overrides = await getCapabilityOverrides().catch(() => undefined)
@@ -73,9 +74,9 @@ export async function GET(request: Request) {
     if (!canManageNodes) return new Response('Not allowed.', { status: 403 })
 
     const admin = createAdminClient()
-    const { data } = await admin.from('nodes').select('style, secret').eq('id', nodeId).maybeSingle()
+    const { data } = await admin.from('nodes').select('style').eq('id', nodeId).maybeSingle()
     if (!data) return new Response('Unknown code.', { status: 404 })
-    target = nodeUrl(nodeId, data.secret)
+    target = signedNodeUrl(nodeId)
     style = parseStyle(data.style)
     defaultName = `checkin-${nodeId.slice(0, 8)}`
   } else {

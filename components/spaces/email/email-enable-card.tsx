@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,11 +11,18 @@ import { setSpaceEmailEnabled } from '@/lib/spaces/campaigns-actions'
 
 // EMAIL ENABLE GATE (ENTITY-SPACES-BUILD §C Phase 3, "per-space kill-switch" + the acknowledgment).
 // When email is OFF for a Space, the owner sees this card instead of the composer. Turning it on
-// REQUIRES a plain-language anti-spam acknowledgment (not legal terms; counsel-gated AUP is deferred).
+// REQUIRES a plain-language anti-spam acknowledgment (not legal terms). The card links the live Space
+// email policy (SPACE_EMAIL_POLICY_HREF, app/space-email-policy; LIVE-729, ADR-1673, owner ruling
+// 2026-09-30 "Ship without counsel review" on OWN-085) so the owner can read the rules before turning
+// email on. The checkbox is still the one thing the owner confirms: linking the policy adds no new
+// consent step and records nothing new.
 // The action is gated on canEditProfile server-side and flips the backbone kill-switch
 // (setSpaceEmailEnabled, @/lib/spaces/email-toggle), then refreshes the surface to show the composer.
 //
 // Copy passes CONTENT-VOICE: plain, concrete, honest, no narrated feelings, no em/en dashes.
+
+/** The live Space email acceptable-use policy (app/space-email-policy/page.tsx). */
+const SPACE_EMAIL_POLICY_HREF = '/space-email-policy'
 
 export function EmailEnableCard({
   spaceId,
@@ -57,6 +65,19 @@ export function EmailEnableCard({
           </p>
         </div>
       </div>
+
+      <p className="text-body-sm text-muted">
+        Read the{' '}
+        <Link
+          href={SPACE_EMAIL_POLICY_HREF}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-primary-strong hover:underline"
+        >
+          Space email policy
+        </Link>{' '}
+        before you turn it on. It covers who you can email, what you can send, and the daily limit.
+      </p>
 
       <Checkbox
         checked={acknowledged}

@@ -7,6 +7,7 @@ import {
   getCirclePracticeAssignData,
   type CirclePracticeAssignData,
 } from '@/app/(main)/circles/admin-actions'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "This week's practice" module (ADR-515 Phase 4, the CIRCLE rail, the 'engage' spine cell).
 // Renders in the page admin rail on /circles/[slug]; the server returns null unless the caller holds
@@ -18,6 +19,8 @@ import {
 export function CirclePracticeModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readPractice = useEntityRailRead('circle', 'practice', getCirclePracticeAssignData)
 
   const [data, setData] = useState<CirclePracticeAssignData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -25,7 +28,7 @@ export function CirclePracticeModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCirclePracticeAssignData(slug)
+    readPractice(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -38,7 +41,7 @@ export function CirclePracticeModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readPractice])
 
   if (!slug) return null
   if (loading) {

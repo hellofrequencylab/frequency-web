@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
+import { belongsToRoomScope, isScopedRoomVisibility, scopedRoomRefusal } from '@/lib/messages/room-scope'
 
 type RoomVisibility = 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
 
@@ -116,13 +117,26 @@ export async function joinRoom(roomId: string) {
   const admin = createAdminClient()
   const { data: room } = await admin
     .from('rooms')
-    .select('id, visibility')
+    .select('id, visibility, scope_id')
     .eq('id', roomId)
     .maybeSingle()
 
   if (!room) throw new Error('Room not found')
   if (room.visibility === 'private') {
     throw new Error('This room is private. You need an invite to join.')
+  }
+  // A Circle, Hub, Nexus, Outpost or Channel room is joinable only from inside its scope
+  // (LIVE-651, ADR-1626). The upsert below runs on the admin client, so RLS is not the gate:
+  // this is. Anything that is not plainly public must pass the scope check, fail-closed.
+  if (room.visibility !== 'public') {
+    const scoped = { visibility: room.visibility as string, scope_id: room.scope_id as string | null }
+    if (!(await belongsToRoomScope(admin, scoped, caller.id))) {
+      throw new Error(
+        isScopedRoomVisibility(scoped.visibility)
+          ? scopedRoomRefusal(scoped.visibility)
+          : 'You cannot join this room.',
+      )
+    }
   }
 
   // Insert membership (UNIQUE on PK prevents duplicates)
@@ -304,12 +318,20 @@ export async function inviteToRoom(roomId: string, profileId: string) {
   // room via the admin client — ADR site-audit SEC-1).
   const { data: room } = await admin
     .from('rooms')
-    .select('visibility')
+    .select('visibility, scope_id')
     .eq('id', roomId)
     .maybeSingle()
   if (!room) throw new Error('Room not found')
-  if ((room as { visibility: string }).visibility === 'private' && !callerMembership.is_admin) {
+  const roomScope = room as { visibility: string; scope_id: string | null }
+  if (roomScope.visibility === 'private' && !callerMembership.is_admin) {
     throw new Error('Only a room admin can invite people to a private room')
+  }
+  // The same scope gate joinRoom applies, asked of the INVITEE (LIVE-651, ADR-1626): a member
+  // of a Circle's room cannot pull a friend from outside the Circle in through the invite door.
+  if (roomScope.visibility !== 'public' && roomScope.visibility !== 'private') {
+    if (!(await belongsToRoomScope(admin, roomScope, profileId))) {
+      throw new Error('That person is not in the place this room belongs to, so they cannot be added.')
+    }
   }
 
   // The invitee must be an accepted friend of the caller (same gate as starting a group

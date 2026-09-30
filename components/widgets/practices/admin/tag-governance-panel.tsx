@@ -71,7 +71,7 @@ function MergeControl({
       {/* `h-8` keeps the control level with the IconButton beside it; the kit's `py-2` is a
           padding, so a stated height wins outright and the row does not grow. The focus halo now
           comes from the primitive, which means this field stops painting the amber CHROME ring it
-          had been asking for by hand (`focus:ring-primary/40`) and takes the calm neutral one that
+          had been asking for by hand (a primary ring at 40%) and takes the calm neutral one that
           every other field on the site wears. */}
       <Select
         id={`merge-${tag.id}`}

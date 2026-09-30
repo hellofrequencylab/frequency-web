@@ -20,13 +20,29 @@
 // lib/spaces/email.ts), which re-runs EVERY anti-spam gate (email function enabled, kill-switch, daily
 // cap, per-recipient consent + suppression, the outreach_sends ledger) with NO caller session. So the
 // drip runner adds NO new send path and inherits all gating for free.
+//
+// A SUSPENDED OR ARCHIVED SPACE HOLDS, IT DOES NOT STOP (LIVE-727, ADR-1662). The seam refuses a Space
+// that is not active with SPACE_NOT_ACTIVE_EMAIL_ERROR. Every other refusal stops the enrollment, which
+// for a suspension would silently throw away every contact's place in the sequence. So that one refusal
+// releases the claim back to 'enrolled' at the SAME step, due again in SPACE_HOLD_RECHECK_MS, and logs
+// the hold. When staff reactivate the Space, the next pass after the recheck sends the step it was on.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendSpaceCampaignSystem, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
+import {
+  sendSpaceCampaignSystem,
+  SPACE_UNSUBSCRIBE_PLACEHOLDER,
+  SPACE_NOT_ACTIVE_EMAIL_ERROR,
+} from '@/lib/spaces/email'
 import { normalizeDelayHours } from '@/lib/spaces/automation'
 import { isError } from '@/lib/action-result'
 import { log, briefError } from '@/lib/log'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
+import { postalFooterHtml } from '@/lib/email-studio/postal'
+
+/** How long a held enrollment (its Space is suspended or archived) waits before the runner looks at it
+ *  again. Short enough that a reactivated Space resumes within the hour; long enough that a suspended
+ *  Space's enrollments are not re-read on every 5-minute pass. */
+export const SPACE_HOLD_RECHECK_MS = 60 * 60 * 1000
 
 /** What one drip-fire pass reports. */
 export interface DripRunResult {
@@ -40,6 +56,9 @@ export interface DripRunResult {
   completed: number
   /** Enrollments stopped this pass (consent revoked / sequence gone / send failed terminally). */
   stopped: number
+  /** Enrollments HELD this pass because their Space is suspended or archived (LIVE-727): released back
+   *  to 'enrolled' at the same step, due again after SPACE_HOLD_RECHECK_MS. */
+  held: number
 }
 
 /** The subset of columns the fire path reads off a due enrollment. */
@@ -78,7 +97,7 @@ function renderStepHtml(body: string): string {
         `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`,
     )
     .join('')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p></div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
 }
 
 /** The enabled steps of a sequence, ascending by order. */
@@ -93,7 +112,7 @@ function orderedEnabled(steps: StepRow[]): StepRow[] {
  * error stops THAT enrollment ('stopped') and moves on; the pass never throws.
  */
 export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
-  const empty: DripRunResult = { due: 0, claimed: 0, sent: 0, completed: 0, stopped: 0 }
+  const empty: DripRunResult = { due: 0, claimed: 0, sent: 0, completed: 0, stopped: 0, held: 0 }
   const db = createAdminClient() as unknown as { from: (t: string) => Record<string, (...a: unknown[]) => unknown> }
   const nowIso = new Date().toISOString()
   // A 'sending' row claimed before this instant is a dead sender (scan2 L6-10): eligible to re-claim.
@@ -136,6 +155,7 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
   let sent = 0
   let completed = 0
   let stopped = 0
+  let held = 0
 
   for (const row of dueRows) {
     if (!row.space_id) {
@@ -201,6 +221,14 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
           html: renderStepHtml(step.body),
           recipients: [{ contactId: row.contact_id, email: row.email }],
         })
+        if (isError(res) && res.error === SPACE_NOT_ACTIVE_EMAIL_ERROR) {
+          // (LIVE-727) The Space is suspended or archived. HOLD, never stop: release the claim at the
+          // same step, due again after the recheck window, so a reactivated Space picks up where it was.
+          await hold(db, row.id, row.current_step, new Date(Date.now() + SPACE_HOLD_RECHECK_MS).toISOString())
+          held++
+          log.warn('cron.space_drips.held_space_not_active', { id: row.id, spaceId: row.space_id })
+          continue
+        }
         if (isError(res)) {
           // The seam refused entirely (kill-switch off, plan lost email, cap hit). STOP this enrollment
           // so it is not retried forever; the operator re-enables + re-enrolls. Logged for visibility.
@@ -230,7 +258,7 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
     }
   }
 
-  return { due: dueRows.length, claimed, sent, completed, stopped }
+  return { due: dueRows.length, claimed, sent, completed, stopped, held }
 }
 
 // ── IO helpers (untyped admin-client seam; space_drip_enrollments not in generated types yet) ──────
@@ -340,6 +368,25 @@ async function advance(
       last_sent_at: new Date().toISOString(),
     })
     .eq('id', id)
+}
+
+/** HOLD a claimed enrollment (LIVE-727): back to 'enrolled' at the SAME step, due again at `nextRunAt`.
+ *  Nothing was sent, so last_sent_at is untouched. If this write fails the row stays 'sending' under its
+ *  lease and the next pass after the lease re-claims it, so a lost hold is retried, not dropped. */
+async function hold(
+  db: { from: (t: string) => Record<string, (...a: unknown[]) => unknown> },
+  id: string,
+  step: number,
+  nextRunAt: string,
+): Promise<void> {
+  try {
+    const q = db.from('space_drip_enrollments') as unknown as {
+      update: (p: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
+    }
+    await q.update({ status: 'enrolled', current_step: step, next_run_at: nextRunAt }).eq('id', id)
+  } catch {
+    // best-effort: see the doc comment (the lease re-claims a row whose hold write was lost).
+  }
 }
 
 /** Mark a claimed enrollment to a terminal status ('done' or 'stopped'). Best-effort. */

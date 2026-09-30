@@ -87,7 +87,7 @@ on top of normal Community membership.
 | Partner | Who | Unlocks | Money |
 |---|---|---|---|
 | 📣 **Collaborator** | influencers, authors, teachers, speakers **with an audience** | bring-your-audience tools; their Practices/Journeys in a **featured directory**; **influencer program** (rewards tied to their activity + gamification) | rewards only; no affiliate money, by owner ruling (ADR-1569) |
-| 🧘 **Practitioner** | healers, breathwork, yogis **running their own client network** | **host paywalled Programs** (Practices + Journeys) + **gamify clients' progress**; private Channel + private Circles, under the Frequency brand | Stripe Connect (verified) |
+| 🧘 **Practitioner** | healers, breathwork, yogis **running their own client network** | **sell what they do** through the live money paths: **tickets** and **Market products** from any account (ADR-914), **paid bookings** and **memberships** from a Space, **Journeys** from a paid Space (ADR-1397). Re-scoped by [ADR-1675](DECISIONS.md) (LIVE-709): the old "paywalled Programs" promise named something nothing can sell | Stripe Connect (verified) |
 | 🏪 **Business** | local businesses | business **listing** + network integration; **loyalty rewards**; **CRM**, **web builder**, deep business tools | payments + loyalty |
 | 🏢 **Organization** | nonprofits / orgs | a full suite tied to whoever's tagged with the org: their own **branded Space website**, CRM, gamification, promotion | tenant billing |
 
@@ -107,7 +107,7 @@ the money gate at `active` (stubbed until Connect is configured).
 Hook tenant**. On the main Frequency site that admin **does not bleed over**: org people are
 Frequency participants *tied to* the org (an organizer is usually Crew, may also be Host/Guide/
 Mentor). **Collaborator vs Practitioner** = *audience / personal-brand + affiliate* vs
-*run-your-own-network + gamify-your-clients*.
+*run-your-own-network + sell-what-you-do*.
 
 ## System 3: Admin (internal platform staff)
 

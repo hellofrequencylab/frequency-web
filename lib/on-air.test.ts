@@ -6,6 +6,7 @@ import {
   buildSessionDispatch,
   cycleSeconds,
   dispatchOpener,
+  fallbackSessionDispatch,
   modeForMindless,
   patternBySlug,
   ringScaleAt,
@@ -197,6 +198,31 @@ describe('mode → activity noun label map (PD0-1 / PD7-1)', () => {
     // An unmapped kind still returns clean, neutral copy.
     expect(dispatchOpener(null)).toBe('Nicely done.')
     expect(statSessionLabel(null)).toBe('This session')
+  })
+})
+
+// LIVE-674: the reveal's last-resort line (the cached daily Dispatch) names THIS session's activity.
+describe('fallbackSessionDispatch (PD0-5)', () => {
+  const cached = { copy: 'Same time tomorrow. Bring one practice.', actionHref: '/on-air', actionLabel: 'See you then' }
+
+  it('leads the cached line with the opener for what was just done, keeping its button', () => {
+    expect(fallbackSessionDispatch('walk', cached)).toEqual({ ...cached, copy: 'Nice walk. Same time tomorrow. Bring one practice.' })
+    expect(fallbackSessionDispatch('timer', cached).copy).toBe('Good sit. Same time tomorrow. Bring one practice.')
+    expect(fallbackSessionDispatch('yoga', cached).copy.startsWith('Nice flow. ')).toBe(true)
+  })
+
+  it('the same cached line reads right after two different sessions the same day', () => {
+    expect(fallbackSessionDispatch('timer', cached).copy).toMatch(/^Good sit\./)
+    expect(fallbackSessionDispatch('run', cached).copy).toMatch(/^Good run\./)
+  })
+
+  it('falls back to the steady template, still with the opener, when there is no cached line', () => {
+    expect(fallbackSessionDispatch('stretch', null)).toEqual({
+      copy: 'Nice stretch. Same time tomorrow. Bring one practice. The streak does the rest.',
+      actionHref: '/feed',
+      actionLabel: 'Back to feed',
+    })
+    expect(fallbackSessionDispatch(null, null).copy.startsWith('Nicely done. ')).toBe(true)
   })
 })
 

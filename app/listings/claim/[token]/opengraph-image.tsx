@@ -42,7 +42,7 @@ export default async function Image({ params }: { params: Promise<{ token: strin
     })
   }
 
-  let pill = 'Listing'
+  let pill: string
   let cover: string | null = null
   if (claim.kind === 'classifieds') {
     const l = await getMarketListing(claim.listingId)

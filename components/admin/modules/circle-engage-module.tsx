@@ -12,6 +12,7 @@ import {
   type CircleEngageData,
 } from '@/app/(main)/circles/admin-actions'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Engage" module (ADMIN-RAIL.md Phase 7, the 'engage' spine cell). Renders in the page
 // admin dock on /circles/[slug]; the server returns null unless the caller holds circle.assignTask.
@@ -24,6 +25,8 @@ const fieldLabel = labelClasses
 export function CircleEngageModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readEngage = useEntityRailRead('circle', 'engage', getCircleEngageData)
 
   const [data, setData] = useState<CircleEngageData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -41,7 +44,7 @@ export function CircleEngageModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCircleEngageData(slug)
+    readEngage(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -54,7 +57,7 @@ export function CircleEngageModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readEngage])
 
   if (!slug) return null
   if (loading) {

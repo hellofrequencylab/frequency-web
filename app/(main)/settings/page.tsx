@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { User, Palette, Bell, MapPin, Shield, CreditCard, Users } from 'lucide-react'
+import { User, Palette, Bell, Smartphone, MapPin, Shield, CreditCard, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,12 +14,13 @@ import { ConnectionsSection } from './connections/section'
 import { AccountSection } from './account/section'
 import { PlanSection } from './billing/section'
 import { MyMembershipsSection } from './memberships/section'
+import { InstallSettingsCard } from '@/components/push/install-card'
 
 // The member Settings suite as ONE page (DAWN 2 screen pass, per
 // design_handoff/dawn/ui_kits/screens/settings.html): a chip section-rail up top, then
 // the whole suite stacked — Appearance (the skin picker leads), the four-channel
-// notification grid, Connections and location, Account and privacy, Plan and billing,
-// then Memberships (Spaces this member belongs to, LIVE-423).
+// notification grid, Install the app (LIVE-703), Connections and location, Account and
+// privacy, Plan and billing, then Memberships (Spaces this member belongs to, LIVE-423).
 // Each section keeps the exact forms + server actions its old standalone route had (the
 // old routes now redirect to their anchor here); this page only composes them.
 //
@@ -40,6 +41,7 @@ export const metadata: Metadata = {
 const SECTIONS = [
   { id: 'appearance', label: 'Appearance', Icon: Palette },
   { id: 'notifications', label: 'Notifications', Icon: Bell },
+  { id: 'install', label: 'Install the app', Icon: Smartphone },
   { id: 'connections', label: 'Connections and location', Icon: MapPin },
   { id: 'account', label: 'Account and privacy', Icon: Shield },
   { id: 'plan', label: 'Plan and billing', Icon: CreditCard },
@@ -125,6 +127,17 @@ export default async function SettingsPage({
         <Suspense fallback={<SectionSkeleton rows={6} />}>
           <NotificationsSection />
         </Suspense>
+      </SettingsSection>
+
+      {/* The permanent way to install (LIVE-703). The one-time card after an RSVP or a post is the
+          other; this one is always here. Client-only: what installing looks like depends on the
+          browser, so there is nothing to fetch. */}
+      <SettingsSection
+        id="install"
+        title="Install the app"
+        intro="Put Frequency on your home screen and open it like any other app."
+      >
+        <InstallSettingsCard />
       </SettingsSection>
 
       <SettingsSection

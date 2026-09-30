@@ -206,6 +206,16 @@ Everything below follows from that, and §9's wrong verdict followed from not ha
   ceiling, so Vercel stores a cache it accepts. Separately, `node_modules` over **1.25 GiB** fails
   the build: a trim can absorb the compiler cache growing, nothing can absorb the install growing.
   Fail-safe plus the gate that notices it fired (rule 6), in one file.
+- **Before it trims, it holds (HYG-140, [ADR-1656](DECISIONS.md)).** The Turbopack cache is a
+  log-structured database: every warm build adds tables and index files and the engine compacts only
+  when it chooses, so on 2026-09-29 a cold 1293 MiB grew past the trim point within a few builds and
+  the trim fired three times in 22 production builds, each followed by a cold compile. Its files
+  cannot be pruned by age (each table is referenced by an index) and `next internal post-build`
+  reclaimed nothing. So `prebuild` (`scripts/snapshot-turbopack-cache.mjs`) hard-links the cache the
+  build RESTORED, and when the new one is over the trim point the gate puts the restored one back:
+  the upload stays under, the next build compiles warm. After `HOLD_LIMIT` holds in a row, on a
+  compiler upgrade, or when the restored cache is itself over, the trim runs as before and prints
+  why. The log line is `HELD the compiler cache … Held N of 6`.
 - **🔴 The trim may never touch `.next/cache/fetch-cache`, and this is why.** It used to drop
   subdirectories **biggest-first**, so that growth in a directory nobody had thought of would still
   be caught. `.next/cache` also holds the **incremental fetch cache**, and page-data collection
@@ -218,16 +228,19 @@ Everything below follows from that, and §9's wrong verdict followed from not ha
   build can do and deleting it is not ([ADR-1086](DECISIONS.md)).
 - **The threshold is in Vercel's units, and it says so.** Vercel weighs the **packed** archive; this
   script can only see raw bytes, and the two ran **~2:1 apart** while a comment claimed ~3%. The
-  conversion is one named constant, `PACKED_PER_RAW = 0.53` (`scripts/check-cache-budget.mjs`,
-  `PACKED_PER_RAW_MEASURED = '2026-08-19'`). ✅ **It is settled, not provisional** — this paragraph
+  conversion is one named constant, `PACKED_PER_RAW = 0.55` (`scripts/check-cache-budget.mjs`,
+  `PACKED_PER_RAW_MEASURED = '2026-09-29'`). ✅ **It is settled, not provisional** — this paragraph
   used to say `0.50` and call it provisional because the raw and packed readings came from
   different builds. ADR-1113 closed exactly that caveat on 2026-08-24 (`HYG-015`) with five
   PAIRED readings, each printing an estimate beside its own build's `Uploading build cache` line:
-  the implied ratio came out 0.524–0.526 against the constant of 0.53, i.e. accurate to 1% and
-  rounded toward firing the trim early. Four later paired readings agree, two of them exact.
-  🔴 **Do not "correct" this back toward 0.264.** That is the node_modules-only mix; near the
-  threshold the cache is compiler-heavy by definition, which is the mix 0.53 was derived on. A
-  probe holds it in a two-sided 0.52–0.54 band.
+  the implied ratio came out 0.524–0.526 against the then-constant of 0.53, i.e. accurate to 1% and
+  rounded toward firing the trim early. 🔴 **Re-derived 2026-09-29 (HYG-136, ADR-1619):** a
+  production build estimated 1.38 GB at 0.53 and uploaded 1.42 GB, implying 0.5454. Rounded UP to
+  0.55, the same rule as 0.5254 → 0.53. The real archive had already passed the 1.40 GB trim point
+  while the estimate said it had not. 🔴 **Do not "correct" this back toward 0.264.** That is the
+  node_modules-only mix; near the threshold the cache is compiler-heavy by definition. A probe
+  holds it in a two-sided 0.52–0.56 band. The compiler cache's growth is `HYG-140`, not a budget
+  raise.
 
 ### 11. The bytes a member's phone parses are an artifact too. 🔒 `check:shell-weight`
 
@@ -308,7 +321,8 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
    `check:cache-budget` (rule 10), `check:build-fanout` (ADR-1211), `check:notfound-routes`
    (ADR-1267). That is **six**; if you count fewer, your copy of this list is stale — check
    `package.json`'s `postbuild`. A ⚠️ trim line from
-   `check:cache-budget` is not a failure, but it is telling you the cache is at its ceiling.
+   `check:cache-budget` is not a failure, but it is telling you the cache is at its ceiling; a
+   ⚠️ `HELD` line is the same gate keeping the restored compiler cache instead (ADR-1656).
 2. `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test` (which now carries six of the contract
    guards directly — ADR-1011) · every guard in `ci.yml`'s `guards=( )` array (the workflow prints
    `${#guards[@]}` rather than a hardcoded count, because the hardcoded one drifted twice).
