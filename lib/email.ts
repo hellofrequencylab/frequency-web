@@ -15,6 +15,7 @@
 import { Resend } from 'resend'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { envString } from '@/lib/env/string'
+import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 import { enqueue, type JobLane } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 // Email Studio (Phase 4) transactional seam: renders an in-house email from its EDITABLE template when an
@@ -268,11 +269,15 @@ export async function sendScanIntroEmail(params: {
   })
 }
 
-// Footer contact line — the physical mailing address (CAN-SPAM) when configured,
-// else org identity. Set COMPANY_POSTAL_ADDRESS for full compliance.
+// Footer contact line: the physical mailing address (CAN-SPAM). COMPANY_POSTAL_ADDRESS wins when it is set;
+// unset or blank falls back to the platform postal line every other footer prints (lib/email-studio/postal.ts,
+// LIVE-728, ADR-1663). It used to fall back to the site host, so with the var never set these footers carried
+// no address at all.
+function postalAddress(): string {
+  return envString('COMPANY_POSTAL_ADDRESS', PLATFORM_POSTAL_LINE)
+}
 function orgContactLine(): string {
-  const addr = process.env.COMPANY_POSTAL_ADDRESS
-  return addr ? escapeHtml(addr) : `Frequency™ · ${BASE_URL.replace(/^https?:\/\//, '')}`
+  return escapeHtml(postalAddress())
 }
 
 function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: {
@@ -307,7 +312,6 @@ function scanIntroText({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
 }): string {
   const who = inviterName || 'A friend'
   const hey = recipientName ? `Hey ${recipientName}` : 'Hey'
-  const addr = process.env.COMPANY_POSTAL_ADDRESS
   return `${hey}
 
 Your friend ${who} invited you to join The Quest. Hopefully they told you a little about our mission to create and connect community.
@@ -319,7 +323,7 @@ Join us here: ${joinUrl}
 Frequency™
 
 A one-time invite from ${who}; we won't add you to any marketing list. To opt out so you never hear from us: ${unsubscribeUrl}
-${addr ? addr : `Frequency™ · ${BASE_URL}`}`
+${postalAddress()}`
 }
 
 // ── Signup recovery (the one note signup_leads was built for, LIVE-170 / ADR-1274) ─────────────
@@ -367,7 +371,6 @@ function signupRecoveryHtml({ firstName, resumeUrl }: { firstName: string | null
 
 function signupRecoveryText({ firstName, resumeUrl }: { firstName: string | null; resumeUrl: string }): string {
   const heading = firstName ? `${firstName}, your account is one step from done.` : 'Your account is one step from done.'
-  const addr = process.env.COMPANY_POSTAL_ADDRESS
   return `${heading}
 
 You started setting up a Frequency account and stopped partway. Picking it back up takes about two minutes, and the same door at /join is still open.
@@ -375,7 +378,7 @@ You started setting up a Frequency account and stopped partway. Picking it back 
 Finish signing up: ${resumeUrl}
 
 One note, sent once, because this address was used to start an account at Frequency. We will not add you to any list. If that was not you, ignore this and nothing happens.
-${addr ? addr : `Frequency™ · ${BASE_URL}`}`
+${postalAddress()}`
 }
 
 // ── Weekly community digest ───────────────────────────────────────────────────
@@ -1821,7 +1824,7 @@ ${claimUrl}
 Want to see it first? View the event: ${eventUrl}
 
 ${who} listed your event on Frequency, a place to find and host local gatherings. You're getting this once so you can claim it or ignore it. Not your event? No action needed.
-Frequency™ · ${BASE_URL}
+${postalAddress()}
 `
 }
 
