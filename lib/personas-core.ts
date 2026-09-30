@@ -115,3 +115,10 @@ export function canStaffTransition(from: PersonaState, to: PersonaState): boolea
   if (to === 'active' && !CONNECT_WIRED) return false
   return STAFF_TRANSITIONS[from]?.includes(to) ?? false
 }
+
+/** Whether a money persona in `state` is waiting on the Connect binding: it is verified (or active)
+ *  and Connect is not wired yet. Read here, beside the flag, so a caller's branch depends on the
+ *  row's state and not on a constant it imported (HYG-143, CodeQL js/trivial-conditional). */
+export function awaitingConnect(state: PersonaState): boolean {
+  return !CONNECT_WIRED && (state === 'verified' || state === 'active')
+}

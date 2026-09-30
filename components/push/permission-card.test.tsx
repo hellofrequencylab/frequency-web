@@ -6,8 +6,8 @@ import { createRoot, type Root } from 'react-dom/client'
 // LIVE-701. Push permission is asked ONLY by the "Turn on notifications" tap. Locked here, one test
 // per path a member's browser can be on: mounting never asks; the tap asks inside the gesture; a
 // denial removes the button and is never asked again; an iPhone Safari tab gets the Home Screen
-// step instead of a dead button; a browser without the APIs gets a plain line; the one-time card
-// really is one time.
+// step instead of a dead button; a browser without the APIs gets a plain line. (The one-time card
+// is DeviceNudge now, tested in device-nudge.test.tsx.)
 
 const { saveSubscription } = vi.hoisted(() => ({ saveSubscription: vi.fn() }))
 vi.mock('./actions', () => ({ saveSubscription }))
@@ -216,57 +216,5 @@ describe('enablePushFromTap', () => {
   })
 })
 
-describe('PushNudge', () => {
-  async function nudge(context: 'rsvp' | 'circle' = 'rsvp') {
-    const { PushNudge } = await import('./permission-card')
-    return mount(<PushNudge context={context} />)
-  }
-
-  it('shows once per device, and asks only from its button', async () => {
-    const el = await nudge()
-    expect(el.textContent).toContain('Want a reminder before it starts?')
-    expect(requestPermission).not.toHaveBeenCalled()
-    // A second eligible card on the same load (a client navigation to a Circle) stays away.
-    act(() => root!.unmount())
-    container!.remove()
-    const second = await nudge('circle')
-    expect(second.textContent).toBe('')
-    // And on the next load of this device, too.
-    act(() => root!.unmount())
-    container!.remove()
-    vi.resetModules()
-    const nextLoad = await nudge('circle')
-    expect(nextLoad.textContent).toBe('')
-  })
-
-  it('Not now puts it away', async () => {
-    const el = await nudge('circle')
-    const notNow = Array.from(el.querySelectorAll('button')).find((b) => b.textContent === 'Not now')!
-    await act(async () => { notNow.click() })
-    expect(el.textContent).toBe('')
-    expect(window.localStorage.getItem('frequency.pushNudge')).toBe('dismissed')
-  })
-
-  it('stays away when a tap cannot help: granted, denied, or no push at all', async () => {
-    for (const p of ['granted', 'denied'] as const) {
-      permission = p
-      const el = await nudge()
-      expect(el.textContent).toBe('')
-      act(() => root!.unmount())
-      container!.remove()
-      root = null
-    }
-    removePushApis()
-    const el = await nudge()
-    expect(el.textContent).toBe('')
-    expect(window.localStorage.getItem('frequency.pushNudge')).toBeNull()
-  })
-
-  it('on an iPhone Safari tab it explains the Home Screen step instead of offering a button', async () => {
-    setNav('userAgent', IPHONE)
-    removePushApis()
-    const el = await nudge()
-    expect(el.textContent).toContain('Add to Home Screen')
-    expect(button(el)).toBeUndefined()
-  })
-})
+// The one-time card beside an RSVP, a post or a Circle moved to DeviceNudge (LIVE-703), which
+// carries this ask and the install ask in one card: device-nudge.test.tsx.

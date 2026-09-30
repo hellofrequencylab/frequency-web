@@ -305,7 +305,10 @@ that cannot claim, and a cron that 500s on its first query.
   restart.
 - **Slow queries or CPU.** The Supabase Query Performance report and `get_advisors` for performance
   name the statement. An index is a file in `supabase/migrations/` in a PR, never a hand-applied fix
-  under pressure ([`WORKFLOW.md`](WORKFLOW.md), the one shared database).
+  under pressure ([`WORKFLOW.md`](WORKFLOW.md), the one shared database). To prove the fix holds
+  under load, run `scripts/load-soak.mjs` against the fix's preview after the incident, never during
+  it: a preview reads the same database, so load on it is load on the one that is already degraded
+  ([`OBSERVABILITY-BASELINES.md`](OBSERVABILITY-BASELINES.md) section 2d). **agent**
 - **Credentials.** The error names the variable (`lib/supabase/env.ts`). Set it in Vercel and
   redeploy. **owner**
 - **Data loss, or a restore is on the table.** Go to section 7. Owner only, announced first. In

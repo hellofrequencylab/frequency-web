@@ -900,7 +900,8 @@
         "components/spaces/checkin-code-card.tsx",
         "components/spaces/email/email-enable-card.tsx",
         "components/spaces/membership-join-card.tsx",
-        "components/walkthroughs/walkthrough-card.tsx"
+        "components/walkthroughs/walkthrough-card.tsx",
+        "components/push/permission-card.tsx"
       ],
       "excludeReasons": {
         "app/(main)/admin/studio/recommendation-card.tsx": "An advisory panel, not a browse card: a severity chip, a finding, and a propose-then-confirm apply button. There is no entity and no href for EntityCard to link to.",
@@ -924,16 +925,17 @@
         "components/spaces/checkin-code-card.tsx": "The same QR panel shape for a Space check-in node, including the true-white quiet zone a scanner requires behind the modules.",
         "components/spaces/email/email-enable-card.tsx": "An enable gate: the plain-language anti-spam acknowledgment that must be ticked before the campaign composer appears.",
         "components/spaces/membership-join-card.tsx": "One membership tier as price, interval, benefits and a Join button. A pricing panel with no entity page behind it to link.",
-        "components/walkthroughs/walkthrough-card.tsx": "A dismissible in-feed prompt: name, description, Start (opens the lightbox) and Not now. No href, so there is nothing for a browse card to link."
+        "components/walkthroughs/walkthrough-card.tsx": "A dismissible in-feed prompt: name, description, Start (opens the lightbox) and Not now. No href, so there is nothing for a browse card to link.",
+        "components/push/permission-card.tsx": "The push permission panel (LIVE-701, ADR-1629): the Settings > Notifications device panel and a one-time nudge, each a line of state plus one Turn on notifications button (the Button primitive) or a Not now link. A permission prompt with no entity and no href, the same shape as walkthrough-card and location-timezone-card."
       },
       "baseline": 1,
       "frozen": {
-        "at": "2026-09-21",
+        "at": "2026-09-29",
         "value": 1,
-        "direction": "raised",
-        "basis": "7d03df5ee63f",
-        "reason": "components/billing/payout-prompt-card.tsx (LIVE-425, PR #2800) is a contextual prompt panel, not a browse entity. EntityCard/PersonCard/StatCard/RowCard are all browse-list primitives and none of them fits a headline+body+action notice, so there is no primitive here to compose.",
-        "from": 0
+        "direction": "rebased",
+        "basis": "a162099752b1",
+        "reason": "Basis only, count unchanged at 1: components/push/permission-card.tsx (LIVE-701, #3060) joined the exclude list with its reason, because it is a push permission prompt panel, not a browse card any of EntityCard/PersonCard/StatCard/RowCard fits (HYG-149, ADR-1653).",
+        "from": 1
       },
       "history": [
         {
@@ -970,6 +972,13 @@
           "to": 1,
           "direction": "raised",
           "reason": "components/billing/payout-prompt-card.tsx (LIVE-425, PR #2800) is a contextual prompt panel, not a browse entity. EntityCard/PersonCard/StatCard/RowCard are all browse-list primitives and none of them fits a headline+body+action notice, so there is no primitive here to compose."
+        },
+        {
+          "at": "2026-09-29",
+          "from": 1,
+          "to": 1,
+          "direction": "rebased",
+          "reason": "Basis only, count unchanged at 1: components/push/permission-card.tsx (LIVE-701, #3060) joined the exclude list with its reason, because it is a push permission prompt panel, not a browse card any of EntityCard/PersonCard/StatCard/RowCard fits (HYG-149, ADR-1653)."
         }
       ]
     },

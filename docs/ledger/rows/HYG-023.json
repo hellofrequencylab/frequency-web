@@ -1,0 +1,10 @@
+{
+  "id": "HYG-023",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const S='scripts/check-stored-links.mjs',T='scripts/check-stored-links.test.ts',B='docs/BUILD-BACKLOG.json';if(!fs.existsSync(B))process.exit(79);const miss=[];if(!fs.existsSync(S))miss.push(S+' does not exist: the census has no instrument, only two hand-rolled row probes');if(!fs.existsSync(T))miss.push(T+' does not exist: the detector is unproven');let b;try{b=require('./scripts/lib/ledger.mjs').loadBacklog()}catch{process.exit(79)}const rows=(b.entries||[]).filter(e=>e.id==='LIVE-104'||e.id==='LIVE-108');if(rows.length!==2)process.exit(79);for(const r of rows){const c=(r.verify||{}).cmd||'';if(/next\\.config/.test(c)&&!/check-stored-links/.test(c))miss.push(r.id+' still re-implements the census walk and the redirect-table parse inline ('+c.length+' chars of node -e) instead of calling the shared checker')}if(miss.length){console.error(miss.join('\\n'));process.exit(1)}process.exit(0)\"",
+      "note": "Measures the CONSEQUENCE — the shared instrument exists, it has a test, and the two row probes actually CALL it instead of each carrying a copy of the census walk and the redirect-table parse. A file that merely exists does not close it: the probes must stop re-implementing next.config.ts parsing inline. Exits 79 if the backlog or the two rows cannot be read, so 'I could not look' never spells the same as 'I found nothing'. HYG-148: reads the merged view (base file plus docs/ledger fragments) through scripts/lib/ledger.mjs, ADR-1635."
+    }
+  }
+}

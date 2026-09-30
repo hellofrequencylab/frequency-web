@@ -201,3 +201,23 @@ describe("business seeder — a platform admin may act on another operator's row
     expect(applyIntake).toHaveBeenCalled()
   })
 })
+
+// HYG-143 (CodeQL js/remote-property-injection): the field path is an object key on the draft, its
+// contact block, an offering and the ledger, so only the three shapes the review board sends get
+// that far. Anything else is refused before a write, and nothing is saved.
+describe('updateImportField field paths', () => {
+  it.each(['tagline', 'about', 'contact.phone'])('accepts the review-board path %s', async (path) => {
+    const res = await actions.updateImportField(ROW_ID, path, { kind: 'drop' })
+    expect(res.ok).toBe(true)
+  })
+
+  it.each(['__proto__', 'contact.__proto__', 'offerings[0].__proto__', 'constructor.prototype', 'contact.', 'tagline '])(
+    'refuses %s before any write',
+    async (path) => {
+      const res = await actions.updateImportField(ROW_ID, path, { kind: 'edit', value: 'x' })
+      expect(res).toEqual({ ok: false, error: 'That field path could not be updated.' })
+      expect(saveDraft).not.toHaveBeenCalled()
+      expect(({} as Record<string, unknown>).x).toBeUndefined()
+    },
+  )
+})

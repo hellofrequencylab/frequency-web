@@ -91,4 +91,33 @@ describe('safeUploadPreviewSrc', () => {
     expect(safeUploadPreviewSrc(undefined)).toBeNull()
     expect(safeUploadPreviewSrc('')).toBeNull()
   })
+
+  // HYG-137: the payloads the CodeQL xss-through-dom alert was about, asserted at the preview
+  // sink itself rather than only through safeImageSrc.
+  it('refuses markup, credentials and script schemes at the preview sink', () => {
+    for (const hostile of [
+      `blob:https://app.local/${Q}><img src=x onerror=alert(1)>`,
+      `blob:https://app.local/x${A} onerror=${A}alert(1)`,
+      'blob:https://app.local/a b<c>',
+      'blob:javascript:alert(1)',
+      'https://user:pw@evil.test/a.jpg',
+      `https://cdn.example.com/a${Q}b.jpg`,
+      'java\nscript:alert(1)',
+      'vbscript:msgbox(1)',
+      'data:text/html,<script>alert(1)</script>',
+      '//evil.test/a.jpg',
+    ]) {
+      expect(safeUploadPreviewSrc(hostile), hostile).toBeNull()
+    }
+  })
+
+  it('never returns a character that could end or open an HTML attribute', () => {
+    const upload = `${HTTP}?t=1790000000000`
+    for (const t of [BLOB, upload, `${HTTP}?x=${Q}<>`, `blob:https://app.local/${Q}><b>`]) {
+      const out = safeUploadPreviewSrc(t)
+      if (out !== null) expect(out, t).not.toMatch(/["'<>`\s\\]/)
+    }
+    expect(safeUploadPreviewSrc(upload)).toBe(upload)
+  })
 })
+

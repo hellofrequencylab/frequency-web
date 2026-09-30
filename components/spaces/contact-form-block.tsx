@@ -95,7 +95,7 @@ export function ContactFormBlock({
           role, so the Space's theme and brand accent reach it exactly as they reach every sibling
           block. Locked by lib/theme/eyebrow-role.test.ts. */}
       {eyebrow?.trim() && <Eyebrow>{eyebrow}</Eyebrow>}
-      <h2 className="font-display text-page-title uppercase tracking-tight text-balance text-text sm:text-3xl">
+      <h2 className="font-display text-page-title uppercase tracking-tight text-balance text-text sm:text-display-h3">
         {heading}
       </h2>
       {body?.trim() && <p className="mt-3 text-body-sm leading-relaxed text-muted">{body}</p>}

@@ -16,7 +16,7 @@ import { adminScopeFor, railArchetypeFor, type AdminScope } from '@/lib/layout/p
 import type { HubSpec } from '@/components/layout/admin-bar/hub-rail'
 import type { OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 import { appsForScope, lockedAppsForScope } from '@/lib/apps/for-scope'
-import { mergeAppOverrides, effectiveMinRole } from '@/lib/apps/overrides'
+import { mergeAppOverrides, effectiveMinRole, dropDisabledApps } from '@/lib/apps/overrides'
 import { APPS } from '@/lib/apps/catalog'
 import type { App, AppViewer } from '@/lib/apps/types'
 import { isSpineApp } from '@/lib/apps/access'
@@ -394,11 +394,12 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // applyOverrides entirely, and since they are the ONLY editable App set at global scope, the global
   // App-overrides manager (/admin/page-layout/apps, which defaults to scope=global) was a complete
   // no-op: disable / reorder / min_role changes saved and badged "Override", but nothing changed for
-  // any viewer. Apply the overlay when the panel's scope IS global — there `appOverrides` are the
-  // matching global-scope overrides these personal apps belong to; on an entity page the personal set
-  // stays unoverridden rather than pick up a wrong-scope override. (Threading the global overrides
-  // onto entity-scope pages so a globally-disabled personal app also hides there is a follow-up.)
-  const personalApps = scope?.kind === 'global' ? applyOverrides(personalGlobalApps) : personalGlobalApps
+  // any viewer. At global scope `appOverrides` are the global rows these personal apps belong to, so
+  // the whole overlay applies. On any other scope the shell's map already carries every global
+  // DISABLE (resolveScopeAppOverrides, LIVE-686), so only the disable applies here: an App off for
+  // everyone is off on /people/<handle> too, while a global reorder or role floor stays global.
+  const personalApps =
+    scope?.kind === 'global' ? applyOverrides(personalGlobalApps) : dropDisabledApps(personalGlobalApps, overrides)
 
   // The management (page-scoped) editor apps, with any personal app filtered out so the global
   // scope's personal set never doubles as a management category on a global-scope page. Operator

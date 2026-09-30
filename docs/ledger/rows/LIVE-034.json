@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-034",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');let d;try{d=require('./scripts/lib/ledger.mjs').loadBacklog()}catch{process.exit(79)}const rows=(d.entries||[]).filter(e=>e.verify&&e.verify.kind==='cmd'&&e.id!=='LIVE-034');if(rows.length<15)process.exit(79);const RUNNER=/\\\\b(vitest|jest|playwright\\\\s+test)\\\\b|\\\\b(pnpm|npm|yarn)\\\\s+(run\\\\s+)?test\\\\b/;const bad=rows.filter(e=>RUNNER.test(e.verify.cmd)).map(e=>e.id);if(bad.length){console.error('probe(s) spawn a test runner: '+bad.join(', '));process.exit(1)}process.exit(0)\"",
+      "note": " HYG-148: reads the merged view (base file plus docs/ledger fragments) through scripts/lib/ledger.mjs, ADR-1635."
+    }
+  }
+}

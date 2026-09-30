@@ -189,7 +189,7 @@ export function ListingContactDialog({
                   <label htmlFor="listing-contact-offer" className="block text-2xs font-semibold uppercase tracking-wide text-muted">
                     Your offer <span className="font-normal normal-case text-muted">(optional)</span>
                   </label>
-                  <div className="flex items-center gap-2 rounded-control border border-border bg-surface-elevated/50 px-3 py-2 focus-within:border-primary">
+                  <div className="flex items-center gap-2 rounded-control border border-border bg-surface-elevated/50 px-3 py-2 focus-within:border-border-strong">
                     <Tag className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
                     <span className="text-body-sm text-muted">$</span>
                     <Input
