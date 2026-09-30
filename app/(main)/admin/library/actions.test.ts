@@ -129,6 +129,17 @@ vi.mock('@/lib/library/versions', () => ({
   },
 }))
 
+// The stored proof (LIVE-580): logged, so a test can read that it follows the protection.
+vi.mock('@/lib/library/proof-object', () => ({
+  writeLibraryProof: async (path: string) => {
+    log.push(`proof:write:${path}`)
+    return true
+  },
+  removeLibraryProof: async (path: string | null) => {
+    log.push(`proof:remove:${path}`)
+  },
+}))
+
 const { updateLibraryAssetMeta, protectLibraryAsset } = await import('./actions')
 
 const ID = '11111111-2222-4333-8444-555555555555'
@@ -372,5 +383,31 @@ describe('protectLibraryAsset: Protected moves the original off the open web (LI
 
   it('refuses an id that is not a uuid before it reads anything', async () => {
     expect(await protectLibraryAsset('a1', true)).toEqual({ error: 'Missing asset id.' })
+  })
+})
+
+describe('protectLibraryAsset: the stored proof follows the protection (LIVE-580)', () => {
+  it('writes the proof once the master is private, before the public copy goes', async () => {
+    seedImage()
+    expect(await protectLibraryAsset(ID, true)).toEqual({ ok: true })
+    const write = log.indexOf('proof:write:root/b.png')
+    expect(write).toBeGreaterThan(log.findIndex((l) => l.startsWith('copy:')))
+    expect(write).toBeLessThan(log.indexOf('remove:library-media'))
+    expect(log.filter((l) => l.startsWith('proof:'))).toEqual(['proof:write:root/b.png'])
+  })
+
+  it('deletes the proof when Protected is switched off', async () => {
+    seedImage()
+    await protectLibraryAsset(ID, true)
+    log.length = 0
+    expect(await protectLibraryAsset(ID, false)).toEqual({ ok: true })
+    expect(log.filter((l) => l.startsWith('proof:'))).toEqual(['proof:remove:root/b.png'])
+  })
+
+  it('writes no proof when the move is refused', async () => {
+    seedImage()
+    usage.pages = 1
+    await protectLibraryAsset(ID, true)
+    expect(log.some((l) => l.startsWith('proof:'))).toBe(false)
   })
 })

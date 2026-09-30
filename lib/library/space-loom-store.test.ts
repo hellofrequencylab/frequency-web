@@ -353,3 +353,36 @@ describe('the module is on the session client, never the service role (the LIVE-
     expect(code).toMatch(/\.eq\('space_id', sharedRoot\)\.eq\('visibility', 'public'\)/)
   })
 })
+
+describe('a protected Space row reaches the Studio and the picker only as a proof to sign (LIVE-580)', () => {
+  const protectedRows = () => [
+    asset('a-private', SPACE_A, { title: 'Private lake', url: null, is_protected: true, storage_path: `${SPACE_A}/private.jpg`, created_at: '2026-09-06T00:00:00.000Z' }),
+    asset('a-private-nokey', SPACE_A, { title: 'Private lake with no key', url: null, is_protected: true, storage_path: null }),
+  ]
+
+  it('is dropped unless the caller asks for protected rows, as every pick reader always did', async () => {
+    rows = [...seed(), ...protectedRows()]
+    viewer = MEMBER
+    const plain = await listSpaceLoomImages(SPACE_A)
+    expect(ids(plain)).not.toContain('a-private')
+    expect(plain.every((a) => a.storagePath === undefined)).toBe(true)
+  })
+
+  it('is kept with its storage key when asked, so withLoomProofs can sign its proof; a protected row with no key is still dropped', async () => {
+    rows = [...seed(), ...protectedRows()]
+    viewer = MEMBER
+    const out = await listSpaceLoomImages(SPACE_A, { includeProtected: true })
+    const priv = out.find((a) => a.id === 'a-private')
+    expect(priv?.isProtected).toBe(true)
+    expect(priv?.storagePath).toBe(`${SPACE_A}/private.jpg`)
+    expect(ids(out)).not.toContain('a-private-nokey')
+    // An unprotected row never carries the key.
+    expect(out.filter((a) => !a.isProtected).every((a) => a.storagePath === undefined)).toBe(true)
+  })
+
+  it('a stranger still gets none of it', async () => {
+    rows = [...seed(), ...protectedRows()]
+    viewer = STRANGER
+    expect(ids(await listSpaceLoomImages(SPACE_A, { includeProtected: true }))).not.toContain('a-private')
+  })
+})
