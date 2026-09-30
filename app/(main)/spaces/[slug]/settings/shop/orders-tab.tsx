@@ -14,9 +14,9 @@ import { setOrderFulfillmentAction } from './shop-actions'
 // orders, so this shows a calm "no orders yet" state. No em or en dashes.
 //
 // A split order that pays this Space (LIVE-624) is listed as the Space's SHARE of it: its lines, its
-// gross in the amount column, and a share line with the net and where the payout stands. Its
-// fulfilment shows read-only: the fulfilment writer binds to the order's owner columns, which a
-// split order leaves empty, so a door here would only refuse.
+// gross in the amount column, and a share line with the net and where the payout stands. Its door
+// moves the Space's OWN share (LIVE-705, ADR-1652): the writer finds the order through the Space's
+// transfer row, and the step shown is the share's, not the other sellers'.
 
 function usd(cents: number): string {
   return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -79,7 +79,7 @@ export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: 
             <OrderFulfilmentControl
               order={o}
               action={setOrderFulfillmentAction.bind(null, slug, o.id)}
-              readOnly={readOnly || o.share !== null}
+              readOnly={readOnly}
             />
           </li>
         ))}

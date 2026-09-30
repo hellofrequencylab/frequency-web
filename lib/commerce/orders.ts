@@ -10,12 +10,22 @@
 // only, their gross and fee in amountCents and platformFeeCents, and `share` with the net and the
 // transfer's state. The whole cart, and every other seller's figures, never leave this module on a
 // seller read. spaceEarningsSummary sums the share the same way.
+//
+// Each seller ships their own share of a split order (LIVE-705, ADR-1652): the step and record live
+// on their transfer row, so a seller's view carries THEIR step, the buyer's read carries each
+// seller's step beside their lines (sellerFulfilments), and the operator reads every share's.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OrderStatus, OwnerKind, OrderOwnerKind, FulfillmentStatus, FundsFlow } from './types'
 import type { TransferStatus } from './transfers'
-import { fulfilmentFromShipping, orderNeedsFulfilment, orderShips, type OrderFulfilment } from './fulfilment-state'
+import {
+  fulfilmentFromRecord,
+  fulfilmentFromShipping,
+  orderNeedsFulfilment,
+  orderShips,
+  type OrderFulfilment,
+} from './fulfilment-state'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -87,6 +97,21 @@ export interface CommerceOrder {
    *  read amountCents and platformFeeCents are this share's and items are this seller's lines.
    *  Null on every other read (a destination order, the buyer's view, the operator's view). */
   share: OrderShare | null
+  /** The buyer's read of a split order only (LIVE-705): where each seller's share stands, matched to
+   *  that seller's lines by sellerNameKey(seller). Absent on every other read. */
+  sellerFulfilments?: SellerFulfilment[]
+}
+
+/** Where one seller's share of a split order stands (LIVE-705). No money figure rides here. */
+export interface SellerFulfilment {
+  seller: OrderLineSeller
+  fulfillmentStatus: FulfillmentStatus
+  fulfilment: OrderFulfilment
+}
+
+/** A share as the operator reads it: which transfer row, so the operator's door can name it. */
+export interface ShareFulfilment extends SellerFulfilment {
+  shareId: string
 }
 
 const ORDER_COLS =
@@ -158,9 +183,12 @@ interface ShareRow {
   platform_fee_cents: number
   reversed_cents: number
   status: TransferStatus
+  /** This seller's own step and record for their share (LIVE-705). */
+  fulfillment_status?: string | null
+  fulfilment?: unknown
 }
 
-const SHARE_COLS = 'order_id, amount_cents, platform_fee_cents, reversed_cents, status'
+const SHARE_COLS = 'order_id, amount_cents, platform_fee_cents, reversed_cents, status, fulfillment_status, fulfilment'
 
 /** This seller's transfer rows, newest first. Filtered on the seller's own owner column AND kind, so
  *  no other seller's row is ever read here. Throws on a database error; each caller decides. */
@@ -183,6 +211,31 @@ function lineBelongsTo(item: OrderItem, seller: OrderSellerRef): boolean {
   return seller.kind === 'space' ? s.spaceId === seller.id : s.profileId === seller.id
 }
 
+function asFulfillmentStatus(v: unknown): FulfillmentStatus {
+  return v === 'pending' || v === 'shipped' || v === 'delivered' || v === 'completed' ? v : 'none'
+}
+
+/**
+ * A split order narrowed to ONE seller's share for sending it (LIVE-705). PURE.
+ *
+ * Their lines, whether those need sending or ship, and THEIR step and record in place of the order's
+ * roll-up, so the seller's door offers the next step of their own share and the operator's door one
+ * per share. Money figures are untouched here; sellerViewOfSplitOrder replaces those for a seller.
+ */
+export function shareView(order: CommerceOrder, seller: OrderLineSeller, fulfillmentStatus: FulfillmentStatus, fulfilment: OrderFulfilment): CommerceOrder {
+  const ref: OrderSellerRef = seller.kind === 'space' ? { kind: 'space', id: seller.spaceId ?? '' } : { kind: 'profile', id: seller.profileId ?? '' }
+  const items = order.items.filter((it) => lineBelongsTo(it, ref))
+  const kinds = items.map((it) => it.productKind)
+  return {
+    ...order,
+    items,
+    needsFulfilment: orderNeedsFulfilment(kinds),
+    ships: orderShips(kinds),
+    fulfillmentStatus,
+    fulfilment,
+  }
+}
+
 /**
  * A split order as ONE of its sellers may see it. PURE.
  *
@@ -192,16 +245,15 @@ function lineBelongsTo(item: OrderItem, seller: OrderSellerRef): boolean {
  * since the other sellers' goods are not theirs to send.
  */
 export function sellerViewOfSplitOrder(order: CommerceOrder, seller: OrderSellerRef, row: ShareRow): CommerceOrder {
-  const items = order.items.filter((it) => lineBelongsTo(it, seller))
-  const kinds = items.map((it) => it.productKind)
+  const lineSeller: OrderLineSeller =
+    seller.kind === 'space' ? { kind: 'space', profileId: null, spaceId: seller.id } : { kind: 'profile', profileId: seller.id, spaceId: null }
+  // Their step and record, not the order's roll-up: the door below offers THEIR next step (LIVE-705).
+  const view = shareView(order, lineSeller, asFulfillmentStatus(row.fulfillment_status), fulfilmentFromRecord(row.fulfilment))
   const grossCents = row.amount_cents + row.platform_fee_cents
   return {
-    ...order,
-    items,
+    ...view,
     amountCents: grossCents,
     platformFeeCents: row.platform_fee_cents,
-    needsFulfilment: orderNeedsFulfilment(kinds),
-    ships: orderShips(kinds),
     share: {
       grossCents,
       feeCents: row.platform_fee_cents,
@@ -251,8 +303,42 @@ function newestFirst(owned: CommerceOrder[], shared: CommerceOrder[], limit: num
 
 const LIMIT = (n?: number) => Math.min(Math.max(n ?? 50, 1), 200)
 
+/**
+ * Where every share of these split orders stands, keyed by order id (LIVE-705). One read of the
+ * transfer ledger, fulfilment columns and seller only: no money figure is selected. FAIL-SAFE to an
+ * empty map (logged): a surface then shows the order's roll-up, never an error.
+ */
+export async function splitShareFulfilments(orderIds: string[]): Promise<Map<string, ShareFulfilment[]>> {
+  const out = new Map<string, ShareFulfilment[]>()
+  if (!orderIds.length) return out
+  try {
+    const { data, error } = await db()
+      .from('commerce_order_transfers')
+      .select('id, order_id, owner_kind, owner_profile_id, owner_space_id, fulfillment_status, fulfilment')
+      .in('order_id', orderIds)
+      .order('created_at', { ascending: true })
+    if (error) throw new Error(error.message)
+    for (const r of (data ?? []) as Record<string, unknown>[]) {
+      const kind = r.owner_kind === 'space' ? 'space' : 'profile'
+      const list = out.get(r.order_id as string) ?? []
+      list.push({
+        shareId: r.id as string,
+        seller: { kind, profileId: (r.owner_profile_id as string | null) ?? null, spaceId: (r.owner_space_id as string | null) ?? null },
+        fulfillmentStatus: asFulfillmentStatus(r.fulfillment_status),
+        fulfilment: fulfilmentFromRecord(r.fulfilment),
+      })
+      out.set(r.order_id as string, list)
+    }
+  } catch (err) {
+    console.error('[commerce orders] share fulfilment unreadable', { error: err instanceof Error ? err.message : String(err) })
+    return new Map()
+  }
+  return out
+}
+
 /** A buyer's own orders, newest first. Only paid+ states (a pending checkout that was
- *  never completed isn't a purchase). */
+ *  never completed isn't a purchase). A split order carries where each seller's share stands
+ *  (LIVE-705), so the buyer sees who has sent what. */
 export async function listOrdersForBuyer(profileId: string, opts: { limit?: number } = {}): Promise<CommerceOrder[]> {
   const { data } = await db()
     .from('commerce_orders')
@@ -261,7 +347,15 @@ export async function listOrdersForBuyer(profileId: string, opts: { limit?: numb
     .neq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(LIMIT(opts.limit))
-  return ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
+  const orders = ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
+  const split = orders.filter((o) => o.fundsFlow === 'separate')
+  if (!split.length) return orders
+  const shares = await splitShareFulfilments(split.map((o) => o.id))
+  return orders.map((o) => {
+    const list = shares.get(o.id)
+    // The operator's row id stays on the server: the buyer reads the seller and the step only.
+    return list ? { ...o, sellerFulfilments: list.map(({ seller, fulfillmentStatus, fulfilment }) => ({ seller, fulfillmentStatus, fulfilment })) } : o
+  })
 }
 
 /** A maker's sales (orders for products they own, and their share of every split order that pays

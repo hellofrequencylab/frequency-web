@@ -21,6 +21,16 @@
 // The buyer hears about `shipped` once, through the notification registry (`order.shipped`,
 // category lifecycle), so a member who switched lifecycle mail off is not emailed. A guest buyer has
 // no switch to read, so their address goes to the outbox directly, as the guest receipt does.
+//
+// A SPLIT ORDER (LIVE-705, ADR-1652). An order that pays several sellers (owner_kind 'split',
+// funds_flow 'separate') names no owner, so rule 2's scope finds nothing. Each seller's claim on it
+// is their row in commerce_order_transfers, and each seller ships their own lines, so a split order
+// is fulfilled SHARE BY SHARE: the seller's step and record live on their transfer row (rule 1 per
+// row, compare-and-set on the step read), a Space or a maker can only ever reach their own row, and
+// an operator names the row. The order's own fulfillment_status is then rolled up to the least
+// advanced share with something to send, only ever forward, and rule 3 fires once every such share
+// is delivered or complete. The buyer's shipped notice names the seller that shipped and their lines.
+// A single-seller order never reaches this path: it is found by rule 2 first, exactly as before.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -40,7 +50,10 @@ import type { FulfillmentStatus, OwnerKind } from './types'
 import {
   FULFILLMENT_LADDER,
   fulfillmentTransition,
+  fulfilmentFromRecord,
   fulfilmentFromShipping,
+  orderNeedsFulfilment,
+  rollupShareFulfilment,
   trackingUrlFor,
   trimmedText,
   type OrderFulfilment,
@@ -58,6 +71,12 @@ type FulfilmentSeller =
   | { kind: 'space'; spaceId: string }
   | { kind: 'profile'; profileId: string }
   | { kind: 'platform' }
+  /** An operator acting for ONE seller's share of a split order, named by its transfer row
+   *  (LIVE-705). Reaches split orders only; a single-seller order is its seller's to move. */
+  | { kind: 'operator'; shareId: string }
+
+/** A seller as the owner-column scope can name one: every kind but the operator's share door. */
+type OwnerSeller = Exclude<FulfilmentSeller, { kind: 'operator' }>
 
 interface FulfilmentInput {
   status: FulfillmentStatus
@@ -68,10 +87,14 @@ interface FulfilmentInput {
 
 interface FulfilledOrder {
   id: string
+  /** The step just written: the order's, or on a split order the share's. */
   fulfillmentStatus: FulfillmentStatus
   /** The order's own status after the move ('fulfilled' once delivered or completed). */
   status: string
   fulfilment: OrderFulfilment
+  /** Split orders only (LIVE-705): the transfer row moved, and where the whole order now stands. */
+  shareId?: string
+  orderFulfillmentStatus?: FulfillmentStatus
 }
 
 type SetOrderFulfillmentResult = { ok: true; order: FulfilledOrder } | { ok: false; error: string }
@@ -100,7 +123,7 @@ const ORDER_COLS =
 
 /** The scope filter, applied to the read AND the write: the owner column of the verified seller and
  *  the value it must hold. PURE. */
-function sellerScope(seller: FulfilmentSeller): [column: string, value: string] {
+function sellerScope(seller: OwnerSeller): [column: string, value: string] {
   if (seller.kind === 'space') return ['owner_space_id', seller.spaceId]
   if (seller.kind === 'profile') return ['owner_profile_id', seller.profileId]
   return ['owner_kind', 'platform']
@@ -122,6 +145,10 @@ export async function setOrderFulfillment(
   const db = deps.client ?? createAdminClient()
   const now = (deps.now ?? (() => new Date()))().toISOString()
   if (!orderId) return { ok: false, error: 'No order was named.' }
+  if (seller.kind === 'operator') {
+    if (!seller.shareId) return { ok: false, error: 'Name the seller whose share you are marking.' }
+    return setShareFulfillment(db, orderId, input, seller, now, deps)
+  }
   if (seller.kind === 'space' && !seller.spaceId) return { ok: false, error: 'That order is not one of yours.' }
   if (seller.kind === 'profile' && !seller.profileId) return { ok: false, error: 'That order is not one of yours.' }
 
@@ -137,13 +164,16 @@ export async function setOrderFulfillment(
     return { ok: false, error: 'Could not read that order. Try again in a moment.' }
   }
   const order = (data as unknown as OrderRow | null) ?? null
-  if (!order) return { ok: false, error: 'That order is not one of yours.' }
-
-  if (order.status === 'pending') return { ok: false, error: 'This order has not been paid yet.' }
-  if (order.status === 'refunded') return { ok: false, error: 'This order was refunded, so there is nothing to send.' }
-  if (order.status === 'cancelled' || order.status === 'failed') {
-    return { ok: false, error: 'This order never completed, so there is nothing to send.' }
+  if (!order) {
+    // Not an order this seller owns. It may be a split order that pays them: their claim on it is
+    // their transfer row, and they move their own share of it (LIVE-705). The platform is never a
+    // share of a split order, so the Store door stops here.
+    if (seller.kind === 'platform') return { ok: false, error: 'That order is not one of yours.' }
+    return setShareFulfillment(db, orderId, input, seller, now, deps)
   }
+
+  const unsendable = unsendableReason(order.status)
+  if (unsendable) return { ok: false, error: unsendable }
 
   const from = (FULFILLMENT_LADDER.includes(order.fulfillment_status as FulfillmentStatus)
     ? order.fulfillment_status
@@ -151,18 +181,7 @@ export async function setOrderFulfillment(
   const move = fulfillmentTransition(from, input.status)
   if (!move.ok) return move
 
-  const prev = fulfilmentFromShipping(order.shipping)
-  const carrier = trimmedText(input.carrier, 60) ?? prev.carrier
-  const tracking = trimmedText(input.tracking, 120) ?? prev.tracking
-  const next: OrderFulfilment = {
-    carrier,
-    tracking,
-    trackingUrl: trackingUrlFor(carrier, tracking),
-    note: trimmedText(input.note, 500) ?? prev.note,
-    shippedAt: input.status === 'shipped' ? now : prev.shippedAt,
-    deliveredAt: input.status === 'delivered' ? now : prev.deliveredAt,
-    completedAt: input.status === 'completed' ? now : prev.completedAt,
-  }
+  const next = nextFulfilment(fulfilmentFromShipping(order.shipping), input, now)
   const baseShipping =
     order.shipping && typeof order.shipping === 'object' && !Array.isArray(order.shipping)
       ? (order.shipping as Record<string, unknown>)
@@ -214,6 +233,235 @@ export async function setOrderFulfillment(
   }
 }
 
+/** Why an order in this state has nothing to send, or null when it can be sent. PURE. */
+function unsendableReason(status: string): string | null {
+  if (status === 'pending') return 'This order has not been paid yet.'
+  if (status === 'refunded') return 'This order was refunded, so there is nothing to send.'
+  if (status === 'cancelled' || status === 'failed') return 'This order never completed, so there is nothing to send.'
+  return null
+}
+
+/** The record after a move: the new step's time stamped, a blank field keeping what was said. PURE. */
+function nextFulfilment(prev: OrderFulfilment, input: FulfilmentInput, now: string): OrderFulfilment {
+  const carrier = trimmedText(input.carrier, 60) ?? prev.carrier
+  const tracking = trimmedText(input.tracking, 120) ?? prev.tracking
+  return {
+    carrier,
+    tracking,
+    trackingUrl: trackingUrlFor(carrier, tracking),
+    note: trimmedText(input.note, 500) ?? prev.note,
+    shippedAt: input.status === 'shipped' ? now : prev.shippedAt,
+    deliveredAt: input.status === 'delivered' ? now : prev.deliveredAt,
+    completedAt: input.status === 'completed' ? now : prev.completedAt,
+  }
+}
+
+// ── A split order, share by share (LIVE-705, ADR-1652) ─────────────────────────────────────────
+
+/** Who may move a share: the seller it pays (by their own owner column) or an operator (by row). */
+type ShareActor = Exclude<FulfilmentSeller, { kind: 'platform' }>
+
+interface ShareRow {
+  id: string
+  owner_kind: 'profile' | 'space'
+  owner_profile_id: string | null
+  owner_space_id: string | null
+  status: string
+  fulfillment_status: string
+  fulfilment: unknown
+}
+
+const SHARE_COLS = 'id, owner_kind, owner_profile_id, owner_space_id, status, fulfillment_status, fulfilment'
+
+/** One line of an order, with the seller it came from (its product's owner) and what it is. */
+interface OrderLine {
+  title: string | null
+  qty: number | null
+  kind: string | null
+  seller: { kind: string; profileId: string | null; spaceId: string | null } | null
+}
+
+async function orderLines(db: SupabaseClient, orderId: string): Promise<OrderLine[] | null> {
+  const { data, error } = await db
+    .from('commerce_order_items')
+    .select('title, qty, commerce_products(product_kind, owner_kind, owner_profile_id, owner_space_id)')
+    .eq('order_id', orderId)
+  if (error) return null
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => {
+    const p = r.commerce_products as {
+      product_kind?: string | null
+      owner_kind?: string | null
+      owner_profile_id?: string | null
+      owner_space_id?: string | null
+    } | null
+    return {
+      title: (r.title as string | null) ?? null,
+      qty: (r.qty as number | null) ?? null,
+      kind: p?.product_kind ?? null,
+      seller: p?.owner_kind
+        ? { kind: p.owner_kind, profileId: p.owner_profile_id ?? null, spaceId: p.owner_space_id ?? null }
+        : null,
+    }
+  })
+}
+
+/** True when a line was sold by the seller this share pays (kind AND that kind's owner id, so a
+ *  Space's line never counts toward the profile that owns the Space). PURE. */
+export function lineIsShares(
+  line: { seller: { kind: string; profileId: string | null; spaceId: string | null } | null },
+  share: { owner_kind: string; owner_profile_id: string | null; owner_space_id: string | null },
+): boolean {
+  const s = line.seller
+  if (!s || s.kind !== share.owner_kind) return false
+  return share.owner_kind === 'space' ? !!s.spaceId && s.spaceId === share.owner_space_id : !!s.profileId && s.profileId === share.owner_profile_id
+}
+
+/** A share that was paid back in full (reversed) or never paid (cancelled) has nothing to send. */
+const CLOSED_SHARE = new Set(['reversed', 'cancelled'])
+
+async function setShareFulfillment(
+  db: SupabaseClient,
+  orderId: string,
+  input: FulfilmentInput,
+  actor: ShareActor,
+  now: string,
+  deps: FulfilmentDeps,
+): Promise<SetOrderFulfillmentResult> {
+  // The share is found by the verified seller's OWN owner column and kind, or, for an operator, by
+  // the row they named; either way only on this order. No seller can reach another seller's row.
+  let q = db.from('commerce_order_transfers').select(SHARE_COLS).eq('order_id', orderId)
+  if (actor.kind === 'operator') q = q.eq('id', actor.shareId)
+  else if (actor.kind === 'space') q = q.eq('owner_kind', 'space').eq('owner_space_id', actor.spaceId)
+  else q = q.eq('owner_kind', 'profile').eq('owner_profile_id', actor.profileId)
+  const { data: shareData, error: shareError } = await q.maybeSingle()
+  if (shareError) {
+    console.error(`${LOG} share read failed`, { orderId, error: shareError.message })
+    return { ok: false, error: 'Could not read that order. Try again in a moment.' }
+  }
+  const share = (shareData as unknown as ShareRow | null) ?? null
+  if (!share) return { ok: false, error: 'That order is not one of yours.' }
+
+  const { data: orderData, error: orderError } = await db
+    .from('commerce_orders')
+    .select(ORDER_COLS)
+    .eq('id', orderId)
+    .eq('funds_flow', 'separate')
+    .maybeSingle()
+  if (orderError) {
+    console.error(`${LOG} order read failed`, { orderId, error: orderError.message })
+    return { ok: false, error: 'Could not read that order. Try again in a moment.' }
+  }
+  const order = (orderData as unknown as OrderRow | null) ?? null
+  if (!order) return { ok: false, error: 'That order is not one of yours.' }
+  const unsendable = unsendableReason(order.status)
+  if (unsendable) return { ok: false, error: unsendable }
+  if (CLOSED_SHARE.has(share.status)) return { ok: false, error: 'This share was paid back, so there is nothing to send.' }
+
+  const lines = await orderLines(db, orderId)
+  if (!lines) return { ok: false, error: 'Could not read that order. Try again in a moment.' }
+  const mine = lines.filter((l) => lineIsShares(l, share))
+  if (!orderNeedsFulfilment(mine.map((l) => l.kind))) {
+    return { ok: false, error: 'Nothing in this share needs sending.' }
+  }
+
+  const from = (FULFILLMENT_LADDER.includes(share.fulfillment_status as FulfillmentStatus)
+    ? share.fulfillment_status
+    : 'none') as FulfillmentStatus
+  const move = fulfillmentTransition(from, input.status)
+  if (!move.ok) return move
+
+  const next = nextFulfilment(fulfilmentFromRecord(share.fulfilment), input, now)
+  // updated_at is left alone: it is the reconciler's clock for a transfer that has not landed.
+  const { data: updated, error: writeError } = await db
+    .from('commerce_order_transfers')
+    .update({ fulfillment_status: input.status, fulfilment: { ...next, status: input.status, updatedAt: now } })
+    .eq('id', share.id)
+    .eq('fulfillment_status', share.fulfillment_status)
+    .select('id')
+  if (writeError) {
+    console.error(`${LOG} share write failed`, { orderId, shareId: share.id, status: input.status, error: writeError.message })
+    return { ok: false, error: 'Could not save that. Try again in a moment.' }
+  }
+  if (!updated || (updated as unknown[]).length === 0) {
+    return { ok: false, error: 'Someone else updated this order first. Reload to see where it stands.' }
+  }
+
+  const rolled = await rollUpSplitOrder(db, order, lines)
+
+  if (input.status === 'shipped') {
+    const notify = deps.notifyShipped ?? notifyOrderShipped
+    await notify({
+      orderId,
+      ownerKind: share.owner_kind,
+      ownerProfileId: share.owner_profile_id,
+      ownerSpaceId: share.owner_space_id,
+      buyerProfileId: order.buyer_profile_id,
+      guestEmail: order.guest_email,
+      fulfilment: next,
+      lines: mine,
+    }, { client: db })
+  }
+
+  return {
+    ok: true,
+    order: {
+      id: orderId,
+      fulfillmentStatus: input.status,
+      status: rolled.status,
+      fulfilment: next,
+      shareId: share.id,
+      orderFulfillmentStatus: rolled.fulfillmentStatus,
+    },
+  }
+}
+
+/**
+ * Move a split order's own fulfillment_status to the least advanced share with something to send,
+ * and close a paid order as fulfilled once every such share is delivered or complete. FORWARD ONLY:
+ * the write only lands on an order still at an earlier step, so two sellers finishing at once can
+ * never pull it back. Best-effort: a failed roll-up is logged and the share's own step stands; the
+ * next share move rolls it up again.
+ */
+async function rollUpSplitOrder(
+  db: SupabaseClient,
+  order: OrderRow,
+  lines: OrderLine[],
+): Promise<{ fulfillmentStatus: FulfillmentStatus; status: string }> {
+  const current = (FULFILLMENT_LADDER.includes(order.fulfillment_status as FulfillmentStatus)
+    ? order.fulfillment_status
+    : 'none') as FulfillmentStatus
+  const kept = { fulfillmentStatus: current, status: order.status }
+  const { data, error } = await db
+    .from('commerce_order_transfers')
+    .select('owner_kind, owner_profile_id, owner_space_id, status, fulfillment_status')
+    .eq('order_id', order.id)
+  if (error) {
+    console.error(`${LOG} split roll-up read failed`, { orderId: order.id, error: error.message })
+    return kept
+  }
+  const steps = ((data ?? []) as Omit<ShareRow, 'id' | 'fulfilment'>[])
+    .filter((r) => !CLOSED_SHARE.has(r.status))
+    .filter((r) => orderNeedsFulfilment(lines.filter((l) => lineIsShares(l, r)).map((l) => l.kind)))
+    .map((r) => r.fulfillment_status)
+  const target = rollupShareFulfilment(steps)
+  const targetIdx = FULFILLMENT_LADDER.indexOf(target)
+  if (targetIdx <= FULFILLMENT_LADDER.indexOf(current)) return kept
+
+  const closesOrder = (target === 'delivered' || target === 'completed') && order.status === 'paid'
+  const { data: moved, error: writeError } = await db
+    .from('commerce_orders')
+    .update({ fulfillment_status: target, ...(closesOrder ? { status: 'fulfilled' } : {}) })
+    .eq('id', order.id)
+    .in('fulfillment_status', FULFILLMENT_LADDER.slice(0, targetIdx) as string[])
+    .select('id')
+  if (writeError) {
+    console.error(`${LOG} split roll-up write failed`, { orderId: order.id, target, error: writeError.message })
+    return kept
+  }
+  if (!moved || (moved as unknown[]).length === 0) return kept
+  return { fulfillmentStatus: target, status: closesOrder ? 'fulfilled' : order.status }
+}
+
 // ── The shipped notice ─────────────────────────────────────────────────────────────────────────
 
 interface ShippedNoticeInput {
@@ -224,14 +472,24 @@ interface ShippedNoticeInput {
   buyerProfileId: string | null
   guestEmail: string | null
   fulfilment: OrderFulfilment
+  /** The lines this notice is about, when they are not the whole order: one seller's share of a
+   *  split order (LIVE-705). Omitted, the order's lines are read. */
+  lines?: { title: string | null; qty: number | null }[]
 }
 
 /** "Two mugs, One print", or null. Best-effort. */
-async function itemSummary(db: SupabaseClient, orderId: string): Promise<{ summary: string | null; first: string | null }> {
+async function itemSummary(
+  db: SupabaseClient,
+  orderId: string,
+  given?: { title: string | null; qty: number | null }[],
+): Promise<{ summary: string | null; first: string | null }> {
   try {
-    const { data, error } = await db.from('commerce_order_items').select('title, qty').eq('order_id', orderId)
-    if (error) return { summary: null, first: null }
-    const rows = (data ?? []) as { title: string | null; qty: number | null }[]
+    let rows = given
+    if (!rows) {
+      const { data, error } = await db.from('commerce_order_items').select('title, qty').eq('order_id', orderId)
+      if (error) return { summary: null, first: null }
+      rows = (data ?? []) as { title: string | null; qty: number | null }[]
+    }
     const parts = rows
       .map((r) => {
         const title = (r.title ?? '').trim()
@@ -261,7 +519,7 @@ async function sellerName(input: ShippedNoticeInput): Promise<string> {
 export async function notifyOrderShipped(input: ShippedNoticeInput, deps: { client?: SupabaseClient } = {}): Promise<void> {
   try {
     const db = deps.client ?? createAdminClient()
-    const [{ summary, first }, seller] = await Promise.all([itemSummary(db, input.orderId), sellerName(input)])
+    const [{ summary, first }, seller] = await Promise.all([itemSummary(db, input.orderId, input.lines), sellerName(input)])
     const what = first ?? 'Your order'
     const f = input.fulfilment
     const content: ReceiptContent = {
