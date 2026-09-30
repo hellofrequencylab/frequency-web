@@ -98,6 +98,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
       initialTitle={plan.title}
       initialSummary={plan.summary}
       initialCover={plan.cover_image}
+      initialCoverFocus={plan.cover_focus}
       initialEmoji={plan.emoji}
       initialAccent={plan.accent}
       initialIntro={plan.intro}
