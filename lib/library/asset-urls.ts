@@ -47,17 +47,21 @@ export type SignableLibraryAsset = {
  *
  * Never store what this returns: a signed URL is a stored expiry (lib/events/series-seo.ts). A failed
  * mint is null, which the Studio's thumbnail renders as its no-image placeholder.
+ *
+ * `opts.download` (LIVE-578, the download door) names the file storage should serve as an attachment;
+ * it is only ever passed with a one-minute ttl, by app/api/library/download/[id]/route.ts.
  */
 export async function signedLibraryAssetUrl(
   asset: SignableLibraryAsset,
   ttlSeconds: number = LIBRARY_SIGNED_URL_TTL_SECONDS,
+  opts?: { download?: string },
 ): Promise<string | null> {
   if (!asset.isProtected || asset.url) return asset.url
   if (!asset.storagePath) return null
   try {
     const { data } = await createAdminClient()
       .storage.from(LIBRARY_PRIVATE_BUCKET)
-      .createSignedUrl(asset.storagePath, ttlSeconds)
+      .createSignedUrl(asset.storagePath, ttlSeconds, opts?.download ? { download: opts.download } : undefined)
     return data?.signedUrl ?? null
   } catch {
     return null
