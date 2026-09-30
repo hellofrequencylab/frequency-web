@@ -107,7 +107,7 @@ per-scan checkbox) the steward sends **one** transactional intro.
 | Shared-CRM lead | `lib/connections/crm-sync.ts`: upsert by `lower(email)`, never downgrades an existing member/subscriber |
 | One-time intro | `lib/connections/invite.ts` → `sendScanIntroEmail` (`lib/email.ts`). Gated by `scan_invite_email_enabled` (**default off**) + the per-scan checkbox + `invited_at` guard |
 | Points on join | The intro's CTA is the steward's **referral** link (`/q/<slug>`, ADR-091). Signup → `applyReferralAttribution` → `invite_accepted` zaps. Automatic |
-| Legal unsubscribe | `/u/scan` (`lib/connections/lead-unsub.ts`, HMAC over `contacts.id`) → `consent_state='unsubscribed'`, RFC 8058 one-click. Non-member footer; set `COMPANY_POSTAL_ADDRESS` for CAN-SPAM |
+| Legal unsubscribe | `/u/scan` (`lib/connections/lead-unsub.ts`, HMAC over `contacts.id`) → `consent_state='unsubscribed'`, RFC 8058 one-click. Non-member footer; prints the platform postal line (`lib/email-studio/postal.ts`) for CAN-SPAM, overridable with `COMPANY_POSTAL_ADDRESS` |
 | Operator switch | Marketing → Contacts toggle (`setScanInviteEnabled`, staff) → `platform_flags`, audited in `platform_flag_events`. Needs `RESEND_API_KEY` |
 
 **Posture:** a single, person-initiated introduction (the steward met them), not bulk
