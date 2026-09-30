@@ -4,7 +4,7 @@ description: Exactly what others can see, every control you have, and how live l
 category: connecting
 order: 6
 published: 2026-06-09
-updated: 2026-06-26
+updated: 2026-09-30
 audience: member
 featureKeys: [connections, location, settings, resonance]
 status: published
@@ -22,7 +22,7 @@ instantly.
 
 - **Ghost mode.** The master switch. One tap and you vanish from proximity and
   maps entirely; every other setting below is paused until you turn it off.
-- **Show me in the Community directory.** Whether you're listed in the member
+- **Show me in the Members directory.** Whether you're listed in the member
   directory at all.
 - **Who can find me nearby.** No one, only your connections, or the whole
   community. This controls who can surface you by location.
