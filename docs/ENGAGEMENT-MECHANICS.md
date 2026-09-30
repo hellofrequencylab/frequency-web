@@ -67,8 +67,10 @@ after the **server** clears it. `verifyCapture(attempt)` runs, in order:
 1. **Node exists** → else `unknown_node`.
 2. **Active** → else `inactive`.
 3. **Validity window** (`valid_from` / `valid_until`) → else `not_yet_valid` / `expired`.
-4. **Signed payload** — a node with a `secret` only accepts the matching `presentedSecret`
-   → else `bad_signature`.
+4. **Signed code** (LIVE-688, ADR-1654) — `presentedSecret` must be an HMAC this server issued
+   over (node id, issued-at) (`lib/qr/node-code.ts`); a forged, tampered or cross-node code →
+   `bad_signature`. A code printed before signing (bare `/n/<id>`, or the node's old random
+   `secret`) claims only until `LEGACY_NODE_CODE_GRACE_ENDS` (2026-12-01), logged `[node-code]`.
 5. **Capture rule** — `once_per_user` / `once_global` block repeats by counting prior
    verified `captures` → else `already_captured`.
 6. **Proximity** — when the node sets `proximity_m` + `location`, the geo math is delegated

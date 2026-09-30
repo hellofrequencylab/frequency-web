@@ -8,11 +8,12 @@
 // reward economy is defined.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { nodeCodeVerdict } from '@/lib/qr/node-code'
 
 export interface CaptureAttempt {
   nodeId: string
   actorProfileId: string
-  /** The signed value carried by the QR/NFC payload, if the node requires one. */
+  /** The signed code carried by the QR/NFC payload (`?s=`), issued by lib/qr/node-code.ts. */
   presentedSecret?: string | null
   /** Device-reported position; required when the node sets a proximity radius. */
   location?: { lng: number; lat: number } | null
@@ -36,8 +37,8 @@ export interface VerifyResult {
 
 /**
  * Run every server-side check for a capture attempt. Pure verification — no
- * writes, no rewards. Returns ok:true only when the node is live, the signature
- * (if any) matches, the capture rule allows it, and proximity (if required) holds.
+ * writes, no rewards. Returns ok:true only when the node is live, the signed code
+ * verifies, the capture rule allows it, and proximity (if required) holds.
  */
 export async function verifyCapture(attempt: CaptureAttempt): Promise<VerifyResult> {
   const db = createAdminClient()
@@ -55,9 +56,20 @@ export async function verifyCapture(attempt: CaptureAttempt): Promise<VerifyResu
   if (node.valid_from && new Date(node.valid_from).getTime() > now) return { ok: false, reason: 'not_yet_valid' }
   if (node.valid_until && new Date(node.valid_until).getTime() < now) return { ok: false, reason: 'expired' }
 
-  // Signed payload: a node with a secret only accepts the matching value.
-  if (node.secret && attempt.presentedSecret !== node.secret) {
-    return { ok: false, reason: 'bad_signature' }
+  // Signed code (LIVE-688, ADR-1654): the payload must carry an HMAC this server issued over
+  // (node, issued-at). A forged, tampered or cross-node code is refused. A code printed before
+  // signing shipped still claims until the grace window ends; log each one so the owner can see
+  // which printed codes still need a reprint before the window closes.
+  const verdict = nodeCodeVerdict({
+    nodeId: attempt.nodeId,
+    presented: attempt.presentedSecret,
+    legacySecret: node.secret,
+  })
+  if (verdict === 'refused') return { ok: false, reason: 'bad_signature' }
+  if (verdict === 'legacy') {
+    console.warn('[node-code] pre-signing code accepted inside the grace window; reprint it', {
+      nodeId: attempt.nodeId,
+    })
   }
 
   // Capture rule: block repeats for one-shot nodes.

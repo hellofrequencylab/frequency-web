@@ -4,7 +4,8 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AdminTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
-import { nodeUrl, shortLinkUrl } from '@/lib/qr/links'
+import { shortLinkUrl } from '@/lib/qr/links'
+import { signedNodeUrl } from '@/lib/qr/node-code'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { parseStyle, withMemberAvatar } from '@/lib/qr/style'
 import { parseVcard } from '@/lib/vcard'
@@ -60,7 +61,7 @@ export default async function QrStudioPage() {
   ] = await Promise.all([
     db
       .from('nodes')
-      .select('id, type, label, zaps_value, capture_rule, active, city, valid_until, partner_id, style, max_claims, secret, created_at')
+      .select('id, type, label, zaps_value, capture_rule, active, city, valid_until, partner_id, style, max_claims, created_at')
       .order('created_at', { ascending: false }),
     db.rpc('node_capture_counts'),
     db
@@ -93,7 +94,7 @@ export default async function QrStudioPage() {
 
   const initialNodes: StudioNode[] = await Promise.all(
     (nodes ?? []).map(async (n) => {
-      const url = nodeUrl(n.id, n.secret)
+      const url = signedNodeUrl(n.id)
       const style = parseStyle(n.style)
       return {
         id: n.id,
@@ -109,7 +110,6 @@ export default async function QrStudioPage() {
         lng: geoByNode.get(n.id)?.lng ?? null,
         proximityM: geoByNode.get(n.id)?.proximity_m ?? null,
         maxClaims: n.max_claims,
-        requireSignature: Boolean(n.secret),
         captures: captureCounts.get(n.id) ?? 0,
         style,
         url,
