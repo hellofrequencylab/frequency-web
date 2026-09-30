@@ -4,7 +4,7 @@ description: Swap and share with neighbors, plus housing, the community Market, 
 category: connecting
 order: 5
 published: 2026-06-06
-updated: 2026-09-29
+updated: 2026-09-30
 audience: member
 featureKeys: [marketplace]
 status: published
@@ -58,6 +58,9 @@ reach the person and arrange the rest offline.
   product, then manage it and set up payouts from **My storefront**.
 - The **Frequency Store** is Frequency's own store for merch, event passes, and retreats.
 - Anything you buy shows up under **My orders** in your account menu.
+- A cart can hold things from more than one Market seller, and you pay once. Your receipt email
+  lists what each seller is sending, under their name. Each seller sends their own items, so they
+  can arrive separately.
 - If the thing you buy has to be shipped, checkout asks for a delivery address and checks it
   before the charge. A Journey or a download stays on the page and does not ask.
 - **Reviews** on a Market listing or a Journey are from people who bought it. If you have not,
