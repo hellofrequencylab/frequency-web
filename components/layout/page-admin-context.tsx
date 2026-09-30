@@ -25,7 +25,8 @@ interface PageAdminCtx {
    *  catalog selection (appsForScope) on the real set, and bar visibility can switch to showsAdminBar. */
   caps?: ReadonlySet<Capability>
   /** Per-scope operator App overrides for THIS page's admin scope (docs/ADMIN-RAIL.md Phase 6),
-   *  loaded once per request by the shell (loadAppOverrides). Merged over the catalog Apps in the
+   *  loaded once per request by the shell (loadCachedAppOverrides), with every global disable folded
+   *  in (resolveScopeAppOverrides, LIVE-686). Merged over the catalog Apps in the
    *  settings panel (mergeAppOverrides + the min_role gate). FAIL-SAFE: absent ⇒ treated as `{}` ⇒
    *  the catalog defaults, so the rail is unchanged until overrides are threaded + saved. */
   appOverrides?: AppOverrides

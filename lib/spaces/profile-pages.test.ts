@@ -152,6 +152,18 @@ describe('pure mutators keep pages + pageDocs consistent', () => {
   })
 })
 
+describe('withPageDoc (HYG-143)', () => {
+  it('writes only a well-formed page slug, so a crafted key never becomes a property name', () => {
+    const prefs = addPage({}, 'classes', 'Classes')
+    expect(readPageDoc(withPageDoc(prefs, 'classes', DOC), 'classes')).not.toBeNull()
+    for (const bad of ['__proto__', 'constructor ', 'Classes', 'a/b', '']) {
+      const next = withPageDoc(prefs, bad, DOC)
+      expect(next.pageDocs).toBeUndefined()
+      expect(Object.getPrototypeOf(next)).toBe(Object.prototype)
+    }
+  })
+})
+
 describe('withoutPageDoc (per-page reset)', () => {
   it('drops a page doc, keeps the page + other docs, and is immutable', () => {
     let prefs: unknown = addPage({}, 'classes', 'Classes')

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { amzDate, encodeS3Key, EMPTY_PAYLOAD_SHA256, rfc3986, signSigV4, UNSIGNED_PAYLOAD } from '@/lib/backup/sigv4'
 
-// HYG-144 (ADR-1636). The signer is pinned to AWS's own published SigV4 examples for S3
+// HYG-144 (ADR-1693). The signer is pinned to AWS's own published SigV4 examples for S3
 // (docs.aws.amazon.com, "Signature Calculations for the Authorization Header", examplebucket,
 // 2013-05-24), so a wrong byte anywhere in the canonical request, the scope or the key derivation
 // fails here against the reference, not against a value this code produced.

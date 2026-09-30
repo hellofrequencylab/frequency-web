@@ -22,8 +22,8 @@
 > gated by `payoutsLive()`: with payments OFF a dispute records its resolution and no money moves.
 >
 > **Remaining follow-ons (non-blocking):** partial-deposit charging for services (v1 charges full price);
-> re-point / retire the legacy JSON offerings profile widget + drop the JSON node; once payments flip, GATE
-> review creation on a real settled order (`hasPurchasedProduct`, `verified_purchase`).
+> re-point / retire the legacy JSON offerings profile widget + drop the JSON node. Review creation is
+> gated on a settled order (`hasPurchasedProduct`, LIVE-697).
 >
 > **Etsy-Grade ladder (quality follow-on, ADR-601):** the phased raise of the listing + buy flow toward
 > marketplace-grade lives in [`ETSY-GRADE-PLAN.md`](ETSY-GRADE-PLAN.md). P0 condition + P1 gallery/taxonomy

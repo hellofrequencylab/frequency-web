@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { putR2Object, type R2Config } from '@/lib/backup/r2'
 
-// The nightly copy of Storage files to a second provider (HYG-144, ADR-1636).
+// The nightly copy of Storage files to a second provider (HYG-144, ADR-1693).
 //
 // WHY. Supabase's daily backup restores the storage.objects rows and not the files (OWN-082's
 // rehearsal, docs/RUNBOOKS.md §7). The owner ruled "Nightly copy elsewhere" and picked Cloudflare

@@ -1,5 +1,5 @@
 -- THE NIGHTLY STORAGE COPY READS WHAT CHANGED (20270345010400_backup_storage_objects_since.sql
--- · HYG-144 · ADR-1636).
+-- · HYG-144 · ADR-1693).
 --
 -- Proves, after a fresh apply, the contract lib/backup/storage-copy.ts relies on:
 --   * every bucket in one walk, private ones included, oldest change first;

@@ -40,6 +40,9 @@ import { revalidatePath } from 'next/cache'
 
 const TOKEN = '3f2c1b4a-9d8e-4f7a-8b6c-5d4e3f2a1b0c'
 const EVENT = '11111111-1111-4111-8111-111111111111'
+const Q1 = 'a1a1a1a1-1111-4111-8111-111111111111'
+const Q2 = 'b2b2b2b2-2222-4222-8222-222222222222'
+const Q3 = 'c3c3c3c3-3333-4333-8333-333333333333'
 const NEUTRAL = 'This link is not active. If you still hold a spot, the newest email about this event has a working one.'
 
 beforeEach(() => {
@@ -127,7 +130,7 @@ describe('updateGuestSeat', () => {
       token: TOKEN,
       slug: 'tuesday-sit',
       plusOnes: 9.7,
-      answers: { 'q-1': 'x'.repeat(2500), 'q-2': 'veg', 'q-3': 42 as unknown as string },
+      answers: { [Q1]: 'x'.repeat(2500), [Q2]: 'veg', [Q3]: 42 as unknown as string },
     })
     expect(res).toEqual({ ok: true })
     const [fn, args] = rpc.mock.calls[0]
@@ -136,16 +139,27 @@ describe('updateGuestSeat', () => {
     // The member rule: [0, 5], truncated.
     expect(args.p_plus_ones).toBe(5)
     const answers = args.p_answers as Record<string, string>
-    expect(answers['q-1']).toHaveLength(2000)
-    expect(answers['q-2']).toBe('veg')
+    expect(answers[Q1]).toHaveLength(2000)
+    expect(answers[Q2]).toBe('veg')
     // A non-string answer is dropped rather than coerced.
-    expect(answers).not.toHaveProperty('q-3')
+    expect(answers).not.toHaveProperty(Q3)
     expect(revalidatePath).toHaveBeenCalledWith('/events/tuesday-sit')
+  })
+
+  it('drops an answer whose key is not a question id before it becomes a property name (HYG-143)', async () => {
+    rpc.mockResolvedValue({ data: true, error: null })
+    const raw = JSON.parse(`{"__proto__": "yes", "constructor": "x", "q-1": "y", "${Q1}": "kept"}`)
+    await updateGuestSeat({ token: TOKEN, slug: 's', plusOnes: null, answers: raw })
+    const [, args] = rpc.mock.calls[0]
+    const answers = args.p_answers as Record<string, string>
+    expect(Object.keys(answers)).toEqual([Q1])
+    expect(answers[Q1]).toBe('kept')
+    expect(Object.getPrototypeOf(answers)).toBe(Object.prototype)
   })
 
   it('omits plus-ones from the call when the page did not offer them (waitlist / pending seat)', async () => {
     rpc.mockResolvedValue({ data: true, error: null })
-    await updateGuestSeat({ token: TOKEN, slug: 's', plusOnes: null, answers: { 'q-1': 'a' } })
+    await updateGuestSeat({ token: TOKEN, slug: 's', plusOnes: null, answers: { [Q1]: 'a' } })
     const [, args] = rpc.mock.calls[0]
     expect(args).not.toHaveProperty('p_plus_ones')
     expect(args).toHaveProperty('p_answers')

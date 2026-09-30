@@ -186,8 +186,8 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'every 30 min',
     freshByMinutes: 60,
-    jobs: ['referral-release', 'embed-events', 'journey-drips'],
-    why: 'referral payouts + event search freshness + Journey drips',
+    jobs: ['referral-release', 'embed-events', 'journey-drips', 'reconcile-transfers'],
+    why: 'referral payouts + event search freshness + Journey drips + split-order seller transfers',
   },
   {
     group: 'hourly',
@@ -423,6 +423,7 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'summarize-vera-memory', reason: 'AI derivation; a missed summary is caught up by the next run, nothing is lost' },
   { job: 'refresh-traits', reason: 'AI derivation; traits go stale by a day and the next run recomputes them' },
   { job: 'vera-owner-brief', reason: 'mails one person, the owner, who notices its absence tomorrow; self-monitoring' },
+  { job: 'reconcile-transfers', reason: 'retries split-order seller transfers (LIVE-622); the settle pays first, every stuck row logs at error, and a monitor is a Healthchecks check the owner adds (the account holds 20)' },
   { job: 'onboarding-throughput', reason: 'a read-only daily reading (LIVE-311); a miss delays a log line and the next run reads the same state' },
   // HYG-144: unmonitored only because the Healthchecks free tier's 20 checks are all taken. It is
   // the one opt-out whose silence is costly (a dead copy means new files have no second home), so

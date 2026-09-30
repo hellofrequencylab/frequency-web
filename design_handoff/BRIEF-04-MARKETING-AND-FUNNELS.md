@@ -29,7 +29,6 @@ them converts. Every asset aims for "a magical connection, not an advertisement.
 | One-timer to regular | One event becomes a Run; the return is built in, not begged for | Latent Leader |
 | Access not extraction | Pricing voice: "what membership funds" names the room's lights and insurance; "no card today, leave anytime"; roles earned, not bought; no fake scarcity | Everyone |
 | Anti-culty trust | Transparency + humans: self-aware game framing, honest thinness, a real founder, "Ghost is a real status, not a guilt trip" | Skeptics |
-| Not a content casino | Doomscroll mode: a member toggle that strips all prompts — the brand statement | Everyone |
 
 **Hard guardrail across all business-facing assets: money is dark.** No flow ends
 on a $ / Paid / Sale node. Land on Captured, Booked, Return.

@@ -38,6 +38,7 @@ import { PracticesActivity } from '@/components/widgets/practices/practices-acti
 import { PracticesBalance } from '@/components/widgets/practices/practices-balance'
 import { PracticesMine } from '@/components/widgets/practices/practices-mine'
 import { PracticesLibrary } from '@/components/widgets/practices/practices-library'
+import { PracticesBestOf } from '@/components/widgets/practices/practices-best-of'
 import { VaultStanding } from '@/components/widgets/vault/vault-standing'
 import { VaultLeaderboard } from '@/components/widgets/vault/vault-leaderboard'
 import { VaultSummary } from '@/components/widgets/vault/vault-summary'
@@ -201,6 +202,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'practices-activity': PracticesActivity,
   'practices-balance': PracticesBalance,
   'practices-mine': PracticesMine,
+  'practices-best-of': PracticesBestOf,
   'practices-library': PracticesLibrary,
   // The Vault (/crew/store).
   'vault-standing': VaultStanding,

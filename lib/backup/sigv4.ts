@@ -1,7 +1,7 @@
 import 'server-only'
 import { createHash, createHmac } from 'node:crypto'
 
-// A minimal AWS Signature Version 4 signer for one S3-compatible request (HYG-144, ADR-1636).
+// A minimal AWS Signature Version 4 signer for one S3-compatible request (HYG-144, ADR-1693).
 //
 // WHY NOT A LIBRARY. The nightly storage copy makes two kinds of call to Cloudflare R2 (a PUT of
 // one object, nothing else), and R2 speaks the S3 API. `@aws-sdk/client-s3` is dozens of packages

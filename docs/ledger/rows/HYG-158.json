@@ -1,0 +1,19 @@
+{
+  "id": "HYG-158",
+  "title": "A migration applied in its window redded every other open PR until its own PR merged",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-09-30",
+  "source": {
+    "file": "scripts/check-migrations.mjs",
+    "ref": "ci checks job 109719028378 (#3097), 2026-09-30 03:02Z: 'Migration ledger DRIFT: 749 repo file(s) vs 750 applied row(s)', ledger-only 20270345009800 commerce_order_transfers, whose file was on open PR #3100"
+  },
+  "detail": "FILED AND CLOSED 2026-09-30. MEASURED: LIVE-622's migration 20270345009800 was applied to production at 03:00Z in its window, as the protocol says (push the PR, apply the SQL with its ledger row, merge). Until #3100 merged, main had no file for that row, so check:migrations on #3097, a PR that touches no migration, read 'Production ran SQL that is not in the tree' and went red. The same happens for every migration in the queue, on every open PR, for the minutes between apply and merge. The owner ruled: soften it. WHAT CHANGED: on a pull_request run whose diff names no file under supabase/migrations, a drift made ONLY of ledger rows with no repo file, every one newer than every migration in the tree, and every one carried as the exact <version>_<name>.sql by another open PR's head, returns `in-flight`: exit 0, loud lines naming each file and its PR, and a ::warning annotation. The open PRs are read with HYG-150's seam (one pulls listing, heads fetched through git). It stays a failure on main, on a PR that touches a migration, when the diff is unknown, when any row is older than the tree or no open PR carries it, when the lookup fails, and for any other drift shape.\n\nCLOSED 2026-09-30 (ADR-1690). scripts/check-migrations.test.ts drives every branch with injected seams.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --input-type=module -e \"import {ledgerCheck} from './scripts/check-migrations.mjs';const env={SUPABASE_ACCESS_TOKEN:'t',SUPABASE_PROJECT_REF:'r'};const repo=Array.from({length:700},(_,i)=>({version:String(20250101000000+i*100),name:'m'+i}));const fly={version:'20990101000000',name:'fly'};const io=(t,find)=>({repo:{readdir:()=>repo.map(r=>r.version+'_'+r.name+'.sql')},fetch:async()=>({ok:true,json:async()=>({result:[...repo,fly]}),text:async()=>''}),prTouchesMigrations:t,findInFlight:find});const yes=async(rows)=>new Map(rows.map(r=>[r.version,1]));const no=async()=>new Map();const go=(t,f)=>ledgerCheck({env,argv:[],total:700,io:io(t,f)});const a=await go(false,yes),b=await go(true,yes),c=await go(undefined,yes),d=await go(false,no);if(!(a.ok&&a.status==='in-flight'&&!b.ok&&!c.ok&&!d.ok)){console.error('HYG-158: an in-flight migration must relax only a PR that touches no migration, and only when an open PR carries it',a.status,b.status,c.status,d.status);process.exit(1)}\"",
+    "note": "The consequence: a ledger row carried by an open PR is ok (in-flight) on a PR with no migration change, and still fails a migration PR, a run whose diff is unknown (every push to main), and a row no open PR carries. On main before this change the status is drift and the probe fails."
+  }
+}

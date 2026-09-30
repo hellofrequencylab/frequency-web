@@ -11,7 +11,9 @@ import {
   collapseSeriesRows,
   countSeries,
   countSeriesBy,
+  groupBySeries,
   isSeriesAnchor,
+  onePerSeries,
   isSeriesCadence,
   seriesDates,
   seriesFetchLimit,
@@ -476,6 +478,97 @@ describe('collapseSeriesAroundFloor — the search partition', () => {
       perSeries: TEASER_CARDS_PER_SERIES,
     })
     expect(ids(out)).toEqual(['a'])
+  })
+})
+
+describe('SERIES-RANK: a comparator elects the best-ranked dates (ADR-1680)', () => {
+  const going: Record<string, number> = { a: 2, c1: 1, c2: 40, c3: 5, c4: 0 }
+  const byGoing = (x: SeriesRow, y: SeriesRow) => (going[y.id] ?? 0) - (going[x.id] ?? 0)
+
+  it('elects the best-attended date, not the next one', () => {
+    const out = collapseSeries(weekly(4), { perSeries: 1, upcomingFrom: FLOOR, elect: byGoing })
+    expect(ids(out.rows)).toEqual(['c2'])
+  })
+
+  it('perSeries: 2 elects the top two by the comparator, in the input order', () => {
+    const out = collapseSeries(weekly(4), { perSeries: 2, upcomingFrom: FLOOR, elect: byGoing })
+    expect(ids(out.rows)).toEqual(['c2', 'c3'])
+  })
+
+  it('a tie elects the earliest, so a comparator that cannot tell dates apart changes nothing', () => {
+    const flat = () => 0
+    const out = collapseSeries(weekly(4), { perSeries: 1, upcomingFrom: FLOOR, elect: flat })
+    expect(ids(out.rows)).toEqual(['a'])
+  })
+
+  it('dates and counts stay earliest-first whatever elects', () => {
+    const out = collapseSeries(weekly(4), { perSeries: 1, upcomingFrom: FLOOR, elect: byGoing })
+    expect(out.groups[0].dates.map((d) => d.id)).toEqual(['a', 'c1', 'c2', 'c3', 'c4'])
+    expect(out.groups[0].dateCount).toBe(5)
+    expect(out.groups[0].hiddenCount).toBe(4)
+  })
+
+  it('a comparator that answers NaN is read as a tie, never as a crash or a shuffle', () => {
+    const out = collapseSeries(weekly(3), { perSeries: 1, upcomingFrom: FLOOR, elect: () => NaN })
+    expect(ids(out.rows)).toEqual(['a'])
+  })
+})
+
+describe('SERIES-PIN: onePerSeries (ADR-1680)', () => {
+  it('keeps the first row of each series and counts its other eligible dates', () => {
+    const rows = [...weekly(4), row({ id: 'solo', starts_at: '2027-03-06T19:00:00Z' })]
+    const folded = collapseSeries(rows, { perSeries: 3, upcomingFrom: FLOOR })
+    expect(ids(folded.rows)).toEqual(['a', 'c1', 'c2', 'solo'])
+    const pins = onePerSeries(folded.rows, folded)
+    expect(pins.map((p) => [p.row.id, p.moreDates])).toEqual([
+      ['a', 4],
+      ['solo', 0],
+    ])
+  })
+
+  it('follows the caller\'s sorted order, so the pin is the card seen first', () => {
+    const folded = collapseSeries(weekly(2), { perSeries: 3, upcomingFrom: FLOOR })
+    const sorted = [...folded.rows].reverse()
+    expect(onePerSeries(sorted, folded).map((p) => p.row.id)).toEqual(['c2'])
+  })
+
+  it('a row the fold never grouped still gets a pin, with no extra dates', () => {
+    const odd = row({ id: 'x', starts_at: 'not a date' })
+    const folded = collapseSeries([odd], {})
+    expect(onePerSeries(folded.rows, folded)).toEqual([{ row: odd, moreDates: 0 }])
+  })
+})
+
+describe('SERIES-PICKER: groupBySeries (ADR-1680)', () => {
+  type Titled = SeriesRow & { title: string }
+  const t = (r: SeriesRow, title: string): Titled => ({ ...r, title })
+
+  it('keeps every date, heads a series by its title, and leaves a one-off alone', () => {
+    const series = weekly(2).map((r) => t(r, 'Cowork'))
+    const solo = t(row({ id: 'solo', starts_at: '2027-03-06T19:00:00Z' }), 'Picnic')
+    // Newest first, the way /admin/qr reads.
+    const groups = groupBySeries([series[2], solo, series[1], series[0]])
+    expect(groups.map((g) => [g.title, g.series, g.rows.map((r) => r.id)])).toEqual([
+      ['Cowork', true, ['a', 'c1', 'c2']],
+      ['Picnic', false, ['solo']],
+    ])
+  })
+
+  it('titles a series whose anchor aged out by its first present date', () => {
+    const [, c1, c2] = weekly(2).map((r) => t(r, 'Cowork'))
+    const groups = groupBySeries([c1, c2])
+    expect(groups).toHaveLength(1)
+    expect(groups[0]).toMatchObject({ key: 'a', title: 'Cowork', series: true })
+  })
+
+  it('a lone date of a series is not a heading of one', () => {
+    const [, c1] = weekly(1).map((r) => t(r, 'Cowork'))
+    expect(groupBySeries([c1])[0].series).toBe(false)
+  })
+
+  it('a row listed twice appears once', () => {
+    const solo = t(row({ id: 'solo' }), 'Picnic')
+    expect(groupBySeries([solo, solo])[0].rows).toHaveLength(1)
   })
 })
 

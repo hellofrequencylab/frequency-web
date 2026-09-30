@@ -115,7 +115,7 @@
 # to run under, and the gate's inputs (profiles.meta and the economy columns) are needed for EVERY
 # active member, not the caller. It reports profile ids only, never an email or an auth id, and
 # writes nothing.
-# app/api/cron/storage-backup/route.ts (added 2026-09-29, HYG-144, ADR-1636): the nightly copy of
+# app/api/cron/storage-backup/route.ts (added 2026-09-29, HYG-144, ADR-1693): the nightly copy of
 # Storage files to Cloudflare R2. The caller is Vercel Cron, so there is no session. It must read
 # EVERY bucket, the private ones included, which only the service role can sign a url for; the
 # listing RPC backup_storage_objects_since is granted to service_role only (a member must not learn
@@ -253,6 +253,12 @@
 # policy-filtered count would quietly report a smaller number than the statement destroys. The caller is
 # authorized before this is ever reached (event.editSettings, re-resolved in the action), nothing here
 # writes, and nothing leaves it but integers.
+# lib/commerce/transfers.ts (added 2026-09-29, LIVE-622): the split-order transfer ledger. The table it
+# writes (commerce_order_transfers) is service role only by design, RLS on with no policy and revoked
+# from anon and authenticated, like financial_transactions, and its callers have no session to run
+# under: the Stripe webhook (the settle, transfer.created, transfer.reversed) and the reconcile-transfers
+# cron. Nothing here is reachable from a request a member makes, and nothing leaves it but counts and
+# log lines; a seller's read of their share (LIVE-624) is authorized before it reaches this module.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -666,6 +672,7 @@ lib/commerce/reviews.ts
 lib/commerce/seller-audience.ts
 lib/commerce/seller-verification.ts
 lib/commerce/ticket-projection.ts
+lib/commerce/transfers.ts
 lib/commerce/variants.ts
 lib/comms/bulk-dm.ts
 lib/comms/contact-preferences.ts

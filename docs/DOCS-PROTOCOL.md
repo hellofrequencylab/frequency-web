@@ -28,8 +28,9 @@ and carry a pointer back to, the relevant git doc (its **"Source of truth"**).
 
 1. **Technical artifact?** (schema / migration / code / API / config) then update the
    relevant `docs/*.md`. If it is a **decision with rationale**, add an ADR to
-   [`DECISIONS.md`](DECISIONS.md). If a build item moved, change the row in
-   [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) so its probe matches. Do not edit
+   [`DECISIONS.md`](DECISIONS.md) as a fragment, `docs/ledger/adr/ADR-<n>.md`. If a build
+   item moved, change the row in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) so its probe
+   matches, as a fragment, `docs/ledger/rows/<ID>.json` (ADR-1635). Do not edit
    `DEVELOPMENT-MAP.md` or `ROADMAP.md` for status; those are superseded history.
 2. **Does it change how a MEMBER uses the product?** then add/update the matching
    **help article** in `content/help/` (member voice), and add a human-facing line to

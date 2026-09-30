@@ -13,7 +13,7 @@ import {
 } from '@/lib/backup/storage-copy'
 import type { R2Config } from '@/lib/backup/r2'
 
-// HYG-144 (ADR-1636). The copy loop against a fake Storage and a fake R2: what it copies, where the
+// HYG-144 (ADR-1693). The copy loop against a fake Storage and a fake R2: what it copies, where the
 // cursor lands after every kind of stop, and that a re-run after a failure resumes rather than
 // repeats. Then the production wiring against a mocked Supabase client and a recording fetch: the
 // listing RPC gets the cursor, private objects are read through a signed url, and the PUT to R2 is

@@ -2,7 +2,7 @@ import 'server-only'
 import { envStringOrNull } from '@/lib/env/string'
 import { encodeS3Key, signSigV4, UNSIGNED_PAYLOAD } from '@/lib/backup/sigv4'
 
-// The second store for Storage files: Cloudflare R2 over its S3-compatible API (HYG-144, ADR-1636).
+// The second store for Storage files: Cloudflare R2 over its S3-compatible API (HYG-144, ADR-1693).
 //
 // DARK UNTIL CONFIGURED. The owner creates the bucket and the API token (OWN-088); until all four
 // variables below are set, `r2ConfigFromEnv()` answers null with the names that are missing and the

@@ -126,10 +126,10 @@ export async function OutcomesTab() {
         />
       </AdminSection>
 
-      <AdminSection title="Journeys" description="Completion and the step members tend to get stuck on.">
+      <AdminSection title="Journeys" description="Members who took each Journey, how many finished it, and the lesson step the rest are on.">
         <DataTable
           rows={quests}
-          getRowId={(q) => q.name}
+          getRowId={(q) => q.id}
           columns={questColumns}
           caption="Journey completion rates and stall steps."
           empty={<EmptyState variant="first-use" icon={Map} title="No Journey activity yet" description="Completion shows up here as members adopt Journeys." />}

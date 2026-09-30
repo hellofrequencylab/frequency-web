@@ -2,6 +2,7 @@
 
 import { MapCanvas } from '@/components/maps/map-canvas'
 import type { MapPin } from '@/components/maps/types'
+import { moreDatesLine } from '@/lib/maps/pin-copy'
 
 // Events library map (Events B-4). Plots in-person events at their HOSTING
 // CIRCLE'S public meeting location (city/approx) — the same public coordinate the
@@ -22,6 +23,9 @@ export type EventMapPin = {
   /** The hosting circle's PUBLIC coordinates. Never the exact venue. */
   lat: number
   lng: number
+  /** A repeating event's OTHER upcoming dates (SERIES-PIN). The map draws one pin per series, so
+   *  the popup is where "and 8 more dates" is said. Absent or 0 for a one-off. */
+  moreDates?: number
 }
 
 // Rendered via next/dynamic({ ssr:false }) from the client wrapper — no map engine may
@@ -45,15 +49,21 @@ export default function EventsMap({
     )
   }
 
-  const mapPins: MapPin[] = pins.map((p) => ({
-    id: p.id,
-    lat: p.lat,
-    lng: p.lng,
-    title: p.title,
-    subtitle: p.cityLabel ? `${p.whenLabel} · ${p.cityLabel}` : p.whenLabel,
-    href: `/events/${encodeURIComponent(p.slug)}`,
-    hrefLabel: 'View event →',
-  }))
+  const mapPins: MapPin[] = pins.map((p) => {
+    // The same copy the /nearby map speaks (lib/maps/pin-copy.ts), so the two maps say it one way.
+    const more = moreDatesLine(p.moreDates ?? 0)
+    return {
+      id: p.id,
+      lat: p.lat,
+      lng: p.lng,
+      title: p.title,
+      subtitle: [p.whenLabel, more, p.cityLabel].filter(Boolean).join(' · '),
+      href: `/events/${encodeURIComponent(p.slug)}`,
+      hrefLabel: more ? 'See the event and its dates →' : 'View event →',
+      // What draws the spot as a `1+` bubble, exactly as /nearby does for the same series.
+      moreCount: p.moreDates ?? 0,
+    }
+  })
 
   return (
     <MapCanvas

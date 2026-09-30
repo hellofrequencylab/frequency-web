@@ -2,7 +2,7 @@
 // The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
 // declaration is applied, not merely written down.
 /**
- * Nightly storage copy (HYG-144, ADR-1636). Runs daily via Vercel Cron.
+ * Nightly storage copy (HYG-144, ADR-1693). Runs daily via Vercel Cron.
  *
  * THE GAP IT CLOSES. Supabase's daily backup restores the storage.objects rows and not the files
  * (OWN-082's rehearsal), so a lost bucket was lost. The owner ruled "Nightly copy elsewhere" and

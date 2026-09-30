@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-730",
+  "title": "A member tuned into a Circle's second or third Channel does not see its cluster posts: the feed and RLS arms still match the primary Channel only",
+  "status": "parked",
+  "priority": "P3",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "supabase/migrations/20270345011400_circle_channels.sql",
+    "ref": "LIVE-666 (ADR-1679): owner ruling 2026-09-30 ~02:10Z \"Phase it\", feed and RLS stay on the primary"
+  },
+  "notes": "parkedUntil: 2027-01-05. Phase two of LIVE-666, after launch; owner ruling 2026-09-30 ~02:10Z \"Phase it\" (ADR-1679).",
+  "detail": "FILED 2026-09-30 by the LIVE-666 builder (ADR-1679). Owner ruling 2026-09-30 ~02:10Z: \"Phase it\". LIVE-666 lets a Circle carry up to three Channels (circle_channels, migration 20270345011400, position 1 mirrored on circles.topical_channel_id). Discovery and the Channel pages match any of the three in app code. The feed and RLS still decide \"a tuned-in member reads this Circle's cluster posts\" on the PRIMARY only, by ruling, so a member tuned into the Circle's second or third Channel does not see them.\n\nWHAT SHIPS. One migration that widens every arm reading c.topical_channel_id = any(<tuned>) so it also matches the join:\n  (c.hub_id is null and (c.topical_channel_id = any(T) or exists (select 1 from public.circle_channels cc where cc.circle_id = c.id and cc.topical_channel_id = any(T))))\nwhere T is the tuned set the arm already uses. The arms, at their LATEST definitions (re-read before building):\n  1. The posts policy \"posts: read by visibility (crew+ or public)\", latest in 20270345007700_feed_rls_space_scope.sql (line 119, predicate on line 122): ((c.hub_id is null) and (c.topical_channel_id = any (private.get_my_tuned_channel_ids()))).\n  2. public.scoped_feed_for_viewer, latest in 20270345009100_scoped_feed_reads_what_the_policy_reads.sql (line 44, predicate on line 78): (c.hub_id is null and c.topical_channel_id = any(coalesce(get_my_tuned_channel_ids(), '{}'::uuid[]))). It must keep saying what the posts policy says (LIVE-335).\n  3. public.feed_for_viewer, latest in 20270227000000_circle_privacy.sql (line 444, predicate on line 488): the same shape as 2.\ncircle_channels is public read with no identity in its USING, so the exists() adds no RLS recursion; confirm with pnpm check:rls-recursion. Measure the posts policy plan on the feed path before and after (ix_circle_channels_topical_channel_id and the primary key on (circle_id, topical_channel_id) both exist). public_circle_by_slug and public_circle_by_id join the primary for display and stay. The Circle settings hint (\"Its posts join the first one's feed\") changes when this ships.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Filed parked 2026-09-30 (ADR-1679). Not probed while parked. Closes when a member tuned into only a Circle's second Channel reads its cluster posts through the posts policy and both feed RPCs.",
+    "checked": "2026-09-30"
+  }
+}

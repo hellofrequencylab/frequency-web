@@ -49,7 +49,22 @@
       ]
     }
   ],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "/screenshots/home-narrow.jpg",
+      "sizes": "390x844",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Frequency on a phone: find your people and the Circles and events near you"
+    },
+    {
+      "src": "/screenshots/home-wide.jpg",
+      "sizes": "1264x800",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Frequency on a computer: start a Circle, host events, open a Space"
+    }
+  ],
   "related_applications": [],
   "prefer_related_applications": false
 }

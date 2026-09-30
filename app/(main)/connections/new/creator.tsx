@@ -417,7 +417,7 @@ export function Creator({ userId }: { userId: string }) {
     if (!res.ok) {
       setMsg({
         kind: 'warn',
-        text: res.reason === 'ai_unavailable' ? 'Vera assist is off right now.' : 'Vera couldn’t parse that. Add details by hand.',
+        text: res.reason === 'ai_unavailable' ? 'Vera assist is off right now.' : 'Vera couldn’t make sense of that. Add the details by hand.',
       })
       return
     }
@@ -503,7 +503,7 @@ export function Creator({ userId }: { userId: string }) {
             <p className="mt-3 text-body-sm font-medium text-text">Snap the card, front and back</p>
             <p className="mt-1 text-meta text-subtle">
               Get the whole card in frame, squared up, no glare. Vera reads both sides, keeps the
-              card on your file, harvests every detail, and cuts out a profile photo.
+              card on file, picks up every detail, and crops a photo for the contact.
             </p>
 
             {/* Explicit front + back slots (back optional). */}
@@ -784,7 +784,7 @@ export function Creator({ userId }: { userId: string }) {
               onChange={(e) => set('visibility', e.target.value as Visibility)}
               options={[
                 { value: 'private', label: 'Private (only you)' },
-                { value: 'network', label: 'Network (visible to stewards)' },
+                { value: 'network', label: 'Network (local Hosts can find them)' },
               ]}
             />
           </Field>
@@ -812,7 +812,7 @@ export function Creator({ userId }: { userId: string }) {
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            {saving ? 'Saving…' : 'Save profile'}
+            {saving ? 'Saving…' : 'Save contact'}
           </button>
         </div>
       )}

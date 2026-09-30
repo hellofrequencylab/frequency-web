@@ -4,7 +4,7 @@ description: The short version of what Frequency is and how it helps you find re
 category: getting-started
 order: 1
 published: 2026-05-31
-updated: 2026-06-10
+updated: 2026-09-30
 audience: member
 featureKeys: [community, circles]
 status: published
@@ -21,8 +21,8 @@ Most online communities are a feed and a hope. Frequency has a shape:
 - A **Channel** is what you practice: movement, breathwork, holistic health,
   creativity, human relating, and more. It connects you to people everywhere who
   care about the same thing.
-- A **Circle** is your people, near you. A small group built around a Channel,
-  with an always-on space online and usually a standing time to meet in person.
+- A **Circle** is your people, near you. A small group built around one to three
+  Channels, with an always-on space online and usually a standing time to meet in person.
 - As Circles grow, they seed new ones nearby, and a neighborhood of Circles
   becomes a whole local community. None of it is appointed from the top.
 

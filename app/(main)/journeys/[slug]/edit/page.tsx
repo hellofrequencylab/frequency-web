@@ -13,9 +13,10 @@ import { JourneyComposer } from '@/components/journey/v2/journey-composer'
 import { JourneyDangerZone } from '@/components/journey/v2/journey-danger-zone'
 import { JourneyExport } from '@/components/journey/v2/journey-export'
 
-// Journeys v2 — the author-only structure editor route (ADR-252, J4b). Loads the plan's
-// block tree and hands it to the client editor. Only the author may open it; everyone else
-// is sent to the player. The editor itself calls the author-gated edit actions.
+// Journeys v2 — the structure editor route (ADR-252, J4b). Loads the plan's block tree and hands
+// it to the client editor. Only a caller `canEditJourney` admits may open it; everyone else is sent
+// to the player. The editor's save actions (./actions.ts) run that same gate, so whoever can open
+// the editor can save in it (LIVE-732, ADR-1686).
 export const dynamic = 'force-dynamic'
 
 export default async function EditJourneyPage({ params }: { params: Promise<{ slug: string }> }) {

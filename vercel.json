@@ -122,6 +122,10 @@
       "schedule": "50 4 * * *"
     },
     {
+      "path": "/api/cron/reconcile-transfers",
+      "schedule": "20,50 * * * *"
+    },
+    {
       "path": "/api/cron/storage-backup",
       "schedule": "20 5 * * *"
     }

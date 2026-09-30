@@ -63,10 +63,17 @@ if (!repo || !token) {
   process.exit(1)
 }
 
+const PR_NUMBER = /^[1-9][0-9]{0,9}$/
+
 function prNumber(): number | null {
   try {
     const ev = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH!, 'utf8'))
-    return ev?.pull_request?.number ?? null
+    // The number goes into a GitHub API path, so only a plain positive integer leaves this file
+    // (HYG-143, CodeQL js/file-access-to-http): anything else in the event payload is not a PR.
+    // An anchored digits-only test is the check CodeQL reads as a barrier; a typeof test is not.
+    const raw = String(ev?.pull_request?.number ?? '')
+    if (PR_NUMBER.test(raw)) return Number(raw)
+    return null
   } catch {
     return null
   }

@@ -126,10 +126,13 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
   { key: 'journeys',   href: '/journeys',        label: 'Journeys',   section: 'The Quest', defaultAccess: 'member', surface: 'journeys' },
   { key: 'practices',  href: '/practices',       label: 'Practices',  section: 'The Quest', defaultAccess: 'member', surface: 'practices' },
-  // Re-homed orphans (E.1). Library = the community's practices/programs/journeys catalog; Journal =
-  // your own captured-moments log (the personal face of Capture). Both are member-content surfaces,
-  // so they live with the Quest engine rather than floating routeless.
-  { key: 'library',    href: '/library',         label: 'Library',    section: 'The Quest', defaultAccess: 'member', surface: 'library' },
+  // The Library row is GONE (LIVE-681, ADR-1678). The owner ruled one front door: /practices holds
+  // the Library's ranked catalog of practices and journeys (the practices-best-of block) and
+  // /library is a 308 to it (next.config.ts), so a rail row there would be a second door to the
+  // same page. The `library` access-matrix surface and its AREA_ICONS glyph stay: an operator
+  // menu row or a stored override may still name the key, and the rail must not draw it bare.
+  // Journal = your own captured-moments log (the personal face of Capture), a member-content
+  // surface that lives with the Quest engine rather than floating routeless (E.1).
   // Journal is a member-only PERSONAL log (no matrix surface of its own); ride the `people` row
   // ({ member: 'full' }, visitor hidden) so it gates exactly like the other member-only surfaces.
   // `railHidden` since the 2026-08-06 regroup: DAWN files the journal under "You" (the account

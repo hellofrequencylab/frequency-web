@@ -195,10 +195,19 @@ Mobile is a prime first beneficiary when you pilot a sync engine on one surface
 
 1. **Mobile stack**: React Native (max reuse: shared TS contract types + design
    tokens) vs native Swift/Kotlin (best UX, more duplication). Determines how much
-   contract code is *literally* shared.
+   contract code is *literally* shared. **Decided 2026-09-29: Expo / React Native**
+   (owner ruling, [ADR-1650](DECISIONS.md)). The app build itself stays parked; the
+   contract, auth, push, capture and store-readiness work it plugs into is active in
+   `docs/BUILD-BACKLOG.json` (wave WM).
+   **Payments in the app go through Apple In-App Purchase** (owner ruling 2026-09-29,
+   [ADR-1650](DECISIONS.md)): Crew and the Space plans bought in the iOS app grant the same
+   entitlements as Stripe through the same resolver; the web keeps Stripe checkout.
 2. **Authorization-convergence pace**: how aggressively to migrate from
    admin-client/app-authz to RLS + RPC. Real cost; do it surface-by-surface
    (public/discover already started).
 3. **Contract transport**: PostgREST + RLS consumed directly by both clients
    (least duplication) vs a dedicated BFF (tRPC/GraphQL/REST) for more control
-   over complex composition. Likely hybrid.
+   over complex composition. Likely hybrid. **Decided 2026-09-29: hybrid, as a
+   versioned `/api/v1` of thin route handlers** over the same `lib/` functions the web's
+   actions call, plus the reads RLS already allows, with a Supabase bearer token
+   ([ADR-1643](DECISIONS.md), [APP-CONTRACT.md](APP-CONTRACT.md)). No separate BFF service.

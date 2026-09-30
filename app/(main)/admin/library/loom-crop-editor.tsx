@@ -17,6 +17,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { RotateCcw, RotateCw, Undo2 } from 'lucide-react'
+import { RangeField } from '@/components/admin/range-field'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { Select } from '@/components/ui/select'
@@ -363,22 +364,16 @@ export default function LoomCropEditor({
             </IconButton>
           </div>
 
-          <label className="block">
-            <span className="mb-1 flex items-center justify-between eyebrow text-subtle">
-              <span>Straighten</span>
-              <span className="tabular-nums">{geo.straighten}°</span>
-            </span>
-            <input
-              type="range"
-              min={-45}
-              max={45}
-              step={0.5}
-              value={geo.straighten}
-              disabled={saving}
-              onChange={(e) => setGeo(freshGeometry(W, H, geo.turns, Number(e.target.value), geo.frame))}
-              className="w-full accent-primary"
-            />
-          </label>
+          <RangeField
+            label="Straighten"
+            value={geo.straighten}
+            min={-45}
+            max={45}
+            step={0.5}
+            suffix="°"
+            disabled={saving}
+            onChange={(next) => setGeo(freshGeometry(W, H, geo.turns, next, geo.frame))}
+          />
         </>
       )}
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-// HYG-144 (ADR-1636). The storage-backup cron against its REAL auth gate and REAL heartbeat
+// HYG-144 (ADR-1693). The storage-backup cron against its REAL auth gate and REAL heartbeat
 // wrapper. What it pins: a request without the bearer is refused; until all four R2 variables are
 // set a run is INERT (200, one log line naming what is missing, no database client created); a
 // half-set configuration is inert too; a configured run hands the loop the declared budget and

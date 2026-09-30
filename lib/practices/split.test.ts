@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveSplitWrite, type SplitWriteInput } from './split'
+import { keepPrimary, resolveSplitWrite, type SplitWriteInput } from './split'
 import { PRIMARY_PCT_DEFAULT, PRIMARY_PCT_FLOOR, splitZaps } from './attribution'
 
 // The Pillar split as an edit stores it (LIVE-641, ADR-1604). Every rule in split.ts's header has
@@ -134,5 +134,32 @@ describe('what it stores, the ledger splits without inflating the wallet', () =>
         expect(primary).toBeGreaterThanOrEqual(secondary)
       }
     }
+  })
+})
+
+// The primary is domain_id, never the first Focus (LIVE-650, ADR-1618). focus_details is jsonb, so a
+// map read back from the row lists its keys in id order: every case is tried in every key order.
+describe('keepPrimary: key order never chooses the primary', () => {
+  const orders = <T,>(keys: T[]): T[][] =>
+    keys.length <= 1 ? [keys] : keys.flatMap((k, i) => orders([...keys.slice(0, i), ...keys.slice(i + 1)]).map((r) => [k, ...r]))
+  const mapOf = (keys: string[]) => Object.fromEntries(keys.map((k) => [k, F]))
+
+  it('keeps the declared primary while it is one of the Focuses, in every key order', () => {
+    for (const keys of orders([MIND, BODY, SPIRIT])) expect(keepPrimary(BODY, mapOf(keys))).toBe(BODY)
+  })
+
+  it('falls back to the first Focus of the map as handed only when the primary left the set', () => {
+    expect(keepPrimary(BODY, mapOf([SPIRIT, MIND]))).toBe(SPIRIT)
+    expect(keepPrimary(null, mapOf([MIND, SPIRIT]))).toBe(MIND)
+    expect(keepPrimary(undefined, mapOf([SPIRIT]))).toBe(SPIRIT)
+  })
+
+  it('an empty map, or one with no Pillar ids, has no primary', () => {
+    expect(keepPrimary(MIND, {})).toBeNull()
+    expect(keepPrimary(null, { junk: F })).toBeNull()
+  })
+
+  it('a declared primary that is not a Pillar id is never kept', () => {
+    expect(keepPrimary('__proto__', mapOf([MIND]))).toBe(MIND)
   })
 })

@@ -141,3 +141,54 @@ export function mergeAppOverrides(apps: readonly App[], overrides: AppOverrides)
   })
   return kept.map(({ app }) => app)
 }
+
+// ── An operator's GLOBAL disable wins on every scope (LIVE-686, ADR-1664) ──────────────────────
+// Overrides are stored per scope KIND, and each page loaded only its own kind's rows. So an App an
+// operator turned off at `global` ("off for everyone") still drew on any page whose scope is not
+// global: the personal Profile / Spotlight / Layout editors mount only on /people/<handle>, which
+// is the `profile` scope, so the global switch for them changed nothing anywhere. The fix lives in
+// ONE resolver, `resolveScopeAppOverrides`, which both server readers go through (the shell's
+// cached read in lib/layout/chrome-sources.ts, and `resolveAppsForScope`). It folds the global
+// DISABLES, and only those, into the page scope's own map. A global `position` or `min_role` is
+// about the global rail's order and floor and does not travel.
+
+/** The scope key whose disables apply on every scope. */
+export const GLOBAL_SCOPE_KEY = 'global'
+
+/**
+ * A scope's own overrides with every App the operator disabled at global scope also disabled. PURE.
+ * The scope's own `position` / `minRole` for that App are kept; the global ones are not carried.
+ * Returns `own` itself when there is nothing to fold (the common case: no global disables).
+ */
+export function withGlobalDisables(own: AppOverrides, global: AppOverrides): AppOverrides {
+  let out: AppOverrides | null = null
+  for (const [id, g] of Object.entries(global)) {
+    if (g.enabled !== false || own[id]?.enabled === false) continue
+    out ??= { ...own }
+    out[id] = { enabled: false, position: own[id]?.position ?? null, minRole: own[id]?.minRole ?? null }
+  }
+  return out ?? own
+}
+
+/**
+ * THE override map every App surface reads for a scope: that scope's own rows plus the global
+ * disables (`withGlobalDisables`). `read` is the caller's fail-safe loader for one scope key (the
+ * shell's cross-request cached read, or the editor's direct `loadAppOverrides`), so a failed read
+ * of either key degrades to `{}` for that key and never breaks the rail. The global scope reads
+ * once.
+ */
+export async function resolveScopeAppOverrides(
+  scopeKey: string,
+  read: (key: string) => Promise<AppOverrides>,
+): Promise<AppOverrides> {
+  if (scopeKey === GLOBAL_SCOPE_KEY) return read(scopeKey)
+  const [own, global] = await Promise.all([read(scopeKey), read(GLOBAL_SCOPE_KEY)])
+  return withGlobalDisables(own, global)
+}
+
+/** The Apps in `apps` whose override is not a disable. PURE. No reorder and no role floor: the
+ *  presence-only half of `mergeAppOverrides`, for a set whose order and floor are not this scope's
+ *  to set (the personal "You" set on a profile page). */
+export function dropDisabledApps(apps: readonly App[], overrides: AppOverrides): App[] {
+  return apps.filter((app) => overrides[app.id]?.enabled !== false)
+}

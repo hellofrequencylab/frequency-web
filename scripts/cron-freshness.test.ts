@@ -336,8 +336,9 @@ describe('the floor', () => {
     const { jobs } = readModel()
     // 28 since 2026-09-08: signup-lead-recovery joined the 27 (ADR-1274).
     // 29 since 2026-09-14: onboarding-throughput joined (LIVE-311). 30 since 2026-09-29: tag-library (LIVE-587).
-    // 31 since 2026-09-29: storage-backup (HYG-144).
-    expect(jobs.length).toBe(31)
+    // 31 since 2026-09-29: reconcile-transfers (LIVE-622).
+    // 32 since 2026-09-30: storage-backup (HYG-144).
+    expect(jobs.length).toBe(32)
     expect(jobs.length).toBeGreaterThan(MIN_JOBS)
   })
 })

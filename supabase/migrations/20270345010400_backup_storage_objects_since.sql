@@ -1,5 +1,5 @@
 -- ============================================================================
--- THE NIGHTLY STORAGE COPY READS WHAT CHANGED (HYG-144, ADR-1636, 2026-09-29)
+-- THE NIGHTLY STORAGE COPY READS WHAT CHANGED (HYG-144, ADR-1693, 2026-09-29)
 -- ============================================================================
 --
 -- THE GAP. Supabase's daily database backup carries the storage.objects ROWS and not
@@ -76,6 +76,6 @@ revoke all on function public.backup_storage_objects_since(timestamptz, uuid, in
 grant execute on function public.backup_storage_objects_since(timestamptz, uuid, integer) to service_role;
 
 comment on function public.backup_storage_objects_since(timestamptz, uuid, integer) is
-  'Nightly storage copy (HYG-144, ADR-1636): storage objects in every bucket changed strictly after '
+  'Nightly storage copy (HYG-144, ADR-1693): storage objects in every bucket changed strictly after '
   'the (changed_at, id) cursor and at least five minutes old, oldest first, at most p_limit (1..1000). '
   'Service role only.';
