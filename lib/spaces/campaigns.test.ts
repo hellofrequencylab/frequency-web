@@ -178,7 +178,9 @@ import {
   updateSpaceCampaign,
   scheduleSpaceCampaign,
   sendSpaceCampaign,
+  renderCampaignHtml,
 } from './campaigns'
+import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 
 beforeEach(() => {
   currentProfileId = 'editor-0000-4000-a000-0000000edit'
@@ -340,6 +342,18 @@ describe('scheduleSpaceCampaign', () => {
     expect('error' in r).toBe(false)
     expect(c.status).toBe('scheduled')
     expect(c.scheduled_for).toBe(future)
+  })
+})
+
+describe('renderCampaignHtml — CAN-SPAM footer (LIVE-728)', () => {
+  it('prints the platform postal address under the unsubscribe line', () => {
+    const html = renderCampaignHtml('Hello there.\n\nSee you Saturday.')
+    expect(html).toContain(PLATFORM_POSTAL_LINE)
+    expect(html.indexOf(PLATFORM_POSTAL_LINE)).toBeGreaterThan(html.indexOf('%%SPACE_UNSUBSCRIBE_URL%%'))
+  })
+
+  it('an empty body still carries the address (the footer never depends on the body)', () => {
+    expect(renderCampaignHtml('')).toContain(PLATFORM_POSTAL_LINE)
   })
 })
 
