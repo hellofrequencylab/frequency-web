@@ -4,7 +4,7 @@ description: Where to update your profile, preferences, and account.
 category: getting-started
 order: 12
 published: 2026-06-03
-updated: 2026-09-29
+updated: 2026-09-30
 audience: member
 featureKeys: [settings, notifications]
 status: published
@@ -34,7 +34,7 @@ Settings is one page. Each area below is a section you can scroll to, in this or
 Frequency helps you find people nearby, and you're always in control of how visible you are. **We never share your exact location.** Others only ever see a fuzzed area or your city, never a pin on a map.
 
 - **Ghost mode**: one tap to vanish from proximity and maps entirely.
-- **Show me in the Community directory**: whether you're listed at all.
+- **Show me in the Members directory**: whether you're listed at all.
 - **Who can find me nearby**: no one, only your connections, or the whole community.
 - **Location precision**: the most anyone can see, whether hidden, your city, or a fuzzed neighborhood area (about a mile across).
 - **Discoverability radius**: how far away someone can be and still find you. Your own slider, from a mile up to your whole region.

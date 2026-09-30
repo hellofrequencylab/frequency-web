@@ -17,7 +17,8 @@ import { slugify, isoDaysAgo } from '@/lib/utils'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
 import { getCircleEarnedZaps } from '@/lib/circles/earned'
-import { setCircleChannel } from '@/lib/channels/programs'
+import { setCircleChannels } from '@/lib/channels/programs'
+import { circleChannelIds } from '@/lib/circles/channels'
 import { writeCircleCoverFocus, writeCircleHeroHeight } from '@/lib/circles/hero'
 import {
   accessModeOptions,
@@ -131,11 +132,12 @@ export interface ChannelOptionGroup {
 
 /** The Channel picker's choices: active topical_channels grouped by Pillar
  *  (topical_channels.pillar_id → pillars), in display order. The circle's
- *  CURRENT channel stays in the list even when paused, so the select tells the
- *  truth about where the circle practices today — the write action refuses a
- *  paused target either way. Channels without a pillar land in a trailing
- *  group so nothing curated silently disappears. */
-async function listChannelOptionGroups(currentChannelId: string | null): Promise<ChannelOptionGroup[]> {
+ *  CURRENT channels (up to three, LIVE-666) stay in the list even when paused,
+ *  so the picker tells the truth about where the circle practices today — the
+ *  write action refuses a paused channel the circle does not already carry.
+ *  Channels without a pillar land in a trailing group so nothing curated
+ *  silently disappears. */
+async function listChannelOptionGroups(currentChannelIds: readonly string[]): Promise<ChannelOptionGroup[]> {
   const db = createAdminClient()
   const [pillarsRes, channelsRes] = await Promise.all([
     db.from('pillars').select('id, name, display_order').eq('is_active', true).order('display_order'),
@@ -153,13 +155,13 @@ async function listChannelOptionGroups(currentChannelId: string | null): Promise
     is_active: boolean
   }[]
 
-  if (currentChannelId && !channels.some((c) => c.id === currentChannelId)) {
+  const missing = currentChannelIds.filter((id) => !channels.some((c) => c.id === id))
+  if (missing.length > 0) {
     const { data } = await db
       .from('topical_channels')
       .select('id, name, pillar_id, is_active')
-      .eq('id', currentChannelId)
-      .maybeSingle()
-    if (data) channels.push(data as (typeof channels)[number])
+      .in('id', missing)
+    channels.push(...((data ?? []) as (typeof channels)[number][]))
   }
 
   const toOption = (c: (typeof channels)[number]) => ({
@@ -201,7 +203,7 @@ export async function getCircleAdminData(slug: string) {
   const { data: circle } = await admin
     .from('circles')
     .select(
-      'id, slug, name, about, type, member_cap, status, image_url, unlisted, access, space_id, topical_channel_id, is_space_primary',
+      'id, slug, name, about, type, member_cap, status, image_url, unlisted, access, space_id, topical_channel_id, is_space_primary, circle_channels ( topical_channel_id, position )',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -209,6 +211,9 @@ export async function getCircleAdminData(slug: string) {
 
   const caps = await getCircleCapabilities(circle.id)
   if (!caps.has('circle.editSettings')) return null
+
+  // Every Channel the circle carries, primary first (LIVE-666).
+  const channelIds = circleChannelIds(circle)
 
   // Also load the practice picker data ("This week's practice" lives here now) plus
   // the Circle Quest adoptions (journeys / practices / challenges) the module lists,
@@ -222,7 +227,7 @@ export async function getCircleAdminData(slug: string) {
       getCircleActivePractice(circle.id),
       getCircleQuestAdoptions(circle.id),
       listAdoptableChallenges(circle.id),
-      listChannelOptionGroups(circle.topical_channel_id ?? null),
+      listChannelOptionGroups(channelIds),
       readCircleTheme(circle.id),
       readOwningSpaceFacts(circle.space_id ?? null),
     ])
@@ -257,6 +262,8 @@ export async function getCircleAdminData(slug: string) {
       isSpaceCircle || availableAccessModes(space).length < CIRCLE_ACCESS_MODES.length,
     theme,
     topical_channel_id: circle.topical_channel_id ?? null,
+    /** The one to three Channels the circle carries, primary first (LIVE-666). */
+    channel_ids: channelIds,
     channel_groups: channelGroups,
     practice_library: practice_library.map((p) => ({ id: p.id, title: p.title })),
     active_practice_id: activePractice?.id ?? null,
@@ -419,20 +426,23 @@ export async function setCircleAccessAction(
   return { ok: true }
 }
 
-/** Declare (or clear) the Channel this circle practices in (ADR-871). Re-checks
+/** Declare the one to three Channels this circle practices in (ADR-871,
+ *  LIVE-666), primary first; an empty list clears it. Re-checks
  *  circle.editSettings, the module's own gate, exactly like the sibling field
- *  saves; the data layer (setCircleChannel) refuses a paused Program with
- *  member-facing copy, which this returns for the module to show inline. */
-export async function setCircleChannelAction(
+ *  saves; the data layer (setCircleChannels) refuses a fourth Channel and a
+ *  paused Program with member-facing copy, which this returns for the module to
+ *  show inline. */
+export async function setCircleChannelsAction(
   circleId: string,
   slug: string,
-  channelId: string | null,
+  channelIds: readonly string[],
 ): Promise<{ ok: true } | { error: string }> {
   const caps = await getCircleCapabilities(circleId)
   if (!caps.has('circle.editSettings')) return { error: 'Unauthorized' }
+  if (!Array.isArray(channelIds)) return { error: 'That Channel is not available.' }
 
   try {
-    await setCircleChannel({ circleId, channelId: channelId || null })
+    await setCircleChannels({ circleId, channelIds })
   } catch (err) {
     return { error: err instanceof Error ? err.message : 'Could not save. Try again.' }
   }

@@ -7,6 +7,7 @@ import {
   getCircleJourneyRunData,
   type CircleJourneyRunData,
 } from './circle-journey-run-actions'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Start a Run" control, stacked into the circle rail's ONE Engage box beside the shared
 // challenges and this week's practice (module-map.tsx). A Run is one Circle going through one
@@ -21,6 +22,8 @@ import {
 export function CircleJourneyRunModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readJourneyRun = useEntityRailRead('circle', 'journeyRun', getCircleJourneyRunData)
 
   const [data, setData] = useState<CircleJourneyRunData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -28,7 +31,7 @@ export function CircleJourneyRunModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCircleJourneyRunData(slug)
+    readJourneyRun(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -41,7 +44,7 @@ export function CircleJourneyRunModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readJourneyRun])
 
   if (!slug) return null
   if (loading) {

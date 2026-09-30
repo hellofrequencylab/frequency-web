@@ -4,7 +4,7 @@ description: Pick one thing, set a standing time, recruit a co-host, and run a s
 category: leading
 order: 1
 published: 2026-06-23
-updated: 2026-09-20
+updated: 2026-09-30
 audience: host
 role: host
 featureKeys: [circles, events]
@@ -33,6 +33,8 @@ That is the kit. Everything below is how to use it.
 
 1. Open **Circles** and choose **Start a Circle**.
 2. Pick the **Channel** it is built around (the one thing you practice together).
+   You can add up to two more later from the Circle's settings, but one is the
+   right place to start.
 3. Name it plainly and say where and when it meets. A clear name and a standing
    time tell people exactly what they are walking into.
 4. Set the first **gathering** with a date, time, and place so people have

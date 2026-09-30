@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Archive } from 'lucide-react'
 import { getHubAdminData, archiveHub } from '@/lib/hierarchy/hub-admin'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Danger zone" module (ADMIN-RAIL.md Phase 7, the 'danger' spine cell for hubs). Renders in
 // the page admin dock on /hubs/[slug]; getHubAdminData returns null unless the caller holds hub.manage,
@@ -15,6 +16,8 @@ type HubData = NonNullable<Awaited<ReturnType<typeof getHubAdminData>>>
 export function HubDangerModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/hubs\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('hub', 'admin', getHubAdminData)
 
   const [data, setData] = useState<HubData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -26,7 +29,7 @@ export function HubDangerModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getHubAdminData(slug)
+    readAdmin(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -39,7 +42,7 @@ export function HubDangerModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readAdmin])
 
   if (!slug) return null
   if (loading) {

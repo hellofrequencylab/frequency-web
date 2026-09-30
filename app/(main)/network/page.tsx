@@ -99,7 +99,9 @@ const FACET_SAMPLE_LIMIT = 1000
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
-  title: 'Community',
+  // "Members", not "Community": NAMING.md §Connection layer names the directory Members (ADR-868),
+  // the same word as its nav row and its Network hub tab.
+  title: 'Members',
   description: 'Everyone in the community. Browse, find someone interesting, say hi.',
 }
 
@@ -166,7 +168,7 @@ export default async function CommunityPage({
     : Promise.resolve(null)
 
   // 🔴 Every member read below is a SERVICE-ROLE read on a member-facing page (the nexus_regions
-  // embed), so it answers to no policy. That is why "Show me in the Community directory" and
+  // embed), so it answers to no policy. That is why "Show me in the Members directory" and
   // Ghost mode were once decorative here: the only enforcer of those columns was the members_near
   // RPC, which this page consults for BANDING, not for the listing. So each read is scoped by
   // scopeDirectoryQuery (active, directory_visible, not ghosting, the demo gate), selects the four

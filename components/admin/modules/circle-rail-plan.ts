@@ -20,7 +20,7 @@
 //   cover      setCircleCoverUrl / removeCircleCover   self-saving through the Loom
 //   settings   updateCircleSettings                   the autosave form, FormData keyed by column
 //   access     setCircleAccessAction                  its own action: the save can be REFUSED
-//   channel    setCircleChannelAction                 its own action, for the same reason
+//   channel    setCircleChannelsAction                its own action, for the same reason
 //   permalink  updateCirclePermalink                  its own action: a rename redirects the page
 //
 // HOSTING THE INLINE PLANE. The manifest places `about` on the inline canvas (it is the content of
@@ -45,8 +45,8 @@ export const CIRCLE_SETTINGS_WRITES = ['name', 'about', 'type', 'memberCap', 'st
 /** The column `setCircleAccessAction` writes. */
 export const CIRCLE_ACCESS_WRITES = ['access'] as const
 
-/** The column `setCircleChannelAction` writes. */
-export const CIRCLE_CHANNEL_WRITES = ['topicalChannelId'] as const
+/** The Channels `setCircleChannelsAction` writes: one to three, primary first (LIVE-666). */
+export const CIRCLE_CHANNEL_WRITES = ['channelIds'] as const
 
 /** The column `updateCirclePermalink` writes. */
 export const CIRCLE_PERMALINK_WRITES = ['slug'] as const
@@ -71,7 +71,9 @@ export const CIRCLE_COLUMNS: Record<CircleRailPath, string> = {
   status: 'status',
   unlisted: 'unlisted',
   access: 'access',
-  topicalChannelId: 'topical_channel_id',
+  // Not a `circles` column: the one to three rows in `circle_channels` (LIVE-666), which
+  // `getCircleAdminData` returns primary first under this key.
+  channelIds: 'channel_ids',
   slug: 'slug',
 }
 
