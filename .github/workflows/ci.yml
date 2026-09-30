@@ -272,6 +272,13 @@ jobs:
         # a guard someone armed and stopped comparing — a diagnosis that pointed at a human who did
         # not exist. Gating the ref on the token restores the tri-state the guard actually wants:
         # both set = compare, NEITHER set = loud skip, one set = a real half-arming to shout about.
+        #
+        # 🟡 A REFUSED TOKEN (HYG-154, ADR-1670). When the Management API answers 401 or 403 to this
+        # secret, a pull request whose diff touches nothing under supabase/migrations gets a loud
+        # `refused` and a workflow warning, not a red job: it cannot move the ledger, and on
+        # 2026-09-30 one dead secret redded every open PR at once. A PR that touches a migration,
+        # and every push to main, still fails on it, so main's own run is what notices the dead
+        # token. The guard reads the PR's diff against the origin/<base> fetched above.
         # ARMS THE CROSS-PR ARM OF check:id-collisions (HYG-111, ADR-1509). check:adr and
         # check:backlog prove uniqueness within THIS tree; two open PRs that each append a block
         # pass alone and collide on merge (four times on 2026-09-21: ADR-1492 twice merged,
