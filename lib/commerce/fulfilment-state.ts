@@ -149,3 +149,25 @@ export function fulfilmentFromShipping(shipping: unknown): OrderFulfilment {
     completedAt: trimmedText(r.completedAt, 40),
   }
 }
+
+/** A share's fulfilment record (commerce_order_transfers.fulfilment, LIVE-705), read the same way as
+ *  an order's `shipping.fulfilment`. PURE. */
+export function fulfilmentFromRecord(record: unknown): OrderFulfilment {
+  return fulfilmentFromShipping({ fulfilment: record })
+}
+
+/**
+ * Where a SPLIT order stands, from the steps of its shares that have something to send (LIVE-705,
+ * ADR-1652): the least advanced of them, so the order reads shipped only once every seller has
+ * shipped, and delivered (which closes it as fulfilled) only once every seller has delivered. No
+ * share with anything to send reads `none`. An unknown step counts as `none`. PURE.
+ */
+export function rollupShareFulfilment(steps: Array<string | null | undefined>): FulfillmentStatus {
+  if (steps.length === 0) return 'none'
+  let least = FULFILLMENT_LADDER.length - 1
+  for (const s of steps) {
+    const i = FULFILLMENT_LADDER.indexOf((s ?? 'none') as FulfillmentStatus)
+    least = Math.min(least, i < 0 ? 0 : i)
+  }
+  return FULFILLMENT_LADDER[least]
+}

@@ -124,9 +124,9 @@ export function SupportChatWidget() {
 
   return (
     // `data-visual-mask`: the visual suite paints over this box (test/e2e/surfaces.ts,
-    // VISUAL_MASK_SITES). The widget mounts only where SUPPORT_CHAT is set, which is one
-    // Vercel environment and not another, so a capture that photographed it would encode
-    // the environment it was taken on rather than the page (LIVE-213, ADR-1277).
+    // VISUAL_MASK_SITES). The widget mounts only where SUPPORT_CHAT is set. That was one
+    // Vercel environment and not another until 2026-09-29, so a capture encoded the
+    // environment it was taken on; Preview carries it too since then (LIVE-213, ADR-1694).
     <div
       data-visual-mask="support-chat"
       className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 print:hidden"

@@ -1517,6 +1517,8 @@ export type Database = {
           attempts: number
           created_at: string
           currency: string
+          fulfillment_status: string
+          fulfilment: Json | null
           id: string
           last_error: string | null
           order_id: string
@@ -1540,6 +1542,8 @@ export type Database = {
           attempts?: number
           created_at?: string
           currency?: string
+          fulfillment_status?: string
+          fulfilment?: Json | null
           id?: string
           last_error?: string | null
           order_id: string
@@ -1563,6 +1567,8 @@ export type Database = {
           attempts?: number
           created_at?: string
           currency?: string
+          fulfillment_status?: string
+          fulfilment?: Json | null
           id?: string
           last_error?: string | null
           order_id?: string
@@ -17035,6 +17041,17 @@ export type Database = {
           _profile: string
         }
         Returns: Json
+      }
+      backup_storage_objects_since: {
+        Args: { p_after_at?: string; p_after_id?: string; p_limit?: number }
+        Returns: {
+          bucket_id: string
+          changed_at: string
+          id: string
+          mimetype: string
+          name: string
+          size: number
+        }[]
       }
       block_type_usage: {
         Args: { p_block_type?: string }
