@@ -246,6 +246,12 @@
 # policy-filtered count would quietly report a smaller number than the statement destroys. The caller is
 # authorized before this is ever reached (event.editSettings, re-resolved in the action), nothing here
 # writes, and nothing leaves it but integers.
+# lib/commerce/transfers.ts (added 2026-09-29, LIVE-622): the split-order transfer ledger. The table it
+# writes (commerce_order_transfers) is service role only by design, RLS on with no policy and revoked
+# from anon and authenticated, like financial_transactions, and its callers have no session to run
+# under: the Stripe webhook (the settle, transfer.created, transfer.reversed) and the reconcile-transfers
+# cron. Nothing here is reachable from a request a member makes, and nothing leaves it but counts and
+# log lines; a seller's read of their share (LIVE-624) is authorized before it reaches this module.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -658,6 +664,7 @@ lib/commerce/reviews.ts
 lib/commerce/seller-audience.ts
 lib/commerce/seller-verification.ts
 lib/commerce/ticket-projection.ts
+lib/commerce/transfers.ts
 lib/commerce/variants.ts
 lib/comms/bulk-dm.ts
 lib/comms/contact-preferences.ts

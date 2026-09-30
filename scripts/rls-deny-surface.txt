@@ -41,6 +41,9 @@
 # belongs to, and NO write policy at all, because every write arrives through a Stripe webhook or
 # a server action on the service-role client. So the usual matrix is insert,update,delete.
 commerce_order_items                 money      insert,update,delete
+# The transfer ledger (LIVE-622, ADR-1614): RLS on, zero policies, service role only, like
+# financial_transactions. A seller's view of their share is served by the server (LIVE-624).
+commerce_order_transfers             money      select,insert,update,delete
 commerce_orders                      money      insert,update,delete
 commerce_products                    money      insert,update,delete
 commerce_variants                    money      insert,update,delete
