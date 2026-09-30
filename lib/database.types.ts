@@ -1524,6 +1524,9 @@ export type Database = {
           owner_profile_id: string | null
           owner_space_id: string | null
           platform_fee_cents: number
+          refund_reversal_cents: number
+          reversal_attempts: number
+          reversal_owed_cents: number | null
           reversed_cents: number
           seller_key: string
           source_charge_id: string | null
@@ -1544,6 +1547,9 @@ export type Database = {
           owner_profile_id?: string | null
           owner_space_id?: string | null
           platform_fee_cents?: number
+          refund_reversal_cents?: number
+          reversal_attempts?: number
+          reversal_owed_cents?: never
           reversed_cents?: number
           seller_key: string
           source_charge_id?: string | null
@@ -1564,6 +1570,9 @@ export type Database = {
           owner_profile_id?: string | null
           owner_space_id?: string | null
           platform_fee_cents?: number
+          refund_reversal_cents?: number
+          reversal_attempts?: number
+          reversal_owed_cents?: never
           reversed_cents?: number
           seller_key?: string
           source_charge_id?: string | null
@@ -7273,6 +7282,45 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_downloads: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          policy: string
+          profile_id: string | null
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          policy: string
+          profile_id?: string | null
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          policy?: string
+          profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_downloads_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_downloads_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

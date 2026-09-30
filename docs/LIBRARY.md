@@ -43,7 +43,17 @@ gets its own Loom**. It grows for years without a code deploy per asset.
   (its Space may paint the importer's object by address), every pick reader already drops a row with no url, and the
   AssetRef refresh and the column-image readers skip it, so they stay fail-open and untouched.
   Audio and video refuse (recordings-media has no private twin), and so does a replace or a
-  Recraft edit of a protected file. The download door and proofing are LIVE-578 and LIVE-580.
+  Recraft edit of a protected file. Since [LIVE-578](BUILD-BACKLOG.json)
+  ([ADR-1596](DECISIONS.md)) **every download goes through one server door**,
+  `GET /api/library/download/<id>` (`lib/library/download-door.ts`): it establishes the caller,
+  refuses a missing file or an expired license, applies `download_policy` (`open`: anyone who
+  reached the link; `members`: a signed-in profile; `staff`: the Loom Studio gate), writes one
+  `public.library_downloads` row (`20270345009560`: service-role insert, staff read, no update or
+  delete policy), and only then redirects, to a **one-minute** signed attachment for a protected
+  original or the public url with storage's `download` flag for anything else. A download that
+  cannot be recorded is refused. The drawer's Download is a link to the door and shows the record
+  under `[data-loom-downloads]`; a code-drawn element still exports from the DOM (it has no file).
+  Proofing is LIVE-580.
 - **Scope:** **every asset is space-scoped.** Frequency's shared/master library is the **root
   space's** Loom (`space_id` is NOT NULL). A child space's effective library = its own ∪ root's.
 - **Transforms:** **on-the-fly** (a width/format request against the master). **Editing an image
@@ -370,6 +380,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    EXIF strip, optional watermark) — decomposed into LIVE-576 to LIVE-580 ([ADR-1562](DECISIONS.md)).
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
    LIVE-577 shipped: the private bucket, the protect move and the one signing function.
+   LIVE-578 shipped: the download door and its append-only record.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
    Background removal and upscale (LIVE-589), describe on view (LIVE-588), auto-tag (LIVE-587) and the hybrid Most relevant rank (LIVE-586) are shipped ([ADR-1563](DECISIONS.md)).
 
