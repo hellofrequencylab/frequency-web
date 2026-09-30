@@ -6,9 +6,11 @@
 // every transfer a seller is owed is a row in `commerce_order_transfers` with its own state, written
 // BEFORE the money moves:
 //
-//   planned ──create──▶ created ──transfer.reversed (in full)──▶ reversed
+//   planned ──create──▶ created ──reversed in full (a refund, or the dashboard)──▶ reversed
 //      │                   ▲
 //      └──refused──▶ failed ┘  (retried by the reconciler, same idempotency key)
+//      │
+//      └──the order is refunded in full first──▶ cancelled  (never paid; LIVE-623)
 //
 // THE SURFACE, for the settle, the webhook, the cron and the two rows that build on this one:
 //   settleSplitOrderTransfers(orderId)  the settle's one call: plan, then pay. Never throws.
@@ -23,6 +25,12 @@
 //                                       status once the whole transfer is back.
 //   listOrderTransfers(orderId)         every row of one order, for a refund (LIVE-623) that
 //                                       reverses them and a seller view (LIVE-624) that shows one.
+//   cancelOpenTransfers(orderId)        a fully refunded order's unpaid rows become cancelled.
+//
+// THE REFUND SIDE is ./split-refund.ts (LIVE-623, ADR-1615): it writes each row's
+// refund_reversal_cents and makes the transfer reversals. This module only has to agree with it on
+// two things: a cancelled row that lands anyway is adopted as created (with the whole amount owed
+// back, so the reversal pass takes it), and a PARTIALLY refunded order still pays its sellers.
 //
 // NEVER TWICE. Four things stand between a retry and a second payment to the same seller:
 //   1. one row per seller per order: unique (order_id, seller_key), and the plan upserts with
@@ -38,8 +46,11 @@
 //      was lost. If that lookup cannot be made, the attempt fails rather than risk a second transfer.
 //
 // NEVER A SELLER PAID FOR A REFUNDED ORDER. A transfer is created only while its order is paid or
-// fulfilled and carries no refund. A refund arriving between a failure and its retry holds the row
-// (logged); the pro rata reversal of transfers that DID land is LIVE-623's.
+// fulfilled. A FULL refund flips the order to refunded, and its rows that never landed are
+// cancelled (by the refund, or here if the refund's own cancel was missed). A PARTIAL refund leaves
+// the order paid, so the seller is still paid their share and the refund's pro rata part of it is
+// then reversed, because the refund wrote that target on the row before the transfer was made
+// (ADR-1615, amending ADR-1614 §3, which held every row of an order with any refund).
 //
 // NOT THE FINANCE LEDGER. A split order's financial_transactions row is its platform fee (the
 // revenue, exactly as a destination order records its application fee); the sellers' gross never
@@ -60,10 +71,15 @@ function db(): SupabaseClient {
 
 const TABLE = 'commerce_order_transfers'
 
-export type TransferStatus = 'planned' | 'created' | 'failed' | 'reversed'
+export type TransferStatus = 'planned' | 'created' | 'failed' | 'reversed' | 'cancelled'
 
 /** A row not yet paid: what the executor and the reconciler pick up. */
 const OPEN: TransferStatus[] = ['planned', 'failed']
+
+/** What a transfer that has just landed may be written over: an open row, or one a full refund
+ *  cancelled while this attempt was already at Stripe (it then carries the whole amount as owed
+ *  back, and the reversal pass of ./split-refund.ts takes it). */
+const ADOPTABLE: TransferStatus[] = [...OPEN, 'cancelled']
 
 /** Attempts before a row stops being retried and is logged as stuck every reconciler run. At the
  *  reconciler's half-hour cadence this is about four hours of a seller's account refusing money. An
@@ -98,6 +114,12 @@ export interface OrderTransfer {
   reversedCents: number
   attempts: number
   lastError: string | null
+  /** What the order's refunds say must come back from this transfer, cumulative (LIVE-623). */
+  refundReversalCents: number
+  /** Reversal attempts since that target last rose. */
+  reversalAttempts: number
+  /** The target minus what is already reversed, never below zero (a generated column). */
+  reversalOwedCents: number
 }
 
 interface TransferRow {
@@ -115,10 +137,13 @@ interface TransferRow {
   reversed_cents: number
   attempts: number
   last_error: string | null
+  refund_reversal_cents: number
+  reversal_attempts: number
+  reversal_owed_cents: number
 }
 
 const ROW_COLS =
-  'id, order_id, owner_kind, owner_profile_id, owner_space_id, stripe_account_id, amount_cents, platform_fee_cents, currency, status, stripe_transfer_id, reversed_cents, attempts, last_error'
+  'id, order_id, owner_kind, owner_profile_id, owner_space_id, stripe_account_id, amount_cents, platform_fee_cents, currency, status, stripe_transfer_id, reversed_cents, attempts, last_error, refund_reversal_cents, reversal_attempts, reversal_owed_cents'
 
 function toTransfer(r: TransferRow): OrderTransfer {
   return {
@@ -136,6 +161,9 @@ function toTransfer(r: TransferRow): OrderTransfer {
     reversedCents: r.reversed_cents,
     attempts: r.attempts,
     lastError: r.last_error,
+    refundReversalCents: r.refund_reversal_cents ?? 0,
+    reversalAttempts: r.reversal_attempts ?? 0,
+    reversalOwedCents: r.reversal_owed_cents ?? 0,
   }
 }
 
@@ -238,9 +266,12 @@ async function readOrder(orderId: string): Promise<OrderForTransfer | null> {
   return (data as OrderForTransfer | null) ?? null
 }
 
-/** Paid or fulfilled, and never refunded: the only state in which a seller may be paid. */
-function orderIsPayable(o: Pick<OrderForTransfer, 'status' | 'refunded_at'>): boolean {
-  return (o.status === 'paid' || o.status === 'fulfilled') && !o.refunded_at
+/** Paid or fulfilled: the only state in which a seller may be paid. A partially refunded order is
+ *  still paid (the schema has no partial state; refunded_at is stamped), and its sellers are paid
+ *  their share and then have the refund's pro rata part reversed (ADR-1615). A fully refunded order
+ *  is `refunded`, and pays nobody. */
+function orderIsPayable(o: Pick<OrderForTransfer, 'status'>): boolean {
+  return o.status === 'paid' || o.status === 'fulfilled'
 }
 
 // ── Plan ────────────────────────────────────────────────────────────────────────────────────────
@@ -292,11 +323,13 @@ export interface ExecuteSummary {
   failed: number
   /** Rows another worker had already claimed. */
   skipped: number
-  /** Rows not paid because the order is no longer payable (refunded, cancelled). */
+  /** Rows not paid because the order is no longer payable and was not refunded (logged). */
   held: number
+  /** Rows never paid because the order was refunded in full first. */
+  cancelled: number
 }
 
-const emptySummary = (): ExecuteSummary => ({ created: 0, adopted: 0, failed: 0, skipped: 0, held: 0 })
+const emptySummary = (): ExecuteSummary => ({ created: 0, adopted: 0, failed: 0, skipped: 0, held: 0, cancelled: 0 })
 
 /** The charge behind an order's PaymentIntent, which a transfer names as `source_transaction` so it
  *  can land before the charge's funds are available. Null when it cannot be read. */
@@ -335,7 +368,7 @@ async function markCreated(row: TransferRow, transferId: string, chargeId: strin
       updated_at: new Date().toISOString(),
     })
     .eq('id', row.id)
-    .in('status', OPEN)
+    .in('status', ADOPTABLE)
   if (error) {
     // The money has moved and this row does not say so. Loud, and self-healing: the retry lookup
     // (attempts > 0) and the transfer.created webhook both adopt it by the row id in its metadata.
@@ -440,6 +473,12 @@ export async function executePlannedTransfers(
   if (!rows.length) return out
 
   const order = await readOrder(orderId)
+  if (order?.status === 'refunded') {
+    // Refunded in full before these were paid: nobody is owed anything. The refund cancels them
+    // itself (./split-refund.ts); this is the backstop for a cancel that did not get written.
+    out.cancelled = await cancelOpenTransfers(orderId)
+    return out
+  }
   if (!order || !orderIsPayable(order)) {
     out.held = rows.length
     log.warn('commerce.transfer.held', { orderId, rows: rows.length, status: order?.status ?? 'missing' })
@@ -508,7 +547,6 @@ export async function reconcileTransfers(opts: {
     .select('id, commerce_order_transfers(id)')
     .eq('funds_flow', 'separate')
     .in('status', ['paid', 'fulfilled'])
-    .is('refunded_at', null)
     .gte('paid_at', new Date(now - RECONCILE_PLAN_WINDOW_MS).toISOString())
     .lt('paid_at', staleBefore)
     .order('paid_at', { ascending: true })
@@ -547,6 +585,7 @@ export async function reconcileTransfers(opts: {
     out.failed += run.failed
     out.skipped += run.skipped
     out.held += run.held
+    out.cancelled += run.cancelled
   }
 
   // 3. Stuck rows. One line each, every run.
@@ -600,7 +639,7 @@ export async function recordTransferCreated(transfer: Stripe.Transfer): Promise<
       updated_at: new Date().toISOString(),
     })
     .eq('id', rowId)
-    .in('status', OPEN)
+    .in('status', ADOPTABLE)
     .select('id')
   if (error) throw new Error(`transfer ${transfer.id} not adopted: ${error.message}`)
   return (data ?? []).length > 0
@@ -649,4 +688,38 @@ export async function listOrderTransfers(orderId: string): Promise<OrderTransfer
     .order('created_at', { ascending: true })
   if (error) throw new Error(`transfers for ${orderId} unreadable: ${error.message}`)
   return ((data ?? []) as TransferRow[]).map(toTransfer)
+}
+
+// ── Cancel ──────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * An order refunded in full before some of its transfers were made: those rows become `cancelled`,
+ * and nobody is paid for them. Each carries refund_reversal_cents = its whole amount, so that a
+ * transfer an executor had already sent to Stripe when this ran, and which lands anyway, is adopted
+ * as created with the whole amount owed back, and the reversal pass takes it back. Compare-and-set
+ * on a not-yet-landed status, so a row that landed first is left for the reversal instead. Returns
+ * how many rows were cancelled. Throws on a database error.
+ */
+export async function cancelOpenTransfers(orderId: string): Promise<number> {
+  const { data, error } = await db().from(TABLE).select('id, amount_cents').eq('order_id', orderId).in('status', OPEN)
+  if (error) throw new Error(`transfers for ${orderId} unreadable: ${error.message}`)
+  let cancelled = 0
+  for (const r of (data ?? []) as { id: string; amount_cents: number }[]) {
+    const { data: hit, error: upErr } = await db()
+      .from(TABLE)
+      .update({
+        status: 'cancelled',
+        refund_reversal_cents: r.amount_cents,
+        reversal_attempts: 0,
+        last_error: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', r.id)
+      .in('status', OPEN)
+      .select('id')
+    if (upErr) throw new Error(`transfer ${r.id} not cancelled: ${upErr.message}`)
+    if ((hit ?? []).length) cancelled += 1
+  }
+  if (cancelled) log.info('commerce.transfer.cancelled', { orderId, rows: cancelled })
+  return cancelled
 }
