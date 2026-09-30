@@ -7,6 +7,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 //      neighbor's position. A refused first write returns the refusal with nothing written.
 //   2. VERA'S BULK OPS COUNT ONLY WHAT LANDED. `applied` excludes a refused op and the refused ops
 //      come back by index in `failed`.
+//   3. ONE ORDER FOR PRACTICES AND LESSONS (LIVE-689). The builder's drag saves a whole lane: a
+//      practice moves above a lesson like any step, only the rows that move are written, a stale or
+//      foreign list writes nothing, and a refused write puts every moved row back. At the top level
+//      a loose step never trades places with a phase.
 //
 // Network-free: auth, the plan read, the capability read, Vera, and the admin client are stubbed.
 
@@ -86,7 +90,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (t: string) => builder(t) }),
 }))
 
-import { moveBlockAction, applyVeraChangeAction } from './actions'
+import { moveBlockAction, reorderBlocksAction, applyVeraChangeAction } from './actions'
 
 const ME = 'profile-me'
 const PLAN = 'plan-1'
@@ -142,6 +146,108 @@ describe('moveBlockAction (the sibling swap)', () => {
 
     expect(await moveBlockAction(SLUG, A.id, 'down')).toEqual({ error: 'Could not move that step.' })
     expect(writes).toHaveLength(1)
+  })
+})
+
+describe('reorderBlocksAction (the builder drag, LIVE-689)', () => {
+  // Phase 1 as stored: a practice, a lesson, a practice, a check.
+  const LANE = [
+    { id: 'breathe', sort_order: 0, block_type: 'practice' },
+    { id: 'intro', sort_order: 1, block_type: 'lesson' },
+    { id: 'walk', sort_order: 2, block_type: 'practice' },
+    { id: 'recap', sort_order: 3, block_type: 'check' },
+  ]
+  const updates = () => writes.filter((w) => w.op === 'update').map((w) => [w.filters[0][1], w.payload])
+
+  beforeEach(() => {
+    mocks.getPlan.mockResolvedValue({ plan: { id: PLAN, author_id: ME }, items: [] })
+    reads.self = { id: 'recap', parent_id: 'phase-1', block_type: 'check' }
+    reads.siblings = LANE
+  })
+
+  it('moves a lesson and a check between practices, writing only the rows that move, scoped to the plan', async () => {
+    expect(await reorderBlocksAction(SLUG, 'phase-1', ['recap', 'breathe', 'intro', 'walk'])).toEqual({ data: undefined })
+    expect(updates()).toEqual([
+      ['breathe', { sort_order: 1 }],
+      ['intro', { sort_order: 2 }],
+      ['walk', { sort_order: 3 }],
+      ['recap', { sort_order: 0 }],
+    ])
+    expect(writes.every((w) => w.filters.some(([c, v]) => c === 'plan_id' && v === PLAN))).toBe(true)
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(`/journeys/${SLUG}/learn`)
+  })
+
+  it('an adjacent practice/lesson swap writes exactly two rows', async () => {
+    reads.self = { id: 'intro', parent_id: 'phase-1', block_type: 'lesson' }
+    await reorderBlocksAction(SLUG, 'phase-1', ['intro', 'breathe', 'walk', 'recap'])
+    expect(updates()).toEqual([
+      ['breathe', { sort_order: 1 }],
+      ['intro', { sort_order: 0 }],
+    ])
+  })
+
+  it('A STALE LIST (a sibling missing) writes nothing', async () => {
+    const res = await reorderBlocksAction(SLUG, 'phase-1', ['recap', 'breathe', 'intro'])
+    expect(res).toEqual({ error: 'This list changed while you were moving things. Refresh and try again.' })
+    expect(writes).toHaveLength(0)
+  })
+
+  it('A FOREIGN PARENT (the first id is not under the parent named) writes nothing', async () => {
+    expect(await reorderBlocksAction(SLUG, 'phase-2', ['recap', 'breathe', 'intro', 'walk'])).toEqual({
+      error: 'Could not save that order.',
+    })
+    expect(writes).toHaveLength(0)
+  })
+
+  it('A REFUSED WRITE puts every moved row back, last first, and reports the refusal', async () => {
+    refuse = (w) => w.filters[0]?.[1] === 'walk' && (w.payload as { sort_order: number }).sort_order === 3
+    expect(await reorderBlocksAction(SLUG, 'phase-1', ['recap', 'breathe', 'intro', 'walk'])).toEqual({
+      error: 'Could not save that order.',
+    })
+    expect(updates()).toEqual([
+      ['breathe', { sort_order: 1 }],
+      ['intro', { sort_order: 2 }],
+      ['walk', { sort_order: 3 }],
+      ['intro', { sort_order: 1 }],
+      ['breathe', { sort_order: 0 }],
+    ])
+    expect(mocks.revalidatePath).not.toHaveBeenCalled()
+  })
+
+  it('only the author (or an operator) may reorder', async () => {
+    mocks.getCallerProfile.mockResolvedValue({ id: 'someone-else' })
+    expect(await reorderBlocksAction(SLUG, 'phase-1', ['recap', 'breathe', 'intro', 'walk'])).toEqual({
+      error: 'Only the author can edit this journey.',
+    })
+    expect(writes).toHaveLength(0)
+  })
+
+  it('TOP LEVEL: loose steps reorder among themselves and a phase between them keeps its slot', async () => {
+    reads.self = { id: 'step-b', parent_id: null, block_type: 'practice' }
+    reads.siblings = [
+      { id: 'step-a', sort_order: 0, block_type: 'lesson' },
+      { id: 'phase-1', sort_order: 1, block_type: 'phase' },
+      { id: 'step-b', sort_order: 2, block_type: 'practice' },
+    ]
+    await reorderBlocksAction(SLUG, null, ['step-b', 'step-a'])
+    expect(updates()).toEqual([
+      ['step-a', { sort_order: 2 }],
+      ['step-b', { sort_order: 0 }],
+    ])
+  })
+
+  it('TOP LEVEL: the up arrow on a loose step skips the phase beside it', async () => {
+    reads.self = { id: 'step-b', parent_id: null, sort_order: 2, block_type: 'practice' }
+    reads.siblings = [
+      { id: 'step-a', sort_order: 0, block_type: 'lesson' },
+      { id: 'phase-1', sort_order: 1, block_type: 'phase' },
+      { id: 'step-b', sort_order: 2, block_type: 'practice' },
+    ]
+    await moveBlockAction(SLUG, 'step-b', 'up')
+    expect(updates()).toEqual([
+      ['step-a', { sort_order: 2 }],
+      ['step-b', { sort_order: 0 }],
+    ])
   })
 })
 
