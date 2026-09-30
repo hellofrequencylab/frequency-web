@@ -32,6 +32,8 @@
 //      the growing, cheap-to-rebuild half — so Vercel stores a cache it will ACCEPT. The result is
 //      a cold compile on the next build instead of a cold compile AND a cold install AND a silently
 //      discarded cache. A partial loss, chosen, in place of a total loss, unnoticed.
+//      Since HYG-140 it first tries a smaller loss still: put back the compiler cache this build
+//      RESTORED and drop only what this build added (HELD_DIR below, ADR-1656).
 //
 //   2. THE GATE THAT NOTICES. A fail-safe with no gate is an invisible regression (AGENTS.md), so
 //      the floor has its own budget and it FAILS THE BUILD. The trim can absorb Turbopack growing;
@@ -129,7 +131,7 @@
 // `orphansPruned` removes them first, in both places, so the figure the budgets weigh is the install
 // the lockfile describes. See scripts/lib/pnpm-orphans.mjs and backlog HYG-016.
 // ─────────────────────────────────────────────────────────────────────────────
-import { lstatSync, readdirSync, rmSync, existsSync } from 'node:fs'
+import { lstatSync, readdirSync, rmSync, existsSync, renameSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -361,6 +363,55 @@ const KNOWN_LOOSE_FILES = ['.rscinfo', '.previewinfo']
 // straddling the threshold the day the threshold moves, and every case passes by testing nothing.
 const UNKNOWN_REPORT_FLOOR_BYTES = 1048576
 
+// ── THE HELD GENERATION: what an over-budget build keeps instead of trimming (HYG-140, ADR-1656) ─
+// 🔴 THE FAILURE THIS EXISTS FOR. The Turbopack cache does not grow because anything leaks into it.
+// It grows because it is a log-structured database: every warm build writes NEW tables for what it
+// recompiled, and the tables they supersede stay on disk until a compaction merges them, which the
+// engine decides on its own. Production, 2026-09-29: a cold compile wrote 1293 MiB and uploaded
+// 1.25 GB; the first warm build after it held 1459 MiB and uploaded 1.36 GB; four or five builds on,
+// the estimate crossed the trim point and the trim threw the whole compiler cache away, so the next
+// build compiled cold and the cycle restarted (trims at dpl_4LyNMq4rrxfvRb6GnZR1oLk5oKF3,
+// dpl_JCj4zdsaYuyaP9JcJzfs299XUjCp and dpl_4H4zhCnd7dJPpFwcQoX8ihyYFMmH that day). The same shape
+// was reproduced locally on a small Turbopack app: +12% of the cold size per warm build, a partial
+// compaction every ~7 builds, and a floor that still ratchets up because index files accumulate.
+//
+// WHAT WAS RULED OUT, so nobody re-runs it. Nothing under .next/cache/turbopack is an "entry" that
+// can be pruned by age: deleting any table or index file out from under the database leaves it
+// pointing at a file that is gone. And the one public compaction lever, `next internal post-build`
+// (turbopackDatabaseCompact, which the build already runs at shutdown), reclaimed 0 bytes on a
+// database 70% over its cold size. The engine's growth cannot be undone from outside it.
+//
+// WHAT CAN BE DONE is to stop that growth reaching the upload. `prebuild` hard-links the cache this
+// build RESTORED into HELD_DIR (scripts/snapshot-turbopack-cache.mjs). When the cache this build
+// wrote is over the trim point but the restored one still fits, the gate puts the restored one back:
+// the upload stays under the trim point, and the next build starts warm from one build back instead
+// of cold. The growth is dropped, not the compiler cache.
+//
+// HOLD_LIMIT is the refresh. A held generation is frozen: every build after it recompiles what
+// changed since, and throws that away again. After HOLD_LIMIT holds in a row the gate trims as it
+// always did, and the next build compiles a fresh, compact cache. A build whose own cache fits, or
+// that trims, resets the count. It is 6 on a first reading: a cold compile cost ~1 minute on
+// 2026-09-29 (dpl_FPi8nw83Rm2ieM5TSoDeWz3768JM "Build Completed [2m]" against [1m] warm), and
+// six merges of drift is well short of that on the production logs of that day. Re-tune it from the
+// "Compiled successfully in" line of held builds, never to make a run green.
+//
+// A hold is refused, and the trim runs, when: there is no snapshot (a cold build), the snapshot
+// lacks a version directory the new cache has (a Next upgrade, where the old generation is useless
+// to the new compiler), the snapshot alone would not fit, or the limit is reached. Every refusal
+// prints its reason.
+const HELD_DIR = 'turbopack-restored'
+const HELD_STATE_FILE = 'turbopack-held.json'
+const HOLD_LIMIT = 6
+
+// The only names the hold may ever remove, and all of them are its own scratch: the snapshot,
+// the build's grown cache for the instant it is set aside, and the count file. Every hold delete
+// goes through dropHoldArtifact(), which refuses any other name, so the trim loop over
+// COMPILER_CACHE_DIRS stays the only thing that can delete a real cache directory (LIVE-048).
+const HOLD_ARTIFACTS = [HELD_DIR, 'turbopack-discarded', HELD_STATE_FILE]
+// Belt and braces, like OVERLAP below: a hold artifact that is also a protected name disables the
+// hold, and dropHoldArtifact() refuses it, instead of quietly repeating 2026-08-18.
+const HOLD_OVERLAP = HOLD_ARTIFACTS.filter((name) => NEVER_TRIM_DIRS.includes(name) || COMPILER_CACHE_DIRS.includes(name))
+
 const OVERLAP = COMPILER_CACHE_DIRS.filter((name) => NEVER_TRIM_DIRS.includes(name))
 
 /** Sum a directory tree the way a tar of it would: real files once, symlinks as links (~0). */
@@ -463,7 +514,11 @@ if (orphansPruned) {
       `   resolve into them. See scripts/lib/pnpm-orphans.mjs (HYG-016).\n`,
   )
 }
-let nextCache = measure('.next/cache')
+// The held snapshot is LINKS to the cache it sits beside, not more cache: counted, it would double the
+// turbopack figure. It is weighed on its own and kept out of every total below.
+const heldRel = path.join('.next', 'cache', HELD_DIR)
+const heldRaw = measure(heldRel)
+let nextCache = measure('.next/cache') - heldRaw
 const yarnCache = measure('.yarn/cache')
 
 // Name the parts of .next/cache, so a future growth has an address rather than a total.
@@ -493,6 +548,7 @@ const looseParts = []
 const cacheDir = path.join(ROOT, '.next', 'cache')
 if (existsSync(cacheDir)) {
   for (const entry of readdirSync(cacheDir, { withFileTypes: true })) {
+    if (entry.name === HELD_DIR) continue // weighed above; never a trim target and never uploaded
     if (entry.isDirectory()) {
       cacheParts.push([entry.name, measure(path.join('.next', 'cache', entry.name))])
       continue
@@ -511,6 +567,87 @@ if (existsSync(cacheDir)) {
 
 let rawTotal = nodeModules + nextCache + yarnCache
 const dropped = []
+
+// ── THE HOLD'S INPUTS (HYG-140). Read here, acted on inside the trim chain below. ────────────────
+const heldAbs = path.join(cacheDir, HELD_DIR)
+const heldStatePath = path.join(cacheDir, HELD_STATE_FILE)
+/** .next/cache as Vercel will pack it: the held snapshot is links to it, so it never counts. */
+const measureCache = () => measure('.next/cache') - measure(heldRel)
+/** Holds in a row the restored cache already carries. Unreadable or absent reads as none. */
+const heldCount = (() => {
+  try {
+    const n = JSON.parse(readFileSync(heldStatePath, 'utf8')).held
+    return Number.isInteger(n) && n > 0 ? n : 0
+  } catch {
+    return 0
+  }
+})()
+let heldNext = 0
+
+/** Directory names directly under `dir`: for Turbopack, one per compiler version. */
+function versionDirs(dir) {
+  try {
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+  } catch {
+    return []
+  }
+}
+
+/** Whether the restored generation can stand in for this build's cache, and if not, why not. */
+function holdVerdict() {
+  const current = cacheParts.find(([n]) => n === 'turbopack')
+  if (HOLD_OVERLAP.length > 0) {
+    return { ok: false, reason: `HOLD_ARTIFACTS names ${HOLD_OVERLAP.join(', ')}, a real cache directory, so the hold is off` }
+  }
+  if (!existsSync(heldAbs)) {
+    return { ok: false, reason: 'no restored generation was snapshotted (a cold build, or prebuild did not run)' }
+  }
+  if (!current) return { ok: false, reason: 'this build wrote no .next/cache/turbopack to hold back' }
+  const restored = versionDirs(heldAbs)
+  const missing = versionDirs(path.join(cacheDir, 'turbopack')).filter((v) => !restored.includes(v))
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      reason: `the restored generation has no ${missing.join(', ')}, so to this compiler it is a cold cache anyway`,
+    }
+  }
+  const withHeld = rawTotal - current[1] + heldRaw
+  if (packed(withHeld) > TRIM_AT_PACKED_GB * GB) {
+    return { ok: false, reason: `it is over the trim point too, about ${gb(packed(withHeld))} GB packed` }
+  }
+  if (heldCount >= HOLD_LIMIT) {
+    return {
+      ok: false,
+      reason: `it has been held for ${heldCount} builds in a row, which is HOLD_LIMIT, so it is refreshed`,
+    }
+  }
+  return { ok: true, dropped: current[1] }
+}
+
+/**
+ * Put the restored generation back in place of this build's. Two renames, and the first is undone if
+ * the second fails, so a failed swap leaves exactly the cache the trim would have seen.
+ */
+function holdSwap(verdict) {
+  const live = path.join(cacheDir, 'turbopack')
+  const discard = path.join(cacheDir, 'turbopack-discarded')
+  try {
+    dropHoldArtifact('turbopack-discarded')
+    renameSync(live, discard)
+    try {
+      renameSync(heldAbs, live)
+    } catch (err) {
+      renameSync(discard, live)
+      throw err
+    }
+    dropHoldArtifact('turbopack-discarded')
+  } catch (err) {
+    verdict.ok = false
+    verdict.reason = `the swap failed (${err && err.message})`
+  }
+}
 
 // THE FAIL-SAFE. Drop the compiler caches, by name, in the order COMPILER_CACHE_DIRS lists them,
 // until the PACKED estimate is one Vercel will accept.
@@ -543,34 +680,81 @@ if (WARN_ONLY) {
   )
 } else if (packed(rawTotal) > TRIM_AT_PACKED_GB * GB) {
   const before = rawTotal
-  for (const name of COMPILER_CACHE_DIRS) {
-    if (packed(rawTotal) <= TRIM_AT_PACKED_GB * GB) break
-    if (NEVER_TRIM_DIRS.includes(name)) continue // unreachable while OVERLAP is empty, and free
-    const found = cacheParts.find(([partName]) => partName === name)
-    if (!found) continue
-    rmSync(path.join(cacheDir, name), { recursive: true, force: true })
-    dropped.push(found)
-    rawTotal -= found[1]
-  }
-  nextCache = measure('.next/cache')
-  rawTotal = nodeModules + nextCache + yarnCache
+  // THE HOLD, tried before the trim (HYG-140). It swaps in the generation this build restored and
+  // leaves everything else alone, so it can drop no more than the trim below would.
+  const verdict = holdVerdict()
+  if (verdict.ok) holdSwap(verdict)
+  if (verdict.ok) {
+    const current = cacheParts.find(([n]) => n === 'turbopack')
+    current[1] = heldRaw
+    nextCache = measureCache()
+    rawTotal = nodeModules + nextCache + yarnCache
+    heldNext = heldCount + 1
+    console.log(
+      `\n⚠️  check:cache-budget HELD the compiler cache at the generation this build restored.\n` +
+        `   What the build was about to hand back measured ${gib(before)} GiB raw, about ` +
+        `${gb(packed(before))} GB packed, over the ${TRIM_AT_PACKED_GB.toFixed(2)} GB trim point.\n` +
+        `   The Turbopack cache it started from (${mib(heldRaw)} MiB) fits, so that goes back and this build's ` +
+        `${mib(verdict.dropped)} MiB is dropped. Next build: warm install, warm compile from one build back.\n` +
+        `   Held ${heldNext} of ${HOLD_LIMIT} builds in a row; at ${HOLD_LIMIT} the trim runs instead and the ` +
+        `next build compiles a fresh cache (HYG-140, ADR-1656).\n`,
+    )
+  } else {
+    for (const name of COMPILER_CACHE_DIRS) {
+      if (packed(rawTotal) <= TRIM_AT_PACKED_GB * GB) break
+      if (NEVER_TRIM_DIRS.includes(name)) continue // unreachable while OVERLAP is empty, and free
+      const found = cacheParts.find(([partName]) => partName === name)
+      if (!found) continue
+      rmSync(path.join(cacheDir, name), { recursive: true, force: true })
+      dropped.push(found)
+      rawTotal -= found[1]
+    }
+    nextCache = measureCache()
+    rawTotal = nodeModules + nextCache + yarnCache
 
-  const still = packed(rawTotal) > TRIM_AT_PACKED_GB * GB
-  console.log(
-    `\n⚠️  check:cache-budget trimmed the build cache before Vercel could reject it.\n` +
-      `   What the build was about to hand back measured ${gib(before)} GiB raw, about ` +
-      `${gb(packed(before))} GB packed, over the ${TRIM_AT_PACKED_GB.toFixed(2)} GB trim point.\n` +
-      `   Vercel discards the WHOLE cache above ${VERCEL_CEILING_GB.toFixed(2)} GB, node_modules included, so this ` +
-      `drops compiler caches instead:\n` +
-      `   ${dropped.length > 0 ? dropped.map(([n, b]) => `.next/cache/${n} (${mib(b)} MiB)`).join(', ') : 'nothing, none of the named compiler caches were present'}.\n` +
-      `   The fetch cache is kept. Next build: warm install, cold compile.\n` +
-      (still
-        ? `   🔴 STILL OVER after the trim: ${gb(packed(rawTotal))} GB packed. The compiler caches ` +
-          `are not the term that grew.\n` +
-          `   Nothing else here is safe to delete on a build, so read what .next/cache holds below ` +
-          `and decide on purpose. See docs/DEPLOY-SAFETY.md §10.\n`
-        : ''),
-  )
+    const still = packed(rawTotal) > TRIM_AT_PACKED_GB * GB
+    console.log(
+      `\n⚠️  check:cache-budget trimmed the build cache before Vercel could reject it.\n` +
+        `   What the build was about to hand back measured ${gib(before)} GiB raw, about ` +
+        `${gb(packed(before))} GB packed, over the ${TRIM_AT_PACKED_GB.toFixed(2)} GB trim point.\n` +
+        `   Vercel discards the WHOLE cache above ${VERCEL_CEILING_GB.toFixed(2)} GB, node_modules included, so this ` +
+        `drops compiler caches instead:\n` +
+        `   ${dropped.length > 0 ? dropped.map(([n, b]) => `.next/cache/${n} (${mib(b)} MiB)`).join(', ') : 'nothing, none of the named compiler caches were present'}.\n` +
+        `   The fetch cache is kept. Next build: warm install, cold compile.\n` +
+        (still
+          ? `   🔴 STILL OVER after the trim: ${gb(packed(rawTotal))} GB packed. The compiler caches ` +
+            `are not the term that grew.\n` +
+            `   Nothing else here is safe to delete on a build, so read what .next/cache holds below ` +
+            `and decide on purpose. See docs/DEPLOY-SAFETY.md §10.\n`
+          : '') +
+        `   Not held at the restored generation: ${verdict.reason}.\n`,
+    )
+  }
+}
+
+// The snapshot is links, not cache, and it must never reach Vercel: counted in the archive it is the
+// turbopack cache a second time. The count file says how many holds in a row the upload carries.
+if (!WARN_ONLY) {
+  try {
+    dropHoldArtifact(HELD_DIR)
+    if (heldNext > 0) writeFileSync(heldStatePath, `${JSON.stringify({ held: heldNext })}\n`)
+    else dropHoldArtifact(HELD_STATE_FILE)
+  } catch (err) {
+    console.log(`\n🔴 check:cache-budget could not tidy the hold's scratch files: ${err && err.message}. See ADR-1656.\n`)
+  }
+}
+
+/**
+ * THE ONE DELETE THE HOLD HAS (HYG-140, LIVE-048). It removes a name from HOLD_ARTIFACTS, directly
+ * under .next/cache, and refuses everything else, so no edit to the hold can reach the fetch cache,
+ * next/image output or a compiler cache the trim has not chosen. Declared down here, after the trim
+ * chain, so the trim's delete stays the first one in the file (scripts/check-cache-budget-warn-only.test.ts).
+ */
+function dropHoldArtifact(name) {
+  if (!HOLD_ARTIFACTS.includes(name) || HOLD_OVERLAP.includes(name)) {
+    throw new Error(`${name} is not a hold artifact, and the hold may delete nothing else`)
+  }
+  rmSync(path.join(cacheDir, name), { recursive: true, force: true })
 }
 
 if (nodeModules > NODE_MODULES_BUDGET_GIB * GIB) {
@@ -608,7 +792,7 @@ const unknown = [
     .filter(([, b]) => b >= UNKNOWN_REPORT_FLOOR_BYTES)
     .map(([n, b]) => `${n} (${mib(b)} MiB)`),
   ...looseParts
-    .filter(([n]) => !KNOWN_LOOSE_FILES.includes(n))
+    .filter(([n]) => !KNOWN_LOOSE_FILES.includes(n) && n !== HELD_STATE_FILE)
     .filter(([, b]) => b >= UNKNOWN_REPORT_FLOOR_BYTES)
     .map(([n, b]) => `${n} (${mib(b)} MiB, not a directory)`),
 ]
