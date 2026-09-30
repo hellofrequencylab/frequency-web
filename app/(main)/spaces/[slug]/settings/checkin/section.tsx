@@ -6,7 +6,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { ensureCheckinNode, countCheckins } from '@/lib/spaces/checkin'
-import { nodeUrl } from '@/lib/qr/links'
+import { signedNodeUrl } from '@/lib/qr/node-code'
 import { renderQrSvg } from '@/lib/qr/render'
 import { CheckinCodeCard } from '@/components/spaces/checkin-code-card'
 import { CheckinRoster } from '@/components/spaces/checkin-roster'
@@ -55,10 +55,10 @@ export async function CheckinSection({
   }
 
   // Ensure (create-or-get) the Space's one check-in node, then render its QR with the EXISTING helpers
-  // (read-only: nodeUrl builds the /n/<id> destination; renderQrSvg paints it inline). A staff
+  // (read-only: signedNodeUrl builds the signed /n/<id> destination; renderQrSvg paints it inline). A staff
   // previewer reads an existing node but never mints one, so the card may be absent for them.
   const node = await ensureCheckinNode(space.id)
-  const link = node ? nodeUrl(node.id, node.secret) : null
+  const link = node ? signedNodeUrl(node.id) : null
   const svg = link ? await renderQrSvg(link, 256) : null
 
   // The count for the StatCard is a head/count query (countCheckins) — NOT listCheckins(...).length, which
