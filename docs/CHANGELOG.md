@@ -29,6 +29,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **The Practitioner partner program says what you can sell.** It used to promise paid Programs, which you cannot sell. Now it names what you can: tickets to your events and products in the Market from any account, paid bookings and memberships from a Space, and Journeys from a paid Space. Once the team verifies you, it links straight to each one.
+
 - **The privacy policy says what the product does today.** Download your data and delete your account yourself in Settings, Account and privacy; you do not need to email us. It names every service that handles your data, including Anthropic for Vera, Sentry for error reports, and Twilio for texts, and it covers push notifications, location, and the camera.
 
 - **You can only review a Market listing or a Journey you bought.** The review still shows whether it came from a purchase. Existing reviews stay up.
