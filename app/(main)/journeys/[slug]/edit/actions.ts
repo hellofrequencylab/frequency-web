@@ -1,9 +1,11 @@
 'use server'
 
-// Journeys v2 — structure editor actions (ADR-252, J4b). Author-only CRUD over the block tree:
+// Journeys v2 — structure editor actions (ADR-252, J4b). CRUD over the block tree for whoever
+// canEditJourney admits (the author, an operator, or a manager of the owning Space; LIVE-732):
 // add phases + lessons, edit a lesson's title/body/type/required, reorder within a lane of
-// siblings (arrows or drag, practices and lessons alike, LIVE-689), and delete (children cascade via the parent_id FK). Direct admin-client writes behind the
-// author guard; the v2 block types (phase/module + leaf types) need the J0 migration applied.
+// siblings (arrows or drag, practices and lessons alike, LIVE-689), and delete (children cascade
+// via the parent_id FK). Direct admin-client writes behind that one gate (authorPlan); the v2 block
+// types (phase/module + leaf types) need the J0 migration applied.
 
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
