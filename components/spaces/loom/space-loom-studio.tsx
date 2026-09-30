@@ -382,7 +382,7 @@ function LoomQuotaMeter({ meter }: { meter: LoomMeter }) {
       </div>
       {pct !== null && <ProgressTrack value={pct} max={100} minVisible={2} label={`Library storage: ${reading}`} tone={tone} />}
       {meter.read && meter.unknown > 0 && (
-        <p className="text-2xs text-subtle">
+        <p className="text-2xs text-muted">
           {meter.unknown} older {meter.unknown === 1 ? 'image has' : 'images have'} no recorded size, so {meter.unknown === 1 ? 'it is' : 'they are'} not counted here.
         </p>
       )}

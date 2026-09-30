@@ -2,6 +2,7 @@
 
 import { useId, useState, useTransition } from 'react'
 import { Wand2, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { forkPracticeAction, remixDirectionsAction } from '@/app/(main)/practices/actions'
 
@@ -125,15 +126,10 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             >
               Cancel
             </button>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={confirm}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-60"
-            >
+            <Button type="button" disabled={pending} onClick={confirm}>
               {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {pending ? (picked ? 'Remixing your copy…' : 'Making your copy…') : 'Remix it'}
-            </button>
+            </Button>
           </div>
         </div>
       </Dialog>
