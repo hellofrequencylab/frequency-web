@@ -716,8 +716,10 @@ export async function removeItem(planId: string, practiceId: string): Promise<Jo
 
 // --- Lesson/section blocks (ADR-244) — keyed by item id, not practice ---------
 // Non-practice blocks (a lesson, a reading, a section header) carry no practice, so
-// they're addressed by their row id. v1 appends them at the end (sort_order = max+1);
-// reordering/interleaving with practices is a follow-up.
+// they're addressed by their row id. v1 appends them at the end (sort_order = max+1). Ordering
+// is one sort_order over practices and blocks alike: the builder's arrows and drag write it through
+// moveBlockAction / reorderBlocksAction (app/(main)/journeys/[slug]/edit/actions.ts) on the lane math
+// in lib/journeys/block-order.ts, and the player reads it interleaved (LIVE-689, ADR-1681).
 
 /** Append a non-practice block (lesson/section/resource/check). Returns its id. */
 export async function addBlock(
@@ -770,24 +772,6 @@ export async function updateBlock(
 export async function removeBlock(itemId: string): Promise<JourneyWriteResult> {
   const { error } = await db().from('journey_plan_items').delete().eq('id', itemId)
   return error ? writeFailed('removeBlock', itemId, error) : WRITE_OK
-}
-
-/** Persist a new order (array of practice ids in the desired sequence). */
-export async function reorderItems(planId: string, practiceIdsInOrder: string[]): Promise<JourneyWriteResult> {
-  const client = db()
-  const results = await Promise.all(
-    practiceIdsInOrder.map((practiceId, i) =>
-      client
-        .from('journey_plan_items')
-        .update({ sort_order: i })
-        .eq('plan_id', planId)
-        .eq('practice_id', practiceId),
-    ),
-  )
-  const failed = results.find((r) => r.error)
-  if (failed?.error) return writeFailed('reorderItems', planId, failed.error)
-  await touchPlan(client, planId)
-  return WRITE_OK
 }
 
 /** Make a plan visible in the open library (first publish stamps published_at). */

@@ -138,8 +138,12 @@ vi.mock('./journey-fulfilment', () => ({
 }))
 vi.mock('@/lib/journeys/tier-gate', () => ({ checkJourneyTier: vi.fn(async () => ({ ok: true })) }))
 vi.mock('./order-receipt', () => ({ sendOrderReceipts: vi.fn(async () => {}) }))
+// LIVE-622: the settle hands a split order to the transfer ledger. The ledger itself is pinned in
+// ./transfers.test.ts; this file pins only WHICH orders the settle hands over.
+const transfers = vi.hoisted(() => ({ settleSplitOrderTransfers: vi.fn(async () => {}) }))
+vi.mock('./transfers', () => transfers)
 
-import { createCommerceCheckout, refundCommerceOrder } from './checkout'
+import { createCommerceCheckout, refundCommerceOrder, recordCommerceOrderFromSession } from './checkout'
 
 const BASE = {
   entity_id: 'ent-1',
@@ -311,5 +315,31 @@ describe('refunding a separate order reverses no transfer on the charge (there i
     expect('reverse_transfer' in splitRefund).toBe(false)
     expect('refund_application_fee' in splitRefund).toBe(false)
     expect(destRefund).toMatchObject({ payment_intent: 'pi_dest', reverse_transfer: true, refund_application_fee: true })
+  })
+})
+
+describe('the settle pays the sellers of a split order, and only of a split order (LIVE-622)', () => {
+  const paidSession = { id: 'cs_1', payment_status: 'paid', payment_intent: 'pi_1', metadata: { kind: 'commerce_order' } } as unknown as Stripe.Checkout.Session
+  const settleWith = (row: Record<string, unknown>) =>
+    state.setHandler((c) => (c.table === 'commerce_orders' && c.op === 'update' ? { data: [row] } : {}))
+  const base = { entity_id: 'ent-1', amount_cents: 3000, platform_fee_cents: 150, buyer_profile_id: 'buyer-1', currency: 'usd' }
+
+  it('hands the order the delivery flipped to the transfer ledger when it is separate', async () => {
+    settleWith({ ...base, id: 'o-split', owner_kind: 'split', owner_profile_id: null, owner_space_id: null, funds_flow: 'separate' })
+    await recordCommerceOrderFromSession(paidSession)
+    expect(transfers.settleSplitOrderTransfers).toHaveBeenCalledTimes(1)
+    expect(transfers.settleSplitOrderTransfers).toHaveBeenCalledWith('o-split')
+  })
+
+  it('never for a destination order, whose one seller was paid as the charge landed', async () => {
+    settleWith({ ...base, id: 'o-dest', owner_kind: 'space', owner_profile_id: null, owner_space_id: 'sp-a', funds_flow: 'destination' })
+    await recordCommerceOrderFromSession(paidSession)
+    expect(transfers.settleSplitOrderTransfers).not.toHaveBeenCalled()
+  })
+
+  it('never on a redelivery that flips nothing', async () => {
+    state.setHandler(() => ({}))
+    await recordCommerceOrderFromSession(paidSession)
+    expect(transfers.settleSplitOrderTransfers).not.toHaveBeenCalled()
   })
 })
