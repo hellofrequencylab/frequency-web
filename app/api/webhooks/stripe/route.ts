@@ -23,6 +23,11 @@
 //    payment (ACH debit, Cash App Pay, bank redirects) arrives at `completed` with
 //    payment_status 'unpaid' (every recorder no-ops) and is only PAID when this event fires.
 //    It routes through the same recorders as `completed`, each idempotent on the session id.
+//  - transfer.created / transfer.reversed (LIVE-622, ADR-1614) — the transfers that pay each
+//    seller of a split order. `created` adopts a transfer the ledger made but never recorded;
+//    `reversed` records the reversed cents on the ledger row, so a reversal made from the Stripe
+//    dashboard is not invisible. Both fire on the PLATFORM account, so the platform-scoped
+//    destination must subscribe to them.
 // Unhandled events are acked 200 so Stripe stops retrying.
 //
 // Configure the Stripe destinations to point at this ONE URL
@@ -67,6 +72,7 @@ import {
   recordCommerceRefundFromCharge,
   abandonCommerceOrderFromSession,
 } from '@/lib/commerce/checkout'
+import { recordTransferCreated, recordTransferReversed } from '@/lib/commerce/transfers'
 import { track } from '@/lib/analytics/track'
 import { purchaseConversionFromSession } from '@/lib/analytics/purchase'
 
@@ -408,6 +414,19 @@ export async function POST(req: Request) {
         await recordSpaceDonationRefundFromCharge(charge)
         break
       }
+
+      case 'transfer.created':
+        // A split order's seller transfer (LIVE-622). The ledger writes its own row when the create
+        // call returns; this is the backstop for the write that was lost after Stripe said yes. A
+        // transfer that is not one of ours, or a row already created, changes nothing.
+        await recordTransferCreated(event.data.object as Stripe.Transfer)
+        break
+
+      case 'transfer.reversed':
+        // A reversal of a seller transfer, from a refund (LIVE-623) or by hand in the dashboard. The
+        // row takes Stripe's cumulative amount_reversed, so a redelivery converges instead of adding.
+        await recordTransferReversed(event.data.object as Stripe.Transfer)
+        break
 
       default:
         // Other events are added in later phases. Acknowledge unknown events with 200 so
