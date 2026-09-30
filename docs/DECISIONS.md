@@ -51680,3 +51680,108 @@ Nothing in the five is infrastructure in the sense the row feared: the preview U
 **Rejected.** Raising the a11y baseline to 40 (a ratchet that rises for a regression stops being a ratchet). Moving the placement button into a menu (a bigger change than the defect, and LIVE-643 put it inline on purpose).
 
 **Consequences.** Each row of the practices table has a 24 px title line, since every row carries the View link. The two controls axe named meet 2.5.8; pr-compare's a11y step on the PR is the reading.
+
+## ADR-1699: The Journey editor's cover band is the Space header control, so an author frames the cover where they set it (LIVE-738)
+
+**Status:** Accepted · 2026-09-30 · backlog `LIVE-738` (filed and closed here) · re-tested first per [ADR-1082](DECISIONS.md) · no migration
+
+**Context.** The owner asked on 2026-09-30: "check the header image focus picker. It used to be there but it got removed. I liked the one we developed for Spaces, please reinstate that." The Spaces control is `HeaderImageField` (`components/ui/header-image-field.tsx`): the cover previewed at the hero's crop shape, the `ImageFocalPicker` drag-to-focus marker on it, Replace and Remove over it. It was extracted from the Space branding form in #1826 so every header editor could share it. Re-tested at `38a5b1a15` before building: the Space still mounts it (`space-branding-form.tsx`, from the rail's `space.basics` and the Manage hub's Profile and Settings tab), as do the profile form, the storefront banner and the Journey rail. The event, Circle and Channel rails still carry `ImageFocalPicker`. `git log -G` on the picker's JSX finds no deleted mount, only replacements. The one header-image editor with stored focus and no picker is the Journey single-page editor at `/journeys/<slug>/edit`. Its cover band was a bare `ImageUpload`. The settings column there holds the Journey's `HeaderImageField`, but it is mounted with `hideIdentity`, which hides it, and the page never passed the stored focus. So an author, or a Space manager editing a Space's Journey since LIVE-732, could set a cover in the editor and not frame it, while `journey_plans.cover_focus` is stored and the Journey page crops its `PageHero` cover by it.
+
+**Decision.**
+
+1. **The editor's cover band is `HeaderImageField`.** Empty, it is the upload band it was. Set, it is the Space control: the preview at the rail's 16:6 shape, the marker, Replace and Remove.
+2. **One field, both ends.** The marker seeds from `plan.cover_focus` (read through `readJourneyCoverFocus`, as the rail does) and a drag writes through `setJourneyHeaderFocus`, the rail's action under the same `canEditJourney` gate, debounced 400 ms. The Journey page already reads that column as `entityFocus`, so a set focus moves the rendered crop.
+3. **`HeaderImageField` takes an optional `uploadFn`**, passed to its empty dropzone, so the editor keeps its server-side cover upload for a dropped file. Every other caller is unchanged.
+
+**Rejected.** Dropping `hideIdentity` for the header images in `JourneySettings` (a second cover control on the same page, beside the band). A new picker (the owner asked for the Spaces one, and the kit has one). Moving `cover_focus` into the Journey manifest as a field (ADR-1246: a focal point is a property of the cover control, not a thing an author fills in).
+
+**Consequences.** Every surface that edits a header image with a stored focus now shows a picker. `components/journey/v2/journey-builder-cover-focus.test.tsx` renders the editor and folds the stored value into `PageHero`; it fails on `main`. The Journey editor is not in the visual baselines, so nothing needs recapturing.
+
+**Rows.** `LIVE-738` (filed and closed here).
+
+## ADR-1700: The reconciler sends a recovered split order's sellers their sale notice, keyed on the rows its own plan inserted (LIVE-733)
+
+**Status:** Accepted · 2026-09-30 · backlog `LIVE-733` · follows LIVE-706 (#3108) and LIVE-622 (ADR-1614) · no migration
+
+**Context.** A split order's seller notices go out from `sendSplitOrderReceipts` (lib/commerce/order-receipt.ts), once, from the settle, to every seller the transfer ledger lists at that moment. When the settle's transfer plan fails, the ledger is empty then, so no seller is told. The reconciler (`reconcileTransfers` step 1, lib/commerce/transfers.ts) later plans the order, logs `commerce.transfer.plan_recovered`, and pays it on the next run. The seller was paid for a sale nobody told them about.
+
+**Decision.** `planTransfersForOrder` returns the ids of the rows THIS call inserted (`rowIds`; the upsert's `ignoreDuplicates` already returned only those). When step 1 recovers a plan, it awaits `sendRecoveredSplitSaleNotices(orderId, rowIds)`, a new export of order-receipt.ts that reads the order and runs the settle's own split half, `sendSplitOrderReceipts`, with those row ids: it notifies only the sellers of those rows, from the same loop, so the two paths send byte-identical notices, and it skips the buyer's receipt (theirs went out at the settle). The import is dynamic, because order-receipt.ts already imports the ledger.
+
+**Never twice.** A seller is notified only for a row id handed in, and only the plan call that inserted a row gets its id back, so a replay, a second run or a racing worker has none. The settle could not have told them either: it found no rows and logged `no seller was notified`. No column records "notified"; the plan's insert is the claim, the same shape as the settle's pending-to-paid flip.
+
+**Never a held payout.** The rows are written before the notice is attempted, and step 2 pays them whatever the mail did. A notice that throws is logged `commerce.transfer.recovered_notice_failed`; one that reaches fewer sellers than were planned is logged `commerce.transfer.recovered_notice_missed` with both counts. `ReconcileSummary.noticedSellers` carries the count into the cron's line. A failed notice is not retried: a second attempt could not tell a lost bell row from a sent one without a record this change does not add.
+
+**Rejected.** A `notified_at` column on `commerce_order_transfers` (a migration for a guarantee the insert already gives). Notifying from step 2 when a row is paid (the settle notifies at plan time, and a row that never lands would never tell its seller about the sale). A separate notifier in transfers.ts (two copies of the seller copy drift).
+
+**Consequences.** Every seller of a split order hears about the sale exactly once, from the settle or from the reconciler. A split order planned by a partial refund before any plan (lib/commerce/split-refund.ts) still notifies nobody; that path is not this row's.
+
+## ADR-1701: The entity rail bundle resolves the viewer once for all its getters, in one action scope (LIVE-734)
+
+**Status:** Accepted · 2026-09-30 · backlog `LIVE-734` (closed here) · re-tested first per [ADR-1082](DECISIONS.md) · finishes the "Not done here" note of [ADR-1685](DECISIONS.md) · extends [ADR-1244](DECISIONS.md) (one viewer read per request) to Server Actions · no migration
+
+**Context.** Re-tested on `main` at `af22048b3`, from the code and then by count. `React.cache()` does not memoise inside a Server Action: react-server-dom's `getCacheForType` (`next/dist/compiled/react-server-dom-webpack/cjs/react-server-dom-webpack-server.node.production.js`) returns a fresh `Map` when `resolveRequest()` finds no Flight request, and `executeActionAndPrepareForRender` (`next/dist/server/app-render/action-handler.js`) runs the action inside `workUnitAsyncStorage` only, not inside a render. So `getCachedUser`, `getCachedViewerProfile`, `resolveCaller`, `currentViewer` and `viewerEdgeLevel` each ran once per caller inside `getEntityRailBundle`. Every rail getter gates through one `get<Kind>Capabilities(id)`, which resolves the viewer (twice, counting the edge-level walk) and reads the entity's capability rows. Measured with the real bundle, getters, `lib/auth` and capability loader against a recording fake of the two Supabase clients (under vitest `cache()` is the same pass-through): a member opening a circle rail of eight reads cost 16 `auth.getUser()` calls and 65 reads; a janitor opening a hub rail of three, 6 and 23.
+
+**Decision.**
+
+1. **An action scope.** `lib/core/action-scope.ts` holds one `AsyncLocalStorage` store per `runInActionScope(fn)` call. A function wrapped in `actionScoped` runs once per scope per argument list, and concurrent callers share the first call's promise. Outside a scope the wrapper is a plain call, so every page render keeps `cache()` exactly as before. A nested scope joins the one it is in. No imports but `node:async_hooks`.
+2. **The viewer chain is scoped.** In `lib/auth.ts`: `getCachedUser`, `getCachedViewerProfile` and `resolveCaller` become `cache(actionScoped(...))`. In `lib/core/load-capabilities.ts`: `currentViewer` and `viewerEdgeLevel` the same, and the two share one scoped read of the stewardship edges.
+3. **The five entity capability builders are scoped.** `getCircleCapabilities`, `getHubCapabilities`, `getNexusCapabilities`, `getEventCapabilities` and `getPracticeCapabilities` keep their signatures and read through an `actionScoped` memo of the unchanged resolver. Each caller receives its own copy of the `Set`.
+4. **The bundle opens the scope.** `getEntityRailBundle` runs its reads inside `runInActionScope`, calls `resolveViewerOnce()` before the getters start, then runs `Promise.allSettled` over them as before. A failed resolve is kept by the scope, so every getter's gate meets the same rejection and each slice comes back `{ ok: false }`, logged, and its module self-fetches, as ADR-1685 already does for a failed read.
+
+**The reading, before and after** (`components/admin/modules/entity-rail-viewer-once.test.ts`):
+
+| Bundle | `auth.getUser()` before | after | Reads before | after |
+|---|---|---|---|---|
+| Circle, member, 8 reads | 16 | 1 | 65 | 14 |
+| Hub, janitor, 3 reads | 6 | 1 | 23 | 9 |
+
+The same suite holds that each bundled slice equals its getter called on its own, for a viewer every gate refuses and one every gate admits, and that the resolver is handed the same viewer fields both ways. Two bundles resolve twice, and two in flight together each keep their own viewer.
+
+**Rejected.** A viewer parameter on each getter (the literal ask): every getter is itself a `'use server'` export, so an extra argument is one the browser can send, and a forged viewer would walk past every gate. Splitting 19 getters into an internal loader plus an action wrapper would avoid that, at the cost of a second copy of each gate path. A shared resolve per entity in the ADR-550 `buildXData` shape (one bespoke loader per kind, five to keep in step with the modules). A module-level memo keyed by user id (it outlives the request, and a role change or a view-as switch would be served stale). A scope around every Server Action (a write inside a scope would be followed by reads served from before it; the scope is opened only around reads).
+
+**Consequences.** The rail's server time drops by the viewer and capability round trips of every getter but the first. Anything that wants the same saving (another read-only multi-getter action) opens a scope with `runInActionScope` and must hold no write inside it. The row's probe loads `lib/core/action-scope.ts` in process and checks the wiring: in-process only, no test runner (LIVE-034).
+
+## ADR-1702: A partial refund that writes a split order's first plan tells the sellers it planned of the sale, through the reconciler's own call (LIVE-739)
+
+**Status:** Accepted · 2026-09-30 · backlog `LIVE-739` · follows ADR-1700 (LIVE-733) and ADR-1615 (LIVE-623) · no migration
+
+**Context.** A split order's seller sale notices go out from the settle, for the rows the transfer ledger holds when it runs, and since ADR-1700 from `reconcileTransfers` step 1, for the rows its own late plan inserted. A third caller writes plans: `reverseSplitTransfers` (lib/commerce/split-refund.ts) plans a paid split order before it writes reversal targets on a partial refund (or a partial lost dispute), so a seller paid later is paid their share and then has their part reversed. When the settle's plan had failed, that refund writes the order's first plan. The settle has already told nobody, and the reconciler skips the order because it has rows now. Step 2 pays the sellers, and no seller is ever told they made a sale.
+
+**Decision.** The reconciler's LIVE-733 block becomes one function in lib/commerce/transfers.ts, `noticeRecoveredSellers(orderId, rowIds, context)`. It awaits `sendRecoveredSplitSaleNotices` (order-receipt.ts, imported late as before) for exactly those rows, logs `commerce.transfer.recovered_notice_failed` on a throw and `commerce.transfer.recovered_notice_missed` on a short count with `context` added, never throws, and returns the count. Step 1 calls it with no context, so its log lines are unchanged. `reverseSplitTransfers` keeps its plan outcome and, when the plan returned `rowIds`, awaits `noticeRecoveredSellers(orderId, plan.rowIds, { via: 'split_refund' })`. `SplitReversalSummary.noticedSellers` carries the count into the `commerce.split_refund` line. There is no new notifier: one function sends the notice, and it runs the settle's own seller loop.
+
+**When.** The notice is sent right after the plan and before any target is written. A database error later in the refund throws, the webhook redelivers, and the redelivery's plan inserts nothing, so a notice placed after the reversals could be lost for good. Nothing waits on the mail. The buyer's refund was made before this function runs. A thrown or short notice is logged and the targets, reversals and payouts go on.
+
+**Never twice.** Only the plan call that inserted a row gets its id back (ADR-1700). The refund action and its own `charge.refunded`, a redelivery, a top-up, a racing reconciler run, and an order the settle or the reconciler already planned all insert nothing, so they tell nobody. One narrow window is accepted: a partial refund that lands between the settle's failed plan and the settle's receipt step would let both see the refund's rows. A refund needs a paid charge and a person or a webhook behind it, and the settle's receipt step runs a moment after its plan.
+
+**A refunded share still hears of the sale.** The settle path is the rule. It tells each seller it planned at plan time, with their full share, and sends no seller a refund notice when a refund follows. A partial refund leaves every planned seller a payout, less their pro rata part, so each is told, with the same byte-identical LIVE-706 notice. That includes a seller whose tiny share rounding would take back whole. The notice describes the sale, and the refund is a separate event the settle path does not announce to sellers either. A refund in full writes no plan (ADR-1615), pays nobody and tells nobody: no row, no notice, as on every path.
+
+**Rejected.** Calling `sendRecoveredSplitSaleNotices` directly from split-refund.ts (a second copy of the logging, which drifts). Letting the reconciler notice an order whose rows a refund wrote (it cannot tell those rows from the settle's without a `notified_at` column, the migration ADR-1700 already rejected). A refund-adjusted "You sold" (a second seller copy the settle path does not have). Sending the notice after the reversals (a later throw loses it).
+
+**Consequences.** Every seller of a split order that is not refunded in full hears about the sale exactly once, from whichever of the settle, the reconciler or a partial refund wrote the plan. The three plan writers now share one notice path.
+
+## ADR-1703: Everything but the iOS app build comes out of parked, the three launch-day rows retire, and priority alone orders the list (HYG-161)
+
+**Status:** Accepted · 2026-09-30 · backlog `HYG-161` (filed and closed here) · owner rulings in a backlog clean-up, multiple choice, ~17:00Z · supersedes the deferrals of [ADR-1573](DECISIONS.md) (the 2026-09-29 cull), [ADR-1624](DECISIONS.md) ("The only things I want deferred are W4, W9, and W11") and [ADR-1682](DECISIONS.md) (the iOS readiness rows and the P3 sort), and the "third to last / second to last / last" order of [ADR-1491](DECISIONS.md) and [ADR-1535](DECISIONS.md) · no code change, no migration
+
+**Context.** On 2026-09-30 every open build row was done: the list held six open rows, all the owner's, and 69 parked ones. The parked set had grown out of four separate rulings (the cull, the W4/W9/W11 deferral, the iOS readiness hold and the P3 sort to after launch), each with its own date or trigger. The owner asked for the backlog to be cleaned up and made ready for the next phase, with no work started: "Take everything except for the iOS app build out of parked or deferred."
+
+**Decision.**
+
+1. **The iOS app build stays parked, and only it.** Owner choice "App + App Store pieces": `DEF-MOBILE` (the native Expo/React Native app), `LIVE-725` (Sign in with Apple), `LIVE-726` (App Store in-app purchases), `OWN-090` (the Apple Developer account and App Store Connect record), `OWN-091` (the app credentials) and `OWN-093` (the in-app purchase setup). Everything that only exists inside the native app or the App Store is held with it.
+2. **Sixty rows reopen**, each with a REOPENED paragraph, its old park note moved into `detail`, and a wave:
+   - `owner-timed`: `OWN-011`, `DEF-A2P`, `LIVE-060`, `OWN-062`.
+   - `W0`: `LIVE-234` (still owner-gated, ownerAction account).
+   - `W2`: `LIVE-675`. `W5`: `LIVE-692`. `W6`: `LIVE-658`, `LIVE-695`. `W8`: `LIVE-710`.
+   - `W4` (the editor, Sites and white label): `PROG-E0` to `PROG-E10`, `PROG-W6`, `LIVE-310`, `LIVE-698`, `LIVE-699`, `LIVE-700`.
+   - `W11`: `DEF-ETSY`. `W9`: `PROG-A1`, `PROG-A3`, `PROG-A4`.
+   - `WM`: the web and API side of iOS readiness, `LIVE-714`, `LIVE-716` to `LIVE-723`. They serve the mobile site and any client, and none needs the native app to exist.
+   - `W7`: `PROG-GD6`, `LIVE-662` to `LIVE-665`, `LIVE-667` to `LIVE-669`, `LIVE-671`, `LIVE-673`, `LIVE-676` to `LIVE-679`, `LIVE-682`, `LIVE-690`, `LIVE-691`, `LIVE-693`, `LIVE-708`, `LIVE-730`, `LIVE-731`.
+3. **The three launch-day rows retire.** Owner choice "Retire all three", after asking whether they were old ideas and what of them was built. `LIVE-464` (end the beta: delete the nine induction renders, turn `FUNNEL_INDUCTION_ACTIVE` off, stop comping Crew), `LIVE-683` (remove demo mode on launch day) and `LIVE-712` (the launch copy pass in `docs/BETA-NOTICES.md` §3) close as not doing. Only `LIVE-464` had been built, as the held draft PR #3034, closed unmerged on 2026-09-29; its branch is deleted with the other closed branches. The consequence is stated plainly: the beta induction, the comped Crew, demo mode and the "free during the beta" copy stay in the product after 21 December 2026 unless the owner asks for them again, and a new row would be filed then.
+4. **Priority alone orders the list.** Owner choice "Flatten by priority". W4, W11 and W9 are no longer third to last, second to last and last; they are topical groups like every other wave. `pnpm packets` already sorts by priority before wave, so nothing in the tooling changes. The wave names and `meta.slate.deferredByName` are rewritten to say so. Product-first ([ADR-1403](DECISIONS.md)) still holds: the editor, Sites, the Etsy-grade store and the App Platform are not started from a scan or a docs pass.
+5. **Done rows whose probes held the old rulings are amended**, not left red: a probe that required a now-reopened row to be parked accepts it open under this ADR.
+
+**Rejected.** Keeping only `DEF-MOBILE` parked (Sign in with Apple, in-app purchases and the Apple accounts have no use before the native app). Keeping all the iOS readiness rows parked (the API, push-token, deletion and universal-link work serves the mobile site too). Folding the three launch rows into one gated row, or keeping them parked to 14 December (the owner chose to drop them). Keeping the wave order (the owner chose priority).
+
+**Consequences.** The open list grows from 6 rows to 66, all unbuilt, so the next phase starts from one list with nothing hidden in parked except the iOS app build. Nothing was started. Three beta clean-ups will not happen at launch.
+
+**Rows.** `HYG-161` (filed and closed here). Reopened: the 60 above. Retired: `LIVE-464`, `LIVE-683`, `LIVE-712`. Notes corrected: `DEF-MOBILE`, `LIVE-726`. Held: `DEF-MOBILE`, `LIVE-725`, `LIVE-726`, `OWN-090`, `OWN-091`, `OWN-093`.
