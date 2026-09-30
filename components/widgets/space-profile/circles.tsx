@@ -46,7 +46,7 @@ function CirclesHeader({ eyebrow, heading }: { eyebrow?: string; heading?: strin
     <div className="mb-6">
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       {heading && (
-        <h2 className="font-display text-page-title uppercase tracking-tight text-balance text-text sm:text-3xl">
+        <h2 className="font-display text-page-title uppercase tracking-tight text-balance text-text sm:text-display-h3">
           {heading}
         </h2>
       )}

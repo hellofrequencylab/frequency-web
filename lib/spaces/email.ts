@@ -9,6 +9,9 @@
 //
 // ANTI-SPAM IS THE WHOLE POINT. sendSpaceCampaign sends NOTHING unless ALL of these hold, in order:
 //   (a) the caller has canEditProfile on the Space (owner / admin / editor);
+//   (a2) the Space is ACTIVE (spaces.status). A suspended or archived Space sends nothing, and a job it
+//        queued before the suspension is cancelled at drain time, right before the provider call
+//        (LIVE-727, ADR-1662). See spaceEmailHold below.
 //   (b) the Space's email KILL-SWITCH (spaces.email_enabled) is ON (default OFF, fail-closed);
 //   (c) today's send count for the Space is under the conservative DAILY CAP;
 //   (d) the recipient clears the lane's CONSENT BAR (ADR-1040) and is not suppressed (GLOBAL or
@@ -41,7 +44,7 @@ import { recordContactInteraction } from '@/lib/crm/interactions'
 import { mapResendEventToInteraction, resendIdempotencyKey, type ResendTimelineEventType } from './email-timeline'
 import { encodeSendToken, injectTracking } from './email-tracking'
 import { randomUUID } from 'crypto'
-import { briefError } from '@/lib/log'
+import { briefError, log } from '@/lib/log'
 
 // ── Tunables (documented v1 values) ─────────────────────────────────────────────────────────────
 
@@ -181,6 +184,29 @@ export function spaceFromLine(brandName: string | null | undefined, fallbackFrom
   const safeName = name.replace(/["\r\n<>]/g, '').slice(0, 78)
   return `${safeName} <${addr}>`
 }
+
+/** Why a Space may not send email right now, or null when it may. PURE + total, and FAIL-CLOSED: only
+ *  an explicitly ACTIVE Space sends. A suspended Space is the case that shipped broken (LIVE-727): the
+ *  operator suspend in /admin/spaces flipped spaces.status and nothing on the send path read it, so a
+ *  suspended Space's broadcasts, scheduled campaigns and drips kept going out. An archived Space, or a
+ *  status we cannot read, holds too. */
+export function spaceEmailHold(
+  status: string | null | undefined,
+): 'space_suspended' | 'space_not_active' | null {
+  if (status === 'active') return null
+  return status === 'suspended' ? 'space_suspended' : 'space_not_active'
+}
+
+/** The refusal every Space send entry returns for a Space that is not active. Exported so the drip
+ *  runner can tell this refusal (HOLD the enrollment until the Space is active again) from the others
+ *  (stop it). No em dash: this is shown to the Space's team. */
+export const SPACE_NOT_ACTIVE_EMAIL_ERROR =
+  'This space is suspended or archived, so its email is paused. Nothing was sent.'
+
+/** The ledger note a queued campaign email carries when the drain cancels it because its Space stopped
+ *  being active after it was queued. The row moves to 'failed' with this text, so the cancel is visible
+ *  in the Space's send history rather than silent. */
+const SPACE_NOT_ACTIVE_DRAIN_NOTE = 'Not sent: the space was suspended or archived before this email left the queue.'
 
 // ── IO seam: the untyped admin-client builders (tables not in generated types yet, ADR-246) ───────
 
@@ -443,6 +469,16 @@ async function deliverSpaceCampaign(
 ): Promise<ActionResult<SendSpaceCampaignResult>> {
   const spaceId = space.id
 
+  // (a2) SPACE STATUS (LIVE-727): a suspended or archived Space sends nothing and queues nothing. Both
+  // entry points (the owner composer and every system caller: the scheduled-campaign cron, the drip
+  // runner, the event Manage broadcast) pass through here, so one check covers them all. The drain
+  // half (runSpaceCampaignEmail) re-checks, for jobs queued before the suspension.
+  const hold = spaceEmailHold(space.status)
+  if (hold) {
+    log.warn('space_email.refused_space_not_active', { spaceId, reason: hold })
+    return fail(SPACE_NOT_ACTIVE_EMAIL_ERROR)
+  }
+
   // (b) KILL-SWITCH: fail closed if email is not explicitly enabled for this Space.
   if (!(await isSpaceEmailEnabled(spaceId))) {
     return fail('Email is turned off for this space. Turn it on in settings before sending.')
@@ -605,6 +641,8 @@ async function deliverSpaceCampaign(
           // at 'queued' forever and blind both webhook matchers — that is why campaigns get their
           // own kind rather than riding the shared one.
           outreachSendId: sendId,
+          // The Space the drain re-checks is still active right before the provider call (LIVE-727).
+          spaceId,
         },
         { lane: 'bulk', runAfter: bulkRunAfter(sent, fanOutStartedAt) },
       )
@@ -688,12 +726,88 @@ async function deliverSpaceCampaign(
 //     is the gate that notices.
 // The ledger update targets still-'queued' rows only (a webhook that raced us keeps its later
 // status) and is best-effort: the email is already accepted, so a ledger blip must never re-send.
+//
+// SPACE STATUS, THE LAST GATE BEFORE THE PROVIDER (LIVE-727, ADR-1662). A campaign fans out as
+// staggered bulk jobs that can sit in the outbox for hours, so a Space suspended mid-campaign still
+// had its remaining jobs drain and send. Every job now re-reads its Space's status right before
+// sendRawEmail. A Space that is not active CANCELS the job: nothing is sent, the ledger row moves
+// 'queued' -> 'failed' with SPACE_NOT_ACTIVE_DRAIN_NOTE (visible in the Space's send history), and
+// the skip is logged. A status read that errors THROWS, so the outbox retries and nothing sends on
+// a blip. A job whose Space cannot be identified at all is cancelled the same way (fail-closed).
 export const SPACE_CAMPAIGN_EMAIL_KIND = 'space-campaign-email'
+
+/** Which Space a queued campaign job belongs to: the payload's spaceId (every job queued since
+ *  LIVE-727) or, for a job queued before, its outreach_sends row's space_id. Null when neither
+ *  resolves. Throws on a read error, so the caller's job retries rather than guessing. */
+async function jobSpaceId(p: Record<string, unknown>): Promise<string | null> {
+  if (typeof p.spaceId === 'string' && p.spaceId) return p.spaceId
+  const db = createAdminClient() as unknown as {
+    from: (t: string) => {
+      select: (c: string) => {
+        eq: (c: string, v: string) => {
+          maybeSingle: () => Promise<{ data: { space_id?: string | null } | null; error: unknown }>
+        }
+      }
+    }
+  }
+  const { data, error } = await db
+    .from('outreach_sends')
+    .select('space_id')
+    .eq('id', p.outreachSendId as string)
+    .maybeSingle()
+  if (error) throw new Error(`space-campaign-email could not read its ledger row: ${briefError(error)}`)
+  return typeof data?.space_id === 'string' && data.space_id ? data.space_id : null
+}
+
+/** A Space's lifecycle status (spaces.status), or null when the Space is gone. Throws on a read error. */
+async function readSpaceStatus(spaceId: string): Promise<string | null> {
+  const db = createAdminClient() as unknown as {
+    from: (t: string) => {
+      select: (c: string) => {
+        eq: (c: string, v: string) => {
+          maybeSingle: () => Promise<{ data: { status?: string | null } | null; error: unknown }>
+        }
+      }
+    }
+  }
+  const { data, error } = await db.from('spaces').select('status').eq('id', spaceId).maybeSingle()
+  if (error) throw new Error(`space-campaign-email could not read its space status: ${briefError(error)}`)
+  return typeof data?.status === 'string' ? data.status : null
+}
+
+/** Cancel a queued campaign row the drain refused to send: 'queued' -> 'failed' with the note. Only a
+ *  still-queued row moves. Best-effort: nothing was sent, so a ledger blip loses no email. */
+async function cancelQueuedSend(outreachSendId: string, note: string): Promise<void> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        update: (patch: Record<string, unknown>) => {
+          eq: (c: string, v: string) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
+        }
+      }
+    }
+    await db.from('outreach_sends').update({ status: 'failed', error: note }).eq('id', outreachSendId).eq('status', 'queued')
+  } catch (err) {
+    console.error('[spaces/email] campaign cancel write failed:', err instanceof Error ? err.message : String(err))
+  }
+}
 
 export const runSpaceCampaignEmail: JobHandler = async (p) => {
   // Malformed jobs surface as dead-letters for inspection (the push handler's posture).
   if (!p.to || !p.subject || typeof p.outreachSendId !== 'string') {
     throw new Error('space-campaign-email job missing to, subject, or outreachSendId')
+  }
+  // (LIVE-727) The Space must still be active at the moment of sending. See the block comment above.
+  const spaceId = await jobSpaceId(p)
+  const hold = spaceEmailHold(spaceId ? await readSpaceStatus(spaceId) : null)
+  if (hold) {
+    log.warn('space_email.drain_skipped_space_not_active', {
+      spaceId,
+      outreachSendId: p.outreachSendId,
+      reason: spaceId ? hold : 'space_unresolved',
+    })
+    await cancelQueuedSend(p.outreachSendId, SPACE_NOT_ACTIVE_DRAIN_NOTE)
+    return
   }
   const { id } = await sendRawEmail({
     to: p.to as string,

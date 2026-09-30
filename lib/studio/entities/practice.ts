@@ -148,8 +148,9 @@ export const PRACTICE_MANIFEST: EntityManifest = {
     { path: 'body', label: 'The guide', kind: 'longtext', section: 'content', placement: 'inline', prose: true, veraDrafts: true },
 
     // ── Pillars and tags ──
-    // The PRIMARY Pillar (pillars.id). Mirrors the first key of focus_details; a Practice may
-    // develop more than one Pillar, which is what focus_details below holds.
+    // The PRIMARY Pillar (pillars.id), and the only place the primary is read from. It is one of
+    // the focus_details keys below (a Practice may develop more than one Pillar), never "the first"
+    // of them: focus_details is jsonb, which keeps no key order (LIVE-650, ADR-1618).
     // A pointer to a `pillars` row, stored as its id and shown as its name, so it must be loaded.
     { path: 'domain_id', label: 'Pillar', kind: 'reference', section: 'pillars', veraDrafts: true, optionsFrom: 'pillars' },
     // THE SPLIT (ADR-438; LIVE-641, ADR-1604): a second Pillar this practice's Zaps also count

@@ -5,12 +5,16 @@
 // reads exactly as its base file. The converter's two pure halves are pinned at the bottom.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
   applyRowFragments,
+  closeEdit,
+  compactLedger,
   compareIds,
+  foldEdit,
+  nextFree,
   fragmentCount,
   fragmentIdsFromPaths,
   loadBacklog,
@@ -249,5 +253,82 @@ describe('ledger:from-diff, the pure halves', () => {
     expect(r.fragments).toEqual([{ id: '003', text: '## ADR-003: ours\n\nNew.\n' }])
     const edited = adrFragmentsFromDiff({ mb, main, ours: mb.replace('Body.', 'Changed.') })
     expect(edited.refusals.join('\n')).toMatch(/ADR-001 is edited in place/)
+  })
+})
+
+describe('compaction (HYG-148)', () => {
+  let dir: string
+  const write = (rel: string, text: string) => {
+    mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true })
+    writeFileSync(path.join(dir, rel), text)
+  }
+  /** What `pnpm ledger:compact` does, against `dir`. */
+  const compactInto = () => {
+    const c = compactLedger(dir)
+    writeFileSync(path.join(dir, 'docs/BUILD-BACKLOG.json'), c.backlogText)
+    writeFileSync(path.join(dir, 'docs/DECISIONS.md'), c.decisionsText)
+    for (const p of c.remove) rmSync(path.join(dir, p))
+    return c
+  }
+  beforeEach(() => {
+    dir = mkdtempSync(path.join(tmpdir(), 'ledger-compact-'))
+    write('docs/BUILD-BACKLOG.json', JSON.stringify(doc([row('A-1'), row('B-1')], [{ name: 'W1 · x', ids: ['A-1', 'B-1'] }, { name: 'W2 · y', ids: [] }]), null, 2))
+    write('docs/DECISIONS.md', '# L\n\n## ADR-001: one\n\nBody.\n')
+    write('docs/ledger/rows/A-1.json', JSON.stringify({ id: 'A-1', patch: { status: 'done', closed: '2026-09-29' }, append: { detail: '\n\nCLOSED.' } }))
+    write('docs/ledger/rows/N-1.json', JSON.stringify({ ...row('N-1'), wave: 'W2' }))
+    write('docs/ledger/adr/ADR-002.md', '## ADR-002: two\n\nWhy.\n')
+  })
+  afterEach(() => rmSync(dir, { recursive: true, force: true }))
+
+  it('folds every fragment into the base files, leaves none, and the merged view is identical', () => {
+    const before = { backlog: loadBacklog(dir), decisions: loadDecisions(dir) }
+    const c = compactInto()
+    expect(c.remove.sort()).toEqual(['docs/ledger/adr/ADR-002.md', 'docs/ledger/rows/A-1.json', 'docs/ledger/rows/N-1.json'])
+    expect(fragmentCount(dir).n).toBe(0)
+    expect(loadBacklog(dir)).toEqual(before.backlog)
+    expect(loadDecisions(dir)).toBe(before.decisions)
+    const base = JSON.parse(readFileSync(path.join(dir, 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    expect(base.entries.map((e: Row) => e.id)).toEqual(['A-1', 'B-1', 'N-1'])
+    expect(base.meta.slate.waves.map((w: { ids: string[] }) => w.ids)).toEqual([['B-1'], ['N-1']])
+    expect(readFileSync(path.join(dir, 'docs/BUILD-BACKLOG.json'), 'utf8').endsWith('\n')).toBe(false)
+  })
+
+  it('is byte-stable: a second compaction changes nothing', () => {
+    compactInto()
+    const once = ['docs/BUILD-BACKLOG.json', 'docs/DECISIONS.md'].map((f) => readFileSync(path.join(dir, f), 'utf8'))
+    const again = compactLedger(dir)
+    expect(again.remove).toEqual([])
+    expect([again.backlogText, again.decisionsText]).toEqual(once)
+  })
+
+  it('refuses to fold a broken fragment into the base', () => {
+    write('docs/ledger/rows/Z-1.json', JSON.stringify({ id: 'Z-1', patch: { status: 'done' } }))
+    expect(() => compactLedger(dir)).toThrow(/refusing to compact broken fragments[\s\S]*Z-1/)
+    expect(existsSync(path.join(dir, 'docs/ledger/rows/A-1.json'))).toBe(true)
+  })
+})
+
+describe('helpers (HYG-148)', () => {
+  it('closeEdit sets status, date and probe, and appends the note to detail', () => {
+    expect(closeEdit({ id: 'A-1', date: '2026-09-29', verify: { kind: 'cmd', cmd: 'x' }, note: 'CLOSED.' })).toEqual({
+      id: 'A-1',
+      patch: { status: 'done', closed: '2026-09-29', verify: { kind: 'cmd', cmd: 'x' } },
+      append: { detail: '\n\nCLOSED.' },
+    })
+    expect(closeEdit({ id: 'A-1', date: 'd', status: 'parked' })).toEqual({ id: 'A-1', patch: { status: 'parked' } })
+  })
+
+  it('foldEdit keeps one file per row: an edit merges into an edit, and into a new row in place', () => {
+    const merged = foldEdit({ id: 'A-1', patch: { size: 'S' }, append: { detail: ' one' } }, closeEdit({ id: 'A-1', date: 'd', note: 'two' }))
+    expect(merged).toEqual({ id: 'A-1', patch: { size: 'S', status: 'done', closed: 'd' }, append: { detail: ' one\n\ntwo' } })
+    const newRow = foldEdit({ ...row('N-1'), wave: 'W2' }, closeEdit({ id: 'N-1', date: 'd', note: 'CLOSED.' }))
+    expect(newRow).toEqual({ ...row('N-1', 'done', { closed: 'd', detail: 'N-1 detail.\n\nCLOSED.' }), wave: 'W2' })
+    expect(foldEdit(null, { id: 'B-1', wave: null })).toEqual({ id: 'B-1', wave: null })
+  })
+
+  it('nextFree reads the merged view', () => {
+    const n = nextFree('.', ['HYG'])
+    expect(n.adr).toBeGreaterThan(1635)
+    expect(Number(n.rows.HYG.split('-')[1])).toBeGreaterThan(145)
   })
 })

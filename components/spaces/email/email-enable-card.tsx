@@ -10,7 +10,9 @@ import { setSpaceEmailEnabled } from '@/lib/spaces/campaigns-actions'
 
 // EMAIL ENABLE GATE (ENTITY-SPACES-BUILD §C Phase 3, "per-space kill-switch" + the acknowledgment).
 // When email is OFF for a Space, the owner sees this card instead of the composer. Turning it on
-// REQUIRES a plain-language anti-spam acknowledgment (not legal terms; counsel-gated AUP is deferred).
+// REQUIRES a plain-language anti-spam acknowledgment (not legal terms). The counsel-gated AUP exists
+// only as a DRAFT for review (app/space-email-policy, LIVE-707): it is deliberately NOT linked from this
+// card until counsel has read it and OWN-085 closes, so an owner is never shown it as if it were final.
 // The action is gated on canEditProfile server-side and flips the backbone kill-switch
 // (setSpaceEmailEnabled, @/lib/spaces/email-toggle), then refreshes the surface to show the composer.
 //

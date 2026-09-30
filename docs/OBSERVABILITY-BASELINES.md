@@ -168,6 +168,76 @@ the Supabase MCP `execute_sql` (read-only) or the SQL editor for each path.
    inside a transaction that is rolled back, never against production as-is.
 5. **Events catalog**: not captured — `events` = 67.
 
+### 2d. Load and soak harness (LIVE-551, [ADR-1621](DECISIONS.md))
+
+§2b's gate says when a baseline means something; this is the tool that takes one under load when
+it does. `scripts/load-soak.mjs` drives the five §2 hot paths at a chosen arrival rate, records
+p50/p95/p99 and the error rate per path, judges each against the executable SLO table in
+`lib/observability/slos.ts` (read from the shipped module, never re-typed), and writes a JSON
+report. `perf-baseline.mjs` stays what it is: one request at a time, a floor, not load.
+
+🔴 **A preview is not isolated.** Local, preview and production share one Supabase project
+([`WORKFLOW.md`](WORKFLOW.md)), so load on a preview is load on the production database. That is
+why the harness has no default target and no CI job that points it at a deployment, and why it
+refuses production twice: by host (`frequencylocal.com` and its subdomains, plus any host in
+`LOAD_SOAK_PRODUCTION_HOSTS`) before a request leaves, and by build (`build.env` at
+`<target>/api/status`, where `production`, or a remote target that cannot answer, is refused).
+`--allow-production` lifts both and exists for an owner who asks for exactly that. No flag lifts the
+100 rps ceiling (the 10x spike included). Announce a run, keep it off-hours, and watch §4's error
+rate while it goes.
+
+**What it drives.** Feed `GET /feed`, Circle detail `GET /circles/<slug>`, People directory
+`GET /network` (not `/people`, which is a redirect into the Network hub, ADR-172, so timing it times
+a 307), Events catalog `GET /events`, and the practice-log write, a `POST /practices` carrying the
+build's `Next-Action` id for `logPracticeAction`. Reads are judged against `latency.read-hot-paths`,
+the write against `latency.practice-log-write`, every path against `error-rate.requests` (a 5xx or
+no response is an error; a 4xx is not). Latency is wall clock to the last byte of the body, because
+a streamed page is not done at its first byte. The load is an open model: request *i* is due at
+*i / rps* whatever the target is doing, and a slot that finds `--concurrency` requests in flight is
+dropped and counted, so a saturated target shows as drops and a breach, not as a slower clock.
+
+**Verdicts, per path and overall.** `pass` (p95 and error rate within the SLO, nothing dropped),
+`breach` (either over, or drops), `unmeasured` (more than half the answers were redirects or
+401/403, which is a login bounce, not the page: set a live session), `skipped` (a missing input,
+named). The run is `pass` only when every path passed, `breach` when any breached, and
+`incomplete` otherwise. Exit codes: 0 pass (or incomplete), 1 breach or a failed smoke (and
+incomplete under `--strict`), 2 refused or bad usage, 3 the SLO table could not be read.
+
+```bash
+# CI-safe self-test: an in-process mock on 127.0.0.1, every hot path including the write, the real
+# SLO table. Sends nothing off the machine. scripts/load-soak.test.ts runs it too.
+node scripts/load-soak.mjs --smoke [--json]
+
+# A steady run against a preview (read paths only; the write is off by default).
+LOAD_SOAK_COOKIE='<Cookie header of a seeded member>' \
+VERCEL_AUTOMATION_BYPASS_SECRET='<preview protection bypass>' \
+node scripts/load-soak.mjs --target https://<preview>.vercel.app --circle <seeded-circle-slug> \
+  --profile steady --rps 1 --duration 120 --data-volume "profiles=N, posts=N" --region <region>
+
+# The plan's done-when: the measured rate, then 10x it, then back (spike), or a long soak.
+node scripts/load-soak.mjs --target https://<preview>.vercel.app --profile spike --rps 2
+node scripts/load-soak.mjs --target https://<preview>.vercel.app --profile soak --rps 1 --duration 1800
+```
+
+**Inputs.** The session is a seeded member's `Cookie` header, from the browser after signing in to
+the preview (seed with the existing demo seeder first, `pnpm seed:demo-space`, which writes to the
+shared database too). The practice write needs `--writes`, `LOAD_SOAK_PRACTICE_ACTION` (the
+`Next-Action` request header the preview's browser sends when you log a practice; it is per build)
+and `LOAD_SOAK_PRACTICE_ID` (a seeded practice). It writes real rows: the per-practice-per-day
+idempotency guard makes repeats cheap no-ops after the first, which is part of what it measures,
+and the 10-per-minute per-member rate limit in `logPracticeAction` answers most of a fast run with a
+"slow down" result inside a 200, so read the write path's numbers as the guard's cost. Requests
+carry `User-Agent: frequency-load-soak/1 (LIVE-551)`, so runtime logs and Sentry can filter them
+out. Neither secret is printed or written to the report.
+
+**The report.** `--out <file>` (a real run defaults to `load-soak-<profile>-<timestamp>.json` in
+the working directory, git-ignored; smoke writes none unless asked): target origin, host kind,
+`build.env` and commit; the SLO rows read; per phase and per path the request count, drops, error
+count and rate, status classes, p50/p95/p99/max and the verdict with its reason; and the
+`--data-volume` and `--region` you passed, because §2a's rule holds here too: a p95 without the data
+volume and region is not a baseline. Paste the per-path p95 into §2b with both stated, once §2b's
+gate has opened.
+
 ---
 
 ## 3. Cost baseline (H0-7)
@@ -335,8 +405,8 @@ morning, so its fresh-by window is 2 h.
 
 ## 5. How to run the baseline scripts
 
-Two dependency-light Node scripts document and (when configured) collect the baselines.
-Both are **safe no-ops when unconfigured** and never hardcode secrets; they read from the
+Three dependency-light Node scripts document and (when configured) collect the baselines,
+and a fourth puts load on them (§2d). The first three are **safe no-ops when unconfigured** and never hardcode secrets; they read from the
 environment. Neither changes app behavior.
 
 ```bash
@@ -358,6 +428,11 @@ node scripts/cost-baseline.mjs --json     # machine-readable output
 node scripts/cron-freshness.mjs           # print the freshness contract table
 node scripts/cron-freshness.mjs --json    # machine-readable output
 node scripts/cron-freshness.mjs --strict  # exit 1 if any job has no monitor
+
+# Load and soak (§2d): --smoke is the CI-safe self-test against a local mock. A real run needs
+# --target <preview-url>; production is refused twice, and a preview shares production's database.
+node scripts/load-soak.mjs --smoke        # self-test, sends nothing off the machine
+node scripts/load-soak.mjs --target https://<preview>.vercel.app --profile spike --rps 2
 ```
 
 **Environment (all optional; unset = documentation-only no-op):**
@@ -374,8 +449,15 @@ node scripts/cron-freshness.mjs --strict  # exit 1 if any job has no monitor
 | `UPSTASH_MONTHLY_SPEND_USD` | cost | this month's Upstash bill |
 | `CRON_HEARTBEAT_BASE_URL` | cron-freshness | presence-checked (not read) to mark every job covered |
 | `CRON_HEARTBEAT_URL_<SLUG>` | cron-freshness | presence-checked (not read) to mark one job covered |
+| `LOAD_SOAK_TARGET` | load-soak | the preview to load when `--target` is not passed; no default |
+| `LOAD_SOAK_COOKIE` | load-soak | a seeded member's session `Cookie` header (secret; never printed) |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | load-soak | preview Deployment Protection bypass (secret; never printed) |
+| `LOAD_SOAK_CIRCLE_SLUG` | load-soak | the seeded Circle for the Circle detail path |
+| `LOAD_SOAK_PRACTICE_ACTION` / `LOAD_SOAK_PRACTICE_ID` | load-soak | the write path, only with `--writes` |
+| `LOAD_SOAK_PRODUCTION_HOSTS` | load-soak | extra hosts to refuse as production, comma separated |
 
-No secret (API key, DSN, service-role key) is read or printed by either script. Spend
+No secret (API key, DSN, service-role key) is read or printed by the three baseline scripts;
+load-soak reads its two secrets from env and never prints or reports them. Spend
 figures are non-sensitive dollar amounts you copy from each vendor's billing console.
 
 ---
@@ -385,7 +467,7 @@ figures are non-sensitive dollar amounts you copy from each vendor's billing con
 | Cadence | Action |
 |---|---|
 | **Once now (H0 close-out)** | Owner fills the §2b latency table + §2c plans, the §3a/§3b cost tables. Scripts make this mechanical. |
-| **Per H3 change** | Re-capture the affected path's row in §2b + its §2c plan; confirm it beats the §4 SLO. |
+| **Per H3 change** | Re-capture the affected path's row in §2b + its §2c plan; confirm it beats the §4 SLO, under load, with `load-soak.mjs --profile spike` against a preview (§2d). |
 | **Monthly** | Re-run `cost-baseline.mjs`, append a dated §3 snapshot; watch the per-1k trend. |
 | **Per deploy / CI** | `pnpm check:cron-freshness --strict` confirms no cron is paging-blind (every §4a job has a heartbeat monitor) before shipping. |
 | **Per incident** | If an SLO pages, open [`RUNBOOKS.md`](RUNBOOKS.md); each section names the §4 row it serves. |
