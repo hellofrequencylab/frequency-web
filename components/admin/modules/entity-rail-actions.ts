@@ -17,6 +17,15 @@
 //
 // FAIL-SAFE ISOLATION. A read that throws comes back as `{ ok: false }`, is logged here so the fallback
 // is visible, and the module that wanted it calls its own getter exactly as it did before this file.
+//
+// ONE VIEWER PER BUNDLE (LIVE-734). React `cache()` does not dedupe inside a Server Action, so each
+// getter used to resolve the viewer for itself: one `auth.getUser()`, the profiles row, the
+// stewardship edges and the crew grant per read, plus the same entity's capability rows per read.
+// The reads now run inside one action scope (lib/core/action-scope.ts). The viewer is resolved once
+// at the top of the scope, and every getter's gate reads that same viewer and that entity's
+// capability set from the scope's memo instead of fetching its own. The getters' signatures are
+// unchanged on purpose: they are Server Actions too, so a viewer passed as an argument would be a
+// value the client could forge.
 
 import {
   getCircleAdminData,
@@ -33,6 +42,8 @@ import { getHubAdminData, getHubPeopleData, getHubInsightsData } from '@/lib/hie
 import { getNexusAdminData, getNexusPeopleData, getNexusInsightsData } from '@/lib/hierarchy/nexus-admin'
 import { getPracticeAdminData, getPracticeInsightsData } from '@/app/(main)/practices/admin-actions'
 import type { EntityRailKind, EntityRailReadKey } from '@/lib/admin/entity-rail-reads'
+import { runInActionScope } from '@/lib/core/action-scope'
+import { resolveViewerOnce } from '@/lib/core/load-capabilities'
 
 type Getter = (key: string) => Promise<unknown>
 
@@ -87,7 +98,15 @@ export async function getEntityRailBundle(
   if (!table || typeof key !== 'string' || !key || !Array.isArray(reads)) return {}
 
   const wanted = [...new Set(reads)].filter((r): r is string => typeof r === 'string' && Object.hasOwn(table, r))
-  const settled = await Promise.allSettled(wanted.map((r) => table[r](key)))
+  if (wanted.length === 0) return {}
+
+  const settled = await runInActionScope(async () => {
+    // Resolve the viewer ONCE, before the getters start. A failure is not swallowed: the scope keeps
+    // the rejected read, each getter's gate meets the same rejection, and every slice comes back
+    // `{ ok: false }` and is logged below, so each module self-fetches exactly as before.
+    await resolveViewerOnce().catch(() => undefined)
+    return Promise.allSettled(wanted.map((r) => table[r](key)))
+  })
 
   const out: Record<string, EntityRailSlice> = {}
   wanted.forEach((read, i) => {

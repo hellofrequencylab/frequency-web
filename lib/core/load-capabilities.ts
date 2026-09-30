@@ -9,6 +9,7 @@
 // component.
 
 import { cache } from 'react'
+import { actionScoped } from '@/lib/core/action-scope'
 import type { AdminScope } from '@/lib/layout/page-chrome'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -44,10 +45,17 @@ import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spot
 // data (every FK was backfilled to an edge; no edge exists without an FK yet). The
 // whole viewer is memoized so the several per-scope builders below share one
 // getCallerProfile() + one getStewardships() round-trip.
-const currentViewer = cache(async (): Promise<Viewer> => {
+//
+// Inside a Server Action `cache()` is a pass-through, so the viewer and the per-entity builders
+// below are also `actionScoped` (LIVE-734, lib/core/action-scope.ts): an action that opens a scope
+// around several gated reads resolves the viewer, and each entity's capability rows, once.
+// The two resolvers below share one read of the viewer's stewardship edges per scope.
+const stewardshipsOnce = actionScoped(getStewardships)
+
+const currentViewer = cache(actionScoped(async (): Promise<Viewer> => {
   const p = await getCallerProfile()
   const [edges, crewGrant] = await Promise.all([
-    p?.id ? getStewardships(p.id) : Promise.resolve([]),
+    p?.id ? stewardshipsOnce(p.id) : Promise.resolve([]),
     // GRANTED CREW (LIVE-223): Crew is granted by an active PAID community membership, recorded as
     // its own provenance-stamped row rather than written into `profiles.membership_tier`. The tier
     // both fields below resolve to is the union `stripe_active OR EXISTS(active grant)`. One read,
@@ -67,7 +75,7 @@ const currentViewer = cache(async (): Promise<Viewer> => {
     realTier: resolveEffectiveTier(p?.realMembershipTier, crewGrant).tier,
     leadsScope: (scopeType, scopeId) => edgeLeadsScope(edges, scopeType, scopeId),
   }
-})
+}))
 
 // The viewer's highest EDGE-contributed community level (P1.6 PR 2, ADR-221). Derived
 // from the same edges `currentViewer` reads, with NO community_role floor — this is the
@@ -76,11 +84,17 @@ const currentViewer = cache(async (): Promise<Viewer> => {
 // just like a global guide/mentor does. The existing FK/edge match then confirms the
 // SPECIFIC parent, so this only opens the walk for scoped-only stewards — it grants
 // nothing a global guide/mentor didn't already have, and removes nothing.
-const viewerEdgeLevel = cache(async (): Promise<CommunityLevel> => {
+const viewerEdgeLevel = cache(actionScoped(async (): Promise<CommunityLevel> => {
   const p = await getCallerProfile()
-  const edges = p?.id ? await getStewardships(p.id) : []
+  const edges = p?.id ? await stewardshipsOnce(p.id) : []
   return deriveCommunityLevel(edges) // no floor: pure edge standing
-})
+}))
+
+/** Resolve the caller's viewer now. Inside an action scope this is the one resolve every gate in
+ *  the scope then reads (LIVE-734); the entity rail bundle calls it before its getters start. */
+export async function resolveViewerOnce(): Promise<void> {
+  await currentViewer()
+}
 
 /** Does the viewer hold an edge at or above `level` anywhere? Additive parent-walk gate. */
 async function hasEdgeAtLeast(level: CommunityLevel): Promise<boolean> {
@@ -111,7 +125,7 @@ export async function assertCanCreate(cap: CreateCapability): Promise<void> {
 }
 
 /** What the caller can do on a specific Circle. */
-export async function getCircleCapabilities(
+async function readCircleCapabilities(
   circleId: string,
   opts?: { openTaskCount?: number; viewerManagesParent?: boolean },
 ): Promise<Set<Capability>> {
@@ -215,9 +229,19 @@ export async function getCircleCapabilities(
   })
 }
 
+const readCircleCapabilitiesOnce = actionScoped(readCircleCapabilities)
+/** readCircleCapabilities, run once per action scope (LIVE-734). Each caller gets its own
+ *  copy of the Set, so no gate can see another's. */
+export async function getCircleCapabilities(
+  circleId: string,
+  opts?: { openTaskCount?: number; viewerManagesParent?: boolean },
+): Promise<Set<Capability>> {
+  return new Set(await readCircleCapabilitiesOnce(circleId, opts))
+}
+
 /** What the caller can do on a specific Hub. hub.manage goes to its guide, a
  *  mentor who leads the parent nexus, or a janitor (resolver). */
-export async function getHubCapabilities(
+async function readHubCapabilities(
   hubId: string,
   opts?: { viewerManagesParent?: boolean },
 ): Promise<Set<Capability>> {
@@ -261,9 +285,19 @@ export async function getHubCapabilities(
   })
 }
 
+const readHubCapabilitiesOnce = actionScoped(readHubCapabilities)
+/** readHubCapabilities, run once per action scope (LIVE-734). Each caller gets its own
+ *  copy of the Set, so no gate can see another's. */
+export async function getHubCapabilities(
+  hubId: string,
+  opts?: { viewerManagesParent?: boolean },
+): Promise<Set<Capability>> {
+  return new Set(await readHubCapabilitiesOnce(hubId, opts))
+}
+
 /** What the caller can do on a specific Nexus. nexus.manage goes to its mentor or
  *  a janitor (resolver). */
-export async function getNexusCapabilities(nexusId: string): Promise<Set<Capability>> {
+async function readNexusCapabilities(nexusId: string): Promise<Set<Capability>> {
   const viewer = await currentViewer()
   const admin = createAdminClient()
 
@@ -280,6 +314,13 @@ export async function getNexusCapabilities(nexusId: string): Promise<Set<Capabil
   })
 }
 
+const readNexusCapabilitiesOnce = actionScoped(readNexusCapabilities)
+/** readNexusCapabilities, run once per action scope (LIVE-734). Each caller gets its own
+ *  copy of the Set, so no gate can see another's. */
+export async function getNexusCapabilities(nexusId: string): Promise<Set<Capability>> {
+  return new Set(await readNexusCapabilitiesOnce(nexusId))
+}
+
 /** What the caller can do on a specific Event. event.editSettings goes to its
  *  host, platform staff, or whoever manages the event's parent scope — the circle
  *  (getCircleCapabilities) for a circle event, or the owning Space (getSpaceCapabilities)
@@ -290,7 +331,7 @@ export async function getNexusCapabilities(nexusId: string): Promise<Set<Capabil
  *  (events.space_id), and a share never writes any of those. Co-hosting on another Space's
  *  calendar is visibility + credit, never management. Personal cohosts (event_cohosts) get their
  *  management through isEventCohost in the event action gates, also not through a share. */
-export async function getEventCapabilities(eventId: string): Promise<Set<Capability>> {
+async function readEventCapabilities(eventId: string): Promise<Set<Capability>> {
   const viewer = await currentViewer()
   const admin = createAdminClient()
 
@@ -352,6 +393,13 @@ export async function getEventCapabilities(eventId: string): Promise<Set<Capabil
   })
 }
 
+const readEventCapabilitiesOnce = actionScoped(readEventCapabilities)
+/** readEventCapabilities, run once per action scope (LIVE-734). Each caller gets its own
+ *  copy of the Set, so no gate can see another's. */
+export async function getEventCapabilities(eventId: string): Promise<Set<Capability>> {
+  return new Set(await readEventCapabilitiesOnce(eventId))
+}
+
 /** What the caller can do on a specific topical Channel. Channels are platform-curated
  *  (no per-channel owner), so channel.manage goes to staff only — the resolver adds it
  *  when the viewer is staff. Used by the channel detail page to gate its staff-only
@@ -362,7 +410,7 @@ export async function getChannelCapabilities(channelId: string): Promise<Set<Cap
 
 /** What the caller can do on a specific Practice. practice.editSettings goes to its
  *  creator (owner), platform staff, or whoever manages its parent space. */
-export async function getPracticeCapabilities(practiceId: string): Promise<Set<Capability>> {
+async function readPracticeCapabilities(practiceId: string): Promise<Set<Capability>> {
   const viewer = await currentViewer()
   const admin = createAdminClient()
   const { data: p } = await admin
@@ -375,6 +423,13 @@ export async function getPracticeCapabilities(practiceId: string): Promise<Set<C
     practiceId,
     ownerId: p?.created_by ?? null,
   })
+}
+
+const readPracticeCapabilitiesOnce = actionScoped(readPracticeCapabilities)
+/** readPracticeCapabilities, run once per action scope (LIVE-734). Each caller gets its own
+ *  copy of the Set, so no gate can see another's. */
+export async function getPracticeCapabilities(practiceId: string): Promise<Set<Capability>> {
+  return new Set(await readPracticeCapabilitiesOnce(practiceId))
 }
 
 /** What the caller can do on a specific Journey. journey.editSettings goes to its author

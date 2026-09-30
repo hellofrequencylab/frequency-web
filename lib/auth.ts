@@ -26,8 +26,14 @@
 //
 // `auth.getUser()` is NOT a local JWT decode: @supabase/auth-js issues GET /auth/v1/user
 // whenever a session exists. That is why the count matters.
+//
+// ONE VIEWER READ PER ACTION SCOPE (LIVE-734). `cache()` is a pass-through inside a Server Action
+// (see lib/core/action-scope.ts), so the three memos below are also `actionScoped`: an action that
+// opens a scope around several gated reads (the entity rail bundle) resolves the viewer once for
+// all of them. Outside a scope the wrapper is a plain call and `cache()` does the work, as before.
 
 import { cache } from 'react'
+import { actionScoped } from '@/lib/core/action-scope'
 import type { User } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -57,12 +63,12 @@ export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'a
  *  getCallerProfile / getMyProfileId / isPlatformStaff / isPaidViewer and — the reason it matters —
  *  every block, reader and module added later that nobody thought to audit. See
  *  lib/core/anonymous-render.ts for why the per-call-site alternative does not survive contact. */
-export const getCachedUser = cache(async (): Promise<User | null> => {
+export const getCachedUser = cache(actionScoped(async (): Promise<User | null> => {
   if (isAnonymousRender()) return null
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user
-})
+}))
 
 /**
  * The columns the viewer's own profile row is read with, ONCE per request. This is the
@@ -107,7 +113,7 @@ export type ViewerProfileRow = Pick<
  * crew+ reads in-region", `auth_user_id = auth.uid()`), so the session client suffices
  * and no service-role bypass is needed for the most-trafficked read in the app.
  */
-export const getCachedViewerProfile = cache(async (): Promise<ViewerProfileRow | null> => {
+export const getCachedViewerProfile = cache(actionScoped(async (): Promise<ViewerProfileRow | null> => {
   const user = await getCachedUser()
   if (!user) return null
   const supabase = await createClient()
@@ -117,7 +123,7 @@ export const getCachedViewerProfile = cache(async (): Promise<ViewerProfileRow |
     .eq('auth_user_id', user.id)
     .maybeSingle()
   return (data as ViewerProfileRow | null) ?? null
-})
+}))
 
 /**
  * The caller's profile core fields (or null), memoized per request.
@@ -189,13 +195,13 @@ export function callerFromViewerRow(data: ViewerProfileRow, effectiveRole: Commu
   }
 }
 
-const resolveCaller = cache(async (): Promise<ResolvedCaller | null> => {
+const resolveCaller = cache(actionScoped(async (): Promise<ResolvedCaller | null> => {
   // The shared per-request row (one getUser, one select, see getCachedViewerProfile).
   const data = await getCachedViewerProfile()
   if (!data) return null
   const realRole = (data.community_role ?? 'member') as CommunityRole
   return callerFromViewerRow(data, await applyViewAs(realRole))
-})
+}))
 
 /** Narrow the `profiles.community_level` string to a CommunityLevel, never
  *  below the floor the legacy `community_role` contributes (additive — ADR-218/221). */
