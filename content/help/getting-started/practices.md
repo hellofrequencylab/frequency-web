@@ -145,9 +145,10 @@ thousands:
 - **Tags.** Practices carry tags like `morning`, `quick`, `outdoor`, or `social` so
   you can spot what suits the moment. When you create or edit your own practice, add
   your own tags to help others find it.
-- **Sort.** Browse by **Trending** (what people are doing lately), **All-time**, or
-  **New**. Trending is the default, so the practices the community is loving rise to
-  the top.
+- **Sort.** Sort the full practice library by **Trending** (what people are doing
+  lately), **All-time**, or **New**. Trending is the default, so the practices the
+  community is loving rise to the top. The sort applies to the full library only; the
+  Best of the library list below keeps its own ranking.
 - **Best of the library.** Above the full library sits one ranked list of the
   community's top practices **and** Journeys, with **All**, **Practices**, and
   **Journeys** tabs. Tap the heart on a card to rate it. Ratings, adoptions, and real
