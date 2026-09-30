@@ -6,6 +6,7 @@
 // with RSVPs. Everything is tagged is_demo so it recedes, toggles, and purges with
 // the rest of the demo layer (docs/DEMO-SYSTEM.md). Server-only (admin client).
 
+import { randomInt } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -50,7 +51,10 @@ const POSTS = [
   'Still figuring out the rhythm but loving every minute of it.',
 ]
 
-const rand = (n: number) => Math.floor(Math.random() * n)
+// node:crypto rather than Math.random (HYG-143, CodeQL js/insecure-randomness). Nothing here is a
+// secret, but a demo handle suffix and a Space slug suffix are identifiers other rows collide with,
+// and one source of randomness for the whole file is easier to reason about than two.
+const rand = (n: number) => (n > 0 ? randomInt(n) : 0)
 const pick = <T,>(a: readonly T[]): T => a[rand(a.length)]
 const between = ([lo, hi]: [number, number]) => lo + rand(hi - lo + 1)
 
@@ -272,7 +276,7 @@ export async function addDemoCircle(input: {
   if (ev) {
     const { data: mem } = await d.from('memberships').select('profile_id').eq('circle_id', circleId)
     const rows = (mem as { profile_id: string }[] | null ?? [])
-      .filter(() => Math.random() < 0.7)
+      .filter(() => rand(10) < 7)
       .map((m) => ({ event_id: (ev as { id: string }).id, profile_id: m.profile_id, status: 'going' }))
     if (rows.length) await d.from('event_rsvps').insert(rows)
   }

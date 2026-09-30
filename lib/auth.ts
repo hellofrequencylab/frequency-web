@@ -75,7 +75,7 @@ export const getCachedUser = cache(async (): Promise<User | null> => {
 export const VIEWER_PROFILE_COLUMNS =
   'id, display_name, handle, avatar_url, community_role, community_level, web_role, membership_tier, current_season_zaps, lifetime_gems, current_streak, meta, home_lat, home_lng, feed_radius_m'
 
-type ViewerProfileRow = Pick<
+export type ViewerProfileRow = Pick<
   Database['public']['Tables']['profiles']['Row'],
   | 'id'
   | 'display_name'
@@ -134,56 +134,68 @@ export const getCachedViewerProfile = cache(async (): Promise<ViewerProfileRow |
  * DB value (use it to gate staff-only affordances irrespective of preview).
  *
  */
-const resolveCaller = cache(
-  async (): Promise<{
-    id: string
-    community_role: CommunityRole
-    realRole: CommunityRole
-    communityLevel: CommunityLevel
-    webRole: WebRole
-    realWebRole: WebRole
-    membershipTier: EntitlementTier
-    realMembershipTier: EntitlementTier
-  } | null> => {
-    // The shared per-request row (one getUser, one select, see getCachedViewerProfile).
-    // The `as` narrowings below tighten DB strings to their unions; asWebRole/
-    // asCommunityLevel stay as runtime validation regardless of what the types promise.
-    const data = await getCachedViewerProfile()
-    if (!data) return null
-    const realRole = (data.community_role ?? 'member') as CommunityRole
-    const realWebRole = asWebRole(data.web_role)
-    const effectiveRole = await applyViewAs(realRole)
-    // View-as is a DOWNGRADE preview of the trust ladder; when it's active the staff
-    // axis is stripped too, so the preview faithfully hides staff surfaces.
-    const previewing = effectiveRole !== realRole
-    // The derived global Community level (ADR-218, floored by community_role so a
-    // global role never regresses; live in prod). Under a view-as DOWNGRADE we floor
-    // it to the impersonated role's level so a janitor-viewing-as-member faithfully
-    // loses elevated standing — mirrors the webRole strip above. (ADR-221.)
-    const realLevel = asCommunityLevel(data.community_level, realRole)
-    const previewLevel = communityRoleToLevel(effectiveRole)
-    return {
-      id: data.id,
-      community_role: effectiveRole,
-      realRole,
-      communityLevel: previewing
-        ? COMMUNITY_LEVEL_FLOOR(realLevel, previewLevel)
-        : realLevel,
-      webRole: previewing ? 'none' : realWebRole,
-      realWebRole,
-      // Billing entitlement (orthogonal to role). The check constraint guarantees the union.
-      // BETA: while open access is on, every signed-in member is granted the paid Crew tier so
-      // all premium features unlock (lib/core/beta.ts). The DB value is untouched — flip the flag
-      // off to restore real tiers. Staff (web_role) is unaffected; admin surfaces stay locked.
-      membershipTier: BETA_OPEN_ACCESS
-        ? BETA_GRANTED_TIER
-        : ((data.membership_tier ?? 'free') as EntitlementTier),
-      // The TRUE DB tier, never beta-overridden. The creation gates read this so the
-      // free-beta upgrade popup still fires for a genuinely free member (ADR-414).
-      realMembershipTier: (data.membership_tier ?? 'free') as EntitlementTier,
-    }
-  },
-)
+/** The resolved caller: the effective (preview-aware) fields plus the true ones. */
+export interface ResolvedCaller {
+  id: string
+  community_role: CommunityRole
+  realRole: CommunityRole
+  communityLevel: CommunityLevel
+  webRole: WebRole
+  realWebRole: WebRole
+  membershipTier: EntitlementTier
+  realMembershipTier: EntitlementTier
+}
+
+/**
+ * The ONE mapping from a viewer's own `profiles` row to the resolved caller, given the effective
+ * role. Pure, so the two ways a caller arrives share it: the web's cookie session (resolveCaller
+ * below, which passes the view-as role) and the versioned API's bearer token
+ * (lib/contract/caller.ts, LIVE-715, which passes the real role because view-as is a web cookie).
+ * A second copy of this mapping is how a native caller would drift from a web one.
+ */
+export function callerFromViewerRow(data: ViewerProfileRow, effectiveRole: CommunityRole): ResolvedCaller {
+  // The `as` narrowings below tighten DB strings to their unions; asWebRole/
+  // asCommunityLevel stay as runtime validation regardless of what the types promise.
+  const realRole = (data.community_role ?? 'member') as CommunityRole
+  const realWebRole = asWebRole(data.web_role)
+  // View-as is a DOWNGRADE preview of the trust ladder; when it's active the staff
+  // axis is stripped too, so the preview faithfully hides staff surfaces.
+  const previewing = effectiveRole !== realRole
+  // The derived global Community level (ADR-218, floored by community_role so a
+  // global role never regresses; live in prod). Under a view-as DOWNGRADE we floor
+  // it to the impersonated role's level so a janitor-viewing-as-member faithfully
+  // loses elevated standing — mirrors the webRole strip above. (ADR-221.)
+  const realLevel = asCommunityLevel(data.community_level, realRole)
+  const previewLevel = communityRoleToLevel(effectiveRole)
+  return {
+    id: data.id,
+    community_role: effectiveRole,
+    realRole,
+    communityLevel: previewing
+      ? COMMUNITY_LEVEL_FLOOR(realLevel, previewLevel)
+      : realLevel,
+    webRole: previewing ? 'none' : realWebRole,
+    realWebRole,
+    // Billing entitlement (orthogonal to role). The check constraint guarantees the union.
+    // BETA: while open access is on, every signed-in member is granted the paid Crew tier so
+    // all premium features unlock (lib/core/beta.ts). The DB value is untouched — flip the flag
+    // off to restore real tiers. Staff (web_role) is unaffected; admin surfaces stay locked.
+    membershipTier: BETA_OPEN_ACCESS
+      ? BETA_GRANTED_TIER
+      : ((data.membership_tier ?? 'free') as EntitlementTier),
+    // The TRUE DB tier, never beta-overridden. The creation gates read this so the
+    // free-beta upgrade popup still fires for a genuinely free member (ADR-414).
+    realMembershipTier: (data.membership_tier ?? 'free') as EntitlementTier,
+  }
+}
+
+const resolveCaller = cache(async (): Promise<ResolvedCaller | null> => {
+  // The shared per-request row (one getUser, one select, see getCachedViewerProfile).
+  const data = await getCachedViewerProfile()
+  if (!data) return null
+  const realRole = (data.community_role ?? 'member') as CommunityRole
+  return callerFromViewerRow(data, await applyViewAs(realRole))
+})
 
 /** Narrow the `profiles.community_level` string to a CommunityLevel, never
  *  below the floor the legacy `community_role` contributes (additive — ADR-218/221). */
@@ -202,12 +214,8 @@ function COMMUNITY_LEVEL_FLOOR(a: CommunityLevel, b: CommunityLevel): CommunityL
   return levelRank(a) >= levelRank(b) ? a : b
 }
 
-/**
- * The caller's profile id + effective community role + STAFF web_role, or null if
- * not signed in / no profile row. Use when an action needs to make a role-based
- * authz decision. `webRole` is the effective staff axis (preview-aware, ADR-208).
- */
-export async function getCallerProfile(): Promise<{
+/** What getCallerProfile returns, and what the versioned API resolves a bearer caller to. */
+export interface CallerProfile {
   id: string
   community_role: CommunityRole
   /** The derived global Community level (ADR-218): the highest stewardship edge a
@@ -219,9 +227,10 @@ export async function getCallerProfile(): Promise<{
   membershipTier: EntitlementTier
   /** The TRUE DB tier, never beta-overridden (ADR-414) — the creation gates read this. */
   realMembershipTier: EntitlementTier
-} | null> {
-  const c = await resolveCaller()
-  if (!c) return null
+}
+
+/** The public projection of a resolved caller: what getCallerProfile returns. */
+export function toCallerProfile(c: ResolvedCaller): CallerProfile {
   return {
     id: c.id,
     community_role: c.community_role,
@@ -230,6 +239,16 @@ export async function getCallerProfile(): Promise<{
     membershipTier: c.membershipTier,
     realMembershipTier: c.realMembershipTier,
   }
+}
+
+/**
+ * The caller's profile id + effective community role + STAFF web_role, or null if
+ * not signed in / no profile row. Use when an action needs to make a role-based
+ * authz decision. `webRole` is the effective staff axis (preview-aware, ADR-208).
+ */
+export async function getCallerProfile(): Promise<CallerProfile | null> {
+  const c = await resolveCaller()
+  return c ? toCallerProfile(c) : null
 }
 
 /**

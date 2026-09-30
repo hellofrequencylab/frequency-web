@@ -124,7 +124,7 @@ export function EmailStyleEditor({
                   disabled={readOnly}
                   spellCheck={false}
                   onChange={(e) => setField(f.key, e.target.value)}
-                  className="w-24 rounded-control border border-border bg-surface-elevated/50 px-2 py-1.5 text-meta text-text placeholder:text-subtle focus:border-primary focus:outline-none disabled:opacity-60"
+                  className="w-24 rounded-control border border-border bg-surface-elevated/50 px-2 py-1.5 text-meta text-text placeholder:text-subtle focus:border-border-strong focus:outline-none disabled:opacity-60"
                 />
                 <button
                   type="button"
