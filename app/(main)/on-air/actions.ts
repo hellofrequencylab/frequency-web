@@ -17,7 +17,8 @@ import { resolveMemberDay } from '@/lib/member-day'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
 import { getNextGathering } from '@/lib/quest/next-gathering'
-import { buildSessionDispatch, modeHasNote, statSessionLabel } from '@/lib/on-air'
+import { buildSessionDispatch, fallbackSessionDispatch, modeHasNote, statSessionLabel } from '@/lib/on-air'
+import { MOVEMENT_MODES } from '@/lib/movement'
 import { loadOnAirSessionData, type OnAirSessionData } from '@/lib/on-air/session-data'
 import { mergeProfileMeta } from '@/lib/profiles/meta'
 import type { DispatchKind, OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
@@ -33,8 +34,9 @@ function dispatchKindFor(
 ): DispatchKind {
   if (movementMode) {
     const m = movementMode === 'workout' ? 'strength' : movementMode
-    const known = ['walk', 'run', 'yoga', 'strength', 'stretch', 'play']
-    if (known.includes(m)) return m as DispatchKind
+    // Validated against the engine's own mode list (lib/movement.ts), so the list cannot drift
+    // from the engine and an unknown string never reaches the opener (the sit mode names it).
+    if (MOVEMENT_MODES.some((x) => x.mode === m)) return m as DispatchKind
   }
   return mode
 }
@@ -386,18 +388,18 @@ export async function completeSession(
       kind: dispatchKind,
     })
   } catch {
-    // Last resort only: the cached, AI-voiced Dispatch from Vera.
-    dispatch = {
-      copy: 'Same time tomorrow. Bring one practice. The streak does the rest.',
-      actionHref: '/feed',
-      actionLabel: 'Back to feed',
-    }
+    // Last resort only: the cached, AI-voiced Dispatch from Vera. That line is cached for the
+    // whole day and is activity-neutral, so the opener for THIS session is added here and the
+    // fallback names what was just done, like the primary path (LIVE-674). If the cache read
+    // fails too, the steady template stands (with the same opener).
+    let cached: { copy: string; actionHref: string | null; actionLabel: string } | null = null
     try {
       const d = await getOrCreateDispatch(profileId)
-      dispatch = { copy: d.copy, actionHref: d.actionHref, actionLabel: d.actionLabel }
+      cached = { copy: d.copy, actionHref: d.actionHref, actionLabel: d.actionLabel }
     } catch {
-      // the template default above stands
+      // the template default stands
     }
+    dispatch = fallbackSessionDispatch(dispatchKind, cached)
   }
 
   return ok({

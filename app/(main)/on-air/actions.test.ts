@@ -128,4 +128,40 @@ describe('completeSession', () => {
     expect(calls[0]).toBe('practice_sessions.insert')
     expect(calls).toContain('practice_timer_sessions.delete')
   })
+
+  // LIVE-674: when both state reads fail, the reveal falls back to the cached daily Dispatch.
+  // That line is minted once a day and replays after every session, so the fallback names THIS
+  // session's activity itself, never whatever the cached line says.
+  it('FALLBACK DISPATCH: names the activity just done, ahead of the cached daily line', async () => {
+    mocks.getPracticesToLogToday.mockRejectedValue(new Error('down'))
+    mocks.getNextGathering.mockRejectedValue(new Error('down'))
+    mocks.getOrCreateDispatch.mockResolvedValue({
+      copy: 'Same time tomorrow. Bring one practice.',
+      actionHref: '/on-air',
+      actionLabel: 'See you then',
+    })
+
+    const res = await completeSession({ ...input, movementMode: 'walk' })
+
+    expect('data' in res && res.data.dispatch).toEqual({
+      copy: 'Nice walk. Same time tomorrow. Bring one practice.',
+      actionHref: '/on-air',
+      actionLabel: 'See you then',
+    })
+    expect(mocks.getOrCreateDispatch).toHaveBeenCalledWith(ME)
+  })
+
+  it('FALLBACK DISPATCH: the steady template still carries the opener when the cache read fails', async () => {
+    mocks.getPracticesToLogToday.mockRejectedValue(new Error('down'))
+    mocks.getNextGathering.mockRejectedValue(new Error('down'))
+    mocks.getOrCreateDispatch.mockRejectedValue(new Error('down'))
+
+    const yoga = await completeSession({ ...input, movementMode: 'yoga' })
+    expect('data' in yoga && yoga.data.dispatch.copy).toBe(
+      'Nice flow. Same time tomorrow. Bring one practice. The streak does the rest.',
+    )
+    // An unknown movement mode never reaches the opener: the sit mode names it.
+    const odd = await completeSession({ ...input, movementMode: 'skydive' })
+    expect('data' in odd && odd.data.dispatch.copy.startsWith('Logged. ')).toBe(true)
+  })
 })
