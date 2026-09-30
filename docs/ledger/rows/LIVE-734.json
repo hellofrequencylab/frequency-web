@@ -14,5 +14,6 @@
     "kind": "manual",
     "evidence": "Filed 2026-09-30. Closes when one entity rail bundle request resolves the viewer once (auth.getUser() called once per bundle, shown by a test that counts it) and every getter's permission gate still passes its existing tests.",
     "checked": "2026-09-30"
-  }
+  },
+  "wave": "W0d"
 }
