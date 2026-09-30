@@ -188,7 +188,7 @@ describe('the horizon setting reaches the listing it claims to tune', () => {
     // Removing the date ceiling must not remove the row budget.
     expect((indexData.match(/\.limit\(SERIES_WIDE_READ\)/g) ?? []).length).toBeGreaterThanOrEqual(3)
     expect(indexData).toContain('getSeriesDisplayConfig(')
-    expect(indexData).toContain('collapseSeriesRows')
+    expect(indexData).toContain('collapseSeries(')
   })
 
   it('the console renders the control and its action re-gates on janitor', () => {
