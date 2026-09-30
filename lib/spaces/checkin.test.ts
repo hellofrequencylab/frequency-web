@@ -232,6 +232,7 @@ describe('ensureCheckinNode (create-or-get, gated)', () => {
     expect(store.nodeInserts[0]!.kind).toBe('checkin')
     expect(store.nodeInserts[0]!.space_id).toBe('space-A')
     expect(store.nodeInserts[0]!.type).toBe('qr') // routes through the normal scan pipeline
+    expect(store.nodeInserts[0]!.secret).toBeUndefined() // the printed code is signed at render (LIVE-688)
   })
 
   it('reuses the existing node on a second call (idempotent)', async () => {

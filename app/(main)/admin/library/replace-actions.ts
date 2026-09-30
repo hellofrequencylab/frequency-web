@@ -22,12 +22,16 @@ import { ingestImageBytes } from '@/lib/library/ingest'
 
 /** Replace the file behind a Loom asset. The asset id (and every reference to it) is preserved; only the
  *  stored file + its metadata (url / path / bucket / mime / bytes) change. The previous file is versioned
- *  first. Returns the new public url on success. */
+ *  first. Returns the new public url on success.
+ *
+ *  This is also the save path of the Loom crop/rotate editor (HYG-109, ADR-1592): the browser redraws
+ *  the image and posts the result here with an optional `note` ("Cropped (Square (1:1)), rotated 90°")
+ *  that labels the version, so a crop is versioned, ingested and rolled back exactly like a replace. */
 export async function replaceLibraryAssetFile(
   assetId: string,
   formData: FormData,
 ): Promise<{ ok: true; url: string } | { error: string }> {
-  await requireAdmin('janitor', { staff: 'marketing' })
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
   const id = (assetId ?? '').trim()
   if (!id) return { error: 'Missing asset id.' }
 
@@ -47,14 +51,20 @@ export async function replaceLibraryAssetFile(
   // Load the current asset so the replacement stays scoped to its Space and we know its current kind.
   const { data: assetRow } = await handle
     .from('library_assets')
-    .select('id, space_id, kind')
+    .select('id, space_id, kind, is_protected')
     .eq('id', id)
     .maybeSingle()
-  const asset = assetRow as { id: string; space_id: string; kind: string } | null
+  const asset = assetRow as { id: string; space_id: string; kind: string; is_protected: boolean } | null
   if (!asset) return { error: 'That asset no longer exists.' }
+  // A protected asset's file lives in the private bucket (LIVE-577, ADR-1595). The upload below writes
+  // to the PUBLIC bucket the classifier names, so a replace here would quietly put a new original on
+  // the open web under a Protected row. Refuse instead; the operator releases it first.
+  if (asset.is_protected) return { error: 'This asset is protected. Switch Protected off to replace its file.' }
 
   // Snapshot the CURRENT file into a version BEFORE the swap, so the replace is reversible.
-  await recordVersion(id, `Replaced file (${target.kind})`)
+  const rawNote = formData.get('note')
+  const note = typeof rawNote === 'string' ? rawNote.trim().slice(0, 120) : ''
+  await recordVersion(id, note || `Replaced file (${target.kind})`, ctx.profileId)
 
   // Upload the new file to a fresh path (the old file is preserved for the version snapshot).
   const ext = (file.name.split('.').pop() || target.kind).toLowerCase().replace(/[^a-z0-9]/g, '')

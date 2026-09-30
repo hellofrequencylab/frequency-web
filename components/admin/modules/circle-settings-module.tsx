@@ -29,6 +29,7 @@ import {
   type CircleAccess,
 } from '@/lib/circles/visibility'
 import { CIRCLE_RAIL, circleRailValues, circleSettingsFormData, type CircleRailValues } from './circle-rail-plan'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Circle settings" (EMBEDDED-ADMIN.md / ADR-133), rendered inside the page admin rail on a
 // /circles/[slug] page. The rail section header is the single title. The main fields autosave and reflect
@@ -63,6 +64,8 @@ export function CircleSettingsModule() {
   const pathname = usePathname()
   const router = useRouter()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('circle', 'admin', getCircleAdminData)
 
   const [data, setData] = useState<CircleData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -92,7 +95,7 @@ export function CircleSettingsModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCircleAdminData(slug).then((d) => {
+    readAdmin(slug).then((d) => {
       if (active) {
         setData(d)
         if (d) {
@@ -109,7 +112,7 @@ export function CircleSettingsModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readAdmin])
 
   if (!slug) return null
   if (loading) {

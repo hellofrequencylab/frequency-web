@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { refuseUnusableBaseUrl } from '../playwright.config'
 
 // ── A GATE MAY NOT REPORT GREEN HAVING TESTED NOTHING ────────────────────────────────────────────
 //
@@ -591,3 +595,419 @@ describe('a dispatch that cannot commit is refused before it spends anything', (
     for (const copy of copies) expect(copy).toBe(copies[0])
   })
 })
+
+// ── 🔴 THE API QUOTA IS SHARED, AND A REFUSED READ IS NOT AN ANSWER (HYG-151, ADR-1669) ────────
+//
+// 2026-09-29: the repository's GITHUB_TOKEN core quota (1,000 requests an hour) read 0 twice in
+// two hours. The turnstile was the largest consumer: one paginated runs read per workflow file
+// plus one jobs read for EVERY in-progress run, every 30 s, in every waiting job. And the preview
+// resolver swallowed every refusal with `|| true` while `gh api` prints the error BODY to stdout,
+// so #3066's pr-compare (run 36636201158, job 109638485701) resolved its preview URL to
+// {"message":"Not Found",...} and ran every suite against it: "Cannot navigate to invalid URL",
+// four @visual reds the PR did not cause.
+//
+// These assertions RUN the two scripts rather than read them: the resolver under bash with a fake
+// `gh` on PATH (it answers like the real one, error body on stdout), the turnstile as the async
+// function github-script wraps it in, with a fake Octokit and a fake clock. Every arm was watched go
+// red against main's workflow.
+
+/** The resolver step's shell body in one job, dedented to column 0. */
+function resolverScript(job: 'pr-compare' | 'lighthouse'): string {
+  const start = wf.indexOf(`\n  ${job}:\n`)
+  const step = wf.indexOf("      - name: Resolve the PR's Vercel preview URL", start)
+  const body = wf.indexOf('        run: |\n', step) + '        run: |\n'.length
+  const end = wf.indexOf('\n      - uses: actions/checkout@v7', body)
+  expect(start).toBeGreaterThan(-1)
+  expect(step).toBeGreaterThan(start)
+  return wf
+    .slice(body, end)
+    .split('\n')
+    .map((line) => line.slice(10))
+    .join('\n')
+}
+
+type GhAnswer = { code?: number; out?: string; err?: string }
+type GhRoute = { m: string; r: GhAnswer[] }
+
+const NOT_FOUND = '{"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}'
+const RATE_LIMITED: GhAnswer = {
+  code: 1,
+  out: '{"message":"API rate limit exceeded for installation ID 1.","documentation_url":"https://docs.github.com/rest/overview/rate-limits-for-the-rest-api","status":"403"}',
+  err: 'gh: API rate limit exceeded for installation ID 1. (HTTP 403)',
+}
+
+// Answers like the real gh: on a failure the error BODY goes to stdout and the exit code is 1.
+// A path no route claims is a 404, which is what #3066's word-split "deployment ids" hit.
+const FAKE_GH = `#!/usr/bin/env node
+const fs = require('fs')
+const path = process.argv[3] || ''
+const file = process.env.FAKE_GH
+fs.appendFileSync(file + '.log', path + '\\n')
+const routes = JSON.parse(fs.readFileSync(file, 'utf8'))
+const route = routes.find((r) => path.includes(r.m))
+if (!route) {
+  process.stdout.write(${JSON.stringify(NOT_FOUND + '\n')})
+  process.stderr.write('gh: Not Found (HTTP 404)\\n')
+  process.exit(1)
+}
+const seen = fs.existsSync(file + '.n') ? JSON.parse(fs.readFileSync(file + '.n', 'utf8')) : {}
+const i = seen[route.m] || 0
+seen[route.m] = i + 1
+fs.writeFileSync(file + '.n', JSON.stringify(seen))
+const a = route.r[Math.min(i, route.r.length - 1)]
+if (a.out !== undefined && a.out !== '') process.stdout.write(a.out + '\\n')
+if (a.err) process.stderr.write(a.err + '\\n')
+process.exit(a.code || 0)
+`
+
+/** Run the resolver against scripted API answers. Routes match by substring, first wins. */
+function runResolver(routes: GhRoute[], job: 'pr-compare' | 'lighthouse' = 'pr-compare') {
+  const dir = mkdtempSync(join(tmpdir(), 'hyg151-'))
+  const bin = join(dir, 'bin')
+  mkdirSync(bin)
+  writeFileSync(join(bin, 'gh'), FAKE_GH)
+  // `sleep` records its argument instead of sleeping, so a 12-minute window runs in a second.
+  writeFileSync(join(bin, 'sleep'), '#!/bin/sh\necho "$1" >> "$FAKE_GH.sleeps"\n')
+  chmodSync(join(bin, 'gh'), 0o755)
+  chmodSync(join(bin, 'sleep'), 0o755)
+  const fake = join(dir, 'routes.json')
+  writeFileSync(fake, JSON.stringify(routes))
+  const script = join(dir, 'resolve.sh')
+  writeFileSync(script, resolverScript(job))
+  for (const f of ['output', 'summary']) writeFileSync(join(dir, f), '')
+  // The runner's own invocation for a `run:` step: bash --noprofile --norc -eo pipefail {0}.
+  const r = spawnSync('bash', ['--noprofile', '--norc', '-eo', 'pipefail', script], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      PATH: `${bin}:${process.env.PATH}`,
+      FAKE_GH: fake,
+      RUNNER_TEMP: dir,
+      GITHUB_OUTPUT: join(dir, 'output'),
+      GITHUB_STEP_SUMMARY: join(dir, 'summary'),
+      REPO: 'o/r',
+      SHA: 'abc123',
+    },
+  })
+  const read = (f: string) => (existsSync(join(dir, f)) ? readFileSync(join(dir, f), 'utf8') : '')
+  return {
+    status: r.status,
+    log: `${r.stdout}${r.stderr}`,
+    output: read('output'),
+    summary: read('summary'),
+    sleeps: read('routes.json.sleeps').split('\n').filter(Boolean).map(Number),
+  }
+}
+
+const nowSec = () => Math.floor(Date.now() / 1000)
+
+describe('🔴 the preview resolver tells "the API refused" from "there is no deployment" (HYG-151)', () => {
+  it('replays #3066: a spent quota fails the job loudly and never hands Playwright an error body', () => {
+    const r = runResolver([
+      { m: 'rate_limit', r: [{ out: `0 ${nowSec() + 3000}` }] },
+      { m: 'deployments?', r: [RATE_LIMITED] },
+    ])
+    expect(r.status, r.log).toBe(1)
+    // The consequence #3066 lacked: no URL and no ready flag reach the suites.
+    expect(r.output).not.toMatch(/^url=/m)
+    expect(r.output).not.toContain('ready=true')
+    expect(r.log).toContain('::error title=GitHub API refused the preview lookup::')
+    expect(r.log).toMatch(/quota is spent until \d\d:\d\d:\d\dZ/)
+    expect(r.summary).toContain('did NOT run: the GitHub API refused')
+  })
+
+  it('both copies behave the same, because they are one definition', () => {
+    const routes: GhRoute[] = [
+      { m: 'rate_limit', r: [{ out: `0 ${nowSec() + 3000}` }] },
+      { m: 'deployments?', r: [RATE_LIMITED] },
+    ]
+    expect(runResolver(routes, 'lighthouse').status).toBe(1)
+  })
+
+  it('waits out a quota that comes back inside the 12-minute window, then resolves', () => {
+    const r = runResolver([
+      { m: 'rate_limit', r: [{ out: `0 ${nowSec() + 60}` }] },
+      { m: 'commits/', r: [{ out: '' }] },
+      { m: '/statuses', r: [{ out: 'https://frequency-abc.vercel.app' }] },
+      { m: 'deployments?', r: [RATE_LIMITED, { out: '11' }] },
+    ])
+    expect(r.status, r.log).toBe(0)
+    expect(r.output).toContain('ready=true')
+    expect(r.output).toContain('url=https://frequency-abc.vercel.app')
+    // It slept until the reset (plus five seconds), not the 20 s poll.
+    expect(r.sleeps[0]).toBeGreaterThanOrEqual(55)
+    expect(r.sleeps[0]).toBeLessThanOrEqual(66)
+    expect(r.log).toContain('::warning title=GitHub API quota spent::')
+  })
+
+  it('retries a refusal that is not the quota (a 5xx) on the normal 20 s cadence', () => {
+    const r = runResolver([
+      { m: 'rate_limit', r: [{ out: `4000 ${nowSec() + 3000}` }] },
+      { m: '/statuses', r: [{ out: 'https://frequency-abc.vercel.app' }] },
+      { m: 'deployments?', r: [{ code: 1, out: '{"message":"Server Error"}', err: 'gh: HTTP 502' }, { out: '11' }] },
+    ])
+    expect(r.status, r.log).toBe(0)
+    expect(r.output).toContain('url=https://frequency-abc.vercel.app')
+    expect(r.sleeps).toEqual([20])
+  })
+
+  it('a refusal that outlasts the window fails, even when the quota is not the reason', () => {
+    const r = runResolver([
+      { m: 'rate_limit', r: [{ out: `4000 ${nowSec() + 3000}` }] },
+      { m: 'deployments?', r: [{ code: 1, out: '{"message":"Server Error"}', err: 'gh: HTTP 502' }] },
+    ])
+    expect(r.status, r.log).toBe(1)
+    expect(r.output).not.toContain('ready=')
+    expect(r.log).toContain('refused the last read')
+  })
+
+  it('a classification the API refused to answer is not "nothing is building"', () => {
+    const r = runResolver([
+      { m: 'rate_limit', r: [{ out: `4000 ${nowSec() + 3000}` }] },
+      { m: 'commits/', r: [RATE_LIMITED] },
+      { m: 'deployments?', r: [{ out: '' }] },
+    ])
+    expect(r.status, r.log).toBe(1)
+    // The quiet green is exactly what a refused classification must not reach.
+    expect(r.output).not.toContain('ready=false')
+    expect(r.log).toContain('checking whether a build is still in flight')
+  })
+
+  it('keeps the quiet green when the API answered and there is genuinely nothing', () => {
+    const r = runResolver([
+      { m: 'commits/', r: [{ out: '' }] },
+      { m: 'deployments?', r: [{ out: '' }] },
+    ])
+    expect(r.status, r.log).toBe(0)
+    expect(r.output).toContain('ready=false')
+    expect(r.sleeps).toHaveLength(36)
+    expect(r.sleeps.every((s) => s === 20)).toBe(true)
+  })
+
+  it('still fails a build in flight, from the commit status alone', () => {
+    const r = runResolver([
+      { m: 'commits/', r: [{ out: 'pending' }] },
+      { m: 'deployments?', r: [{ out: '' }] },
+    ])
+    expect(r.status, r.log).toBe(1)
+    expect(r.log).toContain('::error title=Preview never resolved::')
+  })
+
+  it('only a URL is a URL: an environment_url that is not one fails the step', () => {
+    const r = runResolver([
+      { m: '/statuses', r: [{ out: NOT_FOUND }] },
+      { m: 'deployments?', r: [{ out: '11' }] },
+    ])
+    expect(r.status, r.log).toBe(1)
+    expect(r.output).not.toContain('ready=true')
+    expect(r.log).toContain('::error title=Preview URL is not a URL::')
+  })
+
+  it('no gh read in either copy can swallow its own failure', () => {
+    // The shape of the defect: `gh api … || true`. Every read now goes through read_api.
+    for (const job of ['pr-compare', 'lighthouse'] as const) {
+      const lines = resolverScript(job).split('\n').filter((line) => /\bgh api\b/.test(line) && !/^\s*#/.test(line))
+      for (const line of lines) expect(line).not.toMatch(/\|\|\s*true/)
+    }
+  })
+})
+
+describe('🔴 Playwright refuses to start without a usable base URL (HYG-151)', () => {
+  it('refuses an error body, a bare path and a scheme-less host, anywhere', () => {
+    for (const base of [NOT_FOUND, '/discover', 'frequency-abc.vercel.app', 'https://']) {
+      expect(() => refuseUnusableBaseUrl({ PW_BASE_URL: base })).toThrow(/not an http\(s\) URL/)
+    }
+  })
+
+  it('refuses an empty base on GitHub Actions, where it came from a step output that was empty', () => {
+    expect(() => refuseUnusableBaseUrl({ PW_BASE_URL: '', GITHUB_ACTIONS: 'true' })).toThrow(/HYG-151/)
+  })
+
+  it('leaves the local skip alone, and accepts a real preview or dev server', () => {
+    expect(() => refuseUnusableBaseUrl({})).not.toThrow()
+    expect(() => refuseUnusableBaseUrl({ PW_BASE_URL: '' })).not.toThrow()
+    expect(() => refuseUnusableBaseUrl({ PW_BASE_URL: 'https://frequency-abc.vercel.app', GITHUB_ACTIONS: 'true' })).not.toThrow()
+    expect(() => refuseUnusableBaseUrl({ PW_BASE_URL: 'http://localhost:3000' })).not.toThrow()
+  })
+
+  it('and the lighthouse step refuses an unusable PREVIEW_URL before it audits', () => {
+    const step = wf.slice(wf.indexOf('      - name: Lighthouse (synthetic speed)'))
+    const guard = step.indexOf('[[ "${PREVIEW_URL}" =~ ^https://')
+    expect(guard).toBeGreaterThan(-1)
+    expect(guard).toBeLessThan(step.indexOf('npx --yes @lhci/cli'))
+  })
+})
+
+// ── The turnstile, run for real against a fake Actions API ──────────────────────────────────────
+
+type FakeRun = { id: number; run_number: number; path: string; head_branch: string }
+type FakeJob = { name: string; status: string; steps?: { name: string; status: string }[] }
+
+function turnstileBody(): string {
+  const script = [...wf.matchAll(TURNSTILE_RE)][0][0]
+  return script
+    .split('\n')
+    .map((line) => line.slice(12))
+    .join('\n')
+}
+
+const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor as new (
+  ...args: string[]
+) => (...args: unknown[]) => Promise<void>
+
+/** Look `looks` times (or until the script ends) and report what each look cost. */
+async function runTurnstile(opts: {
+  runs: FakeRun[]
+  jobs: Record<number, FakeJob[]>
+  looks: number
+  refuse?: (call: string) => unknown
+}) {
+  let clock = 1_790_000_000_000
+  const calls: string[][] = [[]]
+  const gaps: number[] = []
+  const info: string[] = []
+  const warnings: string[] = []
+  const github = {
+    rest: { actions: { listWorkflowRunsForRepo: 'repoRuns', listWorkflowRuns: 'fileRuns', listJobsForWorkflowRun: 'jobs' } },
+    paginate: async (kind: string, params: { run_id?: number; workflow_id?: string }) => {
+      calls[calls.length - 1].push(kind === 'jobs' ? `jobs:${params.run_id}` : kind)
+      const refusal = opts.refuse?.(kind)
+      if (refusal) throw refusal
+      if (kind === 'jobs') return opts.jobs[params.run_id as number] ?? []
+      if (kind === 'fileRuns') return opts.runs.filter((run) => run.path.endsWith(`/${params.workflow_id}`))
+      return opts.runs
+    },
+  }
+  const core = {
+    info: (m: string) => info.push(m),
+    warning: (m: string) => warnings.push(m),
+    setOutput: () => {},
+    summary: { addRaw() { return this }, write: async () => {} },
+  }
+  const fakeSetTimeout = (resolve: () => void, ms: number) => {
+    gaps.push(ms)
+    clock += ms
+    if (gaps.length >= opts.looks) throw new Error('STOP')
+    calls.push([])
+    resolve()
+  }
+  const env = {
+    TURNSTILE_JOB: 'pr-compare',
+    TURNSTILE_PEERS: 'pr-compare,smoke,update-baselines,update-a11y,visual',
+    TURNSTILE_WORKFLOWS: 'e2e.yml,e2e-manual.yml',
+    TURNSTILE_MAX_MINUTES: wf.match(/TURNSTILE_MAX_MINUTES: '(\d+)'/)?.[1] ?? '',
+    TURNSTILE_POLL_SECONDS: wf.match(/TURNSTILE_POLL_SECONDS: '(\d+)'/)?.[1] ?? '',
+  }
+  const fn = new AsyncFunction('github', 'context', 'core', 'process', 'setTimeout', 'Date', turnstileBody())
+  let ended = true
+  try {
+    await fn(github, { repo: { owner: 'o', repo: 'r' }, runId: 1000, runNumber: 100 }, core, { env }, fakeSetTimeout, { now: () => clock })
+  } catch (error) {
+    if ((error as Error).message !== 'STOP') throw error
+    ended = false
+  }
+  return { calls, gaps, info, warnings, ended }
+}
+
+const E2E = '.github/workflows/e2e.yml'
+const run = (n: number, path = E2E): FakeRun => ({ id: n * 10, run_number: n, path, head_branch: `b${n}` })
+const job = (turnstile: 'completed' | 'in_progress', name = 'pr-compare'): FakeJob => ({
+  name,
+  status: 'in_progress',
+  steps: [{ name: `Turnstile (wait for other ${name} captures)`, status: turnstile }],
+})
+
+/** One capture (#90) and nine older waiters ahead of #100, three newer behind it, and CI noise. */
+function queue() {
+  const runs = [run(90), ...[91, 92, 93, 94, 95, 96, 97, 98, 99].map((n) => run(n)), run(100), run(101), run(102), run(103), run(400, '.github/workflows/ci.yml')]
+  const jobs: Record<number, FakeJob[]> = { 900: [job('completed'), job('completed', 'lighthouse')] }
+  for (const n of [91, 92, 93, 94, 95, 96, 97, 98, 99, 101, 102, 103]) jobs[n * 10] = [job('in_progress')]
+  return { runs, jobs }
+}
+
+describe('🔴 the turnstile spends a fraction of the quota it used to (HYG-151)', () => {
+  it('one look costs one runs read and one jobs read, however long the queue', async () => {
+    const r = await runTurnstile({ ...queue(), looks: 1 })
+    // Before: a runs read per workflow file plus a jobs read for all 13 other in-progress runs.
+    expect(r.calls[0]).toEqual(['repoRuns', 'jobs:900'])
+    expect(r.info[0]).toContain('pr-compare run #90 (b90: capturing)')
+  })
+
+  it('the gap between looks stretches with the queue: 2 minutes next in line, 6 minutes far back', async () => {
+    const far = await runTurnstile({ ...queue(), looks: 1 })
+    expect(far.gaps[0]).toBe(360_000)
+    const next = await runTurnstile({ runs: [run(90), run(100)], jobs: { 900: [job('completed')] }, looks: 1 })
+    expect(next.gaps[0]).toBe(120_000)
+  })
+
+  it('the arithmetic in the ADR: ten waiters cost about 250 requests an hour, not 14,400', async () => {
+    let perHour = 0
+    for (let ahead = 1; ahead <= 10; ahead += 1) {
+      const runs = [run(90), ...Array.from({ length: ahead - 1 }, (_, i) => run(91 + i)), run(100)]
+      const jobs: Record<number, FakeJob[]> = { 900: [job('completed')] }
+      for (let i = 0; i < ahead - 1; i += 1) jobs[(91 + i) * 10] = [job('in_progress')]
+      const r = await runTurnstile({ runs, jobs, looks: 1 })
+      perHour += r.calls[0].length * (3_600_000 / r.gaps[0])
+    }
+    expect(perHour).toBe(250)
+  })
+
+  it('a newer run seen waiting twice is not read again; a newer run capturing keeps being read', async () => {
+    const runs = [run(100), run(101), run(102)]
+    const jobs = { 1010: [job('in_progress')], 1020: [job('completed')] }
+    const r = await runTurnstile({ runs, jobs, looks: 3 })
+    expect(r.calls[0]).toEqual(['repoRuns', 'jobs:1010', 'jobs:1020'])
+    expect(r.calls[1]).toEqual(['repoRuns', 'jobs:1010', 'jobs:1020'])
+    expect(r.calls[2]).toEqual(['repoRuns', 'jobs:1020'])
+    // Rule 3 unchanged: a newer run that is already capturing is still ahead.
+    expect(r.info[0]).toContain('run #102 (b102: capturing)')
+  })
+
+  it('clears when nothing is ahead, and still ignores its own run and other workflows', async () => {
+    const r = await runTurnstile({ runs: [run(100), run(400, '.github/workflows/ci.yml')], jobs: { 4000: [job('completed')] }, looks: 5 })
+    expect(r.ended).toBe(true)
+    expect(r.calls[0]).toEqual(['repoRuns'])
+    expect(r.info.at(-1)).toContain('clear on poll 1')
+  })
+
+  it('rule 6: a spent quota is waited out until its reset, not asked again at full rate', async () => {
+    const reset = Math.floor(1_790_000_000_000 / 1000) + 1800
+    const r = await runTurnstile({
+      runs: [],
+      jobs: {},
+      looks: 1,
+      refuse: () => ({ status: 403, message: 'API rate limit exceeded', response: { headers: { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': String(reset) } } }),
+    })
+    expect(r.gaps[0]).toBe(1_805_000)
+    expect(r.info[0]).toContain('API quota spent')
+  })
+
+  it('rule 6 honours retry-after (the secondary limit) the same way', async () => {
+    const r = await runTurnstile({ runs: [], jobs: {}, looks: 1, refuse: () => ({ status: 429, message: 'slow down', response: { headers: { 'retry-after': '600' } } }) })
+    expect(r.gaps[0]).toBe(600_000)
+  })
+
+  it('rule 5 still ends the wait on time when the quota reset lies beyond the bound', async () => {
+    const reset = Math.floor(1_790_000_000_000 / 1000) + 7200
+    const r = await runTurnstile({
+      runs: [],
+      jobs: {},
+      looks: 10,
+      refuse: () => ({ status: 403, message: 'API rate limit exceeded', response: { headers: { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': String(reset) } } }),
+    })
+    const bound = Number(env('TURNSTILE_MAX_MINUTES')) * 60_000
+    expect(r.ended).toBe(true)
+    expect(r.gaps.reduce((a, b) => a + b, 0)).toBe(bound)
+    expect(r.warnings.join('\n')).toContain('proceeds anyway')
+  })
+
+  it('every turnstile, in both files, looks at most every 2 minutes at the head of the queue', () => {
+    const polls = [...`${wf}\n${manual}`.matchAll(/TURNSTILE_POLL_SECONDS: '(\d+)'/g)].map((m) => Number(m[1]))
+    expect(polls).toHaveLength(6)
+    for (const p of polls) expect(p).toBe(120)
+  })
+})
+
+function env(name: string): string {
+  return wf.match(new RegExp(`${name}: '(\\d+)'`))?.[1] ?? ''
+}

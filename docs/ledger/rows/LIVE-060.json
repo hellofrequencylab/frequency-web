@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-060",
+  "patch": {
+    "status": "parked",
+    "notes": "parkedUntil: 2026-12-21 (launch). Owner ruling 2026-09-30 ~01:35Z \"Park until launch\" (ADR-1672)."
+  },
+  "append": {
+    "detail": "\n\n── PARKED 2026-09-30. OWNER RULING 2026-09-30 ~01:35Z (multiple choice, recorded by HYG-156, ADR-1672): \"Park until launch\". REVISIT TRIGGER: launch, 2026-12-21 (the launch date LIVE-464's launch-day pass is parked against, ADR-1624). When it reopens the round follows docs/research/PROTOCOL.md unchanged."
+  }
+}

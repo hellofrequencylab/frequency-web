@@ -11,9 +11,10 @@
 //
 // This gate looks sideways instead of down. On a pull_request run it computes the ids THIS PR
 // introduces (present in the checkout, absent from the base branch tip) and the ids EVERY OTHER
-// open PR against the same base introduces (its head's files, read through the GitHub contents
-// API, minus the same base tip), and fails on any overlap. The tree checks stay the in-tree
-// authority; this is the arm they cannot grow.
+// open PR against the same base introduces (its head's tree, fetched through git, minus the same
+// base tip), and fails on any overlap. The tree checks stay the in-tree authority; this is the arm
+// they cannot grow. Since HYG-150 (ADR-1668) the only REST call on the normal path is the ONE pulls
+// listing: see "THE OTHER PRs ARE READ THROUGH GIT" below.
 //
 // ── WHICH SIDE FAILS, and why it is one side ──────────────────────────────────────────────────
 // The convention is the one ADR-1488 already records in its own header — "1482–1487 are claimed
@@ -37,9 +38,10 @@
 //
 // Pure node. No grep, no ripgrep, no shell pipelines (scripts/backlog-contract.test.ts records
 // why: `rg` was on dev boxes and not on the runner, and eight probes inverted at once). The one
-// subprocess is `git show origin/<base>:<file>` for the base tip, which the workflow fetches
-// first; if that ref is not there the base tip is read through the same contents API and the
-// output says so. The comparison itself is pure and exported for
+// subprocess is `git` (through the `git` seam, so tests inject it): `git show origin/<base>:<file>`
+// and `git ls-tree` for the base tip, which the workflow fetches first, and one `git fetch` of the
+// other PRs' heads. If the base ref is not there the base tip is read through the contents API and
+// the output says so. The comparison itself is pure and exported for
 // scripts/check-id-collisions.test.ts.
 //
 // Usage: `node scripts/check-id-collisions.mjs` (or `pnpm check:id-collisions`).
@@ -51,6 +53,7 @@ import { execFileSync } from 'node:child_process'
 import { HEADING } from './check-adr.mjs'
 import { listPullRequestFiles } from './pr-size-gate.mjs'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
+import { LEDGER_DIR, fragmentIdsFromPaths, readBacklogView, readDecisionsView } from './lib/ledger.mjs'
 
 export const LEDGER = 'docs/DECISIONS.md'
 export const BACKLOG = 'docs/BUILD-BACKLOG.json'
@@ -315,15 +318,23 @@ export async function fetchFileAt({ repo, path, ref, token, fetchImpl = fetch })
   return await res.text()
 }
 
+/** The one subprocess: `git <args>` in the checkout, stdout as text, a throw on a non-zero exit or
+ *  a hang past `timeout`. Every git read below goes through a seam with this shape so the tests
+ *  can inject one and touch neither a remote nor this repo's refs. */
+export function runGit(args, { timeout = 120_000 } = {}) {
+  return execFileSync('git', args, {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+    timeout,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+}
+
 /** Base tip text for one watched file: `git show origin/<base>:<path>` when the workflow fetched
  *  the ref, else the contents API for heads/<base>. Reports which source answered. */
-async function baseText({ base, path, repo, token, fetchImpl }) {
+async function baseText({ base, path, repo, token, fetchImpl, git = runGit }) {
   try {
-    const text = execFileSync('git', ['show', `origin/${base}:${path}`], {
-      encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    })
+    const text = git(['show', `origin/${base}:${path}`])
     return { text, source: `git origin/${base}` }
   } catch {
     const text = await fetchFileAt({ repo, path, ref: `heads/${base}`, token, fetchImpl })
@@ -341,14 +352,157 @@ async function baseText({ base, path, repo, token, fetchImpl }) {
  *  dozen-open-PR run from ~100 MB towards ~40 MB, which is the pressure that produced the 403.
  *  `files` is the PR's own files listing, which the caller already pays for. */
 export async function fetchNewIdsForPull({ pr, files, baseSets, token, fetchImpl = fetch }) {
+  // LEDGER FRAGMENTS (HYG-145, ADR-1635): a fragment's id IS its file name, so a PR that writes
+  // docs/ledger/rows/<ID>.json or docs/ledger/adr/ADR-<n>.md names its ids in the files listing the
+  // caller already paid for. No download. An edit fragment names a row that is on the base tip,
+  // so subtracting the base below leaves only the rows and ADRs it genuinely introduces.
+  const frag = fragmentIdsFromPaths(files)
+  const fragNew = newIdSets(frag, baseSets)
+  const fragTouched = frag.rows.size > 0 || frag.adrs.size > 0
   const named = WATCHED.filter((path) => files.includes(path))
-  if (named.length === 0) return { adrs: new Set(), rows: new Set(), touched: false, read: [] }
+  if (named.length === 0) return { ...fragNew, touched: fragTouched, read: [] }
   const texts = await Promise.all(
     named.map((path) => fetchFileAt({ repo: pr.headRepo, path, ref: pr.headSha, token, fetchImpl })),
   )
   const at = (path) => (named.includes(path) ? texts[named.indexOf(path)] : '')
   const head = idSets({ ledger: at(LEDGER), backlog: at(BACKLOG) })
-  return { ...newIdSets(head, baseSets), touched: true, read: named }
+  const fromFiles = newIdSets(head, baseSets)
+  return {
+    adrs: new Set([...fromFiles.adrs, ...fragNew.adrs]),
+    rows: new Set([...fromFiles.rows, ...fragNew.rows]),
+    touched: true,
+    read: named,
+  }
+}
+
+/** Fragment paths on the base tip: `git ls-tree` when the workflow fetched the ref, else the
+ *  contents API directory listings (a 404 is "no fragments there"). */
+async function baseFragmentPaths({ base, repo, token, fetchImpl, git = runGit }) {
+  try {
+    return git(['ls-tree', '-r', '--name-only', `origin/${base}`, '--', LEDGER_DIR]).split('\n').filter(Boolean)
+  } catch {
+    const paths = []
+    for (const dir of [`${LEDGER_DIR}/rows`, `${LEDGER_DIR}/adr`]) {
+      const res = await fetchImpl(`${API}/repos/${repo}/contents/${dir}?ref=${encodeURIComponent(`heads/${base}`)}`, {
+        headers: headers(token, 'application/vnd.github+json'),
+      })
+      if (res.status === 404) continue
+      if (!res.ok) throw new Error(`GET contents/${dir}@heads/${base} (${repo}): HTTP ${res.status}`)
+      const body = await res.json()
+      if (Array.isArray(body)) for (const f of body) if (typeof f?.path === 'string') paths.push(f.path)
+    }
+    return paths
+  }
+}
+
+// ── THE OTHER PRs ARE READ THROUGH GIT (HYG-150, ADR-1668) ─────────────────────────────────────
+// Measured 2026-09-29 22:30Z: #3079's required `checks` job went red on nothing but this gate's
+// `GET pulls (page 1): HTTP 403` with `x-ratelimit-remaining: 0, x-ratelimit-resource: core`
+// (job 109645795505). That is the PRIMARY quota, not a secondary limit: every run spent one pulls
+// listing, then one files listing per other open PR, then a contents download per watched file a
+// PR touched, all on the repository's GITHUB_TOKEN (1,000 requests an hour), and every push and
+// update-branch paid it again. With ~20 open PRs that is 21+ requests a run, so a busy hour spends
+// the quota and the next run cannot even list. No retry budget outlasts a quota that resets in 22
+// minutes, and "skip = clean" is the failure this gate exists to prevent, so the fix is the volume.
+//
+// Git does not spend REST quota. So the ONE pulls listing stays (numbers, head shas, createdAt),
+// and each other PR's ids are read from its head through git: one `git fetch --depth=1
+// --filter=blob:none` of every `refs/pull/<n>/head` (commits and trees only; measured on a depth-1
+// checkout of main: 21 heads in 1.0s, a 133 KB pack, and main's deepened history untouched),
+// then `git ls-tree` for the fragment file names (a fragment's id is its name) and the two legacy
+// files' blob ids. A legacy file is downloaded only when its blob differs from the base tip's,
+// once per distinct blob (stale PRs share their merge base's blob), and base ids are subtracted as
+// before. A PR whose git read fails falls back to the REST path above for that PR only, and when
+// that cannot answer either the run fails as it always has: could-not-look is red.
+
+/** Where the fetched heads land: a private namespace, so no branch, tag or remote ref is touched. */
+export const PR_REF_PREFIX = 'refs/id-collisions/pr'
+export const prRef = (number) => `${PR_REF_PREFIX}/${number}`
+
+/** Fetch every other PR's head in ONE git fetch; if that fails (one ref missing fails the whole
+ *  fetch), fetch each alone so one bad ref costs one PR, not all of them. Returns the numbers
+ *  whose head is now at prRef(n), and a note per failure. Never throws: a PR missing here is read
+ *  through REST, and that path fails loudly if it cannot answer. */
+export function fetchPullHeads({ numbers, git = runGit }) {
+  const fetched = new Set()
+  const notes = []
+  // A PR number becomes part of a git argument, so only a positive integer is ever passed; anything
+  // else is left unfetched and so read through REST (never an option-looking argument to git).
+  const wanted = numbers.filter((n) => Number.isSafeInteger(n) && n > 0)
+  if (wanted.length === 0) return { fetched, notes }
+  const args = (ns) => [
+    'fetch', '--no-tags', '--no-write-fetch-head', '--depth=1', '--filter=blob:none', 'origin',
+    ...ns.map((n) => `+refs/pull/${n}/head:${prRef(n)}`),
+  ]
+  try {
+    git(args(wanted))
+    for (const n of wanted) fetched.add(n)
+    return { fetched, notes }
+  } catch (err) {
+    notes.push(`one git fetch of ${wanted.length} PR head(s) failed (${firstLine(err)}); fetching each alone`)
+  }
+  for (const n of wanted) {
+    try {
+      git(args([n]))
+      fetched.add(n)
+    } catch (err) {
+      notes.push(`git fetch of refs/pull/${n}/head failed (${firstLine(err)}); #${n} is read through REST instead`)
+    }
+  }
+  return { fetched, notes }
+}
+
+function firstLine(err) {
+  const text = String(err?.stderr || (err instanceof Error ? err.message : err) || '').trim()
+  return text.split('\n')[0].slice(0, 200) || 'no message'
+}
+
+/** Blob ids of `paths` at `rev`, from `git ls-tree` (trees only, so a blob:none fetch answers it).
+ *  A path absent at `rev` is absent from the map. Throws when `rev` cannot be read. */
+export function blobOids({ rev, paths, git = runGit }) {
+  const oids = new Map()
+  for (const line of git(['ls-tree', rev, '--', ...paths]).split('\n')) {
+    const m = /^\d+ blob ([0-9a-f]{40,64})\t(.+)$/.exec(line)
+    if (m) oids.set(m[2], m[1])
+  }
+  return oids
+}
+
+/** The ids ONE other open PR introduces, read from its fetched head through git: no REST call.
+ *  `baseOids` is the base tip's blob id per watched file (empty when the base was not read through
+ *  git, and then every watched file present at head is read). `cache` maps `<path>@<blob>` to that
+ *  blob's ids so a blob shared by many PRs is read once. Throws when the head cannot be read. */
+export function gitNewIdsForPull({ rev, baseSets, baseOids = new Map(), cache = new Map(), git = runGit }) {
+  const fragPaths = git(['ls-tree', '-r', '--name-only', rev, '--', LEDGER_DIR]).split('\n').filter(Boolean)
+  const fragNew = newIdSets(fragmentIdsFromPaths(fragPaths), baseSets)
+  const oids = blobOids({ rev, paths: WATCHED, git })
+  const read = WATCHED.filter((path) => oids.has(path) && oids.get(path) !== baseOids.get(path))
+  const adrs = new Set(fragNew.adrs)
+  const rows = new Set(fragNew.rows)
+  for (const path of read) {
+    const key = `${path}@${oids.get(path)}`
+    let ids = cache.get(key)
+    if (!ids) {
+      const text = git(['cat-file', 'blob', oids.get(path)])
+      ids = path === LEDGER ? declaredAdrs(text) : backlogIds(text)
+      cache.set(key, ids)
+    }
+    const into = path === LEDGER ? adrs : rows
+    const known = path === LEDGER ? baseSets.adrs : baseSets.rows
+    for (const id of ids) if (!known.has(id)) into.add(id)
+  }
+  return { adrs, rows, touched: adrs.size > 0 || rows.size > 0 || read.length > 0, read, via: 'git' }
+}
+
+/** This checkout's ids, from the merged view: both base files plus every fragment. */
+export function treeIdSets(root = '.') {
+  let rows
+  try {
+    rows = new Set((readBacklogView({ root }).doc.entries ?? []).map((e) => e?.id).filter((id) => typeof id === 'string'))
+  } catch {
+    rows = backlogIds(readTree(`${root}/${BACKLOG}`))
+  }
+  return { adrs: declaredAdrs(readDecisionsView(root).text), rows }
 }
 
 function readTree(path) {
@@ -397,20 +551,27 @@ export async function main(env = process.env, fetchImpl = fetch, options = {}) {
 
   const http = retryingFetch(fetchImpl, options)
   try {
-    return await compare({ env, repo, base, token, fetchImpl: http })
+    return await compare({ env, repo, base, token, fetchImpl: http, git: options.git ?? runGit })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     throw new Error(`${message}${retryNote(http.state)}`)
   }
 }
 
-async function compare({ env, repo, base, token, fetchImpl }) {
+async function compare({ env, repo, base, token, fetchImpl, git }) {
   const myNumber = prNumberFromEnv(env)
 
-  const baseLedger = await baseText({ base, path: LEDGER, repo, token, fetchImpl })
-  const baseBacklog = await baseText({ base, path: BACKLOG, repo, token, fetchImpl })
-  const baseSets = idSets({ ledger: baseLedger.text, backlog: baseBacklog.text })
-  const headSets = idSets({ ledger: readTree(LEDGER), backlog: readTree(BACKLOG) })
+  const baseLedger = await baseText({ base, path: LEDGER, repo, token, fetchImpl, git })
+  const baseBacklog = await baseText({ base, path: BACKLOG, repo, token, fetchImpl, git })
+  // The base tip's ids are its two files PLUS its fragments' file names; this checkout's are the
+  // merged view the in-tree gates read (HYG-145, ADR-1635).
+  const baseFrag = fragmentIdsFromPaths(await baseFragmentPaths({ base, repo, token, fetchImpl, git }))
+  const baseFiles = idSets({ ledger: baseLedger.text, backlog: baseBacklog.text })
+  const baseSets = {
+    adrs: new Set([...baseFiles.adrs, ...baseFrag.adrs]),
+    rows: new Set([...baseFiles.rows, ...baseFrag.rows]),
+  }
+  const headSets = treeIdSets()
   const mine = newIdSets(headSets, baseSets)
 
   console.log(
@@ -430,25 +591,53 @@ async function compare({ env, repo, base, token, fetchImpl }) {
   const me = pulls.find((p) => p.number === myNumber) ?? { number: myNumber, createdAt: null }
   const others = pulls.filter((p) => p.number !== myNumber)
 
+  // The other PRs' heads, through git: no REST quota (HYG-150, ADR-1668). The base tip's blob ids
+  // let a PR whose legacy file is main's own skip the download.
+  const { fetched, notes } = fetchPullHeads({ numbers: others.map((p) => p.number), git })
+  let baseOids = new Map()
+  try {
+    baseOids = blobOids({ rev: `origin/${base}`, paths: WATCHED, git })
+  } catch {
+    // No base ref: every watched file at a head is read and the base ids still subtract.
+  }
+  const cache = new Map()
+
   const compared = []
+  let viaRest = 0
   for (const pr of others) {
-    if (!pr.headSha || !pr.headRepo) {
-      throw new Error(`PR #${pr.number} "${pr.title}" has no readable head (fork deleted?); refusing to call this clean`)
+    let theirs = null
+    if (fetched.has(pr.number)) {
+      try {
+        theirs = gitNewIdsForPull({ rev: prRef(pr.number), baseSets, baseOids, cache, git })
+      } catch (err) {
+        notes.push(`git read of #${pr.number}'s head failed (${firstLine(err)}); it is read through REST instead`)
+      }
     }
-    // Only the watched files this PR's own diff names are downloaded: neither, when it touches
-    // neither, and ONE when it touches one (the 8.77 MB pair is what reached the rate limit).
-    const files = await listPullRequestFiles({ repo, number: pr.number, token, fetchImpl })
-    const theirs = await fetchNewIdsForPull({ pr, files, baseSets, token, fetchImpl })
+    if (!theirs) {
+      // THE FALLBACK, one PR at a time: the pre-HYG-150 REST path. It fails loudly when it cannot
+      // answer, which is the contract.
+      viaRest += 1
+      if (!pr.headSha || !pr.headRepo) {
+        throw new Error(`PR #${pr.number} "${pr.title}" has no readable head (fork deleted?); refusing to call this clean`)
+      }
+      const files = await listPullRequestFiles({ repo, number: pr.number, token, fetchImpl })
+      theirs = { ...(await fetchNewIdsForPull({ pr, files, baseSets, token, fetchImpl })), via: 'REST' }
+    }
     compared.push({ number: pr.number, title: pr.title, createdAt: pr.createdAt, ...theirs })
   }
 
+  for (const note of notes) console.log(`  git: ${note}.`)
+  console.log(
+    `  ${others.length - viaRest} of ${others.length} other open PR(s) read through git (no REST call each); ` +
+      `${viaRest} through the REST files listing.`,
+  )
   for (const pr of compared) {
     console.log(
       `  #${pr.number} "${pr.title}": ` +
         (pr.touched
           ? `introduces ${pr.adrs.size} ADR(s) [${[...pr.adrs].map((a) => `ADR-${a}`).join(', ')}], ${pr.rows.size} row(s) ` +
-            `[${[...pr.rows].join(', ')}] (read ${pr.read.join(' + ')})`
-          : 'touches neither file'),
+            `[${[...pr.rows].join(', ')}] (${pr.via}${pr.read.length ? `, read ${pr.read.join(' + ')}` : ''})`
+          : `introduces no ADR or row (${pr.via})`),
     )
   }
 

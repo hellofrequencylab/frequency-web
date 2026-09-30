@@ -1,0 +1,9 @@
+{
+  "id": "DEF-MOBILE",
+  "patch": {
+    "notes": "parkedUntil: 2027-01-05. The native build; the ten app-readiness build rows (LIVE-714, LIVE-716 to LIVE-723, LIVE-726) are parked with it since 2026-09-30 and reopen when it starts (ADR-1682). Earlier: the app readiness was active on WM (ADR-1650)."
+  },
+  "append": {
+    "detail": "\n\n── 2026-09-30 (recorded by HYG-157, ADR-1682). OWNER RULING ~01:45Z (multiple choice): \"Park with the native app\". The ten app-readiness build rows (LIVE-714, LIVE-716 to LIVE-723, LIVE-726) are parked with this row and reopen together when this build starts. LIVE-713, LIVE-715 (/api/v1, done), LIVE-724 (done) and OWN-092 (done) are unaffected."
+  }
+}

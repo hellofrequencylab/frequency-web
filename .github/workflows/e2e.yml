@@ -144,8 +144,8 @@ jobs:
     #
     # So the wait moved out of GitHub's queue and into the runner: THE TURNSTILE, the first
     # step below. It polls the Actions API for other in-progress runs of this workflow whose
-    # `pr-compare` job is ahead of this one and sleeps, 30 s between looks, until none is.
-    # Five rules, each pinned in the script:
+    # `pr-compare` job is ahead of this one and sleeps between looks until none is. Six rules,
+    # each pinned in the script:
     #   1. it ignores this run's own jobs;
     #   2. it ignores completed runs and jobs, so a cancelled or finished capture holds nothing;
     #   3. a run is AHEAD when its job is past its own turnstile (capturing), or when it is
@@ -155,7 +155,20 @@ jobs:
     #   5. it never fails the job: a wait that reaches TURNSTILE_MAX_MINUTES proceeds anyway
     #      and says so, in a warning and the job summary. The load rule is a ceiling, not a
     #      gate: one overlapping capture costs less than a required check that reads red
-    #      for a queue.
+    #      for a queue;
+    #   6. it waits out a spent API quota (HYG-151): a 403/429 carrying retry-after, or
+    #      x-ratelimit-remaining 0, sleeps until the reset (never past the bound) instead of
+    #      asking again at full rate.
+    # WHAT A LOOK COSTS (HYG-151, ADR-1669). The repository's GITHUB_TOKEN gets 1,000 core
+    # requests an hour, and on 2026-09-29 this loop spent all of them twice in two hours. A
+    # look used to be one paginated runs read per workflow file plus one jobs read for EVERY
+    # in-progress run, every 30 s, in every waiting job: ten waiters behind one capture cost
+    # ~14,400 requests an hour. A look is now ONE runs read for the repository plus jobs reads
+    # oldest-first that stop at the first run ahead (usually one), and the gap between looks is
+    # TURNSTILE_POLL_SECONDS (120) times the number of older lane runs still in progress,
+    # capped at 3: the job next in line looks every 2 minutes, the tenth every 6. Ten waiters
+    # now cost ~250 requests an hour. Newer runs seen waiting twice are not read again: rule 3
+    # holds them behind this job for as long as it waits.
     # The bound is 90 minutes because the fan-out the loop actually runs is seven lanes and a
     # capture is ~15 minutes: the last lane waits for six. A bound the routine case reaches is
     # a gate that gets routed around. `lighthouse` below keeps its own turnstile keyed by its
@@ -183,10 +196,10 @@ jobs:
           TURNSTILE_PEERS: pr-compare,smoke,update-baselines,update-a11y,visual
           TURNSTILE_WORKFLOWS: e2e.yml,e2e-manual.yml
           TURNSTILE_MAX_MINUTES: '90'
-          TURNSTILE_POLL_SECONDS: '30'
+          TURNSTILE_POLL_SECONDS: '120'
         with:
           script: |
-            // THE TURNSTILE. Rules 1 to 5 are in the comment block above this job's timeout.
+            // THE TURNSTILE. Rules 1 to 6 are in the comment block above pr-compare's timeout in e2e.yml.
             const jobName = process.env.TURNSTILE_JOB
             // THE LANE this job queues in: every job name that counts as a capture, and every
             // workflow file to look for those jobs in. Both are comma-separated. TURNSTILE_PEERS
@@ -196,6 +209,10 @@ jobs:
             const workflowFiles = (process.env.TURNSTILE_WORKFLOWS || '').split(',').map((file) => file.trim()).filter(Boolean)
             const maxMinutes = Number(process.env.TURNSTILE_MAX_MINUTES)
             const pollSeconds = Number(process.env.TURNSTILE_POLL_SECONDS)
+            // HYG-151: a job with N older runs of the lane still in progress looks every
+            // min(N, MAX_STRETCH) x pollSeconds, so the job next in line looks often and the tenth
+            // does not spend the repository's API quota asking a question it cannot win yet.
+            const MAX_STRETCH = 3
             const { owner, repo } = context.repo
             const started = Date.now()
             const deadline = started + maxMinutes * 60_000
@@ -204,6 +221,9 @@ jobs:
             // A job is past its turnstile when this step (matched by name, so every job in every
             // lane shares the one definition) has completed. Before that it is waiting, not capturing.
             const isTurnstile = (step) => /^Turnstile/.test(step.name || '')
+            // A run belongs to the lane when its workflow file is one of TURNSTILE_WORKFLOWS. A run
+            // whose `path` the API did not send is read rather than guessed away.
+            const inLane = (run) => !run.path || workflowFiles.includes(String(run.path).replace(/@.*$/, '').split('/').pop())
             if (workflowFiles.length === 0) {
               // A turnstile with nothing to poll clears on poll 1 having looked at nothing: the
               // vacuous pass this repo refuses, wearing a green tick. It may not fail the job
@@ -215,49 +235,75 @@ jobs:
                 .addRaw(`### Turnstile polled nothing\n\nThis \`${jobName}\` declared no TURNSTILE_WORKFLOWS, so the one-capture-at-a-time rule did not apply to it (LIVE-332).\n`)
                 .write()
             }
+            // Newer runs seen WAITING on two looks. Their turnstile now sees this job waiting and
+            // older, so rule 3 holds them until this job clears: their jobs are not read again.
+            const seenWaiting = new Map()
             let poll = 0
             for (;;) {
               poll += 1
               const ahead = []
+              let older = 0
+              let quotaBackAt = 0
               try {
-                for (const workflowFile of workflowFiles) {
-                  // Only runs still in progress: a completed run (success, failure, CANCELLED)
-                  // holds no load, so the workflow-level group's supersede on the same PR and
-                  // ADR-1328's cancellations both fall out of the read (rule 2).
-                  const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                    owner, repo, workflow_id: workflowFile, status: 'in_progress', per_page: 100,
+                // ONE read of every in-progress run in the repository (HYG-151). It was one paginated
+                // read per workflow file plus one jobs read for EVERY in-progress run, every look.
+                // Only runs still in progress: a completed run (success, failure, CANCELLED) holds no
+                // load, so the workflow-level group's supersede on the same PR and ADR-1328's
+                // cancellations both fall out of the read (rule 2).
+                const runs = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                  owner, repo, status: 'in_progress', per_page: 100,
+                })).filter(inLane)
+                const toRead = []
+                for (const run of runs) {
+                  if (run.id === context.runId) continue // rule 1: never this run's own jobs
+                  if (run.run_number < context.runNumber) older += 1
+                  else if ((seenWaiting.get(run.id) || 0) >= 2) continue
+                  toRead.push(run)
+                }
+                // Oldest first, and stop at the first run ahead: one is enough to wait on (HYG-151).
+                toRead.sort((a, b) => a.run_number - b.run_number)
+                for (const run of toRead) {
+                  const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                    owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
                   })
-                  for (const run of runs) {
-                    if (run.id === context.runId) continue // rule 1: never this run's own jobs
-                    const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-                      owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
-                    })
-                    for (const job of jobs) {
-                      // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
-                      // taking separate turns and one run's two jobs still overlap (ADR-936). A
-                      // completed job, whatever its conclusion, holds nothing (rule 2).
-                      if (!peers.has(job.name) || job.status === 'completed') continue
-                      const gate = (job.steps || []).find(isTurnstile)
-                      const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
-                      const older = run.run_number < context.runNumber
-                      // Rule 3: a run is AHEAD when it is already capturing, or when it is still
-                      // waiting and carries the lower run number. Two waiting runs therefore
-                      // never wait on each other: the older proceeds, the newer waits for it.
-                      // Run numbers are per WORKFLOW FILE, so across two files they are not one
-                      // series: between two waiting runs the file with the lower numbers wins, and
-                      // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
-                      // capture priority over a merely queued PR capture. Deliberate, and it is a
-                      // strict order either way, so no two runs can end up waiting on each other.
-                      if (capturing || older) {
-                        ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
-                      }
+                  let waiting = false
+                  for (const job of jobs) {
+                    // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
+                    // taking separate turns and one run's two jobs still overlap (ADR-936). A
+                    // completed job, whatever its conclusion, holds nothing (rule 2).
+                    if (!peers.has(job.name) || job.status === 'completed') continue
+                    const gate = (job.steps || []).find(isTurnstile)
+                    const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
+                    // Rule 3: a run is AHEAD when it is already capturing, or when it is still
+                    // waiting and carries the lower run number. Two waiting runs therefore
+                    // never wait on each other: the older proceeds, the newer waits for it.
+                    // Run numbers are per WORKFLOW FILE, so across two files they are not one
+                    // series: between two waiting runs the file with the lower numbers wins, and
+                    // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
+                    // capture priority over a merely queued PR capture. Deliberate, and it is a
+                    // strict order either way, so no two runs can end up waiting on each other.
+                    if (capturing || run.run_number < context.runNumber) {
+                      ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
+                    } else {
+                      waiting = true
                     }
                   }
+                  if (ahead.length > 0) break
+                  if (waiting) seenWaiting.set(run.id, (seenWaiting.get(run.id) || 0) + 1)
                 }
               } catch (error) {
                 // An unreadable API is not a clear road; it is one more thing to wait on,
                 // and the bound below still ends the wait (rule 5).
                 ahead.push(`the Actions API (unreadable: ${error.message})`)
+                // Rule 6 (HYG-151): a REFUSED read waits for the quota to come back instead of
+                // asking again at full rate, which is what kept the quota at zero on 2026-09-29.
+                const headers = (error.response && error.response.headers) || {}
+                if (error.status === 403 || error.status === 429) {
+                  const retryAfter = Number(headers['retry-after'])
+                  const reset = Number(headers['x-ratelimit-reset'])
+                  if (retryAfter > 0) quotaBackAt = Date.now() + retryAfter * 1000
+                  else if (headers['x-ratelimit-remaining'] === '0' && reset > 0) quotaBackAt = reset * 1000 + 5_000
+                }
               }
               if (ahead.length === 0) {
                 core.info(`turnstile: clear on poll ${poll} after ${elapsed()} min; ${jobName} proceeds`)
@@ -271,9 +317,14 @@ jobs:
                   .write()
                 break
               }
+              // HYG-151: the look interval stretches with the queue, and a spent quota is waited out.
+              // Both stay inside the bound, so rule 5 still ends the wait on time.
+              let waitMs = pollSeconds * 1000 * Math.min(Math.max(older, 1), MAX_STRETCH)
+              if (quotaBackAt > Date.now()) waitMs = Math.max(waitMs, quotaBackAt - Date.now())
+              waitMs = Math.max(1000, Math.min(waitMs, deadline - Date.now()))
               // Rule 4: one line per poll, naming what it waits on.
-              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; next look in ${pollSeconds}s`)
-              await sleep(pollSeconds * 1000)
+              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; ${older} older run(s) in progress; next look in ${Math.round(waitMs / 1000)}s${quotaBackAt ? ' (API quota spent: waiting for its reset)' : ''}`)
+              await sleep(waitMs)
             }
             core.setOutput('waited_minutes', elapsed())
 
@@ -288,6 +339,63 @@ jobs:
           # Vercel records each build as a GitHub Deployment on the head SHA and reports the
           # live URL as `environment_url` on the deployment's `success` status. Poll for it:
           # the PR event fires before the build finishes.
+          #
+          # 🔴 AN API REFUSAL IS NOT AN EMPTY LIST (HYG-151). Every read here used to end in
+          # `|| true`, and `gh api` prints the error BODY to stdout when a request fails. On
+          # 2026-09-29 the repository's API quota was spent (it resets on the hour), and #3066's
+          # pr-compare (run 36636201158) resolved its preview URL to the literal text
+          # {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+          # and ran every suite against it: "Cannot navigate to invalid URL", four @visual reds
+          # this PR did not cause. So every read goes through read_api, which prints NOTHING on a
+          # failure and writes why to ${refused}; the loop tells "refused" from "none yet", waits
+          # out a spent quota inside this step's 12-minute window, and fails loudly otherwise.
+          refused="${RUNNER_TEMP}/preview-api-refused"
+          window_ends=$((SECONDS + 720))
+          read_api() {
+            local out
+            if out=$(gh api "$1" --jq "$2" 2>"${refused}.stderr"); then
+              printf '%s\n' "${out}"
+            else
+              printf 'GET %s: %s\n' "$1" "$(tr '\n' ' ' < "${refused}.stderr")" >> "${refused}"
+              return 1
+            fi
+          }
+          fail_refused() {
+            echo "::error title=GitHub API refused the preview lookup::$1 Nothing was tested. This is not a missing preview: the API would not say whether one exists. Re-run this job once the quota has reset."
+            cat "${refused}" 2>/dev/null || true
+            {
+              echo "### e2e compare did NOT run: the GitHub API refused"
+              echo
+              echo "$1"
+              echo
+              echo "The preview URL could not be read, so the suites did not start. A refused read is"
+              echo "not an empty list, and running Playwright without a URL is how #3066 went red on"
+              echo "tests it never ran (HYG-151). Re-run this job once the quota has reset."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+          # After a refused read. /rate_limit costs no quota. A spent core quota that comes back
+          # inside the window is slept out; one that does not fails now, with the reset time.
+          # Anything else (a 5xx, a blip) gets the normal 20 s retry.
+          wait_for_quota() {
+            local quota remaining reset now
+            if ! quota=$(gh api rate_limit --jq '.resources.core | "\(.remaining) \(.reset)"' 2>/dev/null); then
+              quota="unknown 0"
+            fi
+            remaining="${quota% *}"
+            reset="${quota#* }"
+            now=$(date +%s)
+            if [ "${remaining}" = "0" ]; then
+              if [ $((reset + 5 - now)) -le $((window_ends - SECONDS)) ]; then
+                echo "::warning title=GitHub API quota spent::The core quota is at 0 until $(date -u -d "@${reset}" +%H:%M:%SZ); waiting $((reset + 5 - now))s for it instead of reading an error as 'no deployment'."
+                sleep $((reset + 5 - now))
+                return 0
+              fi
+              fail_refused "The repository's GitHub API quota is spent until $(date -u -d "@${reset}" +%H:%M:%SZ), past this step's 12-minute window."
+            fi
+            echo "The GitHub API refused a read (quota remaining: ${remaining}); retrying in 20s."
+            sleep 20
+          }
           url=""
           # 36 x 20s = 12 minutes, not 10. #2322 polled for 10 minutes, gave up, and reported
           # SUCCESS at 17:12:01 — nine seconds after its own Vercel Preview check went green at
@@ -295,22 +403,36 @@ jobs:
           # visual suite never ran behind a green check. Two minutes of headroom is the cheap
           # half of that fix; the classification below is the half that matters.
           for attempt in $(seq 1 36); do
-            for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
-              candidate=$(gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" \
-                --jq 'map(select(.state=="success") | .environment_url // empty) | first // empty' || true)
-              if [ -n "${candidate}" ]; then
-                url="${candidate}"
-                break
-              fi
-            done
+            rm -f "${refused}"
+            if deps=$(read_api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" '.[].id'); then
+              for dep in ${deps}; do
+                candidate=$(read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" \
+                  'map(select(.state=="success") | .environment_url // empty) | first // empty') || break
+                if [ -n "${candidate}" ]; then
+                  url="${candidate}"
+                  break
+                fi
+              done
+            fi
             if [ -n "${url}" ]; then
               break
+            fi
+            if [ -s "${refused}" ]; then
+              if [ "${SECONDS}" -ge "${window_ends}" ]; then
+                break
+              fi
+              wait_for_quota
+              continue
             fi
             echo "No successful deployment for ${SHA} yet (attempt ${attempt}/36); waiting 20s."
             sleep 20
           done
 
           if [ -z "${url}" ]; then
+            # The last look was refused, so "no deployment" was never established (HYG-151).
+            if [ -s "${refused}" ]; then
+              fail_refused "The GitHub API refused the last read of this commit's deployments."
+            fi
             # 🔴 A GREEN HERE IS ONLY HONEST WHEN THERE IS GENUINELY NOTHING TO TEST.
             #
             # The preflight job above already states this repo's rule: "a job that runs and takes
@@ -345,13 +467,21 @@ jobs:
             # carried no statuses yet was NOT established — do not write it down as though it were.
             # What matters is the shape: the deployment arm can be silent while a build runs, and
             # the commit status is not, so both are consulted and neither is trusted alone.
+            rm -f "${refused}"
             states=$(
-              for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
-                gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" --jq '.[].state' || true
+              for dep in $(read_api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" '.[].id'); do
+                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" '.[].state'
               done
-              gh api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
-                --jq '.[] | select(.context | ascii_downcase | test("vercel")) | .state' || true
+              read_api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
+                '.[] | select(.context | ascii_downcase | test("vercel")) | .state'
+              # A refused read prints nothing and is recorded in ${refused}, read just below, so the
+              # subshell's own exit status is not the signal and must not trip `set -e`.
+              true
             )
+            # A classification the API refused to answer is not "nothing is building" (HYG-151).
+            if [ -s "${refused}" ]; then
+              fail_refused "The GitHub API refused a read while checking whether a build is still in flight."
+            fi
             if printf '%s\n' "${states}" | grep -qE '^(pending|queued|in_progress)$'; then
               echo "::error title=Preview never resolved::A Vercel deployment for ${SHA} is still building after 12 minutes, so nothing was tested. This job fails rather than reporting a green it did not earn — re-run it once the preview is live."
               {
@@ -379,6 +509,11 @@ jobs:
               echo "than duplicating that signal as a false visual-regression failure."
             } >> "$GITHUB_STEP_SUMMARY"
           else
+            # Only a URL is a URL (HYG-151): #3066's "preview" was an API error body.
+            if ! [[ "${url}" =~ ^https://[A-Za-z0-9.-]+(/[^[:space:]]*)?$ ]]; then
+              echo "::error title=Preview URL is not a URL::The deployment status for ${SHA} gave '${url}' as its environment_url. Nothing was tested."
+              exit 1
+            fi
             echo "ready=true" >> "$GITHUB_OUTPUT"
             echo "url=${url}" >> "$GITHUB_OUTPUT"
             echo "Resolved preview: ${url}"
@@ -684,10 +819,10 @@ jobs:
           TURNSTILE_PEERS: lighthouse,smoke,update-baselines,update-a11y,visual
           TURNSTILE_WORKFLOWS: e2e.yml,e2e-manual.yml
           TURNSTILE_MAX_MINUTES: '90'
-          TURNSTILE_POLL_SECONDS: '30'
+          TURNSTILE_POLL_SECONDS: '120'
         with:
           script: |
-            // THE TURNSTILE. Rules 1 to 5 are in the comment block above this job's timeout.
+            // THE TURNSTILE. Rules 1 to 6 are in the comment block above pr-compare's timeout in e2e.yml.
             const jobName = process.env.TURNSTILE_JOB
             // THE LANE this job queues in: every job name that counts as a capture, and every
             // workflow file to look for those jobs in. Both are comma-separated. TURNSTILE_PEERS
@@ -697,6 +832,10 @@ jobs:
             const workflowFiles = (process.env.TURNSTILE_WORKFLOWS || '').split(',').map((file) => file.trim()).filter(Boolean)
             const maxMinutes = Number(process.env.TURNSTILE_MAX_MINUTES)
             const pollSeconds = Number(process.env.TURNSTILE_POLL_SECONDS)
+            // HYG-151: a job with N older runs of the lane still in progress looks every
+            // min(N, MAX_STRETCH) x pollSeconds, so the job next in line looks often and the tenth
+            // does not spend the repository's API quota asking a question it cannot win yet.
+            const MAX_STRETCH = 3
             const { owner, repo } = context.repo
             const started = Date.now()
             const deadline = started + maxMinutes * 60_000
@@ -705,6 +844,9 @@ jobs:
             // A job is past its turnstile when this step (matched by name, so every job in every
             // lane shares the one definition) has completed. Before that it is waiting, not capturing.
             const isTurnstile = (step) => /^Turnstile/.test(step.name || '')
+            // A run belongs to the lane when its workflow file is one of TURNSTILE_WORKFLOWS. A run
+            // whose `path` the API did not send is read rather than guessed away.
+            const inLane = (run) => !run.path || workflowFiles.includes(String(run.path).replace(/@.*$/, '').split('/').pop())
             if (workflowFiles.length === 0) {
               // A turnstile with nothing to poll clears on poll 1 having looked at nothing: the
               // vacuous pass this repo refuses, wearing a green tick. It may not fail the job
@@ -716,49 +858,75 @@ jobs:
                 .addRaw(`### Turnstile polled nothing\n\nThis \`${jobName}\` declared no TURNSTILE_WORKFLOWS, so the one-capture-at-a-time rule did not apply to it (LIVE-332).\n`)
                 .write()
             }
+            // Newer runs seen WAITING on two looks. Their turnstile now sees this job waiting and
+            // older, so rule 3 holds them until this job clears: their jobs are not read again.
+            const seenWaiting = new Map()
             let poll = 0
             for (;;) {
               poll += 1
               const ahead = []
+              let older = 0
+              let quotaBackAt = 0
               try {
-                for (const workflowFile of workflowFiles) {
-                  // Only runs still in progress: a completed run (success, failure, CANCELLED)
-                  // holds no load, so the workflow-level group's supersede on the same PR and
-                  // ADR-1328's cancellations both fall out of the read (rule 2).
-                  const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                    owner, repo, workflow_id: workflowFile, status: 'in_progress', per_page: 100,
+                // ONE read of every in-progress run in the repository (HYG-151). It was one paginated
+                // read per workflow file plus one jobs read for EVERY in-progress run, every look.
+                // Only runs still in progress: a completed run (success, failure, CANCELLED) holds no
+                // load, so the workflow-level group's supersede on the same PR and ADR-1328's
+                // cancellations both fall out of the read (rule 2).
+                const runs = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                  owner, repo, status: 'in_progress', per_page: 100,
+                })).filter(inLane)
+                const toRead = []
+                for (const run of runs) {
+                  if (run.id === context.runId) continue // rule 1: never this run's own jobs
+                  if (run.run_number < context.runNumber) older += 1
+                  else if ((seenWaiting.get(run.id) || 0) >= 2) continue
+                  toRead.push(run)
+                }
+                // Oldest first, and stop at the first run ahead: one is enough to wait on (HYG-151).
+                toRead.sort((a, b) => a.run_number - b.run_number)
+                for (const run of toRead) {
+                  const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                    owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
                   })
-                  for (const run of runs) {
-                    if (run.id === context.runId) continue // rule 1: never this run's own jobs
-                    const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-                      owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
-                    })
-                    for (const job of jobs) {
-                      // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
-                      // taking separate turns and one run's two jobs still overlap (ADR-936). A
-                      // completed job, whatever its conclusion, holds nothing (rule 2).
-                      if (!peers.has(job.name) || job.status === 'completed') continue
-                      const gate = (job.steps || []).find(isTurnstile)
-                      const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
-                      const older = run.run_number < context.runNumber
-                      // Rule 3: a run is AHEAD when it is already capturing, or when it is still
-                      // waiting and carries the lower run number. Two waiting runs therefore
-                      // never wait on each other: the older proceeds, the newer waits for it.
-                      // Run numbers are per WORKFLOW FILE, so across two files they are not one
-                      // series: between two waiting runs the file with the lower numbers wins, and
-                      // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
-                      // capture priority over a merely queued PR capture. Deliberate, and it is a
-                      // strict order either way, so no two runs can end up waiting on each other.
-                      if (capturing || older) {
-                        ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
-                      }
+                  let waiting = false
+                  for (const job of jobs) {
+                    // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
+                    // taking separate turns and one run's two jobs still overlap (ADR-936). A
+                    // completed job, whatever its conclusion, holds nothing (rule 2).
+                    if (!peers.has(job.name) || job.status === 'completed') continue
+                    const gate = (job.steps || []).find(isTurnstile)
+                    const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
+                    // Rule 3: a run is AHEAD when it is already capturing, or when it is still
+                    // waiting and carries the lower run number. Two waiting runs therefore
+                    // never wait on each other: the older proceeds, the newer waits for it.
+                    // Run numbers are per WORKFLOW FILE, so across two files they are not one
+                    // series: between two waiting runs the file with the lower numbers wins, and
+                    // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
+                    // capture priority over a merely queued PR capture. Deliberate, and it is a
+                    // strict order either way, so no two runs can end up waiting on each other.
+                    if (capturing || run.run_number < context.runNumber) {
+                      ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
+                    } else {
+                      waiting = true
                     }
                   }
+                  if (ahead.length > 0) break
+                  if (waiting) seenWaiting.set(run.id, (seenWaiting.get(run.id) || 0) + 1)
                 }
               } catch (error) {
                 // An unreadable API is not a clear road; it is one more thing to wait on,
                 // and the bound below still ends the wait (rule 5).
                 ahead.push(`the Actions API (unreadable: ${error.message})`)
+                // Rule 6 (HYG-151): a REFUSED read waits for the quota to come back instead of
+                // asking again at full rate, which is what kept the quota at zero on 2026-09-29.
+                const headers = (error.response && error.response.headers) || {}
+                if (error.status === 403 || error.status === 429) {
+                  const retryAfter = Number(headers['retry-after'])
+                  const reset = Number(headers['x-ratelimit-reset'])
+                  if (retryAfter > 0) quotaBackAt = Date.now() + retryAfter * 1000
+                  else if (headers['x-ratelimit-remaining'] === '0' && reset > 0) quotaBackAt = reset * 1000 + 5_000
+                }
               }
               if (ahead.length === 0) {
                 core.info(`turnstile: clear on poll ${poll} after ${elapsed()} min; ${jobName} proceeds`)
@@ -772,9 +940,14 @@ jobs:
                   .write()
                 break
               }
+              // HYG-151: the look interval stretches with the queue, and a spent quota is waited out.
+              // Both stay inside the bound, so rule 5 still ends the wait on time.
+              let waitMs = pollSeconds * 1000 * Math.min(Math.max(older, 1), MAX_STRETCH)
+              if (quotaBackAt > Date.now()) waitMs = Math.max(waitMs, quotaBackAt - Date.now())
+              waitMs = Math.max(1000, Math.min(waitMs, deadline - Date.now()))
               // Rule 4: one line per poll, naming what it waits on.
-              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; next look in ${pollSeconds}s`)
-              await sleep(pollSeconds * 1000)
+              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; ${older} older run(s) in progress; next look in ${Math.round(waitMs / 1000)}s${quotaBackAt ? ' (API quota spent: waiting for its reset)' : ''}`)
+              await sleep(waitMs)
             }
             core.setOutput('waited_minutes', elapsed())
 
@@ -789,6 +962,63 @@ jobs:
           # Vercel records each build as a GitHub Deployment on the head SHA and reports the
           # live URL as `environment_url` on the deployment's `success` status. Poll for it:
           # the PR event fires before the build finishes.
+          #
+          # 🔴 AN API REFUSAL IS NOT AN EMPTY LIST (HYG-151). Every read here used to end in
+          # `|| true`, and `gh api` prints the error BODY to stdout when a request fails. On
+          # 2026-09-29 the repository's API quota was spent (it resets on the hour), and #3066's
+          # pr-compare (run 36636201158) resolved its preview URL to the literal text
+          # {"message":"Not Found","documentation_url":"https://docs.github.com/rest","status":"404"}
+          # and ran every suite against it: "Cannot navigate to invalid URL", four @visual reds
+          # this PR did not cause. So every read goes through read_api, which prints NOTHING on a
+          # failure and writes why to ${refused}; the loop tells "refused" from "none yet", waits
+          # out a spent quota inside this step's 12-minute window, and fails loudly otherwise.
+          refused="${RUNNER_TEMP}/preview-api-refused"
+          window_ends=$((SECONDS + 720))
+          read_api() {
+            local out
+            if out=$(gh api "$1" --jq "$2" 2>"${refused}.stderr"); then
+              printf '%s\n' "${out}"
+            else
+              printf 'GET %s: %s\n' "$1" "$(tr '\n' ' ' < "${refused}.stderr")" >> "${refused}"
+              return 1
+            fi
+          }
+          fail_refused() {
+            echo "::error title=GitHub API refused the preview lookup::$1 Nothing was tested. This is not a missing preview: the API would not say whether one exists. Re-run this job once the quota has reset."
+            cat "${refused}" 2>/dev/null || true
+            {
+              echo "### e2e compare did NOT run: the GitHub API refused"
+              echo
+              echo "$1"
+              echo
+              echo "The preview URL could not be read, so the suites did not start. A refused read is"
+              echo "not an empty list, and running Playwright without a URL is how #3066 went red on"
+              echo "tests it never ran (HYG-151). Re-run this job once the quota has reset."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+          # After a refused read. /rate_limit costs no quota. A spent core quota that comes back
+          # inside the window is slept out; one that does not fails now, with the reset time.
+          # Anything else (a 5xx, a blip) gets the normal 20 s retry.
+          wait_for_quota() {
+            local quota remaining reset now
+            if ! quota=$(gh api rate_limit --jq '.resources.core | "\(.remaining) \(.reset)"' 2>/dev/null); then
+              quota="unknown 0"
+            fi
+            remaining="${quota% *}"
+            reset="${quota#* }"
+            now=$(date +%s)
+            if [ "${remaining}" = "0" ]; then
+              if [ $((reset + 5 - now)) -le $((window_ends - SECONDS)) ]; then
+                echo "::warning title=GitHub API quota spent::The core quota is at 0 until $(date -u -d "@${reset}" +%H:%M:%SZ); waiting $((reset + 5 - now))s for it instead of reading an error as 'no deployment'."
+                sleep $((reset + 5 - now))
+                return 0
+              fi
+              fail_refused "The repository's GitHub API quota is spent until $(date -u -d "@${reset}" +%H:%M:%SZ), past this step's 12-minute window."
+            fi
+            echo "The GitHub API refused a read (quota remaining: ${remaining}); retrying in 20s."
+            sleep 20
+          }
           url=""
           # 36 x 20s = 12 minutes, not 10. #2322 polled for 10 minutes, gave up, and reported
           # SUCCESS at 17:12:01 — nine seconds after its own Vercel Preview check went green at
@@ -796,22 +1026,36 @@ jobs:
           # visual suite never ran behind a green check. Two minutes of headroom is the cheap
           # half of that fix; the classification below is the half that matters.
           for attempt in $(seq 1 36); do
-            for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
-              candidate=$(gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" \
-                --jq 'map(select(.state=="success") | .environment_url // empty) | first // empty' || true)
-              if [ -n "${candidate}" ]; then
-                url="${candidate}"
-                break
-              fi
-            done
+            rm -f "${refused}"
+            if deps=$(read_api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" '.[].id'); then
+              for dep in ${deps}; do
+                candidate=$(read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" \
+                  'map(select(.state=="success") | .environment_url // empty) | first // empty') || break
+                if [ -n "${candidate}" ]; then
+                  url="${candidate}"
+                  break
+                fi
+              done
+            fi
             if [ -n "${url}" ]; then
               break
+            fi
+            if [ -s "${refused}" ]; then
+              if [ "${SECONDS}" -ge "${window_ends}" ]; then
+                break
+              fi
+              wait_for_quota
+              continue
             fi
             echo "No successful deployment for ${SHA} yet (attempt ${attempt}/36); waiting 20s."
             sleep 20
           done
 
           if [ -z "${url}" ]; then
+            # The last look was refused, so "no deployment" was never established (HYG-151).
+            if [ -s "${refused}" ]; then
+              fail_refused "The GitHub API refused the last read of this commit's deployments."
+            fi
             # 🔴 A GREEN HERE IS ONLY HONEST WHEN THERE IS GENUINELY NOTHING TO TEST.
             #
             # The preflight job above already states this repo's rule: "a job that runs and takes
@@ -846,13 +1090,21 @@ jobs:
             # carried no statuses yet was NOT established — do not write it down as though it were.
             # What matters is the shape: the deployment arm can be silent while a build runs, and
             # the commit status is not, so both are consulted and neither is trusted alone.
+            rm -f "${refused}"
             states=$(
-              for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
-                gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" --jq '.[].state' || true
+              for dep in $(read_api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" '.[].id'); do
+                read_api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" '.[].state'
               done
-              gh api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
-                --jq '.[] | select(.context | ascii_downcase | test("vercel")) | .state' || true
+              read_api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
+                '.[] | select(.context | ascii_downcase | test("vercel")) | .state'
+              # A refused read prints nothing and is recorded in ${refused}, read just below, so the
+              # subshell's own exit status is not the signal and must not trip `set -e`.
+              true
             )
+            # A classification the API refused to answer is not "nothing is building" (HYG-151).
+            if [ -s "${refused}" ]; then
+              fail_refused "The GitHub API refused a read while checking whether a build is still in flight."
+            fi
             if printf '%s\n' "${states}" | grep -qE '^(pending|queued|in_progress)$'; then
               echo "::error title=Preview never resolved::A Vercel deployment for ${SHA} is still building after 12 minutes, so nothing was tested. This job fails rather than reporting a green it did not earn — re-run it once the preview is live."
               {
@@ -880,6 +1132,11 @@ jobs:
               echo "than duplicating that signal as a false visual-regression failure."
             } >> "$GITHUB_STEP_SUMMARY"
           else
+            # Only a URL is a URL (HYG-151): #3066's "preview" was an API error body.
+            if ! [[ "${url}" =~ ^https://[A-Za-z0-9.-]+(/[^[:space:]]*)?$ ]]; then
+              echo "::error title=Preview URL is not a URL::The deployment status for ${SHA} gave '${url}' as its environment_url. Nothing was tested."
+              exit 1
+            fi
             echo "ready=true" >> "$GITHUB_OUTPUT"
             echo "url=${url}" >> "$GITHUB_OUTPUT"
             echo "Resolved preview: ${url}"
@@ -913,6 +1170,7 @@ jobs:
           BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           set -euo pipefail
+          [[ "${PREVIEW_URL}" =~ ^https://[^[:space:]]+$ ]] || { echo "::error title=No preview URL::PREVIEW_URL is not an https URL ('${PREVIEW_URL}'), so Lighthouse would audit nothing (HYG-151)."; exit 1; }
           # Deployment Protection would otherwise serve Lighthouse the auth interstitial and
           # we would be grading the login wall. Same bypass the Playwright steps use,
           # passed below as an extra request header.

@@ -199,6 +199,8 @@ each editor carrying `surfaces.editor.tier: 'standard' | 'primary' | 'extra'` + 
 ### Phase 6 — Per-scope App overrides 🔒→🔵
 *Operator customization (Planner C, B6; research v2).* New `app_overrides` table mirroring `page_chrome_overrides` (keyed `(scope_key, app_id)`, `enabled`/`position`/`min_role`, fail-safe to catalog defaults); `loadAppOverrides` + pure `mergeAppOverrides`; a Loom-style manage surface under `/admin/page-layout`. Spine order stays fixed; overrides act on Apps within categories.
 
+A **global disable wins on every scope** ([ADR-1664](DECISIONS.md), LIVE-686). Every page reads its scope's map through `resolveScopeAppOverrides`, which folds the Apps disabled at `global` into that scope's own rows. Only the disable travels: a global `position` or `min_role` stays on the global rail.
+
 ### Phase 7 — Fill the 9-spine for every entity 🔵
 *Breadth (Planner C, S1–S4).* Copy the LP-EVENT recipe to add the missing spine modules — **Circle** (Place&Time, People, Engage, Comms, Insights), **Hub/Nexus** (People, Layout, Reach, Comms, Insights, Danger), **Practice** (Layout, Engage, Insights). Confirmed: **no new capabilities or migrations** (all gates + data exist); Safety + the richer role ladder are the only cells needing a migration and are deferred to S4. Each cell = a registry row + map binding + module component + two gated actions (+ optional page block). Parallelizable per entity.
 
@@ -537,9 +539,12 @@ section header. Rendered in `admin-bar-body.tsx`'s `renderSection`.
 
 ### 6.4 Deferred (documented, not in this pass)
 
-- **Speed:** generalize the ADR-550 one-bundle provider (`space-rail-data.tsx`) to the core entities so a
-  circle/event/hub/nexus/practice rail resolves its ~6 modules from ONE server fetch instead of one
-  self-fetch per module (the remaining "loads slow" contributor).
+- **Speed:** no longer deferred. A circle/event/hub/nexus/practice rail reads its modules through ONE
+  request ([ADR-1685](DECISIONS.md)): `EntityRailDataProvider` (`entity-rail-data.tsx`) wraps the rail
+  body's sections, asks for the reads of the mounted modules (`lib/admin/entity-rail-reads.ts`), and
+  `getEntityRailBundle` runs each once, in parallel, through the modules' own gated getters. A module that
+  misses the bundle calls its getter as before. What is left: each getter still resolves the viewer for
+  itself, because `React.cache()` does not dedupe inside a Server Action (see the ADR).
 - **Coverage:** `broadcast/[id]` still deep-links to `/admin/dispatches` via `StaffEditButton` (a dispatch is
   not yet an `adminScopeFor` scope); every other editable entity page already mounts the rail trigger.
 - **True 0ms preview** (the `EntityLayoutContext` store) for marquee fields, beyond the sub-second

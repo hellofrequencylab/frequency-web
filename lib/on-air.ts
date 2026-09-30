@@ -682,3 +682,21 @@ export function buildSessionDispatch(state: SessionDispatchState): {
     actionLabel: 'Back to feed',
   }
 }
+
+/** The line the reveal shows when the member's state reads both failed (LIVE-674): the cached
+ *  daily Dispatch from Vera (lib/vera-dispatch.ts), or the steady template when that failed too.
+ *  That cached line is minted once per member per day and replays after every session, so it is
+ *  activity-neutral by contract; the activity is named HERE, from THIS session, with the same
+ *  opener the primary path leads with. So the fallback always names what was just done (a walk
+ *  reads "Nice walk.", never a cached "Good sit."). Pure. */
+export function fallbackSessionDispatch(
+  kind: DispatchKind | null | undefined,
+  cached: { copy: string; actionHref: string | null; actionLabel: string } | null,
+): { copy: string; actionHref: string | null; actionLabel: string } {
+  const base = cached ?? {
+    copy: 'Same time tomorrow. Bring one practice. The streak does the rest.',
+    actionHref: '/feed',
+    actionLabel: 'Back to feed',
+  }
+  return { ...base, copy: `${dispatchOpener(kind)} ${base.copy.trim()}` }
+}

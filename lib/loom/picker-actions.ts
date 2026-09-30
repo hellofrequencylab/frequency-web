@@ -13,9 +13,14 @@
 // this file (deleteSpaceLoomImage, updateSpaceLoomImageMeta, spaceLoomImageUsage), which decide on the
 // Space's `loom` function (canManageSpaceLoom, LIVE-566): the Studio is the management door and the
 // picker is the editing door, so switching the Studio off never stops an edit.
-// Uploads run through the service-role admin client, so they never depend on a live browser Storage
-// session token — the fragile path that returned "new row violates row-level security policy".
-// FAIL-SAFE throughout.
+// ONE SPACE'S LOOM IS READ ON THE CALLER'S SESSION (LIVE-571, ADR-1613): the picker's space scope, the
+// Studio's list, tags and holds-check, and its title/alt/tags edit go through lib/library/space-loom-store.ts,
+// where the per-Space policies of 20270345009500 (ADR-1594) are the lock and the checks here are the
+// second wall. Still on the service role, each for a stated reason: the personal 'mine' scope (a personal
+// upload lives in the root Space, which the caller's session cannot read), and every write that is half a
+// storage object (the upload, the fork copy, the delete; storage policies are PROG-D6). Uploads run through
+// the service-role admin client so they never depend on a live browser Storage session token, the fragile
+// path that returned "new row violates row-level security policy". FAIL-SAFE throughout.
 
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -26,8 +31,6 @@ import { normalizeAssetMeta } from '@/lib/library/asset-meta'
 import { findLibraryAssetUsage } from '@/lib/library/usage'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import {
-  getLibraryAsset,
-  updateSpaceLibraryAssetMeta,
   listLoomScopeImages,
   listLoomScopeTags,
   insertSpaceLibraryImage,
@@ -38,6 +41,12 @@ import {
   type LoomPickAsset,
   type LoomSharedMode,
 } from '@/lib/library/store'
+import {
+  listSpaceLoomImages,
+  listSpaceLoomTags,
+  spaceLoomHoldsAsset,
+  updateSpaceLoomAssetMeta,
+} from '@/lib/library/space-loom-store'
 import { ingestImageBytes } from '@/lib/library/ingest'
 import { loomQuotaFor, loomStorageUsed, loomAdmits, loomMeter, type LoomMeter } from '@/lib/library/quota'
 import { readImageDescriptor } from '@/lib/library/image-describe'
@@ -55,16 +64,14 @@ export interface LoomScope {
 }
 
 /** The Loom picker's resolved config for THIS viewer (from the element_settings master, role-gated).
- *  The picker honors it: which tabs render, whether AI Create shows, which scope it opens on. */
+ *  The picker honors it: which tabs render and which scope it opens on. */
 export interface LoomPickerConfig {
   tabs: { images: boolean; icons: boolean; elements: boolean; tags: boolean; spaces: boolean; airwaves: boolean }
-  aiCreate: boolean
   defaultScope: 'mine' | 'space'
 }
 
 const DEFAULT_LOOM_CONFIG: LoomPickerConfig = {
   tabs: { images: true, icons: true, elements: true, tags: true, spaces: true, airwaves: false },
-  aiCreate: false,
   defaultScope: 'mine',
 }
 
@@ -90,7 +97,6 @@ async function resolveLoomConfig(
       spaces: on('tab.spaces'),
       airwaves: on('tab.airwaves'),
     },
-    aiCreate: on('aiCreate'),
     defaultScope: elementChoice(resolved, 'defaultScope') === 'space' ? 'space' : 'mine',
   }
 }
@@ -221,9 +227,18 @@ export async function loomImages(
   // The asset families this view wants (purpose-scoped): the picker passes ['image'] for photos,
   // ['icon'] for the Icons view, ['image','element'] + generatedOnly for Elements, etc.
   const kinds = opts.kinds && opts.kinds.length ? opts.kinds : ['image']
+  // A Space scope reads on the caller's session (LIVE-571): the policies decide, this gate is the
+  // second wall. The personal scope stays on the service role (see the file header).
+  if ('spaceId' in scope) {
+    const [assets, tags] = await Promise.all([
+      listSpaceLoomImages(scope.spaceId, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, shared: opts.shared }),
+      opts.shared === 'only' ? Promise.resolve([] as string[]) : listSpaceLoomTags(scope.spaceId, kinds),
+    ])
+    return { assets, tags }
+  }
   const [assets, tags] = await Promise.all([
-    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly, shared: opts.shared }),
-    opts.shared === 'only' ? Promise.resolve([] as string[]) : listLoomScopeTags(scope, kinds),
+    listLoomScopeImages(scope, { q: opts.q, tag: opts.tag, kinds, generatedOnly: opts.generatedOnly }),
+    listLoomScopeTags(scope, kinds),
   ])
   return { assets, tags }
 }
@@ -349,11 +364,12 @@ async function loomSpaceAndRole(callerId: string, spaceKey: string) {
   }
 }
 
-/** Is `assetId` one of this Space's own Loom rows? A read bound to space_id; a failed read is NO.
- *  Asked before a usage read, so a Space never learns where another Space's image is placed. */
+/** Is `assetId` one of this Space's own Loom rows? A read bound to space_id, on the caller's session
+ *  (LIVE-571), so the policy answers too; a failed read is NO. Asked before a usage read, so a Space
+ *  never learns where another Space's image is placed. */
 async function spaceHoldsAsset(spaceId: string, assetId: string): Promise<boolean> {
   try {
-    return !!(await getLibraryAsset(spaceId, assetId))
+    return await spaceLoomHoldsAsset(spaceId, assetId)
   } catch {
     return false
   }
@@ -425,8 +441,12 @@ export async function updateSpaceLoomImageMeta(
   // never simply refused. Its own row is itself. `id` tells the Studio which row now holds the words.
   const target = await forkIfShared(spaceId, assetId, caller.id)
   if ('error' in target) return { error: target.error }
-  const out = await updateSpaceLibraryAssetMeta(spaceId, target.id, words.patch)
+  // On the caller's session (LIVE-571): the update policy asks private.can_write_space_content, so a
+  // role the Space lets into the Studio but not write content (or staff outside the Space) is refused
+  // by the database, in words, rather than told the image is missing.
+  const out = await updateSpaceLoomAssetMeta(spaceId, target.id, words.patch)
   if (out === 'missing') return { error: 'That image is not in this library.' }
+  if (out === 'refused') return { error: 'Your role in this space cannot edit its images.' }
   if (out === 'failed') return { error: 'That did not save. Try again.' }
   return {
     ok: true,

@@ -57,6 +57,7 @@ import {
   type EventRepeatPath,
   type EventRepeatRows,
 } from './event-rail-plan'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Event settings" (EMBEDDED-ADMIN.md / ADR-133) on /events/[slug]. This is the SINGLE host
 // field editor for the event (the old Place & Time and Engage editor modules folded in here). The rail
@@ -129,6 +130,9 @@ function composeLocation(p: PlaceResult): string {
 export function EventSettingsModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('event', 'admin', getEventAdminData)
+  const readCoreStats = useEntityRailRead('event', 'coreStats', getEventCoreStats)
 
   const [data, setData] = useState<EventData | null>(null)
   const [engage, setEngage] = useState<EventCoreStats | null>(null)
@@ -137,7 +141,7 @@ export function EventSettingsModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getEventAdminData(slug)
+    readAdmin(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -149,7 +153,7 @@ export function EventSettingsModule() {
       })
     // Core stats — its own read; failure just hides the box. Same shape the Manage
     // dashboard leads with (lib/events/event-stats), rendered via the shared component.
-    getEventCoreStats(slug)
+    readCoreStats(slug)
       .then((e) => {
         if (active) setEngage(e)
       })
@@ -157,7 +161,7 @@ export function EventSettingsModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readAdmin, readCoreStats])
 
   if (!slug) return null
   if (loading) {

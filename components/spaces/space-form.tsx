@@ -245,7 +245,7 @@ export function AccentPicker({
                 }
               }}
               className={cn(
-                'w-28 rounded-control border bg-surface px-3 py-1.5 text-body-sm text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60',
+                'w-28 rounded-control border bg-surface px-3 py-1.5 text-body-sm text-text outline-none focus:border-border-strong placeholder:text-subtle disabled:opacity-60',
                 draftValid ? 'border-border' : 'border-danger',
               )}
             />

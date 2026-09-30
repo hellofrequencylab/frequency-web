@@ -272,6 +272,9 @@ survey counted the editors and nobody had before.
 
 **One city. Three businesses. One real gathering each per week. Each brings ten of their own people.**
 
+> Owner ruling 2026-09-30 ([ADR-1672](DECISIONS.md)): the six-week field test is removed. The
+> instrument below and its weekly reading stay; no field test is scheduled.
+
 Instrument three numbers and nothing else: **circles per Space** · **gatherings actually held** ·
 **attendance**. Every other number in this model is a guess until these three move.
 

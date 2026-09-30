@@ -9,20 +9,23 @@
 // price, and the tiers are outside its reach entirely. Declaring `lock` on the manifest is what
 // would turn pins on, and nothing here would have to change.
 
+import { useCallback } from 'react'
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { getEventAdminData } from '@/app/(main)/events/admin-actions'
 import { redrawEventAction, restoreEventAction, type EventRedrawResult } from '@/app/(main)/events/actions'
 import { GuidedModule } from './guided-module'
+import { useEntityRailRead } from './entity-rail-data'
 
 const routeKey = (pathname: string) => pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
-
-/** getEventAdminData returns null unless the viewer holds event.editSettings, so a non-host
- *  resolves to no entity and the section renders nothing. */
-const resolve = async (slug: string) => (await getEventAdminData(slug))?.id ?? null
 
 const restore = (id: string, before: EventRedrawResult['before']) => restoreEventAction(id, before)
 
 export function EventGuidedModule() {
+  /** getEventAdminData returns null unless the viewer holds event.editSettings, so a non-host
+   *  resolves to no entity and the section renders nothing. Its first read comes from the rail's one
+   *  bundled request (ADR-1685), the same read Settings and the Danger zone make. */
+  const readAdmin = useEntityRailRead('event', 'admin', getEventAdminData)
+  const resolve = useCallback(async (slug: string) => (await readAdmin(slug))?.id ?? null, [readAdmin])
   return (
     <GuidedModule
       moduleId="event.guided"

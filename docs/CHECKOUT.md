@@ -28,7 +28,7 @@ must not be eight integrations.
 | **The split refund** | `lib/commerce/split-refund.ts` | A refund or a lost dispute of a split order takes each seller's share back pro rata to their share of the gross (`proportionRefund`, exact to the cent), by one transfer reversal per row under the key `transfer-reversal:<row>:<from>-<to>`, after the buyer is refunded; a transfer never made is cancelled. What does not land is retried by the same cron ([ADR-1615](DECISIONS.md), `LIVE-623`). |
 | **The action** | a `'use server'` module per surface | Decides whether the browser can mount a form, and hands back exactly one of two shapes. |
 | **The control** | the buy button | Branches on what ARRIVED, renders the panel, and can always escape to hosted. |
-| **Discovery stamp** | `lib/commerce/marketplace-entry.ts` via `proxy.ts` | The Market / Journey view, recorded at render so checkout can classify `network` without a client argument ([ADR-1419](DECISIONS.md), `LIVE-220`). |
+| **Discovery stamp** | `lib/commerce/marketplace-entry.ts` via `proxy.ts` | The Market / Journey view, recorded at render so checkout can classify `network` without a client argument ([ADR-1419](DECISIONS.md), `LIVE-220`). Written only when missing, changed, or an hour stale ([ADR-1633](DECISIONS.md), `LIVE-711`). |
 
 ---
 

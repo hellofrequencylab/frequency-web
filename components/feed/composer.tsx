@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback, useMemo, type 
 import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import { Dialog } from '@/components/ui/dialog'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera, type LucideIcon } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
 import { Textarea } from '@/components/ui/field'
@@ -27,6 +28,13 @@ const MODES: { label: string; icon: LucideIcon; announcement: boolean; hint: str
 ]
 
 type HandleResult = { id: string; handle: string; display_name: string; avatar_url: string | null }
+
+// The one-time card after a post (install the app, notifications: LIVE-703). Lazy, because this
+// composer is reachable from the (main) shell and the card is needed only after a post lands, and
+// then at most once per device.
+const DeviceNudge = dynamic(() => import('@/components/push/device-nudge').then((m) => m.DeviceNudge), {
+  ssr: false,
+})
 
 // A small, consistent toolbar button. One look for every embedded control so the
 // formatting row reads as one designed cluster, not a pile of mismatched icons.
@@ -120,6 +128,7 @@ export function Composer({
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageError, setImageError] = useState('')
   const [postError, setPostError] = useState('')
+  const [posted, setPosted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false)
@@ -283,6 +292,7 @@ export function Composer({
       removeImage()
       setSuggestions([])
       setMentionQuery(null)
+      setPosted(true)
     })
   }
 
@@ -738,5 +748,11 @@ export function Composer({
     return <ComposeLightbox onClose={toggleExpand}>{editor}</ComposeLightbox>
   }
 
-  return <div className="mb-4">{editor}</div>
+  return (
+    <div className="mb-4">
+      {editor}
+      {/* A post is one of the two moments the owner ruled earns the install ask (LIVE-703). */}
+      {posted && <DeviceNudge context="post" className="mt-3" />}
+    </div>
+  )
 }

@@ -9,10 +9,11 @@ import { logAdminAction } from '@/lib/admin/audit'
 import {
   PARTNER_PERSONAS,
   canStaffTransition,
-  CONNECT_WIRED,
+  personaActivationVerdict,
   type PartnerPersona,
   type PersonaState,
 } from '@/lib/personas'
+import { getConnectStatus } from '@/lib/billing/connect'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { trustSource } from '@/lib/trust'
 
@@ -45,18 +46,26 @@ export async function transitionPersona(
   const from = (row?.state ?? null) as PersonaState | null
   if (!from) return fail('That persona claim no longer exists.')
   if (from === to) return ok({ state: to })
-  // The money gate (BUG-7): activation needs the per-persona Stripe Connect binding, which isn't
-  // wired yet. `verified` already lights every partner surface, so this withholds nothing
-  // operational — it only blocks the unbacked `active` money state until Connect lands.
-  if (to === 'active' && !CONNECT_WIRED) {
-    return fail('Activation needs the Stripe Connect binding, which is not live yet. Verify keeps every partner tool on.')
-  }
   if (!canStaffTransition(from, to)) return fail(`Can’t move ${from} → ${to}.`)
 
   const patch: Record<string, unknown> = { state: to, ...(notes !== undefined ? { notes } : {}) }
   if (to === 'verified') {
     patch.verified_at = new Date().toISOString()
     patch.verified_by = caller!.id
+  }
+
+  // The payout gate at `active` (LIVE-696, ADR-1676). A money persona goes Active only with the
+  // member's Stripe Connect account able to take charges, read fresh here rather than trusted from
+  // the page, and activation binds that account id onto the persona row. getConnectStatus degrades
+  // a failed read to "no account", so an unreadable account refuses: fail closed.
+  if (to === 'active') {
+    const connect = await getConnectStatus(profileId)
+    const verdict = personaActivationVerdict(persona, {
+      accountId: connect.accountId,
+      chargesEnabled: connect.chargesEnabled,
+    })
+    if (!verdict.ok) return fail(verdict.reason)
+    if (verdict.bindAccountId) patch.stripe_account_id = verdict.bindAccountId
   }
 
   const { error } = await admin

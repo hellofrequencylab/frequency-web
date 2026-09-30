@@ -49,7 +49,7 @@ export function PlacesFinder({ cities }: { cities: FinderCity[] }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Find your town…"
-              className="w-full rounded-2xl border border-border bg-surface py-3 pl-11 pr-4 text-body text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full rounded-2xl border border-border bg-surface py-3 pl-11 pr-4 text-body text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30"
             />
           </div>
         </div>

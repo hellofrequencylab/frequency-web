@@ -52,6 +52,16 @@
 //     parse or floor failure  -> FAILURE. Never a fallback to skip.
 //   • credentials + a read    -> the real comparison, on BOTH columns.
 //
+// ONE narrow exception to "a fetch failure fails" (HYG-154, ADR-1670, the owner's ruling). When
+// the Management API REFUSES the credential itself (HTTP 401 or 403) on a pull request whose diff
+// adds or changes NO file under supabase/migrations, the result is `refused`: exit 0, printed
+// loudly, and raised as a workflow warning. That PR cannot move the ledger, so a dead CI secret is
+// not its defect; on 2026-09-30 at 01:04Z one redded every open PR at once. It never reads as a
+// pass: the run says nothing was compared and names the owner action. It stays a FAILURE on a PR
+// that touches a migration, on every push to main (main's own CI is the gate that notices the
+// dead token), when the PR's diff cannot be read, and for every other status, transport failure
+// or malformed payload.
+//
 // Arm it with SUPABASE_ACCESS_TOKEN (secret) + SUPABASE_PROJECT_REF, or hand it a pre-fetched
 // payload with `--ledger <file>` / MIGRATION_LEDGER_JSON. `--require-ledger` turns the skip into a
 // failure, for any environment that is supposed to have a database and must prove it.
@@ -68,9 +78,11 @@
 //   node scripts/check-migrations.mjs --no-ledger        # tree rules only, on purpose
 // Exits 1 on violation. Model: scripts/check-headers.mjs.
 
+import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
+import { fetchOpenPulls, fetchPullHeads, prRef } from './check-id-collisions.mjs'
 import {
   LEDGER_QUERY,
   compare,
@@ -80,6 +92,8 @@ import {
 } from './maintenance/ledger-parity.mjs'
 
 const DIR = join('supabase', 'migrations')
+// The same directory as git names it (always forward slashes), for `git ls-tree` output.
+const GIT_DIR = 'supabase/migrations'
 // The shape `supabase db push` parses: 14 digits, an underscore, a name, `.sql`.
 const FILENAME = /^(\d{14})_([A-Za-z0-9_.-]+)\.sql$/
 
@@ -291,6 +305,117 @@ export function isWrappedTransportFailure(status, body) {
   return /ECONNREFUSED|ECONNRESET|ETIMEDOUT|connection (terminated|timeout|timed out|refused|reset)/i.test(String(body))
 }
 
+/** A 401 or 403 from the Management API: the platform answered, and what it said is that the
+ *  credential is no good. Matched on the message loadLedgerPayload throws, never on a guess. */
+export function isCredentialRefusal(message) {
+  return /^ledger query HTTP (401|403) from the Supabase Management API\./.test(String(message))
+}
+
+/**
+ * Does this pull request add or change a migration? `true`, `false`, or `undefined` when it
+ * cannot tell. Only `false` ever relaxes anything, so every doubt resolves to the strict path:
+ * not a pull_request run (a push to main), no base ref, no git seam, or a git read that failed.
+ *
+ * On a pull_request run HEAD is the merge commit and an earlier ci.yml step fetches
+ * origin/<base>, so a two-dot tree diff names what the PR changes. If main moved after the merge
+ * ref was built, main's new migrations show up here too, which only makes the answer stricter.
+ *
+ * @param {{ env?: Record<string, string | undefined>, runGit?: (args: string[]) => string }} [opts]
+ */
+export function prTouchesMigrations({ env = {}, runGit } = {}) {
+  if (env.GITHUB_EVENT_NAME !== 'pull_request') return undefined
+  const base = env.GITHUB_BASE_REF
+  if (!base || typeof runGit !== 'function') return undefined
+  try {
+    return runGit(['diff', '--name-only', `origin/${base}`, 'HEAD', '--', DIR]).trim().length > 0
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * IN-FLIGHT MIGRATIONS (HYG-158, ADR-1690). A migration is applied to production in its own window,
+ * right around its own PR (push the PR, apply the SQL with its ledger row, merge). Until that PR
+ * merges, main has no file for the ledger row, so every OTHER open PR read "applied SQL the repo
+ * does not record" and went red for minutes at a time (#3097 on 2026-09-30, for #3100's 9800).
+ *
+ * The drift is forgiven ONLY when all of these hold, and every doubt falls to the strict path:
+ *   · this is a pull request that touches nothing under supabase/migrations (`false`, never unknown);
+ *   · the ONLY disagreement is ledger rows with no repo file (no unapplied file, no name mismatch);
+ *   · every such row is NEWER than every migration in this tree (production is ahead, not forked);
+ *   · every such row's exact `<version>_<name>.sql` sits at the head of another OPEN pull request.
+ * Main's own runs, and every PR that touches a migration, still fail on it.
+ *
+ * Returns the rows to look up, or null when the drift has any other shape.
+ */
+export function inFlightCandidates(result, repo) {
+  if (!result || result.inParity) return null
+  if (result.repoOnly.length > 0 || result.nameMismatches.length > 0) return null
+  if (result.ledgerOnly.length === 0) return null
+  const newestRepo = repo.reduce((max, r) => (r.version > max ? r.version : max), '')
+  return result.ledgerOnly.every((l) => l.version > newestRepo) ? result.ledgerOnly : null
+}
+
+/** The open PRs that carry each ledger row's file, read through git (HYG-150's seam: one pulls
+ *  listing, heads fetched with --filter=blob:none, file names from `git ls-tree`). Returns a Map of
+ *  version to PR number; a row no open PR carries is absent. Throws when it cannot look. */
+export async function findInFlightCarriers({ rows, env = {}, fetchImpl = fetch, git }) {
+  const repo = env.GITHUB_REPOSITORY
+  const base = env.GITHUB_BASE_REF
+  const token = env.GITHUB_TOKEN
+  if (!repo || !base || !token) throw new Error('no GITHUB_REPOSITORY, GITHUB_BASE_REF or GITHUB_TOKEN')
+  const mine = Number(/^refs\/pull\/(\d+)\//.exec(env.GITHUB_REF ?? '')?.[1] ?? env.PR_NUMBER ?? 0)
+  const pulls = (await fetchOpenPulls({ repo, base, token, fetchImpl })).filter((p) => p.number !== mine)
+  const { fetched } = fetchPullHeads({ numbers: pulls.map((p) => p.number), git })
+  const wanted = new Map(rows.map((r) => [`${GIT_DIR}/${r.version}_${r.name}.sql`, r.version]))
+  const carriers = new Map()
+  for (const n of fetched) {
+    const names = git(['ls-tree', '--name-only', prRef(n), '--', `${GIT_DIR}/`])
+      .split('\n')
+      .filter(Boolean)
+    for (const name of names) {
+      const version = wanted.get(name)
+      if (version && !carriers.has(version)) carriers.set(version, n)
+    }
+  }
+  return carriers
+}
+
+/** The in-flight lines. Loud on purpose: this exits 0 with production ahead of the tree. */
+function inFlightLines(rows, carriers) {
+  return [
+    '',
+    `⚠️  check:migrations — ${rows.length} migration(s) are IN FLIGHT: applied to production, and their`,
+    '    file is on another open pull request that has not merged yet (HYG-158, ADR-1690):',
+    ...rows.map((r) => `      • ${r.version}_${r.name}.sql  (#${carriers.get(r.version)})`),
+    '',
+    `    Not failing THIS pull request: it adds or changes no file under ${DIR}, and every drifted`,
+    '      row is newer than this tree and carried by an open PR. Main, and any PR that touches a',
+    '      migration, still FAIL on this. If that PR is closed without merging, the next run here',
+    '      fails too, because nothing carries the row any more.',
+    '',
+  ]
+}
+
+/** The refused-credential lines. Loud on purpose: this exits 0, and must never read as a
+ *  comparison that happened. */
+function refusedLines(message, total) {
+  return [
+    '',
+    `⚠️  check:migrations — the Supabase token was REFUSED: ${message}`,
+    '',
+    `    NOTHING was compared against production. PROVED from the tree only: ${total} migration(s),`,
+    '      every version unique, every filename parseable, every menu reseed carrying its cache note.',
+    `    Not failing THIS pull request: it adds or changes no file under ${DIR}, so it cannot`,
+    '      move the ledger (HYG-154, ADR-1670). A PR that touches a migration, and every push to',
+    '      main, still FAILS on this until the token works again.',
+    '',
+    `    Owner action: create a new Supabase access token and save it as the ${LEDGER_ENV.TOKEN}`,
+    '      Actions secret (GitHub: Settings, Secrets and variables, Actions). See LIVE-273.',
+    '',
+  ]
+}
+
 /** The loud skip. It states what DID pass, so nobody reads it as "the guard is broken", and what
  *  did NOT, so nobody reads it as "the database was checked". */
 function skipLines(reason, total) {
@@ -378,19 +503,25 @@ export async function ledgerCheck({ env = {}, argv = [], io = {}, total = 0 } = 
 
   let result
   let malformed = []
+  let repoList = []
   try {
     const payload = await loadLedgerPayload(source, io)
     const ledger = parseLedger(payload)
     const repo = repoRows(io.repo ?? {})
     malformed = repo.malformed
+    repoList = repo.rows
     result = compare(repo.rows, ledger)
   } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    if (isCredentialRefusal(message) && io.prTouchesMigrations === false) {
+      return { status: 'refused', ok: true, lines: refusedLines(message, total) }
+    }
     return {
       status: 'error',
       ok: false,
       lines: [
         '',
-        `🔴 check:migrations — the ledger comparison could not RUN: ${e instanceof Error ? e.message : String(e)}`,
+        `🔴 check:migrations — the ledger comparison could not RUN: ${message}`,
         '',
         '    A read that failed is not a read that agreed. This exits 1 rather than degrading to',
         '    a skip, because a guard that answers "fine" when it could not look is the failure',
@@ -401,6 +532,24 @@ export async function ledgerCheck({ env = {}, argv = [], io = {}, total = 0 } = 
   }
 
   const report = formatReport(result, { malformed })
+  const candidates = io.prTouchesMigrations === false ? inFlightCandidates(result, repoList) : null
+  if (candidates && typeof io.findInFlight === 'function') {
+    let carriers = null
+    try {
+      carriers = await io.findInFlight(candidates)
+    } catch (e) {
+      const why = e instanceof Error ? e.message : String(e)
+      return {
+        status: 'drift',
+        ok: false,
+        lines: ['', report, '', `    (Could not check the open PRs for in-flight migrations: ${why}. Strict path.)`],
+        result,
+      }
+    }
+    if (candidates.every((r) => carriers.has(r.version))) {
+      return { status: 'in-flight', ok: true, lines: ['', report, ...inFlightLines(candidates, carriers)], result }
+    }
+  }
   return result.inParity
     ? { status: 'parity', ok: true, lines: ['', report], result }
     : { status: 'drift', ok: false, lines: ['', report], result }
@@ -432,8 +581,39 @@ async function main() {
     // Rule 4 runs only once the TREE is sound. Comparing a corpus that already has a collision or
     // a malformed name against the ledger reports the same defect twice under two names, and the
     // filename fix has to land first anyway.
-    const ledger = await ledgerCheck({ env: process.env, argv: process.argv.slice(2), total })
+    const touches = prTouchesMigrations({
+      env: process.env,
+      runGit: (args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }),
+    })
+    const ledger = await ledgerCheck({
+      env: process.env,
+      argv: process.argv.slice(2),
+      total,
+      io: {
+        prTouchesMigrations: touches,
+        findInFlight: (rows) =>
+          findInFlightCarriers({
+            rows,
+            env: process.env,
+            git: (args) =>
+              execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }),
+          }),
+      },
+    })
     for (const line of ledger.lines) (ledger.ok ? console.log : console.error)(line)
+    if (ledger.status === 'refused' && process.env.GITHUB_ACTIONS === 'true') {
+      // A workflow warning shows on the PR's checks page, so an exit-0 refusal is still seen.
+      console.log(
+        '::warning title=check:migrations - Supabase token refused::The ledger comparison did not run. ' +
+          `Renew the ${LEDGER_ENV.TOKEN} Actions secret (LIVE-273). PRs that touch a migration, and main pushes, fail until it is.`,
+      )
+    }
+    if (ledger.status === 'in-flight' && process.env.GITHUB_ACTIONS === 'true') {
+      console.log(
+        '::warning title=check:migrations - migration in flight::Production has a migration whose PR has not merged yet. ' +
+          'This PR touches no migration, so it is not failed (HYG-158). Update this branch after that PR merges.',
+      )
+    }
     if (!ledger.ok) process.exit(1)
     return
   }

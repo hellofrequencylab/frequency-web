@@ -29,7 +29,7 @@ Five types. **Visitor is the default fall-through**; the rest are the forks wort
 | Persona | id | "Who am I" | Marketing track (what we show) | Tag |
 |---|---|---|---|---|
 | 🧍 Visitor / regular member | `visitor` | "I want to find my people" | Feed · circles · events · why join | `persona_visitor` |
-| 🛠️ Practitioner | `practitioner` | "I have something to offer" | Host & build programs · grow a following · worldwide marketplace | `persona_practitioner` |
+| 🛠️ Practitioner | `practitioner` | "I have something to offer" | Sell tickets, bookings and Journeys · grow a following · open a Space and host for free | `persona_practitioner` |
 | 🏪 Partner business | `partner` | "I run a local spot" | Loyalty rewards · gamified foot traffic · local discovery | `persona_partner` |
 | 🤝 Community builder / volunteer | `builder` | "I want to help build it" | Lead a circle · welcome crew · earn guide | `persona_builder` |
 | 💡 Investor / Lab champion | `investor` | "I want a Frequency Lab in my town" | A Lab in your town · ground-floor partner · build the movement | `persona_investor` |
