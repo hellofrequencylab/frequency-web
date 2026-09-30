@@ -1,6 +1,0 @@
-{
-  "id": "OWN-077",
-  "append": {
-    "detail": "\n\n── OWNER RULING 2026-09-30 ~01:35Z on OWN-077 and OWN-087 (multiple choice, recorded by HYG-156, ADR-1672): \"I'll do both with my Space\". The owner seeds the Journey cohort run from their own Space. Recorded only: the row stays open until journey_runs is non-zero in production."
-  }
-}

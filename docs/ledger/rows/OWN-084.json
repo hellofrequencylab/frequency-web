@@ -1,9 +1,0 @@
-{
-  "id": "OWN-084",
-  "patch": {
-    "ownerAction": "waiting"
-  },
-  "append": {
-    "detail": "\n\n── RULED. 2026-09-29 ~19:10-19:20Z (HYG-138, ADR-1624): \"Nightly copy elsewhere\", option (a), built as HYG-144 with the account ask as OWN-088. 2026-09-30 ~01:35Z (multiple choice, recorded by HYG-156, ADR-1672): the provider is \"Cloudflare R2\", read through the env vars R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_BACKUP_BUCKET (bucket frequency-storage-backup) on Vercel Production. No ruling is left to make here, so ownerAction moves from ruling to waiting; the row stays open until the backup has run once, which is HYG-144's first nightly copy."
-  }
-}

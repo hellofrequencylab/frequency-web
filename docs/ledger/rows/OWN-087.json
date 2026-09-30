@@ -1,6 +1,0 @@
-{
-  "id": "OWN-087",
-  "append": {
-    "detail": "\n\n── OWNER RULING 2026-09-30 ~01:35Z on OWN-077 and OWN-087 (multiple choice, recorded by HYG-156, ADR-1672): \"I'll do both with my Space\". The owner runs a Journey cohort and verifies a business or practitioner persona from their own Space. Recorded only: the row stays open until journey_runs, journey_enrollments and profile_personas each carry a real row, read on production."
-  }
-}
