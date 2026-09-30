@@ -77,6 +77,31 @@ const executablePath = existsSync(PREINSTALLED_CHROMIUM)
  */
 export const SCREENSHOT_MAX_DIFF_PIXELS = 400;
 
+/**
+ * A BASE URL THAT WAS HANDED OVER MUST BE A URL (HYG-151, ADR-1669).
+ *
+ * On 2026-09-29 the repository's GitHub API quota was spent, e2e.yml's preview lookup read
+ * the error body `{"message":"Not Found",...}` as the preview URL, and every suite of #3066's
+ * pr-compare ran against it: "Cannot navigate to invalid URL", reported as failed @visual
+ * tests the PR never ran. An EMPTY value is the other half: every spec skips itself, and the
+ * job reports a green that tested nothing. So Playwright refuses to start instead:
+ *   - a non-empty PW_BASE_URL that is not an http(s) URL, anywhere;
+ *   - an empty PW_BASE_URL on GitHub Actions, where the workflow set it from a step output
+ *     that came back empty. Locally, unset or empty still means "skip", as the header says.
+ */
+export function refuseUnusableBaseUrl(env: Record<string, string | undefined>): void {
+  const base = env.PW_BASE_URL;
+  if (base === undefined) return;
+  if (base === '' && env.GITHUB_ACTIONS !== 'true') return;
+  if (!/^https?:\/\/[^\s/]+(\/\S*)?$/.test(base)) {
+    throw new Error(
+      `PW_BASE_URL is ${JSON.stringify(base)}, which is not an http(s) URL, so every test would run against nothing. ` +
+        'Playwright refuses to start rather than report failures (or skips) for tests it never ran (HYG-151).',
+    );
+  }
+}
+refuseUnusableBaseUrl(process.env);
+
 export default defineConfig({
   testDir: './test/e2e',
   // `*.spec.ts` ONLY. Playwright's default testMatch also picks up `*.test.ts`, which is
