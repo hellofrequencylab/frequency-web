@@ -39,8 +39,8 @@ const ORDER_STATUS_LABEL: Record<string, string> = {
 // One sale, with the seller's fulfilment door under it (LIVE-606). Before this the console summed the
 // sales into a count and a gross and listed none of them, so a maker who sold a mug had nowhere to
 // say it left. A split order that pays this maker (LIVE-624) is listed as their share: their lines,
-// their gross, a share line with the net and the payout state, and its fulfilment read-only (the
-// writer binds to the order's owner columns, which a split order leaves empty).
+// their gross, a share line with the net and the payout state, and a door that moves the maker's own
+// share (LIVE-705, ADR-1652: the writer finds it through their transfer row).
 function SaleRow({ o }: { o: CommerceOrder }) {
   const when = new Date(o.paidAt ?? o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   return (
@@ -57,7 +57,7 @@ function SaleRow({ o }: { o: CommerceOrder }) {
         <p className="shrink-0 text-body-sm font-semibold text-text">{usd(o.amountCents, o.currency)}</p>
       </div>
       <OrderShareNote order={o} />
-      <OrderFulfilmentControl order={o} action={setMyOrderFulfillmentAction.bind(null, o.id)} readOnly={o.share !== null} />
+      <OrderFulfilmentControl order={o} action={setMyOrderFulfillmentAction.bind(null, o.id)} />
     </div>
   )
 }

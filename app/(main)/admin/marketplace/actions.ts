@@ -111,6 +111,26 @@ export async function setOrderFulfillmentAction(id: string, status: FulfillmentS
   revalidatePath('/orders')
 }
 
+/** Move ONE seller's share of a split order along the fulfilment ladder (LIVE-705, ADR-1652). An
+ *  operator can mark any share; the writer finds it by the transfer row named here and only on this
+ *  order, and rolls the order up once the share has moved. A refusal is surfaced, as above. */
+export async function setShareFulfillmentAction(
+  orderId: string,
+  shareId: string,
+  status: FulfillmentStatus,
+  formData: FormData,
+): Promise<void> {
+  await requireOperator()
+  const result = await setOrderFulfillment(
+    orderId,
+    { status, carrier: String(formData.get('carrier') ?? ''), tracking: String(formData.get('tracking') ?? '') },
+    { kind: 'operator', shareId },
+  )
+  if (!result.ok) throw new Error(result.error)
+  revalidatePath('/admin/marketplace/orders')
+  revalidatePath('/orders')
+}
+
 /** Triage a marketplace report (reviewing / actioned / dismissed). */
 export async function moderateReportAction(id: string, status: ReportStatus): Promise<void> {
   await requireOperator()
