@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-733",
+  "title": "A split order the reconciler plans after a failed settle pays its sellers but never tells them they made a sale",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/commerce/transfers.ts",
+    "ref": "Found by the LIVE-706 builder (#3108): reconcileTransfers step 1 plans a paid split order with no transfer plan and logs commerce.transfer.plan_recovered; the sale notices only go from sendSplitOrderReceipts in lib/commerce/order-receipt.ts, which runs once, from the settle"
+  },
+  "detail": "FILED 2026-09-30 from the LIVE-706 builder's report (#3108). FINDING: a split order's seller notices go out from sendSplitOrderReceipts (lib/commerce/order-receipt.ts), called once by the settle, and only for the sellers the transfer ledger already lists. When the settle's transfer plan fails, the ledger is empty at that moment, so no seller is notified; the reconciler (reconcileTransfers step 1, lib/commerce/transfers.ts, run by app/api/cron/reconcile-transfers) later plans and pays that order, logs commerce.transfer.plan_recovered, and sends nothing. The seller gets paid for a sale nobody told them about. WHAT SHIPS: when step 1 recovers a plan, it sends each newly planned seller their sale notice for their share only (the same notifyEarner path the settle uses), once per seller, idempotent on a replay, and never a second buyer receipt. PROBE: the step 1 block of reconcileTransfers awaits a notice call next to plan_recovered.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/commerce/transfers.ts\",\"utf8\");const a=s.indexOf(\"export async function reconcileTransfers\");if(a<0){console.error(\"LIVE-733: reconcileTransfers is gone\");process.exit(1)}const b=s.indexOf(\"// 2.\",a);const step=s.slice(a,b<0?a+4000:b);if(!/plan_recovered/.test(step)){console.error(\"LIVE-733: the reconciler no longer plans a split order the settle missed\");process.exit(1)}if(!/await\\s+\\w*(Notice|notice|Notify|notify|Receipt|receipt)\\w*\\(/.test(step)){console.error(\"LIVE-733: the reconciler plans and pays a split order the settle missed, and sends its sellers no sale notice\");process.exit(1)}'",
+    "checked": "2026-09-30"
+  },
+  "wave": "W8"
+}

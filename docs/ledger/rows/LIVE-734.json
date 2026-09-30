@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-734",
+  "title": "The entity rail bundle still resolves the viewer once per module, because React cache() does not dedupe inside a Server Action",
+  "status": "open",
+  "priority": "P3",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/admin/modules/entity-rail-actions.ts",
+    "ref": "Found by the LIVE-655 builder: react-server-dom's getCacheForType returns a fresh Map outside a Flight render, and executeActionAndPrepareForRender runs the action outside one, so getCachedUser and currentViewer dedupe only within a page render"
+  },
+  "detail": "FILED 2026-09-30 from the LIVE-655 builder's report. FINDING: LIVE-655 bundled every circle, event, hub, nexus and practice rail module into one Server Action request (getEntityRailBundle, Promise.allSettled over the wanted reads). The request count fell, but each getter in the bundle still resolves the viewer for itself (one auth.getUser() plus the profile, stewardship and crew reads), because React cache() is a no-op inside a Server Action: react-server-dom's getCacheForType returns a fresh Map when no Flight render is active, and Next's executeActionAndPrepareForRender runs the action outside one. Confirmed from the compiled React and Next code, not a live trace. WHAT SHIPS: one viewer resolve per bundle, either a shared resolve per entity (the ADR-550 buildXData shape) or a memo scoped to one action under lib/auth.ts. Both touch the permission gates, so the change carries a test that every gate still sees the same viewer it saw before.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Filed 2026-09-30. Closes when one entity rail bundle request resolves the viewer once (auth.getUser() called once per bundle, shown by a test that counts it) and every getter's permission gate still passes its existing tests.",
+    "checked": "2026-09-30"
+  },
+  "wave": "W0d"
+}
