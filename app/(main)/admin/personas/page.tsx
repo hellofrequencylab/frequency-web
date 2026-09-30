@@ -14,7 +14,8 @@ import {
   connectBindingState,
   isMoneyPersona,
   CONNECT_BINDING_META,
-  CONNECT_WIRED,
+  personaActivationVerdict,
+  awaitingPayout,
   PERSONA_META,
   PERSONA_STATE_META,
   type PersonaQueueRow,
@@ -34,10 +35,11 @@ const STATE_TONE: Record<'pending' | 'success' | 'muted', StatusTone> = {
 function PersonaRow({ row, trust }: { row: PersonaQueueRow; trust?: number }) {
   const meta = PERSONA_META[row.persona]
   const stateMeta = PERSONA_STATE_META[row.state]
-  // The per-persona payout binding readout, shown only for the money programs (Practitioner,
-  // Organization). It stays dormant platform-wide until Connect is wired (EM2-5).
+  // The payout binding readout, shown only for the money programs (Practitioner, Organization).
+  // Activate is offered only when the member's Connect account can take charges (LIVE-696).
   const binding = isMoneyPersona(row.persona) ? connectBindingState(row) : null
   const bindingMeta = binding ? CONNECT_BINDING_META[binding] : null
+  const canActivate = personaActivationVerdict(row.persona, row.ownerPayout).ok
   return (
     <li className="flex flex-wrap items-center gap-3 px-4 py-3">
       <Link href={`/people/${row.handle ?? ''}`} className="flex min-w-0 flex-1 items-center gap-3">
@@ -66,7 +68,7 @@ function PersonaRow({ row, trust }: { row: PersonaQueueRow; trust?: number }) {
         </StatusChip>
       )}
       <StatusChip tone={STATE_TONE[stateMeta.tone]}>{stateMeta.label}</StatusChip>
-      <PersonaControls profileId={row.profileId} persona={row.persona} state={row.state} />
+      <PersonaControls profileId={row.profileId} persona={row.persona} state={row.state} canActivate={canActivate} />
     </li>
   )
 }
@@ -116,13 +118,14 @@ export default async function AdminPersonasPage() {
   const money = pendingFirst(queue.filter((r) => isMoneyPersona(r.persona)))
   const other = pendingFirst(queue.filter((r) => !isMoneyPersona(r.persona)))
   const moneyPending = money.filter((r) => r.state === 'claimed').length
+  const awaitingAccount = money.filter((r) => awaitingPayout(r.persona, r.state, r.ownerPayout)).length
 
   return (
     <AdminTemplate
       title="Partner verification"
       icon={BadgeCheck}
       eyebrow="People"
-      description="Vet partner program claims. Verify to turn a program’s tools on; suspend to revoke. Practitioner and Organization run the money paths, so their payout binding lands with Stripe Connect."
+      description="Vet partner program claims. Verify to turn a program’s tools on; suspend to revoke. Practitioner and Organization run the money paths, so they go Active only once the member has a payout account."
     >
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Pending review" value={stats.pending} icon={Clock} />
@@ -131,11 +134,11 @@ export default async function AdminPersonasPage() {
         <StatCard label="Suspended" value={stats.suspended} icon={Ban} />
       </div>
 
-      {!CONNECT_WIRED && (
-        <Banner tone="info" title="Payout binding is dormant">
-          Stripe Connect is not live yet, so a program can reach Verified (every partner tool turns on)
-          but not Active. The per-persona payout binding for Practitioner and Organization arrives with
-          Connect, which is owner-gated on EIN and billing.
+      {awaitingAccount > 0 && (
+        <Banner tone="info" title={`${awaitingAccount} verified, waiting on a payout account`}>
+          Their tools are on. Activate appears once the member adds a payout account in Settings under
+          Billing, and activating binds that account to the program. They see the same prompt on
+          their Partner programs page.
         </Banner>
       )}
 
@@ -144,7 +147,7 @@ export default async function AdminPersonasPage() {
         description={
           moneyPending
             ? `${moneyPending} waiting on you. These run the money paths.`
-            : 'The money-path programs. Verify turns the tools on; payout binding waits on Connect.'
+            : 'The money-path programs. Verify turns the tools on; Active needs the member’s payout account.'
         }
       >
         <PersonaQueueList

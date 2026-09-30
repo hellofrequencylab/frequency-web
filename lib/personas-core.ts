@@ -77,17 +77,11 @@ export const PERSONA_META: Record<
 // a staff operator runs the verify → activate ladder (and can suspend/reinstate).
 // "Lit" = the persona's matrix surfaces are on. Only VERIFIED + ACTIVE light up —
 // a bare claim is pending review, so partner tools wait on verification (the point
-// of P2.7). The per-persona Stripe Connect binding (activate's money gate) is stubbed.
+// of P2.7). Activating a money persona binds its member's Stripe Connect account and is
+// refused without one that can take charges (LIVE-696, personaActivationVerdict below).
 
 /** The states whose partner surfaces are live (light the access matrix). */
 export const LIVE_PERSONA_STATES: readonly PersonaState[] = ['verified', 'active'] as const
-
-/** Whether the per-persona Stripe Connect / money binding is wired (site-audit BUG-7). Until
- *  Connect lands this is false, so ACTIVATION is blocked everywhere: the verified→active money
- *  gate can't silently succeed without a payment binding. Flip to true when Connect ships.
- *  Note: `verified` already lights every partner surface (LIVE_PERSONA_STATES), so blocking
- *  `active` withholds nothing operational today — it only stops the unbacked money state. */
-export const CONNECT_WIRED = false
 
 export const PERSONA_STATE_META: Record<
   PersonaState,
@@ -108,17 +102,58 @@ const STAFF_TRANSITIONS: Record<PersonaState, readonly PersonaState[]> = {
   suspended: ['verified'], // reinstate without forcing a re-claim
 }
 
-/** Whether a staff operator may move a persona from `from` to `to`. Activation is gated on the
- *  Connect money binding (BUG-7): while it's unwired, no transition to `active` is allowed, so the
- *  state can never be reached without the payment binding. */
+/** Whether the ladder lets a staff operator move a persona from `from` to `to`. The ladder only:
+ *  activating a money persona is ALSO gated on a payout account, which the ladder cannot see, so
+ *  every activate path asks personaActivationVerdict as well (LIVE-696). */
 export function canStaffTransition(from: PersonaState, to: PersonaState): boolean {
-  if (to === 'active' && !CONNECT_WIRED) return false
   return STAFF_TRANSITIONS[from]?.includes(to) ?? false
 }
 
-/** Whether a money persona in `state` is waiting on the Connect binding: it is verified (or active)
- *  and Connect is not wired yet. Read here, beside the flag, so a caller's branch depends on the
- *  row's state and not on a constant it imported (HYG-143, CodeQL js/trivial-conditional). */
-export function awaitingConnect(state: PersonaState): boolean {
-  return !CONNECT_WIRED && (state === 'verified' || state === 'active')
+// ── The payout gate at `active` (LIVE-696, ADR-1676) ─────────────────────────
+// A money persona (Practitioner, Organization) goes Active only with a Stripe Connect account
+// behind it that can take charges. That account is the member's ONE Connect account
+// (profiles.stripe_account_id, lib/billing/connect.ts), the same one every money path pays out
+// to, so there is no second onboarding: activation binds its id onto the persona row
+// (profile_personas.stripe_account_id). Collaborator and Business take no money and carry no
+// binding, so the ladder alone decides them.
+
+/** The member's mirrored Connect flags, as much of them as the gate reads. */
+export interface PersonaPayout {
+  accountId: string | null
+  chargesEnabled: boolean
+}
+
+/** Where the member adds the account: the payouts card every money path already points at. */
+export const PERSONA_PAYOUT_HREF = '/settings/billing#payouts'
+
+/** What an operator reads when Activate is refused. Names the fix and where it lives. */
+export const PERSONA_NEEDS_PAYOUT =
+  'This member has no payout account that can take money yet. They add one in Settings under Billing, then you can activate.'
+
+export type PersonaActivationVerdict =
+  | { ok: true; bindAccountId: string | null }
+  | { ok: false; reason: string }
+
+/** May this persona go Active with this payout account behind it? PURE and total. A money persona
+ *  needs an account id AND charges enabled, and the verdict carries the id to bind. Anything else
+ *  (no account, an unfinished one, or null for a read that failed) is refused. Fail closed: an
+ *  Active seller with nowhere for the money to land is the defect this gate exists for. */
+export function personaActivationVerdict(
+  persona: PartnerPersona,
+  payout: PersonaPayout | null,
+): PersonaActivationVerdict {
+  if (!isMoneyPersona(persona)) return { ok: true, bindAccountId: null }
+  if (payout?.accountId && payout.chargesEnabled) return { ok: true, bindAccountId: payout.accountId }
+  return { ok: false, reason: PERSONA_NEEDS_PAYOUT }
+}
+
+/** Whether a verified persona is waiting on its member's payout account before it can go Active.
+ *  The one case the member is prompted to add one (/partners/join) and the operator's Activate
+ *  button stays off (/admin/personas). */
+export function awaitingPayout(
+  persona: PartnerPersona,
+  state: PersonaState,
+  payout: PersonaPayout | null,
+): boolean {
+  return state === 'verified' && !personaActivationVerdict(persona, payout).ok
 }
