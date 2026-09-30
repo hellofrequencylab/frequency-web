@@ -14,6 +14,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Compass } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
+import { IconButton } from '@/components/ui/icon-button'
 import { isError } from '@/lib/action-result'
 import type { PlacementPick, PlacementSuggestion } from '@/lib/practices/suggest'
 import { acceptPracticePlacementAction, suggestPracticePlacementAction } from '../actions'
@@ -117,16 +118,13 @@ export function PracticePlacementButton({ id, title }: { id: string; title: stri
 
   return (
     <>
-      <button
-        type="button"
-        onClick={look}
-        title={`Suggest a Pillar and Sub Focus for ${title}`}
-        aria-label={`Suggest a Pillar and Sub Focus for ${title}`}
-        // A 24px hit box around the 14px icon: WCAG 2.2 target-size, beside the row's View link (LIVE-737).
-        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-      >
+      {/* The kit's icon control: 32px around the 14px icon (44px on a coarse pointer), which clears
+          WCAG 2.2 target-size (LIVE-737) and brings the focus ring and press state with it.
+          No h-6 override: `cn` is a plain join, so a size className would be settled by
+          stylesheet order, not by this call site. */}
+      <IconButton label={`Suggest a Pillar and Sub Focus for ${title}`} onClick={look} className="shrink-0">
         <Compass className="h-3.5 w-3.5" aria-hidden />
-      </button>
+      </IconButton>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Suggested placement" className="max-w-md">
         <div className="rounded-card border border-border bg-surface p-5 shadow-pop">
