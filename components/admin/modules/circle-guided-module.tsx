@@ -9,20 +9,23 @@
 // rendered and protected nothing. Fixed in lib/studio/kernel/redraw.ts (ADR-996), so pinning the
 // group's own norms now holds through a redraw.
 
+import { useCallback } from 'react'
 import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
 import { getCircleAdminData } from '@/app/(main)/circles/admin-actions'
 import { redrawCircleAction, restoreCircleAction, type CircleRedrawResult } from '@/app/(main)/circles/actions'
 import { GuidedModule } from './guided-module'
+import { useEntityRailRead } from './entity-rail-data'
 
 const routeKey = (pathname: string) => pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
-
-/** getCircleAdminData returns null unless the viewer holds circle.editSettings, so a non-host
- *  resolves to no entity and the section renders nothing. */
-const resolve = async (slug: string) => (await getCircleAdminData(slug))?.id ?? null
 
 const restore = (id: string, before: CircleRedrawResult['before']) => restoreCircleAction(id, before)
 
 export function CircleGuidedModule() {
+  /** getCircleAdminData returns null unless the viewer holds circle.editSettings, so a non-host
+   *  resolves to no entity and the section renders nothing. Its first read comes from the rail's one
+   *  bundled request (ADR-1685), the same read Settings and the Circle Quest block make. */
+  const readAdmin = useEntityRailRead('circle', 'admin', getCircleAdminData)
+  const resolve = useCallback(async (slug: string) => (await readAdmin(slug))?.id ?? null, [readAdmin])
   return (
     <GuidedModule
       moduleId="circle.guided"

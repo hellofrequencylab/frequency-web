@@ -11,7 +11,7 @@ import {
   getCircleAdminData,
   updateCircleSettings,
   updateCirclePermalink,
-  setCircleChannelAction,
+  setCircleChannelsAction,
   setCircleAccessAction,
   setCircleCoverUrl,
   removeCircleCover,
@@ -28,7 +28,9 @@ import {
   CIRCLE_ACCESS_LIMIT_NOTE,
   type CircleAccess,
 } from '@/lib/circles/visibility'
+import { CIRCLE_MAX_CHANNELS } from '@/lib/circles/channels'
 import { CIRCLE_RAIL, circleRailValues, circleSettingsFormData, type CircleRailValues } from './circle-rail-plan'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Circle settings" (EMBEDDED-ADMIN.md / ADR-133), rendered inside the page admin rail on a
 // /circles/[slug] page. The rail section header is the single title. The main fields autosave and reflect
@@ -63,6 +65,8 @@ export function CircleSettingsModule() {
   const pathname = usePathname()
   const router = useRouter()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('circle', 'admin', getCircleAdminData)
 
   const [data, setData] = useState<CircleData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -81,7 +85,7 @@ export function CircleSettingsModule() {
   const [permaErr, setPermaErr] = useState<string | null>(null)
   const [permaPending, startPerma] = useTransition()
 
-  const [channelId, setChannelId] = useState('')
+  const [channelIds, setChannelIds] = useState<string[]>([])
   const [channelErr, setChannelErr] = useState<string | null>(null)
   const [channelPending, startChannel] = useTransition()
 
@@ -92,7 +96,7 @@ export function CircleSettingsModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCircleAdminData(slug).then((d) => {
+    readAdmin(slug).then((d) => {
       if (active) {
         setData(d)
         if (d) {
@@ -100,7 +104,7 @@ export function CircleSettingsModule() {
           valuesRef.current = initial
           setValues(initial)
           setPermalink(d.slug)
-          setChannelId(d.topical_channel_id ?? '')
+          setChannelIds(d.channel_ids)
           setAccess(d.access)
         }
         setLoading(false)
@@ -109,7 +113,7 @@ export function CircleSettingsModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readAdmin])
 
   if (!slug) return null
   if (loading) {
@@ -135,22 +139,29 @@ export function CircleSettingsModule() {
     })
   }
 
-  /** Declare the circle's Channel (ADR-871). Its own action, not the autosave form:
-   *  the save can be REFUSED (a paused Program takes no new Circles), and that
-   *  refusal has to land next to the select, with the pick rolled back. */
-  function handleChannel(next: string) {
-    const prev = channelId
-    setChannelId(next)
+  /** Declare the circle's one to three Channels (ADR-871, LIVE-666), primary first. Its own action,
+   *  not the autosave form: the save can be REFUSED (a paused Program takes no new Circles, a fourth
+   *  Channel has no room), and that refusal has to land next to the picker, with the pick rolled back. */
+  function handleChannels(next: string[]) {
+    const prev = channelIds
+    setChannelIds(next)
     setChannelErr(null)
     startChannel(async () => {
-      const res = await setCircleChannelAction(circleId, circleSlug, next || null)
+      const res = await setCircleChannelsAction(circleId, circleSlug, next)
       if ('error' in res) {
         setChannelErr(res.error)
-        setChannelId(prev)
+        setChannelIds(prev)
       } else {
         router.refresh()
       }
     })
+  }
+  const channelName = (id: string) => {
+    for (const g of data.channel_groups) {
+      const hit = g.channels.find((c) => c.id === id)
+      if (hit) return hit.paused ? `${hit.name} (paused)` : hit.name
+    }
+    return 'A Channel no longer listed'
   }
 
   /** Set who may enter the circle (axis 2, ADR-1015). Its own action for the same reason the
@@ -234,35 +245,68 @@ export function CircleSettingsModule() {
         </div>
       )}
 
-      {/* Channel: its own action, for the same reason. The manifest names the `channels`
-          collection; the surface loads it grouped by Pillar, which the kit's flat reference
-          select has no row for, so the select stays here under the manifest's label. */}
+      {/* Channels: its own action, for the same reason. The manifest names the `channels`
+          collection and declares a multiselect; the surface loads it grouped by Pillar, which the
+          kit has no row for, so the picker stays here under the manifest's label. One to three
+          (CIRCLE_MAX_CHANNELS, LIVE-666): the chosen list, the first marked primary, then a select
+          that adds one more until the Circle carries three. */}
       {CHANNEL && (
         <div className="space-y-1.5">
           <label htmlFor="circle-channel" className={fieldLabel}>
             {CHANNEL.label}
           </label>
-          <Select
-            id="circle-channel"
-            value={channelId}
-            onChange={(e) => handleChannel(e.target.value)}
-            disabled={channelPending}
-            emptyLabel="No Channel"
-          >
-            {data.channel_groups.map((g) => (
-              <optgroup key={g.pillar} label={g.pillar}>
-                {g.channels.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                    {c.paused ? ' (paused)' : ''}
-                  </option>
+          {channelIds.length > 0 && (
+            <ul className="space-y-1">
+              {channelIds.map((id, i) => (
+                <li
+                  key={id}
+                  className="flex items-center justify-between gap-2 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm text-text"
+                >
+                  <span className="min-w-0 truncate">
+                    {channelName(id)}
+                    {i === 0 && channelIds.length > 1 ? <span className="ml-1.5 text-2xs text-muted">Primary</span> : null}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleChannels(channelIds.filter((c) => c !== id))}
+                    disabled={channelPending}
+                    aria-label={`Take ${channelName(id)} off this circle`}
+                    className="shrink-0 text-meta font-semibold text-muted transition-colors hover:text-text disabled:opacity-40"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {channelIds.length < CIRCLE_MAX_CHANNELS && (
+            <Select
+              id="circle-channel"
+              value=""
+              onChange={(e) => {
+                if (e.target.value) handleChannels([...channelIds, e.target.value])
+              }}
+              disabled={channelPending}
+              emptyLabel={channelIds.length === 0 ? 'No Channel' : 'Add another Channel'}
+            >
+              {data.channel_groups
+                .map((g) => ({ ...g, channels: g.channels.filter((c) => !channelIds.includes(c.id)) }))
+                .filter((g) => g.channels.length > 0)
+                .map((g) => (
+                  <optgroup key={g.pillar} label={g.pillar}>
+                    {g.channels.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                        {c.paused ? ' (paused)' : ''}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
-              </optgroup>
-            ))}
-          </Select>
+            </Select>
+          )}
           <p className="text-2xs text-muted">
-            The Channel this circle practices in. It shows up on that Channel&apos;s page, and its
-            posts join that feed.
+            Up to three Channels this circle practices in. It shows up on each Channel&apos;s page. Its
+            posts join the first one&apos;s feed.
           </p>
           {channelErr && <span className="text-meta font-medium text-danger">{channelErr}</span>}
         </div>

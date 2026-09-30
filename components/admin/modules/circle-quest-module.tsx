@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { getCircleAdminData } from '@/app/(main)/circles/admin-actions'
 import type { CircleQuestItem } from '@/app/(main)/circles/admin-actions'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Circle Quest" admin module. Lists (read-only) the Journeys and Practices this group has
 // adopted. Self-loads via getCircleAdminData, which returns null unless the caller holds
@@ -20,6 +21,8 @@ type CircleData = NonNullable<Awaited<ReturnType<typeof getCircleAdminData>>>
 export function CircleQuestModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('circle', 'admin', getCircleAdminData)
 
   const [data, setData] = useState<CircleData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -27,7 +30,7 @@ export function CircleQuestModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCircleAdminData(slug).then((d) => {
+    readAdmin(slug).then((d) => {
       if (active) {
         setData(d)
         setLoading(false)
@@ -36,7 +39,7 @@ export function CircleQuestModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readAdmin])
 
   if (!slug) return null
   if (loading) {

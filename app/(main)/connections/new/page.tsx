@@ -16,9 +16,9 @@ export default async function NewProfilePage() {
 
   return (
     <FocusTemplate
-      title="New profile"
-      description="Scan a card or poster, or enter details by hand with Vera’s help. Saved privately to you."
-      back={{ href: '/connections', label: 'Profiles' }}
+      title="Add a contact"
+      description="Scan a card or poster, or type the details in with Vera’s help. Only you can see it."
+      back={{ href: '/connections', label: 'My Contacts' }}
     >
       <Creator userId={user.id} />
     </FocusTemplate>

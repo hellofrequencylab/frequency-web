@@ -7,6 +7,7 @@ const SOURCE_LABEL: Record<string, string> = {
   poster: 'From a poster',
   manual: 'Added by hand',
   import: 'Imported',
+  qr_scan: 'From a QR scan',
 }
 
 function fmtDate(iso: string | null): string | null {

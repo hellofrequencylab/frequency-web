@@ -70,7 +70,7 @@ export function PromoteToContacts({
     return (
       <div className="space-y-2">
         <p className="text-body-sm text-subtle">
-          Add {name} to the shared Frequency contacts database as an unconfirmed lead. They stay in your
+          Add {name} to Frequency contacts, the shared contact list, marked unconfirmed. They stay in your
           private book too.
         </p>
         <button
@@ -90,7 +90,7 @@ export function PromoteToContacts({
       <ul className="space-y-1.5 text-body-sm text-muted">
         <li className="flex gap-2">
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
-          They join the shared contacts database as an unconfirmed lead.
+          They join Frequency contacts, marked unconfirmed.
         </li>
         <li className="flex gap-2">
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />
@@ -115,7 +115,7 @@ export function PromoteToContacts({
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <BookUser className="h-4 w-4" aria-hidden />}
-          Add to contacts
+          Add to Frequency contacts
         </button>
         <button
           type="button"
