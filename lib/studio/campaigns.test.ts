@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseSegmentKey, TRAIT_SEGMENT_PREFIX } from './campaigns'
+import { parseSegmentKey, TRAIT_SEGMENT_PREFIX, campaignEmail } from './campaigns'
+import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 
 describe('parseSegmentKey', () => {
   it('treats unprefixed keys as built-in audiences', () => {
@@ -44,5 +45,15 @@ describe('parseSegmentKey', () => {
     expect(parseSegmentKey('profiles:')).toEqual({ kind: 'profiles', ids: [] })
     expect(parseSegmentKey('contact:')).toEqual({ kind: 'contacts', ids: [] })
     expect(parseSegmentKey('event:')).toEqual({ kind: 'event', id: '' })
+  })
+})
+
+describe('campaignEmail — CAN-SPAM footer (LIVE-728)', () => {
+  it('prints the platform postal address after the unsubscribe link, in the html and the text part', () => {
+    const { html, text } = campaignEmail('Hello there.', 'https://frequencylocal.com/u/abc')
+    expect(html).toContain(PLATFORM_POSTAL_LINE)
+    expect(html.indexOf(PLATFORM_POSTAL_LINE)).toBeGreaterThan(html.indexOf('/u/abc'))
+    expect(text).toContain(PLATFORM_POSTAL_LINE)
+    expect(text.indexOf(PLATFORM_POSTAL_LINE)).toBeGreaterThan(text.indexOf('/u/abc'))
   })
 })
