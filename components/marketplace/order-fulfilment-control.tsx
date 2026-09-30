@@ -1,6 +1,6 @@
 import { Truck } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
-import { fieldClasses } from '@/components/ui/field'
+import { Input } from '@/components/ui/field'
 import type { CommerceOrder } from '@/lib/commerce/orders'
 import type { FulfillmentStatus } from '@/lib/commerce/types'
 import { FULFILLMENT_LABEL, FULFILLMENT_STEP_LABEL, nextFulfillmentStep } from '@/lib/commerce/fulfilment-state'
@@ -56,17 +56,17 @@ export function OrderFulfilmentControl({
             <>
               <label className="flex flex-col gap-1 text-meta text-muted">
                 Carrier
-                <input
+                <Input
                   name="carrier"
                   defaultValue={f.carrier ?? ''}
                   placeholder="USPS, UPS, FedEx"
                   maxLength={60}
-                  className={`${fieldClasses} w-full text-body-sm sm:w-40`}
+                  className="w-full text-body-sm sm:w-40"
                 />
               </label>
               <label className="flex flex-col gap-1 text-meta text-muted">
                 Tracking number
-                <input name="tracking" defaultValue={f.tracking ?? ''} maxLength={120} className={`${fieldClasses} w-full text-body-sm sm:w-52`} />
+                <Input name="tracking" defaultValue={f.tracking ?? ''} maxLength={120} className="w-full text-body-sm sm:w-52" />
               </label>
             </>
           )}

@@ -9,13 +9,14 @@
 import { useId, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Sparkles, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Label, Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import type { CurationGaps } from '@/lib/ai/practice-curate'
 import { acceptPracticeCurationAction, draftPracticeCurationAction } from '@/app/(main)/admin/content/actions'
 
 const chip =
-  'inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold transition-colors disabled:opacity-50'
+  'inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold transition-colors disabled:opacity-50'
 
 export function CurateWithVera({ practiceId, title, gaps }: { practiceId: string; title: string; gaps: CurationGaps }) {
   const router = useRouter()
@@ -79,21 +80,22 @@ export function CurateWithVera({ practiceId, title, gaps }: { practiceId: string
   return (
     <div className="mt-2 space-y-2">
       {!open && (gaps.hook || gaps.tags) && (
-        <button
+        <Button
           type="button"
+          variant="primarySoft"
+          size="sm"
           onClick={draft}
           disabled={drafting}
           title="Vera drafts only what is empty. You decide what goes in."
           aria-label={`Fill ${title} with Vera`}
-          className={`${chip} text-primary-strong hover:bg-primary/10`}
         >
           <Sparkles className="h-3.5 w-3.5" aria-hidden />
           {drafting ? 'Drafting…' : 'Fill with Vera'}
-        </button>
+        </Button>
       )}
 
       {open && (
-        <div className="space-y-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+        <div className="space-y-2 rounded-card border border-border bg-surface-elevated/40 p-3">
           {nothing ? (
             <p className="text-meta text-muted">Vera had nothing to offer here. Fill it by hand.</p>
           ) : (
