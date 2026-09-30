@@ -6,6 +6,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { authorizeAction } from '@/lib/admin/guard'
 import { createProduct, setProductStatus, updateProduct, deleteProduct } from '@/lib/commerce/products'
 import { refundCommerceOrder } from '@/lib/commerce/checkout'
+import { retryOrderTransfer } from '@/lib/commerce/transfer-retry'
 import { setOrderFulfillment } from '@/lib/commerce/fulfilment'
 import { setReportStatus, type ReportStatus } from '@/lib/commerce/reports'
 import { setDisputeStatus, orderForDispute } from '@/lib/commerce/disputes'
@@ -80,6 +81,17 @@ export async function refundOrderAction(id: string): Promise<void> {
   // never moved money.
   const res = await refundCommerceOrder(id)
   if (res.error) throw new Error(res.error)
+  revalidatePath('/admin/marketplace/orders')
+}
+
+/** Send one planned or failed transfer of a split order again (LIVE-624, ADR-1616). Runs the row
+ *  through the same idempotent path the reconciler uses; on a row past the attempt ceiling it opens
+ *  exactly one more attempt. A refusal is surfaced, the way refundOrderAction does; an attempt that
+ *  ran and failed is on the row with its error, which the ledger shows. */
+export async function retryOrderTransferAction(transferId: string): Promise<void> {
+  await requireOperator()
+  const res = await retryOrderTransfer(transferId)
+  if (!res.ok) throw new Error(res.error)
   revalidatePath('/admin/marketplace/orders')
 }
 

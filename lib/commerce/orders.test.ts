@@ -35,15 +35,18 @@ vi.mock('@/lib/supabase/admin', () => ({
       or: () => chain,
       in: () => chain,
       not: () => chain,
+      order: () => chain,
+      limit: () => chain,
       then: (resolve: (v: { data: Record<string, unknown>[]; error: null }) => unknown) => {
-        const data =
-          table === 'event_tickets'
-            ? ticketRows
-            : table === 'events'
-              ? eventRows
-              : table === 'space_donations'
-                ? donationRows
-                : rows
+        // The split-share arm (LIVE-624) reads the transfer ledger; none here, so every figure below
+        // reads as it did. lib/commerce/orders-split.test.ts owns that arm.
+        const byTable: Record<string, Record<string, unknown>[]> = {
+          commerce_order_transfers: [],
+          event_tickets: ticketRows,
+          events: eventRows,
+          space_donations: donationRows,
+        }
+        const data = byTable[table] ?? rows
         return Promise.resolve(resolve({ data, error: null }))
       },
     }

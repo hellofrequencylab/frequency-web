@@ -6,7 +6,7 @@ import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
-import { listOrdersForBuyer, type CommerceOrder } from '@/lib/commerce/orders'
+import { listOrdersForBuyer, sellerNames, sellerNameKey, type CommerceOrder } from '@/lib/commerce/orders'
 import { disputesForOrders, type CommerceDispute } from '@/lib/commerce/disputes'
 import { DisputeButton } from '@/components/marketplace/dispute-button'
 import { FULFILLMENT_LABEL } from '@/lib/commerce/fulfilment-state'
@@ -14,6 +14,8 @@ import { FULFILLMENT_LABEL } from '@/lib/commerce/fulfilment-state'
 // My Orders — a member's purchase history across Makers + Shop. Checkout's success_url
 // lands here. Connect-only verticals (General / Housing) never create orders. An order that needs
 // sending shows where it stands and the tracking link once the seller marks it shipped (LIVE-606).
+// A split order (one payment, several sellers, LIVE-621) lists its lines under each seller's name, so
+// the buyer can tell who is sending what (LIVE-624).
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'My orders' }
@@ -30,7 +32,31 @@ const STATUS_TONE: Record<string, string> = {
   failed: 'bg-surface-elevated text-warning',
 }
 
-function OrderCard({ order, dispute }: { order: CommerceOrder; dispute: CommerceDispute | null }) {
+type Line = CommerceOrder['items'][number]
+
+/** The order's lines, one group per seller on a split order and one unlabelled group otherwise. PURE. */
+function lineGroups(order: CommerceOrder, names: Map<string, string>): { key: string; label: string | null; items: Line[] }[] {
+  if (order.fundsFlow !== 'separate') return [{ key: 'all', label: null, items: order.items }]
+  const groups = new Map<string, { key: string; label: string; items: Line[] }>()
+  for (const it of order.items) {
+    const key = it.seller ? sellerNameKey(it.seller) : 'unknown'
+    const label = it.seller ? names.get(key) ?? (it.seller.kind === 'space' ? 'A Space' : 'A maker') : 'A seller'
+    const g = groups.get(key) ?? { key, label, items: [] }
+    g.items.push(it)
+    groups.set(key, g)
+  }
+  return [...groups.values()]
+}
+
+function OrderCard({
+  order,
+  dispute,
+  names,
+}: {
+  order: CommerceOrder
+  dispute: CommerceDispute | null
+  names: Map<string, string>
+}) {
   const when = new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   // A dispute makes sense on a completed purchase, not a failed / cancelled checkout.
   const disputable = order.status === 'paid' || order.status === 'fulfilled'
@@ -46,17 +72,22 @@ function OrderCard({ order, dispute }: { order: CommerceOrder; dispute: Commerce
           {order.status}
         </span>
       </div>
-      <ul className="mt-3 space-y-1">
-        {order.items.map((it) => (
-          <li key={it.id} className="flex items-center justify-between gap-3 text-body-sm text-text">
-            <span>
-              {it.title}
-              {it.qty > 1 && <span className="text-subtle"> × {it.qty}</span>}
-            </span>
-            <span className="text-muted">{usd(it.subtotalCents, order.currency)}</span>
-          </li>
-        ))}
-      </ul>
+      {lineGroups(order, names).map((g) => (
+        <div key={g.key} data-order-seller={g.label ? g.key : undefined} className="mt-3">
+          {g.label && <p className="text-meta font-medium text-subtle">From {g.label}</p>}
+          <ul className="mt-1 space-y-1">
+            {g.items.map((it) => (
+              <li key={it.id} className="flex items-center justify-between gap-3 text-body-sm text-text">
+                <span>
+                  {it.title}
+                  {it.qty > 1 && <span className="text-subtle"> × {it.qty}</span>}
+                </span>
+                <span className="text-muted">{usd(it.subtotalCents, order.currency)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
       {shippingState && (
         <p data-order-fulfilment className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
           <Truck className="h-4 w-4 shrink-0" aria-hidden />
@@ -92,7 +123,11 @@ export default async function OrdersPage() {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in?next=/orders')
   const orders = await listOrdersForBuyer(profileId)
-  const disputes = await disputesForOrders(orders.map((o) => o.id))
+  const [disputes, names] = await Promise.all([
+    disputesForOrders(orders.map((o) => o.id)),
+    // Seller names only for split orders, the one card that labels its lines by seller.
+    sellerNames(orders.filter((o) => o.fundsFlow === 'separate').flatMap((o) => o.items.flatMap((it) => (it.seller ? [it.seller] : [])))),
+  ])
 
   const hero = await resolveIndexHero('/orders')
 
@@ -118,7 +153,7 @@ export default async function OrdersPage() {
       ) : (
         <div className="space-y-4">
           {orders.map((o) => (
-            <OrderCard key={o.id} order={o} dispute={disputes.get(o.id) ?? null} />
+            <OrderCard key={o.id} order={o} dispute={disputes.get(o.id) ?? null} names={names} />
           ))}
         </div>
       )}

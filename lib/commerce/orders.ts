@@ -1,14 +1,31 @@
 // Order reads for the commerce core (ADR-39X). Buyers see what they bought, sellers
 // (makers / Spaces) see their sales, operators see everything + can refund. Server-only
 // (admin client behind app-code authz); settlement + refund live in ./checkout.ts.
+//
+// A SPLIT ORDER (funds_flow 'separate', LIVE-621) names no seller on its own row: owner_kind is
+// 'split' and both owner ids are null, so a read keyed on the owner columns never finds it. Each
+// seller's claim on it is their row in `commerce_order_transfers` (LIVE-622). The two seller reads
+// below therefore union the orders a seller owns with the split orders that carry a transfer row
+// for them, and return each of those as THAT seller's view of it (LIVE-624, ADR-1616): their lines
+// only, their gross and fee in amountCents and platformFeeCents, and `share` with the net and the
+// transfer's state. The whole cart, and every other seller's figures, never leave this module on a
+// seller read. spaceEarningsSummary sums the share the same way.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { OrderStatus, OwnerKind, FulfillmentStatus } from './types'
+import type { OrderStatus, OwnerKind, OrderOwnerKind, FulfillmentStatus, FundsFlow } from './types'
+import type { TransferStatus } from './transfers'
 import { fulfilmentFromShipping, orderNeedsFulfilment, orderShips, type OrderFulfilment } from './fulfilment-state'
 
 function db(): SupabaseClient {
   return createAdminClient()
+}
+
+/** Who sold a line: the product's owner at read time. Null when the product is gone. */
+export interface OrderLineSeller {
+  kind: OwnerKind
+  profileId: string | null
+  spaceId: string | null
 }
 
 interface OrderItem {
@@ -20,12 +37,31 @@ interface OrderItem {
   /** The product's kind at read time (physical, digital, service, booking, ticket, journey), or null
    *  when the product is gone. Decides whether the seller has anything to send (LIVE-606). */
   productKind: string | null
+  /** The seller of this line, so a split order can be shown seller by seller (LIVE-624). */
+  seller: OrderLineSeller | null
 }
+
+/** One seller's share of a split order, from their row in commerce_order_transfers (LIVE-624). */
+export interface OrderShare {
+  /** What this seller's lines came to: the transfer plus the fee kept from it. */
+  grossCents: number
+  feeCents: number
+  /** What the transfer pays this seller. */
+  netCents: number
+  /** Cents pulled back from this seller's transfer so far. */
+  reversedCents: number
+  transferStatus: TransferStatus
+}
+
+/** A seller, as the two seller reads take one. The caller has already verified the viewer may act
+ *  for it (the maker is the signed-in profile; the Space was resolved through its manage access). */
+export type OrderSellerRef = { kind: 'profile'; id: string } | { kind: 'space'; id: string }
 
 export interface CommerceOrder {
   id: string
   buyerProfileId: string | null
-  ownerKind: OwnerKind
+  /** 'split' for an order that pays more than one seller (LIVE-621). */
+  ownerKind: OrderOwnerKind
   ownerProfileId: string | null
   ownerSpaceId: string | null
   amountCents: number
@@ -43,25 +79,52 @@ export interface CommerceOrder {
   paidAt: string | null
   refundedAt: string | null
   items: OrderItem[]
+  /** Which funds flow the order took. 'separate' is a split order paid by transfers (LIVE-622). */
+  fundsFlow: FundsFlow
+  /** How many sellers the order pays: 1 for a destination order, one per share for a split order. */
+  sellerCount: number
+  /** Set ONLY on a seller's own read of a split order: their share and its transfer state. On such a
+   *  read amountCents and platformFeeCents are this share's and items are this seller's lines.
+   *  Null on every other read (a destination order, the buyer's view, the operator's view). */
+  share: OrderShare | null
 }
 
 const ORDER_COLS =
   'id, buyer_profile_id, owner_kind, owner_profile_id, owner_space_id, amount_cents, platform_fee_cents, ' +
-  'currency, status, fulfillment_status, shipping, created_at, paid_at, refunded_at, ' +
+  'currency, status, fulfillment_status, shipping, created_at, paid_at, refunded_at, funds_flow, metadata, ' +
   // The product's kind rides along through the product_id join so a surface can tell a mug from a
   // booking without a second read; a deleted product reads null and defaults to "needs sending".
-  'commerce_order_items(id, title, qty, unit_cents, subtotal_cents, commerce_products(product_kind))'
+  // Its owner rides along too, so a split order's lines can be told apart by seller (LIVE-624).
+  'commerce_order_items(id, title, qty, unit_cents, subtotal_cents, ' +
+  'commerce_products(product_kind, owner_kind, owner_profile_id, owner_space_id))'
+
+/** How many sellers a split order's checkout priced a share for (metadata.split), or 1. PURE. */
+function splitSellerCount(metadata: unknown): number {
+  const split = (metadata as { split?: unknown } | null | undefined)?.split
+  return Array.isArray(split) && split.length > 0 ? split.length : 1
+}
 
 function rowToOrder(r: Record<string, unknown>): CommerceOrder {
   const rawItems = Array.isArray(r.commerce_order_items) ? r.commerce_order_items : []
-  const items = (rawItems as Record<string, unknown>[]).map((it) => ({
-    id: it.id as string,
-    title: it.title as string,
-    qty: it.qty as number,
-    unitCents: it.unit_cents as number,
-    subtotalCents: it.subtotal_cents as number,
-    productKind: ((it.commerce_products as { product_kind?: string | null } | null)?.product_kind as string | undefined) ?? null,
-  }))
+  const items = (rawItems as Record<string, unknown>[]).map((it) => {
+    const product = it.commerce_products as {
+      product_kind?: string | null
+      owner_kind?: OwnerKind | null
+      owner_profile_id?: string | null
+      owner_space_id?: string | null
+    } | null
+    return {
+      id: it.id as string,
+      title: it.title as string,
+      qty: it.qty as number,
+      unitCents: it.unit_cents as number,
+      subtotalCents: it.subtotal_cents as number,
+      productKind: product?.product_kind ?? null,
+      seller: product?.owner_kind
+        ? { kind: product.owner_kind, profileId: product.owner_profile_id ?? null, spaceId: product.owner_space_id ?? null }
+        : null,
+    }
+  })
   const kinds = items.map((it) => it.productKind)
   return {
     id: r.id as string,
@@ -81,7 +144,109 @@ function rowToOrder(r: Record<string, unknown>): CommerceOrder {
     paidAt: (r.paid_at as string) ?? null,
     refundedAt: (r.refunded_at as string) ?? null,
     items,
+    fundsFlow: r.funds_flow === 'separate' ? 'separate' : 'destination',
+    sellerCount: r.funds_flow === 'separate' ? splitSellerCount(r.metadata) : 1,
+    share: null,
   }
+}
+
+// ── A seller's share of a split order (LIVE-624) ────────────────────────────────────────────────
+
+interface ShareRow {
+  order_id: string
+  amount_cents: number
+  platform_fee_cents: number
+  reversed_cents: number
+  status: TransferStatus
+}
+
+const SHARE_COLS = 'order_id, amount_cents, platform_fee_cents, reversed_cents, status'
+
+/** This seller's transfer rows, newest first. Filtered on the seller's own owner column AND kind, so
+ *  no other seller's row is ever read here. Throws on a database error; each caller decides. */
+async function sellerShareRows(seller: OrderSellerRef, limit?: number): Promise<ShareRow[]> {
+  let q = db()
+    .from('commerce_order_transfers')
+    .select(SHARE_COLS)
+    .eq('owner_kind', seller.kind)
+    .eq(seller.kind === 'space' ? 'owner_space_id' : 'owner_profile_id', seller.id)
+    .order('created_at', { ascending: false })
+  if (limit) q = q.limit(limit)
+  const { data, error } = await q
+  if (error) throw new Error(`transfer shares unreadable: ${error.message}`)
+  return (data ?? []) as ShareRow[]
+}
+
+function lineBelongsTo(item: OrderItem, seller: OrderSellerRef): boolean {
+  const s = item.seller
+  if (!s || s.kind !== seller.kind) return false
+  return seller.kind === 'space' ? s.spaceId === seller.id : s.profileId === seller.id
+}
+
+/**
+ * A split order as ONE of its sellers may see it. PURE.
+ *
+ * Their lines only; their gross and fee in place of the cart's, so every existing sum over
+ * amountCents (a console total, a count beside a money figure) adds this share and never the whole
+ * cart; and `share` with the net and the transfer state. Fulfilment is recomputed from their lines,
+ * since the other sellers' goods are not theirs to send.
+ */
+export function sellerViewOfSplitOrder(order: CommerceOrder, seller: OrderSellerRef, row: ShareRow): CommerceOrder {
+  const items = order.items.filter((it) => lineBelongsTo(it, seller))
+  const kinds = items.map((it) => it.productKind)
+  const grossCents = row.amount_cents + row.platform_fee_cents
+  return {
+    ...order,
+    items,
+    amountCents: grossCents,
+    platformFeeCents: row.platform_fee_cents,
+    needsFulfilment: orderNeedsFulfilment(kinds),
+    ships: orderShips(kinds),
+    share: {
+      grossCents,
+      feeCents: row.platform_fee_cents,
+      netCents: row.amount_cents,
+      reversedCents: row.reversed_cents,
+      transferStatus: row.status,
+    },
+  }
+}
+
+/** The split orders that carry a transfer row for this seller, each as their view of it. FAIL-SAFE
+ *  to none (logged): a seller surface still lists the orders they own when the ledger is unreadable. */
+async function splitOrdersForSeller(
+  seller: OrderSellerRef,
+  statuses: OrderStatus[] | null,
+  limit: number,
+): Promise<CommerceOrder[]> {
+  try {
+    const rows = await sellerShareRows(seller, limit)
+    if (!rows.length) return []
+    const byOrder = new Map(rows.map((r) => [r.order_id, r]))
+    let q = db().from('commerce_orders').select(ORDER_COLS).in('id', [...byOrder.keys()]).eq('funds_flow', 'separate')
+    q = statuses ? q.in('status', statuses) : q.neq('status', 'pending')
+    const { data, error } = await q
+    if (error) throw new Error(`split orders unreadable: ${error.message}`)
+    return ((data ?? []) as unknown as Record<string, unknown>[]).flatMap((r) => {
+      const row = byOrder.get(r.id as string)
+      return row ? [sellerViewOfSplitOrder(rowToOrder(r), seller, row)] : []
+    })
+  } catch (err) {
+    console.error('[commerce orders] split shares unreadable', {
+      sellerKind: seller.kind,
+      error: err instanceof Error ? err.message : String(err),
+    })
+    return []
+  }
+}
+
+/** Owned orders and split shares in one list, newest first, capped. An order is never both (a split
+ *  order names no owner), and the id guard keeps it that way if one ever were. */
+function newestFirst(owned: CommerceOrder[], shared: CommerceOrder[], limit: number): CommerceOrder[] {
+  const seen = new Set(owned.map((o) => o.id))
+  return [...owned, ...shared.filter((o) => !seen.has(o.id))]
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0))
+    .slice(0, limit)
 }
 
 const LIMIT = (n?: number) => Math.min(Math.max(n ?? 50, 1), 200)
@@ -99,16 +264,21 @@ export async function listOrdersForBuyer(profileId: string, opts: { limit?: numb
   return ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
 }
 
-/** A maker's sales (orders for products they own), newest first. */
+/** A maker's sales (orders for products they own, and their share of every split order that pays
+ *  them, LIVE-624), newest first. */
 export async function listOrdersForSeller(profileId: string, opts: { limit?: number } = {}): Promise<CommerceOrder[]> {
-  const { data } = await db()
-    .from('commerce_orders')
-    .select(ORDER_COLS)
-    .eq('owner_profile_id', profileId)
-    .neq('status', 'pending')
-    .order('created_at', { ascending: false })
-    .limit(LIMIT(opts.limit))
-  return ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
+  const limit = LIMIT(opts.limit)
+  const [{ data }, shared] = await Promise.all([
+    db()
+      .from('commerce_orders')
+      .select(ORDER_COLS)
+      .eq('owner_profile_id', profileId)
+      .neq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(limit),
+    profileId ? splitOrdersForSeller({ kind: 'profile', id: profileId }, null, limit) : Promise.resolve([]),
+  ])
+  return newestFirst(((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder), shared, limit)
 }
 
 /** A Space's sales (orders for products the Space owns), newest first. The Orders tab of the Shop
@@ -116,16 +286,22 @@ export async function listOrdersForSeller(profileId: string, opts: { limit?: num
  *  a Space's orders are invisible through the maker path (ADR-596). Paid+ states only. */
 export async function listSpaceOrders(spaceId: string, opts: { limit?: number } = {}): Promise<CommerceOrder[]> {
   if (!spaceId) return []
-  const { data } = await db()
-    .from('commerce_orders')
-    .select(ORDER_COLS)
-    .eq('owner_space_id', spaceId)
-    // Settled + refunded only: a failed / cancelled checkout is not a sale, so it must not pad the
-    // Orders list or the count that sits beside the money figures (which sum settled orders only).
-    .in('status', ['paid', 'fulfilled', 'refunded'])
-    .order('created_at', { ascending: false })
-    .limit(LIMIT(opts.limit))
-  return ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
+  const limit = LIMIT(opts.limit)
+  // Settled + refunded only: a failed / cancelled checkout is not a sale, so it must not pad the
+  // Orders list or the count that sits beside the money figures (which sum settled orders only).
+  const settled: OrderStatus[] = ['paid', 'fulfilled', 'refunded']
+  const [{ data }, shared] = await Promise.all([
+    db()
+      .from('commerce_orders')
+      .select(ORDER_COLS)
+      .eq('owner_space_id', spaceId)
+      .in('status', settled)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+    // The Space's share of every split order that pays it (LIVE-624).
+    splitOrdersForSeller({ kind: 'space', id: spaceId }, settled, limit),
+  ])
+  return newestFirst(((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder), shared, limit)
 }
 
 /** How many cents a PARTIAL refund took back off a still-settled order (LIVE-160). A partial refund
@@ -317,6 +493,65 @@ async function donationEarnings(spaceId: string, sinceDays?: number): Promise<Sp
   return out
 }
 
+/**
+ * THE SPLIT-SHARE ARM (LIVE-624).
+ *
+ * A split order names no owner, so the commerce_orders read above never finds it, and its whole
+ * amount would sit under nobody's earnings. This Space's claim on it is its transfer row: gross is
+ * the transfer plus the fee kept from it, the fee is that fee, never the cart's. A refund is read off
+ * the ORDER the same way the arm above reads it (status, or the partial-refund record), and a partial
+ * refund is taken from this share pro rata to its part of the order, the rule ADR-1565 set for a split
+ * refund. Nothing here counts toward the NETWORK slice: a split order records one source for the whole
+ * cart, not per share, so the rule beside networkGrossCents (never overstate it) keeps shares out.
+ * The window is the order's created_at, matching the arm above.
+ */
+async function splitShareEarnings(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
+  const out: SpaceEarnings = {
+    grossCents: 0,
+    feeCents: 0,
+    netCents: 0,
+    refundedCents: 0,
+    orderCount: 0,
+    networkGrossCents: 0,
+    networkFeeCents: 0,
+    networkOrderCount: 0,
+  }
+  const rows = await sellerShareRows({ kind: 'space', id: spaceId })
+  if (!rows.length) return out
+  const byOrder = new Map(rows.map((r) => [r.order_id, r]))
+  let q = db()
+    .from('commerce_orders')
+    .select('id, amount_cents, status, metadata')
+    .in('id', [...byOrder.keys()])
+    .eq('funds_flow', 'separate')
+  if (sinceDays && sinceDays > 0) {
+    q = q.gte('created_at', new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString())
+  }
+  const { data, error } = await q
+  if (error) throw new Error(`split orders unreadable: ${error.message}`)
+  for (const o of (data ?? []) as { id: string; amount_cents?: number | null; status?: string; metadata?: unknown }[]) {
+    const row = byOrder.get(o.id)
+    if (!row) continue
+    const gross = row.amount_cents + row.platform_fee_cents
+    const fee = row.platform_fee_cents
+    const orderAmount = Number(o.amount_cents) || 0
+    if (o.status === 'refunded') {
+      out.refundedCents += gross
+      out.orderCount += 1
+    } else if (o.status === 'paid' || o.status === 'fulfilled') {
+      const orderRefunded = partialRefundedCents(o.metadata, orderAmount)
+      const refunded = orderAmount > 0 ? Math.min(gross, Math.round((orderRefunded * gross) / orderAmount)) : 0
+      const feeRefunded = gross > 0 ? Math.min(fee, Math.round((fee * refunded) / gross)) : 0
+      out.grossCents += gross - refunded
+      out.feeCents += fee - feeRefunded
+      out.refundedCents += refunded
+      out.orderCount += 1
+    }
+  }
+  out.netCents = out.grossCents - out.feeCents
+  return out
+}
+
 export async function spaceEarningsSummary(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
   const empty: SpaceEarnings = {
     grossCents: 0,
@@ -418,6 +653,22 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
       out.networkOrderCount += donations.networkOrderCount
       out.netCents = out.grossCents - out.feeCents
     }
+
+    // THE SPLIT-SHARE ARM (LIVE-624). Own try/catch, same posture: an unreadable ledger returns the
+    // other arms' number rather than zeros. Network figures untouched; see splitShareEarnings.
+    let shares: SpaceEarnings | null = null
+    try {
+      shares = await splitShareEarnings(spaceId, sinceDays)
+    } catch {
+      shares = null
+    }
+    if (shares) {
+      out.grossCents += shares.grossCents
+      out.feeCents += shares.feeCents
+      out.refundedCents += shares.refundedCents
+      out.orderCount += shares.orderCount
+      out.netCents = out.grossCents - out.feeCents
+    }
     return out
   } catch {
     return empty
@@ -442,4 +693,33 @@ export async function orderStatusCounts(): Promise<Record<string, number>> {
   const counts: Record<string, number> = {}
   for (const r of (data ?? []) as { status: string }[]) counts[r.status] = (counts[r.status] ?? 0) + 1
   return counts
+}
+
+/** Display names for the sellers a surface is about to list (the operator's transfer ledger, the
+ *  buyer's lines of a split order), keyed `profile:<id>` / `space:<id>`. One read per table.
+ *  FAIL-SAFE to an empty map: a missing name falls back to the seller kind, never to an error. */
+export async function sellerNames(sellers: Array<{ kind: string; profileId: string | null; spaceId: string | null }>): Promise<Map<string, string>> {
+  const out = new Map<string, string>()
+  const profileIds = [...new Set(sellers.filter((s) => s.kind === 'profile' && s.profileId).map((s) => s.profileId as string))]
+  const spaceIds = [...new Set(sellers.filter((s) => s.kind === 'space' && s.spaceId).map((s) => s.spaceId as string))]
+  try {
+    const [profiles, spaces] = await Promise.all([
+      profileIds.length ? db().from('profiles').select('id, display_name').in('id', profileIds) : Promise.resolve({ data: [] }),
+      spaceIds.length ? db().from('spaces').select('id, name').in('id', spaceIds) : Promise.resolve({ data: [] }),
+    ])
+    for (const p of (profiles.data ?? []) as { id: string; display_name?: string | null }[]) {
+      if (p.display_name) out.set(`profile:${p.id}`, p.display_name)
+    }
+    for (const sp of (spaces.data ?? []) as { id: string; name?: string | null }[]) {
+      if (sp.name) out.set(`space:${sp.id}`, sp.name)
+    }
+  } catch {
+    // Names are decoration here; the figures beside them are what the surface is for.
+  }
+  return out
+}
+
+/** The key sellerNames() files a seller's name under. PURE. */
+export function sellerNameKey(s: { kind: string; profileId: string | null; spaceId: string | null }): string {
+  return s.kind === 'space' ? `space:${s.spaceId}` : `profile:${s.profileId}`
 }
