@@ -732,6 +732,38 @@ describe('an in-flight migration relaxes only a PR that touches no migration', (
     expect(fetchedRefs.some((r) => r.includes('/3097/'))).toBe(false)
   })
 
+  it('findInFlightCarriers finds a row already merged to the base tip without asking the API (HYG-159)', async () => {
+    // #3108 at 03:54Z on 2026-09-30: its merge ref predated #3107, which merged at 03:53Z, so no
+    // open PR carried 20270345011400 any more while the file was already on origin/main.
+    const env = { GITHUB_BASE_REF: 'main', GITHUB_REF: 'refs/pull/3108/merge' }
+    let apiCalls = 0
+    const fetchImpl = async () => {
+      apiCalls += 1
+      return { ok: true, json: async () => [] } as unknown as Response
+    }
+    const git = (args: string[]) =>
+      args.includes('origin/main') ? 'supabase/migrations/20990101000000_in_flight_table.sql\n' : ''
+    const carriers = await findInFlightCarriers({ rows: [fly], env, fetchImpl, git })
+    expect([...carriers]).toEqual([['20990101000000', 'main']])
+    expect(apiCalls).toBe(0)
+    const r = await inFlight({ prTouchesMigrations: false, findInFlight: async () => carriers })
+    expect(r.ok).toBe(true)
+    expect(r.lines.join('\n')).toContain('already on main; update this branch')
+  })
+
+  it('findInFlightCarriers falls through to the open PRs when the base tip was not fetched', async () => {
+    const env = { GITHUB_REPOSITORY: 'o/r', GITHUB_BASE_REF: 'main', GITHUB_TOKEN: 't' }
+    const fetchImpl = async () =>
+      ({ ok: true, json: async () => [{ number: 3100, head: { sha: 'b' } }] }) as unknown as Response
+    const git = (args: string[]) => {
+      if (args.includes('origin/main')) throw new Error('fatal: not a valid object name')
+      if (args[0] === 'fetch') return ''
+      return args.some((a) => a.endsWith('/3100')) ? 'supabase/migrations/20990101000000_in_flight_table.sql\n' : ''
+    }
+    const carriers = await findInFlightCarriers({ rows: [fly], env, fetchImpl, git })
+    expect([...carriers]).toEqual([['20990101000000', 3100]])
+  })
+
   it('findInFlightCarriers throws without a token, so the caller takes the strict path', async () => {
     await expect(findInFlightCarriers({ rows: [fly], env: {}, git: () => '' })).rejects.toThrow()
   })
