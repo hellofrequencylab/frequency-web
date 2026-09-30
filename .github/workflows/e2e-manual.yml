@@ -319,10 +319,10 @@ jobs:
           TURNSTILE_PEERS: pr-compare,lighthouse,smoke,update-baselines,update-a11y,visual
           TURNSTILE_WORKFLOWS: e2e.yml,e2e-manual.yml
           TURNSTILE_MAX_MINUTES: '90'
-          TURNSTILE_POLL_SECONDS: '30'
+          TURNSTILE_POLL_SECONDS: '120'
         with:
           script: |
-            // THE TURNSTILE. Rules 1 to 5 are in the comment block above this job's timeout.
+            // THE TURNSTILE. Rules 1 to 6 are in the comment block above pr-compare's timeout in e2e.yml.
             const jobName = process.env.TURNSTILE_JOB
             // THE LANE this job queues in: every job name that counts as a capture, and every
             // workflow file to look for those jobs in. Both are comma-separated. TURNSTILE_PEERS
@@ -332,6 +332,10 @@ jobs:
             const workflowFiles = (process.env.TURNSTILE_WORKFLOWS || '').split(',').map((file) => file.trim()).filter(Boolean)
             const maxMinutes = Number(process.env.TURNSTILE_MAX_MINUTES)
             const pollSeconds = Number(process.env.TURNSTILE_POLL_SECONDS)
+            // HYG-151: a job with N older runs of the lane still in progress looks every
+            // min(N, MAX_STRETCH) x pollSeconds, so the job next in line looks often and the tenth
+            // does not spend the repository's API quota asking a question it cannot win yet.
+            const MAX_STRETCH = 3
             const { owner, repo } = context.repo
             const started = Date.now()
             const deadline = started + maxMinutes * 60_000
@@ -340,6 +344,9 @@ jobs:
             // A job is past its turnstile when this step (matched by name, so every job in every
             // lane shares the one definition) has completed. Before that it is waiting, not capturing.
             const isTurnstile = (step) => /^Turnstile/.test(step.name || '')
+            // A run belongs to the lane when its workflow file is one of TURNSTILE_WORKFLOWS. A run
+            // whose `path` the API did not send is read rather than guessed away.
+            const inLane = (run) => !run.path || workflowFiles.includes(String(run.path).replace(/@.*$/, '').split('/').pop())
             if (workflowFiles.length === 0) {
               // A turnstile with nothing to poll clears on poll 1 having looked at nothing: the
               // vacuous pass this repo refuses, wearing a green tick. It may not fail the job
@@ -351,49 +358,75 @@ jobs:
                 .addRaw(`### Turnstile polled nothing\n\nThis \`${jobName}\` declared no TURNSTILE_WORKFLOWS, so the one-capture-at-a-time rule did not apply to it (LIVE-332).\n`)
                 .write()
             }
+            // Newer runs seen WAITING on two looks. Their turnstile now sees this job waiting and
+            // older, so rule 3 holds them until this job clears: their jobs are not read again.
+            const seenWaiting = new Map()
             let poll = 0
             for (;;) {
               poll += 1
               const ahead = []
+              let older = 0
+              let quotaBackAt = 0
               try {
-                for (const workflowFile of workflowFiles) {
-                  // Only runs still in progress: a completed run (success, failure, CANCELLED)
-                  // holds no load, so the workflow-level group's supersede on the same PR and
-                  // ADR-1328's cancellations both fall out of the read (rule 2).
-                  const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                    owner, repo, workflow_id: workflowFile, status: 'in_progress', per_page: 100,
+                // ONE read of every in-progress run in the repository (HYG-151). It was one paginated
+                // read per workflow file plus one jobs read for EVERY in-progress run, every look.
+                // Only runs still in progress: a completed run (success, failure, CANCELLED) holds no
+                // load, so the workflow-level group's supersede on the same PR and ADR-1328's
+                // cancellations both fall out of the read (rule 2).
+                const runs = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                  owner, repo, status: 'in_progress', per_page: 100,
+                })).filter(inLane)
+                const toRead = []
+                for (const run of runs) {
+                  if (run.id === context.runId) continue // rule 1: never this run's own jobs
+                  if (run.run_number < context.runNumber) older += 1
+                  else if ((seenWaiting.get(run.id) || 0) >= 2) continue
+                  toRead.push(run)
+                }
+                // Oldest first, and stop at the first run ahead: one is enough to wait on (HYG-151).
+                toRead.sort((a, b) => a.run_number - b.run_number)
+                for (const run of toRead) {
+                  const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                    owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
                   })
-                  for (const run of runs) {
-                    if (run.id === context.runId) continue // rule 1: never this run's own jobs
-                    const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-                      owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
-                    })
-                    for (const job of jobs) {
-                      // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
-                      // taking separate turns and one run's two jobs still overlap (ADR-936). A
-                      // completed job, whatever its conclusion, holds nothing (rule 2).
-                      if (!peers.has(job.name) || job.status === 'completed') continue
-                      const gate = (job.steps || []).find(isTurnstile)
-                      const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
-                      const older = run.run_number < context.runNumber
-                      // Rule 3: a run is AHEAD when it is already capturing, or when it is still
-                      // waiting and carries the lower run number. Two waiting runs therefore
-                      // never wait on each other: the older proceeds, the newer waits for it.
-                      // Run numbers are per WORKFLOW FILE, so across two files they are not one
-                      // series: between two waiting runs the file with the lower numbers wins, and
-                      // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
-                      // capture priority over a merely queued PR capture. Deliberate, and it is a
-                      // strict order either way, so no two runs can end up waiting on each other.
-                      if (capturing || older) {
-                        ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
-                      }
+                  let waiting = false
+                  for (const job of jobs) {
+                    // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
+                    // taking separate turns and one run's two jobs still overlap (ADR-936). A
+                    // completed job, whatever its conclusion, holds nothing (rule 2).
+                    if (!peers.has(job.name) || job.status === 'completed') continue
+                    const gate = (job.steps || []).find(isTurnstile)
+                    const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
+                    // Rule 3: a run is AHEAD when it is already capturing, or when it is still
+                    // waiting and carries the lower run number. Two waiting runs therefore
+                    // never wait on each other: the older proceeds, the newer waits for it.
+                    // Run numbers are per WORKFLOW FILE, so across two files they are not one
+                    // series: between two waiting runs the file with the lower numbers wins, and
+                    // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
+                    // capture priority over a merely queued PR capture. Deliberate, and it is a
+                    // strict order either way, so no two runs can end up waiting on each other.
+                    if (capturing || run.run_number < context.runNumber) {
+                      ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
+                    } else {
+                      waiting = true
                     }
                   }
+                  if (ahead.length > 0) break
+                  if (waiting) seenWaiting.set(run.id, (seenWaiting.get(run.id) || 0) + 1)
                 }
               } catch (error) {
                 // An unreadable API is not a clear road; it is one more thing to wait on,
                 // and the bound below still ends the wait (rule 5).
                 ahead.push(`the Actions API (unreadable: ${error.message})`)
+                // Rule 6 (HYG-151): a REFUSED read waits for the quota to come back instead of
+                // asking again at full rate, which is what kept the quota at zero on 2026-09-29.
+                const headers = (error.response && error.response.headers) || {}
+                if (error.status === 403 || error.status === 429) {
+                  const retryAfter = Number(headers['retry-after'])
+                  const reset = Number(headers['x-ratelimit-reset'])
+                  if (retryAfter > 0) quotaBackAt = Date.now() + retryAfter * 1000
+                  else if (headers['x-ratelimit-remaining'] === '0' && reset > 0) quotaBackAt = reset * 1000 + 5_000
+                }
               }
               if (ahead.length === 0) {
                 core.info(`turnstile: clear on poll ${poll} after ${elapsed()} min; ${jobName} proceeds`)
@@ -407,9 +440,14 @@ jobs:
                   .write()
                 break
               }
+              // HYG-151: the look interval stretches with the queue, and a spent quota is waited out.
+              // Both stay inside the bound, so rule 5 still ends the wait on time.
+              let waitMs = pollSeconds * 1000 * Math.min(Math.max(older, 1), MAX_STRETCH)
+              if (quotaBackAt > Date.now()) waitMs = Math.max(waitMs, quotaBackAt - Date.now())
+              waitMs = Math.max(1000, Math.min(waitMs, deadline - Date.now()))
               // Rule 4: one line per poll, naming what it waits on.
-              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; next look in ${pollSeconds}s`)
-              await sleep(pollSeconds * 1000)
+              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; ${older} older run(s) in progress; next look in ${Math.round(waitMs / 1000)}s${quotaBackAt ? ' (API quota spent: waiting for its reset)' : ''}`)
+              await sleep(waitMs)
             }
             core.setOutput('waited_minutes', elapsed())
 
@@ -578,10 +616,10 @@ jobs:
           TURNSTILE_PEERS: pr-compare,lighthouse,smoke,update-baselines,update-a11y,visual
           TURNSTILE_WORKFLOWS: e2e.yml,e2e-manual.yml
           TURNSTILE_MAX_MINUTES: '90'
-          TURNSTILE_POLL_SECONDS: '30'
+          TURNSTILE_POLL_SECONDS: '120'
         with:
           script: |
-            // THE TURNSTILE. Rules 1 to 5 are in the comment block above this job's timeout.
+            // THE TURNSTILE. Rules 1 to 6 are in the comment block above pr-compare's timeout in e2e.yml.
             const jobName = process.env.TURNSTILE_JOB
             // THE LANE this job queues in: every job name that counts as a capture, and every
             // workflow file to look for those jobs in. Both are comma-separated. TURNSTILE_PEERS
@@ -591,6 +629,10 @@ jobs:
             const workflowFiles = (process.env.TURNSTILE_WORKFLOWS || '').split(',').map((file) => file.trim()).filter(Boolean)
             const maxMinutes = Number(process.env.TURNSTILE_MAX_MINUTES)
             const pollSeconds = Number(process.env.TURNSTILE_POLL_SECONDS)
+            // HYG-151: a job with N older runs of the lane still in progress looks every
+            // min(N, MAX_STRETCH) x pollSeconds, so the job next in line looks often and the tenth
+            // does not spend the repository's API quota asking a question it cannot win yet.
+            const MAX_STRETCH = 3
             const { owner, repo } = context.repo
             const started = Date.now()
             const deadline = started + maxMinutes * 60_000
@@ -599,6 +641,9 @@ jobs:
             // A job is past its turnstile when this step (matched by name, so every job in every
             // lane shares the one definition) has completed. Before that it is waiting, not capturing.
             const isTurnstile = (step) => /^Turnstile/.test(step.name || '')
+            // A run belongs to the lane when its workflow file is one of TURNSTILE_WORKFLOWS. A run
+            // whose `path` the API did not send is read rather than guessed away.
+            const inLane = (run) => !run.path || workflowFiles.includes(String(run.path).replace(/@.*$/, '').split('/').pop())
             if (workflowFiles.length === 0) {
               // A turnstile with nothing to poll clears on poll 1 having looked at nothing: the
               // vacuous pass this repo refuses, wearing a green tick. It may not fail the job
@@ -610,49 +655,75 @@ jobs:
                 .addRaw(`### Turnstile polled nothing\n\nThis \`${jobName}\` declared no TURNSTILE_WORKFLOWS, so the one-capture-at-a-time rule did not apply to it (LIVE-332).\n`)
                 .write()
             }
+            // Newer runs seen WAITING on two looks. Their turnstile now sees this job waiting and
+            // older, so rule 3 holds them until this job clears: their jobs are not read again.
+            const seenWaiting = new Map()
             let poll = 0
             for (;;) {
               poll += 1
               const ahead = []
+              let older = 0
+              let quotaBackAt = 0
               try {
-                for (const workflowFile of workflowFiles) {
-                  // Only runs still in progress: a completed run (success, failure, CANCELLED)
-                  // holds no load, so the workflow-level group's supersede on the same PR and
-                  // ADR-1328's cancellations both fall out of the read (rule 2).
-                  const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                    owner, repo, workflow_id: workflowFile, status: 'in_progress', per_page: 100,
+                // ONE read of every in-progress run in the repository (HYG-151). It was one paginated
+                // read per workflow file plus one jobs read for EVERY in-progress run, every look.
+                // Only runs still in progress: a completed run (success, failure, CANCELLED) holds no
+                // load, so the workflow-level group's supersede on the same PR and ADR-1328's
+                // cancellations both fall out of the read (rule 2).
+                const runs = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                  owner, repo, status: 'in_progress', per_page: 100,
+                })).filter(inLane)
+                const toRead = []
+                for (const run of runs) {
+                  if (run.id === context.runId) continue // rule 1: never this run's own jobs
+                  if (run.run_number < context.runNumber) older += 1
+                  else if ((seenWaiting.get(run.id) || 0) >= 2) continue
+                  toRead.push(run)
+                }
+                // Oldest first, and stop at the first run ahead: one is enough to wait on (HYG-151).
+                toRead.sort((a, b) => a.run_number - b.run_number)
+                for (const run of toRead) {
+                  const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                    owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
                   })
-                  for (const run of runs) {
-                    if (run.id === context.runId) continue // rule 1: never this run's own jobs
-                    const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-                      owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
-                    })
-                    for (const job of jobs) {
-                      // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
-                      // taking separate turns and one run's two jobs still overlap (ADR-936). A
-                      // completed job, whatever its conclusion, holds nothing (rule 2).
-                      if (!peers.has(job.name) || job.status === 'completed') continue
-                      const gate = (job.steps || []).find(isTurnstile)
-                      const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
-                      const older = run.run_number < context.runNumber
-                      // Rule 3: a run is AHEAD when it is already capturing, or when it is still
-                      // waiting and carries the lower run number. Two waiting runs therefore
-                      // never wait on each other: the older proceeds, the newer waits for it.
-                      // Run numbers are per WORKFLOW FILE, so across two files they are not one
-                      // series: between two waiting runs the file with the lower numbers wins, and
-                      // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
-                      // capture priority over a merely queued PR capture. Deliberate, and it is a
-                      // strict order either way, so no two runs can end up waiting on each other.
-                      if (capturing || older) {
-                        ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
-                      }
+                  let waiting = false
+                  for (const job of jobs) {
+                    // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
+                    // taking separate turns and one run's two jobs still overlap (ADR-936). A
+                    // completed job, whatever its conclusion, holds nothing (rule 2).
+                    if (!peers.has(job.name) || job.status === 'completed') continue
+                    const gate = (job.steps || []).find(isTurnstile)
+                    const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
+                    // Rule 3: a run is AHEAD when it is already capturing, or when it is still
+                    // waiting and carries the lower run number. Two waiting runs therefore
+                    // never wait on each other: the older proceeds, the newer waits for it.
+                    // Run numbers are per WORKFLOW FILE, so across two files they are not one
+                    // series: between two waiting runs the file with the lower numbers wins, and
+                    // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
+                    // capture priority over a merely queued PR capture. Deliberate, and it is a
+                    // strict order either way, so no two runs can end up waiting on each other.
+                    if (capturing || run.run_number < context.runNumber) {
+                      ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
+                    } else {
+                      waiting = true
                     }
                   }
+                  if (ahead.length > 0) break
+                  if (waiting) seenWaiting.set(run.id, (seenWaiting.get(run.id) || 0) + 1)
                 }
               } catch (error) {
                 // An unreadable API is not a clear road; it is one more thing to wait on,
                 // and the bound below still ends the wait (rule 5).
                 ahead.push(`the Actions API (unreadable: ${error.message})`)
+                // Rule 6 (HYG-151): a REFUSED read waits for the quota to come back instead of
+                // asking again at full rate, which is what kept the quota at zero on 2026-09-29.
+                const headers = (error.response && error.response.headers) || {}
+                if (error.status === 403 || error.status === 429) {
+                  const retryAfter = Number(headers['retry-after'])
+                  const reset = Number(headers['x-ratelimit-reset'])
+                  if (retryAfter > 0) quotaBackAt = Date.now() + retryAfter * 1000
+                  else if (headers['x-ratelimit-remaining'] === '0' && reset > 0) quotaBackAt = reset * 1000 + 5_000
+                }
               }
               if (ahead.length === 0) {
                 core.info(`turnstile: clear on poll ${poll} after ${elapsed()} min; ${jobName} proceeds`)
@@ -666,9 +737,14 @@ jobs:
                   .write()
                 break
               }
+              // HYG-151: the look interval stretches with the queue, and a spent quota is waited out.
+              // Both stay inside the bound, so rule 5 still ends the wait on time.
+              let waitMs = pollSeconds * 1000 * Math.min(Math.max(older, 1), MAX_STRETCH)
+              if (quotaBackAt > Date.now()) waitMs = Math.max(waitMs, quotaBackAt - Date.now())
+              waitMs = Math.max(1000, Math.min(waitMs, deadline - Date.now()))
               // Rule 4: one line per poll, naming what it waits on.
-              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; next look in ${pollSeconds}s`)
-              await sleep(pollSeconds * 1000)
+              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; ${older} older run(s) in progress; next look in ${Math.round(waitMs / 1000)}s${quotaBackAt ? ' (API quota spent: waiting for its reset)' : ''}`)
+              await sleep(waitMs)
             }
             core.setOutput('waited_minutes', elapsed())
 
@@ -941,10 +1017,10 @@ jobs:
           TURNSTILE_PEERS: pr-compare,lighthouse,smoke,update-baselines,update-a11y,visual
           TURNSTILE_WORKFLOWS: e2e.yml,e2e-manual.yml
           TURNSTILE_MAX_MINUTES: '90'
-          TURNSTILE_POLL_SECONDS: '30'
+          TURNSTILE_POLL_SECONDS: '120'
         with:
           script: |
-            // THE TURNSTILE. Rules 1 to 5 are in the comment block above this job's timeout.
+            // THE TURNSTILE. Rules 1 to 6 are in the comment block above pr-compare's timeout in e2e.yml.
             const jobName = process.env.TURNSTILE_JOB
             // THE LANE this job queues in: every job name that counts as a capture, and every
             // workflow file to look for those jobs in. Both are comma-separated. TURNSTILE_PEERS
@@ -954,6 +1030,10 @@ jobs:
             const workflowFiles = (process.env.TURNSTILE_WORKFLOWS || '').split(',').map((file) => file.trim()).filter(Boolean)
             const maxMinutes = Number(process.env.TURNSTILE_MAX_MINUTES)
             const pollSeconds = Number(process.env.TURNSTILE_POLL_SECONDS)
+            // HYG-151: a job with N older runs of the lane still in progress looks every
+            // min(N, MAX_STRETCH) x pollSeconds, so the job next in line looks often and the tenth
+            // does not spend the repository's API quota asking a question it cannot win yet.
+            const MAX_STRETCH = 3
             const { owner, repo } = context.repo
             const started = Date.now()
             const deadline = started + maxMinutes * 60_000
@@ -962,6 +1042,9 @@ jobs:
             // A job is past its turnstile when this step (matched by name, so every job in every
             // lane shares the one definition) has completed. Before that it is waiting, not capturing.
             const isTurnstile = (step) => /^Turnstile/.test(step.name || '')
+            // A run belongs to the lane when its workflow file is one of TURNSTILE_WORKFLOWS. A run
+            // whose `path` the API did not send is read rather than guessed away.
+            const inLane = (run) => !run.path || workflowFiles.includes(String(run.path).replace(/@.*$/, '').split('/').pop())
             if (workflowFiles.length === 0) {
               // A turnstile with nothing to poll clears on poll 1 having looked at nothing: the
               // vacuous pass this repo refuses, wearing a green tick. It may not fail the job
@@ -973,49 +1056,75 @@ jobs:
                 .addRaw(`### Turnstile polled nothing\n\nThis \`${jobName}\` declared no TURNSTILE_WORKFLOWS, so the one-capture-at-a-time rule did not apply to it (LIVE-332).\n`)
                 .write()
             }
+            // Newer runs seen WAITING on two looks. Their turnstile now sees this job waiting and
+            // older, so rule 3 holds them until this job clears: their jobs are not read again.
+            const seenWaiting = new Map()
             let poll = 0
             for (;;) {
               poll += 1
               const ahead = []
+              let older = 0
+              let quotaBackAt = 0
               try {
-                for (const workflowFile of workflowFiles) {
-                  // Only runs still in progress: a completed run (success, failure, CANCELLED)
-                  // holds no load, so the workflow-level group's supersede on the same PR and
-                  // ADR-1328's cancellations both fall out of the read (rule 2).
-                  const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                    owner, repo, workflow_id: workflowFile, status: 'in_progress', per_page: 100,
+                // ONE read of every in-progress run in the repository (HYG-151). It was one paginated
+                // read per workflow file plus one jobs read for EVERY in-progress run, every look.
+                // Only runs still in progress: a completed run (success, failure, CANCELLED) holds no
+                // load, so the workflow-level group's supersede on the same PR and ADR-1328's
+                // cancellations both fall out of the read (rule 2).
+                const runs = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                  owner, repo, status: 'in_progress', per_page: 100,
+                })).filter(inLane)
+                const toRead = []
+                for (const run of runs) {
+                  if (run.id === context.runId) continue // rule 1: never this run's own jobs
+                  if (run.run_number < context.runNumber) older += 1
+                  else if ((seenWaiting.get(run.id) || 0) >= 2) continue
+                  toRead.push(run)
+                }
+                // Oldest first, and stop at the first run ahead: one is enough to wait on (HYG-151).
+                toRead.sort((a, b) => a.run_number - b.run_number)
+                for (const run of toRead) {
+                  const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                    owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
                   })
-                  for (const run of runs) {
-                    if (run.id === context.runId) continue // rule 1: never this run's own jobs
-                    const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-                      owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
-                    })
-                    for (const job of jobs) {
-                      // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
-                      // taking separate turns and one run's two jobs still overlap (ADR-936). A
-                      // completed job, whatever its conclusion, holds nothing (rule 2).
-                      if (!peers.has(job.name) || job.status === 'completed') continue
-                      const gate = (job.steps || []).find(isTurnstile)
-                      const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
-                      const older = run.run_number < context.runNumber
-                      // Rule 3: a run is AHEAD when it is already capturing, or when it is still
-                      // waiting and carries the lower run number. Two waiting runs therefore
-                      // never wait on each other: the older proceeds, the newer waits for it.
-                      // Run numbers are per WORKFLOW FILE, so across two files they are not one
-                      // series: between two waiting runs the file with the lower numbers wins, and
-                      // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
-                      // capture priority over a merely queued PR capture. Deliberate, and it is a
-                      // strict order either way, so no two runs can end up waiting on each other.
-                      if (capturing || older) {
-                        ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
-                      }
+                  let waiting = false
+                  for (const job of jobs) {
+                    // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
+                    // taking separate turns and one run's two jobs still overlap (ADR-936). A
+                    // completed job, whatever its conclusion, holds nothing (rule 2).
+                    if (!peers.has(job.name) || job.status === 'completed') continue
+                    const gate = (job.steps || []).find(isTurnstile)
+                    const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
+                    // Rule 3: a run is AHEAD when it is already capturing, or when it is still
+                    // waiting and carries the lower run number. Two waiting runs therefore
+                    // never wait on each other: the older proceeds, the newer waits for it.
+                    // Run numbers are per WORKFLOW FILE, so across two files they are not one
+                    // series: between two waiting runs the file with the lower numbers wins, and
+                    // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
+                    // capture priority over a merely queued PR capture. Deliberate, and it is a
+                    // strict order either way, so no two runs can end up waiting on each other.
+                    if (capturing || run.run_number < context.runNumber) {
+                      ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
+                    } else {
+                      waiting = true
                     }
                   }
+                  if (ahead.length > 0) break
+                  if (waiting) seenWaiting.set(run.id, (seenWaiting.get(run.id) || 0) + 1)
                 }
               } catch (error) {
                 // An unreadable API is not a clear road; it is one more thing to wait on,
                 // and the bound below still ends the wait (rule 5).
                 ahead.push(`the Actions API (unreadable: ${error.message})`)
+                // Rule 6 (HYG-151): a REFUSED read waits for the quota to come back instead of
+                // asking again at full rate, which is what kept the quota at zero on 2026-09-29.
+                const headers = (error.response && error.response.headers) || {}
+                if (error.status === 403 || error.status === 429) {
+                  const retryAfter = Number(headers['retry-after'])
+                  const reset = Number(headers['x-ratelimit-reset'])
+                  if (retryAfter > 0) quotaBackAt = Date.now() + retryAfter * 1000
+                  else if (headers['x-ratelimit-remaining'] === '0' && reset > 0) quotaBackAt = reset * 1000 + 5_000
+                }
               }
               if (ahead.length === 0) {
                 core.info(`turnstile: clear on poll ${poll} after ${elapsed()} min; ${jobName} proceeds`)
@@ -1029,9 +1138,14 @@ jobs:
                   .write()
                 break
               }
+              // HYG-151: the look interval stretches with the queue, and a spent quota is waited out.
+              // Both stay inside the bound, so rule 5 still ends the wait on time.
+              let waitMs = pollSeconds * 1000 * Math.min(Math.max(older, 1), MAX_STRETCH)
+              if (quotaBackAt > Date.now()) waitMs = Math.max(waitMs, quotaBackAt - Date.now())
+              waitMs = Math.max(1000, Math.min(waitMs, deadline - Date.now()))
               // Rule 4: one line per poll, naming what it waits on.
-              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; next look in ${pollSeconds}s`)
-              await sleep(pollSeconds * 1000)
+              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; ${older} older run(s) in progress; next look in ${Math.round(waitMs / 1000)}s${quotaBackAt ? ' (API quota spent: waiting for its reset)' : ''}`)
+              await sleep(waitMs)
             }
             core.setOutput('waited_minutes', elapsed())
 
@@ -1170,10 +1284,10 @@ jobs:
           TURNSTILE_PEERS: pr-compare,lighthouse,smoke,update-baselines,update-a11y,visual
           TURNSTILE_WORKFLOWS: e2e.yml,e2e-manual.yml
           TURNSTILE_MAX_MINUTES: '90'
-          TURNSTILE_POLL_SECONDS: '30'
+          TURNSTILE_POLL_SECONDS: '120'
         with:
           script: |
-            // THE TURNSTILE. Rules 1 to 5 are in the comment block above this job's timeout.
+            // THE TURNSTILE. Rules 1 to 6 are in the comment block above pr-compare's timeout in e2e.yml.
             const jobName = process.env.TURNSTILE_JOB
             // THE LANE this job queues in: every job name that counts as a capture, and every
             // workflow file to look for those jobs in. Both are comma-separated. TURNSTILE_PEERS
@@ -1183,6 +1297,10 @@ jobs:
             const workflowFiles = (process.env.TURNSTILE_WORKFLOWS || '').split(',').map((file) => file.trim()).filter(Boolean)
             const maxMinutes = Number(process.env.TURNSTILE_MAX_MINUTES)
             const pollSeconds = Number(process.env.TURNSTILE_POLL_SECONDS)
+            // HYG-151: a job with N older runs of the lane still in progress looks every
+            // min(N, MAX_STRETCH) x pollSeconds, so the job next in line looks often and the tenth
+            // does not spend the repository's API quota asking a question it cannot win yet.
+            const MAX_STRETCH = 3
             const { owner, repo } = context.repo
             const started = Date.now()
             const deadline = started + maxMinutes * 60_000
@@ -1191,6 +1309,9 @@ jobs:
             // A job is past its turnstile when this step (matched by name, so every job in every
             // lane shares the one definition) has completed. Before that it is waiting, not capturing.
             const isTurnstile = (step) => /^Turnstile/.test(step.name || '')
+            // A run belongs to the lane when its workflow file is one of TURNSTILE_WORKFLOWS. A run
+            // whose `path` the API did not send is read rather than guessed away.
+            const inLane = (run) => !run.path || workflowFiles.includes(String(run.path).replace(/@.*$/, '').split('/').pop())
             if (workflowFiles.length === 0) {
               // A turnstile with nothing to poll clears on poll 1 having looked at nothing: the
               // vacuous pass this repo refuses, wearing a green tick. It may not fail the job
@@ -1202,49 +1323,75 @@ jobs:
                 .addRaw(`### Turnstile polled nothing\n\nThis \`${jobName}\` declared no TURNSTILE_WORKFLOWS, so the one-capture-at-a-time rule did not apply to it (LIVE-332).\n`)
                 .write()
             }
+            // Newer runs seen WAITING on two looks. Their turnstile now sees this job waiting and
+            // older, so rule 3 holds them until this job clears: their jobs are not read again.
+            const seenWaiting = new Map()
             let poll = 0
             for (;;) {
               poll += 1
               const ahead = []
+              let older = 0
+              let quotaBackAt = 0
               try {
-                for (const workflowFile of workflowFiles) {
-                  // Only runs still in progress: a completed run (success, failure, CANCELLED)
-                  // holds no load, so the workflow-level group's supersede on the same PR and
-                  // ADR-1328's cancellations both fall out of the read (rule 2).
-                  const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-                    owner, repo, workflow_id: workflowFile, status: 'in_progress', per_page: 100,
+                // ONE read of every in-progress run in the repository (HYG-151). It was one paginated
+                // read per workflow file plus one jobs read for EVERY in-progress run, every look.
+                // Only runs still in progress: a completed run (success, failure, CANCELLED) holds no
+                // load, so the workflow-level group's supersede on the same PR and ADR-1328's
+                // cancellations both fall out of the read (rule 2).
+                const runs = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+                  owner, repo, status: 'in_progress', per_page: 100,
+                })).filter(inLane)
+                const toRead = []
+                for (const run of runs) {
+                  if (run.id === context.runId) continue // rule 1: never this run's own jobs
+                  if (run.run_number < context.runNumber) older += 1
+                  else if ((seenWaiting.get(run.id) || 0) >= 2) continue
+                  toRead.push(run)
+                }
+                // Oldest first, and stop at the first run ahead: one is enough to wait on (HYG-151).
+                toRead.sort((a, b) => a.run_number - b.run_number)
+                for (const run of toRead) {
+                  const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                    owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
                   })
-                  for (const run of runs) {
-                    if (run.id === context.runId) continue // rule 1: never this run's own jobs
-                    const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-                      owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
-                    })
-                    for (const job of jobs) {
-                      // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
-                      // taking separate turns and one run's two jobs still overlap (ADR-936). A
-                      // completed job, whatever its conclusion, holds nothing (rule 2).
-                      if (!peers.has(job.name) || job.status === 'completed') continue
-                      const gate = (job.steps || []).find(isTurnstile)
-                      const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
-                      const older = run.run_number < context.runNumber
-                      // Rule 3: a run is AHEAD when it is already capturing, or when it is still
-                      // waiting and carries the lower run number. Two waiting runs therefore
-                      // never wait on each other: the older proceeds, the newer waits for it.
-                      // Run numbers are per WORKFLOW FILE, so across two files they are not one
-                      // series: between two waiting runs the file with the lower numbers wins, and
-                      // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
-                      // capture priority over a merely queued PR capture. Deliberate, and it is a
-                      // strict order either way, so no two runs can end up waiting on each other.
-                      if (capturing || older) {
-                        ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
-                      }
+                  let waiting = false
+                  for (const job of jobs) {
+                    // Only the job names in THIS job's lane, so pr-compare and lighthouse keep
+                    // taking separate turns and one run's two jobs still overlap (ADR-936). A
+                    // completed job, whatever its conclusion, holds nothing (rule 2).
+                    if (!peers.has(job.name) || job.status === 'completed') continue
+                    const gate = (job.steps || []).find(isTurnstile)
+                    const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
+                    // Rule 3: a run is AHEAD when it is already capturing, or when it is still
+                    // waiting and carries the lower run number. Two waiting runs therefore
+                    // never wait on each other: the older proceeds, the newer waits for it.
+                    // Run numbers are per WORKFLOW FILE, so across two files they are not one
+                    // series: between two waiting runs the file with the lower numbers wins, and
+                    // e2e-manual.yml has far fewer runs than e2e.yml, which hands a maintainer
+                    // capture priority over a merely queued PR capture. Deliberate, and it is a
+                    // strict order either way, so no two runs can end up waiting on each other.
+                    if (capturing || run.run_number < context.runNumber) {
+                      ahead.push(`${job.name} run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
+                    } else {
+                      waiting = true
                     }
                   }
+                  if (ahead.length > 0) break
+                  if (waiting) seenWaiting.set(run.id, (seenWaiting.get(run.id) || 0) + 1)
                 }
               } catch (error) {
                 // An unreadable API is not a clear road; it is one more thing to wait on,
                 // and the bound below still ends the wait (rule 5).
                 ahead.push(`the Actions API (unreadable: ${error.message})`)
+                // Rule 6 (HYG-151): a REFUSED read waits for the quota to come back instead of
+                // asking again at full rate, which is what kept the quota at zero on 2026-09-29.
+                const headers = (error.response && error.response.headers) || {}
+                if (error.status === 403 || error.status === 429) {
+                  const retryAfter = Number(headers['retry-after'])
+                  const reset = Number(headers['x-ratelimit-reset'])
+                  if (retryAfter > 0) quotaBackAt = Date.now() + retryAfter * 1000
+                  else if (headers['x-ratelimit-remaining'] === '0' && reset > 0) quotaBackAt = reset * 1000 + 5_000
+                }
               }
               if (ahead.length === 0) {
                 core.info(`turnstile: clear on poll ${poll} after ${elapsed()} min; ${jobName} proceeds`)
@@ -1258,9 +1405,14 @@ jobs:
                   .write()
                 break
               }
+              // HYG-151: the look interval stretches with the queue, and a spent quota is waited out.
+              // Both stay inside the bound, so rule 5 still ends the wait on time.
+              let waitMs = pollSeconds * 1000 * Math.min(Math.max(older, 1), MAX_STRETCH)
+              if (quotaBackAt > Date.now()) waitMs = Math.max(waitMs, quotaBackAt - Date.now())
+              waitMs = Math.max(1000, Math.min(waitMs, deadline - Date.now()))
               // Rule 4: one line per poll, naming what it waits on.
-              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; next look in ${pollSeconds}s`)
-              await sleep(pollSeconds * 1000)
+              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; ${older} older run(s) in progress; next look in ${Math.round(waitMs / 1000)}s${quotaBackAt ? ' (API quota spent: waiting for its reset)' : ''}`)
+              await sleep(waitMs)
             }
             core.setOutput('waited_minutes', elapsed())
 
