@@ -115,6 +115,13 @@
 # to run under, and the gate's inputs (profiles.meta and the economy columns) are needed for EVERY
 # active member, not the caller. It reports profile ids only, never an email or an auth id, and
 # writes nothing.
+# app/api/cron/storage-backup/route.ts (added 2026-09-29, HYG-144, ADR-1693): the nightly copy of
+# Storage files to Cloudflare R2. The caller is Vercel Cron, so there is no session. It must read
+# EVERY bucket, the private ones included, which only the service role can sign a url for; the
+# listing RPC backup_storage_objects_since is granted to service_role only (a member must not learn
+# private object paths); and the cursor is one platform_settings row, a table with no client
+# policies. It writes that one row and nothing else in the database. Inert (no client created)
+# until the four R2 variables are set.
 # app/(main)/events/[slug]/manage/attendance-actions.ts (added 2026-09-14, PROG-GD4): the host's
 # attendance mark on a seat row (event_rsvps / event_tickets attended_at + attended_by). Same
 # posture as manage/actions.ts directly beside it: the caller is re-gated as host, cohost or staff
@@ -491,6 +498,7 @@ app/api/cron/journey-prompt/route.ts
 app/api/cron/lifecycle-triggers/route.ts
 app/api/cron/onboarding-throughput/route.ts
 app/api/cron/publish-scheduled/route.ts
+app/api/cron/storage-backup/route.ts
 app/api/cron/weekly-digest/route.ts
 app/api/observe/route.ts
 app/api/qr/route.ts

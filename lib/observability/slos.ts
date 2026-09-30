@@ -213,8 +213,9 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
       'billing-renewals',
       'signup-lead-recovery',
       'onboarding-throughput',
+      'storage-backup',
     ],
-    why: 'renewals, retention, lifecycle, embeddings, the daily readings',
+    why: 'renewals, retention, lifecycle, embeddings, the daily readings, the nightly storage copy',
   },
   {
     group: 'weekly',
@@ -374,7 +375,7 @@ export function isCronFresh(
 // the twenty are the twenty checks that exist in the account (OWN-005, OWN-065). The
 // opt-outs are OWN-005's bottom eight, every one an embedding or an AI derivation whose
 // silent failure degrades a reading gradually and is repaired by a backfill, plus the
-// one daily instrument that joined the fleet after the ranking (LIVE-311).
+// daily jobs that joined the fleet after the ranking (LIVE-311, LIVE-587, HYG-144).
 //
 // Moving a job across the line is a code change here AND an account change there (a
 // check created or deleted, CRON_HEARTBEAT_SKIP edited). Neither alone is the move.
@@ -424,6 +425,12 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'vera-owner-brief', reason: 'mails one person, the owner, who notices its absence tomorrow; self-monitoring' },
   { job: 'reconcile-transfers', reason: 'retries split-order seller transfers (LIVE-622); the settle pays first, every stuck row logs at error, and a monitor is a Healthchecks check the owner adds (the account holds 20)' },
   { job: 'onboarding-throughput', reason: 'a read-only daily reading (LIVE-311); a miss delays a log line and the next run reads the same state' },
+  // HYG-144: unmonitored only because the Healthchecks free tier's 20 checks are all taken. It is
+  // the one opt-out whose silence is costly (a dead copy means new files have no second home), so
+  // when a check frees up or the plan grows, the owner creates a `storage-backup` check and this
+  // entry moves to CRON_MONITORED in the same change. Its cursor makes a missed night cheap: the
+  // next run copies everything the missed one would have.
+  { job: 'storage-backup', reason: 'nightly storage copy to R2 (HYG-144); a missed night is caught up by the next run from its cursor, and no check is free on the 20-check plan' },
 ]
 
 /** Is this cron expected to page when it goes quiet? False for an opt-out and for a job
