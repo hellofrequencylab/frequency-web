@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { X } from 'lucide-react'
 import { resolveScannedText } from '@/lib/scan/resolve'
+import { documentRefusesCamera, shouldReloadForCamera, type PolicyDocument } from '@/lib/scan/camera-policy'
 
 type ScanState =
   | { kind: 'starting' }
@@ -79,6 +80,15 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
     async function run() {
       if (!navigator.mediaDevices?.getUserMedia) {
         setState({ kind: 'unsupported' })
+        return
+      }
+      // LIVE-713: a <Link> into /scan keeps the document the member started on, and its
+      // Permissions-Policy is camera=(). Load /scan as its own document (camera=(self)) once,
+      // instead of asking and landing on the denied card. See lib/scan/camera-policy.ts.
+      const loaded = performance.getEntriesByType?.('navigation')?.[0]?.name
+      const refuses = documentRefusesCamera(document as unknown as PolicyDocument)
+      if (shouldReloadForCamera(refuses, loaded, window.location.pathname)) {
+        window.location.replace(window.location.href)
         return
       }
       try {

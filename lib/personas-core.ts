@@ -17,8 +17,9 @@ export const PARTNER_PERSONAS: readonly PartnerPersona[] = [
   'collaborator', 'practitioner', 'business', 'organization',
 ] as const
 
-// The money-moving partner programs (ROLES.md System 2): a Practitioner runs paywalled
-// Programs (Stripe Connect, verified) and an Organization carries tenant billing. These
+// The money-moving partner programs (ROLES.md System 2): a Practitioner sells what they do
+// (tickets, products, paid bookings, memberships and Journeys, paid out through Stripe Connect,
+// verified) and an Organization carries tenant billing. These
 // are the focus of the admin verification queue (EM2-5): their `active` state is the one
 // gated on a real per-persona payout binding. The other two programs (Collaborator,
 // Business) verify the same way and ride a secondary section of the queue.
@@ -47,8 +48,18 @@ export const PERSONA_META: Record<
   practitioner: {
     label: 'Practitioner', emoji: '🧘',
     tagline: 'Healers, breathwork facilitators, yogis running their own network',
-    unlocks: 'Host paywalled Programs + gamify your clients’ progress, with a private Channel & Circles under the Frequency brand.',
-    tools: [], // paywalled Programs + client gamification — building (P3.x)
+    // LIVE-709 (ADR-1675): this line promised "paywalled Programs", which nothing can sell. It now
+    // names only money paths that are live (lib/billing/payout-prompt.ts PAYOUT_CHANNELS) and the
+    // rule each one runs on: tickets and Market products sell from any account (ADR-914), bookings
+    // and memberships need a Space, and only a paid Space may price a Journey (ADR-1397). Every tool
+    // below opens a real page; lib/personas-practitioner-promise.test.ts holds both halves.
+    unlocks: 'Get paid for what you already do. Sell tickets to your events and list products in the Market from any account. Open a Space to take paid bookings and sell memberships, and once it’s on a paid plan, sell your Journeys.',
+    tools: [
+      { label: 'Host an event', href: '/events/new' },
+      { label: 'List a product', href: '/market/sell' },
+      { label: 'Open a Space', href: '/spaces/new' },
+      { label: 'Receive payments', href: '/settings#payouts' },
+    ],
   },
   business: {
     label: 'Business', emoji: '🏪',

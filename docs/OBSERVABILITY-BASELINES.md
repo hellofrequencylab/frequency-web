@@ -56,9 +56,16 @@ code that owns the query so the plan is reproducible.
 |---|---|---|---|
 | **Feed** | Loads their home feed | `lib/feed/blend-rank.ts`, `lib/feed/feed-people.ts` | `feed_for_viewer` / `scoped_feed_for_viewer` RPC |
 | **Circle detail** | Opens a Circle page | `lib/circles/*` | circle row + members + scoped posts |
-| **People directory** | Browses people / suggestions | `lib/feed/feed-people.ts`, `lib/people-suggestions.ts` | profile list + connection-state join |
+| **People directory** | Browses people / suggestions at `/network` | `app/(main)/network/page.tsx` (the member-card listing read), `lib/people-suggestions.ts` | service-role `profiles` listing (one `.range()` page of 48 since LIVE-661) + `members_near` banding + suggestion joins |
 | **Practice log write** | Logs a practice (North-Star write) | `lib/practices/*` | practice insert + ledger award (idempotent) |
 | **Events catalog** | Browses the events list | `lib/events/store.ts` | events list + scope + occurrence join |
+
+**Sample `/network`, not `/people`.** ADR-172 moved the directory into the Network hub, and
+`/people` is now a bare `redirect()` there. The harness used to time `/people`, so its People
+directory reading measured a 307 and never reached the directory query (HYG-141, ADR-1660).
+`scripts/perf-baseline.test.ts` fails if any concrete route the harness samples is a
+redirect-only page. All three directory reads run through the admin client, so their plans are
+the `service_role` shape; `--plans` prints the listing SQL.
 
 **Note on the one write path.** Practice-log write is included deliberately: it is the
 `practice.verified` North-Star emitter and the one hot path that mutates the ledger, so
@@ -155,7 +162,7 @@ the Supabase MCP `execute_sql` (read-only) or the SQL editor for each path.
 
 1. **Feed** (`feed_for_viewer`, role `authenticated`): not captured — `posts` = 0.
 2. **Circle detail**: not captured — `circles` = 0, `circle_profiles` = 0.
-3. **People directory**: not captured — `profiles` = 58, `friendships` = 1.
+3. **People directory** (`/network` listing, role `service_role`): not captured — `profiles` = 58, `friendships` = 1.
 4. **Practice log write** (insert + award path): not captured — `practice_logs` = 14. ⚠️ Note when
    this is captured: `EXPLAIN ANALYZE` **executes** the statement, so the insert path must be run
    inside a transaction that is rolled back, never against production as-is.
