@@ -440,7 +440,7 @@ export function ItemForm({
           <label htmlFor={`tag-input-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
             Tags
           </label>
-          <div className="flex flex-wrap items-center gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 focus-within:border-border-strong">
             {tags.map((t) => (
               <span key={t} className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2 py-0.5 text-meta text-text">
                 {t}

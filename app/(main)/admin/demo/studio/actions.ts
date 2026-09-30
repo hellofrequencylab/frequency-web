@@ -24,11 +24,20 @@ async function planFor(spec: AreaSpec) {
   return buildPlan(spec, palette)
 }
 
-// Run the decay pass on demand (dry run = report without writing).
-export async function runDemoDecay(dryRun: boolean): Promise<DecayReport> {
+// The decay pass on demand, as two actions rather than one with a dry-run flag the browser sends
+// (HYG-143, CodeQL js/user-controlled-bypass): which one the panel calls is the choice, and the
+// write path never branches on a value from the request.
+// Preview: report what the pass would touch, write nothing.
+export async function previewDemoDecay(): Promise<DecayReport> {
   await requireJanitor()
-  const report = await runDecay({ dryRun })
-  if (!dryRun) revalidatePath('/', 'layout')
+  return runDecay({ dryRun: true })
+}
+
+// Run: apply the pass, then refresh every page that reads demo rows.
+export async function runDemoDecay(): Promise<DecayReport> {
+  await requireJanitor()
+  const report = await runDecay({ dryRun: false })
+  revalidatePath('/', 'layout')
   return report
 }
 

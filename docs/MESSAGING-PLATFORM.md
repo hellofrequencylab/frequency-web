@@ -47,7 +47,7 @@ Additional facts:
 | Supabase client | `@supabase/supabase-js` 2.110 + `@supabase/ssr` |
 | Styling | Tailwind v4 semantic tokens |
 | Rate limiting / cache | Upstash Redis + ratelimit installed |
-| Prior art | A separate `resonance/` sub-app already contains a full realtime transport / presence abstraction to lift from |
+| Prior art | The Resonance app (moved to `apps/resonance` in `hellofrequencylab/development`, [ADR-1580](DECISIONS.md)) contains a full realtime transport / presence abstraction to lift from |
 
 ---
 

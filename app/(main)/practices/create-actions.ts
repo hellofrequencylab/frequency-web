@@ -146,7 +146,9 @@ export async function createPracticeFromSparkAction(input: {
   const practice = governed.data
 
   // Map the chosen Pillar slugs to real Focus ids (a Practice can span multiple Focuses).
-  // updatePractice mirrors domain_id to the FIRST focus_details key for back-compat.
+  // A new practice has no primary yet, so updatePractice takes the first Pillar of this map as it
+  // is built here, in the order the author chose them; from then on domain_id is the primary and
+  // key order means nothing (LIVE-650, ADR-1618).
   const patch: PracticeEdit = {}
   if (input.summary?.trim()) patch.summary = input.summary.trim()
   if (input.body?.trim()) patch.body = input.body.trim()

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import {
   AGENT_PROMPT,
@@ -13,6 +12,7 @@ import {
   extractPaths,
   collisionReport,
   pendingMigrations,
+  loadBacklog,
 } from './agent-packets.mjs'
 
 const SCRIPT = path.join(process.cwd(), 'scripts/agent-packets.mjs')
@@ -165,7 +165,7 @@ describe('agent packets (ADR-1412)', () => {
   })
 
   it('slate product next lists LIVE-414 before other product ids', () => {
-    const doc = JSON.parse(readFileSync(path.join(process.cwd(), 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    const doc = loadBacklog()
     const next = doc.meta?.slate?.metaScanCleanup?.productAgent?.next ?? []
     const by = Object.fromEntries((doc.entries ?? []).map((e: { id: string; status: string }) => [e.id, e.status]))
     if (by['LIVE-414'] === 'open') {
@@ -183,7 +183,7 @@ describe('agent packets (ADR-1412)', () => {
     const { status, stdout, stderr } = run(['--json', '--lane', 'events'])
     expect(status, stderr).toBe(0)
     const body = JSON.parse(stdout)
-    const doc = JSON.parse(readFileSync(path.join(process.cwd(), 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    const doc = loadBacklog()
     const open = (doc.entries ?? []).some((e: { id: string; status: string }) => e.id === 'LIVE-414' && e.status === 'open')
     if (open) {
       expect(body.next[0].id).toBe('LIVE-414')

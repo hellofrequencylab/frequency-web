@@ -35,7 +35,13 @@ import {
   listAudienceTags,
   type AudienceFilter,
 } from '@/lib/spaces/audiences'
-import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER, type SpaceRecipient } from '@/lib/spaces/email'
+import {
+  sendSpaceCampaign as sendViaSeam,
+  SPACE_UNSUBSCRIBE_PLACEHOLDER,
+  SPACE_NOT_ACTIVE_EMAIL_ERROR,
+  spaceEmailHold,
+  type SpaceRecipient,
+} from '@/lib/spaces/email'
 import { canEmailContact } from '@/lib/crm/contact-consent'
 import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
 import { resolveSendGate } from '@/lib/comms/send-gate'
@@ -556,6 +562,9 @@ export async function sendSpaceEmailDraftAsConversations(
   const gate = await requireSpaceEditor(spaceId)
   if (!gate.ok) return fail(gate.error)
   const { space } = gate
+  // (LIVE-727) This path mails through the conversation system, not the campaign seam, so it carries its
+  // own copy of the seam's Space-status gate: a suspended or archived Space sends nothing from here either.
+  if (spaceEmailHold(space.status)) return fail(SPACE_NOT_ACTIVE_EMAIL_ERROR)
   const actorProfileId = await getMyProfileId()
   if (!actorProfileId) return fail('Sign in to send email for this space.')
 

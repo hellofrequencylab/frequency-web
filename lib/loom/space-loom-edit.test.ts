@@ -10,7 +10,7 @@ const state = {
   canManage: true,
   holds: true,
   usage: { ok: true, pages: 0, refs: 0, places: [] } as unknown,
-  updateOut: 'ok' as 'ok' | 'missing' | 'failed',
+  updateOut: 'ok' as 'ok' | 'missing' | 'refused' | 'failed',
   deleted: [] as string[],
   updated: [] as unknown[],
   usageReads: 0,
@@ -35,8 +35,18 @@ vi.mock('@/lib/spaces/store', () => ({
 vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: async () => ({ role: 'editor', canEditProfile: true }) }))
 vi.mock('@/lib/library/space-loom-access', () => ({ canManageSpaceLoom: () => state.canManage }))
 vi.mock('@/lib/spaces/operated', () => ({ listOperatedSpaces: async () => [] }))
+// The Space Loom's session store (LIVE-571): the holds-check and the words write run on the caller's
+// session; their policy behaviour is proved in lib/library/space-loom-store.test.ts.
+vi.mock('@/lib/library/space-loom-store', () => ({
+  spaceLoomHoldsAsset: async () => state.holds,
+  listSpaceLoomImages: async () => [],
+  listSpaceLoomTags: async () => [],
+  updateSpaceLoomAssetMeta: async (...args: unknown[]) => {
+    state.updated.push(args)
+    return state.updateOut
+  },
+}))
 vi.mock('@/lib/library/store', () => ({
-  getLibraryAsset: async (spaceId: string, id: string) => (state.holds ? { id, spaceId } : null),
   deleteSpaceLibraryAsset: async (_spaceId: string, id: string) => {
     state.deleted.push(id)
     return { bucket: 'library-media', path: 'p' }
@@ -58,10 +68,6 @@ vi.mock('@/lib/library/store', () => ({
     state.forkCalls.push([spaceId, id])
     if (state.budgetRefusal) return { error: state.budgetRefusal }
     return { id: `copy-of-${id}`, url: 'https://cdn/copy.jpg', reused: false }
-  },
-  updateSpaceLibraryAssetMeta: async (...args: unknown[]) => {
-    state.updated.push(args)
-    return state.updateOut
   },
 }))
 vi.mock('@/lib/library/usage', () => ({
@@ -132,6 +138,12 @@ describe('updateSpaceLoomImageMeta: rename, caption, retag', () => {
   it('an id from another Space updates nothing and says so', async () => {
     state.updateOut = 'missing'
     expect(await updateSpaceLoomImageMeta('camp', 'b9', { title: 'x' })).toEqual({ error: 'That image is not in this library.' })
+  })
+  it('a role the database does not let write is told so, not that the image is missing (LIVE-571)', async () => {
+    state.updateOut = 'refused'
+    expect(await updateSpaceLoomImageMeta('camp', 'a1', { title: 'x' })).toEqual({
+      error: 'Your role in this space cannot edit its images.',
+    })
   })
   it('an id that is neither this Space’s nor a Frequency master is refused before any write (LIVE-569)', async () => {
     state.target = 'refused'

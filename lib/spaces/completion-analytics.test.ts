@@ -153,4 +153,21 @@ describe('getSpaceCompletionAnalytics', () => {
     expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
   })
+
+  it('keeps the Journey count but zeroes the people when the enrollment read fails', async () => {
+    plans.push({ id: 'j1' }, { id: 'j2' })
+    enrollments.push(row('j1', 'p1', '2026-09-01T00:00:00.000Z'))
+    enrollError = { message: 'statement timeout' }
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await expect(getSpaceCompletionAnalytics('space-1')).resolves.toEqual({
+      journeyCount: 2,
+      enrolled: 0,
+      completed: 0,
+      inProgress: 0,
+      paidEnrolled: 0,
+      completionPct: null,
+    })
+    expect(errSpy).toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
 })

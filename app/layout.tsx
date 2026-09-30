@@ -16,6 +16,7 @@ import {
 import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
 import { THEME_BOOTSTRAP_SCRIPT, THEME_COLOR_LIGHT } from '@/lib/theme/mode'
+import { INSTALL_CAPTURE_SCRIPT } from '@/lib/pwa/install-capture'
 import { ThemeModeSync } from '@/components/layout/theme-mode-sync'
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
@@ -181,6 +182,10 @@ export default function RootLayout({
       <head>
         {/* Theme script must run synchronously before any paint */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+        {/* Holds Chromium's install prompt for a later tap, keeps its first-visit mini-bar off, and
+            stamps the device's first visit (LIVE-703). Here, not in a component, because the
+            prompt can fire before hydration and is not fired again until the next full load. */}
+        <script dangerouslySetInnerHTML={{ __html: INSTALL_CAPTURE_SCRIPT }} />
         {/* Site-wide structured data for search/answer engines. The Organization
             node carries the founding location (city-level only) so engines can
             resolve Frequency as a real, place-rooted entity. */}

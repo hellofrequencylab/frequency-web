@@ -3,7 +3,8 @@ import {
   Zap, Gem, Flame, Trophy, CalendarCheck, PenTool, Mic, LogIn, Receipt, type LucideIcon,
 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
-import { getEarningLog, ledgerLabel, type LedgerEntry, type LedgerStreakType } from '@/lib/economy/ledger'
+import { getEarningLog, getZapWeeks, ledgerLabel, type LedgerEntry, type LedgerStreakType } from '@/lib/economy/ledger'
+import { weekOverWeekDelta } from '@/lib/economy/week-over-week'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { RankBadge } from '@/components/ui/rank-badge'
 import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
@@ -55,7 +56,7 @@ export default async function VaultLedgerPage() {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
 
-  const { entries, streaks, totals } = await getEarningLog(profileId)
+  const [{ entries, streaks, totals }, weeks] = await Promise.all([getEarningLog(profileId), getZapWeeks(profileId)])
   // The Vault headline is the season rank + Amplitude (the lifetime layer —
   // Rewards Economy v2; supersedes the lifetime-rank display).
   const rank = (totals.rank as SeasonRank | null) ?? null
@@ -79,7 +80,15 @@ export default async function VaultLedgerPage() {
       width="default"
       stats={
         <>
-          <StatCard label="Zaps · season" value={totals.seasonZaps.toLocaleString()} icon={Zap} />
+          {/* This week against last week (LIVE-685): read from the ledger, never a red arrow. */}
+          <StatCard
+            label="Zaps · season"
+            value={totals.seasonZaps.toLocaleString()}
+            icon={Zap}
+            detail={weeks ? `${weeks.thisWeek.toLocaleString()} this week` : undefined}
+            delta={weeks ? weekOverWeekDelta(weeks) : undefined}
+            title={weeks ? 'This week is the last 7 days; last week is the 7 days before that.' : undefined}
+          />
           <StatCard label="Gems" value={totals.lifetimeGems.toLocaleString()} icon={Gem} />
           <StatCard label="Streak" value={`${totals.currentStreak}w`} icon={Flame} />
           <StatCard

@@ -199,6 +199,8 @@ each editor carrying `surfaces.editor.tier: 'standard' | 'primary' | 'extra'` + 
 ### Phase 6 — Per-scope App overrides 🔒→🔵
 *Operator customization (Planner C, B6; research v2).* New `app_overrides` table mirroring `page_chrome_overrides` (keyed `(scope_key, app_id)`, `enabled`/`position`/`min_role`, fail-safe to catalog defaults); `loadAppOverrides` + pure `mergeAppOverrides`; a Loom-style manage surface under `/admin/page-layout`. Spine order stays fixed; overrides act on Apps within categories.
 
+A **global disable wins on every scope** ([ADR-1664](DECISIONS.md), LIVE-686). Every page reads its scope's map through `resolveScopeAppOverrides`, which folds the Apps disabled at `global` into that scope's own rows. Only the disable travels: a global `position` or `min_role` stays on the global rail.
+
 ### Phase 7 — Fill the 9-spine for every entity 🔵
 *Breadth (Planner C, S1–S4).* Copy the LP-EVENT recipe to add the missing spine modules — **Circle** (Place&Time, People, Engage, Comms, Insights), **Hub/Nexus** (People, Layout, Reach, Comms, Insights, Danger), **Practice** (Layout, Engage, Insights). Confirmed: **no new capabilities or migrations** (all gates + data exist); Safety + the richer role ladder are the only cells needing a migration and are deferred to S4. Each cell = a registry row + map binding + module component + two gated actions (+ optional page block). Parallelizable per entity.
 
