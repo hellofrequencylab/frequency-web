@@ -3,6 +3,8 @@ import { Search, EyeOff } from 'lucide-react'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { type PracticeSort } from '@/lib/practices'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import { canReviewLibrarySubmission } from '@/lib/moderation/scope'
+import { buttonClasses } from '@/components/ui/button'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
@@ -12,11 +14,12 @@ import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 
 // Practices (ADR-270/294). The whole interior is module-driven: the personal blocks (stats ·
-// activity · Pillar balance · your practices) AND the faceted Practice Library are layout modules
-// arranged by the operator (Settings ▾ → Page → Layout). The library is URL-driven; it reads the
-// page's facets from the `x-search` request header (proxy.ts), since searchParams are a page prop a
-// nested module never receives. This page keeps only the header + the search/sort toolbar (which
-// WRITE those facets into the URL) and then renders <PageModules>.
+// activity · Pillar balance · your practices), the ranked best-of catalog of practices AND journeys
+// (the Library's, since /library became a 308 here: LIVE-681, ADR-1678) AND the faceted Practice
+// Library are layout modules arranged by the operator (Settings ▾ → Page → Layout). Both catalogs
+// are URL-driven; they read the page's facets from the `x-search` request header (proxy.ts), since
+// searchParams are a page prop a nested module never receives. This page keeps only the header +
+// the search/sort toolbar (which WRITE those facets into the URL) and then renders <PageModules>.
 
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
@@ -75,6 +78,10 @@ export default async function PracticesPage({
   // The quantity cap is `practice_publish` at go-live, never a Crew wall on this button.
   const signedIn = !!caller
   const canCreatePractice = caps.has('practice.create')
+  // The review queue's door moved here with the Library (LIVE-681, ADR-1678): /library is a 308 to
+  // this page, and /library/review keeps its own route. Same helper as the queue page and the
+  // Approve action (staff or a granted Platform moderator), so no one sees a door that refuses.
+  const canReview = !!caller && canReviewLibrarySubmission(caller.webRole)
 
   // The toolbar writes the facets the library module reads back from the URL.
   const base = {
@@ -118,6 +125,11 @@ export default async function PracticesPage({
         (signedIn || (ctaLabel && ctaHref)) ? (
           <div className="flex items-center gap-2">
             {signedIn && <NewPracticeButton canCreate={canCreatePractice} />}
+            {canReview && (
+              <Link href="/library/review" className={buttonClasses('secondary', 'sm')}>
+                Review queue
+              </Link>
+            )}
             {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
             {ctaLabel && ctaHref && (
               <a
@@ -184,6 +196,7 @@ export default async function PracticesPage({
                 { id: 'practices-mine', label: 'Your practices' },
               ]
             : []),
+          { id: 'practices-best-of', label: 'Best of' },
           { id: 'practices-library', label: 'Library' },
         ]}
       />

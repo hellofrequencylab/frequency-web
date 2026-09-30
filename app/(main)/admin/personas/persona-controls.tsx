@@ -9,7 +9,9 @@ import { isError } from '@/lib/action-result'
 import { canStaffTransition, type PartnerPersona, type PersonaState } from '@/lib/personas-core'
 
 // The staff verify/activate/suspend/reinstate buttons for one persona row. Only the
-// transitions the state machine allows from the current state render (canStaffTransition).
+// transitions the state machine allows from the current state render (canStaffTransition),
+// and Activate only when the payout gate passes (`canActivate`, LIVE-696). The action
+// re-checks the gate against a fresh read, so this only keeps a dead button off the row.
 const ACTIONS: { to: PersonaState; label: string; Icon: typeof Check; tone: 'go' | 'warn' | 'danger' }[] = [
   { to: 'verified', label: 'Verify', Icon: Check, tone: 'go' },
   { to: 'active', label: 'Activate', Icon: Zap, tone: 'go' },
@@ -20,10 +22,13 @@ export function PersonaControls({
   profileId,
   persona,
   state,
+  canActivate,
 }: {
   profileId: string
   persona: PartnerPersona
   state: PersonaState
+  /** The payout gate's answer for this row (personaActivationVerdict). */
+  canActivate: boolean
 }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -49,7 +54,7 @@ export function PersonaControls({
           <RotateCcw className="h-3.5 w-3.5" /> Reinstate
         </Button>
       ) : (
-        ACTIONS.filter((a) => canStaffTransition(state, a.to)).map((a) =>
+        ACTIONS.filter((a) => canStaffTransition(state, a.to) && (a.to !== 'active' || canActivate)).map((a) =>
           // Suspend uses the canonical outlined-danger variant (quieter than solid danger);
           // Verify/Activate map cleanly to the primary button.
           a.tone === 'danger' ? (

@@ -1,16 +1,12 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
 
-// SPACE EMAIL ACCEPTABLE-USE POLICY: A DRAFT FOR COUNSEL (LIVE-707, ADR-1658; owner ruling OWN-085
-// "Draft the AUP for review").
-//
-// This page is NOT live policy. It is the plain-language draft the owner hands to a lawyer. Three
-// things keep it from reading as final, and the test next door pins all three:
-//   1. `robots: { index: false }` and no entry in app/sitemap.ts, so nothing advertises it;
-//   2. nothing links here, least of all the Turn on email card (components/spaces/email/
-//      email-enable-card.tsx), whose checkbox stays the only thing an owner agrees to until
-//      counsel has read this and OWN-085 closes;
-//   3. the page opens with a draft banner and closes with the open questions for counsel.
+// SPACE EMAIL ACCEPTABLE-USE POLICY: LIVE (LIVE-729, ADR-1673). Drafted by LIVE-707 (ADR-1658) as a
+// draft for counsel; the owner ruled on 2026-09-30 "Ship without counsel review" (OWN-085), so this is
+// Frequency's policy now. It is indexed and in app/sitemap.ts beside /privacy and /terms, the Turn on
+// email card (components/spaces/email/email-enable-card.tsx) links it, and so does section 4 of the
+// Terms. The card's checkbox is unchanged: nothing new is recorded when an owner turns email on.
 //
 // EVERY RULE IS GROUNDED IN WHAT THE CODE DOES (lib/spaces/email.ts is the send backbone):
 //   who sends       canEditProfile + the per-Space `email` function, default min role admin
@@ -19,24 +15,35 @@ import { FocusTemplate } from '@/components/templates'
 //   who receives    canEmailContact: a marketing send needs consent_state 'subscribed' in THIS
 //                   Space; an import lands 'unknown' (lib/crm/import/commit.ts); the one relaxed
 //                   lane is an event host mailing that event's guests (consentPurposeForLane);
+//   how it goes out the shared sender with the Space's name, no per-Space Reply-To, and the
+//                   platform postal line in every footer (lib/email-studio/postal.ts, LIVE-728);
 //   limits          DAILY_SEND_CAP (500 a day, UTC; skipped recipients do not count) and the plan's
 //                   monthly `space_email` allowance;
 //   unsubscribe     RFC 8058 one-click header + footer link, a per-Space suppression, per-topic mute;
 //   bounces         the Resend webhook suppresses a hard bounce or complaint globally AND for the
 //                   Space (app/api/webhooks/resend/route.ts); the Email panel flags complaints over
 //                   0.1% (components/spaces/email/analytics-panel.tsx);
-//   turning it off  the same kill switch; platform staff hold Space admin capability.
-// If one of those changes, change the sentence here in the same PR.
+//   turning it off  the same kill switch; platform staff hold Space admin capability; a Space that
+//                   is not active sends nothing (spaceEmailHold in lib/spaces/email.ts, LIVE-727).
+// If one of those changes, change the sentence here in the same PR. page.test.tsx reads the numbers
+// from the modules that enforce them.
 //
-// Voice: docs/CONTENT-VOICE.md. Plain, no em dashes. Bracketed text is a placeholder for the owner.
+// Voice: docs/CONTENT-VOICE.md. Plain, no em dashes.
+
+const TITLE = 'Space email policy'
+const DESCRIPTION =
+  'The rules for sending email from a Space on Frequency: who you can email, what you can send, and the limits.'
 
 export const metadata: Metadata = {
-  title: 'Space email policy (draft)',
-  description: 'A working draft of the rules for sending email from a Space on Frequency, written for legal review. Not in force.',
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: '/space-email-policy' },
-  // A draft for counsel is not something to index or advertise. It is deliberately absent from
-  // app/sitemap.ts, and nothing in the product links here until the reviewed version replaces it.
-  robots: { index: false, follow: false },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: '/space-email-policy' },
+  // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
+  // block verbatim. Mirror this page's own, as /privacy and /terms do.
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
+  // A live policy is public reference, like /privacy and /terms: indexed and in app/sitemap.ts.
+  robots: { index: true, follow: true },
 }
 
 function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
@@ -53,35 +60,27 @@ function Section({ n, title, children }: { n: number; title: string; children: R
 const P = 'text-muted leading-relaxed'
 const UL = 'text-muted space-y-2 list-disc list-inside'
 const B = 'text-text'
+const A = 'text-primary-strong hover:underline'
 
 export default function SpaceEmailPolicyPage() {
   return (
     <div className="min-h-screen bg-surface">
       <div className="px-6 py-16">
         <FocusTemplate
-          eyebrow="Draft for counsel review"
           title="Space email acceptable use policy"
-          description="Working draft, September 29, 2026. Not in force."
+          description="Last updated: September 30, 2026"
           width="default"
         >
           <div className="prose prose-sm prose-gray dark:prose-invert max-w-none space-y-8">
-            <section>
-              <div className="rounded-card border border-border bg-surface-elevated p-4" role="note">
-                <p className={P}>
-                  <strong className={B}>DRAFT. Not in force, and no lawyer has read it yet.</strong> This
-                  is a working draft of the rules for sending email from a Space, written so a lawyer can
-                  review it. It is not legal advice and it is not part of any agreement. Nothing in
-                  Frequency links here. Until a reviewed version replaces it, the rules that apply are our
-                  Terms of Service and the box you tick when you turn email on for a Space.
-                </p>
-              </div>
-            </section>
-
             <Section n={1} title="What this covers">
               <p className={P}>
                 A Space on Frequency can email its own contacts: one-off campaigns, scheduled sends,
                 automated sequences, and an event host&apos;s updates to that event&apos;s guests. This
-                policy covers all of it. It sits on top of our Terms of Service, which still apply.
+                policy covers all of it. It sits on top of our{' '}
+                <Link href="/terms" className={A}>
+                  Terms of Service
+                </Link>
+                , which still apply.
               </p>
               <p className={P}>
                 Email is off for every Space until someone who runs the Space turns it on. By default
@@ -99,6 +98,7 @@ export default function SpaceEmailPolicyPage() {
                   your Space&apos;s name as the sender name.
                 </li>
                 <li>Replies go to that shared address, not to your Space.</li>
+                <li>Every email ends with Frequency Labs Holdings&apos; postal address.</li>
                 <li>
                   Every email carries a one-click unsubscribe link, both in the email itself and in the
                   header inbox apps use for their own unsubscribe button.
@@ -184,8 +184,7 @@ export default function SpaceEmailPolicyPage() {
                 <li>Anything sold for someone else, or email sent on another business&apos;s behalf</li>
               </ul>
               <p className={P}>
-                This list is a draft for review and may be longer when it is final. When something is
-                unclear, ask us before you send.
+                We may add to this list. When something is unclear, ask us before you send.
               </p>
             </Section>
 
@@ -226,19 +225,20 @@ export default function SpaceEmailPolicyPage() {
               </ul>
               <p className={P}>
                 We will tell the Space&apos;s owner why by email. For serious or repeated problems we may
-                also suspend the Space or the accounts involved, as our Terms of Service allow.
+                also suspend the Space or the accounts involved, as our Terms of Service allow. A
+                suspended Space sends no email at all.
               </p>
             </Section>
 
             <Section n={10} title="Asking us to look again">
               <p className={P}>
                 If we turned off your Space&apos;s email and you think we got it wrong, email{' '}
-                <a href="mailto:hello@frequencylocal.com" className="text-primary-strong hover:underline">
+                <a href="mailto:hello@frequencylocal.com" className={A}>
                   hello@frequencylocal.com
                 </a>{' '}
-                with your Space&apos;s name and what happened. A person reads every appeal. We will reply
-                within [owner to set: number of business days]. If you have fixed the cause (for
-                example, cleaned the list or changed how people sign up), tell us what changed.
+                with your Space&apos;s name and what happened. A person reads every appeal and writes back.
+                If you have fixed the cause (for example, cleaned the list or changed how people sign
+                up), tell us what changed.
               </p>
             </Section>
 
@@ -257,69 +257,6 @@ export default function SpaceEmailPolicyPage() {
                 email turned on before the change takes effect.
               </p>
             </Section>
-
-            <section>
-              <div className="rounded-card border border-border bg-surface-elevated p-4 space-y-3" role="note">
-                <p className={P}>
-                  <strong className={B}>For counsel: open questions.</strong> These come from reading
-                  what Space email actually does today. This section comes out before the policy is
-                  published.
-                </p>
-                <ol className="text-muted space-y-2 list-decimal list-inside">
-                  <li>
-                    Sender of record. Each email goes out from Frequency&apos;s shared address with the
-                    Space&apos;s name as the display name. Who is the sender under CAN-SPAM, and are we
-                    controller or processor for Space contacts under GDPR and UK GDPR?
-                  </li>
-                  <li>
-                    Physical address. Emails built in the Space email editor carry Frequency Labs
-                    Holdings&apos; postal address in the footer. The plain campaign composer and automated
-                    sequences carry an unsubscribe line and no address. Whose address must appear, and
-                    must every Space provide one?
-                  </li>
-                  <li>
-                    Replies. There is no per-Space reply address yet; replies go to Frequency&apos;s
-                    shared no-reply sender. Is that acceptable, given the one-click unsubscribe?
-                  </li>
-                  <li>
-                    The event host exception. An event host can mail that event&apos;s guests without a
-                    marketing opt-in (event updates only, unsubscribes and mutes honored). Does that hold
-                    as transactional or relationship mail under CAN-SPAM, CASL, and PECR?
-                  </li>
-                  <li>
-                    Join as consent. Joining a Space marks the person as subscribed to that Space&apos;s
-                    email. Is a join enough, or does the join screen need its own notice or checkbox?
-                  </li>
-                  <li>
-                    Global stop. One spam complaint or hard bounce stops every Space from emailing that
-                    address. Is that right, or should a complaint against one Space stop only that Space?
-                  </li>
-                  <li>
-                    Enforcement. Nothing turns a Space&apos;s email off automatically today: the 0.1%
-                    complaint line is a warning to the Space, and our staff turn email off by hand.
-                    Suspending a Space does not by itself stop its email yet. Does the policy need a fixed
-                    threshold, a notice period, or a right to respond before we turn email off?
-                  </li>
-                  <li>
-                    Prohibited list. Section 6 is a starting list for a wellness community. Which items
-                    should move, be added, or be allowed with conditions (for example, licensed
-                    practitioners, alcohol at events, political or fundraising email)?
-                  </li>
-                  <li>
-                    Tracking. We record opens and clicks with a pixel and redirected links. Does that need
-                    a line in the recipient-facing privacy notice, and consent in the EU and UK?
-                  </li>
-                  <li>
-                    Acceptance. Today an owner ticks one box. Should turning email on require agreeing to
-                    this policy by name, with the date recorded, and should Spaces that already have
-                    email on be asked to agree once it is final?
-                  </li>
-                  <li>
-                    Appeals. What reply time should we commit to, and should an appeal pause anything?
-                  </li>
-                </ol>
-              </div>
-            </section>
           </div>
         </FocusTemplate>
       </div>

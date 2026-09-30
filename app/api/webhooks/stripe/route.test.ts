@@ -60,6 +60,12 @@ vi.mock('@/lib/commerce/checkout', () => ({
   recordCommerceRefundFromCharge: async () => { H.calls.push('orderRefund') },
   abandonCommerceOrderFromSession: async () => { H.calls.push('abandon') },
 }))
+// LIVE-622: a split order's seller transfers. Each records under its own name so a test can prove
+// the two transfer events reach the ledger and nothing else.
+vi.mock('@/lib/commerce/transfers', () => ({
+  recordTransferCreated: async () => { H.calls.push('transferCreated') },
+  recordTransferReversed: async () => { H.calls.push('transferReversed') },
+}))
 vi.mock('@/lib/analytics/track', () => ({
   track: async (
     event: string,
@@ -330,6 +336,15 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     })
     await post()
     expect(H.trackCalls).toEqual([])
+  })
+
+  it('routes transfer.created and transfer.reversed to the transfer ledger, and nowhere else (LIVE-622)', async () => {
+    H.event = plainEvent('transfer.created', { id: 'tr_1' })
+    await post()
+    H.event = plainEvent('transfer.reversed', { id: 'tr_1', amount_reversed: 100 })
+    await post()
+    expect(H.calls).toEqual(['transferCreated', 'transferReversed'])
+    expect(H.rpcCalls).toHaveLength(0)
   })
 
   it('acks an unhandled event type with 200', async () => {

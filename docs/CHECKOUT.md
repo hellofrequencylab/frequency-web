@@ -24,6 +24,7 @@ must not be eight integrations.
 | **The form** | `components/billing/checkout-{panel,form}.tsx` | Entity-blind. Takes a client secret, renders the card fields. |
 | **The creator** | `lib/billing/*.ts`, `lib/commerce/checkout.ts` | Prices the thing, records its pending row, asks the seam for a session. |
 | **The funds flow** | `lib/commerce/funds-flow.ts` | Commerce only: one seller is a destination charge, two or more are one platform charge with `transfer_group` and transfers to follow; the order records `funds_flow` ([ADR-1576](DECISIONS.md), `LIVE-621`). |
+| **The transfer ledger** | `lib/commerce/transfers.ts` | A split order's sellers, paid after the charge: one `commerce_order_transfers` row per seller, planned at settle, created under the key `transfer:<row id>`, retried by `/api/cron/reconcile-transfers`, reversed from the webhook ([ADR-1614](DECISIONS.md), `LIVE-622`). |
 | **The action** | a `'use server'` module per surface | Decides whether the browser can mount a form, and hands back exactly one of two shapes. |
 | **The control** | the buy button | Branches on what ARRIVED, renders the panel, and can always escape to hosted. |
 | **Discovery stamp** | `lib/commerce/marketplace-entry.ts` via `proxy.ts` | The Market / Journey view, recorded at render so checkout can classify `network` without a client argument ([ADR-1419](DECISIONS.md), `LIVE-220`). Written only when missing, changed, or an hour stale ([ADR-1633](DECISIONS.md), `LIVE-711`). |

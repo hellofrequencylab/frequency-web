@@ -64,16 +64,14 @@ export interface LoomScope {
 }
 
 /** The Loom picker's resolved config for THIS viewer (from the element_settings master, role-gated).
- *  The picker honors it: which tabs render, whether AI Create shows, which scope it opens on. */
+ *  The picker honors it: which tabs render and which scope it opens on. */
 export interface LoomPickerConfig {
   tabs: { images: boolean; icons: boolean; elements: boolean; tags: boolean; spaces: boolean; airwaves: boolean }
-  aiCreate: boolean
   defaultScope: 'mine' | 'space'
 }
 
 const DEFAULT_LOOM_CONFIG: LoomPickerConfig = {
   tabs: { images: true, icons: true, elements: true, tags: true, spaces: true, airwaves: false },
-  aiCreate: false,
   defaultScope: 'mine',
 }
 
@@ -99,7 +97,6 @@ async function resolveLoomConfig(
       spaces: on('tab.spaces'),
       airwaves: on('tab.airwaves'),
     },
-    aiCreate: on('aiCreate'),
     defaultScope: elementChoice(resolved, 'defaultScope') === 'space' ? 'space' : 'mine',
   }
 }

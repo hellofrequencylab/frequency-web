@@ -377,7 +377,7 @@ forces a big-bang rewrite.
 | Shell | Import | Use it for | Header / slots |
 |---|---|---|---|
 | **Stream** | `StreamTemplate` | a flow of items: Feed, Broadcast, a circle discussion | `eyebrow·title·description·action·composer`, or `hero` when the stream opens on a header BAND instead of a sentence (Around You opens on the map, ADR-1034). The two are a union: in `hero` mode the band owns the `<h1>`, so the heading props are typed `never`. |
-| **Index** | `IndexTemplate` | a collection to browse whose sections are FIXED: Practices, Journeys, Library, Search, Messages, a Space's tabs, Help. (A browse surface whose body an operator rearranges is the **editable index** instead, §8.5) | `title·description·action·toolbar` |
+| **Index** | `IndexTemplate` | a collection to browse whose sections are FIXED: Practices, Journeys, Search, Messages, a Space's tabs, Help. (A browse surface whose body an operator rearranges is the **editable index** instead, §8.5) | `title·description·action·toolbar` |
 | **Detail** | `DetailTemplate` | one entity: a Circle, Event, Profile, Hub, Program | context band (`badges·actions`) + `tabs` |
 | **Dashboard** | `DashboardTemplate` | a metric-led operator/steward workspace: Marketing, CRM, Crew home | `eyebrow·title·description·actions·stats` + sections |
 | **Focus** | `FocusTemplate` | a centered, single-task surface: compose/edit forms, Settings, single-conversion + scan-confirm. **Centered body, rail still on** (§8.2) | `eyebrow·title·description·actions·back·width` |
@@ -616,7 +616,7 @@ every section that is a self-contained, self-fetching block. For each one:
     dashboard from a single fetch — the hero and at-a-glance line are derived from the SAME
     dispatch/event arrays as the main feed and the sidebar, not independent sections — and its
     two-column `main`/`side` visual cannot be preserved under the default `single` template (which
-    stacks every module in `main`). Like `/library`, it is a single coupled view, not a stack of
+    stacks every module in `main`). Like the old `/library` index was, it is a single coupled view, not a stack of
     standalone blocks.
   - **`/entry-points` is skipped:** it is a Crew-gated Focus builder (the interactive
     `EntryPointsManager` client manager with a paid-gate early return), not a stack of standalone
@@ -631,9 +631,9 @@ every section that is a self-contained, self-fetching block. For each one:
     empty) is the `journal-entries` module (`components/widgets/journal/journal-entries.tsx`).
   - `/library/review` → the Host-gated approval queue is the `library-review-queue` module
     (`components/widgets/library/library-review-queue.tsx`); returns `null` below Host, so the page's
-    redirect stays the real gate. **`/library` (the index) stays hand-composed:** its interior is one
-    faceted, `type`/`pillar` `searchParams`-driven grid (no `x-search` seam), not a stack of standalone
-    sections.
+    redirect stays the real gate. *(The `/library` index is gone since LIVE-681, ADR-1678: it is a 308
+    to `/practices`, whose `practices-best-of` module carries its ranked practices-and-journeys grid and
+    reads `type` through the `x-search` seam.)*
 - ✅ **Batch 1 (2026-06-19):** `connections/[id]`, `admin/events/[id]` (shell only); `/friends`
   (`friends-impact`, the exemplar above).
 
@@ -666,7 +666,6 @@ A standard index is therefore `trail={[...]}` + `heroImage={url}` + `title`, no 
 banner. Exemplars **that really compose `IndexTemplate` today** (verified 2026-08-05):
 [`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
 [`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>),
-[`library/page.tsx`](<../app/(main)/library/page.tsx>),
 [`events/calendar/page.tsx`](<../app/(main)/events/calendar/page.tsx>).
 *(Circles and Events used to head this list. They no longer import `IndexTemplate` at all —
 they moved to the **editable index** below. Same hero, different body.)*
@@ -675,7 +674,6 @@ they moved to the **editable index** below. Same hero, different body.)*
 with the title, subtitle, and the page's own action buttons overlaid on an ink scrim. Adopters
 (all of them now spread `{...await resolveIndexHero(route)}` rather than passing the props by hand):
 [`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
-[`library/page.tsx`](<../app/(main)/library/page.tsx>),
 [`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>),
 [`events/calendar/page.tsx`](<../app/(main)/events/calendar/page.tsx>), plus the surfaces that take
 the band with no cover image (the gradient placeholder): `journeys/mine`, `network`,
@@ -765,7 +763,7 @@ return <IndexTemplate {...hero} title="Friends" … />
 **`short` / `large` split**, deliberately as data rather than per-page taste: PageHero owns the
 page's `<h1>` in `font-display` uppercase at `clamp(1.75rem, 6vw, 3.75rem)` and `large` is
 `min-h-[24rem]` on desktop, which is right over a **discovery** section (`/practices`,
-`/journeys`, `/library`, `/network`) and wrong over a **utility** one (`/journeys/mine`,
+`/journeys`, `/network`) and wrong over a **utility** one (`/journeys/mine`,
 `/network/contacts`, `/network/friends`) where the member came to get something done. Those rows
 feed `resolveHeaderElement` as the *surface* default, so an operator height master still wins.
 Adding a page to the program is a row in that map plus `{...hero}` — never a new stanza.

@@ -90,7 +90,7 @@ describe('moduleIdsForScope', () => {
   it('the practices page resolves its blocks, including the URL-driven library', () => {
     const p = moduleIdsForScope('/practices')
     expect(p).toBe(ROUTE_MODULE_IDS['/practices'])
-    expect(p).toEqual(['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine', 'practices-library'])
+    expect(p).toEqual(['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine', 'practices-best-of', 'practices-library'])
     // No leakage: the MEMBER library is a module here; the ADMIN curation table never is.
     expect(p).not.toContain('admin-practices-library')
     expect(p).toContain('practices-library')

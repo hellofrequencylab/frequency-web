@@ -6,9 +6,9 @@
 // pre-v2 journeys have steps with no phase) so nothing is ever hidden — matching the player,
 // which wraps loose steps in an implicit phase. Calls the author-gated edit actions.
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type DragEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap, ExternalLink, RefreshCw, Anchor } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap, ExternalLink, RefreshCw, Anchor, GripVertical } from 'lucide-react'
 import {
   addPhaseAction,
   addModuleAction,
@@ -18,6 +18,7 @@ import {
   updateBlockAction,
   removeBlockAction,
   moveBlockAction,
+  reorderBlocksAction,
   draftSlotCoachingAction,
   populateWeekAction,
   setBlockPracticeAction,
@@ -26,6 +27,7 @@ import {
   setLeafWarmupMessageAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { isError, type ActionResult } from '@/lib/action-result'
+import { builderSegments, childrenInOrder, laneOf, moveTo, planSiblingOrder, type Lane } from '@/lib/journeys/block-order'
 import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import type { CheckConfig } from '@/lib/journeys/store'
 import { PillarChip } from './pillar-chip'
@@ -281,7 +283,19 @@ export function JourneyEditor({
       router.refresh()
     })
 
-  const sorted = [...blocks].sort((a, b) => a.sortOrder - b.sortOrder)
+  // ── ONE ORDER, DRAWN AS STORED (LIVE-689) ────────────────────────────────────────────────────
+  // sort_order orders every block kind among its siblings, and the member's player reads it that
+  // way (lib/journeys/tree.ts). So the builder draws each parent's children in that same order,
+  // practices, lessons and modules interleaved, and a drag or an arrow moves a block within its lane
+  // (lib/journeys/block-order.ts). A drop shows the new order at once; the server's order replaces
+  // it on the refresh (the override only applies to the `blocks` it was made from).
+  const [drag, setDrag] = useState<{ lane: string; id: string } | null>(null)
+  const [dropTarget, setDropTarget] = useState<string | null>(null)
+  const [localOrder, setLocalOrder] = useState<{ basis: EditorBlock[]; sort: Map<string, number> } | null>(null)
+  const override = localOrder && localOrder.basis === blocks ? localOrder.sort : null
+  const sorted = blocks
+    .map((b) => (override?.has(b.id) ? { ...b, sortOrder: override.get(b.id) as number } : b))
+    .sort((a, b) => a.sortOrder - b.sortOrder)
   // The current Anchor practice, if any — used to note "an anchor already exists" when turning a new
   // one on. Only one Anchor is expected; uniqueness isn't enforced in the UI (the orchestrator can).
   const anchorBlock = blocks.find((b) => b.blockType === 'practice' && isAnchor(b)) ?? null
@@ -294,11 +308,74 @@ export function JourneyEditor({
   const lessonsOf = (phaseId: string) => sorted.filter((b) => b.parentId === phaseId && isLeaf(b))
   const modulesOf = (phaseId: string) => sorted.filter((b) => b.parentId === phaseId && b.blockType === 'module')
 
+  /** A lane's ids in the order drawn: the exact list reorderBlocksAction checks against. */
+  const laneIds = (parentId: string | null, lane: Lane) =>
+    childrenInOrder(sorted, parentId)
+      .filter((b) => laneOf(parentId, b.blockType) === lane)
+      .map((b) => b.id)
+  /** The drag key of a block's lane: its parent, or the top-level lane (phases / loose steps). */
+  const laneKey = (b: EditorBlock) => b.parentId ?? laneOf(null, b.blockType)
+  const dropOn = (b: EditorBlock) => {
+    const d = drag
+    setDrag(null)
+    setDropTarget(null)
+    if (!d || d.lane !== laneKey(b)) return
+    const current = laneIds(b.parentId, laneOf(b.parentId, b.blockType))
+    const next = moveTo(current, d.id, b.id)
+    if (!next) return
+    const slotOf = new Map(sorted.map((x) => [x.id, x.sortOrder]))
+    const writes = planSiblingOrder(current.map((id) => ({ id, sort_order: slotOf.get(id) ?? 0 })), next) ?? []
+    const sort = new Map(override ?? [])
+    for (const w of writes) sort.set(w.id, w.to)
+    setLocalOrder({ basis: blocks, sort })
+    run(() => reorderBlocksAction(slug, b.parentId, next))
+  }
+  /** Drop-target props for a block's row: it accepts a drag only from its own lane. */
+  const dropProps = (b: EditorBlock) => ({
+    'data-drag-row': '',
+    onDragOver: (e: DragEvent) => {
+      if (!drag || drag.lane !== laneKey(b)) return
+      e.preventDefault()
+      e.stopPropagation()
+      if (dropTarget !== b.id) setDropTarget(b.id)
+    },
+    onDrop: (e: DragEvent) => {
+      if (!drag || drag.lane !== laneKey(b)) return
+      e.preventDefault()
+      e.stopPropagation()
+      dropOn(b)
+    },
+  })
+  const dropRing = (b: EditorBlock) => (drag && dropTarget === b.id && drag.id !== b.id ? ' ring-2 ring-primary' : '')
+  /** The grip a pointer drags a row by. The arrows beside it are the keyboard path. */
+  const dragHandle = (b: EditorBlock) => (
+    <span
+      draggable={!pending}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData('text/plain', b.id)
+        const row = (e.currentTarget as HTMLElement).closest('[data-drag-row]')
+        if (row) e.dataTransfer.setDragImage(row, 16, 16)
+        setDrag({ lane: laneKey(b), id: b.id })
+      }}
+      onDragEnd={() => {
+        setDrag(null)
+        setDropTarget(null)
+      }}
+      aria-hidden
+      title="Drag to reorder"
+      className="flex h-9 w-6 shrink-0 cursor-grab items-center justify-center text-subtle hover:text-text active:cursor-grabbing"
+    >
+      <GripVertical className="h-4 w-4" />
+    </span>
+  )
+
   // A Module groups lessons into a session within a Phase (build item §11.1 #3). Own title +
   // its leaves + the same add-step tools. The player/tree already render Phase → Module → Lesson.
   const ModuleGroup = (m: EditorBlock) => (
-    <div key={m.id} className="rounded-card border border-border bg-canvas p-3">
+    <div key={m.id} {...dropProps(m)} className={`mt-2 rounded-card border border-border bg-canvas p-3${dropRing(m)}`}>
       <div className="flex flex-wrap items-center gap-2">
+        {dragHandle(m)}
         <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">Module</span>
         <Input
           defaultValue={m.title}
@@ -435,8 +512,9 @@ export function JourneyEditor({
     const open = openLeaves.has(l.id)
     const anchored = isPractice && isAnchor(l)
     return (
-      <li key={l.id} className={`rounded-card border ${open ? 'p-3' : 'px-3 py-2'} ${isExtra ? 'border-signal/30 bg-signal-bg/20' : 'border-border bg-canvas'}`}>
+      <li key={l.id} {...dropProps(l)} className={`rounded-card border ${open ? 'p-3' : 'px-3 py-2'} ${isExtra ? 'border-signal/30 bg-signal-bg/20' : 'border-border bg-canvas'}${dropRing(l)}`}>
         <div className="flex flex-wrap items-center gap-2">
+          {dragHandle(l)}
           <button
             type="button"
             onClick={() => toggleLeaf(l.id)}
@@ -610,30 +688,26 @@ export function JourneyEditor({
     )
   }
 
-  // ── A parent's leaves (lessons, extra credit, and practices), with the practice blocks gathered
-  //    under a small "Practices" heading (J4b §11). Lessons and extra-credit stay where they are, in
-  //    sort order; the practice group comes after, so a phase reads as "the lessons, then the four
-  //    Pillar practices". Returns null when the parent has no leaves at all. ──
+  // ── A module's leaves (lessons, extra credit, and practices) in stored order, one list. A
+  //    practice is a step like any other and sits wherever sort_order puts it (LIVE-689): the J4b
+  //    §11 "Practices" group that always drew practices last is gone, because the member's player
+  //    never grouped them. Returns null when the parent has no leaves at all. ──
   const renderLeaves = (parentId: string) => {
     const leaves = lessonsOf(parentId)
     if (leaves.length === 0) return null
-    const isPracticeLeaf = (l: EditorBlock) => l.blockType === 'practice' && !l.extraCredit
-    const practiceLeaves = leaves.filter(isPracticeLeaf)
-    const otherLeaves = leaves.filter((l) => !isPracticeLeaf(l))
-    return (
-      <>
-        {otherLeaves.length > 0 && <ul className="mt-3 space-y-2">{otherLeaves.map(LeafRow)}</ul>}
-        {practiceLeaves.length > 0 && (
-          <div className="mt-3">
-            <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
-              <Dumbbell className="h-3.5 w-3.5" /> Practices
-            </p>
-            <ul className="space-y-2">{practiceLeaves.map(LeafRow)}</ul>
-          </div>
-        )}
-      </>
-    )
+    return <ul className="mt-3 space-y-2">{leaves.map((l) => LeafRow(l))}</ul>
   }
+
+  // ── A phase's children as the member reads them: runs of steps with each module in its place
+  //    between them (builderSegments mirrors the tree's grouping). ──
+  const renderPhaseChildren = (phaseId: string) =>
+    builderSegments(childrenInOrder(sorted, phaseId)).map((s) =>
+      s.kind === 'leaves' ? (
+        <ul key={`run:${s.items[0].id}`} className="mt-3 space-y-2">{s.items.map((l) => LeafRow(l))}</ul>
+      ) : (
+        ModuleGroup(s.block)
+      ),
+    )
 
   // ── The add-step controls + practice picker for a parent (a phase, or the loose section).
   //    A render function (not a component) so the search box keeps its state across renders. ──
@@ -705,7 +779,7 @@ export function JourneyEditor({
           <p className="mb-3 text-meta text-muted">
             These steps aren’t in a phase yet. Learners see them as one opening phase. Add phases below to group them into trophy milestones.
           </p>
-          <ul className="space-y-2">{looseLeaves.map(LeafRow)}</ul>
+          <ul className="space-y-2">{looseLeaves.map((l) => LeafRow(l))}</ul>
           {stepTools(null, LOOSE_KEY)}
         </section>
       )}
@@ -714,8 +788,9 @@ export function JourneyEditor({
         const phaseOpen = !closedPhases.has(p.id)
         const stepCount = lessonsOf(p.id).length + modulesOf(p.id).length
         return (
-        <section key={p.id} className="rounded-2xl border border-border bg-surface p-4">
+        <section key={p.id} {...dropProps(p)} className={`rounded-2xl border border-border bg-surface p-4${dropRing(p)}`}>
           <div className="flex flex-wrap items-center gap-2">
+            {dragHandle(p)}
             <button
               type="button"
               onClick={() => togglePhase(p.id)}
@@ -767,8 +842,7 @@ export function JourneyEditor({
                   <p className="mt-1.5 text-center text-2xs text-muted">Vera follows your outline and pulls matching practices from the library. Or add your own below.</p>
                 </div>
               )}
-              {renderLeaves(p.id)}
-              {modulesOf(p.id).length > 0 && <div className="mt-2 space-y-2">{modulesOf(p.id).map(ModuleGroup)}</div>}
+              {renderPhaseChildren(p.id)}
               {stepTools(p.id, p.id)}
               <button
                 type="button"

@@ -322,6 +322,13 @@ unreachable and meaningless. No call site ever passed it.
 > a second ordering branch to the busiest page for a marginal gain. Named as a follow-up:
 > **`SERIES-RANK`**.
 
+> **Amended by [ADR-1680](DECISIONS.md) (`SERIES-RANK`).** `electBy: 'input'` stays deleted. What
+> replaced it is not a second ordering branch: `collapseSeries` takes `elect` as a comparator, and
+> `/events` passes the SAME comparator it sorts with (`compareEvents` in `index-data.ts`). The fold
+> still runs after the facet filter and before the sort; under Nearest, Most going or Best match it
+> elects the best-ranked dates, and ties fall back to the earliest. The default soonest-first order
+> elects the earliest date, as before.
+
 ### 4.5 Test matrix, `lib/events/series.test.ts`
 
 House style, confirmed against `lib/events/ics.test.ts` and `lib/events/circle-upcoming.test.ts`: node
@@ -501,6 +508,10 @@ operator console's helper text is a false statement.
 > is exactly those two files. The Circle block, the Channel strip and the rail panels render plain link
 > rows, not `EventCard`, and gain no chip in v1. Copy C19 is worded to match. Map pin popups are a named
 > follow-up (`SERIES-PIN`, one line at `index-data.ts:669-691`).
+>
+> **`SERIES-PIN` ([ADR-1680](DECISIONS.md)).** The `/events` map draws one pin per series through
+> `onePerSeries` (the series' first card in the sorted list), and the popup says "and N more dates"
+> through `moreDatesLine`, the copy `/nearby` already used.
 
 ### 5.4 Circle block, Channel strip, rail panels
 
@@ -805,6 +816,12 @@ full-width column.
 > `select route, config from page_settings where route like '/events%'` and inserts
 > `'event-series-dates'` after `'event-when-where'` in any saved `side.order` found. A MAIN-safe
 > rendering (`SectionHeader` + list instead of `SidebarCard`) is a named follow-up, `SERIES-MAIN`.
+>
+> **`SERIES-MAIN` ruled moot ([ADR-1680](DECISIONS.md)).** The rail did not ship as a layout module.
+> `event-series-dates` is in no module list; the page renders `SeriesDatesRail`
+> (`components/events/series-dates-rail.tsx`, a heading plus a list of date chips) in the
+> `seriesRail` identity slot of `EventDetailTemplate`, full width under both identity lanes. A saved
+> `/events/*` layout cannot move it, so there is no MAIN column for it to land in.
 
 **The component:** `components/widgets/events/event-series-dates.tsx`, a **Server Component, zero props,
 `async`**, the exact shape of `event-when-where.tsx`. `SidebarCard title="More dates" count={totalUpcoming}
@@ -1132,6 +1149,13 @@ migration, matching `scripts/adr-884-backfill-recurrence-drift.sql`.
 (nothing deletes it), so scoring is unaffected; it goes stale only if the host renames the event.
 Accepted for v1, recorded in the ADR consequences, fix named as a follow-up. Do **not** widen the gate
 silently.
+
+> **`SERIES-EMBED` ruled closed by what shipped ([ADR-1680](DECISIONS.md)).** The gap above never
+> opened. `backfillEventEmbeddings` reads the live OCCURRENCES and keys each series on its anchor
+> (`seriesKey`), so an anchor that aged out still acquires a missing vector through its upcoming
+> children; the gate was not widened. A rename goes through `updateEvent` and `writeEventCopy`,
+> which call `embedEvent`, and `embedEvent` reads the row by id with no date gate and upserts on the
+> series key. No aged-out anchor is left stale.
 
 ### 7.7 Documentation routing (per `docs/DOCS-PROTOCOL.md`)
 
@@ -1519,14 +1543,14 @@ the next two days, **and one 45 days out**, so the horizon-truncation case (§2.
 
 | Tag | What | Why deferred |
 |---|---|---|
-| `SERIES-PD` | SQL `DISTINCT ON (coalesce(parent_event_id, id))` push-down so the `LIMIT` counts series | Needs a functional index and turns each surface into an RPC or view, each a new leak-contract surface. The JS fold stays the authority either way |
-| `SERIES-RANK` | Represent a series by its best-ranked occurrence under popularity / relevance / distance | Adds a second ordering branch to the busiest page for a marginal gain (§4.4) |
+| `SERIES-PD` | SQL `DISTINCT ON (coalesce(parent_event_id, id))` push-down so the `LIMIT` counts series | Needs a functional index and turns each surface into an RPC or view, each a new leak-contract surface. The JS fold stays the authority either way. Needs a migration, so it left LIVE-684 for a row of its own ([ADR-1680](DECISIONS.md)) |
+| `SERIES-RANK` | Represent a series by its best-ranked occurrence under popularity / relevance / distance | Adds a second ordering branch to the busiest page for a marginal gain (§4.4). Built without one: `elect` takes the page's own comparator ([ADR-1680](DECISIONS.md)) |
 | `SERIES-COUNT` | A series-aware count helper for the ~9 inflated operator dashboards and `lib/spaces/discovery.ts` | A row fold cannot fix a head count; `parent_event_id IS NULL` as a quick fix is the bug this plan exists to avoid |
-| `SERIES-PIN` | "and N more dates" in the map pin popup | One line at `index-data.ts:669-691`, after the chip proves out |
-| `SERIES-MAIN` | A MAIN-safe rendering of the date rail (`SectionHeader` + list) | Only matters for communities with a saved `/events/*` layout (§6.4) |
-| `SERIES-PICKER` | A grouped destination picker for `/admin/qr` and the circle-manage attachable list | Operator surfaces need the specific date, so the browse fold is wrong for them |
+| `SERIES-PIN` | "and N more dates" in the map pin popup | One line at `index-data.ts:669-691`, after the chip proves out. Built: one pin per series on `/events` ([ADR-1680](DECISIONS.md)) |
+| `SERIES-MAIN` | A MAIN-safe rendering of the date rail (`SectionHeader` + list) | Only matters for communities with a saved `/events/*` layout (§6.4). Ruled moot: the rail is a template slot, not a layout module ([ADR-1680](DECISIONS.md)) |
+| `SERIES-PICKER` | A grouped destination picker for `/admin/qr` and the circle-manage attachable list | Operator surfaces need the specific date, so the browse fold is wrong for them. Built: `groupBySeries` heads each series' dates with its title and keeps every date ([ADR-1680](DECISIONS.md)) |
 | `SERIES-CANCEL` | "Cancel every date still to come" | No such action exists today; the copy points at the honest workaround (set an end date) |
-| `SERIES-EMBED` | Re-embed an anchor that has aged out of `starts_at >= now()` | Needs an `OR "has an upcoming child"`; do not widen the gate silently |
+| `SERIES-EMBED` | Re-embed an anchor that has aged out of `starts_at >= now()` | Needs an `OR "has an upcoming child"`; do not widen the gate silently. Ruled closed: the backfill already reaches the anchor through its upcoming children, and edits re-embed with no date gate (§7.6, [ADR-1680](DECISIONS.md)) |
 
 ---
 
