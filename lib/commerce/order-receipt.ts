@@ -34,7 +34,9 @@
 // `sendRecoveredSplitSaleNotices` with the rows its own plan inserted, which runs the same split half
 // for those rows' sellers only and skips the buyer (their receipt went out at the settle). The
 // idempotency is the plan's: only the call that inserted a row gets its id back, so a replay or a
-// racing run has no ids and sends nothing.
+// racing run has no ids and sends nothing. A partial refund that writes the order's first plan
+// (lib/commerce/split-refund.ts, LIVE-739, ADR-1702) reaches the same function the same way, through
+// noticeRecoveredSellers in ./transfers.
 
 import 'server-only'
 
@@ -516,9 +518,9 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
 // ── THE RECOVERED SPLIT ORDER (LIVE-733, ADR-1700) ───────────────────────────────────────────────
 
 /**
- * The sale notices a split order's sellers missed because the settle's plan failed. The reconciler
- * planned the order later (reconcileTransfers step 1) and passes the ids of the rows ITS plan
- * inserted; each of those sellers gets the notice the settle sends, from the same split half. The
+ * The sale notices a split order's sellers missed because the settle's plan failed. A later plan
+ * (reconcileTransfers step 1, or a partial refund that arrived first, LIVE-739) passes the ids of the
+ * rows ITS call inserted; each of those sellers gets the notice the settle sends, from the same split half. The
  * buyer is not written to: their receipt went out at the settle.
  *
  * NEVER TWICE: a seller is notified only for a row id given here, and only the plan call that

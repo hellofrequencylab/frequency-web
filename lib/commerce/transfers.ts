@@ -16,6 +16,8 @@
 //   settleSplitOrderTransfers(orderId)  the settle's one call: plan, then pay. Never throws.
 //   planTransferShares(order)           PURE. The rows an order owes, or why it owes none.
 //   planTransfersForOrder(orderId)      write one planned row per seller (idempotent by key).
+//   noticeRecoveredSellers(orderId, ids) tell the sellers of rows a LATE plan inserted their sale
+//                                       (the reconciler, LIVE-733; a partial refund, LIVE-739).
 //   executePlannedTransfers(orderId)    pay the planned and failed rows of one order.
 //   reconcileTransfers({ limit, ... })  the cron: plan what was missed (and tell its sellers, LIVE-733),
 //                                       retry what did not land, log what is stuck, one line each.
@@ -280,7 +282,8 @@ export type PlanOutcome =
   | {
       planned: number
       /** The ids of the rows THIS call inserted, and no others: a replay or a racing worker inserts
-       *  nothing, so it gets none. The reconciler notifies these sellers and only these (LIVE-733). */
+       *  nothing, so it gets none. A late plan (the reconciler, LIVE-733; a partial refund, LIVE-739)
+       *  notifies these sellers and only these, through `noticeRecoveredSellers`. */
       rowIds: string[]
     }
   | { refused: TransferPlanRefusal | 'not_found' | 'not_payable' }
@@ -321,6 +324,41 @@ export async function planTransfersForOrder(orderId: string): Promise<PlanOutcom
   if (error) throw new Error(`transfer plan for ${orderId} not written: ${error.message}`)
   const rowIds = ((data ?? []) as { id: string }[]).map((r) => r.id)
   return { planned: rowIds.length, rowIds }
+}
+
+/**
+ * Tell the sellers of rows a LATE plan inserted that they made a sale. The settle sends each seller
+ * their notice for the rows the ledger holds when it runs; a plan written after it (the reconciler's
+ * step 1, LIVE-733, ADR-1700; a partial refund that arrives first, LIVE-739, ADR-1702) is one the
+ * settle never saw, so nobody was told. This runs the settle's own seller notice for exactly
+ * `rowIds`, through `sendRecoveredSplitSaleNotices` (./order-receipt, imported late because that
+ * module already imports this one), and says out loud when it could not.
+ *
+ * ONCE: pass only the `rowIds` of the plan call that inserted them. A replay, a racing worker or the
+ * other late path gets none back from the plan and so tells nobody.
+ *
+ * NEVER THROWS, NEVER HOLDS MONEY: the rows are written before this runs. A notice that throws is
+ * logged `commerce.transfer.recovered_notice_failed`, one that reaches fewer sellers than were planned
+ * `commerce.transfer.recovered_notice_missed`; `context` is added to both lines (the refund passes
+ * `via`). Returns how many sellers were sent their notice.
+ */
+export async function noticeRecoveredSellers(
+  orderId: string,
+  rowIds: string[],
+  context: Record<string, unknown> = {},
+): Promise<number> {
+  if (!rowIds.length) return 0
+  try {
+    const { sendRecoveredSplitSaleNotices } = await import('./order-receipt')
+    const noticed = await sendRecoveredSplitSaleNotices(orderId, rowIds)
+    if (noticed < rowIds.length) {
+      log.error('commerce.transfer.recovered_notice_missed', { orderId, planned: rowIds.length, noticed, ...context })
+    }
+    return noticed
+  } catch (err) {
+    log.error('commerce.transfer.recovered_notice_failed', { orderId, error: briefError(err), ...context })
+    return 0
+  }
 }
 
 // ── Execute ─────────────────────────────────────────────────────────────────────────────────────
@@ -582,21 +620,9 @@ export async function reconcileTransfers(opts: {
       // THIS call planned their notice now, the same LIVE-706 notice the settle sends. Only the rows
       // this upsert inserted, so a replay or a racing run (which inserts nothing) sends nothing. A
       // notice that does not go is logged here and never holds a payout: the rows are planned
-      // already, and step 2 pays them whatever happened to the mail.
-      try {
-        const { sendRecoveredSplitSaleNotices } = await import('./order-receipt')
-        const noticed = await sendRecoveredSplitSaleNotices(o.id, plan.rowIds)
-        out.noticedSellers += noticed
-        if (noticed < plan.rowIds.length) {
-          log.error('commerce.transfer.recovered_notice_missed', {
-            orderId: o.id,
-            planned: plan.rowIds.length,
-            noticed,
-          })
-        }
-      } catch (err) {
-        log.error('commerce.transfer.recovered_notice_failed', { orderId: o.id, error: briefError(err) })
-      }
+      // already, and step 2 pays them whatever happened to the mail. A partial refund that plans an
+      // order first sends the same notices through the same call (LIVE-739).
+      out.noticedSellers += await noticeRecoveredSellers(o.id, plan.rowIds)
     }
   }
 
