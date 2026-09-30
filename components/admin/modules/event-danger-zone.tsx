@@ -20,6 +20,7 @@ import {
 } from '@/lib/events/delete-plan'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { SERIES_CANCEL_ANCHOR_ID } from '@/components/admin/modules/event-kept-dates-notice'
+import { useEntityRailRead } from './entity-rail-data'
 
 // The event Cancel + Delete box, pulled OUT of EventSettingsModule so the settings panel
 // can render it BELOW the Layout editor (the "layout picker") — the destructive controls
@@ -55,6 +56,8 @@ function seriesOutcomeLines(r: SeriesCancelSummary): string[] {
 export function EventDangerZone() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('event', 'admin', getEventAdminData)
 
   const [data, setData] = useState<EventData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -74,7 +77,7 @@ export function EventDangerZone() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getEventAdminData(slug)
+    readAdmin(slug)
       .then((d) => {
         if (!active) return
         setData(d)
@@ -106,7 +109,7 @@ export function EventDangerZone() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readAdmin])
 
   if (!slug || !data) return null
 

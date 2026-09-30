@@ -15,6 +15,7 @@ import {
   type CircleMoveData,
 } from '@/app/(main)/circles/[slug]/transfer-actions'
 import { Button } from '@/components/ui/button'
+import { useEntityRailRead } from './entity-rail-data'
 
 // The circle-side "Move this circle" control, mounted in the circle admin rail's Danger section.
 //
@@ -50,6 +51,8 @@ export function CircleMoveModule() {
   const pathname = usePathname()
   const router = useRouter()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readMove = useEntityRailRead('circle', 'move', getCircleMoveData)
 
   const [data, setData] = useState<CircleMoveData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -78,7 +81,7 @@ export function CircleMoveModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCircleMoveData(slug)
+    readMove(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -91,7 +94,7 @@ export function CircleMoveModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readMove])
 
   if (!slug) return null
   if (loading) {

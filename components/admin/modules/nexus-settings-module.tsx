@@ -6,6 +6,7 @@ import { Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import { getNexusAdminData, updateNexusSettings } from '@/lib/hierarchy/nexus-admin'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Nexus settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside the page admin dock on
 // /nexuses/[slug], and renders nothing unless the server grants nexus.manage. The rail section header is
@@ -18,6 +19,8 @@ const fieldLabel = labelClasses
 export function NexusSettingsModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/nexuses\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('nexus', 'admin', getNexusAdminData)
 
   const [data, setData] = useState<NexusData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -25,7 +28,7 @@ export function NexusSettingsModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getNexusAdminData(slug).then((d) => {
+    readAdmin(slug).then((d) => {
       if (active) {
         setData(d)
         setLoading(false)
@@ -34,7 +37,7 @@ export function NexusSettingsModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readAdmin])
 
   if (!slug) return null
   if (loading) {

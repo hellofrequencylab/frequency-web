@@ -539,9 +539,12 @@ section header. Rendered in `admin-bar-body.tsx`'s `renderSection`.
 
 ### 6.4 Deferred (documented, not in this pass)
 
-- **Speed:** generalize the ADR-550 one-bundle provider (`space-rail-data.tsx`) to the core entities so a
-  circle/event/hub/nexus/practice rail resolves its ~6 modules from ONE server fetch instead of one
-  self-fetch per module (the remaining "loads slow" contributor).
+- **Speed:** no longer deferred. A circle/event/hub/nexus/practice rail reads its modules through ONE
+  request ([ADR-1685](DECISIONS.md)): `EntityRailDataProvider` (`entity-rail-data.tsx`) wraps the rail
+  body's sections, asks for the reads of the mounted modules (`lib/admin/entity-rail-reads.ts`), and
+  `getEntityRailBundle` runs each once, in parallel, through the modules' own gated getters. A module that
+  misses the bundle calls its getter as before. What is left: each getter still resolves the viewer for
+  itself, because `React.cache()` does not dedupe inside a Server Action (see the ADR).
 - **Coverage:** `broadcast/[id]` still deep-links to `/admin/dispatches` via `StaffEditButton` (a dispatch is
   not yet an `adminScopeFor` scope); every other editable entity page already mounts the rail trigger.
 - **True 0ms preview** (the `EntityLayoutContext` store) for marquee fields, beyond the sub-second
