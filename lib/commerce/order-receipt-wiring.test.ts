@@ -43,6 +43,13 @@ vi.mock('@/lib/supabase/admin', () => {
 
 const receipts = vi.hoisted(() => ({ order: vi.fn(async (_a: Record<string, unknown>) => {}) }))
 vi.mock('./order-receipt', () => ({ sendOrderReceipts: receipts.order, ORDER_SOLD_NOTIFICATION_TYPE: 'x' }))
+// The transfer ledger is LIVE-622's and has its own tests; here it only has to run before the receipts.
+const ledger = vi.hoisted(() => ({ calls: [] as string[] }))
+vi.mock('./transfers', () => ({
+  settleSplitOrderTransfers: vi.fn(async (id: string) => {
+    ledger.calls.push(`transfers:${id}`)
+  }),
+}))
 
 vi.mock('@/lib/finance/record', () => ({ recordFinancialTransaction: vi.fn(async () => ({ recorded: true })) }))
 vi.mock('@/lib/spaces/booking', () => ({
@@ -83,6 +90,7 @@ function session(): Stripe.Checkout.Session {
 beforeEach(() => {
   vi.clearAllMocks()
   state.reset()
+  ledger.calls.length = 0
 })
 
 describe('recordCommerceOrderFromSession', () => {
@@ -126,5 +134,20 @@ describe('recordCommerceOrderFromSession', () => {
     const other = { ...session(), metadata: { kind: 'tip' } } as unknown as Stripe.Checkout.Session
     await recordCommerceOrderFromSession(other)
     expect(receipts.order).not.toHaveBeenCalled()
+  })
+
+  // LIVE-706: a split order's receipts group its lines by seller and notify each seller through the
+  // transfer rows, so the ledger must be planned before they run, and a redelivery must reach neither.
+  it('a split order plans its transfers, then sends the receipts once, and nothing on the redelivery', async () => {
+    const splitRow = { ...paidRow, owner_kind: 'split', owner_space_id: null, funds_flow: 'separate' }
+    receipts.order.mockImplementationOnce(async () => {
+      ledger.calls.push('receipts')
+    })
+    state.updates.push({ data: [splitRow], error: null }, { data: [], error: null })
+    await recordCommerceOrderFromSession(session())
+    await recordCommerceOrderFromSession(session())
+    expect(ledger.calls).toEqual(['transfers:order-1', 'receipts'])
+    expect(receipts.order).toHaveBeenCalledTimes(1)
+    expect(receipts.order.mock.calls[0][0]).toMatchObject({ id: 'order-1', ownerKind: 'split' })
   })
 })
