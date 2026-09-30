@@ -19,6 +19,7 @@ const STATUS: Record<TransferStatus | 'stuck', { label: string; tone: BadgeTone 
   created: { label: 'Paid', tone: 'success' },
   failed: { label: 'Failed', tone: 'warning' },
   reversed: { label: 'Reversed', tone: 'neutral' },
+  cancelled: { label: 'Cancelled', tone: 'neutral' },
   stuck: { label: 'Stuck', tone: 'danger' },
 }
 

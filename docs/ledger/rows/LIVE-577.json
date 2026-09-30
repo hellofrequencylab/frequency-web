@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-577",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst norm=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\" \").replace(/^\\s*\\/\\/.*$/gm,\" \")\nconst rd=(f)=>{try{return norm(fs.readFileSync(f,\"utf8\"))}catch(e){return null}}\nconst strip=(s)=>s.replace(/^\\s*--.*$/gm,\" \")\nconst migs=fs.readdirSync(\"supabase/migrations\").filter((f)=>f.endsWith(\".sql\")).sort().map((f)=>strip(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\"))).join(\"\\n\")\nconst acts=rd(\"app/(main)/admin/library/actions.ts\")\nconst page=rd(\"app/(main)/admin/library/page.tsx\")\nif(acts===null||page===null)process.exit(79)\nif(!/[\\x22\\x27]library-private[\\x22\\x27]\\s*,\\s*[\\x22\\x27]library-private[\\x22\\x27]\\s*,\\s*false/i.test(migs))fail(\"no migration creates a private Loom bucket, so every Loom object is public and Protected is a word on a row\")\nconst urls=rd(\"lib/library/asset-urls.ts\")\nif(urls===null||!/export async function signedLibraryAssetUrl\\(/.test(urls))fail(\"nothing mints a signed URL for a Loom asset, so a private object could not be shown to the operator who owns it\")\nif(!/createSignedUrl/.test(urls))fail(\"signedLibraryAssetUrl signs nothing\")\nconst pi=acts.indexOf(\"export async function protectLibraryAsset(\")\nif(pi<0)fail(\"there is no protect action, so an asset cannot be moved into the private bucket\")\nif(!/recordVersion\\(/.test(acts.slice(pi,acts.indexOf(\"\\n}\",pi))))fail(\"protecting an asset records no version first, so the move cannot be rolled back like every other edit\")\nif(!/signedLibraryAssetUrl\\(|proofLibraryAssetUrl\\(/.test(page))fail(\"the Studio page never mints a signed URL, so a protected asset shows as a broken image to the person who protected it\")\nconsole.log(\"ok\")'",
+      "note": "The migration set creates a private bucket; a signing helper exists and signs; a protect action exists and snapshots first; the Studio page mints for protected rows. Fails today on the first arm (no bucket). Cannot see the bucket on the live project (applied after merge)."
+    }
+  }
+}

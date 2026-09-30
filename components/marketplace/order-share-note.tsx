@@ -18,6 +18,7 @@ export const SHARE_STATUS: Record<TransferStatus, { label: string; tone: BadgeTo
   created: { label: 'Paid out', tone: 'success' },
   failed: { label: "Payout delayed. We're retrying it.", tone: 'warning' },
   reversed: { label: 'Payout reversed', tone: 'neutral' },
+  cancelled: { label: 'Refunded before payout', tone: 'neutral' },
 }
 
 export function OrderShareNote({ order }: { order: CommerceOrder }) {

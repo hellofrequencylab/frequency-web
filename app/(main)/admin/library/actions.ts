@@ -13,6 +13,7 @@ import { findLibraryAssetUsage } from '@/lib/library/usage'
 import { normalizeAssetMeta } from '@/lib/library/asset-meta'
 import { LIBRARY_DOWNLOAD_POLICIES, type LibraryDownloadPolicy } from '@/lib/library/types'
 import { recordVersion } from '@/lib/library/versions'
+import { removeLibraryProof, writeLibraryProof } from '@/lib/library/proof-object'
 import {
   LIBRARY_PRIVATE_BUCKET,
   LIBRARY_PUBLIC_BUCKET,
@@ -21,6 +22,7 @@ import {
   protectRefusal,
   type ProtectVersionRow,
 } from '@/lib/library/protect-move'
+import { readLibraryDownloadRecord } from '@/lib/library/download-door'
 
 // ── THE LOOM STUDIO DOOR: every action on this route carries the PAGE's gate ─────────────────
 // `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes, because a
@@ -368,6 +370,13 @@ export async function protectLibraryAsset(id: string, on: boolean): Promise<{ ok
     rewritten.push(v)
   }
 
+  // 3b. The proof follows the protection (LIVE-580, ADR-1623): protecting writes the small stored
+  //     proof that every surface shows in place of the master, releasing deletes it. Best-effort on
+  //     both sides: a proof that could not be written is written lazily on the next render, and a
+  //     lingering one is private and signed for nobody once the row is public again.
+  if (on && row.storage_path) await writeLibraryProof(row.storage_path)
+  if (!on && row.storage_path) await removeLibraryProof(row.storage_path)
+
   // 4. Only now do the old objects go. This one step is NOT undone on failure: a remove that errored
   //    may still have deleted some objects, and undoing would then drop the only copy. The rows and
   //    the copies already agree, so the operator is told, and the next protect of this asset sweeps
@@ -427,10 +436,21 @@ export async function deleteLibraryAsset(id: string): Promise<{ ok: true } | { e
   const row = data as { storage_bucket: string | null; storage_path: string | null } | null
   if (row?.storage_bucket && row.storage_path) {
     await admin.storage.from(row.storage_bucket).remove([row.storage_path])
+    // A protected asset's stored proof goes with it (LIVE-580).
+    if (row.storage_bucket === LIBRARY_PRIVATE_BUCKET) await removeLibraryProof(row.storage_path)
   }
 
   const { error } = await admin.from('library_assets').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/library')
   return { ok: true }
+}
+
+/** The download record the drawer shows under [data-loom-downloads] (LIVE-578, ADR-1596): how many
+ *  times the file went through the download door, and when last. Studio-gated, so staff only. */
+export async function libraryDownloadRecord(
+  id: string,
+): Promise<{ count: number; lastAt: string | null } | null> {
+  await requireAdmin('janitor', { staff: 'marketing' })
+  return readLibraryDownloadRecord(id)
 }

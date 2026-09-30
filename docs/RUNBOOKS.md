@@ -38,7 +38,7 @@
 
 | Failure mode | Pages a human today | Signal that exists but pages nobody |
 |---|---|---|
-| Cron failure | Healthchecks check for the 20 monitored jobs | `cron.run` lines for the other 9 |
+| Cron failure | Healthchecks check for the 20 monitored jobs | `cron.run` lines for the others (`CRON_UNMONITORED` in `lib/observability/slos.ts`) |
 | Queue backlog | Sentry `error` capture tagged `cron_job: process-queue`, and the `process-queue` Healthchecks check fail-pinged, both on the first drain after a dead-letter appears or the oldest due job passes 10 minutes (LIVE-547) | `queue.health` lines every drain, the Deliverability widget, `[outbox]` log lines |
 | Webhook failure | Stripe's own failed-delivery email, after its retries | `[stripe-webhook]` log lines, Sentry group |
 | Database degradation | Sentry error-rate alert, if armed | weekly `db-usage` reading, red preview builds |
@@ -61,7 +61,7 @@ set a fact in the repo rather than a list of check names in an account.
   top twenty, each named by the job's route segment (`process-queue`, `season-go-live`, ...) with a
   period set from its real schedule. A check goes down when a success ping misses period plus grace,
   or when the wrapper posts to `/fail` after a 5xx (`lib/observability/cron-heartbeat.ts`).
-- **The other nine jobs cannot page.** Their death is visible only in Vercel runtime logs: a
+- **The other jobs (`CRON_UNMONITORED`) cannot page.** Their death is visible only in Vercel runtime logs: a
   `cron.run` line with `ok:false`, or no `cron.run` line at all for the job.
 - **Sentry**, when armed: a handler that throws is captured with tag `cron_job:<name>`.
 - **`cron.heartbeat.ping_failed`** in the logs means the *monitor* rejected the ping, not that the
@@ -513,7 +513,8 @@ production**, losing every write since that backup with no way back.
      keys mean every member is signed out and signs in again.
    - **Edge Functions:** redeploy `supabase/functions/embed`.
    - **Extensions and database settings** that are not in a migration.
-   - **Storage:** bucket settings, and the files themselves, which exist nowhere else. Rows that
+   - **Storage:** bucket settings, and the files themselves, which exist nowhere else in Supabase
+     (restore them from R2, below). Rows that
      store absolute image URLs name the old project's host or the `api.frequencylocal.com` custom
      domain, so the custom domain has to move to the new project for them to resolve.
    - **Read replicas**, if any are ever added.
@@ -524,7 +525,8 @@ production**, losing every write since that backup with no way back.
 **Not restored**, per Supabase's own restore dialog and Backups page: storage objects (the files) and
 storage settings; Edge Functions; auth settings and API keys; database extensions and settings; read
 replicas. Database backups do not include objects stored via the Storage API, so there is no copy of
-an uploaded file anywhere. OWN-084 is the ruling on paying for one.
+an uploaded file anywhere in Supabase. OWN-084 is the ruling on paying for one: the nightly R2 copy
+(HYG-144, below) is that copy once OWN-088 has set it up.
 
 **Rehearse** once a quarter, the next before launch day (2026-12-21), and again whenever the plan,
 the compute size or the point-in-time add-on changes. A rehearsal is steps 1 to 4 and 6 against the
@@ -535,3 +537,46 @@ exists. Write the new timings into the facts table with the date.
 member can sign in, the ledger query shows every migration in `supabase/migrations/` applied, and
 the cause is an ADR in [`DECISIONS.md`](DECISIONS.md) or a row. After a rehearsal: the scratch
 project is deleted and no longer bills.
+
+### Storage files: the R2 copy
+
+**What exists.** A nightly cron, `storage-backup` (05:20 UTC, `app/api/cron/storage-backup`,
+HYG-144, [ADR-1693](DECISIONS.md)), copies every Storage object changed since its last run, in
+every bucket including the private ones, to the Cloudflare R2 bucket named by `R2_BACKUP_BUCKET`,
+under the key `<bucket>/<path>`. So `avatars/<uid>/a.png` in Supabase is `avatars/<uid>/a.png` in
+R2. It keeps the **latest version** of each file only, and it **never deletes**: a file removed
+from Storage stays in R2. Until the four `R2_*` variables are set (OWN-088) the job is inert and
+there is no copy.
+
+**Is it running.** Each run logs one line in Vercel: `cron.storage_backup.counts` (copied, bytes,
+`stopped`, `more`), `cron.storage_backup.inert` (names the missing variables), or
+`cron.storage_backup.failed` (names the object, `failed_key`). The cursor is one row:
+`select value, updated_at from platform_settings where key = 'storage_backup_cursor';` Its `at` is
+the change time of the last file copied. A file changed after that is not in R2 yet. The job is
+not on a Healthchecks check (the 20-check plan is full; `CRON_UNMONITORED` in
+`lib/observability/slos.ts`), so read the log line; nothing pages.
+
+**Restore one file.** **owner**, or **agent** with the R2 token.
+
+1. Find the key: the Storage bucket id, a slash, then the object path (the `name` column of
+   `storage.objects`, or the part of a public URL after `/object/public/`).
+2. Download it: Cloudflare dashboard, R2, the backup bucket, search the key, Download. Or with any
+   S3 client:
+   `aws s3 cp "s3://$R2_BACKUP_BUCKET/<bucket>/<path>" ./file --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com"`.
+3. Put it back at the **same bucket and path**: Supabase dashboard, Storage, the bucket, upload
+   into that folder (replace if asked), or a one-off script with the service-role client calling
+   `storage.from(bucket).upload(path, file, { upsert: true })`. The same path means every row and
+   URL that named the file resolves again with no data change.
+
+**Restore a bucket.** **agent**. `aws s3 sync "s3://$R2_BACKUP_BUCKET/<bucket>/" ./restore/<bucket>/`
+with the same endpoint, then a one-off script that uploads each file to the same path with
+`upsert: true`. After a database restore to a new project (the steps above), do this for every
+bucket: the restored `storage.objects` rows describe files the new project does not have.
+
+**Rehearse** by restoring one file to a scratch path and opening it. HYG-144's verify is the first
+such record.
+
+**Setting it up (OWN-088, owner).** Create the R2 bucket; create an R2 API token with Object Read &
+Write on that bucket only; set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and
+`R2_BACKUP_BUCKET` in Vercel Production and redeploy. The first nights copy everything that exists
+(1.5 GiB and 500 files a night at most), then only what changed.

@@ -1,0 +1,10 @@
+{
+  "id": "PROG-D8",
+  "patch": {
+    "status": "done",
+    "closed": "2026-09-30"
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-09-30 by its own probe, which passes once its four pieces are on main together: the funds-flow seam (LIVE-621), the transfer ledger and reconciler (LIVE-622, #3100, ADR-1614), pro rata refunds and lost disputes (LIVE-623, #3112, ADR-1615), and the seller's share with the operator's transfer view and retry (LIVE-624, ADR-1616). The follow-ups this program named are rows of their own: LIVE-706 (split-order sale notices and buyer receipt, #3108, done) and LIVE-705 (each seller marks their share shipped). The owner's Stripe setup is recorded: transfer.created and transfer.reversed subscribed on the platform destination 2026-09-30; charge.dispute.closed is the remaining subscription LIVE-623 needs."
+  }
+}
