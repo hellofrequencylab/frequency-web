@@ -83,7 +83,7 @@ function SuggestionRow({ id, suggestion, compact = false }: { id: string; sugges
         onClick={accept}
         disabled={pending}
         aria-label={`Accept ${label}`}
-        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated disabled:opacity-50"
       >
         <Check className="h-3.5 w-3.5" aria-hidden /> {pending ? 'Filing…' : 'Accept'}
       </button>
@@ -122,13 +122,13 @@ export function PracticePlacementButton({ id, title }: { id: string; title: stri
         onClick={look}
         title={`Suggest a Pillar and Sub Focus for ${title}`}
         aria-label={`Suggest a Pillar and Sub Focus for ${title}`}
-        className="shrink-0 rounded-md p-0.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        className="shrink-0 rounded-control p-0.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <Compass className="h-3.5 w-3.5" aria-hidden />
       </button>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Suggested placement" className="max-w-md">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-pop">
+        <div className="rounded-card border border-border bg-surface p-5 shadow-pop">
           <h2 className="text-body font-bold text-text">Suggested placement</h2>
           <p className="mt-1 text-body-sm text-muted">
             Read from the practices that sit closest to <span className="font-medium text-text">{title}</span>.
@@ -149,7 +149,7 @@ export function PracticePlacementButton({ id, title }: { id: string; title: stri
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+              className="inline-flex items-center rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
             >
               Close
             </button>
