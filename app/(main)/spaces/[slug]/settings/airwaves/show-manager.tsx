@@ -574,7 +574,7 @@ function EpisodePanel({
                         value={toLocalInput(ep.publishedAt)}
                         disabled={pending}
                         onChange={(e) => onSetVisibility(ep.id, ep.visibility, fromLocalInput(e.target.value))}
-                        className="rounded-lg border border-border bg-surface px-2 py-1 text-3xs text-text outline-none focus:border-primary"
+                        className="rounded-lg border border-border bg-surface px-2 py-1 text-3xs text-text outline-none focus:border-border-strong"
                       />
                     </label>
                     {!ep.publishedAt && (
@@ -753,7 +753,7 @@ function ShowFormDialog({
                 type="checkbox"
                 checked={draft.explicit}
                 onChange={(e) => set('explicit', e.target.checked)}
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                className="h-4 w-4 rounded border-border text-primary"
               />
               <span className={labelText}>Explicit content</span>
             </label>
@@ -788,7 +788,7 @@ function ShowFormDialog({
               type="checkbox"
               checked={draft.published}
               onChange={(e) => set('published', e.target.checked)}
-              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              className="h-4 w-4 rounded border-border text-primary"
             />
             <span className="text-body-sm font-semibold text-text">Published</span>
             <span className="text-2xs text-muted">Off keeps it a private draft.</span>

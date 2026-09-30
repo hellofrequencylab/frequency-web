@@ -48,9 +48,9 @@
   "entries": {
     "app/(main)/e/c/[token]/route.ts": {
       "verdict": "token-credential",
-      "reason": "Email click-tracking redirect. decodeSendToken HMAC-authenticates the token and verifyClickUrl binds the exact destination to it, so `u` cannot be swapped even by a holder of a real token. Fail-safe: anything short of all checks redirects to the site root.",
-      "checked": "2026-08-17",
-      "digest": "98f01abe07e55598"
+      "reason": "Email click-tracking redirect. verifyClickUrl binds the exact destination to the token and runs first on every request (HYG-143), then decodeSendToken HMAC-authenticates the token and the send is read, so `u` cannot be swapped even by a holder of a real token. Fail-safe: anything short of all checks redirects to the site root.",
+      "checked": "2026-09-29",
+      "digest": "c1370e2b6a3697f9"
     },
     "app/(main)/e/o/[token]/route.ts": {
       "verdict": "token-credential",

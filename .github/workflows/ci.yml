@@ -276,10 +276,14 @@ jobs:
         # check:backlog prove uniqueness within THIS tree; two open PRs that each append a block
         # pass alone and collide on merge (four times on 2026-09-21: ADR-1492 twice merged,
         # LIVE-442 / HYG-107 / HYG-108 / LIVE-444 each claimed by two PRs). With the token the gate
-        # lists every other open PR against the base and reads their heads' ledger and backlog
-        # through the contents API. Without it (fork, Dependabot, local) it SKIPS LOUDLY and says
-        # what was not proved; a network failure is exit 1, never a skip. `pull-requests: read`
-        # on this job is what the listing needs, the same permission the PR size gate uses.
+        # lists every other open PR against the base (its ONE REST call) and reads their heads
+        # through git: one `git fetch --depth=1 --filter=blob:none` of refs/pull/<n>/head, which
+        # spends no REST quota (HYG-150, ADR-1668; the per-PR REST reads spent the token's hourly
+        # quota and redded #3079). A head git cannot read falls back to the REST API for that PR.
+        # Without the token (fork, Dependabot, local) it SKIPS LOUDLY and says what was not
+        # proved; a failure to read is exit 1, never a skip. `pull-requests: read` on this job is
+        # what the listing needs, the same permission the PR size gate uses; the git fetch uses
+        # the checkout's own `contents: read` credential.
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && vars.SUPABASE_PROJECT_REF || '' }}
@@ -339,7 +343,7 @@ jobs:
           # actually DENIES is db-tests' word, not this guard's.
           # 2026-09-21: id-collisions joined (HYG-111, ADR-1509). It is the only guard here that
           # looks OUTSIDE the tree: on a pull_request run it reads every other open PR's ledger
-          # and backlog through the API and fails the later-opened PR when two introduce the same
+          # ids (through git since HYG-150) and fails the later-opened PR when two introduce the same
           # ADR number or backlog id. In this array rather than a step of its own so its skip and
           # its failure read in the same log shape as every other guard.
           # 2026-09-28: shipped-ids joined (HYG-124, ADR-1538). check:backlog proves every ROW against

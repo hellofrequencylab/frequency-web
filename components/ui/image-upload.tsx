@@ -271,7 +271,7 @@ export function ImageUpload({
           onChange={(e) => emit(e.target.value.trim() || null, null)}
           disabled={disabled || busy}
           placeholder="or paste an image URL"
-          className="w-full rounded-control border border-border bg-canvas px-3 py-1.5 text-meta text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60"
+          className="w-full rounded-control border border-border bg-canvas px-3 py-1.5 text-meta text-text outline-none focus:border-border-strong placeholder:text-subtle disabled:opacity-60"
         />
       )}
 

@@ -3,6 +3,15 @@
 // edit the two shared ledger files directly.
 //
 //   pnpm ledger:view [<ID> | --adr <n>]   print the merged backlog (or one row, or one ADR's text)
+//   pnpm ledger:close <ID> --verify-file <path> --note <text> [--date YYYY-MM-DD] [--status done|parked]
+//        Write (or fold into) docs/ledger/rows/<ID>.json: status, closed date, the probe (a .json
+//        file is a whole verify object; any other file is the cmd text), and the note appended to
+//        detail. No shell quoting of the probe: it is read from the file.
+//   pnpm ledger:add <row.json> [--wave W7]   file a new row as docs/ledger/rows/<ID>.json
+//   pnpm ledger:adr <adr.md>                 file an ADR as docs/ledger/adr/ADR-<n>.md
+//   pnpm ledger:next [PREFIX ...]            the next free ADR number and row id per prefix
+//   pnpm ledger:compact [--check]            fold every fragment into the two base files and delete
+//        them; byte-stable and idempotent. A housekeeping PR, when more than 30 are waiting.
 //   pnpm ledger:from-diff [--main <ref>] [--drop-preamble] [--check]
 //        Convert THIS branch's direct edits to docs/BUILD-BACKLOG.json and docs/DECISIONS.md
 //        (relative to its merge base with origin/main) into fragments under docs/ledger/, then
@@ -17,7 +26,7 @@
 // Exit codes: 0 done · 1 refused or broken fragments · 2 usage or git error.
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
 import {
   ADR_DIR,
@@ -25,8 +34,16 @@ import {
   DECISIONS,
   ROWS_DIR,
   SLATED_STATUSES,
+  ADR_HEADING,
+  COMPACT_AT,
+  LEDGER_DIR,
+  ROW_ID,
   applyRowFragments,
+  closeEdit,
+  compactLedger,
+  foldEdit,
   mergeAdrFragments,
+  nextFree,
   readBacklogView,
   readDecisionsView,
   waveToken,
@@ -292,11 +309,126 @@ function view(argv) {
   return 0
 }
 
+const today = () => new Date().toISOString().slice(0, 10)
+
+function writeRowFragment(id, body) {
+  mkdirSync(ROWS_DIR, { recursive: true })
+  const path = `${ROWS_DIR}/${id}.json`
+  writeFileSync(path, JSON.stringify(body, null, 2) + '\n')
+  // Prove the tree still loads with it before saying anything worked.
+  const v = readBacklogView()
+  if (v.problems.length) {
+    console.error(`${path} was written, and the ledger no longer loads:\n  ${v.problems.join('\n  ')}`)
+    return 1
+  }
+  console.log(`✓ ${path}`)
+  return 0
+}
+
+function readExisting(id) {
+  const path = `${ROWS_DIR}/${id}.json`
+  return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null
+}
+
+function close(argv) {
+  const id = ROW_ID.test(argv[0] ?? '') ? argv[0] : null
+  const verifyFile = arg(argv, '--verify-file', null)
+  const note = arg(argv, '--note', null)
+  const status = arg(argv, '--status', 'done')
+  const date = arg(argv, '--date', today())
+  if (!id || (!verifyFile && status === 'done') || !['done', 'parked'].includes(status)) {
+    console.error('usage: pnpm ledger:close <ID> --verify-file <path> --note <text> [--date YYYY-MM-DD] [--status done|parked]')
+    return 2
+  }
+  if (!readBacklogView().doc.entries.some((e) => e.id === id)) {
+    console.error(`no row ${id} in the merged backlog; file it first (pnpm ledger:add)`)
+    return 1
+  }
+  let verify = null
+  if (verifyFile) {
+    const text = readFileSync(verifyFile, 'utf8')
+    verify = verifyFile.endsWith('.json') ? JSON.parse(text) : { kind: 'cmd', cmd: text.replace(/\s+$/, '') }
+    const vnote = arg(argv, '--verify-note', null)
+    if (vnote) verify.note = vnote
+  }
+  return writeRowFragment(id, foldEdit(readExisting(id), closeEdit({ id, date, verify, note, status })))
+}
+
+function add(argv) {
+  const file = argv[0] && !argv[0].startsWith('-') ? argv[0] : null
+  if (!file) {
+    console.error('usage: pnpm ledger:add <row.json> [--wave W7]')
+    return 2
+  }
+  const row = JSON.parse(readFileSync(file, 'utf8'))
+  const wave = arg(argv, '--wave', null)
+  if (wave) row.wave = wave
+  for (const k of ['id', 'title', 'status', 'lane']) {
+    if (!row[k]) {
+      console.error(`${file}: a new row needs "${k}"`)
+      return 1
+    }
+  }
+  if (readBacklogView().doc.entries.some((e) => e.id === row.id) && !existsSync(`${ROWS_DIR}/${row.id}.json`)) {
+    console.error(`${row.id} is already a row; take \`pnpm ledger:next\``)
+    return 1
+  }
+  return writeRowFragment(row.id, row)
+}
+
+function adr(argv) {
+  const file = argv[0] && !argv[0].startsWith('-') ? argv[0] : null
+  if (!file) {
+    console.error('usage: pnpm ledger:adr <adr.md>')
+    return 2
+  }
+  const text = readFileSync(file, 'utf8').replace(/\s+$/, '') + '\n'
+  const m = ADR_HEADING.exec(text.split('\n')[0])
+  if (!m) {
+    console.error(`${file}: the first line must be the "## ADR-<n>: ..." heading`)
+    return 1
+  }
+  const path = `${ADR_DIR}/ADR-${m[1]}.md`
+  const check = mergeAdrFragments(readDecisionsView().text, [{ path, id: m[1], text }])
+  if (check.problems.length && !existsSync(path)) {
+    console.error(check.problems.join('\n'))
+    return 1
+  }
+  mkdirSync(ADR_DIR, { recursive: true })
+  writeFileSync(path, text)
+  console.log(`✓ ${path}`)
+  return 0
+}
+
+function next(argv) {
+  const n = nextFree('.', argv.filter((a) => !a.startsWith('-')))
+  console.log(`ADR-${n.adr}`)
+  for (const id of Object.values(n.rows)) console.log(id)
+  console.log('(from this tree; ids claimed on other open PRs are check:id-collisions\'s to catch)')
+  return 0
+}
+
+function compact(argv) {
+  const c = compactLedger()
+  const same = readFileSync(BACKLOG, 'utf8') === c.backlogText && readFileSync(DECISIONS, 'utf8') === c.decisionsText
+  console.log(`ledger:compact: ${c.rows} row fragment(s) and ${c.adrs} ADR fragment(s)${same && !c.remove.length ? '; nothing to do' : ''}.`)
+  if (argv.includes('--check')) return 0
+  writeFileSync(BACKLOG, c.backlogText)
+  writeFileSync(DECISIONS, c.decisionsText)
+  for (const p of c.remove) rmSync(p)
+  for (const d of [ROWS_DIR, ADR_DIR, LEDGER_DIR]) {
+    if (existsSync(d) && readdirSync(d).length === 0) rmSync(d, { recursive: true })
+  }
+  if (c.remove.length) console.log(`  folded into ${BACKLOG} and ${DECISIONS}; ${c.remove.length} fragment file(s) removed.`)
+  console.log(`  (a compaction PR is due when more than ${COMPACT_AT} are waiting)`)
+  return 0
+}
+
 function main(argv = process.argv.slice(2)) {
   const [cmd, ...rest] = argv
-  if (cmd === 'from-diff') return fromDiff(rest)
-  if (cmd === 'view') return view(rest)
-  console.error('usage: node scripts/ledger.mjs <view [ID | --adr N] | from-diff [--main ref] [--drop-preamble] [--check]>')
+  const commands = { 'from-diff': fromDiff, view, close, add, adr, next, compact }
+  if (commands[cmd]) return commands[cmd](rest)
+  console.error('usage: node scripts/ledger.mjs <view | from-diff | close | add | adr | next | compact> ...')
   return 2
 }
 

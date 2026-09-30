@@ -1095,7 +1095,7 @@ function DetailDrawer({
                   type="button"
                   onClick={nameWithVera}
                   disabled={naming || pending}
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-muted hover:bg-surface-elevated disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-body-sm text-muted hover:bg-surface-elevated disabled:opacity-50"
                 >
                   {naming ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
                   Describe with Vera
@@ -1108,7 +1108,7 @@ function DetailDrawer({
           {/* Protection (PROG-D6, LIVE-576): the three hooks the schema has carried since the DAM landed,
               finally reachable by a person. Stored and shown today; the private bucket a protected asset
               moves into is LIVE-577 and the door the download policy gates is LIVE-578. */}
-          <div data-loom-protection className="space-y-3 rounded-2xl border border-border bg-surface-elevated/50 p-3">
+          <div data-loom-protection className="space-y-3 rounded-card border border-border bg-surface-elevated/50 p-3">
             <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
               <Lock className="h-4 w-4 text-subtle" aria-hidden />
               Protection

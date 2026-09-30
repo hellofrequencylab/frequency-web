@@ -721,7 +721,7 @@ if nothing can reach it, and "nothing" includes the operator.*
 | `UPGRADE_COPY['create-event']` | Dead copy. Event creation was ungated |
 | `app/(marketing)/beta/[slug]` | `BETA_SEQUENCES` is empty; every slug 404s |
 | 15 × 8-line redirect stubs | Correct as SEO stubs, but belong in `next.config.ts` as one table |
-| `components/teaser-gate.tsx` (1 mount site) | A third gating idiom beside `CrewGate` and `UpsellTease` |
+| `TeaserGate` (1 mount site) | A third gating idiom beside `CrewGate` and `UpsellTease`. **Deleted** 2026-09-29 (LIVE-680, ADR-1659) |
 | `upgrade-crew` · `crew-preview-banner` · `space-crm-prompt` · `compete-locked` | Four bespoke nudges, four localStorage keys, four hand-written copies, none reading the feature config |
 | `app/page.tsx` hardcoded `$0` | ⚠️ **Leave as copy.** It is a proof-band claim ("To show up") beside `500+ mornings`, not a tier price. There is no catalog entry to derive it from, so binding it to a price source would be a category error |
 

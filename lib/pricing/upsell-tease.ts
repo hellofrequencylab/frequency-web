@@ -62,7 +62,7 @@ export function shouldShowTease(input: TeaseVisibilityInput): boolean {
 
 // ── Frequency cap (the "under cap" half) — a PURE, best-effort local-storage meter ───────────────
 // The tease must never nag: once a member has seen a given tease enough times (or dismissed it), it
-// stays quiet. This mirrors components/teaser-gate.tsx's localStorage meter shape, kept pure here so
+// stays quiet. It keeps a per-key localStorage meter (the shape the retired teaser gate used), kept pure so
 // the count math is testable without a DOM. The store itself (read/write) lives in the client island;
 // these helpers do the arithmetic.
 

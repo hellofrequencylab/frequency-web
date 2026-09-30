@@ -17,8 +17,11 @@
 //      missing or unreadable. The clamp and the default are the attribution module's, not restated.
 //   4. The secondary is one of the practice's Focuses (`focus_details` keys, ADR-992), because a
 //      Pillar the practice earns Zaps toward is a Pillar it develops. Choosing a secondary that is
-//      not yet a Focus ADDS it (with the primary's key kept first); dropping the Focus that is the
-//      secondary drops the split with it.
+//      not yet a Focus ADDS it; dropping the Focus that is the secondary drops the split with it.
+//   5. The primary is `domain_id`, never "the first Focus" (LIVE-650, ADR-1618). `focus_details` is
+//      jsonb, which keeps no key order (Postgres stores object keys by length, then bytewise), so
+//      a map read back from the row lists its Pillars in id order. `keepPrimary` keeps the declared
+//      primary while it is still a Focus and reaches for a key only when it left the set.
 //
 // PURE: no database, no clock. `updatePractice` (lib/practices.ts) reads the current row and
 // calls this; the unit test in split.test.ts owns every rule above.
@@ -75,11 +78,12 @@ export function resolveSplitWrite(input: SplitWriteInput): SplitWrite {
   return { secondary_domain_id: secondary, primary_pct, focus_details: listed ? null : withSecondary(input.focus, primary, secondary) }
 }
 
-/** The Focus map with `secondary` added: the primary's entry first (a reader that takes "the
- *  first Focus" still finds the primary), then every existing UUID-keyed entry once, then the
- *  secondary. Built through a Map and `Object.fromEntries`, never a computed-key write, and any
- *  key that is not a Pillar id (`__proto__`, `constructor`, junk) is dropped, so a stored map can
- *  hold nothing but Pillar ids. Both ids are UUID-checked by the caller. */
+/** The Focus map with `secondary` added: the primary's entry, then every existing UUID-keyed entry
+ *  once, then the secondary. The order is only tidy, never meaning: once stored, jsonb re-sorts the
+ *  keys, and the primary is read from `domain_id` (rule 5). Built through a Map and
+ *  `Object.fromEntries`, never a computed-key write, and any key that is not a Pillar id
+ *  (`__proto__`, `constructor`, junk) is dropped, so a stored map can hold nothing but Pillar ids.
+ *  Both ids are UUID-checked by the caller. */
 function withSecondary(focus: FocusMap, primary: string, secondary: string): FocusMap {
   const own = (k: string) => (Object.prototype.hasOwnProperty.call(focus, k) ? focus[k] : undefined)
   const entries = new Map<string, FocusMap[string]>([[primary, own(primary) ?? EMPTY_FOCUS]])
@@ -88,4 +92,20 @@ function withSecondary(focus: FocusMap, primary: string, secondary: string): Foc
   }
   entries.set(secondary, EMPTY_FOCUS)
   return Object.fromEntries(entries)
+}
+
+/** The primary Pillar a write that carries a Focus map stores (rule 5; LIVE-650, ADR-1618).
+ *  `declared` is the primary this write keeps: the patch's `domain_id` when it names one, else
+ *  the row's current `domain_id`. While that Pillar is still one of the Focuses it stays, whatever
+ *  order the map's keys arrive in, so a save that round-trips a stored map (keys in id order) can
+ *  no longer move the primary to the Pillar whose id sorts first. Only when the declared primary
+ *  left the set (or there was none) does the first key of the map as handed stand in: for the
+ *  Studio builder that is the Focus it shows as primary, and for a map read from the row it is as
+ *  good as any. An empty map has no primary. */
+export function keepPrimary(declared: string | null | undefined, focus: FocusMap): string | null {
+  if (typeof declared === 'string' && UUID.test(declared) && Object.prototype.hasOwnProperty.call(focus, declared)) {
+    return declared
+  }
+  for (const key of Object.keys(focus)) if (UUID.test(key)) return key
+  return null
 }

@@ -230,7 +230,7 @@ export function AdoptPracticeButton({
               maxLength={140}
               onChange={(e) => setCue(e.target.value)}
               placeholder="After my morning coffee"
-              className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-meta text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-2 py-1.5 text-meta text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
             />
           </label>
         </div>

@@ -170,11 +170,14 @@ const HTML_ENTITIES: Record<string, string> = {
 }
 
 export function htmlToText(html: string, maxChars = MAX_TEXT_CHARS): string {
-  // Remove whole script/style/noscript elements + comments, looping to a fixed point.
+  // Remove whole script/style/noscript elements + comments, looping to a fixed point. A browser
+  // ends the element at `</script` followed by anything up to `>` (`</script foo>`, `</script\t\n>`),
+  // so the end tag is matched the same way; ending only at `</script\s*>` left such a script's body
+  // in the text (HYG-143, CodeQL js/bad-tag-filter).
   let stripped = html
-  stripped = replaceUntilStable(stripped, /<script\b[^>]*>[^<]*(?:<(?!\/script>)[^<]*)*<\/script\s*>/gi, ' ')
-  stripped = replaceUntilStable(stripped, /<style\b[^>]*>[^<]*(?:<(?!\/style>)[^<]*)*<\/style\s*>/gi, ' ')
-  stripped = replaceUntilStable(stripped, /<noscript\b[^>]*>[^<]*(?:<(?!\/noscript>)[^<]*)*<\/noscript\s*>/gi, ' ')
+  stripped = replaceUntilStable(stripped, /<script\b[^>]*>[^<]*(?:<(?!\/script\b)[^<]*)*<\/script\b[^>]*>/gi, ' ')
+  stripped = replaceUntilStable(stripped, /<style\b[^>]*>[^<]*(?:<(?!\/style\b)[^<]*)*<\/style\b[^>]*>/gi, ' ')
+  stripped = replaceUntilStable(stripped, /<noscript\b[^>]*>[^<]*(?:<(?!\/noscript\b)[^<]*)*<\/noscript\b[^>]*>/gi, ' ')
   stripped = replaceUntilStable(stripped, /<!--[^-]*(?:-(?!->)[^-]*)*-->/g, ' ')
   // Turn a few block-closers into newlines, then remove ALL remaining tags, looping to a fixed point
   // so `<scr<script>ipt>`-style nesting cannot rebuild a tag.

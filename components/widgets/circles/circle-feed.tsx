@@ -1,7 +1,5 @@
 import { Suspense } from 'react'
 import { Sparkles, HandHeart } from 'lucide-react'
-import { TeaserGate } from '@/components/teaser-gate'
-import { teaserAllowed, TEASER_PREVIEW_SECONDS } from '@/lib/teaser'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { Avatar } from '@/components/ui/avatar'
@@ -59,114 +57,106 @@ export const CircleFeed = async () => {
   const names = arrivalNames(arrivals, extra)
 
   return (
-    <TeaserGate
-      allowed={teaserAllowed({ role: isCrew ? 'crew' : 'member', hasAccess: isMember })}
-      resourceKey={`circle:${circle.id}`}
-      previewSeconds={TEASER_PREVIEW_SECONDS}
-      title="Crew gets the full circle"
-      body="Take a look around. Crew members can post, join the conversation, and connect with everyone here."
-    >
-      <section>
-        <div className="mb-4">
-          <h2 className="text-body-sm font-bold text-text">Circle feed</h2>
-          <p className="mt-0.5 text-meta leading-relaxed text-muted">
-            {canManage
-              ? 'Post to your circle. Toggle Announce to send it to the wider Hub.'
-              : 'Conversation and event announcements for everyone in this circle.'}
-          </p>
+    <section>
+      <div className="mb-4">
+        <h2 className="text-body-sm font-bold text-text">Circle feed</h2>
+        <p className="mt-0.5 text-meta leading-relaxed text-muted">
+          {canManage
+            ? 'Post to your circle. Toggle Announce to send it to the wider Hub.'
+            : 'Conversation and event announcements for everyone in this circle.'}
+        </p>
+      </div>
+
+      {/* A. THE NEWCOMER'S OWN WELCOME. Still `!canManage`: a host does not introduce themselves
+             to a Circle they run. Now it names who else is new, so the intro has an audience. */}
+      {isMember && justJoined && !canManage && (
+        <div className="mb-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3">
+          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+          <div className="min-w-0">
+            <p className="text-body-sm font-semibold text-text">Welcome to {circle.name}</p>
+            <p className="mt-0.5 text-meta leading-relaxed text-muted">
+              You&rsquo;re in. Say hello below so the circle knows who just arrived. A quick intro is
+              the easiest way to start showing up here.
+            </p>
+            {names && (
+              <p className="mt-1.5 text-meta leading-relaxed text-muted">
+                {names} {arrivalTotal === 1 ? 'is' : 'are'} new here too.
+              </p>
+            )}
+          </div>
         </div>
+      )}
 
-        {/* A. THE NEWCOMER'S OWN WELCOME. Still `!canManage`: a host does not introduce themselves
-               to a Circle they run. Now it names who else is new, so the intro has an audience. */}
-        {isMember && justJoined && !canManage && (
-          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3">
-            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
-            <div className="min-w-0">
-              <p className="text-body-sm font-semibold text-text">Welcome to {circle.name}</p>
-              <p className="mt-0.5 text-meta leading-relaxed text-muted">
-                You&rsquo;re in. Say hello below so the circle knows who just arrived. A quick intro is
-                the easiest way to start showing up here.
-              </p>
-              {names && (
-                <p className="mt-1.5 text-meta leading-relaxed text-muted">
-                  {names} {arrivalTotal === 1 ? 'is' : 'are'} new here too.
-                </p>
-              )}
-            </div>
+      {/* B. THE GREETING STRIP, for members who are already settled. Never alongside A: a
+             newcomer has just been handed the same names in their own panel. */}
+      {isMember && !justJoined && arrivals.length > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-border bg-surface-elevated/60 px-4 py-3">
+          <span className="flex shrink-0 -space-x-2">
+            {arrivals.map((a) => (
+              <Avatar
+                key={a.id}
+                src={a.avatarUrl}
+                name={a.displayName}
+                size="sm"
+                className="ring-2 ring-surface"
+              />
+            ))}
+          </span>
+          <div className="min-w-0">
+            <p className="text-body-sm font-semibold text-text">
+              <HandHeart className="mr-1.5 inline h-4 w-4 text-primary-strong" aria-hidden />
+              {names} just joined
+            </p>
+            <p className="mt-0.5 text-meta leading-relaxed text-muted">
+              Say hello below. A new member who gets a reply in their first week usually comes back.
+            </p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* B. THE GREETING STRIP, for members who are already settled. Never alongside A: a
-               newcomer has just been handed the same names in their own panel. */}
-        {isMember && !justJoined && arrivals.length > 0 && (
-          <div className="mb-4 flex items-center gap-3 rounded-2xl border border-border bg-surface-elevated/60 px-4 py-3">
-            <span className="flex shrink-0 -space-x-2">
-              {arrivals.map((a) => (
-                <Avatar
-                  key={a.id}
-                  src={a.avatarUrl}
-                  name={a.displayName}
-                  size="sm"
-                  className="ring-2 ring-surface"
-                />
-              ))}
-            </span>
-            <div className="min-w-0">
-              <p className="text-body-sm font-semibold text-text">
-                <HandHeart className="mr-1.5 inline h-4 w-4 text-primary-strong" aria-hidden />
-                {names} just joined
-              </p>
-              <p className="mt-0.5 text-meta leading-relaxed text-muted">
-                Say hello below. A new member who gets a reply in their first week usually comes back.
-              </p>
-            </div>
+      {isMember ? (
+        <Composer
+          scopeId={circle.id}
+          visibility="group"
+          placeholder={
+            justJoined
+              ? `Introduce yourself to ${circle.name}…`
+              : arrivals.length > 0
+                ? `Welcome ${arrivals[0].displayName} to ${circle.name}…`
+                : `Share something with ${circle.name}…`
+          }
+          canAnnounce={canManage}
+        />
+      ) : (
+        myProfileId && (
+          <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
+            <p className="text-meta leading-relaxed text-muted">
+              Join this circle to post and follow it from your feed.
+            </p>
           </div>
-        )}
+        )
+      )}
 
-        {isMember ? (
-          <Composer
-            scopeId={circle.id}
-            visibility="group"
-            placeholder={
-              justJoined
-                ? `Introduce yourself to ${circle.name}…`
-                : arrivals.length > 0
-                  ? `Welcome ${arrivals[0].displayName} to ${circle.name}…`
-                  : `Share something with ${circle.name}…`
-            }
-            canAnnounce={canManage}
-          />
-        ) : (
-          myProfileId && (
-            <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
-              <p className="text-meta leading-relaxed text-muted">
-                Join this circle to post and follow it from your feed.
-              </p>
-            </div>
-          )
-        )}
-
-        <Suspense fallback={null}>
-          {/* The empty feed says something DIFFERENT to each viewer, because "no posts yet" is a
-              to-do for a host, an invitation for a member, and a fact for everyone else. The old
-              copy ("Be the first to share something") was addressed to a member and shown to all
-              three, including visitors who cannot post at all. */}
-          <FeedList
-            circleIds={[circle.id]}
-            showPublicLayer={false}
-            myProfileId={myProfileId}
-            viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
-            emptyMessage={
-              canManage
-                ? 'Nothing here yet. A first post from you gives everyone else something to reply to.'
-                : isMember
-                  ? 'No posts yet. Be the first to share something.'
-                  : 'No posts yet.'
-            }
-            retryHref={`/circles/${circle.slug}`}
-          />
-        </Suspense>
-      </section>
-    </TeaserGate>
+      <Suspense fallback={null}>
+        {/* The empty feed says something DIFFERENT to each viewer, because "no posts yet" is a
+            to-do for a host, an invitation for a member, and a fact for everyone else. The old
+            copy ("Be the first to share something") was addressed to a member and shown to all
+            three, including visitors who cannot post at all. */}
+        <FeedList
+          circleIds={[circle.id]}
+          showPublicLayer={false}
+          myProfileId={myProfileId}
+          viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
+          emptyMessage={
+            canManage
+              ? 'Nothing here yet. A first post from you gives everyone else something to reply to.'
+              : isMember
+                ? 'No posts yet. Be the first to share something.'
+                : 'No posts yet.'
+          }
+          retryHref={`/circles/${circle.slug}`}
+        />
+      </Suspense>
+    </section>
   )
 }
