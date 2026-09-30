@@ -45,7 +45,6 @@ describe('persona verification state machine (P2.7)', () => {
     // verified → active is the money gate: allowed only once the Stripe Connect binding is wired.
     // While CONNECT_WIRED is false, activation is blocked everywhere (UI button + the action).
     expect(canStaffTransition('verified', 'active')).toBe(CONNECT_WIRED)
-    if (!CONNECT_WIRED) expect(canStaffTransition('verified', 'active')).toBe(false)
   })
 
   it('rejects skips and illegal moves', () => {

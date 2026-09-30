@@ -25,6 +25,19 @@ let buffer: Buffered[] = []
 let timer: ReturnType<typeof setTimeout> | null = null
 let sessionId: string | null = null
 
+/** A fresh random visit id. `randomUUID` needs a secure context (an http preview has none), but
+ *  `getRandomValues` does not, so the fallback is still a CSPRNG rather than Math.random
+ *  (HYG-143, CodeQL js/insecure-randomness). Only a browser with no Web Crypto at all gets the
+ *  timestamp alone. Never throws. */
+function newVisitId(): string {
+  const c = typeof crypto === 'undefined' ? undefined : crypto
+  if (typeof c?.randomUUID === 'function') return c.randomUUID()
+  if (typeof c?.getRandomValues === 'function') {
+    return Array.from(c.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('')
+  }
+  return `${Date.now()}`
+}
+
 /** Ephemeral per-tab visit id (sessionStorage). Random, not PII — just sessionizes a
  *  visit so a sequence of interactions can be stitched without a durable identifier. */
 export function getSessionId(): string {
@@ -34,12 +47,12 @@ export function getSessionId(): string {
     const KEY = 'fq_obs_sid'
     let id = sessionStorage.getItem(KEY)
     if (!id) {
-      id = (crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+      id = newVisitId()
       sessionStorage.setItem(KEY, id)
     }
     sessionId = id
   } catch {
-    sessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    sessionId = newVisitId()
   }
   return sessionId
 }
