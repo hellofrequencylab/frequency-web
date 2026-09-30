@@ -8,7 +8,8 @@
 //   space    → destination charge to the Space owner's connected account (plan rake)
 //   split    → two or more sellers in one cart: a plain charge on the platform carrying
 //              `transfer_group`, one transfer per seller created at settle from the ledger in
-//              ./transfers.ts (LIVE-622, ADR-1614)
+//              ./transfers.ts (LIVE-622, ADR-1614); a refund or a lost dispute reverses each
+//              seller's transfer pro rata in ./split-refund.ts (LIVE-623, ADR-1615)
 // Server-only. Flag-gated by payoutsLive() like every other billing path.
 
 import type Stripe from 'stripe'
@@ -33,6 +34,7 @@ import { getVariantsByIds } from './variants'
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
 import { planFundsFlow, splitTotals, type SellerSplit } from './funds-flow'
 import { settleSplitOrderTransfers } from './transfers'
+import { reverseSplitTransfers, reverseSplitRefundForPaymentIntent } from './split-refund'
 import { receiptEmailFor } from '@/lib/billing/receipt-address'
 import { commercePaymentMethodParams } from './payment-methods'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
@@ -794,7 +796,8 @@ async function bookingPartialRefundCents(order: { id: string; amount_cents: numb
 }
 
 /** Refund a paid order. Destination charges unwind with reverse_transfer +
- *  refund_application_fee; platform charges refund normally. A booking-backed service order with a
+ *  refund_application_fee; platform charges refund normally; a split order refunds on the platform
+ *  and then reverses each seller's transfer pro rata (LIVE-623). A booking-backed service order with a
  *  cancellation/no-show policy refunds the COMPUTED (partial) amount; everything else refunds fully. */
 export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true; error?: string }> {
   if (!stripe) return { error: 'Payments aren’t turned on yet.' }
@@ -835,10 +838,8 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
       // and its application fee. A platform charge has neither. A SEPARATE order has neither ON THE
       // CHARGE either: its money landed on the platform and its transfers are separate objects, so
       // `reverse_transfer` here would be refused by Stripe and dead-end the refund. The transfers
-      // LIVE-622 created at settle are rows in commerce_order_transfers; LIVE-623 reverses each one,
-      // pro rata, beside this refund. Until it lands the refund comes from the platform balance and
-      // the sellers keep their transfers, while a transfer not yet created is held (./transfers.ts
-      // pays no seller of a refunded order).
+      // LIVE-622 created at settle are rows in commerce_order_transfers, and each is reversed pro
+      // rata AFTER this refund, below (LIVE-623, ./split-refund.ts): the buyer first.
       ...(order.owner_kind === 'platform' || order.funds_flow === 'separate'
         ? {}
         : { reverse_transfer: true, refund_application_fee: true }),
@@ -856,6 +857,18 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
     order.stripe_payment_intent_id,
     partialAmount != null ? { refundedCents: partialAmount, releaseBooking: true } : undefined,
   )
+  // A SPLIT ORDER'S SELLERS GIVE BACK THEIR SHARE (LIVE-623, ADR-1615): each transfer reversed pro
+  // rata to the seller's share of the gross, a transfer never made cancelled instead. The buyer has
+  // their money already, so nothing here can fail the refund: a reversal that does not land is a
+  // row the reconciler retries, and the charge.refunded webhook for this same refund runs the same
+  // idempotent call again.
+  if (order.funds_flow === 'separate') {
+    try {
+      await reverseSplitTransfers(order.id, partialAmount ?? order.amount_cents)
+    } catch (err) {
+      console.error('[commerce] split refund reversal not recorded; the charge.refunded webhook retries it', { orderId, err })
+    }
+  }
   return { ok: true }
 }
 
@@ -1061,7 +1074,55 @@ export async function recordCommerceRefundFromCharge(charge: Stripe.Charge): Pro
   const refunded = charge.amount_refunded ?? 0
   if (refunded < amount) {
     await recordCommerceRefund(paymentIntentId, { refundedCents: refunded })
-    return
+  } else {
+    await recordCommerceRefund(paymentIntentId)
   }
-  await recordCommerceRefund(paymentIntentId)
+  // LIVE-623: a refund of a split order, made here or in the Stripe dashboard, takes each seller's
+  // pro rata part back from their transfer. `amount_refunded` is cumulative, so a replay of this
+  // event, or of an earlier partial, reverses nothing twice. A charge that is not a split order's
+  // matches nothing. Throws on a database error, so the webhook redelivers.
+  await reverseSplitRefundForPaymentIntent(paymentIntentId, refunded)
+}
+
+/**
+ * A dispute on a commerce charge that the platform LOST (LIVE-623, ADR-1615): the buyer has the
+ * disputed amount back through their bank, so the order is recorded refunded for it through the same
+ * recorder a refund uses, and on a split order each seller's transfer is reversed pro rata through the
+ * same function. That is the liability case ADR-1565 §5 names: the money already sat in the sellers'
+ * balances when the chargeback landed. What the buyer has had back is the refunds already on the
+ * charge plus the disputed amount. A dispute won, or closed with a warning, changes nothing; a charge
+ * that is not a commerce order's matches nothing. Throws on a database or Stripe read error, so the
+ * webhook redelivers.
+ *
+ * NOT HERE: taking a DESTINATION order's one transfer back after a lost dispute (the order is recorded
+ * refunded; its seller's transfer is not reversed), and disputes on tickets, tips or donations.
+ */
+export async function recordCommerceDisputeClosed(dispute: Stripe.Dispute): Promise<void> {
+  if (dispute?.status !== 'lost') return
+  const paymentIntentId =
+    typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id ?? null
+  if (!paymentIntentId) return
+  const { data, error } = await db()
+    .from('commerce_orders')
+    .select('id, amount_cents, funds_flow')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .in('status', ['paid', 'fulfilled', 'refunded'])
+    .maybeSingle()
+  if (error) throw new Error(`order for disputed ${paymentIntentId} unreadable: ${error.message}`)
+  const order = data as { id: string; amount_cents: number; funds_flow: string | null } | null
+  if (!order) return
+
+  let refundedBefore = 0
+  if (dispute.charge && typeof dispute.charge === 'object') {
+    refundedBefore = dispute.charge.amount_refunded ?? 0
+  } else if (typeof dispute.charge === 'string' && stripe) {
+    const charge = await stripe.charges.retrieve(dispute.charge)
+    refundedBefore = charge?.amount_refunded ?? 0
+  }
+  const taken = Math.min(order.amount_cents, refundedBefore + Math.max(0, dispute.amount ?? 0))
+  if (taken <= 0) return
+
+  console.warn('[commerce] dispute lost; recording it as a refund', { orderId: order.id, disputeId: dispute.id, taken })
+  await recordCommerceRefund(paymentIntentId, taken < order.amount_cents ? { refundedCents: taken } : undefined)
+  if (order.funds_flow === 'separate') await reverseSplitTransfers(order.id, taken)
 }

@@ -58,6 +58,7 @@ vi.mock('@/lib/billing/checkout', () => ({
 vi.mock('@/lib/commerce/checkout', () => ({
   recordCommerceOrderFromSession: async (s: Stripe.Checkout.Session) => { seen('order', s) },
   recordCommerceRefundFromCharge: async () => { H.calls.push('orderRefund') },
+  recordCommerceDisputeClosed: async () => { H.calls.push('disputeClosed') },
   abandonCommerceOrderFromSession: async () => { H.calls.push('abandon') },
 }))
 // LIVE-622: a split order's seller transfers. Each records under its own name so a test can prove
@@ -344,6 +345,14 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     H.event = plainEvent('transfer.reversed', { id: 'tr_1', amount_reversed: 100 })
     await post()
     expect(H.calls).toEqual(['transferCreated', 'transferReversed'])
+    expect(H.rpcCalls).toHaveLength(0)
+  })
+
+  it('routes charge.dispute.closed to the commerce dispute recorder, and nowhere else (LIVE-623)', async () => {
+    H.event = plainEvent('charge.dispute.closed', { id: 'dp_1', status: 'lost', amount: 1000, payment_intent: 'pi_1' })
+    const res = await post()
+    expect(res.status).toBe(200)
+    expect(H.calls).toEqual(['disputeClosed'])
     expect(H.rpcCalls).toHaveLength(0)
   })
 

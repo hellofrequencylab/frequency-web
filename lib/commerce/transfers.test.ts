@@ -12,7 +12,7 @@ import type Stripe from 'stripe'
 //      the retry uses the same key, and a retry after a create that DID land (the response was lost)
 //      adopts the transfer Stripe already holds instead of making a second one;
 //   4. a destination-flow order never gets a row or a transfer;
-//   5. a refunded order is held, a row over the ceiling is logged as stuck and never retried, and a
+//   5. a fully refunded order's unpaid rows are cancelled (LIVE-623), a row over the ceiling is logged as stuck and never retried, and a
 //      reversal from the webhook converges on Stripe's cumulative amount.
 
 type Row = Record<string, unknown>
@@ -445,7 +445,7 @@ describe('a failed transfer is recorded and retried without a second transfer', 
     expect(transfersTo('acct_a')).toHaveLength(0)
   })
 
-  it('a failed row on an order refunded since is held, and its seller is not paid', async () => {
+  it('a failed row on an order refunded in full since is cancelled, and its seller is not paid (LIVE-623)', async () => {
     const order = seedOrder()
     stripeState.plan.failNext = 1
     await settleSplitOrderTransfers('o-split')
@@ -454,9 +454,34 @@ describe('a failed transfer is recorded and retried without a second transfer', 
     later()
     tick()
     const run = await reconcile()
+    expect(run.cancelled).toBe(1)
+    expect(bySpace('sp-a')).toMatchObject({ status: 'cancelled', refund_reversal_cents: 950 })
+    expect(transfersTo('acct_a')).toHaveLength(0)
+  })
+
+  it('a failed row on an order PARTIALLY refunded since is still paid: the order is paid, and the refund share is reversed after (LIVE-623)', async () => {
+    const order = seedOrder()
+    stripeState.plan.failNext = 1
+    await settleSplitOrderTransfers('o-split')
+    order.refunded_at = new Date(db.now()).toISOString()
+    later()
+    tick()
+    const run = await reconcile()
+    expect(run.created).toBe(1)
+    expect(bySpace('sp-a').status).toBe('created')
+    expect(transfersTo('acct_a')).toHaveLength(1)
+  })
+
+  it('a paid order in any other unpayable state is held, not cancelled', async () => {
+    const order = seedOrder()
+    stripeState.plan.failNext = 1
+    await settleSplitOrderTransfers('o-split')
+    order.status = 'cancelled'
+    later()
+    tick()
+    const run = await reconcile()
     expect(run.held).toBe(1)
     expect(bySpace('sp-a').status).toBe('failed')
-    expect(transfersTo('acct_a')).toHaveLength(0)
   })
 })
 

@@ -12,7 +12,9 @@ import type Stripe from 'stripe'
 //      fields, and its row says so;
 //   3. the Store beside a Space is refused before any write or any Stripe call;
 //   4. a second seller who cannot be paid refuses the whole cart before any write;
-//   5. a refund of a separate order sends no `reverse_transfer`, because there is none on the charge.
+//   5. a refund of a separate order sends no `reverse_transfer`, because there is none on the charge;
+//   6. (LIVE-623) that refund, its charge.refunded, and a lost dispute each hand the split order to the
+//      pro rata reversal in ./split-refund.ts, after the buyer is refunded; a destination order never.
 //
 // The admin client is the scripted fake from ./checkout.test.ts: every builder call is recorded, so
 // the assertions read what was SENT, not what came back.
@@ -48,6 +50,7 @@ const state = vi.hoisted(() => {
 const stripeFake = vi.hoisted(() => ({
   checkout: { sessions: { create: vi.fn(), expire: vi.fn() } },
   refunds: { create: vi.fn() },
+  charges: { retrieve: vi.fn() },
 }))
 
 const connect = vi.hoisted(() => ({
@@ -142,8 +145,21 @@ vi.mock('./order-receipt', () => ({ sendOrderReceipts: vi.fn(async () => {}) }))
 // ./transfers.test.ts; this file pins only WHICH orders the settle hands over.
 const transfers = vi.hoisted(() => ({ settleSplitOrderTransfers: vi.fn(async () => {}) }))
 vi.mock('./transfers', () => transfers)
+// LIVE-623: the split refund. Its arithmetic and its never-twice guarantees are pinned in
+// ./split-refund.test.ts; this file pins only WHEN the checkout hands an order to it.
+const splitReversal = vi.hoisted(() => ({
+  reverseSplitTransfers: vi.fn(async () => ({})),
+  reverseSplitRefundForPaymentIntent: vi.fn(async () => null),
+}))
+vi.mock('./split-refund', () => splitReversal)
 
-import { createCommerceCheckout, refundCommerceOrder, recordCommerceOrderFromSession } from './checkout'
+import {
+  createCommerceCheckout,
+  refundCommerceOrder,
+  recordCommerceOrderFromSession,
+  recordCommerceRefundFromCharge,
+  recordCommerceDisputeClosed,
+} from './checkout'
 
 const BASE = {
   entity_id: 'ent-1',
@@ -315,6 +331,54 @@ describe('refunding a separate order reverses no transfer on the charge (there i
     expect('reverse_transfer' in splitRefund).toBe(false)
     expect('refund_application_fee' in splitRefund).toBe(false)
     expect(destRefund).toMatchObject({ payment_intent: 'pi_dest', reverse_transfer: true, refund_application_fee: true })
+    // LIVE-623: the split order's sellers give back their share, after the buyer's refund; the
+    // destination order's one transfer came back on the refund itself.
+    expect(splitReversal.reverseSplitTransfers).toHaveBeenCalledTimes(1)
+    expect(splitReversal.reverseSplitTransfers).toHaveBeenCalledWith('o-split', 3000)
+    expect(stripeFake.refunds.create.mock.invocationCallOrder[0]).toBeLessThan(
+      splitReversal.reverseSplitTransfers.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('a reversal that throws never fails the refund the buyer already has', async () => {
+    state.setHandler((c) =>
+      c.table === 'commerce_orders' && c.op === 'select' && c.single
+        ? { data: { id: 'o-split', owner_kind: 'split', funds_flow: 'separate', status: 'paid', amount_cents: 3000, stripe_payment_intent_id: 'pi_split', refunded_at: null } }
+        : {},
+    )
+    splitReversal.reverseSplitTransfers.mockRejectedValueOnce(new Error('connection reset'))
+    expect(await refundCommerceOrder('o-split')).toEqual({ ok: true })
+  })
+})
+
+describe('the webhook side of a split refund (LIVE-623)', () => {
+  it('charge.refunded hands the cumulative amount refunded to the split reversal, full or partial', async () => {
+    await recordCommerceRefundFromCharge({ payment_intent: 'pi_split', amount: 3000, amount_refunded: 1000 } as unknown as Stripe.Charge)
+    await recordCommerceRefundFromCharge({ payment_intent: 'pi_split', amount: 3000, amount_refunded: 3000 } as unknown as Stripe.Charge)
+    expect(splitReversal.reverseSplitRefundForPaymentIntent.mock.calls).toEqual([
+      ['pi_split', 1000],
+      ['pi_split', 3000],
+    ])
+  })
+
+  const disputeOn = (order: Record<string, unknown> | null) =>
+    state.setHandler((c) => (c.table === 'commerce_orders' && c.op === 'select' && c.single ? { data: order } : {}))
+
+  it('a LOST dispute on a split order is a refund of the disputed amount plus what was refunded before, reversed pro rata', async () => {
+    disputeOn({ id: 'o-split', amount_cents: 3000, funds_flow: 'separate' })
+    stripeFake.charges.retrieve.mockResolvedValueOnce({ id: 'ch_1', amount_refunded: 500 })
+    await recordCommerceDisputeClosed({ id: 'dp_1', status: 'lost', amount: 1000, charge: 'ch_1', payment_intent: 'pi_split' } as unknown as Stripe.Dispute)
+    expect(splitReversal.reverseSplitTransfers).toHaveBeenCalledWith('o-split', 1500)
+    // Recorded through the same recorder a refund uses: a partial, since 1500 of 3000 is back.
+    expect(state.calls.some((c) => c.table === 'commerce_orders' && c.op === 'update')).toBe(true)
+  })
+
+  it('a dispute won, or lost on a destination order, reverses no split transfer', async () => {
+    disputeOn({ id: 'o-split', amount_cents: 3000, funds_flow: 'separate' })
+    await recordCommerceDisputeClosed({ id: 'dp_2', status: 'won', amount: 3000, charge: 'ch_1', payment_intent: 'pi_split' } as unknown as Stripe.Dispute)
+    disputeOn({ id: 'o-dest', amount_cents: 2000, funds_flow: 'destination' })
+    await recordCommerceDisputeClosed({ id: 'dp_3', status: 'lost', amount: 2000, charge: { id: 'ch_2', amount_refunded: 0 }, payment_intent: 'pi_dest' } as unknown as Stripe.Dispute)
+    expect(splitReversal.reverseSplitTransfers).not.toHaveBeenCalled()
   })
 })
 

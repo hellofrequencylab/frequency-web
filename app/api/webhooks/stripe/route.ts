@@ -28,6 +28,11 @@
 //    `reversed` records the reversed cents on the ledger row, so a reversal made from the Stripe
 //    dashboard is not invisible. Both fire on the PLATFORM account, so the platform-scoped
 //    destination must subscribe to them.
+//  - charge.dispute.closed (LIVE-623, ADR-1615) — a LOST dispute on a commerce charge is recorded
+//    as a refund of the disputed amount, and a split order's sellers give back their pro rata part
+//    of it by transfer reversal, the way a refund does. Platform account; subscribe to it there.
+//    (A charge.refunded of a split order also reverses its sellers' transfers, inside the commerce
+//    refund recorder.)
 // Unhandled events are acked 200 so Stripe stops retrying.
 //
 // Configure the Stripe destinations to point at this ONE URL
@@ -70,6 +75,7 @@ import {
 import {
   recordCommerceOrderFromSession,
   recordCommerceRefundFromCharge,
+  recordCommerceDisputeClosed,
   abandonCommerceOrderFromSession,
 } from '@/lib/commerce/checkout'
 import { recordTransferCreated, recordTransferReversed } from '@/lib/commerce/transfers'
@@ -414,6 +420,13 @@ export async function POST(req: Request) {
         await recordSpaceDonationRefundFromCharge(charge)
         break
       }
+
+      case 'charge.dispute.closed':
+        // A chargeback decided (LIVE-623). Only a LOST one on a commerce order changes anything: the
+        // order is recorded refunded for the disputed amount, and a split order's transfers are
+        // reversed pro rata, so the sellers carry their share of it and not the platform alone.
+        await recordCommerceDisputeClosed(event.data.object as Stripe.Dispute)
+        break
 
       case 'transfer.created':
         // A split order's seller transfer (LIVE-622). The ledger writes its own row when the create

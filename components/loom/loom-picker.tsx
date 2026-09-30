@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { renditionUrl } from '@/lib/library/rendition-url'
 import { Dialog } from '@/components/ui/dialog'
 import {
-  Upload, Loader2, ImageIcon, Sparkles, Tag as TagIcon, Building2, User, Check, X, Search, Shapes,
+  Upload, Loader2, ImageIcon, Sparkles, Tag as TagIcon, Building2, User, Check, X, Search, Shapes, Lock,
 } from 'lucide-react'
 import { loomScopes, loomScope as loomScopeAction, loomImages, uploadLoomImage, type LoomScope, type LoomPickerConfig } from '@/lib/loom/picker-actions'
 // The Icons view fetches from GET /api/site-icons rather than calling a server action. A server
@@ -191,10 +191,12 @@ export function LoomPicker({
   // (glyphs), else object-cover (photos). Value is what gets picked/stored (a URL or a data URL).
   // `assetId` rides only on real library rows (an AssetRef the caller can store, ADR-1130);
   // a house SITE icon is a data URL with no catalog row, so it stays reference-less.
-  const tiles: { key: string; value: string; label: string; src: string; contain: boolean; generated: boolean; shared?: boolean; assetId?: string; alt?: string | null }[] = [
+  const tiles: { key: string; value: string; label: string; src: string; contain: boolean; generated: boolean; shared?: boolean; assetId?: string; alt?: string | null; locked?: boolean }[] = [
     // `value` is the MASTER and is what a pick stores (ADR-1130); `src` is a display-only
     // rendition, so a 3-across grid of tiles stops pulling multi-megabyte originals (PROG-D3).
-    ...assets.map((a) => ({ key: a.id, value: a.url, label: a.title, src: renditionUrl(a.url, 'grid'), contain: a.kind === 'icon', generated: a.generated, shared: a.ownedByViewer === false, assetId: a.id, alt: a.alt })),
+    // A PROTECTED row arrives with a signed proof as its url (LIVE-580): it is shown, `locked`, and
+    // never picked, so no page ever stores a protected asset or a URL that expires.
+    ...assets.map((a) => ({ key: a.id, value: a.url, label: a.title, src: renditionUrl(a.url, 'grid'), contain: a.kind === 'icon', generated: a.generated, shared: a.ownedByViewer === false, assetId: a.id, alt: a.alt, locked: a.isProtected })),
     ...(activeView === 'icons'
       ? siteIcons.map((s) => ({ key: `site:${s.name}`, value: s.dataUrl, label: s.label, src: s.dataUrl, contain: true, generated: false }))
       : []),
@@ -494,10 +496,11 @@ export function LoomPicker({
                           <li key={t.key}>
                             <button
                               type="button"
-                              onClick={() => pick(t.value, t.assetId, t.alt)}
-                              title={t.label}
+                              onClick={() => { if (!t.locked) pick(t.value, t.assetId, t.alt) }}
+                              disabled={t.locked}
+                              title={t.locked ? `${t.label}. Protected, so it can't go on a page.` : t.label}
                               aria-pressed={multiple ? on : undefined}
-                              className={`group relative block aspect-square w-full overflow-hidden rounded-control border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary'}`}
+                              className={`group relative block aspect-square w-full overflow-hidden rounded-control border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : t.locked ? 'border-border' : 'border-border hover:border-primary'}`}
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL or an inline SVG data URL, not a configured next/image domain */}
                               <img src={t.src} alt={t.label} loading="lazy" className={`h-full w-full ${t.contain ? 'object-contain p-3' : 'object-cover'}`} />
@@ -509,6 +512,11 @@ export function LoomPicker({
                               {t.shared && (
                                 <span className="absolute bottom-1 left-1 rounded-pill bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-muted lift-1">
                                   Frequency
+                                </span>
+                              )}
+                              {t.locked && (
+                                <span data-loom-proof className="absolute bottom-1 right-1 inline-flex items-center gap-0.5 rounded-pill bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-muted lift-1">
+                                  <Lock className="h-2.5 w-2.5" aria-hidden /> Protected
                                 </span>
                               )}
                               {on && (

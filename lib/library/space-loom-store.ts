@@ -36,9 +36,10 @@ import { armRows, notExpiredOr, toPickAsset, trigramOr, type LoomPickAsset, type
 type LibraryAssetUpdate = Database['public']['Tables']['library_assets']['Update']
 
 /** The columns a Space-scope pick reads. `space_id` and `visibility` ride along for the shelf's
- *  second wall (only the root's public rows) and nothing else. */
+ *  second wall (only the root's public rows) and nothing else; `storage_path` is kept on a row only
+ *  when the caller asked for protected rows, to sign their proofs (LIVE-580). */
 const PICK_COLUMNS =
-  'id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash, space_id, visibility'
+  'id, title, url, alt, kind, tags, config, category, is_protected, expires_at, blurhash, space_id, visibility, storage_path'
 
 /**
  * IMAGE assets in ONE Space's Loom, on the caller's session: RANKED when a query is given (stemmed
@@ -57,6 +58,10 @@ export async function listSpaceLoomImages(
     generatedOnly?: boolean
     limit?: number
     shared?: LoomSharedMode
+    /** Keep a protected row whose file is private (no url) so the caller can show its proof
+     *  (LIVE-580). A caller that sets this MUST pass the list through withLoomProofs before it
+     *  reaches a browser; without it such a row is dropped, as every pick reader always did. */
+    includeProtected?: boolean
   } = {},
 ): Promise<LoomPickAsset[]> {
   if (!spaceId) return []
@@ -113,8 +118,15 @@ export async function listSpaceLoomImages(
         // `.or(notExpiredOr())` still cannot hand the picker a licence that ran out.
         .filter((r) => !isLibraryAssetExpired((r.expires_at as string | null) ?? null))
         .filter(inScope)
-        .map((r) => ({ ...toPickAsset(r), ownedByViewer: !sharedRoot }))
-        .filter((a) => a.url.length > 0)
+        .map((r) => {
+          const a: LoomPickAsset = { ...toPickAsset(r), ownedByViewer: !sharedRoot }
+          // The key rides only for a caller that asked for protected rows (it signs their proofs).
+          if (opts.includeProtected === true && typeof r.storage_path === 'string' && r.storage_path.length > 0) {
+            a.storagePath = r.storage_path
+          }
+          return a
+        })
+        .filter((a) => a.url.length > 0 || (a.isProtected && !!a.storagePath))
       if (opts.generatedOnly) rows = rows.filter((a) => a.generated)
       return rows
     }
