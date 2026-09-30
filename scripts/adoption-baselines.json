@@ -901,7 +901,8 @@
         "components/spaces/email/email-enable-card.tsx",
         "components/spaces/membership-join-card.tsx",
         "components/walkthroughs/walkthrough-card.tsx",
-        "components/push/permission-card.tsx"
+        "components/push/permission-card.tsx",
+        "components/push/install-card.tsx"
       ],
       "excludeReasons": {
         "app/(main)/admin/studio/recommendation-card.tsx": "An advisory panel, not a browse card: a severity chip, a finding, and a propose-then-confirm apply button. There is no entity and no href for EntityCard to link to.",
@@ -926,15 +927,16 @@
         "components/spaces/email/email-enable-card.tsx": "An enable gate: the plain-language anti-spam acknowledgment that must be ticked before the campaign composer appears.",
         "components/spaces/membership-join-card.tsx": "One membership tier as price, interval, benefits and a Join button. A pricing panel with no entity page behind it to link.",
         "components/walkthroughs/walkthrough-card.tsx": "A dismissible in-feed prompt: name, description, Start (opens the lightbox) and Not now. No href, so there is nothing for a browse card to link.",
-        "components/push/permission-card.tsx": "The push permission panel (LIVE-701, ADR-1629): the Settings > Notifications device panel and a one-time nudge, each a line of state plus one Turn on notifications button (the Button primitive) or a Not now link. A permission prompt with no entity and no href, the same shape as walkthrough-card and location-timezone-card."
+        "components/push/permission-card.tsx": "The push permission panel (LIVE-701, ADR-1629): the Settings > Notifications device panel and a one-time nudge, each a line of state plus one Turn on notifications button (the Button primitive) or a Not now link. A permission prompt with no entity and no href, the same shape as walkthrough-card and location-timezone-card.",
+        "components/push/install-card.tsx": "The Install the app panel (LIVE-703, ADR-1630): the Settings row and the one-time DeviceNudge half, each a line of install state plus one Install the app button (the Button primitive) or the iPhone Add to Home Screen steps. An install prompt with no entity and no href, the same shape as permission-card and walkthrough-card."
       },
       "baseline": 1,
       "frozen": {
-        "at": "2026-09-29",
+        "at": "2026-09-30",
         "value": 1,
         "direction": "rebased",
-        "basis": "a162099752b1",
-        "reason": "Basis only, count unchanged at 1: components/push/permission-card.tsx (LIVE-701, #3060) joined the exclude list with its reason, because it is a push permission prompt panel, not a browse card any of EntityCard/PersonCard/StatCard/RowCard fits (HYG-149, ADR-1653).",
+        "basis": "d9617600d60b",
+        "reason": "Basis only, count unchanged at 1: components/push/install-card.tsx (LIVE-703, #3072) joined the exclude list with its reason, because it is an install prompt panel, not a browse card any of EntityCard/PersonCard/StatCard/RowCard fits (HYG-153, following HYG-149 / ADR-1653).",
         "from": 1
       },
       "history": [
@@ -979,6 +981,13 @@
           "to": 1,
           "direction": "rebased",
           "reason": "Basis only, count unchanged at 1: components/push/permission-card.tsx (LIVE-701, #3060) joined the exclude list with its reason, because it is a push permission prompt panel, not a browse card any of EntityCard/PersonCard/StatCard/RowCard fits (HYG-149, ADR-1653)."
+        },
+        {
+          "at": "2026-09-30",
+          "from": 1,
+          "to": 1,
+          "direction": "rebased",
+          "reason": "Basis only, count unchanged at 1: components/push/install-card.tsx (LIVE-703, #3072) joined the exclude list with its reason, because it is an install prompt panel, not a browse card any of EntityCard/PersonCard/StatCard/RowCard fits (HYG-153, following HYG-149 / ADR-1653)."
         }
       ]
     },

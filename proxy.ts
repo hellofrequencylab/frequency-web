@@ -416,6 +416,13 @@ export const config = {
     // ⚠️ Only the negative lookahead changed. Everything this matcher governs BESIDES attribution —
     // session refresh, the protected-path redirect, tenancy — still runs on every other path exactly
     // as before.
-    '/((?!_next/static|_next/image|favicon.ico|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    //
+    // `/api/v1` is the APP CONTRACT (LIVE-715, ADR-1643) and is excluded for the same reason: none
+    // of this middleware is for it. A native caller sends a bearer token and no cookie, so the
+    // proxy's getUser() would see nobody, write a first-touch record whose landing page is an API
+    // path, and set the account and consent marker cookies on JSON responses an app never stores.
+    // The route establishes its own caller (lib/contract/caller.ts); a web caller's cookie session
+    // is read and refreshed there by the server client, which may write cookies in a route handler.
+    '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
