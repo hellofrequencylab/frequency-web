@@ -511,3 +511,40 @@ export function totalSeconds(plan: MovementPlan): number | null {
   const blockSeconds = block.reduce((s, p) => s + p.seconds, 0)
   return lead + blockSeconds * clampRounds(plan.rounds)
 }
+
+// --- auto-continue past the target (ADR-443 PD4, extended to Movement by LIVE-674) ----------
+
+/** The duration-based modes that keep counting past their target, like the Be Still sit: one
+ *  timed block with nothing structured after it, so "keep going" is just more of the same. Yoga
+ *  (a pose sequence) and Strength (rounds) keep their plan-bounded finish; Play is open-ended and
+ *  already counts up. */
+export const AUTO_CONTINUE_MODES: readonly MovementMode[] = ['walk', 'run', 'stretch']
+
+/** Does this plan auto-continue past its target? Pure. */
+export function autoContinues(plan: MovementPlan): boolean {
+  return !plan.openEnded && AUTO_CONTINUE_MODES.includes(plan.mode)
+}
+
+/** Whole seconds run PAST the plan's end, for a plan that auto-continues; 0 otherwise (before
+ *  the end, for a bounded plan, or for open Play). `elapsedSec` is the plan position (a resume's
+ *  banked offset plus this session's elapsed). Drives the live "+M:SS" clock. Pure. */
+export function overtimeAt(plan: MovementPlan, elapsedSec: number): number {
+  if (!autoContinues(plan)) return 0
+  const total = totalSeconds(plan)
+  if (total === null || !Number.isFinite(elapsedSec)) return 0
+  return Math.max(0, Math.floor(elapsedSec - total))
+}
+
+/** What a Movement finish banks, in seconds: what an earlier partial banked (`resumeOffset`) plus
+ *  this session's run-over-gated airtime (`bankedThis`). A plan that auto-continues banks the
+ *  WHOLE run, so time past the target earns its tier (the server's achievedTier pays on it); a
+ *  bounded plan (Yoga, Strength) is still capped at `finishCap`, and open Play (cap null) banks
+ *  raw. The run-over gate upstream already clamps an unattended run. Pure. */
+export function movementFinishSeconds(
+  plan: MovementPlan,
+  opts: { resumeOffset: number; bankedThis: number; finishCap: number | null },
+): number {
+  const done = Math.max(0, opts.resumeOffset) + Math.max(0, opts.bankedThis)
+  if (opts.finishCap === null || autoContinues(plan)) return done
+  return Math.min(done, opts.finishCap)
+}

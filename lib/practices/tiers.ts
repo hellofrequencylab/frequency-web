@@ -92,3 +92,21 @@ export function achievedTierFromMinutes(minutes: number): AchievedOutcome {
 export function achievedTier(engagedSeconds: number): AchievedOutcome {
   return achievedTierFromMinutes((Number.isFinite(engagedSeconds) ? engagedSeconds : 0) / 60)
 }
+
+/** The live "go deeper" cue (ADR-443), shared by the Be Still sit and the Get Moving timer: once
+ *  the target is reached the clock keeps counting (auto-continue), and this names the tier the
+ *  time has EARNED so far plus the minutes that would reach the next one. Same achievedTier the
+ *  economy pays on, so the in-session line never disagrees with the reveal. Voice: plain,
+ *  specific, no narrated feelings, no em dashes. Null below the Light floor (nothing yet). */
+export function liveDepthCue(engagedSec: number): { reached: string; toNext: string } | null {
+  const tier = achievedTier(engagedSec)
+  if (tier === 'partial') return null
+  const rank = TIER_ORDER.indexOf(tier)
+  const next = TIER_ORDER[rank + 1]
+  if (!next) {
+    return { reached: `You're at ${TIER_LABELS[tier]}.`, toNext: 'The deepest tier. Stay as long as you like.' }
+  }
+  const more = Math.max(1, Math.ceil(TIER_FLOOR_MIN[next] - engagedSec / 60))
+  const unit = more === 1 ? 'minute' : 'minutes'
+  return { reached: `You're at ${TIER_LABELS[tier]}.`, toNext: `${more} more ${unit} reaches ${TIER_LABELS[next]}.` }
+}

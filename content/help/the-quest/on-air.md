@@ -4,7 +4,7 @@ description: One timer, two modes. Be Still for the quiet sit, Get Moving for a 
 category: the-quest
 order: 4
 published: 2026-06-11
-updated: 2026-08-03
+updated: 2026-09-30
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -131,6 +131,14 @@ the cue to switch sides on a stretch or move to the next hold in a yoga flow, or
 let Strength count you through each work-and-rest round. The screen stays awake
 the whole time. **Pause** if life interrupts, and **Finish** to collect, same as
 a sit.
+
+On a **walk, run or stretch**, hitting your target doesn't stop the clock. It
+rings once, then keeps counting up (+2:05 and so on) with a line under it naming
+the tier you've reached and how many more minutes reach the next one. Keep going
+as long as you like: the extra time counts toward your tier when you tap
+**Finish**. Go well past your target and it asks if you're **still moving**; tap
+**Still here** to keep logging. A yoga flow and a Strength set end with their last
+pose or round.
 
 ## The reveal
 
