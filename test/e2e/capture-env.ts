@@ -3,7 +3,8 @@
 // ── THE DEFECT, measured ──────────────────────────────────────────────────────────────────────
 // Two fixed elements render in ONE Vercel environment and not the other:
 //   1. the support-chat widget (components/chat/support-chat-widget.tsx) mounts only where
-//      SUPPORT_CHAT=1, which is set for Production and not for Preview;
+//      SUPPORT_CHAT=1, which was set for Production and not for Preview until 2026-09-29 (it is
+//      set for both since then, ADR-1694; the value is read at build time);
 //   2. the Vercel preview toolbar is injected into every PREVIEW response and never into a
 //      production one (ADR-1277; playwright.config.ts sends `x-vercel-skip-toolbar` so the camera
 //      does not see it, which is the fix for that half).
@@ -23,8 +24,10 @@
 // is evaluated at BUILD time; its own note in lib/comms/chat-token.ts says so. Turning it into a
 // request-scoped read would force dynamic rendering on three public root layouts, which is the
 // root-layout fan-out AGENTS.md says to fix rather than to add, in service of a test concern.
-// Parity is therefore one owner value (SUPPORT_CHAT=1 for the Preview environment). Until it is
-// set, the camera refuses a cross-environment comparison INSTEAD of printing one as a regression.
+// Parity is therefore one owner value (SUPPORT_CHAT=1 for the Preview environment). It was set on
+// 2026-09-29 and the committed set was recaptured on a preview built after it (LIVE-213, ADR-1694).
+// The stamp stays: the camera still refuses a cross-environment comparison INSTEAD of printing one
+// as a regression, because a value read at build time can diverge again without a code change.
 //
 // ── WHAT THIS FILE DOES ───────────────────────────────────────────────────────────────────────
 // The committed baseline folder carries a stamp naming the environment it was photographed on.
@@ -159,9 +162,10 @@ export function captureEnvironmentMismatch(
     `The committed visual baselines were photographed on ${stamp.environment.toUpperCase()}${where}, `
     + `and this run points at ${String(baseUrl)}, which is ${current.toUpperCase()}.`
   const why =
-    'Those two deployments do not render the same chrome: the support-chat widget mounts only where '
-    + 'SUPPORT_CHAT=1, which is Production and not Preview (LIVE-213). A comparison across them is red '
-    + 'by thousands of pixels on every page whatever the change under test does.'
+    'Those two deployments have not always rendered the same chrome: the support-chat widget mounts only '
+    + 'where SUPPORT_CHAT=1, which was Production and not Preview until 2026-09-29 (LIVE-213), and a '
+    + 'preview built before then still lacks it. A comparison across them can be red by thousands of '
+    + 'pixels on every page whatever the change under test does.'
   const fix = capturing
     ? `Nothing was captured. A capture into a folder stamped ${stamp.environment} would leave half of it `
       + `photographed on ${stamp.environment} and half on ${current}. Re-dispatch with a base_url on `
