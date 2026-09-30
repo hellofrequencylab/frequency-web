@@ -35,7 +35,8 @@ export const CONTENT_EDIT_ROUTES = [
   '/messages',
   '/journeys',
   '/practices',
-  '/library',
+  // '/library' left with LIVE-681 (ADR-1678): the route is a 308 to /practices, so there is no
+  // header left to edit. A stored '/library' page_content row, if one exists, is read by nothing.
   // Renamed from '/broadcast' with the route (ADR-1020). `page_content` is keyed by the
   // ROUTE STRING, so this registry line, the page's resolvePageContent call, and its
   // pageContentMetadata call all had to move together or the operator's edits would write
