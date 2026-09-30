@@ -7,6 +7,8 @@ import {
   LEDGER_READ_ATTEMPTS,
   LEDGER_READ_BACKOFF_MS,
   isCredentialRefusal,
+  findInFlightCarriers,
+  inFlightCandidates,
   isWrappedTransportFailure,
   menuWritesMissingNote,
   parseArgs,
@@ -632,5 +634,105 @@ describe('prTouchesMigrations resolves every doubt to the strict path', () => {
         },
       }),
     ).toBeUndefined()
+  })
+})
+
+// HYG-158 / ADR-1690 (owner ruling 2026-09-30). A migration applied in its window has a ledger row
+// and no file on main until its own PR merges; every other open PR went red for those minutes.
+// Forgiven only on a PR that touches no migration, only for rows newer than the whole tree, and
+// only when another open PR carries the exact file. Every doubt stays red.
+describe('an in-flight migration relaxes only a PR that touches no migration', () => {
+  const repo = corpus()
+  const fly = row('20990101000000', 'in_flight_table')
+  const inFlight = (extra: Record<string, unknown>, ledger: Row[] = [...repo, fly], tree: Row[] = repo) =>
+    ledgerCheck({
+      env: { [LEDGER_ENV.TOKEN]: 'tok', [LEDGER_ENV.REF]: 'ref' },
+      argv: [],
+      total: tree.length,
+      io: {
+        repo: { readdir: () => files(tree) },
+        fetch: async () => ({ ok: true, json: async () => ({ result: ledger }), text: async () => '' }),
+        ...extra,
+      },
+    })
+  const carried = async (rows: Row[]) => new Map(rows.map((r) => [r.version, 3100]))
+
+  it('is a loud, ok in-flight when an open PR carries the file and this PR touches no migration', async () => {
+    const r = await inFlight({ prTouchesMigrations: false, findInFlight: carried })
+    expect(r.status).toBe('in-flight')
+    expect(r.ok).toBe(true)
+    const out = r.lines.join('\n')
+    expect(out).toContain('IN FLIGHT')
+    expect(out).toContain('20990101000000_in_flight_table.sql  (#3100)')
+    expect(out).toContain('the repo DOES NOT RECORD')
+  })
+
+  it('stays drift on a PR that touches a migration, and when the diff is unknown (main pushes)', async () => {
+    for (const touches of [true, undefined]) {
+      const r = await inFlight({ prTouchesMigrations: touches, findInFlight: carried })
+      expect(r.status).toBe('drift')
+      expect(r.ok).toBe(false)
+    }
+  })
+
+  it('stays drift when no open PR carries the row, or the lookup fails', async () => {
+    const none = await inFlight({ prTouchesMigrations: false, findInFlight: async () => new Map() })
+    expect(none.ok).toBe(false)
+    const threw = await inFlight({
+      prTouchesMigrations: false,
+      findInFlight: async () => {
+        throw new Error('GET pulls (page 1): HTTP 403')
+      },
+    })
+    expect(threw.ok).toBe(false)
+    expect(threw.lines.join('\n')).toContain('Strict path')
+  })
+
+  it('stays drift for any other shape: an older row, an unapplied file, a name mismatch', async () => {
+    const older = row('20240101000000', 'backdated')
+    expect((await inFlight({ prTouchesMigrations: false, findInFlight: carried }, [...repo, older])).ok).toBe(false)
+    const unapplied = [...repo, row('20990202000000', 'authored_only')]
+    expect((await inFlight({ prTouchesMigrations: false, findInFlight: carried }, [...repo, fly], unapplied)).ok).toBe(false)
+    const renamed = [...repo.slice(0, -1), row(repo[repo.length - 1].version, 'other_name'), fly]
+    expect((await inFlight({ prTouchesMigrations: false, findInFlight: carried }, renamed)).ok).toBe(false)
+  })
+
+  it('inFlightCandidates returns null in parity', () => {
+    expect(inFlightCandidates({ inParity: true }, repo)).toBeNull()
+  })
+
+  it('findInFlightCarriers matches the exact file on another open PR head, and skips this PR', async () => {
+    const env = {
+      GITHUB_REPOSITORY: 'o/r',
+      GITHUB_BASE_REF: 'main',
+      GITHUB_TOKEN: 't',
+      GITHUB_REF: 'refs/pull/3097/merge',
+    }
+    const fetchImpl = async () =>
+      ({
+        ok: true,
+        json: async () => [
+          { number: 3097, head: { sha: 'a' } },
+          { number: 3100, head: { sha: 'b' } },
+          { number: 3101, head: { sha: 'c' } },
+        ],
+      }) as unknown as Response
+    const fetchedRefs: string[] = []
+    const git = (args: string[]) => {
+      if (args[0] === 'fetch') {
+        fetchedRefs.push(...args.filter((a) => a.startsWith('+refs/pull/')))
+        return ''
+      }
+      if (args.some((a) => a.endsWith('/3100'))) return 'supabase/migrations/20990101000000_in_flight_table.sql\n'
+      if (args.some((a) => a.endsWith('/3101'))) return 'supabase/migrations/20990101000000_other_name.sql\n'
+      return ''
+    }
+    const carriers = await findInFlightCarriers({ rows: [fly], env, fetchImpl, git })
+    expect([...carriers]).toEqual([['20990101000000', 3100]])
+    expect(fetchedRefs.some((r) => r.includes('/3097/'))).toBe(false)
+  })
+
+  it('findInFlightCarriers throws without a token, so the caller takes the strict path', async () => {
+    await expect(findInFlightCarriers({ rows: [fly], env: {}, git: () => '' })).rejects.toThrow()
   })
 })
