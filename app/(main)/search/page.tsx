@@ -158,7 +158,7 @@ export default async function SearchPage({
       if (tab === 'people') {
         // 🔴 A service-role read on a member-facing page (see ADR-274 above for why: the `?q=`
         // sanitiser exists BECAUSE this bypasses RLS). Bypassing RLS also bypassed every privacy
-        // control: a member who switched "Show me in the Community directory" off, or turned Ghost
+        // control: a member who switched "Show me in the Members directory" off, or turned Ghost
         // mode on, was still findable here by name and handle, because the only enforcer of those
         // columns is the proximity RPC and this is a name search. The four privacy columns are
         // selected and each row goes through the shared /network predicate (ADR-TBD). The gate is

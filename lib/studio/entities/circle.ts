@@ -26,6 +26,8 @@ import { REPEAT_ITEM_SELF, type EntityManifest, type FieldOption } from '@/lib/s
 // PURE (lib/circles/visibility.ts: no Supabase, no Next, no React), so the manifest reads the access
 // vocabulary from its one source rather than restating six modes and their member-facing labels.
 import { CIRCLE_ACCESS_LABEL, CIRCLE_ACCESS_MODES } from '@/lib/circles/visibility'
+// PURE as well (lib/circles/channels.ts): the cap the write door and the database hold (LIVE-666).
+import { CIRCLE_MAX_CHANNELS } from '@/lib/circles/channels'
 
 /** Render a scalar as display text. Mirrors the kernel's own reader. PURE + total. */
 function str(v: unknown): string {
@@ -88,7 +90,7 @@ export const CIRCLE_MANIFEST: EntityManifest = {
     { key: 'shape', title: 'How it runs', desc: 'In person or online, the headcount that works, and the cap.' },
     { key: 'agreements', title: 'Agreements', desc: 'The plain norms of the group, stated once.' },
     { key: 'remix', title: 'Remix and next steps', desc: 'Variations another Host could run, and the Journey you would point members at.' },
-    { key: 'publishing', title: 'Publishing', desc: 'Where it stands, who can find it, who can get in, and the Channel it practices in.' },
+    { key: 'publishing', title: 'Publishing', desc: 'Where it stands, who can find it, who can get in, and the Channels it practices in.' },
   ],
 
   fields: [
@@ -151,9 +153,22 @@ export const CIRCLE_MANIFEST: EntityManifest = {
     { path: 'unlisted', label: 'Unlisted', kind: 'toggle', section: 'publishing', veraDrafts: false },
     // AXIS 2 (ADR-1015): who may enter. `circles.access`; open is the column's default.
     { path: 'access', label: 'Who can join', kind: 'select', section: 'publishing', options: ACCESS_OPTIONS, veraDrafts: false, read: (d) => str(d.access) || 'open' },
-    // The Channel this Circle practices in (ADR-871), `circles.topical_channel_id`. A real foreign
-    // key the surface loads, grouped by Pillar; the manifest names the collection.
-    { path: 'topicalChannelId', label: 'Channel', kind: 'reference', section: 'publishing', optionsFrom: 'channels', veraDrafts: false, omitWhenEmpty: true },
+    // The Channels this Circle practices in (ADR-871): ONE TO THREE since LIVE-666 (ADR-1679), rows
+    // in `circle_channels` with the first mirrored onto `circles.topical_channel_id` as the primary.
+    // A closed pick from a LOADED vocabulary, which is what `multiselect` + `optionsFrom` says: the
+    // manifest names the collection (active Channels, grouped by Pillar) and the surface loads it.
+    // The kernel has no per-field maximum, so the cap is CIRCLE_MAX_CHANNELS, held by the control,
+    // by setCircleChannels, and by the table's own position check. Read as the ids, primary first.
+    {
+      path: 'channelIds',
+      label: 'Channels',
+      kind: 'multiselect',
+      section: 'publishing',
+      optionsFrom: 'channels',
+      veraDrafts: false,
+      omitWhenEmpty: true,
+      read: (d) => (Array.isArray(d.channelIds) ? d.channelIds.filter((v) => typeof v === 'string').slice(0, CIRCLE_MAX_CHANNELS).join(', ') : str(d.channelIds)),
+    },
   ],
 
   // The two lists a Host adds to and removes from one row at a time. Each row is its own

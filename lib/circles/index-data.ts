@@ -14,6 +14,7 @@ import type { CircleCardData } from '@/components/circles/circle-card'
 import type { CircleBase } from '@/lib/types/circle'
 import type { PillarSlug } from '@/lib/pillars'
 import { isListedCircle, LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
+import { carriesChannel, circleChannelIds, type CircleChannelLink } from '@/lib/circles/channels'
 
 // Coded defaults for the operator-editable content (ADR-180) — shared by the page
 // header and the SEO metadata (generateMetadata).
@@ -47,6 +48,8 @@ type CircleRow = CircleBase & {
   is_demo: boolean
   unlisted: boolean
   topical_channel_id: string | null
+  /** Every Channel the Circle carries (LIVE-666); position 1 is `topical_channel_id`. */
+  circle_channels: CircleChannelLink[] | null
   channel: { name: string; pillar_id: string | null } | null
   hub: {
     id: string
@@ -199,6 +202,7 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
         .select(
           `id, name, slug, about, type, member_count, member_cap, status, created_at,
            latitude, longitude, neighborhood, image_url, is_demo, unlisted, featured_at, topical_channel_id,
+           circle_channels ( topical_channel_id, position ),
            channel:topical_channels!topical_channel_id ( name, pillar_id ),
            hub:hubs!hub_id (
              id, name, slug,
@@ -265,7 +269,8 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
     if (selectedDomain && c.channel?.pillar_id !== selectedDomain.id) return false
     if (type === 'in-person' && c.type !== 'in-person') return false
     if (type === 'online' && c.type !== 'online') return false
-    if (interest && c.topical_channel_id !== interest) return false
+    // An Interest chip finds a Circle under ANY of the up to three Channels it carries (LIVE-666).
+    if (interest && !carriesChannel(c, interest)) return false
     if (qLower) {
       const hay = `${c.name} ${c.about ?? ''} ${c.neighborhood ?? ''} ${c.channel?.name ?? ''}`.toLowerCase()
       if (!hay.includes(qLower)) return false
@@ -359,7 +364,7 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
   // Interest browse (counts from full set, top by count).
   const interestCount = new Map<string, number>()
   for (const c of all)
-    if (c.topical_channel_id) interestCount.set(c.topical_channel_id, (interestCount.get(c.topical_channel_id) ?? 0) + 1)
+    for (const id of circleChannelIds(c)) interestCount.set(id, (interestCount.get(id) ?? 0) + 1)
   const interestChips: InterestChip[] = interests
     .map((i) => ({ ...i, count: interestCount.get(i.id) ?? 0 }))
     .filter((i) => i.count > 0)

@@ -900,6 +900,42 @@ export type Database = {
           },
         ]
       }
+      circle_channels: {
+        Row: {
+          circle_id: string
+          created_at: string
+          position: number
+          topical_channel_id: string
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          position: number
+          topical_channel_id: string
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          position?: number
+          topical_channel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_channels_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_channels_topical_channel_id_fkey"
+            columns: ["topical_channel_id"]
+            isOneToOne: false
+            referencedRelation: "topical_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circle_practices: {
         Row: {
           active: boolean

@@ -11,7 +11,8 @@ import { Briefcase, X } from 'lucide-react'
 //
 // Dismissal persists in localStorage so it stays gone once waved off (no server round-trip for a
 // cosmetic nudge). Voice (CONTENT-VOICE §10): plain, an honest "if this is a business" frame, no
-// narrated feelings, no em or en dashes. "Space CRM" matches the naming used across the P3 surfaces.
+// narrated feelings, no em or en dashes. "Community Resonance" is the canon name for a Space's CRM
+// (docs/NAMING.md, CRM / messaging surfaces), so the prompt names it rather than "Space CRM".
 
 const DISMISS_KEY = 'fq_my_contacts_space_crm_dismissed'
 
@@ -44,14 +45,14 @@ export function SpaceCrmPrompt() {
       <div className="min-w-0 flex-1">
         <h2 className="text-body-sm font-semibold text-text">Running this as a business?</h2>
         <p className="mt-0.5 text-body-sm text-muted">
-          Your contacts can graduate into a Space CRM: a pipeline with stages and deals for the people
-          you work with. Bring them over in one step and keep your private list as it is.
+          A Space gives your contacts a home in Community Resonance, with stages and deals for the
+          people you work with. Bring them over in one step and your private list stays as it is.
         </p>
         <Link
           href="/spaces/directory"
           className="mt-2 inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong hover:underline"
         >
-          See spaces
+          See Spaces
         </Link>
       </div>
       <button
