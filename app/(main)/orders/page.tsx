@@ -9,13 +9,15 @@ import { getMyProfileId } from '@/lib/auth'
 import { listOrdersForBuyer, sellerNames, sellerNameKey, type CommerceOrder } from '@/lib/commerce/orders'
 import { disputesForOrders, type CommerceDispute } from '@/lib/commerce/disputes'
 import { DisputeButton } from '@/components/marketplace/dispute-button'
-import { FULFILLMENT_LABEL } from '@/lib/commerce/fulfilment-state'
+import { FULFILLMENT_LABEL, orderNeedsFulfilment, type OrderFulfilment } from '@/lib/commerce/fulfilment-state'
+import type { FulfillmentStatus } from '@/lib/commerce/types'
 
 // My Orders — a member's purchase history across Makers + Shop. Checkout's success_url
 // lands here. Connect-only verticals (General / Housing) never create orders. An order that needs
 // sending shows where it stands and the tracking link once the seller marks it shipped (LIVE-606).
 // A split order (one payment, several sellers, LIVE-621) lists its lines under each seller's name, so
-// the buyer can tell who is sending what (LIVE-624).
+// the buyer can tell who is sending what (LIVE-624), and each seller's group says where THAT
+// seller's share stands, since each ships their own (LIVE-705).
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'My orders' }
@@ -48,6 +50,25 @@ function lineGroups(order: CommerceOrder, names: Map<string, string>): { key: st
   return [...groups.values()]
 }
 
+/** Where a shipment stands, with its carrier and tracking link. */
+function ShippingLine({ status, f }: { status: FulfillmentStatus; f: OrderFulfilment }) {
+  return (
+    <p data-order-fulfilment={status} className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
+      <Truck className="h-4 w-4 shrink-0" aria-hidden />
+      <span className="font-medium text-text">{FULFILLMENT_LABEL[status]}</span>
+      {f.carrier && <span>via {f.carrier}</span>}
+      {f.tracking &&
+        (f.trackingUrl ? (
+          <a href={f.trackingUrl} target="_blank" rel="noreferrer" className="text-primary underline-offset-2 hover:underline">
+            Track {f.tracking}
+          </a>
+        ) : (
+          <span>{f.tracking}</span>
+        ))}
+    </p>
+  )
+}
+
 function OrderCard({
   order,
   dispute,
@@ -63,7 +84,11 @@ function OrderCard({
   // Shipping state only for a settled order with something to send: a booking or a Journey is never
   // "not sent yet", and a refunded order is not on its way anywhere.
   const shippingState = disputable && order.needsFulfilment
-  const f = order.fulfilment
+  // A split order says where each seller's share stands under that seller's lines (LIVE-705). If the
+  // shares could not be read, the order's roll-up line below stands in for them.
+  const byShare = order.fundsFlow === 'separate' && order.sellerFulfilments
+    ? new Map(order.sellerFulfilments.map((s) => [sellerNameKey(s.seller), s]))
+    : null
   return (
     <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <div className="flex items-center justify-between gap-3">
@@ -86,23 +111,12 @@ function OrderCard({
               </li>
             ))}
           </ul>
+          {byShare && disputable && orderNeedsFulfilment(g.items.map((it) => it.productKind)) && byShare.get(g.key) && (
+            <ShippingLine status={byShare.get(g.key)!.fulfillmentStatus} f={byShare.get(g.key)!.fulfilment} />
+          )}
         </div>
       ))}
-      {shippingState && (
-        <p data-order-fulfilment className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
-          <Truck className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="font-medium text-text">{FULFILLMENT_LABEL[order.fulfillmentStatus]}</span>
-          {f.carrier && <span>via {f.carrier}</span>}
-          {f.tracking &&
-            (f.trackingUrl ? (
-              <a href={f.trackingUrl} target="_blank" rel="noreferrer" className="text-primary underline-offset-2 hover:underline">
-                Track {f.tracking}
-              </a>
-            ) : (
-              <span>{f.tracking}</span>
-            ))}
-        </p>
-      )}
+      {shippingState && !byShare && <ShippingLine status={order.fulfillmentStatus} f={order.fulfilment} />}
       <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
         <span className="text-body-sm font-semibold text-text">Total</span>
         <span className="text-body-sm font-semibold text-text">{usd(order.amountCents, order.currency)}</span>

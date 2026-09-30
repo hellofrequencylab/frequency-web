@@ -4,11 +4,20 @@ import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
-import { listAllOrders, orderStatusCounts, sellerNames, type CommerceOrder } from '@/lib/commerce/orders'
+import {
+  listAllOrders,
+  orderStatusCounts,
+  sellerNameKey,
+  sellerNames,
+  shareView,
+  splitShareFulfilments,
+  type CommerceOrder,
+  type ShareFulfilment,
+} from '@/lib/commerce/orders'
 import { listOrderTransfers, type OrderTransfer } from '@/lib/commerce/transfers'
 import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
 import { OrderTransferLedger } from '@/components/marketplace/order-transfer-ledger'
-import { refundOrderAction, retryOrderTransferAction, setOrderFulfillmentAction } from '../actions'
+import { refundOrderAction, retryOrderTransferAction, setOrderFulfillmentAction, setShareFulfillmentAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Orders · Admin' }
@@ -39,11 +48,14 @@ async function transfersFor(orders: CommerceOrder[]): Promise<Map<string, OrderT
 function OrderRow({
   o,
   transfers,
+  shares,
   names,
 }: {
   o: CommerceOrder
   /** Present only for a split order (LIVE-624): its transfer ledger, or null when unreadable. */
   transfers?: OrderTransfer[] | null
+  /** Present only for a split order (LIVE-705): where each seller's share stands. */
+  shares?: ShareFulfilment[]
   names: Map<string, string>
 }) {
   const when = new Date(o.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
@@ -60,11 +72,24 @@ function OrderRow({
         <p className="text-meta text-subtle">
           {OWNER_LABEL[o.ownerKind] ?? o.ownerKind} · {when} · <span className="uppercase tracking-wide">{o.status}</span>
         </p>
-        <OrderFulfilmentControl
-          order={o}
-          action={platformOrder ? setOrderFulfillmentAction.bind(null, o.id) : undefined}
-          readOnly={!platformOrder}
-        />
+        {o.fundsFlow === 'separate' ? (
+          // Each seller ships their own share, so a split order carries one door per share, and an
+          // operator can move any of them (LIVE-705, ADR-1652).
+          (shares ?? []).map((s) => (
+            <OrderFulfilmentControl
+              key={s.shareId}
+              order={shareView(o, s.seller, s.fulfillmentStatus, s.fulfilment)}
+              action={setShareFulfillmentAction.bind(null, o.id, s.shareId)}
+              label={names.get(sellerNameKey(s.seller)) ?? (s.seller.kind === 'space' ? 'A Space' : 'A maker')}
+            />
+          ))
+        ) : (
+          <OrderFulfilmentControl
+            order={o}
+            action={platformOrder ? setOrderFulfillmentAction.bind(null, o.id) : undefined}
+            readOnly={!platformOrder}
+          />
+        )}
         {o.fundsFlow === 'separate' && (
           <OrderTransferLedger
             transfers={transfers ?? null}
@@ -91,7 +116,10 @@ function OrderRow({
 export default async function MarketplaceOrdersPage() {
   await requireAdmin('admin', { staff: 'platform' })
   const [orders, counts] = await Promise.all([listAllOrders({ limit: 200 }), orderStatusCounts()])
-  const ledgers = await transfersFor(orders)
+  const [ledgers, shares] = await Promise.all([
+    transfersFor(orders),
+    splitShareFulfilments(orders.filter((o) => o.fundsFlow === 'separate').map((o) => o.id)),
+  ])
   const names = await sellerNames(
     [...ledgers.values()].flatMap((ts) =>
       (ts ?? []).map((t) => ({ kind: t.ownerKind, profileId: t.ownerProfileId, spaceId: t.ownerSpaceId })),
@@ -131,7 +159,7 @@ export default async function MarketplaceOrdersPage() {
         ) : (
           <div className="space-y-2">
             {orders.map((o) => (
-              <OrderRow key={o.id} o={o} transfers={ledgers.get(o.id)} names={names} />
+              <OrderRow key={o.id} o={o} transfers={ledgers.get(o.id)} shares={shares.get(o.id)} names={names} />
             ))}
           </div>
         )}

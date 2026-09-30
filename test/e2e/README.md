@@ -233,7 +233,7 @@ an attribute with no registry row fails), so a mask cannot go stale in silence.
 
 | Value | Where | Kind | Why it is painted over |
 | :--- | :--- | :--- | :--- |
-| `support-chat` | the support-chat widget root | env | Mounts only where `SUPPORT_CHAT=1`, which is Production and not Preview. A capture that photographed it recorded the environment, not the page. |
+| `support-chat` | the support-chat widget root | env | Mounts only where `SUPPORT_CHAT=1`: Production, and Preview since 2026-09-29 (`LIVE-213`, ADR-1694). Until then a capture that photographed it recorded the environment, not the page. |
 | `rail-panel` | every right-rail panel (`WidgetCard`), the activity chart, the Signature dial, the demo notice, the streaming skeleton | live | Every panel in the rail is a database reading: upcoming events, who is online, the newest circles, the member's own logs. |
 | `vault-head` | the desktop dock's Vault head | live | Zaps, Gems and streak at rest. |
 | `dock-chat-trigger`, `dock-chat-tab` | the chat trigger in the dock, and its phone tab | live | Unread badge, waiting dot, waiting peek. |
@@ -324,8 +324,10 @@ that is not live data, which is what "deterministic" looks like.
 Which URL to capture against: **a preview deployment of a branch that has main merged**,
 because that is what `pr-compare` photographs. Until 2026-09-08 production and a preview
 rendered two fixed elements differently, so a production capture was red by ~2,500 px on
-every public page before a PR changed anything (`LIVE-213`): the support-chat button is
-Production-only while `SUPPORT_CHAT` is set there alone (now masked, `data-visual-mask`),
+every public page before a PR changed anything (`LIVE-213`): the support-chat button was
+Production-only while `SUPPORT_CHAT` was set there alone (masked, `data-visual-mask`; set for
+Preview too since 2026-09-29, ADR-1694, and read at build time, so a preview built before that
+day still lacks it),
 and the preview carried a mid-right element that production did not. ⚠️ That element was
 recorded here and in the row as "Vera's edge tab". **It was not.** Cropped and looked at,
 it is Vercel's preview toolbar: a 34px black disc inset from the edge, not the 44px amber

@@ -1029,8 +1029,10 @@ export const GLOBAL_MASK_SELECTORS: readonly string[] = [
  * two captures", which is `Surface.viewportOnly`'s job (see its note). Three kinds of box
  * earn one:
  *   ENV      the element mounts in one Vercel environment and not another. The support-chat
- *            widget is the one such element: SUPPORT_CHAT is set for Production alone, so a
- *            production capture carried it and a preview capture did not (LIVE-213).
+ *            widget was the one such element: SUPPORT_CHAT was set for Production alone until
+ *            2026-09-29, so a production capture carried it and a preview capture did not. It is
+ *            set for Preview too since then (LIVE-213, ADR-1694), so every capture carries the
+ *            box; the value is read at build time, so a preview built before that day lacks it.
  *   LIVE     the element is a database reading. The right rail's panels, the Vault head's
  *            three numbers, the chat trigger's unread badge.
  *   ROUTE    the element renders on some routes and not others for a reason the picture cannot
@@ -1051,7 +1053,7 @@ export const VISUAL_MASK_SITES: readonly {
     value: 'support-chat',
     file: 'components/chat/support-chat-widget.tsx',
     kind: 'env',
-    why: 'Mounts only where SUPPORT_CHAT=1, which is Production and not Preview.',
+    why: 'Mounts only where SUPPORT_CHAT=1: Production, and Preview since 2026-09-29 (LIVE-213).',
   },
   {
     value: 'edge-pill',
