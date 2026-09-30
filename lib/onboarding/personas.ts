@@ -74,7 +74,11 @@ const VISITOR: Persona = {
   },
 }
 
-// ── Practitioner — has something to offer (hosts + builds programs, sells) ────
+// ── Practitioner — has something to offer (hosts, sells what they do) ─────────
+// LIVE-709 (ADR-1675): the first beat and the first track line promised "programs" a practitioner
+// could spin up in minutes. A Program is a Business Space's Channel with a Chapter blueprint
+// (docs/NAMING.md) and nothing sells one, so the promise now names the money paths that are live:
+// tickets, paid bookings and Journeys (lib/billing/payout-prompt.ts).
 // The third reel beat promised a global marketplace reaching seekers far past your zip code,
 // until 2026-09-09. It was off-model (the nouns are Space, Circle, Event, Practice) and it was
 // also untrue: the marketplace is becoming one LOCAL umbrella, not a worldwide listing service.
@@ -87,14 +91,14 @@ const PRACTITIONER: Persona = {
   emoji: '🛠️',
   marketingTag: 'persona_practitioner',
   reel: [
-    { kind: 'render', render: 'feed', title: 'Host your programs', line: 'Spin up a program in minutes and fill it with the people nearby who want exactly what you do.' },
+    { kind: 'render', render: 'feed', title: 'Get paid for your craft', line: 'Sell tickets to what you host, take paid bookings, and turn what you teach into a Journey people can buy.' },
     { kind: 'render', render: 'circles', title: 'Build a following', line: 'Turn one-off attendees into a circle that comes back: your people, your craft, your cadence.' },
     { kind: 'render', render: 'events', title: 'Put it on the calendar', line: 'Open a Space, list your Events and offerings, and let the people already looking in your town find you.' },
   ],
   track: {
     headline: 'Turn your craft into a community.',
     shows: [
-      'Host & build programs in minutes',
+      'Sell tickets, bookings and Journeys',
       'Grow a following that comes back',
       'Open a Space and host for free',
     ],

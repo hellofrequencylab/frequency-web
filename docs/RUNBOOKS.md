@@ -277,7 +277,8 @@ that cannot claim, and a cron that 500s on its first query.
   sweep". It is a trend, not a pager, and it says "Could not look" rather than "fine" when the token
   is gone.
 - **Not this section:** `check:migrations` failing with HTTP 401 is the `SUPABASE_ACCESS_TOKEN`
-  expiring, not the database (LIVE-273; it expires 2026-12-09).
+  expiring or being refused, not the database (LIVE-273; the current token, rotated 2026-09-30,
+  expires 2027-09-28).
 
 **What to open first.**
 
