@@ -12,6 +12,7 @@ import type {
 } from '@/components/layout/settings-panel'
 import { HubRail } from '@/components/layout/admin-bar/hub-rail'
 import { SpaceRailDataProvider } from '@/components/admin/modules/space-rail-data'
+import { EntityRailDataProvider } from '@/components/admin/modules/entity-rail-data'
 import { railArchetypeFor } from '@/lib/layout/page-chrome'
 import { scoreResult, rankResults, orderByRelevance, contextualEntrySlot } from '@/lib/admin/rail-intel'
 import { getProfileCompletenessRail } from '@/app/(main)/settings/rail-getters'
@@ -73,6 +74,13 @@ export function AdminBarBody({
   // below (Basics / Branding / Settings / Page + the builder), replacing their ~5 duplicate resolves with
   // one. Null off a Space route → the provider is inert and modules self-fetch exactly as before.
   const spaceSlug = pathname.match(/^\/spaces\/([^/]+)/)?.[1] ?? null
+  // ADR-1685 (LIVE-655): the same idea for a circle, event, hub, nexus or practice rail. The provider
+  // asks for the reads of the nodes actually mounted below, in one request, instead of one sequential
+  // request per module. Inert on any other route.
+  const railNodeIds = useMemo(
+    () => model.sections.flatMap((s) => s.nodes.map((n) => n.id)),
+    [model.sections],
+  )
 
   // Section elements by (tier:slot) key, so a search result can scroll to its section once the list
   // remounts (a slot can live in two bands, so the key carries the band).
@@ -263,8 +271,10 @@ export function AdminBarBody({
         </div>
       ) : (
         // ── The band-ordered sections (standard + primary inline), then the operator Page group + locked
-        //    rows, then the ONE "More" disclosure (extra band) at the very bottom. ──
-        <>
+        //    rows, then the ONE "More" disclosure (extra band) at the very bottom. The entity rail
+        //    provider wraps THIS branch only, so a search that unmounts the sections unmounts it too, and
+        //    clearing the search fetches fresh, exactly as the self-fetching modules did (ADR-1685). ──
+        <EntityRailDataProvider pathname={pathname} moduleIds={railNodeIds}>
           {/* ── The Hub (ADR-516 Phase B): on the `hub` archetype the body IS the stats + quick-links Hub
               (member or Space), promoted from the pinned foot. Rendered ABOVE any operator page-management
               sections, which survive on a content hub. The Hub owns the bank, so the foot bank below is
@@ -361,7 +371,7 @@ export function AdminBarBody({
               </div>
             </div>
           )}
-        </>
+        </EntityRailDataProvider>
       )}
     </div>
     </SpaceRailDataProvider>

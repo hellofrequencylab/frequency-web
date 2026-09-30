@@ -11,6 +11,8 @@ import { parseStyle, withMemberAvatar } from '@/lib/qr/style'
 import { parseVcard } from '@/lib/vcard'
 import { scanSummaryFromRpc, type QrStatsRpcPayload } from '@/lib/qr/analytics'
 import { resolveQrStudio } from '@/lib/elements/qr-studio'
+import { groupBySeries } from '@/lib/events/series'
+import { formatEventWhen } from '@/lib/time/zone'
 import { QrStudioDashboard } from './qr-studio-dashboard'
 import type { StudioNode } from './qr-studio'
 import type { StudioLink, NodeOption, PickOption } from './dynamic-links'
@@ -135,12 +137,24 @@ export default async function QrStudioPage() {
   // Circles + events for the circle-join / event check-in destination pickers.
   const [{ data: circleRows }, { data: eventRows }] = await Promise.all([
     db.from('circles').select('id, name, slug').order('name'),
-    db.from('events').select('id, title, slug, starts_at').order('starts_at', { ascending: false }).limit(100),
+    db
+      .from('events')
+      .select('id, title, slug, starts_at, parent_event_id, recurrence_type')
+      .order('starts_at', { ascending: false })
+      .limit(100),
   ])
   const circleName = new Map((circleRows ?? []).map((c) => [c.id, c.name]))
   const eventName = new Map((eventRows ?? []).map((e) => [e.id, e.title]))
   const circleOptions: PickOption[] = (circleRows ?? []).map((c) => ({ id: c.id, label: c.name }))
-  const eventOptions: PickOption[] = (eventRows ?? []).map((e) => ({ id: e.id, label: e.title }))
+  // GROUPED, NEVER FOLDED (SERIES-PICKER, ADR-1680). A check-in code belongs to ONE date, so every
+  // date stays pickable; a repeating event's dates sit under its title and are labelled by the date
+  // (the event's own wall clock), where they used to be up to 61 options reading the same title.
+  const eventWhen = (iso: string | null) => formatEventWhen(iso, null, { withZone: false })
+  const eventOptions: PickOption[] = groupBySeries(eventRows ?? []).flatMap((g) =>
+    g.series
+      ? g.rows.map((e) => ({ id: e.id, label: eventWhen(e.starts_at) || e.title, group: g.title }))
+      : g.rows.map((e) => ({ id: e.id, label: [e.title, eventWhen(e.starts_at)].filter(Boolean).join(' · ') })),
+  )
 
   const initialLinks: StudioLink[] = await Promise.all(
     adminLinkRows.map(async (l) => {

@@ -16,6 +16,10 @@ import {
   clampSeconds,
   sanitizeMovementConfig,
   timerPreview,
+  AUTO_CONTINUE_MODES,
+  autoContinues,
+  overtimeAt,
+  movementFinishSeconds,
 } from './movement'
 
 describe('modes + presets', () => {
@@ -285,5 +289,56 @@ describe('timerPreview (card + detail summary, ADR-592 P4)', () => {
 
   it('an open Play practice has no total', () => {
     expect(timerPreview({ timerKind: 'movement', movementConfig: { mode: 'play' } })).toBe('Get Moving · Open play')
+  })
+})
+
+// LIVE-674: the duration-based modes auto-continue past their target like the Be Still sit, so
+// the time past the target is banked and earns its tier. Structured plans keep their cap.
+describe('auto-continue past the target (ADR-443, LIVE-674)', () => {
+  const walk = buildPlan({ mode: 'walk', walkMinutes: 10 })
+  const run = buildPlan({ mode: 'run', runMinutes: 20 })
+  const stretch = buildPlan({ mode: 'stretch', stretchMinutes: 5 })
+  const yoga = buildPlan({ mode: 'yoga', yogaKind: 'vinyasa' })
+  const strength = buildPlan({ mode: 'strength', strengthKind: 'tabata' })
+  const play = buildPlan({ mode: 'play' })
+
+  it('walk, run and stretch auto-continue; yoga, strength and play do not', () => {
+    expect([...AUTO_CONTINUE_MODES]).toEqual(['walk', 'run', 'stretch'])
+    expect([walk, run, stretch].map(autoContinues)).toEqual([true, true, true])
+    expect([yoga, strength, play].map(autoContinues)).toEqual([false, false, false])
+  })
+
+  it('overtime counts whole seconds past the end, only for an auto-continue plan', () => {
+    expect(overtimeAt(walk, 0)).toBe(0)
+    expect(overtimeAt(walk, 600)).toBe(0)
+    expect(overtimeAt(walk, 600.9)).toBe(0)
+    expect(overtimeAt(walk, 725.4)).toBe(125)
+    const yogaTotal = totalSeconds(yoga) ?? 0
+    expect(overtimeAt(yoga, yogaTotal + 300)).toBe(0)
+    expect(overtimeAt(play, 5000)).toBe(0)
+    expect(overtimeAt(walk, Number.NaN)).toBe(0)
+  })
+
+  it('a walk run 8 minutes past a 10 minute target banks all 18 minutes', () => {
+    expect(movementFinishSeconds(walk, { resumeOffset: 0, bankedThis: 18 * 60, finishCap: 600 })).toBe(18 * 60)
+  })
+
+  it('a resumed walk banks the earlier partial plus the whole of this session, past the target', () => {
+    // 6 of 10 minutes banked earlier, 4 remaining, then 7 more: 17 minutes logged.
+    expect(movementFinishSeconds(walk, { resumeOffset: 360, bankedThis: 11 * 60, finishCap: 600 })).toBe(17 * 60)
+  })
+
+  it('yoga and strength keep the plan-bounded cap; play banks raw', () => {
+    const yogaTotal = totalSeconds(yoga) ?? 0
+    expect(movementFinishSeconds(yoga, { resumeOffset: 0, bankedThis: yogaTotal + 300, finishCap: yogaTotal })).toBe(yogaTotal)
+    const strengthTotal = totalSeconds(strength) ?? 0
+    expect(movementFinishSeconds(strength, { resumeOffset: 0, bankedThis: strengthTotal + 60, finishCap: strengthTotal })).toBe(strengthTotal)
+    expect(movementFinishSeconds(play, { resumeOffset: 0, bankedThis: 4000, finishCap: null })).toBe(4000)
+  })
+
+  it('an early stop banks what was done, under the target, for every mode', () => {
+    expect(movementFinishSeconds(walk, { resumeOffset: 0, bankedThis: 200, finishCap: 600 })).toBe(200)
+    expect(movementFinishSeconds(yoga, { resumeOffset: 0, bankedThis: 200, finishCap: totalSeconds(yoga) })).toBe(200)
+    expect(movementFinishSeconds(walk, { resumeOffset: -5, bankedThis: -5, finishCap: 600 })).toBe(0)
   })
 })

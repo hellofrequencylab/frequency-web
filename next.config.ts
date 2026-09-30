@@ -442,6 +442,17 @@ const nextConfig: NextConfig = {
       { source: '/hubs/:path*', destination: '/spaces/:path*', permanent: true },
       { source: '/nexuses', destination: '/spaces', permanent: true },
       { source: '/nexuses/:path*', destination: '/spaces/:path*', permanent: true },
+      // LIVE-681 / ADR-1678: one front door for practices. The owner ruled (2026-09-29) that
+      // Practices and the Library were two doors to overlapping things, and merged the Library
+      // INTO /practices: the ranked practices-and-journeys lane is the `practices-best-of` block
+      // there now, and its `type` tab reads the same query key this page used, so the query that
+      // rides through (/library?type=journey) lands on the same lane. Permanent (308): bookmarks
+      // and any operator menu row still naming /library cannot be rewritten from here.
+      //
+      // EXACT source, no :path* pair, ON PURPOSE. /library/review is the staff review queue and
+      // keeps its own route (the ruling says so); a wildcard would take it out
+      // (lib/marketing/redirect-shadow.test.ts fails if one is added).
+      { source: '/library', destination: '/practices', permanent: true },
       // Funnels rename (ADR-1090): the sign-up feature is Funnels and its routes moved to /join.
       // Old links are IN THE WILD and cannot be rewritten — QR codes on posters, shared splash
       // links, and CTAs in sent emails all point at /beta/<slug> and /onboarding/beta — so all

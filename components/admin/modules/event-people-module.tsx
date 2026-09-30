@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { getEventPeopleData, approveEventRsvp, type EventPeopleData } from '@/app/(main)/events/admin-actions'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "People" module (ENTITY-MANAGEMENT-OVERHAUL §4, the 'people' spine cell). Renders in
 // the page admin dock on /events/[slug]; the server returns null unless the caller holds
@@ -16,6 +17,8 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 export function EventPeopleModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readPeople = useEntityRailRead('event', 'people', getEventPeopleData)
 
   const [data, setData] = useState<EventPeopleData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -26,7 +29,7 @@ export function EventPeopleModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getEventPeopleData(slug)
+    readPeople(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -39,7 +42,7 @@ export function EventPeopleModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readPeople])
 
   if (!slug) return null
   if (loading) {

@@ -18,6 +18,7 @@ import {
 import { deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { PRACTICE_RAIL } from './practice-rail-plan'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Practice settings" (EMBEDDED-ADMIN.md / ADR-133) on /practices/[id]. The rail section header
 // is the single title. The main fields autosave and reflect live (RailAutosaveForm); the cover self-saves;
@@ -63,6 +64,8 @@ export function PracticeSettingsModule() {
   const pathname = usePathname()
   const router = useRouter()
   const id = pathname.match(/^\/practices\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('practice', 'admin', getPracticeAdminData)
 
   const [data, setData] = useState<PracticeData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -75,7 +78,7 @@ export function PracticeSettingsModule() {
   useEffect(() => {
     if (!id) return
     let active = true
-    getPracticeAdminData(id)
+    readAdmin(id)
       .then((d) => {
         if (active) {
           setData(d)
@@ -92,7 +95,7 @@ export function PracticeSettingsModule() {
     return () => {
       active = false
     }
-  }, [id])
+  }, [id, readAdmin])
 
   if (!id) return null
   if (loading) {

@@ -28,6 +28,11 @@ vi.mock('@/lib/auth', () => ({ getCallerProfile: mocks.getCallerProfile }))
 vi.mock('@/lib/journey-plans', () => ({ getPlan: mocks.getPlan }))
 vi.mock('@/lib/core/load-capabilities', () => ({ getGlobalCapabilities: mocks.getGlobalCapabilities }))
 vi.mock('@/lib/ai/journey-edit', () => ({ planJourneyEdits: mocks.planJourneyEdits }))
+// The edit gate itself (who may save, Space managers included) is locked in ./gate.test.ts
+// (LIVE-732); here it admits the plan's author only, so a refusal case can still be written.
+vi.mock('@/lib/journeys/authoring', () => ({
+  canEditJourney: async (_planId: string, callerId: string) => callerId === 'profile-me',
+}))
 vi.mock('@/lib/pillars', () => ({ getPillars: mocks.getPillars }))
 vi.mock('@/lib/journeys/compose', () => ({
   pillarIdsBySlug: mocks.pillarIdsBySlug,
@@ -214,7 +219,7 @@ describe('reorderBlocksAction (the builder drag, LIVE-689)', () => {
     expect(mocks.revalidatePath).not.toHaveBeenCalled()
   })
 
-  it('only the author (or an operator) may reorder', async () => {
+  it('a caller the shared edit gate refuses may not reorder', async () => {
     mocks.getCallerProfile.mockResolvedValue({ id: 'someone-else' })
     expect(await reorderBlocksAction(SLUG, 'phase-1', ['recap', 'breathe', 'intro', 'walk'])).toEqual({
       error: 'Only the author can edit this journey.',

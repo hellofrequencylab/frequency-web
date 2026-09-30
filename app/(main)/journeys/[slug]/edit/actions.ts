@@ -1,9 +1,11 @@
 'use server'
 
-// Journeys v2 — structure editor actions (ADR-252, J4b). Author-only CRUD over the block tree:
+// Journeys v2 — structure editor actions (ADR-252, J4b). CRUD over the block tree for whoever
+// canEditJourney admits (the author, an operator, or a manager of the owning Space; LIVE-732):
 // add phases + lessons, edit a lesson's title/body/type/required, reorder within a lane of
-// siblings (arrows or drag, practices and lessons alike, LIVE-689), and delete (children cascade via the parent_id FK). Direct admin-client writes behind the
-// author guard; the v2 block types (phase/module + leaf types) need the J0 migration applied.
+// siblings (arrows or drag, practices and lessons alike, LIVE-689), and delete (children cascade
+// via the parent_id FK). Direct admin-client writes behind that one gate (authorPlan); the v2 block
+// types (phase/module + leaf types) need the J0 migration applied.
 
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
@@ -25,7 +27,7 @@ import {
   EXTRA_CREDIT_PLACEHOLDER,
   type ComposedRow,
 } from '@/lib/journeys/compose'
-import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import { canEditJourney } from '@/lib/journeys/authoring'
 import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import { toPortable, type PortableJourney } from '@/lib/journeys/portable'
 import { log } from '@/lib/log'
@@ -41,15 +43,18 @@ function db() {
 
 const LEAF_TYPES = ['lesson', 'video', 'reading', 'exercise', 'reflection', 'check', 'resource'] as const
 
+/** The edit guard every action in this file runs first. It admits exactly who the editor page
+ *  admits, because both ask `canEditJourney` (lib/journeys/authoring.ts): the author, a platform
+ *  operator (admin.access), or a manager of the Space the Journey belongs to (team authoring).
+ *  Before LIVE-732 this guard carried its own author-or-operator copy, so a Space manager could
+ *  open the editor and every save was refused (ADR-1686). Do not re-derive the rule here. */
 async function authorPlan(slug: string): Promise<{ planId: string; profileId: string } | null> {
   const caller = await getCallerProfile()
   if (!caller) return null
   const loaded = await getPlan(slug)
   if (!loaded) return null
-  // The author, or an operator (admin.access) managing any Journey in the library.
-  if (loaded.plan.author_id === caller.id) return { planId: loaded.plan.id, profileId: caller.id }
-  if ((await getGlobalCapabilities()).has('admin.access')) return { planId: loaded.plan.id, profileId: caller.id }
-  return null
+  if (!(await canEditJourney(loaded.plan.id, caller.id))) return null
+  return { planId: loaded.plan.id, profileId: caller.id }
 }
 
 async function nextSortOrder(
@@ -657,13 +662,13 @@ export async function setLeafAnchorAction(
   const admin = db()
   const { data: planRow } = await admin
     .from('journey_plans')
-    .select('author_id, slug')
+    .select('slug')
     .eq('id', planId)
     .maybeSingle()
-  const plan = planRow as { author_id: string | null; slug: string | null } | null
+  const plan = planRow as { slug: string | null } | null
   if (!plan) return fail('Journey not found.')
-  const owner = plan.author_id === caller.id || (await getGlobalCapabilities()).has('admin.access')
-  if (!owner) return fail('Only the author can edit this journey.')
+  // The same one gate as authorPlan and the editor page (LIVE-732).
+  if (!(await canEditJourney(planId, caller.id))) return fail('Only the author can edit this journey.')
 
   const { data: row } = await admin
     .from('journey_plan_items')

@@ -20,6 +20,7 @@ import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { completeText } from '@/lib/ai/complete'
 import { withVoice } from '@/lib/ai/voice'
 import { dispatchDay } from '@/lib/on-air/dispatch-day'
+import { cleanDispatchCopy, unstatedActivityWords } from '@/lib/on-air/dispatch-copy'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -152,7 +153,8 @@ async function resolveAssignment(profileId: string): Promise<Assignment> {
         if (title) {
           return {
             kind: 'depth_mark',
-            copy: `${left} more ${left === 1 ? 'log' : 'logs'} and ${title} hits ${next} Deep. Keep digging.`,
+            // "N Deep" is a retired award name (docs/NAMING.md, ADR-305): say the count plainly.
+            copy: `${left} more ${left === 1 ? 'log' : 'logs'} and ${title} reaches ${next} logs. Keep digging.`,
             actionHref: '/on-air',
             actionLabel: 'Go again tomorrow',
             payload: { mark: next, left },
@@ -177,20 +179,10 @@ async function resolveAssignment(profileId: string): Promise<Assignment> {
 // --- the voice layer (P2) ----------------------------------------------------
 
 const FEATURE = 'vera-dispatch'
-const MAX_COPY = 180
 
-/** Validate + tidy a voiced line so a model hiccup can never reach a member:
- *  strip wrapping quotes / "Vera:" prefixes, collapse whitespace, swap em dashes
- *  for commas (voice canon), cap length. Returns null when unusable. Pure. */
-export function cleanDispatchCopy(raw: string): string | null {
-  let s = (raw ?? '').trim()
-  s = s.replace(/^(vera|dispatch)\s*[:\-]\s*/i, '')
-  s = s.replace(/^["'“‘]+|["'”’]+$/g, '')
-  s = s.replace(/\s*—\s*/g, ', ').replace(/\s+/g, ' ').trim()
-  if (!s || s.length < 12 || s.length > MAX_COPY) return null
-  if (/[\u{1F300}-\u{1FAFF}]/u.test(s)) return null // no emojis in Vera's line
-  return s
-}
+// The voiced line's validator (length, emoji, em dashes, and no activity the fact did not name,
+// LIVE-674) lives in the import-free leaf lib/on-air/dispatch-copy.ts; re-exported for callers.
+export { cleanDispatchCopy, unstatedActivityWords }
 
 /** Vera phrases the deterministic assignment. Budget-gated; null = use the
  *  template. The facts are handed over verbatim and the model may only rephrase. */
@@ -200,7 +192,7 @@ async function voiceCopy(assignment: Assignment, profileId: string): Promise<str
     if (await featureOverBudget(FEATURE)) return null
 
     const system = withVoice(
-      'You are Vera writing a Dispatch: the one-line next assignment a member sees after finishing a practice session. Rephrase the FACT below in one or two short sentences, 140 characters max. Keep every name and number exactly as given. Add nothing new, no greeting, no sign-off, no questions, no emojis. Direct, warm, brisk, like a trusted operator on the radio. Output only the sentence(s).',
+      'You are Vera writing a Dispatch: the one-line next assignment a member sees after finishing a practice session. Rephrase the FACT below in one or two short sentences, 140 characters max. Keep every name and number exactly as given. Add nothing new, no greeting, no sign-off, no questions, no emojis. Never name a kind of practice (a sit, a walk, a run, yoga, breathing, a journal, a stretch) unless the FACT names it: this line is shown after whatever the member practiced today. Direct, warm, brisk, like a trusted operator on the radio. Output only the sentence(s).',
     )
     const res = await completeText({
       system,
@@ -221,7 +213,7 @@ async function voiceCopy(assignment: Assignment, profileId: string): Promise<str
       costUsd: res.costUsd,
       profileId,
     })
-    return cleanDispatchCopy(res.text)
+    return cleanDispatchCopy(res.text, assignment.copy)
   } catch {
     return null // the template fallback stands
   }

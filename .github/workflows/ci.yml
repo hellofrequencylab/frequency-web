@@ -279,6 +279,13 @@ jobs:
         # 2026-09-30 one dead secret redded every open PR at once. A PR that touches a migration,
         # and every push to main, still fails on it, so main's own run is what notices the dead
         # token. The guard reads the PR's diff against the origin/<base> fetched above.
+        #
+        # 🟡 A MIGRATION IN FLIGHT (HYG-158, ADR-1690). A migration is applied in its window just
+        # before its own PR merges, so for those minutes the ledger has a row main has no file for.
+        # On a PR that touches no migration, drift made only of such rows, each newer than the tree
+        # and each carried as the exact file by another open PR, is `in-flight` plus a warning, not
+        # a red job. The open PRs are read with the GITHUB_TOKEN below (one listing, heads via git).
+        # Main, and any PR that touches a migration, still fail on it.
         # ARMS THE CROSS-PR ARM OF check:id-collisions (HYG-111, ADR-1509). check:adr and
         # check:backlog prove uniqueness within THIS tree; two open PRs that each append a block
         # pass alone and collide on merge (four times on 2026-09-21: ADR-1492 twice merged,
