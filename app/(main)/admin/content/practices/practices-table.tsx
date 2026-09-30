@@ -539,7 +539,8 @@ export function PracticesTable({
                       href={`/practices/${p.id}`}
                       title={`View ${p.title}`}
                       aria-label={`View ${p.title}`}
-                      className="shrink-0 text-subtle transition-colors hover:text-text"
+                      // A 24px hit box around the 12px icon: WCAG 2.2 target-size (LIVE-737).
+                      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
                     >
                       <ExternalLink className="h-3 w-3" aria-hidden />
                     </Link>
