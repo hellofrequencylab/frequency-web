@@ -7,6 +7,7 @@ import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import type { ColumnImage } from '@/lib/library/column-image'
+import type { ServerUploadResult } from '@/lib/library/upload-result'
 
 // THE ONE header/cover image control for every editor (Space, Profile, Journey) — the render side of the
 // `header` element's image slot. Extracted from the refined Space branding form so the profile and journey
@@ -34,6 +35,7 @@ export function HeaderImageField({
   disabled = false,
   rounded = false,
   noUrlPaste = false,
+  uploadFn,
   className,
 }: {
   /** The current cover image URL, or null when none is set. */
@@ -59,6 +61,9 @@ export function HeaderImageField({
   rounded?: boolean
   /** Hide the "or paste an image URL" fallback (used for the avatar, whose URL is allowlisted server-side). */
   noUrlPaste?: boolean
+  /** A gated server upload for a file dropped on the empty dropzone, passed straight to ImageUpload
+   *  (the Journey editor binds its own, so a drop never depends on a browser Storage session). */
+  uploadFn?: (file: File) => Promise<ServerUploadResult>
   /** Extra classes on the outer wrapper (e.g. a max-width for a compact avatar control). */
   className?: string
 }) {
@@ -83,6 +88,7 @@ export function HeaderImageField({
           loom
           scopeKey={scopeKey}
           noUrlPaste={noUrlPaste}
+          uploadFn={uploadFn}
         />
       </div>
     )
