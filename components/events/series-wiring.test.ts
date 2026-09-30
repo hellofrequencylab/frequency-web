@@ -23,7 +23,7 @@ describe('the /events index folds repeating series', () => {
   })
 
   it('applies the fold, passing the query floor straight through as the fold floor', () => {
-    expect(indexData).toContain('collapseSeriesRows(filteredEvents')
+    expect(indexData).toContain('collapseSeries(filteredEvents')
     // The count is the OPERATOR knob now (ADR-897 §7.3), not a module constant: a hardcoded
     // CARDS_PER_SERIES here made the console write a row nobody read. The knob's own consumer
     // guard lives in lib/events/series-config.test.ts.
@@ -35,11 +35,23 @@ describe('the /events index folds repeating series', () => {
   it('folds AFTER the facet filter and BEFORE the sort', () => {
     // Order of operations is what makes a date facet elect the occurrence INSIDE the window.
     const filterAt = indexData.indexOf('const filteredEvents')
-    const foldAt = indexData.indexOf('collapseSeriesRows(filteredEvents')
+    const foldAt = indexData.indexOf('collapseSeries(filteredEvents')
     const sortAt = indexData.indexOf('const sortedEvents')
     expect(filterAt).toBeGreaterThan(-1)
     expect(foldAt).toBeGreaterThan(filterAt)
     expect(sortAt).toBeGreaterThan(foldAt)
+  })
+
+  it('elects by the member\'s own sort under a stated sort, and by date otherwise (SERIES-RANK)', () => {
+    // One comparator orders the list AND elects the representative, so they cannot drift apart.
+    expect(indexData).toContain("elect: effectiveSort === 'date' ? 'earliest' : compareEvents")
+    expect(indexData).toContain('[...folded.rows].sort(compareEvents)')
+  })
+
+  it('plots one map pin per series, carrying its other dates (SERIES-PIN)', () => {
+    expect(indexData).toContain('onePerSeries(sortedEvents, folded)')
+    const map = readFileSync('components/events/events-map.tsx', 'utf8')
+    expect(map).toContain('moreDatesLine(p.moreDates')
   })
 
   it('over-fetches, since the fold spends the LIMIT on rows it then discards', () => {

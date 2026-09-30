@@ -29,6 +29,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Changed
 
+- **A repeating event shows its best date when you sort by Nearest, Most going or Best match.** On Events, a weekly class ranks on the date the most people are going to, not just the next one. The map shows one pin for it and says how many more dates there are. When you pick an event to add to a Circle, its dates sit together under its name.
+
 - **The privacy policy says what the product does today.** Download your data and delete your account yourself in Settings, Account and privacy; you do not need to email us. It names every service that handles your data, including Anthropic for Vera, Sentry for error reports, and Twilio for texts, and it covers push notifications, location, and the camera.
 
 - **You can only review a Market listing or a Journey you bought.** The review still shows whether it came from a purchase. Existing reviews stay up.

@@ -52,6 +52,21 @@ export interface NodeOption {
 export interface PickOption {
   id: string
   label: string
+  /** The series heading this option sits under (SERIES-PICKER). Options of one series arrive
+   *  contiguous, so each run renders as one <optgroup>; absent for a one-off. */
+  group?: string
+}
+
+/** Contiguous runs of options that share a `group`, in order. A one-off is a run of its own. */
+function pickRuns(options: PickOption[]): Array<{ group: string | null; items: PickOption[] }> {
+  const runs: Array<{ group: string | null; items: PickOption[] }> = []
+  for (const o of options) {
+    const group = o.group ?? null
+    const last = runs[runs.length - 1]
+    if (last && group !== null && last.group === group) last.items.push(o)
+    else runs.push({ group, items: [o] })
+  }
+  return runs
 }
 
 const DEST_BADGE: Record<StudioLink['destination_type'], string> = {
@@ -586,11 +601,25 @@ export function LinkForm({
               onChange={(e) => set('event_id', e.target.value || null)}
             >
               <option value="">Choose an event…</option>
-              {events.map((ev) => (
-                <option key={ev.id} value={ev.id}>
-                  {ev.label}
-                </option>
-              ))}
+              {/* A repeating event's dates sit under its title, each labelled by its date: a
+                  check-in code belongs to ONE date, and 61 bare copies of one title could not
+                  say which (SERIES-PICKER). */}
+              {pickRuns(events).map((run) =>
+                run.group ? (
+                  <optgroup key={`g:${run.items[0].id}`} label={run.group}>
+                    {run.items.map((ev) => (
+                      <option key={ev.id} value={ev.id}>
+                        {ev.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : (
+                  // An ungrouped run is always exactly one option (pickRuns never merges them).
+                  <option key={run.items[0].id} value={run.items[0].id}>
+                    {run.items[0].label}
+                  </option>
+                ),
+              )}
             </Select>
           </Field>
         )}
