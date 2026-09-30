@@ -122,7 +122,8 @@ export function PracticePlacementButton({ id, title }: { id: string; title: stri
         onClick={look}
         title={`Suggest a Pillar and Sub Focus for ${title}`}
         aria-label={`Suggest a Pillar and Sub Focus for ${title}`}
-        className="shrink-0 rounded-control p-0.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        // A 24px hit box around the 14px icon: WCAG 2.2 target-size, beside the row's View link (LIVE-737).
+        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-control text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <Compass className="h-3.5 w-3.5" aria-hidden />
       </button>
