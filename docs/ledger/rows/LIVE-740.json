@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-740",
+  "title": "The header focus marker stays in view when the saved focus sits on an edge, so the Space header control never reads as missing",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "closed": "2026-09-30",
+  "source": {
+    "file": "components/ui/image-focal-picker.tsx",
+    "ref": "Owner report 2026-09-30 after LIVE-738: \"I still don't see the header focus picker in spaces.\" (screenshot of the Space editor's Pictures panel)"
+  },
+  "detail": "FILED AND CLOSED 2026-09-30. PREMISE. The owner's screenshot shows the Space editor's Pictures panel with HeaderImageField mounted (its focus hint is on screen) but no marker on the preview. The Space's saved preferences.coverFocus was \"0% 0%\" (read once from production 2026-09-30). ImageFocalPicker draws its 24px marker centred on the focal point with left/top set to the raw percentages inside an overflow-hidden, rounded-card frame, so a focus at an edge or corner puts the centre on the boundary and the frame clips the marker, all of it in a corner. The control was there and could be clicked, but nothing showed it. WHAT CHANGED. The marker's left and top go through markerOffset(pct) = clamp(14px, pct%, calc(100% - 14px)): half the marker plus its ring, so the whole marker always shows. The stored value, the emitted value, the pointer math and the crop (the img's object-position) are unchanged; only where the marker is drawn stops at the edge. Every ImageFocalPicker mount benefits (Space, profile, Journey, event, Circle, Channel, storefront). components/ui/image-focal-picker.test.tsx pins the clamp at 0% 0% and 100% 100%, the unclamped middle, and that the crop still reads 0% 0%; it fails on main. No migration, no data change: the owner's saved focus stays as it is.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const f=\"components/ui/image-focal-picker.tsx\";if(!fs.existsSync(f)){console.error(\"LIVE-740: \"+f+\" is gone\");process.exit(1)}const s=fs.readFileSync(f,\"utf8\");const fail=(m)=>{console.error(\"LIVE-740: \"+m);process.exit(1)};const helper=s.match(/function markerOffset\\([^)]*\\)[^{]*\\{([\\s\\S]*?)\\n\\}/);if(!helper||!/clamp\\(/.test(helper[1]))fail(\"the focal marker position is no longer clamped inside the frame, so a focus saved at an edge draws the marker out of sight\");const marker=s.match(/<div[^>]*data-focal-marker[\\s\\S]*?\\/>/);if(!marker)fail(\"the focal marker element is gone\");if(!/left:\\s*markerOffset\\(x\\)/.test(marker[0])||!/top:\\s*markerOffset\\(y\\)/.test(marker[0]))fail(\"the marker is drawn at the raw focus percentage, so 0% 0% hides it in the corner\");if(!/style=\\{\\{\\s*objectPosition\\s*\\}\\}/.test(s))fail(\"the crop no longer uses the stored focus as object-position\");console.log(\"ok: the focal marker is drawn through the clamp and the crop keeps the stored focus\")'",
+    "note": "Closed 2026-09-30. Reads components/ui/image-focal-picker.tsx: markerOffset clamps, the data-focal-marker element's left and top go through markerOffset(x) and markerOffset(y), and the img still crops by the stored objectPosition. Fails on main at the first arm. Exits 1 naming the file when it is gone."
+  }
+}

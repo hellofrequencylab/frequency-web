@@ -10,6 +10,16 @@ import {
 } from '@/lib/images/focal-point'
 import { safeImageSrc } from '@/lib/safe-image-src'
 
+// Half the 24px marker plus its 2px ring: the least distance from the frame edge at which the whole
+// marker still shows (LIVE-740).
+const MARKER_INSET = 14
+
+/** Where the marker's centre is drawn for a focal percentage: the percentage itself, kept MARKER_INSET px
+ *  inside the frame so a focus at an edge or corner never draws the marker out of sight. */
+export function markerOffset(pct: number): string {
+  return `clamp(${MARKER_INSET}px, ${pct}%, calc(100% - ${MARKER_INSET}px))`
+}
+
 // ImageFocalPicker — a reusable control for choosing WHERE a cropped image sits in its frame.
 // Cropped surfaces (hero/cover banners, cards) render with `object-cover`, which crops to center
 // by default, so a face or a horizon often gets cut off. This picker lets a creator drag a marker
@@ -239,11 +249,16 @@ export function ImageFocalPicker({
         )}
         {/* Marker only — a high-contrast ring that reads over any photo. The crosshair guide lines
             were removed to declutter the preview; the marker alone shows the focal point clearly, and
-            the sliders below give precise, accessible control. */}
+            the sliders below give precise, accessible control.
+            The marker's CENTRE is clamped MARKER_INSET px inside the frame (LIVE-740). A focus saved at
+            an edge ("0% 0%") put the centre on the corner, so the frame's overflow-hidden and rounded
+            corner hid the whole marker and the control read as missing. The stored value and the crop
+            are untouched; only where the marker is drawn stops at the edge. */}
         <div
           aria-hidden
+          data-focal-marker=""
           className="pointer-events-none absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-pill border-2 border-on-ink bg-primary/80 lift-1 ring-2 ring-ink/30"
-          style={{ left: `${x}%`, top: `${y}%` }}
+          style={{ left: markerOffset(x), top: markerOffset(y) }}
         />
       </div>
 
