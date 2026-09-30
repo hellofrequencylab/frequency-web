@@ -170,7 +170,7 @@ export function Detail({
               person's Frequency profile — Edit/Delete here only touch this private record. */}
           <span className="inline-flex w-full items-center gap-1.5 text-meta text-muted">
             <Lock className="h-3 w-3 shrink-0" />
-            Your private contact. Editing or deleting this only changes your own note, never their Frequency profile.
+            Your private contact. Editing or deleting this only changes your copy, never their Frequency profile.
           </span>
         </span>
       }
@@ -234,7 +234,7 @@ export function Detail({
           notice={crmTease.notice}
           href="/upgrade"
           title="Keep every contact organized"
-          body="Crew turns saved contacts into a pipeline: follow-up reminders, tags, and notes that stay with you across everyone you meet."
+          body="Crew keeps follow-up reminders, tags, and notes with every person you meet, all in one place."
           cta="See what Crew adds"
         />
       )}

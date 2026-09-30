@@ -48,7 +48,7 @@ describe('isListableInDirectory — the name-listing gate (SQL :123-:124 only)',
     expect(isListableInDirectory({ id: 'old', directory_visible: null, ghost_mode: null })).toBe(true)
   })
 
-  it('"Show me in the Community directory" OFF hides (:123)', () => {
+  it('"Show me in the Members directory" OFF hides (:123)', () => {
     expect(isListableInDirectory(base({ directory_visible: false }))).toBe(false)
   })
 
