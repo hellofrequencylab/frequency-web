@@ -4,7 +4,7 @@ description: Adopt a practice or follow your Circle's, then log it each day to e
 category: getting-started
 order: 3
 published: 2026-05-31
-updated: 2026-08-19
+updated: 2026-09-30
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -148,6 +148,11 @@ thousands:
 - **Sort.** Browse by **Trending** (what people are doing lately), **All-time**, or
   **New**. Trending is the default, so the practices the community is loving rise to
   the top.
+- **Best of the library.** Above the full library sits one ranked list of the
+  community's top practices **and** Journeys, with **All**, **Practices**, and
+  **Journeys** tabs. Tap the heart on a card to rate it. Ratings, adoptions, and real
+  use are what move a card up. (This used to be its own Library page. Old Library links
+  now open Practices.)
 
 ## Rewards vary by practice
 

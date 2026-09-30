@@ -195,7 +195,8 @@ describe('library review surfaces admit a granted moderator, not a host', () => 
   it('the review page and queue ask canReviewLibrarySubmission', () => {
     const page = code('app/(main)/library/review/page.tsx')
     const queue = code('components/widgets/library/library-review-queue.tsx')
-    const index = code('app/(main)/library/page.tsx')
+    // The queue's door lives on /practices since /library became a 308 there (LIVE-681, ADR-1678).
+    const index = code('app/(main)/practices/page.tsx')
     expect(page).toContain('canReviewLibrarySubmission(caller.webRole)')
     expect(queue).toContain('canReviewLibrarySubmission(caller.webRole)')
     expect(index).toContain('canReviewLibrarySubmission(caller.webRole)')
