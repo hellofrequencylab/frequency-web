@@ -3,6 +3,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/ui/stat-card'
 import { listSpaceOrders, spaceEarningsSummary } from '@/lib/commerce/orders'
 import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
+import { OrderShareNote } from '@/components/marketplace/order-share-note'
 import { setOrderFulfillmentAction } from './shop-actions'
 
 // The Orders tab of the Shop console (ADR-596). A Space's sales + earnings, scoped by owner_space_id
@@ -11,6 +12,11 @@ import { setOrderFulfillmentAction } from './shop-actions'
 // (LIVE-606): mark it shipped with a carrier and tracking, then delivered, then complete. A staff
 // preview (`readOnly`) sees the state and no door. While billing is gated OFF there are no settled
 // orders, so this shows a calm "no orders yet" state. No em or en dashes.
+//
+// A split order that pays this Space (LIVE-624) is listed as the Space's SHARE of it: its lines, its
+// gross in the amount column, and a share line with the net and where the payout stands. Its
+// fulfilment shows read-only: the fulfilment writer binds to the order's owner columns, which a
+// split order leaves empty, so a door here would only refuse.
 
 function usd(cents: number): string {
   return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -69,10 +75,11 @@ export async function OrdersTab({ spaceId, slug, readOnly = false }: { spaceId: 
               </div>
               <p className="shrink-0 text-body-sm font-semibold text-text">{usd(o.amountCents)}</p>
             </div>
+            <OrderShareNote order={o} />
             <OrderFulfilmentControl
               order={o}
               action={setOrderFulfillmentAction.bind(null, slug, o.id)}
-              readOnly={readOnly}
+              readOnly={readOnly || o.share !== null}
             />
           </li>
         ))}

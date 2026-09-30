@@ -126,6 +126,10 @@
 # bypass. The signed-in event body was lifted out of app/(main)/events/[slug]/page.tsx so the
 # public share URL can ISR; the service-role reads (RSVP, tickets, host tools) moved with it.
 # The public page no longer imports the admin client. File count is flat.
+# lib/library/proof-object.ts (added 2026-09-29, LIVE-580, ADR-1623): writes and removes the stored
+# proof of a protected Loom image in library-private, a bucket with NO storage policy for anon or
+# authenticated by decision (20270345009550, ADR-1595): service role is the only way in. Called from
+# the Studio-gated protect action and lazily from proofLibraryAssetUrl, which is already listed.
 # lib/library/download-door.ts (added 2026-09-29, LIVE-578, ADR-1596): the Loom download door. It
 # reads one library_assets row (RLS deny-all), signs a one-minute url from library-private (no
 # storage policy names that bucket, by decision), and inserts into library_downloads, whose only
@@ -257,6 +261,11 @@
 # under: the Stripe webhook (the settle, transfer.created, transfer.reversed) and the reconcile-transfers
 # cron. Nothing here is reachable from a request a member makes, and nothing leaves it but counts and
 # log lines; a seller's read of their share (LIVE-624) is authorized before it reaches this module.
+# lib/commerce/transfer-retry.ts (added 2026-09-29, LIVE-624): the operator's retry of one transfer of a
+# split order. It reads and writes the same service-role-only ledger as lib/commerce/transfers.ts (RLS on,
+# no policy), so there is no member session to run under. Its one caller is retryOrderTransferAction,
+# which checks the caller is platform staff (requireOperator) first; its one write lifts a stuck row's
+# attempts to one under the ceiling, compare-and-set, and the payment itself goes through transfers.ts.
 # lib/commerce/split-refund.ts (added 2026-09-29, LIVE-623): the pro rata reversal of a split order's
 # seller transfers on a refund or a lost dispute. It writes the same service-role-only table as
 # lib/commerce/transfers.ts (commerce_order_transfers) and reads commerce_orders by id or PaymentIntent;
@@ -676,6 +685,7 @@ lib/commerce/seller-audience.ts
 lib/commerce/seller-verification.ts
 lib/commerce/split-refund.ts
 lib/commerce/ticket-projection.ts
+lib/commerce/transfer-retry.ts
 lib/commerce/transfers.ts
 lib/commerce/variants.ts
 lib/comms/bulk-dm.ts
@@ -841,6 +851,7 @@ lib/library/download-door.ts
 lib/library/embeddings.ts
 lib/library/event-loom.ts
 lib/library/hybrid-search.ts
+lib/library/proof-object.ts
 lib/library/resolve-refs.ts
 lib/library/splash-registry.ts
 lib/library/store.ts

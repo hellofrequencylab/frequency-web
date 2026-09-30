@@ -4,9 +4,11 @@ import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
-import { listAllOrders, orderStatusCounts, type CommerceOrder } from '@/lib/commerce/orders'
+import { listAllOrders, orderStatusCounts, sellerNames, type CommerceOrder } from '@/lib/commerce/orders'
+import { listOrderTransfers, type OrderTransfer } from '@/lib/commerce/transfers'
 import { OrderFulfilmentControl } from '@/components/marketplace/order-fulfilment-control'
-import { refundOrderAction, setOrderFulfillmentAction } from '../actions'
+import { OrderTransferLedger } from '@/components/marketplace/order-transfer-ledger'
+import { refundOrderAction, retryOrderTransferAction, setOrderFulfillmentAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Orders · Admin' }
@@ -15,9 +17,35 @@ function usd(cents: number, currency = 'usd') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
 }
 
-const OWNER_LABEL: Record<string, string> = { platform: 'Shop', profile: 'Maker', space: 'Space' }
+const OWNER_LABEL: Record<string, string> = { platform: 'Shop', profile: 'Maker', space: 'Space', split: 'Split' }
 
-function OrderRow({ o }: { o: CommerceOrder }) {
+/** A split order's transfer rows, or null when the ledger could not be read (shown as such, never as
+ *  "no transfers"). Only split orders are asked; a destination order has no rows and no section. */
+async function transfersFor(orders: CommerceOrder[]): Promise<Map<string, OrderTransfer[] | null>> {
+  const split = orders.filter((o) => o.fundsFlow === 'separate')
+  const entries = await Promise.all(
+    split.map(async (o): Promise<[string, OrderTransfer[] | null]> => {
+      try {
+        return [o.id, await listOrderTransfers(o.id)]
+      } catch (err) {
+        console.error('[admin orders] transfer ledger unreadable', { orderId: o.id, error: err instanceof Error ? err.message : String(err) })
+        return [o.id, null]
+      }
+    }),
+  )
+  return new Map(entries)
+}
+
+function OrderRow({
+  o,
+  transfers,
+  names,
+}: {
+  o: CommerceOrder
+  /** Present only for a split order (LIVE-624): its transfer ledger, or null when unreadable. */
+  transfers?: OrderTransfer[] | null
+  names: Map<string, string>
+}) {
   const when = new Date(o.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
   const refundable = o.status === 'paid' || o.status === 'fulfilled'
   // Frequency is the seller on a Store order, so the operator holds its door; a Space's or a maker's
@@ -37,6 +65,13 @@ function OrderRow({ o }: { o: CommerceOrder }) {
           action={platformOrder ? setOrderFulfillmentAction.bind(null, o.id) : undefined}
           readOnly={!platformOrder}
         />
+        {o.fundsFlow === 'separate' && (
+          <OrderTransferLedger
+            transfers={transfers ?? null}
+            names={names}
+            retry={(transferId) => retryOrderTransferAction.bind(null, transferId)}
+          />
+        )}
       </div>
       <div className="flex items-center gap-3">
         <span className="text-right text-body-sm">
@@ -56,6 +91,12 @@ function OrderRow({ o }: { o: CommerceOrder }) {
 export default async function MarketplaceOrdersPage() {
   await requireAdmin('admin', { staff: 'platform' })
   const [orders, counts] = await Promise.all([listAllOrders({ limit: 200 }), orderStatusCounts()])
+  const ledgers = await transfersFor(orders)
+  const names = await sellerNames(
+    [...ledgers.values()].flatMap((ts) =>
+      (ts ?? []).map((t) => ({ kind: t.ownerKind, profileId: t.ownerProfileId, spaceId: t.ownerSpaceId })),
+    ),
+  )
   // Gross / fees count only CAPTURED money (paid or fulfilled), matching the Space-side spaceEarningsSummary.
   // listAllOrders returns every status, so a `pending` (unpaid checkout), `cancelled`, `failed`, or already
   // `refunded` order must not pad these tiles (the prior `!== refunded && !== failed` filter let pending +
@@ -68,7 +109,7 @@ export default async function MarketplaceOrdersPage() {
     <AdminTemplate
       title="Orders"
       eyebrow="Marketplace"
-      description="Every commerce order across the Frequency Store, the Market, and Space storefronts. Refund a paid order from here."
+      description="Every commerce order across the Frequency Store, the Market, and Space storefronts. Refund a paid order from here. A split order lists the transfer each seller is owed, and a stuck one can be sent again."
       back={{ href: '/admin/marketplace', label: 'Marketplace' }}
       width="wide"
     >
@@ -90,7 +131,7 @@ export default async function MarketplaceOrdersPage() {
         ) : (
           <div className="space-y-2">
             {orders.map((o) => (
-              <OrderRow key={o.id} o={o} />
+              <OrderRow key={o.id} o={o} transfers={ledgers.get(o.id)} names={names} />
             ))}
           </div>
         )}

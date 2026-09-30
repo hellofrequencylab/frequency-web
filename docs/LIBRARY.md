@@ -53,10 +53,20 @@ gets its own Loom**. It grows for years without a code deploy per asset.
   original or the public url with storage's `download` flag for anything else. A download that
   cannot be recorded is refused. The drawer's Download is a link to the door and shows the record
   under `[data-loom-downloads]`; a code-drawn element still exports from the DOM (it has no file).
-  Proofing is LIVE-580.
+  Since [LIVE-580](BUILD-BACKLOG.json) ([ADR-1623](DECISIONS.md)) **a protected asset is shown
+  only as its stored proof**: protecting writes a 480 px copy (the grid preset) into
+  `library-private` at `proofs/<storage_path>` (`lib/library/proof-object.ts`); storage does the
+  resize, nothing here decodes, and the proof's own header is checked for the width before it is
+  stored. `proofLibraryAssetUrl` in `lib/library/asset-urls.ts` signs that object and never the
+  master (a missing proof is written first), so no proof link can be edited into the original.
+  Releasing or deleting the asset deletes the proof. The admin Studio grid and drawer, the Space
+  Loom Studio and the picker all get the proof (`withLoomProofs` swaps the url and drops the
+  storage key before a pick list leaves the server), and the picker shows a protected tile locked,
+  so it can never be placed. No watermark (owner ruling 2026-09-29).
 - **Scope:** **every asset is space-scoped.** Frequency's shared/master library is the **root
   space's** Loom (`space_id` is NOT NULL). A child space's effective library = its own ∪ root's.
-- **Transforms:** **on-the-fly** (a width/format request against the master). **Editing an image
+- **Transforms:** **on-the-fly** (a width/format request against the master), with one
+  amendment: a protected image stores one proof object (ADR-1623). **Editing an image
   saves a new version** (non-destructive; the original is never overwritten).
 - **Backfill:** **everything** — existing `site-media` URLs get ingested into the catalog and
   references rewritten.
@@ -381,6 +391,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
    LIVE-576 shipped: the hooks reach the product and an expired licence leaves every picker.
    LIVE-577 shipped: the private bucket, the protect move and the one signing function.
    LIVE-578 shipped: the download door and its append-only record.
+   LIVE-580 shipped: the stored 480 px proof object, the only thing both Studios and the picker show.
 7. **D7 — Semantic + AI** (pgvector search, AI auto-tag/color, background removal/upscale).
    Background removal and upscale (LIVE-589), describe on view (LIVE-588), auto-tag (LIVE-587) and the hybrid Most relevant rank (LIVE-586) are shipped ([ADR-1563](DECISIONS.md)).
 
