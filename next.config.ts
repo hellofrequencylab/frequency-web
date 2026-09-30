@@ -144,15 +144,51 @@ const csp = [
 // Baseline security headers applied to every route. X-Frame-Options is SAMEORIGIN (not
 // DENY) so the Puck editor's same-origin preview iframe keeps working while cross-origin
 // clickjacking is still blocked. CSP is now ENFORCED (graduated from report-only).
+// Permissions-Policy is NOT in this list: it differs by route, see below.
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-  // Map uses the Geolocation API; camera/microphone are never used.
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
   { key: 'Content-Security-Policy', value: csp },
 ]
+
+// PERMISSIONS-POLICY, per route (LIVE-713, ADR-1641).
+//
+// The camera is refused everywhere (`camera=()`) EXCEPT on the routes that call getUserMedia,
+// which get `camera=(self)`: this origin only, so an embedded YouTube, Stripe or Spotify frame
+// still cannot ask. Today that is ONE route, /scan, the in-app QR scanner (ADR-235,
+// components/scan/scanner.tsx: door check-in, Ghost Node and partner plaque capture). Until
+// LIVE-713 the site-wide `camera=()` refused that call, so the scanner opened on its denied card
+// in every browser that enforces the header (Chrome on Android first).
+//
+// Not camera users, checked: `<input capture="environment">` (composer, poster and card
+// capture) goes through the OS picker, which this policy does not govern, and the poster QR
+// decode (lib/events/qr-scan.ts) reads a still image with BarcodeDetector, no stream.
+// Microphone: nothing records audio (the audio code only plays), so it stays `()` everywhere.
+// Geolocation: `(self)` everywhere, unchanged. Maps, Near me, node claim, live location and the
+// timezone card all ask, on many routes, so it is not a per-route feature.
+//
+// EXACTLY ONE rule sets this key on any path. The default rule EXCLUDES the camera routes by a
+// lookahead instead of relying on "the last matching header wins": Next's server does let the
+// later rule win, but that is one platform's merge order, and a path matched by both rules is
+// exactly where a proxy can emit two Permissions-Policy lines. The browser joins those into one
+// dictionary where the later `camera` key wins, so the answer would hang on emit order. The
+// LIVE-713 verify probe asserts one rule per path.
+//
+// A POLICY BELONGS TO THE DOCUMENT, not the route. Next's <Link> is a soft navigation, so a
+// member who taps "scan their code" on /partners arrives at /scan inside the /partners document,
+// still under `camera=()`. The scanner handles that itself: when the document it mounts in
+// refuses the camera, it re-loads /scan as its own document, once (lib/scan/camera-policy.ts,
+// called from components/scan/scanner.tsx). Any new getUserMedia route joins CAMERA_ROUTES AND
+// makes the same check.
+const CAMERA_ROUTES = ['/scan'] as const
+const PERMISSIONS_POLICY_DEFAULT = 'camera=(), microphone=(), geolocation=(self)'
+const PERMISSIONS_POLICY_CAMERA = 'camera=(self), microphone=(), geolocation=(self)'
+// `/:path((?!scan/?$).*)`: every path but the camera routes (a trailing slash included, and the
+// match is case-insensitive like the router's). The inner group may open with `(?!`; the outer
+// one may not start with `?`, which is path-to-regexp's rule, not ours.
+const notCameraRoute = `/:path((?!(?:${CAMERA_ROUTES.map((r) => r.slice(1)).join('|')})/?$).*)`
 
 // The faces lib/og/load-nunito.ts opens from disk at RUNTIME: the Nunito pair every share card draws
 // with, and LiberationSans-Bold, its same-directory fallback.
@@ -292,7 +328,14 @@ const nextConfig: NextConfig = {
     '/**': ['./public/tracks/**', './.next/server/chunks/**/*heic2any*'],
   },
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      { source: notCameraRoute, headers: [{ key: 'Permissions-Policy', value: PERMISSIONS_POLICY_DEFAULT }] },
+      ...CAMERA_ROUTES.map((source) => ({
+        source,
+        headers: [{ key: 'Permissions-Policy', value: PERMISSIONS_POLICY_CAMERA }],
+      })),
+    ]
   },
   // Admin reorg Phase 3: the CRM + Marketing operator surfaces moved INTO the admin
   // address space, and the old /growth launchpad collapsed into the /admin/growth
