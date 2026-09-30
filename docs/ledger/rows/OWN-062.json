@@ -1,0 +1,10 @@
+{
+  "id": "OWN-062",
+  "patch": {
+    "status": "parked",
+    "notes": "parkedUntil: the first paid production order (commerce_orders or event_tickets paid above zero). One event_tickets row was already settled on 2026-09-21, so this is read as the first paid order after 2026-09-30 until the owner says otherwise (see detail). Owner ruling 2026-09-30 ~01:35Z \"Park until revenue\" (ADR-1672)."
+  },
+  "append": {
+    "detail": "\n\n── PARKED 2026-09-30. OWNER RULING 2026-09-30 ~01:35Z (multiple choice, recorded by HYG-156, ADR-1672): \"Park until revenue\". REVISIT TRIGGER: the first paid production order, commerce_orders or event_tickets paid above zero. ⚠️ READ THE TRIGGER WITH CARE: LIVE-234's production read of 2026-09-21 already counted one settled event_tickets row (a House of Fates $44 ticket). Read literally, the trigger was met before the ruling, so this ledger reads it as the first paid order AFTER 2026-09-30, and the owner should say if that one ticket was meant to count. Not re-measured here. The closing test is unchanged (the five vendor figures and the snapshot month in docs/OBSERVABILITY-BASELINES.md §3a) and is not run while parked."
+  }
+}

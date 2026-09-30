@@ -261,7 +261,7 @@ export function SpaceCanvasEditor({ loomScope }: {
                     placeholder="Section title (optional)"
                     aria-label={`Title for section ${ri + 1}`}
                     onChange={(e) => onSectionTitle(row.id, e.target.value)}
-                    className="w-full rounded-md border border-transparent px-1 py-0.5 text-meta font-semibold text-text placeholder:font-normal hover:border-border focus:border-primary"
+                    className="w-full rounded-md border border-transparent px-1 py-0.5 text-meta font-semibold text-text placeholder:font-normal hover:border-border focus:border-border-strong"
                   />
                 </div>
 

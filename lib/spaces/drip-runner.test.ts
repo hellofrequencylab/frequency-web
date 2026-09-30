@@ -9,6 +9,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 //   4. LEASE + RESUME (scan2 L6-10): the claim stamps sending_started_at; a 'sending' row whose lease
 //      expired is re-claimed. If the ledger shows a send to this contact since the stale lease began,
 //      the step is NOT re-sent and the enrollment only advances; otherwise the step is sent.
+//   5. SUSPENDED SPACE HOLDS (LIVE-727): the seam's not-active refusal releases the enrollment at the SAME
+//      step, due again after the recheck window. It is never stopped, so reactivation resumes it.
 
 // ── Mocks ────────────────────────────────────────────────────────────────────────────────────────
 
@@ -16,10 +18,13 @@ let sendResult: { data: { sent: number; suppressed: number; failed: number } } |
   data: { sent: 1, suppressed: 0, failed: 0 },
 }
 const sendCalls: { spaceId: string; subject: string }[] = []
+const sentHtml: string[] = []
 vi.mock('./email', () => ({
   SPACE_UNSUBSCRIBE_PLACEHOLDER: '%%U%%',
-  sendSpaceCampaignSystem: async (spaceId: string, input: { subject: string }) => {
+  SPACE_NOT_ACTIVE_EMAIL_ERROR: 'SPACE-NOT-ACTIVE',
+  sendSpaceCampaignSystem: async (spaceId: string, input: { subject: string; html: string }) => {
     sendCalls.push({ spaceId, subject: input.subject })
+    sentHtml.push(input.html)
     return sendResult
   },
 }))
@@ -196,8 +201,9 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { runDueSpaceDrips } from './drip-runner'
+import { runDueSpaceDrips, SPACE_HOLD_RECHECK_MS } from './drip-runner'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
+import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 
 const PAST = '2020-01-01T00:00:00Z'
 const STALE = new Date(Date.now() - SENDING_LEASE_MS - 60_000).toISOString()
@@ -256,6 +262,17 @@ describe('runDueSpaceDrips', () => {
     expect(new Date(enr.next_run_at).getTime()).toBeGreaterThan(Date.now())
   })
 
+  it('the sent step carries the platform postal address under its unsubscribe line (CAN-SPAM, LIVE-728)', async () => {
+    sentHtml.length = 0
+    seedEnrollment()
+    seedStep({ step_order: 1, subject: 'Step 1' })
+    await runDueSpaceDrips()
+    expect(sentHtml).toHaveLength(1)
+    const html = sentHtml[0]
+    expect(html).toContain(PLATFORM_POSTAL_LINE)
+    expect(html.indexOf(PLATFORM_POSTAL_LINE)).toBeGreaterThan(html.indexOf('%%U%%'))
+  })
+
   it('marks an enrollment done after its LAST step', async () => {
     const enr = seedEnrollment({ current_step: 1 })
     seedStep({ step_order: 1, subject: 'Only step' })
@@ -287,6 +304,41 @@ describe('runDueSpaceDrips', () => {
     expect(res.sent).toBe(0)
     expect(res.stopped).toBe(1)
     expect(enr.status).toBe('stopped')
+  })
+
+  it('a suspended Space HOLDS the enrollment at the same step instead of stopping it (LIVE-727)', async () => {
+    const enr = seedEnrollment({ current_step: 1 })
+    seedStep({ step_order: 1 })
+    seedStep({ step_order: 2, subject: 'Step 2' })
+    sendResult = { error: 'SPACE-NOT-ACTIVE' }
+
+    const before = Date.now()
+    const res = await runDueSpaceDrips()
+    expect(res.claimed).toBe(1)
+    expect(res.sent).toBe(0)
+    expect(res.held).toBe(1)
+    expect(res.stopped).toBe(0)
+    // Released, not stopped: same step, back to 'enrolled', due again after the recheck window.
+    expect(enr.status).toBe('enrolled')
+    expect(enr.current_step).toBe(1)
+    expect(new Date(enr.next_run_at).getTime()).toBeGreaterThanOrEqual(before + SPACE_HOLD_RECHECK_MS - 1_000)
+  })
+
+  it('a held enrollment sends the step it was on once the Space is active again (LIVE-727)', async () => {
+    const enr = seedEnrollment({ current_step: 1 })
+    seedStep({ step_order: 1, subject: 'Step 1' })
+    seedStep({ step_order: 2, subject: 'Step 2' })
+    sendResult = { error: 'SPACE-NOT-ACTIVE' }
+    await runDueSpaceDrips()
+    expect(sendCalls.map((c) => c.subject)).toEqual(['Step 1'])
+
+    // Staff reactivate the Space; the recheck window passes.
+    sendResult = { data: { sent: 1, suppressed: 0, failed: 0 } }
+    enr.next_run_at = new Date(Date.now() - 1_000).toISOString()
+    const res = await runDueSpaceDrips()
+    expect(res.sent).toBe(1)
+    expect(sendCalls.map((c) => c.subject)).toEqual(['Step 1', 'Step 1'])
+    expect(enr.current_step).toBe(2)
   })
 
   it('a consent-skipped send (sent:0, no error) still ADVANCES the sequence', async () => {

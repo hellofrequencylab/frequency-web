@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 // Fold the two ledger docs that EVERY merge re-conflicts (HYG-032).
 //
+// ⚠️ THE LEGACY PATH since HYG-145 (ADR-1635). A PR now writes its ledger change as a fragment
+// (docs/ledger/rows/<ID>.json, docs/ledger/adr/ADR-<n>.md) and never touches the two shared files,
+// so it never needs this. It stays for a branch that still edits them directly; `pnpm
+// ledger:from-diff` converts such a branch to fragments instead, which is the preferred fix.
+//
 // WHY THIS EXISTS. Every open PR adds an ADR to docs/DECISIONS.md and rows to
 // docs/BUILD-BACKLOG.json. So every merge to main re-conflicts every other open branch on exactly
 // those two paths — and, measured across a whole queue with `git merge-tree --write-tree`, on
@@ -35,6 +40,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, writeFileSync } from 'node:fs'
 import { invokedDirectly } from '../lib/invoked-directly.mjs'
 import { HEADING } from '../check-adr.mjs'
+import { waveToken, SLATED_STATUSES } from '../lib/ledger.mjs'
 
 const BACKLOG = 'docs/BUILD-BACKLOG.json'
 const DECISIONS = 'docs/DECISIONS.md'
@@ -153,25 +159,10 @@ export function mergeBacklog(base, ours, theirs) {
   return { text, count: merged.length, added: merged.length - T.size, bothChanged, slate: slateFold?.dropped }
 }
 
-/** The key a wave is known by: the token before its first " · " ("W4 · THIRD TO LAST ..." -> "W4"),
- *  or the whole name when it has none ("owner-timed").
- *
- *  🔴 A WAVE'S NAME IS PROSE, AND KEYING BY IT DUPLICATED WAVES (HYG-134). The fold used to match
- *  waves by their full `name`. The 2026-09-29 backlog cull (#3024) appended "── PARKED 2026-09-29 ..."
- *  to the WM, W4 and W11 names, so a branch cut before it folded against main and appended its old
- *  copies of those three waves as if they were new ones. The token is what the docs cite and what
- *  a human means by "the same wave"; the rest of the name is commentary main is free to rewrite.
- *  check-backlog.mjs imports this so the gate and the tool cannot disagree about what a wave is. */
-export function waveToken(name) {
-  const s = String(name ?? '')
-  const i = s.indexOf(' · ')
-  return (i === -1 ? s : s.slice(0, i)).trim()
-}
-
-/** A row that is sequenced work: the statuses HYG-047 requires to sit on a wave. Everything else
- *  (done, parked) sits on NO wave — a parked row carries its date and reason on the row itself,
- *  which is the convention the W4/W9/W11 names state ("its ids are on the rows, status parked"). */
-export const SLATED_STATUSES = ['open', 'blocked']
+/** waveToken and SLATED_STATUSES live in scripts/lib/ledger.mjs (HYG-145, ADR-1635), the loader
+ *  that now drops done and parked ids from every wave at read time. Re-exported here so the fold,
+ *  the loader and check:backlog share one definition of what a wave is (HYG-134). */
+export { waveToken, SLATED_STATUSES }
 
 /** Fold `meta.slate` beside the entries, then reconcile it against them.
  *

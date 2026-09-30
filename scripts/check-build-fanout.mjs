@@ -26,7 +26,7 @@
 // same way check:build-budget and check:og-trace do. Importable: the measuring and judging halves
 // are exported so the fixture test can drive them without a build.
 // ─────────────────────────────────────────────────────────────────────────────
-import { readFileSync, existsSync, globSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, globSync } from 'node:fs'
 import path from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
 
@@ -126,9 +126,11 @@ export function measureFanout(root) {
     const abs = path.join(chunkDir, rel)
     let src
     try {
-      const st = statSync(abs)
-      if (st.size <= ICON_CHUNK_MIN_BYTES) continue
-      src = readFileSync(abs, 'utf8')
+      // One read, then the size of what was read: a stat followed by a read measures one file and
+      // reads another if the chunk changes between them (HYG-143, CodeQL js/file-system-race).
+      const buf = readFileSync(abs)
+      if (buf.length <= ICON_CHUNK_MIN_BYTES) continue
+      src = buf.toString('utf8')
     } catch {
       continue
     }

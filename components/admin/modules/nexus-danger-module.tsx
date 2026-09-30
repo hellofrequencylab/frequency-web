@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Archive } from 'lucide-react'
 import { getNexusAdminData, archiveNexus } from '@/lib/hierarchy/nexus-admin'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Danger zone" module (ADMIN-RAIL.md Phase 7, the 'danger' spine cell for nexuses). Renders
 // in the page admin dock on /nexuses/[slug]; getNexusAdminData returns null unless the caller holds
@@ -15,6 +16,8 @@ type NexusData = NonNullable<Awaited<ReturnType<typeof getNexusAdminData>>>
 export function NexusDangerModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/nexuses\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('nexus', 'admin', getNexusAdminData)
 
   const [data, setData] = useState<NexusData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -26,7 +29,7 @@ export function NexusDangerModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getNexusAdminData(slug)
+    readAdmin(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -39,7 +42,7 @@ export function NexusDangerModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readAdmin])
 
   if (!slug) return null
   if (loading) {

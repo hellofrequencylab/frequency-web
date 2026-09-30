@@ -26,9 +26,12 @@ import { join } from 'node:path'
 //      never reaches the catalog list reads); detachProgramBlueprint clears
 //      template_id and soft-retires the blueprint; the staff editor twins work
 //      on a Frequency-run (NULL-owner) Program the Space path can never reach.
-//   8. The assignment flows (ADR-871): setCircleChannel refuses a paused
-//      channel (the same retire switch) and clears on null;
-//      removeCircleFromChannel only detaches a circle that is IN the channel;
+//   8. The assignment flows (ADR-871, LIVE-666): setCircleChannels stores one
+//      to three Channels primary first, refuses a fourth and a paused channel
+//      the circle does not already carry, and clears on an empty list;
+//      a circle with three is found under each (listChapters reads position 2
+//      and 3); removeCircleFromChannel only detaches a circle that CARRIES the
+//      channel and moves the next one up to primary;
 //      setChannelOwnerSpace enforces one owned channel per Space (the DB's
 //      unique partial index, pre-checked into a sentence), re-stamps a
 //      Program blueprint's owner to match (the ADR-865 catalog fence), leaves
@@ -51,6 +54,7 @@ const state = {
   templates: [] as Row[], // circle_templates
   circleProfiles: [] as Row[], // circle_profiles
   spaces: [] as Row[],
+  circleChannels: [] as Row[], // circle_channels (LIVE-666)
   inserts: [] as Array<{ table: string; row: Row }>,
   updates: [] as Array<{ table: string; patch: Row }>,
   deletes: [] as Array<{ table: string }>,
@@ -64,6 +68,7 @@ function rowsOf(table: string): Row[] {
   if (table === 'circle_templates') return state.templates
   if (table === 'circle_profiles') return state.circleProfiles
   if (table === 'spaces') return state.spaces
+  if (table === 'circle_channels') return state.circleChannels
   throw new Error(`unexpected table ${table}`)
 }
 
@@ -88,7 +93,22 @@ function builder(table: string) {
         pendingInsert = null
         return { data: null, error: { message: `${table} insert failed (injected)` } }
       }
-      const inserted = pendingInsert.map((r) => ({ id: `${table}-${(state.seq += 1)}`, ...r }))
+      // circle_channels holds the migration's constraints (20270345011400): position 1..3, one row
+      // per (circle, position), one per (circle, channel). A violating batch writes nothing.
+      if (table === 'circle_channels') {
+        const batch = pendingInsert
+        const all = [...state.circleChannels, ...batch]
+        const key = (r: Row, k: string) => `${String(r.circle_id)}:${String(r[k])}`
+        const bad =
+          batch.some((r) => typeof r.position !== 'number' || r.position < 1 || r.position > 3) ||
+          new Set(all.map((r) => key(r, 'position'))).size !== all.length ||
+          new Set(all.map((r) => key(r, 'topical_channel_id'))).size !== all.length
+        if (bad) {
+          pendingInsert = null
+          return { data: null, error: { message: 'circle_channels constraint violated' } }
+        }
+      }
+      const inserted = pendingInsert.map((r) => (table === 'circle_channels' ? { ...r } : { id: `${table}-${(state.seq += 1)}`, ...r }))
       pendingInsert = null
       for (const row of inserted) {
         state.inserts.push({ table, row })
@@ -127,6 +147,23 @@ function builder(table: string) {
     },
     in(col: string, vals: unknown[]) {
       filters.push((r) => vals.includes(r[col]))
+      return api
+    },
+    gt(col: string, val: number) {
+      filters.push((r) => typeof r[col] === 'number' && (r[col] as number) > val)
+      return api
+    },
+    // The two PostgREST `or` terms the readers build (anyChannelFilter): `col.eq.v` and `col.in.(a,b)`.
+    or(expr: string) {
+      const terms = expr.match(/[a-z_]+\.(?:eq\.[^,]+|in\.\([^)]*\))/g) ?? []
+      const tests = terms.map((t) => {
+        const [col, op, ...rest] = t.split('.')
+        const val = rest.join('.')
+        if (op === 'eq') return (r: Row) => r[col] === val
+        const list = val.slice(1, -1).split(',').filter(Boolean)
+        return (r: Row) => list.includes(String(r[col]))
+      })
+      filters.push((r) => tests.some((f) => f(r)))
       return api
     },
     order(col: string, opts?: { ascending?: boolean }) {
@@ -185,7 +222,9 @@ import {
   updateProgramForStaff,
   setProgramPausedForStaff,
   refreshProgramBlueprintForStaff,
-  setCircleChannel,
+  setCircleChannels,
+  addCircleToChannel,
+  getCircleChannelIds,
   removeCircleFromChannel,
   setChannelOwnerSpace,
   type ChapterSummary,
@@ -194,6 +233,7 @@ import {
 // leak guard can exercise them FUNCTIONALLY: a program_only clone must never
 // come back from either list read.
 import { getActiveTemplates, getAllTemplates } from '@/lib/circles/templates-data'
+import { promoteNextChannels } from '@/lib/circles/channel-carriers'
 
 beforeEach(() => {
   state.channels = [
@@ -226,6 +266,7 @@ beforeEach(() => {
   state.templates = []
   state.circleProfiles = []
   state.spaces = []
+  state.circleChannels = []
   state.inserts = []
   state.updates = []
   state.deletes = []
@@ -1051,42 +1092,114 @@ describe('the staff editor twins work on a Frequency-run (NULL-owner) Program (A
 
 // ── The assignment flows (ADR-871): circle ↔ channel ↔ owner Space. ──
 
-describe('setCircleChannel (ADR-871)', () => {
+describe('setCircleChannels (ADR-871, LIVE-666)', () => {
+  const THIRD_CHANNEL = '33333333-3333-4333-8333-333333333333'
+  const FOURTH_CHANNEL = '44444444-4444-4444-8444-444444444444'
   beforeEach(() => {
-    state.circles = [{ id: FLAGSHIP, topical_channel_id: null, status: 'active' }]
+    state.channels.push(
+      { id: THIRD_CHANNEL, name: 'Breath', slug: 'breath', category: 'mind', owner_space_id: null, template_id: null, display_order: 3, is_active: true },
+      { id: FOURTH_CHANNEL, name: 'Clay', slug: 'clay', category: 'expression', owner_space_id: null, template_id: null, display_order: 4, is_active: true },
+    )
+    state.circles = [
+      { id: FLAGSHIP, name: 'Flagship', slug: 'flagship', type: 'in-person', topical_channel_id: null, status: 'active', is_demo: false, member_count: 4, member_cap: 12, city: null, neighborhood: null, latitude: null, longitude: null },
+    ]
+  })
+
+  // THE CLOSING SCENARIO (the row's own words): a Circle saves three Channels and is found under
+  // each; a fourth is refused.
+  it('saves three Channels, primary first, and the Circle is found under each; a fourth is refused', async () => {
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL, PROGRAM_CHANNEL, THIRD_CHANNEL] })
+    expect(state.circles[0].topical_channel_id).toBe(PLAIN_CHANNEL)
+    expect(state.circleChannels.map((r) => [r.topical_channel_id, r.position])).toEqual([
+      [PLAIN_CHANNEL, 1],
+      [PROGRAM_CHANNEL, 2],
+      [THIRD_CHANNEL, 3],
+    ])
+    expect(await getCircleChannelIds(FLAGSHIP)).toEqual([PLAIN_CHANNEL, PROGRAM_CHANNEL, THIRD_CHANNEL])
+    for (const channelId of [PLAIN_CHANNEL, PROGRAM_CHANNEL, THIRD_CHANNEL]) {
+      expect((await listChapters(channelId)).map((c) => c.id), channelId).toEqual([FLAGSHIP])
+    }
+    expect(await listChapters(FOURTH_CHANNEL)).toEqual([])
+
+    await expect(
+      setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL, PROGRAM_CHANNEL, THIRD_CHANNEL, FOURTH_CHANNEL] }),
+    ).rejects.toThrow(/up to three Channels/)
+    await expect(addCircleToChannel({ circleId: FLAGSHIP, channelId: FOURTH_CHANNEL })).rejects.toThrow(/up to three Channels/)
+    expect(await getCircleChannelIds(FLAGSHIP)).toEqual([PLAIN_CHANNEL, PROGRAM_CHANNEL, THIRD_CHANNEL])
+  })
+
+  it('holds the cap in the table too: a fourth position has nowhere to go', async () => {
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL, PROGRAM_CHANNEL, THIRD_CHANNEL] })
+    const { error } = await builder('circle_channels').insert({ circle_id: FLAGSHIP, topical_channel_id: FOURTH_CHANNEL, position: 4 })
+    expect(error).not.toBeNull()
+    expect(state.circleChannels).toHaveLength(3)
   })
 
   it('refuses a missing circle or a missing channel, writing nothing', async () => {
     await expect(
-      setCircleChannel({ circleId: '00000000-0000-4000-a000-000000000000', channelId: PLAIN_CHANNEL }),
+      setCircleChannels({ circleId: '00000000-0000-4000-a000-000000000000', channelIds: [PLAIN_CHANNEL] }),
     ).rejects.toThrow(/Circle is not available/)
     await expect(
-      setCircleChannel({ circleId: FLAGSHIP, channelId: '00000000-0000-4000-a000-000000000000' }),
+      setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL, '00000000-0000-4000-a000-000000000000'] }),
     ).rejects.toThrow(/Channel is not available/)
     expect(state.updates).toHaveLength(0)
+    expect(state.circleChannels).toHaveLength(0)
   })
 
-  it('refuses a paused channel with the member-facing copy (the ADR-865 retire switch)', async () => {
+  it('refuses a paused channel the circle does not carry, and keeps one it already does', async () => {
     state.channels.find((c) => c.id === PLAIN_CHANNEL)!.is_active = false
-    await expect(setCircleChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL })).rejects.toThrow(
+    await expect(setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL] })).rejects.toThrow(
       /paused and not taking new Circles/,
     )
     expect(state.updates).toHaveLength(0)
     expect(state.circles[0].topical_channel_id).toBeNull()
+
+    // Already in it before the pause: editing the circle's OTHER Channels keeps it.
+    state.circles[0].topical_channel_id = PLAIN_CHANNEL
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL, THIRD_CHANNEL] })
+    expect(await getCircleChannelIds(FLAGSHIP)).toEqual([PLAIN_CHANNEL, THIRD_CHANNEL])
   })
 
-  it('sets the channel, and null clears it back to no Channel', async () => {
-    await setCircleChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL })
-    expect(state.circles[0].topical_channel_id).toBe(PLAIN_CHANNEL)
-
-    await setCircleChannel({ circleId: FLAGSHIP, channelId: null })
+  it('an empty list clears the circle back to no Channel', async () => {
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL, THIRD_CHANNEL] })
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [] })
     expect(state.circles[0].topical_channel_id).toBeNull()
-    // Only the circle row ever moves: no channel or blueprint write.
-    expect(state.updates.map((u) => u.table)).toEqual(['circles', 'circles'])
+    expect(state.circleChannels).toHaveLength(0)
+    // Only the circle row and its join move: no channel or blueprint write.
+    expect(new Set(state.updates.map((u) => u.table))).toEqual(new Set(['circles']))
+  })
+
+  it('a failed write puts the previous Channels back and leaves the primary alone', async () => {
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL, THIRD_CHANNEL] })
+    state.failNextInsert = 'circle_channels'
+    await expect(setCircleChannels({ circleId: FLAGSHIP, channelIds: [THIRD_CHANNEL] })).rejects.toThrow(/injected/)
+    expect(await getCircleChannelIds(FLAGSHIP)).toEqual([PLAIN_CHANNEL, THIRD_CHANNEL])
+    expect(state.circles[0].topical_channel_id).toBe(PLAIN_CHANNEL)
+  })
+
+  it('the Manage hub add appends, and is a no-op for a Channel already carried', async () => {
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL] })
+    await addCircleToChannel({ circleId: FLAGSHIP, channelId: THIRD_CHANNEL })
+    await addCircleToChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL })
+    expect(await getCircleChannelIds(FLAGSHIP)).toEqual([PLAIN_CHANNEL, THIRD_CHANNEL])
+    expect(state.circles[0].topical_channel_id).toBe(PLAIN_CHANNEL)
+  })
+
+  it('after a Channel delete, the next Channel moves up to primary', async () => {
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL, THIRD_CHANNEL, PROGRAM_CHANNEL] })
+    // What delete_topical_channel does: the join row CASCADEs, the column is SET NULL.
+    state.circleChannels = state.circleChannels.filter((r) => r.topical_channel_id !== PLAIN_CHANNEL)
+    state.circles[0].topical_channel_id = null
+    await promoteNextChannels({ from: builder } as unknown as Parameters<typeof promoteNextChannels>[0], [FLAGSHIP])
+    expect(state.circles[0].topical_channel_id).toBe(THIRD_CHANNEL)
+    expect(state.circleChannels.map((r) => [r.topical_channel_id, r.position])).toEqual([
+      [THIRD_CHANNEL, 1],
+      [PROGRAM_CHANNEL, 2],
+    ])
   })
 })
 
-describe('removeCircleFromChannel (ADR-871)', () => {
+describe('removeCircleFromChannel (ADR-871, LIVE-666)', () => {
   it('refuses a circle that is not in this channel, writing nothing', async () => {
     state.circles = [{ id: FLAGSHIP, topical_channel_id: PROGRAM_CHANNEL, status: 'active' }]
     await expect(
@@ -1096,10 +1209,22 @@ describe('removeCircleFromChannel (ADR-871)', () => {
     expect(state.circles[0].topical_channel_id).toBe(PROGRAM_CHANNEL)
   })
 
-  it('clears topical_channel_id for a circle that is in the channel', async () => {
+  it('clears topical_channel_id for a circle whose only channel it was', async () => {
     state.circles = [{ id: FLAGSHIP, topical_channel_id: PLAIN_CHANNEL, status: 'active' }]
     await removeCircleFromChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL })
     expect(state.circles[0].topical_channel_id).toBeNull()
+  })
+
+  it('taking out the primary moves the next Channel up; taking out a second keeps the primary', async () => {
+    state.circles = [{ id: FLAGSHIP, topical_channel_id: null, status: 'active' }]
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [PLAIN_CHANNEL, PROGRAM_CHANNEL] })
+    await removeCircleFromChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL })
+    expect(state.circles[0].topical_channel_id).toBe(PROGRAM_CHANNEL)
+    expect(await getCircleChannelIds(FLAGSHIP)).toEqual([PROGRAM_CHANNEL])
+
+    await setCircleChannels({ circleId: FLAGSHIP, channelIds: [PROGRAM_CHANNEL, PLAIN_CHANNEL] })
+    await removeCircleFromChannel({ circleId: FLAGSHIP, channelId: PLAIN_CHANNEL })
+    expect(state.circles[0].topical_channel_id).toBe(PROGRAM_CHANNEL)
   })
 })
 

@@ -51,7 +51,7 @@ export function HubSearch({ items }: { items: HubSearchItem[] }) {
                 <li key={`${it.section}:${it.label}:${it.href}`}>
                   <Link
                     href={it.href}
-                    className="group flex items-center gap-2 px-3 py-2.5 text-body-sm outline-none transition-colors hover:bg-surface-elevated focus-visible:bg-surface-elevated"
+                    className="group flex tap-target items-center gap-2 px-3 py-2.5 text-body-sm outline-none transition-colors hover:bg-surface-elevated focus-visible:bg-surface-elevated"
                   >
                     <span className="flex-1 truncate font-medium text-text">{it.label}</span>
                     <span className="shrink-0 text-2xs uppercase tracking-wide text-muted">{it.section}</span>

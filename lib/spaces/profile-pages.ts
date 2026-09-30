@@ -187,9 +187,13 @@ function baseRecord(preferences: unknown): Record<string, unknown> {
   return { ...(asRecord(preferences) ?? {}) }
 }
 
-/** Persist a page's Puck doc. */
+/** Persist a page's Puck doc. The slug becomes a key on the stored map, so only a well-formed page
+ *  slug (`home` or lowercase kebab, the shape every nav page has) is written; anything else returns
+ *  the preferences unchanged, so a crafted key like `__proto__` never becomes a property name
+ *  (HYG-143, CodeQL js/remote-property-injection). The action has already checked hasPage. */
 export function withPageDoc(preferences: unknown, slug: string, doc: Data): Record<string, unknown> {
   const next = baseRecord(preferences)
+  if (!SLUG_RE.test(slug)) return next
   const docs = { ...(readPageDocs(preferences) ?? {}) }
   docs[slug] = doc
   next.pageDocs = docs

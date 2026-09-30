@@ -48,7 +48,7 @@ describe('isListableInDirectory — the name-listing gate (SQL :123-:124 only)',
     expect(isListableInDirectory({ id: 'old', directory_visible: null, ghost_mode: null })).toBe(true)
   })
 
-  it('"Show me in the Community directory" OFF hides (:123)', () => {
+  it('"Show me in the Members directory" OFF hides (:123)', () => {
     expect(isListableInDirectory(base({ directory_visible: false }))).toBe(false)
   })
 
@@ -143,10 +143,14 @@ describe('/network consults the predicate', () => {
     expect(PAGE).toContain(INTERP + ', nexus_regions!nexus_region_id ( name )')
   })
 
-  it('filters the directory BEFORE any downstream use (cards, Online now, counts)', () => {
-    // `typedProfiles` feeds the cards, the online rail, the facets and the "Members Worldwide"
-    // count; gating it at birth is what keeps a hidden member out of all four.
-    expect(PAGE).toMatch(/const typedProfiles = \(\(profiles \?\? \[\]\) as unknown as Profile\[\]\)\.filter\(isListableInDirectory\)/)
+  it('scopes every member read in SQL and filters every returned row (cards, Online now, facets)', () => {
+    // Since LIVE-661 the directory is several scoped reads instead of one capped slice: the page
+    // count, the Online now rail, the facet sample, the nearby lead and the alphabetical page.
+    // Each goes through scopeDirectoryQuery (the SQL half of the gate) and each set of rows is
+    // passed through the predicate again before it renders.
+    expect(PAGE.match(/scopeDirectoryQuery\(/g)?.length ?? 0).toBeGreaterThanOrEqual(6)
+    expect(PAGE.match(/\.filter\(isListableInDirectory\)/g)?.length ?? 0).toBeGreaterThanOrEqual(4)
+    expect(PAGE).not.toMatch(/from\('profiles'\)\s*\.select\(CARD_SELECT[^)]*\)\s*\.(eq|order|limit|range)\(/)
   })
 
   it("no longer passes the viewer's OWN discovery radius as the search radius", () => {

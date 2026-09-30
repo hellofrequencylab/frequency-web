@@ -3,7 +3,12 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CHROME_CACHE_TAGS, crossRequestCached } from '@/lib/cross-request-cache'
 import { parseChromeOverrideRows, type ChromeOverrideRow, type ChromeOverrides } from './page-chrome'
-import { parseAppOverrideRows, type AppOverrides, type RawAppOverrideRow } from '@/lib/apps/overrides'
+import {
+  parseAppOverrideRows,
+  resolveScopeAppOverrides,
+  type AppOverrides,
+  type RawAppOverrideRow,
+} from '@/lib/apps/overrides'
 
 // ── The SHELL's reads of the two operator chrome tables, cached across requests (ADR-1243) ─────
 //
@@ -76,12 +81,19 @@ const appOverrideRows = crossRequestCached(
   { tags: [CHROME_CACHE_TAGS.appOverrides] },
 )
 
-/** The shell's App override map for a scope: the same answer as `loadAppOverrides`, cached across
- *  requests. FAIL-SAFE `{}` on any error, so the rail falls back to the catalog defaults. */
-export const loadCachedAppOverrides = cache(async (scopeKey: string): Promise<AppOverrides> => {
+/** One scope key's own App overrides, cached across requests. FAIL-SAFE `{}` on any error. */
+const cachedScopeAppOverrides = cache(async (scopeKey: string): Promise<AppOverrides> => {
   try {
     return parseAppOverrideRows(await appOverrideRows(scopeKey))
   } catch {
     return {}
   }
 })
+
+/** The shell's App override map for a scope, cached across requests: that scope's own rows plus
+ *  every App an operator disabled at global scope (`resolveScopeAppOverrides`, LIVE-686), so a
+ *  global disable hides the App on circle, event, Space and profile pages too. FAIL-SAFE per key:
+ *  a failed read of either key is `{}`, so the rail falls back to the catalog defaults. */
+export const loadCachedAppOverrides = cache(
+  (scopeKey: string): Promise<AppOverrides> => resolveScopeAppOverrides(scopeKey, cachedScopeAppOverrides),
+)

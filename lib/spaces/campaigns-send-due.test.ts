@@ -30,13 +30,15 @@ let sendResult: { data: { sent: number; suppressed: number; failed: number } } |
 const sendCalls: string[] = []
 const sentRecipients: { contactId: string; email: string }[][] = []
 const sentTopics: (string | undefined)[] = []
+const sentHtml: string[] = []
 vi.mock('./email', () => ({
   SPACE_UNSUBSCRIBE_PLACEHOLDER: '%%U%%',
   sendSpaceCampaignSystem: async (
     spaceId: string,
-    input: { recipients: { contactId: string; email: string }[]; topic?: string },
+    input: { recipients: { contactId: string; email: string }[]; topic?: string; html: string },
   ) => {
     sendCalls.push(spaceId)
+    sentHtml.push(input.html)
     sentRecipients.push(input.recipients)
     sentTopics.push(input.topic)
     return sendResult
@@ -203,6 +205,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 import { sendDueCampaigns } from './campaigns-send-due'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
+import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 
 const STALE = new Date(Date.now() - SENDING_LEASE_MS - 60_000).toISOString()
 const FRESH = new Date(Date.now() - 60_000).toISOString()
@@ -245,6 +248,16 @@ describe('sendDueCampaigns', () => {
     expect(res.sent).toBe(1)
     expect(sendCalls).toEqual(['space-A'])
     expect(row.status).toBe('sent')
+  })
+
+  it('the scheduled send carries the platform postal address under its unsubscribe line (CAN-SPAM, LIVE-728)', async () => {
+    sentHtml.length = 0
+    seed()
+    await sendDueCampaigns()
+    expect(sentHtml).toHaveLength(1)
+    const html = sentHtml[0]
+    expect(html).toContain(PLATFORM_POSTAL_LINE)
+    expect(html.indexOf(PLATFORM_POSTAL_LINE)).toBeGreaterThan(html.indexOf('%%U%%'))
   })
 
   it('sends under the RESOLVER’s topic, not the topic on the row (LIVE-293)', async () => {

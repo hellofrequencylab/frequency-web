@@ -19,6 +19,7 @@ import {
 } from '@/lib/library/store'
 import { similarLibraryAssets } from '@/lib/library/embeddings'
 import { searchLibraryAssetsHybrid } from '@/lib/library/hybrid-search'
+import { signedLibraryAssetUrl } from '@/lib/library/asset-urls'
 import { recraftConfigured } from '@/lib/loom/recraft'
 import { RailGrid } from '@/components/templates'
 import { LibraryUploader } from './library-uploader'
@@ -189,6 +190,14 @@ export default async function LoomStudioPage({
       paginated = true
     }
   }
+
+  // A protected asset's file is in the private bucket and its row carries no url (LIVE-577,
+  // ADR-1595), so the grid and the drawer would show the person who protected it a blank tile. Mint a
+  // short-lived signed URL per protected row, for this render only: it is handed to the grid and
+  // never written back, because a stored signed URL is a stored expiry.
+  assets = await Promise.all(
+    assets.map(async (a) => (a.isProtected && !a.url ? { ...a, url: await signedLibraryAssetUrl(a) } : a)),
+  )
 
   const pageResult = { items: assets, total }
   const totalPages = paginated ? Math.max(1, Math.ceil(total / PAGE_SIZE)) : 1

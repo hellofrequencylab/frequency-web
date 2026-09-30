@@ -1,0 +1,19 @@
+{
+  "id": "HYG-155",
+  "title": "Two done-row probes each spawned the whole adoption ratchet, so every PR's test job failed the probe sweep's per-probe CPU ceiling",
+  "status": "done",
+  "priority": "P0",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-09-30",
+  "source": {
+    "file": "scripts/backlog-contract.test.ts",
+    "ref": "test job 109691527166 (#3079), 2026-09-30 01:12Z: 'The single probe HYG-149 burned 4.86s of CPU, over the 4.5s per-probe ceiling'; same failure on #3086, #3081, #3073"
+  },
+  "detail": "FILED AND CLOSED 2026-09-30. MEASURED: HYG-149 and HYG-153 (both done 2026-09-29/30) verified with `node scripts/check-adoption.mjs`, which reads and comment-strips all 5,061 files under app, components and lib (stripComments alone is about 1.2 s locally) and costs 2.5 to 4.9 s of CPU per spawn. The full sweep in scripts/backlog-contract.test.ts holds every probe under 4.5 s, and the test job on #3079, #3086, #3081 and #3073 failed it at 4.86 s. WHAT CHANGED: each probe now measures its own row's consequence in-process with check-adoption.mjs's own countEntry and stripComments, over only the files that row touched (the LIVE-034 pattern). HYG-149 holds the five classes it fixed at their post-fix counts in the ten attributed files and fails at 8b0b1909e. HYG-153 requires install-card's exclude reason and holds bespoke-cards at its baseline over the *-card.tsx scope, and fails at b9aff5df2. Measured 73 ms and 127 ms wall. The whole-corpus ratchet still runs in ci.yml and the weekly maintenance sweep; no ceiling was raised.\n\nCLOSED 2026-09-30 (ADR-1671).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const bad=['HYG-149','HYG-153'].filter((id)=>{const r=JSON.parse(fs.readFileSync('docs/ledger/rows/'+id+'.json','utf8'));const v=r.verify||(r.patch&&r.patch.verify);return !v||/node scripts\\/check-adoption\\.mjs/.test(v.cmd)||!/countEntry/.test(v.cmd)});if(bad.length){console.error('HYG-155: these probes spawn the whole adoption ratchet again: '+bad.join(', '));process.exit(1)}\"",
+    "note": "The consequence: neither probe spawns the whole-corpus ratchet, and both count in-process with countEntry. The per-probe CPU ceiling in backlog-contract.test.ts is what measures the cost; this probe fails on main, where both still run node scripts/check-adoption.mjs."
+  }
+}

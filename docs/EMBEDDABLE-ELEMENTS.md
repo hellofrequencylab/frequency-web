@@ -122,9 +122,11 @@ header that defers, while each section still has a sensible layout/height. The s
 The Loom picker is the reference implementation of all three parts:
 - Canonical component + actions (done).
 - Registered as `'loom-picker'` in the registry.
-- Config keys (owner decision): `tabs` (Images / Elements / Tags / Spaces / Airwaves), `aiCreate`
-  (AI generation in Elements on/off), `defaultScope` (open on personal vs a space). Read from
-  `element_settings`; edited in Loom Studio.
+- Config keys (owner decision): `tabs` (Images / Elements / Tags / Spaces / Airwaves) and
+  `defaultScope` (open on personal vs a space). Read from `element_settings`; edited in Loom Studio.
+  The `aiCreate` toggle came out with LIVE-656 (ADR-1674): nothing ever read it, and the picker's
+  "generate new Elements (coming soon)" line it stood for promised a control that did nothing.
+  Generation lives in the Loom Studio at `/admin/library`, not in the picker.
 
 ## Adoption path (incremental — not a big-bang rewrite)
 

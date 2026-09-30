@@ -67,8 +67,10 @@ after the **server** clears it. `verifyCapture(attempt)` runs, in order:
 1. **Node exists** → else `unknown_node`.
 2. **Active** → else `inactive`.
 3. **Validity window** (`valid_from` / `valid_until`) → else `not_yet_valid` / `expired`.
-4. **Signed payload** — a node with a `secret` only accepts the matching `presentedSecret`
-   → else `bad_signature`.
+4. **Signed code** (LIVE-688, ADR-1654) — `presentedSecret` must be an HMAC this server issued
+   over (node id, issued-at) (`lib/qr/node-code.ts`); a forged, tampered or cross-node code →
+   `bad_signature`. A code printed before signing (bare `/n/<id>`, or the node's old random
+   `secret`) claims only until `LEGACY_NODE_CODE_GRACE_ENDS` (2026-12-01), logged `[node-code]`.
 5. **Capture rule** — `once_per_user` / `once_global` block repeats by counting prior
    verified `captures` → else `already_captured`.
 6. **Proximity** — when the node sets `proximity_m` + `location`, the geo math is delegated
@@ -85,9 +87,14 @@ concerns. See [ENGAGEMENT-ARCHITECTURE.md §2](ENGAGEMENT-ARCHITECTURE.md).
 `captureNode(attempt)` is the end-to-end physical-engagement flow:
 
 1. **Verify** (`verifyCapture`). On failure, return the reason — nothing else happens.
-2. **Look up the node** (`type`, `zaps_value`, `partner_id`).
-3. **Ledger** the capture exactly-once, keyed `node:<nodeId>:<actorProfileId>`. A duplicate
-   short-circuits with `already_captured` (a second guard on top of the capture rule).
+2. **Look up the node** (`type`, `zaps_value`, `partner_id`, `capture_rule`).
+3. **Ledger** the capture exactly-once in the node's window, keyed `node:<nodeId>:<actorProfileId>`
+   for `once_per_user` / `once_global` nodes and `node:<nodeId>:<actorProfileId>:<memberDay>` for a
+   `repeatable` node (`captureWindowKey`, ADR-1632). The member day is the member's own calendar
+   day from `resolveMemberDay` (server-resolved, never the device). A duplicate short-circuits with
+   `already_captured` (a second guard on top of the capture rule), so a repeatable node credits
+   once per member per day and a same-day double tap credits once. A Space check-in node's
+   timeline row uses the same window.
 4. **Audit row** in `captures` (`verified: true`).
 5. **Reward** — physical sources earn **zaps**; award `node.zaps_value` when
    `currencyForSource(source) === 'zaps'` and the amount is positive.
@@ -101,9 +108,9 @@ concerns. See [ENGAGEMENT-ARCHITECTURE.md §2](ENGAGEMENT-ARCHITECTURE.md).
 Node-type → source mapping lives at the top of the file: `qr → 'qr'`, `nfc → 'nfc'`,
 `ghost → 'geo'`.
 
-> **Known gap (tracked):** repeatable nodes need a request-scoped suffix appended to the
-> idempotency key so legitimate repeats aren't collapsed into the first capture. Pass it
-> through `attempt` when that lands (see the backlog).
+> **Repeatable nodes (LIVE-654, ADR-1632).** The ledger and check-in timeline keys carry the
+> member day for a `repeatable` node. The North-Star `practice.verified` event and the
+> `in_person_checkin` trust signal stay once per `(node, actor)` on purpose.
 
 ---
 

@@ -27,7 +27,7 @@ export default function TermsPage() {
       <div className="px-6 py-16">
         <FocusTemplate
           title="Terms of Service"
-          description="Last updated: June 23, 2026"
+          description="Last updated: September 30, 2026"
           width="default"
         >
           <div className="prose prose-sm prose-gray dark:prose-invert max-w-none space-y-8">
@@ -86,6 +86,11 @@ export default function TermsPage() {
             </ul>
             <p className="text-muted leading-relaxed">
               We may remove content or suspend accounts that break these rules.
+            </p>
+            <p className="text-muted leading-relaxed">
+              If you run a Space that sends email, our{' '}
+              <Link href="/space-email-policy" className="text-primary-strong hover:underline">Space email policy</Link>{' '}
+              also applies. It covers who you can email, what you can send, and the sending limits.
             </p>
           </section>
 

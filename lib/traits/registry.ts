@@ -184,7 +184,7 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
   {
     key: 'persona_practitioner',
     label: 'Persona · Practitioner',
-    description: 'Identified as a practitioner with something to offer — hosts/builds programs, sells on the marketplace.',
+    description: 'Identified as a practitioner with something to offer: hosts, and sells tickets, bookings, products and Journeys.',
     kind: 'tag', category: 'marketing', type: 'boolean',
     pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
     systemManaged: true,

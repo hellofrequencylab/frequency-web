@@ -16,6 +16,7 @@ import { labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { attachEventToCircleAction } from './events-actions'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
+import { groupBySeries, type SeriesFields } from '@/lib/events/series'
 
 // The circle Manage hub's EVENTS area (the Channel hub's sections.tsx pattern, ADR-870): an async
 // Server Component that fetches its own slice so the page streams it behind <Suspense>
@@ -30,15 +31,16 @@ import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
 const ATTACHABLE_LIMIT = 30
 
-type EligibleEventRow = CircleEventRow & {
+type EligibleEventRow = CircleEventRow & SeriesFields & {
   status: string | null
   is_cancelled: boolean | null
   space_id?: string | null
   host_id?: string | null
 }
 
+// `parent_event_id` + `recurrence_type` are read for the picker's series headings only (SERIES-PICKER).
 const EVENT_COLUMNS =
-  'id, title, slug, location, starts_at, status, is_cancelled, scope_id, scope_type, scope_circle_id, space_id, host_id'
+  'id, title, slug, location, starts_at, status, is_cancelled, scope_id, scope_type, scope_circle_id, space_id, host_id, parent_event_id, recurrence_type'
 
 /** Untyped admin handle: the events placement columns are newer than the generated types
  *  (ADR-246 escape: a return-type annotation, not a cast — the repo convention). */
@@ -201,12 +203,26 @@ export async function CircleEventsSection({
               <option value="" disabled>
                 Pick an event
               </option>
-              {attachable.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.title}
-                  {e.starts_at ? ` · ${fmtWhen(e.starts_at)}` : ''}
-                </option>
-              ))}
+              {/* GROUPED, NEVER FOLDED (SERIES-PICKER, ADR-1680). Attaching brings ONE date onto
+                  the circle, so every date stays pickable; a repeating event's dates sit under its
+                  title instead of repeating it on every line. */}
+              {groupBySeries(attachable).map((g) =>
+                g.series ? (
+                  <optgroup key={g.key} label={g.title}>
+                    {g.rows.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.starts_at ? fmtWhen(e.starts_at) : e.title}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : (
+                  // Not a series means exactly one row (a second row would share its key).
+                  <option key={g.key} value={g.rows[0].id}>
+                    {g.rows[0].title}
+                    {g.rows[0].starts_at ? ` · ${fmtWhen(g.rows[0].starts_at)}` : ''}
+                  </option>
+                ),
+              )}
             </Select>
           </label>
           <Button type="submit" size="sm">

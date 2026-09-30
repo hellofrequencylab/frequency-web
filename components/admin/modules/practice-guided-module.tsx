@@ -9,6 +9,7 @@
 // entities later the shape held, so the surface moved to guided-module.tsx and this became the
 // declaration it should always have been.
 
+import { useCallback } from 'react'
 import { PRACTICE_MANIFEST } from '@/lib/studio/entities/practice'
 import { getPracticeAdminData } from '@/app/(main)/practices/admin-actions'
 import {
@@ -17,12 +18,9 @@ import {
   type PracticeRedrawResult,
 } from '@/app/(main)/practices/actions'
 import { GuidedModule } from './guided-module'
+import { useEntityRailRead } from './entity-rail-data'
 
 const routeKey = (pathname: string) => pathname.match(/^\/practices\/([^/]+)/)?.[1] ?? null
-
-/** getPracticeAdminData returns null unless the viewer holds practice.editSettings, so a
- *  non-owner resolves to no entity and the section renders nothing. */
-const resolve = async (id: string) => ((await getPracticeAdminData(id)) ? id : null)
 
 /** The Practice's put-it-back is its ordinary edit action: a Practice redraw's `before` IS a
  *  PracticeEdit, because its manifest paths are its column names. */
@@ -30,6 +28,11 @@ const restore = (id: string, before: PracticeRedrawResult['before']) =>
   updatePracticeAction(id, before)
 
 export function PracticeGuidedModule() {
+  /** getPracticeAdminData returns null unless the viewer holds practice.editSettings, so a
+   *  non-owner resolves to no entity and the section renders nothing. Its first read comes from the
+   *  rail's one bundled request (ADR-1685), the same read Settings makes. */
+  const readAdmin = useEntityRailRead('practice', 'admin', getPracticeAdminData)
+  const resolve = useCallback(async (id: string) => ((await readAdmin(id)) ? id : null), [readAdmin])
   return (
     <GuidedModule
       moduleId="practice.guided"

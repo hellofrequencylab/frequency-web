@@ -909,6 +909,7 @@ lib/practices/embeddings.ts
 lib/practices/health.ts
 lib/practices/lifecycle.ts
 lib/practices/lineage.ts
+lib/practices/suggest.ts
 lib/pricing/dunning.ts
 lib/pricing/gamification-access.ts
 lib/pricing/gates.ts
