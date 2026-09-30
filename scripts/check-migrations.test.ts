@@ -6,9 +6,11 @@ import {
   ledgerCheck,
   LEDGER_READ_ATTEMPTS,
   LEDGER_READ_BACKOFF_MS,
+  isCredentialRefusal,
   isWrappedTransportFailure,
   menuWritesMissingNote,
   parseArgs,
+  prTouchesMigrations,
   resolveLedgerSource,
   stripSqlComments,
 } from './check-migrations.mjs'
@@ -535,5 +537,100 @@ describe('ci.yml arms the ledger pair all-or-nothing (Dependabot + fork runs)', 
     })
     expect(r.status).toBe('skipped')
     expect(r.ok).toBe(true)
+  })
+})
+
+// HYG-154 / ADR-1670 (owner ruling 2026-09-30). At 01:04Z the Management API answered 401 to the
+// CI token and the required `checks` job went red on every open PR, none of which touched a
+// migration. A refused CREDENTIAL on a PR that cannot move the ledger is a loud, warned exit 0.
+// Everything else that could not look still fails, and so does every doubt about the diff.
+describe('a refused token relaxes only a PR that touches no migration', () => {
+  const refused = (status: number, prTouchesMigrations: boolean | undefined) => {
+    const repo = corpus()
+    return run(repo, null, {
+      io: {
+        repo: { readdir: () => files(repo) },
+        fetch: async () => ({ ok: false, status, text: async () => '{"message":"Unauthorized"}' }),
+        prTouchesMigrations,
+      },
+    })
+  }
+
+  it('401 and 403 on a PR with no migration change are refused, ok, and say nothing was compared', async () => {
+    for (const status of [401, 403]) {
+      const r = await refused(status, false)
+      expect(r.status).toBe('refused')
+      expect(r.ok).toBe(true)
+      const out = r.lines.join('\n')
+      expect(out).toContain('REFUSED')
+      expect(out).toContain('NOTHING was compared')
+      expect(out).toContain(LEDGER_ENV.TOKEN)
+    }
+  })
+
+  it('stays a failure on a PR that touches a migration, and when the diff is unknown (main pushes)', async () => {
+    for (const touches of [true, undefined]) {
+      const r = await refused(401, touches)
+      expect(r.status).toBe('error')
+      expect(r.ok).toBe(false)
+    }
+  })
+
+  it('stays a failure for every other kind of not looking, even with no migration change', async () => {
+    for (const status of [400, 404, 429]) expect((await refused(status, false)).ok).toBe(false)
+    const repo = corpus()
+    const thrown = await run(repo, null, {
+      io: {
+        repo: { readdir: () => files(repo) },
+        fetch: async () => {
+          throw new Error('ECONNREFUSED')
+        },
+        sleep: async () => {},
+        prTouchesMigrations: false,
+      },
+    })
+    expect(thrown.ok).toBe(false)
+    const payload = await run(repo, { message: 'Unauthorized' }, {
+      io: {
+        repo: { readdir: () => files(repo) },
+        fetch: async () => ({ ok: true, json: async () => ({ message: 'Unauthorized' }), text: async () => '' }),
+        prTouchesMigrations: false,
+      },
+    })
+    expect(payload.ok).toBe(false)
+  })
+
+  it('matches only the message loadLedgerPayload throws for a 401 or 403', () => {
+    expect(isCredentialRefusal('ledger query HTTP 401 from the Supabase Management API. {}')).toBe(true)
+    expect(isCredentialRefusal('ledger query HTTP 403 from the Supabase Management API. x')).toBe(true)
+    expect(isCredentialRefusal('ledger query HTTP 4010 from the Supabase Management API. x')).toBe(false)
+    expect(isCredentialRefusal('ledger query HTTP 400 from the Supabase Management API. x')).toBe(false)
+    expect(isCredentialRefusal('some other 401')).toBe(false)
+  })
+})
+
+describe('prTouchesMigrations resolves every doubt to the strict path', () => {
+  const pr = { GITHUB_EVENT_NAME: 'pull_request', GITHUB_BASE_REF: 'main' }
+
+  it('reads the two-dot diff of the migrations directory against origin/<base>', () => {
+    const calls: string[][] = []
+    const none = prTouchesMigrations({ env: pr, runGit: (a) => (calls.push(a), '') })
+    expect(none).toBe(false)
+    expect(calls[0]).toEqual(['diff', '--name-only', 'origin/main', 'HEAD', '--', join('supabase', 'migrations')])
+    expect(prTouchesMigrations({ env: pr, runGit: () => 'supabase/migrations/20270101000000_x.sql\n' })).toBe(true)
+  })
+
+  it('is undefined for a push, a missing base, a missing seam, or a failed git read', () => {
+    expect(prTouchesMigrations({ env: { GITHUB_EVENT_NAME: 'push' }, runGit: () => '' })).toBeUndefined()
+    expect(prTouchesMigrations({ env: { GITHUB_EVENT_NAME: 'pull_request' }, runGit: () => '' })).toBeUndefined()
+    expect(prTouchesMigrations({ env: pr })).toBeUndefined()
+    expect(
+      prTouchesMigrations({
+        env: pr,
+        runGit: () => {
+          throw new Error('fatal: bad revision')
+        },
+      }),
+    ).toBeUndefined()
   })
 })

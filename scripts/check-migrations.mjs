@@ -52,6 +52,16 @@
 //     parse or floor failure  -> FAILURE. Never a fallback to skip.
 //   • credentials + a read    -> the real comparison, on BOTH columns.
 //
+// ONE narrow exception to "a fetch failure fails" (HYG-154, ADR-1670, the owner's ruling). When
+// the Management API REFUSES the credential itself (HTTP 401 or 403) on a pull request whose diff
+// adds or changes NO file under supabase/migrations, the result is `refused`: exit 0, printed
+// loudly, and raised as a workflow warning. That PR cannot move the ledger, so a dead CI secret is
+// not its defect; on 2026-09-30 at 01:04Z one redded every open PR at once. It never reads as a
+// pass: the run says nothing was compared and names the owner action. It stays a FAILURE on a PR
+// that touches a migration, on every push to main (main's own CI is the gate that notices the
+// dead token), when the PR's diff cannot be read, and for every other status, transport failure
+// or malformed payload.
+//
 // Arm it with SUPABASE_ACCESS_TOKEN (secret) + SUPABASE_PROJECT_REF, or hand it a pre-fetched
 // payload with `--ledger <file>` / MIGRATION_LEDGER_JSON. `--require-ledger` turns the skip into a
 // failure, for any environment that is supposed to have a database and must prove it.
@@ -68,6 +78,7 @@
 //   node scripts/check-migrations.mjs --no-ledger        # tree rules only, on purpose
 // Exits 1 on violation. Model: scripts/check-headers.mjs.
 
+import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
@@ -291,6 +302,53 @@ export function isWrappedTransportFailure(status, body) {
   return /ECONNREFUSED|ECONNRESET|ETIMEDOUT|connection (terminated|timeout|timed out|refused|reset)/i.test(String(body))
 }
 
+/** A 401 or 403 from the Management API: the platform answered, and what it said is that the
+ *  credential is no good. Matched on the message loadLedgerPayload throws, never on a guess. */
+export function isCredentialRefusal(message) {
+  return /^ledger query HTTP (401|403) from the Supabase Management API\./.test(String(message))
+}
+
+/**
+ * Does this pull request add or change a migration? `true`, `false`, or `undefined` when it
+ * cannot tell. Only `false` ever relaxes anything, so every doubt resolves to the strict path:
+ * not a pull_request run (a push to main), no base ref, no git seam, or a git read that failed.
+ *
+ * On a pull_request run HEAD is the merge commit and an earlier ci.yml step fetches
+ * origin/<base>, so a two-dot tree diff names what the PR changes. If main moved after the merge
+ * ref was built, main's new migrations show up here too, which only makes the answer stricter.
+ *
+ * @param {{ env?: Record<string, string | undefined>, runGit?: (args: string[]) => string }} [opts]
+ */
+export function prTouchesMigrations({ env = {}, runGit } = {}) {
+  if (env.GITHUB_EVENT_NAME !== 'pull_request') return undefined
+  const base = env.GITHUB_BASE_REF
+  if (!base || typeof runGit !== 'function') return undefined
+  try {
+    return runGit(['diff', '--name-only', `origin/${base}`, 'HEAD', '--', DIR]).trim().length > 0
+  } catch {
+    return undefined
+  }
+}
+
+/** The refused-credential lines. Loud on purpose: this exits 0, and must never read as a
+ *  comparison that happened. */
+function refusedLines(message, total) {
+  return [
+    '',
+    `⚠️  check:migrations — the Supabase token was REFUSED: ${message}`,
+    '',
+    `    NOTHING was compared against production. PROVED from the tree only: ${total} migration(s),`,
+    '      every version unique, every filename parseable, every menu reseed carrying its cache note.',
+    `    Not failing THIS pull request: it adds or changes no file under ${DIR}, so it cannot`,
+    '      move the ledger (HYG-154, ADR-1670). A PR that touches a migration, and every push to',
+    '      main, still FAILS on this until the token works again.',
+    '',
+    `    Owner action: create a new Supabase access token and save it as the ${LEDGER_ENV.TOKEN}`,
+    '      Actions secret (GitHub: Settings, Secrets and variables, Actions). See LIVE-273.',
+    '',
+  ]
+}
+
 /** The loud skip. It states what DID pass, so nobody reads it as "the guard is broken", and what
  *  did NOT, so nobody reads it as "the database was checked". */
 function skipLines(reason, total) {
@@ -385,12 +443,16 @@ export async function ledgerCheck({ env = {}, argv = [], io = {}, total = 0 } = 
     malformed = repo.malformed
     result = compare(repo.rows, ledger)
   } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    if (isCredentialRefusal(message) && io.prTouchesMigrations === false) {
+      return { status: 'refused', ok: true, lines: refusedLines(message, total) }
+    }
     return {
       status: 'error',
       ok: false,
       lines: [
         '',
-        `🔴 check:migrations — the ledger comparison could not RUN: ${e instanceof Error ? e.message : String(e)}`,
+        `🔴 check:migrations — the ledger comparison could not RUN: ${message}`,
         '',
         '    A read that failed is not a read that agreed. This exits 1 rather than degrading to',
         '    a skip, because a guard that answers "fine" when it could not look is the failure',
@@ -432,8 +494,24 @@ async function main() {
     // Rule 4 runs only once the TREE is sound. Comparing a corpus that already has a collision or
     // a malformed name against the ledger reports the same defect twice under two names, and the
     // filename fix has to land first anyway.
-    const ledger = await ledgerCheck({ env: process.env, argv: process.argv.slice(2), total })
+    const touches = prTouchesMigrations({
+      env: process.env,
+      runGit: (args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }),
+    })
+    const ledger = await ledgerCheck({
+      env: process.env,
+      argv: process.argv.slice(2),
+      total,
+      io: { prTouchesMigrations: touches },
+    })
     for (const line of ledger.lines) (ledger.ok ? console.log : console.error)(line)
+    if (ledger.status === 'refused' && process.env.GITHUB_ACTIONS === 'true') {
+      // A workflow warning shows on the PR's checks page, so an exit-0 refusal is still seen.
+      console.log(
+        '::warning title=check:migrations - Supabase token refused::The ledger comparison did not run. ' +
+          `Renew the ${LEDGER_ENV.TOKEN} Actions secret (LIVE-273). PRs that touch a migration, and main pushes, fail until it is.`,
+      )
+    }
     if (!ledger.ok) process.exit(1)
     return
   }
