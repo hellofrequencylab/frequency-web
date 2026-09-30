@@ -73,7 +73,7 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
     // Focus surface (page-chrome.ts → 'none'): centered, no rail. The Detail shell owns the
     // header band + the single back-link; the page never hand-rolls chrome (PAGE-FRAMEWORK §8).
     <div className="mx-auto max-w-2xl">
-      <Detail hero={hero} initial={data} reminders={reminders} timeline={timeline} timelineEntries={timelineEntries} back={{ href: '/connections', label: 'Profiles' }} crmTease={crmTease} operatedSpaces={operatedSpaces} />
+      <Detail hero={hero} initial={data} reminders={reminders} timeline={timeline} timelineEntries={timelineEntries} back={{ href: '/connections', label: 'My Contacts' }} crmTease={crmTease} operatedSpaces={operatedSpaces} />
       {/* Manual contact ↔ member link — the path for when the auto detector can't
           fire (card email differs from signup email, no phone on the profile). */}
       <LinkMemberCard contactId={id} contactName={data.contact.displayName} linked={linked} />

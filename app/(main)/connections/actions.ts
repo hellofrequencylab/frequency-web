@@ -153,7 +153,7 @@ export async function createProfile(input: CreateProfileInput): Promise<{ id: st
     logoPath: input.logoPath ?? null,
     extraction: input.extraction,
   })
-  if (!id) return { error: 'Could not save the profile.' }
+  if (!id) return { error: 'Could not save this contact. Try again.' }
 
   const tags = dedupeTags(input.tags)
   if (tags.length) await store.addTags(ownerId, id, tags, 'manual')

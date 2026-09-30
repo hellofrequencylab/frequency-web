@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
-// Instant full-bleed loading for the New profile (contact) creator. The Zap
-// menu's Contact tile and the "New profile" action are App Router navigations;
+// Instant full-bleed loading for the Add a contact creator. The Zap
+// menu's Contact tile and the "Add a contact" action are App Router navigations;
 // without this the feed behind stayed visible during the RSC fetch and flashed
 // before the creator loaded. This paints the FocusTemplate's shape immediately
 // (matches the page's `default` width) so the destination covers the feed at the

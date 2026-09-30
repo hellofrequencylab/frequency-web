@@ -31,7 +31,7 @@ export const dynamic = 'force-dynamic'
 const FACET_TABS = [
   { key: 'all', label: 'All' },
   { key: 'card', label: 'Card' },
-  { key: 'qr_scan', label: 'QR Scan' },
+  { key: 'qr_scan', label: 'QR scan' },
   { key: 'new', label: 'New' },
   { key: 'active', label: 'Active' },
   { key: 'archived', label: 'Archived' },
@@ -107,7 +107,7 @@ export default async function ConnectionsPage({
 
   return (
     <div className="mx-auto max-w-5xl">
-      {/* Hub tab strip — Community · Friends · Contacts read as one Network hub. */}
+      {/* Hub tab strip: Members · Friends · My Contacts read as one Network hub. */}
       <NetworkTabs active="/network/contacts" />
       {/* Mobile header is COMPACT: the H1 drops the icon and the description
           shrinks to one line to save vertical space. sm+ keeps the full header.
@@ -127,7 +127,7 @@ export default async function ConnectionsPage({
             <span className="sm:hidden">People you&rsquo;ve met, private to you.</span>
             <span className="hidden sm:inline">
               People you&rsquo;ve met. Scanned from a card or poster, or added by hand. Private to
-              you unless you promote them to your network.
+              you unless you choose to share them.
             </span>
           </>
         }
@@ -148,7 +148,7 @@ export default async function ConnectionsPage({
               href="/connections/new"
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover sm:px-3.5 sm:py-2"
             >
-              <Plus className="h-4 w-4" /> New profile
+              <Plus className="h-4 w-4" /> Add a contact
             </Link>
           </div>
         }
@@ -191,15 +191,15 @@ export default async function ConnectionsPage({
       {rows.length === 0 ? (
         <EmptyState
           icon={ScanText}
-          title={all.length === 0 ? 'No profiles yet' : 'Nothing matches that filter'}
-          description={all.length === 0 ? 'Scan a business card to harvest someone’s details in seconds.' : undefined}
+          title={all.length === 0 ? 'No contacts yet' : 'Nothing matches that filter'}
+          description={all.length === 0 ? 'Scan a business card and their details land here in a few seconds.' : undefined}
           action={
             all.length === 0 ? (
               <Link
                 href="/connections/new"
                 className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
               >
-                <Plus className="h-4 w-4" /> New profile
+                <Plus className="h-4 w-4" /> Add a contact
               </Link>
             ) : undefined
           }
@@ -246,7 +246,7 @@ export default async function ConnectionsPage({
                     {/* Promoted into the shared marketing contacts DB (linked_contact_id), ADR-742. */}
                     {c.linkedContactId && (
                       <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 font-medium text-success">
-                        <ShieldCheck className="h-3 w-3" /> In contacts
+                        <ShieldCheck className="h-3 w-3" /> In Frequency contacts
                       </span>
                     )}
                     {c.tags.slice(0, 3).map((t) => (

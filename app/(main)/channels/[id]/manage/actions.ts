@@ -10,7 +10,7 @@ import {
   updateProgramForStaff,
   setProgramPausedForStaff,
   refreshProgramBlueprintForStaff,
-  setCircleChannel,
+  addCircleToChannel,
   removeCircleFromChannel,
   setChannelOwnerSpace,
   type BlueprintSource,
@@ -50,9 +50,11 @@ function revalidateManage(idOrSlug: string) {
 
 // ── Circles: add an existing circle, or take one out (ADR-871) ───────────────
 
-/** Add an existing circle to this channel: sets circles.topical_channel_id.
- *  The data layer refuses a paused channel — the same is_active retire switch
- *  startChapter honors (ADR-865) — which surfaces as its own notice. */
+/** Add an existing circle to this channel, as one more of its up to three
+ *  Channels (LIVE-666); the circle keeps the ones it already carries. The data
+ *  layer refuses a paused channel — the same is_active retire switch
+ *  startChapter honors (ADR-865) — and a circle that already carries three,
+ *  each of which surfaces as its own notice. */
 export async function addChannelCircleAction(
   channelId: string,
   idOrSlug: string,
@@ -65,17 +67,19 @@ export async function addChannelCircleAction(
   if (!circleId) redirect(`${managePath(idOrSlug)}?section=circles&error=missing`)
 
   try {
-    await setCircleChannel({ circleId, channelId })
+    await addCircleToChannel({ circleId, channelId })
   } catch (err) {
-    const paused = err instanceof Error && /paused/.test(err.message)
-    redirect(`${managePath(idOrSlug)}?section=circles&error=${paused ? 'paused' : 'failed'}`)
+    const message = err instanceof Error ? err.message : ''
+    const code = /paused/.test(message) ? 'paused' : /up to three/.test(message) ? 'full' : 'failed'
+    redirect(`${managePath(idOrSlug)}?section=circles&error=${code}`)
   }
   revalidateManage(idOrSlug)
   redirect(`${managePath(idOrSlug)}?section=circles&saved=1`)
 }
 
-/** Take a circle out of this channel (clears topical_channel_id). The circle
- *  keeps its host, members, and events; it just stops practicing here. Called
+/** Take a circle out of this channel. When this was its primary, its next
+ *  Channel moves up (LIVE-666). The circle keeps its host, members, and events;
+ *  it just stops practicing here. Called
  *  directly by the quiet-confirm button, not through a form. */
 export async function removeChannelCircleAction(
   channelId: string,

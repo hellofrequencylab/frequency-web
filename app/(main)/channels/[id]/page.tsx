@@ -42,6 +42,8 @@ import { ChaptersNearMe } from '@/components/channels/chapters-near-me'
 import { ChannelRail } from '@/components/channels/channel-rail'
 import { GroupCard, type GroupCardData } from '@/components/channels/group-card'
 import type { CircleBase } from '@/lib/types/circle'
+import { anyChannelFilter } from '@/lib/circles/channels'
+import { secondaryCircleIds } from '@/lib/circles/channel-carriers'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CHANNEL PAGE = the focus area's home (ADR-864 broadened the canon; ADR-868 put
@@ -283,20 +285,23 @@ export default async function ChannelPage({
       .maybeSingle(),
     isProgramChannel
       ? Promise.resolve({ data: null, count: null })
-      : admin
-          .from('circles')
-          .select(
-            `id, name, slug, type, member_count, member_cap, status, city, neighborhood,
-             host:profiles!host_id ( display_name, handle )`,
-            { count: 'exact' }
-          )
-          .eq('topical_channel_id', channel.id)
-          .neq('status', 'archived')
-          // 🔴 Admin client = no RLS (ADR-1015). An Interest page is a BROWSE surface, so it keys
-          // on AXIS 1 (`unlisted`) — a LISTED closed Circle belongs on it, an unlisted one does not.
-          .eq('unlisted', false)
-          .order('member_count', { ascending: false })
-          .limit(12),
+      : secondaryCircleIds(admin, channel.id).then((secondary) =>
+          admin
+            .from('circles')
+            .select(
+              `id, name, slug, type, member_count, member_cap, status, city, neighborhood,
+               host:profiles!host_id ( display_name, handle )`,
+              { count: 'exact' }
+            )
+            // Every Circle carrying this Channel, in any of its three places (LIVE-666).
+            .or(anyChannelFilter(channel.id, secondary))
+            .neq('status', 'archived')
+            // 🔴 Admin client = no RLS (ADR-1015). An Interest page is a BROWSE surface, so it keys
+            // on AXIS 1 (`unlisted`) — a LISTED closed Circle belongs on it, an unlisted one does not.
+            .eq('unlisted', false)
+            .order('member_count', { ascending: false })
+            .limit(12),
+        ),
     isProgramChannel ? listChapters(channel.id) : Promise.resolve<ChapterSummary[]>([]),
     channel.pillar_id
       ? (admin)
