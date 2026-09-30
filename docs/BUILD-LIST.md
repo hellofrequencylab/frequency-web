@@ -156,6 +156,12 @@ blocking E0. ⚠️ **O-1 is partly answered by shipped code** and its scope nee
 
 ## 🏗️ App Platform + white-label sites — **App Platform UNPARKED 2026-08-20**; white label still held — 2026-08-03 ([ADR-921](DECISIONS.md), specs [WHITE-LABEL-SITES.md](WHITE-LABEL-SITES.md) · [LOOM-PLATFORM.md](LOOM-PLATFORM.md) · [SPACES.md](SPACES.md))
 
+> **2026-09-30 ([ADR-1703](DECISIONS.md)): nothing here is held any more.** The owner reopened every
+> parked row except the iOS app build: *"Take everything except for the iOS app build out of parked or
+> deferred."* The App Platform (W9), the editor with white label (W4) and the Etsy-grade store (W11) are
+> open, ordered by priority like everything else. The later holds described below, and the 2026-08-24
+> correction under this line, are history. Status is in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+
 > **⚠️ Corrected 2026-08-24. The section below describes a hold that was lifted.** The owner ruled on
 > 2026-08-20: *"Take all tasks out of deferred or parked programs and add them to the priority list. I
 > want all those things built out. The things that we are deferring are white labeling, mobile

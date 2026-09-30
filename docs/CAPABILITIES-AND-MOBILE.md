@@ -196,9 +196,10 @@ Mobile is a prime first beneficiary when you pilot a sync engine on one surface
 1. **Mobile stack**: React Native (max reuse: shared TS contract types + design
    tokens) vs native Swift/Kotlin (best UX, more duplication). Determines how much
    contract code is *literally* shared. **Decided 2026-09-29: Expo / React Native**
-   (owner ruling, [ADR-1650](DECISIONS.md)). The app build itself stays parked; the
-   contract, auth, push, capture and store-readiness work it plugs into is active in
-   `docs/BUILD-BACKLOG.json` (wave WM).
+   (owner ruling, [ADR-1650](DECISIONS.md)). The app build itself stays parked, with the
+   pieces that only exist in the app or the App Store (Sign in with Apple, in-app purchases,
+   the Apple accounts and credentials; [ADR-1703](DECISIONS.md)). The contract, auth, push and
+   capture work it plugs into is open in `docs/BUILD-BACKLOG.json` (wave WM).
    **Payments in the app go through Apple In-App Purchase** (owner ruling 2026-09-29,
    [ADR-1650](DECISIONS.md)): Crew and the Space plans bought in the iOS app grant the same
    entitlements as Stripe through the same resolver; the web keeps Stripe checkout.

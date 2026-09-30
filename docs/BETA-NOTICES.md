@@ -36,6 +36,10 @@ each notice actually depends on.
 
 ## 3. The inventory (edit at launch)
 
+> **2026-09-30 ([ADR-1703](DECISIONS.md)): the launch-day edit is retired.** The owner retired the launch copy pass
+> (LIVE-712), demo-mode removal (LIVE-683) and the beta switch (LIVE-464), so nothing below is scheduled
+> for 21 December 2026. The inventory stays as a map of where the beta copy lives, if it is ever asked for again.
+
 Legend — Driver: 🟢 `BETA_OPEN_ACCESS` (auto-swaps via `beta-notices.ts`) · 🟡 other flag
 (`billingLive`/`betaEndsAt`/induction — auto-hides when that flips) · 🔴 hardcoded (manual edit).
 
