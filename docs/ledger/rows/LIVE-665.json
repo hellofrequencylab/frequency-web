@@ -1,0 +1,10 @@
+{
+  "id": "LIVE-665",
+  "patch": {
+    "status": "parked",
+    "notes": "parkedUntil: after launch (2026-12-21); reopen on the first real paid order or the first six weeks of live Spaces, whichever comes first. Owner P3 sort 2026-09-30 ~01:50Z (ADR-1672)."
+  },
+  "append": {
+    "detail": "\n\n── PARKED 2026-09-30. OWNER RULING 2026-09-30 ~01:50Z (the P3 sort, recorded by HYG-156, ADR-1672): park until after launch. REVISIT TRIGGER: reopen after launch, on the first real paid order or the first six weeks of live Spaces, whichever comes first. The probe is unchanged and is not run while parked."
+  }
+}

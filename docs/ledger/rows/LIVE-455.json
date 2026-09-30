@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-455",
+  "patch": {
+    "status": "done",
+    "closed": "2026-09-30",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Closed as DROPPED 2026-09-30 by owner ruling \"Remove this field test\" (ADR-1672). Nothing ran and nothing is proven: no city, three Spaces or start date was ever named, and no end reading will be taken. The start reading of 2026-09-21 stays in the detail as the baseline; the PROG-R11 instrument and the weekly sweep's Phase 11 reading stay live. The closing test before the ruling was the end reading six weeks after a named start, recorded beside the start reading.",
+      "checked": "2026-09-30"
+    }
+  },
+  "append": {
+    "detail": "\n\n── DROPPED 2026-09-30. OWNER RULING 2026-09-30 ~01:35Z (multiple choice, recorded by HYG-156, ADR-1672): \"Remove this field test\". The six weeks will not run, and no end reading will be taken. Closed as done because done is the only terminal status check:backlog has; the row is dropped, not proven. What stays: THE START READING above (2026-09-21) as the baseline, the PROG-R11 instrument (scripts/maintenance/prove-it.mjs) and the weekly maintenance sweep's \"Phase 11 reading\", so the series keeps accumulating with no field test behind it."
+  }
+}
