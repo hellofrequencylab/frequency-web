@@ -1291,15 +1291,20 @@ export const VISUAL_MASK_SITES: readonly {
   // from one second to the next. The issued-at is the code's security meaning, so the signing
   // stays as it is and the picture gives up the preview instead.
   //
-  // THE BOX IS FIXED: `w-28 h-28` on the preview's own wrapper in `NodeCard`, so the SVG inside
-  // cannot resize it and the mask holds. The card's label, badges, counts and actions stay in the
-  // picture. The other QR previews on the page (dynamic links, marketing codes, member profile
-  // codes) encode unsigned URLs, rendered the same every time, and are not masked.
+  // THE BOX IS FIXED, AND IT IS THE CODE, NOT THE FRAME: the mask sits on the `h-full w-full`
+  // square that inlines the SVG, inside `NodeCard`'s fixed `w-28 h-28` white frame (112 px less
+  // border and `p-1.5`: 98 px). The frame, and the card's label, badges, counts and actions, stay
+  // in the picture. It is kept under 112 px on purpose: LIVE-458's probe reads the TALLEST solid
+  // mask run down the centre of the mobile baseline as the scans chart (`qr-daily-scans`, the
+  // h-28 box), and on a phone these previews are centred too. A 112 px mask on the frame measured
+  // taller than the chart and was read in its place. The other QR previews on the page (dynamic
+  // links, marketing codes, member profile codes) encode unsigned URLs, rendered the same every
+  // time, and are not masked.
   {
     value: 'qr-node-code',
     file: 'app/(main)/admin/qr/qr-studio.tsx',
     kind: 'live',
-    why: 'Each check-in code preview encodes a node URL signed over a per-second issued-at (LIVE-688), so its modules differ on every render of the same tree: 96 x 96 px bands over the codes, the only difference between two captures 30 minutes apart (#3109). The w-28 h-28 box is fixed, so the mask holds.',
+    why: 'Each check-in code preview encodes a node URL signed over a per-second issued-at (LIVE-688), so its modules differ on every render of the same tree: 96 x 96 px bands over the codes, the only difference between two captures 30 minutes apart (#3109). The mask is the square that inlines the SVG inside the fixed w-28 h-28 frame, so it holds and the frame stays photographed.',
   },
   {
     value: 'qr-daily-scans',
