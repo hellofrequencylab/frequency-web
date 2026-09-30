@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getHubInsightsData, type HubInsightsData } from '@/lib/hierarchy/hub-admin'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Insights" module (ADMIN-RAIL.md Phase 7, the 'insights' spine cell for hubs). Renders in
 // the page admin dock on /hubs/[slug]; the server returns null unless the caller holds hub.manage.
@@ -12,6 +13,8 @@ import { getHubInsightsData, type HubInsightsData } from '@/lib/hierarchy/hub-ad
 export function HubInsightsModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/hubs\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readInsights = useEntityRailRead('hub', 'insights', getHubInsightsData)
 
   const [data, setData] = useState<HubInsightsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -19,7 +22,7 @@ export function HubInsightsModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getHubInsightsData(slug)
+    readInsights(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -32,7 +35,7 @@ export function HubInsightsModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readInsights])
 
   if (!slug) return null
   if (loading) {
