@@ -14,7 +14,7 @@
 import type { PageWidgetConfig } from '@/lib/journey-plans'
 
 /** Which face of the Journey page a layout is for. */
-export type JourneyPageMode = 'active' | 'discovery'
+type JourneyPageMode = 'active' | 'discovery'
 
 /** The canonical, closed set of Journey-page widget ids. Adding a widget = add its id
  *  here + a default entry below + a renderer in components/journey. Editors and the page
@@ -62,7 +62,7 @@ export const DEFAULT_LAYOUT: Record<JourneyPageMode, readonly WidgetId[]> = {
 
 /** A normalized, render-ready widget descriptor: a known id + its resolved enabled flag +
  *  any author settings. The page maps over these in order and renders the matching block. */
-export interface ResolvedWidget {
+interface ResolvedWidget {
   id: WidgetId
   enabled: boolean
   settings: Record<string, unknown>

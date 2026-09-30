@@ -24,7 +24,7 @@
 // dependency-free in dev, CI and tests, where the mirror is inert.
 
 /** The map events worth a line. Dot-namespaced like `lib/log.ts` so they aggregate. */
-export type MapDiagEvent =
+type MapDiagEvent =
   /** The seam gave up on Google and re-rendered MapLibre in place. */
   | 'maps.provider_fallback'
   /** Google's own auth check failed (billing, referrer, API not enabled, bad key). */

@@ -92,7 +92,7 @@ export function categoryLabel(category: App['category']): string {
 }
 
 /** Human labels for a surface badge. */
-export const SURFACE_LABELS: Record<AppSurfaceKind, string> = {
+const SURFACE_LABELS: Record<AppSurfaceKind, string> = {
   editor: 'Editor',
   page: 'Page',
   rail: 'Rail',

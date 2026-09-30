@@ -72,14 +72,14 @@ export interface NotificationContexts {
  *  with no rendered payload is skipped (never enqueued half-formed). `inapp` is defined for
  *  when the in-app channel graduates onto the outbox (see the router's migration checklist);
  *  no migrated type declares it yet. */
-export interface RenderedNotification {
+interface RenderedNotification {
   email?: EmailPayload
   push?: PushPayload
   inapp?: { title: string; body: string; url?: string }
 }
 
 /** One registry row: the declarative mapping event → notification type. */
-export interface NotificationType<E extends NotificationEvent = NotificationEvent> {
+interface NotificationType<E extends NotificationEvent = NotificationEvent> {
   event: E
   /** The send category the gate reads (consent scope + preference toggle + frequency). */
   category: SendCategory

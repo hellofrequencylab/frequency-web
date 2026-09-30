@@ -23,7 +23,7 @@ export interface MonthBand {
   to: string
 }
 
-export interface ScrollBounds {
+interface ScrollBounds {
   /** The earliest month automatic extension may reach. */
   floorKey: string
   /** The latest month automatic extension may reach. */

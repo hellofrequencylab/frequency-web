@@ -10,7 +10,7 @@ export type ZodiacSign =
   | 'libra' | 'scorpio' | 'sagittarius' | 'capricorn' | 'aquarius' | 'pisces'
 
 export type Element = 'fire' | 'earth' | 'air' | 'water'
-export type Modality = 'cardinal' | 'fixed' | 'mutable'
+type Modality = 'cardinal' | 'fixed' | 'mutable'
 
 interface SignInfo {
   label: string
@@ -80,7 +80,7 @@ const ELEMENT_PAIR: Record<Element, Record<Element, number>> = {
   water: { water: 0.85, earth: 0.9, air: 0.5, fire: 0.4 },
 }
 
-export interface SignCompatibility {
+interface SignCompatibility {
   score: number // 0..1
   /** A short, plain, never-overstated reason. */
   reason: string

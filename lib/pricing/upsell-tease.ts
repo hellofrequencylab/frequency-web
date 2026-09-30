@@ -35,7 +35,7 @@ export interface TeaseGate {
 
 /** The inputs the visibility rule needs. All resolved by the caller (the server resolves `gatesLive`
  *  + `locked`; the client island resolves `dismissed` from per-tease local state). PURE. */
-export interface TeaseVisibilityInput {
+interface TeaseVisibilityInput {
   /** Are the paid feature GATES live? (lib/pricing/settings.ts featureGatesLive()). The master gate.
    *  Deliberately not billingLive(): during the beta grace window billing sells but nothing is locked,
    *  and a tease that claims a lock in that window is untrue (ADR-874). */
@@ -62,7 +62,7 @@ export function shouldShowTease(input: TeaseVisibilityInput): boolean {
 
 // ── Frequency cap (the "under cap" half) — a PURE, best-effort local-storage meter ───────────────
 // The tease must never nag: once a member has seen a given tease enough times (or dismissed it), it
-// stays quiet. This mirrors components/teaser-gate.tsx's localStorage meter shape, kept pure here so
+// stays quiet. It keeps a per-key localStorage meter (the shape the retired teaser gate used), kept pure so
 // the count math is testable without a DOM. The store itself (read/write) lives in the client island;
 // these helpers do the arithmetic.
 

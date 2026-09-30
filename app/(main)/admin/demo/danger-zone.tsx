@@ -7,7 +7,7 @@ import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { Button, buttonClasses } from '@/components/ui/button'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { Banner } from '@/components/admin/status'
-import { purgeArea, runDemoDecay } from './studio/actions'
+import { previewDemoDecay, purgeArea, runDemoDecay } from './studio/actions'
 import { deleteDemoCircles, purgeDemoContent } from './actions'
 import { Checkbox } from '@/components/ui/checkbox'
 
@@ -165,7 +165,7 @@ export function DangerZone({
             <button
               type="button"
               disabled={pending}
-              onClick={() => run(async () => setDecay(await runDemoDecay(true)))}
+              onClick={() => run(async () => setDecay(await previewDemoDecay()))}
               className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-semibold text-text hover:border-primary disabled:opacity-50 motion-reduce:transition-none"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
@@ -232,7 +232,7 @@ export function DangerZone({
         title="Run the decay pass"
         body="Purges taken-over demo circles, prunes old demo posts, and sheds demo neighbors. Preview first if you want to see what it touches."
         confirmLabel="Run decay pass"
-        onConfirm={() => run(async () => { setDecay(await runDemoDecay(false)) })}
+        onConfirm={() => run(async () => { setDecay(await runDemoDecay()) })}
       />
       <DangerModal
         open={modal === 'all'}

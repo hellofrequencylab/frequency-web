@@ -40,7 +40,7 @@ export interface CurrentLegContext {
   weeks: number
 }
 
-export interface CurrentLegResult {
+interface CurrentLegResult {
   practiceIds: string[]
   /** One context per contributing Journey (a member can be mid-leg in several at once). */
   legs: CurrentLegContext[]

@@ -12,6 +12,7 @@ import {
   type PlaceType,
 } from '@/lib/messaging/place-tree'
 import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
+import { postalFooterHtml, PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 
 /** A built-in audience, a trait segment (`seg:<slug>`), a place-tree selector
  *  (`circle:<id>` / `hub:<id>` / `nexus:<id>`, CRM Phase 5), an event RSVP audience
@@ -66,7 +67,7 @@ export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
 
 /** A classified audience key. A place selector is one audience type that spans the place tree
  *  (circles/hubs/nexuses) the same way a trait segment spans the Member Data Platform. */
-export type ParsedSegmentKey =
+type ParsedSegmentKey =
   | { kind: 'builtin'; slug: string }
   | { kind: 'trait'; slug: string }
   | { kind: 'place'; place: PlaceType; id: string }
@@ -316,7 +317,7 @@ export function campaignEmail(body: string, unsubscribeUrl: string): { html: str
         `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`,
     )
     .join('')
-  const html = `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p></div>`
-  const text = `${body}\n\n---\nUnsubscribe: ${unsubscribeUrl}`
+  const html = `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
+  const text = `${body}\n\n---\nUnsubscribe: ${unsubscribeUrl}\n${PLATFORM_POSTAL_LINE}`
   return { html, text }
 }

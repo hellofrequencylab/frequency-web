@@ -47,14 +47,14 @@ import { careScore, standingScore, type StandingResult } from './standing'
 /** How far back `gatherings_held` looks. A year of hosting is the window that separates a Space
  *  that gathers from one that gathered once in 2024; the saturation curve then flattens anything
  *  past a handful, so a longer window would not change an order, only a cost. */
-export const HELD_WINDOW_DAYS = 365
+const HELD_WINDOW_DAYS = 365
 
 /** A defensive ceiling on the Spaces one pass rebuilds, so the job can never scan an unbounded
  *  table. Generous against any realistic count (22 Spaces exist as of 2026-09-08). */
-export const ROLLUP_SPACE_LIMIT = 2000
+const ROLLUP_SPACE_LIMIT = 2000
 
 /** What one nightly pass did. `spaces` is the number of rows written. */
-export interface StandingRollupResult {
+interface StandingRollupResult {
   /** Rows upserted into space_standing. 0 on failure. */
   spaces: number
   /** The error message when the rollup failed. Absent on success. */
@@ -320,7 +320,7 @@ export async function refreshSpaceStanding(): Promise<StandingRollupResult> {
 // ── The single-Space read, for the operator receipt page (LIVE-265) ──────────────────────────────
 
 /** One Space's standing as the receipt page reads it. */
-export interface SpaceStandingRow {
+interface SpaceStandingRow {
   /** The seven raw counts, exactly as the rollup wrote them. */
   gatheringsHeld: number
   /** People a host marked present at those gatherings (LIVE-456). */

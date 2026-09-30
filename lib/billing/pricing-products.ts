@@ -46,7 +46,7 @@ const PRODUCT_LABEL: Record<MemberTierKey | SpacePlanKey, string> = {
   nonprofit: 'Frequency Non Profit (Space)',
 }
 
-export interface SyncResult {
+interface SyncResult {
   ok: boolean
   /** Why the sync was skipped (when ok=false). */
   reason?: 'env'
@@ -222,7 +222,7 @@ export function isCatalogItemInertPlaceholder(item: CatalogItem, operatorSeatAct
  *  - `founding`  — the founding/beta rates. Not part of the standard offering: since ADR-1060 shut the
  *                  window they are reached only by a grandfathered lock or the per-Space grant (ADR-1061).
  *  PURE. */
-export type CatalogProductLine = 'standard' | 'founding'
+type CatalogProductLine = 'standard' | 'founding'
 
 /** Extra product metadata: which catalog item this Product belongs to, so a human (or a future query)
  *  can pair the standard and founding Products of one item without parsing names. */

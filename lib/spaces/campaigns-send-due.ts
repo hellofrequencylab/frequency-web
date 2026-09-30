@@ -32,9 +32,10 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { isError } from '@/lib/action-result'
 import { log, briefError } from '@/lib/log'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
+import { postalFooterHtml } from '@/lib/email-studio/postal'
 
 /** What one scheduled-send pass reports. */
-export interface SendDueResult {
+interface SendDueResult {
   /** Due campaigns the pass looked at (before claiming). */
   due: number
   /** Campaigns this pass successfully CLAIMED (scheduled -> sending) and processed. */
@@ -81,7 +82,7 @@ function renderCampaignHtml(body: string): string {
         `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`,
     )
     .join('')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p></div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
 }
 
 /**

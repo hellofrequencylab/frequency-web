@@ -6,6 +6,8 @@ import { CHANNEL_CATEGORY_ICON, FALLBACK_CHANNEL_CATEGORY_ICON } from '@/lib/cha
 import { readChannelCoverFocus, channelCoverFocusStyle } from '@/lib/channels/hero'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { countCirclesPerChannel } from '@/lib/circles/channels'
+import { listSecondaryCarriers } from '@/lib/circles/channel-carriers'
 import { TuneInButton, TunedInButton } from '@/app/(main)/channels/channel-toggle'
 import { PageContents } from '@/components/templates/page-contents'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -86,20 +88,32 @@ export async function ChannelsList() {
   const myChannelIds = new Set<string>()
 
   if (channelIds.length > 0) {
-    const [{ data: members }, { data: circles }] = await Promise.all([
+    const [{ data: members }, { data: circles }, secondary] = await Promise.all([
       admin.from('topical_channel_memberships').select('topical_channel_id').in('topical_channel_id', channelIds),
       // The per-Interest circle COUNT keys on AXIS 1 (ADR-1015): it counts what the browse rail
       // will actually show. A count that moved when somebody created an UNLISTED room would leak
       // that room's existence; a listed closed Circle is public face and belongs in the number.
-      admin.from('circles').select('topical_channel_id').in('topical_channel_id', channelIds).neq('status', 'archived')
+      admin.from('circles').select('id, topical_channel_id').in('topical_channel_id', channelIds).neq('status', 'archived')
         .eq('unlisted', false),
+      // A Circle counts under each Channel it carries, second and third included (LIVE-666).
+      listSecondaryCarriers(admin, channelIds),
     ])
     ;(members ?? []).forEach((m: { topical_channel_id: string }) => {
       memberCounts[m.topical_channel_id] = (memberCounts[m.topical_channel_id] ?? 0) + 1
     })
-    ;(circles ?? []).forEach((c: { topical_channel_id: string | null }) => {
-      if (c.topical_channel_id) circleCounts[c.topical_channel_id] = (circleCounts[c.topical_channel_id] ?? 0) + 1
-    })
+    // The second-and-third carriers pass the same AXIS 1 and archive filter as the primaries above.
+    const secondaryIds = [...new Set(secondary.map((r) => r.circle_id))]
+    const { data: listed } = secondaryIds.length > 0
+      ? await admin.from('circles').select('id').in('id', secondaryIds).neq('status', 'archived').eq('unlisted', false)
+      : { data: [] as { id: string }[] }
+    const listedIds = new Set(((listed ?? []) as { id: string }[]).map((c) => c.id))
+    Object.assign(
+      circleCounts,
+      countCirclesPerChannel([
+        ...((circles ?? []) as { id: string; topical_channel_id: string | null }[]).map((c) => ({ circle_id: c.id, topical_channel_id: c.topical_channel_id })),
+        ...secondary.filter((r) => listedIds.has(r.circle_id)),
+      ]),
+    )
     if (myProfileId) {
       const { data: mine } = await admin
         .from('topical_channel_memberships').select('topical_channel_id')

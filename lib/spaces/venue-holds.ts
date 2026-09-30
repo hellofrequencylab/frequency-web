@@ -7,7 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listAcceptedCollaborations } from './collaborations'
 
-export type VenueHoldStatus = 'pending' | 'accepted' | 'declined' | 'cancelled'
+type VenueHoldStatus = 'pending' | 'accepted' | 'declined' | 'cancelled'
 
 /** A raw space_venue_holds row (typed table; status narrowed to the VenueHoldStatus vocabulary). */
 export interface VenueHoldRow {
@@ -27,7 +27,7 @@ export interface VenueHoldRow {
 type PartnerSpace = { id: string; slug: string; name: string }
 
 /** A hold shaped for a surface, from `forSpaceId`'s perspective. */
-export interface VenueHoldView {
+interface VenueHoldView {
   id: string
   status: VenueHoldStatus
   /** Is `forSpaceId` the VENUE (the approver) or the REQUESTER of this hold? */
@@ -76,7 +76,7 @@ export async function loadVenueHold(id: string): Promise<VenueHoldRow | null> {
   }
 }
 
-async function loadHoldViews(spaceId: string, statuses?: VenueHoldStatus[]): Promise<VenueHoldView[]> {
+async function loadHoldViews(spaceId: string): Promise<VenueHoldView[]> {
   if (!spaceId) return []
   try {
     const admin = createAdminClient()
@@ -84,11 +84,10 @@ async function loadHoldViews(spaceId: string, statuses?: VenueHoldStatus[]): Pro
       admin.from('space_venue_holds').select('*').eq('venue_space_id', spaceId),
       admin.from('space_venue_holds').select('*').eq('requester_space_id', spaceId),
     ])
-    let rows = [
+    const rows = [
       ...((asVenue.data ?? []) as VenueHoldRow[]),
       ...((asRequester.data ?? []) as VenueHoldRow[]),
     ]
-    if (statuses) rows = rows.filter((r) => statuses.includes(r.status))
     if (rows.length === 0) return []
     const spaces = await resolveSpaces(admin, rows.map((r) => partnerSideForHold(r, spaceId)))
     return rows.flatMap((r) => {

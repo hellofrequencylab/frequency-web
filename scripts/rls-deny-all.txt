@@ -24,6 +24,7 @@ beta_host_prompts
 business_intake
 challenge_qr_codes
 circle_transfer_offers
+commerce_order_transfers
 content_ratings
 creator_tips
 cron_run_markers
@@ -49,11 +50,7 @@ journey_drip_sends
 journey_enrollments
 journey_phase_events
 journey_runs
-library_assets
-library_collection_items
-library_collections
 library_styles
-library_versions
 listing_intake
 nodes
 notification_queue

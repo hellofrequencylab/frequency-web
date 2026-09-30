@@ -142,10 +142,10 @@ export function applyVerdicts(ledger: ProvenanceLedger, verdicts: FieldVerdict[]
 // ── The final split (docs §4.3 / §4.4) ────────────────────────────────────────────────
 
 /** The traffic-light status of one field for the review board (docs §4.5). */
-export type FieldStatus = 'green' | 'amber' | 'red'
+type FieldStatus = 'green' | 'amber' | 'red'
 
 /** One flagged field the review board surfaces. */
-export interface FieldFlag {
+interface FieldFlag {
   path: string
   status: FieldStatus
   reason: string

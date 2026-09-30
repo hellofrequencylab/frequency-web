@@ -133,7 +133,7 @@ export async function createSpaceBillingPortal(spaceId: string): Promise<string 
 
 /** The loadout the caller selects: the base tier, the active add-ons, and the seat counts. Monthly or
  *  yearly via `interval`. */
-export interface SpaceLoadout {
+interface SpaceLoadout {
   /** The base tier the loadout is for. 'business' = the run-your-practice base; 'collective' = the
    *  network-depth base (automations, team, collaborators); 'independent' = the standalone white-label
    *  base (off-network); 'nonprofit' = the flat per-mission item. The AI add-on layers on any paid tier.
@@ -212,7 +212,7 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
   return [...out, ...operatorSeat]
 }
 
-export interface SpaceLoadoutCheckoutResult {
+interface SpaceLoadoutCheckoutResult {
   url?: string
   /** An on-page (elements) session's secret. EXACTLY ONE of this and `url` is ever set. */
   clientSecret?: string

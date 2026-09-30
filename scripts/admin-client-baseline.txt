@@ -135,6 +135,11 @@
 # column-backed image companions. library_assets is RLS deny-all (scripts/rls-deny-all.txt),
 # so a session client cannot refresh a cached url. Same posture as lib/library/resolve-refs.ts
 # (PROG-D2): fail-open to the cache, one query, no writes.
+# lib/library/hybrid-search.ts (added 2026-09-29, LIVE-586): the Studio's Most relevant sort, split
+# out of lib/library/embeddings.ts (already listed) with the cosine-only matcher it replaces. It
+# calls search_library_assets, which is EXECUTE-revoked from anon and authenticated and granted to
+# service_role only, over library_assets, which is RLS deny-all (scripts/rls-deny-all.txt). Reads
+# only; hydrates through store.ts. The file count for lib/library is +1, the matcher count is flat.
 # lib/billing/ticket-sale-notify.ts (added 2026-09-15, LIVE-345): the HOST's side of a ticket sale,
 # the exact sibling of lib/billing/tips-notify.ts already in this list and under the identical
 # posture: the caller is STRIPE. It runs from recordTicketFromSession inside the webhook, so there
@@ -246,6 +251,12 @@
 # policy-filtered count would quietly report a smaller number than the statement destroys. The caller is
 # authorized before this is ever reached (event.editSettings, re-resolved in the action), nothing here
 # writes, and nothing leaves it but integers.
+# lib/commerce/transfers.ts (added 2026-09-29, LIVE-622): the split-order transfer ledger. The table it
+# writes (commerce_order_transfers) is service role only by design, RLS on with no policy and revoked
+# from anon and authenticated, like financial_transactions, and its callers have no session to run
+# under: the Stripe webhook (the settle, transfer.created, transfer.reversed) and the reconcile-transfers
+# cron. Nothing here is reachable from a request a member makes, and nothing leaves it but counts and
+# log lines; a seller's read of their share (LIVE-624) is authorized before it reaches this module.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -658,6 +669,7 @@ lib/commerce/reviews.ts
 lib/commerce/seller-audience.ts
 lib/commerce/seller-verification.ts
 lib/commerce/ticket-projection.ts
+lib/commerce/transfers.ts
 lib/commerce/variants.ts
 lib/comms/bulk-dm.ts
 lib/comms/contact-preferences.ts
@@ -821,6 +833,7 @@ lib/library/asset-urls.ts
 lib/library/download-door.ts
 lib/library/embeddings.ts
 lib/library/event-loom.ts
+lib/library/hybrid-search.ts
 lib/library/resolve-refs.ts
 lib/library/splash-registry.ts
 lib/library/store.ts
@@ -896,6 +909,7 @@ lib/practices/embeddings.ts
 lib/practices/health.ts
 lib/practices/lifecycle.ts
 lib/practices/lineage.ts
+lib/practices/suggest.ts
 lib/pricing/dunning.ts
 lib/pricing/gamification-access.ts
 lib/pricing/gates.ts

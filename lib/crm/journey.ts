@@ -20,7 +20,7 @@ export type JourneyKind =
   | 'activity'
   | 'deal'
 
-export type JourneyPhase = 'arrival' | 'outreach' | 'in_app' | 'crm'
+type JourneyPhase = 'arrival' | 'outreach' | 'in_app' | 'crm'
 
 export type JourneyEvent = {
   /** ISO timestamp. */
@@ -45,14 +45,14 @@ const PHASE_OF: Record<JourneyKind, JourneyPhase> = {
   deal: 'crm',
 }
 
-export const PHASE_LABEL: Record<JourneyPhase, string> = {
+const PHASE_LABEL: Record<JourneyPhase, string> = {
   arrival: 'How they arrived',
   outreach: 'Outreach',
   in_app: 'In the app',
   crm: 'CRM activity',
 }
 
-export const PHASE_ORDER: JourneyPhase[] = ['arrival', 'outreach', 'in_app', 'crm']
+const PHASE_ORDER: JourneyPhase[] = ['arrival', 'outreach', 'in_app', 'crm']
 
 export function phaseFor(kind: JourneyKind): JourneyPhase {
   return PHASE_OF[kind]

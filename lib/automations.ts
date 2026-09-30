@@ -11,6 +11,7 @@ import { resolveSendGate } from '@/lib/comms/send-gate'
 import { enqueue } from '@/lib/queue/outbox'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
+import { postalFooterHtml } from '@/lib/email-studio/postal'
 
 // Event types operators can trigger on (matches engagement_events.event_type +
 // the gamification events that flow through the ledger).
@@ -50,7 +51,7 @@ export function isAutomationActionType(value: unknown): value is AutomationActio
 // so the engine stays migration-free: action_config is a free-form jsonb column. An empty
 // or absent condition set means "always fire" (back-compatible with every existing rule).
 
-export const AUTOMATION_CONDITION_OPS = ['eq', 'neq', 'exists', 'absent', 'gt', 'lt'] as const
+const AUTOMATION_CONDITION_OPS = ['eq', 'neq', 'exists', 'absent', 'gt', 'lt'] as const
 export type AutomationConditionOp = (typeof AUTOMATION_CONDITION_OPS)[number]
 
 export function isAutomationConditionOp(value: unknown): value is AutomationConditionOp {
@@ -133,7 +134,7 @@ export function evaluateConditions(
 }
 
 /** Shape of action_config for the push_actor action. `url` is an optional deep-link path. */
-export interface PushActionConfig {
+interface PushActionConfig {
   title: string
   body: string
   url?: string
@@ -177,7 +178,7 @@ export async function listRules(): Promise<AutomationRule[]> {
 
 function actorEmailHtml(body: string, unsubscribeUrl: string): string {
   const safe = body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br/>')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#333;line-height:1.6;">${safe}</p><hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p></div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#333;line-height:1.6;">${safe}</p><hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
 }
 
 /**

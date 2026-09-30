@@ -32,7 +32,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 // Until those are set, the route verifies + acknowledges but records nothing (fail-safe, logged).
 
 /** The normalized shape we pull out of a provider's inbound-email payload. */
-export interface ParsedInboundEmail {
+interface ParsedInboundEmail {
   from: string
   subject: string | null
   text: string | null

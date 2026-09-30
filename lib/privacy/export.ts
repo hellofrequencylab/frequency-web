@@ -66,6 +66,16 @@
 // complete regardless of per-table RLS coverage, BUT because the admin client
 // bypasses RLS, the in-code filters above ARE the access control — they must stay
 // scoped to `profileId`. Do not add a query here without an owner filter.
+//
+// EVERY MULTI-ROW READ IS PAGED, AND A SHORT SECTION SAYS SO (ADR-1599). PostgREST caps one
+// response at `max_rows` (1,000, supabase/config.toml), for the service role too, and says nothing
+// when it does: a member with 1,400 notifications used to get the first 1,000 and a file that
+// looked whole. So no section is one select. Each goes through `readAllPages`, which asks for fixed
+// pages of EXPORT_PAGE_SIZE ordered by a unique column until a page comes back short, and stops at
+// EXPORT_READ_CEILING rows per read so one runaway table cannot take the whole export down with it.
+// A read that stops at the ceiling with rows still behind it, or fails part way, is not cut
+// silently: its section is named in `meta.truncated` with the reason. Only the two single-row reads
+// (the profile, Vera's memory) are not paged, because each is at most one row by its key.
 
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -77,13 +87,19 @@ export type MemberExport = {
   meta: {
     /** Schema version of THIS export shape, bumped if the section set changes. */
     format: 'frequency.member-export'
-    version: 2
+    version: 3
     /** The member this export belongs to (echoed for the downloader's records). */
     profileId: string
     /** ISO timestamp the export was assembled. */
     generatedAt: string
     /** The personal-data sections included, in stable order. */
     sections: readonly MemberExportSection[]
+    /**
+     * The sections that are NOT complete, in section order, and why (ADR-1599). Empty when every
+     * section holds every row. `ceiling`: more rows exist than one export carries per read.
+     * `read_failed`: a page could not be read, so the section holds what came back before it.
+     */
+    truncated: MemberExportTruncation[]
   }
   data: {
     profile: Record<string, unknown> | null
@@ -144,9 +160,92 @@ export const MEMBER_EXPORT_SECTIONS = [
   'crmActivities',
 ] as const
 
-export type MemberExportSection = (typeof MEMBER_EXPORT_SECTIONS)[number]
+type MemberExportSection = (typeof MEMBER_EXPORT_SECTIONS)[number]
 
 type Rows = Record<string, unknown>[]
+
+/** Why a section stopped short. See `meta.truncated`. */
+type MemberExportTruncationReason = 'ceiling' | 'read_failed'
+type MemberExportTruncation = {
+  section: MemberExportSection
+  reason: MemberExportTruncationReason
+}
+
+/**
+ * Rows asked for per page. It must not exceed PostgREST `max_rows` (1,000 in
+ * supabase/config.toml, and export.test.ts reads that file to hold it): a page the server caps
+ * would come back short and read as the last one, which is the silent cut this pager exists to end.
+ */
+export const EXPORT_PAGE_SIZE = 1000
+
+/**
+ * The most rows one read carries into the file. Past it the section is marked `ceiling` in
+ * `meta.truncated`, never cut quietly. Sized so one runaway table cannot exhaust the function that
+ * builds the file, while sitting far above what any member holds in one section today.
+ */
+export const EXPORT_READ_CEILING = 25_000
+
+/** One paged read's outcome: every row it reached, and why it stopped short if it did. */
+type PagedRead = { rows: Rows; truncated: MemberExportTruncationReason | null }
+
+type PageResponse = { data: Rows | null; error: unknown }
+/**
+ * The owner-filtered query a section reads, before order and range. The pager applies both, so a
+ * section cannot forget either, and builds a fresh query per page (a builder is not reusable).
+ */
+type PageableQuery = {
+  order: (
+    column: string,
+    options: { ascending: boolean },
+  ) => { range: (from: number, to: number) => PromiseLike<PageResponse> }
+}
+
+/**
+ * THE one way this module reads more than one row (ADR-1599). Asks for EXPORT_PAGE_SIZE rows at a
+ * time, ordered ascending by `orderBy` (a column unique within the owner's rows, `id` unless the
+ * table has none), until a page comes back short. At EXPORT_READ_CEILING it asks for one more row:
+ * if there is one, the read reports `ceiling`; if not, the member had exactly that many and the
+ * read is complete. A failed page reports `read_failed` and keeps the rows before it. Rows repeated
+ * across a page boundary (a row inserted mid-export shifts the offsets) are kept once.
+ */
+export async function readAllPages(
+  query: () => PageableQuery,
+  { orderBy = 'id' }: { orderBy?: string } = {},
+): Promise<PagedRead> {
+  const out: Rows = []
+  const seen = new Set<unknown>()
+  const page = async (from: number, to: number): Promise<Rows | null> => {
+    try {
+      const { data, error } = await query().order(orderBy, { ascending: true }).range(from, to)
+      return error ? null : (data ?? [])
+    } catch {
+      return null
+    }
+  }
+  for (let from = 0; from < EXPORT_READ_CEILING; from += EXPORT_PAGE_SIZE) {
+    const to = Math.min(from + EXPORT_PAGE_SIZE, EXPORT_READ_CEILING) - 1
+    const rows = await page(from, to)
+    if (rows === null) return { rows: out, truncated: 'read_failed' }
+    for (const row of rows) {
+      const key = row[orderBy]
+      if (key !== undefined && key !== null) {
+        if (seen.has(key)) continue
+        seen.add(key)
+      }
+      out.push(row)
+    }
+    if (rows.length < to - from + 1) return { rows: out, truncated: null }
+  }
+  const beyond = await page(EXPORT_READ_CEILING, EXPORT_READ_CEILING)
+  if (beyond === null) return { rows: out, truncated: 'read_failed' }
+  return { rows: out, truncated: beyond.length > 0 ? 'ceiling' : null }
+}
+
+/**
+ * How many contact ids go into one `.in()` filter. Paging makes a list of thousands of owned
+ * contacts reachable, and thousands of ids in one query string is a request the server may refuse.
+ */
+const IN_FILTER_CHUNK = 100
 
 /** The one field a joined profile carries into the file: its public handle. */
 function handleOf(joined: unknown): string | null {
@@ -159,7 +258,7 @@ function handleOf(joined: unknown): string | null {
  * A friendship row as the member sees it: no profile ids, the other half as a handle, and
  * whether the member was the one who asked. `me` is the caller id the row was filtered on.
  */
-export function reduceFriendship(row: Record<string, unknown>, me: string): Record<string, unknown> {
+function reduceFriendship(row: Record<string, unknown>, me: string): Record<string, unknown> {
   const { user_a_id, user_b_id: _b, requested_by, a, b, introducer, ...rest } = row
   return {
     ...rest,
@@ -204,16 +303,10 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
   // eslint-disable-next-line no-restricted-syntax -- studio_draft + event_rsvps.guest_claimed_by/guest_email aren't in lib/database.types.ts yet (untyped seam, ADR-246)
   const untyped = db as unknown as SupabaseClient
 
-  // Each read is independently owner-scoped; run them in parallel. A failed read
-  // surfaces as an empty section rather than poisoning the whole export — the
-  // member still gets everything that succeeded (best-effort portability).
-  const rows = async (
-    promise: PromiseLike<{ data: Rows | null; error: unknown }>,
-  ): Promise<Rows> => {
-    const { data } = await promise
-    return data ?? []
-  }
-
+  // Each read is independently owner-scoped; run them in parallel, each paged to the end
+  // (ADR-1599). A read that fails or stops at the ceiling keeps the rows it reached and names its
+  // section in `meta.truncated`: the member still gets everything that succeeded (best-effort
+  // portability), and the file says which part is short instead of looking whole.
   const [
     profileRes,
     posts,
@@ -225,7 +318,7 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     zapTransactions,
     gemTransactions,
     memberTags,
-    networkContacts,
+    networkContactsRead,
     aiContextRes,
     studioDrafts,
     consentRecords,
@@ -239,10 +332,10 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     crmActivities,
   ] = await Promise.all([
     db.from('profiles').select('*').eq('id', profileId).maybeSingle(),
-    rows(db.from('posts').select('*').eq('author_id', profileId)),
-    rows(db.from('practice_logs').select('*').eq('profile_id', profileId)),
-    rows(db.from('practice_sessions').select('*').eq('profile_id', profileId)),
-    rows(db.from('event_rsvps').select('*').eq('profile_id', profileId)),
+    readAllPages(() => db.from('posts').select('*').eq('author_id', profileId)),
+    readAllPages(() => db.from('practice_logs').select('*').eq('profile_id', profileId)),
+    readAllPages(() => db.from('practice_sessions').select('*').eq('profile_id', profileId)),
+    readAllPages(() => db.from('event_rsvps').select('*').eq('profile_id', profileId)),
     // The seats they took as a signed-out GUEST before they had an account, which
     // claim_guest_rsvps (20270303000100) attached to them at sign-up. That function converts a
     // guest row IN PLACE — it stamps guest_claimed_by AND back-fills profile_id — so as the
@@ -254,44 +347,59 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     // guest_claimed_by is not in lib/database.types.ts, so this read uses the untyped handle
     // already opened above (ADR-246); the owner filter is identical and is still the whole
     // access control.
-    rows(untyped.from('event_rsvps').select('*').eq('guest_claimed_by', profileId)),
-    rows(db.from('memberships').select('*').eq('profile_id', profileId)),
-    rows(db.from('zap_transactions').select('*').eq('profile_id', profileId)),
-    rows(db.from('gem_transactions').select('*').eq('profile_id', profileId)),
-    rows(db.from('member_tags').select('*').eq('profile_id', profileId)),
-    rows(db.from('network_contacts').select('*').eq('owner_id', profileId)),
+    readAllPages(() => untyped.from('event_rsvps').select('*').eq('guest_claimed_by', profileId)),
+    readAllPages(() => db.from('memberships').select('*').eq('profile_id', profileId)),
+    readAllPages(() => db.from('zap_transactions').select('*').eq('profile_id', profileId)),
+    readAllPages(() => db.from('gem_transactions').select('*').eq('profile_id', profileId)),
+    readAllPages(() => db.from('member_tags').select('*').eq('profile_id', profileId)),
+    readAllPages(() => db.from('network_contacts').select('*').eq('owner_id', profileId)),
     db.from('ai_member_context').select('*').eq('profile_id', profileId).maybeSingle(),
-    rows(untyped.from('studio_draft').select('*').eq('profile_id', profileId)),
-    rows(db.from('consent_records').select('*').eq('profile_id', profileId)),
+    // studio_draft has no id: its key is (profile_id, scope), so scope orders the member's rows.
+    readAllPages(() => untyped.from('studio_draft').select('*').eq('profile_id', profileId), {
+      orderBy: 'scope',
+    }),
+    readAllPages(() => db.from('consent_records').select('*').eq('profile_id', profileId)),
     // The six person-keyed tables (LIVE-550, ADR-1582). Same shape as the fifteen above: one
     // owner column, compared to the caller id and nothing else. The embedded joins read a single
     // public column of the OTHER member, hung off a row that is already mine.
-    rows(
+    readAllPages(() =>
       db.from('messages').select('id, conversation_id, body, created_at').eq('sender_id', profileId),
     ),
-    rows(
+    readAllPages(() =>
       db
         .from('room_messages')
         .select('id, room_id, parent_id, body, media_url, created_at')
         .eq('author_id', profileId),
     ),
-    rows(db.from('friendships').select(FRIENDSHIP_COLUMNS).eq('user_a_id', profileId)),
-    rows(db.from('friendships').select(FRIENDSHIP_COLUMNS).eq('user_b_id', profileId)),
-    rows(db.from('notifications').select(NOTIFICATION_COLUMNS).eq('recipient_id', profileId)),
-    rows(db.from('space_members').select(SPACE_ROLE_COLUMNS).eq('profile_id', profileId)),
-    rows(
+    readAllPages(() => db.from('friendships').select(FRIENDSHIP_COLUMNS).eq('user_a_id', profileId)),
+    readAllPages(() => db.from('friendships').select(FRIENDSHIP_COLUMNS).eq('user_b_id', profileId)),
+    readAllPages(() =>
+      db.from('notifications').select(NOTIFICATION_COLUMNS).eq('recipient_id', profileId),
+    ),
+    readAllPages(() => db.from('space_members').select(SPACE_ROLE_COLUMNS).eq('profile_id', profileId)),
+    readAllPages(() =>
       db
         .from('space_memberships')
         .select(SPACE_MEMBERSHIP_COLUMNS)
         .eq('member_profile_id', profileId),
     ),
-    rows(db.from('crm_activities').select('*').eq('created_by', profileId)),
+    readAllPages(() => db.from('crm_activities').select('*').eq('created_by', profileId)),
   ])
+
+  // One entry per short section, whatever the number of reads behind it. `section` records the
+  // first reason any of its reads stopped for and hands back the rows of all of them.
+  const shortBy = new Map<MemberExportSection, MemberExportTruncationReason>()
+  const section = (name: MemberExportSection, ...reads: PagedRead[]): Rows => {
+    const short = reads.find((r) => r.truncated)?.truncated
+    if (short && !shortBy.has(name)) shortBy.set(name, short)
+    return reads.flatMap((r) => r.rows)
+  }
+  const networkContacts = section('networkContacts', networkContactsRead)
 
   // A friendship is one row with the member on either side, so it can only come back from one of
   // the two reads; the id dedupe is there so a malformed self-row cannot list twice.
   const seenFriendshipIds = new Set<unknown>()
-  const friendships = [...friendshipsAsA, ...friendshipsAsB]
+  const friendships = section('friendships', friendshipsAsA, friendshipsAsB)
     .filter((r) => {
       if (seenFriendshipIds.has(r.id)) return false
       seenFriendshipIds.add(r.id)
@@ -299,19 +407,19 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
     })
     .map((r) => reduceFriendship(r, profileId))
 
-  const notifications = notificationRows.map(({ actor, ...rest }) => ({
+  const notifications = section('notifications', notificationRows).map(({ actor, ...rest }) => ({
     ...rest,
     actor_handle: handleOf(actor),
   }))
 
-  const spaceRoles = spaceRoleRows.map(({ space, inviter, created_at, ...rest }) => ({
+  const spaceRoles = section('spaceRoles', spaceRoleRows).map(({ space, inviter, created_at, ...rest }) => ({
     ...rest,
     ...spaceFields(space),
     joined_at: created_at,
     invited_by_handle: handleOf(inviter),
   }))
 
-  const spaceMemberships = spaceMembershipRows.map(({ space, tier, started_at, ...rest }) => {
+  const spaceMemberships = section('spaceMemberships', spaceMembershipRows).map(({ space, tier, started_at, ...rest }) => {
     const t = (tier && typeof tier === 'object' ? tier : {}) as { name?: unknown }
     return {
       ...rest,
@@ -338,19 +446,22 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
   // never degrades to matching the unproven string. Same gate claim_guest_rsvps itself applies,
   // same rule as ADR-854: an unverified email may address a DELIVERY, but it may never key a thing
   // that is then handed over.
-  const unclaimedGuestRsvps = await (async (): Promise<Rows> => {
+  const none: PagedRead = { rows: [], truncated: null }
+  const unclaimedGuestRsvps = await (async (): Promise<PagedRead> => {
     try {
       // The address is read FROM the caller's own profile row, never passed in — see the header.
       const authUserId = (profileRes.data as { auth_user_id?: string | null } | null)?.auth_user_id
-      if (!authUserId) return []
-      const { data: userRes } = await db.auth.admin.getUserById(authUserId)
+      if (!authUserId) return none
+      const { data: userRes, error: authError } = await db.auth.admin.getUserById(authUserId)
+      // A lookup that errored is not "no guest seats": the section says it is short (ADR-1599).
+      if (authError) return { rows: [], truncated: 'read_failed' }
       const user = userRes?.user as
         | { email?: string | null; email_confirmed_at?: string | null }
         | null
         | undefined
-      if (!user?.email_confirmed_at) return []
+      if (!user?.email_confirmed_at) return none
       const email = user.email?.trim().toLowerCase()
-      if (!email) return []
+      if (!email) return none
       // `.ilike` + escapeLike, not `.eq`, matching how lib/crm/lead-capture.ts matches addresses:
       // capture_guest_rsvp lowercases what it writes, but the column is plain text with no citext
       // behind it, so a row from any other path may be stored mixed-case and `.eq` would miss it.
@@ -360,7 +471,7 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
       // `profile_id IS NULL` is belt-and-braces on top of event_rsvps_identity_check (which already
       // forbids a row carrying both identities): it means that even if that constraint were ever
       // relaxed, an email match could never drag in a row that belongs to a different member.
-      return rows(
+      return readAllPages(() =>
         untyped
           .from('event_rsvps')
           .select('*')
@@ -368,16 +479,21 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
           .ilike('guest_email', escapeLike(email)),
       )
     } catch {
-      // Best-effort like every other section (see `rows` above): an auth lookup that fails costs
-      // this one section, it does not cost the member the rest of their export.
-      return []
+      // Best-effort like every other section: an auth lookup that fails costs this one section,
+      // it does not cost the member the rest of their export, and the file says it is short.
+      return { rows: [], truncated: 'read_failed' }
     }
   })()
 
   // One RSVP row per id. A claimed guest seat carries BOTH profile_id and guest_claimed_by, so
   // it comes back from both owner-scoped reads above; the export should list it once.
   const seenRsvpIds = new Set<string>()
-  const eventRsvps = [...memberRsvps, ...claimedGuestRsvps, ...unclaimedGuestRsvps].filter((r) => {
+  const eventRsvps = section(
+    'eventRsvps',
+    memberRsvps,
+    claimedGuestRsvps,
+    unclaimedGuestRsvps,
+  ).filter((r) => {
     if (typeof r.id !== 'string') return true
     if (seenRsvpIds.has(r.id)) return false
     seenRsvpIds.add(r.id)
@@ -386,49 +502,69 @@ export async function buildMemberExport(profileId: string): Promise<MemberExport
 
   // Network notes/tags are scoped through the contacts the member OWNS: collect
   // the owned contact ids first, then read only children of those ids. If the
-  // member owns no contacts we skip the child reads entirely (no `.in([])`).
+  // member owns no contacts we skip the child reads entirely (no `.in([])`). The ids go in
+  // chunks of IN_FILTER_CHUNK, and each chunk is paged like every other read.
   const contactIds = networkContacts
     .map((c) => c.id)
     .filter((id): id is string => typeof id === 'string')
+  const contactChunks: string[][] = []
+  for (let i = 0; i < contactIds.length; i += IN_FILTER_CHUNK)
+    contactChunks.push(contactIds.slice(i, i + IN_FILTER_CHUNK))
 
-  const [networkContactNotes, networkContactTags] = contactIds.length
-    ? await Promise.all([
-        rows(db.from('network_contact_notes').select('*').in('contact_id', contactIds)),
-        rows(db.from('network_contact_tags').select('*').in('contact_id', contactIds)),
-      ])
-    : [[], []]
+  const [noteReads, tagReads] = await Promise.all([
+    Promise.all(
+      contactChunks.map((ids) =>
+        readAllPages(() => db.from('network_contact_notes').select('*').in('contact_id', ids)),
+      ),
+    ),
+    Promise.all(
+      contactChunks.map((ids) =>
+        readAllPages(() => db.from('network_contact_tags').select('*').in('contact_id', ids)),
+      ),
+    ),
+  ])
+  const networkContactNotes = section('networkContactNotes', ...noteReads)
+  const networkContactTags = section('networkContactTags', ...tagReads)
+
+  // The data first: each `section(...)` call below records a short section, and meta.truncated
+  // reads that record, so it must be built after every section has been.
+  const data: MemberExport['data'] = {
+    profile: (profileRes.data as Record<string, unknown> | null) ?? null,
+    posts: section('posts', posts),
+    practiceLogs: section('practiceLogs', practiceLogs),
+    practiceSessions: section('practiceSessions', practiceSessions),
+    eventRsvps,
+    memberships: section('memberships', memberships),
+    zapTransactions: section('zapTransactions', zapTransactions),
+    gemTransactions: section('gemTransactions', gemTransactions),
+    memberTags: section('memberTags', memberTags),
+    networkContacts,
+    networkContactNotes,
+    networkContactTags,
+    aiMemberContext: (aiContextRes.data as Record<string, unknown> | null) ?? null,
+    studioDrafts: section('studioDrafts', studioDrafts),
+    consentRecords: section('consentRecords', consentRecords),
+    messages: section('messages', messages),
+    roomMessages: section('roomMessages', roomMessages),
+    friendships,
+    notifications,
+    spaceRoles,
+    spaceMemberships,
+    crmActivities: section('crmActivities', crmActivities),
+  }
 
   return {
     meta: {
       format: 'frequency.member-export',
-      version: 2,
+      version: 3,
       profileId,
       generatedAt: new Date().toISOString(),
       sections: MEMBER_EXPORT_SECTIONS,
+      truncated: MEMBER_EXPORT_SECTIONS.flatMap((name) => {
+        const reason = shortBy.get(name)
+        return reason ? [{ section: name, reason }] : []
+      }),
     },
-    data: {
-      profile: (profileRes.data as Record<string, unknown> | null) ?? null,
-      posts,
-      practiceLogs,
-      practiceSessions,
-      eventRsvps,
-      memberships,
-      zapTransactions,
-      gemTransactions,
-      memberTags,
-      networkContacts,
-      networkContactNotes,
-      networkContactTags,
-      aiMemberContext: (aiContextRes.data as Record<string, unknown> | null) ?? null,
-      studioDrafts,
-      consentRecords,
-      messages,
-      roomMessages,
-      friendships,
-      notifications,
-      spaceRoles,
-      spaceMemberships,
-      crmActivities,
-    },
+    data,
   }
 }

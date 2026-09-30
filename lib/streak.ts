@@ -1,7 +1,7 @@
 // Streak milestones — the Duolingo-style checkpoints the feed streak widget (and
 // anywhere else that shows a streak) progresses toward. Pure + reusable.
 
-export interface StreakMilestone {
+interface StreakMilestone {
   day: number
   label: string
   /** Zaps paid the first time a member reaches this checkpoint (real-life act →
@@ -35,7 +35,7 @@ export const STREAK_FREEZE_CAP = 2
  *  version of this comment said never; v3 superseded it. */
 export const FULL_DAYS_PER_FREEZE = 5
 
-export interface StreakProgress {
+interface StreakProgress {
   streak: number
   /** Milestones already reached (day <= streak). */
   reached: StreakMilestone[]

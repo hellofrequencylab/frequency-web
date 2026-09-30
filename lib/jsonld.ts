@@ -579,7 +579,7 @@ function spaceSchemaType(type: string): 'LocalBusiness' | 'Organization' {
  *  four is OPTIONAL and emitted only when present, so existing callers are unchanged. This is the
  *  single place the LocalBusiness/Organization node is shaped; callers PASS values (reviews ->
  *  aggregateRating, socials -> sameAs, etc.) as sources land, never re-declare the signature. */
-export interface SpaceSchemaInput {
+interface SpaceSchemaInput {
   slug: string
   type: string
   name: string

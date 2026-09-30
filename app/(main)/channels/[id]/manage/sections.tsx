@@ -211,7 +211,9 @@ export async function CirclesSection({
           ? 'You are not allowed to do that.'
           : notice.error === 'paused'
             ? 'This Channel is paused and not taking new Circles right now.'
-            : 'That did not save. Try again.'}
+            : notice.error === 'full'
+              ? 'That Circle already carries three Channels. Take one off first.'
+              : 'That did not save. Try again.'}
     </p>
   ) : notice?.saved ? (
     <p className="rounded-xl border border-success/30 bg-success-bg px-4 py-2.5 text-body-sm text-success">

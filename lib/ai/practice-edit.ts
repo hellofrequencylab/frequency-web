@@ -19,7 +19,7 @@ import { withPracticeShape } from './practice-shape'
 const FEATURE = 'practice-edit'
 
 /** The Practice as Vera sees it for editing. */
-export interface PracticeForEdit {
+interface PracticeForEdit {
   title: string
   /** The card hook. */
   summary: string
@@ -31,7 +31,7 @@ export interface PracticeForEdit {
 }
 
 /** The fields Vera may rewrite. Every field optional: only what the request asks for is returned. */
-export interface PracticeEditDraft {
+interface PracticeEditDraft {
   title?: string
   summary?: string
   description?: string

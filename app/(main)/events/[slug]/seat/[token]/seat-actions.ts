@@ -49,13 +49,19 @@ const RATE_LIMITED: GuestSeatActionResult = {
   error: 'Too many requests. Please try again in a few minutes.',
 }
 
+/** A question id as the page sends it: a canonical uuid (event_questions.id). */
+const QUESTION_ID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+
 /** Answers arrive as a plain object keyed by question id; the SQL drops anything that is not one
- *  of this event's questions, so this only bounds the shape and the size. */
+ *  of this event's questions, so this bounds the shape and the size. A key that is not a uuid is
+ *  dropped HERE too, before it is written onto `out` (HYG-143, CodeQL js/remote-property-injection):
+ *  the SQL skips it anyway, and a key like `__proto__` never becomes a property name on the way. */
 function cleanAnswers(raw: unknown): Record<string, string> {
   const out: Record<string, string> = {}
   if (!raw || typeof raw !== 'object') return out
   let n = 0
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (!QUESTION_ID.test(k)) continue
     if (typeof v !== 'string') continue
     if (n++ >= 50) break
     out[k] = v.slice(0, 2000)

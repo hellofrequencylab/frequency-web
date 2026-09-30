@@ -69,18 +69,18 @@ function toEntry(i: ContactInteraction): TimelineEntry {
   }
 }
 
-export interface LegacyNote {
+interface LegacyNote {
   id: string
   body: string
   createdAt: string | null
 }
-export interface LegacyScan {
+interface LegacyScan {
   id: string
   codeTitle: string | null
   scannedAt: string
 }
 
-export interface BuildTimelineInput {
+interface BuildTimelineInput {
   interactions: ContactInteraction[]
   /** network_contact notes folded in until the note adapter backfills them. */
   notes?: LegacyNote[]
@@ -89,7 +89,7 @@ export interface BuildTimelineInput {
 }
 
 /** Options for buildTimeline. */
-export interface BuildTimelineOptions {
+interface BuildTimelineOptions {
   /** When false, automated (system-generated) events are filtered OUT of the result — the
    *  "Show automated events" toggle OFF (see filterTimeline). Defaults to true (show everything). */
   includeAutomated?: boolean
@@ -102,7 +102,7 @@ export interface BuildTimelineOptions {
 /** Sources that are machine-generated engagement / lifecycle noise (email opens, clicks, delivery,
  *  Resonance Engine plays, generic system updates). Hidden when the "Show automated events" toggle is
  *  off. `manual`, `crm_activity`, and `import` are human-logged and always shown. */
-export const AUTOMATED_SOURCES: readonly InteractionSource[] = [
+const AUTOMATED_SOURCES: readonly InteractionSource[] = [
   'engagement',
   'resend',
   'twilio',
@@ -213,7 +213,7 @@ export function relativeTime(at: string | null | undefined, now: number = Date.n
 /** A one-line read of the whole timeline for the detail header: how many touches there are and when
  *  the most recent one happened (the entries are newest-first out of buildTimeline, so the first is
  *  the latest). Pure; an empty timeline yields a null `lastTouchAt`. */
-export interface TimelineSummary {
+interface TimelineSummary {
   count: number
   lastTouchAt: string | null
 }

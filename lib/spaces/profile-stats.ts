@@ -19,7 +19,7 @@ import { listPublicSpaceCircles } from '@/lib/circles/store'
 import { listSpaceMembers } from './membership'
 
 /** The stat metrics resolveProfileStats can compute a live value for. */
-export type StatMetric = 'offerings' | 'sessions' | 'practices' | 'circles' | 'members' | 'clients' | 'standing'
+type StatMetric = 'offerings' | 'sessions' | 'practices' | 'circles' | 'members' | 'clients' | 'standing'
 
 /** One resolved hero stat: a plain-noun label + the live value from the Space's own rows. */
 export interface ResolvedStat {

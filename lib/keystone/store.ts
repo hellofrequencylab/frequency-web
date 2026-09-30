@@ -75,7 +75,7 @@ async function readAllCells(): Promise<DensityCell[]> {
   }
 }
 
-export interface DensityByCity {
+interface DensityByCity {
   cities: CityDensity[]
   summary: KeystoneDensitySummary
 }
@@ -90,7 +90,7 @@ export const getDensityByCity = cache(async (): Promise<DensityByCity> => {
   return { cities, summary: summarizeDensity(cities) }
 })
 
-export interface LocalitySeedSignal {
+interface LocalitySeedSignal {
   /** The viewer's fuzzed city bucket key, or null when they have no home location. */
   cityKey: string | null
   signal: SeedSignal

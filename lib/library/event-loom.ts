@@ -101,7 +101,7 @@ export async function copyImageToLoom(input: {
 }
 
 /** One Loom image the caller may reuse: their OWN space's asset OR a public shared-library asset. */
-export type PickableLoomImage = {
+type PickableLoomImage = {
   id: string
   title: string
   url: string

@@ -34,6 +34,7 @@
 
 import { readFileSync, existsSync } from 'node:fs'
 import { execSync } from 'node:child_process'
+import { LEDGER_DIR, fragmentIdsFromPaths } from './lib/ledger.mjs'
 
 const ALLOWLIST = 'scripts/planning-docs.txt'
 const BACKLOG = 'docs/BUILD-BACKLOG.json'
@@ -92,7 +93,7 @@ const actual = tracked.filter((p) => {
   if (p.startsWith('node_modules/')) return false
   // Only the doc roots. design_handoff/ is DAWN's contract surface, not a task list, and every
   // file under it would otherwise match on the directory name alone.
-  const inScope = p.startsWith('docs/') || p.startsWith('resonance/docs/') || !p.includes('/')
+  const inScope = p.startsWith('docs/') || !p.includes('/')
   if (!inScope) return false
   const base = p.split('/').pop()
   return PLANNING_NAME.test(base)
@@ -145,6 +146,29 @@ if (silent.length) {
       `     > **Status lives in [\`docs/BUILD-BACKLOG.json\`](BUILD-BACKLOG.json).** This document is the\n` +
       `     > spec and the rationale; it does not track what is done.\n` +
       `   ...or a SUPERSEDED banner if it is history. A reader must not have to guess.`,
+  })
+}
+
+// Rule 3 (HYG-145, ADR-1635) — docs/ledger holds ledger fragments and nothing else. Fragments are
+// part of the one list (the loader merges them into it), so a plan, a note or a stray file there
+// would be a second record wearing the first one's directory.
+let ledgerFiles = []
+try {
+  ledgerFiles = execSync(`git ls-files "${LEDGER_DIR}"`, { encoding: 'utf8' }).split('\n').map((l) => l.trim()).filter(Boolean)
+} catch {
+  ledgerFiles = []
+}
+const strays = ledgerFiles.filter((p) => {
+  const ids = fragmentIdsFromPaths([p])
+  return ids.rows.size === 0 && ids.adrs.size === 0
+})
+if (strays.length) {
+  problems.push({
+    kind: `FILES IN ${LEDGER_DIR} THAT ARE NOT LEDGER FRAGMENTS`,
+    lines: strays,
+    fix:
+      `${LEDGER_DIR} holds only rows/<ID>.json and adr/ADR-<n>.md (scripts/lib/ledger.mjs). Move anything\n` +
+      `   else out, or write it as a row or an ADR.`,
   })
 }
 

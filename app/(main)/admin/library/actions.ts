@@ -10,6 +10,7 @@ import { ingestImageBytes } from '@/lib/library/ingest'
 import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 import { findLibraryAssetUsage } from '@/lib/library/usage'
+import { normalizeAssetMeta } from '@/lib/library/asset-meta'
 import { LIBRARY_DOWNLOAD_POLICIES, type LibraryDownloadPolicy } from '@/lib/library/types'
 import { recordVersion } from '@/lib/library/versions'
 import {
@@ -161,20 +162,11 @@ export async function updateLibraryAssetMeta(
       patch.expires_at = new Date(t).toISOString()
     }
   }
-  if (fields.title !== undefined) {
-    const t = fields.title.trim()
-    if (!t) return { error: 'Title cannot be empty.' }
-    patch.title = t.slice(0, 200)
-  }
-  if (fields.alt !== undefined) patch.alt = fields.alt.trim().slice(0, 500) || null
+  // Title, alt and tags validate through the one rule the Space Loom Studio uses too (LIVE-568).
+  const words = normalizeAssetMeta({ title: fields.title, alt: fields.alt, tags: fields.tags })
+  if ('error' in words) return { error: words.error }
+  Object.assign(patch, words.patch)
   if (fields.category !== undefined) patch.category = fields.category.trim().slice(0, 80) || null
-  if (fields.tags !== undefined) {
-    patch.tags = fields.tags
-      .split(',')
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean)
-      .slice(0, 40)
-  }
 
   // Every field above is validated before anything moves, so a bad date cannot strand a moved file.
   if (fields.isProtected !== undefined) {

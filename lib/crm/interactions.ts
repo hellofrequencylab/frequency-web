@@ -23,7 +23,7 @@ import type { Json, TablesInsert } from '@/lib/database.types'
 // messaging adapter (app/(main)/messages/actions.ts) so the contact card shows every in-house touch.
 export type InteractionChannel = 'email' | 'sms' | 'call' | 'in_person' | 'event' | 'note' | 'system' | 'in_app'
 export type InteractionDirection = 'inbound' | 'outbound' | 'internal'
-export type InteractionSubjectKind = 'contact' | 'network_contact' | 'profile'
+type InteractionSubjectKind = 'contact' | 'network_contact' | 'profile'
 // `playbook` (ADR-382): a touch a Resonance Engine playbook recorded through the governed
 // Vera allow-list (a streak save, a tag, a stage move, a drafted email). Additive.
 // `import` (Phase 1): a touch reconstructed from a CSV / data import (used by the import pipeline).
@@ -110,7 +110,7 @@ export interface ContactInteraction {
 }
 
 /** The snake_case row shape written to `contact_interactions` (what the insert/upsert sends). */
-export interface InteractionInsert {
+interface InteractionInsert {
   idempotency_key: string | null
   owner_profile_id: string
   subject_kind: InteractionSubjectKind

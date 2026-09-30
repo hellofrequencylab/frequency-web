@@ -19,10 +19,10 @@ import { z } from 'zod'
 
 export { z }
 
-export type ModelJsonResult<T> = { ok: true; data: T } | { ok: false; reason: 'no-json' | 'bad-json' | 'bad-shape'; detail?: string }
+type ModelJsonResult<T> = { ok: true; data: T } | { ok: false; reason: 'no-json' | 'bad-json' | 'bad-shape'; detail?: string }
 
 /** Which JSON value the prompt asked for; decides which bracket pair we hunt for. */
-export type ModelJsonShape = 'object' | 'array'
+type ModelJsonShape = 'object' | 'array'
 
 /** Strip a leading/trailing markdown code fence, with or without a language tag. */
 export function stripFence(raw: string): string {

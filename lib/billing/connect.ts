@@ -5,9 +5,10 @@
 // flags from Stripe, and read payout-readiness for the UI. Server-only.
 //
 // Per-PROFILE account: one human = one Stripe Express account (one bank + one KYC),
-// shared across every channel and persona they earn through. The per-persona
-// `profile_personas.stripe_account_id` override is reserved for the multi-legal-
-// entity case (a separate LLC) and is not wired in this phase.
+// shared across every channel and persona they earn through. Activating a money persona
+// requires this account to take charges and binds its id onto
+// `profile_personas.stripe_account_id` (LIVE-696); a separate account per legal entity
+// (a separate LLC) is not built.
 //
 // ENV-GATED, like the rest of billing: every function no-ops (returns null / an
 // empty status) when `stripe` is unconfigured, so the surface degrades cleanly
@@ -68,7 +69,7 @@ export interface ConnectStatus {
   ready: boolean
 }
 
-export interface ProfileConnectRow {
+interface ProfileConnectRow {
   stripe_account_id: string | null
   stripe_charges_enabled: boolean | null
   stripe_payouts_enabled: boolean | null
@@ -194,7 +195,7 @@ export async function getConnectReadyMap(profileIds: string[]): Promise<Record<s
  * Separated out because the decision is the only interesting part and mocking a Supabase client to
  * reach it would test the mock (SCAN-532's lesson, one directory over).
  */
-export type ConnectReadOutcome =
+type ConnectReadOutcome =
   | { kind: 'unknown'; message: string }
   | { kind: 'existing'; accountId: string }
   | { kind: 'create'; displayName: string | null }

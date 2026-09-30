@@ -93,7 +93,7 @@ export function practiceZapValue(p: {
 
 export type ZapAction = keyof typeof ZAP_AMOUNTS
 
-export interface ZapAwardResult {
+interface ZapAwardResult {
   awarded: boolean
   amount: number
   /** True ONLY when the award was refused because the action's `zap_config.daily_cap` is
@@ -105,7 +105,7 @@ export interface ZapAwardResult {
   capped?: boolean
 }
 
-export interface AwardZapsOpts {
+interface AwardZapsOpts {
   /** Ledger label for the "how you earned" log (defaults to 'manual'). */
   actionType?: string
   /** Extra context stored on the ledger row (node id, achievement slug, …). */
@@ -154,7 +154,7 @@ export async function awardZaps(
   return { awarded: true, amount: finalAmount }
 }
 
-export interface ReverseZapsResult {
+interface ReverseZapsResult {
   reversed: boolean
   /** The (negative) amount written to the ledger, or 0 when nothing to reverse. */
   amount: number

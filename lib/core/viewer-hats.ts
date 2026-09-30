@@ -35,7 +35,7 @@ import {
 /** A scope the viewer might LEAD by stewardship edge — passed to `surfaceAccess` to
  *  light that scope's in-scope leadership surfaces even for a global-member edge-leader
  *  (P1.6 PR 2, ADR-221). Only circle/hub/nexus carry surface standing today. */
-export type SurfaceScope = { type: 'circle' | 'hub' | 'nexus'; id: string }
+type SurfaceScope = { type: 'circle' | 'hub' | 'nexus'; id: string }
 
 /** The COMMUNITY level a scope confers on whoever leads it: a circle ⇒ host, a hub ⇒
  *  guide, a nexus ⇒ mentor. Used to elevate the matrix standing for an in-scope edge-

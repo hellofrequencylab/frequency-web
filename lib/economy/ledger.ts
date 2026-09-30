@@ -7,8 +7,9 @@
 // so the profileId filter is belt-and-suspenders, not the only guard. See ADR-174.
 
 import { createClient } from '@/lib/supabase/server'
+import { zapWeeks, type ZapWeeks } from '@/lib/economy/week-over-week'
 
-export type LedgerCurrency = 'gems' | 'zaps'
+type LedgerCurrency = 'gems' | 'zaps'
 
 export interface LedgerEntry {
   id: string
@@ -21,14 +22,14 @@ export interface LedgerEntry {
 
 export type LedgerStreakType = 'attendance' | 'posting' | 'hosting' | 'login'
 
-export interface StreakSummary {
+interface StreakSummary {
   type: LedgerStreakType
   current: number
   longest: number
   lastActivityAt: string | null
 }
 
-export interface EarningLog {
+interface EarningLog {
   entries: LedgerEntry[]
   streaks: StreakSummary[]
   totals: {
@@ -141,6 +142,25 @@ export async function getEarningLog(profileId: string, limit = 80): Promise<Earn
       amplitude: Number(p?.amplitude ?? 0),
     },
   }
+}
+
+/**
+ * A member's Zaps this week and last week (LIVE-685), summed at read time from the last 14 days of
+ * `zap_transactions` (the rules live in ./week-over-week.ts). Null when the read fails, so the
+ * stat row simply shows no comparison rather than a false zero.
+ */
+export async function getZapWeeks(profileId: string, now = Date.now()): Promise<ZapWeeks | null> {
+  const supabase = await createClient()
+  const since = new Date(now - 14 * 86_400_000).toISOString()
+  const { data, error } = await supabase
+    .from('zap_transactions')
+    .select('amount, created_at')
+    .eq('profile_id', profileId)
+    .gte('created_at', since)
+    .limit(2000)
+  if (error) return null
+  const rows = data ?? []
+  return zapWeeks(rows.map((r) => ({ at: r.created_at, amount: r.amount })), now)
 }
 
 // Friendly, member-facing labels for each ledger action_type. Kept here so the

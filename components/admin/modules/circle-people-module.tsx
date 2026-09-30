@@ -6,6 +6,7 @@ import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { HostInviteEmail } from '@/components/circles/host-invite-email'
 import { getCirclePeopleData, type CirclePeopleData } from '@/app/(main)/circles/admin-actions'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "People" module (ADMIN-RAIL.md Phase 7, the 'people' spine cell). Renders in the page
 // admin dock on /circles/[slug]; the server returns null unless the caller holds circle.moderate,
@@ -21,6 +22,8 @@ function roleLabel(role: string | null): string | null {
 export function CirclePeopleModule() {
   const pathname = usePathname()
   const slug = pathname.match(/^\/circles\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readPeople = useEntityRailRead('circle', 'people', getCirclePeopleData)
 
   const [data, setData] = useState<CirclePeopleData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -28,7 +31,7 @@ export function CirclePeopleModule() {
   useEffect(() => {
     if (!slug) return
     let active = true
-    getCirclePeopleData(slug)
+    readPeople(slug)
       .then((d) => {
         if (active) {
           setData(d)
@@ -41,7 +44,7 @@ export function CirclePeopleModule() {
     return () => {
       active = false
     }
-  }, [slug])
+  }, [slug, readPeople])
 
   if (!slug) return null
   if (loading) {

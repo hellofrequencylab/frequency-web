@@ -66,7 +66,7 @@ export interface BlockNode {
 }
 
 /** `RowDef` with node cells. Every other field is `RowDef`'s, unchanged. */
-export interface NodeRowDef {
+interface NodeRowDef {
   id: string
   columns: RowColumns
   cells: BlockNode[][]

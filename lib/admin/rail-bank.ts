@@ -25,7 +25,7 @@ export interface BankLink {
 
 /** The viewer facts the bank reads. Staff/operator unlocks the operator-workspace links on the
  *  personal/global bank. Kept minimal + serializable-shaped so any caller can supply it. */
-export interface BankViewer {
+interface BankViewer {
   /** The web_role staff axis (operator). Omitted / false ⇒ no operator links. */
   isStaff?: boolean
 }

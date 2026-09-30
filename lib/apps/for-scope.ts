@@ -24,7 +24,7 @@ import { moduleScopeChain } from '@/lib/widgets/modules'
 import type { ScopeKind } from '@/lib/admin/modules/registry'
 import { tierForApp } from '@/lib/admin/modules/spine'
 import { isAdvancedModuleId } from '@/lib/admin/modules/space-modules'
-import { loadAppOverrides, mergeAppOverrides, effectiveMinRole, scopeKeyFor } from './overrides'
+import { loadAppOverrides, mergeAppOverrides, effectiveMinRole, resolveScopeAppOverrides, scopeKeyFor } from './overrides'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 
 // A scope kind → its URL section, so a scope can address the page-app route sets keyed under
@@ -202,7 +202,7 @@ function reasonForGate(gate: AppGate): string {
 
 /** An attainable-but-locked App: the App plus the one-line reason (+ optional CTA) the rail shows in
  *  place of its editor. Fail-closed: a locked App NEVER exposes its editor — the row is inert. */
-export interface LockedApp {
+interface LockedApp {
   app: App
   reason: string
   cta?: { label: string; href: string }
@@ -253,7 +253,8 @@ export async function resolveAppsForScope(
   role?: CommunityRole | null,
 ): Promise<App[]> {
   if (!scope || !viewer) return []
-  const overrides = await loadAppOverrides(scopeKeyFor(scope))
+  // The scope's own rows plus the global disables (LIVE-686): an App off for everyone is off here.
+  const overrides = await resolveScopeAppOverrides(scopeKeyFor(scope), loadAppOverrides)
   const merged = mergeAppOverrides(appsForScope(scope, viewer, 'editor'), overrides)
   return merged.filter((a) => {
     const floor = effectiveMinRole(a.id, overrides)

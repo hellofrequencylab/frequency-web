@@ -26,7 +26,7 @@ import {
   JOURNEY_SIGN_IN_REASON,
 } from './journey-access'
 
-export type SellCheck = { ok: true } | { ok: false; error: string }
+type SellCheck = { ok: true } | { ok: false; error: string }
 
 /**
  * May `callerId` attach or change a price on `planId`?

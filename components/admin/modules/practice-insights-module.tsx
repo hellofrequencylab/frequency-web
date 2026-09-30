@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getPracticeInsightsData, type PracticeInsightsData } from '@/app/(main)/practices/admin-actions'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Insights" module (ADMIN-RAIL.md Phase 7, the 'insights' spine cell for practices).
 // Renders in the page admin dock on /practices/[id]; the server returns null unless the caller holds
@@ -12,6 +13,8 @@ import { getPracticeInsightsData, type PracticeInsightsData } from '@/app/(main)
 export function PracticeInsightsModule() {
   const pathname = usePathname()
   const id = pathname.match(/^\/practices\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readInsights = useEntityRailRead('practice', 'insights', getPracticeInsightsData)
 
   const [data, setData] = useState<PracticeInsightsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -19,7 +22,7 @@ export function PracticeInsightsModule() {
   useEffect(() => {
     if (!id) return
     let active = true
-    getPracticeInsightsData(id)
+    readInsights(id)
       .then((d) => {
         if (active) {
           setData(d)
@@ -32,7 +35,7 @@ export function PracticeInsightsModule() {
     return () => {
       active = false
     }
-  }, [id])
+  }, [id, readInsights])
 
   if (!id) return null
   if (loading) {

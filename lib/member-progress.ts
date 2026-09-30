@@ -16,9 +16,9 @@ import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
 
 // --- the ladder ------------------------------------------------------------
 
-export type StageKey = 'newcomer' | 'finding_feet' | 'regular' | 'established' | 'anchor'
+type StageKey = 'newcomer' | 'finding_feet' | 'regular' | 'established' | 'anchor'
 
-export interface MemberStage {
+interface MemberStage {
   key: StageKey
   /** 0..4 — comparable across stages. */
   index: number
@@ -35,7 +35,7 @@ export const MEMBER_STAGES: MemberStage[] = [
   { key: 'anchor',       index: 4, label: 'Anchor',            tagline: 'You hold the room. Bring others into it.' },
 ]
 
-export function stageByKey(key: StageKey): MemberStage {
+function stageByKey(key: StageKey): MemberStage {
   return MEMBER_STAGES.find((s) => s.key === key) ?? MEMBER_STAGES[0]
 }
 
@@ -72,7 +72,7 @@ export function deriveStage(s: ProgressSignals): StageKey {
   return 'finding_feet'
 }
 
-export interface NextGate {
+interface NextGate {
   label: string
   met: boolean
 }
@@ -110,7 +110,7 @@ export function nextStage(stage: StageKey): MemberStage | null {
 
 // --- the read --------------------------------------------------------------
 
-export interface MemberProgress {
+interface MemberProgress {
   stage: MemberStage
   next: MemberStage | null
   signals: ProgressSignals

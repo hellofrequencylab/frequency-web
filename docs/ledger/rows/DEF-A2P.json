@@ -1,0 +1,10 @@
+{
+  "id": "DEF-A2P",
+  "patch": {
+    "status": "parked",
+    "notes": "parkedUntil: 3 weeks before any SMS feature ships (carrier review runs 10 to 15 days). Owner ruling 2026-09-30 ~01:35Z \"Park until SMS is scheduled\" (ADR-1672)."
+  },
+  "append": {
+    "detail": "\n\n── PARKED 2026-09-30. OWNER RULING 2026-09-30 ~01:35Z (multiple choice, recorded by HYG-156, ADR-1672): \"Park until SMS is scheduled\". REVISIT TRIGGER: file the brand and campaign at least 3 weeks before any SMS feature ships, because carrier review runs 10 to 15 days. The filing packet stays ready in docs/A2P-REGISTRATION.md. The SMS features themselves (LIVE-693, the automation SMS step, and PROG-GD6, the phone door) are parked by the same day's P3 sort (recorded by HYG-157), so scheduling either one is what starts this clock. The closing test is unchanged and is not run while parked."
+  }
+}

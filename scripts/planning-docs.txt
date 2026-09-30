@@ -89,4 +89,3 @@ docs/naming/INVENTORY-CODE.md
 docs/naming/INVENTORY-CONTENT.md
 docs/naming/INVENTORY-DOCS.md
 docs/naming/PLAN.md
-resonance/docs/BUILD-PLAN.md

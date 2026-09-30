@@ -21,7 +21,7 @@ export interface ConnectionSettings {
   rewardWelcome: number
 }
 
-export const CONNECTION_DEFAULTS: ConnectionSettings = {
+const CONNECTION_DEFAULTS: ConnectionSettings = {
   directoryEnabled: true,
   proximityEnabled: true,
   mapsEnabled: false,
@@ -59,7 +59,7 @@ export const getConnectionSettings = cache(async (): Promise<ConnectionSettings>
 })
 
 // ── Per-user preferences ─────────────────────────────────────────────────────
-export interface MyConnectionPrefs {
+interface MyConnectionPrefs {
   directoryVisible: boolean
   discoverableBy: DiscoverableBy
   locationBand: LocationBand
@@ -101,7 +101,7 @@ export async function getMyConnectionPrefs(): Promise<MyConnectionPrefs | null> 
 }
 
 // ── Proximity directory (privacy-safe) ───────────────────────────────────────
-export interface NearbyMember {
+interface NearbyMember {
   profileId: string
   displayName: string
   handle: string

@@ -50,7 +50,7 @@ export interface SeriesWindow {
 
 /** The most occurrences one window will ever be handed. A daily series over the six-week month grid
  *  is 42; this is a bound against a malformed rule, not a budget. */
-export const MAX_WINDOW_OCCURRENCES = 500
+const MAX_WINDOW_OCCURRENCES = 500
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 
@@ -161,7 +161,7 @@ export const PENCIL_REPEAT_CHOICES = [
   { value: 'monthly', label: 'Every month', rule: 'FREQ=MONTHLY' },
 ] as const
 
-export type PencilRepeatChoice = (typeof PENCIL_REPEAT_CHOICES)[number]['value']
+type PencilRepeatChoice = (typeof PENCIL_REPEAT_CHOICES)[number]['value']
 
 /** Which choice a stored rule is, or 'custom' for a valid rule the menu does not offer (one written
  *  by hand or by a later picker), so an edit never silently drops it. */

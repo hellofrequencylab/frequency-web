@@ -12,6 +12,9 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
+// The Library's ranked catalog lives on /practices since LIVE-681 (ADR-1678): /library is a 308
+// to it, so every write below revalidates /practices. The review queue keeps /library/review.
+
 // Submit a practice or journey you own into the Library (→ pending review). It
 // stays private to you until a leader approves it (then it goes public).
 export async function submitToLibrary(type: 'practice' | 'journey', id: string): Promise<ActionResult> {
@@ -34,7 +37,7 @@ export async function submitToLibrary(type: 'practice' | 'journey', id: string):
     const { error } = await d.from('journey_plans').update({ status: 'pending' }).eq('id', id)
     if (error) return fail('Could not submit this journey. Please try again.')
   }
-  revalidatePath('/library')
+  revalidatePath('/practices')
   return ok()
 }
 
@@ -67,7 +70,7 @@ export async function reviewContent(
   } else {
     await d.from('journey_plans').update({ ...review, ...(approved ? { visibility: 'public' } : {}) }).eq('id', id)
   }
-  revalidatePath('/library')
+  revalidatePath('/practices')
   revalidatePath('/library/review')
   return ok()
 }
@@ -86,11 +89,11 @@ export async function rateContent(type: ContentType, id: string): Promise<Action
     .maybeSingle()
   if (existing) {
     await d.from('content_ratings').delete().eq('id', (existing as { id: string }).id)
-    revalidatePath('/library')
+    revalidatePath('/practices')
     return ok({ rated: false })
   }
   const { error } = await d.from('content_ratings').insert({ profile_id: me, content_type: type, content_id: id })
   if (error) return fail(error.message)
-  revalidatePath('/library')
+  revalidatePath('/practices')
   return ok({ rated: true })
 }

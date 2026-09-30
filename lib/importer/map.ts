@@ -288,7 +288,7 @@ export function mapProfileData(
 
 /** Map draft availability to the AvailabilityWindow input shape the booking store validates.
  *  Invalid windows are dropped by the store's normalizeWindow; we forward the raw shape. Pure. */
-export function mapAvailability(profile: BusinessProfile): AvailabilityWindowInput[] {
+function mapAvailability(profile: BusinessProfile): AvailabilityWindowInput[] {
   return (profile.availability ?? []).filter(
     (w): w is AvailabilityWindowInput => !!w && typeof w.weekday === 'number',
   )
@@ -297,14 +297,14 @@ export function mapAvailability(profile: BusinessProfile): AvailabilityWindowInp
 // ── FAQ rows ──────────────────────────────────────────────────────────────────────
 
 /** One space_faqs insert payload (space_id is stamped by the seeding layer). */
-export interface FaqRow {
+interface FaqRow {
   question: string
   answer: string
   position: number
 }
 
 /** Map draft FAQ to space_faqs rows in order. A row needs a question. Pure. */
-export function mapFaqs(profile: BusinessProfile): FaqRow[] {
+function mapFaqs(profile: BusinessProfile): FaqRow[] {
   const out: FaqRow[] = []
   for (const f of profile.faq ?? []) {
     const question = (f.q ?? '').trim()
@@ -327,7 +327,7 @@ export interface EventRow {
 }
 
 /** Map draft events to event-row payloads. A row needs a title and a start instant. Pure. */
-export function mapEvents(profile: BusinessProfile): EventRow[] {
+function mapEvents(profile: BusinessProfile): EventRow[] {
   const out: EventRow[] = []
   for (const e of profile.events ?? []) {
     const title = (e.title ?? '').trim()

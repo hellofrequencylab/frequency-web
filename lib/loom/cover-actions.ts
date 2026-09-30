@@ -22,7 +22,8 @@
 //      surface's job, which is what keeps this from becoming an autonomous write.
 //
 // GATED: signed in, the entity must really declare a fillable image field, Recraft must be
-// configured, the AI kill switch must be on, and the 'entity-cover' daily cap must have room.
+// configured, the AI kill switch must be on, the 'entity-cover' daily cap must have room, and the
+// target Loom's storage budget must have room (loomAdmits, LIVE-629).
 // Every one of those is re-checked here; the client is never trusted.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ import { getSpaceById, getSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/stor
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { insertSpaceLibraryImage } from '@/lib/library/store'
 import { ingestImageBytes } from '@/lib/library/ingest'
+import { loomAdmits } from '@/lib/library/quota'
 import { LIBRARY_MEDIA_BUCKET } from '@/lib/library/upload-kinds'
 import { downloadRecraft, generateImages, recraftConfigured } from './recraft'
 import {
@@ -154,6 +156,13 @@ export async function generateEntityCoverAction(input: {
   const spaceId = await resolveWriteScope(caller.id, input.scopeKey ?? undefined)
   if (!spaceId) return fail('We could not find a library to save this in.')
 
+  // BUDGET (LIVE-629, ADR-1602), asked twice through the one gate (loomAdmits, ADR-1585). First with
+  // nothing incoming, BEFORE the generation: a Loom that is already full, or whose budget cannot be
+  // read, refuses here and Vera spends nothing. Then again with the drawn cover's real size, before
+  // storage. Both refusals are returned, never thrown. The root Space ('mine') is uncapped.
+  const room = await loomAdmits(spaceId, 0)
+  if (!room.ok) return fail(room.error)
+
   const prompt = buildCoverPrompt({
     entityLabel: manifest.label,
     title,
@@ -188,6 +197,9 @@ export async function generateEntityCoverAction(input: {
     // Recraft render, but the dimensions are not — a cover that does not know its own aspect ratio
     // cannot be laid out without loading it first.
     const ingested = ingestImageBytes(bytes, mime)
+
+    const verdict = await loomAdmits(spaceId, ingested.bytes.byteLength)
+    if (!verdict.ok) return fail(verdict.error)
 
     const admin = createAdminClient()
     const { error: upErr } = await admin.storage

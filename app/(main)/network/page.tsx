@@ -3,12 +3,14 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Globe, MapPin } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Globe, MapPin } from 'lucide-react'
 import { isOnline } from '@/lib/presence'
 import { InviteMemberCompose } from '@/components/compose/invite-member-compose'
 import { type CommunityRole } from '@/lib/community-roles'
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
+import { buttonClasses } from '@/components/ui/button'
 import { CircleCard, type CircleCardData } from '@/components/circles/circle-card'
 import { CircleLocationSearch } from '@/components/circles/circle-location-search'
 import { DirectorySearch } from '@/components/ui/directory-search'
@@ -32,6 +34,15 @@ import {
   DIRECTORY_VISIBILITY_COLUMNS,
   isListableInDirectory,
 } from '@/lib/connections/directory-visibility'
+import {
+  DIRECTORY_PAGE_SIZE,
+  directoryPageCount,
+  directoryWindow,
+  parseDirectoryPage,
+  scopeDirectoryQuery,
+  scopeIsEmpty,
+  type DirectoryScope,
+} from '@/lib/connections/directory-page'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
@@ -66,25 +77,31 @@ type Filters = {
   near?: string
   /** Human label for the chosen place, e.g. "Encinitas, California". */
   place?: string
+  /** 1-based directory page (LIVE-661). Absent means page 1. */
+  page?: string
 }
 
 type NearbyCircle = CircleCardData & { distanceLabel: string }
 
-// The directory fetch cap — bounds the `profiles` scan so the page can't pull an
-// unbounded table into memory (mirrors the /circles index cap). Filtering is client-side
-// over this set; raise it or add pagination when the community outgrows it.
-const DIRECTORY_FETCH_LIMIT = 500
+// The member cards are a SERVER-FILTERED, PAGED read (LIVE-661, ADR-1655): every filter, the name
+// search included, runs in the query (lib/connections/directory-page.ts) and each page is one
+// `.range()`, so a member anywhere in the community can be found and reached. It used to be the
+// first 500 profiles by name, filtered here, which made everyone past the 500th unfindable.
+// The card columns, with the four privacy columns selected by the shared constant.
+const CARD_SELECT = `id, display_name, handle, avatar_url, community_role, is_system, last_seen_at, is_demo, entity_types, ${DIRECTORY_VISIBILITY_COLUMNS}, nexus_regions!nexus_region_id ( name )` as const
 
-// How many member cards to actually RENDER. The fetch is bounded at 500, but painting
-// hundreds of card subtrees is what stutters scroll on low-end phones — so we render a
-// page-sized slice and tell the member to narrow with search/filters for the rest. This
-// caps first-paint DOM (and, since avatars lazy-load, below-fold image requests too).
-const VISIBLE_LIMIT = 48
+// The facet vocabulary (Topic / Role options, the Most popular place) is still read from a bounded
+// sample: PostgREST has no DISTINCT or GROUP BY, and these only choose which OPTIONS to offer. The
+// sample never decides who can be listed or found; the paged read above does. 1000 is PostgREST's
+// row ceiling (supabase/config.toml max_rows).
+const FACET_SAMPLE_LIMIT = 1000
 
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
-  title: 'Community',
+  // "Members", not "Community": NAMING.md §Connection layer names the directory Members (ADR-868),
+  // the same word as its nav row and its Network hub tab.
+  title: 'Members',
   description: 'Everyone in the community. Browse, find someone interesting, say hi.',
 }
 
@@ -112,17 +129,17 @@ export default async function CommunityPage({
     q: qFilter,
     near: nearParam,
     place: placeParam,
+    page: pageParam,
   } = await searchParams
+  const page = parseDirectoryPage(pageParam)
 
   const admin = createAdminClient()
 
   // Kick the independent reads off immediately and await each at its point of use, so the
-  // round-trips OVERLAP without reordering any downstream logic. All five are independent of
-  // one another — the page header, the viewer profile (id + name + proximity home), the
-  // connection settings, the steward id, and the demo-gated 500-row directory + circle vocab.
-  // In particular the heavy directory fetch is now in flight DURING the membersNear proximity
-  // RPC instead of waiting behind it. None of this changes what any read returns, so the
-  // facet/filter/nearby-first ordering tail below is byte-for-byte unchanged.
+  // round-trips OVERLAP without reordering any downstream logic: the page header, the viewer
+  // profile (id + name + proximity home), the connection settings, the steward id, the demo gate,
+  // the circle vocabulary and the region resolution. The member cards themselves are read inside
+  // their own Suspense boundary below, so none of this waits on them.
   const contentPromise = resolvePageContent('/network', CONTENT_FALLBACK)
   const viewerPromise = admin
     .from('profiles')
@@ -134,34 +151,52 @@ export default async function CommunityPage({
   // described at the membersNear call below, so the read is gone with the coupling.
   const settingsPromise = getConnectionSettings()
   const stewardPromise = connectionsOwnerId()
-  const directoryPromise = (async () => {
-    // 🔴 This is a SERVICE-ROLE read on a member-facing page. It was written that way for the
-    // nexus_regions embed and the 500-row cap, and it is why "Show me in the Community directory"
-    // and Ghost mode were decorative here: the only enforcer of those columns is the members_near
-    // RPC, which this page consults for BANDING, not for the listing, and a service-role read
-    // answers to no policy. The RPC cannot serve the listing (it is proximity-scoped and needs a
-    // location), so the four privacy columns are selected here and every row is passed through
-    // the shared predicate below before anything renders or is counted (ADR-TBD). Selecting them
-    // by the shared constant means a future edit cannot drop one without dropping the import.
-    let query = admin
-      .from('profiles')
-      .select(`id, display_name, handle, avatar_url, community_role, is_system, last_seen_at, is_demo, entity_types, ${DIRECTORY_VISIBILITY_COLUMNS}, nexus_regions!nexus_region_id ( name )`)
-      .eq('is_active', true)
-      // Vera (is_system) is FULLY VISIBLE here by owner decision (ADR-231 update):
-      // she gets a member card like anyone else; her chip reads Moderator.
-      .order('display_name', { ascending: true })
-      // Bound the scan so the directory can't load an unbounded `profiles` table into memory
-      // (mirrors /circles). Filtering below is client-side over this capped set; pagination +
-      // a "showing first N" notice is the follow-up when the community outgrows the cap.
-      .limit(DIRECTORY_FETCH_LIMIT)
-    // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
-    if (!(await demoModeEnabled()) || (await viewerHidesDemo())) query = query.eq('is_demo', false)
-    // The directory + the circle vocabulary together (circles power the city → members
-    // resolution; the memberships join still honours any circle/city filter from the URL).
-    return Promise.all([
-      query,
-      admin.from('circles').select('id, name, city, status').in('status', ['forming', 'active']).order('name'),
-    ])
+  // Demo content: hidden when global demo_mode is off OR the member turned beta content off.
+  const hideDemoPromise = (async () => !(await demoModeEnabled()) || (await viewerHidesDemo()))()
+  // The circle vocabulary (circles power the city → members resolution and the City facet).
+  const circlesPromise = admin
+    .from('circles')
+    .select('id, name, city, status')
+    .in('status', ['forming', 'active'])
+    .order('name')
+  // The region filter arrives as a region NAME (the card label); the query filters on the id.
+  const regionIdsPromise: Promise<string[] | null> = regionFilter
+    ? (async () => {
+        const { data } = await admin.from('nexus_regions').select('id').eq('name', regionFilter)
+        return (data ?? []).map((r) => r.id as string)
+      })()
+    : Promise.resolve(null)
+
+  // 🔴 Every member read below is a SERVICE-ROLE read on a member-facing page (the nexus_regions
+  // embed), so it answers to no policy. That is why "Show me in the Members directory" and
+  // Ghost mode were once decorative here: the only enforcer of those columns was the members_near
+  // RPC, which this page consults for BANDING, not for the listing. So each read is scoped by
+  // scopeDirectoryQuery (active, directory_visible, not ghosting, the demo gate), selects the four
+  // privacy columns by the shared constant, and passes every row it returns through the shared
+  // predicate before anything renders or is counted (ADR-1203). Vera (is_system) is FULLY VISIBLE
+  // by owner decision (ADR-231 update): she gets a member card like anyone else; her chip reads
+  // Moderator.
+  const hideDemo = await hideDemoPromise
+  const baseScope: DirectoryScope = { hideDemo }
+  // "Members Worldwide" / Total members: an exact count of the listable community.
+  const totalPromise = scopeDirectoryQuery(
+    admin.from('profiles').select('id', { count: 'exact', head: true }),
+    baseScope,
+  )
+  // "Online now" rail (independent of the online filter, so it still works while browsing).
+  const onlinePromise = scopeDirectoryQuery(
+    admin.from('profiles').select(CARD_SELECT),
+    { ...baseScope, online: true },
+  )
+    .order('display_name', { ascending: true })
+    .limit(8)
+  // The facet vocabulary sample (see FACET_SAMPLE_LIMIT). Streamed: only the facets and the Most
+  // popular place wait on it, each behind its own Suspense boundary.
+  const vocabPromise: Promise<Profile[]> = (async () => {
+    const { data } = await scopeDirectoryQuery(admin.from('profiles').select(CARD_SELECT), baseScope)
+      .order('last_seen_at', { ascending: false, nullsFirst: false })
+      .limit(FACET_SAMPLE_LIMIT)
+    return ((data ?? []) as unknown as Profile[]).filter(isListableInDirectory)
   })()
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
@@ -216,8 +251,8 @@ export default async function CommunityPage({
   // and we have a viewer location — the place they searched (`near`) OR their saved
   // home — default the directory to NEARBY FIRST and tag each surfaced member with a
   // coarse band ("Nearby", "Your area"). The members_near RPC returns a band only —
-  // never a distance — so we never invent one. Resolved here; applied to `filtered`
-  // (post-filter) below, so search / Online-now / scope all keep working.
+  // never a distance — so we never invent one. Resolved here; the listing puts the surfaced
+  // members first, through the same filters, so search / Online-now / scope all keep working.
   const connectionSettings = await settingsPromise
   let proxLat: number | null = null
   let proxLng: number | null = null
@@ -263,83 +298,37 @@ export default async function CommunityPage({
     metLeads = await searchVisibleLeads(stewardId, qFilter.trim(), { includeNetwork: true, limit: 12 })
   }
 
-  // The demo-gated directory + circle vocabulary, from the read kicked off above (in flight
-  // during the proximity RPC rather than waiting behind it).
-  const [{ data: profiles }, { data: circles }] = await directoryPromise
-
+  const { data: circles } = await circlesPromise
   const circleList = (circles ?? []) as { id: string; name: string; city: string | null }[]
 
-  // Resolve the Circle and City filters through memberships → the set of profile
-  // ids that belong to the chosen Circle (or to any Circle in the chosen city).
-  // Only queried when one of those filters is active.
-  let circleMemberIds: Set<string> | null = null
-  if (circleFilter || cityFilter) {
-    let circleIds: string[]
-    if (circleFilter) {
-      circleIds = [circleFilter]
-    } else {
-      circleIds = circleList.filter((c) => c.city === cityFilter).map((c) => c.id)
-    }
-    if (circleIds.length === 0) {
-      circleMemberIds = new Set()
-    } else {
-      const { data: members } = await admin
-        .from('memberships')
-        .select('profile_id')
-        .in('circle_id', circleIds)
-        .eq('status', 'active')
-      circleMemberIds = new Set((members ?? []).map((m) => m.profile_id as string))
-    }
+  // The Circle and City filters resolve to the circles whose ACTIVE members they mean (the
+  // listing turns those into profile ids inside its own boundary). null = no such filter.
+  const filterCircleIds: string[] | null = circleFilter
+    ? [circleFilter]
+    : cityFilter
+      ? circleList.filter((c) => c.city === cityFilter).map((c) => c.id)
+      : null
+
+  // Everything the member cards are filtered by, server-side (lib/connections/directory-page.ts).
+  const listingScope: DirectoryScope = {
+    ...baseScope,
+    regionIds: await regionIdsPromise,
+    online: !!onlineFilter,
+    topic: topicFilter ?? null,
+    role: roleFilter ?? null,
+    q: qFilter ?? null,
   }
 
-  // The privacy gate (ADR-TBD): a member who opted out of the directory, or is ghosting, is not
-  // a member of this page — not in the cards, not in "Online now", not in the counts. Applied
-  // BEFORE every downstream use so no lane can re-admit them. There is deliberately no carve-out
-  // for the viewer's own row: they are listed on the same terms as everyone else, so opting out
-  // is visibly confirmed by their own card disappearing.
-  const typedProfiles = ((profiles ?? []) as unknown as Profile[]).filter(isListableInDirectory)
-
-  // Apply the join-resolved + client-side filters.
-  let filtered = typedProfiles
-  if (regionFilter) filtered = filtered.filter((p) => p.nexus_regions?.name === regionFilter)
-  if (circleMemberIds) filtered = filtered.filter((p) => circleMemberIds!.has(p.id))
-  if (onlineFilter) filtered = filtered.filter((p) => isOnline(p.last_seen_at))
-  // P5 facets — a shared topic tag (entity_types) and a community-role rung.
-  if (topicFilter) filtered = filtered.filter((p) => (p.entity_types ?? []).includes(topicFilter))
-  if (roleFilter) filtered = filtered.filter((p) => (p.community_role ?? 'member') === roleFilter)
-  if (qFilter?.trim()) {
-    const needle = qFilter.trim().toLowerCase()
-    filtered = filtered.filter(
-      (p) =>
-        (p.display_name ?? '').toLowerCase().includes(needle) ||
-        (p.handle ?? '').toLowerCase().includes(needle),
-    )
-  }
-
-  // Nearby-first ordering (privacy-safe). Members the proximity RPC surfaced come
-  // first, in its fuzzed-cell rank (the RPC's order = its proximity/secondary sort);
-  // everyone else keeps the existing alphabetical directory order beneath them. Only
-  // reorders — it never adds or removes members, so all filters above stand. Inert
-  // (no-op) when the viewer has no location or proximity is off.
-  const proximityActive = bandByProfileId.size > 0
-  if (proximityActive) {
-    const rank = new Map(nearbyOrder.map((id, i) => [id, i]))
-    filtered = [...filtered].sort((a, b) => {
-      const ra = rank.get(a.id)
-      const rb = rank.get(b.id)
-      if (ra != null && rb != null) return ra - rb
-      if (ra != null) return -1
-      if (rb != null) return 1
-      return 0 // both non-nearby → keep prior (alphabetical) order
-    })
-  }
-
-  // Sidebar data, computed from the data we already fetched.
-  // "Online now" — members currently online (independent of the online filter,
-  // so the rail still works while browsing everyone). Capped for a tidy rail.
-  const onlineMembers = typedProfiles
+  // The privacy gate (ADR-1203): a member who opted out of the directory, or is ghosting, is not
+  // a member of this page — not in the cards, not in "Online now", not in the counts. The SQL
+  // scope drops them and every row is passed through the predicate again before any use. There is
+  // deliberately no carve-out for the viewer's own row: they are listed on the same terms as
+  // everyone else, so opting out is visibly confirmed by their own card disappearing.
+  const [{ count: totalCount }, { data: onlineRows }] = await Promise.all([totalPromise, onlinePromise])
+  const totalMembers = totalCount ?? 0
+  const onlineMembers = ((onlineRows ?? []) as unknown as Profile[])
+    .filter(isListableInDirectory)
     .filter((p) => isOnline(p.last_seen_at))
-    .slice(0, 8)
     .map((p) => ({
       id: p.id,
       handle: p.handle,
@@ -347,21 +336,9 @@ export default async function CommunityPage({
       avatarUrl: p.avatar_url,
     }))
 
-  // "Most popular place" — the region with the most members (the only
-  // per-member geography we carry on a profile).
-  const placeCounts = new Map<string, number>()
-  for (const p of typedProfiles) {
-    const name = p.nexus_regions?.name
-    if (name) placeCounts.set(name, (placeCounts.get(name) ?? 0) + 1)
-  }
-  let topPlace: string | null = null
-  let topPlaceCount = 0
-  for (const [name, count] of placeCounts) {
-    if (count > topPlaceCount) {
-      topPlace = name
-      topPlaceCount = count
-    }
-  }
+  // Nearby-first ordering (privacy-safe) is applied by the listing: members the proximity RPC
+  // surfaced lead page 1 in its fuzzed-cell rank, and the alphabetical pages follow without them.
+  const proximityActive = bandByProfileId.size > 0
 
   function filterHref(params: Filters) {
     const p = new URLSearchParams()
@@ -374,6 +351,7 @@ export default async function CommunityPage({
     if (params.q) p.set('q', params.q)
     if (params.near) p.set('near', params.near)
     if (params.place) p.set('place', params.place)
+    if (params.page && params.page !== '1') p.set('page', params.page)
     const s = p.toString()
     return s ? `/network?${s}` : '/network'
   }
@@ -398,6 +376,9 @@ export default async function CommunityPage({
     circleFilter || cityFilter || regionFilter || onlineFilter ||
     topicFilter || roleFilter || qFilter?.trim() || nearParam
   )
+  // One Suspense key per query + page, so a new filter or page shows the skeleton instead of the
+  // previous page's cards.
+  const listingKey = filterHref({ ...base, page: String(page) })
 
   // The overlay hero band, resolved once (lib/layout/index-hero.ts): the operator's Settings header
   // image / focal point over the route's section default, plus the operator-tunable header element
@@ -441,7 +422,7 @@ export default async function CommunityPage({
       <div className="flex flex-wrap items-end justify-end gap-x-4 gap-y-1 border-b border-border">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2.5 text-body-sm text-muted">
           <span>
-            <span className="font-bold text-text">{typedProfiles.length}</span> Members Worldwide
+            <span className="font-bold text-text">{totalMembers}</span> Members Worldwide
           </span>
           {connectionSettings.proximityEnabled && bandByProfileId.size > 0 && (
             <span>
@@ -476,7 +457,9 @@ export default async function CommunityPage({
         {/* Directory facets (P5) — Topic / City / Role, options derived from the
             real data on the page; each dropdown hides itself when there's
             nothing to filter by (components/people/directory-facets). */}
-        <DirectoryFacets profiles={typedProfiles} circles={circleList} className="mt-3" />
+        <Suspense fallback={null}>
+          <SampledFacets vocab={vocabPromise} circles={circleList} />
+        </Suspense>
         {/* No-location affordance — nudge the viewer to set a location so the
             directory can lead with who's nearby. Subtle, on the page background. */}
         {connectionSettings.proximityEnabled && !hasViewerLocation && (
@@ -564,37 +547,18 @@ export default async function CommunityPage({
             </Suspense>
           )}
 
-          {/* Portrait contact cards */}
-          {filtered.length === 0 ? (
-            <EmptyState
-              icon={Globe}
-              title="No members match these filters"
-              description="Try widening or clearing a filter to see more of the community."
+          {/* Portrait contact cards: one server-filtered page, streamed behind its own boundary
+              (keyed on the query) so the header, filters and rail paint first. */}
+          <Suspense key={listingKey} fallback={<DirectoryListingSkeleton />}>
+            <DirectoryListing
+              scope={listingScope}
+              circleIds={filterCircleIds}
+              nearbyOrder={nearbyOrder}
+              bandByProfileId={bandByProfileId}
+              page={page}
+              hrefForPage={(n) => filterHref({ ...base, page: String(n) })}
             />
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                {filtered.slice(0, VISIBLE_LIMIT).map((p) => (
-                  <ContactCard
-                    key={p.id}
-                    handle={p.handle}
-                    displayName={p.display_name}
-                    avatarUrl={p.avatar_url}
-                    role={p.is_system ? 'moderator' : ((p.community_role ?? 'member') as CommunityRole)}
-                    location={p.nexus_regions?.name ?? null}
-                    online={isOnline(p.last_seen_at)}
-                    isDemo={p.is_demo}
-                    band={bandByProfileId.get(p.id)}
-                  />
-                ))}
-              </div>
-              {filtered.length > VISIBLE_LIMIT && (
-                <p className="mt-4 text-center text-body-sm text-muted">
-                  Showing the first {VISIBLE_LIMIT} of {filtered.length} members. Narrow with search or the filters above to find someone.
-                </p>
-              )}
-            </>
-          )}
+          </Suspense>
         </div>
 
         {/* Right rail: name search · online now · stats, then the connect-with-others
@@ -608,11 +572,9 @@ export default async function CommunityPage({
             <DirectorySearch placeholder="Search by name or @handle…" />
           </div>
           <OnlineMembersCard members={onlineMembers} />
-          <CommunityStatsCard
-            totalMembers={typedProfiles.length}
-            topPlace={topPlace}
-            topPlaceCount={topPlaceCount}
-          />
+          <Suspense fallback={<CommunityStatsCard totalMembers={totalMembers} />}>
+            <SampledStats vocab={vocabPromise} totalMembers={totalMembers} />
+          </Suspense>
           <Suspense fallback={null}>
             <ConnectionsPulse />
           </Suspense>
@@ -621,4 +583,247 @@ export default async function CommunityPage({
       </IndexTemplate>
     </div>
   )
+}
+
+// ── The member cards: one server-filtered page (LIVE-661, ADR-1655) ─────────────────────────────
+
+async function DirectoryListing({
+  scope,
+  circleIds,
+  nearbyOrder,
+  bandByProfileId,
+  page: requestedPage,
+  hrefForPage,
+}: {
+  scope: DirectoryScope
+  /** Circles whose active members the Circle / City filter means; null = no such filter. */
+  circleIds: string[] | null
+  /** Profile ids the proximity RPC surfaced, in its rank order (empty when proximity is off). */
+  nearbyOrder: string[]
+  bandByProfileId: Map<string, ProximityBand>
+  page: number
+  hrefForPage: (page: number) => string
+}) {
+  const admin = createAdminClient()
+
+  // Circle / City → the profile ids of their active members.
+  let onlyIds: string[] | null = null
+  if (circleIds) {
+    if (circleIds.length === 0) {
+      onlyIds = []
+    } else {
+      const { data: members } = await admin
+        .from('memberships')
+        .select('profile_id')
+        .in('circle_id', circleIds)
+        .eq('status', 'active')
+      onlyIds = [...new Set((members ?? []).map((m) => m.profile_id as string))]
+    }
+  }
+
+  // The nearby lead goes first on page 1 and is left out of the alphabetical read, so no member
+  // appears twice and the page boundaries stay exact across the join.
+  const nearbySet = new Set(nearbyOrder)
+  const onlySet = onlyIds ? new Set(onlyIds) : null
+  const leadIds = onlySet ? nearbyOrder.filter((id) => onlySet.has(id)) : nearbyOrder
+  const leadScope: DirectoryScope = { ...scope, onlyIds: leadIds }
+  const restScope: DirectoryScope = onlyIds
+    ? { ...scope, onlyIds: onlyIds.filter((id) => !nearbySet.has(id)) }
+    : { ...scope, onlyIds: null, excludeIds: nearbyOrder }
+
+  let lead: Profile[] = []
+  if (leadIds.length > 0 && !scopeIsEmpty(leadScope)) {
+    const { data, error } = await scopeDirectoryQuery(admin.from('profiles').select(CARD_SELECT), leadScope)
+    if (error) throw new Error(`Community directory: the nearby read failed (${error.message})`)
+    const rank = new Map(nearbyOrder.map((id, i) => [id, i]))
+    lead = ((data ?? []) as unknown as Profile[])
+      .filter(isListableInDirectory)
+      .sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0))
+  }
+
+  const restEmpty = scopeIsEmpty(restScope)
+  const restCount = async (): Promise<number> => {
+    if (restEmpty) return 0
+    const { count, error } = await scopeDirectoryQuery(
+      admin.from('profiles').select('id', { count: 'exact', head: true }),
+      restScope,
+    )
+    if (error) throw new Error(`Community directory: the count failed (${error.message})`)
+    return count ?? 0
+  }
+  const restPage = async (from: number, to: number) =>
+    scopeDirectoryQuery(admin.from('profiles').select(CARD_SELECT, { count: 'exact' }), restScope)
+      .order('display_name', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to)
+
+  // Read the requested page. A page past the end (a filter narrowed the set under a shared
+  // ?page= link) is clamped to the last page rather than shown empty.
+  let page = requestedPage
+  let rows: Profile[] = []
+  let rest: number | null = null
+  let failed: string | null = null
+  let win = directoryWindow(page, DIRECTORY_PAGE_SIZE, lead.length)
+  if (win.rest && !restEmpty) {
+    const { data, count, error } = await restPage(win.rest.from, win.rest.to)
+    if (error) failed = error.message
+    else {
+      rows = (data ?? []) as unknown as Profile[]
+      rest = count ?? 0
+    }
+  }
+  // A range past the end answers with an error and no count, so count on its own and clamp.
+  if (rest == null) rest = await restCount()
+  const total = lead.length + rest
+  const pages = directoryPageCount(total)
+  if (page > pages) {
+    page = pages
+    win = directoryWindow(page, DIRECTORY_PAGE_SIZE, lead.length)
+    rows = []
+    if (win.rest && !restEmpty) {
+      const { data, error } = await restPage(win.rest.from, win.rest.to)
+      if (error) throw new Error(`Community directory: the page read failed (${error.message})`)
+      rows = (data ?? []) as unknown as Profile[]
+    }
+  } else if (failed) {
+    // Never render a failed read as "No members match".
+    throw new Error(`Community directory: the page read failed (${failed})`)
+  }
+
+  const cards = [
+    ...(win.lead ? lead.slice(win.lead[0], win.lead[1]) : []),
+    ...rows.filter(isListableInDirectory),
+  ]
+
+  if (cards.length === 0) {
+    return (
+      <EmptyState
+        icon={Globe}
+        title="No members match these filters"
+        description="Try widening or clearing a filter to see more of the community."
+      />
+    )
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        {cards.map((p) => (
+          <ContactCard
+            key={p.id}
+            handle={p.handle}
+            displayName={p.display_name}
+            avatarUrl={p.avatar_url}
+            role={p.is_system ? 'moderator' : ((p.community_role ?? 'member') as CommunityRole)}
+            location={p.nexus_regions?.name ?? null}
+            online={isOnline(p.last_seen_at)}
+            isDemo={p.is_demo}
+            band={bandByProfileId.get(p.id)}
+          />
+        ))}
+      </div>
+      <DirectoryPager page={page} pages={pages} total={total} hrefForPage={hrefForPage} />
+    </>
+  )
+}
+
+// Prev / Next + "Page X of Y". All Links, so it needs no client JS and every page is a shareable
+// URL carrying the filters. Hidden when everything fits on one page.
+function DirectoryPager({
+  page,
+  pages,
+  total,
+  hrefForPage,
+}: {
+  page: number
+  pages: number
+  total: number
+  hrefForPage: (page: number) => string
+}) {
+  if (pages <= 1) return null
+  const edge = `${buttonClasses('secondary', 'sm')} pointer-events-none opacity-40`
+  return (
+    <nav
+      aria-label="Directory pages"
+      className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-border pt-5 sm:flex-row"
+    >
+      <p className="text-meta text-subtle">
+        <span className="tabular-nums font-medium text-muted">{total}</span> members match
+      </p>
+      <div className="flex items-center gap-3 text-meta">
+        {page > 1 ? (
+          <Link href={hrefForPage(page - 1)} className={buttonClasses('secondary', 'sm')}>
+            <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+            Prev
+          </Link>
+        ) : (
+          <span className={edge} aria-disabled>
+            <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+            Prev
+          </span>
+        )}
+        <span className="tabular-nums font-medium text-muted">
+          Page {page} of {pages}
+        </span>
+        {page < pages ? (
+          <Link href={hrefForPage(page + 1)} className={buttonClasses('secondary', 'sm')}>
+            Next
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        ) : (
+          <span className={edge} aria-disabled>
+            Next
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+          </span>
+        )}
+      </div>
+    </nav>
+  )
+}
+
+function DirectoryListingSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3" aria-hidden>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="rounded-card border border-border bg-surface p-4 lift-1">
+          <Skeleton className="mx-auto h-16 w-16 rounded-pill" />
+          <Skeleton className="mx-auto mt-3 h-4 w-24" />
+          <Skeleton className="mx-auto mt-1.5 h-3 w-16" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Facet options and the Most popular place, from the vocabulary sample ────────────────────────
+
+async function SampledFacets({
+  vocab,
+  circles,
+}: {
+  vocab: Promise<Profile[]>
+  circles: { id: string; city: string | null }[]
+}) {
+  // Directory facets (P5): Topic / City / Role, options derived from real listed members; each
+  // dropdown hides itself when there's nothing to filter by (components/people/directory-facets).
+  return <DirectoryFacets profiles={await vocab} circles={circles} className="mt-3" />
+}
+
+async function SampledStats({ vocab, totalMembers }: { vocab: Promise<Profile[]>; totalMembers: number }) {
+  // "Most popular place": the region with the most members (the only per-member geography we
+  // carry on a profile).
+  const placeCounts = new Map<string, number>()
+  for (const p of await vocab) {
+    const name = p.nexus_regions?.name
+    if (name) placeCounts.set(name, (placeCounts.get(name) ?? 0) + 1)
+  }
+  let topPlace: string | null = null
+  let topPlaceCount = 0
+  for (const [name, count] of placeCounts) {
+    if (count > topPlaceCount) {
+      topPlace = name
+      topPlaceCount = count
+    }
+  }
+  return <CommunityStatsCard totalMembers={totalMembers} topPlace={topPlace} topPlaceCount={topPlaceCount} />
 }

@@ -14,7 +14,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export interface SpaceCompletionStats {
+interface SpaceCompletionStats {
   journeyCount: number
   enrolled: number
   completed: number
@@ -24,7 +24,7 @@ export interface SpaceCompletionStats {
   completionPct: number | null
 }
 
-export type SpaceCompletionRow = {
+type SpaceCompletionRow = {
   plan_id: string
   profile_id: string
   completed_at: string | null

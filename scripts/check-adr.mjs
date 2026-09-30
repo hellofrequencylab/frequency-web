@@ -38,6 +38,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
+import { ADR_HEADING, readDecisionsView } from './lib/ledger.mjs'
 
 const LEDGER = join('docs', 'DECISIONS.md')
 // `#{2,3}`, not `##`. Seven entries in the ledger use a ### heading -- ADR-052 through
@@ -49,7 +50,9 @@ const LEDGER = join('docs', 'DECISIONS.md')
 // Exported (HYG-111, ADR-1509) so scripts/check-id-collisions.mjs reads declarations with THIS
 // regex rather than a copy: the cross-PR gate and the in-tree gate must never disagree about
 // what a declaration is.
-export const HEADING = /^#{2,3} ADR-(\d+[a-z]?)\b/
+// The regex itself lives in scripts/lib/ledger.mjs (HYG-145, ADR-1635), the leaf module that
+// merges docs/ledger/adr fragments, so the loader, this gate and the fold share one definition.
+export const HEADING = ADR_HEADING
 
 /** ADR numbers CITED in the tree that have no entry, frozen on 2026-08-04. EIGHT of them.
  *
@@ -87,7 +90,7 @@ const KNOWN_MISSING = new Set([
  *  print ✓ — the guard measured "no WORSE than the day it shipped", and a reader took the tick
  *  for "no duplicates". The baseline is now the rule: a number appearing twice is a failure,
  *  whatever the history. Line numbers ride along so the failure names both claimants. */
-export function runCheck(text = readFileSync(LEDGER, 'utf8')) {
+export function runCheck(text = readDecisionsView().text) {
   const counts = new Map()
   text.split('\n').forEach((line, i) => {
     const m = HEADING.exec(line)
@@ -261,15 +264,19 @@ export function scanPlaceholders() {
 }
 
 function main() {
-  const { total, collisions, defined } = runCheck()
+  // The MERGED ledger: docs/DECISIONS.md plus every docs/ledger/adr fragment (HYG-145, ADR-1635).
+  const view = readDecisionsView()
+  const { total, collisions, defined } = runCheck(view.text)
   const dangling = findDanglingCitations(defined)
   const { placeholders, tbd, files } = scanPlaceholders()
   const tbdGrew = tbd > TBD_FROZEN
+  const baseLines = view.baseText.split('\n').length
 
-  if (collisions.length === 0 && dangling.length === 0 && placeholders.length === 0 && !tbdGrew) {
+  if (view.problems.length === 0 && collisions.length === 0 && dangling.length === 0 && placeholders.length === 0 && !tbdGrew) {
     console.log(
       `✓ ADR contract: ${total} distinct ADR number(s), each declared exactly once, ` +
         'and every cited number resolves to an entry.\n' +
+        (view.fragments.length ? `  ${view.fragments.length} of them from ADR fragment(s) in docs/ledger/adr.\n` : '') +
         `  ${files.length} file(s) scanned for an unassigned placeholder in citation position: none. ` +
         `${tbd} undecided marker(s), ceiling ${TBD_FROZEN}.`,
     )
@@ -278,11 +285,14 @@ function main() {
 
   console.error('\n✗ ADR ledger check failed:\n')
 
+  for (const p of view.problems) console.error(`  • ${p}\n`)
+
   const max = Math.max(0, ...[...defined].map((d) => parseInt(d, 10)).filter(Number.isFinite))
 
   for (const c of collisions) {
     console.error(
-      `  • ADR-${c.id} is declared ${c.count}× — ${LEDGER} lines ${c.lines.join(', ')}.\n` +
+      `  • ADR-${c.id} is declared ${c.count}× — ${LEDGER} lines ${c.lines.join(', ')}` +
+        `${c.lines.some((l) => l > baseLines) ? ` (a line past ${baseLines} is in a docs/ledger/adr fragment)` : ''}.\n` +
         `    Every citation of "ADR-${c.id}" is now ambiguous: a reader lands on whichever\n` +
         `    entry they find first. Renumber the LATER claimant to ADR-${max + 1} (the next\n` +
         '    free number) and repoint the citations that meant IT — not the ones that meant\n' +

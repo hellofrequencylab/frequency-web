@@ -7,7 +7,7 @@
 // that same level (we never indent past `ml-8`) — see `assembleThread`.
 
 /** Author shape carried by every comment row (drives avatar + ProfileFlair). */
-export type CommentAuthor = {
+type CommentAuthor = {
   id: string
   display_name: string
   handle: string

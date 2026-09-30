@@ -17,12 +17,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
   let target: string | null = null
   try {
     const sp = new URL(req.url).searchParams
-    const candidate = safeHttpUrl(sp.get('u'))
-    const sig = sp.get('s')
     const { token } = await params
+    const candidate = safeHttpUrl(sp.get('u'))
+    // The signature check runs first and on every request, so nothing the request carries decides
+    // whether it runs (HYG-143, CodeQL js/user-controlled-bypass). It is also the cheap check: a forged
+    // or swapped link is refused before the send lookup touches the database.
+    const bound = verifyClickUrl(token, candidate, sp.get('s'))
     const sendId = decodeSendToken(token)
-    const send = sendId ? await resolveSendForTracking(sendId) : null
-    if (sendId && send && candidate && verifyClickUrl(token, candidate, sig)) {
+    const send = bound && sendId ? await resolveSendForTracking(sendId) : null
+    if (bound && sendId && send && candidate) {
       // Trust the destination BEFORE the best-effort event write, so a record failure never sends the
       // recipient to the site root instead of the link they clicked.
       target = candidate

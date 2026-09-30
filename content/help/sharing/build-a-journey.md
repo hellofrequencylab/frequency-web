@@ -4,7 +4,7 @@ description: Turn what you know into a guided program. Let Vera draft a balanced
 category: sharing
 order: 3
 published: 2026-06-06
-updated: 2026-09-20
+updated: 2026-09-30
 audience: member
 featureKeys: [journeys]
 status: published
@@ -63,7 +63,9 @@ Prefer to start by hand? **Start with the shape** lays the same slots down empty
 - **Coach each practice.** Every practice step has a **Vera coaching prompt** you can draft with one
   tap: a short nudge tuned to the season and the practice's Pillar. Members see it when they reach
   that step in the Journey. Edit it or write your own.
-- **Reorder** with the up and down arrows, and edit titles and content inline.
+- **Reorder** by dragging a step by its grip, or with the up and down arrows. Lessons, practices, and
+  modules mix freely, so a practice can sit between two lessons. The order you see is the order
+  members follow. Edit titles and content inline.
 
 ## Set it up (the settings panel)
 
@@ -146,7 +148,8 @@ takes about two minutes. You can still set the price while that finishes.
 
 People who are not enrolled see the sales page (the story, the outline, the price, and any
 reviews). They see the lessons after they pay or, for a free Journey, after they start it.
-Changing the price keeps those reviews on the Journey.
+Changing the price keeps those reviews on the Journey. Only people who bought the Journey can
+leave a review.
 
 ## Run it with a Circle
 

@@ -93,7 +93,7 @@ export async function getSpaceClaimToken(spaceId: string): Promise<string | null
 }
 
 /** A resolved, still-claimable Space behind a token (what the claim page renders). */
-export interface ResolvedSpaceClaim {
+interface ResolvedSpaceClaim {
   spaceId: string
   slug: string
   name: string
@@ -119,7 +119,7 @@ export async function resolveSpaceClaim(token: string): Promise<ResolvedSpaceCla
 }
 
 /** The outcome of a successful claim. */
-export interface ClaimedSpace {
+interface ClaimedSpace {
   spaceId: string
   slug: string
 }
@@ -130,7 +130,7 @@ export interface ClaimedSpace {
  * redirect the owner who re-opens their used link back to their Space instead of 404ing them. Returns
  * null only when the token maps to no Space at all. Reads only.
  */
-export interface ResolvedSpaceClaimAny extends ResolvedSpaceClaim {
+interface ResolvedSpaceClaimAny extends ResolvedSpaceClaim {
   claimed: boolean
   ownerProfileId: string | null
 }

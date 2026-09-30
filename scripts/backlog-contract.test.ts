@@ -15,6 +15,7 @@ import { execFileSync, execSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, statSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { loadBacklog } from './lib/ledger.mjs'
 
 const ROOT = process.cwd()
 const BACKLOG_GUARD = path.join(ROOT, 'scripts/check-backlog.mjs')
@@ -312,7 +313,8 @@ describe('check:backlog — the probe/status contract', () => {
 
   it('EVERY cmd probe in the real backlog parses', () => {
     // The live assertion, not a fixture: this is what would have caught OWN-058 on the day it shipped.
-    const real = JSON.parse(readFileSync(path.join(ROOT, 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    // The merged view (HYG-145): a probe written in a fragment has to parse too.
+    const real = loadBacklog(ROOT)
     const broken: string[] = []
     for (const e of real.entries) {
       if (e.verify?.kind !== 'cmd' || !e.verify.cmd) continue
@@ -423,6 +425,76 @@ describe('check:backlog — the probe/status contract', () => {
     expect(code, 'an open row without a priority is a structural problem, not a warning').toBe(1)
     expect(out).toContain('UNRANKED')
     expect(out).toMatch(/open row has no priority/)
+  })
+
+  describe('meta.slate waves: one wave per token, sequenced work only (HYG-134)', () => {
+    const openRow = (id: string, status = 'open') => ({
+      id,
+      title: `${id} fixture`,
+      status,
+      lane: 'live',
+      size: 'S',
+      priority: 'P2',
+      verify: { kind: 'manual', evidence: 'fixture', checked: '2026-09-29' },
+    })
+    const withWaves = (entries: unknown[], waves: { name: string; ids: string[] }[]) => {
+      mkdirSync(path.join(dir, 'docs'), { recursive: true })
+      writeFileSync(
+        path.join(dir, 'docs/BUILD-BACKLOG.json'),
+        JSON.stringify({ meta: { slate: { waves } }, entries: [...ballast(), ...entries] }, null, 2),
+      )
+    }
+
+    it('FAILS two waves sharing a token, the shape a name-keyed fold produced on 2026-09-29', () => {
+      withWaves([openRow('A')], [
+        { name: 'W4 · old ── PARKED 2026-09-29', ids: ['A'] },
+        { name: 'W4 · old', ids: [] },
+      ])
+      const { code, out } = run(BACKLOG_GUARD, dir)
+      expect(code).toBe(1)
+      expect(out).toMatch(/2 waves with the token "W4"/)
+    })
+
+    it('PASSES a wave still listing a parked or done id: the loader drops it (HYG-145, ADR-1635)', () => {
+      // Closing a row no longer needs a wave edit. scripts/lib/ledger.mjs takes every id whose row
+      // is not open or blocked off every wave at load time, so the gate reads a slate without it.
+      withWaves([openRow('A'), openRow('P', 'parked'), openRow('D', 'done')], [{ name: 'W4 · x', ids: ['A', 'P', 'D'] }])
+      const { code, out } = run(BACKLOG_GUARD, dir)
+      expect(code, out).toBe(0)
+    })
+
+    it('judges a row closed by a fragment on the merged view, and FAILS a broken fragment (HYG-145)', () => {
+      // The stale-open arm: an open row whose probe passes fails the guard...
+      mkdirSync(path.join(dir, 'docs'), { recursive: true })
+      const stale = {
+        ...openRow('S-1'),
+        verify: { kind: 'grep-present', pattern: 'SENTINEL_TOKEN', paths: ['src/present.ts'] },
+      }
+      withWaves([stale], [{ name: 'W4 · x', ids: ['S-1'] }])
+      const rows = path.join(dir, 'docs/ledger/rows')
+      rmSync(path.join(dir, 'docs/ledger'), { recursive: true, force: true })
+      expect(run(BACKLOG_GUARD, dir).code).toBe(1)
+      // ...and one fragment closing it, with the base file untouched, is what the guard now reads.
+      mkdirSync(rows, { recursive: true })
+      writeFileSync(path.join(rows, 'S-1.json'), JSON.stringify({ id: 'S-1', patch: { status: 'done', closed: '2026-09-29' } }))
+      const closed = run(BACKLOG_GUARD, dir)
+      expect(closed.code, closed.out).toBe(0)
+      // A fragment that edits a row that does not exist is a structural failure naming the file.
+      writeFileSync(path.join(rows, 'NOPE-1.json'), JSON.stringify({ id: 'NOPE-1', patch: { status: 'done' } }))
+      const broken = run(BACKLOG_GUARD, dir)
+      expect(broken.code).toBe(1)
+      expect(broken.out).toMatch(/docs\/ledger\/rows\/NOPE-1\.json: edits NOPE-1, and no row NOPE-1 exists/)
+      rmSync(path.join(dir, 'docs/ledger'), { recursive: true, force: true })
+    })
+
+    it('PASSES distinct tokens holding open and blocked rows', () => {
+      withWaves([openRow('A'), openRow('B', 'blocked')], [
+        { name: 'W4 · x', ids: ['A'] },
+        { name: 'W40 · y', ids: ['B'] },
+        { name: 'owner-timed', ids: [] },
+      ])
+      expect(run(BACKLOG_GUARD, dir).code).toBe(0)
+    })
   })
 
   it('does not probe parked rows at all', () => {
@@ -1053,7 +1125,7 @@ describe('the real tree', () => {
     // source. pnpm check:backlog passed; this failed in CI. The weaker check was the one a human
     // runs by hand, which is the worst way round for the two to differ. check-backlog.mjs now uses
     // isFile() too, so the claim above is true and the failure lands locally (HYG-097).
-    const doc = JSON.parse(readFileSync(path.join(ROOT, 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    const doc = loadBacklog(ROOT)
     const missing = doc.entries
       .filter((e: { source?: { file?: string } }) => e.source?.file)
       .filter((e: { source: { file: string } }) => {

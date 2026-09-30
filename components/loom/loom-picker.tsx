@@ -34,7 +34,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 // from the element_settings master (role-gated), resolved server-side by loomScopes().
 const FALLBACK_CONFIG: LoomPickerConfig = {
   tabs: { images: true, icons: true, elements: true, tags: true, spaces: true, airwaves: false },
-  aiCreate: false,
   defaultScope: 'mine',
 }
 
@@ -156,6 +155,9 @@ export function LoomPicker({
             tag: opts.tag || undefined,
             kinds: viewKinds,
             generatedOnly: opts.view === 'elements',
+            // A Space scope also offers the Frequency shared library, its own images first (LIVE-569).
+            // The personal scope ignores this.
+            shared: 'with',
           }),
           opts.view === 'icons' ? fetchSiteIcons(opts.q, 60) : Promise.resolve([] as SiteIcon[]),
         ])
@@ -189,10 +191,10 @@ export function LoomPicker({
   // (glyphs), else object-cover (photos). Value is what gets picked/stored (a URL or a data URL).
   // `assetId` rides only on real library rows (an AssetRef the caller can store, ADR-1130);
   // a house SITE icon is a data URL with no catalog row, so it stays reference-less.
-  const tiles: { key: string; value: string; label: string; src: string; contain: boolean; generated: boolean; assetId?: string; alt?: string | null }[] = [
+  const tiles: { key: string; value: string; label: string; src: string; contain: boolean; generated: boolean; shared?: boolean; assetId?: string; alt?: string | null }[] = [
     // `value` is the MASTER and is what a pick stores (ADR-1130); `src` is a display-only
     // rendition, so a 3-across grid of tiles stops pulling multi-megabyte originals (PROG-D3).
-    ...assets.map((a) => ({ key: a.id, value: a.url, label: a.title, src: renditionUrl(a.url, 'grid'), contain: a.kind === 'icon', generated: a.generated, assetId: a.id, alt: a.alt })),
+    ...assets.map((a) => ({ key: a.id, value: a.url, label: a.title, src: renditionUrl(a.url, 'grid'), contain: a.kind === 'icon', generated: a.generated, shared: a.ownedByViewer === false, assetId: a.id, alt: a.alt })),
     ...(activeView === 'icons'
       ? siteIcons.map((s) => ({ key: `site:${s.name}`, value: s.dataUrl, label: s.label, src: s.dataUrl, contain: true, generated: false }))
       : []),
@@ -454,7 +456,7 @@ export function LoomPicker({
                     </div>
                   )}
                   {activeView === 'elements' && (
-                    <p className="mb-2 text-2xs text-muted">Elements are images created with AI. Upload generated art here, or generate new Elements (coming soon).</p>
+                    <p className="mb-2 text-2xs text-muted">Elements are the images in this library that were made with AI.</p>
                   )}
                   {activeView === 'icons' && (
                     <p className="mb-2 text-2xs text-muted">Site icons plus any you upload. Search by name, or drop a new icon above.</p>
@@ -502,6 +504,11 @@ export function LoomPicker({
                               {t.generated && (
                                 <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded-pill bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-primary-strong lift-1">
                                   <Sparkles className="h-2.5 w-2.5" /> AI
+                                </span>
+                              )}
+                              {t.shared && (
+                                <span className="absolute bottom-1 left-1 rounded-pill bg-canvas/90 px-1.5 py-0.5 text-2xs font-semibold text-muted lift-1">
+                                  Frequency
                                 </span>
                               )}
                               {on && (

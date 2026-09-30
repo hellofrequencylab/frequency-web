@@ -66,7 +66,7 @@ export async function listActiveSpaceMemberIds(spaceId: string): Promise<string[
 
 /** ALL active members of a space as MemberSummary[] — scored where a score row exists, neutral defaults
  *  where not — via the shared scope-neutral pipeline, so it reads identically to the admin Resonance CRM. */
-export async function loadSpaceResonanceMembers(spaceId: string): Promise<MemberSummary[]> {
+async function loadSpaceResonanceMembers(spaceId: string): Promise<MemberSummary[]> {
   const profileIds = await listActiveSpaceMemberIds(spaceId)
   return rosterFromProfileIds(profileIds)
 }
@@ -74,7 +74,7 @@ export async function loadSpaceResonanceMembers(spaceId: string): Promise<Member
 /** The space's imported CONTACTS/leads as MemberSummary rows, id-prefixed `contact:` so they never collide
  *  with member (profile-id) rows. Dedupes out any contact already present as a member (contacts.profile_id
  *  in `excludeProfileIds`). Newest first. FAIL-SAFE to []. */
-export async function loadSpaceResonanceContacts(
+async function loadSpaceResonanceContacts(
   spaceId: string,
   excludeProfileIds: Set<string>,
 ): Promise<MemberSummary[]> {

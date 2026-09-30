@@ -32,7 +32,7 @@ export interface ReadInput {
   quests: Array<{ name: string; started: number; rate: number | null; avgStallStep: number | null }>
 }
 
-export interface EngagementRead {
+interface EngagementRead {
   summary: string
   insights: Insight[]
   generatedAt: string

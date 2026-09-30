@@ -32,7 +32,7 @@ import { nearestNeighbors } from './embeddings'
 import type { ChurnRisk } from '@/lib/traits/compute'
 
 /** One scored, ready-to-surface match for an anchor person. The intro card reads from this. */
-export interface ResonanceMatch {
+interface ResonanceMatch {
   /** The candidate's profile id (the other person). */
   profileId: string
   /** The reciprocal Resonance Score, 0..1 (higher = stronger mutual fit). */
@@ -50,7 +50,7 @@ function asChurn(v: unknown): ChurnRisk {
 
 /** The minimum reciprocal score worth surfacing. Below this, a "match" is noise (a one-sided or
  *  thin-overlap pairing the harmonic mean has already punished). Keeps edges from becoming junk. */
-export const MIN_RESONANCE_SCORE = 0.12
+const MIN_RESONANCE_SCORE = 0.12
 
 // ── Consent (the trust moat) ─────────────────────────────────────────────────────
 // resonance_consent.opted_in must be TRUE to be in the pool; opted_out_as_target excludes a person

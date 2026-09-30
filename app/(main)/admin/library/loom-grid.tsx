@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import {
   X,
+  Crop,
   Copy,
   Check,
   CheckCircle2,
@@ -48,6 +50,7 @@ import { editLoomSvg, saveElementSvg, reviewLoomSvg, describeWithVera, type Loom
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
 import { isVectorFile } from '@/lib/loom/urls'
 import { AssetAvPanel } from './asset-av-panel'
+import { isCroppableImage } from '@/lib/library/crop-geometry'
 import { AssetUsagePanel } from './asset-usage-panel'
 import { createBrandStyle } from './recraft-actions'
 import { describeGeneratedAsset } from '@/lib/library/describe-generated'
@@ -61,6 +64,13 @@ import {
   bulkArchive,
   bulkDelete,
 } from './collections-actions'
+
+// The crop/rotate editor (HYG-109, ADR-1592) is fetched only when an operator opens it: its code is a
+// separate chunk the grid never ships. Keep it behind this boundary; do not import it statically.
+const LoomCropEditor = dynamic(() => import('./loom-crop-editor'), {
+  ssr: false,
+  loading: () => <div className="h-64 animate-pulse rounded-card border border-border bg-surface-elevated" />,
+})
 
 function human(n: number | null): string {
   if (!n) return ''
@@ -610,6 +620,8 @@ function DetailDrawer({
   const [err, setErr] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [cropping, setCropping] = useState(false)
+  const croppable = isCroppableImage(asset.kind, asset.mime, asset.url)
 
   // ── The keyboard contract this drawer was missing ────────────────────────────────────────
   // It declares `aria-modal="true"`, which is a PROMISE that the rest of the page is inert. It kept
@@ -944,6 +956,11 @@ function DetailDrawer({
                 </button>
               </>
             )}
+            {croppable && !cropping && (
+              <button type="button" onClick={() => setCropping(true)} className={chipCls}>
+                <Crop className="h-4 w-4" /> Crop and rotate
+              </button>
+            )}
             <a href={`/admin/library?similar=${asset.id}`} className={chipCls}>
               <SparklesIcon className="h-4 w-4" /> Find similar
             </a>
@@ -956,6 +973,21 @@ function DetailDrawer({
                     downloads.lastAt ? `, last on ${dayOf(downloads.lastAt)}` : ''
                   }.`}
             </p>
+          )}
+
+          {/* Crop and rotate (HYG-109): saves through the replace seam, so the old file is a version. */}
+          {croppable && cropping && asset.url && (
+            <LoomCropEditor
+              assetId={asset.id}
+              url={asset.url}
+              mime={asset.mime}
+              slug={asset.slug}
+              onCancel={() => setCropping(false)}
+              onSaved={() => {
+                setCropping(false)
+                router.refresh()
+              }}
+            />
           )}
 
           {/* Design with Vera — edit this graphic by describing the change (SVG elements only). */}
@@ -1049,7 +1081,10 @@ function DetailDrawer({
             enabled={recraftEnabled}
             chipCls={chipCls}
           />
-          {recraftEnabled && <AssetVersions assetId={asset.id} />}
+          {/* Versions show for every file-backed asset, not only with Recraft on: a crop or a replace
+              writes one too, and a version nobody can see is a rollback nobody can take. Keyed on the
+              url so the list re-reads after an edit swaps the file. */}
+          {(recraftEnabled || !!asset.url) && <AssetVersions key={asset.url ?? asset.id} assetId={asset.id} />}
 
           {/* Media manager (Airwaves P2): replace-file for any file-backed asset + a usage map for A/V. */}
           <AssetAvPanel assetId={asset.id} kind={asset.kind} hasFile={!!asset.url} />
@@ -1082,7 +1117,7 @@ function DetailDrawer({
                   type="button"
                   onClick={nameWithVera}
                   disabled={naming || pending}
-                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-muted hover:bg-surface-elevated disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-body-sm text-muted hover:bg-surface-elevated disabled:opacity-50"
                 >
                   {naming ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
                   Describe with Vera
@@ -1095,7 +1130,7 @@ function DetailDrawer({
           {/* Protection (PROG-D6, LIVE-576): the three hooks the schema has carried since the DAM landed,
               finally reachable by a person. Protected moves the file into the private bucket (LIVE-577);
               the policy is what the download door applies to whoever follows Download (LIVE-578). */}
-          <div data-loom-protection className="space-y-3 rounded-2xl border border-border bg-surface-elevated/50 p-3">
+          <div data-loom-protection className="space-y-3 rounded-card border border-border bg-surface-elevated/50 p-3">
             <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
               <Lock className="h-4 w-4 text-subtle" aria-hidden />
               Protection

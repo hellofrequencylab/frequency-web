@@ -11,6 +11,7 @@ import { buildLeadUnsubUrl } from '@/lib/connections/lead-unsub'
 import { nextStepAfter, runAtFrom, type NurtureStep } from '@/lib/nurture/schedule'
 import { parseEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
+import { postalFooterHtml } from '@/lib/email-studio/postal'
 import { applyMergeTags } from '@/lib/email-studio/render'
 import { MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 
@@ -29,7 +30,7 @@ interface StepRow {
   subject: string; body: string; enabled: boolean; block_json: unknown
 }
 
-export interface NurtureRunResult {
+interface NurtureRunResult {
   processed: number
   sent: number
   completed: number
@@ -39,7 +40,7 @@ export interface NurtureRunResult {
 // Same lightweight template as the automations email, with a lead-flavoured footer.
 function renderEmail(body: string, unsubscribeUrl: string): string {
   const safe = body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br/>')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#333;line-height:1.6;">${safe}</p><hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;">You're receiving this because you signed up at Frequency. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p></div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#333;line-height:1.6;">${safe}</p><hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;">You're receiving this because you signed up at Frequency. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
 }
 
 function toStep(r: StepRow): NurtureStep {

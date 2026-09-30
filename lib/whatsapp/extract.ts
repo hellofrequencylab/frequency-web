@@ -262,7 +262,7 @@ async function runBatch(
   }
 }
 
-export interface ClassifyResult {
+interface ClassifyResult {
   items: ClassifiedItem[]
   /** True when AI was off or over budget — the caller shows the parse only. */
   aiSkipped: boolean

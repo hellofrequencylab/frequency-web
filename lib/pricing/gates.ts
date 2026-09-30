@@ -351,7 +351,7 @@ export async function setFeatureGateOverride(
 }
 
 /** The account a feature is checked against: the personal billing tier and/or the Space plan. */
-export interface GateAccount {
+interface GateAccount {
   tier?: EntitlementTier | null
   plan?: SpacePlan | string | null
 }

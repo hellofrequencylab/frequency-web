@@ -66,7 +66,7 @@ export function RsvpForm({ token }: { token: string }) {
           autoComplete="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-body text-text focus:border-primary focus:outline-none"
+          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-body text-text focus:border-border-strong focus:outline-none"
         />
       </div>
       <div>
@@ -80,7 +80,7 @@ export function RsvpForm({ token }: { token: string }) {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-body text-text focus:border-primary focus:outline-none"
+          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-body text-text focus:border-border-strong focus:outline-none"
         />
       </div>
       <div>
@@ -93,7 +93,7 @@ export function RsvpForm({ token }: { token: string }) {
           autoComplete="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-body text-text focus:border-primary focus:outline-none"
+          className="w-full rounded-2xl border border-border bg-surface px-4 py-3 text-body text-text focus:border-border-strong focus:outline-none"
         />
       </div>
       <fieldset>

@@ -18,6 +18,7 @@ import {
 import { deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { PRACTICE_RAIL } from './practice-rail-plan'
+import { useEntityRailRead } from './entity-rail-data'
 
 // In-place "Practice settings" (EMBEDDED-ADMIN.md / ADR-133) on /practices/[id]. The rail section header
 // is the single title. The main fields autosave and reflect live (RailAutosaveForm); the cover self-saves;
@@ -47,6 +48,15 @@ function initialValues(data: PracticeData): Record<string, string> {
 /** Ghost text is the surface's, not the manifest's (see FieldControlProps.placeholder). */
 const PLACEHOLDERS: Record<string, string> = { duration_min: 'Optional' }
 
+/** The split's standing guidance (LIVE-641), which names the primary Pillar the row already holds. */
+function splitHints(mainPillar: string | null): Record<string, string> {
+  if (!mainPillar) return { secondary_domain_id: 'Pick a Pillar in the full editor first.' }
+  return {
+    secondary_domain_id: `Zaps count toward ${mainPillar}. Pick a second Pillar to share them.`,
+    primary_pct: `${mainPillar} keeps 50 to 100. The rest counts toward the second Pillar.`,
+  }
+}
+
 const [COVER] = PRACTICE_RAIL.cover.fields
 const [PERMALINK] = PRACTICE_RAIL.permalink.fields
 
@@ -54,6 +64,8 @@ export function PracticeSettingsModule() {
   const pathname = usePathname()
   const router = useRouter()
   const id = pathname.match(/^\/practices\/([^/]+)/)?.[1] ?? null
+  // The first read comes from the rail's one bundled request (ADR-1685); a reload calls the getter.
+  const readAdmin = useEntityRailRead('practice', 'admin', getPracticeAdminData)
 
   const [data, setData] = useState<PracticeData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -66,7 +78,7 @@ export function PracticeSettingsModule() {
   useEffect(() => {
     if (!id) return
     let active = true
-    getPracticeAdminData(id)
+    readAdmin(id)
       .then((d) => {
         if (active) {
           setData(d)
@@ -83,7 +95,7 @@ export function PracticeSettingsModule() {
     return () => {
       active = false
     }
-  }, [id])
+  }, [id, readAdmin])
 
   if (!id) return null
   if (loading) {
@@ -142,6 +154,8 @@ export function PracticeSettingsModule() {
           values={values}
           onChange={(path, next) => setValues((v) => ({ ...v, [path]: next }))}
           placeholders={PLACEHOLDERS}
+          hints={splitHints(data.mainPillar)}
+          loaded={{ pillars: data.splitPillars }}
         />
       </RailAutosaveForm>
 

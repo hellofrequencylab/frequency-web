@@ -71,14 +71,16 @@ export function decodeSendToken(token: string | null | undefined): string | null
 /** Sign a click DESTINATION to its send token, so the `u` param on a tracked link cannot be swapped.
  *  16-hex HMAC over (token, url). Without this, a recipient holding a valid token could turn the click
  *  endpoint into an open redirect (frequencylocal.com/e/c/<token>?u=<evil>); binding the url shuts that. */
-export function signClickUrl(token: string, url: string): string {
+function signClickUrl(token: string, url: string): string {
   const hmac = createHmac('sha256', getSecret())
   hmac.update(`space-email-click:${token}:${url}`)
   return hmac.digest('hex').slice(0, 16)
 }
 
-/** Verify a click destination against its token's signature (constant-time). Any bad shape/mismatch = false. */
-export function verifyClickUrl(token: string, url: string, sig: string | null | undefined): boolean {
+/** Verify a click destination against its token's signature (constant-time). Any bad shape/mismatch = false,
+ *  including no destination at all, so a caller can run it first on every request. */
+export function verifyClickUrl(token: string, url: string | null, sig: string | null | undefined): boolean {
+  if (typeof url !== 'string' || !url) return false
   if (typeof sig !== 'string' || !/^[0-9a-f]{16}$/.test(sig)) return false
   try {
     return timingSafeEqual(Buffer.from(signClickUrl(token, url), 'hex'), Buffer.from(sig, 'hex'))
@@ -143,7 +145,7 @@ export function injectTracking(html: string, token: string, baseUrl: string): st
  * panel read "Delivered 0" for every operator forever. An operator who sends email could not see
  * whether it landed, which is worse than not sending.
  */
-export type EventKind = 'open' | 'click' | 'reply' | 'delivered' | 'bounced' | 'complained'
+type EventKind = 'open' | 'click' | 'reply' | 'delivered' | 'bounced' | 'complained'
 const EVENT_KINDS: readonly EventKind[] = ['open', 'click', 'reply', 'delivered', 'bounced', 'complained']
 
 /** Map a Resend webhook event type (already stripped of its `email.` prefix) to a per-Space event
@@ -262,7 +264,7 @@ export async function recordInboundReplyEvent(email: string, spaceId?: string | 
  * Separate from resolveSendForTracking above because the key differs: the tracking endpoints hold our
  * own send uuid (decoded from a signed token), while the provider webhook holds ITS id.
  */
-export async function resolveSendByResendId(
+async function resolveSendByResendId(
   resendId: string,
 ): Promise<{ sendId: string; spaceId: string; email: string | null } | null> {
   if (!resendId) return null

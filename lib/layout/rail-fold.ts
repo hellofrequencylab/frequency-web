@@ -55,7 +55,7 @@
 // a breakpoint edit either, for the same server-cannot-know-the-viewport reason stated above.)
 
 /** One side's position on the ladder. */
-export type RailFold = 'auto' | 'open' | 'strip'
+type RailFold = 'auto' | 'open' | 'strip'
 
 /** Which rail. The left rail is the menu; the right rail is the status/Vault rail. */
 export type RailSide = 'left' | 'right'

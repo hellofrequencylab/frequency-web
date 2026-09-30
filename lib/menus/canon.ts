@@ -17,7 +17,7 @@
 // nav source all share ONE list. Adding a term is one row here.
 
 /** One retired term: what not to say, what to say instead, and where it is written down. */
-export type RetiredTerm = {
+type RetiredTerm = {
   /** Matched case-insensitively on word boundaries against the whole label. */
   pattern: RegExp
   /** The retired word, for the message. */

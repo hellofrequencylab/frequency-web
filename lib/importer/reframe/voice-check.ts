@@ -103,7 +103,7 @@ const HEALTH_CLAIMS: readonly string[] = [
 ]
 
 /** One flagged voice problem in a generated string. */
-export interface VoiceIssue {
+interface VoiceIssue {
   /** The category of the miss (for the reason string + the review board). */
   kind: 'em-dash' | 'vibe-verb' | 'surface-jargon' | 'hype' | 'health-claim' | 'shouting'
   /** The offending token / phrase (lowercased), or a short description. */

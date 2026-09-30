@@ -13,7 +13,7 @@ import { cookies } from 'next/headers'
 
 export const IMPERSONATION_COOKIE = 'freq-act-as'
 
-export interface ImpersonationStash {
+interface ImpersonationStash {
   /** The real janitor's session, captured before the swap, restored on Exit. */
   at: string // access_token
   rt: string // refresh_token

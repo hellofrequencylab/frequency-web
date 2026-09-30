@@ -56,7 +56,7 @@ export interface TicketTier {
 
 /** One of the owner's RSVPs (the owner-only list). Carries the member id + display name plus the tier
  *  they reserved and when, so the owner sees who is coming. */
-export interface SpaceRsvp {
+interface SpaceRsvp {
   id: string
   spaceId: string
   memberProfileId: string
@@ -67,7 +67,7 @@ export interface SpaceRsvp {
 }
 
 /** The viewer's OWN going RSVP on a tier (or null), for the member surface to show their reservation. */
-export interface MyRsvp {
+interface MyRsvp {
   id: string
   tierId: string
   tierName: string

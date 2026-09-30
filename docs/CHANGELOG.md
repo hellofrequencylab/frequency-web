@@ -12,6 +12,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **You can drag the steps of a Journey into any order.** Lessons, practices, and modules mix freely, so a practice can sit between two lessons. The builder shows the order members follow.
+- **Space email has a written policy.** It says who a Space can email, what it can send, the 500-a-day limit, and what happens after a bounce or a spam complaint. The Turn on email card links it, and so do the Terms.
+
 - **A Space can show the moon and the zodiac on its calendar.** New and full moons, and the day the Sun enters each sign, with the equinox or solstice named alongside it on the four days they share. Switch it on under Space settings, Calendar. Off until you do.
 - **If a Space membership payment fails, you see it.** The Space still counts you as a member. Settings, Plan and billing, names the Space. The host sees Payment failed on that member.
 
@@ -28,6 +31,15 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 - **If you run a Space, Home now shows who started and finished your Journeys.** Enrolled, finished, still going, and the finish rate sit next to your profile views. Revenue was already on that same page. A person who starts again still counts as one.
 
 ### Changed
+
+- **My Contacts uses the same words as the rest of Frequency.** The button reads Add a contact, the Network hub tabs read Members, Friends and My Contacts, and the Network sharing option says local Hosts can find the person. A Space's contact list is called Community Resonance, as it is everywhere else.
+
+- **A repeating event shows its best date when you sort by Nearest, Most going or Best match.** On Events, a weekly class ranks on the date the most people are going to, not just the next one. The map shows one pin for it and says how many more dates there are. When you pick an event to add to a Circle, its dates sit together under its name.
+- **The Practitioner partner program says what you can sell.** It used to promise paid Programs, which you cannot sell. Now it names what you can: tickets to your events and products in the Market from any account, paid bookings and memberships from a Space, and Journeys from a paid Space. Once the team verifies you, it links straight to each one.
+
+- **The privacy policy says what the product does today.** Download your data and delete your account yourself in Settings, Account and privacy; you do not need to email us. It names every service that handles your data, including Anthropic for Vera, Sentry for error reports, and Twilio for texts, and it covers push notifications, location, and the camera.
+
+- **You can only review a Market listing or a Journey you bought.** The review still shows whether it came from a purchase. Existing reviews stay up.
 
 - **A Space's Calendar and its Events are one page now, not two menu rows.** Open **Calendar** on any Space. What is next is featured at the top under **Up next**, soonest first, and the month sits below it. **Events** in the menu used to scroll you to a strip on the Space's home page while **Calendar** took you to the month, for the same gatherings.
 

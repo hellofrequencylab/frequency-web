@@ -110,7 +110,7 @@ export interface ProposeCreateInput {
   stage?: CreateStage
 }
 
-export interface CreateProposal {
+interface CreateProposal {
   proposalId: string
   entity: string
   /** The entity's member-facing name, from its manifest. */
@@ -131,7 +131,7 @@ export interface CreateCommitInput {
   proposalId: string
 }
 
-export interface ConfirmCreateInput<T> {
+interface ConfirmCreateInput<T> {
   proposalId: string
   /**
    * The draft AS CONFIRMED. Pass it whenever the member edited anything on the review board:
@@ -370,7 +370,7 @@ async function closeOut(
 // in the tool registry names this function, so the wall ADR-988 §3 builds is untouched: a model
 // can put a draft in front of a member and can never make one real.
 
-export interface ProposeAndConfirmCreateInput<T> extends ProposeCreateInput {
+interface ProposeAndConfirmCreateInput<T> extends ProposeCreateInput {
   /** The entity's own create path. This layer never writes the row itself. */
   commit: (input: CreateCommitInput) => Promise<T>
 }

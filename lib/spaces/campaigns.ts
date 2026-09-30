@@ -31,11 +31,14 @@ import { resolveAudiencePlan, type AudienceFilter } from '@/lib/spaces/audiences
 import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
 import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
 import type { NotificationTopic } from '@/lib/notification-preferences'
+import { postalFooterHtml } from '@/lib/email-studio/postal'
 
 // Render a plain-text campaign body to a minimal HTML email with a Space-appropriate footer. Inline
 // styles + hex are correct here (an email renders in mail clients, OUTSIDE the DAWN shell, where CSS
 // tokens are unavailable, exactly like lib/studio/campaigns.ts campaignEmail). The unsubscribe href is
 // the SPACE_UNSUBSCRIBE_PLACEHOLDER, which the send seam swaps for each recipient's own one-click URL.
+// Under it sits the platform postal line (lib/email-studio/postal.ts), the CAN-SPAM address every
+// commercial Frequency footer prints (LIVE-728, ADR-1663).
 function escapeCampaignHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
@@ -49,7 +52,7 @@ export function renderCampaignHtml(body: string): string {
         `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeCampaignHtml(p).replace(/\n/g, '<br/>')}</p>`,
     )
     .join('')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p></div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -61,7 +64,7 @@ export type CampaignStatus = 'draft' | 'scheduled' | 'sent'
 
 /** One Space campaign as the app consumes it (camelCased). `body` is plain text (blank lines become
  *  paragraphs at send, like the global composer). scheduledFor / sentAt are ISO strings or null. */
-export interface SpaceCampaign {
+interface SpaceCampaign {
   id: string
   subject: string
   body: string

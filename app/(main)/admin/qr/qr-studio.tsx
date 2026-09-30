@@ -31,8 +31,6 @@ export interface StudioNode {
   proximityM: number | null
   /** Total verified-claim cap ("first N win"); null = unlimited. */
   maxClaims: number | null
-  /** Whether the code requires a signed payload (carries a secret). */
-  requireSignature: boolean
   captures: number
   style: QrStyle
   /** Absolute capture URL this code encodes. */
@@ -64,7 +62,6 @@ const BLANK: NodeInput = {
   lng: null,
   proximityM: null,
   maxClaims: null,
-  requireSignature: false,
   style: DEFAULT_STYLE,
 }
 
@@ -217,7 +214,6 @@ function NodeCard({
                     {node.captures}/{node.maxClaims} claimed
                   </Badge>
                 )}
-                {node.requireSignature && <Badge tone="signal">🔒 Signed</Badge>}
                 {node.valid_until && (
                   <Badge tone="warning">
                     until {new Date(node.valid_until).toLocaleDateString()}
@@ -353,7 +349,6 @@ export function NodeForm({
           lng: node.lng,
           proximityM: node.proximityM,
           maxClaims: node.maxClaims,
-          requireSignature: node.requireSignature,
           style: node.style,
         }
       : BLANK,
@@ -538,14 +533,6 @@ export function NodeForm({
           </div>
         )}
       </div>
-
-      {/* Signed payload — the code carries a secret so a forged /n/<id> can't claim. */}
-      <Checkbox
-        wrapperClassName="flex rounded-lg border border-border bg-canvas/50 p-3"
-        label={<span className="text-meta font-medium text-subtle">Require a signed code (anti-spoof). Only the printed/written code can claim</span>}
-        checked={form.requireSignature}
-        onChange={(e) => set('requireSignature', e.target.checked)}
-      />
 
       {!hideEditor && (
         <StyleEditor

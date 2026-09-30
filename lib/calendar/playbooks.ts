@@ -23,7 +23,7 @@ export function copyPlaybookToPlan(playbook: PlanPlaybook): {
 }
 
 /** One carried to-do: its words, and the offset that re-anchors it to the NEW date (ADR-1386 P5). */
-export interface CarriedTask {
+interface CarriedTask {
   title: string
   dueOffsetDays: number | null
 }

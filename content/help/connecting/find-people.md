@@ -4,7 +4,7 @@ description: Browse the directory and search by location.
 category: connecting
 order: 1
 published: 2026-06-03
-updated: 2026-09-19
+updated: 2026-09-30
 audience: member
 featureKeys: [people, memberships]
 status: published
@@ -23,11 +23,11 @@ If you have joined a Space, open **People** on that Space to see the other membe
 
 - Visitors who have not joined see a join door, not the list.
 - A waitlist spot is not a membership yet, so it does not show you or them.
-- Ghost mode hides you here the same way it hides you from the Community directory.
+- Ghost mode hides you here the same way it hides you from the Members directory.
 
 ## Finding people near you
 
-- The Community directory can put **people nearby first**, each one shown with a soft area label like "Nearby" or "Your area," never a distance or a pin.
+- The Members directory can put **people nearby first**, each one shown with a soft area label like "Nearby" or "Your area," never a distance or a pin.
 - Start typing a city or town and it autocompletes, then shows Circles near that place. You can also search around your own location.
 - You control all of this under **Settings → Connections & Location**: who can find you, how precise it is, and your own findability radius (see [Your settings](/help/getting-started/your-settings)).
 

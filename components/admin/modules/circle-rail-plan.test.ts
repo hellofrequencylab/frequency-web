@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
 import { railForm } from '@/lib/studio/kernel/edit-plan'
+import { CIRCLE_MAX_CHANNELS } from '@/lib/circles/channels'
 import {
   CIRCLE_RAIL,
   CIRCLE_COLUMNS,
@@ -31,7 +32,7 @@ describe('the Circle rail plan', () => {
     expect(CIRCLE_RAIL.cover.fields.map((f) => f.path)).toEqual(['imageUrl'])
     expect(CIRCLE_RAIL.settings.fields.map((f) => f.path)).toEqual(['name', 'about', 'type', 'memberCap', 'status', 'unlisted'])
     expect(CIRCLE_RAIL.access.fields.map((f) => f.path)).toEqual(['access'])
-    expect(CIRCLE_RAIL.channel.fields.map((f) => f.path)).toEqual(['topicalChannelId'])
+    expect(CIRCLE_RAIL.channel.fields.map((f) => f.path)).toEqual(['channelIds'])
     expect(CIRCLE_RAIL.permalink.fields.map((f) => f.path)).toEqual(['slug'])
   })
 
@@ -71,6 +72,13 @@ describe('the Circle rail plan', () => {
     // The status offers the enum's five values and never the "Paused" the old rail invented.
     const status = CIRCLE_RAIL.settings.fields.find((f) => f.path === 'status')
     expect(status?.options?.map((o) => o.value)).toEqual(['draft', 'forming', 'active', 'inactive', 'archived'])
+  })
+
+  it('declares the Channels as a closed multiselect over the loaded Channels, capped at three (LIVE-666)', () => {
+    const [channels] = CIRCLE_RAIL.channel.fields
+    expect(channels).toMatchObject({ path: 'channelIds', kind: 'multiselect', optionsFrom: 'channels' })
+    expect(CIRCLE_MAX_CHANNELS).toBe(3)
+    expect(channels.read?.({ channelIds: ['a', 'b', 'c', 'd'] })).toBe('a, b, c')
   })
 
   it('renders the name because the manifest places it on the rail after creation (ADR-1281)', () => {
@@ -114,6 +122,8 @@ describe('the Circle rail reads its row and writes its FormData through the colu
     unlisted: true,
     access: null,
     topical_channel_id: 'ch1',
+    // The one to three Channels, primary first, as getCircleAdminData returns them (LIVE-666).
+    channel_ids: ['ch1', 'ch2'],
   }
 
   it('reads each field through its column, with the manifest defaults for an unset column', () => {
@@ -126,7 +136,7 @@ describe('the Circle rail reads its row and writes its FormData through the colu
       status: 'draft',
       unlisted: 'true',
       access: 'open',
-      topicalChannelId: 'ch1',
+      channelIds: 'ch1, ch2',
       slug: 'sunrise',
     })
   })

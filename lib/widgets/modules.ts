@@ -78,8 +78,9 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Practices blocks (/practices) — the personal sections above the fixed library ──
   { id: 'practices-stats', label: 'Practice stats', description: 'The headline band: your practices, days practiced, current and longest streak, and the library size.' },
   { id: 'practices-activity', label: 'Your activity', description: 'The member’s practice as a bar chart with Days, Weeks, and Months views.' },
-  { id: 'practices-balance', label: 'Pillar balance', description: 'How the member’s adopted practices spread across the four Pillars.' },
+  { id: 'practices-balance', label: 'Pillar balance', description: 'How the member’s adopted practices spread across the four Pillars, and the Zaps their logs earned in each.' },
   { id: 'practices-mine', label: 'Your practices', description: 'The member’s adopted and built practices, each with its log and edit controls.' },
+  { id: 'practices-best-of', label: 'Best of the library', description: 'The community’s top-ranked practices and journeys in one list, with All, Practices, and Journeys tabs and a love rating that feeds the rank. The Library page’s catalog, moved here when /library became a redirect (LIVE-681).' },
   { id: 'practices-library', label: 'Practice library', description: 'The full, faceted community library, filterable by Pillar, tag, and search, paginated.' },
 
   // ── Friends blocks (/friends) — the assignable section of the people surface ──
@@ -402,15 +403,16 @@ const LEADERBOARD_MODULE_IDS = ['leaderboard-consistency'] as const
 const JOURNAL_MODULE_IDS = ['journal-entries'] as const
 
 // The Library review queue (/library/review). The whole interior is one self-fetching, Host-gated
-// block, so it converts wholesale. (The /library index itself stays hand-composed: its grid is a
-// faceted, type/pillar search-param-driven view a nested module can't receive — like the /practices
-// toolbar's facets, but with no x-search seam here.)
+// block, so it converts wholesale. (The /library index is gone: it is a 308 to /practices, whose
+// practices-best-of block carries its ranked catalog, LIVE-681 / ADR-1678. The queue keeps its route.)
 const LIBRARY_REVIEW_MODULE_IDS = ['library-review-queue'] as const
 
 // The Practices page (/practices) blocks, in default render order. The faceted Practice Library is
 // a module too (practices-library): it's URL-driven, so it reads the page's facets from the
 // `x-search` request header (proxy.ts) rather than searchParams, which a nested module never gets.
-const PRACTICES_MODULE_IDS = ['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine', 'practices-library'] as const
+// The ranked best-of block (practices-best-of) is the Library's catalog, moved here when the owner
+// ruled /practices the one front door (LIVE-681, ADR-1678); it reads `type` from x-search too.
+const PRACTICES_MODULE_IDS = ['practices-stats', 'practices-activity', 'practices-balance', 'practices-mine', 'practices-best-of', 'practices-library'] as const
 
 // Every practice DETAIL page (/practices/<id>) shares one layout, keyed at the '/practices/*'
 // section scope — the body sections below, in default order. The page header (title · image ·

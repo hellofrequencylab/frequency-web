@@ -119,7 +119,13 @@ export interface SeriesGroup<T> {
   anchorPresent: boolean
 }
 
-export interface CollapseOptions {
+/**
+ * How a caller ranks rows, for the comparator form of `elect`: negative when `a` should stand for its
+ * series ahead of `b`. It is the SAME comparator the caller sorts its list with, never a second one.
+ */
+export type SeriesRanking<T> = (a: T, b: T) => number
+
+export interface CollapseOptions<T extends SeriesRow = SeriesRow> {
   perSeries?: number
   /** seriesUpcomingFloor(dayInZone(now, HOME_TZ)) — the caller owns the clock. */
   upcomingFrom?: string
@@ -131,8 +137,14 @@ export interface CollapseOptions {
    * every upcoming browse surface. 'latest' is "what happened", and exists for exactly one caller:
    * the PAST half of search's partition, where electing the earliest row hands a query the series'
    * opening night from years ago. `dates` stays earliest-first either way.
+   *
+   * A COMPARATOR elects the best-ranked rows instead (SERIES-RANK, ADR-1680): /events sorted by
+   * "Most going" is represented by the series' best-attended date and ranks on that date's numbers,
+   * not on whichever date happens to be next. Pass the caller's own sort comparator, so the list is
+   * ordered and elected by one rule. Ties fall back to the earliest date, so a comparator that cannot
+   * tell two dates apart elects exactly what 'earliest' would.
    */
-  elect?: 'earliest' | 'latest'
+  elect?: 'earliest' | 'latest' | SeriesRanking<T>
 }
 
 export interface CollapseResult<T> {
@@ -182,7 +194,7 @@ function clampPerSeries(value: number | undefined): number {
  */
 export function collapseSeries<T extends SeriesRow>(
   rows: T[],
-  opts: CollapseOptions = {},
+  opts: CollapseOptions<T> = {},
 ): CollapseResult<T> {
   const perSeries = clampPerSeries(opts.perSeries)
   const maxDates = typeof opts.maxDates === 'number' && opts.maxDates > 0 ? Math.floor(opts.maxDates) : DEFAULT_MAX_DATES
@@ -243,7 +255,18 @@ export function collapseSeries<T extends SeriesRow>(
     // Election order. Sorting `dates` is not enough on its own: a past-events reader needs the LAST
     // date to stand for the series, and reversing the input array would not do it — this fold
     // elects by INSTANT, not by input position.
-    const representatives = (opts.elect === 'latest' ? [...byDate].reverse() : byDate).slice(0, perSeries)
+    // A comparator re-ranks the earliest-first list with a STABLE sort, so a tie keeps date order.
+    const elect = opts.elect
+    const ranked =
+      typeof elect === 'function'
+        ? [...byDate].sort((a, b) => {
+            const d = elect(a, b)
+            return Number.isFinite(d) ? d : 0
+          })
+        : elect === 'latest'
+          ? [...byDate].reverse()
+          : byDate
+    const representatives = ranked.slice(0, perSeries)
 
     const group: SeriesGroup<T> = {
       key,
@@ -280,7 +303,7 @@ function isDuplicate<T extends SeriesRow>(rows: T[], index: number): boolean {
 }
 
 /** The rows-only wrapper every simple call site uses. */
-export function collapseSeriesRows<T extends SeriesRow>(rows: T[], opts?: CollapseOptions): T[] {
+export function collapseSeriesRows<T extends SeriesRow>(rows: T[], opts?: CollapseOptions<T>): T[] {
   return collapseSeries(rows, opts).rows
 }
 
@@ -306,7 +329,7 @@ export function collapseSeriesRows<T extends SeriesRow>(rows: T[], opts?: Collap
  * so counts as one. That is deliberate: it is the number of cards that would render, and silently
  * dropping a row from a count is the same failure as silently dropping it from a list.
  */
-export function countSeries<T extends SeriesRow>(rows: T[], opts: CollapseOptions = {}): number {
+export function countSeries<T extends SeriesRow>(rows: T[], opts: CollapseOptions<T> = {}): number {
   return collapseSeriesRows(rows, { ...opts, perSeries: 1 }).length
 }
 
@@ -323,7 +346,7 @@ export function countSeries<T extends SeriesRow>(rows: T[], opts: CollapseOption
 export function countSeriesBy<T extends SeriesRow>(
   rows: T[],
   keyOf: (row: T) => string | null | undefined,
-  opts: CollapseOptions = {},
+  opts: CollapseOptions<T> = {},
 ): Map<string, number> {
   const buckets = new Map<string, T[]>()
   const order: string[] = []
@@ -365,7 +388,7 @@ export function collapseSeriesAroundFloor<T extends SeriesRow>(
   upcoming: T[],
   past: T[],
   limit: number,
-  opts: CollapseOptions = {},
+  opts: CollapseOptions<T> = {},
 ): T[] {
   const up = collapseSeriesRows(upcoming, opts)
   // The past half elects the LATEST date it holds. The default election ("what's next") would hand
@@ -411,6 +434,83 @@ export function seriesDates<T extends SeriesRow>(
       return d !== 0 ? d : a.id < b.id ? -1 : a.id > b.id ? 1 : 0
     })
     .slice(0, limit)
+}
+
+/**
+ * ONE ENTRY PER SERIES, for a surface that plots places rather than listing cards (SERIES-PIN,
+ * ADR-1680). The /events map is drawn from the sorted card list, which carries up to
+ * `cardsPerSeries` dates of one series; every one of them sits on the same venue, so the map stacked
+ * three identical pins on one spot and none of them said the gathering repeats.
+ *
+ * Walks `rows` (the caller's already-sorted, already-folded list) and keeps the FIRST row of each
+ * series, so the pin is the card the member sees first. `moreDates` is the series' other eligible
+ * dates, read from the fold that produced the list: `dateCount - 1`, because this row is one of
+ * them. A row the fold did not group (a one-off, or a row it could not place) carries 0.
+ */
+export function onePerSeries<T extends SeriesRow>(
+  rows: T[],
+  folded: Pick<CollapseResult<T>, 'byRowId'>,
+): Array<{ row: T; moreDates: number }> {
+  const seen = new Set<string>()
+  const out: Array<{ row: T; moreDates: number }> = []
+  for (const row of rows) {
+    if (!row || !row.id) continue
+    const group = folded.byRowId.get(row.id)
+    const key = group?.key ?? `row:${row.id}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ row, moreDates: group ? Math.max(0, group.dateCount - 1) : 0 })
+  }
+  return out
+}
+
+/** One series' dates as an operator picker lists them. `series` is false for a lone row. */
+export interface SeriesPickerGroup<T> {
+  key: string
+  /** The title the group is headed by: the anchor's when it is present, else the first row's. */
+  title: string
+  /** True when two or more dates of one repeating event are present, so they belong under a heading. */
+  series: boolean
+  /** Earliest first. An operator reads a series' dates in calendar order whatever the list order. */
+  rows: T[]
+}
+
+/**
+ * GROUP, NEVER FOLD — the operator pickers' shape (SERIES-PICKER, ADR-1680).
+ *
+ * The QR check-in destination on /admin/qr and "Add an event" on a circle's Manage page each pick ONE
+ * specific date: a check-in code belongs to a date, and attaching an event attaches that row. So the
+ * browse fold (one card per series) is the wrong tool; it would hide the very date the operator
+ * needs. What was wrong instead was that a daily series listed as up to 61 options with the same
+ * bare title. This keeps every row and heads each series' dates with the series' title, in the order
+ * each series first appears in `rows`, so the caller's ordering of whole gatherings survives.
+ */
+export function groupBySeries<T extends SeriesRow & { title?: string | null }>(rows: T[]): SeriesPickerGroup<T>[] {
+  const order: string[] = []
+  const buckets = new Map<string, T[]>()
+  const seen = new Set<string>()
+  for (const row of rows) {
+    if (!row || !row.id || seen.has(row.id)) continue
+    seen.add(row.id)
+    const key = seriesKey(row)
+    const bucket = buckets.get(key)
+    if (bucket) bucket.push(row)
+    else {
+      buckets.set(key, [row])
+      order.push(key)
+    }
+  }
+  return order.map((key) => {
+    const bucket = buckets.get(key)!
+    const anchor = bucket.find((r) => r.id === key)
+    const title = (anchor?.title ?? bucket[0].title ?? '').trim() || 'Untitled event'
+    const byDate = [...bucket].sort((a, b) => {
+      const d = instant(a.starts_at) - instant(b.starts_at)
+      return Number.isNaN(d) ? 0 : d
+    })
+    // Two rows share a key only through parent_event_id, so a bucket of two or more IS a series.
+    return { key, title, series: bucket.length > 1, rows: byDate }
+  })
 }
 
 /** A post-query fold spends the query LIMIT on rows it then discards, so a folding read must

@@ -292,7 +292,7 @@ jobs:
       # itself; the account PLAN ceiling — the thing actually hit — is not readable from this role.
       # Volume and size are therefore a trend across these summaries, with no invented denominator.
       #
-      # ⚠️ Depends on SUPABASE_ACCESS_TOKEN, which expires 2026-12-09 (LIVE-273, an open owner row).
+      # ⚠️ Depends on SUPABASE_ACCESS_TOKEN, which expires 2027-09-28 (rotated 2026-09-30, LIVE-273).
       # On expiry this step degrades to 79 and says so; it does not go quiet.
       - name: Database account usage
         id: dbusage

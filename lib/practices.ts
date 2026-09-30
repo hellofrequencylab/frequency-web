@@ -4,9 +4,8 @@
 // a host assigns one to a circle, or a member adopts one for themselves; both log
 // against the same practice. Server-only (admin client + app-code authz in callers).
 //
-// The practices/* tables are new; until `supabase gen types` is re-run they are not
-// in the generated Database types, so this module reads/writes through an untyped
-// admin handle. Drop the cast after regen (see docs/START-HERE.md).
+// The practices/* tables are in the generated Database types, so the admin handle below
+// keeps them: a misspelt practice column fails tsc, not a request (LIVE-647).
 //
 // ── 🔴 `import 'server-only'` IS THE POINT OF THE LINE BELOW, NOT DECORATION (LIVE-009) ──────────
 // "Server-only" on line 5 was a comment, and it was not true: `lib/pillars.ts` imported
@@ -20,9 +19,9 @@
 // the compiler, so the dozen `import type` client callers are unaffected.
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Json, TablesInsert, TablesUpdate } from '@/lib/database.types'
 import { listReadFailClosed } from '@/lib/discover'
 import { slugify as slugifyShared } from '@/lib/utils'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { track } from '@/lib/analytics/track'
 import { awardZaps, awardZapsForAction, reverseZaps } from '@/lib/zaps'
@@ -34,6 +33,8 @@ import { resolveMemberDay, memberDay } from '@/lib/member-day'
 import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
 import { normalizePrimaryPct, type PillarSplit } from '@/lib/practices/attribution'
+import { keepPrimary, resolveSplitWrite } from '@/lib/practices/split'
+import { residualFacetCounts, type FacetBaseRow } from '@/lib/practices/residual-facets'
 import { coerceTermWeeks, cleanCue, termWindow, withinActiveCap } from '@/lib/practices/adoption'
 import { BREATH_PATTERNS } from '@/lib/on-air'
 import {
@@ -59,7 +60,7 @@ export type TimerKind = (typeof TIMER_KINDS)[number]
 export const MINDLESS_MODES = ['meditate', 'breathe', 'journal', 'stillness', 'ritual', 'log'] as const
 export type MindlessMode = (typeof MINDLESS_MODES)[number]
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 
@@ -70,7 +71,8 @@ export interface FocusDetail {
 }
 
 /** A practice's per-Focus details, keyed by pillar id. The KEYS are the selected
- *  Focuses (presence = selected); `domain_id` mirrors the FIRST key for back-compat. */
+ *  Focuses (presence = selected). The column is jsonb, which keeps no key order, so the keys say
+ *  nothing about which Focus is primary: that is `domain_id` (LIVE-650, ADR-1618). */
 export type FocusDetails = Record<string, FocusDetail>
 
 export interface Practice {
@@ -123,8 +125,9 @@ export interface Practice {
   reward_note: string | null
   /** Fallback per-log payout tier when reward_zaps is null: 'light' (8⚡) | 'standard' (12⚡) | 'heavy' (15⚡). */
   weight_class: string | null
-  /** The PRIMARY Pillar (domains.id), or null if uncategorized. Mirrors the first
-   *  selected Focus in `focus_details`, kept for back-compat (Pillar filtering + cards). */
+  /** The PRIMARY Pillar (domains.id), or null if uncategorized. The one place the primary is
+   *  read from: it is one of the `focus_details` keys, never "the first" of them (jsonb keeps no
+   *  key order; LIVE-650, ADR-1618). Drives Pillar filtering, cards and the Zap split. */
   domain_id: string | null
   /** Per-Focus instructions + timing, keyed by pillar id. The keys are the selected
    *  Focuses (a practice can belong to multiple). Defaults to {} on legacy rows. */
@@ -138,7 +141,7 @@ export interface Practice {
 }
 
 /** A library tag (canonical or member/Vera folksonomy) as shown on a practice. */
-export interface PracticeTag {
+interface PracticeTag {
   slug: string
   label: string
 }
@@ -208,7 +211,7 @@ export function pillarTimerDefault(
 /** Coerce a raw practices row into a Practice with the new completion-economy columns
  *  reliably typed: duration_locked defaults to false (a pre-migration row reads null/undefined),
  *  and mindless_mode stays null when absent (the read-time pillarTimerDefault fallback fills it).
- *  Reached through the untyped admin handle (ADR-246) — the cast just types the shape. */
+ *  The cast just types the shape. */
 function normalizePractice<T extends Practice>(row: T): T {
   return {
     ...row,
@@ -308,7 +311,7 @@ export async function getPublicPractice(slugOrId: string): Promise<PublicPractic
 // the database against the `practices_ranked` view (count: 'exact' + .range), so
 // a page only ever fetches + enriches one screen of rows. URL-driven from the page.
 
-export interface LibrarySearchOpts {
+interface LibrarySearchOpts {
   q?: string | null
   pillarId?: string | null
   subId?: string | null
@@ -324,7 +327,7 @@ export interface LibrarySearchOpts {
   hideDemo?: boolean
 }
 
-export interface LibrarySearchResult {
+interface LibrarySearchResult {
   rows: RankedPractice[]
   total: number
   page: number
@@ -461,7 +464,7 @@ export interface AdminPracticeSearchOpts {
 
 /** One admin curation row: the practice's library fields + its usage signal + the
  *  table-only enrichments (featured_at, creator) the view doesn't carry. */
-export interface AdminPracticeRow {
+interface AdminPracticeRow {
   id: string
   title: string
   created_by: string | null
@@ -552,9 +555,9 @@ async function applyAdminFilters<Q extends {
   if (opts.hideDemo) q = q.eq('is_demo', false)
   if (opts.isPublic !== undefined) q = q.eq('is_public', opts.isPublic)
   if (opts.isTemplate !== undefined) q = q.eq('is_template', opts.isTemplate)
-  // NB: `featured` is NOT filtered here — featured_at is a timestamp the practices_ranked
-  // view does not expose, so it can't be a column predicate. searchAdminPractices applies
-  // it post-query against the enriched featured_at; countAdminPractices documents the gap.
+  // NB: `featured` is NOT filtered here (it is a timestamp, not a bool). searchAdminPractices
+  // applies it post-query against the enriched featured_at; countAdminPractices applies it as a
+  // null check on the view's featured_at.
   if (opts.pillarId) q = q.eq('domain_id', opts.pillarId)
   if (opts.subId) q = q.eq('subcategory_id', opts.subId)
   if (opts.status) q = q.eq('status', opts.status)
@@ -699,30 +702,30 @@ export async function countAdminPractices(opts: AdminPracticeSearchOpts = {}): P
     .select('id', { count: 'exact', head: true }) as unknown as AdminFilterBuilder
   const filtered = await applyAdminFilters(q, opts)
   if (filtered === null) return 0
-  const { count } = (await (filtered.q as unknown as Promise<{ count: number | null }>)) ?? { count: 0 }
-  // The `featured` filter is enriched post-query (timestamp, not a column bool); when it is
-  // the ONLY thing narrowing the count we can't express it in SQL here, so the count is the
-  // pre-featured total. Callers that need an exact featured count read the facet rail's
-  // 'featured' flag count instead (practice_admin_facets), which counts featured_at directly.
+  // `featured` is a timestamp, so the row read applies it after the query; the view exposes
+  // featured_at, so the count applies the same test as a null check (LIVE-646, ADR-1609).
+  const f = filtered.q as unknown as AdminFilterBuilder & { not: (c: string, op: string, v: null) => AdminFilterBuilder }
+  const scoped = opts.featured === undefined ? f : opts.featured ? f.not('featured_at', 'is', null) : f.is('featured_at', null)
+  const { count } = (await (scoped as unknown as Promise<{ count: number | null }>)) ?? { count: 0 }
   return count ?? 0
 }
 
 // --- Admin facet counts (the curation rail) -------------------------------
 //
-// Phase 1 item 1.3 (PRACTICE-LIBRARY §5). The rail shows grouped counts across the
-// whole library so an operator can see, at a glance, how many practices sit under each
-// Pillar / status / weight / flag / computed-gap, and jump to them.
+// Phase 1 item 1.3 (PRACTICE-LIBRARY §5). The rail shows grouped counts so an operator can see
+// how many practices sit under each Pillar / status / weight / flag / computed-gap, and jump to
+// them. Two reads, two questions:
 //
-// CAVEAT (documented design choice): these are GLOBAL counts over the admin-visible
-// universe, NOT counts of "the current filter set minus this facet" (the textbook
-// faceted-search behavior). Computing per-facet residual counts means one grouped query
-// per facet on every rail render, which is wasteful for a single-operator workspace; the
-// global counts answer "what's in the library" — which is the curation question — and the
-// "showing N of M" line (countAdminPractices) already reflects the active filter. Residual
-// faceting is a Phase-2 refinement if operators ask for it. The RPC carries the same note.
+//   • searchAdminFacets(filters): RESIDUAL ("minus-self") counts for the rail (LIVE-646,
+//     ADR-1609). Each group is counted under every active filter except its own, so a count is
+//     the row total of the view its option links to. Computed in the app from one read of the
+//     base set (lib/practices/residual-facets.ts), through the same filter builder as the table.
+//   • libraryFacetTotals(): GLOBAL counts over the admin-visible universe via the
+//     practice_admin_facets RPC, for the headline stats ("in library", "pending"), which describe
+//     the library whatever is filtered.
 
 /** One facet bucket: a key within a facet group and how many practices fall in it. */
-export interface FacetCount {
+interface FacetCount {
   key: string
   count: number
 }
@@ -740,12 +743,99 @@ export interface AdminPracticeFacets {
   computed: { no_image: number; no_body: number; never_logged: number; no_pillar: number }
 }
 
+/** One page of the facet base read: PostgREST's max_rows (supabase/config.toml). */
+const FACET_PAGE = 1000
+
+/** The practices_ranked columns the residual counter reads. `body` is not among them: a step
+ *  text is long, and the counter only needs to know it is missing, which a second, id-only read
+ *  asks with the table's own `is('body', null)`. */
+const FACET_BASE_COLS =
+  'id, domain_id, subcategory_id, status, weight_class, created_by, is_public, is_template, ' +
+  'featured_at, header_image, logs_total'
+
+/** Every practices_ranked row matching `opts`, through applyAdminFilters, a page at a time in id
+ *  order. Null on a read error (logged). */
+async function readAllAdminFiltered<T>(cols: string, opts: AdminPracticeSearchOpts): Promise<T[] | null> {
+  const out: T[] = []
+  for (let from = 0; ; from += FACET_PAGE) {
+    const q = db().from('practices_ranked').select(cols) as unknown as AdminFilterBuilder
+    const filtered = await applyAdminFilters(q, opts)
+    if (filtered === null) return out
+    const { data, error } = await (filtered.q as unknown as {
+      order: (c: string, o: { ascending: boolean }) => {
+        range: (a: number, b: number) => Promise<{ data: unknown; error: unknown }>
+      }
+    }).order('id', { ascending: true }).range(from, from + FACET_PAGE - 1)
+    if (error) {
+      log.error('practices.admin_facets_read_failed', { error: (error as { message?: string }).message })
+      return null
+    }
+    const page = (data as T[] | null) ?? []
+    out.push(...page)
+    if (page.length < FACET_PAGE) return out
+  }
+}
+
 /**
- * Read the curation rail's facet counts via the practice_admin_facets RPC (one round-trip
- * for the whole rail). Global over the admin-visible universe (see CAVEAT above). The RPC
- * is reached through the untyped admin handle (ADR-246) until the types are regenerated.
+ * The rail's residual facet counts for a filter set (LIVE-646, ADR-1609): every group counted
+ * under every active filter except its own. Reads the base set (the universe narrowed only by the
+ * uncounted filters: free text, hidden, demo) through applyAdminFilters, plus which of those rows
+ * have no steps and the tag slugs they carry, and counts in lib/practices/residual-facets.ts.
+ * Tag buckets are keyed by SLUG, the value the tag filter takes. Empty on a read error.
  */
 export async function searchAdminFacets(
+  filters: AdminPracticeSearchOpts = {},
+): Promise<AdminPracticeFacets> {
+  const base: AdminPracticeSearchOpts = {
+    q: filters.q, includeHidden: filters.includeHidden, hideDemo: filters.hideDemo,
+  }
+  const [baseRows, noBodyRows] = await Promise.all([
+    readAllAdminFiltered<Omit<FacetBaseRow, 'no_body'>>(FACET_BASE_COLS, base),
+    readAllAdminFiltered<{ id: string }>('id', { ...base, noBody: true }),
+  ])
+  if (baseRows === null || noBodyRows === null) return residualFacetCounts([], new Map(), filters)
+  const noBody = new Set(noBodyRows.map((r) => r.id))
+  const rows: FacetBaseRow[] = baseRows.map((r) => ({ ...r, no_body: noBody.has(r.id) }))
+
+  // Tag slugs per practice: the defs are a small vocabulary; the links are read whole, a page at
+  // a time, and kept only for rows in the base set (an .in() over thousands of ids would not fit
+  // in a URL).
+  const tagSlugsByPractice = new Map<string, string[]>()
+  const { data: defRows } = await db().from('practice_tag_defs').select('id, slug')
+  const slugOf = new Map(((defRows as { id: string; slug: string }[] | null) ?? []).map((d) => [d.id, d.slug]))
+  if (slugOf.size > 0 && rows.length > 0) {
+    const inBase = new Set(rows.map((r) => r.id))
+    for (let from = 0; ; from += FACET_PAGE) {
+      const { data, error } = await (db().from('practice_tags').select('practice_id, tag_id') as unknown as {
+        order: (c: string, o: { ascending: boolean }) => {
+          range: (a: number, b: number) => Promise<{ data: unknown; error: unknown }>
+        }
+      }).order('id', { ascending: true }).range(from, from + FACET_PAGE - 1)
+      if (error) {
+        log.error('practices.admin_facet_tags_read_failed', { error: (error as { message?: string }).message })
+        break
+      }
+      const links = (data as { practice_id: string; tag_id: string }[] | null) ?? []
+      for (const l of links) {
+        const slug = slugOf.get(l.tag_id)
+        if (!slug || !inBase.has(l.practice_id)) continue
+        const list = tagSlugsByPractice.get(l.practice_id)
+        if (list) list.push(slug)
+        else tagSlugsByPractice.set(l.practice_id, [slug])
+      }
+      if (links.length < FACET_PAGE) break
+    }
+  }
+
+  return residualFacetCounts(rows, tagSlugsByPractice, filters)
+}
+
+/**
+ * Whole-library facet counts via the practice_admin_facets RPC (one round-trip), for the
+ * workspace's headline stats. Not scoped to any filter: the stats band describes the library.
+ * Tag buckets here are keyed by tag id.
+ */
+export async function libraryFacetTotals(
   opts: { includeHidden?: boolean } = {},
 ): Promise<AdminPracticeFacets> {
   const out: AdminPracticeFacets = {
@@ -806,7 +896,7 @@ export async function findPracticeDuplicates(
     .select('embedding')
     .eq('id', practiceId)
     .maybeSingle()
-  const embedding = (seedRow as { embedding: string | number[] | null } | null)?.embedding
+  const embedding = seedRow?.embedding
   if (!embedding) return []
   const { data, error } = await db().rpc('match_practices', {
     query_embedding: embedding,
@@ -887,7 +977,7 @@ export async function restorePractices(ids: string[]): Promise<number> {
 
 /** A practice creator's display identity, for author attribution on cards + the
  *  detail page. handle is the /people/{handle} key; null = no human author. */
-export type PracticeCreator = { id: string; handle: string | null; display_name: string | null; avatar_url: string | null }
+type PracticeCreator = { id: string; handle: string | null; display_name: string | null; avatar_url: string | null }
 
 /** Batch-resolve the creators (profiles) for a set of `created_by` ids in ONE query.
  *  Returns a Map keyed by profile id; ids that aren't real profiles are simply absent.
@@ -922,7 +1012,7 @@ export async function setPracticeFlags(
   id: string,
   flags: { is_template?: boolean; is_public?: boolean },
 ): Promise<void> {
-  const update: Record<string, unknown> = {}
+  const update: TablesUpdate<'practices'> = {}
   if (flags.is_template !== undefined) update.is_template = flags.is_template
   if (flags.is_public !== undefined) update.is_public = flags.is_public
   if (Object.keys(update).length === 0) return
@@ -954,7 +1044,7 @@ export async function setPracticeReward(
   id: string,
   patch: { reward_zaps?: number | null; reward_note?: string | null },
 ): Promise<void> {
-  const update: Record<string, unknown> = {}
+  const update: TablesUpdate<'practices'> = {}
   if (patch.reward_zaps !== undefined) update.reward_zaps = patch.reward_zaps
   if (patch.reward_note !== undefined) update.reward_note = patch.reward_note
   if (Object.keys(update).length === 0) return
@@ -1167,21 +1257,21 @@ export async function getRankedPractice(slugOrId: string): Promise<RankedPractic
 //   · circles  — only non-archived; demo circles hidden unless demo mode is on AND
 //     the viewer hasn't opted out (mirrors app/(main)/circles/page.tsx)
 
-export interface PracticeJourneyLink {
+interface PracticeJourneyLink {
   slug: string
   title: string
   /** Times this journey has been adopted (the library's popularity signal). */
   adoptCount: number
 }
 
-export interface PracticeCircleLink {
+interface PracticeCircleLink {
   slug: string
   name: string
   /** Active members in the circle. */
   memberCount: number
 }
 
-export interface PracticeBacklinks {
+interface PracticeBacklinks {
   journeys: PracticeJourneyLink[]
   circles: PracticeCircleLink[]
 }
@@ -1266,8 +1356,8 @@ export async function getPracticeMemberState(
   const [adopt, log] = await Promise.all([
     client.from('member_practices').select('id').eq('profile_id', profileId)
       .eq('practice_id', practiceId).eq('active', true).maybeSingle(),
-    // Read the completion columns through the untyped handle (newer than the generated types,
-    // ADR-246) so a banked-but-unfinished log surfaces as a partial, not just "logged today".
+    // Read the completion columns so a banked-but-unfinished log surfaces as a partial, not
+    // just "logged today".
     client.from('practice_logs').select('id, completed, seconds_done, seconds_target')
       .eq('profile_id', profileId)
       .eq('practice_id', practiceId).eq('logged_for', today).maybeSingle(),
@@ -1365,7 +1455,7 @@ export async function createPractice(input: {
   status?: 'draft' | 'pending' | 'approved'
 }): Promise<Practice | null> {
   const isPublic = input.isPublic ?? true
-  const insert: Record<string, unknown> = {
+  const insert: TablesInsert<'practices'> = {
     title: input.title,
     description: input.description ?? null,
     created_by: input.createdBy,
@@ -1373,8 +1463,7 @@ export async function createPractice(input: {
     slug: await uniquePracticeSlug(input.title),
   }
   // Stamp the owning Space (tenancy axis, Phase 0). Defaults to the root space via
-  // loadRootSpaceId, so this single-tenant create keeps behaving exactly as today. space_id is
-  // newer than the generated DB types — set it on the untyped insert payload (ADR-246). Omit
+  // loadRootSpaceId, so this single-tenant create keeps behaving exactly as today. Omit
   // when the root row is missing (the backfill sweeps the NULL to root).
   const spaceId = input.spaceId ?? (await loadRootSpaceId())
   if (spaceId) insert.space_id = spaceId
@@ -1422,7 +1511,7 @@ export async function createPractice(input: {
  * Defaults to the root space (so a caller that passes no spaceId reads the root's practices, the
  * canary). Filtered by space_id so a practice in space A can never resolve for space B — the
  * by-space read the Phase 1 profile's Practices surfaces use. FAIL-SAFE: [] on any
- * error / missing tenant. space_id is reached with an untyped handle (ADR-246).
+ * error / missing tenant.
  */
 export async function listPracticesForSpace(
   spaceId?: string | null,
@@ -1432,21 +1521,13 @@ export async function listPracticesForSpace(
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
   try {
-    // Untyped chain (space_id isn't in the generated types, ADR-246); loose so we can add a
-    // conditional status filter without re-typing every rung.
-    type Chain = {
-      select: (cols: string) => Chain
-      eq: (col: string, val: string) => Chain
-      order: (col: string, o: { ascending: boolean }) => Chain
-      limit: (n: number) => Promise<{ data: unknown; error: unknown }>
-    }
-    let q = (db().from('practices') as unknown as Chain).select(PRACTICE_COLS).eq('space_id', sid)
+    let q = db().from('practices').select(PRACTICE_COLS).eq('space_id', sid)
     // The PUBLIC profile block passes publishedOnly so drafts (status='draft') stay in the owner's
     // manager only. 'approved' = live to the Space (and any is_public library practice is approved too).
     if (opts?.publishedOnly) q = q.eq('status', 'approved')
     const { data, error } = await q.order('created_at', { ascending: false }).limit(limit)
     if (error) return []
-    return (data as Practice[] | null) ?? []
+    return (data as unknown as Practice[] | null) ?? []
   } catch {
     return []
   }
@@ -1455,7 +1536,7 @@ export async function listPracticesForSpace(
 /** Set a practice's library review status (draft/pending/approved/rejected/archived). Caller enforces
  *  authz. For a Space practice, moving to 'approved' is the "make it live to my space" step (no staff
  *  needed for own-space content); reaching the PUBLIC library still flips is_public through the
- *  paid-Crew + review flow. Reached with the untyped admin handle (ADR-246). */
+ *  paid-Crew + review flow. */
 export async function setPracticeStatus(practiceId: string, status: string): Promise<void> {
   await db().from('practices').update({ status }).eq('id', practiceId)
 }
@@ -1555,20 +1636,26 @@ export interface PracticeEdit {
   domain_id?: string | null
   /** The practice's Focuses (Pillars) with per-Focus instructions + timing, keyed by
    *  pillar id. Presence of a key = that Focus is selected (a practice can have many).
-   *  When written, `domain_id` is set to the first key for back-compat (Pillar filtering). */
+   *  When written, `domain_id` keeps the declared primary (this patch's, else the row's) while it
+   *  is still a key, and only falls back to a key when it left the set (`keepPrimary`, LIVE-650). */
   focus_details?: Record<string, { instructions: string; timing: string }> | null
   subcategory_id?: string | null
+  /** The second Pillar this practice's Zaps count toward (ADR-438; LIVE-641). Null clears the
+   *  split. Stored only through `resolveSplitWrite` (lib/practices/split.ts): never the primary,
+   *  always one of the Focuses (a new one is added), and gone when its Focus is removed. */
+  secondary_domain_id?: string | null
+  /** The primary Pillar's share of each log's Zaps, 50 to 100 (75 when unset). Meaningful only
+   *  beside a secondary; with none it stores the column default. */
+  primary_pct?: number | null
   /** Payout weight for a log (Rewards Economy v2): 'light' (8⚡) | 'standard' (12⚡) |
    *  'heavy' (15⚡). Unlike the reward_zaps amount, this IS author-editable — it's the
    *  effort tier of the practice, which the author knows best (drives practiceLogAction). */
   weight_class?: WeightClass
 }
 
-/** Normalize a focus_details patch into a clean, bounded map (and pick its primary
- *  pillar for domain_id). Trims/caps the free-text so a bad client can't write junk. */
-function cleanFocusDetails(
-  raw: Record<string, { instructions: string; timing: string }>,
-): { focus_details: FocusDetails; primary: string | null } {
+/** Normalize a focus_details patch into a clean, bounded map. Trims/caps the free-text so a bad
+ *  client can't write junk. It picks no primary: key order is not meaning (LIVE-650). */
+function cleanFocusDetails(raw: Record<string, { instructions: string; timing: string }>): FocusDetails {
   const out: FocusDetails = {}
   // Pillar ids are UUIDs. Only accept UUID-shaped keys, which rejects '__proto__' /
   // 'constructor' / 'prototype' (remote property-injection / prototype-pollution guard).
@@ -1580,13 +1667,15 @@ function cleanFocusDetails(
       timing: (detail?.timing ?? '').slice(0, 80),
     }
   }
-  const keys = Object.keys(out)
-  return { focus_details: out, primary: keys[0] ?? null }
+  return out
 }
 
 /** The three payout tiers a practice log can carry. 'standard' is the default. */
 export const WEIGHT_CLASSES = ['light', 'standard', 'heavy'] as const
 export type WeightClass = (typeof WEIGHT_CLASSES)[number]
+
+/** The `practices.icon` column default: what a practice with no chosen icon wears. */
+const DEFAULT_PRACTICE_ICON = 'sparkles'
 
 const STR = (v: string | null | undefined, max: number): string | null => {
   const t = (v ?? '').trim()
@@ -1596,7 +1685,7 @@ const STR = (v: string | null | undefined, max: number): string | null => {
 /** Update a practice's content. Caller enforces ownership (created_by === caller).
  *  Only the fields present in `patch` are written. */
 export async function updatePractice(id: string, patch: PracticeEdit): Promise<Practice | null> {
-  const update: Record<string, unknown> = {}
+  const update: TablesUpdate<'practices'> = {}
   // The pre-edit row, read AT MOST ONCE and only when a clause below actually needs it (the
   // weight-class clamp, or the placeholder-slug re-mint). Two clauses would otherwise mean two
   // round trips for one save.
@@ -1604,6 +1693,26 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   const loadCurrent = async (): Promise<Practice | null> => {
     if (cachedCurrent === undefined) cachedCurrent = await getPractice(id)
     return cachedCurrent
+  }
+  // The row's Pillar columns, read AT MOST ONCE: the Focus clause needs the stored primary and the
+  // split clause needs all four.
+  type PillarRow = {
+    domain_id: string | null
+    secondary_domain_id: string | null
+    primary_pct: number | null
+    focus_details: FocusDetails | null
+  }
+  let cachedPillars: PillarRow | null | undefined
+  const loadPillars = async (): Promise<PillarRow | null> => {
+    if (cachedPillars === undefined) {
+      const { data } = await db()
+        .from('practices')
+        .select('domain_id, secondary_domain_id, primary_pct, focus_details')
+        .eq('id', id)
+        .maybeSingle()
+      cachedPillars = (data as unknown as PillarRow | null) ?? null
+    }
+    return cachedPillars
   }
   // The title actually being written (already trimmed + capped), kept so the slug re-mint just below
   // slugifies exactly what lands in the column rather than the raw patch.
@@ -1670,7 +1779,7 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   }
   if (patch.movement_config !== undefined)
     update.movement_config = patch.movement_config
-      ? sanitizeMovementConfig(patch.movement_config)
+      ? (sanitizeMovementConfig(patch.movement_config) as unknown as Json)
       : null
   // The Be Still flavour a mindless practice opens on (meditate | breathe | journal | stillness |
   // ritual | log). Null = derive from the Pillar at read time. Validated against the enum.
@@ -1697,18 +1806,47 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
         ? patch.breath_pattern
         : null
   if (patch.category !== undefined) update.category = STR(patch.category, 40)
-  if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
+  // `icon` is NOT NULL (default 'sparkles'). A blank icon is the builder's "Use default", and the
+  // editor already shows a blank icon as sparkles, so it writes the default rather than a null the
+  // column rejects (which failed the whole save) (LIVE-648, ADR-1612).
+  if (patch.icon !== undefined) update.icon = STR(patch.icon, 40) ?? DEFAULT_PRACTICE_ICON
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
   if (patch.domain_id !== undefined) update.domain_id = patch.domain_id || null
-  // Multi-Focus: write the per-Focus map and keep domain_id as the FIRST selected
-  // Focus (back-compat for Pillar filtering + cards). A focus_details patch wins on
-  // domain_id, since both describe the same Focus set.
+  // Multi-Focus: write the per-Focus map, and keep the primary it is measured against. The primary
+  // is domain_id, never the map's first key: focus_details is jsonb, which keeps no key order, so a
+  // map read back from the row arrives in id order and its first key is whichever Pillar id sorts
+  // first. The declared primary (this patch's domain_id, else the row's) stays while it is still a
+  // Focus; only a primary that left the set is replaced (LIVE-650, ADR-1618).
   if (patch.focus_details !== undefined) {
-    const { focus_details, primary } = cleanFocusDetails(patch.focus_details ?? {})
-    update.focus_details = focus_details
-    update.domain_id = primary
+    const focus_details = cleanFocusDetails(patch.focus_details ?? {})
+    update.focus_details = focus_details as unknown as Json
+    const declared =
+      patch.domain_id !== undefined ? (update.domain_id ?? null) : ((await loadPillars())?.domain_id ?? null)
+    update.domain_id = keepPrimary(declared, focus_details)
   }
   if (patch.subcategory_id !== undefined) update.subcategory_id = patch.subcategory_id || null
+  // The Pillar split (ADR-438; LIVE-641, ADR-1604). Resolved whenever this write chooses a split
+  // OR moves what the split is measured against (the primary, the Focus set), because the stored
+  // secondary has to stay true against both: the database refuses a secondary equal to the
+  // primary, and a secondary whose Focus was removed would credit a Pillar the practice no longer
+  // says it develops. The unchanged halves come from the row as it stands.
+  if (patch.secondary_domain_id !== undefined || patch.primary_pct !== undefined || update.domain_id !== undefined) {
+    const current = await loadPillars()
+    const authored = patch.secondary_domain_id !== undefined
+    const split = resolveSplitWrite({
+      primary: update.domain_id !== undefined ? (update.domain_id as string | null) : (current?.domain_id ?? null),
+      focus:
+        update.focus_details !== undefined
+          ? (update.focus_details as unknown as FocusDetails)
+          : (current?.focus_details ?? {}),
+      secondary: authored ? patch.secondary_domain_id : (current?.secondary_domain_id ?? null),
+      primaryPct: patch.primary_pct !== undefined ? patch.primary_pct : (current?.primary_pct ?? null),
+      authored,
+    })
+    update.secondary_domain_id = split.secondary_domain_id
+    update.primary_pct = split.primary_pct
+    if (split.focus_details) update.focus_details = split.focus_details as unknown as Json
+  }
   // Weight class drives the per-log Zap payout (light 8 / standard 12 / heavy 15).
   // Time-vs-points (ADR-442): clamp the stored tier to the highest one the practice's
   // required length earns, so a short practice can never bank Heavy. Lower tiers stay
@@ -1839,7 +1977,6 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
   const rootId = (lineageRow as { root_practice_id: string | null } | null)?.root_practice_id ?? practiceId
   const { data } = await db()
     .from('practices')
-    // Lineage columns aren't in the generated types yet (ADR-246) — cast the payload.
     .insert({
       title: src.title,
       // Mint a slug here too. `createPractice` has always done this; the fork path never did,
@@ -1854,18 +1991,18 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
       // timer_kind is authoritative (uses_timer is generated, never inserted); carry the
       // Movement config so a forked Movement practice keeps its mode + tuning.
       timer_kind: src.timer_kind,
-      movement_config: src.movement_config ?? null,
+      movement_config: (src.movement_config ?? null) as unknown as Json,
       category: src.category,
-      icon: src.icon,
+      icon: src.icon as string, // NOT NULL in the table, so the source row always carries one
       header_image: src.header_image,
       domain_id: src.domain_id,
-      focus_details: src.focus_details ?? {},
+      focus_details: (src.focus_details ?? {}) as unknown as Json,
       subcategory_id: src.subcategory_id,
       created_by: profileId,
       is_public: false,
       remixed_from: practiceId,
       root_practice_id: rootId,
-    } as never)
+    })
     .select(PRACTICE_COLS)
     .maybeSingle()
   return (data as Practice | null) ?? null
@@ -1928,7 +2065,7 @@ export async function setCirclePractice(
 /** How an adoption is shaped at write time (ADR-920). Omitted entirely = the legacy call:
  *  an ongoing self adoption with no term (journey enrollment and internal callers pass
  *  explicit shapes as the phases land). */
-export interface AdoptOptions {
+interface AdoptOptions {
   /** Preset weeks (2/4/8) or null = ongoing. Coerced through coerceTermWeeks. */
   termWeeks?: number | null
   /** 'self' (default) or 'journey' (enrollment-written; requires journeyPlanId). */
@@ -2087,7 +2224,7 @@ export async function adoptPracticesForJourney(
 }
 
 /** Why a commitment ended (mirrors the DB check). */
-export type RetireReason = 'completed' | 'phase_ended' | 'dropped' | 'swapped'
+type RetireReason = 'completed' | 'phase_ended' | 'dropped' | 'swapped'
 
 /** Reconcile a member's journey-sourced rows for ONE plan against the target set (current leg
  *  union anchors, computed by lib/journeys/leg-targets.ts): retire rows that fell out of the
@@ -2246,7 +2383,7 @@ export async function dropMemberPractice(
 
 // --- Activity history -----------------------------------------------------
 
-export interface PracticeLogEntry {
+interface PracticeLogEntry {
   logged_for: string
   title: string | null
 }
@@ -2301,7 +2438,7 @@ export interface PartialPracticeToday {
  * { secondsDone, secondsTarget } so the UI can offer "Finish Practice" and compute the time
  * left. "Today" is the member's LOCAL day (home_timezone, then client tz, then UTC), the same
  * day resolveMemberDay keys the log under. Scoped to the caller's own logs (profileId is
- * server-resolved by the caller). Reads the new completion columns through the untyped handle.
+ * server-resolved by the caller).
  */
 export async function getPartialPracticesToday(
   profileId: string,
@@ -2344,8 +2481,7 @@ export async function getPartialPracticesToday(
  * the index-surface companion to getPartialPracticesToday (which fetches the full practice rows
  * for a standalone list). Index surfaces (the "Your practices" rows) already hold the practice,
  * so they only need the resume numbers per id. One read of today's incomplete logs, no N+1.
- * "Today" is the member's LOCAL day (home_timezone, then client tz, then UTC). Reads the
- * completion columns through the untyped handle (newer than the generated types, ADR-246).
+ * "Today" is the member's LOCAL day (home_timezone, then client tz, then UTC).
  */
 export async function getPartialMapToday(
   profileId: string,
@@ -2377,7 +2513,7 @@ export async function getPartialMapToday(
  *  were retired (ADR-253) — daily logs no longer grant journey/co-op rewards — so this now
  *  carries only the surviving daily-loop bonus (Spark, the v3 variable layer). Kept under the
  *  `journey` key for a stable toast/action contract (on-air/actions → reveal.tsx). */
-export interface LogBonusResult {
+interface LogBonusResult {
   bonuses: { label: string; kind: 'zaps' | 'gems'; amount: number }[]
   zaps: number
   gems: number
@@ -2423,7 +2559,7 @@ export interface LogPracticeResult {
 /** The FULL per-log Zap value a practice pays (reward_zaps override else weight-class
  *  default), via the one source of truth lib/zaps.practiceZapValue. Used by the finish
  *  top-up to size the remaining delta, and mirrored by the first-log full path below.
- *  Reads the practice's reward fields through the untyped handle; 0 on any error. */
+ *  0 on any error. */
 async function practiceFullReward(practiceId: string, tier?: PracticeTier | null): Promise<number> {
   try {
     const { data } = await db()
@@ -2761,8 +2897,7 @@ export async function logPractice(input: {
   // Durable log row (unique on profile+practice+day mirrors the idempotency key). The
   // completion columns ride along: a full sit is completed=true; a partial is completed=false
   // (it still cleared the day above + ticks the streak below). seconds_done/seconds_target are
-  // null on a one-tap log (no timer), so that path writes exactly as before. Reached through
-  // the untyped handle (the columns are newer than the generated types; ADR-246).
+  // null on a one-tap log (no timer), so that path writes exactly as before.
   await db()
     .from('practice_logs')
     .upsert(
@@ -2857,8 +2992,7 @@ export async function logPractice(input: {
 
   // Record the awarded amount on the log row so the today-only un-log (B.1) can debit
   // it EXACTLY — the live zap_config / weight_class / reward_zaps can all drift between
-  // log and un-log, so the row carries the true grant. Best-effort + reached through the
-  // untyped handle (the `zaps_awarded` column is newer than the generated types; ADR-246):
+  // log and un-log, so the row carries the true grant. Best-effort:
   // a failed write just leaves NULL, which the un-log treats as 0 (never over-debits).
   //
   // The Pillar-split SNAPSHOT (Phase 4 attribution ledger, ADR-1131) freezes beside the
@@ -2869,7 +3003,7 @@ export async function logPractice(input: {
   // exactness NEVER regresses; a null snapshot is then covered by the reader's documented
   // current-split fallback (lib/practices/attribution.ts).
   {
-    const stampLog = (patch: Record<string, unknown>) =>
+    const stampLog = (patch: TablesUpdate<'practice_logs'>) =>
       db()
         .from('practice_logs')
         .update(patch)
@@ -2926,11 +3060,11 @@ export async function logPractice(input: {
     const { maybeSpark } = await import('@/lib/rewards/spark')
     const spark = await maybeSpark(profileId, { source: 'practice_log', day })
     if (spark.sparked && spark.amount > 0) {
-      const base = journey ?? { bonuses: [], zaps: 0, gems: 0 }
+      // Spark is the only bonus left in this container, so it starts from empty.
       journey = {
-        bonuses: [...base.bonuses, { label: `A Spark. Plus ${spark.amount} Gems.`, kind: 'gems', amount: spark.amount }],
-        zaps: base.zaps,
-        gems: base.gems + spark.amount,
+        bonuses: [{ label: `A Spark. Plus ${spark.amount} Gems.`, kind: 'gems', amount: spark.amount }],
+        zaps: 0,
+        gems: spark.amount,
       }
     }
   } catch {

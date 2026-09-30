@@ -65,7 +65,7 @@ import {
 } from '@/lib/on-air'
 import { findFreeSit, shouldRunFreeSit } from '@/lib/on-air/free-sit'
 import { createAmbient, type AmbientHandle } from '@/lib/on-air-ambient'
-import { achievedTier, TIER_ORDER, TIER_LABELS, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
+import { liveDepthCue } from '@/lib/practices/tiers'
 import { BreathVisualizer } from './visualizer'
 import { Reveal } from './reveal'
 import { MindlessMasthead } from './mode-toggle'
@@ -240,23 +240,8 @@ function buzz(pulse: number | number[] = 15) {
   }
 }
 
-// The live "go deeper" cue (ADR-443): once the target is reached the clock keeps
-// counting (auto-continue), and this names the tier the time has EARNED so far plus
-// the minutes that would reach the next one. Same achievedTier the economy pays on,
-// so the in-session line never disagrees with the reveal. Voice: plain, specific, no
-// narrated feelings, no em dashes. Returns null below the Light floor (nothing yet).
-function liveDepthCue(engagedSec: number): { reached: string; toNext: string } | null {
-  const tier = achievedTier(engagedSec)
-  if (tier === 'partial') return null
-  const rank = TIER_ORDER.indexOf(tier)
-  const next = TIER_ORDER[rank + 1]
-  if (!next) {
-    return { reached: `You're at ${TIER_LABELS[tier]}.`, toNext: 'The deepest tier. Stay as long as you like.' }
-  }
-  const more = Math.max(1, Math.ceil(TIER_FLOOR_MIN[next] - engagedSec / 60))
-  const unit = more === 1 ? 'minute' : 'minutes'
-  return { reached: `You're at ${TIER_LABELS[tier]}.`, toNext: `${more} more ${unit} reaches ${TIER_LABELS[next]}.` }
-}
+// The live "go deeper" cue (liveDepthCue) lives in lib/practices/tiers.ts, shared with the Get
+// Moving timer so both screens name the tier the economy pays on (ADR-443, LIVE-674).
 
 /** The mode-button icons: the On Air kit marks for the sit modes, lucide for the rest. */
 const MODE_ICON: Record<SessionMode, React.ElementType> = {

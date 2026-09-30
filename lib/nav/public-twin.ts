@@ -55,7 +55,7 @@ interface LookupRule {
   entity: 'circle' | 'channel'
 }
 
-export type TwinRule = DirectRule | LookupRule
+type TwinRule = DirectRule | LookupRule
 
 /**
  * One rule per member detail family that has a /discover twin.
@@ -90,7 +90,7 @@ export const TWIN_RULES: readonly TwinRule[] = [
   { kind: 'lookup', re: /^\/channels\/([^/]+)$/, entity: 'channel' },
 ]
 
-export interface TwinMatch {
+interface TwinMatch {
   /** The captured entity segment (slug or id, per the family). */
   segment: string
   /** For a direct rule, the resolved twin path. Absent when a lookup is required. */

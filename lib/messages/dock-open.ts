@@ -29,12 +29,12 @@ export const DOCK_OPEN_EVENT = 'open-chat'
  *  member reading a conversation does not lose the whole dock on one keystroke. */
 export const DOCK_BACK_EVENT = 'dock-chat-back'
 
-export const DOCK_PARAM = 'chat'
-export const DOCK_THREAD_PARAM = 'thread'
+const DOCK_PARAM = 'chat'
+const DOCK_THREAD_PARAM = 'thread'
 
 /** What the dock should show. `inbox` is a real request, not a null: it is how a caller sends
  *  an already-open thread back to the list. */
-export type DockOpenRef =
+type DockOpenRef =
   | { kind: 'dm' | 'room'; id: string; title?: string }
   | { kind: 'inbox' }
 

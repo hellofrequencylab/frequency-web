@@ -15,7 +15,7 @@ import { DEFAULT_ONBOARDING_SEQUENCE } from './default-sequence'
 // wiring the SequenceRunner to this resolver is a separate, verified cutover.
 
 /** The axes the resolver targets on. Filled by the server seam that knows the arriving member. */
-export interface OnboardingViewer {
+interface OnboardingViewer {
   /** The active space, if any (else the flow resolves against the root only). */
   spaceId?: string | null
   /** The self-identified persona (lib/onboarding/personas.ts). */

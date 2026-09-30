@@ -25,7 +25,7 @@
 
 /** A table the trigger is attached to: the actor column (a uuid FK to profiles.id) and, where a
  *  member can edit what they wrote, the content columns whose UPDATE is also a contribution. */
-export type SuspensionCoverage = {
+type SuspensionCoverage = {
   /** The column that names the member who authored the row. */
   actor: string
   /** Columns whose UPDATE is a fresh contribution (the migration uses `before update of ...`).
@@ -96,6 +96,7 @@ export const SUSPENSION_EXEMPT: Record<string, string> = {
   // Money ledgers are written by webhooks and system paths; a raise here desyncs Stripe.
   financial_transactions: 'ledger row written by webhooks and system paths',
   commerce_orders: 'ledger row written by checkout and webhooks',
+  commerce_order_transfers: 'transfer ledger written by settle, the Stripe webhook and the reconciler (service role only)',
   // RETIRED (LIVE-361): the contribution charge and its recorder are gone, so nothing writes this
   // any more. The table stays because it is schema, and it is still listed here on purpose --
   // dropping the verdict would make a live table unaccounted for, which is the gap this file

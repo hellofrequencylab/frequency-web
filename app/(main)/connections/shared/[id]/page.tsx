@@ -80,10 +80,10 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
             <Users className="h-4 w-4 shrink-0" /> Shared to the network by{' '}
             {c.ownerHandle ? (
               <Link href={`/people/${c.ownerHandle}`} className="font-medium text-primary-strong hover:underline">
-                {c.ownerName ?? 'a steward'}
+                {c.ownerName ?? 'a Host'}
               </Link>
             ) : (
-              <span className="font-medium text-text">{c.ownerName ?? 'a steward'}</span>
+              <span className="font-medium text-text">{c.ownerName ?? 'a Host'}</span>
             )}
           </p>
           <p className="mt-1 flex items-start gap-1.5 text-meta text-subtle">
@@ -107,8 +107,8 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
       </div>
 
       <p className="mt-3 text-meta text-subtle">
-        A steward chose to share this private contact with stewards in {c.city ?? 'your area'}. Their notes, email and
-        phone stay private. Connect through the steward above.
+        A Host chose to share this private contact with Hosts in {c.city ?? 'your area'}. Their notes, email, and
+        phone stay private. Ask the Host above for an introduction.
       </p>
       </DetailTemplate>
     </div>

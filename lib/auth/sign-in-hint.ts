@@ -20,9 +20,9 @@ export const NEW_ACCOUNT_EMAIL_COOKIE = 'fq_new_account_email'
 /** A year: long enough to still help someone who signs in rarely. */
 export const SIGN_IN_HINT_MAX_AGE = 60 * 60 * 24 * 365
 
-export type SignInMethod = 'google' | 'email'
+type SignInMethod = 'google' | 'email'
 
-export interface SignInHint {
+interface SignInHint {
   method: SignInMethod
   /** e.g. "m•••@gmail.com" */
   masked: string

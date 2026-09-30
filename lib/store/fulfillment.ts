@@ -16,7 +16,7 @@
 
 import { cosmeticForItem, type CosmeticType, type ShelfItem } from './cosmetics'
 
-export type RedemptionPlan =
+type RedemptionPlan =
   /** A cosmetic that applies to the profile immediately, and that something renders. */
   | { kind: 'cosmetic'; cosmeticType: CosmeticType; value: string }
   /** An operator-honored perk (feature SKUs + the guest pass): the store_redemptions
@@ -34,7 +34,7 @@ export type RedemptionPlan =
 /** The SKU context the classifier needs beyond its metadata. Optional so the historical
  *  one-argument call (and its tests) keep their exact meaning: metadata alone can still say
  *  "cosmetic", "billing credit" or "operator-honored". */
-export type RedemptionItem = Pick<ShelfItem, 'slug' | 'category'>
+type RedemptionItem = Pick<ShelfItem, 'slug' | 'category'>
 
 /** Decide how a store item should be fulfilled (ADR-280, extended by LIVE-013). */
 export function classifyRedemption(metadata: unknown, item?: RedemptionItem): RedemptionPlan {
@@ -80,14 +80,14 @@ export const UNDELIVERABLE_MESSAGE =
 // (the real grant, the refund of the debit row) is injected so it stays unit-testable beside
 // classifyRedemption and imports nothing from Supabase.
 
-export interface StreakFreezeGrantOutcome {
+interface StreakFreezeGrantOutcome {
   /** A freeze token was banked. */
   granted: boolean
   /** The grant was refused because the member is already holding the most freezes allowed. */
   atCap: boolean
 }
 
-export interface StreakFreezeFulfillmentDeps {
+interface StreakFreezeFulfillmentDeps {
   /** Bank the token (lib/practice-streak grantStreakFreeze). A throw counts as not granted. */
   grant: () => Promise<StreakFreezeGrantOutcome>
   /** Reverse the debit through the same unit the charge wrote: delete the store_redemptions row the
@@ -95,7 +95,7 @@ export interface StreakFreezeFulfillmentDeps {
   refund: () => Promise<{ error: { message: string } | null }>
 }
 
-export type StreakFreezeFulfillment =
+type StreakFreezeFulfillment =
   | { ok: true }
   /** Not delivered. `refunded` says whether the Gems made it back; the message says so to the member. */
   | { ok: false; refunded: boolean; atCap: boolean; message: string }

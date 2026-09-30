@@ -18,21 +18,23 @@ export const dynamic = 'force-dynamic'
 // a queue whose Approve would refuse.)
 // (2026-09-19, OWN-054: a granted Platform moderator uses the same helper. isStaff stays
 // admin/janitor so this page does not become an admin door.)
+// (2026-09-30, LIVE-681 / ADR-1678: /library is a 308 to /practices, which holds the Library's
+// catalog and carries the door to this queue. This route stays; its way back is /practices.)
 export default async function LibraryReviewPage() {
   const caller = await getCallerProfile()
-  if (!caller || !canReviewLibrarySubmission(caller.webRole)) redirect('/library')
+  if (!caller || !canReviewLibrarySubmission(caller.webRole)) redirect('/practices')
 
   return (
     <FocusTemplate
       title="Review queue"
       description="Community submissions waiting to join the Library. Approve to publish into the pool; reject to send back."
-      back={{ href: '/library', label: 'Library' }}
+      back={{ href: '/practices', label: 'Practices' }}
     >
       <PageModules route="/library/review" />
 
       <p className="mt-6 text-meta text-subtle">
-        <Link href="/library" className="inline-flex items-center gap-1 text-primary-strong hover:underline">
-          <ChevronLeft className="h-3 w-3" /> Back to the Library
+        <Link href="/practices" className="inline-flex items-center gap-1 text-primary-strong hover:underline">
+          <ChevronLeft className="h-3 w-3" /> Back to Practices
         </Link>
       </p>
     </FocusTemplate>

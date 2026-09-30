@@ -87,7 +87,7 @@ export const SPACE_MENU_LEAD_SEGMENTS = [
 ] as const
 
 /** The bar, and the tail behind the "More" disclosure. Together they are always the whole input. */
-export interface CondensedSpaceMenu {
+interface CondensedSpaceMenu {
   /** The rows the bar shows, Home first. At most `budget` of them. */
   primary: SpaceProfileTab[]
   /** The rest, in the "More" disclosure. Real links in the DOM whether it is open or shut. */

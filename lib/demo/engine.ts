@@ -214,13 +214,13 @@ export type AreaSpec = {
   aiPolish: boolean
   seed?: string
 }
-export type PersonPlan = {
+type PersonPlan = {
   key: string; name: string; handle: string; rank: Rank
   role: 'guide' | 'host' | 'crew' | 'member'; bio: string
   zaps: number; gems: number; streak: number; achievements: number
   tenureWeeks: number
 }
-export type CirclePlan = {
+type CirclePlan = {
   key: string; name: string; slug: string; channel: string; activity: string
   lat: number; lng: number; about: string
   people: PersonPlan[]
@@ -228,17 +228,17 @@ export type CirclePlan = {
   events: { title: string; description: string; daysOffset: number }[]
 }
 /** A post written on someone's wall, or a public feed post (target === author). */
-export type WallPost = { authorKey: string; targetKey: string; body: string; ageMin: number }
+type WallPost = { authorKey: string; targetKey: string; body: string; ageMin: number }
 /** An accepted friendship between two people (canonical-ordered at commit). */
 export type Friendship = { aKey: string; bKey: string }
 /** A published broadcast from a Host (circle) or the Guide (hub). */
-export type DispatchPlan = { authorKey: string; scope: 'circle' | 'hub'; circleKey?: string; title: string; body: string; ageMin: number }
+type DispatchPlan = { authorKey: string; scope: 'circle' | 'hub'; circleKey?: string; title: string; body: string; ageMin: number }
 /** An open "Journey" plan: a named bundle of practices, adopted by some. */
-export type JourneyPlanSpec = {
+type JourneyPlanSpec = {
   slug: string; title: string; summary: string; itemCount: number; authorKey: string; adopterCount: number
 }
-export type HubPlan = { name: string; slug: string; guideKey: string }
-export type AreaPlan = {
+type HubPlan = { name: string; slug: string; guideKey: string }
+type AreaPlan = {
   spec: AreaSpec
   hub: HubPlan
   guide: PersonPlan

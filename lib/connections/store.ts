@@ -287,7 +287,7 @@ export async function listContactsForMerge(ownerId: string): Promise<ContactMerg
   }
 }
 
-export interface UpdateContactPatch {
+interface UpdateContactPatch {
   displayName?: string | null
   email?: string | null
   phone?: string | null
@@ -491,7 +491,7 @@ export async function getContact(ownerId: string, id: string): Promise<ContactDe
 
 // ── Network-shared discovery (non-owner read) ────────────────────────────────
 
-export interface SharedContactView {
+interface SharedContactView {
   id: string
   ownerId: string
   ownerName: string | null

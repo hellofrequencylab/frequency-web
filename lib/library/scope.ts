@@ -6,7 +6,7 @@ import { getRootSpaceId } from './store'
 // reads from, so adding personal + per-space Looms later (D5) is a change here, not in every
 // page. Today: staff manage the Frequency master (the root space's Loom). See docs/LIBRARY.md.
 
-export type LoomScopeKind = 'frequency' | 'space' | 'personal'
+type LoomScopeKind = 'frequency' | 'space' | 'personal'
 
 export type LoomScope = {
   spaceId: string
@@ -20,7 +20,7 @@ export type LoomScope = {
  * The scopes a staff viewer manages. Janitor/staff reach the Frequency master library.
  * Per-space (owner/admin) and personal (any member) Looms plug in here next.
  */
-export async function resolveManagedScopes(): Promise<LoomScope[]> {
+async function resolveManagedScopes(): Promise<LoomScope[]> {
   const rootId = await getRootSpaceId()
   if (!rootId) return []
   return [{ spaceId: rootId, label: 'Frequency master', kind: 'frequency', canManage: true }]

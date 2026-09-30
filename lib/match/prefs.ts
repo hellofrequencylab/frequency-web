@@ -16,7 +16,7 @@ export interface BirthData {
   place?: { label: string; lat?: number | null; lng?: number | null } | null
 }
 
-export interface MatchPrefs {
+interface MatchPrefs {
   /** What kinds of connection the member is open to. 'community' is the default. */
   connectIntent: string[]
   /** Opted into romance matching (off by default). Only ever paired with other opt-ins. */
@@ -30,7 +30,7 @@ export interface MatchPrefs {
   natalChart: NatalChart | null
 }
 
-export const DEFAULT_MATCH_PREFS: MatchPrefs = {
+const DEFAULT_MATCH_PREFS: MatchPrefs = {
   connectIntent: ['community'],
   romanceMode: false,
   astrologyOptIn: false,

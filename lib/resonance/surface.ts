@@ -15,7 +15,7 @@ import { getMatchingConsent } from './matches'
 import type { ResonanceReason } from './score'
 
 /** One match as a surface renders it: the matched person + the score + the plain WHY. */
-export interface SurfaceMatch {
+interface SurfaceMatch {
   profileId: string
   name: string
   handle: string | null
@@ -84,7 +84,7 @@ export async function getResonanceMatchesForPerson(profileId: string, limit = 5)
 }
 
 /** One Space-scoped match suggestion: an anchor member in the Space and one person they resonate with. */
-export interface SpaceMatchSuggestion {
+interface SpaceMatchSuggestion {
   anchorProfileId: string
   anchorName: string
   match: SurfaceMatch

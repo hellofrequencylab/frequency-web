@@ -53,7 +53,7 @@ export function conversationSigningAvailable(): boolean {
  *  the default, and the ONLY role most of the system uses. `house` = the operator/leader's reply-to on a
  *  FORWARDED copy (the email bridge, ADR-814): a reply to it routes OUTBOUND to the member, as the house.
  *  Direction is decided by which secret-derived address the reply lands on, never by the (spoofable) From. */
-export type ReplyRole = 'member' | 'house'
+type ReplyRole = 'member' | 'house'
 
 /** HMAC over the conversation ref (+ role). 16 bytes (32 hex) — the first half of SHA-256; forging an
  *  8-byte tag is 2^64 work. The ref is stringified so the signed input is stable regardless of caller

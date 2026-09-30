@@ -19,6 +19,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/utils'
 import { distanceKm } from '@/lib/distance'
 import { remixTemplate } from '@/lib/circles/remix'
+import {
+  anyChannelFilter,
+  normalizeCircleChannelIds,
+  withChannelAdded,
+  withChannelFirst,
+  withoutChannel,
+} from '@/lib/circles/channels'
+import { readCircleChannelIds, secondaryCircleIds, writeCircleChannels } from '@/lib/circles/channel-carriers'
 
 // Untyped admin handle — the repo-wide service-role convention (ADR-246),
 // mirroring lib/circles/templates-data.ts.
@@ -120,10 +128,12 @@ export async function listSpacePrograms(spaceId: string): Promise<ProgramChannel
  *  with a viewer location run the result through rankChaptersNear. */
 export async function listChapters(channelId: string): Promise<ChapterSummary[]> {
   const admin = db()
+  // A Chapter is a Circle carrying the Program's Channel in ANY of its three places (LIVE-666).
+  const secondary = await secondaryCircleIds(admin, channelId)
   const { data } = await admin
     .from('circles')
     .select('id, name, slug, type, status, city, neighborhood, latitude, longitude, member_count, member_cap')
-    .eq('topical_channel_id', channelId)
+    .or(anyChannelFilter(channelId, secondary))
     .eq('is_demo', false)
     .in('status', ['forming', 'active'])
     .order('member_count', { ascending: false })
@@ -183,12 +193,10 @@ export async function startChapter(input: { channelId: string; profileId: string
 
   const draft = await remixTemplate({ templateId: channel.template_id, profileId: input.profileId })
 
-  // The stamp that makes the draft a Chapter: publish leaves it in the channel.
-  const { error } = await admin
-    .from('circles')
-    .update({ topical_channel_id: input.channelId })
-    .eq('id', draft.circleId)
-  if (error) throw new Error(error.message)
+  // The stamp that makes the draft a Chapter: publish leaves it in the channel. The Program's
+  // Channel goes FIRST, so it is the Chapter's primary (LIVE-666).
+  const current = (await getCircleChannelIds(draft.circleId)) ?? []
+  await writeCircleChannels(admin, draft.circleId, withChannelFirst(current, input.channelId), current)
 
   return { circleId: draft.circleId, slug: draft.slug }
 }
@@ -425,12 +433,10 @@ export async function createSpaceProgram(input: {
   }
   const channel = channelRow as { id: string; slug: string }
 
-  // 3. The flagship becomes Chapter one.
-  const { error: stampError } = await admin
-    .from('circles')
-    .update({ topical_channel_id: channel.id })
-    .eq('id', input.sourceCircleId)
-  if (stampError) throw new Error(stampError.message)
+  // 3. The flagship becomes Chapter one: the Program's Channel is its primary, and it keeps up to
+  //    two of the Channels it already carried behind it (LIVE-666).
+  const flagshipChannels = (await getCircleChannelIds(input.sourceCircleId)) ?? []
+  await writeCircleChannels(admin, input.sourceCircleId, withChannelFirst(flagshipChannels, channel.id), flagshipChannels)
 
   return { channelId: String(channel.id), channelSlug: String(channel.slug), templateId }
 }
@@ -456,7 +462,7 @@ export async function updateSpaceProgram(input: {
   await applyProgramCopyPatch(admin, input.channelId, program.templateId, input.patch)
 }
 
-export interface ProgramCopyPatch {
+interface ProgramCopyPatch {
   name?: string
   oneLiner?: string
   coverImage?: string | null
@@ -748,67 +754,79 @@ export async function refreshProgramBlueprintForStaff(input: {
 // everything above: the circle-settings action gates on circle.editSettings,
 // the Manage hub actions on channel.manage (ADR-274).
 
-/** Set or clear the Channel a circle practices in (circles.topical_channel_id).
- *  `channelId` null clears it. A missing channel is refused, and so is a paused
- *  one: is_active is the same retire switch startChapter honors (ADR-865), so a
- *  paused Program takes no new Circles by ANY road. */
-export async function setCircleChannel(input: {
+// ── The Channels a Circle carries (LIVE-666, ADR-1679) ───────────────────────
+//
+// A Circle carries one to three Channels: rows in `circle_channels` at position 1, 2 and 3, with
+// position 1 mirrored onto `circles.topical_channel_id` (the primary the feed still reads). Every
+// write below goes through `writeCircleChannels` (lib/circles/channel-carriers.ts), which is the only
+// place the two are kept equal.
+
+const PAUSED_CHANNEL = 'This Channel is paused and not taking new Circles right now.'
+
+/** Every Channel a Circle carries, primary first. Null when the Circle does not exist. */
+export async function getCircleChannelIds(circleId: string): Promise<string[] | null> {
+  return readCircleChannelIds(db(), circleId)
+}
+
+/**
+ * Set the one to three Channels a Circle practices in (ADR-871, LIVE-666), primary first. An empty
+ * list clears the Circle back to no Channel. Refuses more than three, a missing Circle, a missing
+ * Channel, and a paused Channel the Circle does not ALREADY carry: is_active is the retire switch
+ * startChapter honors (ADR-865), so a paused Program takes no new Circles by any road, while a
+ * Circle already in it keeps it when the Host edits its other Channels. Returns the stored list.
+ */
+export async function setCircleChannels(input: {
   circleId: string
-  channelId: string | null
-}): Promise<void> {
+  channelIds: readonly unknown[]
+}): Promise<string[]> {
+  const checked = normalizeCircleChannelIds(input.channelIds)
+  if ('problem' in checked) throw new Error(checked.problem)
+  const ids = checked.ids
+
+  const current = await getCircleChannelIds(input.circleId)
+  if (!current) throw new Error('That Circle is not available.')
+
   const admin = db()
-
-  const { data: circleData } = await admin
-    .from('circles')
-    .select('id, topical_channel_id')
-    .eq('id', input.circleId)
-    .maybeSingle()
-  if (!circleData) throw new Error('That Circle is not available.')
-
-  if (input.channelId) {
-    const { data } = await admin
-      .from('topical_channels')
-      .select('id, is_active')
-      .eq('id', input.channelId)
-      .maybeSingle()
-    const channel = data as { id: string; is_active: boolean } | null
-    if (!channel) throw new Error('That Channel is not available.')
-    if (channel.is_active === false) {
-      throw new Error('This Channel is paused and not taking new Circles right now.')
+  if (ids.length > 0) {
+    const { data } = await admin.from('topical_channels').select('id, is_active').in('id', ids)
+    const found = new Map(((data ?? []) as { id: string; is_active: boolean }[]).map((c) => [c.id, c]))
+    for (const id of ids) {
+      const channel = found.get(id)
+      if (!channel) throw new Error('That Channel is not available.')
+      if (channel.is_active === false && !current.includes(id)) throw new Error(PAUSED_CHANNEL)
     }
   }
 
-  const { error } = await admin
-    .from('circles')
-    .update({ topical_channel_id: input.channelId })
-    .eq('id', input.circleId)
-  if (error) throw new Error(error.message)
+  await writeCircleChannels(admin, input.circleId, ids, current)
+  return ids
+}
+
+/** Add a Circle to one more Channel (the Channel Manage hub's add). A Channel it already carries is
+ *  a no-op; a Circle that already carries three is refused rather than losing one. */
+export async function addCircleToChannel(input: { circleId: string; channelId: string }): Promise<void> {
+  const current = await getCircleChannelIds(input.circleId)
+  if (!current) throw new Error('That Circle is not available.')
+  const next = withChannelAdded(current, input.channelId)
+  if ('problem' in next) throw new Error(next.problem)
+  if (next.ids.length === current.length) return
+  await setCircleChannels({ circleId: input.circleId, channelIds: next.ids })
 }
 
 /** Take a circle out of a channel (the Manage hub's remove). Verifies the
- *  circle is actually IN this channel first, so a stale form can never detach
- *  a circle from somewhere else. The circle keeps its host, members, and
- *  events; it just stops practicing here. */
+ *  circle actually CARRIES this channel first, so a stale form can never detach
+ *  a circle from somewhere else. When it was the primary, the next Channel moves
+ *  up (LIVE-666). The circle keeps its host, members, and events; it just stops
+ *  practicing here. */
 export async function removeCircleFromChannel(input: {
   circleId: string
   channelId: string
 }): Promise<void> {
-  const admin = db()
-  const { data } = await admin
-    .from('circles')
-    .select('id, topical_channel_id')
-    .eq('id', input.circleId)
-    .maybeSingle()
-  const circle = data as { id: string; topical_channel_id: string | null } | null
-  if (!circle) throw new Error('That Circle is not available.')
-  if (circle.topical_channel_id !== input.channelId) {
+  const current = await getCircleChannelIds(input.circleId)
+  if (!current) throw new Error('That Circle is not available.')
+  if (!current.includes(input.channelId)) {
     throw new Error('That Circle is not in this Channel.')
   }
-  const { error } = await admin
-    .from('circles')
-    .update({ topical_channel_id: null })
-    .eq('id', input.circleId)
-  if (error) throw new Error(error.message)
+  await writeCircleChannels(db(), input.circleId, withoutChannel(current, input.channelId), current)
 }
 
 /** Assign a channel's owner Space, or clear it back to Frequency-run

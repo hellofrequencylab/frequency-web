@@ -31,17 +31,15 @@ import { isJanitor } from '@/lib/core/roles'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
-/** This Space's check-in node, as the surface consumes it. `secret` rides the QR URL so a forged
- *  node-id link can't claim (verifyCapture checks the match); it is owner-visible only (this surface
- *  is canEditProfile-gated). */
-export interface CheckinNode {
+/** This Space's check-in node, as the surface consumes it. The QR it prints carries a signed code
+ *  (signedNodeUrl, lib/qr/node-code.ts, LIVE-688) so a forged node-id link can't claim; the surface
+ *  that renders it is canEditProfile-gated. */
+interface CheckinNode {
   id: string
-  /** A server-issued signing token, when the node was created with one (null otherwise). */
-  secret: string | null
 }
 
 /** One person's check-in (the owner roster row): who checked in + when. */
-export interface CheckinEntry {
+interface CheckinEntry {
   /** The capture id (a stable React key). */
   id: string
   profileId: string
@@ -69,7 +67,7 @@ export function normalizeSince(raw: unknown): string | null {
 
 // ── IO: the typed admin-client seams ────────────────────────────────────────────────────────────
 
-type NodeRow = { id: string; secret: string | null; space_id: string | null; kind: string }
+type NodeRow = { id: string; space_id: string | null; kind: string }
 
 function nodesTable() {
   return createAdminClient().from('nodes')
@@ -78,7 +76,7 @@ function capturesTable() {
   return createAdminClient().from('captures')
 }
 
-const NODE_COLS = 'id, secret, space_id, kind'
+const NODE_COLS = 'id, space_id, kind'
 const CAPTURE_COLS = 'id, actor_profile_id, captured_at'
 
 /** Read THIS Space's existing check-in node, or null (service-role; FAIL-SAFE to null). */
@@ -98,11 +96,11 @@ async function readCheckinNode(spaceId: string): Promise<NodeRow | null> {
 }
 
 /** Insert a check-in node for THIS Space (service-role). A check-in node is a `qr` node (so a scan
- *  routes through the normal /n/<nodeId> pipeline) marked kind='checkin' + scoped to the Space. A
- *  random secret is issued so a forged node-id-only URL can't claim it. FAIL-SAFE to null on error. */
+ *  routes through the normal /n/<nodeId> pipeline) marked kind='checkin' + scoped to the Space. No
+ *  stored secret: the printed code is an HMAC signed at render (LIVE-688), so a forged node-id-only
+ *  URL can't claim it. FAIL-SAFE to null on error. */
 async function insertCheckinNode(spaceId: string, label: string): Promise<NodeRow | null> {
   try {
-    const secret = randomSecret()
     const { data } = await nodesTable()
       .insert([
         {
@@ -110,7 +108,6 @@ async function insertCheckinNode(spaceId: string, label: string): Promise<NodeRo
           kind: 'checkin', // the orthogonal Space-check-in marker
           space_id: spaceId,
           label,
-          secret,
           capture_rule: 'repeatable', // a member may check in to an event more than once over time
           zaps_value: 0, // a check-in is presence, not a reward bump (no economy churn)
           active: true,
@@ -122,13 +119,6 @@ async function insertCheckinNode(spaceId: string, label: string): Promise<NodeRo
   } catch {
     return null
   }
-}
-
-/** A short, URL-safe signing token for a check-in node (server-issued; rides the QR as `?s=`). */
-function randomSecret(): string {
-  // crypto.randomUUID is available in the Node + Edge runtimes this code runs in; the hyphen-stripped
-  // uuid is a 32-char opaque token, plenty for a scan signing secret.
-  return globalThis.crypto.randomUUID().replace(/-/g, '')
 }
 
 /** Count THIS node's captures (optionally since `since`) with a head/count query: no rows returned,
@@ -202,7 +192,7 @@ export async function ensureCheckinNode(spaceId: string): Promise<CheckinNode | 
   if (!canEdit && !isJanitor(caller?.webRole)) return null
 
   const existing = await readCheckinNode(spaceId)
-  if (existing) return { id: existing.id, secret: existing.secret }
+  if (existing) return { id: existing.id }
 
   // No node yet: only an EDITOR may create one (a staff previewer reads, never writes).
   if (!canEdit) return null
@@ -212,7 +202,7 @@ export async function ensureCheckinNode(spaceId: string): Promise<CheckinNode | 
   if (!spaceFunctionAccess(space, 'checkin', caps.role)) return null
   const label = `${space.brandName ?? space.name} check-in`
   const created = await insertCheckinNode(spaceId, label)
-  return created ? { id: created.id, secret: created.secret } : null
+  return created ? { id: created.id } : null
 }
 
 /**

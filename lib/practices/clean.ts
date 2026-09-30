@@ -10,17 +10,15 @@
 //                              logged / stale), each row scored by computeQualityScore.
 //   2.4 promoteTagToCanonical / mergeTags / listAllTags — tag governance.
 //
-// Server-only. The practices/* tables + the Phase-2 RPC are ahead of the generated Database
-// types, so this module reads/writes through the untyped admin handle (ADR-246), the same
-// convention as lib/practices.ts. Mutations are caller-trusted: the curator gate lives at the
+// Server-only, through the typed admin handle, the same convention as lib/practices.ts
+// (LIVE-647). Mutations are caller-trusted: the curator gate lives at the
 // action layer (app/(main)/admin/content/actions.ts) — see the // authz-delegated note below.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { getGlobalTrustScores } from '@/lib/trust/store'
 import { computeQualityScore, isStale, type QualityScore } from './quality'
 
-function db(): SupabaseClient {
+function db() {
   return createAdminClient()
 }
 
@@ -33,7 +31,7 @@ function db(): SupabaseClient {
 // vector RPC (match_practices) — see the COST note on listReviewQueue.
 
 /** One row in the triage queue: the pending practice + its review signals. */
-export interface ReviewQueueItem {
+interface ReviewQueueItem {
   id: string
   title: string
   summary: string | null
@@ -142,11 +140,11 @@ export async function listReviewQueue(opts: { limit?: number } = {}): Promise<Re
 /** The single nearest existing practice to a seed via the vector RPC, when it clears the
  *  near-identical threshold; null when the seed has no embedding or nothing is close enough. */
 async function nearestDuplicate(
-  client: SupabaseClient,
+  client: ReturnType<typeof db>,
   practiceId: string,
 ): Promise<{ id: string; title: string; similarity: number } | null> {
   const { data: seedRow } = await client.from('practices').select('embedding').eq('id', practiceId).maybeSingle()
-  const embedding = (seedRow as { embedding: string | number[] | null } | null)?.embedding
+  const embedding = seedRow?.embedding
   if (!embedding) return null
   const { data, error } = await client.rpc('match_practices', {
     query_embedding: embedding,
@@ -176,7 +174,7 @@ export interface MergeResult {
  * old slug as a redirect; and archives + unpublishes + stamps merged_into on the source.
  * Re-point, never delete — history lives on the canonical.
  *
- * The RPC is service_role-only and reached through the untyped admin handle (ADR-246). It
+ * The RPC is service_role-only, so it is reached through the admin handle. It
  * throws on a bad merge (self-merge, missing id, already-merged), which surfaces as the
  * error message the action returns.
  *
@@ -225,10 +223,14 @@ export async function resolvePracticeSlugRedirect(oldSlug: string): Promise<stri
 // --- 2.3 Needs attention -----------------------------------------------------
 
 /** The reasons a practice landed in the needs-attention view (a row may carry several). */
-export type AttentionReason = 'orphaned' | 'imageless' | 'never_logged' | 'stale'
+export type AttentionReason = 'orphaned' | 'imageless' | 'never_logged' | 'stale' | 'hookless' | 'undertagged'
+
+/** A public practice with fewer tags than this reads as under-tagged (LIVE-644). Vera's fill
+ *  (lib/ai/practice-curate.ts) proposes tags on the same floor. */
+export const PRACTICE_TAG_FLOOR = 3
 
 /** One needs-attention row: the practice + why it surfaced + its quality score. */
-export interface NeedsAttentionItem {
+interface NeedsAttentionItem {
   id: string
   title: string
   status: string | null
@@ -244,6 +246,9 @@ export interface NeedsAttentionItem {
  *   • imageless    — no header image
  *   • never_logged — zero logs all time
  *   • stale        — past the freshness floor AND no logs in 30 days (old + idle)
+ *   • hookless     — no card hook (summary blank). Read by its own query, so a well-used, fresh
+ *                    practice with an empty hook still surfaces (LIVE-644), and it sorts first
+ *   • undertagged  — fewer than PRACTICE_TAG_FLOOR tags (among the rows already read)
  * Reuses the practices_ranked view's usage signal + the table's content/freshness columns.
  * Ordered worst-quality first (the score blends all three axes), so the most-broken rows lead.
  *
@@ -268,7 +273,16 @@ export async function needsAttention(opts: { limit?: number } = {}): Promise<Nee
     .order('logs_total', { ascending: true })
     .order('created_at', { ascending: true })
     .limit(limit)
-  const ranked =
+  // The empty card hooks, whatever their usage (LIVE-644): the window above is least-used first,
+  // so without this read a logged, fresh practice with no hook never reached the panel.
+  const { data: hooklessRows } = await client
+    .from('practices_ranked')
+    .select('id, title, status, is_public, domain_id, subcategory_id, header_image, body, summary, duration_min, adopters, logs_30d, logs_total')
+    .eq('is_public', true)
+    .or('summary.is.null,summary.eq.')
+    .order('created_at', { ascending: true })
+    .limit(limit)
+  const windowRows =
     ((rankedRows as
       | {
           id: string; title: string | null; status: string | null; is_public: boolean
@@ -277,6 +291,11 @@ export async function needsAttention(opts: { limit?: number } = {}): Promise<Nee
           adopters: number; logs_30d: number; logs_total: number
         }[]
       | null) ?? [])
+  const seenIds = new Set(windowRows.map((r) => r.id))
+  const ranked = [
+    ...windowRows,
+    ...((hooklessRows as typeof windowRows | null) ?? []).filter((r) => !seenIds.has(r.id)),
+  ]
   if (ranked.length === 0) return []
 
   // updated_at lives only on the table (the view's columns are frozen): one batched read.
@@ -285,6 +304,13 @@ export async function needsAttention(opts: { limit?: number } = {}): Promise<Nee
   const updatedById = new Map(
     ((touchRows as { id: string; updated_at: string | null }[] | null) ?? []).map((r) => [r.id, r.updated_at]),
   )
+  // Tag counts for the same rows. A read that comes back at PostgREST's 1,000-row cap may be cut
+  // short, and a short count would call a tagged practice under-tagged, so it flags nothing then.
+  const { data: tagRows } = await client.from('practice_tags').select('practice_id').in('practice_id', ids)
+  const tagLinks = (tagRows as { practice_id: string }[] | null) ?? []
+  const tagCountKnown = tagLinks.length < 1000
+  const tagCount = new Map<string, number>()
+  for (const l of tagLinks) tagCount.set(l.practice_id, (tagCount.get(l.practice_id) ?? 0) + 1)
 
   const out: NeedsAttentionItem[] = []
   for (const r of ranked) {
@@ -294,6 +320,8 @@ export async function needsAttention(opts: { limit?: number } = {}): Promise<Nee
     if (r.header_image == null) reasons.push('imageless')
     if ((r.logs_total || 0) === 0) reasons.push('never_logged')
     if (isStale({ updated_at, logs_30d: r.logs_30d, now })) reasons.push('stale')
+    if (!(r.summary ?? '').trim()) reasons.push('hookless')
+    if (tagCountKnown && (tagCount.get(r.id) ?? 0) < PRACTICE_TAG_FLOOR) reasons.push('undertagged')
     if (reasons.length === 0) continue
     const quality = computeQualityScore({
       title: r.title,
@@ -312,15 +340,17 @@ export async function needsAttention(opts: { limit?: number } = {}): Promise<Nee
     out.push({ id: r.id, title: r.title ?? '', status: r.status, is_public: r.is_public, reasons, quality })
   }
 
-  // Worst quality first (the most-broken practices lead the fix list).
-  out.sort((a, b) => a.quality.score - b.quality.score)
+  // An empty card hook first, so the panel's row cap still shows it (LIVE-644); then worst quality
+  // first (the most-broken practices lead the fix list).
+  const hookFirst = (it: NeedsAttentionItem) => (it.reasons.includes('hookless') ? 0 : 1)
+  out.sort((a, b) => hookFirst(a) - hookFirst(b) || a.quality.score - b.quality.score)
   return out
 }
 
 // --- 2.4 Tag governance ------------------------------------------------------
 
 /** One tag in the governance list: its def + how many practices carry it + where it came from. */
-export interface TagGovernanceRow {
+interface TagGovernanceRow {
   id: string
   slug: string
   label: string

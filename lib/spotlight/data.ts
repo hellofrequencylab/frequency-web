@@ -27,7 +27,7 @@ import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 // a SEPARATE gate query and never returned — the page row itself is the strict
 // SPOTLIGHT_SELECT allowlist, with no meta/contact/geo columns.
 
-export interface SpotlightHostedEvent {
+interface SpotlightHostedEvent {
   id: string
   slug: string
   title: string

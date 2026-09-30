@@ -13,7 +13,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export type VerificationMethod = 'leader' | 'timer' | 'location' | 'code'
+type VerificationMethod = 'leader' | 'timer' | 'location' | 'code'
 
 /**
  * Verify a held crew completion, releasing its Zaps. Pass `verifierId` for the leader method (who

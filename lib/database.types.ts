@@ -900,6 +900,42 @@ export type Database = {
           },
         ]
       }
+      circle_channels: {
+        Row: {
+          circle_id: string
+          created_at: string
+          position: number
+          topical_channel_id: string
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          position: number
+          topical_channel_id: string
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          position?: number
+          topical_channel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_channels_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_channels_topical_channel_id_fkey"
+            columns: ["topical_channel_id"]
+            isOneToOne: false
+            referencedRelation: "topical_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circle_practices: {
         Row: {
           active: boolean
@@ -1475,6 +1511,91 @@ export type Database = {
           },
         ]
       }
+      commerce_order_transfers: {
+        Row: {
+          amount_cents: number
+          attempts: number
+          created_at: string
+          currency: string
+          id: string
+          last_error: string | null
+          order_id: string
+          owner_kind: string
+          owner_profile_id: string | null
+          owner_space_id: string | null
+          platform_fee_cents: number
+          reversed_cents: number
+          seller_key: string
+          source_charge_id: string | null
+          status: string
+          stripe_account_id: string
+          stripe_transfer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          attempts?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          last_error?: string | null
+          order_id: string
+          owner_kind: string
+          owner_profile_id?: string | null
+          owner_space_id?: string | null
+          platform_fee_cents?: number
+          reversed_cents?: number
+          seller_key: string
+          source_charge_id?: string | null
+          status?: string
+          stripe_account_id: string
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          attempts?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          last_error?: string | null
+          order_id?: string
+          owner_kind?: string
+          owner_profile_id?: string | null
+          owner_space_id?: string | null
+          platform_fee_cents?: number
+          reversed_cents?: number
+          seller_key?: string
+          source_charge_id?: string | null
+          status?: string
+          stripe_account_id?: string
+          stripe_transfer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commerce_order_transfers_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_order_transfers_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_order_transfers_owner_space_id_fkey"
+            columns: ["owner_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commerce_orders: {
         Row: {
           amount_cents: number
@@ -1484,6 +1605,7 @@ export type Database = {
           currency: string
           entity_id: string
           fulfillment_status: string
+          funds_flow: string
           guest_email: string | null
           id: string
           metadata: Json
@@ -1508,6 +1630,7 @@ export type Database = {
           currency?: string
           entity_id: string
           fulfillment_status?: string
+          funds_flow?: string
           guest_email?: string | null
           id?: string
           metadata?: Json
@@ -1532,6 +1655,7 @@ export type Database = {
           currency?: string
           entity_id?: string
           fulfillment_status?: string
+          funds_flow?: string
           guest_email?: string | null
           id?: string
           metadata?: Json
@@ -9354,51 +9478,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      page_settings_events_backup_20260910: {
-        Row: {
-          header_image_focal: string | null
-          header_image_url: string | null
-          layout: Json | null
-          og_image_url: string | null
-          route: string | null
-          seo_description: string | null
-          seo_title: string | null
-          space_id: string | null
-          status: string | null
-          updated_at: string | null
-          updated_by: string | null
-          visibility_role: string | null
-        }
-        Insert: {
-          header_image_focal?: string | null
-          header_image_url?: string | null
-          layout?: Json | null
-          og_image_url?: string | null
-          route?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
-          space_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          visibility_role?: string | null
-        }
-        Update: {
-          header_image_focal?: string | null
-          header_image_url?: string | null
-          layout?: Json | null
-          og_image_url?: string | null
-          route?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
-          space_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          visibility_role?: string | null
-        }
-        Relationships: []
       }
       pages: {
         Row: {
@@ -18090,6 +18169,22 @@ export type Database = {
           display_name: string
           handle: string
           id: string
+        }[]
+      }
+      search_library_assets: {
+        Args: {
+          match_count?: number
+          p_embedding?: string
+          p_kind?: string
+          p_query: string
+          p_space_id: string
+        }
+        Returns: {
+          fts_rank: number
+          id: string
+          rrf_score: number
+          trgm_rank: number
+          vec_rank: number
         }[]
       }
       set_event_geog: {

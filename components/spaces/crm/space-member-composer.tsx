@@ -65,7 +65,7 @@ export interface SpaceMemberComposerProps {
 }
 
 const inputClass =
-  'w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none'
+  'w-full rounded-control border border-border bg-canvas px-3 py-2 text-body-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
 /** Normalize an email for the chip key + de-dupe (trim + lowercase). */
 function normalize(email: string): string {
