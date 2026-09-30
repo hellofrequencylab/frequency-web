@@ -17,8 +17,8 @@
 //   planTransferShares(order)           PURE. The rows an order owes, or why it owes none.
 //   planTransfersForOrder(orderId)      write one planned row per seller (idempotent by key).
 //   executePlannedTransfers(orderId)    pay the planned and failed rows of one order.
-//   reconcileTransfers({ limit, ... })  the cron: plan what was missed, retry what did not land,
-//                                       log what is stuck, one line each.
+//   reconcileTransfers({ limit, ... })  the cron: plan what was missed (and tell its sellers, LIVE-733),
+//                                       retry what did not land, log what is stuck, one line each.
 //   recordTransferCreated(transfer)     webhook `transfer.created`: adopt a transfer that landed
 //                                       at Stripe but was never written here.
 //   recordTransferReversed(transfer)    webhook `transfer.reversed`: the reversed cents, and the
@@ -276,7 +276,14 @@ function orderIsPayable(o: Pick<OrderForTransfer, 'status'>): boolean {
 
 // ── Plan ────────────────────────────────────────────────────────────────────────────────────────
 
-export type PlanOutcome = { planned: number } | { refused: TransferPlanRefusal | 'not_found' | 'not_payable' }
+export type PlanOutcome =
+  | {
+      planned: number
+      /** The ids of the rows THIS call inserted, and no others: a replay or a racing worker inserts
+       *  nothing, so it gets none. The reconciler notifies these sellers and only these (LIVE-733). */
+      rowIds: string[]
+    }
+  | { refused: TransferPlanRefusal | 'not_found' | 'not_payable' }
 
 /** Write one planned row per seller share of a paid split order. Idempotent: a second call, from a
  *  redelivered webhook or the reconciler, inserts nothing. A destination order writes nothing.
@@ -292,7 +299,7 @@ export async function planTransfersForOrder(orderId: string): Promise<PlanOutcom
     log.error('commerce.transfer.plan_refused', { orderId, reason: plan.refused })
     return plan
   }
-  if (!plan.shares.length) return { planned: 0 }
+  if (!plan.shares.length) return { planned: 0, rowIds: [] }
 
   const { data, error } = await db()
     .from(TABLE)
@@ -312,7 +319,8 @@ export async function planTransfersForOrder(orderId: string): Promise<PlanOutcom
     )
     .select('id')
   if (error) throw new Error(`transfer plan for ${orderId} not written: ${error.message}`)
-  return { planned: (data ?? []).length }
+  const rowIds = ((data ?? []) as { id: string }[]).map((r) => r.id)
+  return { planned: rowIds.length, rowIds }
 }
 
 // ── Execute ─────────────────────────────────────────────────────────────────────────────────────
@@ -514,6 +522,8 @@ export async function settleSplitOrderTransfers(orderId: string): Promise<void> 
 export interface ReconcileSummary extends ExecuteSummary {
   /** Split orders found paid with no plan, and planned now. */
   plannedOrders: number
+  /** Sellers of those orders sent their sale notice now (LIVE-733). */
+  noticedSellers: number
   /** Orders whose due rows were worked. */
   orders: number
   /** Rows over the attempt ceiling, logged one line each. */
@@ -525,7 +535,8 @@ export interface ReconcileSummary extends ExecuteSummary {
 /**
  * Go back for every transfer that did not land. Three passes, each bounded by `limit`:
  *   1. a paid split order from the last three days with no row at all (the settle died between the
- *      paid flip and the plan) is planned;
+ *      paid flip and the plan) is planned, and each seller it now pays is sent the sale notice the
+ *      settle could not send them (LIVE-733);
  *   2. every planned or failed row under the attempt ceiling and untouched for ten minutes is
  *      retried, grouped by order, oldest first, until `exhausted()` says the clock is spent;
  *   3. every row over the ceiling is logged as stuck, one line each, every run, until a person
@@ -538,7 +549,14 @@ export async function reconcileTransfers(opts: {
 }): Promise<ReconcileSummary> {
   const now = opts.now ?? Date.now()
   const exhausted = opts.exhausted ?? (() => false)
-  const out: ReconcileSummary = { ...emptySummary(), plannedOrders: 0, orders: 0, stuck: 0, remainingOrders: 0 }
+  const out: ReconcileSummary = {
+    ...emptySummary(),
+    plannedOrders: 0,
+    noticedSellers: 0,
+    orders: 0,
+    stuck: 0,
+    remainingOrders: 0,
+  }
   const staleBefore = new Date(now - RECONCILE_STALE_MS).toISOString()
 
   // 1. Paid split orders with no plan.
@@ -559,6 +577,26 @@ export async function reconcileTransfers(opts: {
     if ('planned' in plan && plan.planned > 0) {
       out.plannedOrders += 1
       log.warn('commerce.transfer.plan_recovered', { orderId: o.id, planned: plan.planned })
+      // TELL THE SELLERS (LIVE-733). The settle sends each seller their sale notice for the rows the
+      // ledger holds at that moment; with no plan it held none, so nobody was told. Send each seller
+      // THIS call planned their notice now, the same LIVE-706 notice the settle sends. Only the rows
+      // this upsert inserted, so a replay or a racing run (which inserts nothing) sends nothing. A
+      // notice that does not go is logged here and never holds a payout: the rows are planned
+      // already, and step 2 pays them whatever happened to the mail.
+      try {
+        const { sendRecoveredSplitSaleNotices } = await import('./order-receipt')
+        const noticed = await sendRecoveredSplitSaleNotices(o.id, plan.rowIds)
+        out.noticedSellers += noticed
+        if (noticed < plan.rowIds.length) {
+          log.error('commerce.transfer.recovered_notice_missed', {
+            orderId: o.id,
+            planned: plan.rowIds.length,
+            noticed,
+          })
+        }
+      } catch (err) {
+        log.error('commerce.transfer.recovered_notice_failed', { orderId: o.id, error: briefError(err) })
+      }
     }
   }
 

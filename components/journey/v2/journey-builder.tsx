@@ -7,11 +7,13 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { HeaderImageField } from '@/components/ui/header-image-field'
 import { IconAccentFace } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
-import { saveJourneyMeta, setJourneyVisibility, adoptJourney, uploadJourneyCover } from '@/app/(main)/journeys/actions'
+import { saveJourneyMeta, setJourneyVisibility, adoptJourney, uploadJourneyCover, setJourneyHeaderFocus } from '@/app/(main)/journeys/actions'
 import { createJourneyDraftAction } from '@/app/(main)/journeys/create-actions'
 import { isError } from '@/lib/action-result'
+import { readJourneyCoverFocus } from '@/lib/journeys/header'
 import type { PlanVisibility } from '@/lib/journey-plans'
 import { EditableText } from './editable-text'
 
@@ -197,6 +199,7 @@ export function JourneyBuilder({
   initialTitle = '',
   initialSummary = null,
   initialCover = null,
+  initialCoverFocus = null,
   initialEmoji = null,
   initialAccent = null,
   initialIntro = null,
@@ -223,6 +226,9 @@ export function JourneyBuilder({
   initialTitle?: string
   initialSummary?: string | null
   initialCover?: string | null
+  /** The saved cover focal point (`journey_plans.cover_focus`, an object-position) for the cover
+   *  band's drag-to-focus marker. Unset reads as centered. */
+  initialCoverFocus?: string | null
   initialEmoji?: string | null
   initialAccent?: string | null
   /** The story/overview write-up, shown above the curriculum (moved out of Settings). */
@@ -242,6 +248,23 @@ export function JourneyBuilder({
   const router = useRouter()
   const [, start] = useTransition()
   const [cover, setCover] = useState<string | null>(initialCover)
+  // COVER FOCUS: where the cover sits in its cropped hero window. The Space header control
+  // (HeaderImageField, the one the Journey rail also mounts) owns the marker. A drag moves it live and
+  // the write is debounced, so a drag is not one save per pixel. It writes journey_plans.cover_focus,
+  // the column the Journey page hands PageHero as the cover's object-position.
+  const [focus, setFocus] = useState(() => readJourneyCoverFocus(initialCoverFocus))
+  const [, startFocus] = useTransition()
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onFocusChange = (next: string) => {
+    setFocus(next)
+    if (!planId) return
+    if (focusTimer.current) clearTimeout(focusTimer.current)
+    focusTimer.current = setTimeout(() => {
+      startFocus(async () => {
+        await setJourneyHeaderFocus(planId, next)
+      })
+    }, 400)
+  }
   // Icon is display-only now (the fallback face when there's no logo); the picker was removed (owner ask),
   // so nothing sets it. The logo/profile image below is the editable identity mark.
   const [icon] = useState(initialEmoji ?? 'compass')
@@ -400,23 +423,28 @@ export function JourneyBuilder({
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        {/* Cover header — up top, the standard upload band with an Upload overlay. */}
+        {/* Cover header, up top: the Space header control (HeaderImageField). Empty, it is the upload
+            band. Set, it previews the cover at the hero's crop shape with the drag-to-focus marker on
+            it and Replace / Remove over it, so the author frames the header right where they set it. */}
         <div className="mb-5">
           {draft ? (
             <div className="flex h-32 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-body-sm text-subtle">
               <Lock className="h-4 w-4" aria-hidden /> Add a cover photo once you name it
             </div>
           ) : (
-            <ImageUpload
+            <HeaderImageField
               label="Cover"
               value={cover}
               onChange={(url) => {
                 setCover(url)
                 meta({ coverImage: url })
               }}
-              folder="journey-covers"
+              focus={focus}
+              onFocusChange={onFocusChange}
+              aspect={16 / 6}
               uploadFn={coverUpload}
               hint="Shown on the Journey's page and cards."
+              focusHint="Drag to choose which part of your cover stays in frame on the Journey's page."
             />
           )}
         </div>
