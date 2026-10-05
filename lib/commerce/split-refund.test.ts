@@ -52,6 +52,9 @@ const TRANSFER_DEFAULTS = (): Row => ({
   reversed_cents: 0,
   refund_reversal_cents: 0,
   reversal_attempts: 0,
+  reversal_refusals: 0,
+  reversal_attempt_floor: 0,
+  reversal_lease_until: '1970-01-01T00:00:00.000Z',
   last_error: null,
   stripe_transfer_id: null,
   source_charge_id: null,
@@ -61,11 +64,12 @@ const TRANSFER_DEFAULTS = (): Row => ({
   updated_at: new Date(db.now()).toISOString(),
 })
 
-/** The generated column, as Postgres keeps it. */
+/** The generated columns, as Postgres keeps them. */
 function regenerate(table: string) {
   if (table !== 'commerce_order_transfers') return
   for (const r of db.rows(table)) {
     r.reversal_owed_cents = Math.max(Number(r.refund_reversal_cents) - Number(r.reversed_cents), 0)
+    r.reversal_attempts_since_target = Number(r.reversal_attempts) - Number(r.reversal_attempt_floor ?? 0)
   }
 }
 
@@ -167,7 +171,9 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 // Stripe, with memory. A transfer keeps its cumulative amount_reversed, as Stripe does; a request
-// made under a key is answered again for that key until `byKey` is cleared (the 24 hour window).
+// made under a key is answered again for that key until `byKey` is cleared (the 24 hour window),
+// AND SO IS A REFUSAL: Stripe stores the error a request ended in under its key too (SCAN-649), so
+// a retry under the same key gets the stored refusal back whatever the balance is now.
 // Stripe refuses a reversal of more than is left on the transfer.
 const stripeState = vi.hoisted(() => {
   const transfers: Record<string, unknown>[] = []
@@ -178,9 +184,17 @@ const stripeState = vi.hoisted(() => {
     retrieveFails: false,
     /** Runs inside transfers.create, after the claim and before the transfer exists. */
     duringCreate: null as null | (() => Promise<void>),
+    /** Runs inside transfers.createReversal, after the claim and the amount_reversed read, before
+     *  the reversal exists: the window a second refund used to slip into. */
+    duringReversal: null as null | (() => Promise<void>),
   }
   return { transfers, reversals, byKey, plan }
 })
+
+/** A refusal as stripe-node raises it: it ran, Stripe said no. */
+function stripeRefusal(message: string, code: string) {
+  return Object.assign(new Error(message), { type: 'StripeInvalidRequestError', rawType: 'invalid_request_error', code })
+}
 
 const stripeFake = vi.hoisted(() => ({
   transfers: {
@@ -206,14 +220,22 @@ const stripeFake = vi.hoisted(() => ({
     }),
     createReversal: vi.fn(async (id: string, params: { amount: number }, opts: { idempotencyKey: string }) => {
       const seen = stripeState.byKey.get(opts.idempotencyKey)
+      if (seen instanceof Error) throw seen
       if (seen) return seen
+      const hook = stripeState.plan.duringReversal
+      stripeState.plan.duringReversal = null
+      if (hook) await hook()
       const t = stripeState.transfers.find((x) => x.id === id)
       if (!t) throw new Error(`No such transfer: ${id}`)
+      const refuse = (err: Error) => {
+        stripeState.byKey.set(opts.idempotencyKey, err)
+        throw err
+      }
       if (stripeState.plan.failReversalFor.has(t.destination as string)) {
-        throw new Error('Insufficient funds in the connected account to reverse this transfer')
+        refuse(stripeRefusal('Insufficient funds in the connected account to reverse this transfer', 'balance_insufficient'))
       }
       if ((t.amount_reversed as number) + params.amount > (t.amount as number)) {
-        throw new Error('Amount exceeds the transfer amount that can be reversed')
+        refuse(stripeRefusal('Amount exceeds the transfer amount that can be reversed', 'amount_too_large'))
       }
       t.amount_reversed = (t.amount_reversed as number) + params.amount
       const r = { id: `trr_${stripeState.reversals.length + 1}`, transfer: id, amount: params.amount, key: opts.idempotencyKey }
@@ -252,6 +274,7 @@ import {
   reverseSplitRefundForPaymentIntent,
   reconcileSplitReversals,
   reversalIdempotencyKey,
+  isDeterministicStripeRefusal,
 } from './split-refund'
 import {
   settleSplitOrderTransfers,
@@ -316,6 +339,7 @@ beforeEach(() => {
   stripeState.plan.failReversalFor.clear()
   stripeState.plan.retrieveFails = false
   stripeState.plan.duringCreate = null
+  stripeState.plan.duringReversal = null
   logs.lines.length = 0
   vi.clearAllMocks()
   notices.send.mockImplementation(async (_orderId: string, ids: string[]) => ids.length)
@@ -608,6 +632,130 @@ describe('a reversal that fails is owed and retried', () => {
     seedOrder()
     db.failures.push({ table: 'commerce_orders', op: 'select', message: 'connection reset' })
     await expect(reverseSplitRefundForPaymentIntent('pi_1', 3000)).rejects.toThrow(/connection reset/)
+  })
+})
+
+describe('a refusal Stripe saved under the key is not the answer forever (SCAN-649)', () => {
+  it('the retry after an empty-balance refusal is a NEW request, so it lands once the balance is back', async () => {
+    const order = seedOrder()
+    await settleSplitOrderTransfers('o-split')
+    refundInFull(order)
+    stripeState.plan.failReversalFor.add('acct_a')
+    await reverseSplitTransfers('o-split', 3000)
+    const a = bySpace('sp-a')
+    expect(a).toMatchObject({ reversal_refusals: 1, reversal_attempts: 1, reversal_owed_cents: 950 })
+    expect(a.last_error).toMatch(/Insufficient funds/)
+
+    // The balance is back, but Stripe still answers the first key with the stored refusal, and does
+    // for 24 hours: nothing was cleared from byKey. Under the old fixed key this row was stuck.
+    stripeState.plan.failReversalFor.clear()
+    later()
+    const run = await reconcile()
+    expect(run.reversals).toMatchObject({ reversed: 1, failed: 0, stuck: 0 })
+    expect(bySpace('sp-a')).toMatchObject({ status: 'reversed', reversal_owed_cents: 0, last_error: null })
+    const keys = stripeFake.transfers.createReversal.mock.calls.filter((c) => c[0] === a.stripe_transfer_id).map((c) => c[2].idempotencyKey)
+    expect(keys).toEqual([reversalIdempotencyKey(a.id as string, 0, 950), reversalIdempotencyKey(a.id as string, 0, 950, 1)])
+    expect(reversalsOf('acct_a')).toHaveLength(1)
+    expect(reversedAt('acct_a')).toBe(950)
+  })
+
+  it('a failure that is not a refusal (the network) keeps the key, so a request that went through is deduped', async () => {
+    const order = seedOrder()
+    await settleSplitOrderTransfers('o-split')
+    refundInFull(order)
+    stripeFake.transfers.createReversal.mockImplementationOnce(async () => {
+      throw Object.assign(new Error('socket hang up'), { type: 'StripeConnectionError' })
+    })
+    await reverseSplitTransfers('o-split', 3000)
+    const a = bySpace('sp-a')
+    expect(a).toMatchObject({ reversal_refusals: 0, reversal_attempts: 1 })
+    later()
+    await reconcile()
+    const keys = stripeFake.transfers.createReversal.mock.calls.filter((c) => c[0] === a.stripe_transfer_id).map((c) => c[2].idempotencyKey)
+    expect(new Set(keys).size).toBe(1)
+    expect(reversedAt('acct_a')).toBe(950)
+  })
+
+  it('classifies stripe-node errors: refusals vary the key, everything unreadable keeps it', () => {
+    expect(isDeterministicStripeRefusal(stripeRefusal('x', 'balance_insufficient'))).toBe(true)
+    expect(isDeterministicStripeRefusal({ type: 'StripeIdempotencyError' })).toBe(true)
+    expect(isDeterministicStripeRefusal({ type: 'StripeConnectionError' })).toBe(false)
+    expect(isDeterministicStripeRefusal({ type: 'StripeAPIError', rawType: 'api_error' })).toBe(false)
+    expect(isDeterministicStripeRefusal({ type: 'StripeRateLimitError' })).toBe(false)
+    expect(isDeterministicStripeRefusal(new Error('plain'))).toBe(false)
+    expect(isDeterministicStripeRefusal(null)).toBe(false)
+  })
+
+  it('the stuck ceiling counts attempts since the target last rose, and a bigger refund gets fresh budget without the counter going back', async () => {
+    const order = seedOrder()
+    await settleSplitOrderTransfers('o-split')
+    refundInPart(order)
+    stripeState.plan.failReversalFor.add('acct_a')
+    await reverseSplitTransfers('o-split', 1000)
+    bySpace('sp-a').reversal_attempts = MAX_TRANSFER_ATTEMPTS
+    later()
+    expect((await reconcile()).reversals).toMatchObject({ stuck: 1, reversed: 0 })
+
+    stripeState.plan.failReversalFor.clear()
+    refundInFull(order)
+    await reverseSplitTransfers('o-split', 3000)
+    const a = bySpace('sp-a')
+    // The counter never went back; the floor moved under it.
+    expect(Number(a.reversal_attempts)).toBeGreaterThanOrEqual(MAX_TRANSFER_ATTEMPTS)
+    expect(a.reversal_attempt_floor).toBe(MAX_TRANSFER_ATTEMPTS)
+    expect(a).toMatchObject({ status: 'reversed', reversal_owed_cents: 0 })
+    expect(reversedAt('acct_a')).toBe(950)
+  })
+})
+
+describe('two refunds in flight reverse one seller once (SCAN-649)', () => {
+  it('a second refund that arrives while the first is at Stripe skips the leased row, and the reconciler reverses only the rest', async () => {
+    const order = seedOrder()
+    await settleSplitOrderTransfers('o-split')
+    refundInPart(order)
+    // Refund #1 ($10 of $30: $3.16 from A) is inside createReversal when refund #2 ($20: $6.33 from A)
+    // arrives. Before the fix the raise zeroed reversal_attempts, #2 claimed the row, read
+    // amount_reversed 0 and reversed 0 -> 633 under its own key: 316 + 633 left seller A.
+    let second: Awaited<ReturnType<typeof reverseSplitTransfers>> | null = null
+    stripeState.plan.duringReversal = async () => {
+      second = await reverseSplitTransfers('o-split', 2000)
+    }
+    const first = await reverseSplitTransfers('o-split', 1000)
+    // #2 raised both targets, skipped A (leased by #1) and reversed B to ITS target. #1's list of B
+    // is now stale (the counter moved under it), so its claim on B matches nothing: skipped, and B
+    // is reversed exactly once, to the larger target.
+    expect(second).toMatchObject({ targeted: 2, reversed: 1, skipped: 1 })
+    expect(first).toMatchObject({ reversed: 1, skipped: 1 })
+    expect(reversedAt('acct_a')).toBe(316)
+    expect(reversalsOf('acct_a')).toHaveLength(1)
+    expect(reversedAt('acct_b')).toBe(1266)
+    expect(reversalsOf('acct_b')).toHaveLength(1)
+    const a = bySpace('sp-a')
+    expect(a).toMatchObject({ refund_reversal_cents: 633, reversed_cents: 316, reversal_owed_cents: 317, status: 'created' })
+
+    // The lease is released when #1 lands, so the rest is owed and the reconciler takes exactly it.
+    later()
+    const run = await reconcile()
+    expect(run.reversals).toMatchObject({ reversed: 1 })
+    expect(reversedAt('acct_a')).toBe(633)
+    expect(reversalsOf('acct_a')).toHaveLength(2)
+    expect(bySpace('sp-a')).toMatchObject({ reversal_owed_cents: 0 })
+  })
+
+  it('a worker that died mid-flight frees the row by time: the lease expires and the reconciler proceeds', async () => {
+    const order = seedOrder()
+    await settleSplitOrderTransfers('o-split')
+    refundInFull(order)
+    stripeState.plan.retrieveFails = true
+    await reverseSplitTransfers('o-split', 3000)
+    stripeState.plan.retrieveFails = false
+    // Simulate a claim whose worker never came back: the lease is still in the future.
+    bySpace('sp-a').reversal_lease_until = new Date(db.now() + 60_000).toISOString()
+    later()
+    // RECONCILE_STALE_MS is ten minutes, past the five-minute lease: the row is free again.
+    const run = await reconcile()
+    expect(run.reversals).toMatchObject({ reversed: 2, skipped: 0 })
+    expect(reversedAt('acct_a')).toBe(950)
   })
 })
 

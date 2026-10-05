@@ -118,10 +118,17 @@ export interface OrderTransfer {
   lastError: string | null
   /** What the order's refunds say must come back from this transfer, cumulative (LIVE-623). */
   refundReversalCents: number
-  /** Reversal attempts since that target last rose. */
+  /** Reversal attempts, total. Only ever rises: the claim in ./split-refund.ts is a compare-and-set
+   *  on it (SCAN-649). */
   reversalAttempts: number
   /** The target minus what is already reversed, never below zero (a generated column). */
   reversalOwedCents: number
+  /** Deterministic Stripe refusals so far; part of the reversal key once above zero (SCAN-649). */
+  reversalRefusals: number
+  /** The instant the current reversal claim expires (ISO); epoch when free (SCAN-649). */
+  reversalLeaseUntil: string
+  /** reversalAttempts since the target last rose (a generated column), what the ceiling reads. */
+  reversalAttemptsSinceTarget: number
 }
 
 interface TransferRow {
@@ -142,10 +149,16 @@ interface TransferRow {
   refund_reversal_cents: number
   reversal_attempts: number
   reversal_owed_cents: number
+  reversal_refusals?: number | null
+  reversal_lease_until?: string | null
+  reversal_attempts_since_target?: number | null
 }
 
 const ROW_COLS =
-  'id, order_id, owner_kind, owner_profile_id, owner_space_id, stripe_account_id, amount_cents, platform_fee_cents, currency, status, stripe_transfer_id, reversed_cents, attempts, last_error, refund_reversal_cents, reversal_attempts, reversal_owed_cents'
+  'id, order_id, owner_kind, owner_profile_id, owner_space_id, stripe_account_id, amount_cents, platform_fee_cents, currency, status, stripe_transfer_id, reversed_cents, attempts, last_error, refund_reversal_cents, reversal_attempts, reversal_owed_cents, reversal_refusals, reversal_lease_until, reversal_attempts_since_target'
+
+/** A free lease: the column's default. */
+export const REVERSAL_LEASE_FREE = '1970-01-01T00:00:00.000Z'
 
 function toTransfer(r: TransferRow): OrderTransfer {
   return {
@@ -166,6 +179,10 @@ function toTransfer(r: TransferRow): OrderTransfer {
     refundReversalCents: r.refund_reversal_cents ?? 0,
     reversalAttempts: r.reversal_attempts ?? 0,
     reversalOwedCents: r.reversal_owed_cents ?? 0,
+    reversalRefusals: r.reversal_refusals ?? 0,
+    reversalLeaseUntil: r.reversal_lease_until ?? REVERSAL_LEASE_FREE,
+    // Pre-migration (no floor column) the whole counter is the budget, as before.
+    reversalAttemptsSinceTarget: r.reversal_attempts_since_target ?? r.reversal_attempts ?? 0,
   }
 }
 
