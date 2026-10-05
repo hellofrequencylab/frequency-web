@@ -109,6 +109,10 @@ type EventSchemaEnrichment = {
    *  published as `2026-08-27T18:30:00Z`, which reads as 11:30am. Absent or null falls back to the
    *  community zone, the same direction `resolveZone` fails in. */
   time_zone?: string | null
+  /** The host-uploaded cover as a PUBLIC URL (`getPublicUrl` on the event-media bucket, the same
+   *  construction the image sitemap uses), or null/absent when the row has no cover. Never a signed
+   *  URL: a signed URL expires, and an advertised image that is not there is LIVE-205 on a timer. */
+  cover_url?: string | null
   attendance_mode?: 'in_person' | 'online' | 'hybrid' | null
   is_cancelled?: boolean | null
   category?: string | null
@@ -246,7 +250,12 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     // extensionless form is the same 200-HTML trap. The SHARE card is unaffected and still
     // per-event: this page deliberately leaves openGraph.images unset so Next injects the
     // suffixed URL itself, which is the one mechanism that knows the hash.
-    image: [SITE_OG_IMAGE],
+    //
+    // The event's OWN public cover leads when it has one (SCAN-660): it is the picture a rich
+    // result or an answer engine should show for this event, and it is a plain public-bucket URL
+    // with no suffix and no fuse. The site card stays as the second entry, so an event with no
+    // cover still satisfies Google's "image is required" and nothing is invented.
+    image: event.cover_url ? [event.cover_url, SITE_OG_IMAGE] : [SITE_OG_IMAGE],
     ...(event.description ? { description: event.description } : {}),
     location,
     url,

@@ -558,6 +558,13 @@ describe('personSchema', () => {
     expect(result.url).toBe(`${SITE_URL}/discover/events/organizer/ada`)
   })
 
+  it('event image leads with the public cover when there is one, and is the site card alone otherwise (SCAN-660)', () => {
+    const withCover = eventSchema(makeEvent({ cover_url: 'https://cdn.example/event-media/covers/a.jpg' }))
+    expect(withCover.image).toEqual(['https://cdn.example/event-media/covers/a.jpg', expect.stringContaining('/opengraph-image.jpg')])
+    const bare = eventSchema(makeEvent({ cover_url: null }))
+    expect(bare.image).toEqual([expect.stringContaining('/opengraph-image.jpg')])
+  })
+
   it('includes image when an avatar is provided', () => {
     const result = personSchema({ name: 'Ada', path: '/x', image: 'https://cdn/a.png' })
     expect(result).toHaveProperty('image', 'https://cdn/a.png')
