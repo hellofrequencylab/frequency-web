@@ -2,13 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStaffMember, staffCan } from '@/lib/staff'
+import { getStaffMember, staffCanNow } from '@/lib/staff'
 import { proposeWinbacks, executeAction } from '@/lib/studio/agent'
 import { proposeContentDrafts } from '@/lib/marketing/content'
 
 async function gate(): Promise<{ profileId: string } | null> {
   const staff = await getStaffMember()
-  if (!staff || !staffCan(staff.role, 'marketing')) return null
+  if (!staff || !(await staffCanNow('marketing'))) return null
   return { profileId: staff.profileId }
 }
 
