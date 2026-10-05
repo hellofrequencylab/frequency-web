@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-652",
+  "title": "A protected Loom asset left on the default open download policy hands its original to anyone with its id",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "wave": "W5",
+  "ownerAction": "ruling",
+  "detail": "FOUND 2026-10-05 in the scan-six read of LIVE-578 / LIVE-580 (0fa4462, d9d06b7). download_policy defaults to `open` (20260920000000_library_dam.sql) and protecting an asset does not tighten it; admitDownload returns early on `open` without asking isProtected, and download-door.test.ts pins a signed-out caller getting a signed URL for protectedAsset('open'). withLoomProofs sends the asset id to every picker user, so anyone, signed out included, can GET /api/library/download/<id> and receive a one-minute signed attachment of the master: LIVE-580 says a protected image is 'never its original'.\n\nWHY IT IS A RULING: ADR-1594 deliberately made protection and policy independent knobs ('Each is optional and independent'). Pick one: (a) the door reads protected+open as `members`; (b) as `staff`; (c) protecting an asset sets download_policy to staff unless the operator chose otherwise; (d) keep as is and say in the drawer that Protected does not gate downloads.",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-six adversarial read of the 2026-09-28..30 merges"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs = require(\"fs\")\nconst door = fs.readFileSync(\"lib/library/download-door.ts\", \"utf8\")\nconst i = door.indexOf(\"export async function openLibraryDownload\")\nconst body = i < 0 ? door : door.slice(i)\nlet protectMove = \"\"\ntry { protectMove = fs.readFileSync(\"lib/library/protect-move.ts\", \"utf8\") } catch {}\nif (!/isProtected/.test(body) && !/download_policy/.test(protectMove)) { console.error(\"SCAN-652: a PROTECTED Loom asset left on the default open download policy hands its original to anyone with the asset id, signed out included, through /api/library/download/<id>; the picker sends that id to every picker user.\"); process.exit(1) }\n'",
+    "note": "Fails until the door or the protect move considers protection when the policy is open. If the ruling is (d), close it with that note and a probe on the drawer copy."
+  }
+}

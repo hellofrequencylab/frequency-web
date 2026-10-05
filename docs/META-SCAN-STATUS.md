@@ -7,6 +7,53 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-10-05 pass (scan six: the split-order money sprint, signed QR codes and the Loom door)
+
+Run against `origin/main` at `2b5ef05`, 50 commits after the 2026-09-28 pass. Sequential reads, no parallel agents.
+
+**What every instrument that can look says.** `pnpm exec tsc --noEmit` exit 0. All 12 ci.yml `guards` and 40 more contract checks exit 0 locally (`check:pgtap-skips` only runs on a TAP file). No open pull requests. **Migration drift: zero, proven as a set.** The repo holds 756 migrations, the production ledger holds 756 rows, and `md5(string_agg(version, "," order by version))` is `e4f139b0bca97d499f286173f2ef1bdd` on both sides. Advisors: security unchanged in kind (PostGIS `spatial_ref_sys`, 81 deny-all INFO, the SECURITY DEFINER WARNs OWN-006 tracks). Performance: **zero** unindexed foreign keys (the nine from 2026-09-28 are closed, and `check:fk-indexes` now replays all 626) and zero `auth_rls_initplan`. Unused indexes 642, up from 398, but 1,024 of 1,279 public indexes read zero scans, which points to a statistics reset, not new waste. Re-read it after a full week of traffic before acting.
+
+**Ratchet.** `check:adoption` reported four shrunk classes nobody had re-frozen. Lowered here: literal-radius 2156 to 2147, raw-button-bg 403 to 402, literal-display-type 48 to 47, handrolled-eyebrow 478 to 477.
+
+**Read adversarially and holds.**
+- Split-order pro-rata math: largest remainder, sums exact, never over-reverses.
+- One plan row per seller (unique constraint), and sale and shipped notices go out exactly once.
+- Seller and operator authorization on every split-order action.
+- The HMAC construction (timing-safe, namespaced, fail closed).
+- The R2 backup cron (secret check, inert without its variables, paginated, heartbeat).
+- HYG-139's two-person DM trigger and scope-leader read.
+- The `/scan` camera header.
+- LIVE-732's journey gate (a strict superset of the page's own gate, no widening).
+- The rail bundle (per-request memo, no cross-viewer cache).
+- Journey reorder, Circle Channels writes, the `/library` 308, series ranking, and the persona payout gate.
+
+**Findings that survived refute: seven. Three are fixed in this pass.**
+
+| Finding | Row | State |
+|---|---|---|
+| A check-in node created after LIVE-688 gets no `secret`, and the verdict treated "no secret, no code" as legacy, so a bare `/n/<id>` checked in until 2026-12-01. All 4 production nodes predate it, so nothing was exposed. | `SCAN-646` P1 | fixed |
+| The operator's Send again on a stuck seller transfer refused any order with `refunded_at`, which a partial refund stamps on a still-paid order the reconciler pays | `SCAN-647` P2 | fixed |
+| Vera's two outbound email shells (an approved outreach, an autonomous lifecycle email) had no postal address after LIVE-728 | `SCAN-648` P2 | fixed |
+| Split-order reversal: a fixed idempotency key replays a saved Stripe refusal past the 8-attempt ceiling, and raising a target resets the claim so two refunds can reverse one seller twice | `SCAN-649` P2 | open |
+| An order stays shipped after a share is fully reversed from the Stripe dashboard | `SCAN-650` P3 | open |
+| `circle_channels` is `using (true)` for anon and lists hidden Circles' ids. Not a plain revoke, because the signed-out index embeds it. | `SCAN-651` P3 | open |
+| A protected Loom asset on the default `open` policy hands its original to anyone with its id | `SCAN-652` P2 | open, owner ruling |
+
+**Owner actions still open.**
+- `OWN-088`: create the R2 bucket and set the four variables. The nightly copy is built and inert until then, so `HYG-144` and `OWN-084` wait on it.
+- `HYG-126`: one stranded branch, `claude/calendar-wall-clock-live-512`, is still on GitHub. Agents cannot delete refs.
+- `LIVE-234`: prove each money loop once in production. Fold in SCAN-649's test-mode question about `source_transaction` after an early partial refund.
+- `OWN-074`: Temple of Aset has no Connect account, so the Returning Home ticket (23 Oct) cannot be bought. **This is 18 days out.**
+
+**Scorecard, honest gap to 10.**
+- **Security 8.** Gates green and SCAN-646 is closed. SCAN-651 and SCAN-652 are open, and HYG-100 is still unconfirmed live.
+- **Wiring 9.** Nothing unplugged; module reachability, menu, templates and creates are all green.
+- **Correctness 8.** The money sprint is mostly sound under an adversarial read. SCAN-649 is the one real money risk, latent until a split order refunds.
+- **DB⇄code 9.** Zero drift as a set and zero FK debt.
+- **Bookkeeping 9.** Every finding is a row with a probe, and the ratchet is re-frozen.
+- **Speed 7.** Unchanged from 2026-09-28.
+- **Docs 9.**
+
 ## 2026-09-28 pass (scan five — the calendar sprint audited, and the soft-delete question asked twice)
 
 Run against `origin/main` at `9903a4eeb`, 40 commits after the 2026-09-19 evening pass, over the
