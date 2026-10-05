@@ -150,6 +150,7 @@ vi.mock('./order-receipt', () => ({ sendOrderReceipts: vi.fn(async () => {}) }))
 import {
   createCommerceCheckout,
   recordCommerceOrderFromSession,
+  abandonCommerceOrderFromSession,
   refundCommerceOrder,
   recordCommerceRefund,
   recordCommerceRefundFromCharge,
@@ -648,6 +649,62 @@ describe('recordCommerceOrderFromSession — persists Stripe shipping (LIVE-346)
       paid_at: expect.any(String),
       stripe_payment_intent_id: 'pi_1',
     })
+  })
+})
+
+// ── SCAN-710 ────────────────────────────────────────────────────────────────────────────────────
+// supabase-js returns { data: null, error } on a PostgREST or network failure instead of throwing.
+// Reading only `data` from the two status flips turned a pooler blip into "no rows", the webhook
+// acked 200 with the event claimed, Stripe never redelivered, and a paid order stayed pending
+// forever (or an expired session kept its booking hold). Both flips must THROW on error, as
+// recordTipRefund does, so the webhook releases its claim and 500s for a safe, pending-guarded retry.
+describe('status flips throw on a database error so the webhook can release its claim (SCAN-710)', () => {
+  const dbError = { message: 'connection reset by pooler' }
+
+  it('the pending-to-paid flip throws naming the session and the error', async () => {
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') return { data: null, error: dbError }
+      return {}
+    })
+    await expect(
+      recordCommerceOrderFromSession({
+        id: 'cs_710',
+        metadata: { kind: 'commerce_order' },
+        payment_status: 'paid',
+        payment_intent: 'pi_710',
+      } as unknown as Stripe.Checkout.Session),
+    ).rejects.toThrow(/cs_710.*connection reset by pooler/)
+    // Nothing downstream ran: no stock decrement, no ledger row, no booking confirm.
+    expect(firstCall((c) => c.table === 'rpc:decrement_commerce_stock_atomic')).toBeUndefined()
+    expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
+    expect(booking.confirmBookingByOrder).not.toHaveBeenCalled()
+  })
+
+  it('the expired-session cancel throws naming the session and the error', async () => {
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') return { data: null, error: dbError }
+      return {}
+    })
+    await expect(
+      abandonCommerceOrderFromSession({
+        id: 'cs_711',
+        metadata: { kind: 'commerce_order' },
+      } as unknown as Stripe.Checkout.Session),
+    ).rejects.toThrow(/cs_711.*connection reset by pooler/)
+    expect(booking.cancelBookingByOrder).not.toHaveBeenCalled()
+  })
+
+  it('a clean no-row result (already settled) still resolves quietly', async () => {
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') return { data: [], error: null }
+      return {}
+    })
+    await expect(
+      abandonCommerceOrderFromSession({
+        id: 'cs_712',
+        metadata: { kind: 'commerce_order' },
+      } as unknown as Stripe.Checkout.Session),
+    ).resolves.toBeUndefined()
   })
 })
 

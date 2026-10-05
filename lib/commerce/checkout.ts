@@ -606,7 +606,13 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   // pending value alone when Stripe collected nothing (an intangible cart, or a miss).
   const collectedShipping = shippingDetailsFromSession(session)
 
-  const { data: updated } = await db()
+  // SCAN-710: the paid flip is NOT best-effort. supabase-js never throws on a PostgREST or network
+  // failure; it returns { data: null, error }, so reading only `data` turned a pooler blip into an
+  // empty list, a webhook that acked 200 with the event claimed, and a paid order stuck in
+  // `pending` forever (hidden from /orders, never enrolled, never receipted, stock never taken).
+  // Throw instead, as recordTipRefund and setTier do: the webhook's outer catch releases the claim
+  // and 500s, Stripe redelivers, and the retry is safe because the update is guarded on pending.
+  const { data: updated, error: flipError } = await db()
     .from('commerce_orders')
     .update({
       status: 'paid',
@@ -622,6 +628,7 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // ONE LITERAL, not a concatenation: the generated PostgREST types parse this string, and a built
     // one widens to `string` and types the result as GenericStringError[].
     .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency, funds_flow')
+  if (flipError) throw new Error(`[commerce] paid flip failed (session=${session.id}): ${flipError.message}`)
   const rows = (updated ?? []) as {
     id: string
     owner_kind: OrderOwnerKind
@@ -736,12 +743,16 @@ export async function recordCommerceOrderFromSessionId(sessionId: string): Promi
  *  forever. FAIL-SOFT booking release (no-op for a normal product order / pre-migration). */
 export async function abandonCommerceOrderFromSession(session: Stripe.Checkout.Session): Promise<void> {
   if (session.metadata?.kind !== 'commerce_order') return
-  const { data: updated } = await db()
+  // SCAN-710: same contract as the paid flip. A dropped error here left the booking hold in place
+  // with the expired event claimed, so the slot stayed blocked forever. Throw and let the webhook
+  // release its claim; the retry is safe because the update is guarded on pending.
+  const { data: updated, error: cancelError } = await db()
     .from('commerce_orders')
     .update({ status: 'cancelled' })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
     .select('id')
+  if (cancelError) throw new Error(`[commerce] cancel flip failed (session=${session.id}): ${cancelError.message}`)
   for (const row of (updated ?? []) as { id: string }[]) {
     await cancelBookingByOrder(row.id)
   }
