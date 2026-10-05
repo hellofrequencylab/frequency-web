@@ -1,6 +1,0 @@
-{
-  "id": "OWN-088",
-  "append": {
-    "detail": "\n\nRULED 2026-10-05 by owner, multiple choice in the project thread (ADR-1705 §4): \"Do it this week\" (the options were: do it this week, give me Cloudflare access, accept the risk). The owner creates the R2 bucket and token and sets the four variables on Vercel Production in the week of 2026-10-05; the first copied count is read the morning after."
-  }
-}

@@ -1,6 +1,0 @@
-{
-  "id": "PROG-E10",
-  "append": {
-    "detail": "\n\nRULED 2026-10-05 by owner, multiple choice in the project thread (ADR-1705 §4): \"When W4 starts\" (the options were: buy and request now, when W4 starts, subdomains only). The Sites apex domain purchase and the Vercel Domains API access request wait until the editor and Sites wave (W4) is next; the row stays open with that note."
-  }
-}
