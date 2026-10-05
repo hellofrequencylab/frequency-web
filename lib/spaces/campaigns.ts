@@ -58,9 +58,12 @@ export function renderCampaignHtml(body: string): string {
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
 /** A campaign's lifecycle as the Space surfaces use it. `draft` = being written; `scheduled` = a
- *  send time is set (scheduled_for) but it has not gone out; `sent` = delivered. Unknown DB values
- *  fall back to 'draft' so a future status never reads as sent. */
-export type CampaignStatus = 'draft' | 'scheduled' | 'sent'
+ *  send time is set (scheduled_for) but it has not gone out; `sending` = the cron holds the lease and
+ *  is fanning out right now; `sent` = delivered; `failed` = the cron could not resolve or send it
+ *  (why is in sendError). Unknown DB values fall back to 'draft' so a future status never reads as
+ *  sent. SCAN-706: sending and failed used to fold to draft, so the owner saw a plain Draft with no
+ *  reason and could edit or resend a campaign that was going out. */
+export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed'
 
 /** One Space campaign as the app consumes it (camelCased). `body` is plain text (blank lines become
  *  paragraphs at send, like the global composer). scheduledFor / sentAt are ISO strings or null. */
@@ -75,6 +78,8 @@ interface SpaceCampaign {
   createdAt: string | null
   /** The topic tag (marketing / events / dispatches) — gates each recipient's per-topic mute (ADR-799 C). */
   topic: NotificationTopic
+  /** Why a `failed` campaign did not go out (campaigns.send_error), or null. */
+  sendError: string | null
 }
 
 /** The fields the composer can set on create / update. Both optional on update; subject is required
@@ -89,7 +94,7 @@ export interface CampaignInput {
 const MAX_SUBJECT_LEN = 200
 const MAX_BODY_LEN = 50_000
 
-const STATUSES: readonly CampaignStatus[] = ['draft', 'scheduled', 'sent'] as const
+const STATUSES: readonly CampaignStatus[] = ['draft', 'scheduled', 'sending', 'sent', 'failed'] as const
 
 // ── PURE: validation / normalization (no IO, testable) ──────────────────────────────────────────
 
@@ -102,6 +107,18 @@ export function normalizeSubject(raw: unknown): string {
 /** Length-cap a body, preserving internal newlines (blank lines become paragraphs at send). Pure. */
 export function normalizeBody(raw: unknown): string {
   return typeof raw === 'string' ? raw.slice(0, MAX_BODY_LEN) : ''
+}
+
+/** A campaign nobody may edit, schedule or resend: it has gone out, or the cron is sending it right
+ *  now (SCAN-706). A `failed` campaign stays open so the owner can fix the audience and try again. */
+export function isLocked(status: CampaignStatus): boolean {
+  return status === 'sent' || status === 'sending'
+}
+
+function lockedMessage(status: CampaignStatus): string {
+  return status === 'sending'
+    ? 'This campaign is going out right now.'
+    : 'This campaign has already gone out.'
 }
 
 /** Coerce a DB status string to a known CampaignStatus; unknown -> 'draft' (never reads as sent). */
@@ -127,7 +144,7 @@ export function parseScheduleTime(raw: unknown, now: Date = new Date()): string 
 
 // The `campaigns` columns the Space surfaces read.
 const CAMPAIGN_COLS =
-  'id, subject, body, status, recipient_count, scheduled_for, sent_at, created_at, space_id, topic'
+  'id, subject, body, status, recipient_count, scheduled_for, sent_at, created_at, space_id, topic, send_error'
 
 type CampaignRow = {
   id: string
@@ -140,6 +157,7 @@ type CampaignRow = {
   created_at: string | null
   space_id: string | null
   topic: string | null
+  send_error?: string | null
 }
 
 /** The typed `campaigns` query builder. */
@@ -159,6 +177,7 @@ function mapCampaign(r: CampaignRow): SpaceCampaign {
     sentAt: r.sent_at ?? null,
     createdAt: r.created_at ?? null,
     topic: normalizeEmailTopic(r.topic),
+    sendError: typeof r.send_error === 'string' && r.send_error ? r.send_error : null,
   }
 }
 
@@ -298,8 +317,8 @@ export async function updateSpaceCampaign(
 
   const existing = await readCampaign(id, spaceId)
   if (!existing) return fail('Campaign not found.')
-  if (toCampaignStatus(existing.status) === 'sent')
-    return fail('This campaign has already gone out, so it cannot be edited.')
+  if (isLocked(toCampaignStatus(existing.status)))
+    return fail(`${lockedMessage(toCampaignStatus(existing.status))} It cannot be edited.`)
 
   const patch: TablesUpdate<'campaigns'> = {}
   if (input.subject !== undefined) {
@@ -346,8 +365,8 @@ export async function scheduleSpaceCampaign(
 
   const existing = await readCampaign(id, spaceId)
   if (!existing) return fail('Campaign not found.')
-  if (toCampaignStatus(existing.status) === 'sent')
-    return fail('This campaign has already gone out, so it cannot be scheduled.')
+  if (isLocked(toCampaignStatus(existing.status)))
+    return fail(`${lockedMessage(toCampaignStatus(existing.status))} It cannot be scheduled.`)
   if (!normalizeSubject(existing.subject)) return fail('Give your campaign a subject before scheduling.')
   if (!normalizeBody(existing.body ?? '').trim()) return fail('Write your campaign before scheduling.')
 
@@ -386,8 +405,8 @@ export async function sendSpaceCampaign(
 
   const existing = await readCampaign(id, spaceId)
   if (!existing) return fail('Campaign not found.')
-  if (toCampaignStatus(existing.status) === 'sent')
-    return fail('This campaign has already gone out.')
+  if (isLocked(toCampaignStatus(existing.status)))
+    return fail(lockedMessage(toCampaignStatus(existing.status)))
   if (!normalizeSubject(existing.subject)) return fail('Give your campaign a subject before sending.')
   if (!normalizeBody(existing.body).trim()) return fail('Write your campaign before sending.')
 
@@ -412,6 +431,12 @@ export async function sendSpaceCampaign(
     recipients,
   })
   if (isError(res)) return res
+
+  // SCAN-704: a campaign whose every recipient was suppressed (no opt-in yet) delivered nothing. It
+  // is not sent; say so instead of stamping it and telling the owner it is on its way.
+  if (!res.data.sent) {
+    return fail('Nobody on this list has opted in to email yet, so nothing was sent.')
+  }
 
   // Stamp the campaign as sent (best-effort: the emails already went out, so a failed status write
   // must not surface as a send failure).
