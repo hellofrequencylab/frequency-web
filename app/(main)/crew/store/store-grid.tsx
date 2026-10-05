@@ -6,8 +6,9 @@ import {
   Circle, Flame, Star, Crown, Zap, Sparkles,
   CreditCard, Award, Heart, BadgeCheck,
 } from 'lucide-react'
-import { redeemItem } from './actions'
+import { redeemItem, equipCosmetic } from './actions'
 import { isError } from '@/lib/action-result'
+import type { CosmeticType } from '@/lib/store/cosmetics'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   circle: Circle, flame: Flame, star: Star, crown: Crown, zap: Zap,
@@ -27,6 +28,9 @@ interface StoreItem {
   owned: boolean
   /** LIVE-013: nothing in the product renders this cosmetic, so it is not for sale. */
   undeliverable?: boolean
+  /** SCAN-772: the slot this cosmetic fills, and whether the member is wearing it right now. */
+  cosmeticSlot?: CosmeticType | null
+  equipped?: boolean
 }
 
 export function StoreGrid({ items, balance }: { items: StoreItem[]; balance: number }) {
@@ -60,6 +64,20 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
     })
   }
 
+  // SCAN-772: wear an owned cosmetic, or take the worn one off. The server action revalidates the
+  // store, so `equipped` flips on its own after the transition.
+  function handleEquip(wear: boolean) {
+    if (!item.cosmeticSlot) return
+    const slot = item.cosmeticSlot
+    startTransition(async () => {
+      const res = await equipCosmetic(wear ? item.id : null, slot)
+      if (isError(res)) {
+        setResult({ text: res.error, ok: false })
+        setTimeout(() => setResult(null), 3000)
+      }
+    })
+  }
+
   return (
     <div className={`rounded-card border px-4 py-3 transition-all motion-reduce:transition-none ${
       item.owned
@@ -90,6 +108,36 @@ function StoreCard({ item, balance }: { item: StoreItem; balance: number }) {
             {result ? (
               <span className={`text-meta font-semibold ${result.ok ? 'text-signal-strong' : 'text-danger'}`}>
                 {result.text}
+              </span>
+            ) : item.owned && item.cosmeticSlot ? (
+              // An owned cosmetic is a wardrobe item, not a receipt (SCAN-772): Equip when it is not
+              // worn, Equipped + Remove when it is.
+              <span className="flex items-center gap-2">
+                {item.equipped ? (
+                  <>
+                    <span className="text-meta font-semibold text-signal-strong flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Equipped
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleEquip(false)}
+                      disabled={isPending}
+                      className="min-h-11 rounded-control border border-border px-3 py-1 text-meta font-semibold text-muted transition-colors hover:text-text hover:bg-surface-elevated disabled:opacity-50 motion-reduce:transition-none"
+                    >
+                      {isPending ? <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" /> : 'Remove'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleEquip(true)}
+                    disabled={isPending}
+                    className="flex min-h-11 items-center gap-1 rounded-control bg-primary px-3 py-1 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 motion-reduce:transition-none"
+                  >
+                    {isPending ? <Loader2 className="w-3 h-3 animate-spin motion-reduce:animate-none" /> : <Check className="w-3 h-3" />}
+                    Equip
+                  </button>
+                )}
               </span>
             ) : item.owned ? (
               <span className="text-meta font-semibold text-signal-strong flex items-center gap-1">

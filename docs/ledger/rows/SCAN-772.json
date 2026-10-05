@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-772",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/crew/store/actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-772: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const hasEquip=/export async function (equip|unequip|wear|setEquipped)\\w*\\s*\\(/i.test(s);const nullWrite=/(profile_border|profile_flair|custom_title):\\s*(null|value|plan\\.value|cosmeticValue\\s*\\?\\?\\s*null)/.test(s.slice(s.indexOf(\"export async function equip\")>=0?s.indexOf(\"export async function equip\"):0));if(!hasEquip){console.error(\"SCAN-772: the store actions export no equip action, so the only writer of profile_border, profile_flair and custom_title is redeemItem at purchase time: a second cosmetic purchase overwrites the first for good and nothing can re-wear or remove one.\");process.exit(1)}if(!nullWrite){console.error(\"SCAN-772: an equip action exists but does not write the cosmetic slot columns, so owned cosmetics still cannot be re-worn or removed.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nNew equipCosmetic(itemId | null, slot) action verifies ownership and classification then writes the slot column through the admin client; getStoreData returns each item's slot and equipped state and the shelf offers Equip, Equipped and Remove."
+  }
+}
