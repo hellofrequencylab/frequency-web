@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
 import { Zap } from 'lucide-react'
-import { SITE_NAME, SITE_URL } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
 import { SHELL_ROW_CLASS, SHELL_CONTENT_WIDTH_CLASS } from '@/lib/layout/shell-metrics'
 import { getMyProfileId } from '@/lib/auth'
 import { resolveSpaceClaimAny } from '@/lib/spaces/claim'
@@ -100,6 +100,7 @@ export async function generateMetadata({
       title: { absolute: `Claim this business · ${SITE_NAME}` },
       robots: { index: false },
       openGraph: {
+        ...OG_SITE,
         title: `Claim your business on ${SITE_NAME}`,
         description: 'Frequency builds a page for local businesses. If one is yours, claim it.',
         type: 'website',

@@ -5,6 +5,7 @@ import { PageHero, Section, Card, Button } from '@/components/marketing/marketin
 import { Illustration, type IllustrationName } from '@/components/marketing/illustrations'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { OG_SITE } from '@/lib/site'
 
 // The role picker (ADR-180 keeps this a coded page, not a Puck slug). One decision:
 // Build, Practice, or Spread. Each card routes to a DISTINCT destination that keeps its
@@ -22,6 +23,7 @@ export function generateMetadata(): Metadata {
       'Three ways into Frequency: lead a Circle, do a practice today, or bring one person. Pick the door that fits and we point you at your first move.',
     alternates: { canonical: '/start' },
     openGraph: {
+      ...OG_SITE,
       title: 'Where do you want to start? · Frequency',
       description:
         'Build, Practice, or Spread. Pick the door that fits and we point you at your first move.',

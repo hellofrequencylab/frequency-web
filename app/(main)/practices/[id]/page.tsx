@@ -29,6 +29,7 @@ import { RemixPracticeButton } from '@/components/practice/remix-practice-button
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
+import { OG_SITE } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +52,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description: desc,
     alternates: { canonical: `/practices/${p.slug ?? p.id}` },
     openGraph: {
+      ...OG_SITE,
       title: p.title,
       description: desc,
       type: 'article',

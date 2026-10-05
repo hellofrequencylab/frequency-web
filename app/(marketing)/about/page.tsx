@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { OG_SITE } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -24,6 +25,7 @@ export function generateMetadata(): Metadata {
       'The story behind Frequency, born on a cliff at Moonlight Beach in 2020. We hand ordinary people the tools to rebuild the third place where they live.',
     alternates: { canonical: '/about' },
     openGraph: {
+      ...OG_SITE,
       title: 'About Frequency',
       description: 'The third place is gone. We hand ordinary people the tools to bring it back.',
       url: '/about',

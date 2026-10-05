@@ -7,7 +7,7 @@ import { SignInCta } from '@/components/discover/cards'
 import { ShareButton } from '@/components/discover/share-button'
 import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceSchema, breadcrumbSchema } from '@/lib/jsonld'
 
@@ -34,7 +34,7 @@ export async function generateMetadata({
     title: practice.title,
     description,
     alternates: { canonical: `/discover/practices/${practice.slug ?? practice.id}` },
-    openGraph: { title: ogTitle, description, url: `/discover/practices/${practice.slug ?? practice.id}`, type: 'article' },
+    openGraph: { ...OG_SITE, title: ogTitle, description, url: `/discover/practices/${practice.slug ?? practice.id}`, type: 'article' },
     twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }

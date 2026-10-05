@@ -11,7 +11,7 @@
 //   - Voice canon: no em or en dashes in any surfaced string.
 
 import type { Metadata } from 'next'
-import { SITE_NAME, SITE_URL, SITE_OG_IMAGE } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_URL, SITE_OG_IMAGE } from '@/lib/site'
 import { breadcrumbSchema, aggregateRatingNode, productReviewNodes } from '@/lib/jsonld'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 
@@ -77,6 +77,7 @@ export function listingMetadata(view: ListingDetailView): Metadata {
     ...(noindex ? { robots: { index: false, follow: true } } : {}),
     alternates: { canonical: path },
     openGraph: {
+      ...OG_SITE,
       title: ogTitle,
       description,
       type: 'website',

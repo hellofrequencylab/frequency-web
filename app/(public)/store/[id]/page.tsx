@@ -6,7 +6,7 @@ import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { productSchema } from '@/lib/jsonld'
-import { SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { BuyButton } from '@/app/(main)/marketplace/buy-button'
 
 // Public Product JSON-LD page, advertised in app/sitemap.ts. force-dynamic here would keep the
@@ -39,6 +39,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/store/${id}` },
     openGraph: {
+      ...OG_SITE,
       title: ogTitle,
       description,
       type: 'website',

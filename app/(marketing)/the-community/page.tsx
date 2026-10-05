@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { OG_SITE } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
     'A Circle is a few people near you doing life on purpose. Frequency is a Community Collective: four Pillars and Circles that grow on their own.',
   alternates: { canonical: '/the-community' },
   openGraph: {
+    ...OG_SITE,
     title: 'The Community · Frequency',
     description:
       'Four Pillars, your Channels, and a Circle near you. Community with a shape, leaderful and built to last.',

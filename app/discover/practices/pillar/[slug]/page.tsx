@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { getPillars, PILLAR_SLUGS } from '@/lib/pillars'
 import { searchLibraryPractices } from '@/lib/practices'
 import { PracticeCard, PillarChips } from '../../practice-card'
-import { SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { IndexTemplate } from '@/components/templates'
@@ -54,7 +54,7 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: url },
-    openGraph: { title: `${title} · ${SITE_NAME}`, description, url, type: 'website' },
+    openGraph: { ...OG_SITE, title: `${title} · ${SITE_NAME}`, description, url, type: 'website' },
     twitter: { card: 'summary_large_image', title: `${title} · ${SITE_NAME}`, description },
   }
 }

@@ -36,6 +36,7 @@ import {
   journeyFacts,
   primaryPillar,
 } from '@/components/journey/discovery-widgets'
+import { OG_SITE } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,6 +73,7 @@ export async function generateMetadata({
     // there so ranking signals consolidate on the discover surface rather than compete with it.
     alternates: { canonical: `/discover/journeys/${slug}` },
     openGraph: {
+      ...OG_SITE,
       title: plan.title,
       description,
       type: 'article',

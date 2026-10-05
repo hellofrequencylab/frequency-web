@@ -18,7 +18,7 @@ import {
 } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { articleSchema, faqSchema, breadcrumbSchema } from '@/lib/jsonld'
-import { SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import {
   COMPARISONS,
   getComparison,
@@ -62,6 +62,7 @@ export async function generateMetadata({
     description: copy.description,
     alternates: { canonical },
     openGraph: {
+      ...OG_SITE,
       title: `${copy.ogTitle} · ${SITE_NAME}`,
       description: copy.description,
       url: canonical,

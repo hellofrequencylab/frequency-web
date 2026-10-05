@@ -8,7 +8,7 @@ import { loadCirclePractice } from './tab-facts'
 import { getCircleHealth } from '@/lib/circles/earned'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleCapabilities } from '@/lib/circles/detail-access'
-import { SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 // The circle BODY (feed + info-rail) is the page-settings module engine (ADR-270/294): this tab
 // resolves all the per-viewer data once, stamps it into the request-scoped circle context, and
@@ -99,6 +99,7 @@ export async function generateMetadata({
     title: circle.name,
     description,
     openGraph: {
+      ...OG_SITE,
       title: ogTitle,
       description,
       ...(coverUrl ? { images: [{ url: coverUrl }] } : {}),

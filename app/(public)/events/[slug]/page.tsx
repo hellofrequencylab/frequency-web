@@ -8,7 +8,7 @@ import { SignInCta } from '@/components/discover/cards'
 import { EventDetailTemplate } from '@/components/templates'
 import { PosterBand } from '@/components/media/poster-band'
 import { eventPosterHeightClass, eventPosterMaxHeightClass } from '@/lib/events/hero-height'
-import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { seriesRobots, seriesSeoFactsBySlug, suppressPastNoindex } from '@/lib/events/series-seo'
@@ -53,6 +53,7 @@ export async function generateMetadata({
     alternates: { canonical: `/events/${event.slug}` },
     ...(robots ? { robots } : {}),
     openGraph: {
+      ...OG_SITE,
       title: ogTitle,
       description,
       url: `/events/${event.slug}`,

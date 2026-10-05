@@ -9,7 +9,7 @@ import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { resolvePageContent } from '@/lib/page-content'
-import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from '@/lib/site'
 
 // SEO title + description are operator-editable through the ADR-180 page-content
 // system (edited at /pages/home; the coded strings below are the fallback).
@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { absolute: title },
     description,
     alternates: { canonical: '/' },
-    openGraph: { title, description, url: '/' },
+    openGraph: { ...OG_SITE, title, description, url: '/' },
     // Metadata merges per TOP-LEVEL KEY, so a page that sets only `openGraph` inherits the ROOT
     // `twitter` block verbatim — which meant the operator-edited home title/description never
     // reached the X/Slack card. Mirror the OG values so both cards read the same live copy.

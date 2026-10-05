@@ -10,6 +10,7 @@ import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { OG_SITE } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -45,6 +46,7 @@ export function generateMetadata(): Metadata {
     description: DESCRIPTION,
     alternates: { canonical: PATH },
     openGraph: {
+      ...OG_SITE,
       title: OG_TITLE,
       description: OG_DESCRIPTION,
       url: PATH,

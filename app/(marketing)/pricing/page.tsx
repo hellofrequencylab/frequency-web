@@ -50,6 +50,7 @@ import { getPublishedData } from '@/lib/page-editor/data'
 import { isWellFormed } from '@/lib/page-editor/templates'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { OG_SITE } from '@/lib/site'
 
 // EVERY figure on this page is READ, never written. Prices, the yearly deal, the trial length, the
 // per-tier take-rate, the add-on and seat amounts, and every cell of the comparison grid come from
@@ -136,6 +137,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description,
     alternates: { canonical: '/pricing' },
     openGraph: {
+      ...OG_SITE,
       title: 'Frequency pricing: your own people are always free',
       description,
       url: '/pricing',
