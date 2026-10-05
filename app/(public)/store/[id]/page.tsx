@@ -95,9 +95,12 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
           })),
         })}
       />
+      {/* The /store index is members-only (lib/nav/public-detail-routes.ts) and 307s a signed-out
+          visitor to /, and this ISR page has no viewer to gate on, so the back link goes to the
+          public /discover hub instead of the index (SCAN-786). */}
       <DetailTemplate
         {...hero}
-        back={{ href: '/store', label: 'Frequency Store' }}
+        back={{ href: '/discover', label: 'Discover' }}
         title={product.title}
         subtitle={<span className="font-semibold text-text">{usd(product.priceCents, product.currency)}</span>}
         badges={product.category ? <span className="text-meta text-subtle">{product.category}</span> : undefined}
