@@ -45,7 +45,9 @@ export async function createAndPublishDispatch(fd: FormData) {
 
   // Association guard: an admin tier (janitor+) may broadcast anywhere; everyone else
   // may only broadcast to a scope they LEAD — the circle's host, the hub's guide, or
-  // the nexus's mentor matching the audience.
+  // the nexus's mentor matching the audience. SCAN-717: the mentor is read from `nexuses`
+  // (hubs.nexus_id and the composer's nexus list both point there); it used to read
+  // `nexus_regions`, the geography tree, so the mentor branch never matched.
   if (!hasRole(caller.community_role, 'janitor')) {
     let led = false
     if (audience_scope === 'circle') {
@@ -55,7 +57,7 @@ export async function createAndPublishDispatch(fd: FormData) {
         const { data: h } = await admin.from('hubs').select('guide_id, nexus_id').eq('id', c.hub_id).maybeSingle()
         if (h?.guide_id === caller.id) led = true
         else if (h?.nexus_id) {
-          const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
+          const { data: n } = await admin.from('nexuses').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
           if (n?.mentor_id === caller.id) led = true
         }
       }
@@ -63,11 +65,11 @@ export async function createAndPublishDispatch(fd: FormData) {
       const { data: h } = await admin.from('hubs').select('guide_id, nexus_id').eq('id', audience_id).maybeSingle()
       if (h?.guide_id === caller.id) led = true
       else if (h?.nexus_id) {
-        const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
+        const { data: n } = await admin.from('nexuses').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
         if (n?.mentor_id === caller.id) led = true
       }
     } else if (audience_scope === 'nexus') {
-      const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', audience_id).maybeSingle()
+      const { data: n } = await admin.from('nexuses').select('mentor_id').eq('id', audience_id).maybeSingle()
       if (n?.mentor_id === caller.id) led = true
     }
     if (!led) throw new Error('You can only broadcast to a circle, hub, or region you lead.')
