@@ -19,23 +19,35 @@ let countResult = 0
 let waitlistRow: Record<string, unknown> | null = null
 let eventRow: Record<string, unknown> | null = { capacity: 10 }
 
+// What the promotion's compare-and-set read-back returns, per update call in order (SCAN-701):
+// `undefined` means "the row as patched" (the write landed); null means zero rows (another caller
+// promoted that person first).
+let updateResults: (Record<string, unknown> | null | undefined)[] = []
+
 function builder(table: string) {
   const call: Call = { table, filters: [], nots: [] }
   calls.push(call)
   const b: Record<string, unknown> = {}
+  let patch: Record<string, unknown> | null = null
   Object.assign(b, {
     select: () => b,
-    update: () => b,
+    update: (p: Record<string, unknown>) => ((patch = p), b),
     eq: (c: string, v: unknown) => (call.filters.push([c, v]), b),
     neq: (c: string, v: unknown) => (call.nots.push(['neq', c, v]), b),
     order: () => b,
     limit: () => b,
-    maybeSingle: () =>
-      Promise.resolve({
+    maybeSingle: () => {
+      if (patch) {
+        const scripted = updateResults.shift()
+        const data = scripted === undefined ? { ...(waitlistRow ?? {}), ...patch } : scripted
+        return Promise.resolve({ data, count: countResult, error: null })
+      }
+      return Promise.resolve({
         data: table === 'events' ? eventRow : waitlistRow,
         count: countResult,
         error: null,
-      }),
+      })
+    },
     then: (ok: (v: unknown) => unknown) =>
       Promise.resolve({ data: null, count: countResult, error: null }).then(ok),
   })
@@ -51,6 +63,7 @@ beforeEach(() => {
   countResult = 0
   waitlistRow = null
   eventRow = { capacity: 10 }
+  updateResults = []
 })
 
 const rsvpCall = () => calls.find((c) => c.table === 'event_rsvps')
@@ -115,5 +128,41 @@ describe('promoteFromWaitlist — promotion may not bypass the approval gate', (
     waitlistRow = { id: 'r-3', profile_id: 'p-3', guest_email: null }
     const seat = await promoteFromWaitlist('ev-1')
     expect(seat).toEqual({ rsvpId: 'r-3', profileId: 'p-3', guestEmail: null })
+  })
+})
+
+// TWO WITHDRAWALS AT ONCE (SCAN-701). Both callers read the same oldest waitlist row. The write
+// must land only on a row STILL waitlisted and read itself back, so the loser sees zero rows and
+// moves on instead of reporting the same seat (and ringing the same person) twice.
+describe('promoteFromWaitlist — two concurrent withdrawals promote two people, not one twice', () => {
+  const promotion = () => calls.filter((c) => c.table === 'event_rsvps')[2]
+
+  it('promotes only a row still on the waitlist and reads the moved row back', async () => {
+    countResult = 1
+    waitlistRow = { id: 'r-1', profile_id: 'p-1', guest_email: null }
+    await promoteFromWaitlist('ev-1')
+    expect(promotion().filters).toContainEqual(['id', 'r-1'])
+    expect(promotion().filters).toContainEqual(['status', 'waitlist'])
+  })
+
+  it('moves to the next candidate when another caller took the first one, and stops when nobody is left', async () => {
+    countResult = 1
+    waitlistRow = { id: 'r-1', profile_id: 'p-1', guest_email: null }
+    // First attempt: zero rows (someone else promoted r-1). Second: the seat lands.
+    updateResults = [null, undefined]
+    const seat = await promoteFromWaitlist('ev-1')
+    expect(seat?.rsvpId).toBe('r-1')
+    expect(calls.filter((c) => c.table === 'event_rsvps' && c.filters.some(([c2]) => c2 === 'id'))).toHaveLength(2)
+
+    calls.length = 0
+    updateResults = [null, null, null]
+    expect(await promoteFromWaitlist('ev-1')).toBeNull()
+  })
+
+  it('reports nobody promoted when the capacity trigger coerced the row because the room refilled', async () => {
+    countResult = 1
+    waitlistRow = { id: 'r-1', profile_id: 'p-1', guest_email: null }
+    updateResults = [{ id: 'r-1', status: 'waitlist' }]
+    expect(await promoteFromWaitlist('ev-1')).toBeNull()
   })
 })
