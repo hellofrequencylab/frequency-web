@@ -55,7 +55,10 @@ export async function retryOrderTransfer(transferId: string): Promise<RetryTrans
     .maybeSingle()
   if (orderErr) return { ok: false, error: 'Could not read the order. Try again in a moment.' }
   const o = order as { status: string; refunded_at: string | null } | null
-  if (!o || !(o.status === 'paid' || o.status === 'fulfilled') || o.refunded_at) {
+  // A PARTIAL refund stamps refunded_at and leaves the status paid, and its sellers are still paid
+  // their shares (the refund reverses each one pro rata), exactly as the reconciler's
+  // orderIsPayable reads it. Only a full refund (status 'refunded') stops the transfer.
+  if (!o || !(o.status === 'paid' || o.status === 'fulfilled')) {
     return { ok: false, error: 'This order was refunded or never completed, so its sellers are not paid.' }
   }
 

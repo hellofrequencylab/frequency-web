@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-653",
+  "title": "The calendar Today-button test read the real clock and has failed on main since 2026-10-01",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "XS",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "source": {
+    "file": "components/events/event-calendar.a11y.render.test.tsx",
+    "ref": "found 2026-10-05 by the scan-six full test run (20,428 passed, 1 failed)"
+  },
+  "detail": "FOUND 2026-10-05 in the scan-six full `pnpm test`. 'keeps Today mounted and disabled' mounts September 2026, presses Next month and expects Today ENABLED, then presses Today and expects September. It never pinned the clock, so from 2026-10-01 Next month lands on the real current month, Today is disabled, and the case fails: on main and on every pull request, unrelated to the diff.\n\nCLOSED 2026-10-05: the case pins Date to 2026-09-15 with vi.useFakeTimers({ toFake: ['Date'] }) and restores it in onTestFinished. The other EventCalendar render tests pass today; any that read Today against a fixed month have the same shape and want the same pin.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"components/events/event-calendar.a11y.render.test.tsx\",\"utf8\");const i=s.indexOf(\"keeps Today mounted and disabled\");if(i<0||!/vi\\.setSystemTime\\(/.test(s.slice(i,i+800))){console.error(\"SCAN-653: the Today-button case reads Today as September 2026 without pinning the clock, so it fails whenever the real month is the one after initialMonth1 and turns every PR red.\");process.exit(1)}'",
+    "note": "Reads the case for a pinned clock."
+  }
+}

@@ -28,6 +28,12 @@ import { nodeUrl } from '@/lib/qr/links'
  *  claims. After it, only a signed code checks a member in. Stated in ADR-1654. */
 export const LEGACY_NODE_CODE_GRACE_ENDS = Date.parse('2026-12-01T00:00:00Z')
 
+/** When signing shipped (LIVE-688, merged 2026-09-30T01:51Z). A node created from then on never had
+ *  a pre-signing code printed for it, so the no-code legacy path is closed to it from day one:
+ *  without this, a node created after signing (which no longer gets a random `secret`) accepted a
+ *  bare `/n/<id>` for the whole grace window. */
+export const SIGNED_NODE_CODES_SINCE = Date.parse('2026-09-30T01:51:23Z')
+
 /** A signed code may not claim an issue time further ahead of the server clock than this. */
 const FUTURE_SKEW_MS = 5 * 60 * 1000
 
@@ -98,6 +104,7 @@ export type NodeCodeVerdict = 'signed' | 'legacy' | 'refused'
  *    code is refused, never waved through as legacy.
  *  • Before LEGACY_NODE_CODE_GRACE_ENDS, a pre-signing code still claims: the node's old random
  *    secret when it has one (exact match), or no code at all when it never had one.
+ *  • A node created after signing shipped never had an unsigned code, so it gets no legacy path.
  *  • After the grace window, anything unsigned is refused.
  */
 export function nodeCodeVerdict(input: {
@@ -105,6 +112,8 @@ export function nodeCodeVerdict(input: {
   presented: string | null | undefined
   /** The node's pre-signing random secret (`nodes.secret`), or null when it never had one. */
   legacySecret: string | null | undefined
+  /** `nodes.created_at`. A node created on or after SIGNED_NODE_CODES_SINCE has no legacy code. */
+  nodeCreatedAt?: string | null
   now?: number
 }): NodeCodeVerdict {
   const now = input.now ?? Date.now()
@@ -119,5 +128,7 @@ export function nodeCodeVerdict(input: {
   if (input.legacySecret) {
     return presented && safeEqual(presented, input.legacySecret) ? 'legacy' : 'refused'
   }
+  const created = input.nodeCreatedAt ? Date.parse(input.nodeCreatedAt) : NaN
+  if (Number.isFinite(created) && created >= SIGNED_NODE_CODES_SINCE) return 'refused'
   return presented ? 'refused' : 'legacy'
 }

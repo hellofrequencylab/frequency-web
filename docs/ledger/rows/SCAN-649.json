@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-649",
+  "title": "A split-order reversal that Stripe refuses once can never be retried, and a second refund can reverse the same seller twice",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "wave": "W8",
+  "detail": "FOUND 2026-10-05 in the scan-six read of LIVE-623 (f5d03d0). Two defects in lib/commerce/split-refund.ts reverseTransferRow and the target raise, both latent until real split orders refund.\n\n1. SAVED ERROR. Every retry uses reversalIdempotencyKey(row, from, to), and from/to do not move while nothing lands. Stripe stores the result of a request that began executing under its key for ~24h, errors included (an empty connected balance is the likely one). The reconciler (:20 and :50) re-receives the same stored error and hits MAX_TRANSFER_ATTEMPTS (8) in ~4h, well inside the window; only a new, larger refund resets reversal_attempts, and there is no operator door for reversals (transfer-retry.ts handles planned/failed transfers only). The row logs reversal_stuck forever and the platform carries that seller's share of the refund. Transfer creation shares the shape (`transfer:<rowId>`) but the operator retry recovers it after 24h.\n\n2. CLAIM RESET. Raising the target writes `reversal_attempts: 0`, which undoes the compare-and-set claim of a worker already calling Stripe for the old target. Refund #2 then claims, reads amount_reversed before #1 lands, and reverses 0->T2 under a different key: T1+T2 leaves the seller, capped only by the transfer amount.\n\nTHE FIX: keep a separate target counter instead of resetting attempts, add a claim lease (reversal_claimed_at with a TTL) so a second worker skips an in-flight row, and vary the key only after a DETERMINISTIC Stripe refusal (not after a network timeout, where the fixed key is what dedupes an in-flight request), keeping the amount_reversed read before each call. Add an operator Send again for reversals. ALSO TEST IN TEST MODE: whether a transfer with source_transaction is refused after an early partial refund leaves less on the charge (LIVE-739 plans full-amount rows after the refund); fold the answer into LIVE-234.",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-six adversarial read of the 2026-09-28..30 merges"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs = require(\"fs\")\nconst s = fs.readFileSync(\"lib/commerce/split-refund.ts\", \"utf8\")\nif (/refund_reversal_cents:\\s*target,\\s*reversal_attempts:\\s*0/.test(s)) { console.error(\"SCAN-649: raising a reversal target resets reversal_attempts to 0, which undoes the compare-and-set claim of a worker already calling Stripe; a second refund then reverses the same seller again under a different key.\"); process.exit(1) }\nconst m = /export function reversalIdempotencyKey\\(([^)]*)\\)/.exec(s)\nif (!m || m[1].split(\",\").length < 4) { console.error(\"SCAN-649: the reversal idempotency key is fixed to (row, from, to), so a Stripe error saved under that key (e.g. an empty connected balance) answers every retry for 24h and the reconciler gives up after 8 attempts: that seller share is never reversed and the platform pays it.\"); process.exit(1) }\n'",
+    "note": "Fails today on the claim reset. Passes once the raise stops zeroing attempts AND the key carries an attempt or refusal discriminator."
+  }
+}

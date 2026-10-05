@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2156,
+      "baseline": 2147,
       "frozen": {
-        "at": "2026-09-28",
-        "value": 2156,
-        "direction": "raised",
+        "at": "2026-10-05",
+        "value": 2147,
+        "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "A RAISE, banked as debt and not as a win: +4 literal rounded-* utilities merged after the 2026-09-22 freeze while this gate was advisory in ci.yml (ADR-1290, OWN-004). Two files, attributed by per-file count diff against 0458ce676: components/spaces/contact-form-block.tsx +2 (#2893, the new Space contact-form block) and app/(main)/spaces/[slug]/settings/program/page.tsx +2 (#2862, the Program door recording its Plan). Neither is a scope move and no pattern changed, so no credit is owed; the floor moves only so the scoreboard reads true on main again, and the class stays flagged until a radius-role sweep retires these four sites.",
-        "from": 2152
+        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
+        "from": 2156
       },
       "history": [
         {
@@ -287,6 +287,13 @@
           "to": 2156,
           "direction": "raised",
           "reason": "A RAISE, banked as debt and not as a win: +4 literal rounded-* utilities merged after the 2026-09-22 freeze while this gate was advisory in ci.yml (ADR-1290, OWN-004). Two files, attributed by per-file count diff against 0458ce676: components/spaces/contact-form-block.tsx +2 (#2893, the new Space contact-form block) and app/(main)/spaces/[slug]/settings/program/page.tsx +2 (#2862, the Program door recording its Plan). Neither is a scope move and no pattern changed, so no credit is owed; the floor moves only so the scoreboard reads true on main again, and the class stays flagged until a radius-role sweep retires these four sites."
+        },
+        {
+          "at": "2026-10-05",
+          "from": 2156,
+          "to": 2147,
+          "direction": "lowered",
+          "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
         }
       ]
     },
@@ -625,14 +632,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 403,
+      "baseline": 402,
       "frozen": {
-        "at": "2026-09-21",
-        "value": 403,
+        "at": "2026-10-05",
+        "value": 402,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "LIVE-445 / ADR-1503: calendar-list-view.tsx no longer hand-rolls its selected bg-primary fill; the selected class comes from lib/calendar/registry.ts itemSelectedClass. One of the two sites named in the 2026-09-21 raise retired.",
-        "from": 404
+        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
+        "from": 403
       },
       "history": [
         {
@@ -788,6 +795,13 @@
           "to": 403,
           "direction": "lowered",
           "reason": "LIVE-445 / ADR-1503: calendar-list-view.tsx no longer hand-rolls its selected bg-primary fill; the selected class comes from lib/calendar/registry.ts itemSelectedClass. One of the two sites named in the 2026-09-21 raise retired."
+        },
+        {
+          "at": "2026-10-05",
+          "from": 403,
+          "to": 402,
+          "direction": "lowered",
+          "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
         }
       ]
     },
@@ -1232,14 +1246,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 48,
+      "baseline": 47,
       "frozen": {
-        "at": "2026-09-09",
-        "value": 48,
+        "at": "2026-10-05",
+        "value": 47,
         "direction": "lowered",
         "basis": "64ff33cabd79",
-        "reason": "One site left with the deleted UI under phases 1-3 (ADR-1294) - the /dev showcase routes and the retired pricing and Offerings sections. Not a conversion to a semantic type token.",
-        "from": 49
+        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
+        "from": 48
       },
       "history": [
         {
@@ -1297,6 +1311,13 @@
           "to": 48,
           "direction": "lowered",
           "reason": "One site left with the deleted UI under phases 1-3 (ADR-1294) - the /dev showcase routes and the retired pricing and Offerings sections. Not a conversion to a semantic type token."
+        },
+        {
+          "at": "2026-10-05",
+          "from": 48,
+          "to": 47,
+          "direction": "lowered",
+          "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
         }
       ]
     },
@@ -1691,14 +1712,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 478,
+      "baseline": 477,
       "frozen": {
-        "at": "2026-09-21",
-        "value": 478,
+        "at": "2026-10-05",
+        "value": 477,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed.",
-        "from": 481
+        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
+        "from": 478
       },
       "history": [
         {
@@ -1763,6 +1784,13 @@
           "to": 478,
           "direction": "lowered",
           "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed."
+        },
+        {
+          "at": "2026-10-05",
+          "from": 478,
+          "to": 477,
+          "direction": "lowered",
+          "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
         }
       ]
     }

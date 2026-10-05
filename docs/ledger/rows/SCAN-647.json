@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-647",
+  "title": "The operator's Send again on a stuck seller transfer refused every partially refunded order, which the reconciler still pays",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "detail": "FOUND 2026-10-05 in the scan-six read of LIVE-624 (ced6bf6). A PARTIAL refund stamps `commerce_orders.refunded_at` and leaves the status `paid`, and ADR-1615 / orderIsPayable keep paying its sellers (the refund reverses each share pro rata). retryOrderTransfer refused any order with `refunded_at` set, so on a partially refunded order with a stuck transfer the operator read 'This order was refunded' and could not pay that seller their remaining share; only the reconciler could, and only until MAX_TRANSFER_ATTEMPTS.\n\nCLOSED 2026-10-05: the retry reads the status alone, as orderIsPayable does; a fully refunded order (status `refunded`) is still refused. transfer-retry.test.ts now pins both: the refunded order refused, the partially refunded one retried.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs = require(\"fs\")\nconst s = fs.readFileSync(\"lib/commerce/transfer-retry.ts\", \"utf8\")\nif (/o\\.refunded_at\\b/.test(s)) { console.error(\"SCAN-647: the operator transfer retry refuses an order with refunded_at set, which a PARTIAL refund stamps on a still-paid order. The reconciler pays that seller (orderIsPayable reads status only); the operator is told refunded and cannot.\"); process.exit(1) }\nif (!/o\\.status === \\x27paid\\x27 \\|\\| o\\.status === \\x27fulfilled\\x27/.test(s)) { console.error(\"SCAN-647: the retry no longer reads the order status at all\"); process.exit(1) }\n'",
+    "note": "Fails on main before this change (mutation-checked)."
+  },
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-six adversarial read of the 2026-09-28..30 merges"
+  }
+}

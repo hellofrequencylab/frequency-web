@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-650",
+  "title": "A split order stays shipped after one seller's transfer is fully reversed from the Stripe dashboard",
+  "status": "open",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "XS",
+  "wave": "W8",
+  "detail": "FOUND 2026-10-05 in the scan-six read of LIVE-705 (dafcddd). rollUpSplitOrder (lib/commerce/fulfilment.ts) recomputes an order's shipping state only when a seller's share moves. recordTransferReversed (lib/commerce/transfers.ts, the transfer.reversed webhook) can set a share to `reversed` after every other share is delivered, and nothing re-rolls the order. THE FIX: call the roll-up from recordTransferReversed when a row becomes reversed.",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-six adversarial read of the 2026-09-28..30 merges"
+  },
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs = require(\"fs\")\nconst s = fs.readFileSync(\"lib/commerce/transfers.ts\", \"utf8\")\nconst i = s.indexOf(\"export async function recordTransferReversed\")\nconst body = i < 0 ? \"\" : s.slice(i, i + 6000)\nif (!/rollUp|rollup|recomputeFulfil/i.test(body)) { console.error(\"SCAN-650: a transfer fully reversed from the Stripe dashboard (transfer.reversed) marks its share reversed but never re-rolls the split order, so an order whose other shares were delivered stays shipped.\"); process.exit(1) }\n'",
+    "note": "Fails until recordTransferReversed re-rolls the order."
+  }
+}

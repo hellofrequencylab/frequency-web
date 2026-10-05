@@ -89,6 +89,13 @@ describe('nodeCodeVerdict: what the capture verifier accepts', () => {
   it('an unsigned code (the bare node id) claims only inside the grace window', () => {
     expect(nodeCodeVerdict({ nodeId: NODE, presented: null, legacySecret: null, now: BEFORE_GRACE_END })).toBe('legacy')
     expect(nodeCodeVerdict({ nodeId: NODE, presented: null, legacySecret: null, now: AFTER_GRACE_END })).toBe('refused')
+    // A node created after signing shipped never had an unsigned code printed: no legacy path.
+    expect(
+      nodeCodeVerdict({ nodeId: NODE, presented: null, legacySecret: null, nodeCreatedAt: '2026-10-01T00:00:00Z', now: BEFORE_GRACE_END }),
+    ).toBe('refused')
+    expect(
+      nodeCodeVerdict({ nodeId: NODE, presented: null, legacySecret: null, nodeCreatedAt: '2026-09-01T00:00:00Z', now: BEFORE_GRACE_END }),
+    ).toBe('legacy')
   })
 
   it('an old random secret claims only when it matches, and only inside the grace window', () => {

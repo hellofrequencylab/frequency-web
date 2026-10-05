@@ -45,7 +45,7 @@ export async function verifyCapture(attempt: CaptureAttempt): Promise<VerifyResu
 
   const { data: node } = await db
     .from('nodes')
-    .select('active, secret, capture_rule, proximity_m, location, valid_from, valid_until, max_claims')
+    .select('active, secret, created_at, capture_rule, proximity_m, location, valid_from, valid_until, max_claims')
     .eq('id', attempt.nodeId)
     .maybeSingle()
 
@@ -64,6 +64,7 @@ export async function verifyCapture(attempt: CaptureAttempt): Promise<VerifyResu
     nodeId: attempt.nodeId,
     presented: attempt.presentedSecret,
     legacySecret: node.secret,
+    nodeCreatedAt: node.created_at,
   })
   if (verdict === 'refused') return { ok: false, reason: 'bad_signature' }
   if (verdict === 'legacy') {
