@@ -1852,16 +1852,20 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   return { ok: true, zapsAwarded }
 }
 
-export async function cancelEvent(eventId: string) {
+/** Host self-cancel. Returns `{}` on success and `{ error }` on a refusal or a failed write, so the
+ *  Manage button and the Space calendar manager can tell a cancel that happened from one that did
+ *  not (SCAN-700). Before this it returned nothing on every path and never read the update error,
+ *  so a host was sent back to the event as if it were cancelled while nothing had been written. */
+export async function cancelEvent(eventId: string): Promise<{ error?: string }> {
   const myProfileId = await getMyProfileId()
-  if (!myProfileId) return
+  if (!myProfileId) return { error: 'Sign in to cancel this event.' }
 
   // AUTHORIZATION: the host, platform staff, or whoever manages the event's parent
   // scope (its circle or owning Space) may cancel — same authority that gates every
   // other management action (event.editSettings). Gating on host_id alone silently
   // no-op'd for a space/circle manager who is not the original host.
   const caps = await getEventCapabilities(eventId)
-  if (!caps.has('event.editSettings')) return
+  if (!caps.has('event.editSettings')) return { error: 'Only the host or a manager can cancel this event.' }
 
   // Use the admin client (RLS-bypassing) AFTER the capability gate, mirroring the admin
   // cancel path. The events UPDATE RLS policy only permits the host or a guide+ circle
@@ -1873,12 +1877,16 @@ export async function cancelEvent(eventId: string) {
   // ONLY on the live → cancelled transition — the sole condition under which we fan out
   // refunds. Authorization is enforced by the capability check above, so this update is
   // keyed on id (the manager need not be the host_id).
-  const { data: flipped } = await admin
+  const { data: flipped, error } = await admin
     .from('events')
     .update(cancelAudit(myProfileId, null))
     .eq('id', eventId)
     .eq('is_cancelled', false)
     .select('id')
+  if (error) {
+    log.error('events.cancel.update_failed', { eventId, error: briefError(error) })
+    return { error: 'Could not cancel the event. Try again.' }
+  }
 
   const firstCancel = (flipped ?? []).length > 0
 
@@ -1895,6 +1903,7 @@ export async function cancelEvent(eventId: string) {
   if (firstCancel) {
     await refundAndNotifyForCancelledEvent(eventId)
   }
+  return {}
 }
 
 // ── Edit re-entry: the redraw (ADR-450 §2 · ADR-994 · ADR-996) ────────────────────────────────

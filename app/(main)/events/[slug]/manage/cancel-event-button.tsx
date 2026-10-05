@@ -9,15 +9,21 @@ import { cancelEvent } from '@/app/(main)/events/actions'
 // Host self-cancel — the member-facing "cancel my event". It sat on /events/[slug]/edit until
 // LIVE-237 retired that route; it now renders in the Manage hub's Settings tab beside the rail
 // (event-danger-zone.tsx). Calls the host-gated cancelEvent (RLS: host_id = me) behind a confirm,
-// then returns to the event.
+// then returns to the event. A refusal or a failed write stays here and says so (SCAN-700).
 export function CancelEventButton({ eventId, slug, title }: { eventId: string; slug: string; title: string }) {
   const [open, setOpen] = useState(false)
   const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   function cancel() {
+    setError(null)
     start(async () => {
-      await cancelEvent(eventId)
+      const res = await cancelEvent(eventId)
+      if (res?.error) {
+        setError(res.error)
+        return
+      }
       router.push(`/events/${slug}`)
       router.refresh()
     })
@@ -25,6 +31,11 @@ export function CancelEventButton({ eventId, slug, title }: { eventId: string; s
 
   return (
     <>
+      {error && (
+        <p role="alert" className="mb-2 text-meta text-danger">
+          {error}
+        </p>
+      )}
       <button
         type="button"
         onClick={() => setOpen(true)}

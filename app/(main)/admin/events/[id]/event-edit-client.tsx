@@ -138,7 +138,8 @@ export function EventEditClient({
         if (event.is_cancelled) {
           await reinstateEvent(event.id)
         } else {
-          await cancelEvent(event.id)
+          const res = await cancelEvent(event.id)
+          if (res?.error) throw new Error(res.error)
         }
         router.refresh()
       } catch (err) {
