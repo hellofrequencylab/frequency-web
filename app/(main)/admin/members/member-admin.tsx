@@ -55,10 +55,14 @@ export function MemberAdmin({
   members,
   emailMap,
   canGrantModerator = false,
+  canManageAccounts = false,
 }: {
   members: Member[]
   emailMap: Record<string, string>
   canGrantModerator?: boolean
+  /** web_role janitor: the only viewer whose account buttons (edit, sign-in link, deactivate,
+   *  delete) would succeed on the server (SCAN-755). */
+  canManageAccounts?: boolean
 }) {
   // Deep-link support: a profile's "Manage account" link lands here as
   // ?q=<handle>&member=<id> — pre-filter the roster to that member and open their row.
@@ -126,6 +130,7 @@ export function MemberAdmin({
               isExpanded={expandedId === m.id}
               onToggle={() => setExpandedId(expandedId === m.id ? null : m.id)}
               canGrantModerator={canGrantModerator}
+              canManageAccounts={canManageAccounts}
             />
           ))
         )}
@@ -142,12 +147,14 @@ function MemberRow({
   isExpanded,
   onToggle,
   canGrantModerator,
+  canManageAccounts,
 }: {
   member: Member
   email: string | null
   isExpanded: boolean
   onToggle: () => void
   canGrantModerator: boolean
+  canManageAccounts: boolean
 }) {
   const [isPending, startTransition] = useTransition()
   const [editMode, setEditMode] = useState(false)
@@ -157,11 +164,18 @@ function MemberRow({
 
   const initials = getInitials(m.display_name)
 
+  // Every handler catches (SCAN-755): React rethrows an error from an async transition to the
+  // nearest boundary, and app/(main)/admin/error.tsx replaced the whole page on one Unauthorized or
+  // one duplicate handle. The status line is where the refusal belongs.
   function handleRoleChange(role: string) {
     startTransition(async () => {
-      await assignRole(m.id, role as CommunityRole)
-      setStatus(`Role changed to ${role}`)
-      setTimeout(() => setStatus(null), 2000)
+      try {
+        await assignRole(m.id, role as CommunityRole)
+        setStatus(`Role changed to ${role}`)
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 3000)
     })
   }
 
@@ -191,17 +205,25 @@ function MemberRow({
 
   function handleDeactivate() {
     startTransition(async () => {
-      await deactivateMember(m.id)
-      setStatus('Member deactivated')
-      setTimeout(() => setStatus(null), 2000)
+      try {
+        await deactivateMember(m.id)
+        setStatus('Member deactivated')
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 3000)
     })
   }
 
   function handleReactivate() {
     startTransition(async () => {
-      await reactivateMember(m.id)
-      setStatus('Member reactivated')
-      setTimeout(() => setStatus(null), 2000)
+      try {
+        await reactivateMember(m.id)
+        setStatus('Member reactivated')
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 3000)
     })
   }
 
@@ -220,10 +242,15 @@ function MemberRow({
 
   function handleProfileSave(fd: FormData) {
     startTransition(async () => {
-      await updateMemberProfile(m.id, fd)
-      setEditMode(false)
-      setStatus('Profile updated')
-      setTimeout(() => setStatus(null), 2000)
+      try {
+        await updateMemberProfile(m.id, fd)
+        // The form stays open on a refusal (a duplicate handle, a non-https avatar) so it can be fixed.
+        setEditMode(false)
+        setStatus('Profile updated')
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 3000)
     })
   }
 
@@ -364,13 +391,15 @@ function MemberRow({
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setEditMode(!editMode)}
-            >
-              <Pencil className="w-3 h-3" /> Edit profile
-            </Button>
+            {canManageAccounts && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditMode(!editMode)}
+              >
+                <Pencil className="w-3 h-3" /> Edit profile
+              </Button>
+            )}
             {/* Spotlight page (opt-in public mini-site) — off for everyone by
                 default, flipped on here per member to let them set theirs up. */}
             {!m.is_system && (
@@ -414,7 +443,7 @@ function MemberRow({
             )}
             {/* No sign-in link or delete for the system voice: she has no auth user,
                 and deleteUserAccount guards her server-side anyway (ADR-231). */}
-            {!m.is_system && (
+            {canManageAccounts && !m.is_system && (
               <Button
                 variant="secondary"
                 size="sm"
@@ -424,7 +453,7 @@ function MemberRow({
                 <Mail className="w-3 h-3" /> Send sign-in link
               </Button>
             )}
-            {m.is_active ? (
+            {!canManageAccounts ? null : m.is_active ? (
               <Button variant="warningOutline" size="sm" onClick={handleDeactivate} disabled={isPending}>
                 <UserX className="w-3 h-3" /> Deactivate
               </Button>
@@ -433,7 +462,7 @@ function MemberRow({
                 <UserCheck className="w-3 h-3" /> Reactivate
               </Button>
             )}
-            {m.is_system ? null : !confirmDelete ? (
+            {m.is_system || !canManageAccounts ? null : !confirmDelete ? (
               <Button variant="dangerOutline" size="sm" onClick={() => setConfirmDelete(true)}>
                 <Trash2 className="w-3 h-3" /> Delete account
               </Button>

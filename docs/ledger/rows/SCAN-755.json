@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-755",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const rd=(p)=>{if(!fs.existsSync(p)){console.error(\"indeterminate: missing \"+p);process.exit(79)}return fs.readFileSync(p,\"utf8\")};const t=rd(\"app/(main)/admin/members/member-admin.tsx\");const fn=(n)=>{const i=t.indexOf(\"function \"+n+\"(\");if(i<0)return null;const j=t.indexOf(\"\\n  function \",i+10);return t.slice(i,j<0?t.length:j)};const bare=[\"handleRoleChange\",\"handleDeactivate\",\"handleReactivate\",\"handleProfileSave\"].filter((n)=>{const s=fn(n);return s&&!/try\\s*\\{/.test(s)});const noFlag=!/canManageAccounts/.test(t);if(bare.length||noFlag){console.error(\"SCAN-755: \"+(noFlag?\"member rows render janitor-only buttons for every admitted staffer (no canManageAccounts flag)\":\"\")+(bare.length?(noFlag?\"; \":\"\")+bare.join(\", \")+\" call their action with no try/catch so an Unauthorized throw replaces the admin page\":\"\")+\".\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nmembers page passes canManageAccounts (web_role janitor); member rows render edit, sign-in link, deactivate and delete only then; the four handlers catch and show the error; profile save closes only on success."
+  }
+}

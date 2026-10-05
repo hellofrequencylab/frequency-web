@@ -117,11 +117,16 @@ async function MembersTab() {
     getStaffMember().catch(() => null),
   ])
   const canGrantModerator = !!caller && (isJanitor(caller.webRole) || staff?.role === 'owner')
+  // Account actions (edit profile, sign-in link, deactivate, delete) require web_role janitor on the
+  // server. Support and Operations staff are admitted to this page for member assist (ADR-223) and
+  // used to see every button, each of which threw Unauthorized into the admin error boundary
+  // (SCAN-755). The server gates are unchanged; this only decides what renders.
+  const canManageAccounts = !!caller && isJanitor(caller.webRole)
 
   return (
     <>
       <p className="mb-4 text-body-sm text-muted">{allMembers.filter((m) => !m.is_system).length} total members</p>
-      <MemberAdmin members={allMembers} emailMap={emailMap} canGrantModerator={canGrantModerator} />
+      <MemberAdmin members={allMembers} emailMap={emailMap} canGrantModerator={canGrantModerator} canManageAccounts={canManageAccounts} />
     </>
   )
 }
