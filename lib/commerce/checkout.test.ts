@@ -145,7 +145,11 @@ vi.mock('./journey-fulfilment', () => ({
   revokeJourneyByOrder: vi.fn(async () => {}),
 }))
 vi.mock('@/lib/journeys/tier-gate', () => tierGate)
-vi.mock('./order-receipt', () => ({ sendOrderReceipts: vi.fn(async () => {}) }))
+const receipts = vi.hoisted(() => ({
+  sendOrderReceipts: vi.fn(async () => {}),
+  sendSoldOutRefundNotice: vi.fn(async () => {}),
+}))
+vi.mock('./order-receipt', () => receipts)
 
 import {
   createCommerceCheckout,
@@ -649,6 +653,30 @@ describe('recordCommerceOrderFromSession — persists Stripe shipping (LIVE-346)
       stripe_payment_intent_id: 'pi_1',
     })
   })
+
+  it('a DB refusal on the paid flip THROWS so the webhook releases its claim and Stripe redelivers (SCAN-764)', async () => {
+    // Before: the error was never read, zero rows looked like a redelivery, the route acked 200
+    // and the paid order stayed pending forever. No stock, ledger or fulfilment work may run on
+    // a flip that failed.
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') {
+        return { data: null, error: { message: 'terminating connection' } }
+      }
+      return {}
+    })
+
+    await expect(
+      recordCommerceOrderFromSession({
+        id: 'cs_1',
+        metadata: { kind: 'commerce_order' },
+        payment_status: 'paid',
+        payment_intent: 'pi_1',
+      } as unknown as Stripe.Checkout.Session),
+    ).rejects.toThrow(/settle flip failed/)
+    expect(state.calls.filter((c) => c.op === 'rpc')).toHaveLength(0)
+    expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
+    expect(booking.confirmBookingByOrder).not.toHaveBeenCalled()
+  })
 })
 
 // ── THE GUEST DOOR (LIVE-396) ────────────────────────────────────────────────────────────────────
@@ -776,5 +804,147 @@ describe('createCommerceCheckout — the guest door (LIVE-396)', () => {
     const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Stripe.Checkout.SessionCreateParams
     expect(args.success_url).toMatch(/^https:\/\/app\.test\/sign-in\?next=/)
     expect(args.success_url).toContain('email=sam%40example.com')
+  })
+})
+
+// ── SOLD OUT (SCAN-713) ──────────────────────────────────────────────────────────────────────────
+// A plain (variant-less) tracked product had no stock check before the charge: the only gates were
+// `status = active` and the variant arm, so a buyer on the hour-stale store page could pay for the
+// last tee after it sold, and the settle's decrement found out with the money taken and only logged
+// it. Two locks: the checkout refuses a cart its stock cannot cover, and the settle refunds the
+// buyer who lost the race instead of leaving them a paid order with nothing to ship.
+describe('createCommerceCheckout — a plain tracked product is checked against its stock before the charge (SCAN-713)', () => {
+  function productHandler(stock: number | null) {
+    state.setHandler((c) => {
+      if (c.table === 'commerce_products') return { data: [{ ...PRODUCT, stock }] }
+      if (c.table === 'commerce_orders' && c.op === 'insert') return { data: { id: 'o1' } }
+      if (c.table === 'commerce_order_items' && c.op === 'insert') return { data: [] }
+      if (c.table === 'commerce_orders' && c.op === 'update') return { data: [{ id: 'o1' }] }
+      return {}
+    })
+  }
+
+  it('refuses a sold-out product and writes nothing', async () => {
+    productHandler(0)
+    const res = await createCommerceCheckout({ buyerProfileId: 'buyer-1', items: [{ productId: 'p1', qty: 1 }] })
+    expect(res).toEqual({ error: 'This item is sold out.' })
+    expect(firstCall((c) => c.table === 'commerce_orders')).toBeUndefined()
+    expect(stripeFake.checkout.sessions.create).not.toHaveBeenCalled()
+  })
+
+  it('refuses a quantity above the stock, naming what is left', async () => {
+    productHandler(1)
+    const res = await createCommerceCheckout({ buyerProfileId: 'buyer-1', items: [{ productId: 'p1', qty: 2 }] })
+    expect(res).toEqual({ error: 'Only 1 left of this item.' })
+    expect(firstCall((c) => c.table === 'commerce_orders')).toBeUndefined()
+  })
+
+  it('sums the lines of one product: two lines of one each cannot buy a single unit', async () => {
+    productHandler(1)
+    const res = await createCommerceCheckout({
+      buyerProfileId: 'buyer-1',
+      items: [
+        { productId: 'p1', qty: 1 },
+        { productId: 'p1', qty: 1 },
+      ],
+    })
+    expect(res).toEqual({ error: 'Only 1 left of this item.' })
+    expect(firstCall((c) => c.table === 'commerce_orders')).toBeUndefined()
+  })
+
+  it('an untracked product (stock null) stays unlimited and the order is written', async () => {
+    productHandler(null)
+    const res = await createCommerceCheckout({ buyerProfileId: 'buyer-1', items: [{ productId: 'p1', qty: 50 }] })
+    expect(res.error).toBeUndefined()
+    expect(firstCall((c) => c.table === 'commerce_orders' && c.op === 'insert')).toBeDefined()
+  })
+})
+
+describe('recordCommerceOrderFromSession — the buyer who loses the stock race is refunded, not logged (SCAN-713)', () => {
+  const PAID_ROW = {
+    id: 'o1',
+    owner_kind: 'platform',
+    owner_profile_id: null,
+    owner_space_id: null,
+    entity_id: 'ent-1',
+    amount_cents: 1000,
+    platform_fee_cents: 0,
+    buyer_profile_id: 'buyer-1',
+    currency: 'usd',
+    funds_flow: 'destination',
+  }
+  const SESSION = {
+    id: 'cs_1',
+    metadata: { kind: 'commerce_order' },
+    payment_status: 'paid',
+    payment_intent: 'pi_1',
+    customer_details: { email: 'buyer@example.com' },
+  } as unknown as Stripe.Checkout.Session
+
+  function settleHandler(decrementError: { message: string; code?: string } | null) {
+    state.setHandler((c) => {
+      // The paid flip (guarded on status = pending), then the refund's own status flip.
+      if (c.table === 'commerce_orders' && c.op === 'update') {
+        return { data: [hasFilter(c, 'eq', 'status', 'pending') ? PAID_ROW : { ...PAID_ROW, metadata: null }] }
+      }
+      // refundCommerceOrder reads the order it is about to refund.
+      if (c.table === 'commerce_orders' && c.op === 'select' && hasFilter(c, 'eq', 'id', 'o1')) {
+        return {
+          data: {
+            id: 'o1',
+            owner_kind: 'platform',
+            funds_flow: 'destination',
+            status: 'paid',
+            amount_cents: 1000,
+            stripe_payment_intent_id: 'pi_1',
+            refunded_at: null,
+          },
+        }
+      }
+      if (c.table === 'rpc:decrement_commerce_stock_atomic' && decrementError) return { error: decrementError }
+      return {}
+    })
+  }
+
+  it('out_of_stock at the decrement issues the full refund, tells the buyer, and sends no sale receipt', async () => {
+    settleHandler({ message: 'out_of_stock', code: 'P0001' })
+    await recordCommerceOrderFromSession(SESSION)
+
+    // The refund went to Stripe for this order's charge.
+    expect(stripeFake.refunds.create).toHaveBeenCalledTimes(1)
+    expect(stripeFake.refunds.create.mock.calls[0][0]).toMatchObject({ payment_intent: 'pi_1' })
+    // The order reads refunded, not paid-with-nothing-to-ship.
+    const flips = state.calls.filter((c) => c.table === 'commerce_orders' && c.op === 'update')
+    expect(flips.some((c) => (c.payload as { status?: string }).status === 'refunded')).toBe(true)
+    // The buyer hears "refunded", never "paid".
+    expect(receipts.sendSoldOutRefundNotice).toHaveBeenCalledTimes(1)
+    expect(receipts.sendSoldOutRefundNotice.mock.calls[0][0]).toMatchObject({
+      id: 'o1',
+      buyerProfileId: 'buyer-1',
+      amountCents: 1000,
+      buyerEmail: 'buyer@example.com',
+    })
+    expect(receipts.sendOrderReceipts).not.toHaveBeenCalled()
+    // Nothing is granted for goods that will not ship.
+    expect(booking.confirmBookingByOrder).not.toHaveBeenCalled()
+    // The ledger carries both halves, so it nets to zero rather than showing a lone reversal.
+    const keys = ledger.recordFinancialTransaction.mock.calls.map((c) => (c[0] as { idempotencyKey: string }).idempotencyKey)
+    expect(keys).toEqual(expect.arrayContaining(['commerce_order:o1', 'commerce_order-refund:o1']))
+  })
+
+  it('any other decrement error stays fail-soft: no refund, the sale stands and the receipts go out', async () => {
+    settleHandler({ message: 'deadlock detected' })
+    await recordCommerceOrderFromSession(SESSION)
+    expect(stripeFake.refunds.create).not.toHaveBeenCalled()
+    expect(receipts.sendSoldOutRefundNotice).not.toHaveBeenCalled()
+    expect(receipts.sendOrderReceipts).toHaveBeenCalledTimes(1)
+    expect(booking.confirmBookingByOrder).toHaveBeenCalledWith('o1')
+  })
+
+  it('a clean decrement refunds nobody', async () => {
+    settleHandler(null)
+    await recordCommerceOrderFromSession(SESSION)
+    expect(stripeFake.refunds.create).not.toHaveBeenCalled()
+    expect(receipts.sendOrderReceipts).toHaveBeenCalledTimes(1)
   })
 })

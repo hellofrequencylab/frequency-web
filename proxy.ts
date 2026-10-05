@@ -333,10 +333,16 @@ export async function proxy(request: NextRequest) {
   // twin and redirects there. Only the DETAIL route matches: the index pages and every /manage,
   // /edit and /settings sub-route fall through and stay protected exactly as before.
   const isTwinRedirectable = hasPublicTwin(pathname)
+  // The opt-in "Save contact" card (/people/<handle>/vcard, SCAN-720) is public by the route's
+  // own contract (scripts/authz-route-ledger.json): a stranger who scanned a member's printed QR
+  // is who it exists for, and the route 404s unless the member turned the card on. Anchored so
+  // the profile page itself (/people/<handle>) stays protected.
+  const isPublicVcard = /^\/people\/[^/]+\/vcard$/.test(pathname)
   const isProtected =
     !isShareableFeed &&
     !isPublicEventView &&
     !isTwinRedirectable &&
+    !isPublicVcard &&
     PROTECTED_PATHS.some((p) => pathname.startsWith(p))
 
   if (!user && isProtected) {
@@ -368,8 +374,14 @@ export async function proxy(request: NextRequest) {
   // SCAN-636. A signed-in member on the public event URL keeps RSVP, tickets, and
   // host tools on the existing page. The rewrite is internal: the share URL stays
   // /events/<slug>, and withPath above stamps that path on x-pathname. Crawlers
-  // and signed-out visitors fall through to the ISR body on page.tsx.
-  const eventMemberPath = memberEventRewrite(pathname, !!user)
+  // and signed-out visitors fall through to the ISR body on page.tsx, except a
+  // signed-out organizer on the claim link (?claim=<token>), who needs the member
+  // page's Claim This Event banner (SCAN-799).
+  const eventMemberPath = memberEventRewrite(
+    pathname,
+    !!user,
+    request.nextUrl.searchParams.has('claim'),
+  )
   if (eventMemberPath) {
     const memberUrl = request.nextUrl.clone()
     memberUrl.pathname = eventMemberPath

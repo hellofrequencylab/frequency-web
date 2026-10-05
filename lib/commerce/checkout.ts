@@ -38,7 +38,7 @@ import { reverseSplitTransfers, reverseSplitRefundForPaymentIntent } from './spl
 import { receiptEmailFor } from '@/lib/billing/receipt-address'
 import { commercePaymentMethodParams } from './payment-methods'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
-import { sendOrderReceipts } from './order-receipt'
+import { sendOrderReceipts, sendSoldOutRefundNotice } from './order-receipt'
 import type { CheckoutInput, CommerceVariant, OrderOwnerKind, ServiceConfig } from './types'
 import { SHIP_TO_COUNTRIES, cartNeedsShipping, shippingDetailsFromSession } from './shipping'
 
@@ -243,6 +243,9 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     unitCents: number
     title: string
   }[] = []
+  // SCAN-713: the quantity of each PLAIN (variant-less) product this cart asks for, summed across
+  // its lines, so two lines for one tee cannot each pass a check the pair would fail.
+  const plainQtyByProduct = new Map<string, number>()
   for (const it of input.items) {
     const p = products.find((x) => x.id === it.productId)!
     const qty = Math.max(1, Math.floor(it.qty))
@@ -254,6 +257,18 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       }
       const available = effectiveVariantStock(variant)
       if (available != null && available < qty) return { error: 'That option is out of stock.' }
+    } else if (p.stock != null) {
+      // THE PLAIN-PRODUCT TWIN OF THE VARIANT CHECK ABOVE (SCAN-713). Until this arm the only gate on
+      // a tracked product with no variant was `status = active`, so a buyer on the store page (ISR,
+      // up to an hour stale) could be charged for the last tee after it sold, and the settle below
+      // found out at decrement time with the money already taken. Refusing here costs nothing. Like
+      // the variant check it is a PRE-CHECK, not a hold: two buyers a millisecond apart can both pass
+      // it, and that race is the settle's to handle (the refund arm in recordCommerceOrderFromSession).
+      const wanted = (plainQtyByProduct.get(p.id) ?? 0) + qty
+      plainQtyByProduct.set(p.id, wanted)
+      if (p.stock < wanted) {
+        return { error: p.stock <= 0 ? 'This item is sold out.' : `Only ${p.stock} left of this item.` }
+      }
     }
     const unitCents = variant ? effectiveVariantPriceCents({ priceCents: p.price_cents }, variant) : p.price_cents
     lines.push({ product: p, variant, qty, unitCents, title: variant ? `${p.title} (${variant.name})` : p.title })
@@ -606,7 +621,7 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   // pending value alone when Stripe collected nothing (an intangible cart, or a miss).
   const collectedShipping = shippingDetailsFromSession(session)
 
-  const { data: updated } = await db()
+  const { data: updated, error } = await db()
     .from('commerce_orders')
     .update({
       status: 'paid',
@@ -622,6 +637,14 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // ONE LITERAL, not a concatenation: the generated PostgREST types parse this string, and a built
     // one widens to `string` and types the result as GenericStringError[].
     .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency, funds_flow')
+  // SCAN-764: the paid flip is NOT best-effort. A DB refusal used to read as "zero rows flipped",
+  // indistinguishable from a redelivery, so the webhook acked 200 with its claim kept and the order
+  // stayed `pending` forever: money taken, nothing fulfilled, no seller payout, no retry. Throwing
+  // hands the error to the Stripe route, which releases the claim and 500s so Stripe redelivers;
+  // the on-page backstops catch it (never fatal to the buyer). Safe because the update is guarded
+  // on `status = 'pending'`, so the redelivery flips exactly once. The side effects below stay
+  // fail-soft: by then the money has moved and the row is paid.
+  if (error) throw new Error(`[commerce] settle flip failed (session=${session.id}): ${error.message}`)
   const rows = (updated ?? []) as {
     id: string
     owner_kind: OrderOwnerKind
@@ -648,12 +671,42 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // order's quantities, and is idempotent per order (a retried/concurrent settle
     // no-ops). Untracked products (stock null) are skipped and stay unlimited.
     const { error: stockError } = await db().rpc('decrement_commerce_stock_atomic', { _order: row.id })
+    // SCAN-713: set when the goods are gone and the buyer got their money back, so the arms below
+    // neither grant what cannot ship nor send a receipt for a sale that was unwound.
+    let refundedSoldOut = false
     if (stockError) {
-      // The order is already paid + settled; the RPC raises typed P0001 'out_of_stock'
-      // only when stock raced below the sold quantity. We fail SOFT (log, do not throw)
-      // so the ledger record + paid flip are never blocked. Operators reconcile oversell
-      // out of band; idempotency means a webhook retry re-runs safely once stock is fixed.
-      console.error('[commerce] stock decrement failed', { orderId: row.id, error: stockError.message })
+      // The order is already paid + settled, and the RPC raises typed P0001 'out_of_stock' ONLY
+      // when stock raced below the sold quantity (both buyers passed the pre-check in
+      // createCommerceCheckout; the lock here decided who lost). That buyer holds a paid order
+      // with NOTHING TO SHIP, so the refund is the only honest answer and it is issued through the
+      // same full-refund path an operator would use (refundCommerceOrder: Stripe, the status flip,
+      // the ledger reversal; the stock restore no-ops because nothing was decremented). This
+      // differs on purpose from the ticket settle, which HONOURS an over-capacity seat: a host can
+      // add a chair, a seller cannot ship a tee they do not have. Any OTHER decrement error (a
+      // deadlock, a dropped connection) says nothing about stock, so it stays fail-soft: log, and
+      // the idempotent RPC re-runs on the next webhook delivery. Never throws: the money has moved.
+      const outOfStock = /out_of_stock/i.test(stockError.message)
+      if (outOfStock) {
+        const refund = await refundCommerceOrder(row.id)
+        if (refund.ok) {
+          refundedSoldOut = true
+          console.error('[commerce] order sold out at settle; the buyer was refunded', { orderId: row.id })
+          await sendSoldOutRefundNotice({
+            id: row.id,
+            buyerProfileId: row.buyer_profile_id,
+            amountCents: row.amount_cents,
+            currency: row.currency,
+            buyerEmail: session.customer_details?.email ?? null,
+          }).catch(() => {})
+        } else {
+          console.error('[commerce] order sold out at settle and the refund FAILED; a paid order has nothing to ship', {
+            orderId: row.id,
+            error: refund.error,
+          })
+        }
+      } else {
+        console.error('[commerce] stock decrement failed', { orderId: row.id, error: stockError.message })
+      }
     }
 
     const revenue = row.owner_kind === 'platform' ? row.amount_cents : row.platform_fee_cents
@@ -668,6 +721,10 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
       sourceId: row.id,
       idempotencyKey: `commerce_order:${row.id}`,
     }).catch(() => {})
+
+    // A sold-out order was refunded above (SCAN-713): the revenue row stays so the ledger nets to
+    // zero against the reversal the refund wrote, but nothing is granted and no sale receipt goes out.
+    if (refundedSoldOut) continue
 
     // Bookable services (Phase 4, ADR-596): if this order paid the deposit on a held booking, confirm
     // it. No-op / fail-soft for a normal product order (no linked booking) and pre-migration.
