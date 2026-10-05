@@ -126,9 +126,9 @@
     },
     "app/auth/signout/route.ts": {
       "verdict": "self-scoped",
-      "reason": "Signs out whatever session the request carries and clears the impersonation cookie. There is no other principal it could act on, and it is POST-only so a prefetched GET cannot trigger it.",
-      "checked": "2026-08-17",
-      "digest": "613bb35db77f49f1"
+      "reason": "Signs out whatever session the request carries and clears the impersonation cookie. There is no other principal it could act on, and it is POST-only so a prefetched GET cannot trigger it. RE-READ 2026-10-05 (SCAN-746): the route now reads the httpOnly act-as stash BEFORE signing out and, when one is present, signs the borrowed member session out with scope local, restores the janitor's own stashed session from that cookie and signs it out locally too; a plain sign-out keeps the global scope it always had. No new read of caller input and no new principal: the only tokens it touches are the ones the request itself carries (the active session cookie and the stash the same browser set), and the redirect target is unchanged. Verdict unchanged.",
+      "checked": "2026-10-05",
+      "digest": "31a2f0dbd387c674"
     },
     "app/dev/og-root-card/route.tsx": {
       "verdict": "public",
