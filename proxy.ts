@@ -423,6 +423,12 @@ export const config = {
     // path, and set the account and consent marker cookies on JSON responses an app never stores.
     // The route establishes its own caller (lib/contract/caller.ts); a web caller's cookie session
     // is read and refreshed there by the server client, which may write cookies in a route handler.
-    '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    //
+    // `sw.js`, `offline.html` and `manifest.json` (HYG-162, ADR-1704) are the PWA files in public/.
+    // The service worker fetches the first two on every page the worker is active on, so each was
+    // about 1,400 proxy invocations a day on the preview deployments alone, every one of them a
+    // billed middleware event that did a Supabase session read for a file no one is signed in to.
+    // Same test as the crawler files: never a human's landing page, never tenanted, never behind auth.
+    '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|sw\\.js$|offline\\.html$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
