@@ -3,7 +3,7 @@ import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
-import { getPublishedData } from '@/lib/page-editor/data'
+import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
@@ -114,7 +114,8 @@ const EMPTY: Data = { content: [], root: {} }
 // here fails the build. New marketing structure on this page belongs in a BLOCK
 // (lib/page-editor/config.tsx).
 export default async function TheCommunityPage() {
-  const published = await getPublishedData('the-community')
+  const page = await getPublishedPage('the-community')
+  const published = page?.doc ?? null
   const template = getTemplate('the-community')
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
   const live = await getLiveData(createAdminClient()).catch(() => null)
@@ -123,7 +124,7 @@ export default async function TheCommunityPage() {
       {/* Breadcrumb is DERIVED from the route, not from copy, so it is emitted here rather than
           by any block. Everything editorial (Article, FAQPage) travels with the document. */}
       <JsonLd data={breadcrumbSchema([{ name: 'The Community', path: '/the-community' }])} />
-      <BlockDocJsonLd data={data} path="/the-community" published={PUBLISHED} updated={UPDATED} />
+      <BlockDocJsonLd data={data} path="/the-community" published={PUBLISHED} updated={latestDay(UPDATED, page?.published_at)} />
       <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
     </>
   )

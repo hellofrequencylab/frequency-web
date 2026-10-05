@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-789",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/jsonld.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-789: \"+f+\" missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");if(/validFrom:\\s*startIso\\s*\\?\\?\\s*event\\.starts_at/.test(s)){console.error(\"SCAN-789: eventSchema still sets offers.validFrom to the event start, so every priced event tells crawlers its tickets go on sale only when the event begins.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: eventSchema in lib/jsonld.ts no longer publishes Offer.validFrom (it meant the event start, not the sale-open moment); the comment explains why and lib/jsonld.test.ts asserts validFrom is undefined. The SCAN-207 pairing test was replaced by that assertion."
+  }
+}

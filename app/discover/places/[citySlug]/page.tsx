@@ -66,7 +66,7 @@ export async function generateMetadata({
     alternates: { canonical },
     // An empty place 404s, but guard the index signal anyway: a hub with nothing
     // live should never be advertised as a landing page.
-    robots: hub ? undefined : { index: false, follow: true },
+    ...(hub ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       ...OG_SITE,
       images: ROOT_OG_IMAGES,

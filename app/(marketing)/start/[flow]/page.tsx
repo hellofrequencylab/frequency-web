@@ -23,6 +23,11 @@ export async function generateMetadata({ params }: { params: Promise<{ flow: str
   return {
     title: lf.splash.headline,
     description: lf.splash.body,
+    // A campaign splash (QR, IG bio, partner button) is shared directly with an audience, not a
+    // public crawl target: indexed, it is a thin page titled with its slogan competing with /start.
+    // Noindex, follow, matching the /join/<slug> funnel splash. The self canonical stays: pointing
+    // it at /start alongside noindex would send crawlers mixed signals (SCAN-803).
+    robots: { index: false, follow: true },
     alternates: { canonical: `/start/${flow}` },
     openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: lf.splash.headline, description: lf.splash.body, url: `/start/${flow}` },
     // Metadata merges per top-level key: omitting `twitter` inherits the ROOT block, so a lead

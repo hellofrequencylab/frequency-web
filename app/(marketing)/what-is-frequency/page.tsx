@@ -8,7 +8,7 @@ import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
-import { getPublishedData } from '@/lib/page-editor/data'
+import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
@@ -99,7 +99,8 @@ const EMPTY: Data = { content: [], root: {} }
 // `what-is-frequency 0` and `check:render-path` matches it EXACTLY. New structure on this page
 // belongs in a BLOCK (lib/page-editor/config.tsx), or in the spec.
 export default async function WhatIsFrequencyPage() {
-  const published = await getPublishedData(SLUG)
+  const page = await getPublishedPage(SLUG)
+  const published = page?.doc ?? null
   const template = getTemplate(SLUG)
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
   return (
@@ -111,7 +112,7 @@ export default async function WhatIsFrequencyPage() {
         title={TITLE}
         description={DESCRIPTION}
         published={PUBLISHED}
-        updated={UPDATED}
+        updated={latestDay(UPDATED, page?.published_at)}
         image={HERO_IMAGE}
       />
       <BlockRender config={config} data={data} />

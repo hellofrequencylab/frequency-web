@@ -59,7 +59,7 @@ export async function generateMetadata({
     alternates: { canonical },
     // Below-threshold cities 404, but guard the index signal too: a city without
     // a resolved hub must never be advertised as an indexable landing page.
-    robots: hub ? undefined : { index: false, follow: true },
+    ...(hub ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       ...OG_SITE,
       title: `${title} · ${SITE_NAME}`,

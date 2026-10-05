@@ -46,7 +46,7 @@ import { MISSION_FRAMING, PLAN_STORY, paidWalls } from '@/lib/pricing/pricing-pa
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
-import { getPublishedData } from '@/lib/page-editor/data'
+import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
 import { isWellFormed } from '@/lib/page-editor/templates'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -117,6 +117,9 @@ function ladderSentence(offerings: Offering[]): string {
     .join(', ')
 }
 
+// Shared with the Article headline on the published branch so the two cannot drift (SCAN-802).
+const TITLE = 'Pricing: your own people are always free'
+
 export async function generateMetadata(): Promise<Metadata> {
   const input = await pricingInput()
   const ladder = ladderCompact(spaceOfferings(input))
@@ -133,7 +136,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // it in words costs nothing and keeps the rule absolute rather than carved with an exception.
   const description = `People join free. Businesses host free. You pay when you start charging, and never on your own people. ${ladder}.`
   return {
-    title: 'Pricing: your own people are always free',
+    title: TITLE,
     description,
     alternates: { canonical: '/pricing' },
     openGraph: {
@@ -249,6 +252,11 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
   ]
 }
 
+// Article dates (SCAN-781). datePublished is the day this route first shipped (repository history:
+// 2026-06-02). The Article is only emitted on the published branch, where the pages row always
+// carries a real published_at, so dateModified is that day and no UPDATED literal is needed.
+const PUBLISHED = '2026-06-02'
+
 export default async function PricingPage() {
   // ── OPERATOR-PUBLISHED CONTENT WINS (owner directive, ADR-916) ─────────────────────────────
   //
@@ -266,11 +274,12 @@ export default async function PricingPage() {
   // has published silently downgrades /pricing from live figures to a snapshot. So there are two
   // rungs, not three, and the ordering says exactly what it means: a human's published words beat the
   // generated page, and nothing else does.
-  const [input, published, live] = await Promise.all([
+  const [input, page, live] = await Promise.all([
     pricingInput(),
-    getPublishedData('pricing'),
+    getPublishedPage('pricing'),
     getLiveData(createAdminClient()).catch(() => null),
   ])
+  const published = page?.doc ?? null
   const members = memberOfferings(input)
   const spaces = spaceOfferings(input)
 
@@ -322,7 +331,13 @@ export default async function PricingPage() {
             ⚠️ The FAQPage schema is deliberately NOT carried over: it is generated from the coded
             page's own FAQ copy, and asserting those answers over a body an operator has rewritten
             would publish text no visitor can see. The published document carries its own. */}
-        <BlockDocJsonLd data={published} path="/pricing" />
+        <BlockDocJsonLd
+          data={published}
+          path="/pricing"
+          title={TITLE}
+          published={PUBLISHED}
+          updated={latestDay(PUBLISHED, page?.published_at)}
+        />
         <BlockRender config={config} data={published} metadata={live ? { live } : {}} />
       </>
     )
