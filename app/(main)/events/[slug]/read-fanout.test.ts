@@ -114,3 +114,35 @@ describe('the gates the reads feed did not move', () => {
     expect(body).toContain('const extra: ExtraMeta = event')
   })
 })
+
+// A STAFF-REMOVED EVENT 404s FOR EVERYONE BUT A MANAGER (SCAN-699).
+//
+// reportRemoveEvent (lib/events/event-drafts.ts) stamps removed_at and flips is_cancelled but
+// leaves status published and visibility untouched. Until 2026-10-05 this page neither selected
+// removed_at nor gated on it, so a removed spam or abusive public event passed the draft gate and
+// the visibility gate and rendered in full, under a Cancelled chip, for every signed-in member
+// who followed the shared link (lib/nav/member-event-rewrite.ts sends them all here). Anonymous
+// readers already got a 404 from the public_events RPC and a blank OG card.
+describe('a staff-removed event does not render for members', () => {
+  it('the one events select carries removed_at', () => {
+    const merged = selectStrings(body).map(columnsOf).find((cols) => cols.includes('slug') && cols.includes('title'))
+    expect(merged, 'the header select is gone or is no longer a single-quoted literal').toBeDefined()
+    expect(merged).toContain('removed_at')
+  })
+
+  it('the removal guard sits with the draft guard, before any gate that could let it through', () => {
+    const draft = body.indexOf("if ((extra?.status ?? 'published') !== 'published' && !canManage) notFound()")
+    const removal = body.indexOf('if (extra?.removed_at && !canManage) notFound()')
+    const visibility = body.indexOf("if (vis === 'private') notFound()")
+    expect(draft).toBeGreaterThan(-1)
+    expect(removal).toBeGreaterThan(draft)
+    expect(visibility).toBeGreaterThan(removal)
+  })
+
+  it('generateMetadata reads removed_at too and gives a removed event a noindexed not-found head', () => {
+    const meta = page.slice(0, bodyStart)
+    expect(meta).toMatch(/\.select\(\s*`[^`]*\bremoved_at\b[^`]*`/)
+    expect(meta).toContain("if ((ev as { removed_at?: string | null }).removed_at) {")
+    expect(meta).toContain("return { title: 'Event not found', robots: { index: false, follow: false } }")
+  })
+})

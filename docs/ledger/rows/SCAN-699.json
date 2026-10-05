@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-699",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/events/[slug]/event-member-page.tsx\";if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(f,\"utf8\");const selected=/\\.select\\(\\s*[\\x27\"][^\\x27\"]*\\bremoved_at\\b[^\\x27\"]*[\\x27\"]/.test(s);const gated=/if\\s*\\([^)]*removed_at[^)]*\\)\\s*notFound\\(\\)/.test(s);if(!selected||!gated){console.error(\"SCAN-699: the member event page still neither selects removed_at nor gates on it, so a staff-removed event renders in full for every signed-in member.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe member event page read the events row with the admin client through a select that omitted removed_at and had no removal gate, so a public event staff had removed for spam or abuse (reportRemoveEvent stamps removed_at and is_cancelled but leaves status published and visibility untouched) passed the draft and visibility gates and rendered in full under a Cancelled chip for every signed-in member who followed the link, while anonymous readers already got a 404 and a blank OG card. Fix in app/(main)/events/[slug]/event-member-page.tsx: removed_at is now on the one single-quoted events select and on ExtraMeta, and 'if (extra?.removed_at && !canManage) notFound()' sits next to the draft guard, so only a manager (host or staff) can still open a removed event; generateMetadata also reads removed_at and returns an 'Event not found' noindexed head for one. Pinned by a new describe in app/(main)/events/[slug]/read-fanout.test.ts that reads the select, the gate order (draft, removal, visibility) and the metadata branch; read-fanout, claim-wiring and check-event-hero-parity all pass."
+  }
+}

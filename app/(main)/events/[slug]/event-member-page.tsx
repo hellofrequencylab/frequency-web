@@ -196,11 +196,15 @@ export async function generateMetadata({
     // The three recurrence columns ride along on the read generateMetadata already does, so the
     // series robots rules cost this page ZERO extra round trips for a one-off (see seriesSeoFacts).
     .select(
-      `id, title, description, starts_at, ends_at, visibility, status, is_cancelled, ${SERIES_COLUMNS}`,
+      `id, title, description, starts_at, ends_at, visibility, status, is_cancelled, removed_at, ${SERIES_COLUMNS}`,
     )
     .eq('slug', slug)
     .maybeSingle()
   if (!ev) return { title: 'Event not found' }
+  // A staff-removed event 404s in the body (SCAN-699); its head must not leak the title either.
+  if ((ev as { removed_at?: string | null }).removed_at) {
+    return { title: 'Event not found', robots: { index: false, follow: false } }
+  }
   const event = ev as {
     id: string
     title: string
@@ -210,6 +214,7 @@ export async function generateMetadata({
     visibility: string | null
     status: string | null
     is_cancelled: boolean | null
+    removed_at: string | null
     recurrence_type: string | null
     recurrence_until: string | null
     parent_event_id: string | null
@@ -332,6 +337,9 @@ export default async function EventDetailPage({
     attendance_mode: AttendanceMode | null
     online_url: string | null
     status: string | null
+    /** Stamped by staff removal (reportRemoveEvent, spam / abuse). Set means the event is gone for
+     *  everyone but a manager, whatever `status` and `visibility` still say. */
+    removed_at?: string | null
     // Structured venue address (feeds the Maps deep link; coarser fields omitted).
     venue_name: string | null
     street: string | null
@@ -374,7 +382,7 @@ export default async function EventDetailPage({
   const { data: rawEvent } = await admin
     .from('events')
     .select(
-      'id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency, visibility, scope_id, scope_type, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval, host:profiles!host_id ( id, display_name, handle, avatar_url )',
+      'id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency, visibility, scope_id, scope_type, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval, removed_at, host:profiles!host_id ( id, display_name, handle, avatar_url )',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -477,6 +485,14 @@ export default async function EventDetailPage({
   // public slug. The admin read above bypasses RLS, so re-apply the status gate the
   // migration assumes server reads carry — only a manager may preview a draft.
   if ((extra?.status ?? 'published') !== 'published' && !canManage) notFound()
+
+  // Removal guard (SCAN-699): staff removal (reportRemoveEvent) stamps removed_at and flips
+  // is_cancelled but leaves status published and visibility untouched, so without this line a
+  // removed spam or abusive event passed every gate below and rendered in full under a Cancelled
+  // chip for every signed-in member who followed its link. Every other reader (public_events RPC,
+  // the OG card, the calendar store, the .ics feeds) already filters removed_at; this is the one
+  // that did not. A manager may still open it, the same allowance the draft guard makes.
+  if (extra?.removed_at && !canManage) notFound()
 
   // An unclaimed event posted on an organizer's behalf: it has a poster credit, no
   // host, and was never claimed. Drives the "this is not my event / claim it" UI.
