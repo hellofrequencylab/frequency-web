@@ -236,6 +236,23 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   // item with no variantId is unchanged. One Line per cart item feeds gross, the Stripe line items, and
   // the order-item rows so price + variant stay consistent across all three.
   const variantMap = await getVariantsByIds(input.items.map((i) => i.variantId ?? '').filter(Boolean))
+  // A PRODUCT WITH OPTIONS IS BOUGHT AS ONE OF THEM (SCAN-712). The VariantPicker is a client
+  // component and a server action is a public POST, so a line with no variantId on a product that
+  // has active variants used to price at the base price and pass every option's stock check: a
+  // print whose A3 and A2 options were sold out could still be bought at the base price with no
+  // option recorded. One batched read of the active variants on the variant-less products, then
+  // each such line is refused below.
+  const bareIds = [...new Set(input.items.filter((i) => !i.variantId).map((i) => i.productId))]
+  const requiresVariant = new Set<string>()
+  if (bareIds.length) {
+    const { data: activeVariants, error: variantsError } = await db()
+      .from('commerce_variants')
+      .select('product_id')
+      .in('product_id', bareIds)
+      .eq('active', true)
+    if (variantsError) return { error: 'Could not read the options for that item. Try again.' }
+    for (const v of (activeVariants ?? []) as { product_id: string }[]) requiresVariant.add(v.product_id)
+  }
   const lines: {
     product: ProductRow
     variant: CommerceVariant | null
@@ -254,6 +271,8 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       }
       const available = effectiveVariantStock(variant)
       if (available != null && available < qty) return { error: 'That option is out of stock.' }
+    } else if (requiresVariant.has(p.id)) {
+      return { error: 'Pick an option.' }
     }
     const unitCents = variant ? effectiveVariantPriceCents({ priceCents: p.price_cents }, variant) : p.price_cents
     lines.push({ product: p, variant, qty, unitCents, title: variant ? `${p.title} (${variant.name})` : p.title })
