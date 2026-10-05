@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-808",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs = require(\"fs\")\nconst files = [[\"components/spaces/space-card.tsx\", /<img\\s+src=\\{coverUrl\\}[\\s\\S]*?\\/>/, \"Space directory cover\"], [\"components/spaces/brand-anchor.tsx\", /<img\\s+src=\\{logoUrl\\}[\\s\\S]*?\\/>/, \"Space logo chip\"], [\"app/(public)/store/[id]/page.tsx\", /<img\\s+key=\\{i\\}[\\s\\S]*?\\/>/, \"store product gallery photo\"]]\nconst missing = []\nfor (const [f, re, what] of files) {\n  if (!fs.existsSync(f)) { console.error(\"SCAN-808: \" + f + \" is missing\"); process.exit(79) }\n  const s = fs.readFileSync(f, \"utf8\")\n  const m = s.match(re)\n  if (!m) { console.error(\"SCAN-808: could not locate the \" + what + \" img in \" + f); process.exit(79) }\n  if (!/\\bloading=/.test(m[0])) missing.push(what + \" (\" + f + \")\")\n}\nif (missing.length) { console.error(\"SCAN-808: these operator images still load eagerly at full size with no loading attribute, so a directory hub or store page starts every below-the-fold download at once: \" + missing.join(\"; \")); process.exit(1) }\n'",
+      "note": "Fails on main before this change (checked by running the probe before the fix); passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: the Space card cover, the card-size BrandAnchor logo chip and every store gallery photo after the first carry loading=lazy and decoding=async; the profile-header chip and the first product photo stay eager."
+  }
+}

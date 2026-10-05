@@ -34,6 +34,11 @@ const TASK_TYPES = new Set([
   'attendance', 'hosting', 'volunteering', 'content', 'referral', 'other',
 ])
 
+// The most Zaps one circle task may pay (SCAN-687). Host is self-granted (drafting a circle),
+// so a circle task is a host-made reward and its ceiling has to be one a stranger can hold:
+// twenty tasks at the old 9999 cap minted about 200k season Zaps and the top of the leaderboard.
+const CIRCLE_TASK_ZAP_CAP = 100
+
 function revalidateTaskSurfaces() {
   revalidatePath('/crew')
   revalidatePath('/admin/crew-tasks')
@@ -64,14 +69,17 @@ export async function createCircleTask(circleId: string, fd: FormData): Promise<
   if (!name) return { ok: false, error: 'Task name is required.' }
   const rawType = (fd.get('task_type') as string) ?? 'volunteering'
   const taskType = TASK_TYPES.has(rawType) ? rawType : 'volunteering'
-  const zaps = Math.min(9999, Math.max(1, parseInt(fd.get('zaps_value') as string, 10) || 10))
+  const zaps = Math.min(CIRCLE_TASK_ZAP_CAP, Math.max(1, parseInt(fd.get('zaps_value') as string, 10) || 10))
 
+  // Every circle task needs a leader's verification before its Zaps are released (SCAN-687):
+  // the host who made the task is the same person who could claim and complete it, so the
+  // flag is never the caller's to switch off. The form's value is ignored on purpose.
   const { error } = await db().from('crew_tasks').insert({
     name,
     task_type: taskType,
     zaps_value: zaps,
     is_repeatable: false,
-    requires_verification: fd.get('requires_verification') === 'true',
+    requires_verification: true,
     circle_id: circleId,
   })
   if (error) throw new Error(error.message)

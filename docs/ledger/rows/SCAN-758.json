@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-758",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const d=\"supabase/migrations\";if(!fs.existsSync(d+\"/20270325000000_spotlight_guestbook.sql\")){console.error(\"SCAN-758: guestbook migration missing\");process.exit(79)}const all=fs.readdirSync(d).filter(f=>f.endsWith(\".sql\")).map(f=>fs.readFileSync(d+\"/\"+f,\"utf8\").toLowerCase()).join(\"\\n\");const colGrant=/grant\\s+update\\s*\\(\\s*hidden_at\\s*\\)\\s+on\\s+(public\\.)?spotlight_guestbook/.test(all);const guard=/create\\s+(or\\s+replace\\s+)?trigger[^;]*before\\s+update[^;]*on\\s+(public\\.)?spotlight_guestbook/.test(all)&&/signer_profile_id\\s+(is\\s+distinct\\s+from|<>|!=)\\s+old\\.signer_profile_id|old\\.signer_profile_id\\s+(is\\s+distinct\\s+from|<>|!=)\\s+new\\.signer_profile_id/.test(all);if(!colGrant&&!guard){console.error(\"SCAN-758: spotlight_guestbook UPDATE is still table-wide for authenticated, so a page owner can PATCH message and signer_profile_id and publish a note under another member\\u0027s name; no column-limited grant (hidden_at) and no before-update trigger guards the other columns.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nspotlight_guestbook_update is a row policy (owner or staff) and a row policy cannot limit columns, so Supabase's default per-role grant left authenticated with table-wide UPDATE: a page owner could PATCH message and signer_profile_id on a note and the public Spotlight showed text that member never wrote under their name. Added migration 20270345011700_spotlight_guestbook_update_hidden_at_only.sql which revokes UPDATE from anon and authenticated by name (a revoke from public removes nothing, ADR-959) and grants UPDATE (hidden_at) back to authenticated, with an in-transaction has_column_privilege proof both ways; SELECT, INSERT and DELETE are untouched and hide/unhide only ever send hidden_at, while the report path hides through the service role. Annotated the spotlight_guestbook row in scripts/table-grants.txt. Pinned by supabase/tests/spotlight_guestbook_update_columns.test.sql (pgTAP: the privilege state plus an owner seat that flips hidden_at and gets 42501 on message, signer_profile_id and created_at, and a signer seat that updates nothing) and supabase/migrations/spotlight-guestbook-grants.test.ts (vitest: replays every grant and revoke on the table so a later migration cannot hand table-wide UPDATE back). No trigger was added: the optional belt would need a function-grants verdict and the column grant is refused by Postgres before RLS or any trigger runs."
+  }
+}

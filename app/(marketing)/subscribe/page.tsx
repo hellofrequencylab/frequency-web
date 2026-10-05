@@ -5,7 +5,7 @@ import { PageHero, Section, FaqList } from '@/components/marketing/marketing-ui'
 import { SubscribeForm } from '@/components/marketing/subscribe-form'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Get notes from Frequency',
@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/subscribe' },
   openGraph: {
     ...OG_SITE,
+    images: ROOT_OG_IMAGES,
     title: 'Get notes from Frequency',
     description: 'A few notes a month on Circles, practices, and events. Confirm your email and you’re on the list.',
     url: '/subscribe',
