@@ -982,11 +982,14 @@ export async function approveVerification(completionId: string) {
 export async function rejectVerification(completionId: string) {
   await requireCommunityOps()
   const admin = createAdminClient()
+  // SCAN-752: the held marker is verified_at, not verified_by (an auto-verified completion carries
+  // verified_at and no verified_by), so keying on verified_by could delete a completion whose Zaps
+  // were already credited. Same key as the queue in lib/crew/verification-queue.ts.
   const { error } = await admin
     .from('crew_completions')
     .delete()
     .eq('id', completionId)
-    .is('verified_by', null)
+    .is('verified_at', null)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/crew-tasks')
 }

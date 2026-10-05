@@ -92,7 +92,7 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
             type="button"
             onClick={takeDown}
             disabled={isPending}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60"
           >
             <EyeOff className="h-4 w-4" />
             Take listing down
@@ -102,7 +102,7 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
           type="button"
           onClick={submit}
           disabled={isPending || !form.name.trim()}
-          className={`${initial ? '' : 'ml-auto '}inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60`}
+          className={`${initial ? '' : 'ml-auto '}inline-flex items-center gap-1.5 rounded-control bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60`}
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
           {initial ? 'Save listing' : 'Publish listing'}
