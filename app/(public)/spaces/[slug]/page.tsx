@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation'
 import { DetailTemplate } from '@/components/templates'
 import { SignInCta } from '@/components/discover/cards'
 import { JsonLd } from '@/components/json-ld'
-import { spaceSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { spaceSchema, breadcrumbSchema, parseOpeningHours } from '@/lib/jsonld'
+import { readProfileData } from '@/lib/spaces/profile-data'
+import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
@@ -107,7 +109,7 @@ export default async function PublicSpacePage({
   // plain 16:6 crop this page shipped with ignored. The band then renders through the canonical
   // PageHero at the header element's height and overlay, so /admin/elements retunes it with the
   // rest. Service-role reads only, so ISR (`revalidate` above) is untouched.
-  const [tagline, hero, tiers] = await Promise.all([
+  const [tagline, hero, tiers, reviews] = await Promise.all([
     readTagline(space.id),
     resolveDetailHero(`/spaces/${space.slug}`, {
       entityImage: coverSrc,
@@ -119,8 +121,22 @@ export default async function PublicSpacePage({
     // Request-cached through the same `readTiers` the Memberships tab renders from, so the door and
     // the page behind it can never disagree about whether there is anything to sell.
     listMembershipTiers(space.id),
+    // The review summary feeds aggregateRating on the LocalBusiness node below (SCAN-663). A
+    // service-role read of SPACE data, like the three above; a failed read drops the rating, never
+    // the page.
+    getSpaceReviews(space.id).catch(() => null),
   ])
   const tierCount = tiers.length
+  // The LocalBusiness node the CRAWLER reads is this page's (self-canonical, in the sitemap), and
+  // until SCAN-663 it was a name-only stub while the member layout under (main) passed the full
+  // NAP, hours, links and rating to the same builder. Same sources, same shape: `readProfileData`
+  // is a pure read of preferences, `parseOpeningHours` is pure, and the builder drops any half it
+  // is not given, so a virtual Space still emits a valid node.
+  const spaceProfile = readProfileData(space.preferences)
+  const aggregateRating =
+    reviews && reviews.average != null && reviews.count > 0
+      ? { ratingValue: reviews.average, reviewCount: reviews.count }
+      : undefined
 
   // The operator's saved arrangement, read and parsed EXACTLY as the member body reads it
   // ((profile)/full/page.tsx): `parseEntityLayout` is pure and takes no viewer, so the two renders
@@ -160,6 +176,18 @@ export default async function PublicSpacePage({
             name: brandName,
             tagline,
             logoUrl: space.brandLogoUrl,
+            aggregateRating,
+            telephone: spaceProfile.phone,
+            address:
+              spaceProfile.address || space.city
+                ? {
+                    ...(spaceProfile.address ? { streetAddress: spaceProfile.address } : {}),
+                    ...(space.city ? { addressLocality: space.city } : {}),
+                  }
+                : null,
+            sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
+            priceRange: spaceProfile.priceRange,
+            openingHours: parseOpeningHours(spaceProfile.hours),
           }),
           breadcrumbSchema([
             { name: 'Spaces', path: '/spaces' },
