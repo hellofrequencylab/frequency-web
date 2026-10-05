@@ -16,6 +16,7 @@ export const ACQUISITION_CHANNELS = [
   'event_guest',  // arrived from an event page / guest touchpoint
   'video',        // a video on-ramp (YouTube etc. — the early-adopter sequence's path)
   'social',       // social platforms (IG, TikTok, X, Facebook, LinkedIn, Reddit…)
+  'ai_answer',    // an AI answer engine sent them (ChatGPT, Perplexity, Gemini, Copilot, Claude...)
   'search',       // search engines (organic)
   'email',        // an email / newsletter link
   'organic',      // an external site referrer that isn't search/social
@@ -32,6 +33,7 @@ export const CHANNEL_LABEL: Record<AcquisitionChannel, string> = {
   event_guest: 'Event guest',
   video: 'Video',
   social: 'Social',
+  ai_answer: 'AI answer',
   search: 'Search',
   email: 'Email',
   organic: 'Organic',
@@ -48,6 +50,13 @@ export function isChannel(value: string): value is AcquisitionChannel {
 }
 
 // ── Host → channel hints (used to classify a referrer URL) ───────────────────
+// Checked BEFORE the search hosts (SCAN-671): gemini.google.com and copilot.microsoft.com would
+// otherwise read as plain search, and chatgpt.com, perplexity.ai and claude.ai as 'organic', so the
+// channel robots.ts calls primary (AI citation, CONTENT-VOICE §8) was invisible in attribution.
+const AI_HOSTS = [
+  'chatgpt.com', 'chat.openai.com', 'perplexity.ai', 'gemini.google.com', 'copilot.microsoft.com',
+  'claude.ai', 'you.com', 'phind.com', 'meta.ai',
+]
 const SEARCH_HOSTS = ['google.', 'bing.', 'duckduckgo.', 'yahoo.', 'ecosia.', 'baidu.', 'yandex.']
 const SOCIAL_HOSTS = [
   'instagram.', 'tiktok.', 'twitter.', 'x.com', 't.co', 'facebook.', 'fb.com', 'fb.me',
@@ -87,11 +96,14 @@ export function deriveChannel(touch: {
   if (['social', 'cpc', 'paid-social', 'paid_social', 'ppc'].includes(medium)) return 'social'
   if (['instagram', 'ig', 'tiktok', 'twitter', 'x', 'facebook', 'fb', 'linkedin', 'reddit', 'threads', 'pinterest', 'snapchat'].includes(source)) return 'social'
   if (medium === 'referral') return 'referral'
+  // ChatGPT appends utm_source=chatgpt.com to the links it cites; the others are what operators type.
+  if (['chatgpt.com', 'chatgpt', 'openai', 'perplexity', 'perplexity.ai', 'gemini', 'copilot', 'claude', 'claude.ai'].includes(source)) return 'ai_answer'
   if (['google', 'bing', 'duckduckgo', 'yahoo', 'ecosia', 'baidu', 'yandex'].includes(source)) return 'search'
 
   const host = referrerHost(touch.ref)
   if (host) {
     if (hostMatches(host, VIDEO_HOSTS)) return 'video'
+    if (hostMatches(host, AI_HOSTS)) return 'ai_answer'
     if (hostMatches(host, SEARCH_HOSTS)) return 'search'
     if (hostMatches(host, SOCIAL_HOSTS)) return 'social'
     return 'organic' // some other external site sent them

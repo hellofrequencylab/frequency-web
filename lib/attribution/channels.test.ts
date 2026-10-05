@@ -47,6 +47,16 @@ describe('acquisition channels', () => {
   })
 
   describe('deriveChannel — referrer host', () => {
+    it('classifies an AI answer engine as ai_answer, ahead of search and organic (SCAN-671)', () => {
+      expect(deriveChannel({ landing: '/', ref: 'https://chatgpt.com/' })).toBe('ai_answer')
+      expect(deriveChannel({ landing: '/', ref: 'https://www.perplexity.ai/search?q=x' })).toBe('ai_answer')
+      expect(deriveChannel({ landing: '/', ref: 'https://gemini.google.com/app' })).toBe('ai_answer')
+      expect(deriveChannel({ landing: '/', ref: 'https://copilot.microsoft.com/' })).toBe('ai_answer')
+      expect(deriveChannel({ landing: '/', utm: { source: 'chatgpt.com' } })).toBe('ai_answer')
+      // Plain Google search is still search.
+      expect(deriveChannel({ landing: '/', ref: 'https://www.google.com/search?q=x' })).toBe('search')
+    })
+
     it('classifies search / social / video / organic', () => {
       expect(deriveChannel({ landing: '/', ref: 'https://www.google.com/search?q=x' })).toBe('search')
       expect(deriveChannel({ landing: '/', ref: 'https://t.co/abc' })).toBe('social')
