@@ -62,23 +62,28 @@ export async function isSuppressed(email: string, spaceId?: string): Promise<boo
  */
 export async function suppress(email: string, reason: string, spaceId?: string): Promise<void> {
   const addr = norm(email)
-  try {
-    // Pre-check the exact (scope, address) row so re-running is a no-op.
-    const existing = await db()
-      .from('email_suppressions')
-      .select('space_id')
-      .eq('email', addr)
-    const rows = existing.data ?? []
-    const wanted = spaceId ?? null
-    if (rows.some((r) => r.space_id === wanted)) return
+  // NOT best-effort (SCAN-763). supabase-js resolves `{ error }` and never throws, and the blanket
+  // try/catch this used to wear swallowed even that resolved error, so the Resend webhook could never
+  // see a failed suppression: it acked 200 with the svix claim kept, Resend never redelivered, and a
+  // bouncing or complaining address kept getting mail. Every caller already wraps this call, so a
+  // throw here is what lets the webhook release its claim and 503, and what lets /unsubscribe tell
+  // the member the truth when the row never landed.
+  const existing = await db()
+    .from('email_suppressions')
+    .select('space_id')
+    .eq('email', addr)
+  if (existing.error) throw new Error(`[suppression] pre-check failed: ${existing.error.message}`)
+  const rows = existing.data ?? []
+  const wanted = spaceId ?? null
+  if (rows.some((r) => r.space_id === wanted)) return
 
-    await db()
-      .from('email_suppressions')
-      .insert({ email: addr, reason, ...(spaceId ? { space_id: spaceId } : {}) })
-  } catch {
-    // A unique-index race (the row was inserted concurrently) is the only expected failure here,
-    // and the row we wanted now exists, so swallowing it keeps suppress() idempotent.
-  }
+  const { error } = await db()
+    .from('email_suppressions')
+    .insert({ email: addr, reason, ...(spaceId ? { space_id: spaceId } : {}) })
+  // A unique-index race (23505) means a concurrent call inserted the row we wanted, so it exists
+  // and this call is still idempotent. Anything else is a real failure the caller must see.
+  if (error && error.code === '23505') return
+  if (error) throw new Error(`[suppression] insert failed: ${error.message}`)
 }
 
 /**
@@ -96,7 +101,7 @@ export async function recordEmailEvent(input: {
   payload?: Record<string, unknown>
   campaignId?: string | null
 }): Promise<void> {
-  await db()
+  const { error } = await db()
     .from('email_events')
     .insert({
       email: norm(input.email),
@@ -106,4 +111,6 @@ export async function recordEmailEvent(input: {
       payload: (input.payload ?? {}) as Json,
       ...(input.campaignId ? { campaign_id: input.campaignId } : {}),
     })
+  // Resolved, not thrown (SCAN-763): read it, or the webhook acks an event that was never recorded.
+  if (error) throw new Error(`[suppression] email_events insert failed: ${error.message}`)
 }
