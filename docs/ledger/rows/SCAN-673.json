@@ -1,0 +1,16 @@
+{
+  "id": "SCAN-673",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const cfg=fs.readFileSync(\"next.config.ts\",\"utf8\");const files=[\"high-functioning-loneliness\",\"how-to-calm-down-fast\",\"make-friends-as-an-adult\",\"meet-people-in-a-new-city\",\"how-to-stop-doomscrolling\"];const open=files.filter((f)=>{const s=fs.readFileSync(\"content/help/find-your-people/\"+f+\".md\",\"utf8\");return /^status: published/m.test(s)&&!/^canonical:/m.test(s)&&!cfg.includes(\"/help/find-your-people/\"+f)});if(open.length){console.error(\"SCAN-673: \"+open.length+\" help article(s) still compete with a marketing guide for the same query with no ruling taken (published, self-canonical, not redirected): \"+open.join(\", \"));process.exit(1)}'",
+      "note": "Measures the consequence; fails until the fix lands."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05 by the owner-gated prep PR, ruling (b) prepared for the owner's approval (ADR-1705): the five twins carry a canonical: front-matter key naming their guide, lib/help/content-core.ts reads it into HelpArticle.canonical, the article page emits it as the canonical link and app/sitemap.ts leaves a twin out. Pinned in content-core.test.ts. If the owner names another letter, reopen and amend ADR-1705.\n\nAPPROVED 2026-10-05 17:45Z by the owner on a decision card, multiple choice (guide ranks, keep both, retire twins): \"canonical to guide\", option (b) as implemented here."
+  },
+  "wave": "W0"
+}

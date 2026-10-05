@@ -1,0 +1,6 @@
+{
+  "id": "OWN-077",
+  "append": {
+    "detail": "\n\nRULED 2026-10-05 by owner, multiple choice in the project thread (ADR-1705 §4): \"Wait for a real cohort\" (the options were: I do both this week, walk me through it live, wait for a real cohort). Supersedes the 2026-09-30 \"I'll do both with my Space\": the owner does not seed the run or the persona; the rows close when a member Circle runs a Journey and a real partner applies and is verified. Production 2026-10-05: journey_runs 0, journey_enrollments 2 (solo), profile_personas 0. Stays open and owner-timed."
+  }
+}

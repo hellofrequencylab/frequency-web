@@ -125,6 +125,20 @@ describe('the core still reads the real help centre', () => {
     )
   })
 
+  it('reads the canonical key on the five guide twins and leaves every other article self-canonical', async () => {
+    const articles = (await loadCategoriesFromDisk()).flatMap((c) => c.articles)
+    const twins = articles.filter((a) => a.canonical)
+    expect(twins.map((a) => `${a.category}/${a.slug}`).sort()).toEqual([
+      'find-your-people/high-functioning-loneliness',
+      'find-your-people/how-to-calm-down-fast',
+      'find-your-people/how-to-stop-doomscrolling',
+      'find-your-people/make-friends-as-an-adult',
+      'find-your-people/meet-people-in-a-new-city',
+    ])
+    for (const t of twins) expect(t.canonical).toMatch(/^\/(loneliness|calm-down-fast|friendship-as-an-adult)$/)
+    expect(articles.filter((a) => !a.canonical).length).toBe(articles.length - 5)
+  })
+
   it('searchIndexFrom yields one entry per published article, each with an href and excerpt', async () => {
     const cats = selectCategories(await loadCategoriesFromDisk())
     const index = searchIndexFrom(cats)

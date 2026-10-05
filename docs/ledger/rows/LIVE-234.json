@@ -1,0 +1,6 @@
+{
+  "id": "LIVE-234",
+  "append": {
+    "detail": "\n\nRULED 2026-10-05 by owner, multiple choice in the project thread (ADR-1705 §4): \"Prove as they happen\" (the options were: I buy each once, prove as they happen, park until launch). The four unproven loops (order, Space subscription, donation, paid booking with deposit) close as real customers trigger them; nobody buys them to prove them. The row stays open and owner-timed; production on 2026-10-05: event_tickets succeeded 1, commerce_orders 0, space_subscription_items 0, supporter_contributions 0, financial_transactions 1, stripe_webhook_events 26."
+  }
+}
