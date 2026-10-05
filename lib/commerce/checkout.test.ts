@@ -331,15 +331,16 @@ describe('refundCommerceOrder — a policy PARTIAL refund is recorded as partial
     expect(patch.status).toBeUndefined()
     expect(typeof patch.refunded_at).toBe('string')
     expect(patch.metadata.refund).toMatchObject({ kind: 'partial', refunded_cents: 500, retained_cents: 500, revenue_reversed_cents: 500 })
-    // The once-only guard: status still settled AND refunded_at still null.
+    // The once-only guard: status still settled AND no partial recorded yet (SCAN-714: the guard is
+    // the partial record, not refunded_at, so a later cumulative partial can still land).
     expect(hasFilter(stamp, 'in', 'status', ['paid', 'fulfilled'])).toBe(true)
-    expect(hasFilter(stamp, 'is', 'refunded_at', null)).toBe(true)
-    // Ledger: the refunded share only, on its own idempotency key.
+    expect(hasFilter(stamp, 'is', 'metadata->refund', null)).toBe(true)
+    // Ledger: the refunded share only, on its own idempotency key (keyed on the cumulative amount).
     expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
     expect(ledger.recordFinancialTransaction.mock.calls[0][0]).toMatchObject({
       revenueType: 'refund',
       amountCents: -500,
-      idempotencyKey: 'commerce_order-refund:o1:partial',
+      idempotencyKey: 'commerce_order-refund:o1:partial:500',
     })
     // The policy cancel releases the slot.
     expect(booking.cancelBookingByOrder).toHaveBeenCalledWith('o1')
@@ -351,6 +352,32 @@ describe('refundCommerceOrder — a policy PARTIAL refund is recorded as partial
     expect(res).toEqual({ ok: true })
     expect(stripeFake.refunds.create).not.toHaveBeenCalled()
     expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
+  })
+
+  // SCAN-714: a partial on record is money still owed, not a finished refund. A dispute approved after
+  // a $5 goodwill partial used to close as "Approved and refunded" with no Stripe call.
+  it('a full refund AFTER a recorded partial sends the remainder to Stripe and completes the refund', async () => {
+    const partial = { kind: 'partial', refunded_cents: 500, retained_cents: 500, revenue_reversed_cents: 500, recorded_at: '2026-09-05T00:00:00.000Z' }
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'select' && hasFilter(c, 'eq', 'id', 'o1')) {
+        return { data: { ...PAID_ORDER, ...REFUND_ROW, refunded_at: partial.recorded_at, metadata: { refund: partial } } }
+      }
+      if (c.table === 'commerce_orders' && c.op === 'select' && hasFilter(c, 'eq', 'stripe_payment_intent_id', 'pi_1')) {
+        return { data: { id: 'o1', amount_cents: 1000 } }
+      }
+      if (c.table === 'commerce_orders' && c.op === 'update') return { data: [{ id: 'o1' }] }
+      return {}
+    })
+    const res = await refundCommerceOrder('o1')
+    expect(res).toEqual({ ok: true })
+    expect(stripeFake.refunds.create).toHaveBeenCalledTimes(1)
+    // The remainder, not the whole order and not nothing.
+    expect((stripeFake.refunds.create.mock.calls[0][0] as { amount?: number }).amount).toBe(500)
+    // Recorded as a FULL refund: the order flips to refunded.
+    const flips = state.calls.filter(
+      (c) => c.table === 'commerce_orders' && c.op === 'update' && (c.payload as { status?: string }).status === 'refunded',
+    )
+    expect(flips).toHaveLength(1)
   })
 
   it('the charge.refunded webhook for that same partial refund records nothing twice', async () => {
