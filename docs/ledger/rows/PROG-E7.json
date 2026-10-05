@@ -1,0 +1,13 @@
+{
+  "id": "PROG-E7",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const walk=(d)=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(d+\"/\"+e.name):/\\.tsx?$/.test(e.name)?[d+\"/\"+e.name]:[]);const tax=walk(\"lib/billing\").some(f=>/1099/.test(fs.readFileSync(f,\"utf8\")));if(!tax){console.error(\"PROG-E7: member Connect has no tax path: 1099 has zero hits under lib/billing (EDITOR-ARCHITECTURE §8 E7 names tax/1099 as the open gap).\");process.exit(1)}'",
+      "note": "Measures the gap EDITOR-ARCHITECTURE §8 names for E7 that shipped code has not closed: tax/1099 has zero hits under lib/billing. Payout eligibility, the other named gap, was answered by LIVE-696 (canReceivePayouts now returns true for every role; readiness is the Stripe account). Fails on main; passes once a 1099 path exists in billing."
+    }
+  },
+  "append": {
+    "detail": "\n\n── RE-TESTED 2026-10-05 (manual-probe sweep, ADR-1082 premise first). Premise moved: the payout-eligibility gap is CLOSED another way. LIVE-696 (#3096, 2026-09-29) made lib/billing/connect.ts canReceivePayouts return true for every role, so a plain member is no longer barred by role; readiness is the mirrored Stripe flags (ConnectStatus.ready). Still open: tax/1099 has zero hits under lib/ and app/ (the two hits in the repo are an event spark copy string and a wizard-route test), the five transactional widgets are not placeable blocks (components/page-editor/blocks has no ticket, donate, booking or enroll block; the hits are CTAs in profile and product-story), and there is no form block. The probe now measures the 1099 gap."
+  }
+}
