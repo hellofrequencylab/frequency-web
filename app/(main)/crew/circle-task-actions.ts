@@ -10,7 +10,13 @@
 //
 // Completing a claimed task is NOT here on purpose: a circle task is still a
 // crew_tasks row, so the existing completion flow (./actions.ts logCompletion →
-// crew_completions) works unchanged.
+// crew_completions) works unchanged, except that logCompletion refuses a circle
+// task the caller does not hold the claim on.
+//
+// SCAN-687: any member can draft a circle and become its Host, so a Host is NOT
+// a trusted economy actor. Every circle task therefore requires verification
+// (community ops releases the held Zaps, app/(main)/admin/actions.ts
+// approveVerification) and its Zap value is capped at CIRCLE_TASK_ZAPS_CAP.
 //
 // The assignment columns aren't in lib/database.types.ts yet → untyped admin
 // handle (repo convention; see lib/crew/circle-tasks.ts).
@@ -20,6 +26,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
+import { CIRCLE_TASK_ZAPS_CAP } from '@/lib/crew/circle-task-policy'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -52,7 +59,8 @@ async function loadTask(taskId: string): Promise<{
   return (data as { id: string; circle_id: string | null; assigned_to: string | null } | null) ?? null
 }
 
-/** Host flow: create a task scoped to a circle the caller manages. */
+/** Host flow: create a task scoped to a circle the caller manages. Verification
+ *  is forced on and the Zap value capped (see the header note). */
 export async function createCircleTask(circleId: string, fd: FormData): Promise<CircleTaskActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) throw new Error('Unauthorized')
@@ -64,14 +72,15 @@ export async function createCircleTask(circleId: string, fd: FormData): Promise<
   if (!name) return { ok: false, error: 'Task name is required.' }
   const rawType = (fd.get('task_type') as string) ?? 'volunteering'
   const taskType = TASK_TYPES.has(rawType) ? rawType : 'volunteering'
-  const zaps = Math.min(9999, Math.max(1, parseInt(fd.get('zaps_value') as string, 10) || 10))
+  const zaps = Math.min(CIRCLE_TASK_ZAPS_CAP, Math.max(1, parseInt(fd.get('zaps_value') as string, 10) || 10))
 
   const { error } = await db().from('crew_tasks').insert({
     name,
     task_type: taskType,
     zaps_value: zaps,
     is_repeatable: false,
-    requires_verification: fd.get('requires_verification') === 'true',
+    // Always held for review: the form cannot switch this off (SCAN-687).
+    requires_verification: true,
     circle_id: circleId,
   })
   if (error) throw new Error(error.message)

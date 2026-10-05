@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-687",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/(main)/crew/actions.ts\",c=\"app/(main)/crew/circle-task-actions.ts\";if(!fs.existsSync(a)||!fs.existsSync(c))process.exit(79);const s=fs.readFileSync(a,\"utf8\");const i=s.indexOf(\"export async function logCompletion\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);const t=fs.readFileSync(c,\"utf8\");const noClaim=!/assigned_to/.test(body);const trust=/requires_verification:\\s*fd\\.get\\(/.test(t)||/Math\\.min\\(9999/.test(t);if(noClaim||trust){console.error(\"SCAN-687: logCompletion still credits Zaps for a circle task without checking the claim, or createCircleTask still lets the host pick verification off and a 9999 Zap value, so any member can complete any task and a self-made Host can mint season Zaps.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nlogCompletion credited Zaps for any crew task id to any signed-in member, never reading circle_id or assigned_to, and createCircleTask let a self-made Host pick verification off and a 9999 Zap value, so a member could draft a circle and mint season Zaps. logCompletion now selects circle_id and assigned_to and returns without calling log_crew_completion_atomic when a circle task is not claimed by the caller (global catalogue tasks stay open per ADR-1295). createCircleTask forces requires_verification to true and clamps zaps_value to CIRCLE_TASK_ZAPS_CAP (100) from the new pure module lib/crew/circle-task-policy.ts; the host form in admin/crew-tasks/circle-tasks-panel.tsx drops the verification checkbox and uses the cap as its max. crew_tasks has no is_active column, so that part of the proposal was dropped. Pinned by app/(main)/crew/actions.test.ts (claim check, 4 cases) and app/(main)/crew/circle-task-actions.test.ts (forced verification, cap, capability refusal); the row's probe reads the same guards."
+  }
+}

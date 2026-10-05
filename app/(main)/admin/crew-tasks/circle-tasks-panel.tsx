@@ -10,9 +10,9 @@ import Image from 'next/image'
 import { Check, Hand, Plus, Trash2, Undo2, X } from 'lucide-react'
 import { createCircleTask, deleteCircleTask, releaseCircleTask } from '../../crew/circle-task-actions'
 import type { CircleTask } from '@/lib/crew/circle-tasks'
+import { CIRCLE_TASK_ZAPS_CAP } from '@/lib/crew/circle-task-policy'
 import { getInitials } from '@/lib/utils'
 import { Field, Input } from '@/components/ui/field'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Select } from '@/components/ui/select'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
@@ -39,7 +39,6 @@ function NewCircleTaskForm({
   const [name, setName]     = useState('')
   const [type, setType]     = useState<string>('volunteering')
   const [zaps, setZaps]     = useState('10')
-  const [verify, setVerify] = useState(false)
   const [error, setError]   = useState<string | null>(null)
   // One panel per circle can be open at a time, but the ids still have to be instance-scoped.
   const formId = useId()
@@ -51,7 +50,6 @@ function NewCircleTaskForm({
     fd.set('name', name)
     fd.set('task_type', type)
     fd.set('zaps_value', zaps)
-    fd.set('requires_verification', String(verify))
     startTransition(async () => {
       const res = await createCircleTask(circleId, fd)
       if (!res.ok) { setError(res.error ?? 'Could not create the task.'); return }
@@ -85,7 +83,7 @@ function NewCircleTaskForm({
         <Input
           type="number"
           min="1"
-          max="9999"
+          max={CIRCLE_TASK_ZAPS_CAP}
           value={zaps}
           onChange={(e) => setZaps(e.target.value)}
           required
@@ -93,12 +91,9 @@ function NewCircleTaskForm({
         />
       </Field>
 
-      <Checkbox
-        label="Requires verification"
-        checked={verify}
-        onChange={(e) => setVerify(e.target.checked)}
-        disabled={isPending}
-      />
+      <p className="self-end text-meta text-subtle">
+        Up to {CIRCLE_TASK_ZAPS_CAP} Zaps. Every circle task is reviewed before the Zaps land.
+      </p>
 
       <div className="sm:col-span-2 flex items-center gap-2 pt-1">
         <button

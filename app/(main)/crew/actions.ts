@@ -13,14 +13,19 @@ export async function logCompletion(taskId: string) {
 
   const admin = createAdminClient()
 
-  // Load task to check repeatability and zaps value
+  // Load task to check repeatability, zaps value and (for a circle task) who holds the claim.
   const { data: task } = await admin
     .from('crew_tasks')
-    .select('id, zaps_value, is_repeatable, requires_verification, task_type')
+    .select('id, zaps_value, is_repeatable, requires_verification, task_type, circle_id, assigned_to')
     .eq('id', taskId)
     .maybeSingle()
 
   if (!task) return
+
+  // SCAN-687: a circle task (circle_id set) is completable ONLY by the member who holds its claim.
+  // The task id is a client prop, so the UI hiding CompleteButton for everyone else is not a
+  // guard; this is. Global catalogue tasks (circle_id null) stay open to every member (ADR-1295).
+  if (task.circle_id && task.assigned_to !== profileId) return
 
   // Atomic completion (P0 — final-scan patch list): serialize concurrent completions of the same
   // (member, task) and insert at most once for a non-repeatable task, so trg_after_crew_completion
