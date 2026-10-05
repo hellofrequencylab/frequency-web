@@ -121,7 +121,15 @@ export function ComposerShell({
     start(async () => {
       const id = await ensureDraft()
       if (!id) return
-      const res = await scheduleSpaceCampaign(spaceId, slug, id, when, filter)
+      // `when` is the picker's LOCAL wall time with no zone (YYYY-MM-DDTHH:mm). Turn it into a UTC
+      // instant HERE, where the owner's zone is known; the server reads a zone-less string as UTC
+      // and refuses it (SCAN-702), so a 2:30 PM in Los Angeles can never go out at 2:30 PM UTC.
+      const whenMs = new Date(when).getTime()
+      if (!Number.isFinite(whenMs)) {
+        setError('Pick a send time in the future.')
+        return
+      }
+      const res = await scheduleSpaceCampaign(spaceId, slug, id, new Date(whenMs).toISOString(), filter)
       if (isError(res)) {
         setError(res.error)
         return
