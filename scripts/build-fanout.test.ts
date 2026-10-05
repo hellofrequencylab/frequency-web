@@ -275,13 +275,13 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     // is how this regresses: the helper gets re-inlined "just for one image" and the directory
     // comes back with it.
     //
-    // ⚠️ `app/(main)/events/[slug]/opengraph-image.tsx` was on this list until ADR-1257 moved the
+    // ⚠️ `app/(public)/events/[slug]/opengraph-image.tsx` was on this list until ADR-1257 moved the
     // event card's LAYOUT — and with it the mark read — into lib/og/event-card.tsx, which the
     // public twin at /discover/events/<slug> now renders too. The file that draws a public asset is
     // the file that must reach it through local-image, so the shared module took its place here and
     // both routes stay under the fs half below. The net did not get narrower.
     const CARDS = [
-      'app/(main)/spaces/[slug]/opengraph-image.tsx',
+      'app/(public)/spaces/[slug]/opengraph-image.tsx',
       'lib/og/event-card.tsx',
       'app/events/claim/[token]/opengraph-image.tsx',
       'lib/og/claim-card.tsx',
@@ -297,7 +297,7 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     // legitimately read hero.jpg by a LITERAL path in the route file, which is why this arm names
     // the routes it covers instead of sweeping every opengraph-image.tsx.)
     for (const path of [
-      'app/(main)/events/[slug]/opengraph-image.tsx',
+      'app/(public)/events/[slug]/opengraph-image.tsx',
       'app/discover/events/[slug]/opengraph-image.tsx',
     ]) {
       const route = FILES.find((f) => f.path === path)

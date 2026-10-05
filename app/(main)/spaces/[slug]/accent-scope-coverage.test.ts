@@ -137,7 +137,7 @@ describe('Space share card mirrors the on-page shape (LIVE-196, ADR-1192)', () =
   // `borderRadius: 28`, which matches no theme and no token, under a header claiming the card
   // "MIRRORS THE ON-PAGE HERO". The chip on the page is `BrandAnchor`, which rides `--radius-cover`.
   const globalsCss = readFileSync(join(REPO_ROOT, 'app/globals.css'), 'utf8')
-  const og = readFileSync(join(SPACE_ROOT, 'opengraph-image.tsx'), 'utf8')
+  const og = readFileSync(join(PUBLIC_SPACE_ROOT, 'opengraph-image.tsx'), 'utf8')
 
   it('sets the OG logo chip radius from the --radius-cover baseline', () => {
     const token = globalsCss.match(/^\s*--radius-cover:\s*(\d+)px;/m)
