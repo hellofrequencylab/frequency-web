@@ -24,6 +24,8 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { rateLimitOk } from '@/lib/rate-limit'
+import { smsEnabledFlag } from '@/lib/platform-flags'
 import { isSmsProvisioned, isSmsConsentTableReady } from '@/lib/comms/sms'
 import { enqueueSms } from '@/lib/comms/sms-send'
 import {
@@ -79,6 +81,20 @@ export async function sendSmsCode(rawPhone: string): Promise<ActionResult<{ phon
     // Honest, in-voice: texts are not live yet (the A2P legal track is the gate).
     return fail('Texts are not turned on yet. Check back soon.')
   }
+  // The operator kill-switch (platform_flags.sms_enabled) gates the code text too, not only the
+  // marketing sends behind it (SCAN-747).
+  if (!(await smsEnabledFlag())) return fail('Texts are not turned on yet. Check back soon.')
+
+  // THROTTLED (SCAN-747). A signed-in member could otherwise script this against arbitrary or
+  // premium-rate numbers (SMS pumping, toll fraud, harassment) the moment the channel is
+  // provisioned. Per member and per phone, so neither a loop on one number nor a spray from one
+  // account gets far.
+  if (
+    !(await rateLimitOk('sms-code:profile', profileId, 3, '10 m')) ||
+    !(await rateLimitOk('sms-code:phone', phone, 5, '1 d'))
+  ) {
+    return fail('Too many codes. Wait a bit before asking for another.')
+  }
 
   const code = generateSmsCode()
   const pending: PendingVerification = {
@@ -133,6 +149,11 @@ export async function verifySmsCode(rawCode: string): Promise<ActionResult> {
   if (!(await isSmsConsentTableReady())) {
     return fail('Texts are not turned on yet. Check back soon.')
   }
+  // Brute-force guard (SCAN-747): the per-row attempt cap is read-then-write, so parallel guesses
+  // all see the same count. This window is the hard ceiling the cap could not be.
+  if (!(await rateLimitOk('sms-verify:profile', profileId, 10, '10 m'))) {
+    return fail('Too many tries. Wait a bit, then send yourself a new code.')
+  }
 
   let latest: Record<string, unknown> | null = null
   try {
@@ -185,9 +206,11 @@ export async function verifySmsCode(rawCode: string): Promise<ActionResult> {
     return fail("That code didn't match. Check it and try again.")
   }
 
-  // Match: record express written consent (opted_in) + turn the channel on.
+  // Match: record express written consent (opted_in) + turn the channel on. The insert RESOLVES
+  // with { error } on a database failure rather than throwing, so the error is read (SCAN-747):
+  // reporting verified with no consent row meant texts never arrived (the send gate needs the row).
   try {
-    await smsConsentTable().insert([
+    const { error } = await smsConsentTable().insert([
       {
         profile_id: profileId,
         phone,
@@ -196,6 +219,7 @@ export async function verifySmsCode(rawCode: string): Promise<ActionResult> {
         consent_text: CONSENT_TEXT,
       },
     ])
+    if (error) return fail('Could not save your opt-in. Try again.')
   } catch {
     return fail('Could not save your opt-in. Try again.')
   }

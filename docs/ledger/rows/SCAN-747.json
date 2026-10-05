@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-747",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/settings/notifications/sms-actions.ts\";if(!fs.existsSync(f))process.exit(79);const t=fs.readFileSync(f,\"utf8\");if(!/rateLimitOk\\s*\\(/.test(t)){console.error(\"SCAN-747: sendSmsCode and verifySmsCode have no rate limit, so once texting is provisioned any signed-in member can send unlimited verification texts to any number and brute-force a code past its attempt cap.\");process.exit(1)}const k=t.indexOf(\"status: \"+String.fromCharCode(39)+\"opted_in\");if(k<0)process.exit(79);const before=t.slice(Math.max(0,k-260),k);if(!/\\{\\s*error\\s*\\}\\s*=\\s*await/.test(before)){console.error(\"SCAN-747: the opted_in consent insert ignores its returned error, so a failed write still reports the number as verified and turns texting on with no consent row.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nsendSmsCode gates on smsEnabledFlag and rateLimitOk per profile (3 per 10 min) and per phone (5 per day); verifySmsCode rate-limits 10 per 10 min; the opted_in insert reads its error."
+  }
+}
