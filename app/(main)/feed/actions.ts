@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Database } from '@/lib/database.types'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { recordEngagementEvent } from '@/lib/engagement/events'
@@ -22,6 +21,24 @@ import {
 } from '@/lib/feed/comment-thread'
 
 const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
+
+// The post types a member may write through the composer (components/feed/composer.tsx). The
+// `post_type` enum also holds `system`, `space_update`, `blog` and `recap`, which the platform
+// writes itself: a `system` post renders as an unattributed SystemLine with no author chip and no
+// Report menu (components/feed/post-card.tsx), and a top-level `space_update` widens the member
+// thread read policy. The insert below runs through the admin client, so the request body is the
+// only gate (SCAN-680).
+const MEMBER_POST_TYPES = ['feed', 'note', 'announcement'] as const
+type MemberPostType = (typeof MEMBER_POST_TYPES)[number]
+const MEMBER_POST_VISIBILITIES = ['public', 'region', 'cluster', 'group'] as const
+type MemberPostVisibility = (typeof MEMBER_POST_VISIBILITIES)[number]
+
+function isMemberPostType(value: string): value is MemberPostType {
+  return (MEMBER_POST_TYPES as readonly string[]).includes(value)
+}
+function isMemberPostVisibility(value: string): value is MemberPostVisibility {
+  return (MEMBER_POST_VISIBILITIES as readonly string[]).includes(value)
+}
 
 // Is this profile an active member of the circle? Gates writes/reads on
 // group-scoped (private circle) content.
@@ -82,15 +99,22 @@ async function fanOutMentions(
 export async function createPost(formData: FormData): Promise<ActionResult> {
   const body = (formData.get('body') as string | null)?.trim()
   const scopeId = formData.get('scopeId') as string | null
-  const requestedVisibility = (formData.get('visibility') as string) || 'public'
+  const requestedVisibility = (formData.get('visibility') as string | null) || 'public'
   const postType = (formData.get('post_type') as string | null) || 'feed'
   const imageUrl = (formData.get('imageUrl') as string | null)?.trim() || null
+
+  // Allowlist both enum-valued fields before any database work. A crafted server-action call is
+  // not limited to what the composer sends, and the admin insert below would otherwise store
+  // whatever arrived under a bare type cast.
+  if (!isMemberPostType(postType) || !isMemberPostVisibility(requestedVisibility)) {
+    return fail('Could not save your post. Please try again.')
+  }
   const isAnnouncement = postType === 'announcement'
 
   // A host announcement broadcasts beyond the circle (to the hub, or the
   // topical channel's followers if hub-less) — that wider reach is what
   // `cluster` visibility resolves. A member's post stays circle-only (`group`).
-  const visibility = isAnnouncement ? 'cluster' : requestedVisibility
+  const visibility: MemberPostVisibility = isAnnouncement ? 'cluster' : requestedVisibility
 
   if ((!body && !imageUrl) || !scopeId) return fail('Write something to post.')
 
@@ -160,8 +184,8 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     author_id: profileId,
     body: body || '',
     scope_id: scopeId,
-    visibility: visibility as Database['public']['Tables']['posts']['Insert']['visibility'],
-    post_type: postType as Database['public']['Tables']['posts']['Insert']['post_type'],
+    visibility,
+    post_type: postType,
     is_pinned: isAnnouncement,
     media_urls: mediaUrls,
   }).select('id').single()

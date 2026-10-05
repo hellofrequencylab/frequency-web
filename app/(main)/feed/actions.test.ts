@@ -73,23 +73,42 @@ describe('createPost gates the circle scope', () => {
 
 type Row = Record<string, unknown>
 let tables: Record<string, Row[]> = {}
-let writes: Array<{ table: string; op: 'delete' | 'update'; patch?: Row; matched: number }> = []
+let writes: Array<{ table: string; op: 'delete' | 'update' | 'insert'; patch?: Row; matched: number }> = []
+let inserted = 0
 
 function builder(table: string) {
   const filters: Array<(r: Row) => boolean> = []
-  let op: 'select' | 'delete' | 'update' = 'select'
+  let op: 'select' | 'delete' | 'update' | 'insert' = 'select'
   let patch: Row | null = null
+  let insertedRows: Row[] = []
   const rows = () => (tables[table] ?? []).filter((r) => filters.every((f) => f(r)))
   const api = {
     select() { return api },
     delete() { op = 'delete'; return api },
     update(p: Row) { op = 'update'; patch = p; return api },
+    insert(p: Row | Row[]) {
+      op = 'insert'
+      insertedRows = (Array.isArray(p) ? p : [p]).map((r) => ({ id: `row-${++inserted}`, ...r }))
+      ;(tables[table] ??= []).push(...insertedRows)
+      for (const r of insertedRows) writes.push({ table, op, patch: r, matched: 1 })
+      return api
+    },
+    in() { return api },
     eq(col: string, val: unknown) {
       filters.push((r) => r[col] === val)
       return api
     },
+    async single() {
+      return op === 'insert'
+        ? { data: insertedRows[0] ?? null, error: null }
+        : { data: rows()[0] ?? null, error: null }
+    },
     async maybeSingle() { return { data: rows()[0] ?? null, error: null } },
     then(resolve: (v: { data: Row[]; error: null }) => void) {
+      if (op === 'insert') {
+        resolve({ data: insertedRows, error: null })
+        return
+      }
       const matched = rows()
       if (op === 'delete') {
         tables[table] = (tables[table] ?? []).filter((r) => !matched.includes(r))
@@ -125,10 +144,12 @@ vi.mock('@/lib/achievements', () => ({
   recordStreakActivity: async () => {},
 }))
 vi.mock('@/lib/gems', () => ({ awardGems: async () => {} }))
+vi.mock('@/lib/engagement/events', () => ({ recordEngagementEvent: async () => {} }))
 vi.mock('next/cache', () => ({ revalidatePath: mocks.revalidatePath }))
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }))
 
-import { deletePost, pinPost, unpinPost } from './actions'
+import { createPost, deletePost, pinPost, unpinPost } from './actions'
+import { isError } from '@/lib/action-result'
 
 const HOST = 'host-1'
 const AUTHOR = 'author-1'
@@ -141,6 +162,7 @@ const UNSCOPED = 'post-unscoped'
 
 function seedFeed() {
   tables = {
+    memberships: [{ id: 'm-1', profile_id: AUTHOR, circle_id: THEIR_CIRCLE, status: 'active' }],
     circles: [
       { id: MY_CIRCLE, host_id: HOST },
       { id: THEIR_CIRCLE, host_id: 'someone-else' },
@@ -253,5 +275,59 @@ describe('pinPost / unpinPost · scope (L7-2)', () => {
     mocks.getCallerProfile.mockResolvedValue(null)
     await pinPost(INSIDE)
     expect(writes).toHaveLength(0)
+  })
+})
+
+// ── SCAN-680 · createPost accepts only the post types and visibilities a member may write ─────────
+//
+// THE DEFECT. `post_type` was read off the request and inserted through the admin client under a
+// bare enum cast. The composer only sends feed / note / announcement, but a crafted server-action
+// call can send `system`, which post-card.tsx renders as an unattributed SystemLine in the platform
+// voice with no author chip and no Report menu, or `space_update`, which widens the thread read
+// policy. RUNTIME: the table-driven mock records every insert, so each refusal asserts NOTHING was.
+
+describe('createPost · post_type and visibility allowlist (SCAN-680)', () => {
+  const form = (fields: Record<string, string>) => {
+    const fd = new FormData()
+    fd.set('body', 'hello')
+    fd.set('scopeId', THEIR_CIRCLE)
+    for (const [k, v] of Object.entries(fields)) fd.set(k, v)
+    return fd
+  }
+  const postWrites = () => writes.filter((w) => w.table === 'posts' && w.op === 'insert')
+
+  it.each(['system', 'space_update', 'blog', 'recap', 'nonsense'])(
+    'refuses a forged post_type=%s without touching the database',
+    async (postType) => {
+      signInAs(asAuthor)
+      const res = await createPost(form({ post_type: postType, visibility: 'group' }))
+      expect(isError(res)).toBe(true)
+      expect(postWrites()).toHaveLength(0)
+      // Refused before the caller is even established: no database work at all.
+      expect(mocks.getMyProfileId).not.toHaveBeenCalled()
+    },
+  )
+
+  it('refuses a forged visibility outside the enum', async () => {
+    signInAs(asAuthor)
+    const res = await createPost(form({ post_type: 'feed', visibility: 'everyone' }))
+    expect(isError(res)).toBe(true)
+    expect(postWrites()).toHaveLength(0)
+  })
+
+  it('still writes a plain member note into a circle they belong to', async () => {
+    signInAs(asAuthor)
+    const res = await createPost(form({ post_type: 'note', visibility: 'group' }))
+    expect(isError(res)).toBe(false)
+    expect(postWrites().map((w) => w.patch)).toMatchObject([
+      { author_id: AUTHOR, scope_id: THEIR_CIRCLE, post_type: 'note', visibility: 'group' },
+    ])
+  })
+
+  it('defaults an absent post_type to feed and an absent visibility to public', async () => {
+    signInAs(asAuthor)
+    const res = await createPost(form({}))
+    expect(isError(res)).toBe(false)
+    expect(postWrites()[0]?.patch).toMatchObject({ post_type: 'feed', visibility: 'public' })
   })
 })
