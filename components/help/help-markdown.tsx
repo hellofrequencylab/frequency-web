@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
@@ -11,6 +12,9 @@ export function HelpMarkdown({ children }: { children: string }) {
   return (
     <div className="max-w-none">
       <ReactMarkdown
+        // GitHub-flavoured Markdown: without it a pipe table is paragraph text, and four published
+        // articles (run-a-program, circle-roles, get-paid, plans-and-pricing) carry one (SCAN-658).
+        remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }: Kids) => (
             <h2 className="font-display text-page-title text-text mt-10 mb-3">{children}</h2>
@@ -69,6 +73,15 @@ export function HelpMarkdown({ children }: { children: string }) {
             <strong className="text-text font-semibold">{children}</strong>
           ),
           hr: () => <hr className="my-8 border-border" />,
+          table: ({ children }: Kids) => (
+            <div className="overflow-x-auto mb-4">
+              <table className="w-full text-body-sm text-text/80 border-collapse">{children}</table>
+            </div>
+          ),
+          th: ({ children }: Kids) => (
+            <th className="border-b border-border px-3 py-2 text-left font-semibold text-text">{children}</th>
+          ),
+          td: ({ children }: Kids) => <td className="border-b border-border px-3 py-2 align-top">{children}</td>,
         }}
       >
         {children}
