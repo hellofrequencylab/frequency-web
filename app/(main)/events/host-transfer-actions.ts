@@ -453,15 +453,21 @@ async function respond(transferId: string, next: 'accepted' | 'declined' | 'revo
     if (blocked) return fail(blocked)
   }
 
-  const { error } = await admin
+  // Compare-and-set that RETURNS rows. A PATCH matching zero rows is not an error to PostgREST, so
+  // the status filter alone proves nothing; the returned row count is the lost-update guard. When a
+  // concurrent revoke / decline / accept resolved the offer first, this reply stops here and never
+  // reaches applyHost, which is what moves where ticket money goes.
+  const { data: updated, error } = await admin
     .from('event_host_transfers')
     .update({ status: next, responded_at: new Date().toISOString(), responded_by: profileId })
     .eq('id', transferId)
-    .eq('status', 'pending') // lost-update guard: a concurrent reply wins and this one reports it
+    .eq('status', 'pending')
+    .select('id')
   if (error) {
     console.error('[host-transfer] respond failed', { code: error.code, message: error.message, transferId })
     return fail('Could not answer that offer. Please try again.')
   }
+  if (!updated || updated.length === 0) return fail('That host offer has already been resolved.')
 
   if (next === 'accepted' && !(await applyHost(admin, row.event_id, row.to_space_id))) {
     return fail('Could not change the host. Please try again.')
