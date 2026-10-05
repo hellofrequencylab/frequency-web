@@ -105,15 +105,15 @@ export function ConnectButton({ targetId }: { targetId: string }) {
   }
   return (
     <div className="flex flex-col items-end gap-1 shrink-0">
-      <button
+      <Button
+        size="sm"
         type="button"
         disabled={isPending}
         onClick={() => run(() => sendFriendRequest(targetId), () => setSent(true))}
-        className="flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
       >
         <UserPlus className="w-3.5 h-3.5" />
         Connect
-      </button>
+      </Button>
       <ActionError error={error} />
     </div>
   )
