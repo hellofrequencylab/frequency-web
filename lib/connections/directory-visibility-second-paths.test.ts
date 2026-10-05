@@ -36,4 +36,20 @@ describe('every member listing selects the privacy columns and filters through t
     expect(bare).toHaveLength(1)
     expect(bare[0]).toContain('current_season_rank')
   })
+
+  it('the Team block picker (lib/page-editor/member-search-action.ts) gates both the search and the resolve (SCAN-776)', () => {
+    const src = read('lib/page-editor/member-search-action.ts')
+    expect(src).toContain(IMPORT)
+    expect((src.match(/\$\{DIRECTORY_VISIBILITY_COLUMNS\}`\)/g) ?? []).length).toBe(2)
+    expect((src.match(/\.filter\(isListableInDirectory\)/g) ?? []).length).toBe(2)
+    expect(src).not.toMatch(/select\('id, handle, display_name, avatar_url'\)/)
+  })
+
+  it('the public Team cards (lib/spaces/content-data.ts resolveMemberCards) gate (SCAN-776)', () => {
+    const src = read('lib/spaces/content-data.ts')
+    expect(src).toContain(IMPORT)
+    const fn = src.match(/export async function resolveMemberCards\([\s\S]*?\n\}/)?.[0] ?? ''
+    expect(fn).toContain(INTERP + '`)')
+    expect(fn).toContain('.filter(isListableInDirectory)')
+  })
 })
