@@ -179,18 +179,23 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   // canonicalizes to it), so the schema url/image/offers all consolidate there.
   const url = abs(`/events/${event.slug}`)
 
-  // City-level Place: addressLocality + optional city-level region/country. We
-  // never include streetAddress, venue name, or coordinates.
-  const place = event.city
+  // City-level Place: addressLocality + optional city-level region/country, built from WHICHEVER
+  // of the three exist (SCAN-790): Google treats location.address as required for a physical
+  // Place, so an event with a region or country but no city still gets an address rather than
+  // the bare placeholder. We never include streetAddress, venue name, or coordinates, and never
+  // fall back to location / street / venue_name (SCAN-209, ADR-825). An event with none of the
+  // three is knowingly ineligible for the Event rich result; nothing is invented for it.
+  const addr = {
+    ...(event.city ? { addressLocality: event.city } : {}),
+    ...(event.region ? { addressRegion: event.region } : {}),
+    ...(event.country ? { addressCountry: event.country } : {}),
+  }
+  const placeName = event.city ?? event.region ?? event.country ?? null
+  const place = placeName
     ? {
         '@type': 'Place',
-        name: event.city,
-        address: {
-          '@type': 'PostalAddress',
-          addressLocality: event.city,
-          ...(event.region ? { addressRegion: event.region } : {}),
-          ...(event.country ? { addressCountry: event.country } : {}),
-        },
+        name: placeName,
+        address: { '@type': 'PostalAddress', ...addr },
       }
     : { '@type': 'Place', name: 'Location shared with members' }
 

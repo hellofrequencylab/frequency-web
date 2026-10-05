@@ -275,13 +275,22 @@ describe('eventSchema', () => {
     })
   })
 
-  it('uses generic location placeholder when city is null (privacy contract)', () => {
+  it('uses generic location placeholder when city, region and country are all null (privacy contract)', () => {
     const result = eventSchema(makeEvent({ city: null }))
     const loc = result.location as Record<string, unknown>
     expect(loc['@type']).toBe('Place')
     // Must NOT expose precise location; name is a generic placeholder
     expect(loc.name).toMatch(/member/i)
     expect(loc).not.toHaveProperty('address')
+  })
+
+  it('still emits a PostalAddress from region when city is null (SCAN-790)', () => {
+    const result = eventSchema({ ...makeEvent({ city: null }), region: 'CA' })
+    const loc = result.location as Record<string, unknown>
+    expect(loc.name).toBe('CA')
+    expect(loc.address).toMatchObject({ '@type': 'PostalAddress', addressRegion: 'CA' })
+    expect(loc.address).not.toHaveProperty('addressLocality')
+    expect(loc.address).not.toHaveProperty('streetAddress')
   })
 
   it('defaults to a scheduled, offline (in-person) event with no enrichment', () => {
