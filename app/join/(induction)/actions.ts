@@ -43,6 +43,7 @@ import { assignTag } from '@/lib/traits/tags'
 import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
 import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/referral'
 import { persistAcquisition } from '@/lib/attribution/acquisition'
+import { runClaimOnJoin, type ClaimOnJoinSession } from '@/lib/onboarding/claim-on-join'
 import { markLeadConverted } from './lead-actions'
 import type { Json } from '@/lib/database.types'
 
@@ -434,6 +435,12 @@ async function writeInduction(data: InductionData): Promise<void> {
     await applyReferralAttribution(prof.id as string).catch(() => {})
     await applyEntryPointConversion(prof.id as string).catch(() => {})
     await persistAcquisition(prof.id as string).catch(() => {})
+    // CLAIM-ON-JOIN (SCAN-743): redeem the Space lead-grab this member scanned in on, log the claim
+    // touchpoint on any sealed lead holding this email, attach guest event seats, and pay the
+    // connector join reward. The same helper completeOnboarding uses; that page has redirected here
+    // since FUNNEL_INDUCTION_ACTIVE, so without this call every live signup dropped all four. Runs
+    // after acquisition and before the welcome; every step inside is fail-safe and never blocks.
+    await runClaimOnJoin(prof.id as string, user.email, supabase as unknown as ClaimOnJoinSession).catch(() => {})
     // Name the inviter for the welcome email when this member joined through a
     // personal code (attribution just set referred_by). Best-effort personalization.
     try {
