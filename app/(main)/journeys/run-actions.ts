@@ -19,6 +19,10 @@ import {
   type RunEndState,
 } from '@/lib/journeys/runs'
 import { resolveRunGate, journeysOfferedBySpace } from '@/lib/journeys/run-gate'
+import { checkFreeEnrol } from '@/lib/journeys/free-enrol-gate'
+import { JOURNEY_FULL_MESSAGE } from '@/lib/journeys/journey-access'
+import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
+import { planMeta } from '@/lib/journey-plans'
 import { buildJourneyTree, type BlockRow } from '@/lib/journeys/tree'
 import { phaseUnlockAt } from '@/lib/journeys/schedule'
 
@@ -51,6 +55,22 @@ export async function startJourneyRunAction(input: {
     }
   }
 
+  // WHAT they may pick, for ANY Circle (SCAN-724): a Run enrols the whole roster and the learn page
+  // reads that enrolment as full access, so this door meets the same price, tier and seat gate as
+  // the solo free door (ADR-1397). Without it a member could start a Run of a priced public Journey
+  // for their own circle and unlock it for everyone free, or run a private draft that is not theirs.
+  // The author-or-manager escape mirrors adoptJourney: they are not buying their own program.
+  const meta = await planMeta(input.planId)
+  if (!meta) return fail('Journey not found.')
+  const isOwner =
+    (!!meta.author_id && meta.author_id === caller.id) ||
+    (await getJourneyCapabilities(input.planId)).has('journey.editSettings')
+  if (meta.visibility === 'private' && !isOwner) return fail('Journey not found.')
+  const free = await checkFreeEnrol(input.planId, caller.id, { isOwner })
+  if (!free.ok) return fail(free.error)
+  const seats = await rosterSeatCheck(input.planId, input.circleId)
+  if (!seats.ok) return fail(seats.error)
+
   const runId = await startRun({
     planId: input.planId,
     circleId: input.circleId,
@@ -73,6 +93,39 @@ export async function startJourneyRunAction(input: {
 
   revalidatePath(`/circles/${gate.circleSlug}`)
   return ok({ runId })
+}
+
+/** Does the Journey's enroll_cap hold the WHOLE roster a Run would enrol? checkFreeEnrol only reserves
+ *  the caller's own seat; startRun enrols every active member of the Circle at once. Members already
+ *  enrolled in the plan keep their seat and are not counted twice. FAIL-SAFE like the free door: a
+ *  broken count admits (worst case a few seats over), never locks a Journey. */
+async function rosterSeatCheck(planId: string, circleId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const admin = createAdminClient()
+    const [{ data: plan }, { data: members }, { count: taken }] = await Promise.all([
+      admin.from('journey_plans').select('enroll_cap').eq('id', planId).maybeSingle(),
+      admin.from('memberships').select('profile_id').eq('circle_id', circleId).eq('status', 'active'),
+      admin.from('journey_enrollments').select('id', { count: 'exact', head: true }).eq('plan_id', planId).is('completed_at', null),
+    ])
+    const enrollCap = (plan as { enroll_cap: number | null } | null)?.enroll_cap ?? null
+    if (enrollCap == null || enrollCap <= 0) return { ok: true }
+    const roster = (members ?? []).map((m) => String((m as { profile_id: string }).profile_id))
+    let alreadyIn = 0
+    if (roster.length) {
+      const { count } = await admin
+        .from('journey_enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('plan_id', planId)
+        .in('profile_id', roster)
+      alreadyIn = count ?? 0
+    }
+    const needed = Math.max(0, roster.length - alreadyIn)
+    if ((taken ?? 0) + needed > enrollCap) return { ok: false, error: JOURNEY_FULL_MESSAGE }
+    return { ok: true }
+  } catch (error) {
+    console.error('[journeys] run seat check failed, admitting', { planId, circleId, error })
+    return { ok: true }
+  }
 }
 
 /**
