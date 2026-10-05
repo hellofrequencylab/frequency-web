@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-646",
+  "title": "A check-in node created after signing shipped accepted a bare /n/<id> with no code until the grace window ends",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "XS",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "detail": "FOUND 2026-10-05 in the scan-six read of LIVE-688 (95dd410, ADR-1654). LIVE-688 stopped writing a random `nodes.secret` on new check-in nodes (insertCheckinNode) and on /admin/qr nodes, and nodeCodeVerdict answers `legacy` for a node with no secret and NO presented code until LEGACY_NODE_CODE_GRACE_ENDS (2026-12-01). So every node created after the deploy took a bare `/n/<id>` (strip `?s=`) as a valid check-in for two months: a member who scanned once could check in from home for every later event. That is a regression from before LIVE-688, when check-in nodes always carried a secret.\n\nMEASURED ON PROD 2026-10-05: 4 nodes, all created before LIVE-688 and all carrying a secret, so no node was exposed yet.\n\nCLOSED 2026-10-05: nodeCodeVerdict takes `nodeCreatedAt`; a node created on or after SIGNED_NODE_CODES_SINCE (the LIVE-688 merge, 2026-09-30T01:51:23Z) never had an unsigned code printed, so it gets no legacy path. verifyCapture reads `created_at` and passes it. Unit cases in lib/qr/node-code.test.ts pin both sides (a post-signing node refuses a bare id; a pre-signing node keeps its grace).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs = require(\"fs\")\nconst fail = (m) => { console.error(m); process.exit(1) }\nconst code = fs.readFileSync(\"lib/qr/node-code.ts\", \"utf8\")\nconst verify = fs.readFileSync(\"lib/engagement/verify.ts\", \"utf8\")\nif (!/created\\s*>=\\s*SIGNED_NODE_CODES_SINCE\\)\\s*return\\s*\\x27refused\\x27/.test(code)) fail(\"SCAN-646: nodeCodeVerdict no longer refuses the no-code legacy path for a node created after signing shipped, so a node created after LIVE-688 (which gets no random secret) checks in a bare /n/<id> until 2026-12-01.\")\nif (!/nodeCreatedAt:\\s*node\\.created_at/.test(verify) || !/select\\([^)]*created_at/.test(verify)) fail(\"SCAN-646: verifyCapture does not pass nodes.created_at into nodeCodeVerdict, so the post-signing refusal never fires.\")\n'",
+    "note": "Reads the verdict seam and its one caller. Fails on main before this change (mutation-checked by stashing the fix)."
+  },
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-six adversarial read of the 2026-09-28..30 merges"
+  }
+}
