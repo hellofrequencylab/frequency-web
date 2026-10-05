@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-791",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/jsonld.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-791: \"+f+\" missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const i=s.indexOf(\"export function eventSchema\");if(i<0){console.error(\"SCAN-791: eventSchema not found\");process.exit(79)}const b=s.slice(i,i+9000);const m=b.match(/organizer:\\s*\\{[^}]*\\}/);if(!m){console.error(\"SCAN-791: eventSchema emits no organizer node at all, so an event cannot be joined to its host entity.\");process.exit(1)}if(!/url\\s*:|@id/.test(m[0])){console.error(\"SCAN-791: the Event organizer is still a name-only Organization with no url or @id, so answer engines cannot join the event to its hosting circle.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: eventSchema in lib/jsonld.ts gives the circle organizer a url of /discover/circles/<circle_id> (the link the page already shows) when circle_id is set; lib/jsonld.test.ts asserts it. Person and Space hosts still emit no organizer (follow-up row per the detail)."
+  }
+}

@@ -1,12 +1,33 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import Link from 'next/link'
-import type { ReactNode } from 'react'
+import { isValidElement, type ReactNode } from 'react'
 
 // Renders help-article Markdown with DAWN-token styling. Server component (no
 // client JS) so help pages stay static and fast. Each handler takes only the
 // children it needs, so react-markdown's internal `node` prop never leaks to the DOM.
 type Kids = { children?: ReactNode }
+
+/** The plain text of a heading's children: strings as they are, arrays and elements walked. */
+function headingText(node: ReactNode): string {
+  if (node == null || typeof node === 'boolean') return ''
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(headingText).join('')
+  if (isValidElement<{ children?: ReactNode }>(node)) return headingText(node.props.children)
+  return ''
+}
+
+/** A URL-safe id for a heading, so a support reply, a sitelink or an answer engine can point at
+ *  one section instead of the whole page (SCAN-805). "What if I miss a week?" -> what-if-i-miss-a-week. */
+function headingId(children: ReactNode): string | undefined {
+  const slug = headingText(children)
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+  return slug || undefined
+}
 
 export function HelpMarkdown({ children }: { children: string }) {
   return (
@@ -17,13 +38,19 @@ export function HelpMarkdown({ children }: { children: string }) {
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }: Kids) => (
-            <h2 className="font-display text-page-title text-text mt-10 mb-3">{children}</h2>
+            <h2 id={headingId(children)} className="scroll-mt-24 font-display text-page-title text-text mt-10 mb-3">
+              {children}
+            </h2>
           ),
           h2: ({ children }: Kids) => (
-            <h2 className="font-display text-lead text-text mt-10 mb-3">{children}</h2>
+            <h2 id={headingId(children)} className="scroll-mt-24 font-display text-lead text-text mt-10 mb-3">
+              {children}
+            </h2>
           ),
           h3: ({ children }: Kids) => (
-            <h3 className="text-body-lg font-semibold text-text mt-6 mb-2">{children}</h3>
+            <h3 id={headingId(children)} className="scroll-mt-24 text-body-lg font-semibold text-text mt-6 mb-2">
+              {children}
+            </h3>
           ),
           // break-words on the three inline elements that can carry an unbreakable string:
           // a bare URL, a long env-var name, a hyphen-free compound. <pre> below already had

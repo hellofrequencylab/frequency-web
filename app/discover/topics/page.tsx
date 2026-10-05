@@ -13,7 +13,7 @@ import {
 import { CircleConstellation, OrganicBlob } from '@/components/marketing/vector-art'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, topicListSchema } from '@/lib/jsonld'
-import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Channels',
@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/discover/topics' },
   openGraph: {
     ...OG_SITE,
+    images: ROOT_OG_IMAGES,
     title: `Channels · ${SITE_NAME}`,
     description: 'Browse the Channels neighbors gather around on Frequency.',
     url: '/discover/topics',

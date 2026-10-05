@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const cat = (await getAllCategories()).find((c) => c.slug === category)
   if (!cat) return {}
   return {
-    title: `${cat.title} | Help`,
+    title: `${cat.title} · Help`,
     description: cat.description,
     alternates: { canonical: `/help/${cat.slug}` },
     openGraph: {

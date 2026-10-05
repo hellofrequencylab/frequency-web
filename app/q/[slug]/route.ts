@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isCodeLive } from '@/lib/qr/codes'
@@ -11,13 +12,15 @@ import {
   encodeFirstTouch,
   type FirstTouch,
 } from '@/lib/attribution/first-touch'
-import { joinCircle } from '@/app/(main)/circles/actions'
+import { joinCircleAsMember } from '@/lib/circles/join'
+import { listSpaceStewardIds, listSpaceEventCreatorIds } from '@/lib/events/placement'
+import { isStaff, asWebRole } from '@/lib/core/roles'
 import { checkInEvent, setRsvpStatus } from '@/app/(main)/events/actions'
 import type { CheckInFailReason } from '@/app/(main)/events/actions'
 import { log, briefError } from '@/lib/log'
 import { listActiveVariants, pickVariant } from '@/lib/entry-points/ab'
 import { referralsEnabled } from '@/lib/platform-flags'
-import { normalizeSplash, primarySplashLink } from '@/lib/qr/splash'
+import { normalizeSplash, splashRedirectLink } from '@/lib/qr/splash'
 import { renderSplashPage } from '@/lib/qr/splash-render'
 import { captureQrContact } from '@/lib/connections/qr-capture'
 import { makeEventInviteToken } from '@/lib/qr/event-invite'
@@ -62,6 +65,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     event_id: string | null
     purpose: string | null
     owner_profile_id: string | null
+    created_by: string | null
     source_tag: string | null
     space_id: string | null
     splash: unknown
@@ -74,7 +78,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const untypedQr = (admin as unknown as { from: (t: string) => UntypedQuery }).from('qr_codes')
   const { data: code } = await untypedQr
     .select(
-      'id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id, source_tag, space_id, splash',
+      'id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id, created_by, source_tag, space_id, splash',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -250,7 +254,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   //   • ANONYMOUS scanner → stash a pending grab so the eventual signup redeems the lead (claim-on-join).
   // The `source_tag === 'offer'` marker (set by createSpaceCode when the owner enables an offer-unlock)
   // makes the capture consent-native (mailable); otherwise the sealed lead stays consent 'unknown'.
-  const isSpaceLead = !!code.space_id && code.purpose === 'lead'
+  // The code's owner has to hold the Space it captures for (SCAN-774): a lead code is minted by a
+  // Space steward (createSpaceCode), so a row whose owner is not one is not that Space's code and
+  // captures nothing. An owner-less row is an operator code and keeps working.
+  const isSpaceLead =
+    !!code.space_id &&
+    code.purpose === 'lead' &&
+    (await ownerHoldsSpace(code.owner_profile_id, code.space_id))
   if (isSpaceLead && code.space_id) {
     const offerUnlock = code.source_tag === 'offer'
     // Met-context: the event the code carries, else the coarse IP-geo city (same source as personal capture).
@@ -288,17 +298,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   // referral/first-touch cookies are set (so a splash code still counts + attributes):
   //   • A/B variant in play -> the variant wins (skip the splash), so split-traffic codes keep their
   //     existing behavior unchanged.
-  //   • Otherwise, if the splash has a PRIMARY CTA, redirect straight to it (the owner's chosen main
-  //     action). If it has no links, RENDER the splash landing page (heading + blurb + image).
+  //   • Otherwise, if the splash is a bare single link (one link, no blurb, no image), the landing
+  //     would add nothing over its one button, so redirect straight to it (splashRedirectLink).
+  //   • Otherwise RENDER the splash landing page (heading + blurb + image + links, the first link
+  //     styled as the main button). The editor promises exactly this page, so a scan must show what
+  //     the owner authored rather than skipping to link one (SCAN-780).
   // A code WITHOUT a splash (or a malformed one) falls through to every existing branch below,
   // unchanged. A relative-path or a same-origin CTA resolves against the request origin.
   const splash = abTarget ? null : normalizeSplash(code.splash)
   if (splash) {
-    const cta = primarySplashLink(splash)
-    if (cta) {
-      return withReferral(NextResponse.redirect(new URL(cta.url, origin)))
+    const shortcut = splashRedirectLink(splash)
+    if (shortcut) {
+      return withReferral(NextResponse.redirect(new URL(shortcut.url, origin)))
     }
-    // No CTA: render the splash landing itself (cookies are set via withReferral on the HTML response).
+    // Render the splash landing itself (cookies are set via withReferral on the HTML response).
     const html = renderSplashPage(splash, origin)
     return withReferral(
       new NextResponse(html, { headers: { 'content-type': 'text/html; charset=utf-8' } }),
@@ -320,14 +333,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   if (code.destination_type === 'circle' && code.circle_id) {
     const { data: circle } = await admin
       .from('circles')
-      .select('slug')
+      .select('slug, host_id, space_id')
       .eq('id', code.circle_id)
       .maybeSingle()
     if (!circle) return unavailable
-    // `invited: true` — a QR code with a circle destination was minted by the Host or an operator
-    // for exactly this purpose, so scanning it IS the invite. It is the one caller that may open a
-    // private circle's join (ADR-1015); every other path goes through the default deny.
-    if (profileId) await joinCircle(code.circle_id, circle.slug, { invited: true }).catch(() => {})
+    // `invited` is true only when the code was minted by someone with authority over THIS circle:
+    // its Host, a steward of its Space, or platform staff (SCAN-774). Then scanning it IS the
+    // invite, and this is the one caller that may open a private circle's join (ADR-1015). A code
+    // whose minter holds none of that is just a link to the circle: the scanner lands on it and
+    // the default deny decides, the same as every other path.
+    if (profileId) {
+      const invited = await minterHoldsCircle(admin, code, circle)
+      await joinCircleAsMember(profileId, code.circle_id, { invited }).catch(() => {})
+      if (invited) {
+        revalidatePath('/circles')
+        revalidatePath('/feed')
+      }
+    }
     return withReferral(to(`/circles/${circle.slug}`))
   }
 
@@ -427,6 +449,29 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
  *  (`guest` is not a refusal: it is the signed-out scanner being sent to the guest form, PROG-GD4).
  *  Rides to the event page as `?door=`; not exported, because a route file may only export handlers. */
 type DoorOutcome = CheckInFailReason | 'rsvp_refused' | 'failed' | 'guest'
+
+/** Does the minter of a circle code hold authority over that circle: its Host, a steward of its
+ *  Space, or platform staff? The minter is the row's creator, else its owner. A row with neither on
+ *  record vouches for nobody, so it is a plain link, never an invite (fail-closed, SCAN-774). */
+async function minterHoldsCircle(
+  admin: ReturnType<typeof createAdminClient>,
+  code: { created_by: string | null; owner_profile_id: string | null },
+  circle: { host_id: string | null; space_id: string | null },
+): Promise<boolean> {
+  const minter = code.created_by ?? code.owner_profile_id
+  if (!minter) return false
+  if (circle.host_id && minter === circle.host_id) return true
+  if (circle.space_id && (await listSpaceStewardIds(circle.space_id)).includes(minter)) return true
+  const { data: p } = await admin.from('profiles').select('web_role').eq('id', minter).maybeSingle()
+  return isStaff(asWebRole(p?.web_role))
+}
+
+/** Does a Space code's owner hold that Space: its owner or an ACTIVE editor+ member, the same seats
+ *  createSpaceCode admits (canEditProfile)? An owner-less code is an operator code and passes. */
+async function ownerHoldsSpace(ownerId: string | null, spaceId: string): Promise<boolean> {
+  if (!ownerId) return true
+  return (await listSpaceEventCreatorIds(spaceId)).includes(ownerId)
+}
 
 async function ownerHandle(
   admin: ReturnType<typeof createAdminClient>,

@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-060",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Retired 2026-10-05 by owner ruling, multiple choice (schedule it this month, after launch, retire the program): \"Retire the program\". The quarterly moderated round leaves the plan; docs/research/PROTOCOL.md stays as the method if a round is ever wanted again. Nothing to measure.",
+      "checked": "2026-10-05"
+    }
+  },
+  "append": {
+    "detail": "\n\nRETIRED 2026-10-05 by owner ruling, put as multiple choice (schedule it this month, after launch, retire the program): \"Retire the program\". The quarterly moderated research cadence (UX-MATURITY-PLAN Lift 1b) ends; docs/research/PROTOCOL.md stays as the method, not a schedule. Recorded in ADR-1705 §4."
+  }
+}

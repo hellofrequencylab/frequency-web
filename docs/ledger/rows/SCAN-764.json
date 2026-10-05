@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-764",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const need=[\"lib/billing/tips.ts\",\"lib/commerce/checkout.ts\",\"lib/billing/tickets.ts\"];for(const f of need){if(!fs.existsSync(f)){console.error(\"SCAN-764: \"+f+\" missing\");process.exit(79)}}const seg=(s,start)=>{const i=s.indexOf(start);if(i<0)return null;const r=s.slice(i);const j=r.indexOf(\"\\nexport \",10);return j>0?r.slice(0,j):r};const tips=seg(fs.readFileSync(need[0],\"utf8\"),\"export async function recordTipFromSession(\");const ord=seg(fs.readFileSync(need[1],\"utf8\"),\"export async function recordCommerceOrderFromSession(\");const tk=fs.readFileSync(need[2],\"utf8\");const fi=tk.indexOf(\"function flippedRows(\");if(!tips||!ord||fi<0){console.error(\"SCAN-764: a settle recorder was not found\");process.exit(79)}const fr=tk.slice(fi,tk.indexOf(\"return (result.data\",fi));const okUpdate=(x)=>/\\{\\s*data:\\s*updated\\s*,\\s*error(?::\\s*\\w+)?\\s*\\}\\s*=\\s*await\\s+db\\(\\)/.test(x)&&/if\\s*\\(\\s*\\w*[eE]rror\\s*\\)\\s*\\{?\\s*throw/.test(x);const bad=[];if(!okUpdate(tips))bad.push(\"recordTipFromSession (tips)\");if(!okUpdate(ord))bad.push(\"recordCommerceOrderFromSession (commerce_orders)\");if(!/\\bthrow\\b/.test(fr)||/return\\s*\\[\\s*\\]/.test(fr))bad.push(\"flippedRows (tickets)\");if(bad.length){console.error(\"SCAN-764: \"+bad.join(\", \")+\" still swallow(s) the DB error on the paid flip, so a failed settle is acked 200 with the Stripe claim kept and the tip, order or ticket stays pending forever with no redelivery.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThree of the four recorders behind recordPaidCheckout swallowed the DB error on the paid flip: recordTipFromSession never read error from the update, recordCommerceOrderFromSession did the same until SCAN-710 landed its throw on main, and flippedRows in tickets logged the RPC error and returned [], so a transient failure looked like a redelivery, the Stripe route acked 200 with the claim kept, and the tip, order or ticket stayed pending forever with no redelivery. Each settle write now throws (tips captures { data: updated, error } and throws, commerce_orders already did via SCAN-710; flippedRows throws after its console.error, so the ticket refund path redelivers too). The on-page backstops already caught (settleTipAction, settleTicketAction, settleCommerceOrderAction, the Journey welcome page); the two that did not (people/[handle]/page.tsx and events/[slug]/event-member-page.tsx) and the inline reconcile in refundTicket (Stripe refund already made) now catch and log so a paying buyer never sees an error page. Pinned in lib/billing/tips.test.ts, lib/commerce/checkout.test.ts and lib/billing/tickets-settle.test.ts (the two tests that asserted never-throws were flipped to assert the throw and that no downstream side effect runs)."
+  }
+}

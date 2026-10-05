@@ -1,0 +1,9 @@
+{
+  "id": "PROG-A3",
+  "patch": {
+    "priority": "P3"
+  },
+  "append": {
+    "detail": "\n\n── RE-PRICED P1 -> P3 on 2026-10-05 by owner ruling, put as multiple choice (P3 and stays W9, stays P1, P2 and stays W9): \"Re-price to P3\". The App Platform ships last (ADR-1535 §1, ADR-1703), so the price now matches when the work can start; the row keeps W9, its size, detail and probe."
+  }
+}

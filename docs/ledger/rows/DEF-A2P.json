@@ -1,0 +1,6 @@
+{
+  "id": "DEF-A2P",
+  "append": {
+    "detail": "\n\nRULED 2026-10-05 by owner, multiple choice in the project thread (ADR-1705 §4): \"File now\" (the options were: file now, file at launch, drop SMS). The owner starts the Twilio brand and campaign filing from docs/A2P-REGISTRATION.md now; the 10 to 15 day carrier clock starts on submission. Closes when both SIDs and SMS_PROVISIONING_ENABLED are set on Vercel Production after approval."
+  }
+}

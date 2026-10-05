@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-727",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"lib/journey-plans.ts\";if(!fs.existsSync(p))process.exit(79);const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"export async function forkPlan(\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);if(!/block_type|parent_id|copyItemTree/.test(body)){console.error(\"SCAN-727: forkPlan copies only practice_id, domain_id, sort_order, note and cadence, so Remix on a phase or lesson Journey produces a flat list of untitled empty practice blocks.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nforkPlan and duplicatePlan share copyItemTree, which copies the full block tree parents first; a priced or tier-gated source forks without bodies or media; a partial copy deletes the fork and returns null."
+  }
+}

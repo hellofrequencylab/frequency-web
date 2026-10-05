@@ -1,0 +1,15 @@
+{
+  "id": "OWN-074",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Closed 2026-10-05 by owner ruling in the project thread: \"I messaged Lumi. Close OWN-074 out.\" The host of Returning Home ($55, 2026-10-23) was asked by the owner to finish Stripe Connect onboarding at /settings/billing. Production at 2026-10-05 ~16:45Z still read stripe_account_id null, charges and payouts disabled for that profile; the owner closes the row on the message sent, not on the flag flipping. If the host has not connected by the event, the ticket stays unsellable and LIVE-233 (the prompt at first sell attempt) is the product-side guard.",
+      "checked": "2026-10-05"
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05 by owner ruling, put as multiple choice (send them the message, switch the payee, let it pass unsold): the owner messaged the host and said \"Close OWN-074 out\". Production at ~16:45Z the same day: the Returning Home host still has no Connect account; charges and payouts disabled; 18 days to the event. The row closes on the owner's word that the ask was made; the reading is recorded so nobody re-files it as new."
+  }
+}
