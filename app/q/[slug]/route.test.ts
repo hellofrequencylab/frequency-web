@@ -20,9 +20,13 @@ const fx = vi.hoisted(() => ({
   checkInEvent: vi.fn(async (): Promise<Row> => ({ ok: true })),
   warn: vi.fn(),
   profileId: 'member-1' as string | null,
+  // The circle branch (SCAN-774): the helper the route joins through, and the minter verdict.
+  joinCircleAsMember: vi.fn(async (): Promise<unknown> => ({ ok: true, joined: true })),
+  mayInvite: vi.fn(async (): Promise<boolean> => true),
+  code: { destination_type: 'event', event_id: 'event-1', circle_id: null } as Record<string, unknown>,
 }))
 
-const CODE: Row = {
+const BASE_CODE: Row = {
   id: 'code-1',
   active: true,
   valid_from: null,
@@ -36,6 +40,7 @@ const CODE: Row = {
   event_id: 'event-1',
   purpose: null,
   owner_profile_id: null,
+  created_by: null,
   source_tag: null,
   space_id: null,
   splash: null,
@@ -48,7 +53,14 @@ vi.mock('@/lib/supabase/admin', () => ({
       b.select = () => b
       b.eq = () => b
       b.maybeSingle = async () => ({
-        data: table === 'qr_codes' ? CODE : table === 'events' ? { slug: 'moon-circle', title: 'Moon Circle' } : null,
+        data:
+          table === 'qr_codes'
+            ? { ...BASE_CODE, ...fx.code }
+            : table === 'events'
+              ? { slug: 'moon-circle', title: 'Moon Circle' }
+              : table === 'circles'
+                ? { slug: 'quiet-room', host_id: 'host-1', space_id: 'space-1' }
+                : null,
         error: null,
       })
       return b
@@ -59,7 +71,11 @@ vi.mock('@/lib/supabase/admin', () => ({
 vi.mock('@/lib/auth', () => ({ getMyProfileId: async () => fx.profileId }))
 vi.mock('@/lib/analytics/track', () => ({ track: async () => undefined }))
 vi.mock('@/lib/engagement/events', () => ({ recordEngagementEvent: async () => ({ recorded: false }) }))
-vi.mock('@/app/(main)/circles/actions', () => ({ joinCircle: async () => undefined }))
+vi.mock('@/lib/circles/join', () => ({ joinCircleAsMember: fx.joinCircleAsMember }))
+vi.mock('@/lib/qr/circle-invite', () => ({
+  qrCodeMinterMayInvite: fx.mayInvite,
+  isSpaceSteward: async () => true,
+}))
 vi.mock('@/app/(main)/events/actions', () => ({
   setRsvpStatus: fx.setRsvpStatus,
   checkInEvent: fx.checkInEvent,
@@ -95,6 +111,10 @@ beforeEach(() => {
   fx.checkInEvent.mockResolvedValue({ ok: true })
   fx.warn.mockClear()
   fx.profileId = 'member-1'
+  fx.joinCircleAsMember.mockClear()
+  fx.mayInvite.mockReset()
+  fx.mayInvite.mockResolvedValue(true)
+  fx.code = { destination_type: 'event', event_id: 'event-1', circle_id: null }
 })
 
 describe('the QR door carries its outcome to the event page', () => {
@@ -165,5 +185,57 @@ describe('the QR door carries its outcome to the event page', () => {
     expect(url.searchParams.get('door')).not.toBe('guest')
     expect(fx.setRsvpStatus).toHaveBeenCalledWith('event-1', 'going')
     expect(fx.checkInEvent).toHaveBeenCalledWith('event-1')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The circle branch (SCAN-774). A circle code used to be treated as the Host's invite no matter
+// who minted it, and it went through the exported joinCircle Server Action with `invited: true`,
+// a flag any browser could pass on its own. Now the route asks who minted the code and joins
+// through the plain helper, which is not an action at all.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('the QR circle door only invites when the minter could have', () => {
+  beforeEach(() => {
+    fx.code = { destination_type: 'circle', event_id: null, circle_id: 'circle-1', created_by: 'host-1' }
+  })
+
+  it('a code minted by someone trusted joins the scanner as invited', async () => {
+    const url = await scan()
+    expect(url.pathname).toBe('/circles/quiet-room')
+    expect(fx.mayInvite).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ created_by: 'host-1' }),
+      expect.objectContaining({ host_id: 'host-1', space_id: 'space-1' }),
+    )
+    expect(fx.joinCircleAsMember).toHaveBeenCalledWith('member-1', 'circle-1', { invited: true })
+  })
+
+  it('🔴 a code minted by a stranger is NOT an invite: the join runs through the default deny', async () => {
+    fx.mayInvite.mockResolvedValue(false)
+    const url = await scan()
+    expect(url.pathname).toBe('/circles/quiet-room')
+    expect(fx.joinCircleAsMember).toHaveBeenCalledWith('member-1', 'circle-1', { invited: false })
+  })
+
+  it('a minter check that throws reads as not invited, and the scan still lands', async () => {
+    fx.mayInvite.mockRejectedValue(new Error('db away'))
+    const url = await scan()
+    expect(url.pathname).toBe('/circles/quiet-room')
+    expect(fx.joinCircleAsMember).toHaveBeenCalledWith('member-1', 'circle-1', { invited: false })
+  })
+
+  it('an anonymous scan joins nobody and lands on the circle', async () => {
+    fx.profileId = null
+    const url = await scan()
+    expect(url.pathname).toBe('/circles/quiet-room')
+    expect(fx.mayInvite).not.toHaveBeenCalled()
+    expect(fx.joinCircleAsMember).not.toHaveBeenCalled()
+  })
+
+  it('a refused or throwing join never breaks the scan', async () => {
+    fx.joinCircleAsMember.mockRejectedValueOnce(new Error('boom'))
+    const url = await scan()
+    expect(url.pathname).toBe('/circles/quiet-room')
   })
 })

@@ -84,6 +84,7 @@ vi.mock('@/lib/supabase/admin', () => {
 })
 
 import { joinCircle } from './actions'
+import { joinCircleAsMember } from '@/lib/circles/join'
 
 const CLOSED = {
   member_count: 2,
@@ -152,10 +153,23 @@ describe('every closed access mode refuses a stranger', () => {
 })
 
 describe('each mode`s own door opens', () => {
-  it('the QR route`s invited: true opens an invite circle', async () => {
+  it('the QR route`s invited: true opens an invite circle, through the helper', async () => {
     circleRow = { ...CLOSED, access: 'invite' }
-    await joinCircle('circle-1', 'closed-circle', { invited: true })
+    const outcome = await joinCircleAsMember('stranger-1', 'circle-1', { invited: true })
+    expect(outcome).toEqual({ ok: true, joined: true })
     expect(membershipInserts).toHaveLength(1)
+  })
+
+  it('🔴 SCAN-774: the exported Server Action has no invited door, whatever a client sends', async () => {
+    // A Server Action's arguments come from the browser. The flag used to be the third parameter,
+    // so any signed-in client could POST it; the action now ignores anything past the slug.
+    for (const access of ['invite', 'tier', 'space_paid_members'] as const) {
+      circleRow = { ...CLOSED, access }
+      const smuggled = joinCircle as unknown as (a: string, b: string, c: unknown) => Promise<ActionResult>
+      const res = await smuggled('circle-1', 'closed-circle', { invited: true })
+      expect(isError(res)).toBe(true)
+    }
+    expect(membershipInserts).toHaveLength(0)
   })
 
   it('a TEAM seat opens a space_members circle — the staff semantics OWN-034 ruling C keeps', async () => {

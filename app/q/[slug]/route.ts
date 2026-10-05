@@ -11,7 +11,8 @@ import {
   encodeFirstTouch,
   type FirstTouch,
 } from '@/lib/attribution/first-touch'
-import { joinCircle } from '@/app/(main)/circles/actions'
+import { joinCircleAsMember } from '@/lib/circles/join'
+import { qrCodeMinterMayInvite, isSpaceSteward } from '@/lib/qr/circle-invite'
 import { checkInEvent, setRsvpStatus } from '@/app/(main)/events/actions'
 import type { CheckInFailReason } from '@/app/(main)/events/actions'
 import { log, briefError } from '@/lib/log'
@@ -62,6 +63,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     event_id: string | null
     purpose: string | null
     owner_profile_id: string | null
+    created_by: string | null
     source_tag: string | null
     space_id: string | null
     splash: unknown
@@ -74,7 +76,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const untypedQr = (admin as unknown as { from: (t: string) => UntypedQuery }).from('qr_codes')
   const { data: code } = await untypedQr
     .select(
-      'id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id, source_tag, space_id, splash',
+      'id, active, valid_from, valid_until, destination_type, target_url, alt_target_url, switch_at, node_id, circle_id, event_id, purpose, owner_profile_id, created_by, source_tag, space_id, splash',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -250,7 +252,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   //   • ANONYMOUS scanner → stash a pending grab so the eventual signup redeems the lead (claim-on-join).
   // The `source_tag === 'offer'` marker (set by createSpaceCode when the owner enables an offer-unlock)
   // makes the capture consent-native (mailable); otherwise the sealed lead stays consent 'unknown'.
-  const isSpaceLead = !!code.space_id && code.purpose === 'lead'
+  // The code's minter must steward the Space it claims to capture for (SCAN-774): a code whose
+  // owner has no seat on that Space is not a lead-grab door, so the branch is skipped and the scan
+  // falls through to its destination unchanged. An operator code (no owner) is trusted as before.
+  const isSpaceLead =
+    !!code.space_id &&
+    code.purpose === 'lead' &&
+    (!code.owner_profile_id ||
+      (await isSpaceSteward(admin, code.space_id, code.owner_profile_id).catch(() => false)))
   if (isSpaceLead && code.space_id) {
     const offerUnlock = code.source_tag === 'offer'
     // Met-context: the event the code carries, else the coarse IP-geo city (same source as personal capture).
@@ -320,14 +329,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   if (code.destination_type === 'circle' && code.circle_id) {
     const { data: circle } = await admin
       .from('circles')
-      .select('slug')
+      .select('slug, host_id, space_id')
       .eq('id', code.circle_id)
       .maybeSingle()
     if (!circle) return unavailable
-    // `invited: true` — a QR code with a circle destination was minted by the Host or an operator
-    // for exactly this purpose, so scanning it IS the invite. It is the one caller that may open a
-    // private circle's join (ADR-1015); every other path goes through the default deny.
-    if (profileId) await joinCircle(code.circle_id, circle.slug, { invited: true }).catch(() => {})
+    // Scanning a circle code IS the invite (ADR-1015), but ONLY when the code was minted by someone
+    // who could have invited the scanner by hand: the Host, a steward of the circle's Space, or
+    // platform staff (SCAN-774). A member-minted code pointing at somebody else's closed circle is
+    // just a link to its public face, and the join runs through the default deny like any other.
+    // joinCircleAsMember is a plain helper, not the Server Action, so this is the one place the
+    // flag can be raised and a browser cannot reach it.
+    if (profileId) {
+      const invited = await qrCodeMinterMayInvite(admin, code, circle).catch(() => false)
+      await joinCircleAsMember(profileId, code.circle_id, { invited }).catch(() => {})
+    }
     return withReferral(to(`/circles/${circle.slug}`))
   }
 

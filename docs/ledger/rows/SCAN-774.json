@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-774",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const r=\"app/q/[slug]/route.ts\",a=\"app/(main)/circles/actions.ts\";if(!fs.existsSync(r)||!fs.existsSync(a)){console.error(\"SCAN-774: a file the probe must read is missing\");process.exit(79)}const route=fs.readFileSync(r,\"utf8\"),act=fs.readFileSync(a,\"utf8\");const sig=act.match(/export async function joinCircle\\(([\\s\\S]*?)\\)\\s*:/);const actionTakesInvited=!!(sig&&/invited/.test(sig[1]));const routeTrustsRow=/joinCircle\\(code\\.circle_id, circle\\.slug, \\{ invited: true \\}\\)/.test(route)&&!/host_id|steward|isStaff|platform_staff/.test(route);if(actionTakesInvited||routeTrustsRow){console.error(\"SCAN-774: a member can still join a closed or paid circle without an invite: \"+(actionTakesInvited?\"the exported joinCircle Server Action still accepts an invited flag any client can pass; \":\"\")+(routeTrustsRow?\"the /q resolver still passes invited:true for any circle code without checking that its creator is the circle host, a Space steward or staff.\":\"\"));process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe exported joinCircle Server Action took an invited flag any browser could POST, and the /q resolver passed invited:true for every circle code without asking who minted it, while the qr_codes insert policy let a member insert a row with any circle_id or space_id. The join body now lives in lib/circles/join.ts (joinCircleAsMember, not an action); the action takes only circleId and slug and always passes invited:false. The route selects the code's created_by and the circle's host_id and space_id and raises invited only when lib/qr/circle-invite.ts says the minter is the Host, a steward of the Space (owner or active editor+), platform staff, or an operator code with no minter; the lead-grab branch likewise requires the code's owner to steward code.space_id. Migration 20270345011800 revokes table-wide insert and update on qr_codes from anon and authenticated and grants back only the personal-code columns on insert and title, style, target_url, active on update. Pinned by lib/qr/circle-invite.test.ts, the circle-branch cases in app/q/[slug]/route.test.ts, the no-invited-door case in join-privacy.test.ts, and the pgTAP file supabase/tests/qr_codes_member_write_columns.test.sql."
+  }
+}
