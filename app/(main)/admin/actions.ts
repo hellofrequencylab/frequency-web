@@ -27,6 +27,7 @@ import { promotionStepsCrossed, ROLE_PROMOTION_SLUG } from '@/lib/walkthroughs/r
 import { authorizeAction } from '@/lib/admin/guard'
 import { logAdminAction } from '@/lib/admin/audit'
 import { getStaffMember } from '@/lib/staff'
+import { assertCanBroadcastTo } from '@/lib/messaging/broadcast-scope'
 import { staffCan, type StaffDomain } from '@/lib/core/staff-roles'
 import {
   getCircleCapabilities,
@@ -698,8 +699,38 @@ function makeExcerpt(body: string, maxLen = 200): string {
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…'
 }
 
+// A Dispatch is its author's (SCAN-749). The global host rung alone let any circle host edit,
+// retarget, publish or delete any other host's broadcast, so every mutation below first loads the
+// row and admits only its author or a platform operator (web_role staff, or a staff role holding
+// community write), the same reach requireScopedManage grants. `operator` says which path admitted
+// the caller, so the edit path knows whether to re-run the association guard on a new audience.
+async function requireDispatchOwner(id: string) {
+  const caller = await requireCommunityOps()
+  const admin = createAdminClient()
+  const { data: dispatch } = await admin
+    .from('dispatches')
+    .select('id, author_id, status, published_at')
+    .eq('id', id)
+    .maybeSingle()
+  if (!dispatch) throw new Error('Dispatch not found')
+  const isAuthor = dispatch.author_id === caller.id
+  let operator = isStaff(caller.webRole)
+  if (!operator) {
+    const staff = await getStaffMember().catch(() => null)
+    operator = staffCan(staff?.role ?? null, 'community', 'write')
+  }
+  if (!isAuthor && !operator) throw new Error('Unauthorized')
+  return { caller, dispatch, operator }
+}
+
 export async function updateDispatch(id: string, fd: FormData) {
-  await requireCommunityOps()
+  const { caller, operator } = await requireDispatchOwner(id)
+
+  const audience_scope = fd.get('audience_scope') as DispatchScope
+  const audience_id    = ((fd.get('audience_id') as string) ?? '').trim()
+  // The new audience obeys the same association guard the create path enforces: a host may
+  // only retarget to a circle, hub or region they lead (a staff operator keeps global reach).
+  if (!operator) await assertCanBroadcastTo(caller, audience_scope, audience_id)
 
   const body           = (fd.get('body') as string).trim()
   const excerpt        = makeExcerpt(body)
@@ -715,8 +746,8 @@ export async function updateDispatch(id: string, fd: FormData) {
     body,
     excerpt,
     dispatch_type,
-    audience_scope: fd.get('audience_scope') as DispatchScope,
-    audience_id:    (fd.get('audience_id') as string).trim(),
+    audience_scope,
+    audience_id:    audience_id || null,
     linked_task_id,
     scheduled_for,
     updated_at:     new Date().toISOString(),
@@ -750,20 +781,25 @@ export async function updateDispatch(id: string, fd: FormData) {
 }
 
 export async function publishDispatch(id: string) {
-  await requireCommunityOps()
+  const { dispatch: before } = await requireDispatchOwner(id)
 
   const admin = createAdminClient()
-  const { error } = await admin.from('dispatches').update({
+  // Only a draft flips, and the first publish stamp is kept, so unpublish then publish does not
+  // re-send the blast (SCAN-749). A row comes back only when this call did the flip.
+  const { data: flipped, error } = await admin.from('dispatches').update({
     status:       'published',
-    published_at: new Date().toISOString(),
+    published_at: before.published_at ?? new Date().toISOString(),
     updated_at:   new Date().toISOString(),
-  }).eq('id', id)
+  }).eq('id', id).neq('status', 'published').select('id')
   if (error) throw new Error(error.message)
 
   revalidatePath('/admin/dispatches')
   revalidatePath('/nearby')
   revalidatePath(`/nearby/${id}`)
   revalidatePath('/feed')
+
+  // The fan-out runs once per Dispatch: on the publish that first stamped it.
+  if (!flipped?.length || before.published_at) return
 
   // Fire-and-forget email fan-out. Never block publish on email failure
   ;(async () => {
@@ -856,7 +892,7 @@ export async function publishDispatch(id: string) {
 }
 
 export async function unpublishDispatch(id: string) {
-  await requireCommunityOps()
+  await requireDispatchOwner(id)
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -872,7 +908,7 @@ export async function unpublishDispatch(id: string) {
 }
 
 export async function deleteDispatch(id: string) {
-  await requireCommunityOps()
+  await requireDispatchOwner(id)
 
   const admin = createAdminClient()
   const { error } = await admin.from('dispatches').delete().eq('id', id)

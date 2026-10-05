@@ -10,6 +10,7 @@ import { sendPushToProfile } from '@/lib/push'
 import { atLeastRole } from '@/lib/core/roles'
 import { resolvePlaceTreeProfileIds, type PlaceType } from '@/lib/messaging/place-tree'
 import { logDispatchRecipients, type DispatchRecipientRow } from '@/lib/messaging/dispatch-log'
+import { assertCanBroadcastTo } from '@/lib/messaging/broadcast-scope'
 
 // Role-ladder comparison — single source in lib/core/roles.
 const hasRole = atLeastRole
@@ -34,44 +35,13 @@ export async function createAndPublishDispatch(fd: FormData) {
   const audience_id    = (fd.get('audience_id') as string)?.trim()
 
   const isGlobal = audience_scope === 'global'
-  // Global reaches every member — staff/janitor only (Phase D, ADR-088).
-  if (isGlobal && !hasRole(caller.community_role, 'janitor')) {
-    throw new Error('Only staff can broadcast globally.')
-  }
-  if (!title || !body || !audience_scope || (!isGlobal && !audience_id)) throw new Error('Missing required fields')
+  if (!title || !body) throw new Error('Missing required fields')
+  // Association guard, shared with the operator edit path (SCAN-749): a janitor+ tier may
+  // broadcast anywhere; everyone else only to a circle, hub or region they lead.
+  await assertCanBroadcastTo(caller, audience_scope, audience_id)
 
   const excerpt = makeExcerpt(body)
   const admin   = createAdminClient()
-
-  // Association guard: an admin tier (janitor+) may broadcast anywhere; everyone else
-  // may only broadcast to a scope they LEAD — the circle's host, the hub's guide, or
-  // the nexus's mentor matching the audience.
-  if (!hasRole(caller.community_role, 'janitor')) {
-    let led = false
-    if (audience_scope === 'circle') {
-      const { data: c } = await admin.from('circles').select('host_id, hub_id').eq('id', audience_id).maybeSingle()
-      if (c?.host_id === caller.id) led = true
-      else if (c?.hub_id) {
-        const { data: h } = await admin.from('hubs').select('guide_id, nexus_id').eq('id', c.hub_id).maybeSingle()
-        if (h?.guide_id === caller.id) led = true
-        else if (h?.nexus_id) {
-          const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
-          if (n?.mentor_id === caller.id) led = true
-        }
-      }
-    } else if (audience_scope === 'hub') {
-      const { data: h } = await admin.from('hubs').select('guide_id, nexus_id').eq('id', audience_id).maybeSingle()
-      if (h?.guide_id === caller.id) led = true
-      else if (h?.nexus_id) {
-        const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
-        if (n?.mentor_id === caller.id) led = true
-      }
-    } else if (audience_scope === 'nexus') {
-      const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', audience_id).maybeSingle()
-      if (n?.mentor_id === caller.id) led = true
-    }
-    if (!led) throw new Error('You can only broadcast to a circle, hub, or region you lead.')
-  }
 
   // audience_id is nullable for global in the DB (dispatch_global_tier migration).
   const { data: dispatch, error } = await admin
