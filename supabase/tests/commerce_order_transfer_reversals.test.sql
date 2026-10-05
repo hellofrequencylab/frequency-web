@@ -7,7 +7,7 @@
 --     code never writes.
 --   GENERATED: reversal_owed_cents is the target minus what is reversed, never below zero, and it
 --     follows both columns, which is the reconciler's queue.
---   SCAN-649 (20270345011700): a new row holds no lease, no refusals and a zero floor;
+--   SCAN-649 (20270345011900): a new row holds no lease, no refusals and a zero floor;
 --     reversal_attempts_since_target follows attempts and the floor; the floor cannot pass attempts.
 --
 -- One transaction, rolled back: nothing persists. Fixture style follows commerce_order_transfers.test.sql.
