@@ -1,6 +1,5 @@
 'use server'
 
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
@@ -12,14 +11,7 @@ import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/re
 import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { persistAcquisition } from '@/lib/attribution/acquisition'
-import { rewardConnectorJoinOnSignup } from '@/lib/rewards/connector'
-import {
-  LEAD_GRAB_COOKIE,
-  LEGACY_LEAD_GRAB_COOKIE,
-  parseLeadGrab,
-  claimPendingLeadGrab,
-  claimLeadOnSignup,
-} from '@/lib/crm/lead-capture'
+import { runClaimOnJoin } from '@/lib/onboarding/claim-on-join'
 
 export async function completeOnboarding(data: {
   displayName: string
@@ -104,50 +96,10 @@ export async function completeOnboarding(data: {
     await applyReferralAttribution(updated.id)
     await applyEntryPointConversion(updated.id).catch(() => {})
     await persistAcquisition(updated.id).catch(() => {})
-    // CLAIM-ON-JOIN (CRM Phase 3): redeem any Space lead-grab this new member came through. Two
-    // fail-safe, never-blocking paths — an anonymous Space-QR scan carried a pending grab (fq_lead
-    // cookie → link into the Space CRM with the original door), and any sealed lead already sharing this
-    // email gets its 'claim' touchpoint logged (the profiles_sync_contact trigger linked profile_id).
-    try {
-      const jar = await cookies()
-      // 2026-09-06 (LIVE-162): the grab cookie was renamed 'fq_lead' -> 'fq_lead_grab' because the
-      // signup lead claim (app/join/(induction)/lead-actions.ts) writes the same 'fq_lead' name, so
-      // on a shared browser one overwrote the other. A grab parked before the rename is still worth
-      // redeeming (30-day max-age), so the OLD name is read as a fallback and only a value that
-      // parses as a grab is used: the claim cookie's `<id>.<token>` string is not one, so a visitor
-      // who only walked the join funnel parses to null here and nothing is claimed.
-      // 🗓️ DELETE THE FALLBACK AFTER 2026-10-07 (one full LEAD_GRAB_MAX_AGE past the rename): drop
-      // LEGACY_LEAD_GRAB_COOKIE from this read, its delete below, and the export in lib/crm/lead-capture.ts.
-      const current = parseLeadGrab(jar.get(LEAD_GRAB_COOKIE)?.value)
-      const legacy = current ? null : parseLeadGrab(jar.get(LEGACY_LEAD_GRAB_COOKIE)?.value)
-      const grab = current ?? legacy
-      if (grab) {
-        await claimPendingLeadGrab(updated.id, grab).catch(() => {})
-        // Clear only the slot the grab actually came from. The legacy name is ALSO the signup lead
-        // claim's cookie, and that one is consumed later, by markLeadConverted: deleting it here
-        // whenever it exists would drop a conversion stamp that has not been written yet.
-        jar.delete(current ? LEAD_GRAB_COOKIE : LEGACY_LEAD_GRAB_COOKIE)
-      }
-    } catch {
-      /* claim is a bonus, never a blocker on signup */
-    }
-    await claimLeadOnSignup(updated.id, user.email).catch(() => {})
-    // CLAIM-ON-JOIN, the seats leg: any event this person already RSVP'd to as a signed-out guest
-    // becomes theirs (20270303000100). Without this the guest seat is a dead end — it holds a place
-    // in the room but never appears in "my events", can never be cancelled by the person holding
-    // it, and never reaches WAM.
-    //
-    // Called on the SESSION client, which is not incidental: claim_guest_rsvps proves ownership
-    // with auth.uid() and would find nothing under the admin client. It also requires
-    // auth.users.email_confirmed_at, so a merely-typed address claims nothing (ADR-854).
-    // Fail-safe like its neighbours — a claim is a bonus, never a blocker on signup.
-    await (supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<unknown> })
-      .rpc('claim_guest_rsvps', { p_profile_id: updated.id })
-      .catch(() => {})
-    // Connector reward (ADR-154 / ADR-777): if this new member's email matches one or more
-    // inviters' event-sourced personal contacts, each inviter earns the join ⚡⚡ + 💎 (the person
-    // they captured actually joined). Idempotent + daily-capped + fail-safe inside the grant engine.
-    await rewardConnectorJoinOnSignup(user.email).catch(() => {})
+    // CLAIM-ON-JOIN (CRM Phase 3): the Space lead-grab, the sealed lead's claim touchpoint, the
+    // guest RSVP seats and the inviter's connector reward, each fail-safe. SCAN-743: shared with the
+    // live /join finisher (writeInduction) through lib/onboarding/claim-on-join.ts.
+    await runClaimOnJoin(updated.id, user.email, supabase)
     // Welcome the new member (ADR-231): grants the join Zaps AND drops the one quiet
     // "@handle joined 👋" line into the feed + the personal notification. This is the
     // classic path — it previously only granted Zaps and never posted the feed line,

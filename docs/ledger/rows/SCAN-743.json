@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-743",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const f=\"app/join/(induction)/actions.ts\";if(!fs.existsSync(f))process.exit(79);const seen=new Set();const read=(p,depth)=>{if(seen.has(p)||depth>2)return \"\";seen.add(p);let t=\"\";try{t=fs.readFileSync(p,\"utf8\")}catch{return \"\"}let out=t;const re=/from\\s+[\"\\x27]@\\/([^\"\\x27]+)[\"\\x27]/g;let m;while((m=re.exec(t))){for(const ext of [\".ts\",\".tsx\",\"/index.ts\"]){const q=path.join(process.cwd(),m[1]+ext);if(fs.existsSync(q)){out+=read(q,depth+1);break}}}return out};const all=read(f,0);const names=[\"claimPendingLeadGrab\",\"claimLeadOnSignup\",\"rewardConnectorJoinOnSignup\"];const missing=names.filter(n=>!all.includes(n));if(missing.length){console.error(\"SCAN-743: the live /join finisher (writeInduction and its imports) never calls \"+missing.join(\", \")+\", so Space lead-grab scans, lead claim touchpoints and connector join rewards are dropped for every member who signs up through /join.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe claim-on-join block (Space lead-grab redemption, sealed-lead claim touchpoint, guest RSVP seat claim, connector join reward) lived only in completeOnboarding in app/onboarding/actions.ts, whose page redirects to /join while the funnel induction is live, so every member who signed up through /join (writeInduction in app/join/(induction)/actions.ts) was dropped from the Space CRM they scanned into and their inviters never earned the ADR-154/777 join Zaps and Gems. Fix: the block moved into a shared server helper lib/onboarding/claim-on-join.ts exporting runClaimOnJoin(profileId, email, sessionClient), each leg fail-safe, reading fq_lead_grab (legacy fq_lead only while it parses as a grab) and deleting only the slot the grab came from; writeInduction now calls it right after persistAcquisition and before postWelcomeForMember, and completeOnboarding calls the same helper instead of its own copy. Pinned by lib/onboarding/claim-on-join.test.ts (the three calls plus the claim_guest_rsvps RPC on the session client, both cookie slots, the claim cookie left alone, every leg fail-safe) and app/join/(induction)/actions.claim-on-join.test.ts (source-shape: writeInduction calls the helper between attribution and the welcome, completeOnboarding has no copy of its own); the existing app/onboarding/actions.test.ts lead-grab cases still pass through the helper."
+  }
+}

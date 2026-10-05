@@ -43,6 +43,7 @@ import { assignTag } from '@/lib/traits/tags'
 import { resolveAcquisition, stampAcquisitionTag } from '@/lib/attribution/server'
 import { applyReferralAttribution, applyEntryPointConversion } from '@/lib/qr/referral'
 import { persistAcquisition } from '@/lib/attribution/acquisition'
+import { runClaimOnJoin } from '@/lib/onboarding/claim-on-join'
 import { markLeadConverted } from './lead-actions'
 import type { Json } from '@/lib/database.types'
 
@@ -434,6 +435,12 @@ async function writeInduction(data: InductionData): Promise<void> {
     await applyReferralAttribution(prof.id as string).catch(() => {})
     await applyEntryPointConversion(prof.id as string).catch(() => {})
     await persistAcquisition(prof.id as string).catch(() => {})
+    // CLAIM-ON-JOIN (SCAN-743): the Space lead-grab this member scanned into, the sealed lead's
+    // claim touchpoint, any guest RSVP seats and the inviter's connector join reward. Until now only
+    // the legacy completeOnboarding ran this, behind a redirect to /join, so every live signup was
+    // dropped from the Space CRM and inviters were never paid. Runs AFTER attribution (same order as
+    // the legacy path) and BEFORE the welcome. Fail-safe inside; never blocks onboarding.
+    await runClaimOnJoin(prof.id as string, user.email, supabase).catch(() => {})
     // Name the inviter for the welcome email when this member joined through a
     // personal code (attribution just set referred_by). Best-effort personalization.
     try {
