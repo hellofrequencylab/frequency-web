@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-765",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/api/track/route.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-765: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const imp=/from\\s+\"@\\/lib\\/consent\\/consent\"|from\\s+\\x27@\\/lib\\/consent\\/consent\\x27/.test(s);const gate=/hasConsent\\(\\s*profile\\.id\\s*,\\s*[\"\\x27]analytics[\"\\x27]\\s*\\)/.test(s);if(!imp||!gate){console.error(\"SCAN-765: /api/track writes an account-tied engagement_events row without checking the analytics consent scope, so a member who turned off Product analytics still has every nav.page_view stored against their profile (its sibling /api/observe honours the same toggle).\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n/api/track drops the event with 204 when the member has no analytics consent, the same gate as /api/observe; route test added and ANALYTICS.md notes it."
+  }
+}

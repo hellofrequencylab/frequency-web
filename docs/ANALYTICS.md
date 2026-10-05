@@ -40,6 +40,10 @@ are set in production.
 
 `track()`/`engagement_events` is the **semantic** stream — named, reviewable, business-meaningful
 events (one row per join / RSVP / verified practice), the source of truth for dashboards and rewards.
+Its client sink `POST /api/track` (`trackClient`, navigation + UI events) is member-tied and
+**consent-gated** on the `analytics` scope, the same gate as `/api/observe` (SCAN-765): a member who
+turns off Product analytics gets a 204 and no row. `track()` itself stays open for the
+server-authoritative events (joins, RSVPs, account.created) that dashboards and rewards depend on.
 
 Alongside it runs the **raw interaction firehose** — `interaction_events`, the high-volume twin for
 the fine-grained behavioral signal the AI + reward engine read history from:
