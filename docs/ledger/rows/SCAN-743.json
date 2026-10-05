@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-743",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const f=\"app/join/(induction)/actions.ts\";if(!fs.existsSync(f))process.exit(79);const seen=new Set();const read=(p,depth)=>{if(seen.has(p)||depth>2)return \"\";seen.add(p);let t=\"\";try{t=fs.readFileSync(p,\"utf8\")}catch{return \"\"}let out=t;const re=/from\\s+[\"\\x27]@\\/([^\"\\x27]+)[\"\\x27]/g;let m;while((m=re.exec(t))){for(const ext of [\".ts\",\".tsx\",\"/index.ts\"]){const q=path.join(process.cwd(),m[1]+ext);if(fs.existsSync(q)){out+=read(q,depth+1);break}}}return out};const all=read(f,0);const names=[\"claimPendingLeadGrab\",\"claimLeadOnSignup\",\"rewardConnectorJoinOnSignup\"];const missing=names.filter(n=>!all.includes(n));if(missing.length){console.error(\"SCAN-743: the live /join finisher (writeInduction and its imports) never calls \"+missing.join(\", \")+\", so Space lead-grab scans, lead claim touchpoints and connector join rewards are dropped for every member who signs up through /join.\");process.exit(1)}'",
+      "note": "Reads app/join/(induction)/actions.ts and every local module it imports (two levels deep) and requires the three claim-on-join calls to be reachable from it. Fails today because only app/onboarding/actions.ts, behind a redirect, calls them."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: the claim-on-join block (lead-grab, sealed-lead claim, claim_guest_rsvps on the session client, connector join reward) moved into lib/onboarding/claim-on-join.ts runClaimOnJoin, called from writeInduction (after persistAcquisition, before postWelcomeForMember) and from completeOnboarding. Verified by the probe, eslint, tsc and app/join/(induction)/actions.claim-on-join.test.ts asserting the three calls plus the RPC."
+  }
+}
