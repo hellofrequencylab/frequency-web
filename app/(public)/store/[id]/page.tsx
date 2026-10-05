@@ -111,6 +111,8 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
                   key={i}
                   src={src}
                   alt={`${product.title}, photo ${i + 1}`}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
                   className="aspect-square w-full rounded-card border border-border object-cover"
                 />
               ))}

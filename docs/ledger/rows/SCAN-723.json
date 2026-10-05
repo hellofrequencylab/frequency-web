@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-723",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/practices/actions.ts\";if(!fs.existsSync(p))process.exit(79);const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"export async function logPracticeAction(\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);const sig=body.slice(0,body.indexOf(\"{\"));const takesTimed=/timed\\??\\s*:/.test(sig);const forwards=/secondsTarget:\\s*timed\\?*\\.secondsTarget/.test(body);if(takesTimed&&forwards){console.error(\"SCAN-723: logPracticeAction still forwards client-supplied secondsDone and secondsTarget to logPractice, so a member can skip the timer gate and claim the Heavy tier by sending any numbers.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nlogPracticeAction no longer takes a timed argument and always passes null seconds, so the uses_timer gate always applies; the logPractice comment now says the seconds are trusted as given."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-652",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs = require(\"fs\")\nconst door = fs.readFileSync(\"lib/library/download-door.ts\", \"utf8\")\nconst i = door.indexOf(\"export async function openLibraryDownload\")\nconst body = i < 0 ? door : door.slice(i)\nlet protectMove = \"\"\ntry { protectMove = fs.readFileSync(\"lib/library/protect-move.ts\", \"utf8\") } catch {}\nif (!/isProtected/.test(body) && !/download_policy/.test(protectMove)) { console.error(\"SCAN-652: a PROTECTED Loom asset left on the default open download policy hands its original to anyone with the asset id, signed out included, through /api/library/download/<id>; the picker sends that id to every picker user.\"); process.exit(1) }\n'",
+      "note": "Fails until the door or the protect move considers protection when the policy is open. If the ruling is (d), close it with that note and a probe on the drawer copy."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05 by the owner-gated prep PR, ruling (b) prepared for the owner's approval (ADR-1705): effectiveDownloadPolicy in lib/library/download-door.ts reads a protected asset left on the default open policy as staff, an operator's pick of members or staff survives, the written record carries the applied policy, and the drawer says so under Protected. Pinned in download-door.test.ts. If the owner names another letter, reopen and amend ADR-1705.\n\nAPPROVED 2026-10-05 17:45Z by owner on a decision card, multiple choice (staff only, members, flip on protect, keep as is): \"Loom team only\", option (b) as implemented here."
+  }
+}

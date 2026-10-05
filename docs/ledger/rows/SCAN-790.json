@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-790",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/jsonld.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-790: \"+f+\" missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const i=s.indexOf(\"export function eventSchema\");const j=s.indexOf(\"const virtual\",i);if(i<0||j<0){console.error(\"SCAN-790: eventSchema or its Place block not found\");process.exit(79)}const b=s.slice(i,j);if(/const place\\s*=\\s*event\\.city\\s*\\?/.test(b)){console.error(\"SCAN-790: eventSchema still picks the location Place on event.city alone, so an in-person event with no city but a known region or country emits a Place with no address and loses the Event rich result.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: eventSchema in lib/jsonld.ts builds the Place address from whichever of city, region and country exist, naming the Place by the most specific part, and uses the bare placeholder only when all three are null; lib/jsonld.test.ts adds the city-null region-CA case."
+  }
+}

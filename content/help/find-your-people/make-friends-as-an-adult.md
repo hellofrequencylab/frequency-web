@@ -8,6 +8,7 @@ updated: 2026-10-05
 audience: member
 featureKeys: [circles, practices]
 status: published
+canonical: /friendship-as-an-adult
 ---
 Read the full guide first: [How to make friends as an adult](/friendship-as-an-adult). This page is the short version for members, with the Frequency features that help.
 

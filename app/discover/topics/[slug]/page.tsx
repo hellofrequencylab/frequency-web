@@ -11,7 +11,7 @@ import { CircleCard, SignInCta } from '@/components/discover/cards'
 import { CircleConstellation } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { OG_SITE, SITE_NAME } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { circleListSchema, breadcrumbSchema } from '@/lib/jsonld'
 
@@ -46,6 +46,7 @@ export async function generateMetadata({
     alternates: { canonical: `/discover/topics/${channel.slug}` },
     openGraph: {
       ...OG_SITE,
+      images: ROOT_OG_IMAGES,
       title: `${channel.name} · ${SITE_NAME}`,
       description,
       url: `/discover/topics/${channel.slug}`,

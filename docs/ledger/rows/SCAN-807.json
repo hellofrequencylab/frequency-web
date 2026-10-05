@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-807",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs = require(\"fs\")\nconst f = \"components/spotlight/spotlight-shell.tsx\"\nif (!fs.existsSync(f)) { console.error(\"SCAN-807: \" + f + \" is missing\"); process.exit(79) }\nconst s = fs.readFileSync(f, \"utf8\")\nconst start = s.indexOf(\"background.assetPath &&\")\nconst end = s.indexOf(\"background.dim\")\nif (start < 0 || end < 0) { console.error(\"SCAN-807: the Spotlight background block could not be located in \" + f); process.exit(79) }\nconst block = s.slice(start, end)\nconst rawImg = /<img[\\s\\S]*?src=\\{`\\$\\{SPOTLIGHT_PUBLIC_BASE\\}/.test(block)\nconst nextImage = /<Image[\\s\\S]*?src=\\{`\\$\\{SPOTLIGHT_PUBLIC_BASE\\}/.test(block)\nif (rawImg || !nextImage) { console.error(\"SCAN-807: the Spotlight background is still a raw img of the original upload (up to 5 MB) instead of a next/image fill, so every visitor downloads the full-resolution file for a viewport-filling layer.\"); process.exit(1) }\n'",
+      "note": "Fails on main before this change (checked by running the probe before the fix); passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: the Spotlight background is a next/image fill (sizes 100vw, fetchPriority low) inside the existing fixed wrapper, so the optimizer serves a viewport-sized AVIF/WebP instead of the creator's original upload."
+  }
+}

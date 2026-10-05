@@ -3,24 +3,28 @@ import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
-import { getPublishedData } from '@/lib/page-editor/data'
+import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 export const revalidate = 3600
 
+// Not the bare word (SCAN-678): say who the page is for, which is what the query says. Shared with
+// the Article headline below so the two cannot drift (SCAN-802).
+const TITLE = 'Spaces for businesses, studios and organizations'
+
 export const metadata: Metadata = {
-  // Not the bare word (SCAN-678): say who the page is for, which is what the query says.
-  title: 'Spaces for businesses, studios and organizations',
+  title: TITLE,
   description:
     'Run your community as a Space on Frequency. A front door in Discover, and the tools to host Circles and Runs. Free to start, no card today.',
   alternates: { canonical: '/spaces' },
   openGraph: {
     ...OG_SITE,
+    images: ROOT_OG_IMAGES,
     title: 'Spaces · Frequency',
     description:
       'Bring your community onto Frequency as a Space: a real front door, the format for Circles and Runs, and tools to grow without losing what made it yours.',
@@ -67,8 +71,15 @@ const EMPTY: Data = { content: [], root: {} }
 // ⚠️ Do NOT add a coded section to this file. `scripts/render-path-bodies.txt` records `spaces 0`
 // and `check:render-path` matches it EXACTLY, so a second top-level component here fails the build.
 // New marketing structure on this page belongs in a BLOCK (lib/page-editor/config.tsx).
+// Article dates (SCAN-781). datePublished is the day this route first shipped (repository history:
+// 2026-06-24); dateModified is the later of the template's last revision (2026-09-21) and the pages row's
+// real published_at, so a Publish from /edit moves it and nothing is invented when none exists.
+const PUBLISHED = '2026-06-24'
+const UPDATED = '2026-09-21'
+
 export default async function SpacesPage() {
-  const published = await getPublishedData('spaces')
+  const page = await getPublishedPage('spaces')
+  const published = page?.doc ?? null
   const template = getTemplate('spaces')
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
   const live = await getLiveData(createAdminClient()).catch(() => null)
@@ -77,7 +88,13 @@ export default async function SpacesPage() {
       <JsonLd data={breadcrumbSchema([{ name: 'Spaces', path: '/spaces' }])} />
       {/* The coded body published NO Article schema, so this rung is the only one that ever has.
           Unconditional now, which is what it already was in practice: `data` was never null. */}
-      <BlockDocJsonLd data={data} path="/spaces" />
+      <BlockDocJsonLd
+        data={data}
+        path="/spaces"
+        title={TITLE}
+        published={PUBLISHED}
+        updated={latestDay(UPDATED, page?.published_at)}
+      />
       <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
     </>
   )

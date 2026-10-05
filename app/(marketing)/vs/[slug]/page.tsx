@@ -4,6 +4,7 @@
 // JSON-LD. Voice + naming locked (CONTENT-VOICE, NAMING): plain, honest, no em
 // dashes, no health claims, the skeptic test. We never knock the other tool.
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowRight, Check } from 'lucide-react'
 import {
@@ -40,12 +41,6 @@ export function generateStaticParams() {
 // A real gathering photo doubles as the multimodal AIO signal + E-E-A-T proof.
 const HERO_IMAGE = '/images/site/community-dinner.jpg'
 
-// Article dates for every comparison page. Google requires datePublished/dateModified on an
-// Article node, and each pillar page stamps them as literals the same way; without them all five
-// /vs/<slug> URLs published a dateless Article. One template, one build date, so the whole set
-// stays honest at once: first shipped 2026-07-28, last revised 2026-08-05.
-const PUBLISHED = '2026-07-28'
-const UPDATED = '2026-08-05'
 
 export async function generateMetadata({
   params,
@@ -96,8 +91,8 @@ export default async function ComparisonPage({
             title: copy.metaTitle,
             description: copy.description,
             path,
-            published: PUBLISHED,
-            updated: UPDATED,
+            published: comparison.published,
+            updated: comparison.updated,
             image: HERO_IMAGE,
           }),
           faqSchema(copy.faq),
@@ -197,6 +192,31 @@ export default async function ComparisonPage({
           Common questions
         </h2>
         <FaqList items={copy.faq.map((f) => ({ q: f.q, a: f.a }))} />
+      </Section>
+
+      {/* The other comparisons and the hub, as links a visitor and a crawler can follow.
+          Without this the breadcrumb JSON-LD was the only route back to /vs (SCAN-801). */}
+      <Section tone="canvas">
+        <h2 className="mb-5 font-display text-display-h3 uppercase text-text">
+          More comparisons
+        </h2>
+        <ul className="flex flex-col gap-2 text-body-lg">
+          {COMPARISONS.filter((c) => c.slug !== slug).map((c) => (
+            <li key={c.slug}>
+              <Link
+                href={comparisonPath(c.slug)}
+                className="font-semibold text-primary-strong hover:underline"
+              >
+                Frequency vs {c.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-6 text-body-sm text-muted">
+          <Link href="/vs" className="font-semibold text-primary-strong hover:underline">
+            Every comparison
+          </Link>
+        </p>
       </Section>
 
       <BetaCTA

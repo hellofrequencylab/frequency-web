@@ -399,8 +399,13 @@ export default async function EventDetailPage({
   // (when present), the viewer's event capabilities, and the root Space id.
   const [ticketedCentsResolved, eventCaps, rootSpaceId] = await Promise.all([
     // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
+    // Never fatal to the buyer: a DB refusal throws out of the settle (SCAN-764) so the webhook
+    // redelivers, and this page must still render for someone who has just paid.
     ticket === 'success' && session_id
-      ? recordTicketFromSessionId(session_id)
+      ? recordTicketFromSessionId(session_id).catch((e: unknown) => {
+          console.error('[tickets] redirect settle failed; the webhook is now the only path', e)
+          return null
+        })
       : Promise.resolve(null),
     getEventCapabilities(event.id),
     // The root Space is the single-tenant default an event inherits (a personal Circle derives

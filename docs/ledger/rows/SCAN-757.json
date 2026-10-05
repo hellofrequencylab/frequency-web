@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-757",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const rd=(p)=>{if(!fs.existsSync(p)){console.error(\"indeterminate: missing \"+p);process.exit(79)}return fs.readFileSync(p,\"utf8\")};const s=rd(\"lib/staff.ts\");const files=[\"app/(main)/admin/marketing/layout.tsx\",\"app/(main)/admin/marketing/agent/actions.ts\",\"app/(main)/admin/marketing/automations/actions.ts\",\"app/(main)/admin/marketing/deliverability/actions.ts\"];const bad=[];if(/staffCan\\(member\\.role,\\s*domain,\\s*level\\)/.test(s)||!/getCapabilityOverrides/.test(s))bad.push(\"requireStaffCap calls staffCan without the capability overrides\");for(const f of files){const t=rd(f);if(/staffCan\\(staff\\.role,\\s*.marketing.(,\\s*.read.)?\\)/.test(t)&&!/getCapabilityOverrides|staffCanNow/.test(t))bad.push(f+\" gates on code defaults only\")}if(bad.length){console.error(\"SCAN-757: \"+bad.join(\"; \")+\", so the roles grid cannot revoke or grant what those doors allow.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nrequireStaffCap in lib/staff.ts called staffCan(role, domain, level) with no overrides, so the capability_permissions grid a janitor edits on /admin/roles was ignored by about thirty capability gates, and the four marketing doors (layout, agent, automations, deliverability actions) called staffCan on the role alone the same way; a grid denial did not close them and a grant did not open them while requireAdmin honoured the grid. lib/staff.ts now imports getCapabilityOverrides, requireStaffCap loads it (request-cached, fails open to the code defaults) and passes it as staffCan's fourth argument, and a new exported staffCanNow(domain, level) pairs getStaffMember with staffCan plus the grid; the four marketing files use it. Pinned by lib/staff.test.ts: a marketer row set to none on marketing makes requireStaffCap redirect and staffCanNow false, a support row set to write opens both, an empty grid resolves as the code defaults, a throwing grid read fails open, and a non-staff or view-as viewer is denied before the grid is read."
+  }
+}

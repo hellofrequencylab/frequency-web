@@ -27,6 +27,7 @@ import { promotionStepsCrossed, ROLE_PROMOTION_SLUG } from '@/lib/walkthroughs/r
 import { authorizeAction } from '@/lib/admin/guard'
 import { logAdminAction } from '@/lib/admin/audit'
 import { getStaffMember } from '@/lib/staff'
+import { assertCanBroadcastTo } from '@/lib/messaging/broadcast-scope'
 import { staffCan, type StaffDomain } from '@/lib/core/staff-roles'
 import {
   getCircleCapabilities,
@@ -392,7 +393,10 @@ export async function setCircleFeaturedAction(id: string, on: boolean): Promise<
 // ── Invite links ─────────────────────────────────────────────────────────────
 
 export async function createInviteLink(circleId: string): Promise<{ token: string }> {
-  const caller = await requireCommunityOps()
+  // Scoped, not the global host rung (SCAN-750): a link is a key into a private or paid
+  // circle, so only someone who manages THIS circle (or a platform operator) may mint one.
+  const caps = await getCircleCapabilities(circleId)
+  const caller = await requireScopedManage(await getCallerProfile(), caps.has('circle.editSettings'), 'community')
 
   const token = randomBytes(12).toString('base64url')
   const admin = createAdminClient()
@@ -433,6 +437,14 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
   if (!link || !link.is_active) throw new Error('Invite link is invalid or no longer active')
   if (link.expires_at && new Date(link.expires_at) < new Date()) throw new Error('Invite link has expired')
   if (link.max_uses > 0 && link.used_count >= link.max_uses) throw new Error('Invite link has reached its maximum uses')
+
+  // An archived circle takes no new members, whatever its links say (SCAN-750).
+  const { data: circle } = await admin
+    .from('circles')
+    .select('status')
+    .eq('id', link.circle_id)
+    .maybeSingle()
+  if (!circle || circle.status === 'archived') throw new Error('This circle is no longer accepting members')
 
   // Get caller profile
   const { data: profile } = await admin
@@ -687,8 +699,36 @@ function makeExcerpt(body: string, maxLen = 200): string {
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…'
 }
 
+// A Dispatch is its author's (SCAN-749). The global host rung alone let any circle host edit,
+// retarget, publish or delete any other host's broadcast, so every mutation below first loads the
+// row and admits only its author or a platform operator (web_role staff, or a staff role holding
+// community write), the same reach requireScopedManage grants. `operator` says which path admitted
+// the caller, so the edit path knows whether to re-run the association guard on a new audience.
+async function requireDispatchOwner(id: string) {
+  const caller = await requireCommunityOps()
+  const admin = createAdminClient()
+  const { data: dispatch } = await admin
+    .from('dispatches')
+    .select('id, author_id, status, published_at')
+    .eq('id', id)
+    .maybeSingle()
+  if (!dispatch) throw new Error('Dispatch not found')
+  const isAuthor = dispatch.author_id === caller.id
+  // Both reaches are read unconditionally so the authz scan sees the gate on every path.
+  const staff = await getStaffMember().catch(() => null)
+  const operator = isStaff(caller.webRole) || staffCan(staff?.role ?? null, 'community', 'write')
+  if (!isAuthor && !operator) throw new Error('Unauthorized')
+  return { caller, dispatch, operator }
+}
+
 export async function updateDispatch(id: string, fd: FormData) {
-  await requireCommunityOps()
+  const { caller, operator } = await requireDispatchOwner(id)
+
+  const audience_scope = fd.get('audience_scope') as DispatchScope
+  const audience_id    = ((fd.get('audience_id') as string) ?? '').trim()
+  // The new audience obeys the same association guard the create path enforces: a host may
+  // only retarget to a circle, hub or region they lead (a staff operator keeps global reach).
+  if (!operator) await assertCanBroadcastTo(caller, audience_scope, audience_id)
 
   const body           = (fd.get('body') as string).trim()
   const excerpt        = makeExcerpt(body)
@@ -704,8 +744,8 @@ export async function updateDispatch(id: string, fd: FormData) {
     body,
     excerpt,
     dispatch_type,
-    audience_scope: fd.get('audience_scope') as DispatchScope,
-    audience_id:    (fd.get('audience_id') as string).trim(),
+    audience_scope,
+    audience_id:    audience_id || null,
     linked_task_id,
     scheduled_for,
     updated_at:     new Date().toISOString(),
@@ -739,20 +779,25 @@ export async function updateDispatch(id: string, fd: FormData) {
 }
 
 export async function publishDispatch(id: string) {
-  await requireCommunityOps()
+  const { dispatch: before } = await requireDispatchOwner(id)
 
   const admin = createAdminClient()
-  const { error } = await admin.from('dispatches').update({
+  // Only a draft flips, and the first publish stamp is kept, so unpublish then publish does not
+  // re-send the blast (SCAN-749). A row comes back only when this call did the flip.
+  const { data: flipped, error } = await admin.from('dispatches').update({
     status:       'published',
-    published_at: new Date().toISOString(),
+    published_at: before.published_at ?? new Date().toISOString(),
     updated_at:   new Date().toISOString(),
-  }).eq('id', id)
+  }).eq('id', id).neq('status', 'published').select('id')
   if (error) throw new Error(error.message)
 
   revalidatePath('/admin/dispatches')
   revalidatePath('/nearby')
   revalidatePath(`/nearby/${id}`)
   revalidatePath('/feed')
+
+  // The fan-out runs once per Dispatch: on the publish that first stamped it.
+  if (!flipped?.length || before.published_at) return
 
   // Fire-and-forget email fan-out. Never block publish on email failure
   ;(async () => {
@@ -845,7 +890,7 @@ export async function publishDispatch(id: string) {
 }
 
 export async function unpublishDispatch(id: string) {
-  await requireCommunityOps()
+  await requireDispatchOwner(id)
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -861,7 +906,7 @@ export async function unpublishDispatch(id: string) {
 }
 
 export async function deleteDispatch(id: string) {
-  await requireCommunityOps()
+  await requireDispatchOwner(id)
 
   const admin = createAdminClient()
   const { error } = await admin.from('dispatches').delete().eq('id', id)
@@ -972,6 +1017,16 @@ export async function updateEventDetails(id: string, fd: FormData) {
 
 export async function approveVerification(completionId: string) {
   const caller = await requireCommunityOps()
+  // SCAN-687: a circle task is always verification-gated and any member can become a circle Host,
+  // so the person who logged the completion can never be the one who releases its Zaps.
+  const { data: completion, error: completionError } = await createAdminClient()
+    .from('crew_completions')
+    .select('profile_id')
+    .eq('id', completionId)
+    .maybeSingle()
+  if (completionError) throw new Error(completionError.message)
+  if (!completion) return
+  if (completion.profile_id === caller.id) throw new Error('Unauthorized: you cannot verify your own completion')
   // Verification-gated Zaps (leader grant): stamping verified_at releases the held Zaps via
   // trg_after_crew_completion_verified, which writes the ledger row once. Idempotent — re-approving
   // an already-verified completion is a safe no-op (the helper only touches still-held rows).
@@ -982,11 +1037,14 @@ export async function approveVerification(completionId: string) {
 export async function rejectVerification(completionId: string) {
   await requireCommunityOps()
   const admin = createAdminClient()
+  // SCAN-752: the held marker is verified_at, not verified_by (an auto-verified completion carries
+  // verified_at and no verified_by), so keying on verified_by could delete a completion whose Zaps
+  // were already credited. Same key as the queue in lib/crew/verification-queue.ts.
   const { error } = await admin
     .from('crew_completions')
     .delete()
     .eq('id', completionId)
-    .is('verified_by', null)
+    .is('verified_at', null)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/crew-tasks')
 }

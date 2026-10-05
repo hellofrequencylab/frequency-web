@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-800",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/spotlight/[handle]/page.tsx\";if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(f,\"utf8\");const i=s.indexOf(\"generateMetadata\");if(i<0)process.exit(79);const end=s.indexOf(\"\\nexport default\",i);const body=s.slice(i,end<0?s.length:end);const owns=/\\bimages\\s*:/.test(body);if(owns){console.error(\"SCAN-800: the Spotlight page still sets images inside generateMetadata, so a member with an avatar owns the key and the designed opengraph-image card is suppressed in favour of the raw square avatar.\");process.exit(1)}'",
+      "note": "Fails on main before this change (checked by running the probe before the fix); passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: generateMetadata no longer sets images in either the openGraph or the twitter block, so the folder opengraph-image.tsx card wins for every Spotlight, avatar or not, and Next copies it into twitter:image."
+  }
+}
