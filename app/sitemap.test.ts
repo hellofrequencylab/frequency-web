@@ -322,6 +322,13 @@ describe('app/sitemap emitted URL set', () => {
     expect(urls).not.toContain(`${SITE}/discover/places/encinitas`)
   })
 
+  it('escapes XML-reserved characters in image URLs, so one & in a cover cannot break the file (SCAN-785)', async () => {
+    commerce.shop = [{ id: 'amp-1', images: ['https://cdn.example/a.jpg?x=1&y=2'] }]
+    const hit = (await sitemap()).find((e) => e.images?.[0]?.includes('a.jpg'))
+    expect(hit, 'the product entry is advertised').toBeDefined()
+    expect(hit!.images![0]).toBe('https://cdn.example/a.jpg?x=1&amp;y=2')
+  })
+
   it('emits no duplicate URLs', async () => {
     const urls = (await sitemap()).map((e) => e.url)
     const dupes = urls.filter((u, i) => urls.indexOf(u) !== i)

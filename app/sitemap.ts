@@ -763,5 +763,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     );
   }
 
-  return [...staticRoutes, ...helpRoutes, ...dynamicRoutes, ...organizerRoutes, ...spotlightRoutes];
+  return xmlSafe([...staticRoutes, ...helpRoutes, ...dynamicRoutes, ...organizerRoutes, ...spotlightRoutes]);
+}
+
+// Next's sitemap serializer writes <loc> and <image:loc> verbatim (resolve-route-data.js), so one
+// '&' in an operator- or importer-supplied cover URL makes the whole file ill-formed XML and every
+// URL in it unreadable (SCAN-785). Our own URLs carry no reserved characters; the images can.
+const XML_ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" };
+export function escapeXml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => XML_ESCAPES[c]);
+}
+function xmlSafe(entries: MetadataRoute.Sitemap): MetadataRoute.Sitemap {
+  return entries.map((e) => ({
+    ...e,
+    url: escapeXml(e.url),
+    ...(e.images ? { images: e.images.map(escapeXml) } : {}),
+  }));
 }
