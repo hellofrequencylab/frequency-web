@@ -625,7 +625,11 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   // pending value alone when Stripe collected nothing (an intangible cart, or a miss).
   const collectedShipping = shippingDetailsFromSession(session)
 
-  const { data: updated } = await db()
+  // The flip is NOT best-effort (SCAN-710): supabase-js never throws, so a swallowed error here
+  // would let the webhook ack 200 with the event claimed, Stripe would never redeliver, and the
+  // paid order would stay pending forever. Throw so the webhook releases its claim and 500s; the
+  // retry is safe because the update is guarded by status = 'pending' (same shape as tips.ts).
+  const { data: updated, error: flipError } = await db()
     .from('commerce_orders')
     .update({
       status: 'paid',
@@ -641,6 +645,9 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // ONE LITERAL, not a concatenation: the generated PostgREST types parse this string, and a built
     // one widens to `string` and types the result as GenericStringError[].
     .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency, funds_flow')
+  if (flipError) {
+    throw new Error(`[commerce] paid flip failed (session=${session.id}): ${flipError.message}`)
+  }
   const rows = (updated ?? []) as {
     id: string
     owner_kind: OrderOwnerKind
@@ -755,12 +762,17 @@ export async function recordCommerceOrderFromSessionId(sessionId: string): Promi
  *  forever. FAIL-SOFT booking release (no-op for a normal product order / pre-migration). */
 export async function abandonCommerceOrderFromSession(session: Stripe.Checkout.Session): Promise<void> {
   if (session.metadata?.kind !== 'commerce_order') return
-  const { data: updated } = await db()
+  // Same contract as the paid flip (SCAN-710): a dropped error would ack the expired event and
+  // leave the booking hold in place forever. Throw so Stripe redelivers; pending-only, so safe.
+  const { data: updated, error: cancelError } = await db()
     .from('commerce_orders')
     .update({ status: 'cancelled' })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
     .select('id')
+  if (cancelError) {
+    throw new Error(`[commerce] expired-session cancel failed (session=${session.id}): ${cancelError.message}`)
+  }
   for (const row of (updated ?? []) as { id: string }[]) {
     await cancelBookingByOrder(row.id)
   }

@@ -16,10 +16,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const openOrGetConversation = vi.fn()
 const appendConversationMessage = vi.fn()
+const getConversationByRef = vi.fn()
 vi.mock('@/lib/comms/conversations', () => ({
   openOrGetConversation: (a: unknown) => openOrGetConversation(a),
   appendConversationMessage: (a: unknown) => appendConversationMessage(a),
-  getConversationByRef: vi.fn(),
+  getConversationByRef: (ref: string) => getConversationByRef(ref),
   reopenConversationIfClosed: vi.fn(),
 }))
 
@@ -55,7 +56,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { startSupportChat } from './support-chat'
+import { startSupportChat, postSupportChatMessage } from './support-chat'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -163,5 +164,59 @@ describe('startSupportChat — runtime prerequisites are checked before the firs
     setEnv({ CRM_INBOX_OWNER_PROFILE_ID: '   ' })
     expect(await startSupportChat({ name: 'V', email: 'v@example.com', message: 'hi' })).toBeNull()
     expect(openOrGetConversation).not.toHaveBeenCalled()
+  })
+})
+
+// ── SCAN-782 (2026-10-05): every visitor message names an author the spine CHECK accepts ───────────
+//
+// comms_messages_author_present requires author_id OR author_contact_id on a member/contact row. The
+// opening message of an anonymous chat was appended with neither (and silently dropped), and every
+// follow-up from a visitor or a member had no author at all, so the insert failed and the widget showed
+// Could not send that.
+
+describe('support chat messages always carry an author the comms_messages CHECK accepts', () => {
+  it('anonymous opening message is authored by the resolved contact', async () => {
+    const out = await startSupportChat({ name: 'Visitor', email: 'visitor@example.com', message: 'hello' })
+    expect(out).toEqual({ ref: '1042', token: 'token-for-1042' })
+    const arg = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.authorKind).toBe('contact')
+    expect(arg.authorContactId).toBe('victim-contact-1')
+    expect(arg.authorId).toBeNull()
+  })
+
+  it('member opening message is authored by the member profile', async () => {
+    await startSupportChat({ name: 'M', email: 'x@example.com', message: 'hello', memberProfileId: 'member-1' })
+    const arg = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.authorKind).toBe('member')
+    expect(arg.authorId).toBe('member-1')
+    expect(arg.authorContactId).toBeNull()
+  })
+
+  it('a dropped opening message is reported, not swallowed as success', async () => {
+    appendConversationMessage.mockResolvedValue(null)
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const out = await startSupportChat({ name: 'Visitor', email: 'visitor@example.com', message: 'hello' })
+    expect(out).toBeNull()
+    expect(err).toHaveBeenCalled()
+    err.mockRestore()
+  })
+
+  it('follow-up from an anonymous visitor is authored by the thread contact', async () => {
+    getConversationByRef.mockResolvedValue({ id: 'conv-1', ref: '1042', status: 'open', memberProfileId: null, contactId: 'contact-9' })
+    const out = await postSupportChatMessage({ ref: '1042', token: 't', body: 'again' })
+    expect(out?.id).toBe('msg-1')
+    const arg = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.authorKind).toBe('contact')
+    expect(arg.authorContactId).toBe('contact-9')
+    expect(arg.authorId).toBeNull()
+  })
+
+  it('follow-up from a member is authored by the member profile', async () => {
+    getConversationByRef.mockResolvedValue({ id: 'conv-1', ref: '1042', status: 'open', memberProfileId: 'member-1', contactId: null })
+    await postSupportChatMessage({ ref: '1042', token: 't', body: 'again' })
+    const arg = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.authorKind).toBe('member')
+    expect(arg.authorId).toBe('member-1')
+    expect(arg.authorContactId).toBeNull()
   })
 })
