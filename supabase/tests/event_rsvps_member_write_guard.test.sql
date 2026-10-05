@@ -1,146 +1,178 @@
--- SCAN-696 behavioural guard for trg_a_event_rsvps_member_write_guard (migration 20270346000696).
+-- pgTAP behavioural guard for migration 20270345011900 (SCAN-696).
 --
--- The update-own policy on event_rsvps checks ownership alone, so before this trigger a member
--- could approve their own pending request, mark themselves attended and set any plus_ones on
--- their own row. This file runs each forged write AS THE MEMBER (set local role authenticated,
--- the JWT sub pointing at their auth user, RLS on) and expects 42501; then it runs the host's
--- writes as postgres (the admin client and every SECURITY DEFINER door run as a trusted role)
--- and expects them to land, so the fix cannot have closed the real paths.
---
--- Fixture style follows space_update_rls_narrowing.test.sql: seeded as postgres, the
--- auto-provisioned profiles removed, fresh-stack grants restated (the POLICIES and the TRIGGER
--- are what this file tests, not the grant baseline). One transaction, rolled back.
+-- The update-own policy on event_rsvps checks ownership alone, so before this migration a member
+-- could PATCH their own row from the browser with approval_status = 'approved', attended_at = now(),
+-- attended_by = themselves and plus_ones = 500. Every forged write below is made AS a member through
+-- the policy, exactly the way PostgREST would make it, and must be refused; the writes the app makes
+-- for a member (a pending request, a withdrawal, a re-join, a plus-one within the cap) must still
+-- land; and the host's writes on the service role and the anon guest door must be untouched.
 --
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
 begin;
-select plan(14);
+select plan(20);
 
--- ── Fixture ──────────────────────────────────────────────────────────────────────────────────────
+-- ── Seed (as postgres, which RLS does not bind) ─────────────────────────────────────────────────
 
 insert into auth.users (id, email) values
-  ('00000000-0000-4000-a696-000000000001', 's696-member@test.local'),
-  ('00000000-0000-4000-a696-000000000002', 's696-host@test.local');
+  ('00000000-0000-4000-a696-000000000001', 'mwg-member@test.local'),
+  ('00000000-0000-4000-a696-000000000002', 'mwg-host@test.local');
 
-insert into public.profiles (id, auth_user_id, display_name, handle, community_role) values
-  ('00000000-0000-4000-b696-000000000001', '00000000-0000-4000-a696-000000000001', 'S696 Member', 's696-member', 'member'),
-  ('00000000-0000-4000-b696-000000000002', '00000000-0000-4000-a696-000000000002', 'S696 Host',   's696-host',   'host');
+insert into public.profiles (id, auth_user_id, display_name, handle) values
+  ('00000000-0000-4000-b696-000000000001', '00000000-0000-4000-a696-000000000001', 'MWG Member', 'mwg-member'),
+  ('00000000-0000-4000-b696-000000000002', '00000000-0000-4000-a696-000000000002', 'MWG Host',   'mwg-host');
 
--- trg_on_auth_user_created auto-provisions a profile per auth.users row; keep only the fixed ids.
+-- trg_on_auth_user_created auto-provisions a profile per auth.users row; keep only the fixed ids so
+-- get_my_profile_id()'s scalar subquery has one answer.
 delete from public.profiles
 where auth_user_id in ('00000000-0000-4000-a696-000000000001', '00000000-0000-4000-a696-000000000002')
   and id not in ('00000000-0000-4000-b696-000000000001', '00000000-0000-4000-b696-000000000002');
 
--- A published event with no capacity (the capacity trigger takes its lock and returns). The scope
--- is a bare uuid: events.scope_id carries no FK, and nothing here reads the Circle.
-insert into public.events (id, title, slug, host_id, scope_type, scope_id, visibility, status, starts_at, ends_at, join_mode, is_cancelled)
+-- A published, public, future, approval-required RSVP event with no capacity cap.
+insert into public.events (id, title, slug, scope_type, scope_id, visibility, status, starts_at, ends_at,
+                           join_mode, is_cancelled, capacity, time_zone, host_id, rsvp_requires_approval)
 values
-  ('00000000-0000-4000-d696-000000000001', 'S696 gathering', 's696-gathering',
-   '00000000-0000-4000-b696-000000000002', 'circle', '00000000-0000-4000-e696-000000000001',
-   'public', 'published', now() + interval '7 days', now() + interval '7 days 2 hours', 'rsvp', false);
+  ('00000000-0000-4000-e696-000000000001', 'MWG sit', 'mwg-sit', 'public',
+   '00000000-0000-4000-e696-0000000000aa', 'public', 'published',
+   now() + interval '30 days', now() + interval '30 days 2 hours', 'rsvp', false, null,
+   'America/Los_Angeles', '00000000-0000-4000-b696-000000000002', true);
 
--- The member's own pending request, seeded as postgres so the forged UPDATEs have a row to hit.
-insert into public.event_rsvps (id, event_id, profile_id, status, approval_status, plus_ones)
-values
-  ('00000000-0000-4000-f696-000000000001', '00000000-0000-4000-d696-000000000001',
-   '00000000-0000-4000-b696-000000000001', 'going', 'pending', 0);
-
--- Fresh-stack grants (see header).
-grant select, insert, update, delete on public.event_rsvps to authenticated;
-grant select on public.events, public.profiles to authenticated;
-
--- ── The catalog: the trigger is attached and fires before the capacity trigger ───────────────────
+-- ── 1. The trigger is attached, fires first, and is not a browser-callable function ─────────────
 
 select is(
-  (select count(*) from pg_trigger t join pg_class c on c.oid = t.tgrelid
-    where c.relname = 'event_rsvps' and t.tgname = 'trg_a_event_rsvps_member_write_guard' and not t.tgisinternal),
-  1::bigint,
+  (select count(*)::int from pg_trigger t
+     join pg_class c on c.oid = t.tgrelid
+     join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relname = 'event_rsvps'
+      and t.tgname = 'trg_a_event_rsvps_member_write_guard' and not t.tgisinternal),
+  1,
   'trg_a_event_rsvps_member_write_guard is attached to event_rsvps');
 
 select ok(
-  'trg_a_event_rsvps_member_write_guard' < 'trg_enforce_event_rsvp_capacity',
-  'the guard sorts before the capacity trigger, so it fires first');
+  'trg_a_event_rsvps_member_write_guard' < 'trg_enforce_event_rsvp_capacity'
+  and 'trg_a_event_rsvps_member_write_guard' < 'trg_event_rsvps_block_suspended',
+  'the guard sorts before the capacity and suspension triggers, so it fires first');
 
--- ── As the member: every forged write is refused ────────────────────────────────────────────────
+select is(has_function_privilege('authenticated', 'public.guard_event_rsvp_member_write()', 'execute'), false,
+  'authenticated cannot execute guard_event_rsvp_member_write');
+select is(has_function_privilege('anon', 'public.guard_event_rsvp_member_write()', 'execute'), false,
+  'anon cannot execute guard_event_rsvp_member_write');
+
+-- ── 2. Forged inserts, as the member ────────────────────────────────────────────────────────────
 
 set local role authenticated;
 select set_config('request.jwt.claims',
   json_build_object('sub', '00000000-0000-4000-a696-000000000001', 'role', 'authenticated')::text, true);
 
 select throws_ok(
-  $$ update public.event_rsvps set approval_status = 'approved'
-     where id = '00000000-0000-4000-f696-000000000001' $$,
+  $$ insert into public.event_rsvps (event_id, profile_id, status, approval_status)
+     values ('00000000-0000-4000-e696-000000000001', '00000000-0000-4000-b696-000000000001', 'going', 'approved') $$,
   '42501', null,
-  'a member cannot approve their own pending request');
+  'a member cannot insert their seat already approved');
+
+select throws_ok(
+  $$ insert into public.event_rsvps (event_id, profile_id, status, approval_status, attended_at, attended_by)
+     values ('00000000-0000-4000-e696-000000000001', '00000000-0000-4000-b696-000000000001', 'going', 'pending',
+             now(), '00000000-0000-4000-b696-000000000001') $$,
+  '42501', null,
+  'a member cannot insert their seat already attended');
+
+-- The write the app makes for a request on an approval-required event.
+select lives_ok(
+  $$ insert into public.event_rsvps (event_id, profile_id, status, approval_status)
+     values ('00000000-0000-4000-e696-000000000001', '00000000-0000-4000-b696-000000000001', 'going', 'pending') $$,
+  'a member inserts a pending request');
+
+-- ── 3. Forged updates, as the member ────────────────────────────────────────────────────────────
+
+select throws_ok(
+  $$ update public.event_rsvps set approval_status = 'approved'
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
+  '42501', null,
+  'a member cannot approve their own request');
 
 select throws_ok(
   $$ update public.event_rsvps set attended_at = now(), attended_by = '00000000-0000-4000-b696-000000000001'
-     where id = '00000000-0000-4000-f696-000000000001' $$,
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
   '42501', null,
   'a member cannot mark themselves attended');
 
 select throws_ok(
   $$ update public.event_rsvps set plus_ones = 500
-     where id = '00000000-0000-4000-f696-000000000001' $$,
-  '42501', null,
-  'a member cannot claim 500 plus-ones');
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
+  '23514', null,
+  'a member cannot claim 500 plus-ones (event_rsvps_plus_ones_check caps at 5)');
 
 select throws_ok(
-  $$ update public.event_rsvps set guest_email = 'forged@test.local'
-     where id = '00000000-0000-4000-f696-000000000001' $$,
+  $$ update public.event_rsvps set from_ticket_id = '00000000-0000-4000-e696-0000000000f1'
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
   '42501', null,
-  'a member cannot write a guest column on their own row');
+  'a member cannot stamp a ticket onto their own seat');
 
 select throws_ok(
-  $$ update public.event_rsvps set approval_status = 'none'
-     where id = '00000000-0000-4000-f696-000000000001' $$,
+  $$ update public.event_rsvps set guest_claimed_by = '00000000-0000-4000-b696-000000000001', guest_claimed_at = now()
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
   '42501', null,
-  'a member cannot move a pending request back to none');
+  'a member cannot write the guest claim columns on their own seat');
+
+-- ── 4. The writes the app makes for a member still land ─────────────────────────────────────────
 
 select lives_ok(
-  $$ update public.event_rsvps set plus_ones = 2, status = 'going'
-     where id = '00000000-0000-4000-f696-000000000001' $$,
-  'a member may still set plus_ones within the app max and their own status');
-
--- A fresh row cannot arrive approved or attended either (delete the seeded one first so the
--- unique (event_id, profile_id) pair is free; delete-own is the member's own policy).
-select lives_ok(
-  $$ delete from public.event_rsvps where id = '00000000-0000-4000-f696-000000000001' $$,
-  'control: the member deletes their own row');
-
-select throws_ok(
-  $$ insert into public.event_rsvps (event_id, profile_id, status, approval_status)
-     values ('00000000-0000-4000-d696-000000000001', '00000000-0000-4000-b696-000000000001', 'going', 'approved') $$,
-  '42501', null,
-  'a member cannot insert an approved seat');
-
-select throws_ok(
-  $$ insert into public.event_rsvps (event_id, profile_id, status, approval_status, attended_at, attended_by)
-     values ('00000000-0000-4000-d696-000000000001', '00000000-0000-4000-b696-000000000001', 'going', 'pending',
-             now(), '00000000-0000-4000-b696-000000000001') $$,
-  '42501', null,
-  'a member cannot insert an attended seat');
+  $$ update public.event_rsvps set status = 'not_going', plus_ones = 0
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
+  'a member withdraws');
 
 select lives_ok(
-  $$ insert into public.event_rsvps (id, event_id, profile_id, status, approval_status)
-     values ('00000000-0000-4000-f696-000000000002', '00000000-0000-4000-d696-000000000001',
-             '00000000-0000-4000-b696-000000000001', 'going', 'pending') $$,
-  'a member still files a pending request');
+  $$ update public.event_rsvps set status = 'going', approval_status = 'pending', plus_ones = 3
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
+  'a member re-joins as a pending request with three plus-ones');
 
 reset role;
 select set_config('request.jwt.claims', '', true);
 
--- ── As postgres (the admin client and the SECURITY DEFINER doors): the host paths still land ────
+select is(
+  (select approval_status || '/' || coalesce(attended_at::text, 'null')
+     from public.event_rsvps
+    where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001'),
+  'pending/null',
+  'after every forged write the row is still a pending, unattended request');
+
+-- ── 5. The host's writes on the service role are untouched ──────────────────────────────────────
+-- This is the role the admin client's requests arrive as (PostgREST sets it from the service key).
+
+set local role service_role;
 
 select lives_ok(
   $$ update public.event_rsvps set approval_status = 'approved'
-     where id = '00000000-0000-4000-f696-000000000002' $$,
-  'the host approves a request through the trusted role');
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
+  'the host approves the request on the service role');
 
 select lives_ok(
   $$ update public.event_rsvps set attended_at = now(), attended_by = '00000000-0000-4000-b696-000000000002'
-     where id = '00000000-0000-4000-f696-000000000002' $$,
-  'the host marks attendance through the trusted role');
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
+  'the host marks the seat attended on the service role');
+
+select throws_ok(
+  $$ update public.event_rsvps set plus_ones = 6
+      where event_id = '00000000-0000-4000-e696-000000000001' and profile_id = '00000000-0000-4000-b696-000000000001' $$,
+  '23514', null,
+  'the plus-ones ceiling binds every writer, the service role included');
+
+reset role;
+
+-- ── 6. The anon guest door still writes a guest seat ────────────────────────────────────────────
+
+set local role anon;
+select lives_ok(
+  $$ select public.capture_guest_rsvp('00000000-0000-4000-e696-000000000001', 'mwg-guest@test.local', 'MWG Guest') $$,
+  'capture_guest_rsvp (a SECURITY DEFINER door) is exempt from the guard');
+reset role;
+
+select is(
+  (select approval_status from public.event_rsvps
+    where event_id = '00000000-0000-4000-e696-000000000001' and guest_email = 'mwg-guest@test.local'),
+  'pending',
+  'the guest seat landed as a pending request through the door');
 
 select * from finish();
 rollback;

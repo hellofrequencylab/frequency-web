@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-813",
+  "title": "A member can still set any plus_ones on their own RSVP row: the member write guard freezes the host columns but puts no ceiling on plus_ones",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "source": {
+    "file": "supabase/migrations/20270345011900_event_rsvps_member_write_guard.sql",
+    "ref": "found 2026-10-05 while closing SCAN-696 against the guard already applied to production"
+  },
+  "detail": "FOUND 2026-10-05 (P1 fix wave, SCAN-696). Production carries guard_event_rsvp_member_write() (20270345011900), which refuses a member's self-approval, self-attendance and any write to the guest, token and ticket columns. It does not bound plus_ones: event_rsvps has only a floor on the column, so a member can still update their own row from the browser console with plus_ones = 500 and the capacity trigger counts them. The app clamps setRsvpPlusOnes to MAX_PLUS_ONES (5) in app/(main)/events/actions.ts, but a direct write skips the app. THE FIX: a migration that re-creates guard_event_rsvp_member_write() with a plus_ones check (null, below 0 or above 5 raises 42501 for a caller role, trusted writers and guest rows untouched), plus a pgTAP case in supabase/tests/event_rsvps_member_write_guard.test.sql that sets plus_ones = 500 as the member and expects 42501 and sets plus_ones = 2 and expects it to land.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const dir=\"supabase/migrations\";if(!fs.existsSync(dir))process.exit(79);let last=null;for(const f of fs.readdirSync(dir).filter(f=>f.endsWith(\".sql\")).sort()){const s=fs.readFileSync(p.join(dir,f),\"utf8\");const i=s.search(/create\\s+or\\s+replace\\s+function\\s+public\\.guard_event_rsvp_member_write\\s*\\(/i);if(i>=0){const j=s.indexOf(\"$$\",i);const k=s.indexOf(\"$$\",j+2);last=s.slice(i,k>0?k:undefined)}}if(last===null)process.exit(79);if(!/plus_ones/i.test(last)){console.error(\"SCAN-813: the latest definition of public.guard_event_rsvp_member_write() never reads plus_ones, so a member can still set any plus_ones on their own RSVP row.\");process.exit(1)}'",
+    "note": "Finds the latest migration that (re)creates guard_event_rsvp_member_write and fails while its body never names plus_ones; passes once a later migration bounds it."
+  },
+  "wave": "W7"
+}
