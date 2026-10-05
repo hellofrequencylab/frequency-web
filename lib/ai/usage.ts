@@ -65,7 +65,7 @@ export async function recordAiUsage(input: {
 const SPEND_PAGE = 500
 
 /** Today's spend in USD, summed IN THE DATABASE through the ai_spend_today RPC (migration
- *  20270345011900, SCAN-737). A single unpaged select-and-reduce covered an arbitrary 1,000-row
+ *  20270346000800, SCAN-737). A single unpaged select-and-reduce covered an arbitrary 1,000-row
  *  subset on a busy day, so the caps undercounted exactly when they mattered. While the migration
  *  sits unapplied the RPC errors and this pages the rows with .range() instead, so the sum is
  *  complete either way. Throws only on a failed page read (the caller fails open). */

@@ -9,6 +9,6 @@
     }
   },
   "append": {
-    "detail": "\n\nMigration 20270345011900 adds ai_spend_today and ai_spend_by_feature_today (SECURITY DEFINER, service_role); featureOverBudget and load-ai sum through the RPC with a paged .range() fallback."
+    "detail": "\n\nMigration 20270346000800 adds ai_spend_today and ai_spend_by_feature_today (SECURITY DEFINER, service_role); featureOverBudget and load-ai sum through the RPC with a paged .range() fallback."
   }
 }

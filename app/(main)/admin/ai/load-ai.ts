@@ -18,7 +18,7 @@ export async function getAiControlsData() {
   const since = new Date()
   since.setUTCHours(0, 0, 0, 0)
 
-  // Summed in the database (ai_spend_by_feature_today, migration 20270345011900, SCAN-737): one
+  // Summed in the database (ai_spend_by_feature_today, migration 20270346000800, SCAN-737): one
   // unpaged select is capped at 1,000 rows by PostgREST, so the table understated a busy day.
   // While the migration sits unapplied the RPC errors and the rows are paged with .range().
   const spend = new Map<string, number>()

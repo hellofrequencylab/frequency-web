@@ -17033,7 +17033,7 @@ export type Database = {
             Returns: Json
           }
       ai_spend_by_feature_today: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: { feature: string; spent: number }[]
       }
       ai_spend_today: {
