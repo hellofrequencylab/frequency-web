@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-662",
+  "title": "/llms.txt told answer engines to cite member counts below the social-proof floor, and gave them no help-category, city or operator-track URLs to walk",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "source": {
+    "file": "app/llms.txt/route.ts",
+    "ref": "found 2026-10-05 by four scan-seven finders (geo-ai, seo-content, seo-help, seo-local), confirmed by hand"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven). Four independent finders read /llms.txt and each found a gap: the stats block published raw member and Circle counts with no floor, where every other public surface honours SOCIAL_PROOF_FLOOR (lib/site.ts), and called them the citable source; the file listed the /help hub and none of its ten categories; it listed /discover/cities and none of the live city landing URLs; it omitted the operator track (/spaces, /tools-for-community-builders); and it described /discover/places as third places when the page is Circles and events by city. CLOSED 2026-10-05: below the floor the people counts are withheld with a founding-stage line (the library and Pillar counts stay, because they size the catalog, not the crowd); a Help center section lists the categories and a Cities section lists the density-gated landing pages, both fail-safe to absent; the two operator pages join Key pages; the places line says what the page is. app/llms.txt/route.test.ts pins the floor and the help walk.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/llms.txt/route.ts\",\"utf8\");const miss=[\"async function helpSection\",\"async function citiesSection\",\"members < SOCIAL_PROOF_FLOOR\",\"/tools-for-community-builders\"].filter((k)=>!s.includes(k));if(miss.length){console.error(\"SCAN-662: /llms.txt is missing \"+miss.join(\", \")+\": answer engines are told to cite member counts below the social-proof floor and are given no help-category or city landing URLs to walk.\");process.exit(1)}'",
+    "note": "Fails on main before this change; passes with it."
+  }
+}
