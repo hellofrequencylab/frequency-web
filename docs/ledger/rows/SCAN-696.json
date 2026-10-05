@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-696",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const dir=\"supabase/migrations\";if(!fs.existsSync(dir))process.exit(79);const files=fs.readdirSync(dir).filter(f=>f.endsWith(\".sql\"));const guarded=files.some(f=>{const s=fs.readFileSync(p.join(dir,f),\"utf8\");return /create\\s+trigger\\s+\\S+\\s+before\\s+insert\\s+or\\s+update\\s+on\\s+public\\.event_rsvps/i.test(s)&&/attended_at/i.test(s)&&/\\braise\\b/i.test(s)});if(!guarded){console.error(\"SCAN-696: no BEFORE INSERT OR UPDATE trigger on public.event_rsvps checks attended_at, so the update-own RLS policy still lets a member self-approve, self-mark attendance and set any plus_ones on their own RSVP row.\");process.exit(1)}'",
+      "note": "Scans every migration for a BEFORE INSERT OR UPDATE trigger on public.event_rsvps whose body names attended_at and raises; none exists today, so the RLS update-own policy is the only gate on the row and it checks ownership alone."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: migration 20270346000696 adds trg_a_event_rsvps_member_write_guard, a BEFORE INSERT OR UPDATE trigger on public.event_rsvps that passes service_role, postgres, supabase_admin and guest rows unchanged and otherwise refuses (42501) an approval_status other than none or pending on insert or a change to anything but pending on update, any write to attended_at, attended_by, guest_*, seat_token_hash or from_ticket_id, and plus_ones outside 0 to 5; it sorts before trg_enforce_event_rsvp_capacity. supabase/tests/event_rsvps_member_write_guard.test.sql runs each forged write as the member and the host paths as postgres. Verified by the row probe and check:migrations; pgTAP runs in CI (no Supabase CLI in the sandbox)."
+  }
+}
