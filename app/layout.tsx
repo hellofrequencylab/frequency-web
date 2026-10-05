@@ -53,9 +53,12 @@ const anton = Anton({
 // Member-selectable Spotlight fonts (lib/spotlight/theme.ts maps ids → these vars). Loaded
 // once on <html> so they self-host and cascade to the public /spotlight route. Variable
 // fonts where possible (Caveat needs explicit weights).
-const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap" });
-const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], weight: ["400", "700"], display: "swap" });
-const spaceGrotesk = Space_Grotesk({ variable: "--font-grotesk", subsets: ["latin"], display: "swap" });
+// `preload: false` on all three (SCAN-676): they are Spotlight faces, and without it next/font put a
+// <link rel="preload"> for each in the <head> of EVERY route, three font fetches ahead of the LCP on
+// pages that never draw a glyph in them. The CSS @font-face still loads each one where it is used.
+const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap", preload: false });
+const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
+const spaceGrotesk = Space_Grotesk({ variable: "--font-grotesk", subsets: ["latin"], display: "swap", preload: false });
 
 // Space-page THEME fonts (ADR-578, lib/theme/space-themes.ts). Each Space profile theme pairs a display +
 // body face; these load the ones not already on <html>. next/font self-hosts them, and `preload: false`
