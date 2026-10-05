@@ -462,6 +462,34 @@ async function rollUpSplitOrder(
   return { fulfillmentStatus: target, status: closesOrder ? 'fulfilled' : order.status }
 }
 
+/**
+ * Re-roll a split order after a share CLOSED without moving (SCAN-650): a transfer fully reversed
+ * from the Stripe dashboard drops its share out of the roll-up, and the order's own step must
+ * follow the shares still open. Best-effort, as the roll-up itself is: a read that fails is logged
+ * and the order stands where it was. Does nothing for an order that is not a split order.
+ */
+export async function rollUpSplitOrderById(orderId: string, deps: { client?: SupabaseClient } = {}): Promise<void> {
+  const db = deps.client ?? createAdminClient()
+  const { data, error } = await db
+    .from('commerce_orders')
+    .select(ORDER_COLS)
+    .eq('id', orderId)
+    .eq('funds_flow', 'separate')
+    .maybeSingle()
+  if (error) {
+    console.error(`${LOG} split roll-up order read failed`, { orderId, error: error.message })
+    return
+  }
+  const order = (data as unknown as OrderRow | null) ?? null
+  if (!order) return
+  const lines = await orderLines(db, orderId)
+  if (!lines) {
+    console.error(`${LOG} split roll-up lines read failed`, { orderId })
+    return
+  }
+  await rollUpSplitOrder(db, order, lines)
+}
+
 // ── The shipped notice ─────────────────────────────────────────────────────────────────────────
 
 interface ShippedNoticeInput {

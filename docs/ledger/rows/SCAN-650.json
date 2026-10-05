@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-650",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs = require(\"fs\")\nconst s = fs.readFileSync(\"lib/commerce/transfers.ts\", \"utf8\")\nconst i = s.indexOf(\"export async function recordTransferReversed\")\nconst body = i < 0 ? \"\" : s.slice(i, i + 6000)\nif (!/rollUp|rollup|recomputeFulfil/i.test(body)) { console.error(\"SCAN-650: a transfer fully reversed from the Stripe dashboard (transfer.reversed) marks its share reversed but never re-rolls the split order, so an order whose other shares were delivered stays shipped.\"); process.exit(1) }\n'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: recordTransferReversed (lib/commerce/transfers.ts) re-rolls the split order through the new rollUpSplitOrderById (lib/commerce/fulfilment.ts) when a share becomes reversed, best-effort after the reversal is recorded."
+  }
+}
