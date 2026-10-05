@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-728",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/unsubscribe/actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-728: missing \"+p);process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const fn=s.slice(s.indexOf(\"export async function processUnsubscribe\"));const body=fn.slice(0,fn.indexOf(\"export async function\",10)>0?fn.indexOf(\"export async function\",10):fn.length);const revokes=/email_marketing/.test(body);const flips=/consent_state/.test(body);if(!revokes&&!flips){console.error(\"SCAN-728: processUnsubscribe only flips the lifecycle preference and never revokes email_marketing consent or sets contacts.consent_state, so a member who unsubscribes from a marketing campaign still passes the marketing gate and gets the next one.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nEvery global broadcast mints its footer and List-Unsubscribe links with category lifecycle, including a campaign to the opt-in subscribed_members audience that the send-gate runs under marketing; processUnsubscribe only flipped email_lifecycle, which the marketing gate never reads (it decides on the email_marketing consent scope alone, and the audience is filtered on contacts.consent_state), so an unsubscribed member got the next campaign. Fix in app/unsubscribe/actions.ts: when the category is lifecycle, after the preference upsert succeeds, recordConsent(profileId, email_marketing, false, unsubscribe) and update contacts set consent_state=unsubscribed for every row of that profile (cross-space, mirroring recordGlobalStop); either write failing returns fail(), both are idempotent so the RFC 8058 one-click POST can re-run them. The confirm-page lifecycle label now reads newsletters and onboarding nudges. Pinned by app/unsubscribe/actions.test.ts, which runs the real action, the real consent reader and the real resolveSendGate over an in-memory stand-in for the three tables: marketing allowed before the click, no_consent after, every contact row unsubscribed, idempotent re-run, loud failure on either write, and a narrow events link leaves marketing consent alone."
+  }
+}

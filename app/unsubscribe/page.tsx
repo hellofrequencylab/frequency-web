@@ -29,7 +29,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   events:     'event reminders',
   mentions:   'mention notifications',
   comments:   'comment notifications',
-  lifecycle:  'onboarding nudges',
+  // The lifecycle link is the one every global broadcast mints, and confirming it also revokes
+  // marketing consent (SCAN-728), so the copy names the whole of what stops.
+  lifecycle:  'newsletters and onboarding nudges',
 }
 
 // `p`/`c` carry the GLOBAL member unsubscribe; `s`/`e` carry the per-Space unsubscribe (a Space

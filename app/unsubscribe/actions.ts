@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyUnsubscribeToken, verifySpaceUnsubscribeToken } from '@/lib/unsubscribe-tokens'
 import { suppress } from '@/lib/suppression'
+import { recordConsent } from '@/lib/consent/consent'
 import {
   DEFAULT_PREFERENCES,
   type NotificationCategory,
@@ -68,6 +69,33 @@ export async function processUnsubscribe(params: {
   if (error) {
     console.error('[unsubscribe] upsert:', error.message)
     return fail('Could not save your preference. Please try again.')
+  }
+
+  // SCAN-728. `lifecycle` is the ONE category a global broadcast mints into its footer and
+  // List-Unsubscribe links (lib/email-studio/send.ts), including a campaign to the opt-in
+  // `subscribed_members` audience, which the send-gate runs under `marketing`. The marketing gate
+  // never reads email_lifecycle: it decides on the email_marketing consent scope alone, and the
+  // audience is filtered on contacts.consent_state. So a lifecycle unsubscribe is the member's
+  // broad "stop emailing me" and must also revoke marketing consent, or the next campaign still
+  // lands (CAN-SPAM / RFC 8058). Both writes are idempotent (append-only ledger, latest wins;
+  // the contact flip is a no-op on state), so the one-click POST route can re-run them.
+  if (cat === 'lifecycle') {
+    try {
+      await recordConsent(profileId, 'email_marketing', false, 'unsubscribe')
+    } catch (err) {
+      console.error('[unsubscribe] revoke marketing consent:', err instanceof Error ? err.message : String(err))
+      return fail('Could not save your preference. Please try again.')
+    }
+    // INTENTIONAL cross-space update (ADR-624): every Space's contact row for this profile flips,
+    // mirroring recordGlobalStop. This also drops the member from the subscribed_members audience.
+    const { error: contactError } = await admin
+      .from('contacts')
+      .update({ consent_state: 'unsubscribed', updated_at: new Date().toISOString() })
+      .eq('profile_id', profileId)
+    if (contactError) {
+      console.error('[unsubscribe] contacts consent_state:', contactError.message)
+      return fail('Could not save your preference. Please try again.')
+    }
   }
 
   return ok({ category: cat })
