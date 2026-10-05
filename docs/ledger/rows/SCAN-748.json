@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-748",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/(main)/settings/account/actions.ts\",e=\"app/(main)/settings/account/export-actions.ts\";if(!fs.existsSync(a)||!fs.existsSync(e))process.exit(79);const A=fs.readFileSync(a,\"utf8\"),E=fs.readFileSync(e,\"utf8\");if(!A.includes(\"readImpersonation\")){console.error(\"SCAN-748: deleteAccountAction never consults the act-as stash, so staff acting as a member can permanently delete that member and cancel their paid plans with nothing attributing it to staff.\");process.exit(1)}if(!E.includes(\"readImpersonation\")){console.error(\"SCAN-748: downloadMyData never consults the act-as stash, so staff acting as a member receive the full personal export unlogged.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\ndeleteAccountAction refuses while readImpersonation returns a stash; downloadMyData logs impersonation.export with the staff actor; source-shape test added."
+  }
+}

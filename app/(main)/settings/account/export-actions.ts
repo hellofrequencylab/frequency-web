@@ -8,6 +8,8 @@
 // that lib; this action's only job is to bind the export to the real caller.
 
 import { getMyProfileId } from '@/lib/auth'
+import { readImpersonation } from '@/lib/impersonation'
+import { logAdminAction } from '@/lib/admin/audit'
 import { buildMemberExport, type MemberExport } from '@/lib/privacy/export'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -23,6 +25,19 @@ export type MemberExportPayload = {
 export async function downloadMyData(): Promise<ActionResult<MemberExportPayload>> {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return fail('You need to be signed in to download your data.')
+
+  // Under act-as the export still answers (support may need it), but it is ATTRIBUTED to the staff
+  // member who ran it (SCAN-748). Only impersonation.start and .stop were audited before, so an
+  // export looked like the member downloaded their own data.
+  const actingAs = await readImpersonation()
+  if (actingAs) {
+    await logAdminAction({
+      actorId: actingAs.actorId,
+      action: 'impersonation.export',
+      targetType: 'profile',
+      targetId: myProfileId,
+    })
+  }
 
   try {
     const data = await buildMemberExport(myProfileId)
