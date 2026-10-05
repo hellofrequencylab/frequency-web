@@ -392,7 +392,10 @@ export async function setCircleFeaturedAction(id: string, on: boolean): Promise<
 // ── Invite links ─────────────────────────────────────────────────────────────
 
 export async function createInviteLink(circleId: string): Promise<{ token: string }> {
-  const caller = await requireCommunityOps()
+  // Scoped, not the global host rung (SCAN-750): a link is a key into a private or paid
+  // circle, so only someone who manages THIS circle (or a platform operator) may mint one.
+  const caps = await getCircleCapabilities(circleId)
+  const caller = await requireScopedManage(await getCallerProfile(), caps.has('circle.editSettings'), 'community')
 
   const token = randomBytes(12).toString('base64url')
   const admin = createAdminClient()
@@ -433,6 +436,14 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
   if (!link || !link.is_active) throw new Error('Invite link is invalid or no longer active')
   if (link.expires_at && new Date(link.expires_at) < new Date()) throw new Error('Invite link has expired')
   if (link.max_uses > 0 && link.used_count >= link.max_uses) throw new Error('Invite link has reached its maximum uses')
+
+  // An archived circle takes no new members, whatever its links say (SCAN-750).
+  const { data: circle } = await admin
+    .from('circles')
+    .select('status')
+    .eq('id', link.circle_id)
+    .maybeSingle()
+  if (!circle || circle.status === 'archived') throw new Error('This circle is no longer accepting members')
 
   // Get caller profile
   const { data: profile } = await admin
