@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-669",
+  "title": "Five help articles covered the same query as a marketing guide, and neither side linked to the other",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-seven SEO/GEO finders (26-agent fan-out), confirmed by hand against the tree"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven, two independent finders: seo-content and seo-help). content/help/find-your-people/{high-functioning-loneliness, how-to-calm-down-fast, make-friends-as-an-adult, meet-people-in-a-new-city, how-to-stop-doomscrolling}.md carry the same titles and intent as /loneliness, /calm-down-fast and /friendship-as-an-adult (next.config.ts already 308s the retired /meet-people-new-city and /life-after-the-feed guides into those three), every one self-canonical and in the sitemap, with zero links between the sides. CLOSED 2026-10-05 for the link half: each help twin opens with 'Read the full guide first' linking its guide, and its updated date moves. The choice that is left is the owner's and is SCAN-673: keep both with the guide as the ranking page, canonicalise the help twins to the guides, or retire the twins with 308s as the fifteen retired guides were.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const want={\"high-functioning-loneliness\":\"](/loneliness)\",\"how-to-calm-down-fast\":\"](/calm-down-fast)\",\"make-friends-as-an-adult\":\"](/friendship-as-an-adult)\",\"meet-people-in-a-new-city\":\"](/friendship-as-an-adult)\",\"how-to-stop-doomscrolling\":\"](/loneliness)\"};const miss=Object.entries(want).filter(([f,l])=>!fs.readFileSync(\"content/help/find-your-people/\"+f+\".md\",\"utf8\").includes(l)).map(([f])=>f);if(miss.length){console.error(\"SCAN-669: help twin(s) \"+miss.join(\", \")+\" cover the same query as a marketing guide and do not link to it, so the two self-canonical pages compete for the same search intent with no signal about which is the answer.\");process.exit(1)}'",
+    "note": "Fails on main before this change; passes with it."
+  }
+}

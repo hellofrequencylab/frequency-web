@@ -4,11 +4,12 @@ description: Wired and tired at the same time? Here is a 60-second way to calm d
 category: find-your-people
 order: 2
 published: 2026-06-20
-updated: 2026-06-20
+updated: 2026-10-05
 audience: member
 featureKeys: [practices, on-air]
 status: published
 ---
+Read the full guide first: [How to calm down fast](/calm-down-fast). This page is the short version for members, with the Frequency features that help.
 
 It is late, you are exhausted, and you still cannot switch off. Your body is
 running like there is a deadline when the only thing in front of you is bed. Wired

@@ -4,11 +4,12 @@ description: You moved and you don't know anyone. Here is the fastest honest way
 category: find-your-people
 order: 5
 published: 2026-06-20
-updated: 2026-06-20
+updated: 2026-10-05
 audience: member
 featureKeys: [circles, practices]
 status: published
 ---
+Read the full guide first: [How to make friends as an adult, including in a new city](/friendship-as-an-adult). This page is the short version for members, with the Frequency features that help.
 
 You moved. The boxes are unpacked, the job is fine, and on a Friday night you
 realize you do not have a single person to call. Moving somewhere new and knowing
