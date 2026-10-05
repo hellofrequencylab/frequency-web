@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStaffMember, staffCan } from '@/lib/staff'
+import { staffCanNow } from '@/lib/staff'
 import { isStaff, asWebRole } from '@/lib/core/roles'
 
 // The Marketing workspace lives UNDER the admin shell: the admin layout supplies the
@@ -27,8 +27,9 @@ export default async function MarketingLayout({ children }: { children: React.Re
     .maybeSingle()
 
   if (!isStaff(asWebRole(profile?.web_role))) {
-    const staff = await getStaffMember().catch(() => null)
-    if (!staff || !staffCan(staff.role, 'marketing', 'read')) notFound()
+    // With the roles grid applied (SCAN-757), not the code defaults alone.
+    const staff = await staffCanNow('marketing', 'read').catch(() => null)
+    if (!staff) notFound()
   }
 
   // No chrome here: the admin shell owns the top-nav + breadcrumb, and the Growth

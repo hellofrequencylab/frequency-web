@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { readViewAsTarget } from '@/lib/view-as'
+import { getCapabilityOverrides } from '@/lib/permissions'
 import { type StaffRole, type StaffDomain, type Access, staffCan } from '@/lib/core/staff-roles'
 
 // The role model + capability matrix live in lib/core/staff-roles.ts (client-safe);
@@ -75,6 +76,18 @@ export async function requireStaff(min: StaffRole = 'analyst'): Promise<StaffMem
  */
 export async function requireStaffCap(domain: StaffDomain, level: Access = 'write'): Promise<StaffMember> {
   const member = await getStaffMember()
-  if (!member || !staffCan(member.role, domain, level)) redirect('/')
+  // THE ROLES GRID GATES HERE TOO (SCAN-757). staffCan without overrides reads the CAPS code defaults,
+  // so a capability a janitor revoked or granted at /admin/roles changed nothing for the thirty
+  // doors behind this gate while requireAdmin honoured it. getCapabilityOverrides is request-cached
+  // and fails open to an empty grid, so an empty table behaves exactly as before.
+  if (!member || !staffCan(member.role, domain, level, await getCapabilityOverrides())) redirect('/')
   return member
+}
+
+/** The capability check with the roles grid applied, for a gate that answers rather than redirects
+ *  (the marketing actions and layout). Pairs getStaffMember with staffCan plus the overrides. */
+export async function staffCanNow(domain: StaffDomain, level: Access = 'write'): Promise<StaffMember | null> {
+  const member = await getStaffMember()
+  if (!member) return null
+  return staffCan(member.role, domain, level, await getCapabilityOverrides()) ? member : null
 }

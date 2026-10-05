@@ -2,13 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStaffMember, staffCan } from '@/lib/staff'
+import { staffCanNow } from '@/lib/staff'
 import { proposeWinbacks, executeAction } from '@/lib/studio/agent'
 import { proposeContentDrafts } from '@/lib/marketing/content'
 
 async function gate(): Promise<{ profileId: string } | null> {
-  const staff = await getStaffMember()
-  if (!staff || !staffCan(staff.role, 'marketing')) return null
+  // With the roles grid applied (SCAN-757), not the code defaults alone.
+  const staff = await staffCanNow('marketing')
+  if (!staff) return null
   return { profileId: staff.profileId }
 }
 

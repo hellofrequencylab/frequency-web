@@ -171,6 +171,7 @@ const GUARD = new RegExp(
     'get\\w*Capabilities',
     'getJanitor',
     'getStaffMember',
+    'staffCanNow', // lib/staff.ts — getStaffMember + staffCan with the roles grid applied (SCAN-757)
     'getMyWebRole',
     'surfaceAccess',
     'verify\\w*Token',

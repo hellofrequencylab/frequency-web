@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStaffMember, staffCan } from '@/lib/staff'
+import { staffCanNow } from '@/lib/staff'
 import {
   isAutomationActionType,
   parseConditions,
@@ -40,8 +40,9 @@ export type CreateRuleInput = RuleInput
 async function gate(): Promise<
   { ok: true; profileId: string } | { ok: false; error: string }
 > {
-  const staff = await getStaffMember()
-  if (!staff || !staffCan(staff.role, 'marketing')) {
+  // With the roles grid applied (SCAN-757), not the code defaults alone.
+  const staff = await staffCanNow('marketing')
+  if (!staff) {
     return { ok: false, error: 'Marketer access required.' }
   }
   return { ok: true, profileId: staff.profileId }
