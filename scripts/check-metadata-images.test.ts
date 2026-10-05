@@ -98,3 +98,76 @@ describe('a route never owns `images` on the branch that has no image', () => {
     expect(metadataRoutes('app').length).toBeGreaterThan(40)
   })
 })
+
+// ── A PUBLIC PAGE WITH NO SEGMENT CARD MUST CARRY THE ROOT IMAGE ITSELF (SCAN-798) ────────────────
+//
+// The mirror defect. `app/opengraph-image.jpg` attaches only to the ROOT layout, and mergeMetadata
+// replaces a child segment's `openGraph` wholesale. So a page below app/ that declares openGraph
+// WITHOUT `images`, in a folder chain with no opengraph-image file of its own, ships no og:image and
+// shares as a bare text link. Those pages spread ROOT_OG_IMAGES (lib/site.ts). Pages that have or
+// inherit a segment card must NOT (that is the LIVE-141 half above), so the two tests are one rule
+// read from both sides: own `images` exactly when no file convention would supply them.
+
+const OG_CARD = /^opengraph-image\./
+
+/** The `openGraph: {` object literals in `src`, by brace matching. */
+function openGraphBlocks(src: string): string[] {
+  const blocks: string[] = []
+  for (const m of src.matchAll(/openGraph\s*:\s*\{/g)) {
+    const start = src.indexOf('{', m.index)
+    let depth = 0
+    for (let k = start; k < src.length; k++) {
+      if (src[k] === '{') depth++
+      else if (src[k] === '}' && --depth === 0) {
+        blocks.push(src.slice(start, k + 1))
+        break
+      }
+    }
+  }
+  return blocks
+}
+
+/** Whether a segment card sits in `file`'s own folder or any ancestor folder under app/ (the root
+ *  app/ folder included: a file directly in app/ shares the root card's segment). */
+function hasSegmentCard(file: string): boolean {
+  const appRoot = path.join(ROOT, 'app')
+  const own = path.dirname(file)
+  for (let d = own; d.startsWith(appRoot); d = path.dirname(d)) {
+    // The root card counts only for the root segment's own files, never for a child segment.
+    if (d === appRoot && own !== appRoot) break
+    if (readdirSync(d).some((e) => OG_CARD.test(e))) return true
+    if (d === appRoot) break
+  }
+  return false
+}
+
+/** Pages and layouts under `dir` whose openGraph literal has no `images` and no segment card. */
+export function cardlessOpenGraph(dir: string): string[] {
+  const hits: string[] = []
+  for (const full of tsFilesUnder(path.join(ROOT, dir))) {
+    if (!/[\\/](page|layout)\.tsx?$/.test(full) || hasSegmentCard(full)) continue
+    const src = readFileSync(full, 'utf8')
+    for (const block of openGraphBlocks(src)) {
+      if (!/\bimages\s*:/.test(block)) hits.push(path.relative(ROOT, full))
+    }
+  }
+  return hits
+}
+
+describe('a page with no segment card carries the root share image itself', () => {
+  it('no openGraph literal under app/ lacks images where no opengraph-image file would supply them', () => {
+    expect(cardlessOpenGraph('app')).toEqual([])
+  })
+
+  it('the brace matcher reads a real block (positive control)', () => {
+    const src = "openGraph: {\n  ...OG_SITE,\n  title: t,\n  nested: { a: 1 },\n},\ntwitter: { card: 'summary' }"
+    expect(openGraphBlocks(src)).toHaveLength(1)
+    expect(openGraphBlocks(src)[0]).toContain('nested: { a: 1 }')
+    expect(/\bimages\s*:/.test(openGraphBlocks(src)[0])).toBe(false)
+  })
+
+  it('the root card is recognised as a segment card for files directly in app/', () => {
+    expect(hasSegmentCard(path.join(ROOT, 'app', 'page.tsx'))).toBe(true)
+    expect(hasSegmentCard(path.join(ROOT, 'app', 'terms', 'page.tsx'))).toBe(false)
+  })
+})
