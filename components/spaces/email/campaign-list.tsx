@@ -12,13 +12,16 @@ import { StatusChip, type StatusTone } from '@/components/admin/status'
 // Map a campaign status to the shared StatusChip tone (mirrors campaigns-table.tsx).
 function statusTone(status: CampaignStatus): StatusTone {
   if (status === 'sent') return 'success'
-  if (status === 'scheduled') return 'info'
+  if (status === 'scheduled' || status === 'sending') return 'info'
+  if (status === 'failed') return 'danger'
   return 'neutral'
 }
 
 function statusLabel(status: CampaignStatus): string {
   if (status === 'sent') return 'Sent'
   if (status === 'scheduled') return 'Scheduled'
+  if (status === 'sending') return 'Sending'
+  if (status === 'failed') return 'Failed'
   return 'Draft'
 }
 
@@ -51,7 +54,11 @@ export async function CampaignList({ spaceId }: { spaceId: string }) {
             ? `Sent ${fmt.format(new Date(c.sentAt))}`
             : c.status === 'scheduled' && c.scheduledFor
               ? `Sends ${fmt.format(new Date(c.scheduledFor))}`
-              : c.createdAt
+              : c.status === 'sending'
+                ? 'Going out now'
+                : c.status === 'failed'
+                  ? `Didn't send: ${c.sendError ?? 'Unknown error'}`
+                  : c.createdAt
                 ? `Drafted ${fmt.format(new Date(c.createdAt))}`
                 : 'Draft'
         return (

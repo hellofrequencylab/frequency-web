@@ -227,6 +227,9 @@ describe('pure validation', () => {
   it('toCampaignStatus fails closed to draft for unknowns', () => {
     expect(toCampaignStatus('sent')).toBe('sent')
     expect(toCampaignStatus('scheduled')).toBe('scheduled')
+    // SCAN-706: the two states the cron writes are their own, not folded to draft.
+    expect(toCampaignStatus('sending')).toBe('sending')
+    expect(toCampaignStatus('failed')).toBe('failed')
     expect(toCampaignStatus('queued')).toBe('draft')
     expect(toCampaignStatus(null)).toBe('draft')
   })
