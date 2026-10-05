@@ -46,6 +46,15 @@ export const OG_SITE = { siteName: SITE_NAME, locale: "en_US" } as const;
 // NOT to be confused with "The Community Collective" the TIER LADDER (also ADR-811) — that is a
 // billing surface heading, a different name that keeps its article.
 export const SITE_TAGLINE = "Community Collective";
+// The root share card, for a public page that has no segment card of its own (SCAN-798). The file
+// convention app/opengraph-image.jpg attaches ONLY to the root layout: Next replaces a child
+// segment's `openGraph` wholesale, so a page that declares openGraph without `images` ships no
+// og:image at all and previews as a bare text link. Spread this into that page's block. NEVER add
+// it to a page that has (or inherits) an opengraph-image file: owning `images` suppresses that card
+// (LIVE-141), which is why it is a separate constant and not part of OG_SITE.
+export const ROOT_OG_IMAGES = [
+  { url: SITE_OG_IMAGE, width: 1200, height: 630, alt: `${SITE_NAME} · ${SITE_TAGLINE}` },
+];
 // The site description: the <meta> description of `/` (page_content carries no `/` row, so
 // app/page.tsx falls through to this), the Organization and WebSite JSON-LD `description`, and the
 // llms-full.txt header. It used to close on "a small, shrinking network-only take-rate", which is the

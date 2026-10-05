@@ -11,7 +11,7 @@
 //   - Voice canon: no em or en dashes in any surfaced string.
 
 import type { Metadata } from 'next'
-import { OG_SITE, SITE_NAME, SITE_URL, SITE_OG_IMAGE } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_URL, SITE_OG_IMAGE, ROOT_OG_IMAGES } from '@/lib/site'
 import { breadcrumbSchema, aggregateRatingNode, productReviewNodes } from '@/lib/jsonld'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 
@@ -84,13 +84,14 @@ export function listingMetadata(view: ListingDetailView): Metadata {
       description,
       type: 'website',
       url: path,
-      ...(image ? { images: [{ url: image }] } : {}),
+      // No listing photo: the ROOT card. The listing routes have no segment card, so a block
+      // without `images` ships no og:image at all (SCAN-798). twitter.images inherits this.
+      images: image ? [{ url: image }] : ROOT_OG_IMAGES,
     },
     twitter: {
       card: 'summary_large_image',
       title: ogTitle,
       description,
-      ...(image ? { images: [image] } : {}),
     },
   }
 }

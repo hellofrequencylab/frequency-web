@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { PhotoHero, Section } from '@/components/marketing/marketing-ui'
 import { LEAD_FLOWS, getLeadFlow } from '@/lib/onboarding/lead-flows'
 import { PersonaChooser } from './persona-chooser'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 // An assignable lead flow (ADR-125, docs/LEAD-FLOWS.md): /start/<flow>. Drop the URL
 // behind any entry point (QR, IG bio, partner button). The splash sets the frame;
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ flow: str
     // it at /start alongside noindex would send crawlers mixed signals (SCAN-803).
     robots: { index: false, follow: true },
     alternates: { canonical: `/start/${flow}` },
-    openGraph: { ...OG_SITE, title: lf.splash.headline, description: lf.splash.body, url: `/start/${flow}` },
+    openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: lf.splash.headline, description: lf.splash.body, url: `/start/${flow}` },
     // Metadata merges per top-level key: omitting `twitter` inherits the ROOT block, so a lead
     // flow dropped in an IG bio would preview as generic site copy instead of its own splash.
     twitter: { card: 'summary_large_image', title: lf.splash.headline, description: lf.splash.body },
