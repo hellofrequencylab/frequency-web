@@ -1,0 +1,13 @@
+{
+  "id": "PROG-E3",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"test/e2e/surfaces.ts\",\"utf8\");const paths=[...s.matchAll(/path:\\s*[\\x60\\x27\"]([^\\x60\\x27\"]+)[\\x60\\x27\"]/g)].map(m=>m[1]);const need=[[\"Spotlight\",/^\\/spotlight/],[\"Site\",/^\\/sites\\//]];const missing=need.filter(([,re])=>!paths.some(p=>re.test(p))).map(([n])=>n);if(missing.length){console.error(\"PROG-E3: the visual suite declares no baseline surface for \"+missing.join(\" or \")+\", so a zero-visual-diff gate for E3 cannot be measured (EDITOR-ARCHITECTURE §7.1, §8.1 item 2).\");process.exit(1)}'",
+      "note": "Measures the instrument E3 lacks: EDITOR-ARCHITECTURE §7.1 says none of E3 four target surfaces (Spotlight, in-app profile, Space, Site) has a visual baseline. The probe reads the declared surface paths in test/e2e/surfaces.ts and requires a /spotlight and a /sites/ surface, the two with no baseline of any kind today. Fails on main; passes once the captures are declared."
+    }
+  },
+  "append": {
+    "detail": "\n\n── RE-TESTED 2026-10-05 (manual-probe sweep, ADR-1082 premise first). Still open, and E3 still has no instrument. test/e2e/surfaces.ts declares 29 baseline slugs; none is /spotlight (app/spotlight exists as a route) or /sites/<slug> (app/sites/[slug]/page.tsx exists), and the in-app profile is also absent. kinds[] still has no member value and density is not a declared block property. The probe now reads the surface list for the two missing captures."
+  }
+}
