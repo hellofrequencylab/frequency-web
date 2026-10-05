@@ -30,9 +30,10 @@ Everyone starts as a Member. Nobody is given anything until you give it to them.
 Open your Circle, go to the **Members** tab, and pick the role beside their name. The
 change takes effect straight away and they keep it until you change it again.
 
-Only the Host sets roles. An Admin can do almost everything you can, and this is the one
-thing they cannot: it stops a circle's leadership from being handed around without the
-person who holds the circle knowing.
+Only the Host sets roles, and only the Host can delete the circle. An Admin can do almost
+everything else you can. Keeping those two with the Host stops a circle's leadership from
+being handed around, or the circle itself from disappearing, without the person who holds
+the circle knowing.
 
 ## The Host role works differently
 
