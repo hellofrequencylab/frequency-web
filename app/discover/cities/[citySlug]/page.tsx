@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowRight, Users, CalendarDays } from 'lucide-react'
 import { getDensityCity, listDensityCities, cityFromSlug } from '../_data'
+import { getCityCategoryHubs } from '@/app/discover/events/_data'
 import { CircleCard, EventRow } from '@/components/discover/cards'
 import {
   PageHero,
@@ -84,6 +85,10 @@ export default async function DiscoverCityPage({
 
   const { city, circles, events } = hub
   const canonical = `/discover/cities/${citySlug}`
+  // Fail-safe: the hubs are a courtesy row, never a reason this page does not render.
+  const hubs = await getCityCategoryHubs()
+    .then((all) => all.filter((h) => h.citySlug === citySlug.toLowerCase()))
+    .catch(() => [])
 
   return (
     <>
@@ -171,6 +176,32 @@ export default async function DiscoverCityPage({
                 <EventRow key={e.id} event={e} />
               ))}
             </div>
+            {hubs.length > 0 && (
+              // The city × category hubs (/discover/events/in/<city>/<category>) answer the most
+              // local query shape there is, and until SCAN-670 nothing but the sitemap linked them.
+              // Same pill row the hub page draws for its siblings, under the page's own heading kit.
+              <section className="mt-10">
+                <SectionHeading
+                  eyebrow="By type"
+                  title={
+                    <>
+                      Events by type in <span className="text-primary-strong">{city}</span>
+                    </>
+                  }
+                />
+                <div className="flex flex-wrap gap-2">
+                  {hubs.map((h) => (
+                    <Link
+                      key={h.category.slug}
+                      href={`/discover/events/in/${h.citySlug}/${h.category.slug}`}
+                      className="rounded-pill border border-border bg-surface px-4 py-2 text-body-sm font-medium text-text transition-colors hover:border-border-strong"
+                    >
+                      {h.category.label} ({h.events.length})
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
             <div className="mt-8">
               <Link
                 href="/discover/events"
