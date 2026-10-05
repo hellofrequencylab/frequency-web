@@ -7,6 +7,64 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-10-05 pass (scan seven: 26 finders, 26 skeptics, every feature surface and the SEO / GEO layer)
+
+Run against `origin/main` at `1531d9b`, the same day as scan six, by 26 parallel finders (one per
+feature area or SEO dimension) each followed by an independent skeptic prompted to refute. The scan
+was wider than any before it: feed, circles, events, spaces, commerce, social, practice, CRM, AI,
+auth, admin, verticals, API, economy, pages and search / help on the feature side; metadata, sitemap,
+JSON-LD, generative-engine answers, social cards, content, help, Core Web Vitals, local and URLs on
+the SEO side.
+
+**What the instruments say.** `pnpm exec tsc --noEmit` exit 0 on every branch. `pnpm test` green on
+every branch (the core-B branch alone ran 107 files, 1,751 tests). All contract guards exit 0,
+including `check:backlog` with every new probe failing on the tree it was written against and passing
+only once its fix lands.
+
+**Findings.** 168 raised, 31 refuted by the skeptics, **137 survived**. 14 are high severity, all
+on the feature side: a self-granted Host moderating the whole network through the report queue, any
+member completing any circle task and minting Zaps, members self-approving their own RSVPs through
+direct `event_rsvps` writes, Space campaign schedules read in UTC, the commerce paid-flip acking a
+failed write, a Circle Run enrolling a whole circle in a paid Journey without checkout, and an
+unsubscribe that did not stop marketing campaigns.
+
+**Fixed in this pass: 22, across five PRs** (#3132 core-A, #3133 core-B, #3134 help, #3135 sweep,
+and the compaction PR that carries this entry). All of them SEO / GEO, because those were the
+findings a day could close without an owner ruling: sitemap XML escaping and the `/events/new`
+robots anchor, the `(main)` → `(public)` move of the Event and Space Open Graph images so public
+pages actually get their cards, `og:site_name` and `og:locale` restored on 58 pages, Event and
+LocalBusiness JSON-LD with the data the pages already had, `/llms.txt` with a help and a cities
+section, AI answer engines as an attribution channel, help-center tables, dated articles and
+self-describing cards, and the city pages linking their category hubs. Rows `SCAN-654` to
+`SCAN-678`.
+
+**Filed with a probe: 128 rows, `SCAN-679` to `SCAN-811`.** 13 P1, 76 P2, 39 P3. By lift: 34 XS,
+81 S, 12 M, 1 L. Every one has a `verify` probe that reads the deciding file and exits 1 today; none
+can be closed by editing prose. `pnpm backlog` is the working view; the P1 rows are the next fix
+wave.
+
+**Parked, by owner decision.** Six rows, all the iOS app build: `DEF-MOBILE`, `LIVE-725`,
+`LIVE-726`, `OWN-090`, `OWN-091`, `OWN-093`. Nothing else is parked.
+
+**Owner rulings this pass asks for.** `SCAN-673` (which URL ranks for the five help twins),
+`SCAN-652` (the Loom asset policy, carried from scan six), and `SCAN-679`, `SCAN-749`, `SCAN-750` and
+`SCAN-753`, which change who may moderate or publish for whom.
+
+**Scorecard, honest gap to 10.**
+- **Security 6.** Down from 8, not because the tree regressed but because 26 readers found what
+  one sequential read did not: 14 high-severity authorization gaps across report moderation, circle
+  tasks, RSVPs, journeys and direct RLS writes. All filed, none fixed yet.
+- **Wiring 8.** Four unwired doors found (nested Reply, the Replies notification switch, the host
+  Dispatch from the home feed, the anonymous vCard).
+- **Correctness 7.** The money findings (commerce paid-flip, partial refunds, double Gem purchases,
+  Space campaign timezones) are real and open.
+- **SEO / GEO 8.** Up from an unmeasured baseline: cards, structured data, sitemap and llms.txt are
+  right on every public page; the remaining rows are twins, the chat widget's weight and local
+  Spaces on city pages.
+- **DB⇄code 9.** Unchanged.
+- **Bookkeeping 10.** 128 findings, 128 probes, one list.
+- **Docs 9.**
+
 ## 2026-10-05 pass (scan six: the split-order money sprint, signed QR codes and the Loom door)
 
 Run against `origin/main` at `2b5ef05`, 50 commits after the 2026-09-28 pass. Sequential reads, no parallel agents.
