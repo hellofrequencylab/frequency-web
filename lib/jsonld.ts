@@ -366,14 +366,14 @@ export function eventListSchema(events: PublicEvent[], listName: string) {
 
 // ── ItemList of upcoming events (the /events listing) ───────────────────────────
 // The AEO signal for the member's own events home + the marketplace Events tab's
-// canonical target (/events). Unlike eventListSchema (bare ListItems), each entry
-// here is a nested Event node pointing at the same CANONICAL public event page
-// /events/<slug>, so the listing consolidates ranking there.
+// canonical target (/events). Bare ListItems pointing at the CANONICAL public event page
+// /events/<slug>, so the listing consolidates ranking there (the function explains why they
+// are no longer nested Event nodes, SCAN-664).
 //
 // PRIVACY (ADR-186): this listing is built from the free-text venue `location` on the
 // browse row, which is NOT a city-redacted field, so we deliberately emit NO location
-// at all — only name + startDate + url + eventStatus. The precise, privacy-safe Place
-// lives on the per-event canonical page (eventSchema), which reads the redacted city.
+// at all, only url + name. The precise, privacy-safe Place lives on the per-event
+// canonical page (eventSchema), which reads the redacted city.
 // Structurally typed (a subset of EventRow) so lib/jsonld stays dependency-light.
 type EventListingInput = {
   slug: string
@@ -387,6 +387,12 @@ type EventListingInput = {
 }
 
 export function eventsListingSchema(events: readonly EventListingInput[], listName: string) {
+  // SUMMARY form (SCAN-664): a ListItem with `url` and `name`, the shape Google documents for a
+  // listing whose items each have their own page, and the shape eventListSchema and topicListSchema
+  // already use. This used to nest a full Event node per item, and an Event with no `location` and
+  // no `image` is an INVALID Event item in Search Console, one per listed event; the listing cannot
+  // carry a location (ADR-186) and the detail page already carries the whole node. The canonical
+  // /events/<slug> url is what consolidates the ranking, and it is still here.
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -395,17 +401,8 @@ export function eventsListingSchema(events: readonly EventListingInput[], listNa
     itemListElement: events.map((e, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      // A nested Event node WITHOUT its own @context (the parent ItemList carries it).
-      // Name + startDate + canonical url + status only — never the free-text venue.
-      item: {
-        '@type': 'Event',
-        name: e.title,
-        startDate: eventIsoWithOffset(e.starts_at, e.time_zone) ?? e.starts_at,
-        url: abs(`/events/${e.slug}`),
-        eventStatus: e.is_cancelled
-          ? 'https://schema.org/EventCancelled'
-          : 'https://schema.org/EventScheduled',
-      },
+      url: abs(`/events/${e.slug}`),
+      name: e.title,
     })),
   }
 }
