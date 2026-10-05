@@ -11,11 +11,15 @@ import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-edi
 import { DesktopEditor, useEditorDoc } from '@/components/page-editor/desktop/desktop-editor'
 
 // Dynamic publish button: full-colour "Publish now" when there are unpublished
-// edits, dim "Published" (with a check) when the live page matches the editor.
-// Reads the live document via useEditorDoc and compares it to the last-published
-// baseline (captured on first render — the editor loads the doc as-is with no
-// normalisation, so the initial render can't register as a fake edit).
-function PublishButton({ slug }: { slug: string }) {
+// edits OR the page is not live, dim "Published" (with a check) when the live page
+// matches the editor. Reads the live document via useEditorDoc and compares it to
+// the last-published baseline (captured on first render — the editor loads the doc
+// as-is with no normalisation, so the initial render can't register as a fake edit).
+// `published` is the server's word on whether a live document exists: after Unpublish
+// the kept draft loads as the baseline again, so the dirty flag alone would show a
+// disabled Published check and refuse to republish without a dummy edit (SCAN-779).
+function PublishButton({ slug, published }: { slug: string; published: boolean }) {
+  const router = useRouter()
   const doc = useEditorDoc()
   const current = JSON.stringify(doc)
 
@@ -25,14 +29,17 @@ function PublishButton({ slug }: { slug: string }) {
   const [status, setStatus] = useState<'idle' | 'publishing' | 'error'>('idle')
 
   const dirty = current !== baseline
+  const publishable = dirty || !published
 
   async function handlePublish() {
-    if (!dirty || status === 'publishing') return
+    if (!publishable || status === 'publishing') return
     setStatus('publishing')
     try {
       await publishPage(slug, doc)
       setBaseline(JSON.stringify(doc))
       setStatus('idle')
+      // Re-read the server state so `published` flips and the Unpublish button appears.
+      router.refresh()
     } catch {
       setStatus('error')
     }
@@ -43,25 +50,25 @@ function PublishButton({ slug }: { slug: string }) {
       ? 'Publishing…'
       : status === 'error'
         ? 'Retry publish'
-        : dirty
+        : publishable
           ? 'Publish now'
           : 'Published'
 
-  const active = dirty || status === 'error'
+  const active = publishable || status === 'error'
 
   return (
     <button
       type="button"
       onClick={handlePublish}
       disabled={!active || status === 'publishing'}
-      title={dirty ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
+      title={publishable ? 'Publish your changes. They go live immediately' : 'No changes to publish'}
       className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-body-sm font-semibold transition-colors ${
         active
           ? 'bg-primary text-on-primary shadow-sm hover:bg-primary-hover'
           : 'bg-surface-elevated text-subtle cursor-default'
       } ${status === 'publishing' ? 'opacity-70' : ''}`}
     >
-      {!dirty && status === 'idle' && <Check className="h-4 w-4" />}
+      {!publishable && status === 'idle' && <Check className="h-4 w-4" />}
       {label}
     </button>
   )
@@ -137,7 +144,7 @@ export function PageEditor({
                 ← Exit
               </Link>
               {published && <UnpublishButton slug={slug} />}
-              <PublishButton slug={slug} />
+              <PublishButton slug={slug} published={published} />
             </>
           }
         />

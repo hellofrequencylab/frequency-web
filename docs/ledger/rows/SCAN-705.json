@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-705",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const files=[\"lib/spaces/campaigns.ts\",\"lib/spaces/email-drafts.ts\",\"lib/spaces/campaigns-send-due.ts\"];for(const f of files){if(!fs.existsSync(f)){console.error(\"SCAN-705: missing \"+f);process.exit(79)}}const upd=(f)=>/\\.update\\(\\s*\\{[^}]*recipient_count\\s*:/.test(fs.readFileSync(f,\"utf8\"));const due=fs.readFileSync(files[2],\"utf8\");const i=due.indexOf(\"function stampStatus\");const stamp=i<0?\"\":due.slice(i,due.indexOf(\"\\n}\",i));const missing=[files[0],files[1]].filter((f)=>!upd(f)).concat(/recipient_count/.test(stamp)?[]:[files[2]]);const d=fs.readFileSync(\"lib/spaces/email-drafts.ts\",\"utf8\");const sel=d.match(/\\.select\\(\\s*[\"\\x27][^\"\\x27]*recipient_count[^\"\\x27]*[\"\\x27]\\s*\\)/);const stalled=!!sel&&/sending_started_at/.test(sel[0]);if(missing.length||!stalled){console.error(\"SCAN-705: Space send paths stamp a campaign sent without writing recipient_count (\"+(missing.join(\", \")||\"none\")+\") and the messaging list never selects sending_started_at (selected=\"+stalled+\"), so every sent Space campaign reads 0 recipients and a stuck send can never read as stalled.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: Every Space send path now stamps recipient_count with the delivered total: campaigns.ts and the two block-email sends in email-drafts.ts write res.data.sent, the 1:1 member send writes its sent counter, and the cron's stampStatus takes the seam's sent plus the recipients a resumed send had already reached. listSpaceEmailMessagingItems now selects sending_started_at so the stalled check can fire."
+  }
+}

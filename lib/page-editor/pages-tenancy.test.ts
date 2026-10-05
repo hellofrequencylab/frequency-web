@@ -81,6 +81,40 @@ describe('the app writes pages on the same key', () => {
   })
 })
 
+describe('the app surfaces a failed page write (SCAN-778)', () => {
+  // supabase-js returns a PostgREST error as a value and never rejects, so an action that drops
+  // `{ error }` reports success to the editor while the live page keeps the old document.
+  const fn = (name: string) => {
+    const m = editActionsCode.match(new RegExp(`export async function ${name}\\([\\s\\S]*?\\n\\}`))
+    expect(m, `${name} is exported`).not.toBeNull()
+    return m![0]
+  }
+
+  it('publishPage reads the upsert error and throws on it', () => {
+    const body = fn('publishPage')
+    expect(body).toMatch(/const \{ error \} = await db\.from\('pages'\)\.upsert\(/)
+    expect(body).toMatch(/if \(error\) throw new Error\(error\.message\)/)
+  })
+
+  it('unpublishPage reads the update error and throws on it', () => {
+    const body = fn('unpublishPage')
+    expect(body).toMatch(/const \{ error \} = await q\.eq\('slug', slug\)\.eq\('space_id', sid\)/)
+    expect(body).toMatch(/if \(error\) throw new Error\(error\.message\)/)
+  })
+
+  it('neither action writes without a resolved space', () => {
+    expect(fn('publishPage')).toMatch(/if \(!sid\) throw/)
+    expect(fn('unpublishPage')).toMatch(/if \(!sid\) throw/)
+  })
+
+  it('revalidates only after the write succeeded', () => {
+    for (const name of ['publishPage', 'unpublishPage']) {
+      const body = fn(name)
+      expect(body.indexOf('if (error) throw')).toBeLessThan(body.indexOf('revalidatePath('))
+    }
+  })
+})
+
 describe('the app reads pages on the same key', () => {
   it('getPage filters by space_id and slug', () => {
     expect(dataLayer).toMatch(/\.eq\('space_id', sid\)\.eq\('slug', slug\)/)

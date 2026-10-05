@@ -12,7 +12,13 @@ import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { suggestCircleDraft, fallbackCircleSuggestion, type CircleSuggestion } from '@/lib/ai/circle-spark'
 import { planCircleEdit } from '@/lib/ai/circle-edit'
-import { getCircleDraft, saveCircleDraft, type CircleDraft, type CircleDraftPatch } from '@/lib/circles/draft'
+import {
+  getCircleDraft,
+  saveCircleDraft,
+  CIRCLE_DRAFT_SAVE_ERROR,
+  type CircleDraft,
+  type CircleDraftPatch,
+} from '@/lib/circles/draft'
 import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
 import {
   applyLock,
@@ -384,7 +390,12 @@ export async function redrawCircleAction(
     return fail('Vera kept this one as it is. Give her a direction, or unpin something, and try again.')
   }
 
-  await saveCircleDraft(circleId, circleWritePatch(safe, draft, paths))
+  // A failed write is a refusal, not a diff: saveCircleDraft throws on it (SCAN-694).
+  try {
+    await saveCircleDraft(circleId, circleWritePatch(safe, draft, paths))
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : CIRCLE_DRAFT_SAVE_ERROR)
+  }
   revalidatePath('/circles')
   revalidatePath(`/circles/${draft.slug}`)
   revalidatePath(`/circles/${draft.slug}/edit`)
@@ -405,7 +416,11 @@ export async function restoreCircleAction(
   const { draft } = gate
   const paths = Object.keys(before).filter((p) => (CIRCLE_REDRAW_PATHS as readonly string[]).includes(p))
   if (paths.length === 0) return fail('Nothing to put back.')
-  await saveCircleDraft(circleId, circleWritePatch(before, draft, paths))
+  try {
+    await saveCircleDraft(circleId, circleWritePatch(before, draft, paths))
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : CIRCLE_DRAFT_SAVE_ERROR)
+  }
   revalidatePath('/circles')
   revalidatePath(`/circles/${draft.slug}`)
   revalidatePath(`/circles/${draft.slug}/edit`)
