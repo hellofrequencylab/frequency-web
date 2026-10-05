@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-728",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/unsubscribe/actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-728: missing \"+p);process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const fn=s.slice(s.indexOf(\"export async function processUnsubscribe\"));const body=fn.slice(0,fn.indexOf(\"export async function\",10)>0?fn.indexOf(\"export async function\",10):fn.length);const revokes=/email_marketing/.test(body);const flips=/consent_state/.test(body);if(!revokes&&!flips){console.error(\"SCAN-728: processUnsubscribe only flips the lifecycle preference and never revokes email_marketing consent or sets contacts.consent_state, so a member who unsubscribes from a marketing campaign still passes the marketing gate and gets the next one.\");process.exit(1)}'",
+      "note": "Reads processUnsubscribe in app/unsubscribe/actions.ts and fails while it neither revokes email_marketing consent nor flips contacts.consent_state; today it only flips the lifecycle preference, which the marketing gate never reads."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: processUnsubscribe on the lifecycle category (the one every global broadcast mints) now also appends a granted=false email_marketing consent record and sets contacts.consent_state=unsubscribed for the profile, returning fail() when either write errors; the confirm-page label reads 'onboarding nudges and marketing emails'. Verified by the probe, eslint, and app/unsubscribe/actions.test.ts: the emitted link, the action, then resolveSendGate(marketing) answers no_consent."
+  }
+}
