@@ -13,12 +13,21 @@
 // app, where the full dock (Messages + Vera) lives. Auth detection mirrors the marketing header's
 // getSession() pattern (cookie read, no network). Off unless the SUPPORT_CHAT switch is enabled
 // (supportChatFlagEnabled in lib/comms/chat-token.ts, a server-only variable since LIVE-165, 2026-09-07).
+//
+// 🔴 THIS FILE IS LOADED LAZILY (SCAN-674). The public layouts mount `SupportChatLauncher`
+// (./support-chat-launcher.tsx), which renders only the floating button and imports THIS module
+// through next/dynamic on the first tap (prefetched when the browser is idle). Everything in here,
+// use-support-chat.ts and lib/realtime/use-typing.ts included, reaches @supabase/supabase-js (GoTrue,
+// Postgrest, Realtime, Storage: ~57 KB gzip), the exact weight components/layout/marketing-header.tsx
+// records removing from every public page's first-load JS. So: never import this module statically
+// from a layout, and never import `@/lib/supabase/client` statically from this file either; the
+// auth probe below uses `import()` like the header does, so the panel's own chunk stays lean until
+// a session is really needed.
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { MessageCircle, X, Loader2, ArrowLeft, CheckCircle2, UserRound } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { X, Loader2, ArrowLeft, CheckCircle2, UserRound } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import {
   startSupportChatAction,
@@ -66,9 +75,10 @@ function readViewerId(): string {
 /** The views the panel can show: the contact form, the post-submit confirmation, or the open thread. */
 type View = 'form' | 'sent' | 'thread'
 
-export function SupportChatWidget() {
+/** The contact PANEL: header, body and close control. The fixed wrapper and the launcher button live
+ *  in SupportChatLauncher, which mounts this lazily. */
+export function SupportChatPanel({ onClose }: { onClose: () => void }) {
   const pathname = usePathname()
-  const [open, setOpen] = useState(false)
   const [view, setView] = useState<View>('form')
   const [hydrated, setHydrated] = useState<{ ready: boolean; session: Session | null; viewerId: string }>({
     ready: false,
@@ -84,8 +94,9 @@ export function SupportChatWidget() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHydrated({ ready: true, session: readSession(), viewerId: readViewerId() })
     let live = true
-    void createClient()
-      .auth.getSession()
+    // Lazy, like marketing-header.tsx: the client is fetched after paint, not in this chunk.
+    import('@/lib/supabase/client')
+      .then(({ createClient }) => createClient().auth.getSession())
       .then(({ data }) => {
         if (live) setAuthed(!!data.session)
       })
@@ -123,41 +134,22 @@ export function SupportChatWidget() {
   )
 
   return (
-    // `data-visual-mask`: the visual suite paints over this box (test/e2e/surfaces.ts,
-    // VISUAL_MASK_SITES). The widget mounts only where SUPPORT_CHAT is set. That was one
-    // Vercel environment and not another until 2026-09-29, so a capture encoded the
-    // environment it was taken on; Preview carries it too since then (LIVE-213, ADR-1694).
-    <div
-      data-visual-mask="support-chat"
-      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 print:hidden"
-    >
-      {open && (
-        <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden overscroll-contain rounded-2xl border border-border bg-surface shadow-pop">
-          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <div className="min-w-0">
-              <p className="text-body-sm font-semibold text-text">Contact us</p>
-              <p className="text-2xs text-muted">Send us a message. We reply by email and right here.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close"
-              className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          {body}
+    <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden overscroll-contain rounded-2xl border border-border bg-surface shadow-pop">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-body-sm font-semibold text-text">Contact us</p>
+          <p className="text-2xs text-muted">Send us a message. We reply by email and right here.</p>
         </div>
-      )}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? 'Close contact panel' : 'Contact us'}
-        className="flex h-14 w-14 items-center justify-center rounded-pill bg-primary text-on-primary shadow-pop transition-transform hover:scale-105"
-      >
-        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-      </button>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      {body}
     </div>
   )
 }

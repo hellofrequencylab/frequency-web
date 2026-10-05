@@ -2,7 +2,7 @@
 //
 // ── THE DEFECT, measured ──────────────────────────────────────────────────────────────────────
 // Two fixed elements render in ONE Vercel environment and not the other:
-//   1. the support-chat widget (components/chat/support-chat-widget.tsx) mounts only where
+//   1. the support-chat launcher (components/chat/support-chat-launcher.tsx) mounts only where
 //      SUPPORT_CHAT=1, which was set for Production and not for Preview until 2026-09-29 (it is
 //      set for both since then, ADR-1694; the value is read at build time);
 //   2. the Vercel preview toolbar is injected into every PREVIEW response and never into a
