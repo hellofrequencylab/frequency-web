@@ -9,7 +9,9 @@ import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
-import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
+import { isWellFormed } from '@/lib/page-editor/templates'
+import { whatIsFrequencyData } from '@/lib/page-editor/templates/what-is-frequency'
+import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE } from '@/lib/site'
@@ -98,8 +100,11 @@ const EMPTY: Data = { content: [], root: {} }
 // `what-is-frequency 0` and `check:render-path` matches it EXACTLY. New structure on this page
 // belongs in a BLOCK (lib/page-editor/config.tsx), or in the spec.
 export default async function WhatIsFrequencyPage() {
-  const published = await getPublishedData(SLUG)
-  const template = getTemplate(SLUG)
+  // The template rung is evaluated against the OPERATOR'S pricing config (SCAN-793), the same input
+  // /pricing and llms.txt resolve, so an /admin/pricing edit moves this page's ladder, FAQ and JSON-LD
+  // in the same revalidation. getTemplate(SLUG) is the code-default seed and stays the editor's.
+  const [published, input] = await Promise.all([getPublishedData(SLUG), loadPricingInput()])
+  const template = whatIsFrequencyData(input)
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
   return (
     <>

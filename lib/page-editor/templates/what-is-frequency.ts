@@ -1,10 +1,10 @@
 import { articleTemplate, type ArticleSpec, type ArticleTier } from '@/lib/page-editor/templates/article'
 import { FOUNDING_PLACE } from '@/lib/site'
-import { priceStrings, CREW_NOTE } from '@/lib/pricing/pricing-page'
+import { priceStringsFrom, defaultPricingInput, CREW_NOTE } from '@/lib/pricing/pricing-page'
+import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
 import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { ADVERTISED_SPACE_PLANS, formatBps } from '@/lib/pricing/display'
-import { PRICING_DEFAULTS } from '@/lib/pricing/settings'
 import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -97,15 +97,21 @@ import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/bill
 // hero photo, exactly as coded (the beat photo was never in it).
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Every dollar figure on this page interpolates from the ONE price source (the code catalog via
-// priceStrings + the feature-tiers placeholder maps), so the ladder here can never drift from /pricing.
-const P = priceStrings()
+// THE SPEC IS A FUNCTION OF THE PRICING INPUT (SCAN-793). It used to compute every price and rate at
+// module load from the code defaults, while /pricing and llms.txt resolved the operator's config, so an
+// /admin/pricing edit left this page (its FAQ, its JSON-LD, its tier ladder) quoting the old fee. The
+// route awaits loadPricingInput() and passes it here; the module-level `spec` / `data` below are the
+// code-default evaluation the editor seeds from and the tests read.
+export function whatIsFrequencySpec(input: PricingGridInput): ArticleSpec {
+// Every dollar figure on this page interpolates from the ONE price source (the resolved catalog in the
+// input + the feature-tiers placeholder maps), so the ladder here can never drift from /pricing.
+const P = priceStringsFrom(input.catalog)
 
 // Every RATE interpolates from the take-rate config the fee code charges, so no answer here can quote a
 // rung the owner has retired. The free Member rung LEADS, because selling is free on every tier and the
 // reference rate is the one a reader starts on. The rate is what a plan settles at, never the reason to
 // take one (PLAN_STORY.rate, ADR-1350). Verified Non Profit is zero.
-const TAKE = PRICING_DEFAULTS.take_rate
+const TAKE = input.values.take_rate
 /** A Space plan's rate, through the one plan-to-rung resolver (LIVE-230): free / paid / nonprofit. */
 const SPACE_RATE = (plan: string) => formatBps(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(TAKE)))
 const MEMBER_RATE = formatBps(TAKE.member_free_bps)
@@ -145,7 +151,7 @@ const SPACE_LADDER = SPACE_TIERS.map((t) => `${t.name} is ${t.price.replace('/mo
 const HERO_IMAGE = '/images/site/community-1.jpg'
 const BEGINS_IMAGE = '/images/site/community-dinner.jpg'
 
-export const spec: ArticleSpec = {
+return {
   slug: 'what-is-frequency',
   eyebrow: 'The short version',
   title: 'What is Frequency?',
@@ -364,5 +370,13 @@ export const spec: ArticleSpec = {
     body: "The fastest way to understand Frequency is to walk into one room. Join free and we'll point you at the first move.",
   },
 }
+}
 
+/** The document for a resolved pricing input: what the route renders as its template rung. */
+export function whatIsFrequencyData(input: PricingGridInput) {
+  return articleTemplate(whatIsFrequencySpec(input))
+}
+
+/** The code-default evaluation: the editor seed (templates/index.ts) and the tests. */
+export const spec: ArticleSpec = whatIsFrequencySpec(defaultPricingInput())
 export const data = articleTemplate(spec)

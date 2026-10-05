@@ -1,10 +1,7 @@
 import { getAllCategories, helpHref } from '@/lib/help/content'
 import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
-import { getPricingValues } from '@/lib/pricing/settings'
-import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
-import { isBetaPricingActive } from '@/lib/pricing/beta'
-import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
-import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
+import { loadPricingInput } from '@/lib/pricing/pricing-input'
+import { allOfferings, type Offering } from '@/lib/pricing/pricing-grid'
 import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/pricing-page'
 
 // /llms-full.txt — the comprehensive, self-maintaining companion to the curated /llms.txt route
@@ -20,19 +17,6 @@ import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/
 
 export const revalidate = 3600
 
-/** Resolve the whole pricing model the way /pricing does: the operator's editable config layered over
- *  the code defaults. This route already reads the DB (the help center) and is ISR, so it can afford the
- *  same reads /pricing makes, and an edit at /admin/pricing now moves the answer-engine corpus in the
- *  same revalidation it moves the page. Before Phase 5 (ADR-916) it read the code defaults only, so a
- *  price or rate an operator changed was published here at the old number until the next deploy. */
-async function pricingInput(): Promise<PricingGridInput> {
-  const [values, catalog, gateOverrides] = await Promise.all([
-    getPricingValues(),
-    loadCatalogConfig(),
-    loadFeatureGateOverrides(),
-  ])
-  return { values, catalog: catalogConfigByKey(catalog), betaActive: isBetaPricingActive(), gateOverrides }
-}
 
 /** The network-only take-rate, one line per rung, straight off the offerings. Every ADVERTISED rung is
  *  listed, so the ladder cannot silently omit one the way a hand-written list did (it named Member,
@@ -55,7 +39,7 @@ function tierLadderLines(offerings: Offering[]): string[] {
 }
 
 export async function GET() {
-  const [cats, input] = await Promise.all([getAllCategories(), pricingInput()])
+  const [cats, input] = await Promise.all([getAllCategories(), loadPricingInput()])
   const offerings = allOfferings(input)
 
   const out: string[] = [
