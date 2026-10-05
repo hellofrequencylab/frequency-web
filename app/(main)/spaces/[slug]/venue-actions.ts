@@ -38,9 +38,13 @@ async function revalidateSpaces(...spaceIds: string[]): Promise<void> {
   }
 }
 
-/** Parse a client datetime string to an ISO instant, or null if invalid. */
+/** Parse a client datetime string to an ISO instant, or null if invalid. A zone-less wall time (the
+ *  raw datetime-local value) is INVALID: the server would read it as UTC and store the hold hours
+ *  off from the time the requester chose, so the client converts and this refuses (SCAN-702). */
 function toIso(v: string | null | undefined): string | null {
   if (!v) return null
+  // Same zone gate as lib/spaces/campaigns.ts parseScheduleTime: `Z` or an offset, or it is a wall time.
+  if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(v.trim())) return null
   const t = new Date(v).getTime()
   return Number.isNaN(t) ? null : new Date(t).toISOString()
 }
