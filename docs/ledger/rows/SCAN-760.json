@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-760",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const page=\"app/(public)/housing/[id]/page.tsx\",types=\"lib/listings/types.ts\";if(!fs.existsSync(page)||!fs.existsSync(types)){console.error(\"SCAN-760: housing detail page or listings types missing\");process.exit(79)}const s=fs.readFileSync(page,\"utf8\"),t=fs.readFileSync(types,\"utf8\");const promise=/Signed-in members see the street address/.test(t);const serverFalse=/signedIn:\\s*false/.test(s);const route=fs.existsSync(\"app/api/housing/[id]/address/route.ts\");const serverTrue=/signedIn:\\s*true/.test(s);if(promise&&(serverFalse||!serverTrue)&&!route){console.error(\"SCAN-760: the housing detail page resolves the address with signedIn false and no signed-in address route exists, while lib/listings/types.ts still promises that signed-in members see the street address, so the exact address is shown to nobody.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nExact addresses now reach signed-in members through /api/housing/[id]/address, read after hydration by SignedInAddress on the ISR detail page."
+  }
+}

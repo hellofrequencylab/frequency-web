@@ -19,6 +19,7 @@ import { listingMetadata, type HousingSeoFacts } from '@/lib/listings-shared/lis
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { ViewerListingClaim } from '@/components/marketplace/listing-claim-box'
+import { SignedInAddress } from '@/components/listings/signed-in-address'
 
 // Public housing detail, advertised in app/sitemap.ts. Auth during render is a dynamic API
 // and would void ISR. Owners still edit at /housing/[id]/edit. The save heart and a ?claim=
@@ -93,10 +94,11 @@ export default async function HousingDetailPage({
   }
   const firstName = listing.owner?.displayName.split(' ')[0] ?? 'the host'
 
-  // The address, resolved through the member's chosen precision (ADR-867). The street
-  // address is SERVER-checked here: it only renders when the member picked 'exact' AND
-  // the viewer is signed in. It rides the page body only — the view's locationLabel
-  // (meta + JSON-LD) is computed public-safe inside listingDetailFromHousing.
+  // The address, resolved through the member's chosen precision (ADR-867). This page is ISR and
+  // cannot read auth during render, so it resolves as an ANONYMOUS viewer and the street address
+  // never reaches the static HTML. A signed-in member gets it from /api/housing/[id]/address after
+  // hydration through <SignedInAddress> below (SCAN-760). The view's locationLabel (meta + JSON-LD)
+  // is computed public-safe inside listingDetailFromHousing.
   const address = detail
     ? resolveAddressDisplay({
         precision: detail.addressPrecision,
@@ -162,6 +164,7 @@ export default async function HousingDetailPage({
           </div>
       }
     >
+      {detail?.addressPrecision === 'exact' && <SignedInAddress listingId={id} />}
       {facts.length > 0 && (
         <dl className="mb-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
           {facts.map((f) => (
