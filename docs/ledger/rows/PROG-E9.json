@@ -1,0 +1,13 @@
+{
+  "id": "PROG-E9",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const pkg=JSON.parse(fs.readFileSync(\"package.json\",\"utf8\")).scripts||{};const cmd=pkg[\"check:loom-integrity\"];const file=cmd&&(cmd.match(/scripts\\/[\\w./-]+\\.mjs/)||[])[0];if(!cmd||!file||!fs.existsSync(file)){console.error(\"PROG-E9: check:loom-integrity is not a package.json script backed by a file under scripts/ (EDITOR-ARCHITECTURE §7.2: every Loom-declared function resolves to real primitives and real schemas).\");process.exit(1)}'",
+      "note": "Measures the one gate §7.2 assigns to E9: check:loom-integrity exists as a package.json script and the script it names exists. Fails on main today (the only mentions are in docs); passes when the write-time gate is wired."
+    }
+  },
+  "append": {
+    "detail": "\n\n── RE-TESTED 2026-10-05 (manual-probe sweep, ADR-1082 premise first). Still open. check:loom-integrity is named in five docs and in no script or package.json entry; lib/loom/ today is cover, icon and picker actions (the asset Loom), not a declarative function composer. The probe now reads package.json for the gate."
+  }
+}

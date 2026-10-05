@@ -1,0 +1,13 @@
+{
+  "id": "PROG-E6",
+  "patch": {
+    "verify": {
+      "kind": "manual",
+      "evidence": "Program phase. 2026-10-05: no drag-and-drop library (@dnd-kit, react-dnd absent from package.json), no layer tree, no spacing handles, no presets-first inserter under components/page-editor; the draggable hits in components/ are the admin rail and dock, not the editor. Nothing started.",
+      "checked": "2026-10-05"
+    }
+  },
+  "append": {
+    "detail": "\n\n── RE-TESTED 2026-10-05 (manual-probe sweep, ADR-1082 premise first). Still open, nothing started. Stays manual: the gate (keyboard path complete AND the full authoring path completes on a phone) is a device test."
+  }
+}
