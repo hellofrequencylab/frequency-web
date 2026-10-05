@@ -45,8 +45,13 @@ const SERIES_COUNT_ROW_CAP = 2000
 
 export interface SitemapEventEntry {
   slug: string
-  /** ISO instant of the date this URL represents — the sitemap's `lastModified`. */
+  /** ISO instant of the date this URL represents. NOT the sitemap's `lastModified` any more
+   *  (SCAN-661): a start date is in the future for every upcoming event, and a future lastmod is
+   *  the one value Google documents as a reason to stop trusting the field for the whole file. */
   startsAt: string
+  /** `events.updated_at`, the sitemap's `lastModified`; absent when the row carries none, because
+   *  absent beats invented (LIVE-197). */
+  updatedAt?: string
   /**
    * The event's PUBLIC cover image URL, for the image-sitemap extension — or absent when the row
    * has no uploaded cover.
@@ -270,7 +275,7 @@ export async function listSitemapEventEntries(opts: {
       // looking finished while the sitemap still carries every date.
       // `cover_image_path` rides along for the image-sitemap entry — the PUBLIC bucket only; see
       // the note on SitemapEventEntry.image for why the other two hero sources must never appear.
-      .select(`id, slug, starts_at, is_cancelled, cover_image_path, ${SERIES_COLUMNS}`)
+      .select(`id, slug, starts_at, updated_at, is_cancelled, cover_image_path, ${SERIES_COLUMNS}`)
       .eq('status', 'published')
       .eq('visibility', 'public')
       .eq('is_cancelled', false)
@@ -284,6 +289,7 @@ export async function listSitemapEventEntries(opts: {
       id: string
       slug: string | null
       starts_at: string | null
+      updated_at: string | null
       is_cancelled: boolean | null
       cover_image_path: string | null
       recurrence_type: string | null
@@ -313,6 +319,7 @@ export async function listSitemapEventEntries(opts: {
         out.push({
           slug: r.slug,
           startsAt: r.starts_at,
+          ...(typeof r.updated_at === 'string' ? { updatedAt: r.updated_at } : {}),
           isSeriesHome: group.recurring && i === 0,
           ...(cover ? { image: cover } : {}),
         })

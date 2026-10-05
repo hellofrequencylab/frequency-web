@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-661",
+  "title": "Event sitemap entries declared lastmod as the start date, which is in the future for every upcoming event",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "wave": "W0",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-seven SEO/GEO finders (26-agent fan-out), confirmed by hand against the tree"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven, seo-sitemap finder). lib/events/series-seo.ts documented startsAt as the sitemap's lastModified, and app/sitemap.ts wrote it, so every upcoming event carried a future lastmod. Google documents a consistently inaccurate lastmod as grounds to ignore the field for the whole file, which would also cost the Space, help and journey entries their real dates. CLOSED 2026-10-05: the reader selects events.updated_at, SitemapEventEntry carries it as updatedAt, and the sitemap uses it with the LIVE-197 rule (absent beats invented); lib/events/series-seo.test.ts pins the field name and the absence of the start date.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const sm=fs.readFileSync(\"app/sitemap.ts\",\"utf8\");const r=fs.readFileSync(\"lib/events/series-seo.ts\",\"utf8\");if(/lastModified: new Date\\(e\\.startsAt\\)/.test(sm)||!/e\\.updatedAt/.test(sm)||!/updated_at/.test(r)){console.error(\"SCAN-661: event sitemap entries declare lastmod as the START date, which is in the future for every upcoming event; Google names a future or inaccurate lastmod as grounds to ignore the field for the whole sitemap.\");process.exit(1)}'",
+    "note": "Fails on main before this change; passes with it."
+  },
+  "closed": "2026-10-05"
+}
