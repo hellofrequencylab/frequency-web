@@ -9,6 +9,6 @@
     }
   },
   "append": {
-    "detail": "\n\n2026-10-05: migration 20270345011800 redefines near_misses and welcome_targets with a two-direction blocked_users exclusion and restates the browser grants; recordWelcome returns quietly across a block before the insert."
+    "detail": "\n\n2026-10-05: migration 20270346000720 redefines near_misses and welcome_targets with a two-direction blocked_users exclusion and restates the browser grants; recordWelcome returns quietly across a block before the insert."
   }
 }
