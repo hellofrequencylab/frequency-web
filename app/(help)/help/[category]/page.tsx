@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SITE_NAME } from '@/lib/site'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllCategories, helpHref } from '@/lib/help/content'
@@ -22,6 +23,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${cat.title} | Help`,
     description: cat.description,
     alternates: { canonical: `/help/${cat.slug}` },
+    openGraph: {
+      type: 'website',
+      siteName: SITE_NAME,
+      locale: 'en_US',
+      title: `${cat.title} · Help · ${SITE_NAME}`,
+      description: cat.description,
+      url: `/help/${cat.slug}`,
+    },
   }
 }
 

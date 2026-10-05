@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SITE_NAME } from '@/lib/site'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllArticles, getArticle, helpHref } from '@/lib/help/content'
@@ -34,6 +35,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: article.description,
       url: helpHref(category, slug),
       type: 'article',
+      siteName: SITE_NAME,
+      locale: 'en_US',
     },
     twitter: {
       card: 'summary_large_image',
