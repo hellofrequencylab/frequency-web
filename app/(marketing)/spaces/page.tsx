@@ -13,9 +13,12 @@ import { OG_SITE } from '@/lib/site'
 
 export const revalidate = 3600
 
+// Not the bare word (SCAN-678): say who the page is for, which is what the query says. Shared with
+// the Article headline below so the two cannot drift (SCAN-802).
+const TITLE = 'Spaces for businesses, studios and organizations'
+
 export const metadata: Metadata = {
-  // Not the bare word (SCAN-678): say who the page is for, which is what the query says.
-  title: 'Spaces for businesses, studios and organizations',
+  title: TITLE,
   description:
     'Run your community as a Space on Frequency. A front door in Discover, and the tools to host Circles and Runs. Free to start, no card today.',
   alternates: { canonical: '/spaces' },
@@ -84,7 +87,13 @@ export default async function SpacesPage() {
       <JsonLd data={breadcrumbSchema([{ name: 'Spaces', path: '/spaces' }])} />
       {/* The coded body published NO Article schema, so this rung is the only one that ever has.
           Unconditional now, which is what it already was in practice: `data` was never null. */}
-      <BlockDocJsonLd data={data} path="/spaces" published={PUBLISHED} updated={latestDay(UPDATED, page?.published_at)} />
+      <BlockDocJsonLd
+        data={data}
+        path="/spaces"
+        title={TITLE}
+        published={PUBLISHED}
+        updated={latestDay(UPDATED, page?.published_at)}
+      />
       <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
     </>
   )

@@ -13,11 +13,13 @@ import { OG_SITE } from '@/lib/site'
 
 export const revalidate = 3600
 
+// Not the bare word (SCAN-678): the template appends the site name, and 'About · Frequency' names
+// nothing a query contains. Shared with the AboutPage headline below so the two cannot drift.
+const TITLE = 'About the Community Collective'
+
 export function generateMetadata(): Metadata {
   return {
-    // Not the bare word (SCAN-678): the template appends the site name, and 'About · Frequency' names
-    // nothing a query contains.
-    title: 'About the Community Collective',
+    title: TITLE,
     // Capped under the ~155 char search-snippet window, the same rule
     // /discover/circles/[id] already applies. This ran 326 characters, so
     // everything after "where they live" was cut by the SERP and the money
@@ -79,7 +81,16 @@ export default async function AboutPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema([{ name: 'About', path: '/about' }])} />
-      <BlockDocJsonLd data={data} path="/about" published={PUBLISHED} updated={latestDay(UPDATED, page?.published_at)} />
+      {/* AboutPage, not Article (SCAN-802): this document IS the page, and its headline is the page
+          title rather than whatever the first block says. */}
+      <BlockDocJsonLd
+        data={data}
+        path="/about"
+        title={TITLE}
+        schemaType="AboutPage"
+        published={PUBLISHED}
+        updated={latestDay(UPDATED, page?.published_at)}
+      />
       <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
     </>
   )

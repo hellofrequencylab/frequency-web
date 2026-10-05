@@ -117,6 +117,9 @@ function ladderSentence(offerings: Offering[]): string {
     .join(', ')
 }
 
+// Shared with the Article headline on the published branch so the two cannot drift (SCAN-802).
+const TITLE = 'Pricing: your own people are always free'
+
 export async function generateMetadata(): Promise<Metadata> {
   const input = await pricingInput()
   const ladder = ladderCompact(spaceOfferings(input))
@@ -133,7 +136,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // it in words costs nothing and keeps the rule absolute rather than carved with an exception.
   const description = `People join free. Businesses host free. You pay when you start charging, and never on your own people. ${ladder}.`
   return {
-    title: 'Pricing: your own people are always free',
+    title: TITLE,
     description,
     alternates: { canonical: '/pricing' },
     openGraph: {
@@ -327,7 +330,13 @@ export default async function PricingPage() {
             ⚠️ The FAQPage schema is deliberately NOT carried over: it is generated from the coded
             page's own FAQ copy, and asserting those answers over a body an operator has rewritten
             would publish text no visitor can see. The published document carries its own. */}
-        <BlockDocJsonLd data={published} path="/pricing" published={PUBLISHED} updated={latestDay(PUBLISHED, page?.published_at)} />
+        <BlockDocJsonLd
+          data={published}
+          path="/pricing"
+          title={TITLE}
+          published={PUBLISHED}
+          updated={latestDay(PUBLISHED, page?.published_at)}
+        />
         <BlockRender config={config} data={published} metadata={live ? { live } : {}} />
       </>
     )

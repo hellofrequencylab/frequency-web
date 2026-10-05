@@ -13,8 +13,11 @@ import { OG_SITE } from '@/lib/site'
 
 export const revalidate = 3600
 
+// Shared with the Article headline below so the two cannot drift (SCAN-802).
+const TITLE = 'The Lab: a third space, planned for 2028'
+
 export const metadata: Metadata = {
-  title: 'The Lab: a third space, planned for 2028',
+  title: TITLE,
   description:
     'The third space the Frequency community is building: a sauna, a cold plunge, and rooms to gather. The first is planned for 2028 in North County San Diego.',
   alternates: { canonical: '/the-lab' },
@@ -88,7 +91,13 @@ export default async function TheLabPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema([{ name: 'The Lab', path: '/the-lab' }])} />
-      <BlockDocJsonLd data={data} path="/the-lab" published={PUBLISHED} updated={latestDay(UPDATED, page?.published_at)} />
+      <BlockDocJsonLd
+        data={data}
+        path="/the-lab"
+        title={TITLE}
+        published={PUBLISHED}
+        updated={latestDay(UPDATED, page?.published_at)}
+      />
       <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
     </>
   )

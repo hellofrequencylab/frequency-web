@@ -834,6 +834,19 @@ describe('SCAN-207 · Event startDate carries the event zone, not a bare Z', () 
 describe('articleSchema — image + datePublished (LIVE-183)', () => {
   const base = { title: 'How to join a Circle', description: 'Find a local group.', path: '/help/getting-started/join-a-circle' }
 
+  it('emits a WebPage or AboutPage that carries its own @id instead of an Article (SCAN-802)', () => {
+    const page = articleSchema({ ...base, path: '/', type: 'WebPage' }) as Record<string, unknown>
+    expect(page['@type']).toBe('WebPage')
+    expect(page['@id']).toBe(`${SITE_URL}/`)
+    expect(page).not.toHaveProperty('mainEntityOfPage')
+    const about = articleSchema({ ...base, path: '/about', type: 'AboutPage' }) as Record<string, unknown>
+    expect(about['@type']).toBe('AboutPage')
+    // The default is still an Article pointing at the page it is the main entity of.
+    const article = articleSchema(base) as Record<string, unknown>
+    expect(article['@type']).toBe('Article')
+    expect(article.mainEntityOfPage).toEqual({ '@type': 'WebPage', '@id': `${SITE_URL}${base.path}` })
+  })
+
   it('emits datePublished and dateModified when both are given', () => {
     const node = articleSchema({ ...base, published: '2026-05-31', updated: '2026-06-16' }) as Record<string, unknown>
     expect(node.datePublished).toBe('2026-05-31')

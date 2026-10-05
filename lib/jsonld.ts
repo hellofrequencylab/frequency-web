@@ -897,7 +897,12 @@ export function articleSchema(article: {
   updated?: string | null
   /** One or more image URLs (absolute, or root-relative — normalized via abs). */
   image?: string | string[] | null
+  /** The node type. Article (default) is right for an editorial document; a block document that IS
+   *  the page (the home page, /about) is a WebPage or AboutPage, which carries the same headline,
+   *  dates, author and publisher but is not an Article headlined by its hero line (SCAN-802). */
+  type?: 'Article' | 'WebPage' | 'AboutPage'
 }) {
+  const type = article.type ?? 'Article'
   const images = article.image
     ? (Array.isArray(article.image) ? article.image : [article.image]).map((src) =>
         src.startsWith('http') ? src : abs(src),
@@ -905,11 +910,15 @@ export function articleSchema(article: {
     : undefined
   return {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': type,
     headline: article.title,
     description: article.description,
     url: abs(article.path),
-    mainEntityOfPage: { '@type': 'WebPage', '@id': abs(article.path) },
+    // An Article points at the WebPage it is the main entity of; a WebPage node IS that page, so it
+    // carries the @id itself rather than pointing at a second copy of itself.
+    ...(type === 'Article'
+      ? { mainEntityOfPage: { '@type': 'WebPage', '@id': abs(article.path) } }
+      : { '@id': abs(article.path) }),
     ...(article.published ? { datePublished: article.published } : {}),
     ...(article.updated ? { dateModified: article.updated } : {}),
     ...(images ? { image: images } : {}),
