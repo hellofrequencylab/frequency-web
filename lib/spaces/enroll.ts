@@ -233,7 +233,7 @@ async function readActiveEnrollments(spaceId: string): Promise<EnrollmentRow[]> 
 /** The shape supabase-js hands back for a Postgres error: sqlstate in `code`, the raise text in `message`. */
 type PgError = { code?: string | null; message?: string | null }
 
-/** enforce_space_program_capacity (20270345012200) raises 'program_full' with errcode check_violation
+/** enforce_space_program_capacity (20270346001300) raises 'program_full' with errcode check_violation
  *  (sqlstate 23514). Both halves are checked so an unrelated CHECK failure is not read as a full program. */
 function isProgramFull(error: unknown): boolean {
   const e = (error ?? {}) as PgError
@@ -425,7 +425,7 @@ export async function enrollInProgram(spaceId: string): Promise<ActionResult> {
 
   // Capacity guard: refuse when a capped program is full. This is the FAST PATH, not the guard: two
   // members racing for the last seat both pass this count. The guard is
-  // enforce_space_program_capacity (20270345012200), a BEFORE trigger that locks the program row
+  // enforce_space_program_capacity (20270346001300), a BEFORE trigger that locks the program row
   // and raises program_full; the insert below maps that onto the same message (SCAN-708).
   if (program.capacity > 0) {
     const activeCount = await countActiveEnrollments(spaceId)

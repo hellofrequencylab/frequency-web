@@ -1,5 +1,5 @@
 -- circle_channels inherits the Circle's visibility
--- (20270345012000_circle_channels_inherit_circle_visibility.sql · SCAN-651 · ADR-1015).
+-- (20270346001100_circle_channels_inherit_circle_visibility.sql · SCAN-651 · ADR-1015).
 --
 -- The join carried `using (true)`, so anon could list every hidden Circle's uuid and Channels.
 -- The policy now defers to the caller's view of public.circles. This file proves both halves:

@@ -10,6 +10,6 @@
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-05: migration 20270345012000_circle_channels_inherit_circle_visibility.sql replaces the using (true) select policy on circle_channels with an exists on public.circles, so the row inherits circles_access_restrictive; supabase/tests/circle_channels_visibility.test.sql proves anon still reads a listed Circle's rows and never a hidden one's. Not applied: the thread owner applies it after merge."
+    "detail": "\n\nCLOSED 2026-10-05: migration 20270346001100_circle_channels_inherit_circle_visibility.sql replaces the using (true) select policy on circle_channels with an exists on public.circles, so the row inherits circles_access_restrictive; supabase/tests/circle_channels_visibility.test.sql proves anon still reads a listed Circle's rows and never a hidden one's. Not applied: the thread owner applies it after merge."
   }
 }
