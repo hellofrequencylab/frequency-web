@@ -4,7 +4,8 @@
 // (app/(main)/nearby/actions.ts) and the operator edit path (app/(main)/admin/actions.ts) so a
 // retargeted Dispatch obeys the same association guard a new one does: an admin tier (community
 // janitor+) may broadcast anywhere, global included; everyone else may only broadcast to a scope
-// they LEAD (the circle's host, the hub's guide, the nexus's mentor, walking up the tree).
+// they LEAD (the circle's host, the hub's guide, the nexus's mentor, walking up the tree). A nexus is a row of nexuses (hubs.nexus_id
+// points there), not of the nexus_regions geography tree (SCAN-717).
 //
 // Service-role reads; the CALLER has already authenticated the profile it passes in.
 
@@ -37,7 +38,7 @@ export async function assertCanBroadcastTo(
       const { data: h } = await admin.from('hubs').select('guide_id, nexus_id').eq('id', c.hub_id).maybeSingle()
       if (h?.guide_id === caller.id) led = true
       else if (h?.nexus_id) {
-        const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
+        const { data: n } = await admin.from('nexuses').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
         if (n?.mentor_id === caller.id) led = true
       }
     }
@@ -45,11 +46,11 @@ export async function assertCanBroadcastTo(
     const { data: h } = await admin.from('hubs').select('guide_id, nexus_id').eq('id', audienceId!).maybeSingle()
     if (h?.guide_id === caller.id) led = true
     else if (h?.nexus_id) {
-      const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
+      const { data: n } = await admin.from('nexuses').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
       if (n?.mentor_id === caller.id) led = true
     }
   } else if (scope === 'nexus') {
-    const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', audienceId!).maybeSingle()
+    const { data: n } = await admin.from('nexuses').select('mentor_id').eq('id', audienceId!).maybeSingle()
     if (n?.mentor_id === caller.id) led = true
   }
   if (!led) throw new Error('You can only broadcast to a circle, hub, or region you lead.')
