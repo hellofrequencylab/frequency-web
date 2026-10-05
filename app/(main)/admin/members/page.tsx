@@ -116,12 +116,21 @@ async function MembersTab() {
     getCallerProfile(),
     getStaffMember().catch(() => null),
   ])
-  const canGrantModerator = !!caller && (isJanitor(caller.webRole) || staff?.role === 'owner')
+  const isJanitorViewer = !!caller && isJanitor(caller.webRole)
+  const canGrantModerator = isJanitorViewer || staff?.role === 'owner'
+  // SCAN-755: edit profile / sign-in link / deactivate / delete are janitor-gated server actions.
+  // A staffer admitted through the `members` domain gets the roster and Spotlight switches only.
+  const canManageAccounts = isJanitorViewer
 
   return (
     <>
       <p className="mb-4 text-body-sm text-muted">{allMembers.filter((m) => !m.is_system).length} total members</p>
-      <MemberAdmin members={allMembers} emailMap={emailMap} canGrantModerator={canGrantModerator} />
+      <MemberAdmin
+        members={allMembers}
+        emailMap={emailMap}
+        canGrantModerator={canGrantModerator}
+        canManageAccounts={canManageAccounts}
+      />
     </>
   )
 }

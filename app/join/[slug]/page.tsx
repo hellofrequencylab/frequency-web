@@ -161,13 +161,15 @@ export default async function JoinPage({ params }: Props) {
       .maybeSingle()
 
     if (profile) {
+      // SCAN-744: only an ACTIVE row means they belong. A pending or inactive row is a dormant
+      // seat that the Join button wakes up, so it must still see the button.
       const { data: membership } = await admin
         .from('memberships')
-        .select('id')
+        .select('id, status')
         .eq('circle_id', circle.id)
         .eq('profile_id', profile.id)
         .maybeSingle()
-      alreadyMember = !!membership
+      alreadyMember = membership?.status === 'active'
     }
   }
 
