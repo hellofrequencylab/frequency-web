@@ -5,7 +5,7 @@ import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
 import { columnImageUrl } from '@/lib/library/column-image'
 import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveContentCascade } from '@/lib/layout/content-cascade'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 // Operator-editable page content, keyed by route (ADR-180/182). A coded page reads
 // this and falls back to its hardcoded default when nothing is set, so editing is
@@ -128,6 +128,8 @@ export async function pageContentMetadata(
   // page-content hero (the banner the page actually shows). Without an image here, Next REPLACES
   // (not deep-merges) the layout's openGraph, dropping the operator's share card — so we resolve
   // and re-emit it. loadPageSettings is request-cached, shared with the layout's own read.
+  // With none of those, the ROOT card: these routes have no segment card, and a block without
+  // `images` ships no og:image at all (SCAN-798).
   const settings = await loadPageSettings(route)
   const ogImage = settings?.og_image_url ?? settings?.header_image_url ?? heroImage ?? null
   return {
@@ -138,12 +140,8 @@ export async function pageContentMetadata(
     // (root layout) resolves the relative path; harmless on the noindex in-app pages that also use
     // this helper.
     alternates: { canonical: route },
-    openGraph: { ...OG_SITE, title, description, ...(ogImage ? { images: [{ url: ogImage }] } : {}) },
-    twitter: {
-      card: ogImage ? 'summary_large_image' : 'summary',
-      title,
-      description,
-      ...(ogImage ? { images: [ogImage] } : {}),
-    },
+    openGraph: { ...OG_SITE, title, description, images: ogImage ? [{ url: ogImage }] : ROOT_OG_IMAGES },
+    // twitter.images inherits openGraph.images (postProcessMetadata), so only the card type is set.
+    twitter: { card: 'summary_large_image', title, description },
   }
 }
