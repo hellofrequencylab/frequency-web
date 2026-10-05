@@ -18,11 +18,46 @@ import {
   type PhaseEventKind,
   type RunEndState,
 } from '@/lib/journeys/runs'
-import { resolveRunGate, journeysOfferedBySpace } from '@/lib/journeys/run-gate'
+import { resolveRunGate, journeysOfferedBySpace, runRosterHasRoom } from '@/lib/journeys/run-gate'
+import { checkFreeEnrol } from '@/lib/journeys/free-enrol-gate'
+import { JOURNEY_FULL_MESSAGE } from '@/lib/journeys/journey-access'
+import { planMeta } from '@/lib/journey-plans'
+import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { buildJourneyTree, type BlockRow } from '@/lib/journeys/tree'
 import { phaseUnlockAt } from '@/lib/journeys/schedule'
 
 const DAY_MS = 86_400_000
+
+/** Does the Circle's active roster fit under the Journey's seat cap (SCAN-724)? Reads the cap,
+ *  the live enrolment count and the roster size, then asks the pure `runRosterHasRoom`. Fail-safe
+ *  like the single-seat check in checkFreeEnrol: a broken COUNT admits (worst case a seat over),
+ *  because the price gate before it is the one that must never leak. */
+async function rosterFitsJourney(planId: string, circleId: string): Promise<boolean> {
+  const admin = createAdminClient()
+  try {
+    const [{ data: plan }, { count: enrolled }, { count: roster }] = await Promise.all([
+      admin.from('journey_plans').select('enroll_cap').eq('id', planId).maybeSingle(),
+      admin
+        .from('journey_enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('plan_id', planId)
+        .is('completed_at', null),
+      admin
+        .from('memberships')
+        .select('profile_id', { count: 'exact', head: true })
+        .eq('circle_id', circleId)
+        .eq('status', 'active'),
+    ])
+    return runRosterHasRoom({
+      enrollCap: (plan as { enroll_cap: number | null } | null)?.enroll_cap ?? null,
+      activeEnrollmentCount: enrolled ?? 0,
+      rosterSize: roster ?? 0,
+    })
+  } catch (error) {
+    console.error('[journeys] run seat check failed, admitting', { planId, circleId, error })
+    return true
+  }
+}
 
 export async function startJourneyRunAction(input: {
   planId: string
@@ -50,6 +85,23 @@ export async function startJourneyRunAction(input: {
       return fail('Pick a Journey this space offers.')
     }
   }
+
+  // WHAT they may pick, for ANY Circle (SCAN-724): a Run enrols the whole roster, so it is a door
+  // into the Journey like adoptPlanAction is, and it meets the same rules. A private Journey is
+  // only the author's or a manager's to run; a priced Journey is not free because a Circle walks
+  // it together; the tier gate and the seat cap bind for the whole roster, not one seat. Without
+  // this, a member's own Circle could unlock a paid Journey for everyone in it by starting a Run.
+  const meta = await planMeta(input.planId)
+  if (!meta) return fail('Journey not found.')
+  const isAuthor = !!meta.author_id && meta.author_id === caller.id
+  const canManage = await getJourneyCapabilities(input.planId)
+    .then((caps) => caps.has('journey.editSettings'))
+    .catch(() => false)
+  const isOwner = isAuthor || canManage
+  if (meta.visibility === 'private' && !isOwner) return fail('Journey not found.')
+  const enrol = await checkFreeEnrol(input.planId, caller.id, { isOwner })
+  if (!enrol.ok) return fail(enrol.error)
+  if (!(await rosterFitsJourney(input.planId, input.circleId))) return fail(JOURNEY_FULL_MESSAGE)
 
   const runId = await startRun({
     planId: input.planId,

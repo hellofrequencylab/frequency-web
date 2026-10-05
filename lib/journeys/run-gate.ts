@@ -55,6 +55,23 @@ export function canStartRunForCircle(facts: RunGateFacts): boolean {
   return !!facts.circleHostId && facts.circleHostId === facts.viewerProfileId
 }
 
+/**
+ * Does the WHOLE roster fit under the Journey's seat cap (SCAN-724)? A Run enrols every active
+ * member of the Circle at once, so the single-seat `journeyHasRoom` check is not enough: a cap of
+ * 10 with 8 in and a roster of 5 must refuse. PURE, and fail-safe the same way `journeyHasRoom`
+ * is: no cap or a nonsense cap never blocks, and negative counts read as zero.
+ */
+export function runRosterHasRoom(facts: {
+  enrollCap: number | null
+  activeEnrollmentCount: number
+  rosterSize: number
+}): boolean {
+  if (facts.enrollCap == null || facts.enrollCap <= 0) return true
+  const taken = Math.max(0, facts.activeEnrollmentCount)
+  const roster = Math.max(0, facts.rosterSize)
+  return taken + roster <= facts.enrollCap
+}
+
 /** What the IO front door resolved, so a caller that passes can reuse the facts. */
 interface RunGateResult {
   allowed: boolean

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canStartRunForCircle } from './run-gate'
+import { canStartRunForCircle, runRosterHasRoom } from './run-gate'
 
 // The pure Run gate (ADR-842): who may start a Run for a Circle. The IO half (resolveRunGate)
 // reads the Circle + the owning Space's capabilities and feeds these facts in.
@@ -118,5 +118,26 @@ describe('canStartRunForCircle', () => {
         circleCanManage: true,
       }),
     ).toBe(false)
+  })
+})
+
+// The roster seat check (SCAN-724): a Run enrols the whole Circle at once, so the cap is measured
+// against everyone it would admit, not one seat.
+describe('runRosterHasRoom', () => {
+  it('never blocks an uncapped or nonsense-capped Journey', () => {
+    expect(runRosterHasRoom({ enrollCap: null, activeEnrollmentCount: 50, rosterSize: 50 })).toBe(true)
+    expect(runRosterHasRoom({ enrollCap: 0, activeEnrollmentCount: 50, rosterSize: 50 })).toBe(true)
+  })
+
+  it('admits a roster that exactly fills the room', () => {
+    expect(runRosterHasRoom({ enrollCap: 10, activeEnrollmentCount: 5, rosterSize: 5 })).toBe(true)
+  })
+
+  it('refuses a roster that would go one over the cap, even though one seat is free', () => {
+    expect(runRosterHasRoom({ enrollCap: 10, activeEnrollmentCount: 8, rosterSize: 3 })).toBe(false)
+  })
+
+  it('reads negative counts as zero', () => {
+    expect(runRosterHasRoom({ enrollCap: 3, activeEnrollmentCount: -4, rosterSize: -1 })).toBe(true)
   })
 })

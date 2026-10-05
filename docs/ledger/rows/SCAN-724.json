@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-724",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/journeys/run-actions.ts\";if(!fs.existsSync(p))process.exit(79);const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"export async function startJourneyRunAction(\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);if(!/checkFreeEnrol|getJourneyOffer|checkJourneyTier/.test(body)){console.error(\"SCAN-724: startJourneyRunAction enrolls a whole circle in any Journey without consulting the price, tier or seat gate, so a paid Journey can be unlocked for free by starting a Run.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nstartJourneyRunAction checked only who may start a Run and, for Space circles, that the Space offers the plan; for a member's own circle any plan id went straight to startRun, which enrols every active member and activates their adoption, so a priced or private Journey could be unlocked for a whole circle for free. The action now loads planMeta, refuses a private plan to anyone who is not its author or a journey.editSettings manager (as Journey not found), runs checkFreeEnrol(planId, caller.id, { isOwner }) for the price and tier gate, and checks the seat cap against the whole roster through the new pure runRosterHasRoom (lib/journeys/run-gate.ts) fed by a fail-safe rosterFitsJourney read, all before startRun. Pinned by app/(main)/journeys/run-actions.test.ts (source shape: gate sits between resolveRunGate and startRun, private refusal, roster seat check) and runRosterHasRoom cases in lib/journeys/run-gate.test.ts."
+  }
+}
