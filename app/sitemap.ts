@@ -565,9 +565,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // sitemap" until 2026-09-07; it did carry a URL, and that URL served HTML — see below.)
     const eventRoutes: MetadataRoute.Sitemap = (events as SitemapEventEntry[]).map((e) => ({
       url: `${SITE_URL}/events/${e.slug}`,
-      // `updated_at`, never the start date (SCAN-661): the start is in the future for every
-      // upcoming event, and a future lastmod is what Google names as grounds to ignore the field.
-      ...((e.updatedAt) ? { lastModified: new Date(e.updatedAt) } : {}),
+      // NO lastModified (SCAN-661): it used to be the start date, which is in the future for every
+      // upcoming event, and a future lastmod is what Google names as grounds to ignore the field for
+      // the whole file. `events` has no updated-at column, so there is nothing true to send.
       changeFrequency: "daily",
       priority: e.isSeriesHome ? 0.8 : 0.7,
       // The event's own PUBLIC cover, when it has one (LIVE-207). A row with no uploaded cover
