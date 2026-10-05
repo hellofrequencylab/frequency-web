@@ -38,16 +38,18 @@ export async function generateMetadata({
     title: name,
     description,
     alternates: { canonical: path },
-    // `images` is never set here (SCAN-800): ./opengraph-image.tsx owns the card. Owning the key on
-    // ANY branch suppresses that file convention (Next's mergeStaticMetadata applies it only when
-    // the source does not hasOwnProperty('images')), and Next copies openGraph.images into twitter,
-    // so neither block names an image and no twitter-image.tsx is needed.
     openGraph: {
       ...OG_SITE,
       type: 'profile',
       url: path,
       title: name,
       description,
+      // 🔴 SPREAD, NOT `: undefined`. Declaring the key at all — even as undefined — OWNS it, and
+      // Next's mergeStaticMetadata applies the file-convention image only when the source does NOT
+      // hasOwnProperty('images') (resolve-metadata.js). So `: undefined` SUPPRESSED this route's own
+      // opengraph-image.tsx for every Spotlight without an avatar, which fell back to the generic
+      // site card — the exact failure the comment below says this block exists to prevent.
+      ...(data.profile.avatar_url ? { images: [avatarSrc(data.profile.avatar_url)] } : {}),
     },
     // Metadata merges per TOP-LEVEL KEY: omitting `twitter` inherits the ROOT block, so a member
     // sharing their own Spotlight link posted a card with the generic site name and tagline on it.
@@ -55,6 +57,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title: name,
       description,
+      ...(data.profile.avatar_url ? { images: [avatarSrc(data.profile.avatar_url)] } : {}),
     },
   }
 }

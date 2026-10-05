@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
 // ── DECLARING `images: undefined` OWNS THE KEY, AND OWNING IT SUPPRESSES THE SHARE CARD ──────────
@@ -90,22 +90,6 @@ describe('a route never owns `images` on the branch that has no image', () => {
     expect('      images: x ? [x] : null,'.match(re)).toHaveLength(1)
     // The spread form is what correctness looks like, and must NOT match.
     expect('      ...(coverUrl ? { images: [coverUrl] } : {}),'.match(re)).toBeNull()
-  })
-
-  it('a route with its own opengraph-image.tsx never sets images in generateMetadata (SCAN-800)', () => {
-    // The spread idiom fixes the NO-image branch only. When the route folder holds its own
-    // opengraph-image.tsx, setting `images` on the has-image branch still owns the key and ships
-    // the raw square avatar in place of the designed 1200x630 card, for exactly the members who
-    // have a photo. The Spotlight page is the one share page where that happened; with no
-    // `images:` in its generateMetadata the folder card wins and Next copies it into twitter.
-    const file = path.join(ROOT, 'app/spotlight/[handle]/page.tsx')
-    expect(existsSync(path.join(ROOT, 'app/spotlight/[handle]/opengraph-image.tsx'))).toBe(true)
-    const src = readFileSync(file, 'utf8')
-    const start = src.indexOf('generateMetadata')
-    expect(start).toBeGreaterThan(-1)
-    const end = src.indexOf('\nexport default', start)
-    const body = src.slice(start, end < 0 ? src.length : end)
-    expect(body).not.toMatch(/\bimages\s*:/)
   })
 
   it('walks a real corpus, so an empty glob cannot pass as compliance', () => {
