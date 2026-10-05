@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { EventCalendar, type CalendarEvent } from './event-calendar'
@@ -64,6 +64,13 @@ describe('EventCalendar on a phone (LIVE-469)', () => {
 
 describe('EventCalendar focus and announcements (LIVE-469)', () => {
   it('keeps Today mounted and disabled, and hands focus to the month title', () => {
+    // The assertions read "Today" as September 2026, so pin the clock there: unpinned, this case
+    // broke the day the real calendar reached October 2026, when Next month landed on today.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-15T12:00:00Z'))
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const el = mount(<EventCalendar events={[item()]} initialYear={2026} initialMonth1={9} />)
     const today = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Today')
     expect(today, 'Today is always in the tree').toBeTruthy()

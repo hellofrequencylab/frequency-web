@@ -11,7 +11,7 @@
 
 Run against `origin/main` at `2b5ef05`, 50 commits after the 2026-09-28 pass. Sequential reads, no parallel agents.
 
-**What every instrument that can look says.** `pnpm exec tsc --noEmit` exit 0. All 12 ci.yml `guards` and 40 more contract checks exit 0 locally (`check:pgtap-skips` only runs on a TAP file). No open pull requests. **Migration drift: zero, proven as a set.** The repo holds 756 migrations, the production ledger holds 756 rows, and `md5(string_agg(version, "," order by version))` is `e4f139b0bca97d499f286173f2ef1bdd` on both sides. Advisors: security unchanged in kind (PostGIS `spatial_ref_sys`, 81 deny-all INFO, the SECURITY DEFINER WARNs OWN-006 tracks). Performance: **zero** unindexed foreign keys (the nine from 2026-09-28 are closed, and `check:fk-indexes` now replays all 626) and zero `auth_rls_initplan`. Unused indexes 642, up from 398, but 1,024 of 1,279 public indexes read zero scans, which points to a statistics reset, not new waste. Re-read it after a full week of traffic before acting.
+**What every instrument that can look says.** `pnpm exec tsc --noEmit` exit 0. `pnpm test` 20,428 passed, 1 failed (SCAN-653, fixed here), across 1,504 files. All 12 ci.yml `guards` and 40 more contract checks exit 0 locally (`check:pgtap-skips` only runs on a TAP file). No open pull requests. **Migration drift: zero, proven as a set.** The repo holds 756 migrations, the production ledger holds 756 rows, and `md5(string_agg(version, "," order by version))` is `e4f139b0bca97d499f286173f2ef1bdd` on both sides. Advisors: security unchanged in kind (PostGIS `spatial_ref_sys`, 81 deny-all INFO, the SECURITY DEFINER WARNs OWN-006 tracks). Performance: **zero** unindexed foreign keys (the nine from 2026-09-28 are closed, and `check:fk-indexes` now replays all 626) and zero `auth_rls_initplan`. Unused indexes 642, up from 398, but 1,024 of 1,279 public indexes read zero scans, which points to a statistics reset, not new waste. Re-read it after a full week of traffic before acting.
 
 **Ratchet.** `check:adoption` reported four shrunk classes nobody had re-frozen. Lowered here: literal-radius 2156 to 2147, raw-button-bg 403 to 402, literal-display-type 48 to 47, handrolled-eyebrow 478 to 477.
 
@@ -27,13 +27,14 @@ Run against `origin/main` at `2b5ef05`, 50 commits after the 2026-09-28 pass. Se
 - The rail bundle (per-request memo, no cross-viewer cache).
 - Journey reorder, Circle Channels writes, the `/library` 308, series ranking, and the persona payout gate.
 
-**Findings that survived refute: seven. Three are fixed in this pass.**
+**Findings that survived refute: eight. Four are fixed in this pass.**
 
 | Finding | Row | State |
 |---|---|---|
 | A check-in node created after LIVE-688 gets no `secret`, and the verdict treated "no secret, no code" as legacy, so a bare `/n/<id>` checked in until 2026-12-01. All 4 production nodes predate it, so nothing was exposed. | `SCAN-646` P1 | fixed |
 | The operator's Send again on a stuck seller transfer refused any order with `refunded_at`, which a partial refund stamps on a still-paid order the reconciler pays | `SCAN-647` P2 | fixed |
 | Vera's two outbound email shells (an approved outreach, an autonomous lifecycle email) had no postal address after LIVE-728 | `SCAN-648` P2 | fixed |
+| The EventCalendar Today-button test read the real clock: it has failed on main, and so on every PR, since 2026-10-01 | `SCAN-653` P1 | fixed |
 | Split-order reversal: a fixed idempotency key replays a saved Stripe refusal past the 8-attempt ceiling, and raising a target resets the claim so two refunds can reverse one seller twice | `SCAN-649` P2 | open |
 | An order stays shipped after a share is fully reversed from the Stripe dashboard | `SCAN-650` P3 | open |
 | `circle_channels` is `using (true)` for anon and lists hidden Circles' ids. Not a plain revoke, because the signed-out index embeds it. | `SCAN-651` P3 | open |
