@@ -17,7 +17,7 @@ import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
-import { hasBlocked } from '@/lib/blocking'
+import { hasBlocked, isBlockedBetween } from '@/lib/blocking'
 import { MessageSquare, CalendarDays, Zap, Users, MapPin, Globe, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, UserCog } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge, FoundingBadge } from '@/lib/community-roles'
@@ -208,6 +208,11 @@ export default async function ProfilePage({
     : Promise.resolve(null)
   // Block state — only read for a signed-in non-self viewer, same guard as before.
   const blockPromise = isRelationalViewer ? hasBlocked(myProfileId!, profileId) : Promise.resolve(false)
+  // SCAN-683: the wall closes on a block in EITHER direction (the one-way read above drives the
+  // Block/Unblock button, which must stay one-way).
+  const blockedEitherPromise = isRelationalViewer
+    ? isBlockedBetween(myProfileId!, profileId)
+    : Promise.resolve(false)
   // The viewer's OWN merged contact card (docs/NETWORK-CRM.md) — same gate (signed-in
   // non-owner) as before, just folded into the batch.
   const linkedContactPromise =
@@ -216,7 +221,7 @@ export default async function ProfilePage({
   const [
     journeysDone, completionsCountResult, postsCountResult, circlesResult, signature, awards,
     payoutsAreLive, connectStatus, profileCaps, globalCaps, realWebRole,
-    friendResult, isBlocked, myLinkedContact,
+    friendResult, isBlocked, blockedEither, myLinkedContact,
   ] = await Promise.all([
     // Journeys finished THIS SEASON — the canonical rank-ladder driver (same source the
     // feed / crew home / leaderboard use). The displayed Zaps number is a separate value
@@ -249,6 +254,7 @@ export default async function ProfilePage({
     getRealCallerWebRole(),
     friendPromise,
     blockPromise,
+    blockedEitherPromise,
     linkedContactPromise,
   ])
 
@@ -624,8 +630,8 @@ export default async function ProfilePage({
             )}
           </Suspense>
 
-          {/* Composer + timeline. */}
-          {myProfileId && (
+          {/* Composer + timeline. SCAN-683: no wall note across a block, in either direction. */}
+          {myProfileId && !blockedEither && (
             <Composer
               scopeId={profileId}
               visibility="public"

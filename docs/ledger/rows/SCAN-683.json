@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-683",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/feed/actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-683: feed actions.ts missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");if(!/isBlockedBetween|blocked_users|hasBlocked/.test(s)){console.error(\"SCAN-683: the feed actions never consult the block list, so a blocked member can still comment on, @mention and wall-post to the person who blocked them.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: createReply and wall posts refuse across a block in either direction, fanOutMentions drops blocked pairs with one batched read, the profile page hides the wall composer on a two-way block, and the help copy says what a block now does. The feed RPC still shows a blocked member's posts; that read-side change is a migration for a follow-up row."
+  }
+}

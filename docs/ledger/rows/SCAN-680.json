@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-680",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/feed/actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-680: feed actions.ts missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"export async function createPost\");const j=s.indexOf(\"export async function\",i+10);const body=s.slice(i,j<0?s.length:j);const bareCast=/post_type:\\s*postType as Database/.test(body);const allow=/\\[\\s*.feed.\\s*,\\s*.note.\\s*,\\s*.announcement.\\s*\\]/.test(s)&&/\\.includes\\(/.test(body);if(bareCast||!allow){console.error(\"SCAN-680: createPost still inserts whatever post_type the request sends with only a type cast, so a member can forge an unreportable system line in the platform voice.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: createPost checks post_type against the feed/note/announcement allowlist and visibility against public/group/cluster before any database work, and the bare enum casts are gone."
+  }
+}
