@@ -1116,8 +1116,9 @@ export function productSchema(p: {
 // engine cites for "what does <space> offer / cost". Composed from the shared productSchema builder so
 // the Offer shape can't drift. Spaces have no per-offering page, so every Product deep-links to the
 // profile's Offerings section anchor. Structurally typed (a subset of SpaceOffering) so lib/jsonld stays
-// dependency-light. An offering with no set price ('contact', or none) still emits a Product (name +
-// blurb) with no Offer; a 'free' offering is a $0 Offer.
+// dependency-light. An offering with no set price ('contact', or none) is emitted as a Service (name +
+// blurb + provider), not a Product: Google's Product snippet requires an Offer, a review or a rating,
+// and a Product with none is reported as an invalid item (SCAN-792). A 'free' offering is a $0 Offer.
 type OfferingSchemaInput = {
   title: string
   blurb?: string
@@ -1132,14 +1133,24 @@ export function spaceOfferingsSchema(
 ) {
   const path = `/spaces/${opts.slug}#offerings`
   const itemListElement = offerings.map((o, i) => {
-    // A set price → cents. 'free' is $0; 'contact' or a missing price carries NO price (undefined), so
-    // productSchema omits the Offer rather than emit a misleading $0.
+    // A set price → cents. 'free' is $0; 'contact' or a missing price carries NO price (undefined), and
+    // that offering is a Service rather than a Product with no Offer (never a misleading $0).
     const priceCents =
       o.priceModel === 'free'
         ? 0
         : o.priceModel === 'contact' || typeof o.price !== 'number'
           ? undefined
           : Math.round(o.price * 100)
+    if (priceCents === undefined) {
+      const service = {
+        '@type': 'Service',
+        name: o.title,
+        ...(o.blurb ? { description: o.blurb } : {}),
+        ...(opts.sellerName ? { provider: { '@type': 'Organization', name: opts.sellerName } } : {}),
+        url: abs(path),
+      }
+      return { '@type': 'ListItem', position: i + 1, item: service }
+    }
     // Nest the Product WITHOUT its own @context (the parent ItemList carries it; a nested @context is
     // redundant in JSON-LD).
     const { '@context': _context, ...product } = productSchema({

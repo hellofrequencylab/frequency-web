@@ -714,19 +714,32 @@ describe('spaceOfferingsSchema', () => {
     expect((product.offers as Record<string, unknown>).price).toBe('20.00')
   })
 
-  it("emits a 'free' offering as a $0 Offer and a 'contact' / priceless offering with no Offer", () => {
+  it("emits a 'free' offering as a $0 Offer and a 'contact' / priceless offering as a Service (SCAN-792)", () => {
     const items = spaceOfferingsSchema(
       [
         { title: 'Community class', priceModel: 'free' },
-        { title: 'Private coaching', priceModel: 'contact' },
+        { title: 'Private coaching', priceModel: 'contact', blurb: 'One on one.' },
         { title: 'Workshop' },
       ],
-      { slug: 's', listName },
+      { slug: 's', sellerName: 'River Yoga', listName },
     ).itemListElement as Record<string, unknown>[]
     const free = items[0].item as Record<string, unknown>
+    expect(free['@type']).toBe('Product')
     expect((free.offers as Record<string, unknown>).price).toBe('0.00')
+    // An unpriced offering is never a Product with no Offer: Google reports that as an invalid item.
+    expect(items[1].item).toMatchObject({
+      '@type': 'Service',
+      name: 'Private coaching',
+      description: 'One on one.',
+      provider: { '@type': 'Organization', name: 'River Yoga' },
+      url: `${SITE_URL}/spaces/s#offerings`,
+    })
     expect(items[1].item).not.toHaveProperty('offers')
-    expect(items[2].item).not.toHaveProperty('offers')
+    expect((items[2].item as Record<string, unknown>)['@type']).toBe('Service')
+    for (const it of items) {
+      const node = it.item as Record<string, unknown>
+      if (node['@type'] === 'Product') expect(node.offers ?? node.review ?? node.aggregateRating).toBeTruthy()
+    }
   })
 })
 
