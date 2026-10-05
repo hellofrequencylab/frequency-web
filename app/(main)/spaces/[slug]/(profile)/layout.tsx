@@ -30,6 +30,7 @@ import { SpaceShareButton } from '@/components/spaces/space-share-button'
 import { SpacePrivateNotice } from '@/components/spaces/space-private-notice'
 import { JsonLd } from '@/components/json-ld'
 import { spaceSchema, breadcrumbSchema, parseOpeningHours, spaceOfferingsSchema } from '@/lib/jsonld'
+import { spaceSchemaLocation } from '@/lib/spaces/schema-location'
 import { isServiceListed } from '@/lib/spaces/profile-data'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { foundingBadgeForSpace } from '@/lib/founding/status'
@@ -195,6 +196,7 @@ export default async function SpaceProfileChromeLayout({
   // source the Contact + Business blocks render, so the LocalBusiness JSON-LD below carries real NAP + sameAs.
   // Pure sync read; only needed for the network schema.
   const spaceProfile = isNetwork ? readProfileData(space.preferences) : {}
+  const schemaLocation = spaceSchemaLocation(space, spaceProfile.address)
   // The PUBLIC (listed) offerings only — a private service never renders publicly, so it must never leak
   // into the structured data either. Fed to the Product/Offer ItemList below (network schema only).
   const listedOfferings = (spaceProfile.offerings ?? []).filter(isServiceListed)
@@ -648,17 +650,10 @@ export default async function SpaceProfileChromeLayout({
               // already rendered on this page by the Contact / Business blocks; read the same source here so
               // the schema carries the address, phone, website + socials instead of a name-only stub.
               telephone: spaceProfile.phone,
-              // addressLocality is the half that makes this a LOCAL node rather than a named one, and it
-              // was never passed: the builder has accepted it all along, the call site only ever sent a
-              // street. `spaces.city` supplies it. Either half alone still emits a valid PostalAddress,
-              // and a Space with neither (virtual or mobile) correctly emits no address block at all.
-              address:
-                spaceProfile.address || space.city
-                  ? {
-                      ...(spaceProfile.address ? { streetAddress: spaceProfile.address } : {}),
-                      ...(space.city ? { addressLocality: space.city } : {}),
-                    }
-                  : null,
+              // The place half (street, addressLocality, addressRegion, postalCode, addressCountry and geo) is
+              // built once in lib/spaces/schema-location.ts, which also applies the owner's location precision.
+              address: schemaLocation.address,
+              geo: schemaLocation.geo,
               sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
               // The operator's relative price indicator ('$'..'$$$$'), captured on the Business Info form.
               priceRange: spaceProfile.priceRange,

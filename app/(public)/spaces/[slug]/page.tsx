@@ -4,6 +4,7 @@ import { DetailTemplate } from '@/components/templates'
 import { SignInCta } from '@/components/discover/cards'
 import { JsonLd } from '@/components/json-ld'
 import { spaceSchema, breadcrumbSchema, parseOpeningHours } from '@/lib/jsonld'
+import { spaceSchemaLocation } from '@/lib/spaces/schema-location'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -133,6 +134,7 @@ export default async function PublicSpacePage({
   // is a pure read of preferences, `parseOpeningHours` is pure, and the builder drops any half it
   // is not given, so a virtual Space still emits a valid node.
   const spaceProfile = readProfileData(space.preferences)
+  const schemaLocation = spaceSchemaLocation(space, spaceProfile.address)
   const aggregateRating =
     reviews && reviews.average != null && reviews.count > 0
       ? { ratingValue: reviews.average, reviewCount: reviews.count }
@@ -178,13 +180,10 @@ export default async function PublicSpacePage({
             logoUrl: space.brandLogoUrl,
             aggregateRating,
             telephone: spaceProfile.phone,
-            address:
-              spaceProfile.address || space.city
-                ? {
-                    ...(spaceProfile.address ? { streetAddress: spaceProfile.address } : {}),
-                    ...(space.city ? { addressLocality: space.city } : {}),
-                  }
-                : null,
+            // The place half (street, addressLocality, addressRegion, postalCode, addressCountry and geo) is
+            // built once in lib/spaces/schema-location.ts, which also applies the owner's location precision.
+            address: schemaLocation.address,
+            geo: schemaLocation.geo,
             sameAs: [spaceProfile.website, ...(spaceProfile.socials ?? []).map((s) => s.url)],
             priceRange: spaceProfile.priceRange,
             openingHours: parseOpeningHours(spaceProfile.hours),
