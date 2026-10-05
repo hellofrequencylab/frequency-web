@@ -37,7 +37,7 @@
 //      a replay inside the key window with the write lost gets the same reversal back.
 // Stripe itself refuses to reverse more than the transfer, and the target never asks for more.
 //
-// TWO DEFECTS THIS SHAPE CLOSED (SCAN-649, migration 20270345011900). Stripe stores the result of a
+// TWO DEFECTS THIS SHAPE CLOSED (SCAN-649, migration 20270346000700). Stripe stores the result of a
 // request under its idempotency key for about 24 hours, ERRORS INCLUDED. With the key fixed to
 // (row, from, to), a seller whose balance was empty once got the stored refusal back on every retry
 // until the reconciler's ceiling and was logged stuck forever, the platform carrying their share.
