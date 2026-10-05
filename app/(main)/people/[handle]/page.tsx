@@ -79,7 +79,13 @@ export default async function ProfilePage({
   // record it here (the webhook also does, idempotently) and show a thank-you.
   let tippedCents: number | null = null
   if (tip === 'success' && session_id) {
-    tippedCents = await recordTipFromSessionId(session_id)
+    // Never fatal to the tipper: a DB refusal throws out of the settle (SCAN-764) so the webhook
+    // redelivers, and this page must still render for someone who has just paid.
+    try {
+      tippedCents = await recordTipFromSessionId(session_id)
+    } catch (e) {
+      console.error('[tips] redirect settle failed; the webhook is now the only path', e)
+    }
   }
 
   const admin = createAdminClient()

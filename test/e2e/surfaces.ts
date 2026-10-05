@@ -1051,7 +1051,7 @@ export const VISUAL_MASK_SITES: readonly {
 }[] = [
   {
     value: 'support-chat',
-    file: 'components/chat/support-chat-widget.tsx',
+    file: 'components/chat/support-chat-launcher.tsx',
     kind: 'env',
     why: 'Mounts only where SUPPORT_CHAT=1: Production, and Preview since 2026-09-29 (LIVE-213).',
   },
