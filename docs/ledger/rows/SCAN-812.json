@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-812",
+  "title": "The friendships identity freeze is a no-op: its trigger function is SECURITY DEFINER, so current_user is always postgres and the trusted-writer branch admits every member",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "source": {
+    "file": "supabase/migrations/20270221000000_friendships_freeze_identity_on_update.sql",
+    "ref": "found 2026-10-05 while fixing SCAN-696: CI showed the same idiom never fires for a member write"
+  },
+  "detail": "FOUND 2026-10-05 (P1 fix wave, SCAN-696). public.friendships_freeze_identity() is declared security definer and opens with `if current_user in ('service_role', 'postgres', 'supabase_admin') then return new`. Inside a SECURITY DEFINER function current_user is the function owner (postgres), so that branch is true for every caller and the identity triple (user_a_id, user_b_id, requested_by) is not frozen for a member UPDATE at all; the policy tightening in the same migration is the only gate left, and the migration itself says a predicate over the new row cannot close this. The SCAN-696 guard shipped with the same idiom and CI's pgTAP run proved it a no-op (eight forged writes landed); it was fixed by dropping security definer. THE FIX: a migration that re-creates friendships_freeze_identity() without security definer (keep set search_path = public, pg_temp), plus a pgTAP case that runs a member UPDATE of user_b_id under set local role authenticated and expects 42501, mirroring supabase/tests/event_rsvps_member_write_guard.test.sql.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const dir=\"supabase/migrations\";if(!fs.existsSync(dir))process.exit(79);let last=null;for(const f of fs.readdirSync(dir).filter(f=>f.endsWith(\".sql\")).sort()){const s=fs.readFileSync(p.join(dir,f),\"utf8\");const i=s.search(/create\\s+or\\s+replace\\s+function\\s+public\\.friendships_freeze_identity\\s*\\(/i);if(i>=0)last=s.slice(i,s.indexOf(\"$$\",i))}if(last===null)process.exit(79);if(/security\\s+definer/i.test(last)){console.error(\"SCAN-812: the latest definition of public.friendships_freeze_identity() is still SECURITY DEFINER, so current_user is postgres inside it and the trusted-writer branch lets every member rewrite the identity triple.\");process.exit(1)}'",
+    "note": "Finds the latest migration that (re)creates friendships_freeze_identity and fails while its header says security definer; passes once a later migration re-creates it as an invoker function."
+  },
+  "wave": "W7"
+}

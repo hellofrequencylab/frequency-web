@@ -13,14 +13,19 @@ export async function logCompletion(taskId: string) {
 
   const admin = createAdminClient()
 
-  // Load task to check repeatability and zaps value
+  // Load task to check repeatability and zaps value, plus the circle claim (SCAN-687).
   const { data: task } = await admin
     .from('crew_tasks')
-    .select('id, zaps_value, is_repeatable, requires_verification, task_type')
+    .select('id, zaps_value, is_repeatable, requires_verification, task_type, circle_id, assigned_to')
     .eq('id', taskId)
     .maybeSingle()
 
   if (!task) return
+
+  // A circle task is completed by the member who holds its claim, and nobody else (SCAN-687).
+  // The UI only shows CompleteButton on your own claim, but task ids are client props and this
+  // action writes through the admin client, so the claim is checked here, where it counts.
+  if (task.circle_id && task.assigned_to !== profileId) return
 
   // Atomic completion (P0 — final-scan patch list): serialize concurrent completions of the same
   // (member, task) and insert at most once for a non-repeatable task, so trg_after_crew_completion
