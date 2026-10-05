@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-782",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"lib/comms/support-chat.ts\";if(!fs.existsSync(p))process.exit(79);const s=fs.readFileSync(p,\"utf8\");const a=s.indexOf(\"export async function startSupportChat\");const b=s.indexOf(\"export async function postSupportChatMessage\");const c=s.indexOf(\"export async function loadSupportChatHistory\");if(a<0||b<0||c<0)process.exit(79);const start=s.slice(a,b);const post=s.slice(b,c);const mig=\"supabase/migrations\";if(!fs.existsSync(mig))process.exit(79);const dropped=fs.readdirSync(mig).some(f=>/drop constraint[^;]*comms_messages_author_present/i.test(fs.readFileSync(mig+\"/\"+f,\"utf8\")));if(dropped)process.exit(0);const startOk=/authorContactId\\s*:/.test(start);const postOk=/authorContactId\\s*:/.test(post)&&/authorId\\s*:/.test(post);if(!startOk||!postOk){console.error(\"SCAN-782: support chat still appends visitor messages with neither author_id nor author_contact_id (startSupportChat opening message: \"+(startOk?\"ok\":\"no authorContactId\")+\"; postSupportChatMessage: \"+(postOk?\"ok\":\"no authorId/authorContactId\")+\"), so comms_messages_author_present rejects the insert and the visitor sees Could not send that.\");process.exit(1)}'",
+      "note": "Reads the startSupportChat and postSupportChatMessage bodies in lib/comms/support-chat.ts and fails while either append omits authorContactId (and postSupportChatMessage omits authorId), unless a migration has dropped comms_messages_author_present; fails today because neither append names a contact author, so the constraint rejects the insert."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: startSupportChat now passes authorContactId for anonymous visitors and returns null (logged) when the opening message is not stored; postSupportChatMessage authors each message as the bound member or the thread contact, as inbound.ts does. Verified by the probe, eslint and five new cases in lib/comms/support-chat.test.ts."
+  }
+}
