@@ -40,10 +40,14 @@
 --
 -- House style: idempotent (create or replace, drop trigger if exists). No em or en dashes.
 
+-- SECURITY INVOKER, deliberately. Inside a SECURITY DEFINER function current_user is the owner
+-- (postgres), so the trusted-writer branch below would admit every caller and the guard would be
+-- a no-op; CI's first run of event_rsvps_member_write_guard.test.sql proved exactly that. As an
+-- invoker function it sees the real writer: authenticated for a member, service_role for the
+-- admin client, and postgres inside the postgres-owned SECURITY DEFINER doors.
 create or replace function public.event_rsvps_member_write_guard()
 returns trigger
 language plpgsql
-security definer
 set search_path = public, pg_temp
 as $$
 declare
