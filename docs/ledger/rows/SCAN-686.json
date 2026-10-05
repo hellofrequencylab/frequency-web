@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-686",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const b=\"components/layout/notification-bell.tsx\",a=\"app/(main)/notifications/actions.ts\";if(!fs.existsSync(b)||!fs.existsSync(a)){console.error(\"SCAN-686: a file the probe needs is missing\");process.exit(79)}const s=fs.readFileSync(b,\"utf8\");const i=s.indexOf(\"function handleOpen\");const j=s.indexOf(\"\\n  function \",i+10);const body=s.slice(i,j<0?s.length:j);const mark=body.indexOf(\"markAllRead()\");const load=body.indexOf(\"getMyNotifications()\");const marksFirst=mark>=0&&load>=0&&mark<load;const act=fs.readFileSync(a,\"utf8\");const k=act.indexOf(\"export async function markAllRead\");const m=act.indexOf(\"\\nexport \",k+10);const mbody=act.slice(k,m<0?act.length:m);const wideRevalidate=/revalidatePath\\(\\s*.\\/.\\s*,\\s*.layout.\\s*\\)/.test(mbody);if(marksFirst||wideRevalidate){console.error(\"SCAN-686: opening the bell still marks everything read before the list is fetched\"+(wideRevalidate?\" and markAllRead still revalidates the whole layout\":\"\")+\", so unread rows never show as unread.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: the bell loads the list first and marks read afterwards in one transition, and markAllRead revalidates /notifications instead of the root layout."
+  }
+}

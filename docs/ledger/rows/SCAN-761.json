@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-761",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const j=\"app/(main)/partners/join/actions.ts\",l=\"app/(main)/partners/listing/actions.ts\";if(!fs.existsSync(j)||!fs.existsSync(l)){console.error(\"SCAN-761: partners action files missing\");process.exit(79)}const js=fs.readFileSync(j,\"utf8\"),ls=fs.readFileSync(l,\"utf8\");const releaseHides=/from\\([\\x22\\x27]partners[\\x22\\x27]\\)/.test(js);const ownerUnpublish=/unpublishListing|status:\\s*[\\x22\\x27](hidden|inactive|archived|unpublished)[\\x22\\x27]/.test(ls);if(!releaseHides&&!ownerUnpublish){console.error(\"SCAN-761: releasing a Business or Organization persona never touches the partners table, and no owner path can set a partner listing to anything but active, so a released program stays live in the directory with no way to take it down.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe directory (listActivePartners, getPartnerView, the sitemap) read only partners.status = active and never the owner's persona, while saveListing and saveOffer refused a caller without a live Business or Organization program, and setPersona release and the staff suspend door only flipped profile_personas.state. A released or suspended program therefore stayed public with no door to take it down. Added lib/partners/unpublish.ts: hidePartnerListing(profileId) sets the owner's partners rows to status inactive (the column's own vocabulary), pauses their partner_offers, and revalidates /partners, /partners/listing, /discover/partners and both per-slug pages; listingProgramLost(persona, profileId) says whether the change left the profile with neither listing program live. setPersona release and transitionPersona to suspended call it when the last listing program goes; listing/actions.ts gained unpublishListing(), keyed only on contact_profile_id with no persona gate, behind a Take listing down button in the listing form. Saving the listing again republishes it. Pinned by lib/partners/unpublish.test.ts, app/(main)/partners/join/actions.test.ts, and new cases in listing/actions.test.ts and admin/personas/actions.test.ts."
+  }
+}

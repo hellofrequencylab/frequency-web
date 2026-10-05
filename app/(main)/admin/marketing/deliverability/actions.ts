@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getStaffMember, staffCan } from '@/lib/staff'
+import { staffCanNow } from '@/lib/staff'
 import { requeueDeadLettered, discardDeadLettered, processQueue } from '@/lib/queue/outbox'
 import { queueHandlers } from '@/lib/queue/handlers'
 
@@ -36,8 +36,7 @@ export interface DiscardResult {
 // before reviving anything. `kind` narrows the recovery to one job type (e.g. only
 // 'email' after a Resend outage); omit it to requeue every dead-letter.
 export async function requeueDeadLetters(kind?: string): Promise<RequeueResult> {
-  const staff = await getStaffMember()
-  if (!staff || !staffCan(staff.role, 'marketing')) {
+  if (!(await staffCanNow('marketing'))) {
     return { ok: false, error: 'Marketer access required.' }
   }
   try {
@@ -53,8 +52,7 @@ export async function requeueDeadLetters(kind?: string): Promise<RequeueResult> 
 // succeed on retry). Same marketing-domain staff gate as requeue. `kind` narrows it to one job type;
 // omit it to discard every dead-letter. Terminal: the row moves out of the recovery queue and the drain.
 export async function discardDeadLetters(kind?: string): Promise<DiscardResult> {
-  const staff = await getStaffMember()
-  if (!staff || !staffCan(staff.role, 'marketing')) {
+  if (!(await staffCanNow('marketing'))) {
     return { ok: false, error: 'Marketer access required.' }
   }
   try {
@@ -75,8 +73,7 @@ export async function discardDeadLetters(kind?: string): Promise<DiscardResult> 
 // existing when the waitlist was removed. Deliverability is where an operator already comes to ask
 // "why has nothing sent", so it lives here now, beside the dead-letter recovery.
 export async function drainQueueNow(): Promise<DrainResult> {
-  const staff = await getStaffMember()
-  if (!staff || !staffCan(staff.role, 'marketing')) {
+  if (!(await staffCanNow('marketing'))) {
     return { ok: false, error: 'Marketer access required.' }
   }
   try {

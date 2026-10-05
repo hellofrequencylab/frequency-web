@@ -35,11 +35,13 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => h.admin }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile: vi.fn() }))
 vi.mock('@/lib/personas', () => ({ getActivePersonas: vi.fn() }))
+vi.mock('@/lib/partners/unpublish', () => ({ hidePartnerListing: vi.fn() }))
 
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { getActivePersonas } from '@/lib/personas'
-import { saveOffer } from './actions'
+import { hidePartnerListing } from '@/lib/partners/unpublish'
+import { saveOffer, unpublishListing } from './actions'
 
 const VALID = { title: 'Free refill', description: 'Any hot drink.', terms: 'Show your code.', validUntil: '2026-12-31', active: true }
 
@@ -102,5 +104,31 @@ describe('saveOffer', () => {
 
     h.state.updated = null
     expect(await saveOffer({ ...VALID, id: 'someone-elses' })).toEqual({ error: 'That offer is not on your listing.' })
+  })
+})
+
+// SCAN-761: the owner door out of the directory. No persona gate, so a member whose program was
+// released or suspended can still take their own listing down.
+describe('unpublishListing', () => {
+  beforeEach(() => {
+    vi.mocked(hidePartnerListing).mockReset()
+    vi.mocked(getActivePersonas).mockResolvedValue([] as never)
+  })
+
+  it('hides the caller listing without asking for a partner program', async () => {
+    vi.mocked(hidePartnerListing).mockResolvedValue({ slugs: ['blue-cafe'] })
+    expect(await unpublishListing()).toEqual({ data: undefined })
+    expect(hidePartnerListing).toHaveBeenCalledWith('me')
+    expect(getActivePersonas).not.toHaveBeenCalled()
+  })
+
+  it('refuses a signed-out caller and says so when there is nothing to take down', async () => {
+    vi.mocked(getCallerProfile).mockResolvedValue(null as never)
+    expect(await unpublishListing()).toEqual({ error: 'Sign in first.' })
+    expect(hidePartnerListing).not.toHaveBeenCalled()
+
+    vi.mocked(getCallerProfile).mockResolvedValue({ id: 'me' } as never)
+    vi.mocked(hidePartnerListing).mockResolvedValue({ slugs: [] })
+    expect(await unpublishListing()).toEqual({ error: 'You have no listing to take down.' })
   })
 })

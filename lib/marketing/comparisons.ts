@@ -14,6 +14,11 @@
 export interface Comparison {
   /** URL slug, e.g. "partiful". The page lives at /vs/<slug>. */
   slug: string
+  /** The day this comparison first shipped and the day its copy last changed (YYYY-MM-DD).
+   *  They drive the Article datePublished and dateModified on /vs/<slug>, so an edit to this
+   *  entry moves `updated` with it; the page has no editor row to read a timestamp from (SCAN-797). */
+  published: string
+  updated: string
   /** The competitor's display name, exactly as they spell it. */
   name: string
   /** The category an answer engine would file them under (for the H1 + meta). */
@@ -51,6 +56,8 @@ export interface ComparisonRow {
 export const COMPARISONS: Comparison[] = [
   {
     slug: 'partiful',
+    published: '2026-07-28',
+    updated: '2026-08-05',
     name: 'Partiful',
     category: 'party and event invite app',
     theyAreGoodAt:
@@ -68,6 +75,8 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'linktree',
+    published: '2026-07-28',
+    updated: '2026-08-05',
     name: 'Linktree',
     category: 'link-in-bio page builder',
     theyAreGoodAt:
@@ -92,6 +101,8 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'calendly',
+    published: '2026-07-28',
+    updated: '2026-08-05',
     name: 'Calendly',
     category: 'scheduling and booking tool',
     theyAreGoodAt:
@@ -112,6 +123,8 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'eventbrite',
+    published: '2026-07-28',
+    updated: '2026-08-05',
     name: 'Eventbrite',
     category: 'event listing and ticketing platform',
     theyAreGoodAt:
@@ -132,6 +145,8 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'mighty-networks',
+    published: '2026-07-28',
+    updated: '2026-08-05',
     name: 'Mighty Networks',
     category: 'online community platform',
     theyAreGoodAt:

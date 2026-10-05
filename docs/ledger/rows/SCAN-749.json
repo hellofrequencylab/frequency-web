@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-749",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const rd=(p)=>{if(!fs.existsSync(p)){console.error(\"indeterminate: missing \"+p);process.exit(79)}return fs.readFileSync(p,\"utf8\")};const slice=(t,name)=>{const i=t.indexOf(\"export async function \"+name);if(i<0)return null;const j=t.indexOf(\"export async function \",i+10);return t.slice(i,j<0?t.length:j)};const t=rd(\"app/(main)/admin/actions.ts\");const bad=[];for(const n of [\"updateDispatch\",\"publishDispatch\",\"unpublishDispatch\",\"deleteDispatch\"]){const s=slice(t,n);if(!s){bad.push(n+\" missing\");continue}const owner=/requireDispatchOwner\\(|requireScopedManage\\(|author_id\\s*[!=]==|[!=]==\\s*\\w+\\.author_id/.test(s);if(/requireCommunityOps\\(\\)/.test(s)&&!owner)bad.push(n)}if(bad.length){console.error(\"SCAN-749: \"+bad.join(\", \")+\" still gate on the global host rung alone with no author or scope check, so any circle host can edit, retarget, publish or delete any dispatch.\");process.exit(1)}'",
+      "note": "Reads the four dispatch actions; fails while any of them calls the bare requireCommunityOps() with no author, owner or scope check in its body. Passes once each one loads the row and checks author or staff reach."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: the four dispatch actions now pass through requireDispatchOwner, which loads the row and admits only its author or a platform operator; updateDispatch runs the shared assertCanBroadcastTo (lifted into lib/messaging/broadcast-scope.ts, used by the create path too) on the new audience for non-operators; publishDispatch flips only a draft, keeps the first published_at and fans out only on the first publish. Verified by the row probe (fail before, pass after), eslint on the changed files and the updateDispatch vitest."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-796",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/llms-full.txt/route.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-796: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const miss=[];if(!/EDITABLE_PAGES|page-editor\\/templates|getPublishedData/.test(s))miss.push(\"the eight seeker guides and the what-is-frequency FAQ\");if(!/comparisonCopy|COMPARISONS/.test(s))miss.push(\"the /vs comparison FAQs\");if(miss.length){console.error(\"SCAN-796: /llms-full.txt still emits the help center only; it never reads \"+miss.join(\" or \")+\", so an engine ingesting the full corpus gets none of the answer-first pages.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: app/llms-full.txt/route.ts opens a Guides and answers section before the help center: for each seeker article in EDITABLE_PAGES it prints the title, URL, answer-first sentence and every FAQ pair from the static template spec, then the same for each COMPARISONS entry via comparisonCopy. Static specs, no DB read; fail-safe to an empty section."
+  }
+}

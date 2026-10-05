@@ -8,6 +8,7 @@ updated: 2026-10-05
 audience: member
 featureKeys: [circles, practices]
 status: published
+canonical: /loneliness
 ---
 Read the full guide first: [High-functioning loneliness: lonely but not alone](/loneliness). This page is the short version for members, with the Frequency features that help.
 

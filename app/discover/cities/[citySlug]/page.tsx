@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowRight, Users, CalendarDays, Building2 } from 'lucide-react'
 import { getDensityCity, listDensityCities, cityFromSlug } from '../_data'
-import { getCityCategoryHubs } from '@/app/discover/events/_data'
+import { getCityCategoryHubs, cityRegion } from '@/app/discover/events/_data'
 import { CircleCard, EventRow } from '@/components/discover/cards'
 import { SpaceCard } from '@/components/spaces/space-card'
 import {
@@ -60,7 +60,7 @@ export async function generateMetadata({
     alternates: { canonical },
     // Below-threshold cities 404, but guard the index signal too: a city without
     // a resolved hub must never be advertised as an indexable landing page.
-    robots: hub ? undefined : { index: false, follow: true },
+    ...(hub ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       ...OG_SITE,
       title: `${title} · ${SITE_NAME}`,
@@ -91,6 +91,8 @@ export default async function DiscoverCityPage({
   const hubs = await getCityCategoryHubs()
     .then((all) => all.filter((h) => h.citySlug === citySlug.toLowerCase()))
     .catch(() => [])
+  // The state and country the city's events name, so the Place is Vista, CA and not any Vista.
+  const { region, country } = cityRegion(hubs.flatMap((h) => h.events))
 
   return (
     <>
@@ -109,7 +111,12 @@ export default async function DiscoverCityPage({
             about: {
               '@type': 'Place',
               name: city,
-              address: { '@type': 'PostalAddress', addressLocality: city },
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: city,
+                ...(region ? { addressRegion: region } : {}),
+                ...(country ? { addressCountry: country } : {}),
+              },
             },
           },
           circles.length > 0 && circleListSchema(circles, `Circles in ${city}`),

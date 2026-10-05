@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-794",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"content/help/spaces/plans-and-pricing.md\";if(!fs.existsSync(p)){console.error(\"SCAN-794: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const hits=[];if(/buys? (that |the |your )?rate down/i.test(s))hits.push(\"buy the rate down\");if(/brings it down/i.test(s))hits.push(\"brings it down\");if(hits.length){console.error(\"SCAN-794: the published plans-and-pricing help article, dumped verbatim into /llms-full.txt, still sells a plan as buying the rate down (\"+hits.join(\", \")+\"), contradicting PLAN_STORY.rate in the same file header.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: content/help/spaces/plans-and-pricing.md now states the PLAN_STORY framing (a plan is taken when money starts moving, the rate is what a plan settles at) in place of buy the rate down, and Crew settles at the lower rate instead of bringing it down. PROG-R8's probe was not extended to content/help; that remains a follow-up."
+  }
+}

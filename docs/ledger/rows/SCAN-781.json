@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-781",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const files=[\"app/(marketing)/the-lab/page.tsx\",\"app/(marketing)/about/page.tsx\",\"app/(marketing)/spaces/page.tsx\",\"app/(marketing)/pricing/page.tsx\"];if(!files.every((p)=>fs.existsSync(p))){console.error(\"SCAN-781: a file the probe must read is missing\");process.exit(79)}const dateless=files.filter((p)=>{const s=fs.readFileSync(p,\"utf8\");const tag=s.match(/<BlockDocJsonLd[\\s\\S]*?\\/>/);return !tag||!/published=/.test(tag[0]);});if(dateless.length){console.error(\"SCAN-781: \"+dateless.length+\" editor-built marketing pages still emit an Article JSON-LD with no datePublished or dateModified (\"+dateless.map((p)=>p.split(\"/\")[2]).join(\", \")+\"), so crawlers get no freshness signal.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: lib/page-editor/data.ts gains getPublishedPage (doc plus the row's published_at and updated_at; getPublishedData is now a thin wrapper) and latestDay; the-lab, about, spaces and pricing pass published={PUBLISHED} (first-ship day from repository history) and updated={latestDay(UPDATED, page?.published_at)} to BlockDocJsonLd, so a Publish from /edit moves dateModified. The sitemap lastModified half of the detail was left out (optional)."
+  }
+}

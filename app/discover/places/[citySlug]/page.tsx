@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { ArrowRight, Users, CalendarDays, Building2 } from 'lucide-react'
 import { getCityHub, listDiscoverCities, cityFromSlug, citySlug as toSlug } from '../_data'
 import { listDensityCities } from '../../cities/_data'
-import { getCityCategoryHubs } from '@/app/discover/events/_data'
+import { getCityCategoryHubs, cityRegion } from '@/app/discover/events/_data'
 import { CircleCard, EventRow } from '@/components/discover/cards'
 import { SpaceCard } from '@/components/spaces/space-card'
 import {
@@ -17,7 +17,7 @@ import {
 import { Stat } from '@/components/ui/stat'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema, eventListSchema, spaceListSchema } from '@/lib/jsonld'
-import { OG_SITE, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -67,9 +67,10 @@ export async function generateMetadata({
     alternates: { canonical },
     // An empty place 404s, but guard the index signal anyway: a hub with nothing
     // live should never be advertised as a landing page.
-    robots: hub ? undefined : { index: false, follow: true },
+    ...(hub ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       ...OG_SITE,
+      images: ROOT_OG_IMAGES,
       title: `${title} · ${SITE_NAME}`,
       description,
       url: canonical,
@@ -97,6 +98,8 @@ export default async function DiscoverPlacePage({
   const hubs = await getCityCategoryHubs()
     .then((all) => all.filter((h) => h.citySlug === toSlug(cityFromSlug(citySlug))))
     .catch(() => [])
+  // The state and country the city's events name, so the Place is Vista, CA and not any Vista.
+  const { region, country } = cityRegion(hubs.flatMap((h) => h.events))
 
   return (
     <>
@@ -112,7 +115,16 @@ export default async function DiscoverPlacePage({
             '@type': 'CollectionPage',
             name: `Community in ${city}`,
             url: `${SITE_URL}/discover/places/${citySlug}`,
-            about: { '@type': 'Place', name: city, address: { '@type': 'PostalAddress', addressLocality: city } },
+            about: {
+              '@type': 'Place',
+              name: city,
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: city,
+                ...(region ? { addressRegion: region } : {}),
+                ...(country ? { addressCountry: country } : {}),
+              },
+            },
           },
           circles.length > 0 && circleListSchema(circles, `Circles in ${city}`),
           events.length > 0 && eventListSchema(events, `Upcoming events in ${city}`),

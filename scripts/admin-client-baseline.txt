@@ -675,6 +675,7 @@ lib/circles/earned.ts
 lib/circles/effort-board.ts
 lib/circles/events.ts
 lib/circles/handoff.ts
+lib/circles/join.ts
 lib/circles/remix.ts
 lib/circles/social-fuel.ts
 lib/circles/store.ts
@@ -719,6 +720,7 @@ lib/consent/consent.ts
 lib/consent/retention.ts
 lib/core/load-capabilities.ts
 lib/crew/circle-tasks.ts
+lib/crew/verification-queue.ts
 lib/crew/verify.ts
 lib/crm/capture-context.ts
 lib/crm/classification.ts
@@ -888,6 +890,7 @@ lib/member-day.ts
 lib/member-progress.ts
 lib/menus/db.ts
 lib/messages/scoped-dm.ts
+lib/messaging/broadcast-scope.ts
 lib/messaging/control-panel.ts
 lib/messaging/dispatch-log.ts
 lib/messaging/place-tree.ts
@@ -914,6 +917,7 @@ lib/page-settings/store.test.ts
 lib/page-settings/store.ts
 lib/partners/collaborators.ts
 lib/partners/read.ts
+lib/partners/unpublish.ts
 lib/people-suggestions.ts
 lib/people/associations.ts
 lib/people/roster-from-ids.ts
