@@ -8,6 +8,8 @@
 // into free FOCUS presets under Business (lib/spaces/modes.ts); the former `organization` was renamed
 // to `nonprofit`. `root` stays here (and in the spaces_type_check CHECK): it is the platform host
 // (rootEntityId(), delete/suspend guards) and is never member-facing.
+import type { SpaceLocationPrecision } from './location'
+
 export type SpaceType = 'root' | 'business' | 'nonprofit'
 
 export type SpaceStatus = 'active' | 'suspended' | 'archived'
@@ -91,6 +93,17 @@ export interface Space {
    *  or mobile business), and null is the correct value there rather than an invented town: the schema
    *  omits the address block entirely instead of claiming a locality. Read untyped (ADR-246). */
   city?: string | null
+  /** The rest of the Space's location columns (ADR-1026, 20270301000000_space_location.sql), read for the
+   *  LocalBusiness node only (lib/spaces/schema-location.ts). The TRUE coordinate is stored even at
+   *  'approximate' precision, so anything that publishes these owes the coarsening duty that
+   *  lib/nearby/map-pins.ts pays. Read untyped (ADR-246); absent pre-migration. */
+  street?: string | null
+  region?: string | null
+  postalCode?: string | null
+  country?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  locationPrecision?: SpaceLocationPrecision
   /** The Space's own description (spaces.about), as the public profile renders it. Read untyped
    *  (ADR-246). Its second consumer is the Space Circle's info board (ADR-1393). */
   about?: string | null
