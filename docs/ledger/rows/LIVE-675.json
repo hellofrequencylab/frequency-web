@@ -1,6 +1,0 @@
-{
-  "id": "LIVE-675",
-  "append": {
-    "detail": "\n\nRULED 2026-10-05 by owner, multiple choice in the project thread (ADR-1705 §4): \"After launch\" (the options were: create it now, after launch, not needed). The GitHub App is created after launch, on the first real paid order or six weeks of live Spaces, whichever comes first; the row stays open with that trigger rather than parked, per the 2026-09-30 clean-up (ADR-1703)."
-  }
-}
