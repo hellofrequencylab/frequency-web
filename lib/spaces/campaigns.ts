@@ -413,11 +413,12 @@ export async function sendSpaceCampaign(
   })
   if (isError(res)) return res
 
-  // Stamp the campaign as sent (best-effort: the emails already went out, so a failed status write
-  // must not surface as a send failure).
+  // Stamp the campaign as sent with how many it reached (best-effort: the emails already went out, so a
+  // failed status write must not surface as a send failure). recipient_count is what the campaign list
+  // and the Marketing Sent column print; without it every sent campaign reads 0 (SCAN-705).
   try {
     await campaignsTable()
-      .update({ status: 'sent', sent_at: new Date().toISOString() })
+      .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: res.data.sent })
       .eq('id', id)
       .eq('space_id', spaceId)
   } catch {
