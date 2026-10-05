@@ -1,4 +1,4 @@
--- pgTAP guard for SCAN-709 (migration 20270345011700): the member-facing write policies on
+-- pgTAP guard for SCAN-709 (migration 20270346000710): the member-facing write policies on
 -- commerce_reviews and commerce_disputes are gone, so no authenticated caller can insert a review
 -- or rewrite a dispute through PostgREST. The app writes both tables through the service role,
 -- behind the verified-purchase, not-the-seller and hidden-review gates. The read and the author

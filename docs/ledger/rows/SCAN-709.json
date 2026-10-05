@@ -9,6 +9,6 @@
     }
   },
   "append": {
-    "detail": "\n\n2026-10-05: migration 20270345011700 drops commerce_reviews_member_insert, commerce_reviews_author_update, commerce_disputes_buyer_insert and commerce_disputes_buyer_update (every app writer already uses the service role); supabase/tests/commerce_reviews_member_writes.test.sql pins that no insert or update policy remains on either table and the read policies stay."
+    "detail": "\n\n2026-10-05: migration 20270346000710 drops commerce_reviews_member_insert, commerce_reviews_author_update, commerce_disputes_buyer_insert and commerce_disputes_buyer_update (every app writer already uses the service role); supabase/tests/commerce_reviews_member_writes.test.sql pins that no insert or update policy remains on either table and the read policies stay."
   }
 }
