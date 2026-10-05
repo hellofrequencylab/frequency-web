@@ -16,10 +16,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const openOrGetConversation = vi.fn()
 const appendConversationMessage = vi.fn()
+const getConversationByRef = vi.fn()
 vi.mock('@/lib/comms/conversations', () => ({
   openOrGetConversation: (a: unknown) => openOrGetConversation(a),
   appendConversationMessage: (a: unknown) => appendConversationMessage(a),
-  getConversationByRef: vi.fn(),
+  getConversationByRef: (a: unknown) => getConversationByRef(a),
   reopenConversationIfClosed: vi.fn(),
 }))
 
@@ -55,7 +56,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { startSupportChat } from './support-chat'
+import { startSupportChat, postSupportChatMessage } from './support-chat'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -163,5 +164,72 @@ describe('startSupportChat — runtime prerequisites are checked before the firs
     setEnv({ CRM_INBOX_OWNER_PROFILE_ID: '   ' })
     expect(await startSupportChat({ name: 'V', email: 'v@example.com', message: 'hi' })).toBeNull()
     expect(openOrGetConversation).not.toHaveBeenCalled()
+  })
+})
+
+// ── SCAN-782 (2026-10-05): every chat message names an author the spine's CHECK accepts ─────────────
+//
+// comms_messages_author_present (20261210000000_conversations_spine.sql) rejects a contact/member row
+// with neither author_id nor author_contact_id. The opening message of an anonymous start passed only
+// authorId (null for a visitor), and every follow-up passed no author at all, so the insert failed with
+// 23514, appendConversationMessage returned null, and the visitor saw an empty thread / "Could not send".
+
+describe('SCAN-782: chat messages always carry author_id or author_contact_id', () => {
+  it('an ANONYMOUS opening message is authored by the resolved platform contact', async () => {
+    const out = await startSupportChat({ name: 'Visitor', email: 'visitor@example.com', message: 'hello' })
+
+    expect(out).toEqual({ ref: '1042', token: 'token-for-1042' })
+    expect(appendConversationMessage).toHaveBeenCalledTimes(1)
+    const arg = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.authorKind).toBe('contact')
+    expect(arg.authorId).toBeNull()
+    // The contacts mock resolves the email to this existing platform contact.
+    expect(arg.authorContactId).toBe('victim-contact-1')
+  })
+
+  it('a MEMBER opening message is authored by the profile, with no contact author', async () => {
+    await startSupportChat({ name: '', email: '', message: 'hello', memberProfileId: 'member-1' })
+
+    const arg = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.authorKind).toBe('member')
+    expect(arg.authorId).toBe('member-1')
+    expect(arg.authorContactId).toBeNull()
+  })
+
+  it('a dropped opening message FAILS the start instead of handing back a token to an empty thread', async () => {
+    appendConversationMessage.mockResolvedValue(null)
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const out = await startSupportChat({ name: 'Visitor', email: 'visitor@example.com', message: 'hello' })
+
+    expect(out).toBeNull()
+    expect(err).toHaveBeenCalled()
+    expect(String(err.mock.calls[0][0])).toContain('[support-chat]')
+    err.mockRestore()
+  })
+
+  it('a follow-up from an ANONYMOUS visitor is authored by the thread contact', async () => {
+    getConversationByRef.mockResolvedValue({ id: 'conv-1', status: 'open', memberProfileId: null, contactId: 'contact-9' })
+    appendConversationMessage.mockResolvedValue({ id: 'msg-2' })
+
+    const out = await postSupportChatMessage({ ref: '1042', token: 't', body: 'and another thing' })
+
+    expect(out?.id).toBe('msg-2')
+    const arg = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.authorKind).toBe('contact')
+    expect(arg.authorId).toBeNull()
+    expect(arg.authorContactId).toBe('contact-9')
+  })
+
+  it('a follow-up on a MEMBER-bound thread is authored by the member', async () => {
+    getConversationByRef.mockResolvedValue({ id: 'conv-2', status: 'open', memberProfileId: 'member-1', contactId: null })
+    appendConversationMessage.mockResolvedValue({ id: 'msg-3' })
+
+    await postSupportChatMessage({ ref: '1043', token: 't', body: 'still here' })
+
+    const arg = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.authorKind).toBe('member')
+    expect(arg.authorId).toBe('member-1')
+    expect(arg.authorContactId).toBeNull()
   })
 })

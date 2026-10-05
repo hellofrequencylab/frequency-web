@@ -161,14 +161,28 @@ export async function startSupportChat(input: {
 
   const body = (input.message ?? '').trim().slice(0, 4000)
   if (body) {
-    await appendConversationMessage({
+    // SCAN-782: comms_messages_author_present requires author_id OR author_contact_id for a contact /
+    // member message. An anonymous visitor has no profile, so the message is authored by the platform
+    // contact resolved above (the same shape the inbound email path writes, lib/comms/inbound.ts).
+    const appended = await appendConversationMessage({
       conversationId: conv.id,
       direction: 'inbound',
       authorKind: memberProfileId ? 'member' : 'contact',
       authorId: memberProfileId,
+      authorContactId: memberProfileId ? null : contactId,
       body,
       channel: 'in_app',
     })
+    // The opening message is the whole point of the submit. A dropped insert used to be swallowed (the
+    // thread opened empty and the visitor believed it was sent); now it is logged and the start fails,
+    // so the action shows its "unavailable" copy and the visitor can try again.
+    if (!appended || !('id' in appended)) {
+      console.error('[support-chat] opening message was not written', {
+        conversationId: conv.id,
+        member: !!memberProfileId,
+      })
+      return null
+    }
   }
   return { ref: conv.ref, token: makeChatToken(conv.ref) }
 }
@@ -185,10 +199,15 @@ export async function postSupportChatMessage(input: {
   const body = (input.body ?? '').trim().slice(0, 4000)
   if (!body) return null
 
+  // SCAN-782: author the message as the thread's counterparty (the member when the thread is
+  // member-bound, otherwise the platform contact), exactly as the inbound email path does, so the
+  // comms_messages_author_present CHECK is satisfied and the follow-up is actually stored.
   const out = await appendConversationMessage({
     conversationId: conv.id,
     direction: 'inbound',
-    authorKind: 'contact',
+    authorKind: conv.memberProfileId ? 'member' : 'contact',
+    authorId: conv.memberProfileId ?? null,
+    authorContactId: conv.memberProfileId ? null : conv.contactId,
     body,
     channel: 'in_app',
   })
