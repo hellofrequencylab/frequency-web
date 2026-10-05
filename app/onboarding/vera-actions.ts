@@ -1,9 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { runConciergeTurn, type ConciergeTurnResult } from '@/lib/ai/vera/turn'
+import { VERA_TURN_BODY } from '@/lib/ai/vera/turn-input'
+import { MEMBER_CHAT_TOOL_KEYS, requiresConfirmation } from '@/lib/ai/vera/tools'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isError } from '@/lib/action-result'
@@ -13,8 +16,18 @@ export type { ConciergeTurnResult }
 
 // The tools a MEMBER may run from their own confirm path. Each self-scopes its write to the
 // caller (memory, own profile, an intro post in their voice). join_circle is handled separately
-// above. Everything else in executeConfirmedTool is an operator-scoped playbook tool.
-const MEMBER_CONFIRMABLE_TOOLS = new Set(['remember_fact', 'set_profile_field', 'draft_intro'])
+// above. Everything else in executeConfirmedTool is an operator-scoped playbook tool. Derived from
+// the member chat set (SCAN-738) so what the model may propose and what a member may confirm are
+// one list.
+const MEMBER_CONFIRMABLE_TOOLS = new Set(
+  [...MEMBER_CHAT_TOOL_KEYS].filter((key) => requiresConfirmation(key) && key !== 'join_circle'),
+)
+
+/** The caller's IP, the per-actor key for an anonymous Vera turn (same shape as support/actions). */
+async function callerIp(): Promise<string> {
+  const h = await headers()
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'unknown'
+}
 
 async function callerProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -32,7 +45,14 @@ async function callerProfileId(): Promise<string | null> {
  *  app/api/vera/turn (ADR-1287); both run lib/ai/vera/turn, and the client falls back to this one
  *  when a stream cannot be opened. Write proposals are returned, never executed. */
 export async function conciergeTurn(stage: string, memberText: string, history: VeraMessage[] = []): Promise<ConciergeTurnResult> {
-  return runConciergeTurn(stage, memberText, history)
+  // Same bounds as the streaming door, and the same per-IP actor for the AI window (SCAN-736): an
+  // anonymous caller used to reach the model with no throttle and no size limit through this door.
+  const parsed = VERA_TURN_BODY.safeParse({ stage, text: memberText, history })
+  if (!parsed.success) {
+    return { message: 'That is more than I can take in one go. Try a shorter message.', stage: 'chat', proposals: [], suggestions: [], done: false }
+  }
+  const body = parsed.data
+  return runConciergeTurn(body.stage, body.text, body.history, { ip: await callerIp() })
 }
 
 /** The member confirmed a proposed write — execute it (consent-gated). */
@@ -62,6 +82,11 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   const result = await executeConfirmedTool(profileId, tool, args)
   // A confirmed intro lands as a real feed post — show it on the next feed paint.
   if (tool === 'draft_intro' && result.ok) revalidatePath('/feed')
+  // A saved profile field shows on the profile and in settings on the next paint (SCAN-740).
+  if (tool === 'set_profile_field' && result.ok) {
+    revalidatePath('/settings/profile')
+    revalidatePath('/people', 'layout')
+  }
   return result
 }
 
