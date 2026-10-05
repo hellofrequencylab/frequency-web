@@ -1,0 +1,281 @@
+import { getSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
+import { readHeroConfig, resolveHero } from '@/lib/spaces/hero-config'
+import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
+import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
+import { spaceTypeLabel } from '@/components/spaces/space-type'
+import { fetchRemoteImage } from '@/lib/og/remote-image'
+import { coverPlaceholderDataUrl, siteMarkDataUrl } from '@/lib/og/local-image'
+import { loadNunito } from '@/lib/og/load-nunito'
+import { cardResponse } from '@/lib/og/deliver'
+import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
+import { SITE_NAME } from '@/lib/site'
+
+export const runtime = 'nodejs'
+export const alt = `A space on ${SITE_NAME}`
+export const size = { width: 1200, height: 630 }
+// JPEG, not PNG. This card puts the entity's cover across the full 1200x630 canvas, and
+// next/og emits lossless PNG: 1,776KB measured, against 151KB as JPEG. cardResponse
+// re-encodes and adds the CDN cache headers (lib/og/deliver.ts).
+export const contentType = OG_CONTENT_TYPE
+
+// Per-Space dynamic OG image (SEO/AIO) — the share card for /spaces/<slug> and every business
+// sub-page under it (/book, custom pages, community, reviews all inherit this segment's image), and
+// the `image` in the Space JSON-LD. It MIRRORS THE ON-PAGE HERO: the Space's cover photo as the
+// background (a Space with no cover gets the SAME deterministic site placeholder the page shows,
+// via the shared lib/spaces/cover-placeholder), the ink legibility scrim, the logo chip layered on
+// top, and the identity lockup — type badge, name, tagline — resolved through the SAME resolveHero
+// helper the profile chrome renders from, so the card and the page can never tell two stories.
+//
+// PRIVACY (unchanged contract): a PRIVATE Space (or a missing / inactive one) renders the neutral
+// brand card with NO name, type, cover, or logo, so a shared link to a noindex private profile never
+// leaks its identity through the image. Brand identity only — never member data.
+//
+// Satori has NO access to the CSS token system, so the DAWN tokens it needs are mirrored here as
+// literals (app/globals.css :root): ink #141210 · on-ink #F3EEE3 · primary #E2912F ·
+// broadcast (business accent) #1EB6C5 · signal (nonprofit accent) #0F8E78.
+const INK = '#141210'
+const ON_INK = '#F3EEE3'
+const PRIMARY = '#E2912F'
+const ACCENT_BY_TYPE: Record<string, string> = {
+  business: '#1EB6C5',
+  nonprofit: '#0F8E78',
+}
+// The logo chip's corner, mirroring `--radius-cover` (app/globals.css :root, 24px). The chip on the
+// page is BrandAnchor, which rides that token because a Space's cover photo and logo chip are its
+// IDENTITY MEDIA and stay round on every theme (ADR-1192). This literal read 28 — a number matching
+// no token and no theme — under a header that claims this card mirrors the on-page hero, so the card
+// and the page told two stories about the same chip. Named, and pinned to the token by
+// accent-scope-coverage.test.ts, which fails if the two drift again (LIVE-196).
+const COVER_RADIUS = 24
+
+// Build-time assets under public/ are inlined through lib/og/local-image.ts (Satori needs bytes,
+// not a relative URL). ⚠️ NOT a `readFile` in this file: a path built from a variable is
+// unresolvable to @vercel/nft, which then globs the whole of public/ into every function under
+// this segment — measured at 12.25 MB apiece, against 2.37 MB now. See that module's header.
+
+export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const [space, visibility] = await Promise.all([getSpaceBySlug(slug), getSpaceVisibility(slug)])
+
+  // Only a NETWORK (public), active Space reveals its brand on the card. Anything else falls back to
+  // a neutral, identity-free card (no leak for a private space).
+  const isPublic = !!space && space.status === 'active' && visibility !== 'private'
+
+  if (!isPublic || !space) {
+    // Neutral card: DAWN ink ground + the primary accent bar, no identity, no fonts to fetch (the
+    // built-in font carries it, so it can never slow or fail a crawl of a private link).
+    return cardResponse(
+      (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: 72,
+            backgroundImage: `linear-gradient(180deg, ${INK} 0%, #211D17 100%)`,
+            color: '#ffffff',
+            fontFamily: 'sans-serif',
+          }}
+        >
+          <div style={{ display: 'flex', fontSize: 28, fontWeight: 700, letterSpacing: '0.32em', color: 'rgba(243,238,227,0.85)' }}>
+            {SITE_NAME.toUpperCase()}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: PRIMARY, marginBottom: 28 }} />
+            <div style={{ display: 'flex', fontSize: 68, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.02em', maxWidth: 1000 }}>
+              A space on {SITE_NAME}
+            </div>
+          </div>
+          <div style={{ display: 'flex', fontSize: 26, color: 'rgba(243,238,227,0.72)' }}>
+            A community on {SITE_NAME}
+          </div>
+        </div>
+      ),
+      size,
+    )
+  }
+
+  // ── The public hero card: the SAME resolution path the page hero runs. ──────────────────────────
+  const brandName = space.brandName?.trim() || space.name
+  const hero = resolveHero({
+    config: readHeroConfig(space.preferences),
+    preferences: space.preferences,
+    base: `/spaces/${space.slug}`,
+    brandName,
+    tagline: space.tagline ?? null,
+    defaultCtaLabel: defaultPrimaryCtaLabel(space.type),
+  })
+  const name = hero.heading.length > 70 ? `${hero.heading.slice(0, 67)}...` : hero.heading
+  const tagline =
+    hero.tagline && hero.tagline.length > 120 ? `${hero.tagline.slice(0, 117)}...` : hero.tagline
+  const typeLabel = spaceTypeLabel(space.type)
+  // The brand accent: the operator's own hex when set (brand_accent also admits token NAMES, which
+  // Satori cannot resolve — only a literal hex passes), else the per-type default accent literal.
+  const accent =
+    space.brandAccent && /^#[0-9a-fA-F]{6}$/.test(space.brandAccent)
+      ? space.brandAccent
+      : (ACCENT_BY_TYPE[space.type] ?? PRIMARY)
+
+  // Cover: the real upload (remote, fetched + inlined, fail-safe) or the page hero's own deterministic
+  // placeholder. Logo: the real upload or an initials chip (the BrandAnchor fallback, accent-toned).
+  // 2026-09-05 (scan2 L10 R5, LIVE-155): "fail-safe" was not true for a webp upload. fetchRemoteImage
+  // passed the origin's content-type straight into the data URL, and Satori's data-URL resolver can
+  // size only png / gif / jpeg; a `data:image/webp` src made it spread an unassigned variable
+  // (`TypeError: u2 is not iterable`), which is the production crash on one Space whose logo is
+  // stored as image/webp. The guard now lives at the read site (lib/og/remote-image.ts): the type
+  // comes from the bytes, and any type Satori cannot size returns null, so the placeholder cover or
+  // the initials chip below carries the card. Proven by opengraph-image.test.tsx beside this file.
+  const [remoteCover, logo, mark] = await Promise.all([
+    space.coverImageUrl ? fetchRemoteImage(space.coverImageUrl) : Promise.resolve(null),
+    space.brandLogoUrl ? fetchRemoteImage(space.brandLogoUrl) : Promise.resolve(null),
+    siteMarkDataUrl(),
+  ])
+  const cover = remoteCover ?? (await coverPlaceholderDataUrl(coverPlaceholderFor(space.id)))
+  const initials = brandName
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+
+  // FULL Nunito faces read from public/fonts, memoised per process (lib/og/load-nunito.ts). Not
+  // subsets: subsetting to the card's own glyphs rendered a name containing anything outside that
+  // subset as tofu. And loadNunito CAN reject if public/fonts is missing from the bundle, which
+  // returns a 500 and gets the previewer a text card. That is deliberate and recoverable, unlike
+  // handing Satori an empty `fonts` array, which crashes it inside fontFamily.split().
+  const [black, bold] = await Promise.all([
+    loadNunito(900),
+    loadNunito(700),
+  ])
+  const fonts = [
+    { name: 'Nunito', data: black, weight: 900 as const, style: 'normal' as const },
+    { name: 'Nunito', data: bold, weight: 700 as const, style: 'normal' as const },
+  ]
+
+  return cardResponse(
+    (
+      <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', fontFamily: 'Nunito' }}>
+        {/* Cover photo background — the page hero's own image. */}
+        <img
+          src={cover}
+          alt=""
+          width={size.width}
+          height={size.height}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+        {/* The ink legibility scrim (the page hero's shade treatment): bottom-heavy fade so the
+            identity clears any photo while the top stays crisp. */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage:
+              'linear-gradient(180deg, rgba(20,18,16,0.16) 0%, rgba(20,18,16,0.34) 44%, rgba(20,18,16,0.78) 76%, rgba(20,18,16,0.92) 100%)',
+          }}
+        />
+        {/* The Frequency mark, top-right — quiet network attribution. */}
+        <img
+          src={mark}
+          alt=""
+          width={72}
+          height={72}
+          style={{ position: 'absolute', top: 48, right: 56, width: 72, height: 72, opacity: 0.95 }}
+        />
+        {/* Identity lockup anchored bottom-left over the scrim, mirroring the on-page hero: the logo
+            chip beside the accent bar + type badge + name + tagline. */}
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'flex-end',
+            width: '100%',
+            height: '100%',
+            padding: 64,
+            gap: 32,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              width: 148,
+              height: 148,
+              borderRadius: COVER_RADIUS,
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              flexShrink: 0,
+            }}
+          >
+            {logo ? (
+              <img
+                src={logo}
+                alt=""
+                width={148}
+                height={148}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <div style={{ display: 'flex', fontWeight: 700, fontSize: 60, color: accent }}>{initials}</div>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0 }}>
+            <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: accent, marginBottom: 18 }} />
+            <div
+              style={{
+                display: 'flex',
+                alignSelf: 'flex-start',
+                marginBottom: 14,
+                padding: '6px 18px',
+                borderRadius: 9999,
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                color: ON_INK,
+                backgroundColor: 'rgba(255,255,255,0.16)',
+                border: '1px solid rgba(255,255,255,0.35)',
+              }}
+            >
+              {typeLabel}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: name.length > 26 ? 56 : 72,
+                fontWeight: 900,
+                lineHeight: 1.05,
+                letterSpacing: '-0.02em',
+                color: '#FFFFFF',
+                textShadow: '0 2px 24px rgba(0,0,0,0.55)',
+                maxWidth: 880,
+              }}
+            >
+              {name}
+            </div>
+            {tagline && (
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: 30,
+                  fontWeight: 700,
+                  lineHeight: 1.3,
+                  marginTop: 12,
+                  color: 'rgba(243,238,227,0.94)',
+                  textShadow: '0 1px 12px rgba(0,0,0,0.6)',
+                  maxWidth: 880,
+                }}
+              >
+                {tagline}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    ),
+    { ...size, fonts },
+  )
+}

@@ -15,7 +15,11 @@ const DISALLOW = [
   // /events + /events/<slug> are PUBLIC (SEO/AIO); only the create flow stays out of the
   // index. Host manage sub-routes are proxy-protected (anon gets redirected), so a crawler
   // never indexes them even though they aren't listed here.
-  "/events/new",
+  // `$` anchors the rule (Google and Bing honour it): a bare "/events/new" is a PREFIX rule and
+  // would also hide every public event whose slug starts with "new" (SCAN-654). The `?` arm keeps
+  // the composer's own query forms (?circle=, ?space=, ?duplicate=) out of the index.
+  "/events/new$",
+  "/events/new?",
   // App-shell TWINS of canonical /discover surfaces — these pages canonical to
   // /discover/partners|journeys, so keep crawlers off the twins to stop them cannibalizing
   // the canonicals. (/discover/* is NOT disallowed.) NOTE: the four marketplace indexes —
