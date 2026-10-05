@@ -10,6 +10,6 @@
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-05 by the owner-gated prep PR, ruling (b) prepared for the owner's approval (ADR-1705): effectiveDownloadPolicy in lib/library/download-door.ts reads a protected asset left on the default open policy as staff, an operator's pick of members or staff survives, the written record carries the applied policy, and the drawer says so under Protected. Pinned in download-door.test.ts. If the owner names another letter, reopen and amend ADR-1705."
+    "detail": "\n\nCLOSED 2026-10-05 by the owner-gated prep PR, ruling (b) prepared for the owner's approval (ADR-1705): effectiveDownloadPolicy in lib/library/download-door.ts reads a protected asset left on the default open policy as staff, an operator's pick of members or staff survives, the written record carries the applied policy, and the drawer says so under Protected. Pinned in download-door.test.ts. If the owner names another letter, reopen and amend ADR-1705.\n\nAPPROVED 2026-10-05 17:45Z by owner on a decision card, multiple choice (staff only, members, flip on protect, keep as is): \"Loom team only\", option (b) as implemented here."
   }
 }
