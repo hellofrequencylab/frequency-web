@@ -44,11 +44,17 @@ export function SpotlightShell({
     <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
       {background.assetPath && (
         <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden" aria-hidden>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          {/* next/image, not a raw img: the upload is the creator's original (up to 5 MB) and the
+              public avatars bucket is already in next.config remotePatterns, so the optimizer resizes
+              it to the viewport and serves AVIF/WebP (SCAN-807). The fixed wrapper is the positioned
+              parent `fill` needs. Low fetch priority: a decorative layer must not outrank the header. */}
+          <Image
             src={`${SPOTLIGHT_PUBLIC_BASE}${background.assetPath}`}
             alt=""
-            className="h-full w-full object-cover"
+            fill
+            sizes="100vw"
+            fetchPriority="low"
+            className="object-cover"
             style={{
               objectPosition: `${background.focusX}% ${background.focusY}%`,
               transform: background.zoom !== 100 ? `scale(${background.zoom / 100})` : undefined,
