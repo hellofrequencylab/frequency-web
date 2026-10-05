@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!found) return {}
   const { article } = found
   return {
-    title: `${article.title} | Help`,
+    title: `${article.title} · Help`,
     description: article.description,
     alternates: { canonical: helpHref(category, slug) },
     // The IMAGE is not set here on purpose. `opengraph-image.tsx` / `twitter-image.tsx` sit beside

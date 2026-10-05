@@ -373,6 +373,10 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
       { id: 'the-community', label: 'The Community', href: '/the-community' },
       { id: 'the-quest', label: 'The Quest', href: '/the-quest' },
       { id: 'pricing', label: 'Pricing', href: '/pricing' },
+      // The /vs comparison hub (SCAN-801). Its only other inbound link sits on the coded
+      // branch of /pricing, which stops rendering once an operator publishes the pricing
+      // document; the site map keeps the hub and its five comparisons reachable.
+      { id: 'compare', label: 'Compare', href: '/vs' },
     ],
   },
   {
