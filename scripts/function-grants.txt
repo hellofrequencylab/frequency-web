@@ -103,6 +103,7 @@ circle_momentum                      authenticated
 circle_templates_touch_updated_at    public
 circles_near                         public
 circles_space_primary_guard          internal
+claim_founder_flags                  internal
 claim_guest_rsvps                    authenticated
 claim_guest_tickets                  authenticated
 claim_guest_orders                   authenticated
