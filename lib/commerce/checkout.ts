@@ -610,7 +610,7 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   // would let the webhook ack 200 with the event claimed, Stripe would never redeliver, and the
   // paid order would stay pending forever. Throw so the webhook releases its claim and 500s; the
   // retry is safe because the update is guarded by status = 'pending' (same shape as tips.ts).
-  const { data: updated, error: flipError } = await db()
+  const { data: updated, error } = await db()
     .from('commerce_orders')
     .update({
       status: 'paid',
@@ -626,9 +626,7 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // ONE LITERAL, not a concatenation: the generated PostgREST types parse this string, and a built
     // one widens to `string` and types the result as GenericStringError[].
     .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency, funds_flow')
-  if (flipError) {
-    throw new Error(`[commerce] paid flip failed (session=${session.id}): ${flipError.message}`)
-  }
+  if (error) throw new Error(`[commerce] paid flip failed (session=${session.id}): ${error.message}`)
   const rows = (updated ?? []) as {
     id: string
     owner_kind: OrderOwnerKind

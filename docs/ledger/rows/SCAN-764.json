@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-764",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const need=[\"lib/billing/tips.ts\",\"lib/commerce/checkout.ts\",\"lib/billing/tickets.ts\"];for(const f of need){if(!fs.existsSync(f)){console.error(\"SCAN-764: \"+f+\" missing\");process.exit(79)}}const seg=(s,start)=>{const i=s.indexOf(start);if(i<0)return null;const r=s.slice(i);const j=r.indexOf(\"\\nexport \",10);return j>0?r.slice(0,j):r};const tips=seg(fs.readFileSync(need[0],\"utf8\"),\"export async function recordTipFromSession(\");const ord=seg(fs.readFileSync(need[1],\"utf8\"),\"export async function recordCommerceOrderFromSession(\");const tk=fs.readFileSync(need[2],\"utf8\");const fi=tk.indexOf(\"function flippedRows(\");if(!tips||!ord||fi<0){console.error(\"SCAN-764: a settle recorder was not found\");process.exit(79)}const fr=tk.slice(fi,tk.indexOf(\"return (result.data\",fi));const okUpdate=(x)=>/\\{\\s*data:\\s*updated\\s*,\\s*error\\s*\\}\\s*=\\s*await\\s+db\\(\\)/.test(x)&&/if\\s*\\(\\s*error\\s*\\)\\s*throw/.test(x);const bad=[];if(!okUpdate(tips))bad.push(\"recordTipFromSession (tips)\");if(!okUpdate(ord))bad.push(\"recordCommerceOrderFromSession (commerce_orders)\");if(!/\\bthrow\\b/.test(fr)||/return\\s*\\[\\s*\\]/.test(fr))bad.push(\"flippedRows (tickets)\");if(bad.length){console.error(\"SCAN-764: \"+bad.join(\", \")+\" still swallow(s) the DB error on the paid flip, so a failed settle is acked 200 with the Stripe claim kept and the tip, order or ticket stays pending forever with no redelivery.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe tips and commerce_orders paid flips and flippedRows now throw on a DB error so the Stripe route releases its claim and redelivers; on-page backstops and refundTicket catch it so a buyer never sees an error after paying."
+  }
+}

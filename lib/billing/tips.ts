@@ -195,12 +195,17 @@ export async function recordTipFromSession(session: Stripe.Checkout.Session): Pr
   // Only advance pending → succeeded (idempotent; a redelivered event is a no-op).
   // `.select()` returns the rows we actually flipped, so the ledger append below runs
   // exactly once per tip.
-  const { data: updated } = await db()
+  // The flip is NOT best-effort (SCAN-764): supabase-js resolves `{ error }` and never throws, so
+  // discarding it let the webhook ack 200 with the event claimed, Stripe never redelivered, and a
+  // paid tip stayed pending forever. Throw so the route releases its claim and 500s; the retry is
+  // safe because the update is guarded by status = 'pending'.
+  const { data: updated, error } = await db()
     .from('tips')
     .update({ status: 'succeeded', succeeded_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
     .select('id, platform_fee_cents, from_profile_id, currency, to_profile_id, amount_cents, message')
+  if (error) throw new Error(`[tips] paid flip failed (session=${session.id}): ${error.message}`)
   const rows = (updated ?? []) as {
     id: string
     platform_fee_cents: number

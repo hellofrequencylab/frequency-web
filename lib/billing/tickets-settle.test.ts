@@ -244,12 +244,13 @@ describe('recordTicketFromSession — the flip and the sold bump are ONE stateme
     expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
   })
 
-  it('a failed settle is logged, never thrown, NOT retried, and records no ledger row', async () => {
+  it('a failed settle is logged, THROWN so the webhook redelivers (SCAN-764), NOT retried here, and records no ledger row', async () => {
     state.setRpcRows([TICKET])
     state.setRpcError({ message: 'function unavailable' })
-    await expect(recordTicketFromSession(paidSession())).resolves.toBeUndefined()
-    // Not retried on purpose: a call that commits and loses its response would return zero rows on
-    // a retry, and zero rows is how this path says "somebody else settled it".
+    await expect(recordTicketFromSession(paidSession())).rejects.toThrow(/function unavailable/)
+    // Not retried in-process on purpose: a call that commits and loses its response would return
+    // zero rows on a retry, and zero rows is how this path says "somebody else settled it". The
+    // retry is Stripe's redelivery, which the throw is what asks for.
     expect(rpcCalls()).toHaveLength(1)
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('settle_ticket_atomic failed'),
@@ -288,9 +289,9 @@ describe('recordTicketRefund — the mirror image gives the seat back in the sam
     expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
   })
 
-  it('a failed refund RPC is logged and never throws', async () => {
+  it('a failed refund RPC is logged and THROWS so charge.refunded is redelivered (SCAN-764)', async () => {
     state.setRpcError({ message: 'deadlock detected' })
-    await expect(recordTicketRefund('pi_1')).resolves.toBeUndefined()
+    await expect(recordTicketRefund('pi_1')).rejects.toThrow(/deadlock detected/)
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('refund_ticket_atomic failed'),
       expect.objectContaining({ error: 'deadlock detected' }),

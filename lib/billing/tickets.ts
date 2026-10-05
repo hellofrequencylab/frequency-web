@@ -1227,12 +1227,15 @@ function flippedRows(
 ): SettledTicketRow[] {
   if (result.error) {
     // One transaction: a failure flipped nothing and moved no `sold`, so the ticket is untouched
-    // and a Stripe redelivery can settle it cleanly. Loud, because nothing here retries.
+    // and a Stripe redelivery can settle it cleanly. That redelivery only happens if this THROWS
+    // (SCAN-764): returning [] here let the webhook ack 200 with the event claimed, so a ticket whose
+    // paid flip failed during a blip stayed pending forever, money taken and nothing delivered. The
+    // on-page backstops (ticket-actions, the member page, refundTicket) catch it themselves.
     console.error(`[tickets] ${fn} failed; the ticket was NOT flipped and its tier was NOT moved`, {
       args,
       error: result.error.message,
     })
-    return []
+    throw new Error(`[tickets] ${fn} failed: ${result.error.message}`)
   }
   return (result.data ?? []) as SettledTicketRow[]
 }
@@ -1880,8 +1883,13 @@ export async function refundTicket(ticketId: string, eventId: string): Promise<R
   }
 
   // Reconcile immediately (belt-and-suspenders); the charge.refunded webhook also
-  // calls recordTicketRefund. Both are idempotent (only succeeded → refunded flips).
-  await recordTicketRefund(ticket.stripe_payment_intent_id)
+  // calls recordTicketRefund. Both are idempotent (only succeeded → refunded flips). The money has
+  // already moved, so a failed inline flip is NOT an error to the host: the webhook still owes it.
+  try {
+    await recordTicketRefund(ticket.stripe_payment_intent_id)
+  } catch (err) {
+    console.error('[tickets] inline refund reconcile failed; the charge.refunded webhook is now the only path', err)
+  }
   return { ok: true }
 }
 
