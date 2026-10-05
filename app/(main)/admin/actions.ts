@@ -714,11 +714,9 @@ async function requireDispatchOwner(id: string) {
     .maybeSingle()
   if (!dispatch) throw new Error('Dispatch not found')
   const isAuthor = dispatch.author_id === caller.id
-  let operator = isStaff(caller.webRole)
-  if (!operator) {
-    const staff = await getStaffMember().catch(() => null)
-    operator = staffCan(staff?.role ?? null, 'community', 'write')
-  }
+  // Both reaches are read unconditionally so the authz scan sees the gate on every path.
+  const staff = await getStaffMember().catch(() => null)
+  const operator = isStaff(caller.webRole) || staffCan(staff?.role ?? null, 'community', 'write')
   if (!isAuthor && !operator) throw new Error('Unauthorized')
   return { caller, dispatch, operator }
 }
