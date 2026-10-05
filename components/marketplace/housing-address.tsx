@@ -10,7 +10,14 @@ import { useViewer } from '@/components/layout/viewer-chrome'
 // fetched from /api/housing/[id]/address, which applies the same resolveAddressDisplay rule
 // with signedIn: true. Anonymous viewers and crawlers never trigger the fetch, and a fetch
 // that fails leaves the row out. Renders a <dt>/<dd> pair, so it sits inside the facts <dl>.
-export function ViewerHousingAddress({ listingId }: { listingId: string }) {
+export function ViewerHousingAddress({
+  listingId,
+  labelClassName,
+}: {
+  listingId: string
+  /** The page's own facts-label class, so this row matches its siblings in the <dl>. */
+  labelClassName: string
+}) {
   const { signedIn } = useViewer()
   const [addressLine, setAddressLine] = useState<string | null>(null)
 
@@ -31,7 +38,7 @@ export function ViewerHousingAddress({ listingId }: { listingId: string }) {
   if (!addressLine) return null
   return (
     <div>
-      <dt className="text-2xs font-semibold uppercase tracking-wide text-muted">Address</dt>
+      <dt className={labelClassName}>Address</dt>
       <dd className="mt-0.5 text-body-sm font-medium text-text">{addressLine}</dd>
     </div>
   )

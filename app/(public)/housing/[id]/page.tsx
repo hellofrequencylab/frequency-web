@@ -26,6 +26,9 @@ import { ViewerHousingAddress } from '@/components/marketplace/housing-address'
 // arrival hydrate from /api/viewer.
 export const revalidate = 3600
 
+// The facts <dl> label, shared with the signed-in Address fact so the two read as one list.
+const FACT_LABEL = 'text-2xs font-semibold uppercase tracking-wide text-muted'
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
   const listing = await getListingWithOwner(id)
@@ -170,11 +173,11 @@ export default async function HousingDetailPage({
         <dl className="mb-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
           {facts.map((f) => (
             <div key={f.label}>
-              <dt className="text-2xs font-semibold uppercase tracking-wide text-muted">{f.label}</dt>
+              <dt className={FACT_LABEL}>{f.label}</dt>
               <dd className="mt-0.5 text-body-sm font-medium text-text">{f.value}</dd>
             </div>
           ))}
-          {showsAddressToMembers && <ViewerHousingAddress listingId={listing.id} />}
+          {showsAddressToMembers && <ViewerHousingAddress listingId={listing.id} labelClassName={FACT_LABEL} />}
         </dl>
       )}
 

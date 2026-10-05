@@ -312,11 +312,11 @@ function MemberRow({
         <div className="px-4 pb-4 pt-1 bg-surface/50 dark:bg-surface-elevated/20">
           {status && (
             status.startsWith('Error:') ? (
-              <div role="alert" className="flex items-center gap-2 mb-3 text-meta font-medium text-danger bg-danger-bg/30 px-3 py-2 rounded-lg">
+              <div role="alert" className="flex items-center gap-2 mb-3 text-meta font-medium text-danger bg-danger-bg/30 px-3 py-2 rounded-control">
                 <AlertCircle className="w-3.5 h-3.5" /> {status}
               </div>
             ) : (
-              <div className="flex items-center gap-2 mb-3 text-meta font-medium text-success bg-success-bg/30 px-3 py-2 rounded-lg">
+              <div className="flex items-center gap-2 mb-3 text-meta font-medium text-success bg-success-bg/30 px-3 py-2 rounded-control">
                 <Check className="w-3.5 h-3.5" /> {status}
               </div>
             )
