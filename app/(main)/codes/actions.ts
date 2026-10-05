@@ -8,7 +8,8 @@ import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { generateSlug } from '@/lib/qr/codes'
-import { MARKETING_CODE_LIMIT, isValidMarketingPath } from '@/lib/qr/marketing'
+import { MARKETING_CODE_LIMIT, isValidMarketingPath, personalMarketingSpaceFilter } from '@/lib/qr/marketing'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { parseVcard, type VcardConfig } from '@/lib/vcard'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import type { Json } from '@/lib/database.types'
@@ -87,11 +88,18 @@ export async function createMarketingCode(input: MarketingInput): Promise<Action
   if (typeof row === 'string') return fail(row)
 
   const db = createAdminClient()
+  const rootId = await loadRootSpaceId()
+  // Count ONLY the member's personal codes: the same space_id arm the /codes list reads with
+  // (personalMarketingSpaceFilter). Without it a member's plain Space codes (owner_profile_id
+  // stamped, purpose null, space_id = their Space) ate the personal quota, so the member hit
+  // "Delete one to add another" with an empty list (SCAN-775).
   const { count } = await db
     .from('qr_codes')
     .select('id', { count: 'exact', head: true })
     .eq('owner_profile_id', member.id)
     .is('purpose', null)
+    // space_id null or root: a code stamped with any other Space is a Space code, not personal.
+    .or(personalMarketingSpaceFilter(rootId))
   if ((count ?? 0) >= MARKETING_CODE_LIMIT) {
     return fail(`You can have up to ${MARKETING_CODE_LIMIT} marketing codes. Delete one to add another.`)
   }

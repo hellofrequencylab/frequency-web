@@ -7,6 +7,24 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export const MARKETING_CODE_LIMIT = 3
 
+/**
+ * The space arm of "this qr_codes row is one of a member's PERSONAL marketing codes", as a
+ * PostgREST `.or(...)` filter. Pair it with `.eq('owner_profile_id', me).is('purpose', null)`.
+ *
+ * Personal means NOT tenant-scoped to a Space. That used to be spelled `.is('space_id', null)`,
+ * but the BEFORE INSERT trigger `qr_codes_default_space_id` (20260714010000_tenancy_hardening)
+ * stamps every null space_id with the ROOT Space, so no row has a null space_id any more and a
+ * null-only filter matches nothing (SCAN-775: the list read 0 of 3 while the limit count said 3
+ * of 3). Root is admitted explicitly, the same rule as lib/people/associations.ts and
+ * lib/studio/campaigns.ts. A code stamped with any OTHER Space is a Space code (lib/qr/space-codes.ts
+ * stamps owner_profile_id on those too, for scan attribution) and is neither listed here nor
+ * counted against the personal quota. Without a root row (pre-migration) this degrades to the
+ * null-only arm. PURE, so the list and the limit count cannot drift apart.
+ */
+export function personalMarketingSpaceFilter(rootSpaceId: string | null): string {
+  return rootSpaceId ? `space_id.is.null,space_id.eq.${rootSpaceId}` : 'space_id.is.null'
+}
+
 export interface MarketingTarget {
   type: 'circle' | 'event'
   slug: string

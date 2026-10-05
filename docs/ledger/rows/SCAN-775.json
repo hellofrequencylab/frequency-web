@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-775",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/codes/page.tsx\",a=\"app/(main)/codes/actions.ts\";if(!fs.existsSync(p)||!fs.existsSync(a)){console.error(\"SCAN-775: a file the probe must read is missing\");process.exit(79)}const page=fs.readFileSync(p,\"utf8\"),act=fs.readFileSync(a,\"utf8\");const listNullOnly=/\\.is\\([\\x27\"]space_id[\\x27\"], null\\)/.test(page)&&!/space_id\\.is\\.null,space_id\\.eq\\./.test(page);const cnt=act.match(/count: [\\x27\"]exact[\\x27\"][\\s\\S]*?MARKETING_CODE_LIMIT/);const countIgnoresSpace=!cnt||!/space_id/.test(cnt[0]);if(listNullOnly||countIgnoresSpace){console.error(\"SCAN-775: personal marketing codes never show on /codes but still count toward the 3-code limit: \"+(listNullOnly?\"the list still requires a null space_id that the root-stamping trigger never leaves; \":\"\")+(countIgnoresSpace?\"the limit count still ignores space_id so Space codes eat the personal quota.\":\"\"));process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe /codes marketing list required space_id IS NULL, but the qr_codes_default_space_id trigger stamps every null space_id with the root Space, so the list matched nothing; the limit count in createMarketingCode had no space filter, so a member's Space codes (owner stamped, purpose null) ate the personal quota. Added personalMarketingSpaceFilter(rootSpaceId) in lib/qr/marketing.ts (space_id null or root, the same rule as associations.ts and campaigns.ts) and applied it to both the page list and the create count via loadRootSpaceId. Pinned by app/(main)/codes/actions.test.ts: a runtime mock-backed count (three Space codes still allow a create; three root-stamped personal codes refuse; a legacy null-space code counts) plus a source-shape check that neither side uses a bare null space_id and both call the shared helper."
+  }
+}

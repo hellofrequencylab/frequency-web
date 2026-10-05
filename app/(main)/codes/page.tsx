@@ -8,7 +8,8 @@ import { shortLinkUrl } from '@/lib/qr/links'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { parseStyle, withMemberAvatar, type QrStyle } from '@/lib/qr/style'
 import { ensureMemberCodes, type MemberCodePurpose } from '@/lib/qr/member-codes'
-import { listMarketingTargets, MARKETING_CODE_LIMIT } from '@/lib/qr/marketing'
+import { listMarketingTargets, personalMarketingSpaceFilter, MARKETING_CODE_LIMIT } from '@/lib/qr/marketing'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { parseVcard } from '@/lib/vcard'
 import { isGoogleWalletConfigured } from '@/lib/wallet/google'
 import { MemberCodes, type MemberCodeCard } from './member-codes'
@@ -108,17 +109,19 @@ export default async function CodesPage() {
 // (MARKETING_CODE_LIMIT), not a tier.
 async function MarketingCodesSection({ profileId, qrConfig }: { profileId: string; qrConfig?: QrStudioConfig }) {
   const db = createAdminClient()
+  const rootId = await loadRootSpaceId()
   const [{ data: rows }, targets] = await Promise.all([
     // Personal marketing codes ONLY: owner-owned, purpose-null, and NOT tenant-scoped to a Space.
     // A Space code now stamps owner_profile_id (for scan attribution) AND space_id, so this list must
     // exclude space codes or a member who created one for their Space would see it in their personal
-    // funnel list.
+    // funnel list. The space arm is the SAME filter createMarketingCode counts with
+    // (personalMarketingSpaceFilter), so what is listed and what fills the quota cannot disagree.
     db
       .from('qr_codes')
       .select('id, slug, title, target_url, scan_count, style')
       .eq('owner_profile_id', profileId)
       .is('purpose', null)
-      .is('space_id', null)
+      .or(personalMarketingSpaceFilter(rootId))
       .order('created_at', { ascending: false }),
     listMarketingTargets(profileId),
   ])
