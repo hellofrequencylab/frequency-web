@@ -1,4 +1,4 @@
--- pgTAP behavioural guard for migration 20270345011700 (SCAN-696).
+-- pgTAP behavioural guard for migration 20270345011900 (SCAN-696).
 --
 -- The update-own policy on event_rsvps checks ownership alone, so before this migration a member
 -- could PATCH their own row from the browser with approval_status = 'approved', attended_at = now(),

@@ -1,4 +1,4 @@
-// SCAN-696: the member write guard on event_rsvps (migration 20270345011700).
+// SCAN-696: the member write guard on event_rsvps (migration 20270345011900).
 //
 // The behaviour itself is proved by pgTAP (supabase/tests/event_rsvps_member_write_guard.test.sql),
 // which runs against a real Postgres in CI. This vitest half pins the SHAPE that the pgTAP file and
@@ -14,7 +14,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 
 import { MAX_GUEST_PLUS_ONES } from './guest-seat'
 
-const MIGRATION = 'supabase/migrations/20270345011700_event_rsvps_member_write_guard.sql'
+const MIGRATION = 'supabase/migrations/20270345011900_event_rsvps_member_write_guard.sql'
 const PGTAP = 'supabase/tests/event_rsvps_member_write_guard.test.sql'
 const TRIGGER = 'trg_a_event_rsvps_member_write_guard'
 const FROZEN = [
