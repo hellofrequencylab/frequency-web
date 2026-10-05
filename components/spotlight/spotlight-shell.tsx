@@ -44,20 +44,11 @@ export function SpotlightShell({
     <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
       {background.assetPath && (
         <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden" aria-hidden>
-          {/* SCAN-807: next/image, not a raw img. The upload is the creator's ORIGINAL (up to 5 MB) and this
-              layer fills the viewport on every visit, so it goes through the optimizer (resize, AVIF/WebP).
-              The fixed inset-0 wrapper is the positioned parent `fill` needs. It is the LCP candidate when
-              no header image is above it, so it preloads only then (this fork uses `preload`, not
-              `priority`); with a header the header keeps the hint. No `loading="eager"` in that case: on
-              this fork eager also emits a preload link, which would make the two compete. The default
-              lazy is harmless for a fixed viewport layer, which is in view the moment it lays out. */}
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={`${SPOTLIGHT_PUBLIC_BASE}${background.assetPath}`}
             alt=""
-            fill
-            sizes="100vw"
-            preload={!(theme.header.show && profile.header_image_url)}
-            className="object-cover"
+            className="h-full w-full object-cover"
             style={{
               objectPosition: `${background.focusX}% ${background.focusY}%`,
               transform: background.zoom !== 100 ? `scale(${background.zoom / 100})` : undefined,
