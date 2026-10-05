@@ -10,6 +10,15 @@ vi.mock('@/lib/auth', () => ({ getCallerProfile: async () => ({ id: 'staff-1' })
 vi.mock('@/lib/admin/guard', () => ({ authorizeAction: async () => undefined }))
 vi.mock('@/lib/admin/audit', () => ({ logAdminAction: async () => undefined }))
 vi.mock('@/lib/trust', () => ({ trustSource: () => ({ signal: async () => undefined }) }))
+// SCAN-761: suspending the last listing program takes the member's directory listing down.
+const unpublish = { lost: false, hidden: [] as string[] }
+vi.mock('@/lib/partners/unpublish', () => ({
+  listingProgramLost: async () => unpublish.lost,
+  hidePartnerListing: async (id: string) => {
+    unpublish.hidden.push(id)
+    return { slugs: ['blue-cafe'] }
+  },
+}))
 
 const connect = { accountId: null as string | null, chargesEnabled: false }
 const connectReads: string[] = []
@@ -61,6 +70,25 @@ beforeEach(() => {
   connect.chargesEnabled = false
   updates.length = 0
   connectReads.length = 0
+  unpublish.lost = false
+  unpublish.hidden.length = 0
+})
+
+describe('transitionPersona → suspended (SCAN-761)', () => {
+  it('takes the listing down when the suspended program was the last listing program', async () => {
+    unpublish.lost = true
+    const r = await transitionPersona('member-1', 'business', 'suspended')
+    expect(r).toEqual({ data: { state: 'suspended' } })
+    expect(updates[0]).toEqual({ state: 'suspended' })
+    expect(unpublish.hidden).toEqual(['member-1'])
+  })
+
+  it('does not touch the listing on any other move', async () => {
+    unpublish.lost = true
+    current = { state: 'claimed' }
+    await transitionPersona('member-1', 'business', 'verified')
+    expect(unpublish.hidden).toEqual([])
+  })
 })
 
 describe('transitionPersona → active (LIVE-696)', () => {

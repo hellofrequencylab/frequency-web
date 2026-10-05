@@ -3,6 +3,7 @@ import {
   normalizeSplash,
   normalizeLinks,
   primarySplashLink,
+  splashRedirectLink,
   type Splash,
 } from './splash'
 import { renderSplashPage } from './splash-render'
@@ -12,6 +13,8 @@ import { renderSplashPage } from './splash-render'
 //      trimmed + capped; an unsafe image url drops to null; links are validated.
 //   2. normalizeLinks drops a link missing a label or a valid url; caps at 5.
 //   3. primarySplashLink is links[0] (or null).
+//   3b. splashRedirectLink is links[0] ONLY for a bare single-link splash (no blurb, no image); a
+//       splash with authored content renders instead of redirecting (SCAN-780).
 //   4. renderSplashPage escapes owner content (no injection) and resolves relative urls.
 
 describe('normalizeLinks (pure, fail-closed)', () => {
@@ -95,6 +98,31 @@ describe('primarySplashLink (pure)', () => {
     expect(primarySplashLink(s)).toEqual({ label: 'A', url: 'https://a.com' })
     expect(primarySplashLink(normalizeSplash({ heading: 'Hi' })!)).toBeNull()
     expect(primarySplashLink(null)).toBeNull()
+  })
+})
+
+describe('splashRedirectLink (pure, SCAN-780)', () => {
+  const one = { label: 'Book', url: 'https://a.com' }
+  const two = { label: 'Menu', url: 'https://b.com' }
+
+  it('a bare single link (no blurb, no image) is the redirect target', () => {
+    expect(splashRedirectLink(normalizeSplash({ heading: 'Hi', links: [one] }))).toEqual(one)
+  })
+
+  it('🔴 a splash with several links renders: the extra links must be shown, not skipped', () => {
+    expect(splashRedirectLink(normalizeSplash({ heading: 'Hi', links: [one, two] }))).toBeNull()
+  })
+
+  it('🔴 a blurb or an image keeps the landing: that content is what the owner authored', () => {
+    expect(splashRedirectLink(normalizeSplash({ heading: 'Hi', blurb: 'Come in.', links: [one] }))).toBeNull()
+    expect(
+      splashRedirectLink(normalizeSplash({ heading: 'Hi', imageUrl: 'https://img.test/a.png', links: [one] })),
+    ).toBeNull()
+  })
+
+  it('no links or no splash: nothing to redirect to', () => {
+    expect(splashRedirectLink(normalizeSplash({ heading: 'Hi' }))).toBeNull()
+    expect(splashRedirectLink(null)).toBeNull()
   })
 })
 

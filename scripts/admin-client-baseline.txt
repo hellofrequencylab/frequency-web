@@ -720,6 +720,7 @@ lib/consent/consent.ts
 lib/consent/retention.ts
 lib/core/load-capabilities.ts
 lib/crew/circle-tasks.ts
+lib/crew/verification-queue.ts
 lib/crew/verify.ts
 lib/crm/capture-context.ts
 lib/crm/classification.ts
@@ -916,6 +917,7 @@ lib/page-settings/store.test.ts
 lib/page-settings/store.ts
 lib/partners/collaborators.ts
 lib/partners/read.ts
+lib/partners/unpublish.ts
 lib/people-suggestions.ts
 lib/people/associations.ts
 lib/people/roster-from-ids.ts

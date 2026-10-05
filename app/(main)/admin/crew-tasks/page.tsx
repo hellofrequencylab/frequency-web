@@ -5,6 +5,7 @@ import { CrewTasksClient } from './crew-tasks-client'
 import { CircleTasksPanel, type HostedCircleTasks } from './circle-tasks-panel'
 import { NewTaskCompose } from '@/components/compose/new-task-compose'
 import { listCircleTasksByCircle } from '@/lib/crew/circle-tasks'
+import { listHeldCompletions } from '@/lib/crew/verification-queue'
 
 
 export default async function AdminCrewTasksPage() {
@@ -12,7 +13,7 @@ export default async function AdminCrewTasksPage() {
 
   const admin = createAdminClient()
 
-  const [tasksRes, pendingRes] = await Promise.all([
+  const [tasksRes, filteredPending] = await Promise.all([
     // Global catalogue only (circle_id IS NULL) — circle-scoped tasks live in
     // the per-circle panel below. Untyped handle: circle_id isn't in
     // database.types yet (repo convention; see lib/crew/circle-tasks.ts).
@@ -22,43 +23,11 @@ export default async function AdminCrewTasksPage() {
       .is('circle_id', null)
       .order('task_type')
       .order('zaps_value', { ascending: false }),
-    admin
-      .from('crew_completions')
-      .select(`
-        id, completed_at, zaps_earned,
-        task:crew_tasks!task_id ( id, name, zaps_value ),
-        member:profiles!profile_id ( id, display_name, handle, avatar_url )
-      `)
-      .is('verified_by', null)
-      .order('completed_at', { ascending: true })
-      .limit(50),
+    // Held completions (verified_at null, task requires verification), filtered in SQL before
+    // the limit so ordinary completions can never crowd the queue out (SCAN-752). Circle-scoped
+    // held completions surface here too.
+    listHeldCompletions(admin),
   ])
-
-  // Filter to only completions where the task requires verification
-  type PendingRow = {
-    id: string
-    completed_at: string
-    zaps_earned: number
-    task: { id: string; name: string; zaps_value: number } | null
-    member: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
-  }
-
-  const allPending = (pendingRes.data ?? []) as unknown as PendingRow[]
-  const pendingVerifications = allPending.filter((c) => {
-    // task is an object with id/name from the join; check parent requires_verification
-    return c.task !== null
-  })
-
-  // Re-fetch tasks that require verification to cross-reference
-  const verificationTaskIds = new Set(
-    (tasksRes.data ?? [])
-      .filter((t) => t.requires_verification)
-      .map((t) => t.id)
-  )
-
-  const filteredPending = pendingVerifications.filter((c: PendingRow) =>
-    c.task ? verificationTaskIds.has(c.task.id) : false
-  )
 
   // Circle-task assignment (P4.7): circles the caller hosts, each with its
   // scoped tasks. Writes are re-gated per circle (circle.assignTask) in the
