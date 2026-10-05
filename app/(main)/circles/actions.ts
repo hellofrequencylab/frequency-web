@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
-import { asCircleAccess, canJoinCircle } from '@/lib/circles/visibility'
+import { asCircleAccess, canJoinCircle, LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 import { isSpacePaidMember, isSpaceTeamSeat } from '@/lib/circles/space-entry'
 import { processGamificationEvent } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
@@ -82,12 +82,23 @@ export async function joinCircle(
     }
   })
     .from('circles')
-    .select('member_count, member_cap, hub_id, access, unlisted, space_id, host_id')
+    .select('member_count, member_cap, hub_id, access, unlisted, space_id, host_id, status')
     .eq('id', circleId)
     .maybeSingle()
 
   if (!circleRaw) return fail('This circle is no longer available.')
   const circle = circleRaw as unknown as { member_count: number; member_cap: number; hub_id: string | null }
+
+  // THE LIFECYCLE GATE (SCAN-691). Only a `forming` or `active` circle takes members: a draft is
+  // not yet published, an inactive one has been switched off by its Space, an archived one is
+  // closed. Every listing filters on LISTABLE_CIRCLE_STATUS; this is a service-role write, so the
+  // same rule has to be written here too, or a stale QR code or a direct action call joins a
+  // circle that is not running. Same refusal string as the missing-circle copy, for the same
+  // reason as the access gate below: the refusal must not confirm what the circle is.
+  const status = (circleRaw as { status?: unknown }).status
+  if (!(LISTABLE_CIRCLE_STATUS as readonly unknown[]).includes(status)) {
+    return fail('This circle is no longer available.')
+  }
 
   // THE ACCESS GATE. Every closed mode has its own door; the default is deny.
   const row = circleRaw as {

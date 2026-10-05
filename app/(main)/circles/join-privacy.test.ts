@@ -93,6 +93,7 @@ const CLOSED = {
   unlisted: false, // LISTED and closed: the lead funnel
   space_id: 'space-1',
   host_id: 'host-1',
+  status: 'active',
 }
 
 const CLOSED_MODES = ['circle_members', 'invite', 'tier', 'space_members', 'space_paid_members'] as const
@@ -230,4 +231,43 @@ describe('joinCircle narrows nothing that was open before', () => {
     expect(res.error).toContain('full')
     expect(membershipInserts).toHaveLength(0)
   })
+})
+
+// THE LIFECYCLE GATE (SCAN-691). Every listing and public_circle_by_slug filter on
+// LISTABLE_CIRCLE_STATUS (forming, active), but joinCircle is a service-role write, so it has to
+// refuse the other statuses itself: a Space switching its hub Circle off must not leave a working
+// Join, and a stale QR code or a direct action call must not join a draft or archived circle by id.
+describe('a circle that is not taking members refuses every join', () => {
+  for (const status of ['inactive', 'draft', 'archived']) {
+    it(`${status}: refused with the missing-circle copy, and no membership row is written`, async () => {
+      circleRow = { ...CLOSED, access: 'open', status }
+      const res = (await joinCircle('circle-1', 'off-circle')) as { error?: string }
+      expect(isError(res as ActionResult)).toBe(true)
+      expect(res.error).toBe('This circle is no longer available.')
+      expect(membershipInserts).toHaveLength(0)
+    })
+  }
+
+  it('an invite (the QR route) does not open a draft circle', async () => {
+    circleRow = { ...CLOSED, access: 'invite', status: 'draft' }
+    const res = await joinCircle('circle-1', 'off-circle', { invited: true })
+    expect(isError(res as ActionResult)).toBe(true)
+    expect(membershipInserts).toHaveLength(0)
+  })
+
+  it('a missing status is refused too: the gate fails closed', async () => {
+    const { status: _omit, ...noStatus } = { ...CLOSED, access: 'open' }
+    circleRow = noStatus
+    const res = await joinCircle('circle-1', 'off-circle')
+    expect(isError(res as ActionResult)).toBe(true)
+    expect(membershipInserts).toHaveLength(0)
+  })
+
+  for (const status of ['forming', 'active']) {
+    it(`${status}: still joins`, async () => {
+      circleRow = { ...CLOSED, access: 'open', status }
+      await joinCircle('circle-1', 'live-circle')
+      expect(membershipInserts).toHaveLength(1)
+    })
+  }
 })
