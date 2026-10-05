@@ -418,6 +418,13 @@ const nextConfig: NextConfig = {
       // one events home. Permanent (308), same shape as the housing pair above.
       { source: '/marketplace/events', destination: '/events', permanent: true },
       { source: '/marketplace/events/:path*', destination: '/events/:path*', permanent: true },
+      // The /discover/events/<slug> twin (SCAN-672): a second prerendered copy of /events/<slug>,
+      // with its own loading file and OG image route per event, that already canonicalised to the
+      // member page and that nothing linked to but itself. Retired; every event now builds once.
+      // Permanent (308) so any crawl signal the twin collected transfers. ONE segment only: it must
+      // not shadow the live /discover/events/in/<city>/<category> hubs or
+      // /discover/events/organizer/<handle>, and lib/marketing/redirect-shadow.test.ts proves it.
+      { source: '/discover/events/:slug', destination: '/events/:slug', permanent: true },
       // /broadcast -> /nearby (ADR-1020). "Broadcast" was retired from member copy long ago
       // (NAMING.md §Dispatch) and the route was its last member-reachable survivor. The visible
       // label did not change: it was, and stays, "Around You".

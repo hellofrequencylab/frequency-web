@@ -15,6 +15,7 @@ import {
   type PublicEvent,
 } from '@/lib/discover'
 import { citySlug, cityFromSlug } from '@/app/discover/events/_data'
+import { listNetworkedSpaces, type NetworkedSpace } from '@/lib/spaces/discovery'
 
 // One city with everything a visitor can browse there. The counts drive the index
 // cards + the city-hub stat band; the lists back the hub grids and the JSON-LD.
@@ -26,6 +27,9 @@ export type CityHub = {
   circles: PublicCircle[]
   /** Upcoming events only (past ones are filtered out, mirroring the locator). */
   events: PublicEvent[]
+  /** Networked Spaces whose `spaces.city` is this city (SCAN-675). Filled by getCityHub only: a
+   *  Space never CREATES a hub or a sitemap URL on its own, so the index set is unchanged. */
+  spaces: NetworkedSpace[]
 }
 
 // A lighter shape for the index grid — just the counts, no full lists.
@@ -48,7 +52,7 @@ async function loadCityBuckets(): Promise<Map<string, CityHub>> {
     const slug = citySlug(city)
     const existing = byCity.get(slug)
     if (existing) return existing
-    const fresh: CityHub = { city, slug, circles: [], events: [] }
+    const fresh: CityHub = { city, slug, circles: [], events: [], spaces: [] }
     byCity.set(slug, fresh)
     return fresh
   }
@@ -91,7 +95,10 @@ export async function getCityHub(slug: string): Promise<CityHub | null> {
   const buckets = await loadCityBuckets()
   const hub = buckets.get(want)
   if (!hub || (hub.circles.length === 0 && hub.events.length === 0)) return null
-  return hub
+  // The local Spaces are a courtesy row: a transport failure there (listNetworkedSpaces REPORTS
+  // one, LIVE-331) must not 500 a hub the circles and events can still fill.
+  const spaces = await listNetworkedSpaces().catch(() => [] as NetworkedSpace[])
+  return { ...hub, spaces: spaces.filter((s) => s.city && citySlug(s.city) === want) }
 }
 
 export { citySlug, cityFromSlug }
