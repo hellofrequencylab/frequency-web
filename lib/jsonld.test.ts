@@ -30,8 +30,8 @@ import type { PublicEvent, PublicCircle } from './discover'
 // `time_zone` is an EventSchemaEnrichment field rather than a PublicEvent one (the public RPCs do
 // not return it yet), so the helper accepts it alongside the row — see the SCAN-207 block below.
 function makeEvent(
-  overrides: Partial<PublicEvent> & { time_zone?: string | null } = {},
-): PublicEvent & { time_zone?: string | null } {
+  overrides: Partial<PublicEvent> & { time_zone?: string | null; cover_url?: string | null } = {},
+): PublicEvent & { time_zone?: string | null; cover_url?: string | null } {
   return {
     id: 'evt-1',
     slug: 'test-event',
@@ -504,40 +504,19 @@ describe('eventsListingSchema', () => {
     expect(result.itemListElement[1].position).toBe(2)
   })
 
-  it('nests an Event node pointing at the canonical /events/<slug> url', () => {
-    const first = eventsListingSchema(rows, 'x').itemListElement[0]
+  it('is the SUMMARY form: a ListItem with the canonical /events/<slug> url and the name, no nested Event (SCAN-664)', () => {
+    const first = eventsListingSchema(rows, 'x').itemListElement[0] as Record<string, unknown>
     expect(first['@type']).toBe('ListItem')
-    const event = first.item as Record<string, unknown>
-    expect(event['@type']).toBe('Event')
-    expect(event.name).toBe('Sunrise Sit')
-    expect(event.startDate).toBe('2026-08-01T15:00:00-07:00') // same rule as eventSchema — SCAN-207
-    expect(event.url).toBe(`${SITE_URL}/events/evt-a`)
-    // Nested Event carries no redundant @context (the parent ItemList holds it).
-    expect(event).not.toHaveProperty('@context')
+    expect(first.url).toBe(`${SITE_URL}/events/evt-a`)
+    expect(first.name).toBe('Sunrise Sit')
+    // A nested Event with no location and no image is an invalid Event item, one per listed event.
+    expect(first).not.toHaveProperty('item')
   })
 
-  it('maps eventStatus from is_cancelled', () => {
-    const items = eventsListingSchema(rows, 'x').itemListElement
-    expect((items[0].item as Record<string, unknown>).eventStatus).toBe(
-      'https://schema.org/EventScheduled',
-    )
-    expect((items[1].item as Record<string, unknown>).eventStatus).toBe(
-      'https://schema.org/EventCancelled',
-    )
-  })
-
-  it('never emits a venue location (ADR-186 privacy: name + startDate + url + status only)', () => {
-    const event = eventsListingSchema(rows, 'x').itemListElement[0].item as Record<string, unknown>
-    expect(event).not.toHaveProperty('location')
-    expect(event).not.toHaveProperty('address')
-    expect(Object.keys(event).sort()).toEqual(['@type', 'eventStatus', 'name', 'startDate', 'url'])
-  })
-
-  it('treats a missing is_cancelled as scheduled', () => {
-    const result = eventsListingSchema([{ slug: 's', title: 'T', starts_at: '2026-08-01T15:00:00Z' }], 'x')
-    expect((result.itemListElement[0].item as Record<string, unknown>).eventStatus).toBe(
-      'https://schema.org/EventScheduled',
-    )
+  it('never emits a venue location (ADR-186 privacy: url + name only)', () => {
+    const first = eventsListingSchema(rows, 'x').itemListElement[0] as Record<string, unknown>
+    expect(first).not.toHaveProperty('location')
+    expect(first).not.toHaveProperty('address')
   })
 
   it('handles an empty list', () => {
@@ -556,6 +535,13 @@ describe('personSchema', () => {
     expect(result['@type']).toBe('Person')
     expect(result.name).toBe('Ada Lovelace')
     expect(result.url).toBe(`${SITE_URL}/discover/events/organizer/ada`)
+  })
+
+  it('event image leads with the public cover when there is one, and is the site card alone otherwise (SCAN-660)', () => {
+    const withCover = eventSchema(makeEvent({ cover_url: 'https://cdn.example/event-media/covers/a.jpg' }))
+    expect(withCover.image).toEqual(['https://cdn.example/event-media/covers/a.jpg', expect.stringContaining('/opengraph-image.jpg')])
+    const bare = eventSchema(makeEvent({ cover_url: null }))
+    expect(bare.image).toEqual([expect.stringContaining('/opengraph-image.jpg')])
   })
 
   it('includes image when an avatar is provided', () => {
@@ -807,13 +793,6 @@ describe('SCAN-207 · Event startDate carries the event zone, not a bare Z', () 
     expect(r.startDate).toBe('not-a-date')
   })
 
-  it('applies the same rule to the listing, which had the same defect', () => {
-    const items = eventsListingSchema(
-      [{ slug: 's', title: 'T', starts_at: '2026-08-27T18:30:00Z', time_zone: 'America/Los_Angeles' }],
-      'x',
-    ).itemListElement
-    expect((items[0].item as Record<string, unknown>).startDate).toBe('2026-08-27T18:30:00-07:00')
-  })
 })
 
 

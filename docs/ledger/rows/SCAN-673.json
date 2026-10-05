@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-673",
+  "title": "Five help articles compete with three marketing guides for the same query, and the ruling on which URL ranks is the owner's",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "wave": "W0",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-seven SEO/GEO finders (26-agent fan-out), confirmed by hand against the tree"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven, seo-content and seo-help finders). content/help/find-your-people/{high-functioning-loneliness, how-to-calm-down-fast, make-friends-as-an-adult, meet-people-in-a-new-city, how-to-stop-doomscrolling}.md duplicate the intent of /loneliness, /calm-down-fast and /friendship-as-an-adult, each side self-canonical and in the sitemap. SCAN-669 added the lead link from each twin to its guide. WHAT IS LEFT IS A RULING, three ways: (a) keep both, guide as the ranking page (today, after SCAN-669); (b) give the five twins a `canonical:` frontmatter key pointing at the guide (needs a 10-line read in the article page's generateMetadata); (c) retire the five with 308s in next.config.ts beside the retired guides and set their status to draft. The probe passes on (b) or (c), or on an explicit decision recorded by setting the row done with (a).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const cfg=fs.readFileSync(\"next.config.ts\",\"utf8\");const files=[\"high-functioning-loneliness\",\"how-to-calm-down-fast\",\"make-friends-as-an-adult\",\"meet-people-in-a-new-city\",\"how-to-stop-doomscrolling\"];const open=files.filter((f)=>{const s=fs.readFileSync(\"content/help/find-your-people/\"+f+\".md\",\"utf8\");return /^status: published/m.test(s)&&!/^canonical:/m.test(s)&&!cfg.includes(\"/help/find-your-people/\"+f)});if(open.length){console.error(\"SCAN-673: \"+open.length+\" help article(s) still compete with a marketing guide for the same query with no ruling taken (published, self-canonical, not redirected): \"+open.join(\", \"));process.exit(1)}'",
+    "note": "Measures the consequence; fails until the fix lands."
+  },
+  "ownerAction": "ruling"
+}

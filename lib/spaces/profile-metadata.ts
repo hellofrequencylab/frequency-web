@@ -75,13 +75,20 @@ export async function spaceProfileMetadata(
   const brandName = space.brandName?.trim() || space.name
   const tagline = await readTagline(space.id)
 
-  // "{name}: a {type} on Frequency. {tagline}" for the profile itself; a sub-tab describes the tab.
-  const base = `${brandName}: ${typePhrase(space.type)} on ${SITE_NAME}.`
+  // "{name}: a {type} in {city} on Frequency. {tagline}" for the profile itself; a sub-tab
+  // describes the tab. The locality is what makes a Space page answer "<type> in <city>" at all
+  // (SCAN-665): without it the title and description read like any brand page, not a local listing.
+  const city = space.city?.trim() || null
+  const where = city ? ` in ${city}` : ''
+  const base = `${brandName}: ${typePhrase(space.type)}${where} on ${SITE_NAME}.`
   const profileDescription = snippet(tagline ? `${base} ${tagline}` : base)
   const description = tab?.describe ? snippet(tab.describe(brandName)) : profileDescription
 
-  const title = tab ? `${tab.label} · ${brandName}` : brandName
-  const ogTitle = tab ? `${tab.label} · ${brandName} · ${SITE_NAME}` : `${brandName} · ${SITE_NAME}`
+  // The root title names the place: "Yoga Loft, a studio in Encinitas". Sub-tabs keep the short
+  // form, because the tab label already fills the title.
+  const rootTitle = city ? `${brandName}, ${typePhrase(space.type)}${where}` : brandName
+  const title = tab ? `${tab.label} · ${brandName}` : rootTitle
+  const ogTitle = tab ? `${tab.label} · ${brandName} · ${SITE_NAME}` : `${rootTitle} · ${SITE_NAME}`
   const canonical = tab ? `/spaces/${space.slug}/${tab.segment}` : `/spaces/${space.slug}`
 
   const openGraph = { title: ogTitle, description, url: canonical, type: 'profile' as const }

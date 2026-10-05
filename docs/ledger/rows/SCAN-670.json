@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-670",
+  "title": "The city x category event hubs had no inbound links: only the sitemap reached /discover/events/in/<city>/<category>",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "wave": "W0",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-seven SEO/GEO finders (26-agent fan-out), confirmed by hand against the tree"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven, seo-local finder). A search of app/, components/ and lib/ for events/in/ found one link: the hub page's own sibling row. The city landing pages (/discover/cities/<city> and /discover/places/<city>) linked only the generic /discover/events, so the pages that match a local query most closely ('Movement in Encinitas') were orphaned from the crawl. CLOSED 2026-10-05: both city pages read getCityCategoryHubs (fail-safe to none) and draw an 'Events by type in <city>' pill row with the hub page's own markup under the events list.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const miss=[\"app/discover/cities/[citySlug]/page.tsx\",\"app/discover/places/[citySlug]/page.tsx\"].filter((p)=>!/\\/discover\\/events\\/in\\/\\$\\{h\\.citySlug\\}\\/\\$\\{h\\.category\\.slug\\}/.test(fs.readFileSync(p,\"utf8\")));if(miss.length){console.error(\"SCAN-670: \"+miss.join(\", \")+\" link(s) no city x category event hub, so /discover/events/in/<city>/<category>, the pages that match a local query most closely, are reachable from the sitemap alone.\");process.exit(1)}'",
+    "note": "Fails on main before this change; passes with it."
+  },
+  "closed": "2026-10-05"
+}

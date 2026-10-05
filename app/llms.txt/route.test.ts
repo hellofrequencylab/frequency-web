@@ -95,6 +95,23 @@ describe('it publishes counts, and only counts', () => {
     expect(out).toContain('Pillars: 4')
   })
 
+  it('withholds the people counts below the social-proof floor and says why (SCAN-662)', async () => {
+    db.results.profiles = { ...db.results.profiles, count: 3 }
+    const out = await body()
+    expect(out).toContain('Founding stage')
+    expect(out).not.toContain('Members: 3')
+    expect(out).not.toContain('Live Circles:')
+    expect(out).toContain('Practices: 78')
+  })
+
+  it('walks the help center by category and the live city landing pages (SCAN-662)', async () => {
+    const out = await body()
+    expect(out).toContain('## Help center')
+    expect(out).toMatch(new RegExp(`\\]\\(${SITE_URL}/help/[a-z-]+\\): `))
+    // No density city in this harness, so the section is simply absent rather than an error.
+    expect(out).not.toContain('## Cities')
+  })
+
   it('emits not one character of the rows those queries returned', async () => {
     const out = await body()
     for (const leak of POISON_STRINGS) expect(out, leak).not.toContain(leak)

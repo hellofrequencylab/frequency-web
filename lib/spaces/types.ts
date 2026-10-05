@@ -84,7 +84,7 @@ export interface Space {
   /** The one-line Space tagline (spaces.tagline), shown under the name in the identity header. Read
    *  untyped (ADR-246). Null / absent renders no subtitle. */
   tagline?: string | null
-  /** The Space's locality (spaces.city). Its ONE consumer is `addressLocality` on the LocalBusiness /
+  /** The Space's locality (spaces.city). Its consumers are `addressLocality` on the LocalBusiness / Organization node and the locality in the profile title and description (SCAN-665); the node is the
    *  Organization node the public profile emits — the "<category> near me" local-SEO lever. It does NOT
    *  drive /discover/places or /discover/cities, both of which bucket by the CIRCLE's and EVENT's own
    *  city, nor the Spaces directory, which never reads it. Null for a Space with no premises (a virtual

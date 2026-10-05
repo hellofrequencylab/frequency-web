@@ -109,6 +109,10 @@ type EventSchemaEnrichment = {
    *  published as `2026-08-27T18:30:00Z`, which reads as 11:30am. Absent or null falls back to the
    *  community zone, the same direction `resolveZone` fails in. */
   time_zone?: string | null
+  /** The host-uploaded cover as a PUBLIC URL (`getPublicUrl` on the event-media bucket, the same
+   *  construction the image sitemap uses), or null/absent when the row has no cover. Never a signed
+   *  URL: a signed URL expires, and an advertised image that is not there is LIVE-205 on a timer. */
+  cover_url?: string | null
   attendance_mode?: 'in_person' | 'online' | 'hybrid' | null
   is_cancelled?: boolean | null
   category?: string | null
@@ -246,7 +250,12 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     // extensionless form is the same 200-HTML trap. The SHARE card is unaffected and still
     // per-event: this page deliberately leaves openGraph.images unset so Next injects the
     // suffixed URL itself, which is the one mechanism that knows the hash.
-    image: [SITE_OG_IMAGE],
+    //
+    // The event's OWN public cover leads when it has one (SCAN-660): it is the picture a rich
+    // result or an answer engine should show for this event, and it is a plain public-bucket URL
+    // with no suffix and no fuse. The site card stays as the second entry, so an event with no
+    // cover still satisfies Google's "image is required" and nothing is invented.
+    image: event.cover_url ? [event.cover_url, SITE_OG_IMAGE] : [SITE_OG_IMAGE],
     ...(event.description ? { description: event.description } : {}),
     location,
     url,
@@ -357,14 +366,14 @@ export function eventListSchema(events: PublicEvent[], listName: string) {
 
 // ── ItemList of upcoming events (the /events listing) ───────────────────────────
 // The AEO signal for the member's own events home + the marketplace Events tab's
-// canonical target (/events). Unlike eventListSchema (bare ListItems), each entry
-// here is a nested Event node pointing at the same CANONICAL public event page
-// /events/<slug>, so the listing consolidates ranking there.
+// canonical target (/events). Bare ListItems pointing at the CANONICAL public event page
+// /events/<slug>, so the listing consolidates ranking there (the function explains why they
+// are no longer nested Event nodes, SCAN-664).
 //
 // PRIVACY (ADR-186): this listing is built from the free-text venue `location` on the
 // browse row, which is NOT a city-redacted field, so we deliberately emit NO location
-// at all — only name + startDate + url + eventStatus. The precise, privacy-safe Place
-// lives on the per-event canonical page (eventSchema), which reads the redacted city.
+// at all, only url + name. The precise, privacy-safe Place lives on the per-event
+// canonical page (eventSchema), which reads the redacted city.
 // Structurally typed (a subset of EventRow) so lib/jsonld stays dependency-light.
 type EventListingInput = {
   slug: string
@@ -378,6 +387,12 @@ type EventListingInput = {
 }
 
 export function eventsListingSchema(events: readonly EventListingInput[], listName: string) {
+  // SUMMARY form (SCAN-664): a ListItem with `url` and `name`, the shape Google documents for a
+  // listing whose items each have their own page, and the shape eventListSchema and topicListSchema
+  // already use. This used to nest a full Event node per item, and an Event with no `location` and
+  // no `image` is an INVALID Event item in Search Console, one per listed event; the listing cannot
+  // carry a location (ADR-186) and the detail page already carries the whole node. The canonical
+  // /events/<slug> url is what consolidates the ranking, and it is still here.
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -386,17 +401,8 @@ export function eventsListingSchema(events: readonly EventListingInput[], listNa
     itemListElement: events.map((e, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      // A nested Event node WITHOUT its own @context (the parent ItemList carries it).
-      // Name + startDate + canonical url + status only — never the free-text venue.
-      item: {
-        '@type': 'Event',
-        name: e.title,
-        startDate: eventIsoWithOffset(e.starts_at, e.time_zone) ?? e.starts_at,
-        url: abs(`/events/${e.slug}`),
-        eventStatus: e.is_cancelled
-          ? 'https://schema.org/EventCancelled'
-          : 'https://schema.org/EventScheduled',
-      },
+      url: abs(`/events/${e.slug}`),
+      name: e.title,
     })),
   }
 }

@@ -69,7 +69,9 @@ export async function generateMetadata({
       ...OG_SITE,
       title: ogTitle,
       description,
-      url: `/discover/events/${event.slug}`,
+      // The canonical, not this twin (SCAN-668): og:url that disagrees with the canonical splits the
+      // share signal between the two URLs.
+      url: `/events/${event.slug}`,
       type: 'article',
     },
     twitter: { card: 'summary_large_image', title: ogTitle, description },
@@ -112,7 +114,7 @@ export default async function EventPage({
               breadcrumbSchema([
                 { name: 'Discover', path: '/discover' },
                 { name: 'Events', path: '/discover/events' },
-                { name: event.title, path: `/discover/events/${event.slug}` },
+                { name: event.title, path: `/events/${event.slug}` },
               ]),
             ]}
           />

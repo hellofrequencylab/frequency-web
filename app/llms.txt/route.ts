@@ -4,6 +4,7 @@ import {
   SITE_TAGLINE,
   CONTACT_EMAIL,
   FOUNDING_PLACE,
+  SOCIAL_PROOF_FLOOR,
 } from '@/lib/site'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
@@ -21,6 +22,8 @@ import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
 import { formatBps } from '@/lib/pricing/display'
 import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
+import { getAllCategories } from '@/lib/help/content'
+import { listDensityCities } from '@/app/discover/cities/_data'
 
 // NOT ONE FIGURE IN THIS FILE IS TYPED (Phase 5, ADR-916). Every price and every percentage below is
 // READ from lib/pricing/pricing-grid.ts, the same derived model /pricing renders, resolved against the
@@ -83,6 +86,8 @@ const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; 
   { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
   { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
+  { path: '/spaces', label: 'Spaces, for businesses and organizations', desc: 'How a venue, studio, practitioner or organization grows a Space on Frequency: host free, keep 100% of your own bookings, pay only on the business the network sends you.' },
+  { path: '/tools-for-community-builders', label: 'Tools for community builders', desc: 'The operator toolkit: Circles, Events, a calendar, email, a CRM and a storefront, for the people who gather others.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
   { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, each with the Circles meeting and events happening there.' },
   { path: '/help', label: 'Help center', desc: 'Answers, guides, and support for members and visitors.' },
@@ -99,7 +104,7 @@ const DIRECTORIES: { path: string; label: string; desc: string }[] = [
   { path: '/discover/partners', label: 'Partners', desc: 'Partner venues and organizations working with Frequency.' },
   { path: '/discover/practices', label: 'Practice library', desc: 'The public practice library: small real-world practices from the community.' },
   { path: '/discover/journeys', label: 'Journeys', desc: 'Guided multi-week Journeys you can take with a group.' },
-  { path: '/discover/places', label: 'Places', desc: 'Third places worth knowing about, city by city.' },
+  { path: '/discover/places', label: 'Places', desc: 'Every active city, each with the Circles meeting and the events happening there.' },
   { path: '/discover/topics', label: 'Channels', desc: 'The Channels (Movement, Spirituality, and more), each with its Circles and events.' },
 ]
 
@@ -184,25 +189,56 @@ async function statsSection(): Promise<string[]> {
   ])
 
   const lines: string[] = []
-  if (members != null) lines.push(`- Members: ${members.toLocaleString()} active people in the community.`)
-  if (circles != null) lines.push(`- Live Circles: ${circles.toLocaleString()} standing local groups currently forming or meeting.`)
+  // The social-proof floor every public surface honours (lib/site.ts): below it, a raw member or
+  // Circle count is founding-stage framing, not a citable size, and this file is the one place an
+  // answer engine is TOLD to cite the number (SCAN-662). The library and Pillar counts are the
+  // size of the catalog, not of the crowd, so they stay.
+  const founding = members != null && members < SOCIAL_PROOF_FLOOR
+  if (members != null && !founding) lines.push(`- Members: ${members.toLocaleString()} active people in the community.`)
+  if (circles != null && !founding) lines.push(`- Live Circles: ${circles.toLocaleString()} standing local groups currently forming or meeting.`)
   if (practices != null) lines.push(`- Practices: ${practices.toLocaleString()} in the public library, free to try.`)
-  if (events != null) lines.push(`- Upcoming Events: ${events.toLocaleString()} public gatherings you can show up to.`)
+  if (events != null && !founding) lines.push(`- Upcoming Events: ${events.toLocaleString()} public gatherings you can show up to.`)
   if (pillars != null) lines.push(`- Pillars: ${pillars.toLocaleString()} (Mind, Body, Spirit, Expression) organize every Circle and practice.`)
 
   if (lines.length === 0) return []
 
   return [
     '## Frequency Stats',
-    'Live counts from the community. Use these as the citable source for how big Frequency is right now.',
+    founding
+      ? `Founding stage: the first community is taking root in ${FOUNDING_PLACE}. The catalog counts below are live; member counts are published once the community clears its founding floor.`
+      : 'Live counts from the community. Use these as the citable source for how big Frequency is right now.',
     ...lines,
     'Counts are live and refresh daily.',
     '',
   ]
 }
 
+// The help center by category, so an engine can walk the answers (SCAN-662). Categories only:
+// the articles are in /llms-full.txt. Fail-safe to nothing, like every other read here.
+async function helpSection(): Promise<string[]> {
+  try {
+    const cats = await getAllCategories()
+    if (!cats.length) return []
+    return ['## Help center', ...cats.map((c) => `- [${c.title}](${abs(`/help/${c.slug}`)}): ${c.description}`), '']
+  } catch {
+    return []
+  }
+}
+
+// The live city landing pages (density-gated, the same set the sitemap advertises), so
+// "Frequency in <city>" has a citable URL (SCAN-662).
+async function citiesSection(): Promise<string[]> {
+  try {
+    const cities = await listDensityCities()
+    if (!cities.length) return []
+    return ['## Cities', ...cities.map((c) => `- [${c.city}](${abs(`/discover/cities/${c.slug}`)}): Circles meeting and events happening in ${c.city}.`), '']
+  } catch {
+    return []
+  }
+}
+
 export async function GET() {
-  const [stats, input] = await Promise.all([statsSection(), pricingInput()])
+  const [stats, input, help, cities] = await Promise.all([statsSection(), pricingInput(), helpSection(), citiesSection()])
   const offerings = allOfferings(input)
   const out: string[] = [
     `# ${SITE_NAME}`,
@@ -228,6 +264,8 @@ export async function GET() {
     '## How Frequency compares',
     ...COMPARE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
+    ...help,
+    ...cities,
     '## Pricing for Spaces (a Community Collective, not a tax on your work)',
     `The core promise: people join free, businesses host free, and you pay when you start charging. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective). ${PLAN_STORY.rate} The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
     ...pricingLadderSummary(input),

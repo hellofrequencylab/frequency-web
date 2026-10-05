@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-664",
+  "title": "The /events listing nested a full Event node per item with no location and no image, an invalid Event item in Search Console for every listed event",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-seven SEO/GEO finders (26-agent fan-out), confirmed by hand against the tree"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven, two independent finders: seo-jsonld and seo-local). lib/jsonld.ts eventsListingSchema wrapped each ListItem around an Event node with name, startDate, url and eventStatus. Google requires location (and lists image) on an Event, and the listing deliberately cannot carry a location (ADR-186, the browse row holds the free-text venue), so every item was an invalid Event. CLOSED 2026-10-05: the listing is the SUMMARY form (ListItem with the canonical /events/<slug> url and the name), the shape eventListSchema and topicListSchema already used and the one Google documents for a page whose items have their own pages. The detail page still carries the full Event node. lib/jsonld.test.ts pins the shape.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/jsonld.ts\",\"utf8\");const a=s.indexOf(\"export function eventsListingSchema(\");const b=s.indexOf(\"\\n}\\n\",a);const body=s.slice(a,b);if(a<0||/@type.: .Event./.test(body)||!/url: abs\\(`\\/events\\/\\$\\{e\\.slug\\}`\\)/.test(body)){console.error(\"SCAN-664: the /events listing nests a full Event node per item with no location and no image, which Search Console reports as an invalid Event item, one per listed event; the summary form (ListItem url + name) is what a listing page should carry.\");process.exit(1)}'",
+    "note": "Fails on main before this change; passes with it."
+  }
+}
