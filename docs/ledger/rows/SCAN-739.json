@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-739",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fsx=[\"components/vera/vera-chat.tsx\",\"components/onboarding/vera-lightbox.tsx\"];for(const f of fsx){if(!fs.existsSync(f))process.exit(79);const T=fs.readFileSync(f,\"utf8\");if(/\\n\\s*await confirmProposal\\(/.test(T)){console.error(\"SCAN-739: \"+f+\" still discards the result of confirmProposal, so a refused Vera proposal (no consent, full circle, unknown handle) vanishes as if it worked.\");process.exit(1)}}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nBoth Vera surfaces (components/vera/vera-chat.tsx and components/onboarding/vera-lightbox.tsx) removed the proposal card and then awaited confirmProposal as a bare statement, so a { ok: false, error } from the server (no memory consent, full circle, unknown handle, not signed in) was discarded and the card vanished as if the write had happened. allow() now reads the result: on !ok it puts the card back and appends the server's reason as a Vera bubble inside the role=log live region; a thrown action rejection is caught and shown as a plain line. A join_circle success redirects from the action and resolves with nothing on the client, which is left alone. Pinned by components/vera/vera-proposal-refusal.test.tsx, which mounts both surfaces, offers a proposal through a mocked stream, taps Allow, and asserts the refused card returns with the reason in the transcript, the thrown case shows the fallback line, and a success leaves the card gone with no extra bubble."
+  }
+}

@@ -126,9 +126,24 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
     turn(t)
   }
 
+  // The card leaves while the server works, and comes BACK if the server refused (no memory
+  // consent, a full circle, an unknown handle), with the server's own reason as a Vera bubble so
+  // the member knows nothing happened (SCAN-739). The bubble lands in the role="log" live region
+  // below, so a screen reader hears the refusal too. A join_circle success redirects from the
+  // action and resolves with nothing on the client, which is not a refusal.
   async function allow(p: ProposedToolCall) {
     setProposals((ps) => ps.filter((x) => x !== p))
-    await confirmProposal(p.tool, JSON.stringify(p.args))
+    let res: Awaited<ReturnType<typeof confirmProposal>> | undefined
+    try {
+      res = await confirmProposal(p.tool, JSON.stringify(p.args))
+    } catch {
+      res = { ok: false, error: 'That did not go through. Try again?' }
+    }
+    if (res && !res.ok) {
+      const reason = res.error || 'That did not go through. Try again?'
+      setProposals((ps) => [...ps, p])
+      setMessages((m) => [...m, { from: 'vera', text: reason }])
+    }
   }
 
   return (
