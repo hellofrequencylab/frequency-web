@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-667",
+  "title": "Help articles printed their updated date as plain text and sent no article:modified_time, so crawlers had no machine-readable freshness signal",
+  "status": "done",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "XS",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-seven SEO/GEO finders (26-agent fan-out), confirmed by hand against the tree"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven, seo-metadata and seo-help finders). The article page rendered 'Updated 2026-09-20' as text in two places and its openGraph (type article) carried no publishedTime or modifiedTime, though the Article JSON-LD already publishes both dates. CLOSED 2026-10-05: the OG block sends publishedTime and modifiedTime (each guarded, since published is '' for a file without the key) and both visible dates are <time dateTime> elements.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/(help)/help/[category]/[slug]/page.tsx\",\"utf8\");if(!/modifiedTime: article\\.updated/.test(s)||!/<time dateTime=\\{article\\.updated\\}>/.test(s)){console.error(\"SCAN-667: help articles print an updated date as plain text and send no article:modified_time, so crawlers get no machine-readable freshness signal for the help center.\");process.exit(1)}'",
+    "note": "Fails on main before this change; passes with it."
+  }
+}
