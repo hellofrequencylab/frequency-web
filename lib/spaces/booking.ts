@@ -30,11 +30,17 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { canTakePayments } from '@/lib/commerce/selling'
 import { payoutsLive } from '@/lib/billing/connect'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { blockingRange, type EntryRow } from '@/lib/calendar/entries'
 import { expandPencilSeries, seriesRule } from '@/lib/calendar/pencil-series'
 import { eventInstant } from '@/lib/time/zone'
+
+/** SCAN-715: how long a hold-first Checkout stays open. Stripe's minimum (30 minutes), the same
+ *  window the ticket rail holds a seat; an abandoned session frees its slot through the
+ *  checkout.session.expired path instead of Stripe's 24-hour default. */
+export const BOOKING_CHECKOUT_SECONDS = 30 * 60
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -1938,6 +1944,12 @@ export async function startServiceDeposit(
   const service = await resolveService(spaceId, serviceTypeId)
   if (!service || !service.productId) return { error: 'This service is not set up for paid booking.' }
 
+  // SCAN-715: the same door as bookServiceAction. A hold blocks the slot until the Checkout settles
+  // or expires, so the starts are capped and the session is short.
+  if (!(await rateLimitOk('service_book', profileId, 5, '1 h'))) {
+    return { error: 'You have started a lot of bookings. Try again in a little while.' }
+  }
+
   // HOLD-FIRST: reserve the slot (a 'pending' booking), then take the deposit via commerce checkout.
   const hold = await holdSlotForBooking(spaceId, profileId, startsAtISO, service.productId)
   if (!hold) return { error: 'That time is no longer available. Pick another.' }
@@ -1948,6 +1960,7 @@ export async function startServiceDeposit(
     const checkout = await createCommerceCheckout({
       buyerProfileId: profileId,
       items: [{ productId: service.productId, qty: 1 }],
+      expiresInSeconds: BOOKING_CHECKOUT_SECONDS,
     })
     if (checkout.error || !checkout.url || !checkout.orderId) {
       // Without an order the settle webhook can never confirm the hold; release it and stop.
