@@ -22,19 +22,25 @@ export default async function AdminCrewTasksPage() {
       .is('circle_id', null)
       .order('task_type')
       .order('zaps_value', { ascending: false }),
+    // HELD completions only, filtered IN SQL before the limit (SCAN-752). The held marker is
+    // verified_at (null = Zaps still held); verified_by is only ever stamped by the leader method.
+    // The old query keyed on verified_by null with no task filter, so once fifty ordinary
+    // completions existed the oldest fifty were all ordinary, the JS filter dropped them all, and
+    // the queue read empty forever while held Zaps never released. Circle-scoped held completions
+    // surface here too.
     admin
       .from('crew_completions')
       .select(`
         id, completed_at, zaps_earned,
-        task:crew_tasks!task_id ( id, name, zaps_value ),
+        task:crew_tasks!task_id!inner ( id, name, zaps_value, circle_id ),
         member:profiles!profile_id ( id, display_name, handle, avatar_url )
       `)
-      .is('verified_by', null)
+      .is('verified_at', null)
+      .eq('task.requires_verification', true)
       .order('completed_at', { ascending: true })
       .limit(50),
   ])
 
-  // Filter to only completions where the task requires verification
   type PendingRow = {
     id: string
     completed_at: string
@@ -43,22 +49,7 @@ export default async function AdminCrewTasksPage() {
     member: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
 
-  const allPending = (pendingRes.data ?? []) as unknown as PendingRow[]
-  const pendingVerifications = allPending.filter((c) => {
-    // task is an object with id/name from the join; check parent requires_verification
-    return c.task !== null
-  })
-
-  // Re-fetch tasks that require verification to cross-reference
-  const verificationTaskIds = new Set(
-    (tasksRes.data ?? [])
-      .filter((t) => t.requires_verification)
-      .map((t) => t.id)
-  )
-
-  const filteredPending = pendingVerifications.filter((c: PendingRow) =>
-    c.task ? verificationTaskIds.has(c.task.id) : false
-  )
+  const filteredPending = (pendingRes.data ?? []) as unknown as PendingRow[]
 
   // Circle-task assignment (P4.7): circles the caller hosts, each with its
   // scoped tasks. Writes are re-gated per circle (circle.assignTask) in the

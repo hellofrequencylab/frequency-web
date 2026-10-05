@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-752",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const rd=(p)=>{if(!fs.existsSync(p)){console.error(\"indeterminate: missing \"+p);process.exit(79)}return fs.readFileSync(p,\"utf8\")};const slice=(t,name)=>{const i=t.indexOf(\"export async function \"+name);if(i<0)return null;const j=t.indexOf(\"export async function \",i+10);return t.slice(i,j<0?t.length:j)};const q=String.fromCharCode(39);const p=rd(\"app/(main)/admin/crew-tasks/page.tsx\");const t=rd(\"app/(main)/admin/actions.ts\");const r=slice(t,\"rejectVerification\")||\"\";const byNull=new RegExp(\"\\\\.is\\\\(\"+q+\"verified_by\"+q+\",\\\\s*null\\\\)\");if(byNull.test(p)){console.error(\"SCAN-752: the verification queue still selects crew_completions by verified_by null and limits before filtering on requires_verification, so fifty ordinary completions hide every held one and their Zaps never release.\");process.exit(1)}if(byNull.test(r)){console.error(\"SCAN-752: rejectVerification still keys its delete on verified_by null instead of verified_at null, so an auto-verified and already credited completion can be deleted.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe queue selects held completions by verified_at null with an inner join on crew_tasks.requires_verification before the limit; rejectVerification keys on verified_at null."
+  }
+}
