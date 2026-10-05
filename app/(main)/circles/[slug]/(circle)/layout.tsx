@@ -21,6 +21,7 @@ import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { loadCircleShell } from '@/lib/circles/store'
+import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 import { circleTabs } from '@/lib/circles/tabs'
 import { circleSubheading } from '@/lib/circles/subheading'
 import {
@@ -282,7 +283,10 @@ export default async function CircleDetailLayout({
   // Someone already inside gets CREATE, the menu that now carries posting; everyone else gets Join.
   // Post as a button is gone: it was a link to a composer three inches below it on the tab that has
   // one, and "New post" inside Create is the door from the tabs that do not.
-  const canJoin = !isMember && !!myProfileId && !full && !isDraft
+  // SCAN-691: Join only on a LIVE circle (forming or active). A draft, an inactive Space Circle or
+  // an archived circle shows its pill and no door; joinCircle refuses the same set server-side.
+  const isLive = (LISTABLE_CIRCLE_STATUS as readonly string[]).includes(String(circle.status))
+  const canJoin = !isMember && !!myProfileId && !full && isLive
   const primary = isMember || isHost || canManage ? 'create' : canJoin ? 'join' : 'none'
 
   return (
@@ -295,8 +299,8 @@ export default async function CircleDetailLayout({
           <div className="text-body-sm">
             <p className="font-semibold text-text">This circle is in draft</p>
             <p className="mt-0.5 text-muted">
-              Only you can see it. It stays off the Circles directory, map, and search until you set the
-              status to Active in the settings panel.
+              Only you can see it. It stays off the Circles directory, map, and search until you publish
+              it from the builder.
             </p>
           </div>
         </div>
