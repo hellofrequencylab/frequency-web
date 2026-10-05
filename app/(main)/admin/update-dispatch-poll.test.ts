@@ -10,9 +10,12 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile: async () => ({ id: 'staff-1', community_role: 'admin', webRole: 'admin' }) }))
 vi.mock('@/lib/admin/guard', () => ({ authorizeAction: async (caller: unknown) => caller }))
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }))
+vi.mock('@/lib/staff', () => ({ getStaffMember: async () => null }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => ({
+      // The owner gate (SCAN-749) loads the row first; this caller is staff so any author passes.
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: 'd1', author_id: 'someone-else', status: 'draft', published_at: null }, error: null }) }) }),
       update: () => ({ eq: async () => ({ error: null }) }),
       delete: () => ({ eq: async () => ({ error: null }) }),
       insert: async (rows: unknown) => { if (table === 'dispatch_poll_options') pollWrites.push(rows); return { error: null } },

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-749",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const rd=(p)=>{if(!fs.existsSync(p)){console.error(\"indeterminate: missing \"+p);process.exit(79)}return fs.readFileSync(p,\"utf8\")};const slice=(t,name)=>{const i=t.indexOf(\"export async function \"+name);if(i<0)return null;const j=t.indexOf(\"export async function \",i+10);return t.slice(i,j<0?t.length:j)};const t=rd(\"app/(main)/admin/actions.ts\");const bad=[];for(const n of [\"updateDispatch\",\"publishDispatch\",\"unpublishDispatch\",\"deleteDispatch\"]){const s=slice(t,n);if(!s){bad.push(n+\" missing\");continue}const owner=/requireDispatchOwner\\(|requireScopedManage\\(|author_id\\s*[!=]==|[!=]==\\s*\\w+\\.author_id/.test(s);if(/requireCommunityOps\\(\\)/.test(s)&&!owner)bad.push(n)}if(bad.length){console.error(\"SCAN-749: \"+bad.join(\", \")+\" still gate on the global host rung alone with no author or scope check, so any circle host can edit, retarget, publish or delete any dispatch.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nupdateDispatch, publishDispatch, unpublishDispatch and deleteDispatch gated only on the global host rung and ran on the admin client keyed on id, so the host of one circle could edit, retarget, publish or delete any other host's broadcast, and a re-publish after unpublish re-sent the whole email and push blast. Added requireDispatchOwner(id) in app/(main)/admin/actions.ts (runs requireCommunityOps, loads author_id/status/published_at, allows only the author, isStaff(webRole) or a community-write staff operator) at the top of all four. Lifted the led-association guard out of createAndPublishDispatch into lib/messaging/dispatch-audience.ts (assertCanBroadcastTo) and run it on the new audience in updateDispatch for non-staff callers; staff may pick global and the audience id is cleared. publishDispatch now updates with .neq(status, published).select(id) and fans out only when a row flipped and its earlier published_at was null. Pinned by app/(main)/admin/dispatch-owner.test.ts (10 tests) and the extended update-dispatch-poll.test.ts."
+  }
+}

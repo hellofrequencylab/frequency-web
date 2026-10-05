@@ -28,6 +28,7 @@ import { authorizeAction } from '@/lib/admin/guard'
 import { logAdminAction } from '@/lib/admin/audit'
 import { getStaffMember } from '@/lib/staff'
 import { staffCan, type StaffDomain } from '@/lib/core/staff-roles'
+import { assertCanBroadcastTo, isDispatchPlaceScope } from '@/lib/messaging/dispatch-audience'
 import {
   getCircleCapabilities,
   getHubCapabilities,
@@ -391,8 +392,12 @@ export async function setCircleFeaturedAction(id: string, on: boolean): Promise<
 
 // ── Invite links ─────────────────────────────────────────────────────────────
 
+// Scoped like updateCircle (SCAN-750): the global host rung is not enough, because a host of
+// circle A could otherwise mint a link into private or paid circle B, join it free, and disable
+// B's real link. Whoever manages THIS circle (circle.editSettings), or a platform operator, may.
 export async function createInviteLink(circleId: string): Promise<{ token: string }> {
-  const caller = await requireCommunityOps()
+  const caps = await getCircleCapabilities(circleId)
+  const caller = await requireScopedManage(await getCallerProfile(), caps.has('circle.editSettings'), 'community')
 
   const token = randomBytes(12).toString('base64url')
   const admin = createAdminClient()
@@ -433,6 +438,15 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
   if (!link || !link.is_active) throw new Error('Invite link is invalid or no longer active')
   if (link.expires_at && new Date(link.expires_at) < new Date()) throw new Error('Invite link has expired')
   if (link.max_uses > 0 && link.used_count >= link.max_uses) throw new Error('Invite link has reached its maximum uses')
+
+  // An archived circle takes no new members, even through a link minted before it closed
+  // (SCAN-750). The join page already refuses it; the action is a public endpoint and must too.
+  const { data: linkCircle } = await admin
+    .from('circles')
+    .select('status')
+    .eq('id', link.circle_id)
+    .maybeSingle()
+  if (!linkCircle || linkCircle.status === 'archived') throw new Error('This circle is no longer open to new members')
 
   // Get caller profile
   const { data: profile } = await admin
@@ -672,7 +686,6 @@ export async function deleteCrewTask(id: string) {
 
 // ── Dispatches ───────────────────────────────────────────────────────────────
 
-type DispatchScope = 'circle' | 'hub' | 'nexus'
 
 function makeExcerpt(body: string, maxLen = 200): string {
   // Strip markdown syntax for the plain-text excerpt
@@ -687,8 +700,31 @@ function makeExcerpt(body: string, maxLen = 200): string {
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…'
 }
 
+// Owner gate for the four dispatch mutations (SCAN-749). `requireCommunityOps` is a
+// global host-or-above rung that never reads the row, and every mutation runs on the
+// admin client keyed on id alone, so a host of one circle could edit, retarget, publish
+// or delete another host's broadcast. This loads the row and allows only its author,
+// platform staff (web_role admin/janitor, ADR-208) or a staff operator holding
+// `community` (write). Returns the caller, the row and whether the caller is staff, so
+// the edit path can hold a non-staff retarget to the same led-scope rule as a create.
+async function requireDispatchOwner(id: string) {
+  const caller = await requireCommunityOps()
+  const admin = createAdminClient()
+  const { data: dispatch, error } = await admin
+    .from('dispatches')
+    .select('id, author_id, status, published_at')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!dispatch) throw new Error('Dispatch not found')
+  const member = await getStaffMember().catch(() => null)
+  const staff = isStaff(caller.webRole) || staffCan(member?.role ?? null, 'community', 'write')
+  if (!staff && dispatch.author_id !== caller.id) throw new Error('Unauthorized')
+  return { caller, dispatch, staff }
+}
+
 export async function updateDispatch(id: string, fd: FormData) {
-  await requireCommunityOps()
+  const { caller, staff } = await requireDispatchOwner(id)
 
   const body           = (fd.get('body') as string).trim()
   const excerpt        = makeExcerpt(body)
@@ -697,6 +733,16 @@ export async function updateDispatch(id: string, fd: FormData) {
   const scheduled_raw  = fd.get('scheduled_for') as string | null
   const scheduled_for  = scheduled_raw ? new Date(scheduled_raw).toISOString() : null
   const pollOptionsRaw = fd.get('poll_options') as string | null
+  const audience_scope = fd.get('audience_scope') as string
+  const audience_id    = ((fd.get('audience_id') as string | null) ?? '').trim() || null
+
+  // The new audience is held to the create-path rule: a non-staff caller may only
+  // retarget to a circle, hub or region they lead; global stays staff-only.
+  if (!staff) {
+    await assertCanBroadcastTo(caller.id, audience_scope, audience_id)
+  } else if (audience_scope !== 'global' && !isDispatchPlaceScope(audience_scope)) {
+    throw new Error('Pick a circle, hub, region, or global audience.')
+  }
 
   const admin = createAdminClient()
   const { error } = await admin.from('dispatches').update({
@@ -704,8 +750,8 @@ export async function updateDispatch(id: string, fd: FormData) {
     body,
     excerpt,
     dispatch_type,
-    audience_scope: fd.get('audience_scope') as DispatchScope,
-    audience_id:    (fd.get('audience_id') as string).trim(),
+    audience_scope,
+    audience_id:    audience_scope === 'global' ? null : audience_id,
     linked_task_id,
     scheduled_for,
     updated_at:     new Date().toISOString(),
@@ -739,20 +785,25 @@ export async function updateDispatch(id: string, fd: FormData) {
 }
 
 export async function publishDispatch(id: string) {
-  await requireCommunityOps()
+  const { dispatch: before } = await requireDispatchOwner(id)
 
   const admin = createAdminClient()
-  const { error } = await admin.from('dispatches').update({
+  // Only a draft flips, and the fan-out below runs only for a FIRST publish: a
+  // re-publish after unpublish used to stamp published_at again and re-send the whole
+  // email and push blast to every member under the audience (SCAN-749).
+  const { data: flipped, error } = await admin.from('dispatches').update({
     status:       'published',
     published_at: new Date().toISOString(),
     updated_at:   new Date().toISOString(),
-  }).eq('id', id)
+  }).eq('id', id).neq('status', 'published').select('id')
   if (error) throw new Error(error.message)
 
   revalidatePath('/admin/dispatches')
   revalidatePath('/nearby')
   revalidatePath(`/nearby/${id}`)
   revalidatePath('/feed')
+
+  if (!(flipped ?? []).length || before.published_at) return
 
   // Fire-and-forget email fan-out. Never block publish on email failure
   ;(async () => {
@@ -845,7 +896,7 @@ export async function publishDispatch(id: string) {
 }
 
 export async function unpublishDispatch(id: string) {
-  await requireCommunityOps()
+  await requireDispatchOwner(id)
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -861,7 +912,7 @@ export async function unpublishDispatch(id: string) {
 }
 
 export async function deleteDispatch(id: string) {
-  await requireCommunityOps()
+  await requireDispatchOwner(id)
 
   const admin = createAdminClient()
   const { error } = await admin.from('dispatches').delete().eq('id', id)
