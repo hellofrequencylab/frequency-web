@@ -81,6 +81,10 @@ export function BrandAnchor({
       <img
         src={logoUrl}
         alt=""
+        // The card chip sits in a directory grid, mostly below the fold, so it loads lazily; the
+        // profile-header chip stays eager because it is above the fold (SCAN-808).
+        loading={size === 'card' ? 'lazy' : undefined}
+        decoding="async"
         className={cn(
           'shrink-0 rounded-[var(--radius-cover,1.5rem)]',
           dims.box,
