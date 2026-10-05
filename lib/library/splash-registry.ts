@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { isJanitor } from '@/lib/core/roles'
 import { EDITABLE_PAGES, listPages, type PageRow } from '@/lib/page-editor/data'
-import { normalizeSplash, primarySplashLink } from '@/lib/qr/splash'
+import { normalizeSplash, splashRedirectLink } from '@/lib/qr/splash'
 import { listSplashTemplates, type SplashTemplate } from './splash-templates'
 
 // The Loom Studio Splash registry (docs/LOOM-PLATFORM.md §4, docs/PAGE-FRAMEWORK.md §10). Backs the
@@ -132,7 +132,7 @@ async function listQrSplashes(): Promise<LiveSplash[]> {
 
     return rows.map((r) => {
       const splash = normalizeSplash(r.splash)
-      const cta = primarySplashLink(splash)
+      const cta = splashRedirectLink(splash)
       const spaceSlug = r.space_id ? slugs.get(r.space_id) : undefined
       return {
         id: `qr:${r.id}`,
