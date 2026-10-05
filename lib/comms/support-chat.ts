@@ -161,14 +161,24 @@ export async function startSupportChat(input: {
 
   const body = (input.message ?? '').trim().slice(0, 4000)
   if (body) {
-    await appendConversationMessage({
+    // SCAN-782: comms_messages_author_present needs author_id OR author_contact_id on a member/contact
+    // row. An anonymous visitor has no profile, so the contact is the author (as lib/comms/inbound.ts
+    // does); without it the insert fails 23514, appendConversationMessage returns null, and the opening
+    // message silently vanished while the visitor was told it sent. The result is checked for the same
+    // reason: a dropped opening message is reported, not swallowed.
+    const appended = await appendConversationMessage({
       conversationId: conv.id,
       direction: 'inbound',
       authorKind: memberProfileId ? 'member' : 'contact',
       authorId: memberProfileId,
+      authorContactId: memberProfileId ? null : contactId,
       body,
       channel: 'in_app',
     })
+    if (!appended || !('id' in appended)) {
+      console.error('[support-chat] opening message was not stored', { conversationId: conv.id, member: !!memberProfileId })
+      return null
+    }
   }
   return { ref: conv.ref, token: makeChatToken(conv.ref) }
 }
@@ -185,10 +195,15 @@ export async function postSupportChatMessage(input: {
   const body = (input.body ?? '').trim().slice(0, 4000)
   if (!body) return null
 
+  // SCAN-782: the author is whoever the thread is bound to (member profile, else the contact), exactly as
+  // the inbound email path does. Before this the row had no author at all, so every follow-up message
+  // from a visitor or a member failed comms_messages_author_present and surfaced as Could not send that.
   const out = await appendConversationMessage({
     conversationId: conv.id,
     direction: 'inbound',
-    authorKind: 'contact',
+    authorKind: conv.memberProfileId ? 'member' : 'contact',
+    authorId: conv.memberProfileId ?? null,
+    authorContactId: conv.memberProfileId ? null : conv.contactId,
     body,
     channel: 'in_app',
   })
