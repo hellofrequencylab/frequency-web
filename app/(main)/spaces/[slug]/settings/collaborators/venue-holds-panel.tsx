@@ -6,6 +6,7 @@ import { Loader2, Check, X, CalendarPlus } from 'lucide-react'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import { localInputToIso } from '@/lib/time/instant'
 import {
   requestVenueHold,
   acceptVenueHold,
@@ -207,7 +208,14 @@ export function VenueHoldsPanel({
             disabled={pending || !venueId || !title.trim() || !startsAt || !endsAt || windowInvalid}
             onClick={() =>
               run(
-                () => requestVenueHold(spaceId, venueId, { title: title.trim(), startsAt, endsAt }),
+                // The pickers hold local wall times with no zone; the instant is made here, on the
+                // only side that knows the zone (SCAN-702). The server refuses a zone-less string.
+                () =>
+                  requestVenueHold(spaceId, venueId, {
+                    title: title.trim(),
+                    startsAt: localInputToIso(startsAt),
+                    endsAt: localInputToIso(endsAt),
+                  }),
                 () => {
                   setTitle('')
                   setStartsAt('')

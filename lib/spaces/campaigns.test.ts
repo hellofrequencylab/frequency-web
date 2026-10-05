@@ -238,6 +238,16 @@ describe('pure validation', () => {
     expect(parseScheduleTime('not-a-date', now)).toBeNull()
     expect(parseScheduleTime(undefined, now)).toBeNull()
   })
+
+  it('parseScheduleTime refuses a zone-less datetime-local wall time (SCAN-702)', () => {
+    // "2:30 PM" picked in Los Angeles used to reach the server as this string, be read as 14:30Z and go
+    // out at 7:30 AM local. The client now converts; the server fails closed on anything unconverted.
+    const now = new Date('2026-06-20T00:00:00.000Z')
+    expect(parseScheduleTime('2026-06-21T14:30', now)).toBeNull()
+    expect(parseScheduleTime('2026-06-21T14:30:00', now)).toBeNull()
+    expect(parseScheduleTime('2026-06-21T14:30:00-07:00', now)).toBe('2026-06-21T21:30:00.000Z')
+    expect(parseScheduleTime(new Date('2026-06-21T14:30:00.000Z'), now)).toBe('2026-06-21T14:30:00.000Z')
+  })
 })
 
 describe('createSpaceCampaign — gating + validation', () => {

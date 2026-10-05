@@ -2,6 +2,7 @@ import { Mail } from 'lucide-react'
 import { listSpaceCampaigns, type CampaignStatus } from '@/lib/spaces/campaigns'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
+import { LocalWhen } from '@/components/spaces/email/local-when'
 
 // CAMPAIGN LIST (ENTITY-SPACES-BUILD §C Phase 3). A self-fetching server component for the Space email
 // surface: this Space's campaigns (subject + status + audience size + when), gated on canEditProfile
@@ -35,25 +36,22 @@ export async function CampaignList({ spaceId }: { spaceId: string }) {
     )
   }
 
-  const fmt = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  // Times render in the VIEWER's zone via the LocalWhen client leaf (SCAN-702): a server has no idea
+  // where the owner is reading from, and a UTC reading here hid a wrong-hour schedule from them.
 
   return (
     <ul className="divide-y divide-border rounded-card border border-border bg-surface lift-1">
       {campaigns.map((c) => {
         const when =
-          c.status === 'sent' && c.sentAt
-            ? `Sent ${fmt.format(new Date(c.sentAt))}`
-            : c.status === 'scheduled' && c.scheduledFor
-              ? `Sends ${fmt.format(new Date(c.scheduledFor))}`
-              : c.createdAt
-                ? `Drafted ${fmt.format(new Date(c.createdAt))}`
-                : 'Draft'
+          c.status === 'sent' && c.sentAt ? (
+            <>Sent <LocalWhen iso={c.sentAt} /></>
+          ) : c.status === 'scheduled' && c.scheduledFor ? (
+            <>Sends <LocalWhen iso={c.scheduledFor} /></>
+          ) : c.createdAt ? (
+            <>Drafted <LocalWhen iso={c.createdAt} /></>
+          ) : (
+            'Draft'
+          )
         return (
           <li key={c.id} className="flex items-center justify-between gap-4 px-4 py-3">
             <div className="min-w-0">

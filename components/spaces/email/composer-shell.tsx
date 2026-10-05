@@ -18,6 +18,7 @@ import { AudiencePicker } from '@/components/spaces/email/audience-picker'
 import { TemplatePicker } from '@/components/spaces/email/template-picker'
 import { EMAIL_TOPIC_OPTIONS, DEFAULT_EMAIL_TOPIC } from '@/lib/spaces/email-topics'
 import type { NotificationTopic } from '@/lib/notification-preferences'
+import { localInputToIso } from '@/lib/time/instant'
 
 // CAMPAIGN COMPOSER (ENTITY-SPACES-BUILD §C Phase 3 + ADR-380). Mirrors the global composer pattern
 // (app/(main)/admin/marketing/campaigns/campaign-composer.tsx): a subject + a plain-text body where
@@ -118,10 +119,17 @@ export function ComposerShell({
     if (!ready || disabled || !when) return
     setError(null)
     setNotice(null)
+    // `when` is the picker's local wall time with no zone. Only this side knows the owner's zone, so
+    // the instant is made HERE; the server refuses a zone-less string (SCAN-702).
+    const whenIso = localInputToIso(when)
+    if (!whenIso) {
+      setError('Pick a send time in the future.')
+      return
+    }
     start(async () => {
       const id = await ensureDraft()
       if (!id) return
-      const res = await scheduleSpaceCampaign(spaceId, slug, id, when, filter)
+      const res = await scheduleSpaceCampaign(spaceId, slug, id, whenIso, filter)
       if (isError(res)) {
         setError(res.error)
         return

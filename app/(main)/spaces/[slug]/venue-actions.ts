@@ -16,6 +16,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { listSpaceCollaborationApprovers } from '@/lib/spaces/collaborations'
 import { loadVenueHold, spacesHaveAcceptedCollaboration } from '@/lib/spaces/venue-holds'
+import { parseZonedInstant } from '@/lib/time/instant'
 
 /** True when the signed-in caller is an owner/admin of `spaceId`. Fail-closed. */
 async function viewerApprovesSpace(spaceId: string): Promise<boolean> {
@@ -38,11 +39,11 @@ async function revalidateSpaces(...spaceIds: string[]): Promise<void> {
   }
 }
 
-/** Parse a client datetime string to an ISO instant, or null if invalid. */
+/** Parse a client datetime string to an ISO instant, or null if invalid. A string with no zone suffix
+ *  (a raw datetime-local value) is refused (SCAN-702): read on a UTC server it lands hours off from
+ *  the window the owner picked. The panel converts on the client (lib/time/instant.ts). */
 function toIso(v: string | null | undefined): string | null {
-  if (!v) return null
-  const t = new Date(v).getTime()
-  return Number.isNaN(t) ? null : new Date(t).toISOString()
+  return parseZonedInstant(v)
 }
 
 /**

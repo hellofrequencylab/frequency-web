@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-702",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f1=\"components/spaces/email/composer-shell.tsx\",f2=\"app/(main)/spaces/[slug]/settings/collaborators/venue-holds-panel.tsx\",f3=\"lib/spaces/campaigns.ts\";for(const f of [f1,f2,f3]){if(!fs.existsSync(f)){console.error(\"SCAN-702: missing \"+f);process.exit(79)}}const c=fs.readFileSync(f1,\"utf8\"),v=fs.readFileSync(f2,\"utf8\"),s=fs.readFileSync(f3,\"utf8\");const rawSched=/scheduleSpaceCampaign\\([^)]*,\\s*when\\s*,/.test(c);const rawHold=/requestVenueHold\\([^)]*\\{[^}]*\\bstartsAt\\s*,\\s*endsAt\\b[^}]*\\}/.test(v);const fn=s.slice(s.indexOf(\"function parseScheduleTime\"));const body=fn.slice(0,fn.indexOf(\"\\n}\")+2);const zoneGate=/\\[\\+\\-\\]|\\(Z\\|/.test(body);if(rawSched||rawHold||!zoneGate){console.error(\"SCAN-702: a zone-less datetime-local wall time still reaches the server unchanged (composer raw=\"+rawSched+\", venue hold raw=\"+rawHold+\", parseScheduleTime zone gate=\"+zoneGate+\"), so a scheduled campaign or venue hold is stored as UTC and goes out hours off from the time the owner chose.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe campaign composer and the venue-holds panel sent the raw datetime-local value (a local wall time with no zone) to the server, where new Date(raw) read it as UTC, so a 2:30 PM Los Angeles schedule was stored as 14:30Z and went out at 7:30 AM; the campaign list then formatted scheduled_for in the server zone so the owner could not see it. Fixed on both halves: a new pure lib/time/instant.ts gives the client localInputToIso (composer-shell.tsx and venue-holds-panel.tsx now send a Z instant) and the server parseZonedInstant; parseScheduleTime (lib/spaces/campaigns.ts) and venue-actions toIso refuse any string with no Z or offset suffix, so an unconverted wall time can never reach a row again. The campaign list renders times through a LocalWhen client leaf (useSyncExternalStore: UTC labelled on the server, the viewer zone on the client). The journeys launch editor already converted on the client and is unchanged. Pinned by lib/time/instant.test.ts, the zone-less case in lib/spaces/campaigns.test.ts, and components/spaces/email/local-when.test.tsx."
+  }
+}
