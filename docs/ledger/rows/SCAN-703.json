@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-703",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"components/spaces/email/composer-shell.tsx\";if(!fs.existsSync(f)){console.error(\"SCAN-703: missing \"+f);process.exit(79)}const c=fs.readFileSync(f,\"utf8\");const a=c.indexOf(\"function handleSend\"),b=c.indexOf(\"function handleSchedule\");if(a<0||b<0){console.error(\"SCAN-703: handleSend/handleSchedule not found in the composer; re-anchor the probe.\");process.exit(79)}const send=c.slice(a,b);const resets=/setSubject\\(\\s*\"\"\\s*\\)|setSubject\\(\\s*\\x27\\x27\\s*\\)/.test(send);const reuse=/draftId/.test(c);if(!resets||!reuse){console.error(\"SCAN-703: after a successful Send now the composer keeps subject and body filled (reset=\"+resets+\") and every click creates a fresh campaign row (draft reuse=\"+reuse+\"), so a second click sends the whole campaign to every contact again.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nhandleSend in components/spaces/email/composer-shell.tsx left the subject and body in place after a successful send and ensureDraft created a new campaign row on every click, so a second Send now click made a fresh campaign and mailed every contact again (the server's already-gone-out check only sees the row it is given, and the per-recipient idempotency key carries the campaign id). The composer now keeps one draftId in state: the first click creates the draft and stores its id, every later click updates that same row, and a successful send or schedule empties subject, body, when and clears draftId, so a retry after a failure reuses the row and a repeat click after success has nothing to send. Pinned by components/spaces/email/composer-shell.test.tsx, which renders the composer, fails the first send, retries and asserts one create plus an update of the same id, then asserts the empty form and a disabled Send now after success."
+  }
+}

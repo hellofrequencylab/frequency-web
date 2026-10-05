@@ -74,6 +74,10 @@ export function ComposerShell({
   const [when, setWhen] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // SCAN-703: the one draft row this composer owns until it goes out. A retry after a failed send
+  // (or a second click) reuses it, so the server's already-gone-out check can stop a repeat send
+  // and no orphan drafts pile up. Cleared once a send or schedule succeeds.
+  const [draftId, setDraftId] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
   const ready = subject.trim().length > 0 && body.trim().length > 0
@@ -84,16 +88,25 @@ export function ComposerShell({
   const memberAudience = Boolean(filter.memberSegment)
   const effectiveTopic: NotificationTopic = memberAudience ? 'marketing' : topic
 
-  // Ensure the draft exists, returning its id (or null on failure, with the error surfaced).
+  // Ensure the draft exists, returning its id (or null on failure, with the error surfaced). One
+  // row per composition: the first click creates it, every later click updates that same row with
+  // the current text, so a repeat click never mints a fresh campaign id.
   async function ensureDraft(): Promise<string | null> {
-    const res = await createSpaceCampaign(spaceId, slug, { subject, body, topic: effectiveTopic })
+    const input = { subject, body, topic: effectiveTopic }
+    if (draftId) {
+      const upd = await updateSpaceCampaign(spaceId, slug, draftId, input)
+      if (isError(upd)) {
+        setError(upd.error)
+        return null
+      }
+      return draftId
+    }
+    const res = await createSpaceCampaign(spaceId, slug, input)
     if (isError(res)) {
       setError(res.error)
       return null
     }
-    // Keep the body in sync (a create stores the current text); update is a no-op here but keeps the
-    // edit path honest if the owner tweaks before sending.
-    await updateSpaceCampaign(spaceId, slug, res.data.id, { subject, body, topic: effectiveTopic })
+    setDraftId(res.data.id)
     return res.data.id
   }
 
@@ -110,6 +123,11 @@ export function ComposerShell({
         return
       }
       setNotice('Your campaign is on its way.')
+      // Empty the form and let go of the draft, so a second click has nothing to send.
+      setSubject('')
+      setBody('')
+      setWhen('')
+      setDraftId(null)
       router.refresh()
     })
   }
@@ -130,6 +148,7 @@ export function ComposerShell({
       setSubject('')
       setBody('')
       setWhen('')
+      setDraftId(null)
       router.refresh()
     })
   }
