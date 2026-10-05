@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowRight, Users, CalendarDays } from 'lucide-react'
 import { getDensityCity, listDensityCities, cityFromSlug } from '../_data'
-import { getCityCategoryHubs } from '@/app/discover/events/_data'
+import { getCityCategoryHubs, cityRegion } from '@/app/discover/events/_data'
 import { CircleCard, EventRow } from '@/components/discover/cards'
 import {
   PageHero,
@@ -90,6 +90,8 @@ export default async function DiscoverCityPage({
   const hubs = await getCityCategoryHubs()
     .then((all) => all.filter((h) => h.citySlug === citySlug.toLowerCase()))
     .catch(() => [])
+  // The state and country the city's events name, so the Place is Vista, CA and not any Vista.
+  const { region, country } = cityRegion(hubs.flatMap((h) => h.events))
 
   return (
     <>
@@ -108,7 +110,12 @@ export default async function DiscoverCityPage({
             about: {
               '@type': 'Place',
               name: city,
-              address: { '@type': 'PostalAddress', addressLocality: city },
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: city,
+                ...(region ? { addressRegion: region } : {}),
+                ...(country ? { addressCountry: country } : {}),
+              },
             },
           },
           circles.length > 0 && circleListSchema(circles, `Circles in ${city}`),

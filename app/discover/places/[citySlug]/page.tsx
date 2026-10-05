@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { ArrowRight, Users, CalendarDays } from 'lucide-react'
 import { getCityHub, listDiscoverCities, cityFromSlug, citySlug as toSlug } from '../_data'
 import { listDensityCities } from '../../cities/_data'
-import { getCityCategoryHubs } from '@/app/discover/events/_data'
+import { getCityCategoryHubs, cityRegion } from '@/app/discover/events/_data'
 import { CircleCard, EventRow } from '@/components/discover/cards'
 import {
   PageHero,
@@ -96,6 +96,8 @@ export default async function DiscoverPlacePage({
   const hubs = await getCityCategoryHubs()
     .then((all) => all.filter((h) => h.citySlug === toSlug(cityFromSlug(citySlug))))
     .catch(() => [])
+  // The state and country the city's events name, so the Place is Vista, CA and not any Vista.
+  const { region, country } = cityRegion(hubs.flatMap((h) => h.events))
 
   return (
     <>
@@ -111,7 +113,16 @@ export default async function DiscoverPlacePage({
             '@type': 'CollectionPage',
             name: `Community in ${city}`,
             url: `${SITE_URL}/discover/places/${citySlug}`,
-            about: { '@type': 'Place', name: city, address: { '@type': 'PostalAddress', addressLocality: city } },
+            about: {
+              '@type': 'Place',
+              name: city,
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: city,
+                ...(region ? { addressRegion: region } : {}),
+                ...(country ? { addressCountry: country } : {}),
+              },
+            },
           },
           circles.length > 0 && circleListSchema(circles, `Circles in ${city}`),
           events.length > 0 && eventListSchema(events, `Upcoming events in ${city}`),
