@@ -4,7 +4,8 @@
 // the depth sheet wrote a going row with any number of plus-ones into a cancelled, finished or
 // closed event. One module, one answer.
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { isEventPast, resolveZone } from '@/lib/time/zone'
 import { rsvpWindowStateFromDetails } from '@/lib/events/rsvp-window'
 
@@ -22,6 +23,12 @@ export const MAX_PLUS_ONES = 5
 export interface RsvpGate { open: boolean; windowOpen: boolean }
 export const CLOSED_FOR_RSVP: RsvpGate = { open: false, windowOpen: false }
 
+/** The client the gate reads with. The callers (app/(main)/events/actions.ts and the depth sheet)
+ *  already hold the service-role client, because the gate must SEE a cancelled, removed or
+ *  non-member-circle event in order to refuse it; this module takes that client rather than
+ *  minting its own, so the RLS-bypass surface stays exactly where it was (check:admin-client). */
+export type RsvpGateDb = SupabaseClient<Database>
+
 export interface RsvpEventRow {
   id: string
   is_cancelled: boolean | null
@@ -31,8 +38,8 @@ export interface RsvpEventRow {
   details: unknown
 }
 
-export async function eventOpenForRsvp(eventId: string): Promise<RsvpGate> {
-  const loaded = await loadRsvpEvent(eventId)
+export async function eventOpenForRsvp(db: RsvpGateDb, eventId: string): Promise<RsvpGate> {
+  const loaded = await loadRsvpEvent(db, eventId)
   if (!loaded) return CLOSED_FOR_RSVP
   const { ev, zone } = loaded
   // The host's booking window (lib/events/rsvp-window.ts). Enforced HERE and not only in the page,
@@ -42,11 +49,10 @@ export async function eventOpenForRsvp(eventId: string): Promise<RsvpGate> {
 
 /** The event row the gate reads, with its zone resolved. Null when the event is missing, cancelled
  *  or already over: a finished or cancelled event takes nothing, whatever the window says. */
-export async function loadRsvpEvent(eventId: string): Promise<{ ev: RsvpEventRow; zone: string } | null> {
-  const admin = createAdminClient()
+export async function loadRsvpEvent(db: RsvpGateDb, eventId: string): Promise<{ ev: RsvpEventRow; zone: string } | null> {
   // `details` and `time_zone` sit outside the generated types, so this reads untyped and casts
   // (repo convention, ADR-246). Both are returned at runtime.
-  const { data } = await admin
+  const { data } = await db
     .from('events')
     .select('id, is_cancelled, starts_at, ends_at, time_zone, details')
     .eq('id', eventId)

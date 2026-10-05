@@ -676,7 +676,7 @@ export async function setEventRsvpDepth(
   // SCAN-697: the same gate every other seat-taking path consults (lib/events/rsvp-gate.ts). A
   // cancelled or finished event takes nothing; a closed booking window refuses a NEW going answer
   // and any plus-one increase, and never traps someone who wants to leave.
-  const gate = await eventOpenForRsvp(eventId)
+  const gate = await eventOpenForRsvp(admin, eventId)
   if (!gate.open) return { ok: false }
   const plusOneNames = (args.plusOneNames ?? [])
     .map((n) => String(n ?? '').trim().slice(0, 80))

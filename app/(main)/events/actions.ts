@@ -1155,7 +1155,7 @@ async function eventRequiresApprovalOrClosed(eventId: string): Promise<boolean> 
 // host's booking window is enforced HERE, in the action, and not only in the page, because a
 // control that merely hides a button is not a window (SCAN-528 pins this line to this file).
 async function rsvpGate(eventId: string): Promise<RsvpGate> {
-  const loaded = await loadRsvpEvent(eventId)
+  const loaded = await loadRsvpEvent(createAdminClient(), eventId)
   if (!loaded) return CLOSED_FOR_RSVP
   const { ev, zone } = loaded
   return { open: true, windowOpen: rsvpWindowStateFromDetails(ev.details, zone) === 'open' }
