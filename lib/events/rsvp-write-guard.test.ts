@@ -13,6 +13,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 
 import { MAX_GUEST_PLUS_ONES } from './guest-seat'
+import { MAX_PLUS_ONES } from './rsvp-gate'
 
 const MIGRATION = 'supabase/migrations/20270345011900_event_rsvps_member_write_guard.sql'
 const PGTAP = 'supabase/tests/event_rsvps_member_write_guard.test.sql'
@@ -62,10 +63,11 @@ describe('event_rsvps member write guard (SCAN-696)', () => {
     expect(m).not.toBeNull()
     const ceiling = Number(m![1])
     expect(ceiling).toBe(MAX_GUEST_PLUS_ONES)
-    // The member clamp is a module-private const in the actions file; read it rather than widen
-    // its export surface for a test.
+    // SCAN-697 moved the member clamp out of the actions file into the shared gate, where every
+    // write path (actions, the depth sheet, rsvp-depth) imports it; pin the export itself.
+    expect(ceiling).toBe(MAX_PLUS_ONES)
     const actions = readFileSync('app/(main)/events/actions.ts', 'utf8')
-    expect(actions).toMatch(new RegExp(`const MAX_PLUS_ONES = ${ceiling}\\b`))
+    expect(actions).toMatch(/import \{[^}]*\bMAX_PLUS_ONES\b[^}]*\} from '@\/lib\/events\/rsvp-gate'/)
   })
 
   it('is the last migration to touch the plus_ones check, and the pgTAP file exercises the trigger as a member', () => {
