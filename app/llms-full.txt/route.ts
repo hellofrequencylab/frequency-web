@@ -109,8 +109,20 @@ export async function GET() {
         `#### ${a.title}`,
         `${SITE_URL}${helpHref(cat.slug, a.slug)}`,
       )
+      if (a.updated) out.push(`Updated: ${a.updated}`)
       if (a.description) out.push(a.description)
-      out.push('', a.body.trim())
+      // The body as the corpus carries it (SCAN-806). Root-relative markdown links become absolute,
+      // so an engine can resolve and cite them, and every heading is demoted three levels so a body
+      // `##` sits under the `####` article title instead of outranking it (`##` -> `#####`,
+      // `###` -> `######`; +3 keeps the two apart where +4 would flatten both to `######`). The
+      // heading regex also matches inside a fenced code block; no help body carries a `#` fence.
+      out.push(
+        '',
+        a.body
+          .trim()
+          .replace(/\]\(\/(?!\/)/g, `](${SITE_URL}/`)
+          .replace(/^(#{1,6})[ \t]/gm, (_m, h: string) => '#'.repeat(Math.min(h.length + 3, 6)) + ' '),
+      )
     }
   }
 
