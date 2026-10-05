@@ -11,6 +11,7 @@ import { ensureMemberCodes, type MemberCodePurpose } from '@/lib/qr/member-codes
 import { listMarketingTargets, MARKETING_CODE_LIMIT } from '@/lib/qr/marketing'
 import { parseVcard } from '@/lib/vcard'
 import { isGoogleWalletConfigured } from '@/lib/wallet/google'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { MemberCodes, type MemberCodeCard } from './member-codes'
 import { MarketingCodes, type MarketingCard } from './marketing-codes'
 import { VcardEditor } from './vcard-editor'
@@ -108,18 +109,25 @@ export default async function CodesPage() {
 // (MARKETING_CODE_LIMIT), not a tier.
 async function MarketingCodesSection({ profileId, qrConfig }: { profileId: string; qrConfig?: QrStudioConfig }) {
   const db = createAdminClient()
+  // Personal marketing codes ONLY: owner-owned, purpose-null, and NOT tenant-scoped to a Space.
+  // A Space code now stamps owner_profile_id (for scan attribution) AND space_id, so this list must
+  // exclude space codes or a member who created one for their Space would see it in their personal
+  // funnel list.
+  //
+  // SCAN-775: "personal" is the PLATFORM lane, which means the root Space OR a legacy null. The
+  // qr_codes_default_space_id trigger stamps every null space_id with the root Space on insert, so a
+  // null-only filter never matched a code created since 2026-07 and the list read 0/3 while the limit
+  // in createMarketingCode (which reads the same scope) said the quota was full. Same shape as
+  // lib/studio/campaigns.ts and lib/comms/support-chat.ts.
+  const rootId = await loadRootSpaceId()
+  let listQuery = db
+    .from('qr_codes')
+    .select('id, slug, title, target_url, scan_count, style')
+    .eq('owner_profile_id', profileId)
+    .is('purpose', null)
+  listQuery = rootId ? listQuery.or(`space_id.is.null,space_id.eq.${rootId}`) : listQuery.is('space_id', null)
   const [{ data: rows }, targets] = await Promise.all([
-    // Personal marketing codes ONLY: owner-owned, purpose-null, and NOT tenant-scoped to a Space.
-    // A Space code now stamps owner_profile_id (for scan attribution) AND space_id, so this list must
-    // exclude space codes or a member who created one for their Space would see it in their personal
-    // funnel list.
-    db
-      .from('qr_codes')
-      .select('id, slug, title, target_url, scan_count, style')
-      .eq('owner_profile_id', profileId)
-      .is('purpose', null)
-      .is('space_id', null)
-      .order('created_at', { ascending: false }),
+    listQuery.order('created_at', { ascending: false }),
     listMarketingTargets(profileId),
   ])
 

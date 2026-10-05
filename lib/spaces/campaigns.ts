@@ -112,10 +112,16 @@ export function toCampaignStatus(raw: unknown): CampaignStatus {
 }
 
 /** Parse a schedule time to an ISO string in the FUTURE, or null if it is missing / unparseable /
- *  in the past. Pure (takes `now` for testability). A past or invalid time fails closed to null so a
- *  schedule can never silently send immediately. */
+ *  in the past / a zone-less wall time. Pure (takes `now` for testability). A past or invalid time
+ *  fails closed to null so a schedule can never silently send immediately; a zone-less string fails
+ *  closed too, because the client is the only side that knows the owner's zone and must convert
+ *  before calling (SCAN-702). */
 export function parseScheduleTime(raw: unknown, now: Date = new Date()): string | null {
   if (typeof raw !== 'string' && !(raw instanceof Date)) return null
+  // A string names an INSTANT only when it ends in a zone: `Z` or a `+HH:MM` / `-HHMM` offset. A
+  // bare datetime-local wall time (`2026-06-21T14:30`) has none, and `new Date` on the server
+  // reads it as UTC, hours off from what the owner picked. Refuse it; the client converts.
+  if (typeof raw === 'string' && !/(Z|[+-]\d{2}:?\d{2})$/i.test(raw.trim())) return null
   const d = raw instanceof Date ? raw : new Date(raw)
   const ms = d.getTime()
   if (!Number.isFinite(ms)) return null

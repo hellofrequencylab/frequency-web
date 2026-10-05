@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-775",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/codes/page.tsx\",a=\"app/(main)/codes/actions.ts\";if(!fs.existsSync(p)||!fs.existsSync(a)){console.error(\"SCAN-775: a file the probe must read is missing\");process.exit(79)}const page=fs.readFileSync(p,\"utf8\"),act=fs.readFileSync(a,\"utf8\");const listNullOnly=/\\.is\\([\\x27\"]space_id[\\x27\"], null\\)/.test(page)&&!/space_id\\.is\\.null,space_id\\.eq\\./.test(page);const cnt=act.match(/count: [\\x27\"]exact[\\x27\"][\\s\\S]*?MARKETING_CODE_LIMIT/);const countIgnoresSpace=!cnt||!/space_id/.test(cnt[0]);if(listNullOnly||countIgnoresSpace){console.error(\"SCAN-775: personal marketing codes never show on /codes but still count toward the 3-code limit: \"+(listNullOnly?\"the list still requires a null space_id that the root-stamping trigger never leaves; \":\"\")+(countIgnoresSpace?\"the limit count still ignores space_id so Space codes eat the personal quota.\":\"\"));process.exit(1)}'",
+      "note": "Reads the list query on the codes page and the limit count in the create action. Fails while the list still requires a null space_id without a root-or-null alternative, or while the count query has no space filter; passes once both read the same personal scope."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: the /codes list and the createMarketingCode limit count both read the same personal scope (root Space or legacy null space_id via loadRootSpaceId), so personal codes show and Space codes no longer eat the quota. Verified by the probe and eslint on both files."
+  }
+}
