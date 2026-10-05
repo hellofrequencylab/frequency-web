@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-735",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/lead/inbox/actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-735: missing \"+p);process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const a=s.indexOf(\"export async function setLeaderTriage\");if(a<0){console.error(\"SCAN-735: setLeaderTriage not found\");process.exit(79)}let b=s.indexOf(\"export async function\",a+10);if(b<0)b=s.length;const body=s.slice(a,b);const writes=/assignedTo\\s*=\\s*input\\.assignedTo/.test(body);const guarded=/!==\\s*leaderId|!==\\s*conv\\.ownerProfileId|===\\s*leaderId|===\\s*conv\\.ownerProfileId/.test(body);if(writes&&!guarded){console.error(\"SCAN-735: setLeaderTriage still writes any profile id into assigned_to without checking it is the caller or the owner, so a holder of a thread can hand the member email, full thread and internal notes to any other profile.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: setLeaderTriage in app/(main)/lead/inbox/actions.ts resolves the assignee target first and refuses any value other than null, the caller or the conversation owner with 'You can only assign this conversation to yourself.'; the patch and the assignment record are written from that checked target."
+  }
+}
