@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-762",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const f=\"app/(main)/housing/new/housing-form.tsx\";if(!fs.existsSync(f)){console.error(\"SCAN-762: housing-form.tsx missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const raw=/<button\\s+type=[\\x22\\x27]submit[\\x22\\x27]/.test(s);const walk=(d)=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)]);const pendingAware=walk(\"app/(main)/housing\").filter(p=>/\\.tsx?$/.test(p)).some(p=>/useFormStatus|useActionState/.test(fs.readFileSync(p,\"utf8\")));if(raw&&!pendingAware){console.error(\"SCAN-762: the housing form still submits through a raw <button type=submit> and nothing under app/(main)/housing reads useFormStatus or useActionState, so a second tap while the geocode and governed write run posts the listing twice.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe housing compose/edit form submitted through a raw <button type=submit> and nothing under app/(main)/housing read a pending state, so a second tap while the geocode and governed write ran posted the same listing twice. Added app/(main)/housing/new/submit.tsx, a client leaf that reads useFormStatus() and renders the shared Button with loading={pending} (disabled and aria-busy while pending), and housing-form.tsx now renders <HousingSubmit> inside the form in place of the raw button, covering both create and edit. Pinned by app/(main)/housing/new/housing-submit.test.ts, which fails on a bare submit button returning, on the leaf losing useFormStatus(), or on the loading prop going away."
+  }
+}
