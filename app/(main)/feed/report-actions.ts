@@ -5,9 +5,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { logAdminAction } from '@/lib/admin/audit'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
-import { atLeastRole } from '@/lib/core/roles'
+import { atLeastRole, canModeratePlatform, asWebRole } from '@/lib/core/roles'
 import { getStaffMember } from '@/lib/staff'
 import { staffCan } from '@/lib/core/staff-roles'
+import { canModeratePost } from '@/lib/moderation/scope'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 
 export type ReportTargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event' | 'guestbook'
@@ -24,34 +25,98 @@ const MAX_REPORT_DETAILS = 2000
 // Role-ladder comparison — single source in lib/core/roles.
 const hasRole = atLeastRole
 
-// A moderator is a community host+ OR a staff member holding the community domain — the
-// same additive, fail-closed union the moderation page gates on
-// (requireAdmin('host', { staff: 'community' })). Without the staff arm, a platform-staff
-// moderator (community_role 'member') passed the page gate but every action returned
-// Unauthorized, so the queue buttons silently no-op. Returns the caller when authorized.
-async function resolveModerator() {
+// Who may act on a report, split into two scopes (SCAN-679). `platform` is platform staff or a
+// granted Platform moderator (profiles.web_role, canModeratePlatform) or a team_members staff role
+// holding the community domain at write: the same union the moderation page admits
+// (requireAdmin('host', { staff: 'community' })). A community host is NOT platform: `host` is
+// self-granted (ensureHostOnOwnership, lib/circles/remix.ts, promotes whoever publishes a Circle),
+// so it only ever meant "moderates the Circles they host". A host resolves with platform=false and
+// each action then asks `canModeratePost` with the caller's hosted circle ids, exactly as
+// deletePost/pinPost do (OWN-054). Member suspensions, warnings and event cancellations have no
+// circle to scope to, so they require platform. Fail-closed: anything else is null.
+type Moderator = {
+  caller: NonNullable<Awaited<ReturnType<typeof getCallerProfile>>>
+  platform: boolean
+}
+
+async function resolveModerator(): Promise<Moderator | null> {
   const caller = await getCallerProfile()
   if (!caller) return null
-  if (hasRole(caller.community_role, 'host')) return caller
+  if (canModeratePlatform(caller.webRole)) return { caller, platform: true }
   const staff = await getStaffMember().catch(() => null)
-  return staffCan(staff?.role, 'community', 'write') ? caller : null
+  if (staffCan(staff?.role, 'community', 'write')) return { caller, platform: true }
+  if (hasRole(caller.community_role, 'host')) return { caller, platform: false }
+  return null
+}
+
+type ReportRow = { target_type: string; target_id: string; reporter_id: string | null }
+
+// The report row every action reads before it acts: the target it names, and who filed it. A
+// moderator never acts on their own report (SCAN-679): file-then-action is how a host turned the
+// queue into a self-service weapon.
+async function readReport(
+  admin: ReturnType<typeof createAdminClient>,
+  reportId: string,
+): Promise<ReportRow | null> {
+  const { data } = await admin
+    .from('reports')
+    .select('target_type, target_id, reporter_id')
+    .eq('id', reportId)
+    .maybeSingle()
+  return (data as ReportRow | null) ?? null
+}
+
+const ownReport = (report: ReportRow, callerId: string) => report.reporter_id === callerId
+
+// The ids of the circles this profile hosts (`circles.host_id = profileId`): the set the `posts`
+// policies scope a host's moderation to. Fail-safe to an empty list so a failed read denies.
+async function hostedCircleIds(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string,
+): Promise<string[]> {
+  const { data } = await admin.from('circles').select('id').eq('host_id', profileId)
+  return (data ?? []).map((c: { id: string }) => c.id)
+}
+
+// May this moderator act on this report at all? Platform: yes. A host: only a post or comment
+// report whose post sits in a Circle they host (the `posts` policy predicate, via canModeratePost).
+async function canActOnReport(
+  admin: ReturnType<typeof createAdminClient>,
+  mod: Moderator,
+  report: ReportRow,
+): Promise<boolean> {
+  if (mod.platform) return true
+  if (report.target_type !== 'post' && report.target_type !== 'comment') return false
+  const { data: post } = await admin
+    .from('posts')
+    .select('author_id, scope_id')
+    .eq('id', report.target_id)
+    .maybeSingle()
+  if (!post) return false
+  return canModeratePost({
+    callerId: mod.caller.id,
+    communityRole: mod.caller.community_role,
+    webRole: mod.caller.webRole,
+    post: post as { author_id: string; scope_id: string | null },
+    hostedCircleIds: await hostedCircleIds(admin, mod.caller.id),
+  })
 }
 
 // A moderation action must act on the SAME target the report names (site-audit SEC-3): a host
 // passing an unrelated id alongside an open report id must not be able to warn/suspend/cancel an
-// arbitrary target. Returns true only when the report exists and its target matches.
-async function reportTargetMatches(
+// arbitrary target. Returns the report only when it exists, its target matches, and the caller did
+// not file it (SCAN-679); null otherwise.
+async function matchingReport(
   admin: ReturnType<typeof createAdminClient>,
   reportId: string,
   type: TargetType,
   id: string,
-): Promise<boolean> {
-  const { data } = await admin
-    .from('reports')
-    .select('target_type, target_id')
-    .eq('id', reportId)
-    .maybeSingle()
-  return !!data && (data as { target_type: string }).target_type === type && (data as { target_id: string }).target_id === id
+  callerId: string,
+): Promise<ReportRow | null> {
+  const report = await readReport(admin, reportId)
+  if (!report || report.target_type !== type || report.target_id !== id) return null
+  if (ownReport(report, callerId)) return null
+  return report
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -147,7 +212,7 @@ export async function reportContent(
   return ok()
 }
 
-// ── Review a report (host+ only) ───────────────────────────────────────────
+// ── Review a report (platform, or a host inside a Circle they host) ───────────────────────────────────────────
 //
 // Action semantics by target_type:
 //   post/comment → soft-hide (sets hidden_at, hidden_by — recoverable)
@@ -167,39 +232,37 @@ export async function reviewReport(
   reportId: string,
   action: 'actioned' | 'dismissed'
 ): Promise<ActionResult> {
-  const caller = await resolveModerator()
-  if (!caller) {
+  const mod = await resolveModerator()
+  if (!mod) {
     return fail('Unauthorized')
   }
+  const { caller } = mod
 
   const admin = createAdminClient()
+  const report = await readReport(admin, reportId)
+  if (!report) return fail('Report not found')
+  if (ownReport(report, caller.id)) return fail('You cannot act on your own report')
+  if (!(await canActOnReport(admin, mod, report))) return fail('Unauthorized')
+
   let hidden: { targetType: string; targetId: string } | null = null
 
   if (action === 'actioned') {
-    const { data: report } = await admin
-      .from('reports')
-      .select('target_type, target_id')
-      .eq('id', reportId)
-      .maybeSingle()
-
-    if (report) {
-      const hidePayload = {
-        hidden_at: new Date().toISOString(),
-        hidden_by: caller.id,
-      }
-      if (report.target_type === 'post' || report.target_type === 'comment') {
-        await admin.from('posts').update(hidePayload).eq('id', report.target_id)
-        hidden = { targetType: report.target_type, targetId: report.target_id }
-      } else if (report.target_type === 'dispatch') {
-        await admin.from('dispatches').update(hidePayload).eq('id', report.target_id)
-        hidden = { targetType: report.target_type, targetId: report.target_id }
-      } else if (report.target_type === 'guestbook') {
-        // The guestbook table carries hidden_at only (no hidden_by); the audit row below names the moderator.
-        await admin.from('spotlight_guestbook').update({ hidden_at: hidePayload.hidden_at }).eq('id', report.target_id)
-        hidden = { targetType: report.target_type, targetId: report.target_id }
-      }
-      // member/event handled via dedicated helpers; reviewReport just closes them.
+    const hidePayload = {
+      hidden_at: new Date().toISOString(),
+      hidden_by: caller.id,
     }
+    if (report.target_type === 'post' || report.target_type === 'comment') {
+      await admin.from('posts').update(hidePayload).eq('id', report.target_id)
+      hidden = { targetType: report.target_type, targetId: report.target_id }
+    } else if (report.target_type === 'dispatch') {
+      await admin.from('dispatches').update(hidePayload).eq('id', report.target_id)
+      hidden = { targetType: report.target_type, targetId: report.target_id }
+    } else if (report.target_type === 'guestbook') {
+      // The guestbook table carries hidden_at only (no hidden_by); the audit row below names the moderator.
+      await admin.from('spotlight_guestbook').update({ hidden_at: hidePayload.hidden_at }).eq('id', report.target_id)
+      hidden = { targetType: report.target_type, targetId: report.target_id }
+    }
+    // member/event handled via dedicated helpers; reviewReport just closes them.
   }
 
   const result = await closeReport(reportId, caller.id, action)
@@ -231,15 +294,16 @@ export async function warnMember(
   memberProfileId: string,
   reason?: string,
 ): Promise<ActionResult> {
-  const caller = await resolveModerator()
-  if (!caller) {
+  const mod = await resolveModerator()
+  if (!mod || !mod.platform) {
     return fail('Unauthorized')
   }
+  const { caller } = mod
 
   const admin = createAdminClient()
 
-  // The report must actually name this member (SEC-3).
-  if (!(await reportTargetMatches(admin, reportId, 'member', memberProfileId))) {
+  // The report must actually name this member (SEC-3) and not be the caller's own (SCAN-679).
+  if (!(await matchingReport(admin, reportId, 'member', memberProfileId, caller.id))) {
     return fail('This report does not target that member')
   }
 
@@ -325,17 +389,37 @@ export async function suspendMember(
   memberProfileId: string,
   options: { reason?: string; durationDays?: number } = {},
 ): Promise<ActionResult> {
-  const caller = await resolveModerator()
-  if (!caller) {
+  const mod = await resolveModerator()
+  if (!mod || !mod.platform) {
     return fail('Unauthorized')
   }
+  const { caller } = mod
+  if (memberProfileId === caller.id) return fail('You cannot suspend yourself')
 
   const admin = createAdminClient()
 
-  // The report must actually name this member (SEC-3).
-  if (!(await reportTargetMatches(admin, reportId, 'member', memberProfileId))) {
+  // The report must actually name this member (SEC-3) and not be the caller's own (SCAN-679).
+  if (!(await matchingReport(admin, reportId, 'member', memberProfileId, caller.id))) {
     return fail('This report does not target that member')
   }
+
+  // Platform staff, a granted Platform moderator, and team_members staff are never suspended
+  // through the queue (SCAN-679): that is an ownership decision, not a report outcome.
+  const { data: target } = await admin
+    .from('profiles')
+    .select('web_role')
+    .eq('id', memberProfileId)
+    .maybeSingle()
+  if (!target) return fail('This report does not target that member')
+  if (canModeratePlatform(asWebRole((target as { web_role: string | null }).web_role))) {
+    return fail('Staff and moderators cannot be suspended from the queue')
+  }
+  const { data: staffRow } = await admin
+    .from('team_members')
+    .select('role')
+    .eq('profile_id', memberProfileId)
+    .maybeSingle()
+  if (staffRow) return fail('Staff and moderators cannot be suspended from the queue')
 
   const suspendedUntil = options.durationDays
     ? new Date(Date.now() + options.durationDays * 24 * 60 * 60 * 1000).toISOString()
@@ -370,15 +454,16 @@ export async function cancelEventFromReport(
   reportId: string,
   eventId: string,
 ): Promise<ActionResult> {
-  const caller = await resolveModerator()
-  if (!caller) {
+  const mod = await resolveModerator()
+  if (!mod || !mod.platform) {
     return fail('Unauthorized')
   }
+  const { caller } = mod
 
   const admin = createAdminClient()
 
-  // The report must actually name this event (SEC-3).
-  if (!(await reportTargetMatches(admin, reportId, 'event', eventId))) {
+  // The report must actually name this event (SEC-3) and not be the caller's own (SCAN-679).
+  if (!(await matchingReport(admin, reportId, 'event', eventId, caller.id))) {
     return fail('This report does not target that event')
   }
 

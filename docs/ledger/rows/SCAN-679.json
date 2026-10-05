@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-679",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/feed/report-actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-679: report-actions.ts missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const hostAlone=/hasRole\\(caller\\.community_role,\\s*.host.\\)\\)\\s*return caller/.test(s);const scoped=/canModeratePlatform/.test(s);if(hostAlone||!scoped){console.error(\"SCAN-679: the report queue still treats a self-granted community host as a platform moderator, so any member who publishes a Circle can suspend anyone, hide any post and cancel any event.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nresolveModerator in app/(main)/feed/report-actions.ts returned the caller on community host alone, and host is self-granted by publishing a Circle, so any such member could suspend anyone, hide any post and cancel any event through the admin-client report queue. It now returns { caller, platform } where platform is canModeratePlatform(webRole) or community-domain staff write; a host resolves with platform=false. warnMember, suspendMember and cancelEventFromReport require platform; reviewReport (hide or dismiss) requires platform or, for a post/comment report, canModeratePost against the caller's hosted circle ids. Every action reads reporter_id and refuses the caller's own report; suspendMember refuses self, web_role staff/moderators and team_members rows. The /admin/moderation queue widget narrows a non-platform host to post/comment reports inside Circles they host. Pinned by runtime tests in app/(main)/feed/report-actions.test.ts (host refused on suspend/warn/cancel/out-of-circle hide with no writes; host hides in-circle; staff and community-domain staff act; self-report and staff targets refused)."
+  }
+}

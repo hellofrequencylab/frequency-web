@@ -1,6 +1,10 @@
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getCallerProfile } from '@/lib/auth'
+import { getStaffMember } from '@/lib/staff'
+import { staffCan } from '@/lib/core/staff-roles'
+import { canModeratePlatform } from '@/lib/core/roles'
 import { ModerationQueue } from '@/app/(main)/admin/moderation/moderation-queue'
 
 // Admin Moderation layout module (LP7, ADR-270/294): the community report queue — the pending
@@ -8,7 +12,10 @@ import { ModerationQueue } from '@/app/(main)/admin/moderation/moderation-queue'
 // prior-report count, plus the "queue is clear" empty. A self-fetching, fail-safe RSC: it reads the
 // reports and every target preview itself, so the page hands it nothing. There is no searchParams
 // facet. The page keeps its host + community-staff gate; this renders only through that gated route,
-// so it never re-gates.
+// so it never re-gates. It does NARROW (SCAN-679): a community host is self-granted (publishing a
+// Circle), so a host who is not platform staff, a granted Platform moderator, or community-domain
+// staff sees only reports on posts and comments inside the Circles they host, which is all the
+// actions in report-actions.ts will let them act on.
 
 type RawReport = {
   id: string
@@ -42,7 +49,29 @@ export async function AdminModerationQueue() {
     .order('created_at', { ascending: false })
     .limit(100)
 
-  const reports = (rawReports ?? []) as unknown as RawReport[]
+  let reports = (rawReports ?? []) as unknown as RawReport[]
+
+  // Narrow a non-platform host to their own Circles (SCAN-679). Fail-closed: no caller, no reports.
+  const caller = await getCallerProfile()
+  if (!caller) return null
+  const staff = await getStaffMember().catch(() => null)
+  const platform = canModeratePlatform(caller.webRole) || staffCan(staff?.role, 'community', 'write')
+  if (!platform) {
+    const { data: hosted } = await admin.from('circles').select('id').eq('host_id', caller.id)
+    const hostedIds = new Set((hosted ?? []).map((c: { id: string }) => c.id))
+    const candidateIds = reports
+      .filter((r) => r.target_type === 'post' || r.target_type === 'comment')
+      .map((r) => r.target_id)
+    const inScope = new Set<string>()
+    if (candidateIds.length > 0 && hostedIds.size > 0) {
+      const { data: scoped } = await admin.from('posts').select('id, scope_id').in('id', candidateIds)
+      for (const p of scoped ?? []) {
+        const typed = p as { id: string; scope_id: string | null }
+        if (typed.scope_id && hostedIds.has(typed.scope_id)) inScope.add(typed.id)
+      }
+    }
+    reports = reports.filter((r) => inScope.has(r.target_id))
+  }
 
   // Gather target previews for each report
   const postIds = reports.filter((r) => r.target_type === 'post' || r.target_type === 'comment').map((r) => r.target_id)
