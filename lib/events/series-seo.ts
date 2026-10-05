@@ -162,6 +162,9 @@ export function seriesRobots(
   // fields by overwrite, not by merge (node_modules/next/dist/docs/01-app/03-api-reference/
   // 04-functions/generate-metadata.md:1328). Returning a "yes" object here would quietly drop
   // whatever robots fields the layout sets on every indexable event page.
+  // Callers must OMIT the key via a conditional spread (`...(robots ? { robots } : {})`), never
+  // write `robots: seriesRobots(...)` directly: Next iterates every own key of the metadata
+  // object, so a key present with the value undefined still replaces the layout block with nothing.
   return isOccurrenceIndexed(facts, indexedOccurrences) ? undefined : { index: false, follow: true }
 }
 

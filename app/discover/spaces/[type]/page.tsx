@@ -45,7 +45,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical },
     // Guard the index signal: a hub with too few Spaces should not be advertised as a landing page.
-    robots: spaces.length >= HUB_MIN_INDEX ? undefined : { index: false, follow: true },
+    ...(spaces.length >= HUB_MIN_INDEX ? {} : { robots: { index: false, follow: true } }),
     openGraph: { ...OG_SITE, title, description, url: canonical, type: 'website' },
     twitter: { card: 'summary_large_image', title, description },
   }

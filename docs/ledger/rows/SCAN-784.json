@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-784",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const files=[\"app/discover/cities/[citySlug]/page.tsx\",\"app/discover/places/[citySlug]/page.tsx\",\"app/discover/spaces/[type]/page.tsx\"];const bad=[];for(const f of files){if(!fs.existsSync(f)){console.error(\"SCAN-784: missing \"+f);process.exit(79)}const src=fs.readFileSync(f,\"utf8\");if(/^\\s*robots:\\s*[^\\n]*\\?\\s*undefined\\s*:/m.test(src)||/^\\s*robots:\\s*[^\\n]*\\?[^\\n]*:\\s*undefined\\s*,?\\s*$/m.test(src))bad.push(f)}if(bad.length){console.error(\"SCAN-784: \"+bad.join(\", \")+\" still write robots: cond ? undefined : {...}, so the key is present as undefined on the indexable branch and wipes the root layout googleBot max-image-preview and max-snippet block on every indexable hub.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: The three discover hubs (cities, places, spaces/[type]) omit the robots key via a conditional spread on the indexable branch instead of writing robots: undefined, so the root layout googleBot block inherits; lib/events/series-seo.ts comment now says callers must spread, not assign."
+  }
+}
