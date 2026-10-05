@@ -518,7 +518,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     }));
 
-    const placeRoutes: MetadataRoute.Sitemap = cities.map((c) => ({
+    // A city that also earns the density landing page canonicalises there
+    // (app/discover/places/[citySlug]/page.tsx), so advertising its /discover/places URL
+    // sends crawlers to a page that points elsewhere (SCAN-656). The density slug and the
+    // places slug are the same `citySlug(name)` form, so set membership is the page's rule.
+    const densitySlugs = new Set(densityCities.map((c) => c.slug));
+    const placeRoutes: MetadataRoute.Sitemap = cities
+      .filter((c) => !densitySlugs.has(c.slug))
+      .map((c) => ({
       url: `${SITE_URL}/discover/places/${c.slug}`,
       changeFrequency: "daily" as const,
       priority: 0.6,

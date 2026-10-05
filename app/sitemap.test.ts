@@ -172,8 +172,9 @@ vi.mock('@/lib/marketplace', () => ({
 }))
 vi.mock('@/lib/help/content', () => ({ getAllArticles: async () => [], getAllCategories: async () => [] }))
 vi.mock('@/app/discover/events/_data', () => ({ getCityCategoryHubs: async () => [] }))
-vi.mock('@/app/discover/places/_data', () => ({ listDiscoverCities: async () => [] }))
-vi.mock('@/app/discover/cities/_data', () => ({ listDensityCities: async () => [] }))
+const cityReads = vi.hoisted(() => ({ places: [] as { slug: string }[], density: [] as { slug: string }[] }))
+vi.mock('@/app/discover/places/_data', () => ({ listDiscoverCities: async () => cityReads.places }))
+vi.mock('@/app/discover/cities/_data', () => ({ listDensityCities: async () => cityReads.density }))
 vi.mock('@/lib/supabase/public', () => ({ createPublicClient: () => ({ rpc: async () => ({ data: [] }) }) }))
 // The admin client answers per TABLE, so a LIVE-331 test can hand the real partners reader the
 // exact resolved shape supabase-js produces under a database window, while every other read this
@@ -214,6 +215,8 @@ beforeEach(() => {
   commerce.housing = []
   commerce.classifieds = []
   commerce.limits = {}
+  cityReads.places = []
+  cityReads.density = []
 })
 
 /** Just the podcast entries, in emission order. */
@@ -308,6 +311,15 @@ describe('app/sitemap emitted URL set', () => {
     expect(byUrl.get(`${SITE}/the-community`)?.priority).toBe(0.8)
     expect(byUrl.get(`${SITE}/the-lab`)?.priority).toBe(0.8)
     expect(byUrl.get(`${SITE}/the-quest`)?.priority).toBe(0.6)
+  })
+
+  it('never advertises a /discover/places city whose canonical is its density page (SCAN-656)', async () => {
+    cityReads.places = [{ slug: 'encinitas' }, { slug: 'carlsbad' }]
+    cityReads.density = [{ slug: 'encinitas' }]
+    const urls = (await sitemap()).map((e) => e.url)
+    expect(urls).toContain(`${SITE}/discover/cities/encinitas`)
+    expect(urls).toContain(`${SITE}/discover/places/carlsbad`)
+    expect(urls).not.toContain(`${SITE}/discover/places/encinitas`)
   })
 
   it('emits no duplicate URLs', async () => {
