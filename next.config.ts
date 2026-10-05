@@ -653,7 +653,7 @@ const nextConfig: NextConfig = {
 // skipped — withSentryConfig becomes a near pass-through that doesn't break the build.
 // org/project/authToken come from env so nothing Sentry-specific is hardcoded.
 //
-// THE BUILD LOG IS BILLED (HYG-162, ADR-1704). Vercel counts build log lines as observability
+// THE BUILD LOG IS BILLED (HYG-162, ADR-1706). Vercel counts build log lines as observability
 // events, and one build of this app wrote about 10,000 lines, nearly all of them this plugin
 // listing every `.js.map` it uploaded (`silent: !process.env.CI` was *loud* on Vercel, where CI
 // is set). September's Observability Events line ($234) tracked the build count day by day, not

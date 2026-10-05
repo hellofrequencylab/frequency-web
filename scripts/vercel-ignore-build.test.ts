@@ -3,7 +3,7 @@ import { decide, isDocOnly } from './vercel-ignore-build.mjs'
 
 describe('vercel-ignore-build (HYG-162)', () => {
   it('skips a push that only touches documentation', () => {
-    const d = decide(['docs/ledger/rows/HYG-162.json', 'docs/ledger/adr/ADR-1704.md', 'AGENTS.md'])
+    const d = decide(['docs/ledger/rows/HYG-162.json', 'docs/ledger/adr/ADR-1706.md', 'AGENTS.md'])
     expect(d.skip).toBe(true)
   })
 

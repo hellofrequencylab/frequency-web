@@ -1,4 +1,4 @@
-// The Ignored Build Step (HYG-162, ADR-1704). Vercel runs this before every build; exit 0 means
+// The Ignored Build Step (HYG-162, ADR-1706). Vercel runs this before every build; exit 0 means
 // "skip this build", exit 1 means "build". It is wired from vercel.json's `ignoreCommand`.
 //
 // WHY. September 2026 cost about $700 on Vercel, and $265 of it was Build CPU Minutes. Six

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { tracesSampleRate } from './sentry'
 
-// HYG-162 / ADR-1704: previews are untraced, production and the override are unchanged.
+// HYG-162 / ADR-1706: previews are untraced, production and the override are unchanged.
 describe('tracesSampleRate', () => {
   it('is zero on a preview deployment', () => {
     expect(tracesSampleRate({ NODE_ENV: 'production', VERCEL_ENV: 'preview' })).toBe(0)

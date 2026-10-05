@@ -424,7 +424,7 @@ export const config = {
     // The route establishes its own caller (lib/contract/caller.ts); a web caller's cookie session
     // is read and refreshed there by the server client, which may write cookies in a route handler.
     //
-    // `sw.js`, `offline.html` and `manifest.json` (HYG-162, ADR-1704) are the PWA files in public/.
+    // `sw.js`, `offline.html` and `manifest.json` (HYG-162, ADR-1706) are the PWA files in public/.
     // The service worker fetches the first two on every page the worker is active on, so each was
     // about 1,400 proxy invocations a day on the preview deployments alone, every one of them a
     // billed middleware event that did a Supabase session read for a file no one is signed in to.

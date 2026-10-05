@@ -52,7 +52,7 @@ const environment =
  *  SENTRY_TRACES_SAMPLE_RATE). Tracing only runs when Sentry is enabled at all, so this is moot
  *  when no DSN is set.
  *
- *  Previews are zero (HYG-162, ADR-1704): the DSN is set for preview AND production, so every
+ *  Previews are zero (HYG-162, ADR-1706): the DSN is set for preview AND production, so every
  *  e2e, visual and Lighthouse run against a preview was also a traced session nobody reads.
  *  Errors on previews still go through; only the performance spans stop. */
 export function tracesSampleRate(env: NodeJS.ProcessEnv = process.env): number {
