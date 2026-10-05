@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-745",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/join/(induction)/feature-actions.ts\";if(!fs.existsSync(f))process.exit(79);const t=fs.readFileSync(f,\"utf8\");const strips=(t.match(/\\[\\^a-z0-9\\]\\/g/g)||[]).length;const i=t.indexOf(\"function baseHandle\");const body=i<0?\"\":t.slice(i,t.indexOf(\"\\n}\",i));const minThree=/>=\\s*3|<\\s*3|\\{3,/.test(body);if(strips>0){console.error(\"SCAN-745: feature-funnel handle derivation still strips underscores with [^a-z0-9], so a picked @jo_ann is stored as a different handle than the one the visitor was shown.\");process.exit(1)}if(!minThree){console.error(\"SCAN-745: baseHandle has no three-character minimum, so a visitor named Jo is stashed as @jo and fails sanitizeProfileInput at /join/complete, never finishing onboarding.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe feature-funnel signup bridge (app/join/(induction)/feature-actions.ts) derived handles with [^a-z0-9], which stripped the underscores the funnel's own HANDLE_RE allows (a picked @jo_ann was stored as @joann), and baseHandle had no three-character floor, so a visitor named Jo who skipped the username step was stashed as @jo and rejected by sanitizeProfileInput at /join/complete, bouncing back to /join forever. baseHandle and the picked-handle strip now keep underscores, baseHandle pads anything under three characters with 'member', and a final /^[a-z0-9_]{3,30}$/ guard before stashPendingInduction falls back to member plus a random suffix. Pinned by app/join/(induction)/feature-actions.test.ts (underscore kept, Jo padded, blank name, short pick falls back to name, taken handle suffixed) with the cookie jar, admin lookup and stash mocked."
+  }
+}

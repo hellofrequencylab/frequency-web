@@ -20,9 +20,16 @@ import { stashPendingInduction } from './actions'
 // Stored cookie name kept through the Funnels rename (ADR-1090) — see actions.ts.
 const FUNNEL_SEQ_COOKIE = 'fq_beta_seq'
 
-// "Daniel Tyack" -> "danieltyack" (mirrors the induction's suggestHandle).
+// The shape writeInduction / mergeInduction accept (lib/profile-input.ts). Anything stashed that
+// does not match it throws at /join/complete and the visitor bounces back to /join (SCAN-745).
+const HANDLE_RE = /^[a-z0-9_]{3,30}$/
+
+// "Daniel Tyack" -> "danieltyack" (mirrors the induction's suggestHandle). Keeps underscores, which
+// the funnel's own HANDLE_RE allows, and always yields at least three characters so a visitor named
+// Jo is not stashed as @jo and rejected by sanitizeProfileInput at the finish line.
 function baseHandle(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24) || 'member'
+  const b = name.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24)
+  return b.length >= 3 ? b : (b + 'member').slice(0, 24) || 'member'
 }
 
 /** A handle not already taken. Tries the base, then base2..base9, then a short random suffix, so a
@@ -73,8 +80,10 @@ export async function beginFeatureFunnelSignup(input: {
 
   // Prefer the @username they picked (feature funnel step 2) when it is a valid, free handle; else
   // derive a unique one from their name. Never dies on a collision the visitor can't see.
-  const picked = (input.handle ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
-  const handle = picked.length >= 3 ? await uniqueHandle(picked) : await uniqueHandle(name)
+  const picked = (input.handle ?? '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30)
+  let handle = picked.length >= 3 ? await uniqueHandle(picked) : await uniqueHandle(name)
+  // Last line of defence: never stash a handle the finalizer will reject.
+  if (!HANDLE_RE.test(handle)) handle = `member${Math.random().toString(36).slice(2, 6)}`
 
   // Park a minimal profile (name + the handle; everything else blank) in the pending-induction
   // cookie. The finalizer writes it through the tested writeInduction path after sign-in.
