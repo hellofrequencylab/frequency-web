@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-800",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/spotlight/[handle]/page.tsx\";if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(f,\"utf8\");const i=s.indexOf(\"generateMetadata\");if(i<0)process.exit(79);const end=s.indexOf(\"\\nexport default\",i);const body=s.slice(i,end<0?s.length:end);const owns=/\\bimages\\s*:/.test(body);if(owns){console.error(\"SCAN-800: the Spotlight page still sets images inside generateMetadata, so a member with an avatar owns the key and the designed opengraph-image card is suppressed in favour of the raw square avatar.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\ngenerateMetadata in app/spotlight/[handle]/page.tsx spread images: [avatarSrc(avatar_url)] into both openGraph and twitter whenever the member had a photo. Owning the images key makes Next's mergeStaticMetadata skip the folder's opengraph-image.tsx, so members with an avatar (the common case) shared a raw square photo stretched into a summary_large_image slot instead of the designed 1200x630 card; LIVE-141 only fixed the no-avatar branch. Removed both spreads and the stale comment, leaving a note that opengraph-image.tsx owns the card and Next copies openGraph.images into twitter. Pinned in scripts/check-metadata-images.test.ts: a test slices generateMetadata to the default export and asserts no images: assignment while opengraph-image.tsx exists beside it. avatarSrc stays imported for the JSON-LD person image."
+  }
+}
