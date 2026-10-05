@@ -168,10 +168,10 @@ const ATTENDANCE_MODE_URL: Record<'in_person' | 'online' | 'hybrid', string> = {
 
 export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   const mode: 'in_person' | 'online' | 'hybrid' = event.attendance_mode ?? 'in_person'
-  // Resolved ONCE and reused by startDate, endDate and offers.validFrom, so the three can never
-  // disagree about when the event is — a page whose offer opens at a different moment than the
-  // event starts is a page-vs-schema contradiction of the same kind the availability note below
-  // guards against.
+  // Resolved ONCE and reused by startDate and endDate, so the two can never disagree about when
+  // the event is. Offer.validFrom is deliberately NOT published: schema.org defines it as the
+  // moment tickets go on sale, not the moment the event begins, and the sale-open instant lives on
+  // the ticket tiers (lib/events/sales-window.ts), which this builder does not receive (SCAN-789).
   const startIso = eventIsoWithOffset(event.starts_at, event.time_zone)
   const endIso = eventIsoWithOffset(event.ends_at, event.time_zone)
   // Canonical public event URL is /events/<slug> (both the /events page's
@@ -290,7 +290,6 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
                 ? 'https://schema.org/SoldOut'
                 : 'https://schema.org/InStock',
             url,
-            validFrom: startIso ?? event.starts_at,
           },
         }),
   }

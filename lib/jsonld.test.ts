@@ -780,11 +780,11 @@ describe('SCAN-207 · Event startDate carries the event zone, not a bare Z', () 
     }
   })
 
-  it('keeps the offer opening at the same moment the event starts', () => {
-    // startDate and offers.validFrom are resolved once and shared, so the two cannot drift into a
-    // page-vs-schema contradiction about when the event is.
+  it('publishes no offers.validFrom: the event start is not the sale-open moment (SCAN-789)', () => {
+    // Offer.validFrom means "tickets go on sale at"; the builder has no sale-open instant, so it
+    // says nothing rather than claiming the sale opens when the doors do.
     const r = eventSchema(makeEvent({ starts_at: '2026-08-27T18:30:00Z', time_zone: 'America/Los_Angeles' }))
-    expect((r.offers as Record<string, unknown>).validFrom).toBe(r.startDate)
+    expect((r.offers as Record<string, unknown>).validFrom).toBeUndefined()
   })
 
   it('degrades to the raw stored value on a malformed timestamp rather than dropping the field', () => {
