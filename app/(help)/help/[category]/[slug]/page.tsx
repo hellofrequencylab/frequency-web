@@ -22,10 +22,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const found = await getArticle(category, slug)
   if (!found) return {}
   const { article } = found
+  // A twin of a marketing guide names the guide in its `canonical:` key (SCAN-673), so the guide is
+  // the one URL that ranks for the query; every other article stays self-canonical.
+  const canonical = article.canonical || helpHref(category, slug)
   return {
     title: `${article.title} | Help`,
     description: article.description,
-    alternates: { canonical: helpHref(category, slug) },
+    alternates: { canonical },
     // The IMAGE is not set here on purpose. `opengraph-image.tsx` / `twitter-image.tsx` sit beside
     // this file, and Next merges the file-convention card into `openGraph.images` /
     // `twitter.images` itself — at the hash-suffixed URL only Next knows (see the note in
