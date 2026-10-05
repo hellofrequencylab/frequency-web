@@ -30,8 +30,8 @@ import type { PublicEvent, PublicCircle } from './discover'
 // `time_zone` is an EventSchemaEnrichment field rather than a PublicEvent one (the public RPCs do
 // not return it yet), so the helper accepts it alongside the row — see the SCAN-207 block below.
 function makeEvent(
-  overrides: Partial<PublicEvent> & { time_zone?: string | null; cover_url?: string | null } = {},
-): PublicEvent & { time_zone?: string | null; cover_url?: string | null } {
+  overrides: Partial<PublicEvent> & { time_zone?: string | null } = {},
+): PublicEvent & { time_zone?: string | null } {
   return {
     id: 'evt-1',
     slug: 'test-event',
