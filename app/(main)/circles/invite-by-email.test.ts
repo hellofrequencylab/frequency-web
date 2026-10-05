@@ -44,21 +44,24 @@ vi.mock('@/lib/ai/circle-spark', () => ({
 // Admin client: circles.name + profiles.display_name reads, and the invite_links insert.
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
-    from: (table: string) => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: async () => {
-            if (table === 'circles') return { data: { name: 'Sunset Circle' }, error: null }
-            if (table === 'profiles') return { data: { display_name: 'Ada' }, error: null }
-            return { data: null, error: null }
-          },
-        }),
-      }),
+    from: (table: string) => {
+      const maybeSingle = async () => {
+        if (table === 'circles') return { data: { name: 'Sunset Circle' }, error: null }
+        if (table === 'profiles') return { data: { display_name: 'Ada' }, error: null }
+        // invite_links: no live link yet (SCAN-693 reuses one when it exists), so a row is minted.
+        return { data: null, error: null }
+      }
+      // The invite_links read chains .eq().eq().order().limit().maybeSingle(); the others .eq().maybeSingle().
+      const chain: Record<string, unknown> = { maybeSingle }
+      for (const k of ['eq', 'order', 'limit']) chain[k] = () => chain
+      return {
+      select: () => chain,
       insert: (row: Record<string, unknown>) => {
         if (table === 'invite_links') inviteInserts.push(row)
         return Promise.resolve({ error: inviteInsertError })
       },
-    }),
+      }
+    },
   }),
 }))
 
