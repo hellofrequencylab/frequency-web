@@ -310,6 +310,11 @@ export async function proxy(request: NextRequest) {
   // the event link should be able to add it to their calendar. Events are
   // already anon-readable via the public_landing_reads RLS policies.
   const isShareableFeed = pathname.endsWith('.ics')
+  // SCAN-720: the opt-in "Save contact" card at /people/<handle>/vcard is a public file built from
+  // the member's own opt-in (the route 404s otherwise), and the person holding it is a stranger who
+  // scanned a printed code. Anchored to the vcard leaf only: /people and /people/<handle> stay
+  // protected exactly as before.
+  const isPublicVcard = /^\/people\/[^/]+\/vcard$/.test(pathname)
   // The Funnels front door (ADR-068, renamed ADR-1090) lives at /join, which is
   // deliberately NOT in PROTECTED_PATHS: signed-out visitors run the whole
   // cinematic induction (sign-in embedded) at /join, the no-auth preview at
@@ -335,6 +340,7 @@ export async function proxy(request: NextRequest) {
   const isTwinRedirectable = hasPublicTwin(pathname)
   const isProtected =
     !isShareableFeed &&
+    !isPublicVcard &&
     !isPublicEventView &&
     !isTwinRedirectable &&
     PROTECTED_PATHS.some((p) => pathname.startsWith(p))
