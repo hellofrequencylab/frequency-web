@@ -1968,6 +1968,10 @@ export async function setPracticeTags(
 export async function forkPractice(profileId: string, practiceId: string): Promise<Practice | null> {
   const src = await getPractice(practiceId)
   if (!src) return null
+  // Visibility (SCAN-726): this reads through the admin client, so RLS does not apply. Only a
+  // practice the caller could already read (public, or their own) may be copied; a private or
+  // pending practice reached by uuid is refused exactly as the detail page refuses it (404).
+  if (!src.is_public && src.created_by !== profileId) return null
   // PRACTICE_COLS doesn't carry the lineage columns, so read the parent's root directly.
   const { data: lineageRow } = await db()
     .from('practices')
@@ -2017,6 +2021,10 @@ export async function claimPractice(
   templateId: string,
   fields: { title?: string; summary?: string | null; body?: string | null; cadence?: string | null },
 ): Promise<Practice | null> {
+  // Only a real template is claimable (the claim path also pays the first-claim Zaps, SCAN-726);
+  // the visibility guard itself lives in forkPractice.
+  const template = await getPractice(templateId)
+  if (!template?.is_template) return null
   const copy = await forkPractice(profileId, templateId)
   if (!copy) return null
   const patch: PracticeEdit = {}
@@ -2680,8 +2688,10 @@ export async function logPractice(input: {
   // Completion economy (ADR-443, achieved tier). A TIMED log earns the tier its REAL engaged
   // time reaches (achievedTier below); under the Light floor it is a partial (clears the day,
   // 1 Zap, "Finish Practice" tops up). A one-tap / quick-log (no target) is always FULL — the
-  // unchanged recommended path. The timer-completion proof in completeSession still guarantees
-  // the claimed seconds were actually spent before any of this runs.
+  // unchanged recommended path. secondsDone / secondsTarget are trusted here, so they must only
+  // ever come from a server-derived source: the On Air completeSession path reads the elapsed
+  // time off the server-side session row, and logPracticeAction (the member-callable one-tap
+  // action) pins both to null and never forwards client numbers (SCAN-723).
   const tgt = Math.max(0, Math.round(secondsTarget ?? 0))
   const done = Math.max(0, Math.round(secondsDone ?? 0))
   const isTimed = tgt > 0

@@ -57,11 +57,6 @@ export async function logPracticeAction(
   practiceId: string,
   circleId?: string | null,
   clientTimezone?: string | null,
-  // Completion economy (practice-timer redesign): optional timed-log seconds. Omitted by
-  // the one-tap "Log it" callers, which keep the unchanged FULL behavior (no target → full
-  // reward, streak tick). A timed caller (e.g. a "Finish Practice" top-up from the practices
-  // page) passes both, and logPractice routes partial / full / finish off the ratio.
-  timed?: { secondsDone?: number | null; secondsTarget?: number | null } | null,
 ): Promise<ActionResult<LogPracticeResult>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
@@ -76,14 +71,20 @@ export async function logPracticeAction(
   // streak re-derive. Wrap it in log.time so duration_ms + ok are queryable by the
   // same `action.practice.log` event vocabulary as the crons, without changing the
   // result or control flow (log.time re-throws on error).
+  //
+  // This action is ALWAYS a one-tap log (SCAN-723): it never accepts seconds from the client.
+  // secondsDone / secondsTarget are pinned to null so the uses_timer gate in logPractice always
+  // applies, and a member cannot claim a Heavy-tier sit by sending their own numbers. Timed logs
+  // and "Finish Practice" top-ups go only through the On Air completeSession path, which derives
+  // the elapsed time from the server-side session row.
   const res = await log.time('action.practice.log', () =>
     logPractice({
       profileId,
       practiceId,
       circleId: circleId ?? null,
       clientTimezone: clientTimezone ?? null,
-      secondsDone: timed?.secondsDone ?? null,
-      secondsTarget: timed?.secondsTarget ?? null,
+      secondsDone: null,
+      secondsTarget: null,
     }),
   )
   // Timer gate: a practice with a set timer can only be logged from inside its session (which
@@ -659,7 +660,8 @@ export async function suggestPracticeAction(
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
   const template = await getPractice(templateId)
-  if (!template) return fail('Practice not found')
+  // Only a practice the member could already read (public, or their own) is sent to the model.
+  if (!template || (!template.is_public && template.created_by !== profileId)) return fail('Practice not found')
   const suggestion = await personalizePractice({
     template: {
       title: template.title,

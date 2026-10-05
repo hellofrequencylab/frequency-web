@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-726",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const l=\"lib/practices.ts\",a=\"app/(main)/practices/actions.ts\";if(!fs.existsSync(l)||!fs.existsSync(a))process.exit(79);const ls=fs.readFileSync(l,\"utf8\"),as=fs.readFileSync(a,\"utf8\");const slice=(s,n)=>{const i=s.indexOf(\"export async function \"+n+\"(\");if(i<0)return null;const j=s.indexOf(\"\\nexport \",i+10);return s.slice(i,j<0?s.length:j)};const fork=slice(ls,\"forkPractice\"),forkA=slice(as,\"forkPracticeAction\"),sug=slice(as,\"suggestPracticeAction\");if(!fork||!forkA||!sug)process.exit(79);const guard=/src\\.is_public|allowPrivate|practice\\.is_public|template\\.is_public|copy\\.is_public/;const forkGuarded=guard.test(fork)||guard.test(forkA);const sugGuarded=/template\\.is_public|is_public\\s*&&/.test(sug);if(!forkGuarded||!sugGuarded){console.error(\"SCAN-726: forkPractice and suggestPracticeAction read any practice by id with no visibility check, so a member with a private practice uuid can copy its full guide body into their own editor.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nforkPractice read any practice by id through the admin client (no RLS) and copied its full body into a private copy owned by the caller; forkPracticeAction and claimPractice rode that path with only a signed-in check, and suggestPracticeAction sent any practice body to the model with a bare null check. forkPractice now returns null when the source is not public and not created by the caller, so fork and claim both carry the guard (no admin fork path exists today, so no allowPrivate flag was added); claimPractice reads the source first and refuses a non-template so the first-claim Zaps only pay for real templates; suggestPracticeAction uses the same public-or-own condition remixDirectionsAction already had. Pinned by lib/practices-fork-visibility.test.ts against an in-memory admin-client fake: another member's private practice yields null with no insert, public and own practices still copy, and claimPractice refuses a non-template and a private template."
+  }
+}

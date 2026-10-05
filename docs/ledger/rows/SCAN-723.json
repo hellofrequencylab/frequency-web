@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-723",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/practices/actions.ts\";if(!fs.existsSync(p))process.exit(79);const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"export async function logPracticeAction(\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);const sig=body.slice(0,body.indexOf(\"{\"));const takesTimed=/timed\\??\\s*:/.test(sig);const forwards=/secondsTarget:\\s*timed\\?*\\.secondsTarget/.test(body);if(takesTimed&&forwards){console.error(\"SCAN-723: logPracticeAction still forwards client-supplied secondsDone and secondsTarget to logPractice, so a member can skip the timer gate and claim the Heavy tier by sending any numbers.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nlogPracticeAction, a server action any member can call, accepted a timed { secondsDone, secondsTarget } argument and forwarded it unchecked to logPractice. The uses_timer refusal only runs when the target is <= 0, so secondsTarget: 1 with secondsDone: 3600 skipped the gate and paid a Heavy-tier log plus a streak tick with the timer never run. No caller passed timed. The timed parameter is deleted and the action always passes secondsDone: null, secondsTarget: null, so it is a pure one-tap log and the timer gate always applies; timed logs and Finish Practice top-ups go only through On Air completeSession, which derives elapsed time from the server-side session row. The misleading comment in lib/practices.ts above the completion economy block now states that the seconds are trusted and must come only from a server-derived source. Pinned by app/(main)/practices/log-practice-action.test.ts, which asserts the logPractice input carries null seconds even when a hostile extra argument is sent."
+  }
+}
