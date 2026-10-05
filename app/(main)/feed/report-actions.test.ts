@@ -64,3 +64,49 @@ describe('reportContent refuses a target that does not exist (LIVE-652)', () => 
     expect(body).toContain(`.from('${table}')`)
   })
 })
+
+// SCAN-679 — resolveModerator returned the caller on community host alone, and host is
+// self-granted (publishing a Circle). Every action wrote through the admin client, so any member
+// who published one Circle could suspend any member, hide any post and cancel any event.
+describe('the report queue splits platform scope from in-Circle scope (SCAN-679)', () => {
+  it('never admits a moderator on community host alone', () => {
+    expect(/hasRole\(caller\.community_role,\s*'host'\)\)\s*return caller/.test(src)).toBe(false)
+    expect(src).toContain('canModeratePlatform(caller.webRole)')
+  })
+
+  it.each(['warnMember', 'suspendMember', 'cancelEventFromReport'])('%s requires platform scope', (fn) => {
+    const a = src.indexOf(`export async function ${fn}`)
+    expect(a).toBeGreaterThan(0)
+    const b = src.indexOf('\nexport ', a + 10)
+    const body = src.slice(a, b < 0 ? undefined : b)
+    expect(body).toContain('!mod.platform')
+    expect(body).toContain('canActOnReport(admin, mod, report)')
+  })
+
+  it('reviewReport checks the report scope before any hide', () => {
+    const a = src.indexOf('export async function reviewReport')
+    const b = src.indexOf('\nexport ', a + 10)
+    const body = src.slice(a, b)
+    const gate = body.indexOf('canActOnReport(admin, mod, report)')
+    const hide = body.search(/from\('posts'\)\.update/)
+    expect(gate).toBeGreaterThan(0)
+    expect(hide).toBeGreaterThan(gate)
+  })
+
+  it('a host acts only on a post or comment in a Circle they host, and nobody acts on their own report', () => {
+    const a = src.indexOf('async function canActOnReport')
+    const b = src.indexOf('function reportTargetMatches')
+    const body = src.slice(a, b)
+    expect(body).toContain('report.reporter_id === mod.caller.id) return false')
+    expect(body).toContain("report.target_type !== 'post' && report.target_type !== 'comment'")
+    expect(body).toContain('canModeratePost(')
+  })
+
+  it('suspendMember refuses self, staff and moderators as targets', () => {
+    const a = src.indexOf('export async function suspendMember')
+    const b = src.indexOf('\nexport ', a + 10)
+    const body = src.slice(a, b)
+    expect(body).toContain('memberProfileId === caller.id')
+    expect(body).toContain('canModeratePlatform(asWebRole(')
+  })
+})

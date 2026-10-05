@@ -5,7 +5,7 @@ import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
 import { catalogItem } from '@/lib/billing/pricing-keys'
 import { getFunnelConfig, funnelSlugs } from '@/lib/marketing/funnel-config'
 import { NicheFunnel } from '@/components/marketing/funnel/niche-funnel'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 // THE OPERATOR FUNNEL DOOR (ADR-591). One chrome-free conversion template, one config per niche. STATIC:
 // generated at build from the funnel registry; `dynamicParams=false` so an unknown niche 404s. Reads only
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ niche: st
     title: pageTitle,
     description,
     alternates: { canonical: path },
-    openGraph: { ...OG_SITE, title: ogTitle, description, url: path, type: 'website' },
+    openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: ogTitle, description, url: path, type: 'website' },
     twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }

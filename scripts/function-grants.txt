@@ -141,6 +141,7 @@ friendships_freeze_identity          internal
 funnel_rollup                        authenticated
 get_my_group_ids                     internal
 gift_gems_atomic                     internal
+guard_event_rsvp_member_write        internal
 handle_is_available                  public
 handle_new_auth_user                 internal
 housing_aspect_score                 internal
