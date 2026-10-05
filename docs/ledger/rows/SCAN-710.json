@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-710",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/commerce/checkout.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-710: checkout.ts missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const paid=s.search(/\\.update\\(\\{\\s*status:\\s*\\x27paid\\x27/);const gone=s.search(/\\.update\\(\\{\\s*status:\\s*\\x27cancelled\\x27\\s*\\}\\)/);if(paid<0||gone<0){console.error(\"SCAN-710: the paid or cancelled flip on commerce_orders was not found\");process.exit(79)}const head=(i)=>s.slice(Math.max(0,i-220),i);const drops=(h)=>/const\\s*\\{\\s*data:\\s*updated\\s*\\}\\s*=\\s*await\\s*db\\(\\)\\s*\\.from\\(\\x27commerce_orders\\x27\\)\\s*$/.test(h);const bad=[];if(drops(head(paid)))bad.push(\"the pending-to-paid flip\");if(drops(head(gone)))bad.push(\"the expired-session cancel\");if(bad.length){console.error(\"SCAN-710: \"+bad.join(\" and \")+\" in lib/commerce/checkout.ts still read only data from the update, so a transient database error is swallowed, the webhook acks 200, Stripe never redelivers and the paid order stays pending forever.\");process.exit(1)}'",
+      "note": "Looks at the destructure directly before the pending-to-paid update and the expired-session cancel update in checkout.ts and fails while either reads only data and not error; passes once both read the error (and the fix throws on it)."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: recordCommerceOrderFromSession and abandonCommerceOrderFromSession now destructure the update error and throw naming the session id, so the Stripe webhook releases its claim and 500s for redelivery instead of acking a dropped flip. Verified by the probe, eslint, and two new checkout.test.ts cases that mock a failing update and expect the throw."
+  }
+}
