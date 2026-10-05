@@ -314,6 +314,10 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
 
 ---
 
+## The build that does not run (HYG-162, ADR-1706)
+
+`vercel.json` carries `ignoreCommand: node scripts/vercel-ignore-build.mjs`. A push whose every changed file since the branch's last successful deployment is documentation (`docs/**`, any `*.md`, `.claude/**`, `scripts/planning-docs.txt`, `LICENSE`) does not build, on previews or on `main`; the artifact would be byte-identical. Any other file, or any doubt about the diff, builds. September's Build CPU Minutes ($265) and Observability Events ($234) both tracked the build count, and the Sentry upload alone wrote about 10,000 billed log lines per build; see [ADR-1706](DECISIONS.md). If a docs-only PR seems not to deploy, that is this rule working. If a code change ever sits under a path the list calls documentation, add the path to the test in `scripts/vercel-ignore-build.test.ts` and move it out of the list, never the other way round.
+
 ## The checklist, before merging anything structural
 
 1. `pnpm build` locally, then read the `postbuild` output. **Every** gate must be ✅ —
