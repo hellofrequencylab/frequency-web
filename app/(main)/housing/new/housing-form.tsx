@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
-import { buttonClasses } from '@/components/ui/button'
+import { HousingSubmit } from './submit'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -417,9 +417,7 @@ export function HousingForm({
       </div>
 
       <div className="flex justify-end">
-        <button type="submit" className={buttonClasses('primary', 'md')}>
-          {initial ? 'Save changes' : 'List housing'}
-        </button>
+        <HousingSubmit>{initial ? 'Save changes' : 'List housing'}</HousingSubmit>
       </div>
     </form>
   )

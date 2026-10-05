@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-762",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const f=\"app/(main)/housing/new/housing-form.tsx\";if(!fs.existsSync(f)){console.error(\"SCAN-762: housing-form.tsx missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const raw=/<button\\s+type=[\\x22\\x27]submit[\\x22\\x27]/.test(s);const walk=(d)=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)]);const pendingAware=walk(\"app/(main)/housing\").filter(p=>/\\.tsx?$/.test(p)).some(p=>/useFormStatus|useActionState/.test(fs.readFileSync(p,\"utf8\")));if(raw&&!pendingAware){console.error(\"SCAN-762: the housing form still submits through a raw <button type=submit> and nothing under app/(main)/housing reads useFormStatus or useActionState, so a second tap while the geocode and governed write run posts the listing twice.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nHousing form submit is a useFormStatus leaf that disables and shows a loading state while the action runs."
+  }
+}
