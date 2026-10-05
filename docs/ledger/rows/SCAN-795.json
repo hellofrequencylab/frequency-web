@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-795",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/admin/pricing/actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-795: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const has=(r)=>new RegExp(\"revalidatePath\\\\(\\\\s*[\\\"\\x27]\"+r+\"[\\\"\\x27]\").test(s);const miss=[];if(!has(\"/llms\\\\.txt\"))miss.push(\"/llms.txt\");if(!has(\"/llms-full\\\\.txt\"))miss.push(\"/llms-full.txt\");if(!has(\"/pricing\"))miss.push(\"/pricing\");if(miss.length){console.error(\"SCAN-795: an /admin/pricing write revalidates only /admin/pricing, so \"+miss.join(\", \")+\" keep quoting the old fee until their ISR window expires (24h for /llms.txt).\");process.exit(1)}'",
+      "note": "Fails on main before this change (checked by running the probe before the fix); passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: every write in app/(main)/admin/pricing/actions.ts calls revalidatePricingSurfaces(), which revalidates /admin/pricing, /pricing, /llms.txt and /llms-full.txt, so a pricing or flag edit refreshes the public quotes at once instead of after the ISR window."
+  }
+}

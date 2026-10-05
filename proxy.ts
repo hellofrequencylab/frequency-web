@@ -368,8 +368,14 @@ export async function proxy(request: NextRequest) {
   // SCAN-636. A signed-in member on the public event URL keeps RSVP, tickets, and
   // host tools on the existing page. The rewrite is internal: the share URL stays
   // /events/<slug>, and withPath above stamps that path on x-pathname. Crawlers
-  // and signed-out visitors fall through to the ISR body on page.tsx.
-  const eventMemberPath = memberEventRewrite(pathname, !!user)
+  // and signed-out visitors fall through to the ISR body on page.tsx, except a
+  // signed-out organizer on the claim link (?claim=<token>), who needs the member
+  // page's Claim This Event banner (SCAN-799).
+  const eventMemberPath = memberEventRewrite(
+    pathname,
+    !!user,
+    request.nextUrl.searchParams.has('claim'),
+  )
   if (eventMemberPath) {
     const memberUrl = request.nextUrl.clone()
     memberUrl.pathname = eventMemberPath

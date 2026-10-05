@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
 import { columnImageUrl } from '@/lib/library/column-image'
 import { isValidTimeZone } from '@/lib/time/zone'
+import { resolvePrecision } from './location'
 import { log } from '@/lib/log'
 import { normalizeSpaceType } from './types'
 import type { Space, SpaceStatus } from './types'
@@ -37,7 +38,10 @@ const COLS =
 // It rides the EXISTING space read rather than a query of its own, so the calendar pages pay
 // nothing for it. NULL is meaningful and is not a default: it means this Space has never said, and
 // only then does the viewer's browser zone decide (lib/time/header-zone.ts).
-const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, cover_image_asset_id, tagline, city, about, time_zone`
+// The location columns (20270301000000_space_location.sql) ride the same read so the public profile's
+// LocalBusiness node can carry addressRegion, postalCode, addressCountry and geo (SCAN-809); before
+// this, setSpaceLocation wrote them and nothing ever selected them back.
+const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, cover_image_asset_id, tagline, city, about, time_zone, street, region, postal_code, country, latitude, longitude, location_precision`
 
 type SpaceRow = {
   about?: string | null
@@ -66,6 +70,13 @@ type SpaceRow = {
   cover_image_asset_id?: string | null
   tagline?: string | null
   city?: string | null
+  street?: string | null
+  region?: string | null
+  postal_code?: string | null
+  country?: string | null
+  latitude?: number | string | null
+  longitude?: number | string | null
+  location_precision?: string | null
 }
 
 function mapSpace(r: SpaceRow, live: ReadonlyMap<string, string> = new Map()): Space {
@@ -109,7 +120,23 @@ function mapSpace(r: SpaceRow, live: ReadonlyMap<string, string> = new Map()): S
     // Feeds addressLocality on the public profile's LocalBusiness node, and nothing else.
     city: r.city ?? null,
     about: r.about ?? null,
+    // The rest of the Space's place (ADR-1026), for the LocalBusiness node (lib/spaces/schema-location.ts).
+    // numeric columns arrive as strings from PostgREST, so the pair is coerced here, together or not at
+    // all (the pair rule in lib/spaces/location.ts). Null-safe when the columns are absent pre-migration.
+    street: r.street ?? null,
+    region: r.region ?? null,
+    postalCode: r.postal_code ?? null,
+    country: r.country ?? null,
+    ...coordPair(r.latitude, r.longitude),
+    locationPrecision: resolvePrecision(r.location_precision),
   }
+}
+
+function coordPair(lat: unknown, lng: unknown): { latitude: number | null; longitude: number | null } {
+  const a = lat == null ? Number.NaN : Number(lat)
+  const b = lng == null ? Number.NaN : Number(lng)
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return { latitude: null, longitude: null }
+  return { latitude: a, longitude: b }
 }
 
 async function mapSpaces(rows: SpaceRow[]): Promise<Space[]> {
