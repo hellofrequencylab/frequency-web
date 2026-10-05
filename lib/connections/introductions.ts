@@ -130,7 +130,10 @@ export async function claimIntroductionRewards(): Promise<IntroductionRewardResu
       }
     }
   }
-  if (rewarded) revalidatePath('/network/friends')
+  // No revalidatePath here: the only caller is the dynamic Friends page, which awaits this
+  // during its Server Component render and already shows the fresh state in the same pass.
+  // revalidatePath throws during render (SCAN-716), so a future form-action caller that
+  // needs revalidation calls it itself.
   return { rewarded, gems }
 }
 

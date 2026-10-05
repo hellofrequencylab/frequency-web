@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-716",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/connections/introductions.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-716: \"+f+\" missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const i=s.indexOf(\"async function claimIntroductionRewards\");if(i<0){console.error(\"SCAN-716: claimIntroductionRewards not found\");process.exit(79)}const j=s.indexOf(\"\\n}\",i);const body=s.slice(i,j<0?s.length:j);if(/revalidatePath\\(/.test(body)){console.error(\"SCAN-716: claimIntroductionRewards still calls revalidatePath, and its only caller is the Friends page rendering it as a Server Component, so the one load that pays an introduction reward throws during render and shows the error boundary instead of the +Gems banner.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nclaimIntroductionRewards ended with revalidatePath('/network/friends') when a reward was paid, but its only caller is the async Server Component PeopleMode on the Friends page, which awaits it during render; Next throws from revalidatePath while workUnitStore.phase is render, so the single load that paid an introduction reward rendered network/error.tsx instead of the +Gems banner (the gems were already awarded and the row already stamped, so a reload showed nothing). Removed that line with a comment explaining why; createIntroduction, a real action, keeps its revalidatePath. Pinned in lib/connections/introductions.test.ts: a paid reward returns { rewarded: 1, gems: 15 } and never calls revalidatePath, an empty pending list returns zero, and createIntroduction still revalidates."
+  }
+}
