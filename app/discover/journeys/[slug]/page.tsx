@@ -25,7 +25,7 @@ import { ShareButton } from '@/components/discover/share-button'
 import { buttonClasses } from '@/components/ui/button'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
-import { SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { journeySchema, breadcrumbSchema, journeyOfferSchema } from '@/lib/jsonld'
 import { getJourneyOffer, isSoldOut } from '@/lib/journeys/paid'
@@ -75,6 +75,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/discover/journeys/${plan.slug}` },
     openGraph: {
+      ...OG_SITE,
       title: ogTitle,
       description,
       url: `/discover/journeys/${plan.slug}`,

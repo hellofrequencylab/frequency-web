@@ -7,7 +7,7 @@ import { SignInCta } from '@/components/discover/cards'
 import { ShareButton } from '@/components/discover/share-button'
 import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { localBusinessSchema, breadcrumbSchema } from '@/lib/jsonld'
 
@@ -37,7 +37,7 @@ export async function generateMetadata({
     title: partner.name,
     description,
     alternates: { canonical: `/discover/partners/${partner.slug}` },
-    openGraph: { title: ogTitle, description, url: `/discover/partners/${partner.slug}`, type: 'website' },
+    openGraph: { ...OG_SITE, title: ogTitle, description, url: `/discover/partners/${partner.slug}`, type: 'website' },
     twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }

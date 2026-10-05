@@ -5,6 +5,7 @@ import { loadLibraryAssetUrls } from '@/lib/library/asset-urls'
 import { columnImageUrl } from '@/lib/library/column-image'
 import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveContentCascade } from '@/lib/layout/content-cascade'
+import { OG_SITE } from '@/lib/site'
 
 // Operator-editable page content, keyed by route (ADR-180/182). A coded page reads
 // this and falls back to its hardcoded default when nothing is set, so editing is
@@ -137,7 +138,7 @@ export async function pageContentMetadata(
     // (root layout) resolves the relative path; harmless on the noindex in-app pages that also use
     // this helper.
     alternates: { canonical: route },
-    openGraph: { title, description, ...(ogImage ? { images: [{ url: ogImage }] } : {}) },
+    openGraph: { ...OG_SITE, title, description, ...(ogImage ? { images: [{ url: ogImage }] } : {}) },
     twitter: {
       card: ogImage ? 'summary_large_image' : 'summary',
       title,

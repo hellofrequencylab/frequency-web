@@ -34,6 +34,12 @@ export const SITE_URL =
 export const SITE_OG_IMAGE = `${SITE_URL}/opengraph-image.jpg`;
 
 export const SITE_NAME = "Frequency";
+
+// The two Open Graph keys every page's block must carry itself (SCAN-659): Next replaces a nested
+// metadata object such as `openGraph` wholesale, so a page that sets its own block loses the root
+// layout's og:site_name and og:locale unless it spreads these back in. Spread first, so a page can
+// still override either.
+export const OG_SITE = { siteName: SITE_NAME, locale: "en_US" } as const;
 // The brand tagline, and the exact words under the mark in the logo lockup. No leading "The":
 // NAMING.md §ADR-811 makes "Community Collective" the canonical descriptor for the platform, and
 // the artwork sets it that way, so the lockup, the OG card, the <title> and llms.txt all agree.

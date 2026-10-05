@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { OG_SITE } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
     'The third space the Frequency community is building: a sauna, a cold plunge, and rooms to gather. The first is planned for 2028 in North County San Diego.',
   alternates: { canonical: '/the-lab' },
   openGraph: {
+    ...OG_SITE,
     title: 'The Lab · Frequency',
     description:
       'A vision for 2028: a sauna, a cold plunge, and rooms to gather in person. Nothing is bookable yet. The first Lab is planned for North County San Diego.',

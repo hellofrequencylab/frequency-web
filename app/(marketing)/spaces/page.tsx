@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { OG_SITE } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
     'Run your community as a Space on Frequency. A front door in Discover, and the tools to host Circles and Runs. Free to start, no card today.',
   alternates: { canonical: '/spaces' },
   openGraph: {
+    ...OG_SITE,
     title: 'Spaces · Frequency',
     description:
       'Bring your community onto Frequency as a Space: a real front door, the format for Circles and Runs, and tools to grow without losing what made it yours.',

@@ -20,7 +20,7 @@ import { seriesRobots, seriesSeoFacts, suppressPastNoindex } from '@/lib/events/
 import { SeriesDatesRail } from '@/components/events/series-dates-rail'
 import { PayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import { createClient } from '@/lib/supabase/server'
-import { SITE_NAME, SITE_URL } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-projection'
@@ -273,6 +273,7 @@ export async function generateMetadata({
     // so search + AI engines consolidate on this one page.
     alternates: { canonical: `/events/${slug}` },
     openGraph: {
+      ...OG_SITE,
       title: ogTitle,
       description,
       type: 'article',

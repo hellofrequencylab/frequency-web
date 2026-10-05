@@ -7,6 +7,7 @@ import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { helpArticleJsonLd } from '@/lib/help/article-jsonld'
+import { OG_SITE } from '@/lib/site'
 
 type Params = { params: Promise<{ category: string; slug: string }> }
 
@@ -30,6 +31,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     // lib/help/article-jsonld.ts). Setting `images` by hand here would OVERRIDE that card with a
     // guess: resolve-metadata skips the static file whenever the source object already owns the key.
     openGraph: {
+      ...OG_SITE,
       title: article.title,
       description: article.description,
       url: helpHref(category, slug),

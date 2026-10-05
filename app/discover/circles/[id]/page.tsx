@@ -7,7 +7,7 @@ import { SignInCta } from '@/components/discover/cards'
 import { RippleRings } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleSchema } from '@/lib/jsonld'
 
@@ -48,6 +48,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/discover/circles/${circle.slug ?? circle.id}` },
     openGraph: {
+      ...OG_SITE,
       title: `${circle.name} · ${SITE_NAME}`,
       description,
       url: `/discover/circles/${circle.slug ?? circle.id}`,

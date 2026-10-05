@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-659",
+  "title": "Every page that sets its own openGraph dropped og:site_name and og:locale, because Next replaces the root block instead of merging it",
+  "status": "done",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "source": {
+    "file": "lib/site.ts",
+    "ref": "found 2026-10-05 by the scan-seven seo-metadata finder; SCAN-657 fixed the help pages and pointed here for the rest"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven). app/layout.tsx sets siteName and locale on the root openGraph, and Next does not deep-merge nested metadata objects, so every page or layout that defined its own openGraph (58 files under app/ and lib/) published without og:site_name and og:locale. CLOSED 2026-10-05 as one mechanical sweep: lib/site.ts exports OG_SITE ({ siteName, locale }) and every openGraph block spreads it first, so a page can still override either key; a scripted, lint-checked edit with no other change. The probe walks app/**/{page,layout}.tsx for a block that neither carries siteName nor spreads OG_SITE.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const path=require(\"path\");const out=[];const walk=(d)=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(p)}else if(/^(page|layout)\\.tsx$/.test(e.name)){const s=fs.readFileSync(p,\"utf8\");let i=s.indexOf(\"openGraph: {\");while(i>=0){const block=s.slice(i,i+900);if(!/siteName|[.]{3}OG_SITE/.test(block))out.push(p);i=s.indexOf(\"openGraph: {\",i+12)}}}};walk(\"app\");const u=[...new Set(out)];if(u.length){console.error(\"SCAN-659: \"+u.length+\" page/layout file(s) set an openGraph block without siteName or the OG_SITE spread, so og:site_name and og:locale from the root are dropped there (Next replaces nested metadata objects; it does not merge them). First: \"+u.slice(0,5).join(\", \"));process.exit(1)}'",
+    "note": "Walks app/**/{page,layout}.tsx; fails on main, passes with the sweep."
+  }
+}

@@ -15,7 +15,7 @@ import {
 import { Stat } from '@/components/ui/stat'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema, eventListSchema } from '@/lib/jsonld'
-import { SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -67,6 +67,7 @@ export async function generateMetadata({
     // live should never be advertised as a landing page.
     robots: hub ? undefined : { index: false, follow: true },
     openGraph: {
+      ...OG_SITE,
       title: `${title} · ${SITE_NAME}`,
       description,
       url: canonical,

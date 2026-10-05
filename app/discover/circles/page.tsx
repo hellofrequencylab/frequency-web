@@ -17,7 +17,7 @@ import {
 } from '@/components/marketing/vector-art'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema } from '@/lib/jsonld'
-import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Local Circles',
@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     'Browse the local Circles forming on Frequency: small groups of up to 50 neighbors meeting in person around something they share.',
   alternates: { canonical: '/discover/circles' },
   openGraph: {
+    ...OG_SITE,
     title: `Local Circles · ${SITE_NAME}`,
     description: 'Browse the local Circles forming on Frequency and find your people.',
     url: '/discover/circles',

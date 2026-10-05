@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
+import { OG_SITE } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
     'The Quest is the light game everyone plays alongside their Circle. Earn Zaps in person and Gems online, finish three Journeys a season, and climb the ranks.',
   alternates: { canonical: '/the-quest' },
   openGraph: {
+    ...OG_SITE,
     title: 'The Quest · Frequency',
     description:
       'Real life is the reward. The game everyone plays alongside their Circle: Zaps, Gems, season ranks, and Journeys.',

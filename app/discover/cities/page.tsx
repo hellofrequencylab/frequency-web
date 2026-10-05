@@ -9,7 +9,7 @@ import { listDensityCities } from './_data'
 import { PageHero, Section, BetaCTA, Button } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
-import { SITE_NAME, SITE_URL } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -24,6 +24,7 @@ export function generateMetadata(): Metadata {
     description: DESCRIPTION,
     alternates: { canonical },
     openGraph: {
+      ...OG_SITE,
       title: `${TITLE} · ${SITE_NAME}`,
       description: DESCRIPTION,
       url: canonical,

@@ -6,6 +6,7 @@ import { MemberProfileModules } from '@/components/widgets/member-profile/member
 import { JsonLd } from '@/components/json-ld'
 import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { avatarSrc } from '@/lib/images/avatar-focus'
+import { OG_SITE } from '@/lib/site'
 
 // PUBLIC, top-level route (outside the auth-gated (main) group) so a signed-out
 // visitor or non-member can open a shared link. Fail-closed: a page that is not
@@ -38,6 +39,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical: path },
     openGraph: {
+      ...OG_SITE,
       type: 'profile',
       url: path,
       title: name,

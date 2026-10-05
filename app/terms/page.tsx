@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
+import { OG_SITE } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Terms of service',
   description: 'The terms for using Frequency: your account, acceptable use, messaging consent, and the legal basics.',
   alternates: { canonical: '/terms' },
   openGraph: {
+    ...OG_SITE,
     title: 'Terms of service',
     description: 'The terms for using Frequency: your account, acceptable use, messaging consent, and the legal basics.',
     url: '/terms',

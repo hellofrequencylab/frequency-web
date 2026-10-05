@@ -13,7 +13,7 @@ import {
 import { FrequencyArcs, OrganicBlob } from '@/components/marketing/vector-art'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema } from '@/lib/jsonld'
-import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Upcoming events',
@@ -21,6 +21,7 @@ export const metadata: Metadata = {
     'Browse upcoming events across the Frequency community: a sunrise on the bluff, a cold plunge, a supper table. Real plans, on real days, with neighbors near you.',
   alternates: { canonical: '/discover/events' },
   openGraph: {
+    ...OG_SITE,
     title: `Upcoming events · ${SITE_NAME}`,
     description: 'Browse upcoming real-world events across the Frequency community.',
     url: '/discover/events',

@@ -12,7 +12,7 @@ import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema, personSchema } from '@/lib/jsonld'
-import { SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 
@@ -140,6 +140,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical: `/discover/events/organizer/${organizer.handle}` },
     openGraph: {
+      ...OG_SITE,
       title: ogTitle,
       description,
       url: `/discover/events/organizer/${organizer.handle}`,
