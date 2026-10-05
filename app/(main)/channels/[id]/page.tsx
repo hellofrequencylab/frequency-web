@@ -44,6 +44,7 @@ import { GroupCard, type GroupCardData } from '@/components/channels/group-card'
 import type { CircleBase } from '@/lib/types/circle'
 import { anyChannelFilter } from '@/lib/circles/channels'
 import { secondaryCircleIds } from '@/lib/circles/channel-carriers'
+import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CHANNEL PAGE = the focus area's home (ADR-864 broadened the canon; ADR-868 put
@@ -295,7 +296,9 @@ export default async function ChannelPage({
             )
             // Every Circle carrying this Channel, in any of its three places (LIVE-666).
             .or(anyChannelFilter(channel.id, secondary))
-            .neq('status', 'archived')
+            // Only forming and active Circles are listable: a draft or an inactive one is off
+            // discovery, and its page would 404 anyway (SCAN-690).
+            .in('status', [...LISTABLE_CIRCLE_STATUS])
             // 🔴 Admin client = no RLS (ADR-1015). An Interest page is a BROWSE surface, so it keys
             // on AXIS 1 (`unlisted`) — a LISTED closed Circle belongs on it, an unlisted one does not.
             .eq('unlisted', false)
