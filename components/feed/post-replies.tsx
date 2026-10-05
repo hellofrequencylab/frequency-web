@@ -343,12 +343,21 @@ export function PostReplies({
 
   const renderComment = (comment: CommentNode) => (
     <CommentRow key={comment.id} comment={comment} myProfileId={myProfileId} onReply={setReplyTo}>
-      {/* One level of nesting: replies indent under their parent (smaller avatar,
-          ml-8). Replies-to-replies flatten to this same level server-side. */}
+      {/* One level of nesting: replies indent under their parent (smaller avatar, ml-8).
+          SCAN-684: Reply on a NESTED row targets the top-level comment, because that is the only
+          row the composer below opens under (the thread reads two levels and createReply never
+          flattens), and keeps the nested author's name for the label. The self-reply guard and
+          the Gems award then key off the top-level comment's author. */}
       {(comment.replies.length > 0 || replyTo?.id === comment.id) && (
         <div className="ml-8 mt-2.5 space-y-2.5">
           {comment.replies.map((reply) => (
-            <CommentRow key={reply.id} comment={reply} myProfileId={myProfileId} nested onReply={setReplyTo} />
+            <CommentRow
+              key={reply.id}
+              comment={reply}
+              myProfileId={myProfileId}
+              nested
+              onReply={(t) => setReplyTo({ id: comment.id, name: t.name })}
+            />
           ))}
           {replyTo?.id === comment.id && (
             <ReplyComposer
