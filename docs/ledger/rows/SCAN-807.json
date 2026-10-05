@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-807",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs = require(\"fs\")\nconst f = \"components/spotlight/spotlight-shell.tsx\"\nif (!fs.existsSync(f)) { console.error(\"SCAN-807: \" + f + \" is missing\"); process.exit(79) }\nconst s = fs.readFileSync(f, \"utf8\")\nconst start = s.indexOf(\"background.assetPath &&\")\nconst end = s.indexOf(\"background.dim\")\nif (start < 0 || end < 0) { console.error(\"SCAN-807: the Spotlight background block could not be located in \" + f); process.exit(79) }\nconst block = s.slice(start, end)\nconst rawImg = /<img[\\s\\S]*?src=\\{`\\$\\{SPOTLIGHT_PUBLIC_BASE\\}/.test(block)\nconst nextImage = /<Image[\\s\\S]*?src=\\{`\\$\\{SPOTLIGHT_PUBLIC_BASE\\}/.test(block)\nif (rawImg || !nextImage) { console.error(\"SCAN-807: the Spotlight background is still a raw img of the original upload (up to 5 MB) instead of a next/image fill, so every visitor downloads the full-resolution file for a viewport-filling layer.\"); process.exit(1) }\n'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe Spotlight background in components/spotlight/spotlight-shell.tsx was a raw img of the creator's original upload (up to 5 MB, SPOTLIGHT_MAX_BYTES) in a fixed viewport-filling wrapper, so every visitor downloaded the full-resolution file with no resize, no AVIF/WebP and no LCP hint, while the header and avatar in the same file already used next/image. The img (and its eslint-disable) is now a next/image fill with sizes 100vw inside the existing fixed inset-0 wrapper, keeping the focal point and zoom styles and the dim overlay; it preloads only when no header image sits above it (this fork uses preload, not priority), and deliberately does not set loading=eager because on this fork eager also emits a preload link and would compete with the header's. Pinned by components/spotlight/spotlight-shell.test.tsx: the background renders as an optimizer srcset (/_next/image) sized 100vw and never the raw storage URL, preloads exactly when it is the LCP candidate (one preload link with a header, the header's), keeps object-position and scale, and renders no layer when no background is set."
+  }
+}
