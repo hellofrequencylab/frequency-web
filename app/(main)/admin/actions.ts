@@ -1019,6 +1019,16 @@ export async function updateEventDetails(id: string, fd: FormData) {
 
 export async function approveVerification(completionId: string) {
   const caller = await requireCommunityOps()
+  // SCAN-687: a circle task is always verification-gated and any member can become a circle Host,
+  // so the person who logged the completion can never be the one who releases its Zaps.
+  const { data: completion, error: completionError } = await createAdminClient()
+    .from('crew_completions')
+    .select('profile_id')
+    .eq('id', completionId)
+    .maybeSingle()
+  if (completionError) throw new Error(completionError.message)
+  if (!completion) return
+  if (completion.profile_id === caller.id) throw new Error('Unauthorized: you cannot verify your own completion')
   // Verification-gated Zaps (leader grant): stamping verified_at releases the held Zaps via
   // trg_after_crew_completion_verified, which writes the ledger row once. Idempotent — re-approving
   // an already-verified completion is a safe no-op (the helper only touches still-held rows).
