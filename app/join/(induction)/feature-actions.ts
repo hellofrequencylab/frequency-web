@@ -20,10 +20,17 @@ import { stashPendingInduction } from './actions'
 // Stored cookie name kept through the Funnels rename (ADR-1090) — see actions.ts.
 const FUNNEL_SEQ_COOKIE = 'fq_beta_seq'
 
-// "Daniel Tyack" -> "danieltyack" (mirrors the induction's suggestHandle).
+// "Daniel Tyack" -> "danieltyack" (mirrors the induction's suggestHandle). Keeps underscores,
+// which the client HANDLE_RE allows, and guarantees the three-character floor sanitizeProfileInput
+// enforces at /join/complete (SCAN-745): a visitor named Jo used to be stashed as @jo and bounce
+// between /join/complete and /join forever.
 function baseHandle(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24) || 'member'
+  const b = name.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24)
+  if (b.length >= 3) return b
+  return (b + 'member').slice(0, 24)
 }
+
+const HANDLE_RE = /^[a-z0-9_]{3,30}$/
 
 /** A handle not already taken. Tries the base, then base2..base9, then a short random suffix, so a
  *  feature-funnel signup never dies on a unique-violation the visitor can't see or fix. Best-effort:
@@ -73,8 +80,13 @@ export async function beginFeatureFunnelSignup(input: {
 
   // Prefer the @username they picked (feature funnel step 2) when it is a valid, free handle; else
   // derive a unique one from their name. Never dies on a collision the visitor can't see.
-  const picked = (input.handle ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
-  const handle = picked.length >= 3 ? await uniqueHandle(picked) : await uniqueHandle(name)
+  // Same charset as the client's live check, so the @jo_ann the visitor was shown is the @jo_ann
+  // that is stored (SCAN-745).
+  const picked = (input.handle ?? '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30)
+  let handle = picked.length >= 3 ? await uniqueHandle(picked) : await uniqueHandle(name)
+  // The finalizer refuses anything outside this shape, and the refusal loops the visitor back to
+  // /join, so never stash one.
+  if (!HANDLE_RE.test(handle)) handle = `member${Math.random().toString(36).slice(2, 6)}`
 
   // Park a minimal profile (name + the handle; everything else blank) in the pending-induction
   // cookie. The finalizer writes it through the tested writeInduction path after sign-in.
