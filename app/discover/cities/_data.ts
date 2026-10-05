@@ -26,6 +26,7 @@ import {
   type PublicEvent,
 } from '@/lib/discover'
 import { citySlug, cityFromSlug } from '@/app/discover/events/_data'
+import { listNetworkedSpaces, type NetworkedSpace } from '@/lib/spaces/discovery'
 
 /** The density score at or above which a city earns a programmatic landing page.
  *  Mirrors the read-model's 'growing'/'ready' stages; 'seed' stays out of crawl. */
@@ -43,6 +44,10 @@ export type DensityCity = {
   circles: PublicCircle[]
   /** Upcoming public events in this city (past ones filtered out). */
   events: PublicEvent[]
+  /** Networked Spaces (businesses, studios, organizations) whose `spaces.city` is this city
+   *  (SCAN-675). The same discovery boundary /discover/spaces applies, so a walled Space never
+   *  appears here; city-level only, the row carries no street. */
+  spaces: NetworkedSpace[]
 }
 
 /** A light shape for the index grid + sitemap: just the slug, name, and score. */
@@ -91,14 +96,19 @@ export async function getDensityCity(slug: string): Promise<DensityCity | null> 
   const place = places.find((p) => citySlug(p.city) === want)
   if (!place) return null
 
-  const [allCircles, allEvents] = await Promise.all([
+  // The Spaces read is a courtesy row on a page whose gate is the density signal: a transport
+  // failure there (listNetworkedSpaces REPORTS one, LIVE-331) must not 500 a city page that the
+  // circles and events can still fill, so it degrades to none rather than ending the render.
+  const [allCircles, allEvents, allSpaces] = await Promise.all([
     getPublicCircles(200),
     getPublicEvents(200),
+    listNetworkedSpaces().catch(() => [] as NetworkedSpace[]),
   ])
   const circles = allCircles.filter((c) => c.city && citySlug(c.city) === want)
   const events = allEvents.filter(
     (e) => e.city && citySlug(e.city) === want && !hasEventEnded(e),
   )
+  const spaces = allSpaces.filter((s) => s.city && citySlug(s.city) === want)
 
   return {
     city: cityFromSlug(want),
@@ -106,6 +116,7 @@ export async function getDensityCity(slug: string): Promise<DensityCity | null> 
     density: place,
     circles,
     events,
+    spaces,
   }
 }
 

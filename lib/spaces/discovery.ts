@@ -88,6 +88,9 @@ export interface NetworkedSpace {
   logoBackdrop: LogoBackdrop
   /** Operator-supplied cover/banner image URL (spaces.cover_image_url), or null. Leads the card. */
   coverUrl: string | null
+  /** The city the Space says it is in (spaces.city, city-level only, never a street), or null. The
+   *  city landing pages filter on it (SCAN-675); a card never paints it. */
+  city: string | null
   /** The card's action button: the operator-configured header CTA resolved to a label + href off the
    *  Space base path (`/spaces/<slug>`). Total (always resolves to at least the per-type default), so
    *  never null in practice; typed nullable so a card can defend against it. */
@@ -192,8 +195,11 @@ export function normalizeSpaceSort(value: string | null | undefined): SpaceSort 
 // updateSpaceProfile) do not stamp the column, so for many rows this reads as the row's creation
 // time. That is a WEAK lastmod, not a false one -- it never claims a change that did not happen --
 // but it is why the sitemap treats it as optional rather than synthesising a date when it is absent.
+// `city` rides along for the city landing pages (SCAN-675): /discover/cities/<slug> and
+// /discover/places/<slug> filter this list on citySlug(city) so a city page can show the local
+// Spaces located there, the same way it already shows that city's Circles and events.
 const COLS =
-  'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, created_at, updated_at, preferences'
+  'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, city, created_at, updated_at, preferences'
 
 /** The jsonb path to a Space's stored SUBJECT (preferences.profileData.subject), used to filter in the
  *  DB. A missing path reads as NULL, which matches no subject (there is no default subject). The KIND
@@ -215,6 +221,7 @@ type SpaceDiscoveryRow = {
   brand_logo_url: string | null
   cover_image_url: string | null
   tagline: string | null
+  city: string | null
   created_at: string | null
   updated_at: string | null
   preferences: unknown
@@ -592,6 +599,7 @@ export const listNetworkedSpaces = cache(
           logoUrl: r.brand_logo_url,
           logoBackdrop: readLogoBackdrop(r.preferences),
           coverUrl: r.cover_image_url,
+          city: r.city?.trim() || null,
           updatedAt: r.updated_at ?? null,
           action: { label: resolved.label, href: resolved.href },
           memberCount: memberCounts?.get(r.id) ?? null,
