@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-771",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"lib/practice-streak.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-771: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"export async function setStreakPause\");if(i<0){console.error(\"SCAN-771: setStreakPause not found\");process.exit(79)}const rest=s.slice(i+10);const j=rest.search(/export (async )?function /);const body=j<0?rest:rest.slice(0,j);if(!/pauseCoveredDays\\(/.test(body)||/frozenDates:\\s*stored\\.frozenDates/.test(body)){console.error(\"SCAN-771: setStreakPause replaces the rest window without banking the days the old window covered into frozenDates, so a second rest taken before logging breaks the streak the first rest protected.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nsetStreakPause built the new rest window and wrote it over the stored one while passing frozenDates through unchanged, so the days the old window had covered (still bridged only by the read path because a rest is retired on the next log) were dropped from both rest and frozenDates; a member who tapped Rest again the day after a rest ended, or mid-rest from a second tab, saw the streak the first rest protected read as broken. setStreakPause now does what clearStreakPause already did before replacing the window: folds pauseCoveredDays(stored.rest, today) into a Set with stored.frozenDates, prunes to WINDOW_DAYS, and writes that as frozenDates; pauseCoveredDays clamps to today so only already-rested days become permanent. Pinned in lib/practice-streak.meta.test.ts: rest Oct 1 to 7, re-rest Oct 8 with no log writes Oct 1 to 7 into frozenDates and derivePracticeStreak over the written meta still reports the 40 day streak alive (47 with the bridge); a mid-rest re-rest banks only the days already passed."
+  }
+}

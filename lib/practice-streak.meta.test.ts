@@ -61,6 +61,9 @@ import {
   grantStreakFreeze,
   setStreakPause,
   clearStreakPause,
+  shiftDay,
+  frozenDaysFrom,
+  derivePracticeStreak,
 } from './practice-streak'
 
 const TODAY = '2026-09-05'
@@ -166,6 +169,43 @@ describe('setStreakPause / clearStreakPause', () => {
     const patch = lastRpc().args.p_patch as { practiceStreak: { rest: unknown } }
     expect(Object.keys(patch)).toEqual(['practiceStreak'])
     expect(patch.practiceStreak.rest).toEqual(res.rest)
+  })
+
+  // SCAN-771: a stored rest is only retired on a log, so the day after a rest ends (no log yet) the
+  // hero offers Rest again. Replacing the window used to drop the days the old one covered from both
+  // `rest` and `frozenDates`, and the streak the first rest was protecting read as broken.
+  it('re-resting right after the first rest ends banks the old window into frozenDates, so the streak stays alive', async () => {
+    const OCT_8 = '2026-10-08'
+    mocks.resolveMemberDay.mockResolvedValue(OCT_8)
+    mocks.profileMeta = {
+      ...mocks.profileMeta,
+      practiceStreak: { freezeTokens: 0, frozenDates: [], milestonesPaid: [], longest: 40, rest: { from: '2026-10-01', through: '2026-10-07' } },
+    }
+    const res = await setStreakPause('p1', 7)
+    expect(res.rest).toEqual({ from: OCT_8, through: '2026-10-14' })
+    const patch = lastRpc().args.p_patch as { practiceStreak: { rest: unknown; frozenDates: string[] } }
+    expect(patch.practiceStreak.rest).toEqual(res.rest)
+    expect([...patch.practiceStreak.frozenDates].sort()).toEqual([
+      '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07',
+    ])
+
+    // The streak that ended with a log on Sep 30 is still alive on Oct 8 through the banked bridge.
+    const logged = new Set(Array.from({ length: 40 }, (_, i) => shiftDay('2026-09-30', -i)))
+    const frozen = frozenDaysFrom({ practiceStreak: patch.practiceStreak }, OCT_8)
+    const derived = derivePracticeStreak(logged, frozen, OCT_8)
+    expect(derived.alive).toBe(true)
+    expect(derived.current).toBe(47)
+  })
+
+  it('re-resting mid-rest banks only the days already rested, never the future', async () => {
+    mocks.profileMeta = {
+      ...mocks.profileMeta,
+      practiceStreak: { freezeTokens: 0, frozenDates: [], milestonesPaid: [], longest: 5, rest: { from: '2026-09-03', through: '2026-09-09' } },
+    }
+    await setStreakPause('p1', 2)
+    const patch = lastRpc().args.p_patch as { practiceStreak: { rest: unknown; frozenDates: string[] } }
+    expect(patch.practiceStreak.rest).toEqual({ from: TODAY, through: '2026-09-06' })
+    expect([...patch.practiceStreak.frozenDates].sort()).toEqual(['2026-09-03', '2026-09-04', '2026-09-05'])
   })
 
   it('both throw when the merge did not land, so the action reports it instead of revalidating', async () => {

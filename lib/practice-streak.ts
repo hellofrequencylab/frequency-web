@@ -813,7 +813,8 @@ interface SetPauseResult {
  * from the session. Bounded by MAX_PAUSE_DAYS so the safety net keeps a ceiling.
  * Migration-free: the window is stored in `profiles.meta.practiceStreak.rest`
  * alongside the rest of the streak augmentation. Setting a new window replaces
- * any existing one. Idempotent-safe — re-marking just resets the window.
+ * any existing one, after banking the days the old one already covered into
+ * frozenDates (SCAN-771). Idempotent-safe — re-marking just resets the window.
  */
 export async function setStreakPause(
   profileId: string,
@@ -829,10 +830,19 @@ export async function setStreakPause(
   const meta = (prof?.meta ?? {}) as Record<string, unknown>
   const stored = readStored(meta)
 
+  // 2026-10-05 (SCAN-771): bank the days the OLD window already covered before replacing it, exactly
+  // as clearStreakPause does. A stored rest is only retired on a log, so a second rest taken the day
+  // after the first ends (or mid-rest from another tab) used to drop those days from both `rest` and
+  // `frozenDates`, and the streak the first rest was protecting read as broken. pauseCoveredDays clamps
+  // to today, so only days already rested become permanent; the new window covers the rest.
+  const frozen = new Set(stored.frozenDates)
+  for (const d of pauseCoveredDays(stored.rest, today)) frozen.add(d)
+  const prunedFrozen = [...frozen].filter((d) => dayDiff(today, d) <= WINDOW_DAYS)
+
   const nextStreak = {
     ...meta.practiceStreak as Record<string, unknown> | undefined,
     freezeTokens: stored.freezeTokens,
-    frozenDates: stored.frozenDates,
+    frozenDates: prunedFrozen,
     milestonesPaid: stored.milestonesPaid,
     longest: stored.longest,
     fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
