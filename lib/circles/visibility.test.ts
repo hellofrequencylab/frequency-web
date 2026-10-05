@@ -256,20 +256,32 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
     expect(src).toContain('myHiddenIds')
   })
 
-  it('joinCircle gates on ACCESS, and refuses every closed mode with one identical string', () => {
-    const src = read('app/(main)/circles/actions.ts')
+  it('the join gates on ACCESS, and refuses every closed mode with one identical string', () => {
+    // The gate moved out of the Server Action into a plain helper (SCAN-774), so a browser cannot
+    // reach the `invited` flag. The action only renders and redirects; the helper is the seam.
+    const src = read('lib/circles/join.ts')
     expect(src).toContain('canJoinCircle')
     expect(src).toContain("if (access !== 'open')")
-    // Exactly one refusal string in the access gate — a per-mode message would confirm the circle
+    // Exactly one refusal in the access gate — a per-mode message would confirm the circle
     // exists and hint at its shape.
     const gate = src.slice(src.indexOf("if (access !== 'open')"), src.indexOf('member_count >= circle.member_cap'))
-    expect(gate.match(/return fail\(/g) ?? []).toHaveLength(1)
+    expect(gate.match(/return \{ ok: false/g) ?? []).toHaveLength(1)
+    // The Server Action carries NO invited flag on its signature and always joins uninvited.
+    const action = read('app/(main)/circles/actions.ts')
+    expect(action).toContain('joinCircleAsMember(myProfileId, circleId, { invited: false })')
+    expect(action).not.toContain('canJoinCircle')
   })
 
-  it('the QR route is the ONLY caller that passes invited: true', () => {
-    expect(read('app/q/[slug]/route.ts')).toContain('{ invited: true }')
-    for (const f of ['components/circles/join-circle-button.tsx', 'app/onboarding/vera-actions.ts']) {
-      expect(read(f)).not.toContain('invited: true')
+  it('the QR route is the ONLY caller that may raise invited, and only after the minter check', () => {
+    const qr = read('app/q/[slug]/route.ts')
+    expect(qr).toContain('qrCodeMinterMayInvite(admin, code, circle)')
+    expect(qr).toContain('joinCircleAsMember(profileId, code.circle_id, { invited })')
+    for (const f of [
+      'components/circles/join-circle-button.tsx',
+      'app/onboarding/vera-actions.ts',
+      'app/(main)/circles/actions.ts',
+    ]) {
+      expect(sourceWithoutComments(join(root, f), { imports: true })).not.toContain('invited: true')
     }
   })
 

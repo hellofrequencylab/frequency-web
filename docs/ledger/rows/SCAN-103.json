@@ -1,0 +1,17 @@
+{
+  "id": "SCAN-103",
+  "patch": {
+    "verify": {
+      "kind": "grep-present",
+      "pattern": "23505",
+      "paths": [
+        "lib/circles/join.ts"
+      ],
+      "note": "Passes when the unique-violation path is handled distinctly instead of folding into the generic retry message. The join body lives in lib/circles/join.ts since SCAN-774."
+    }
+  },
+  "append": {
+    "detail": " 2026-10-05 (SCAN-774): the join body, including this 23505 settlement, moved from the joinCircle Server Action into the plain helper lib/circles/join.ts (joinCircleAsMember), so the probe reads that file now. Behaviour unchanged."
+  },
+  "wave": "W7"
+}
