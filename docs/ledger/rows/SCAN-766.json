@@ -10,6 +10,6 @@
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-05: supabase/migrations/20270345011700_search_handles_public_honours_directory_visibility.sql recreates search_handles_public(q) with the same return shape and grants, filters on directory_visible IS NOT FALSE AND ghost_mode IS NOT TRUE (an accepted connection of the caller stays pickable via an EXISTS over friendships against auth.uid()), and escapes LIKE metacharacters in q. Not applied here; the thread owner applies it after merge. The SCAN-546 probe is a done row's probe and was left untouched."
+    "detail": "\n\nCLOSED 2026-10-05: supabase/migrations/20270346001000_search_handles_public_honours_directory_visibility.sql recreates search_handles_public(q) with the same return shape and grants, filters on directory_visible IS NOT FALSE AND ghost_mode IS NOT TRUE (an accepted connection of the caller stays pickable via an EXISTS over friendships against auth.uid()), and escapes LIKE metacharacters in q. Not applied here; the thread owner applies it after merge. The SCAN-546 probe is a done row's probe and was left untouched."
   }
 }
