@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-744",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/(main)/admin/actions.ts\",p=\"app/join/[slug]/page.tsx\";if(!fs.existsSync(a)||!fs.existsSync(p))process.exit(79);const A=fs.readFileSync(a,\"utf8\"),P=fs.readFileSync(p,\"utf8\");const manual=/update\\(\\s*\\{\\s*member_count:\\s*\\([^)]*member_count[^)]*\\)\\s*\\+\\s*1/.test(A);const anyRow=/alreadyMember\\s*=\\s*!!membership/.test(P);if(manual){console.error(\"SCAN-744: joinViaInviteLink still adds one to circles.member_count by hand on top of the trg_memberships_member_count trigger, so every invite-link join counts twice and the circle reports full while seats are free.\");process.exit(1)}if(anyRow){console.error(\"SCAN-744: the invite page still treats any membership row, pending or inactive included, as already joined.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\njoinViaInviteLink drops the manual member_count bump (the trigger counts), reactivates pending or inactive rows, maps the circle_full raise, bumps used_count conditionally; the invite page treats only an active row as joined."
+  }
+}

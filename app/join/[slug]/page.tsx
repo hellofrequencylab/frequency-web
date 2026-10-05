@@ -163,11 +163,13 @@ export default async function JoinPage({ params }: Props) {
     if (profile) {
       const { data: membership } = await admin
         .from('memberships')
-        .select('id')
+        .select('id, status')
         .eq('circle_id', circle.id)
         .eq('profile_id', profile.id)
         .maybeSingle()
-      alreadyMember = !!membership
+      // Only an ACTIVE row is a member (SCAN-744): a pending request or a dormant row still needs
+      // the Join button, which joinViaInviteLink now wakes up.
+      alreadyMember = membership?.status === 'active'
     }
   }
 

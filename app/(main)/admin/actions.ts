@@ -442,40 +442,46 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
     .maybeSingle()
   if (!profile) throw new Error('Profile not found')
 
-  // Check not already a member
+  // Only an ACTIVE row is "already joined" (SCAN-744). A pending request or a dormant (inactive)
+  // row is a member who is NOT in yet: the invite wakes it up the way joinCircle's conflict path
+  // does, instead of telling them they already belong and leaving them outside.
   const { data: existing } = await admin
     .from('memberships')
-    .select('id')
+    .select('id, status')
     .eq('circle_id', link.circle_id)
     .eq('profile_id', profile.id)
     .maybeSingle()
 
-  if (!existing) {
-    const { error: joinError } = await admin.from('memberships').insert({
-      circle_id:  link.circle_id,
-      profile_id: profile.id,
-      status:     'active',
-    })
-    if (joinError) throw new Error(joinError.message)
+  const circleFull = (error: { code?: string; message?: string } | null) =>
+    error?.code === 'P0001' && (error.message ?? '').includes('circle_full')
 
-    // Increment used_count and update circle member_count
+  if (existing?.status !== 'active') {
+    if (existing) {
+      // Reactivation. The cap trigger fires on UPDATE OF status too (20270345000500).
+      const { error: wakeError } = await admin.from('memberships').update({ status: 'active' }).eq('id', existing.id)
+      if (circleFull(wakeError)) throw new Error('This circle is full.')
+      if (wakeError) throw new Error(wakeError.message)
+    } else {
+      const { error: joinError } = await admin.from('memberships').insert({
+        circle_id:  link.circle_id,
+        profile_id: profile.id,
+        status:     'active',
+      })
+      if (circleFull(joinError)) throw new Error('This circle is full.')
+      if (joinError) throw new Error(joinError.message)
+    }
+
+    // Count the use. Conditional on the value read so two redemptions racing cannot both land on
+    // the same count; a lost race simply leaves the count to the winner.
     await admin
       .from('invite_links')
       .update({ used_count: link.used_count + 1 })
       .eq('id', link.id)
+      .eq('used_count', link.used_count)
 
-    // Best-effort member count increment. Manual update since we may not have the RPC
-    const { data: circleData } = await admin
-      .from('circles')
-      .select('member_count')
-      .eq('id', link.circle_id)
-      .maybeSingle()
-    if (circleData) {
-      await admin
-        .from('circles')
-        .update({ member_count: (circleData.member_count ?? 0) + 1 })
-        .eq('id', link.circle_id)
-    }
+    // circles.member_count is kept by trg_memberships_member_count (migration 20270345000500) on
+    // the insert / status flip above. The manual plus-one that used to sit here counted every
+    // invite-link join TWICE, so circles reported full while seats were free (SCAN-744).
 
     // Lifecycle reward: the inviter, when someone they invited actually joins
     // (once per inviter+invitee). Real-world outreach -> zaps. Routes through
