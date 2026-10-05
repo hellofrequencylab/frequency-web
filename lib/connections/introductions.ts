@@ -130,7 +130,10 @@ export async function claimIntroductionRewards(): Promise<IntroductionRewardResu
       }
     }
   }
-  if (rewarded) revalidatePath('/network/friends')
+  // SCAN-716: no revalidatePath here. The only caller is the Friends page rendering this inside a
+  // Server Component, where revalidatePath throws (render phase), so the one load that paid a reward
+  // showed the error boundary instead of the +Gems banner. That page is dynamic and renders the fresh
+  // state in the same pass; a future form-action caller revalidates itself.
   return { rewarded, gems }
 }
 
