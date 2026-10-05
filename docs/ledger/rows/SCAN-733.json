@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-733",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/manage-emails/manage-form.tsx\",u=\"app/unsubscribe/page.tsx\";for(const p of [f,u]){if(!fs.existsSync(p)){console.error(\"SCAN-733: missing \"+p);process.exit(79)}}const form=/key:\\s*.matches./.test(fs.readFileSync(f,\"utf8\"));const page=/^\\s*matches:\\s*./m.test(fs.readFileSync(u,\"utf8\"));if(!form||!page){console.error(\"SCAN-733: the manage-emails form has no label for the matches category, so the housing match row is built then dropped and a member cannot turn match emails off or back on from the page that says it manages their email.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nCATEGORY_LABELS in app/manage-emails/manage-form.tsx had no entry for the matches category while lib/notifications/wired.ts wires matches to email, and the render returns null for a category without a label, so page.tsx built the matches row and the form silently dropped it; app/unsubscribe/page.tsx had the same gap and fell back to the raw key. Added a matches entry to both label tables (Roommate matches, the name the settings form, search destinations and the match email already use; the unsubscribe confirm reads roommate match alerts). Pinned by app/manage-emails/manage-form.test.tsx, which fails when any email-wired category lacks a label and checks the form renders a switch per email-wired category, and by a new case in app/unsubscribe/page.test.tsx that a matches token confirms with the plain label, not the key."
+  }
+}

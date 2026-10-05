@@ -30,6 +30,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   mentions:   'mention notifications',
   comments:   'comment notifications',
   lifecycle:  'onboarding nudges',
+  matches:    'roommate match alerts',
 }
 
 // `p`/`c` carry the GLOBAL member unsubscribe; `s`/`e` carry the per-Space unsubscribe (a Space

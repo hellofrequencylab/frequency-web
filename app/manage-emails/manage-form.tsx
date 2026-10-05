@@ -11,12 +11,16 @@ import { isError } from '@/lib/action-result'
 // email type off (unsubscribe from just that type) or back on (resubscribe), one row at a time. Voice canon:
 // plain, no em dashes.
 
-const CATEGORY_LABELS: { key: NotificationCategory; label: string; help: string }[] = [
+// Every category that lib/notifications/wired.ts wires to EMAIL needs an entry here: the render below
+// returns null for a category with no label, so a missing entry silently drops the row (SCAN-733: the
+// `matches` row was built by page.tsx and never shown). manage-form.test.tsx pins that coverage.
+export const CATEGORY_LABELS: { key: NotificationCategory; label: string; help: string }[] = [
   { key: 'dispatches', label: 'Dispatches', help: 'Dispatch posts from your Hosts and the wider community.' },
   { key: 'events', label: 'Events', help: 'RSVP changes and reminders before an event starts.' },
   { key: 'comments', label: 'Replies', help: 'Replies and mentions on posts and comments you wrote, and notes in your guestbook.' },
   { key: 'mentions', label: 'Mentions', help: 'When someone @mentions you anywhere else.' },
   { key: 'lifecycle', label: 'Onboarding nudges', help: 'Day 1, Day 3, and Day 7 check-ins after you join a circle.' },
+  { key: 'matches', label: 'Roommate matches', help: 'When someone new lines up with your roommate search or your room. Once per person, never a repeat.' },
 ]
 
 export type EmailCategoryState = { category: NotificationCategory; subscribed: boolean }
