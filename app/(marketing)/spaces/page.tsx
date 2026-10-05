@@ -14,7 +14,8 @@ import { OG_SITE } from '@/lib/site'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Spaces',
+  // Not the bare word (SCAN-678): say who the page is for, which is what the query says.
+  title: 'Spaces for businesses, studios and organizations',
   description:
     'Run your community as a Space on Frequency. A front door in Discover, and the tools to host Circles and Runs. Free to start, no card today.',
   alternates: { canonical: '/spaces' },

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SITE_NAME } from '@/lib/site'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { HelpMarkdown } from '@/components/help/help-markdown'
@@ -14,6 +15,14 @@ export const metadata: Metadata = {
   title: "What's new | Help",
   description: 'Recent changes and improvements to Frequency.',
   alternates: { canonical: '/help/changelog' },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    locale: 'en_US',
+    title: `What's new · Help · ${SITE_NAME}`,
+    description: 'Recent changes and improvements to Frequency.',
+    url: '/help/changelog',
+  },
 }
 
 export default async function ChangelogPage() {

@@ -21,7 +21,8 @@ export const metadata: Metadata = {
     title: 'Privacy policy',
     description: 'How Frequency collects, uses, and protects your personal information.',
   },
-  robots: { index: true, follow: true },
+  // No `robots` here (SCAN-677): the root layout's block already says index + follow AND carries the
+  // googleBot preview directives, and a nested `robots` replaces that block wholesale.
 }
 
 export default function PrivacyPage() {

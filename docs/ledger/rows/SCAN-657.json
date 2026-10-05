@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-657",
+  "title": "/help, /help/<category> and /help/changelog shared as the homepage: they set no openGraph of their own and inherited the root block whole",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "source": {
+    "file": "docs/META-SCAN-STATUS.md",
+    "ref": "found 2026-10-05 by the scan-seven SEO/GEO finders (26-agent fan-out), confirmed by hand against the tree"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven, four independent finders: seo-metadata, seo-social, seo-help, seo-urls). Next replaces nested metadata objects rather than merging them: a page that sets no openGraph inherits the root's og:url \"/\", homepage title and description, so a shared help link previewed as the homepage. The help ARTICLE page set its own openGraph and so lost og:site_name and og:locale instead. CLOSED 2026-10-05: the three pages carry their own openGraph (type, siteName, locale, title, description, url) and the article block adds siteName and locale. The site-wide version of the second half (every page that sets openGraph drops site_name/locale) is a sweep and stays open as SCAN-659.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const q=String.fromCharCode(39);const pages={\"app/(help)/help/page.tsx\":\"/help\",\"app/(help)/help/[category]/page.tsx\":\"/help/${cat.slug}\",\"app/(help)/help/changelog/page.tsx\":\"/help/changelog\"};for(const [p,u] of Object.entries(pages)){const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"openGraph:\");const want=\"url: \"+(u.includes(\"$\")?\"`\"+u+\"`\":q+u+q);if(i<0||!s.slice(i).includes(want)){console.error(\"SCAN-657: \"+p+\" sets no openGraph of its own, so it inherits the ROOT block whole and shares as the homepage (og:url /, homepage title).\");process.exit(1)}}const a=fs.readFileSync(\"app/(help)/help/[category]/[slug]/page.tsx\",\"utf8\");if(!/siteName: SITE_NAME/.test(a)){console.error(\"SCAN-657: the help article openGraph drops og:site_name, because Next replaces nested metadata objects rather than merging them.\");process.exit(1)}'",
+    "note": "Fails on main before this change (checked by stashing the fix); passes with it."
+  }
+}

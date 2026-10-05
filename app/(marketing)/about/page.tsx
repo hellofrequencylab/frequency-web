@@ -15,7 +15,9 @@ export const revalidate = 3600
 
 export function generateMetadata(): Metadata {
   return {
-    title: 'About',
+    // Not the bare word (SCAN-678): the template appends the site name, and 'About · Frequency' names
+    // nothing a query contains.
+    title: 'About the Community Collective',
     // Capped under the ~155 char search-snippet window, the same rule
     // /discover/circles/[id] already applies. This ran 326 characters, so
     // everything after "where they live" was cut by the SERP and the money

@@ -4,11 +4,12 @@ description: You doomscroll and you hate it. Here is why willpower fails, the on
 category: find-your-people
 order: 4
 published: 2026-06-20
-updated: 2026-06-20
+updated: 2026-10-05
 audience: member
 featureKeys: [practices, on-air]
 status: published
 ---
+Read the full guide first: [Loneliness, third places and life after the feed](/loneliness). This page is the short version for members, with the Frequency features that help.
 
 You pick up your phone to check one thing and surface 40 minutes later, foggy and
 a little worse. You know it is happening while it happens. You hate it. And tonight

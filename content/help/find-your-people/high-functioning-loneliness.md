@@ -4,11 +4,12 @@ description: You look fine on paper and still feel alone. Here is what high-func
 category: find-your-people
 order: 3
 published: 2026-06-20
-updated: 2026-06-20
+updated: 2026-10-05
 audience: member
 featureKeys: [circles, practices]
 status: published
 ---
+Read the full guide first: [High-functioning loneliness: lonely but not alone](/loneliness). This page is the short version for members, with the Frequency features that help.
 
 You are employed, capable, and busy. From the outside nothing is wrong. And yet
 there is a quiet flatness to your week, a sense that you are surrounded by people

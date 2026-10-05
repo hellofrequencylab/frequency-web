@@ -4,11 +4,12 @@ description: Making friends after 30 is hard because the easy structures are gon
 category: find-your-people
 order: 1
 published: 2026-06-20
-updated: 2026-06-20
+updated: 2026-10-05
 audience: member
 featureKeys: [circles, practices]
 status: published
 ---
+Read the full guide first: [How to make friends as an adult](/friendship-as-an-adult). This page is the short version for members, with the Frequency features that help.
 
 You have a job, a phone full of contacts, and almost nobody to call on a Tuesday.
 That is the gap most adults hit, and it is not a character flaw. The structures

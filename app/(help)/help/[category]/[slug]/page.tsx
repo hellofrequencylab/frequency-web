@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SITE_NAME } from '@/lib/site'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllArticles, getArticle, helpHref } from '@/lib/help/content'
@@ -36,6 +37,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: article.description,
       url: helpHref(category, slug),
       type: 'article',
+      siteName: SITE_NAME,
+      locale: 'en_US',
+      // The dates the page already prints and the Article node already carries, as the OG article
+      // properties crawlers read for freshness (SCAN-667). `published` is '' for a file without the
+      // key, so each is guarded.
+      ...(article.published ? { publishedTime: article.published } : {}),
+      ...(article.updated ? { modifiedTime: article.updated } : {}),
     },
     twitter: {
       card: 'summary_large_image',
@@ -70,7 +78,11 @@ export default async function HelpArticlePage({ params }: Params) {
           <Link href={`/help/${cat.slug}`} className="hover:text-text">
             {cat.title}
           </Link>
-          {article.updated && <> · Updated {article.updated}</>}
+          {article.updated && (
+            <>
+              {' · '}Updated <time dateTime={article.updated}>{article.updated}</time>
+            </>
+          )}
         </>
       }
     >
@@ -83,7 +95,7 @@ export default async function HelpArticlePage({ params }: Params) {
 
         {article.updated && (
           <p className="mt-10 border-t border-border pt-4 text-meta text-subtle">
-            Last updated {article.updated}
+            Last updated <time dateTime={article.updated}>{article.updated}</time>
           </p>
         )}
 

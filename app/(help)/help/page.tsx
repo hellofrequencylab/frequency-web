@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SITE_NAME } from '@/lib/site'
 import Link from 'next/link'
 import { LifeBuoy } from 'lucide-react'
 import { getAllCategories, helpHref } from '@/lib/help/content'
@@ -13,6 +14,17 @@ export const metadata: Metadata = {
   description:
     'Guides and answers for using Frequency: finding Circles, going to gatherings, and how the Quest works.',
   alternates: { canonical: '/help' },
+  // Without this block the page inherits the ROOT openGraph whole, homepage og:url and all
+  // (SCAN-657). Next replaces nested metadata objects; it does not merge them.
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    locale: 'en_US',
+    title: `Help Center · ${SITE_NAME}`,
+    description:
+      'Guides and answers for using Frequency: finding Circles, going to gatherings, and how the Quest works.',
+    url: '/help',
+  },
 }
 
 export default async function HelpHomePage() {
