@@ -8,7 +8,7 @@ import { SpaceCard } from '@/components/spaces/space-card'
 import { PageHero, Section, SectionHeading, BetaCTA, Button } from '@/components/marketing/marketing-ui'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, spaceListSchema } from '@/lib/jsonld'
-import { OG_SITE, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -46,7 +46,7 @@ export async function generateMetadata({
     alternates: { canonical },
     // Guard the index signal: a hub with too few Spaces should not be advertised as a landing page.
     robots: spaces.length >= HUB_MIN_INDEX ? undefined : { index: false, follow: true },
-    openGraph: { ...OG_SITE, title, description, url: canonical, type: 'website' },
+    openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title, description, url: canonical, type: 'website' },
     twitter: { card: 'summary_large_image', title, description },
   }
 }

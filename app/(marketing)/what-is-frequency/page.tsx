@@ -12,7 +12,7 @@ import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -49,6 +49,7 @@ export function generateMetadata(): Metadata {
     alternates: { canonical: PATH },
     openGraph: {
       ...OG_SITE,
+      images: ROOT_OG_IMAGES,
       title: OG_TITLE,
       description: OG_DESCRIPTION,
       url: PATH,

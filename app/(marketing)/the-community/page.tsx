@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/the-community' },
   openGraph: {
     ...OG_SITE,
+    images: ROOT_OG_IMAGES,
     title: 'The Community · Frequency',
     description:
       'Four Pillars, your Channels, and a Circle near you. Community with a shape, leaderful and built to last.',
