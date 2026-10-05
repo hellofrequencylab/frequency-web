@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-765",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/api/track/route.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-765: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const imp=/from\\s+\"@\\/lib\\/consent\\/consent\"|from\\s+\\x27@\\/lib\\/consent\\/consent\\x27/.test(s);const gate=/hasConsent\\(\\s*profile\\.id\\s*,\\s*[\"\\x27]analytics[\"\\x27]\\s*\\)/.test(s);if(!imp||!gate){console.error(\"SCAN-765: /api/track writes an account-tied engagement_events row without checking the analytics consent scope, so a member who turned off Product analytics still has every nav.page_view stored against their profile (its sibling /api/observe honours the same toggle).\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\napp/api/track/route.ts resolved the member's profile and called track() with no consent check, so a member who turned off Product analytics still had every nav.page_view written to engagement_events keyed to their profile_id, while the sibling /api/observe dropped its batch on the same toggle. The route now imports hasConsent from @/lib/consent/consent, returns 204 when there is no profile, returns 204 without calling track() when hasConsent(profile.id, 'analytics') is false (ADR-069, the /api/observe gate), and passes profile.id to track(). lib/analytics/track.ts is unchanged so server-authoritative events still feed the ledger. Pinned by app/api/track/route.test.ts (consent off: 204 and track never called; no profile: 204; consenting: recorded under the profile id; non-client event still 400). docs/ANALYTICS.md notes that /api/track is consent-gated."
+  }
+}
