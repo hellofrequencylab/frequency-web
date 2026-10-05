@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // THE OPERATOR'S RETRY (LIVE-624, ADR-1616). One planned or failed transfer sent again through the
 // same executePlannedTransfers the settle and the reconciler use. What this file pins:
-//   - a landed row, and a row of a refunded order, are refused before anything moves;
+//   - a landed row, and a row of a fully refunded order, are refused before anything moves;
+//   - a row of a PARTIALLY refunded order is retried, as the reconciler would pay it;
 //   - a row past the attempt ceiling is reopened for exactly ONE more attempt: attempts goes to one
 //     under the ceiling, never to zero, because the adoption lookup in ./transfers.ts runs only when
 //     attempts > 0 and is what stops a retry after the key window from paying a seller twice;
@@ -92,11 +93,19 @@ describe('retryOrderTransfer', () => {
 
   it('refuses a row of a refunded order and leaves its attempts alone', async () => {
     tables.commerce_order_transfers[0].attempts = 8
+    tables.commerce_orders[0].status = 'refunded'
     tables.commerce_orders[0].refunded_at = '2026-09-29T00:00:00Z'
     const res = await retryOrderTransfer('t-1')
     expect(res.ok).toBe(false)
     expect(tables.commerce_order_transfers[0].attempts).toBe(8)
     expect(executePlannedTransfers).not.toHaveBeenCalled()
+  })
+
+  it('retries a row of a partially refunded order, which still pays its sellers', async () => {
+    tables.commerce_orders[0].refunded_at = '2026-09-29T00:00:00Z'
+    const res = await retryOrderTransfer('t-1')
+    expect(res.ok).toBe(true)
+    expect(executePlannedTransfers).toHaveBeenCalledWith('o-1')
   })
 
   it('refuses an unknown row', async () => {
