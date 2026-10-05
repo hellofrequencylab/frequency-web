@@ -1,6 +1,7 @@
 'use server'
 
 import { randomBytes } from 'crypto'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -204,11 +205,15 @@ export async function sendMagicLink(profileId: string) {
   const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
   if (!user?.email) throw new Error('No email found for this user')
 
-  const { error } = await admin.auth.admin.generateLink({
-    type: 'magiclink',
+  // SCAN-751: `admin.generateLink` only MINTS a link (impersonate-actions relies on exactly that)
+  // and never sends mail, so the "Sign-in link sent" message used to be false. `signInWithOtp` is
+  // the same send the /sign-in form makes: Supabase's mailer delivers the magic link to the
+  // member. `shouldCreateUser: false` because the account was just looked up and must exist.
+  const { error } = await admin.auth.signInWithOtp({
     email: user.email,
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'}/auth/callback`,
+      shouldCreateUser: false,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'}/auth/callback`,
     },
   })
   if (error) throw new Error(error.message)
@@ -442,40 +447,35 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
     .maybeSingle()
   if (!profile) throw new Error('Profile not found')
 
-  // Check not already a member
+  // SCAN-744: only an ACTIVE row is "already a member". A pending or inactive row is a dormant
+  // seat, and redeeming the link wakes it up (the same reactivation UPDATE joinCircle uses), so
+  // the member is not told they belong to a circle they are not in.
   const { data: existing } = await admin
     .from('memberships')
-    .select('id')
+    .select('id, status')
     .eq('circle_id', link.circle_id)
     .eq('profile_id', profile.id)
     .maybeSingle()
 
-  if (!existing) {
-    const { error: joinError } = await admin.from('memberships').insert({
-      circle_id:  link.circle_id,
-      profile_id: profile.id,
-      status:     'active',
-    })
-    if (joinError) throw new Error(joinError.message)
-
-    // Increment used_count and update circle member_count
-    await admin
-      .from('invite_links')
-      .update({ used_count: link.used_count + 1 })
-      .eq('id', link.id)
-
-    // Best-effort member count increment. Manual update since we may not have the RPC
-    const { data: circleData } = await admin
-      .from('circles')
-      .select('member_count')
-      .eq('id', link.circle_id)
-      .maybeSingle()
-    if (circleData) {
-      await admin
-        .from('circles')
-        .update({ member_count: (circleData.member_count ?? 0) + 1 })
-        .eq('id', link.circle_id)
+  if (existing?.status !== 'active') {
+    const joined = existing
+      ? await reactivateInviteMembership(admin, existing.id)
+      : await insertInviteMembership(admin, link.circle_id, profile.id)
+    if (joined === 'full') throw new Error('This circle is full.')
+    if (joined === 'already_active') {
+      revalidatePath('/circles')
+      return { circleId: link.circle_id }
     }
+
+    // Count the redemption. A compare-and-set on the value we read makes two redemptions landing
+    // together count twice instead of once; a lost race re-reads and tries again.
+    await bumpInviteLinkUses(admin, link.id, link.used_count)
+
+    // circles.member_count is NOT touched here. trg_memberships_member_count (migration
+    // 20270345000500) adds one when a row becomes active, by insert or by status update, so a
+    // manual +1 on top of it counted every invite-link join twice and reported the circle full
+    // while seats were free. The cap itself is enforced by enforce_circle_member_cap on the same
+    // statements; its raise is what the two helpers above map to 'full'.
 
     // Lifecycle reward: the inviter, when someone they invited actually joins
     // (once per inviter+invitee). Real-world outreach -> zaps. Routes through
@@ -499,6 +499,79 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
   revalidatePath('/circles')
   revalidatePath('/feed')
   return { circleId: link.circle_id }
+}
+
+/** What an invite-link redemption did to the membership row. */
+type InviteJoinOutcome = 'joined' | 'already_active' | 'full'
+
+function isCircleFullRaise(error: { code?: string; message?: string } | null): boolean {
+  return error?.code === 'P0001' && (error.message ?? '').includes('circle_full')
+}
+
+async function insertInviteMembership(
+  admin: ReturnType<typeof createAdminClient>,
+  circleId: string,
+  profileId: string,
+): Promise<InviteJoinOutcome> {
+  const { error } = await admin.from('memberships').insert({
+    circle_id:  circleId,
+    profile_id: profileId,
+    status:     'active',
+  })
+  if (!error) return 'joined'
+  if (isCircleFullRaise(error)) return 'full'
+  if (error.code !== '23505') throw new Error(error.message)
+
+  // UNIQUE(profile_id, circle_id): a row landed between our read and this insert. Read it and
+  // finish the job rather than refusing a join that could never be retried.
+  const { data: row } = await admin
+    .from('memberships')
+    .select('id, status')
+    .eq('circle_id', circleId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  if (!row) throw new Error(error.message)
+  if (row.status === 'active') return 'already_active'
+  return reactivateInviteMembership(admin, row.id)
+}
+
+async function reactivateInviteMembership(
+  admin: ReturnType<typeof createAdminClient>,
+  membershipId: string,
+): Promise<InviteJoinOutcome> {
+  // enforce_circle_member_cap fires on UPDATE OF status too (20270345000500), so a full circle
+  // refuses the wake-up with the same typed raise the insert gets.
+  const { error } = await admin
+    .from('memberships')
+    .update({ status: 'active' })
+    .eq('id', membershipId)
+  if (!error) return 'joined'
+  if (isCircleFullRaise(error)) return 'full'
+  throw new Error(error.message)
+}
+
+async function bumpInviteLinkUses(
+  admin: ReturnType<typeof createAdminClient>,
+  linkId: string,
+  seenUsedCount: number,
+): Promise<void> {
+  let expected = seenUsedCount
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data } = await admin
+      .from('invite_links')
+      .update({ used_count: expected + 1 })
+      .eq('id', linkId)
+      .eq('used_count', expected)
+      .select('id')
+    if (data && data.length > 0) return
+    const { data: fresh } = await admin
+      .from('invite_links')
+      .select('used_count')
+      .eq('id', linkId)
+      .maybeSingle()
+    if (!fresh) return
+    expected = fresh.used_count
+  }
 }
 
 // ── Channels ──────────────────────────────────────────────────────────────────
@@ -631,8 +704,17 @@ export async function updateNexus(id: string, fd: FormData) {
 
 // ── Crew tasks ────────────────────────────────────────────────────────────────
 
+// The GLOBAL Zap catalogue (crew_tasks with circle_id null) prices every member's Zaps, so it is a
+// platform operator's to edit, not any host's (SCAN-753): a host could mint Zaps by adding a
+// repeatable top-tier task and logging it. Hosts keep their circle-scoped tasks, which go through
+// circle.assignTask in app/(main)/crew/circle-task-actions.ts. `hasScopeCap` is false because a
+// global row has no scope anyone can hold; staff web_role or the community staff domain remain.
+async function requireCatalogueEditor() {
+  return requireScopedManage(await getCallerProfile(), false, 'community')
+}
+
 export async function createCrewTask(fd: FormData) {
-  await requireCommunityOps()
+  await requireCatalogueEditor()
   const admin = createAdminClient()
   const { error } = await admin.from('crew_tasks').insert({
     name:                  (fd.get('name') as string).trim(),
@@ -647,7 +729,7 @@ export async function createCrewTask(fd: FormData) {
 }
 
 export async function updateCrewTask(id: string, fd: FormData) {
-  await requireCommunityOps()
+  await requireCatalogueEditor()
   const admin = createAdminClient()
   const { error } = await admin.from('crew_tasks').update({
     name:                  (fd.get('name') as string).trim(),
@@ -662,7 +744,7 @@ export async function updateCrewTask(id: string, fd: FormData) {
 }
 
 export async function deleteCrewTask(id: string) {
-  await requireCommunityOps()
+  await requireCatalogueEditor()
   const admin = createAdminClient()
   const { error } = await admin.from('crew_tasks').delete().eq('id', id)
   if (error) throw new Error(error.message)
@@ -970,8 +1052,50 @@ export async function updateEventDetails(id: string, fd: FormData) {
 
 // ── Crew task verification ────────────────────────────────────────────────────
 
+/** The scope of a HELD crew completion (SCAN-753): the member who logged it and whether the caller
+ *  manages a circle it belongs to. That is the task's own circle for a circle-scoped task, or, for
+ *  a global-catalogue task, any circle the member is active in. Throws when the completion is gone. */
+async function loadCompletionScope(completionId: string): Promise<{ profile_id: string; hasScopeCap: boolean }> {
+  // Untyped handle: crew_tasks.circle_id is not in the generated types yet (see lib/crew/circle-tasks.ts).
+  const admin: SupabaseClient = createAdminClient()
+  const { data: completion, error } = await admin
+    .from('crew_completions')
+    .select('id, profile_id, task_id, task:crew_tasks!task_id ( circle_id )')
+    .eq('id', completionId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  const row = completion as { id: string; profile_id: string; task: { circle_id: string | null } | null } | null
+  if (!row) throw new Error('That completion is gone.')
+
+  const circleIds: string[] = []
+  if (row.task?.circle_id) {
+    circleIds.push(row.task.circle_id)
+  } else {
+    const { data: rows } = await admin
+      .from('memberships')
+      .select('circle_id')
+      .eq('profile_id', row.profile_id)
+      .eq('status', 'active')
+      .limit(25)
+    for (const m of (rows ?? []) as { circle_id: string | null }[]) if (m.circle_id) circleIds.push(m.circle_id)
+  }
+  let hasScopeCap = false
+  for (const circleId of circleIds) {
+    if ((await getCircleCapabilities(circleId)).has('circle.assignTask')) { hasScopeCap = true; break }
+  }
+  return { profile_id: row.profile_id, hasScopeCap }
+}
+
 export async function approveVerification(completionId: string) {
-  const caller = await requireCommunityOps()
+  // SCAN-753: requireCommunityOps was a global host-or-above floor that knew nothing about whose
+  // completion this is, so any host could release their own held Zaps or anyone's in any circle.
+  // The caller must not be the member and must manage the completion's circle; platform staff keep
+  // global reach through requireScopedManage. Every check runs before anything is written.
+  const caller = await getCallerProfile()
+  if (!caller) throw new Error('Unauthorized')
+  const { profile_id, hasScopeCap } = await loadCompletionScope(completionId)
+  if (profile_id === caller.id) throw new Error('You cannot verify your own completion.')
+  await requireScopedManage(caller, hasScopeCap, 'community')
   // Verification-gated Zaps (leader grant): stamping verified_at releases the held Zaps via
   // trg_after_crew_completion_verified, which writes the ledger row once. Idempotent — re-approving
   // an already-verified completion is a safe no-op (the helper only touches still-held rows).
@@ -980,13 +1104,21 @@ export async function approveVerification(completionId: string) {
 }
 
 export async function rejectVerification(completionId: string) {
-  await requireCommunityOps()
+  // Same gate as approveVerification (SCAN-753): not your own, and only inside a circle you manage.
+  const caller = await getCallerProfile()
+  if (!caller) throw new Error('Unauthorized')
+  const { profile_id, hasScopeCap } = await loadCompletionScope(completionId)
+  if (profile_id === caller.id) throw new Error('You cannot reject your own completion.')
+  await requireScopedManage(caller, hasScopeCap, 'community')
   const admin = createAdminClient()
+  // Only a still-HELD completion (verified_at null) may be rejected. verified_by is not the held
+  // marker: the auto-methods (timer / location / code) stamp verified_at alone, so keying on
+  // verified_by would let a credited completion be deleted while its ledger row stays (SCAN-752).
   const { error } = await admin
     .from('crew_completions')
     .delete()
     .eq('id', completionId)
-    .is('verified_by', null)
+    .is('verified_at', null)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/crew-tasks')
 }
