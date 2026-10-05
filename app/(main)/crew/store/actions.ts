@@ -7,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { classifyRedemption, fulfillStreakFreeze, UNDELIVERABLE_MESSAGE } from '@/lib/store/fulfillment'
-import { isUndeliverable } from '@/lib/store/cosmetics'
+import { isUndeliverable, cosmeticForItem, type CosmeticType } from '@/lib/store/cosmetics'
 import { computeSpendableBalance, fetchGiftsSent } from '@/lib/store/balance'
 import { RANK_ORDER, rankIndex } from '@/lib/season-ranks'
 import { giftGems, type GiftGemsResult } from '@/lib/rewards/gifts'
@@ -250,6 +250,61 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
 }
 
 /**
+ * Wear an owned cosmetic, or take one off (SCAN-772). redeemItem used to be the ONLY writer of
+ * profile_border / profile_flair / custom_title, at purchase time, so a second border overwrote the
+ * first for good: Golden Ring showed "Owned" forever and could never be shown again, and Prismatic
+ * could never be removed. The economy-lock trigger refuses self-edits of those columns, so this is
+ * the admin-client seam that lets a member choose among what they already paid for.
+ *
+ * `itemId` null clears the slot. Otherwise the item must be one THIS member redeemed (the same
+ * store_redemptions read redeemItem makes), must classify as a cosmetic, and must fit the slot.
+ */
+export async function equipCosmetic(itemId: string | null, slot: CosmeticType): Promise<ActionResult<{ value: string | null }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Not authenticated')
+  if (slot !== 'border' && slot !== 'flair' && slot !== 'title') return fail('Unknown cosmetic slot')
+
+  const admin = createAdminClient()
+  let value: string | null = null
+
+  if (itemId) {
+    const { data: owned } = await admin
+      .from('store_redemptions')
+      .select('id')
+      .eq('profile_id', profileId)
+      .eq('item_id', itemId)
+      .maybeSingle()
+    if (!owned) return fail('You don’t own this item yet')
+
+    const { data: item } = await admin
+      .from('store_items')
+      .select('id, slug, category, metadata')
+      .eq('id', itemId)
+      .maybeSingle()
+    if (!item) return fail('Item not found')
+
+    const plan = classifyRedemption(item.metadata, { slug: item.slug, category: item.category })
+    if (plan.kind !== 'cosmetic') return fail('This item isn’t something you wear')
+    if (plan.cosmeticType !== slot) return fail('This item doesn’t fit that slot')
+    value = plan.value
+  }
+
+  // One typed patch per slot (the generated Insert type rejects a computed key), same shape as
+  // redeemItem's purchase-time write. `value` is null when the member is taking the cosmetic off.
+  const patch =
+    slot === 'border' ? { profile_border: value }
+    : slot === 'flair' ? { profile_flair: value }
+    : { custom_title: value }
+  const { error } = await admin.from('profiles').update(patch).eq('id', profileId)
+  if (error) return fail('Could not update your profile. Try again in a moment.')
+
+  revalidatePath('/crew/store')
+  // The worn cosmetic paints the profile and the shell, so the root layout revalidates too.
+  revalidatePath('/', 'layout')
+  return ok({ value })
+}
+
+/**
  * Gift Gems to another member (Vault sink, ADR-305). Thin wrapper: resolves the giver
  * from the session, delegates validation + the spend/credit to lib/rewards/gifts, and
  * revalidates the store so the giver's balance updates. The giver can never gift more
@@ -349,10 +404,24 @@ export async function getStoreData() {
     return !exp || new Date(exp).getTime() >= now
   })
 
+  const equipped = {
+    border: profile?.profile_border ?? null,
+    flair: profile?.profile_flair ?? null,
+    title: profile?.custom_title ?? null,
+  }
+
   return {
-    items: onShelf.map(item => ({
+    items: onShelf.map(item => {
+      // SCAN-772: the resolved cosmetic slot + value, so the shelf can offer Equip on an owned
+      // cosmetic that is not worn and Remove on the one that is, against the same registry the
+      // equip action reads.
+      const cosmetic = cosmeticForItem({ slug: item.slug, metadata: item.metadata })
+      return {
       ...item,
       owned: ownedIds.has(item.id),
+      cosmeticSlot: cosmetic?.type ?? null,
+      cosmeticValue: cosmetic?.value ?? null,
+      equipped: !!cosmetic && equipped[cosmetic.type] === cosmetic.value,
       // LIVE-013: a cosmetic/title SKU nothing can paint is shown as not-ready instead of
       // buyable. Computed HERE rather than in the card so the shelf and the server action read
       // the same registry — a card that offered a Redeem button the action then refused would
@@ -364,17 +433,14 @@ export async function getStoreData() {
         is_active: item.is_active,
         metadata: item.metadata,
       }),
-    })),
+      }
+    }),
     // Spendable = earned − store spend − gifts sent (lib/store/balance, the one source).
     balance: computeSpendableBalance({
       lifetimeGems: profile?.lifetime_gems,
       redemptions,
       giftsSent,
     }),
-    equipped: {
-      border: profile?.profile_border ?? null,
-      flair: profile?.profile_flair ?? null,
-      title: profile?.custom_title ?? null,
-    },
+    equipped,
   }
 }
