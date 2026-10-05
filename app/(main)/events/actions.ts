@@ -39,11 +39,11 @@ import { stampEventSpaceId } from '@/lib/events/store'
 import { spaceIdForCircle } from '@/lib/circles/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { coerceVisibilityForScope } from '@/lib/events/options'
-import { HOME_TZ, isValidTimeZone, isEventPast, zoneAbbrev, resolveZone } from '@/lib/time/zone'
+import { HOME_TZ, isValidTimeZone, zoneAbbrev, resolveZone } from '@/lib/time/zone'
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { checkInWindowOpen } from '@/lib/events/checkin-window'
 import { isPendingApproval } from '@/lib/events/admission'
-import { rsvpWindowStateFromDetails } from '@/lib/events/rsvp-window'
+import { eventOpenForRsvp, MAX_PLUS_ONES } from '@/lib/events/rsvp-gate'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -1159,49 +1159,6 @@ async function readEventHostId(eventId: string): Promise<string | null> {
   return (data as { host_id: string | null } | null)?.host_id ?? null
 }
 
-// Guard: the event must exist and not be cancelled before we write an RSVP row
-// (mirrors checkInEvent's own check). Without it a stale/cancelled event id could
-// mint orphaned RSVP rows + fire the going side-effects. Returns false to no-op.
-/**
- * The two answers a caller needs. `open` is the hard gate — a cancelled or finished event takes
- * nothing at all. `windowOpen` gates JOINING only: a host's booking window stops new answers, it
- * does not trap the people who already answered. Somebody who said yes must always be able to say
- * no, or "close RSVPs" quietly becomes "lock the guest list", which is a different feature and one
- * nobody asked for.
- */
-interface RsvpGate { open: boolean; windowOpen: boolean }
-const CLOSED_FOR_RSVP: RsvpGate = { open: false, windowOpen: false }
-
-async function eventOpenForRsvp(eventId: string): Promise<RsvpGate> {
-  const admin = createAdminClient()
-  // `details` and `time_zone` sit outside the generated types, so this reads untyped and casts
-  // (repo convention, ADR-246). Both are returned at runtime.
-  const { data } = await admin
-    .from('events')
-    .select('id, is_cancelled, starts_at, ends_at, time_zone, details')
-    .eq('id', eventId)
-    .maybeSingle()
-  const ev = data as unknown as {
-    id: string
-    is_cancelled: boolean | null
-    starts_at: string
-    ends_at: string | null
-    time_zone: string | null
-    details: unknown
-  } | null
-  if (!ev || ev.is_cancelled) return CLOSED_FOR_RSVP
-
-  const zone = resolveZone(ev.time_zone)
-  // Once the gathering is OVER there is nothing left to say you are coming to. The page has hidden
-  // the controls past this point since #2319; the action never enforced it, so a stale tab or a
-  // direct call still minted a seat for last month's event.
-  if (isEventPast(ev.starts_at, ev.ends_at, zone)) return CLOSED_FOR_RSVP
-
-  // The host's booking window (lib/events/rsvp-window.ts). Enforced HERE and not only in the page,
-  // because a control that merely hides a button is not a window (ADR-1174).
-  return { open: true, windowOpen: rsvpWindowStateFromDetails(ev.details, zone) === 'open' }
-}
-
 // Drop / update / remove the "<Name> RSVP'd" entry in the event's activity feed
 // (event_posts) when someone RSVPs going (EVENTS activity loop). One entry per
 // (event, profile) — the partial unique index (kind='rsvp') keeps a changed RSVP
@@ -1672,10 +1629,9 @@ export async function setRsvpStatus(
 
 // Capacity-neutral headcount the host cares about: how many guests a confirmed
 // attendee is bringing. Self-authorized (only the caller's own row), clamped to
-// [0, MAX_PLUS_ONES], and only meaningful for a 'going' RSVP — we no-op otherwise
-// so it can't inflate a maybe/waitlist row. Does NOT consume seats (the capacity
-// trigger counts 'going' rows, not plus_ones) and never emails.
-const MAX_PLUS_ONES = 5
+// [0, MAX_PLUS_ONES] (lib/events/rsvp-gate.ts), and only meaningful for a 'going' RSVP — we
+// no-op otherwise so it can't inflate a maybe/waitlist row. Does NOT consume seats (the
+// capacity trigger counts 'going' rows, not plus_ones) and never emails.
 
 export async function setRsvpPlusOnes(eventId: string, plusOnes: number) {
   const myProfileId = await getMyProfileId()

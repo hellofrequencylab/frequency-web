@@ -19,6 +19,7 @@ import { sendRsvpApprovedNotice } from '@/lib/events/guest-rsvp-email'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import { isBlockedBetween } from '@/lib/blocking'
 import { rateLimitOk } from '@/lib/rate-limit'
+import { eventOpenForRsvp, MAX_PLUS_ONES } from '@/lib/events/rsvp-gate'
 
 // Post-event social loop (slice B-2): the event activity feed (event_posts), the
 // recap album (event_media), and cohosts (event_cohosts).
@@ -659,14 +660,34 @@ export async function setEventRsvpDepth(
   const admin = createAdminClient()
   const { data: existingRsvp } = await admin
     .from('event_rsvps')
-    .select('approval_status')
+    .select('approval_status, status, plus_ones')
     .eq('event_id', eventId)
     .eq('profile_id', profileId)
     .maybeSingle()
-  const existingApproval =
-    (existingRsvp as { approval_status: ApprovalStatus | null } | null)?.approval_status ?? null
+  const existingRow = existingRsvp as {
+    approval_status: ApprovalStatus | null
+    status: string | null
+    plus_ones: number | null
+  } | null
+  const existingApproval = existingRow?.approval_status ?? null
   const approvalStatus: ApprovalStatus =
     existingApproval ?? ((await eventRequiresApproval(eventId)) ? 'pending' : 'none')
+
+  // SCAN-697: the same gate every other seat-taking path consults (lib/events/rsvp-gate.ts). A
+  // cancelled or finished event takes nothing; a closed booking window refuses a NEW going answer
+  // and any plus-one increase, and never traps someone who wants to leave.
+  const gate = await eventOpenForRsvp(eventId)
+  if (!gate.open) return { ok: false }
+  const plusOneNames = (args.plusOneNames ?? [])
+    .map((n) => String(n ?? '').trim().slice(0, 80))
+    .filter(Boolean)
+    .slice(0, MAX_PLUS_ONES)
+  const wasGoing = existingRow?.status === 'going'
+  const currentPlusOnes = existingRow?.plus_ones ?? 0
+  if (!gate.windowOpen) {
+    if (args.status === 'going' && !wasGoing) return { ok: false }
+    if (plusOneNames.length > currentPlusOnes) return { ok: false }
+  }
 
   // setRsvp returns null when the upsert failed. That result used to be discarded, so a failed
   // write still fell through to revalidate + a silent success: the member watched the control
@@ -676,7 +697,7 @@ export async function setEventRsvpDepth(
     eventId,
     profileId,
     status: args.status,
-    plusOneNames: args.plusOneNames,
+    plusOneNames,
     declineReason: args.declineReason,
     approvalStatus,
   })
