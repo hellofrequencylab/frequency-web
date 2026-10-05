@@ -10,6 +10,6 @@
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-05: migration 20270345011900_space_program_capacity_guard.sql adds enforce_space_program_capacity, a BEFORE INSERT OR UPDATE OF status trigger on space_enrollments that locks the program row and raises program_full (23514) at capacity, modelled on the ticket tier guard; enrollInProgram (lib/spaces/enroll.ts) maps program_full to This program is full right now, 23505 to You are already enrolled here, and anything else to Could not enroll right now. Try again. scripts/function-grants.txt records the trigger function as internal. Not applied: the thread owner applies it after merge."
+    "detail": "\n\nCLOSED 2026-10-05: migration 20270345012200_space_program_capacity_guard.sql adds enforce_space_program_capacity, a BEFORE INSERT OR UPDATE OF status trigger on space_enrollments that locks the program row and raises program_full (23514) at capacity, modelled on the ticket tier guard; enrollInProgram (lib/spaces/enroll.ts) maps program_full to This program is full right now, 23505 to You are already enrolled here, and anything else to Could not enroll right now. Try again. scripts/function-grants.txt records the trigger function as internal. Not applied: the thread owner applies it after merge."
   }
 }

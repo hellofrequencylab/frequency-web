@@ -10,6 +10,6 @@
     }
   },
   "append": {
-    "detail": "\n\nCLOSED 2026-10-05: the store pre-check in app/(main)/crew/store/actions.ts reads with limit(1) before maybeSingle so a duplicate pair still reads as owned, and migration 20270345011800_redeem_refuses_a_second_copy_of_an_owned_item.sql redefines redeem_store_item_atomic to raise already_owned under the buyer lock for cosmetic, title and collectible items; the action maps it to You already own this item. Not applied: the thread owner applies it after merge."
+    "detail": "\n\nCLOSED 2026-10-05: the store pre-check in app/(main)/crew/store/actions.ts reads with limit(1) before maybeSingle so a duplicate pair still reads as owned, and migration 20270345012100_redeem_refuses_a_second_copy_of_an_owned_item.sql redefines redeem_store_item_atomic to raise already_owned under the buyer lock for cosmetic, title and collectible items; the action maps it to You already own this item. Not applied: the thread owner applies it after merge."
   }
 }
