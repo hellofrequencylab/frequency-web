@@ -26,7 +26,7 @@ export const SITE_URL =
 // bytes, matching this file on disk byte for byte (LIVE-205, ADR-1220).
 //
 // ⚠️ A METADATA ROUTE CANNOT BE NAMED THIS WAY AT ALL. A per-entity card
-// (`app/(main)/events/[slug]/opengraph-image.tsx`) sits under a route group, so Next appends a
+// (`app/(public)/events/[slug]/opengraph-image.tsx`) sits under a route group, so Next appends a
 // six-character hash derived from the parent path and the bare path is dead. Only a STATIC file at
 // a non-grouped root has a URL stable enough to hardcode, which is why this constant names one and
 // `lib/jsonld.seo-images.test.ts` fails any self-origin image URL that does not resolve to a real

@@ -14,7 +14,7 @@
 //
 // 🔴 WHY THIS MODULE EXISTS. That precedence used to be hand-rolled at each call site, and the
 // three copies drifted: the event page and the claim card resolved all three sources, while the
-// per-event OG share card (app/(main)/events/[slug]/opengraph-image.tsx) never selected
+// per-event OG share card (app/(public)/events/[slug]/opengraph-image.tsx) never selected
 // `cover_image_path` at all and ordered the other two backwards. The consequence was invisible from
 // inside the app — every page rendered, every test passed — and visible only on somebody else's
 // phone: every event whose host UPLOADED a cover shared as the brand TEXT fallback card, because

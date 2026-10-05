@@ -96,7 +96,7 @@ describe('every non-attending reader goes through the rule', () => {
     // and lib/og/deliver.ts caches the render on a shared CDN for 24h with a week of
     // stale-while-revalidate — so the leak outlives the fix by a day. 19 published public events had
     // `hide_address = true` when this was found.
-    const src = code('app/(main)/events/[slug]/opengraph-image.tsx')
+    const src = code('app/(public)/events/[slug]/opengraph-image.tsx')
     expect(src).not.toMatch(/function publicVisibleLocation\b/)
     expect(src).toContain('publicVisibleLocation(')
     // The raw free-text line must never reach the canvas again.
