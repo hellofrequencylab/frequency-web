@@ -129,6 +129,10 @@ export async function GET(
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
       'Cache-Control': 'private, no-store',
+      // A token in the URL is a credential: a crawler that finds the link must not index it, and
+      // robots.txt is the wrong tool because a disallowed URL can still be indexed by reference
+      // (SCAN-666).
+      'X-Robots-Tag': 'noindex, nofollow',
     },
   })
 }
