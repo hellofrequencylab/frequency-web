@@ -17,14 +17,27 @@ export async function getAiControlsData() {
   const admin = createAdminClient()
   const since = new Date()
   since.setUTCHours(0, 0, 0, 0)
-  const { data: usageRows } = await admin
-    .from('ai_usage')
-    .select('feature, cost_usd')
-    .gte('created_at', since.toISOString())
 
+  // Summed in the database (ai_spend_by_feature_today, migration 20270345011900, SCAN-737): one
+  // unpaged select is capped at 1,000 rows by PostgREST, so the table understated a busy day.
+  // While the migration sits unapplied the RPC errors and the rows are paged with .range().
   const spend = new Map<string, number>()
-  for (const r of (usageRows ?? []) as { feature: string; cost_usd: number }[]) {
-    spend.set(r.feature, (spend.get(r.feature) ?? 0) + Number(r.cost_usd))
+  const { data: byFeature, error: rpcError } = await admin.rpc('ai_spend_by_feature_today')
+  if (!rpcError && byFeature) {
+    for (const r of byFeature as { feature: string; spent: number | string }[]) spend.set(r.feature, Number(r.spent))
+  } else {
+    const PAGE = 500
+    for (let from = 0; ; from += PAGE) {
+      const { data: usageRows } = await admin
+        .from('ai_usage')
+        .select('feature, cost_usd')
+        .gte('created_at', since.toISOString())
+        .order('created_at', { ascending: true })
+        .range(from, from + PAGE - 1)
+      const rows = (usageRows ?? []) as { feature: string; cost_usd: number }[]
+      for (const r of rows) spend.set(r.feature, (spend.get(r.feature) ?? 0) + Number(r.cost_usd))
+      if (rows.length < PAGE) break
+    }
   }
   const features = Array.from(new Set([...Object.keys(FEATURE_DAILY_CAP_USD), ...spend.keys()])).sort()
   const rows: AiFeatureRow[] = features.map((feature) => ({
