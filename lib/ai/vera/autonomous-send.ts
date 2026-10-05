@@ -28,6 +28,7 @@ import {
   recordAutonomyDecision,
   type AutonomyAuditEntry,
 } from './circuit-breaker'
+import { PLATFORM_POSTAL_LINE, postalFooterHtml } from '@/lib/email-studio/postal'
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
@@ -107,7 +108,7 @@ export async function autonomousSend(
       to: input.recipientEmail,
       subject: input.subject,
       html: autonomousEmailHtml(input.body, unsubscribeUrl),
-      text: `${input.body}\n\nUnsubscribe or manage emails: ${unsubscribeUrl}`,
+      text: `${input.body}\n\nUnsubscribe or manage emails: ${unsubscribeUrl}\n${PLATFORM_POSTAL_LINE}`,
       headers: listUnsubscribeHeaders(unsubscribeUrl),
       tags: [{ name: AUTONOMOUS_SEND_TAG, value: input.category }],
     })
@@ -189,5 +190,5 @@ function autonomousEmailHtml(body: string, unsubscribeUrl: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/\n/g, '<br/>')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#3D352A;line-height:1.65;">${safe}</p><hr style="border:none;border-top:1px solid #E9E1D4;margin:24px 0;"/><p style="font-size:12px;color:#8F8675;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe or manage emails</a>.</p></div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#3D352A;line-height:1.65;">${safe}</p><hr style="border:none;border-top:1px solid #E9E1D4;margin:24px 0;"/><p style="font-size:12px;color:#8F8675;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe or manage emails</a>.</p>${postalFooterHtml()}</div>`
 }

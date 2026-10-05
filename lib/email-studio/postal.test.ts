@@ -48,4 +48,15 @@ describe('one source', () => {
       expect(src).not.toContain('Unsubscribe</a>.</p></div>')
     },
   )
+
+  // Vera's two outbound shells (a human-approved send to a CRM contact, an autonomous lifecycle email to a
+  // member) carry a List-Unsubscribe and a lifecycle token, so they are commercial too (SCAN-648).
+  it.each(['lib/ai/vera/execute.ts', 'lib/ai/vera/autonomous-send.ts'])(
+    '%s appends the postal paragraph and the plain-text postal line',
+    (file) => {
+      const src = readFileSync(join(process.cwd(), file), 'utf8')
+      expect(src).toContain('Unsubscribe or manage emails</a>.</p>${postalFooterHtml()}</div>')
+      expect(src).toContain('${unsubscribeUrl}\\n${PLATFORM_POSTAL_LINE}`')
+    },
+  )
 })
