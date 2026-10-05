@@ -36,8 +36,9 @@ const CATEGORIES: { key: NotificationCategory; label: string; description: strin
   },
   {
     key:         'lifecycle',
-    label:       'Onboarding nudges',
-    description: 'Day 1 / Day 3 / Day 7 check-ins after you join a circle.',
+    // One switch, many senders (SCAN-734): check-ins, leader notes, automations, nurture and newsletters.
+    label:       'Updates and messages',
+    description: 'Check-ins after you join, notes from your Hosts and leaders, and newsletters.',
   },
   {
     key:         'practice',
