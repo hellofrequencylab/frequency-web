@@ -341,12 +341,15 @@ export function CircleSettingsModule() {
         </div>
       )}
 
-      <DangerDelete
-        entity="circle"
-        warning="Members lose access and memberships, invites, tasks, and awards are erased. Posts are unlinked to the public feed."
-        onDelete={() => deleteCircle(circleId, circleSlug)}
-        redirectTo="/circles"
-      />
+      {/* Deleting is an ownership act (SCAN-689): only a lead sees it, and the action re-checks. */}
+      {data.can_delete && (
+        <DangerDelete
+          entity="circle"
+          warning="Members lose access and memberships, invites, tasks, and awards are erased. Posts are unlinked to the public feed."
+          onDelete={() => deleteCircle(circleId, circleSlug)}
+          redirectTo="/circles"
+        />
+      )}
     </div>
   )
 }

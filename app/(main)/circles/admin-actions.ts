@@ -260,6 +260,10 @@ export async function getCircleAdminData(slug: string) {
      *  carries its own two-door rule. */
     access_limited:
       isSpaceCircle || availableAccessModes(space).length < CIRCLE_ACCESS_MODES.length,
+    /** True only for a lead (Host, staff, or the managing guide/mentor of the parent). Deleting the
+     *  circle is an ownership act, so a volunteer_role Admin, who can edit it, never sees the
+     *  control; `deleteCircle` re-checks the same capability (SCAN-689). */
+    can_delete: caps.has('circle.manageRoles'),
     theme,
     topical_channel_id: circle.topical_channel_id ?? null,
     /** The one to three Channels the circle carries, primary first (LIVE-666). */
@@ -688,16 +692,19 @@ export async function updateCirclePermalink(
 }
 
 /**
- * Permanently delete a circle. Gated on circle.editSettings (its host, a managing
- * guide/mentor of the parent, or staff) — the same gate as editing it. The capability
- * re-check is the FIRST statement (the authz scan is file-level, not a per-function
- * prover). FK cascades clear memberships, invites, circle_practices, tasks, awards;
- * the polymorphic refs (posts/events scope, stewardship edges) carry no FK, so they
- * are unlinked here in the same call. Irreversible — the UI requires a typed confirm.
+ * Permanently delete a circle. Gated on circle.manageRoles, NOT circle.editSettings
+ * (SCAN-689): deleting the circle is an ownership act, like handing it off, so it belongs
+ * to the leads only (its host, a managing guide/mentor of the parent, or staff). ADR-1014
+ * widened editSettings to a volunteer_role Admin, and an Admin must never be able to erase
+ * the Host's circle. The capability re-check is the FIRST statement (the authz scan is
+ * file-level, not a per-function prover). FK cascades clear memberships, invites,
+ * circle_practices, tasks, awards; the polymorphic refs (posts/events scope, stewardship
+ * edges) carry no FK, so they are unlinked here in the same call. Irreversible — the UI
+ * requires a typed confirm, and renders the control only when `can_delete` is true.
  */
 export async function deleteCircle(id: string, slug: string): Promise<{ error?: string }> {
   const caps = await getCircleCapabilities(id)
-  if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
+  if (!caps.has('circle.manageRoles')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
   const { data: circle } = await admin.from('circles').select('name, is_space_primary').eq('id', id).maybeSingle()

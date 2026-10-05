@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-689",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/(main)/circles/admin-actions.ts\";if(!fs.existsSync(a))process.exit(79);const s=fs.readFileSync(a,\"utf8\");const i=s.indexOf(\"export async function deleteCircle\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);if(/caps\\.has\\(.circle\\.editSettings.\\)/.test(body)&&!/circle\\.manageRoles/.test(body)){console.error(\"SCAN-689: deleteCircle still gates on circle.editSettings, which a circle-scoped Admin holds, so an Admin can permanently delete the circle its Host owns.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\ndeleteCircle in app/(main)/circles/admin-actions.ts was gated on circle.editSettings, which ADR-1014 widened to a volunteer_role Admin, so an Admin could type the confirm and irreversibly delete the Host's circle through the admin client with no RLS in the way. The gate now follows circle.manageRoles, the lead marker (Host, staff, managing guide or mentor of the parent) that a rung never holds, the doc comment says why, getCircleAdminData returns can_delete from the same capability, and circle-settings-module.tsx renders DangerDelete only when it is true. Pinned by app/(main)/circles/delete-ownership.test.ts (an editSettings-only caller is refused before any write, a lead deletes, and can_delete tracks the capability) and a ladder assertion in lib/core/capabilities.test.ts that a volunteer_role Admin holds editSettings but not manageRoles."
+  }
+}

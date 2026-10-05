@@ -212,6 +212,14 @@ describe('resolveCapabilities · circle role ladder (ADR-1014)', () => {
     for (const cap of OWNER_ONLY) expect(can(caps, cap)).toBe(false)
   })
 
+  it('ADMIN holds no delete authority: deleting the circle follows circle.manageRoles (SCAN-689)', () => {
+    // deleteCircle in app/(main)/circles/admin-actions.ts gates on circle.manageRoles, the lead
+    // marker, so an editSettings holder who is not a lead is refused the irreversible act.
+    const caps = resolveCapabilities(viewer, asRung('guide'))
+    expect(can(caps, 'circle.editSettings')).toBe(true)
+    expect(can(caps, 'circle.manageRoles')).toBe(false)
+  })
+
   it('MODERATOR holds the room and provably not the settings', () => {
     const caps = resolveCapabilities(viewer, asRung('host'))
     expect(can(caps, 'circle.moderate')).toBe(true)
