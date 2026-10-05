@@ -16,7 +16,7 @@ import {
 import { Stat } from '@/components/ui/stat'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, circleListSchema, eventListSchema } from '@/lib/jsonld'
-import { OG_SITE, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -69,6 +69,7 @@ export async function generateMetadata({
     robots: hub ? undefined : { index: false, follow: true },
     openGraph: {
       ...OG_SITE,
+      images: ROOT_OG_IMAGES,
       title: `${title} · ${SITE_NAME}`,
       description,
       url: canonical,
