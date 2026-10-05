@@ -17,7 +17,7 @@ import type { CheckInFailReason } from '@/app/(main)/events/actions'
 import { log, briefError } from '@/lib/log'
 import { listActiveVariants, pickVariant } from '@/lib/entry-points/ab'
 import { referralsEnabled } from '@/lib/platform-flags'
-import { normalizeSplash, primarySplashLink } from '@/lib/qr/splash'
+import { normalizeSplash, splashRedirectLink } from '@/lib/qr/splash'
 import { renderSplashPage } from '@/lib/qr/splash-render'
 import { captureQrContact } from '@/lib/connections/qr-capture'
 import { makeEventInviteToken } from '@/lib/qr/event-invite'
@@ -288,17 +288,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   // referral/first-touch cookies are set (so a splash code still counts + attributes):
   //   • A/B variant in play -> the variant wins (skip the splash), so split-traffic codes keep their
   //     existing behavior unchanged.
-  //   • Otherwise, if the splash has a PRIMARY CTA, redirect straight to it (the owner's chosen main
-  //     action). If it has no links, RENDER the splash landing page (heading + blurb + image).
+  //   • Otherwise, if the splash is a bare single link (one link, no blurb, no image), the landing
+  //     would add nothing over its one button, so redirect straight to it (splashRedirectLink).
+  //   • Otherwise RENDER the splash landing page (heading + blurb + image + links, the first link
+  //     styled as the main button). The editor promises exactly this page, so a scan must show what
+  //     the owner authored rather than skipping to link one (SCAN-780).
   // A code WITHOUT a splash (or a malformed one) falls through to every existing branch below,
   // unchanged. A relative-path or a same-origin CTA resolves against the request origin.
   const splash = abTarget ? null : normalizeSplash(code.splash)
   if (splash) {
-    const cta = primarySplashLink(splash)
-    if (cta) {
-      return withReferral(NextResponse.redirect(new URL(cta.url, origin)))
+    const shortcut = splashRedirectLink(splash)
+    if (shortcut) {
+      return withReferral(NextResponse.redirect(new URL(shortcut.url, origin)))
     }
-    // No CTA: render the splash landing itself (cookies are set via withReferral on the HTML response).
+    // Render the splash landing itself (cookies are set via withReferral on the HTML response).
     const html = renderSplashPage(splash, origin)
     return withReferral(
       new NextResponse(html, { headers: { 'content-type': 'text/html; charset=utf-8' } }),
