@@ -264,8 +264,18 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     ...(event.description ? { description: event.description } : {}),
     location,
     url,
+    // The hosting Circle, with the url the page itself links (the circle route is keyed by id, not
+    // slug), so an answer engine can join the event to the host's indexed profile instead of a bare
+    // name (SCAN-791). An event hosted by a person or a Space still emits no organizer: nothing here
+    // can name their profile path yet.
     ...(event.circle_name
-      ? { organizer: { '@type': 'Organization', name: event.circle_name } }
+      ? {
+          organizer: {
+            '@type': 'Organization',
+            name: event.circle_name,
+            ...(event.circle_id ? { url: abs(`/discover/circles/${event.circle_id}`) } : {}),
+          },
+        }
       : {}),
     // Pricing. A TICKETED event carries its price on its active tiers, not on events.price_cents
     // (which stays null for them), so reading price_cents alone published "this event is free"

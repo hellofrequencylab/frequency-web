@@ -355,6 +355,13 @@ describe('eventSchema', () => {
     })
   })
 
+  it('links the circle organizer to the public circle page the event page links (SCAN-791)', () => {
+    const result = eventSchema(makeEvent({ circle_name: 'Surf Club', circle_id: 'c-1' }))
+    expect((result as Record<string, unknown>).organizer).toMatchObject({
+      url: `${SITE_URL}/discover/circles/c-1`,
+    })
+  })
+
   it('omits organizer when circle_name is null', () => {
     const result = eventSchema(makeEvent({ circle_name: null }))
     expect(result).not.toHaveProperty('organizer')
