@@ -29,6 +29,13 @@ type Hold = {
 }
 
 /** Format an ISO instant in the viewer's local zone with native Intl (no project tz lib on the client). */
+/** A datetime-local value (local wall time, no zone) to a UTC ISO instant; unparseable passes through
+ *  unchanged so the server's own validation names the problem. */
+function toInstant(local: string): string {
+  const ms = new Date(local).getTime()
+  return Number.isFinite(ms) ? new Date(ms).toISOString() : local
+}
+
 function when(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
@@ -207,7 +214,14 @@ export function VenueHoldsPanel({
             disabled={pending || !venueId || !title.trim() || !startsAt || !endsAt || windowInvalid}
             onClick={() =>
               run(
-                () => requestVenueHold(spaceId, venueId, { title: title.trim(), startsAt, endsAt }),
+                // The pickers hold LOCAL wall times with no zone; convert to UTC instants here, where
+                // the requester's zone is known. The server refuses a zone-less string (SCAN-702).
+                () =>
+                  requestVenueHold(spaceId, venueId, {
+                    title: title.trim(),
+                    startsAt: toInstant(startsAt),
+                    endsAt: toInstant(endsAt),
+                  }),
                 () => {
                   setTitle('')
                   setStartsAt('')
