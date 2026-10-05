@@ -62,6 +62,7 @@ vi.mock('@/lib/admin/guard', () => ({
 const {
   openLibraryDownload,
   admitDownload,
+  effectiveDownloadPolicy,
   downloadFilename,
   publicDownloadUrl,
   readDoorPolicy,
@@ -143,6 +144,29 @@ describe('openLibraryDownload: the policy is applied to the caller', () => {
   })
 })
 
+describe('openLibraryDownload: a protected asset left on the default open policy (SCAN-652, ruling b)', () => {
+  it('refuses a signed-out visitor and a member, and signs nothing', async () => {
+    state.asset = protectedAsset('open')
+    expect(await openLibraryDownload(ID, null)).toEqual({ ok: false, refusal: 'members' })
+    expect(await openLibraryDownload(ID, member)).toEqual({ ok: false, refusal: 'staff' })
+    expect(state.signed).toEqual([])
+    expect(state.inserts).toEqual([])
+  })
+
+  it('lets the Loom team through and records the policy the door applied, staff, not the stored open', async () => {
+    state.asset = protectedAsset('open')
+    const out = await openLibraryDownload(ID, staff)
+    expect(out.ok).toBe(true)
+    expect(state.inserts).toHaveLength(1)
+    expect(state.inserts[0]).toMatchObject({ asset_id: ID, profile_id: 'p-staff', policy: 'staff' })
+  })
+
+  it('an unprotected asset on open is still open to anyone', async () => {
+    state.asset = asset({ download_policy: 'open' })
+    expect((await openLibraryDownload(ID, null)).ok).toBe(true)
+  })
+})
+
 describe('openLibraryDownload: the record and the refusals', () => {
   it('writes the record after the mint and before answering; a failed write refuses the download', async () => {
     state.asset = protectedAsset('members')
@@ -152,8 +176,8 @@ describe('openLibraryDownload: the record and the refusals', () => {
   })
 
   it('never signs for longer than a minute', async () => {
-    state.asset = protectedAsset('open')
-    await openLibraryDownload(ID, null)
+    state.asset = protectedAsset('members')
+    await openLibraryDownload(ID, member)
     expect(LIBRARY_DOWNLOAD_TTL_SECONDS).toBe(60)
     expect(state.signed.every((s) => s.ttl <= 60)).toBe(true)
   })
@@ -176,9 +200,9 @@ describe('openLibraryDownload: the record and the refusals', () => {
   })
 
   it('a mint that fails is refused and not recorded', async () => {
-    state.asset = protectedAsset('open')
+    state.asset = protectedAsset('members')
     state.signFails = true
-    expect(await openLibraryDownload(ID, null)).toEqual({ ok: false, refusal: 'unavailable' })
+    expect(await openLibraryDownload(ID, member)).toEqual({ ok: false, refusal: 'unavailable' })
     expect(state.inserts).toEqual([])
   })
 
@@ -199,6 +223,13 @@ describe('the pure pieces', () => {
     expect(gate).not.toHaveBeenCalled()
     expect(await admitDownload('staff', member, gate)).toBe('staff')
     expect(await admitDownload('staff', null, gate)).toBe('members')
+  })
+
+  it('effectiveDownloadPolicy tightens only the protected-and-default case', () => {
+    expect(effectiveDownloadPolicy({ isProtected: true, downloadPolicy: 'open' })).toBe('staff')
+    expect(effectiveDownloadPolicy({ isProtected: true, downloadPolicy: 'members' })).toBe('members')
+    expect(effectiveDownloadPolicy({ isProtected: true, downloadPolicy: 'staff' })).toBe('staff')
+    expect(effectiveDownloadPolicy({ isProtected: false, downloadPolicy: 'open' })).toBe('open')
   })
 
   it('an unknown stored policy reads as the strictest one at the door', () => {
