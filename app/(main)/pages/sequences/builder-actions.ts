@@ -58,7 +58,12 @@ export async function saveFunnelVersion(slug: string, override: FunnelOverride):
     ...override,
     status: override.status ?? current?.status,
   }
-  await saveFunnelOverride(slug, merged, me?.id ?? null)
+  // A failed write returns ok: false so the editor's "Could not save" branch runs (SCAN-777).
+  try {
+    await saveFunnelOverride(slug, merged, me?.id ?? null)
+  } catch {
+    return { ok: false }
+  }
   revalidatePath('/join')
   revalidatePath('/pages/sequences')
   revalidatePath(`/pages/sequences/${slug}/edit`)
@@ -93,8 +98,23 @@ export async function renameFunnelSlug(
   if (!current) return { ok: false, error: 'This funnel could not be found.' }
   const me = await getCallerProfile()
   // Re-key the row: save under the new slug (keeping status + tag + all copy), then delete the old.
-  await saveFunnelOverride(next, current, me?.id ?? null)
-  await deleteFunnelVersion(oldSlug)
+  // No transaction wraps the two writes, so the old row goes ONLY after the new one is confirmed
+  // written: a failed or unconfirmed save stops here with the funnel intact (SCAN-777).
+  try {
+    await saveFunnelOverride(next, current, me?.id ?? null)
+  } catch {
+    return { ok: false, error: 'Could not change the permalink. Try again.' }
+  }
+  if (!(await getFunnelOverride(next))) {
+    return { ok: false, error: 'Could not change the permalink. Try again.' }
+  }
+  try {
+    await deleteFunnelVersion(oldSlug)
+  } catch {
+    // The new row exists and the old one is still there: the funnel is reachable under both slugs,
+    // nothing is lost. Report it so the operator can retry rather than land on an orphaned pair.
+    return { ok: false, error: 'The new permalink was saved but the old one could not be removed. Try again.' }
+  }
   revalidatePath('/pages/sequences')
   revalidatePath('/join')
   revalidatePath(`/pages/sequences/${oldSlug}/edit`)
