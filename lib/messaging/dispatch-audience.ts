@@ -36,7 +36,7 @@ export async function assertCanBroadcastTo(
       const { data: h } = await admin.from('hubs').select('guide_id, nexus_id').eq('id', c.hub_id).maybeSingle()
       if (h?.guide_id === callerId) led = true
       else if (h?.nexus_id) {
-        const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
+        const { data: n } = await admin.from('nexuses').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
         if (n?.mentor_id === callerId) led = true
       }
     }
@@ -44,11 +44,11 @@ export async function assertCanBroadcastTo(
     const { data: h } = await admin.from('hubs').select('guide_id, nexus_id').eq('id', audienceId).maybeSingle()
     if (h?.guide_id === callerId) led = true
     else if (h?.nexus_id) {
-      const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
+      const { data: n } = await admin.from('nexuses').select('mentor_id').eq('id', h.nexus_id).maybeSingle()
       if (n?.mentor_id === callerId) led = true
     }
   } else {
-    const { data: n } = await admin.from('nexus_regions').select('mentor_id').eq('id', audienceId).maybeSingle()
+    const { data: n } = await admin.from('nexuses').select('mentor_id').eq('id', audienceId).maybeSingle()
     if (n?.mentor_id === callerId) led = true
   }
   if (!led) throw new Error('You can only broadcast to a circle, hub, or region you lead.')
