@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-708",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const dir=\"supabase/migrations\",f=\"lib/spaces/enroll.ts\";if(!fs.existsSync(dir)||!fs.existsSync(f)){console.error(\"SCAN-708: migrations dir or enroll.ts missing\");process.exit(79)}const guard=fs.readdirSync(dir).filter((n)=>n.endsWith(\".sql\")).some((n)=>{const t=fs.readFileSync(path.join(dir,n),\"utf8\");return /space_enrollments/.test(t)&&/program_full/.test(t)&&/create\\s+(or\\s+replace\\s+)?trigger/i.test(t)});const mapped=/program_full/.test(fs.readFileSync(f,\"utf8\"));if(!guard||!mapped){console.error(\"SCAN-708: no migration adds a program_full capacity trigger on space_enrollments (trigger=\"+guard+\") and enrollInProgram does not map that error (mapped=\"+mapped+\"), so the only capacity check is a read-then-insert in JS and two simultaneous enrolls can both take the last seat.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: migration 20270345011900_space_program_capacity_guard.sql adds enforce_space_program_capacity, a BEFORE INSERT OR UPDATE OF status trigger on space_enrollments that locks the program row and raises program_full (23514) at capacity, modelled on the ticket tier guard; enrollInProgram (lib/spaces/enroll.ts) maps program_full to This program is full right now, 23505 to You are already enrolled here, and anything else to Could not enroll right now. Try again. scripts/function-grants.txt records the trigger function as internal. Not applied: the thread owner applies it after merge."
+  }
+}
