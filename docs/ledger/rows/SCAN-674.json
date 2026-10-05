@@ -1,20 +1,15 @@
 {
   "id": "SCAN-674",
-  "title": "The support chat widget puts supabase-js in the first-load JS of every public marketing, help and discover page",
-  "status": "done",
-  "priority": "P2",
-  "lane": "hygiene",
-  "size": "S",
-  "source": {
-    "file": "docs/META-SCAN-STATUS.md",
-    "ref": "found 2026-10-05 by the scan-seven SEO/GEO finders (26-agent fan-out), confirmed by hand against the tree"
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const hit=[\"app/(marketing)/layout.tsx\",\"app/(help)/layout.tsx\",\"app/discover/layout.tsx\"].filter((p)=>fs.existsSync(p)&&/from \\x27@\\/components\\/chat\\/support-chat-widget\\x27/.test(fs.readFileSync(p,\"utf8\")));if(hit.length){console.error(\"SCAN-674: \"+hit.join(\", \")+\" import the support chat widget statically, which puts supabase-js (about 57KB gzip) in the first-load JS of every public marketing, help and discover page, the exact weight marketing-header.tsx records removing.\");process.exit(1)}'",
+      "note": "Fails on main before this change (checked by running the probe before the fix); passes with it."
+    }
   },
-  "detail": "FOUND 2026-10-05 (scan seven, seo-cwv finder). components/chat/support-chat-widget.tsx imports @/lib/supabase/client statically and calls createClient().auth.getSession() on mount; use-support-chat.ts and lib/realtime/use-typing.ts import it statically too; app/(marketing)/layout.tsx, app/(help)/layout.tsx and app/discover/layout.tsx render the widget statically. components/layout/marketing-header.tsx:73-95 records why supabase was made lazy there (GoTrue, Postgrest, Realtime and Storage, 222KB raw / ~57KB gzip, in every public page's initial bundle) and the widget brings it back; OWN-052 confirmed the widget is in the RSC payload on /what-is-frequency. THE FIX: a components/chat/support-chat-launcher.tsx ('use client') that renders only the launcher button and loads the panel with dynamic(() => import('./support-chat-widget'), { ssr: false }) on first click or requestIdleCallback; point the three layouts at it; inside the widget, lazy-import the supabase client the way marketing-header.tsx does; add '@supabase/supabase-js' to HEAVY_CLIENT_MODULES in scripts/check-shell-weight.mjs so the gate catches a return. Measure with check:shell-weight before and after.\n\nCLOSED 2026-10-05: components/chat/support-chat-launcher.tsx renders only the floating button and mounts the panel through next/dynamic (ssr false) on the first tap, prefetching the chunk on requestIdleCallback; the three public layouts render the launcher; the panel's own auth probe imports @/lib/supabase/client lazily the way marketing-header.tsx does; components/chat/support-chat-launcher.test.ts reads the source edges with check-shell-weight's classifier and fails if the launcher or a layout imports the widget or the client statically. '@supabase/supabase-js' was NOT added to HEAVY_CLIENT_MODULES: Arm C walks server-action files below client boundaries too, so every hot route already reaches @supabase/ssr through lib/supabase/server.ts and the gate would fail on main; the launcher test is the guard instead.",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node -e 'const fs=require(\"fs\");const hit=[\"app/(marketing)/layout.tsx\",\"app/(help)/layout.tsx\",\"app/discover/layout.tsx\"].filter((p)=>fs.existsSync(p)&&/from \\x27@\\/components\\/chat\\/support-chat-widget\\x27/.test(fs.readFileSync(p,\"utf8\")));if(hit.length){console.error(\"SCAN-674: \"+hit.join(\", \")+\" import the support chat widget statically, which puts supabase-js (about 57KB gzip) in the first-load JS of every public marketing, help and discover page, the exact weight marketing-header.tsx records removing.\");process.exit(1)}'",
-    "note": "Fails on main before this change (checked by running the probe before the fix); passes with it."
-  },
-  "closed": "2026-10-05",
-  "wave": "W6"
+  "append": {
+    "detail": "\n\ncomponents/chat/support-chat-launcher.tsx renders only the floating button and mounts the panel through next/dynamic (ssr false) on the first tap, prefetching the chunk on requestIdleCallback; the three public layouts render the launcher; the panel's own auth probe imports @/lib/supabase/client lazily the way marketing-header.tsx does; components/chat/support-chat-launcher.test.ts reads the source edges with check-shell-weight's classifier and fails if the launcher or a layout imports the widget or the client statically. '@supabase/supabase-js' was NOT added to HEAVY_CLIENT_MODULES: Arm C walks server-action files below client boundaries too, so every hot route already reaches @supabase/ssr through lib/supabase/server.ts and the gate would fail on main; the launcher test is the guard instead."
+  }
 }

@@ -26,7 +26,9 @@ const VALID_CATEGORIES: NotificationCategory[] = [
 ]
 
 // Flip email_<category> to false for the given profile, verifying the
-// HMAC token first. Idempotent: re-running has no additional effect.
+// HMAC token first. A 'lifecycle' unsubscribe (the category every global broadcast
+// mints) also revokes email_marketing consent and unsubscribes the linked contact.
+// Idempotent: re-running has no additional effect.
 //
 // Returns { ok: true, category } on success, otherwise an error string.
 // Never reveals whether the profile_id exists — invalid token and unknown
@@ -68,6 +70,33 @@ export async function processUnsubscribe(params: {
   if (error) {
     console.error('[unsubscribe] upsert:', error.message)
     return fail('Could not save your preference. Please try again.')
+  }
+
+  // SCAN-728: every global broadcast (lib/email-studio/send.ts) mints its footer and List-Unsubscribe
+  // links with category 'lifecycle', but a campaign to subscribed members is gated on the
+  // email_marketing CONSENT scope (lib/comms/send-gate.ts), which never reads the lifecycle
+  // preference. So a lifecycle unsubscribe is the member's marketing opt-out too: revoke the
+  // consent in the ledger (the latest record wins, so hasConsent flips to false) and mark every
+  // contacts row linked to the profile unsubscribed, which also drops them from the
+  // subscribed_members / members / site_signups audiences. Both writes are idempotent, so the
+  // RFC 8058 one-click POST can re-run them; either failing is a failed unsubscribe, not a
+  // best-effort miss (CAN-SPAM needs the opt-out to actually hold).
+  if (cat === 'lifecycle') {
+    const { error: consentError } = await admin
+      .from('consent_records')
+      .insert({ profile_id: profileId, scope: 'email_marketing', granted: false, source: 'unsubscribe' })
+    if (consentError) {
+      console.error('[unsubscribe] revoke email_marketing consent:', consentError.message)
+      return fail('Could not save your preference. Please try again.')
+    }
+    const { error: contactError } = await admin
+      .from('contacts')
+      .update({ consent_state: 'unsubscribed' })
+      .eq('profile_id', profileId)
+    if (contactError) {
+      console.error('[unsubscribe] contacts consent_state:', contactError.message)
+      return fail('Could not save your preference. Please try again.')
+    }
   }
 
   return ok({ category: cat })

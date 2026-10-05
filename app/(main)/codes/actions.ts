@@ -6,6 +6,7 @@
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { generateSlug } from '@/lib/qr/codes'
 import { MARKETING_CODE_LIMIT, isValidMarketingPath } from '@/lib/qr/marketing'
@@ -87,11 +88,17 @@ export async function createMarketingCode(input: MarketingInput): Promise<Action
   if (typeof row === 'string') return fail(row)
 
   const db = createAdminClient()
-  const { count } = await db
+  // SCAN-775: count the SAME personal scope /codes lists (root Space or legacy null space_id), so a
+  // member's plain Space codes (lib/qr/space-codes.ts also stamps owner_profile_id with purpose null)
+  // no longer eat the personal quota and the member is never told to delete a code they cannot see.
+  const rootId = await loadRootSpaceId()
+  let countQuery = db
     .from('qr_codes')
     .select('id', { count: 'exact', head: true })
     .eq('owner_profile_id', member.id)
     .is('purpose', null)
+  countQuery = rootId ? countQuery.or(`space_id.is.null,space_id.eq.${rootId}`) : countQuery.is('space_id', null)
+  const { count } = await countQuery
   if ((count ?? 0) >= MARKETING_CODE_LIMIT) {
     return fail(`You can have up to ${MARKETING_CODE_LIMIT} marketing codes. Delete one to add another.`)
   }
