@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-774",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const r=\"app/q/[slug]/route.ts\",a=\"app/(main)/circles/actions.ts\";if(!fs.existsSync(r)||!fs.existsSync(a)){console.error(\"SCAN-774: a file the probe must read is missing\");process.exit(79)}const route=fs.readFileSync(r,\"utf8\"),act=fs.readFileSync(a,\"utf8\");const sig=act.match(/export async function joinCircle\\(([\\s\\S]*?)\\)\\s*:/);const actionTakesInvited=!!(sig&&/invited/.test(sig[1]));const routeTrustsRow=/joinCircle\\(code\\.circle_id, circle\\.slug, \\{ invited: true \\}\\)/.test(route)&&!/host_id|steward|isStaff|platform_staff/.test(route);if(actionTakesInvited||routeTrustsRow){console.error(\"SCAN-774: a member can still join a closed or paid circle without an invite: \"+(actionTakesInvited?\"the exported joinCircle Server Action still accepts an invited flag any client can pass; \":\"\")+(routeTrustsRow?\"the /q resolver still passes invited:true for any circle code without checking that its creator is the circle host, a Space steward or staff.\":\"\"));process.exit(1)}'",
+      "note": "Reads the join action signature and the /q circle branch. Fails while the exported joinCircle still accepts an invited flag, or while the route passes invited:true with no host, steward or staff check; passes once both are gone."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: the join body moved to lib/circles/join.ts (joinCircleAsMember); the exported joinCircle action takes no invited flag; the /q circle branch passes invited only when the code's minter is the circle host, a steward of its Space or platform staff, and the Space lead branch runs only when the code's owner holds that Space; migration 20270345020774 revokes insert and update on qr_codes from anon and authenticated and grants insert back on the eight columns the personal-code provisioner writes. Verified by the row probe (fail before, pass after), eslint, the join-privacy and /q route vitests, check:grants, check:migrations and tsc."
+  }
+}
