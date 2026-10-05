@@ -17127,6 +17127,10 @@ export type Database = {
       claim_guest_orders: { Args: never; Returns: string[] }
       claim_guest_rsvps: { Args: { p_profile_id: string }; Returns: undefined }
       claim_guest_tickets: { Args: never; Returns: number }
+      claim_founder_flags: {
+        Args: { p_profile: string; p_tasks: string[]; p_complete: boolean }
+        Returns: Json
+      }
       claim_outbox_jobs: {
         Args: { _limit?: number }
         Returns: {

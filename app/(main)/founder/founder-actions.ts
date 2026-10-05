@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { awardGems } from '@/lib/gems'
 import { getFounderTasks, type FounderTaskKey } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_REWARD } from '@/lib/onboarding/founder-config'
@@ -41,27 +40,25 @@ export async function claimFounderRewards(): Promise<FounderClaimResult> {
   const tasks = await getFounderTasks(profileId)
   const admin = createAdminClient()
 
-  const { data: row } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
-  const meta = (row?.meta ?? {}) as Record<string, unknown>
-  const founder = (meta.founder ?? {}) as { rewarded?: FounderTaskKey[]; badge?: boolean }
-  const rewarded = new Set<FounderTaskKey>(founder.rewarded ?? [])
-
-  const newlyRewarded = tasks.tasks.filter((t) => t.done && !rewarded.has(t.key)).map((t) => t.key)
-  newlyRewarded.forEach((k) => rewarded.add(k))
-
-  const completing = tasks.complete && !founder.badge
-
-  // Stamp the flags FIRST so a double-call can't double-pay; worst case we miss a
-  // reward rather than grant it twice.
-  // 2026-09-05 (scan2 L6-09): only the `founder` key is merged server-side, and the merge is checked: an
-  // unstamped flag pays nothing, because it would pay again on the next claim.
-  const { error } = await mergeProfileMeta(admin, profileId, {
-    founder: { rewarded: [...rewarded], badge: !!founder.badge || tasks.complete },
+  // COMPARE-AND-SET UNDER THE ROW LOCK (SCAN-759). The flags used to be decided from an unlocked
+  // read and stamped through merge_profile_meta, which never says whether a key was already set:
+  // two tabs (or five parallel posts) all read rewarded = [] first, each stamped, each paid.
+  // claim_founder_flags (migration 20270345012100) locks the profile row, adds only the tasks not
+  // yet stored, flips the badge only if it was unset, and returns exactly what THIS call added.
+  // Flag-first doctrine unchanged (scan2 L6-09): an unstamped flag pays nothing.
+  const done = tasks.tasks.filter((t) => t.done).map((t) => t.key)
+  const { data: claim, error } = await admin.rpc('claim_founder_flags', {
+    p_profile: profileId,
+    p_tasks: done,
+    p_complete: tasks.complete,
   })
-  if (error) {
+  if (error || !claim) {
     console.error('[claimFounderRewards] founder stamp failed, paying nothing', { profileId, error })
     return empty
   }
+  const claimed = claim as { added?: string[]; completing?: boolean }
+  const newlyRewarded = (claimed.added ?? []).filter((k): k is FounderTaskKey => done.includes(k as FounderTaskKey))
+  const completing = claimed.completing === true
 
   let gemsAwarded = 0
 

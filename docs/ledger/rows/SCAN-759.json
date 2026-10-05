@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-759",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/founder/founder-actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-759: founder-actions.ts missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const unlockedRead=/from\\([\\x22\\x27]profiles[\\x22\\x27]\\)\\s*\\.select\\([\\x22\\x27]meta[\\x22\\x27]\\)/.test(s);const cas=/\\.rpc\\(\\s*[\\x22\\x27]claim_founder_flags[\\x22\\x27]/.test(s);const idem=/idem/.test(s);if(unlockedRead&&!cas&&!idem){console.error(\"SCAN-759: claimFounderRewards still decides newlyRewarded from an unlocked read of profiles.meta and pays awardGems with no compare-and-set RPC and no idempotency key, so overlapping calls each pay the founder Gems.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nclaimFounderRewards claims flags through the claim_founder_flags RPC (row lock, compare-and-set) and only pays Gems for flags that call added."
+  }
+}
