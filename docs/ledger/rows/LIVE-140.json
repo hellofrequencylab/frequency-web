@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-140",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const s=require('fs').readFileSync('app/(public)/events/[slug]/opengraph-image.tsx','utf8');const g=s.match(/const linkReadable = ([^\\\\n]*)\\\\n\\\\s*const isPublic = ([^\\\\n]*)/);if(!g)process.exit(1);const vis=[...g[1].matchAll(/'([a-z_]+)'/g)].map(m=>m[1]).sort().join(',');process.exit(vis==='public,unlisted'&&/=== 'published'/.test(g[2])&&/!ev\\\\?\\\\.removed_at/.test(g[2])&&s.includes(\\\"from '@/lib/events/visible-location'\\\")&&s.includes('publicVisibleLocation(')&&!/const where = ev\\\\??\\\\.location/.test(s)&&/\\\\.select\\\\(\\\\s*\\\\n?\\\\s*'[^']*hide_address[^']*'/.test(s)&&/return neutralCard\\\\(\\\\)/.test(s)?0:1)\"",
+      "note": "Measures the GATE EXPRESSION, not the presence of words in the file. It extracts the two-line linkReadable/isPublic gate and asserts: the link-readable set is EXACTLY {public, unlisted}; the published clause and the !ev?.removed_at clause both live in that expression; the venue goes through the SCAN-209 rule and never reads ev.location raw; hide_address is actually selected; and the neutral card is returned.\n\n\ud83d\udd34 THE PREVIOUS PROBE, AND THE VITEST ARM, BOTH MISSED TWO OF THIS ROW'S OWN THREE LEAKS. Re-audited 2026-09-01 by mutating the FIXED tree: deleting `&& !ev?.removed_at` passed BOTH arms, because `removed_at` also appears in the .select() string and the Row type, so toContain passed by EXISTING - shape-not-truth verbatim, in the guard written to prevent a leak. Widening the set with `|| 'private' || 'circle_only'` also passed both, because nothing pinned the SET, only that two members were mentioned somewhere. Both mutations now fail both arms."
+    }
+  },
+  "append": {
+    "detail": "2026-10-05 (SCAN-655): the event share card moved to app/(public)/events/[slug], the segment that serves /events/<slug>; the probe reads it there. Nothing in the card changed."
+  }
+}

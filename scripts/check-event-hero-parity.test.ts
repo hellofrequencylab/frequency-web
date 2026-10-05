@@ -30,7 +30,7 @@ const HERO_SURFACES = [
   // poster URLs; the ORDER still comes from the shared authority.
   'app/(main)/events/[slug]/event-member-page.tsx',
   // The per-event social share / SEO card — the surface that broke.
-  'app/(main)/events/[slug]/opengraph-image.tsx',
+  'app/(public)/events/[slug]/opengraph-image.tsx',
   // The seeded-event claim card.
   'app/events/claim/[token]/opengraph-image.tsx',
 ] as const
@@ -99,7 +99,7 @@ describe('event hero parity', () => {
   it('detects the omission it was written for (positive control)', () => {
     // Mutate the fixed source back into the shipped defect and watch the detector fire. A guard
     // nobody has seen go red is a guard nobody has tested.
-    const fixed = read('app/(main)/events/[slug]/opengraph-image.tsx')
+    const fixed = read('app/(public)/events/[slug]/opengraph-image.tsx')
     expect(selectsEveryHeroColumn(fixed)).toBe(true)
     const broken = fixed.replace('cover_image_path, poster_path', 'poster_path')
     expect(broken, 'the mutation did not apply — re-anchor it').not.toBe(fixed)

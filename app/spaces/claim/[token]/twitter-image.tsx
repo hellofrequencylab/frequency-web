@@ -1,5 +1,5 @@
 // X/Twitter share card for a Space CLAIM link — the SAME card as the OG image (one source,
-// re-exported, the site-root pattern used by app/(main)/spaces/[slug]/twitter-image.tsx).
+// re-exported, the site-root pattern used by app/(public)/spaces/[slug]/twitter-image.tsx).
 //
 // WHY THIS FILE EXISTS. Next only replaces `twitter.images` when the CURRENT segment ships a
 // twitter-image file; otherwise the value from the ROOT segment survives. Without this, the claim

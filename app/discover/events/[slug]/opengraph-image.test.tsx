@@ -175,7 +175,7 @@ describe('the public event share card', () => {
     const root = path.join(import.meta.dirname, '..', '..', '..', '..')
     const read = (rel: string) => readFileSync(path.join(root, rel), 'utf8')
     const publicCard = read('app/discover/events/[slug]/opengraph-image.tsx')
-    const memberCard = read('app/(main)/events/[slug]/opengraph-image.tsx')
+    const memberCard = read('app/(public)/events/[slug]/opengraph-image.tsx')
     for (const src of [publicCard, memberCard]) {
       expect(src).toMatch(/from '@\/lib\/og\/event-card'/)
       expect(src).toContain('eventCardResponse(')

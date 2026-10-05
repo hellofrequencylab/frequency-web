@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-138",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const og=fs.readFileSync('app/(public)/events/[slug]/opengraph-image.tsx','utf8');const h=fs.readFileSync('lib/events/hero-url.ts','utf8');const sel=(og.match(/\\\\.select\\\\(\\\\s*'([^']*)'/)||['',''])[1];const b=h.slice(h.indexOf('export function eventHeroCandidates'));const i=['ev.cover_image_path','ev.poster_path','ev.details?.media?.coverPath'].map(k=>b.indexOf(k));process.exit(sel.includes('cover_image_path')&&og.includes('resolveEventHeroUrl(ev)')&&i[0]>=0&&i[0]<i[1]&&i[1]<i[2]?0:1)\"",
+      "note": "Measures the consequence, not the title: the OG route's own .select() string must name cover_image_path (the omitted column IS the bug), the route must resolve through resolveEventHeroUrl, and eventHeroCandidates must still push cover before poster before crop. A CLI rather than a vitest run because LIVE-034 forbids a backlog probe from spawning a test runner. scripts/check-event-hero-parity.test.ts is the enforcing arm - it adds the claim card, the page, and a repo-wide net for a fourth surface, and every arm was watched go red against a real mutation."
+    }
+  },
+  "append": {
+    "detail": "2026-10-05 (SCAN-655): the event share card moved to app/(public)/events/[slug], the segment that serves /events/<slug>; the probe reads it there. Nothing in the card changed."
+  }
+}

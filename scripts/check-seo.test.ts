@@ -83,7 +83,8 @@ describe('check-seo — reading the sources of truth', () => {
     expect(proxySrc).toContain('isPublicEventView')
     expect(proxySrc).toMatch(/!isPublicEventView\s*&&/)
     // And the create flow, which is NOT public, must still be disallowed by name.
-    expect(parsePathList('app/robots.ts', 'DISALLOW')).toContain('/events/new')
+    // `$`-anchored since SCAN-654, so the rule stops at the composer instead of every slug starting with new.
+    expect(parsePathList('app/robots.ts', 'DISALLOW')).toContain('/events/new$')
   })
 
   it('throws rather than silently returning [] when it cannot find its input', () => {

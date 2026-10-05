@@ -518,7 +518,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     }));
 
-    const placeRoutes: MetadataRoute.Sitemap = cities.map((c) => ({
+    // A city that also earns the density landing page canonicalises there
+    // (app/discover/places/[citySlug]/page.tsx), so advertising its /discover/places URL
+    // sends crawlers to a page that points elsewhere (SCAN-656). The density slug and the
+    // places slug are the same `citySlug(name)` form, so set membership is the page's rule.
+    const densitySlugs = new Set(densityCities.map((c) => c.slug));
+    const placeRoutes: MetadataRoute.Sitemap = cities
+      .filter((c) => !densitySlugs.has(c.slug))
+      .map((c) => ({
       url: `${SITE_URL}/discover/places/${c.slug}`,
       changeFrequency: "daily" as const,
       priority: 0.6,
@@ -558,7 +565,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // sitemap" until 2026-09-07; it did carry a URL, and that URL served HTML — see below.)
     const eventRoutes: MetadataRoute.Sitemap = (events as SitemapEventEntry[]).map((e) => ({
       url: `${SITE_URL}/events/${e.slug}`,
-      lastModified: new Date(e.startsAt),
+      // NO lastModified (SCAN-661): it used to be the start date, which is in the future for every
+      // upcoming event, and a future lastmod is what Google names as grounds to ignore the field for
+      // the whole file. `events` has no updated-at column, so there is nothing true to send.
       changeFrequency: "daily",
       priority: e.isSeriesHome ? 0.8 : 0.7,
       // The event's own PUBLIC cover, when it has one (LIVE-207). A row with no uploaded cover
@@ -754,5 +763,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     );
   }
 
-  return [...staticRoutes, ...helpRoutes, ...dynamicRoutes, ...organizerRoutes, ...spotlightRoutes];
+  return xmlSafe([...staticRoutes, ...helpRoutes, ...dynamicRoutes, ...organizerRoutes, ...spotlightRoutes]);
+}
+
+// Next's sitemap serializer writes <loc> and <image:loc> verbatim (resolve-route-data.js), so one
+// '&' in an operator- or importer-supplied cover URL makes the whole file ill-formed XML and every
+// URL in it unreadable (SCAN-785). Our own URLs carry no reserved characters; the images can.
+const XML_ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" };
+export function escapeXml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => XML_ESCAPES[c]);
+}
+function xmlSafe(entries: MetadataRoute.Sitemap): MetadataRoute.Sitemap {
+  return entries.map((e) => ({
+    ...e,
+    url: escapeXml(e.url),
+    ...(e.images ? { images: e.images.map(escapeXml) } : {}),
+  }));
 }

@@ -632,7 +632,7 @@ export function spaceSchema(space: SpaceSchemaInput) {
   // so the node always has an image (rich-result bar).
   //
   // 🔴 THE PER-SPACE OG CARD USED TO SIT BETWEEN THEM, and that URL 404s for the same reason the
-  // event one did (LIVE-205): app/(main)/spaces/[slug]/opengraph-image.tsx is under a route group,
+  // event one did (LIVE-205): app/(public)/spaces/[slug]/opengraph-image.tsx is under a route group,
   // so Next serves it at `/spaces/<slug>/opengraph-image-tt3pwa`. Removed rather than hardcoded —
   // the suffix is Next's to derive. The share card is unaffected and still per-Space.
   const image = [...(space.logoUrl ? [space.logoUrl] : []), SITE_OG_IMAGE]

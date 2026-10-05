@@ -216,8 +216,10 @@ describe('sitemap wiring', () => {
     // `e.starts_at` (the old RPC row) would produce `new Date(undefined)` -> Invalid Date in every
     // lastModified, which serialises without throwing. The type is the real guard; this is the
     // cheap one that runs on every push.
-    expect(sitemap).toContain('e.startsAt')
+    expect(sitemap).toContain('e.isSeriesHome')
     expect(sitemap).not.toContain('e.starts_at')
+    // And never the start date as lastmod (SCAN-661): it is in the future for every upcoming event.
+    expect(sitemap).not.toContain('lastModified: new Date(e.startsAt)')
   })
 
   it('ranks the series page above its individual dates', () => {

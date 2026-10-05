@@ -1,0 +1,20 @@
+{
+  "id": "SCAN-785",
+  "title": "One & in an operator-supplied cover URL would make the whole sitemap ill-formed XML",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "XS",
+  "closed": "2026-10-05",
+  "wave": "W0",
+  "source": {
+    "file": "app/sitemap.ts",
+    "ref": "found 2026-10-05 by the scan-seven seo-sitemap finder and its skeptic; confirmed against node_modules/next/dist/build/webpack/loaders/metadata/resolve-route-data.js"
+  },
+  "detail": "FOUND 2026-10-05 (scan seven). Next's sitemap serializer writes <loc> and <image:loc> verbatim (resolve-route-data.js lines 112 and 123, no escaping), and app/sitemap.ts hands it Space covers, event covers and product images that operators and the importer supply. A single & in one of those URLs (a CDN query string is enough) makes the whole file ill-formed XML, and a parser that rejects the file loses every URL in it, not one. Our own route URLs carry no reserved characters. CLOSED 2026-10-05: the sitemap's one return passes through xmlSafe, which escapes &, <, >, double and single quotes in url and images; app/sitemap.test.ts pins a product image with a query string.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/sitemap.ts\",\"utf8\");if(!/return xmlSafe\\(/.test(s)||!/images\\.map\\(escapeXml\\)/.test(s)){console.error(\"SCAN-785: the sitemap hands image URLs to Next unescaped, and Next writes <image:loc> verbatim, so one & in an operator-supplied cover makes the whole sitemap ill-formed XML and every URL in it unreadable.\");process.exit(1)}'",
+    "note": "Fails on main before this change; passes with it."
+  }
+}

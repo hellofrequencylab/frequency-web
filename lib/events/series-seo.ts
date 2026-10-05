@@ -45,7 +45,11 @@ const SERIES_COUNT_ROW_CAP = 2000
 
 export interface SitemapEventEntry {
   slug: string
-  /** ISO instant of the date this URL represents — the sitemap's `lastModified`. */
+  /** ISO instant of the date this URL represents. NOT the sitemap's `lastModified` any more
+   *  (SCAN-661): a start date is in the future for every upcoming event, and a future lastmod is
+   *  the one value Google documents as a reason to stop trusting the field for the whole file.
+   *  `events` carries no updated-at column (created_at only), so an event entry has NO lastmod:
+   *  absent beats invented (LIVE-197). */
   startsAt: string
   /**
    * The event's PUBLIC cover image URL, for the image-sitemap extension — or absent when the row

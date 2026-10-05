@@ -401,7 +401,6 @@ app/(main)/events/[slug]/manage/crm/actions.ts
 app/(main)/events/[slug]/manage/load.ts
 app/(main)/events/[slug]/manage/page.tsx
 app/(main)/events/[slug]/manage/questionnaire-actions.ts
-app/(main)/events/[slug]/opengraph-image.tsx
 app/(main)/events/[slug]/social-actions.ts
 app/(main)/events/actions.ts
 app/(main)/events/admin-actions.ts
@@ -492,6 +491,7 @@ app/(marketing)/start/actions.ts
 app/(marketing)/the-community/page.tsx
 app/(marketing)/the-lab/page.tsx
 app/(marketing)/the-quest/page.tsx
+app/(public)/events/[slug]/opengraph-image.tsx
 app/api/cron/billing-renewals/route.ts
 app/api/cron/event-reminders/route.ts
 app/api/cron/journey-prompt/route.ts
