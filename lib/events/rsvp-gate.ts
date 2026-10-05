@@ -22,7 +22,27 @@ export const MAX_PLUS_ONES = 5
 export interface RsvpGate { open: boolean; windowOpen: boolean }
 export const CLOSED_FOR_RSVP: RsvpGate = { open: false, windowOpen: false }
 
+export interface RsvpEventRow {
+  id: string
+  is_cancelled: boolean | null
+  starts_at: string
+  ends_at: string | null
+  time_zone: string | null
+  details: unknown
+}
+
 export async function eventOpenForRsvp(eventId: string): Promise<RsvpGate> {
+  const loaded = await loadRsvpEvent(eventId)
+  if (!loaded) return CLOSED_FOR_RSVP
+  const { ev, zone } = loaded
+  // The host's booking window (lib/events/rsvp-window.ts). Enforced HERE and not only in the page,
+  // because a control that merely hides a button is not a window (ADR-1174).
+  return { open: true, windowOpen: rsvpWindowStateFromDetails(ev.details, zone) === 'open' }
+}
+
+/** The event row the gate reads, with its zone resolved. Null when the event is missing, cancelled
+ *  or already over: a finished or cancelled event takes nothing, whatever the window says. */
+export async function loadRsvpEvent(eventId: string): Promise<{ ev: RsvpEventRow; zone: string } | null> {
   const admin = createAdminClient()
   // `details` and `time_zone` sit outside the generated types, so this reads untyped and casts
   // (repo convention, ADR-246). Both are returned at runtime.
@@ -31,23 +51,13 @@ export async function eventOpenForRsvp(eventId: string): Promise<RsvpGate> {
     .select('id, is_cancelled, starts_at, ends_at, time_zone, details')
     .eq('id', eventId)
     .maybeSingle()
-  const ev = data as unknown as {
-    id: string
-    is_cancelled: boolean | null
-    starts_at: string
-    ends_at: string | null
-    time_zone: string | null
-    details: unknown
-  } | null
-  if (!ev || ev.is_cancelled) return CLOSED_FOR_RSVP
+  const ev = data as unknown as RsvpEventRow | null
+  if (!ev || ev.is_cancelled) return null
 
   const zone = resolveZone(ev.time_zone)
   // Once the gathering is OVER there is nothing left to say you are coming to. The page has hidden
   // the controls past this point since #2319; the action never enforced it, so a stale tab or a
   // direct call still minted a seat for last month's event.
-  if (isEventPast(ev.starts_at, ev.ends_at, zone)) return CLOSED_FOR_RSVP
-
-  // The host's booking window (lib/events/rsvp-window.ts). Enforced HERE and not only in the page,
-  // because a control that merely hides a button is not a window (ADR-1174).
-  return { open: true, windowOpen: rsvpWindowStateFromDetails(ev.details, zone) === 'open' }
+  if (isEventPast(ev.starts_at, ev.ends_at, zone)) return null
+  return { ev, zone }
 }

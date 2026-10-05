@@ -43,7 +43,8 @@ import { HOME_TZ, isValidTimeZone, zoneAbbrev, resolveZone } from '@/lib/time/zo
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { checkInWindowOpen } from '@/lib/events/checkin-window'
 import { isPendingApproval } from '@/lib/events/admission'
-import { eventOpenForRsvp, MAX_PLUS_ONES } from '@/lib/events/rsvp-gate'
+import { loadRsvpEvent, CLOSED_FOR_RSVP, MAX_PLUS_ONES, type RsvpGate } from '@/lib/events/rsvp-gate'
+import { rsvpWindowStateFromDetails } from '@/lib/events/rsvp-window'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -1149,6 +1150,17 @@ async function eventRequiresApprovalOrClosed(eventId: string): Promise<boolean> 
   return (data as { rsvp_requires_approval: boolean | null }).rsvp_requires_approval === true
 }
 
+// The RSVP gate for the actions in this file (ADR-1174, ADR-1175). The read and the cancelled /
+// finished checks live in lib/events/rsvp-gate.ts, shared with the depth sheet (SCAN-697); the
+// host's booking window is enforced HERE, in the action, and not only in the page, because a
+// control that merely hides a button is not a window (SCAN-528 pins this line to this file).
+async function rsvpGate(eventId: string): Promise<RsvpGate> {
+  const loaded = await loadRsvpEvent(eventId)
+  if (!loaded) return CLOSED_FOR_RSVP
+  const { ev, zone } = loaded
+  return { open: true, windowOpen: rsvpWindowStateFromDetails(ev.details, zone) === 'open' }
+}
+
 // The event's host. Used to deny attendance gamification credit to the host of
 // the event itself (anti-farming: no self-attendance rewards). Best-effort: a
 // read failure returns null, so the caller treats it as "not the host" and the
@@ -1275,7 +1287,7 @@ async function captureRsvpLead(
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
-  const gate = await eventOpenForRsvp(eventId)
+  const gate = await rsvpGate(eventId)
   if (!gate.open) return
 
   const admin = createAdminClient()
@@ -1466,7 +1478,7 @@ export async function setRsvpStatus(
 ): Promise<ActionResult<void> | void> {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
-  const gate = await eventOpenForRsvp(eventId)
+  const gate = await rsvpGate(eventId)
   if (!gate.open) return
   // The booking window stops people taking a SEAT. Every move that gives one up ('maybe' frees it,
   // 'not_going' withdraws) stays available, so a host closing RSVPs does not lock anyone into a
@@ -1655,7 +1667,7 @@ export async function setRsvpPlusOnes(eventId: string, plusOnes: number) {
   // Adding a plus-one adds a head to the room, so it obeys the same two gates a fresh RSVP does:
   // a finished or cancelled event takes nothing, and a closed booking window takes no new seats.
   // REDUCING the count is always allowed, for the same reason a withdrawal is.
-  const gate = await eventOpenForRsvp(eventId)
+  const gate = await rsvpGate(eventId)
   const current = (existing as { plus_ones?: number | null }).plus_ones ?? 0
   if (n > current && (!gate.open || !gate.windowOpen)) return
 
