@@ -1,0 +1,9 @@
+{
+  "id": "LIVE-155",
+  "patch": {
+    "source": { "file": "app/(public)/spaces/[slug]/opengraph-image.tsx", "ref": "ADR-1207" }
+  },
+  "append": {
+    "detail": "2026-10-05 (SCAN-655): the card file moved from app/(main)/spaces/[slug] to app/(public)/spaces/[slug], the segment that serves /spaces/<slug>; the source pointer follows. Nothing in the card changed."
+  }
+}
