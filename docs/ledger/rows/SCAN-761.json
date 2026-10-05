@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-761",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const j=\"app/(main)/partners/join/actions.ts\",l=\"app/(main)/partners/listing/actions.ts\";if(!fs.existsSync(j)||!fs.existsSync(l)){console.error(\"SCAN-761: partners action files missing\");process.exit(79)}const js=fs.readFileSync(j,\"utf8\"),ls=fs.readFileSync(l,\"utf8\");const releaseHides=/from\\([\\x22\\x27]partners[\\x22\\x27]\\)/.test(js);const ownerUnpublish=/unpublishListing|status:\\s*[\\x22\\x27](hidden|inactive|archived|unpublished)[\\x22\\x27]/.test(ls);if(!releaseHides&&!ownerUnpublish){console.error(\"SCAN-761: releasing a Business or Organization persona never touches the partners table, and no owner path can set a partner listing to anything but active, so a released program stays live in the directory with no way to take it down.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nReleasing the last Business or Organization persona hides the partner listing and its offers; owners also get an unpublishListing action."
+  }
+}

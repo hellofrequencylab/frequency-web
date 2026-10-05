@@ -122,3 +122,25 @@ export async function saveOffer(input: OfferInput): Promise<ActionResult<{ id: s
   revalidatePath(`/partners/${partner.slug}`)
   return ok({ id })
 }
+
+/** Take your own listing down (SCAN-761). Keyed on contact_profile_id only, with NO persona gate:
+ *  the owner must always be able to unpublish, program or no program. Offers go inactive with it. */
+export async function unpublishListing(): Promise<ActionResult<void>> {
+  const me = await getCallerProfile()
+  if (!me) return fail('Sign in first.')
+  const admin = createAdminClient()
+  const { data: partner } = await admin
+    .from('partners')
+    .select('id, slug')
+    .eq('contact_profile_id', me.id)
+    .maybeSingle()
+  if (!partner) return fail('You have no listing to take down.')
+  const { error } = await admin.from('partners').update({ status: 'hidden' }).eq('id', partner.id)
+  if (error) return fail(error.message)
+  await admin.from('partner_offers').update({ active: false }).eq('partner_id', partner.id)
+  revalidatePath('/partners')
+  revalidatePath('/partners/listing')
+  revalidatePath('/discover/partners')
+  revalidatePath(`/partners/${partner.slug}`)
+  return ok()
+}
