@@ -17,6 +17,7 @@ import {
   buildBookingReminderEmail,
   sendBookingCancelledEmail,
 } from '@/lib/email'
+import { madeWithUrl } from '@/lib/marketing/made-with'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000 // 24h before the session
@@ -206,6 +207,8 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
         otherPartyName: ctx.spaceName,
         manageUrl,
         icsBase64,
+        // The customer's copy carries the mark (LIVE-804); the owner's is a work notice and does not.
+        madeWith: { label: 'Made with Frequency', url: madeWithUrl('booking-email', APP_URL) },
       })
     }
     if (ctx.ownerProfileId && ctx.ownerProfileId !== ctx.memberProfileId) {

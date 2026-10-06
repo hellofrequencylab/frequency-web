@@ -1157,6 +1157,8 @@ export async function sendBookingConfirmationEmail(params: {
   otherPartyName: string | null
   manageUrl: string
   icsBase64: string | null
+  /** The "Made with Frequency" mark (LIVE-804); the customer's copy carries it, the owner's does not. */
+  madeWith?: { label: string; url: string } | null
 }) {
   const { to, serviceName, spaceName, audience } = params
   const subject =
@@ -1183,6 +1185,7 @@ function bookingConfirmationHtml(p: {
   durationMinutes: number
   otherPartyName: string | null
   manageUrl: string
+  madeWith?: { label: string; url: string } | null
 }): string {
   const eyebrow = p.audience === 'owner' ? 'New booking' : "You're booked"
   const title = p.serviceName ?? `Session with ${escapeHtml(p.spaceName)}`
@@ -1201,6 +1204,11 @@ function bookingConfirmationHtml(p: {
       <span style="color:#777;">${p.durationMinutes} minute session</span>
     </p>
     <a href="${p.manageUrl}" style="${btnStyle}">View booking &rarr;</a>
+    ${
+      p.madeWith
+        ? `<p style="font-size:12px;color:#999;margin:28px 0 0;"><a href="${p.madeWith.url}" style="color:#999;">${escapeHtml(p.madeWith.label)}</a></p>`
+        : ''
+    }
   `)
 }
 
@@ -1213,6 +1221,7 @@ function bookingConfirmationText(p: {
   durationMinutes: number
   otherPartyName: string | null
   manageUrl: string
+  madeWith?: { label: string; url: string } | null
 }): string {
   const intro =
     p.audience === 'owner'
@@ -1226,7 +1235,7 @@ When: ${p.whenAbsolute}
 Length: ${p.durationMinutes} minute session
 
 View booking: ${p.manageUrl}
-`
+${p.madeWith ? `\n${p.madeWith.label}: ${p.madeWith.url}\n` : ''}`
 }
 
 interface BookingReminderEmailParams {
