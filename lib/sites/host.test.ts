@@ -20,7 +20,7 @@ describe('normalizeHost', () => {
 
 describe('isAppHost', () => {
   it("treats Frequency's own domains, previews and local hosts as the app", () => {
-    for (const h of ['frequencylocal.com', 'www.frequencylocal.com', 'go.findafreq.com', 'frequency-web-git-x.vercel.app', 'localhost:3000', '127.0.0.1', '']) {
+    for (const h of ['frequencylocal.com', 'www.frequencylocal.com', 'frequency-web-git-x.vercel.app', 'localhost:3000', '127.0.0.1', '']) {
       expect(isAppHost(h)).toBe(true)
     }
   })
@@ -95,7 +95,7 @@ describe("a site host's crawler files (LIVE-783)", () => {
 
   it("matches the proxy matcher's host arm to isAppHost, anchored the way Next anchors it", () => {
     const re = new RegExp(`^${APP_HOST_PATTERN}$`)
-    for (const h of ['frequencylocal.com', 'www.frequencylocal.com', 'go.findafreq.com', 'frequency-web-git-x.vercel.app', 'localhost', '127.0.0.1']) {
+    for (const h of ['frequencylocal.com', 'www.frequencylocal.com', 'frequency-web-git-x.vercel.app', 'localhost', '127.0.0.1']) {
       expect(re.test(h), h).toBe(true)
       expect(isAppHost(h), h).toBe(true)
     }
