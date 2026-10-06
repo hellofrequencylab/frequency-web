@@ -4,6 +4,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getProduct } from '@/lib/commerce/products'
 import { getSpaceById } from '@/lib/spaces/store'
 import { createCommerceCheckout } from '@/lib/commerce/checkout'
+import { BOOKING_CHECKOUT_SECONDS } from '@/lib/spaces/booking'
 import { createBooking, holdSlotForBooking, linkBookingToOrder, cancelBooking } from '@/lib/spaces/booking'
 import { payoutsLive } from '@/lib/billing/connect'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -57,10 +58,20 @@ export async function bookServiceAction(
 
   // Paid service: gate behind payments, HOLD-FIRST, then take payment and link the hold to the order.
   if (!(await payoutsLive())) return { error: 'Payments aren’t turned on yet.' }
+  // SCAN-715: a hold is a seat nobody else can take until the Checkout settles or expires. Five
+  // starts an hour per buyer, and a 30-minute session, so one person cannot park every slot of a
+  // Space for a day by opening and closing Checkout tabs.
+  if (!(await rateLimitOk('service_book', buyerProfileId, 5, '1 h'))) {
+    return { error: 'You have started a lot of bookings. Try again in a little while.' }
+  }
   const hold = await holdSlotForBooking(product.bookingSpaceId, buyerProfileId, startsAtISO, product.id)
   if (!hold) return { error: 'That time is no longer available. Pick another.' }
 
-  const checkout = await createCommerceCheckout({ buyerProfileId, items: [{ productId: product.id, qty: 1 }] })
+  const checkout = await createCommerceCheckout({
+    buyerProfileId,
+    items: [{ productId: product.id, qty: 1 }],
+    expiresInSeconds: BOOKING_CHECKOUT_SECONDS,
+  })
   // A missing url OR a missing orderId is a failure: without the order the settle webhook can never
   // confirm the hold and a refund can never release it (both key on order_id), so keeping the hold + the
   // payment coupled means we must release the hold and stop rather than send the buyer to pay.

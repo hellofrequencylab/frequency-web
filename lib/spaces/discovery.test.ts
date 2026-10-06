@@ -43,6 +43,8 @@ type SpaceRow = {
   preferences?: unknown
   /** LIVE-197: the sitemap's `<lastmod>` source. */
   updated_at?: string | null
+  /** The Focus (spaces.mode_variant) the Book tab gate resolves the page's widget from (SCAN-787). */
+  mode_variant?: string | null
   /** The per-Space function on/off switches (spaces.entitlements) the tab gates read. */
   entitlements?: unknown
 }
@@ -69,6 +71,8 @@ const store: {
   collaborations: PresenceRow[]
   /** `space_membership_tiers` rows for the Memberships tab gate (LIVE-509). */
   membershipTiers: PresenceRow[]
+  /** `space_donation_asks` rows for the Book tab gate of a donations-Focus Space (SCAN-787). */
+  donationAsks: PresenceRow[]
 } = {
   spaces: [],
   counts: {},
@@ -81,6 +85,7 @@ const store: {
   reviews: [],
   collaborations: [],
   membershipTiers: [],
+  donationAsks: [],
 }
 
 /** The stored SUBJECT for a row (preferences.profileData.subject), or null when unset — mirrors the
@@ -277,6 +282,7 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table === 'space_reviews') return presenceBuilder(store.reviews)
       if (table === 'space_collaborations') return presenceBuilder(store.collaborations)
       if (table === 'space_membership_tiers') return presenceBuilder(store.membershipTiers)
+      if (table === 'space_donation_asks') return presenceBuilder(store.donationAsks)
       return spacesBuilder()
     },
   }),
@@ -311,6 +317,7 @@ beforeEach(() => {
   store.reviews = []
   store.collaborations = []
   store.membershipTiers = []
+  store.donationAsks = []
   store.spaces = [
     // s1 is a PRE-MIGRATION row: kind stored on the LEGACY `category` key, plus a subject. s2 stores
     // the CANONICAL `kind` key + a subject. s3 has NEITHER (kind reads as 'business', no subject).
@@ -665,9 +672,37 @@ describe('listNetworkedSpaceProfileTabs (the sitemap tab gates)', () => {
     return rows.filter((r) => r.slug === slug).map((r) => r.segment)
   }
 
-  it('gives a bare Space exactly ONE tab — book, the page that is never empty', async () => {
-    // No events, no circles, no reviews, no collaborators, no published storefront, no custom pages.
-    expect(await segmentsFor('sound-co')).toEqual(['book'])
+  // BOOK (SCAN-787). The page never 404s, but the widget it leads with renders an honest empty state
+  // at zero: a business on its default (service -> membership) Focus shows "No membership tiers yet"
+  // and a nonprofit on its default (donations) Focus shows "No fund posted yet". Neither gets a URL,
+  // on the SAME rule the page picks its widget by (lib/spaces/cta-kind.ts).
+  it('gives a bare Space NO tab at all: its Book page would show a visitor only an empty state', async () => {
+    // No tiers, no ask, no events, no circles, no reviews, no collaborators, no storefront, no pages.
+    expect(await segmentsFor('sound-co')).toEqual([])
+    expect(await segmentsFor('forest-org')).toEqual([])
+  })
+
+  it('advertises book for a membership-Focus Space only once it has an ACTIVE tier', async () => {
+    store.membershipTiers = [
+      { space_id: 's2', is_active: null }, // NULL means active
+      { space_id: 's1', is_active: false }, // retired: the join surface would read empty
+    ]
+    expect(await segmentsFor('sound-co')).toContain('book')
+    expect(await segmentsFor('river-yoga')).not.toContain('book')
+  })
+
+  it('advertises book for a donations-Focus Space only once it has a published ask', async () => {
+    // s3 is an `organization` (normalised to nonprofit), whose default Focus is donations.
+    store.donationAsks = [{ space_id: 's3', is_active: true }]
+    expect(await segmentsFor('forest-org')).toContain('book')
+    // A hidden ask (is_active=false) is the member empty state again.
+    store.donationAsks = [{ space_id: 's3', is_active: false }]
+    expect(await segmentsFor('forest-org')).not.toContain('book')
+  })
+
+  it('keeps book advertised for the Focuses with no presence read yet (booking, enroll, tickets)', async () => {
+    store.spaces = store.spaces.map((r) => (r.id === 's2' ? { ...r, mode_variant: 'appointments' } : r))
+    expect(await segmentsFor('sound-co')).toContain('book')
   })
 
   it('advertises calendar only for a Space with an upcoming PUBLIC event', async () => {
@@ -842,6 +877,7 @@ describe('listNetworkedSpaceProfileTabs (the sitemap tab gates)', () => {
 
   it('carries the Space row updated_at onto every tab (the LIVE-197 lastmod source)', async () => {
     tabRead = true
+    store.membershipTiers = [{ space_id: 's2', is_active: true }] // so sound-co has a tab to carry it on
     store.spaces = store.spaces.map((r) => (r.id === 's2' ? { ...r, updated_at: '2026-08-09T11:30:00Z' } : r))
     const rows = await listNetworkedSpaceProfileTabs()
     const mine = rows.filter((r) => r.slug === 'sound-co')

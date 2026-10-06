@@ -65,7 +65,9 @@ export async function enrollContactInSequence(
         upsert: (
           rows: Row[],
           opts: { onConflict: string; ignoreDuplicates: boolean },
-        ) => Promise<{ error: unknown }>
+        ) => Promise<{ error: unknown }> & {
+          select: (c: string) => Promise<{ data: Row[] | null; error: unknown }>
+        }
       }
     }
 
@@ -105,28 +107,132 @@ export async function enrollContactInSequence(
     const nextRunAt = new Date(Date.now() + delayHours * 3_600_000).toISOString()
 
     // Idempotent enroll: the unique (sequence_id, contact_id) index folds a re-enroll to a no-op.
-    const { error } = await db.from('space_drip_enrollments').upsert(
-      [
-        {
-          space_id: spaceId,
-          sequence_id: sequenceId,
-          contact_id: contactId,
-          email,
-          current_step: stepOrder,
-          next_run_at: nextRunAt,
-          status: 'enrolled',
-        },
-      ],
-      { onConflict: 'sequence_id,contact_id', ignoreDuplicates: true },
-    )
+    // SCAN-707: `enrolled` is true only when a row came back, so a contact already in the sequence
+    // is not counted as newly enrolled (the docstring always said so; the code said true).
+    const { data: rows, error } = await db
+      .from('space_drip_enrollments')
+      .upsert(
+        [
+          {
+            space_id: spaceId,
+            sequence_id: sequenceId,
+            contact_id: contactId,
+            email,
+            current_step: stepOrder,
+            next_run_at: nextRunAt,
+            status: 'enrolled',
+          },
+        ],
+        { onConflict: 'sequence_id,contact_id', ignoreDuplicates: true },
+      )
+      .select('contact_id')
     if (error) {
       log.error('spaces.drip.enroll_failed', { spaceId, sequenceId, contactId, error: briefError(error) })
       return { enrolled: false }
     }
-    return { enrolled: true }
+    return { enrolled: (rows ?? []).length > 0 }
   } catch (err) {
     log.error('spaces.drip.enroll_threw', { spaceId, sequenceId, contactId, error: briefError(err) })
     return { enrolled: false }
+  }
+}
+
+// SCAN-707: the upsert batch. 5,000 contacts is the audience resolver's ceiling; ten batches of 500
+// keep each statement small without turning one Start into thousands of round trips.
+const ENROLL_CHUNK = 500
+
+/**
+ * Enroll MANY Space contacts into ONE of the Space's drip sequences, the "Start sequence" path
+ * (SCAN-707). The per-contact primitive above makes four serial round trips per contact, two of which
+ * (the sequence, the steps) answer the same for every contact, so a 3,000-contact audience ran about
+ * 12,000 queries inside one server action and could die partway. This reads the sequence once, the
+ * steps once, takes the emails the audience resolver already returned (it is pinned to space_id, so
+ * tenancy holds), and upserts in chunks with the same onConflict + ignoreDuplicates, counting only
+ * the rows that came back. FAIL-SAFE: a chunk error is logged and the count so far is returned.
+ */
+export async function enrollContactsInSequence(
+  spaceId: string,
+  sequenceId: string,
+  recipients: readonly { contactId: string; email: string }[],
+): Promise<{ enrolled: number }> {
+  if (!spaceId || !sequenceId || recipients.length === 0) return { enrolled: 0 }
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            eq: (col: string, val: string) => {
+              maybeSingle: () => Promise<{ data: Row | null; error: unknown }>
+              order: (col: string, o: { ascending: boolean }) => Promise<{ data: Row[] | null; error: unknown }>
+            }
+          }
+        }
+        upsert: (
+          rows: Row[],
+          opts: { onConflict: string; ignoreDuplicates: boolean },
+        ) => { select: (c: string) => Promise<{ data: Row[] | null; error: unknown }> }
+      }
+    }
+
+    const { data: seq } = await db
+      .from('space_drip_sequences')
+      .select('id, enabled')
+      .eq('id', sequenceId)
+      .eq('space_id', spaceId)
+      .maybeSingle()
+    if (!seq || seq.enabled === false) return { enrolled: 0 }
+
+    const { data: stepRows } = await db
+      .from('space_drip_steps')
+      .select('step_order, delay_hours, enabled')
+      .eq('space_id', spaceId)
+      .eq('sequence_id', sequenceId)
+      .order('step_order', { ascending: true })
+    const first = (stepRows ?? [])
+      .filter((s) => s.enabled !== false)
+      .sort((a, b) => Number(a.step_order) - Number(b.step_order))[0]
+    if (!first) return { enrolled: 0 }
+
+    const stepOrder = Number(first.step_order) || 1
+    const delayHours = normalizeDelayHours(first.delay_hours)
+    const nextRunAt = new Date(Date.now() + delayHours * 3_600_000).toISOString()
+
+    // One row per contact with a usable address; duplicates in the audience collapse here so the
+    // upsert never sees the same (sequence, contact) twice in one statement.
+    const seen = new Set<string>()
+    const rows: Row[] = []
+    for (const r of recipients) {
+      const email = typeof r.email === 'string' ? r.email.trim().toLowerCase() : ''
+      if (!r.contactId || !email || seen.has(r.contactId)) continue
+      seen.add(r.contactId)
+      rows.push({
+        space_id: spaceId,
+        sequence_id: sequenceId,
+        contact_id: r.contactId,
+        email,
+        current_step: stepOrder,
+        next_run_at: nextRunAt,
+        status: 'enrolled',
+      })
+    }
+
+    let enrolled = 0
+    for (let i = 0; i < rows.length; i += ENROLL_CHUNK) {
+      const chunk = rows.slice(i, i + ENROLL_CHUNK)
+      const { data, error } = await db
+        .from('space_drip_enrollments')
+        .upsert(chunk, { onConflict: 'sequence_id,contact_id', ignoreDuplicates: true })
+        .select('contact_id')
+      if (error) {
+        log.error('spaces.drip.bulk_enroll_failed', { spaceId, sequenceId, chunk: i / ENROLL_CHUNK, error: briefError(error) })
+        return { enrolled }
+      }
+      enrolled += (data ?? []).length
+    }
+    return { enrolled }
+  } catch (err) {
+    log.error('spaces.drip.bulk_enroll_threw', { spaceId, sequenceId, error: briefError(err) })
+    return { enrolled: 0 }
   }
 }
 

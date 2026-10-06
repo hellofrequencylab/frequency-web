@@ -332,6 +332,8 @@ export default async function EventDetailPage({
     attendance_mode: AttendanceMode | null
     online_url: string | null
     status: string | null
+    /** Set by staff removal (reportRemoveEvent). SCAN-699: every other reader filters it. */
+    removed_at?: string | null
     // Structured venue address (feeds the Maps deep link; coarser fields omitted).
     venue_name: string | null
     street: string | null
@@ -374,7 +376,7 @@ export default async function EventDetailPage({
   const { data: rawEvent } = await admin
     .from('events')
     .select(
-      'id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency, visibility, scope_id, scope_type, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval, host:profiles!host_id ( id, display_name, handle, avatar_url )',
+      'id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency, visibility, scope_id, scope_type, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval, removed_at, host:profiles!host_id ( id, display_name, handle, avatar_url )',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -399,8 +401,13 @@ export default async function EventDetailPage({
   // (when present), the viewer's event capabilities, and the root Space id.
   const [ticketedCentsResolved, eventCaps, rootSpaceId] = await Promise.all([
     // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
+    // Never fatal to the buyer: a DB refusal throws out of the settle (SCAN-764) so the webhook
+    // redelivers, and this page must still render for someone who has just paid.
     ticket === 'success' && session_id
-      ? recordTicketFromSessionId(session_id)
+      ? recordTicketFromSessionId(session_id).catch((e: unknown) => {
+          console.error('[tickets] redirect settle failed; the webhook is now the only path', e)
+          return null
+        })
       : Promise.resolve(null),
     getEventCapabilities(event.id),
     // The root Space is the single-tenant default an event inherits (a personal Circle derives
@@ -477,6 +484,11 @@ export default async function EventDetailPage({
   // public slug. The admin read above bypasses RLS, so re-apply the status gate the
   // migration assumes server reads carry — only a manager may preview a draft.
   if ((extra?.status ?? 'published') !== 'published' && !canManage) notFound()
+  // SCAN-699: an event staff removed for abuse stays published and public in the row, so it passed
+  // the two gates above and rendered in full for every signed-in member. The public RPC, the share
+  // card, the calendar and the feeds all filter removal; this page does too. Only a manager (the
+  // host, a cohost, staff) can still open it, to see what was removed.
+  if (extra?.removed_at && !canManage) notFound()
 
   // An unclaimed event posted on an organizer's behalf: it has a poster credit, no
   // host, and was never claimed. Drives the "this is not my event / claim it" UI.

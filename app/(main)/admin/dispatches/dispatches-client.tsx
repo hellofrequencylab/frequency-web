@@ -16,6 +16,14 @@ import { StatusChip, type StatusTone, Banner } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DangerModal } from '@/components/admin/danger-modal'
 
+/** An ISO instant as the `YYYY-MM-DDTHH:mm` a datetime-local input shows, in the browser's zone. */
+function toLocalInput(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 type DispatchType = 'post' | 'poll' | 'challenge' | 'article'
 
 type DispatchRow = {
@@ -88,7 +96,8 @@ function DispatchForm({
   const [audId,        setAudId]        = useState(initial?.audience_id ?? '')
   const [taskId,       setTaskId]       = useState(initial?.linked_task?.id ?? '')
   const [preview,      setPreview]      = useState(false)
-  const [scheduledFor, setScheduledFor] = useState(initial?.scheduled_for ? initial.scheduled_for.slice(0, 16) : '')
+  // The stored value is UTC; the datetime-local input speaks the browser's local time (SCAN-756).
+  const [scheduledFor, setScheduledFor] = useState(initial?.scheduled_for ? toLocalInput(initial.scheduled_for) : '')
   const [pollOptions,  setPollOptions]  = useState<string[]>(['', ''])
 
   const audienceOptions =
@@ -104,7 +113,9 @@ function DispatchForm({
     fd.set('audience_scope', scope)
     fd.set('audience_id', audId)
     fd.set('linked_task_id', taskId)
-    if (scheduledFor) fd.set('scheduled_for', scheduledFor)
+    // Send an instant, not a wall-clock string: a datetime-local value has no offset, and the server
+    // read it in its own zone (UTC on Vercel), so a 6:00 PM Pacific schedule fired at 11:00 AM.
+    if (scheduledFor) fd.set('scheduled_for', new Date(scheduledFor).toISOString())
     if (dispatchType === 'poll') fd.set('poll_options', JSON.stringify(pollOptions))
     onSave(fd)
   }

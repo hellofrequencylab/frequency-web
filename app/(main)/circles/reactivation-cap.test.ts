@@ -25,7 +25,8 @@ vi.mock('@/lib/ai/circle-spark', () => ({
 }))
 
 vi.mock('@/lib/supabase/admin', () => {
-  const circle = { member_count: 2, member_cap: 3, hub_id: null, access: 'open', unlisted: false, space_id: null, host_id: 'host-1' }
+  // SCAN-691: joinCircleAsMember reads status; only forming/active take a join.
+  const circle = { member_count: 2, member_cap: 3, hub_id: null, access: 'open', unlisted: false, space_id: null, host_id: 'host-1', status: 'active' }
   const chain = (table: string, opts?: { count?: string; head?: boolean }) => {
     const node: Record<string, unknown> = {}
     node.eq = () => node

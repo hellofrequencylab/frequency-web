@@ -145,10 +145,16 @@ vi.mock('./audiences', () => ({
 }))
 let enrollOutcome = true
 const enrollCalls: { spaceId: string; sequenceId: string; contactId: string }[] = []
+// SCAN-707: the start path enrolls in ONE bulk call; the recorder flattens it to one entry per
+// contact so the scoping assertions below read the same.
 vi.mock('./drip-enroll', () => ({
-  enrollContactInSequence: async (spaceId: string, sequenceId: string, contactId: string) => {
-    enrollCalls.push({ spaceId, sequenceId, contactId })
-    return { enrolled: enrollOutcome }
+  enrollContactsInSequence: async (
+    spaceId: string,
+    sequenceId: string,
+    recipients: { contactId: string; email: string }[],
+  ) => {
+    for (const r of recipients) enrollCalls.push({ spaceId, sequenceId, contactId: r.contactId })
+    return { enrolled: enrollOutcome ? recipients.length : 0 }
   },
 }))
 

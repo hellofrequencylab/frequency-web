@@ -26,6 +26,7 @@
 // action resolves the nudger from the session + checks shared-Circle membership).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isBlockedBetween } from '@/lib/blocking'
 import { withVoice } from '@/lib/ai/voice'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
@@ -259,6 +260,8 @@ interface NudgeResult {
  * authz: the call site (the server action) resolved `nudgerProfileId` from the session; this helper
  * additionally binds the nudge to a SHARED active Circle, so it cannot be used to poke a stranger.
  */
+const NUDGE_BODY = 'nudged you to keep your streak going'
+
 export async function nudgeCircleMate(nudgerProfileId: string, mateProfileId: string): Promise<NudgeResult> {
   if (nudgerProfileId === mateProfileId) return { nudged: false, reason: 'error' }
   try {
@@ -273,15 +276,35 @@ export async function nudgeCircleMate(nudgerProfileId: string, mateProfileId: st
     const shared = ((theirs ?? []) as { circle_id: string | null }[]).some((m) => m.circle_id && myCircles.has(m.circle_id))
     if (!shared) return { nudged: false, reason: 'not_circle_mates' }
 
-    // The poke is an in-app notification from the nudger to the mate. Best-effort.
-    await admin.from('notifications').insert({
+    // SCAN-692: a block in either direction ends the nudge. The reason is reused on purpose so the
+    // refusal does not reveal the block.
+    if (await isBlockedBetween(nudgerProfileId, mateProfileId)) return { nudged: false, reason: 'not_circle_mates' }
+
+    // SCAN-692: one nudge per pair per day. A repeat inside the window is reported as sent (the
+    // first one is still there) and writes nothing, so a loop cannot flood the mate's bell.
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { data: recent } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('recipient_id', mateProfileId)
+      .eq('actor_id', nudgerProfileId)
+      .eq('body', NUDGE_BODY)
+      .gte('created_at', since)
+      .limit(1)
+      .maybeSingle()
+    if (recent) return { nudged: true, reason: 'sent' }
+
+    // The poke is an in-app notification from the nudger to the mate. supabase-js returns a write
+    // failure as a value, so it is read here instead of trusted (SCAN-692).
+    const { error } = await admin.from('notifications').insert({
       recipient_id: mateProfileId,
       actor_id: nudgerProfileId,
       type: 'mention',
       reference_type: 'profile',
       reference_id: nudgerProfileId,
-      body: 'nudged you to keep your streak going',
+      body: NUDGE_BODY,
     })
+    if (error) return { nudged: false, reason: 'error' }
     return { nudged: true, reason: 'sent' }
   } catch {
     return { nudged: false, reason: 'error' }

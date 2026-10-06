@@ -30,8 +30,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   mentions:   'mention notifications',
   comments:   'comment notifications',
   // A global broadcast mints its unsubscribe link under 'lifecycle' and the click also revokes
-  // marketing consent (SCAN-728), so the label says what the member actually stops getting.
-  lifecycle:  'onboarding nudges and marketing emails',
+  // marketing consent (SCAN-728), so the label says what the member actually stops getting:
+  // check-ins, leader notes, automations, nurture steps and newsletters (SCAN-734).
+  lifecycle:  'updates and messages from Frequency and your leaders',
+  matches:    'housing match alerts',
 }
 
 // `p`/`c` carry the GLOBAL member unsubscribe; `s`/`e` carry the per-Space unsubscribe (a Space

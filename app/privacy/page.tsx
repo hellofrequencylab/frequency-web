@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
 import { CookieChoicesButton } from '@/components/consent/cookie-choices-button'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Privacy policy',
@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/privacy' },
   openGraph: {
     ...OG_SITE,
+    images: ROOT_OG_IMAGES,
     title: 'Privacy policy',
     description: 'How Frequency collects, uses, and protects your personal information.',
     url: '/privacy',

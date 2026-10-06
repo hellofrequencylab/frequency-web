@@ -1211,14 +1211,20 @@ interface SettledTicketRow {
  * succeeded and its tier has not counted it, and the bump is derived from the rows the same
  * statement returned rather than inferred across a gap.
  *
- * NOT RETRIED, deliberately. The RPC is idempotent, but a call that COMMITS and then loses its
+ * NOT RETRIED HERE, deliberately. The RPC is idempotent, but a call that COMMITS and then loses its
  * response would return zero rows on a retry -- and zero rows is how this function says "somebody
  * else settled it", which would skip the ledger row. That was already true of the bare flip, so
- * this keeps the semantics and logs instead. `sold` is derived, never authoritative (capacity is
- * counted from event_tickets rows by reserve_ticket_atomic, migration 20260930000000), and the
- * reconcile below is safe to run at any time:
+ * this keeps the semantics. `sold` is derived, never authoritative (capacity is counted from
+ * event_tickets rows by reserve_ticket_atomic, migration 20260930000000), and the reconcile below
+ * is safe to run at any time:
  *   update event_ticket_types t set sold = coalesce((select sum(qty) from event_tickets
  *     where ticket_type_id = t.id and status = 'succeeded'), 0)
+ *
+ * A FAILED CALL THROWS (SCAN-764). It used to log and return [], which the callers read as "a
+ * redelivery, nothing to do", so the Stripe route acked 200 with its claim kept and the ticket
+ * stayed `pending` forever: money taken, no ticket, no payout, and no redelivery to settle it. The
+ * comment above already said a redelivery could settle it cleanly; the throw is what makes Stripe
+ * send one (the route releases the claim and 500s). The on-page backstops and refundTicket catch it.
  */
 function flippedRows(
   fn: 'settle_ticket_atomic' | 'refund_ticket_atomic',
@@ -1227,12 +1233,12 @@ function flippedRows(
 ): SettledTicketRow[] {
   if (result.error) {
     // One transaction: a failure flipped nothing and moved no `sold`, so the ticket is untouched
-    // and a Stripe redelivery can settle it cleanly. Loud, because nothing here retries.
+    // and a Stripe redelivery can settle it cleanly. Loud AND thrown, so that redelivery happens.
     console.error(`[tickets] ${fn} failed; the ticket was NOT flipped and its tier was NOT moved`, {
       args,
       error: result.error.message,
     })
-    return []
+    throw new Error(`[tickets] ${fn} failed: ${result.error.message}`)
   }
   return (result.data ?? []) as SettledTicketRow[]
 }
@@ -1881,7 +1887,14 @@ export async function refundTicket(ticketId: string, eventId: string): Promise<R
 
   // Reconcile immediately (belt-and-suspenders); the charge.refunded webhook also
   // calls recordTicketRefund. Both are idempotent (only succeeded → refunded flips).
-  await recordTicketRefund(ticket.stripe_payment_intent_id)
+  // The money has already moved at Stripe, so a DB refusal here (recordTicketRefund throws,
+  // SCAN-764) must not read as a failed refund: log it and let the webhook's redelivery flip
+  // the row.
+  try {
+    await recordTicketRefund(ticket.stripe_payment_intent_id)
+  } catch (err) {
+    console.error('[tickets] inline refund reconcile failed; the charge.refunded webhook is now the only path', { ticketId, err })
+  }
   return { ok: true }
 }
 

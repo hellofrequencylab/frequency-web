@@ -24,7 +24,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { definitionToFilter, resolveAudience } from '@/lib/spaces/audiences'
-import { enrollContactInSequence } from '@/lib/spaces/drip-enroll'
+import { enrollContactsInSequence } from '@/lib/spaces/drip-enroll'
 import {
   SPACE_AUTOMATION_TRIGGERS,
   SPACE_AUTOMATION_ACTIONS,
@@ -516,11 +516,9 @@ export async function startSequenceForAudience(
   }
   if (recipients.length === 0) return ok({ enrolled: 0 })
 
-  let enrolled = 0
-  for (const r of recipients) {
-    const res = await enrollContactInSequence(spaceId, sequenceId, r.contactId)
-    if (res.enrolled) enrolled++
-  }
+  // SCAN-707: one chunked bulk enroll (the sequence and steps read once, upserts of 500) instead of
+  // four serial round trips per contact. The count is the rows that were actually created.
+  const { enrolled } = await enrollContactsInSequence(spaceId, sequenceId, recipients)
   return ok({ enrolled })
 }
 

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-732",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"lib/nurture/runner.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-732: missing \"+p);process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const a=s.indexOf(\"runDueNurture\");const b=s.indexOf(\".limit(\",a);if(a<0||b<0){console.error(\"SCAN-732: due query not found\");process.exit(79)}const q=s.slice(a,b);const filtered=/\\.in\\(\\s*.sequence_id|nurture_sequences!inner|nurture_sequences\\.enabled/.test(q);if(!filtered){console.error(\"SCAN-732: the nurture due query still selects enrollments from paused sequences ahead of everything else, so once a paused sequence has limit or more due rows every run skips them all and every enabled sequence stalls while the cron reports ok.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nrunDueNurture reads enabled sequence ids first and scopes the due query with in(sequence_id); a transient gate skip pushes next_run_at back 15 minutes; route header corrected."
+  }
+}

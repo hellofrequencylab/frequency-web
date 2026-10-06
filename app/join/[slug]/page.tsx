@@ -8,7 +8,7 @@ import { PhotoHero, Statement, Section, Button } from '@/components/marketing/ma
 import { FUNNELS, getFunnel } from '@/lib/funnels/definitions'
 import { getSplashOverride } from '@/lib/funnels/overrides'
 import { JoinButton } from './join-button'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 // ONE dynamic segment, two front doors (ADR-1090). `/join/<slug>` serves:
 //
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // the old /beta/<slug> carried, now doubled by the robots.ts "/join" disallow.
     robots: { index: false },
     alternates: { canonical: `/join/${slug}` },
-    openGraph: { ...OG_SITE, title: splash.headline, description: splash.body, url: `/join/${slug}` },
+    openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: splash.headline, description: splash.body, url: `/join/${slug}` },
     // Metadata merges per top-level key: omitting `twitter` inherits the ROOT block, so a shared
     // /join/<slug> link would preview as generic site copy instead of this Funnel's splash.
     twitter: { card: 'summary_large_image', title: splash.headline, description: splash.body },
@@ -161,13 +161,15 @@ export default async function JoinPage({ params }: Props) {
       .maybeSingle()
 
     if (profile) {
+      // SCAN-744: only an ACTIVE row means they belong. A pending or inactive row is a dormant
+      // seat that the Join button wakes up, so it must still see the button.
       const { data: membership } = await admin
         .from('memberships')
-        .select('id')
+        .select('id, status')
         .eq('circle_id', circle.id)
         .eq('profile_id', profile.id)
         .maybeSingle()
-      alreadyMember = !!membership
+      alreadyMember = membership?.status === 'active'
     }
   }
 

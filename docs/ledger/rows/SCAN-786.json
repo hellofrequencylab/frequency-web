@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-786",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const r=\"app/robots.ts\",s=\"app/(public)/store/[id]/page.tsx\";for(const f of [r,s]){if(!fs.existsSync(f)){console.error(\"SCAN-786: \"+f+\" missing\");process.exit(79)}}const bad=[];if(/walking THROUGH the index/.test(fs.readFileSync(r,\"utf8\")))bad.push(\"robots.ts still leans on a crawl hub that 307s every signed-out visitor to the home page\");if(/back=\\{\\{\\s*href:\\s*[\\x27\"]\\/store[\\x27\"]/.test(fs.readFileSync(s,\"utf8\")))bad.push(\"the public product page sends every signed-out reader who taps Frequency Store to the members-only /store index, which redirects to /\");if(bad.length){console.error(\"SCAN-786: \"+bad.join(\"; \")+\".\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: app/robots.ts now says the four marketplace indexes are left out of DISALLOW only so a prefix rule does not catch their detail URLs, that the indexes 307 anonymous visitors to /, and that detail pages are found through the sitemap and Space shop pages; the public /store/<id> page's back link points at the public /discover hub instead of the members-only /store index."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-703",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"components/spaces/email/composer-shell.tsx\";if(!fs.existsSync(f)){console.error(\"SCAN-703: missing \"+f);process.exit(79)}const c=fs.readFileSync(f,\"utf8\");const a=c.indexOf(\"function handleSend\"),b=c.indexOf(\"function handleSchedule\");if(a<0||b<0){console.error(\"SCAN-703: handleSend/handleSchedule not found in the composer; re-anchor the probe.\");process.exit(79)}const send=c.slice(a,b);const resets=/setSubject\\(\\s*\"\"\\s*\\)|setSubject\\(\\s*\\x27\\x27\\s*\\)/.test(send);const reuse=/draftId/.test(c);if(!resets||!reuse){console.error(\"SCAN-703: after a successful Send now the composer keeps subject and body filled (reset=\"+resets+\") and every click creates a fresh campaign row (draft reuse=\"+reuse+\"), so a second click sends the whole campaign to every contact again.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: the composer keeps one draftId per composition (ensureDraft updates it on a retry instead of creating a row), and a successful send clears subject, body, when and the draft id, the same reset a schedule does."
+  }
+}

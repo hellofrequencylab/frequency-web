@@ -106,6 +106,11 @@ export interface CheckoutInput {
   /** `'elements'` asks for an ON-PAGE card form and returns `clientSecret` instead of `url`
    *  (LIVE-359). Hosted stays the default, so no existing caller changes behaviour. */
   ui?: CheckoutUi
+  /** How long the Checkout session stays open, in seconds (Stripe's minimum is 30 minutes). A
+   *  HOLD-FIRST caller (a service booking) sets it so an abandoned Checkout frees its slot through
+   *  the expired-session path instead of holding it for Stripe's 24-hour default (SCAN-715).
+   *  Absent = Stripe's default. */
+  expiresInSeconds?: number
 }
 
 // ── Variants (Etsy-Grade Phase 2) ───────────────────────────────────────────

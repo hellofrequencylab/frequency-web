@@ -39,7 +39,7 @@ import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
 // The approved copy spine, which deliberately lives in a LEAF module (ADR-1368). Imported here only
 // so this module can read it (pricingLadderSummary) and re-export it for existing callers.
 import { PLAN_STORY } from './plan-story'
-import { allOfferings, spaceOfferings, type Offering } from './pricing-grid'
+import { allOfferings, spaceOfferings, type Offering, type PricingGridInput } from './pricing-grid'
 import {
   type BillingInterval,
   type CatalogAmounts,
@@ -83,9 +83,23 @@ interface PriceStrings {
   veraAiYear: string
 }
 
-/** Build the interpolable price strings from the ONE code catalog. PURE. */
+/** Build the interpolable price strings from the ONE code catalog. PURE. Marketing SPECS that a route
+ *  renders should take `priceStringsFrom(input.catalog)` instead (SCAN-793), so an /admin/pricing edit
+ *  moves them the way it moves /pricing and llms.txt; this zero-argument form is the editor-seed and
+ *  test default. */
 export function priceStrings(): PriceStrings {
-  const cat = pricingCatalog()
+  return priceStringsFrom(pricingCatalog())
+}
+
+/** The code-default pricing input: the SAME shape the routes resolve from the operator config
+ *  (lib/pricing/pricing-input.ts), built from the code catalog and the code rate vector alone. PURE, so
+ *  a spec can be evaluated at module load (the editor seed) and in a test without a database. */
+export function defaultPricingInput(): PricingGridInput {
+  return { values: PRICING_DEFAULTS, catalog: pricingCatalog() }
+}
+
+/** The price strings from a RESOLVED catalog (the operator's config over the code defaults). PURE. */
+export function priceStringsFrom(cat: Record<CatalogItemKey, ResolvedCatalogItem>): PriceStrings {
   return {
     businessList: formatLoadoutCents(cat.business_base.month.listCents),
     businessBeta: formatLoadoutCents(cat.business_base.month.foundingCents),

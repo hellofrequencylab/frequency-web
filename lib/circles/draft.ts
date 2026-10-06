@@ -155,9 +155,23 @@ export async function getCircleDraft(circleId: string): Promise<CircleDraft | nu
   }
 }
 
+/** The member_cap ceiling the circles_cap_check constraint enforces for each type
+ *  (supabase/migrations/20270345005600_space_circle.sql); a Space's primary Circle gets 300. */
+const CIRCLE_CAP_BY_TYPE = { 'in-person': 50, online: 100 } as const
+const SPACE_PRIMARY_CAP = 300
+
+/** What a failed draft write says to the host. The builder's catch and the Vera rail show it. */
+export const CIRCLE_DRAFT_SAVE_ERROR = "Couldn't save that change. Try again."
+
 /** Apply a patch: framework fields go to `circles` (cast the payload, like
  *  remix.ts), the rich content upserts onto `circle_profiles` (untyped handle).
- *  Only keys present in the patch are written. */
+ *  Only keys present in the patch are written.
+ *
+ *  THROWS on a failed write (SCAN-694). supabase-js returns a failed write as a value, so a
+ *  discarded `{ error }` let the builder flash "Saved" and Vera return a diff that was never
+ *  persisted; the host found the edit gone on reload. The one user-reachable failure is the
+ *  circles_cap_check constraint (an online draft with a cap above 50 switched to in-person), so
+ *  the cap is clamped to the resulting type's ceiling here too, in the same update. */
 export async function saveCircleDraft(circleId: string, patch: CircleDraftPatch): Promise<void> {
   const admin = createAdminClient()
 
@@ -166,11 +180,28 @@ export async function saveCircleDraft(circleId: string, patch: CircleDraftPatch)
   const circleUpdate: Record<string, unknown> = {}
   if ('name' in patch) circleUpdate.name = patch.name
   if ('about' in patch) circleUpdate.about = patch.about
-  if ('type' in patch) circleUpdate.type = patch.type
+  if ('type' in patch) circleUpdate.type = patch.type === 'online' ? 'online' : 'in-person'
   if ('memberCap' in patch) circleUpdate.member_cap = patch.memberCap
   if ('primaryPillar' in patch) circleUpdate.primary_pillar = patch.primaryPillar
+  if ('type' in patch || 'memberCap' in patch) {
+    // Clamp the cap to the ceiling of the RESULTING type, so a type switch alone cannot leave the
+    // existing member_cap above what the constraint allows.
+    const { data: row, error } = await admin
+      .from('circles')
+      .select('type, member_cap, is_space_primary')
+      .eq('id', circleId)
+      .maybeSingle()
+    if (error) throw new Error(CIRCLE_DRAFT_SAVE_ERROR)
+    const current = (row ?? {}) as { type?: string | null; member_cap?: number | null; is_space_primary?: boolean | null }
+    const resultingType = (circleUpdate.type as string | undefined) ?? (current.type === 'online' ? 'online' : 'in-person')
+    const ceiling = current.is_space_primary ? SPACE_PRIMARY_CAP : CIRCLE_CAP_BY_TYPE[resultingType as 'in-person' | 'online']
+    const requested = Number((circleUpdate.member_cap as number | undefined) ?? current.member_cap ?? 12)
+    const cap = Math.min(ceiling, Math.max(2, Number.isFinite(requested) ? Math.round(requested) : 12))
+    if ('memberCap' in patch || (current.member_cap ?? 0) > ceiling) circleUpdate.member_cap = cap
+  }
   if (Object.keys(circleUpdate).length) {
-    await admin.from('circles').update(circleUpdate as never).eq('id', circleId)
+    const { error } = await admin.from('circles').update(circleUpdate as never).eq('id', circleId)
+    if (error) throw new Error(CIRCLE_DRAFT_SAVE_ERROR)
   }
 
   // Rich content on the 1:1 `circle_profiles` companion (net-new table, untyped
@@ -186,9 +217,10 @@ export async function saveCircleDraft(circleId: string, patch: CircleDraftPatch)
   if ('remixOptions' in patch) profileUpdate.remix_options = patch.remixOptions
   if ('recommendedJourneyPillar' in patch) profileUpdate.recommended_journey_pillar = patch.recommendedJourneyPillar
   if (Object.keys(profileUpdate).length) {
-    await db()
+    const { error } = await db()
       .from('circle_profiles')
       .upsert({ circle_id: circleId, ...profileUpdate }, { onConflict: 'circle_id' })
+    if (error) throw new Error(CIRCLE_DRAFT_SAVE_ERROR)
   }
 }
 
