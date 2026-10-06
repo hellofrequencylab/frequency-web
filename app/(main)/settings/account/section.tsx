@@ -63,7 +63,7 @@ export async function AccountSection() {
 
       {myProfileId && (
         <div>
-          <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">Your standing</p>
+          <p className="eyebrow text-muted mb-2">Your standing</p>
           <YourStanding profileId={myProfileId} />
         </div>
       )}
