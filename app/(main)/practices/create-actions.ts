@@ -15,6 +15,9 @@ import { atLeastRole } from '@/lib/core/roles'
 import { canCreate } from '@/lib/core/load-capabilities'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
+import { checkPersonalPracticeMeter } from '@/lib/spaces/counted-meters'
+import { loadRootSpaceId } from '@/lib/spaces/store'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { MovementConfig } from '@/lib/movement'
 import {
   createPractice,
@@ -40,7 +43,7 @@ import {
  * button is only convenience.
  */
 async function authorizeCreatePractice(): Promise<
-  { profileId: string; autoApprove: boolean } | { error: string }
+  { profileId: string; autoApprove: boolean; tier: EntitlementTier } | { error: string }
 > {
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Not signed in' }
@@ -54,7 +57,7 @@ async function authorizeCreatePractice(): Promise<
     return { error: 'Not signed in' }
   }
   const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'
-  return { profileId: caller.id, autoApprove }
+  return { profileId: caller.id, autoApprove, tier: caller.realMembershipTier }
 }
 
 /** Vera drafts the whole Practice from the spark answers. Returns the draft for the author to
@@ -104,7 +107,11 @@ export async function createPracticeFromSparkAction(input: {
 }): Promise<void> {
   const gate = await authorizeCreatePractice()
   if ('error' in gate) redirect('/practices')
-  const { profileId, autoApprove } = gate as { profileId: string; autoApprove: boolean }
+  const { profileId, autoApprove, tier } = gate as { profileId: string; autoApprove: boolean; tier: EntitlementTier }
+  // A Host+/staff author goes live at birth, which is a publish, so it asks the practice_publish
+  // meter (LIVE-752). Past the allowance the Practice is still created, as a private draft they can
+  // keep working on; nothing they wrote is lost. A Crew/Member author is born a draft and asks on submit.
+  const publishNow = autoApprove && (await checkPersonalPracticeMeter(profileId, tier, await loadRootSpaceId())).ok
 
   const title = input.title.trim().slice(0, 80)
   if (!title) redirect('/practices/new')
@@ -135,7 +142,7 @@ export async function createPracticeFromSparkAction(input: {
         title,
         description,
         createdBy: profileId,
-        isPublic: autoApprove,
+        isPublic: publishNow,
         status: autoApprove ? 'approved' : 'draft',
       })
       if (!created) throw new Error('Could not create the practice.')
@@ -207,6 +214,10 @@ export async function submitPracticeForReviewAction(practiceId: string): Promise
   if (!practice || practice.created_by !== profileId) return fail('Not yours to submit.')
   if (practice.status === 'pending') return ok()
   if (practice.status === 'approved' || practice.is_public) return fail('Already live.')
+  // Submitting is publishing, so it asks the practice_publish meter (LIVE-752, free 3, Crew unlimited).
+  const caller = await getCallerProfile()
+  const meter = await checkPersonalPracticeMeter(profileId, caller?.realMembershipTier, await loadRootSpaceId())
+  if (!meter.ok) return fail(meter.error)
   await setPracticeStatus(practiceId, 'pending')
   await notifyStaffOfPendingPractice({ practiceId, title: practice.title, proposedBy: profileId })
   revalidatePath(`/practices/${practiceId}/edit`)

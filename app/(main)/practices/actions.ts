@@ -6,6 +6,9 @@ import { atLeastRole } from '@/lib/core/roles'
 import { getCircleCapabilities, canCreate } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
+import { checkPersonalPracticeMeter } from '@/lib/spaces/counted-meters'
+import { loadRootSpaceId } from '@/lib/spaces/store'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 import { redirect } from 'next/navigation'
 import {
   logPractice,
@@ -249,7 +252,7 @@ export async function keepPracticeAction(
  * beta, a plain Member without real Crew — see ADR-414).
  */
 async function authorizeCreatePractice(): Promise<
-  { profileId: string; autoApprove: boolean } | { error: string }
+  { profileId: string; autoApprove: boolean; tier: EntitlementTier } | { error: string }
 > {
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Not signed in' }
@@ -264,7 +267,7 @@ async function authorizeCreatePractice(): Promise<
   }
   // Host+ (or platform staff, who curate the library) author live; everyone else pending review.
   const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'
-  return { profileId: caller.id, autoApprove }
+  return { profileId: caller.id, autoApprove, tier: caller.realMembershipTier }
 }
 
 export async function createPracticeAction(
@@ -275,6 +278,10 @@ export async function createPracticeAction(
   if ('error' in gate) return fail(gate.error)
   const t = title.trim()
   if (!t) return fail('Title is required')
+  // This road publishes at birth (live for Host+, pending review for everyone else), so it asks the
+  // practice_publish meter first (LIVE-752): free 3, Crew unlimited. Off during the beta.
+  const meter = await checkPersonalPracticeMeter(gate.profileId, gate.tier, await loadRootSpaceId())
+  if (!meter.ok) return fail(meter.error)
   // THE GOVERNED WRITE (ADR-988, ADR-1249): the author named the Practice and tapped Create, so
   // one call proposes, claims and commits through the same writer, and the audit row is written.
   // The review-status policy stays here (ADR-998); a writer failure keeps its generic line.
