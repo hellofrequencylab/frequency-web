@@ -302,6 +302,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/friendship-as-an-adult`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/how-to-build-community`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/calm-down-fast`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/mindless`, changeFrequency: "monthly", priority: 0.6 },
     // Leader-track pillar (CONTENT-VOICE §7b.2): the activation guide for the
     // natural connector — answer-first, HowTo + FAQ schema.
     { url: `${SITE_URL}/how-to-start-a-circle`, changeFrequency: "monthly", priority: 0.7 },
