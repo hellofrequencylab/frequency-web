@@ -28,6 +28,10 @@ import {
   vercelDomainsConfigured,
   type DomainStatus,
 } from '@/lib/sites/vercel-domains'
+import { appOrigin } from '@/lib/sites/host'
+import { DC_RETURN_PATH } from '@/lib/sites/domain-connect/constants'
+import { findOneClickConnect, type OneClickConnect } from '@/lib/sites/domain-connect/discovery'
+import { signDomainConnectState } from '@/lib/sites/domain-connect/state'
 import {
   nextCoverScrimPreferences,
   nextLogoBackdropPreferences,
@@ -488,6 +492,34 @@ export async function removeSiteDomain(slug: string): Promise<ActionResult> {
   if ((await writeSpaceDomain(auth.spaceId, null)) !== 'ok') return fail('Could not remove your domain. Try again.')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
+}
+
+/** Connect automatically (LIVE-780): when the domain's DNS provider has onboarded Frequency's Domain
+ *  Connect template, the provider's name and a signed apply URL for the "Connect with <provider>"
+ *  button; otherwise { supported: false } and the panel keeps the copy-records steps. Re-gates the
+ *  editor role and the custom_domain plan gate exactly as connectSiteDomain does. Never throws. */
+export async function domainConnectLink(slug: string): Promise<ActionResult<OneClickConnect>> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+  if (!(await customDomainAllowed(auth.plan))) return fail('Your own domain comes with the Business plan.')
+  if (!auth.domain) return fail('Connect a domain first.')
+
+  const state = signDomainConnectState(slug)
+  if (!state) return ok({ supported: false })
+  const status = await siteDomainStatus(auth.domain)
+  if (status.providerIsVercel || (status.attached && status.verified && status.dnsReady)) return ok({ supported: false })
+  const ip = status.records.find((r) => r.type === 'A' && r.name === '@')?.value
+  const target = status.records.find((r) => r.type === 'CNAME' && r.name === 'www')?.value
+  if (!ip || !target) return ok({ supported: false })
+
+  return ok(
+    await findOneClickConnect({
+      domain: auth.domain,
+      variables: { ip, target },
+      redirectUri: `${appOrigin()}${DC_RETURN_PATH}`,
+      state,
+    }),
+  )
 }
 
 // ── THE NAV MANAGER actions (multi-page model). Create / rename / reorder / delete the operator-defined
