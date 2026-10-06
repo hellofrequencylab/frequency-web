@@ -12,7 +12,7 @@ const PLANS = new Map([
   ['p2', { title: 'Sleep well', slug: null }],
 ])
 
-const line = (over: Partial<JourneySaleLine> & { order?: Partial<JourneySaleLine['order']> }): JourneySaleLine => ({
+const line = (over: Partial<Omit<JourneySaleLine, 'order'>> & { order?: Partial<JourneySaleLine['order']> }): JourneySaleLine => ({
   planId: 'p1',
   subtotalCents: 2000,
   orderItemsCents: 2000,
