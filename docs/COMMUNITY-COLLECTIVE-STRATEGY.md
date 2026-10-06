@@ -41,7 +41,7 @@
 ## 1. The one-sentence version
 
 Frequency is not another wellness-business tool. It is **the Community Collective**: a collaboration-first
-network where independent creators, healers, coaches, and small businesses grow **together**, and eventually
+network where independent teachers, coaches, bodyworkers, studios and small businesses grow **together**, and eventually
 build real-world spaces together. We exist to support every community effort and to help everyone in it
 succeed. We make our money from that shared success, never by taxing anyone's core work.
 
@@ -50,7 +50,7 @@ succeed. We make our money from that shared success, never by taxing anyone's co
 The market is **two silos that never touch**: cold booking/ops tools that cannot do community (Mindbody,
 Momence, Vagaro), and warm community/content tools that cannot book a class or run a business (Circle,
 Mighty Networks, Skool). **No one owns the intersection**, and no one serves the **solo-to-collective
-continuum**: a lone healer who wants to eventually band together with peers into a shared center *without
+continuum**: a solo practitioner (a Portfolio Teacher or a Second-Act Practitioner, CONTENT-VOICE §2f) who wants to eventually band together with peers into a shared center *without
 re-platforming*. That continuum is our thesis, our differentiator, and our path to physical spaces.
 
 Positioning line: **"Frequency is a Community Collective. We exist to support every community effort, and
@@ -108,7 +108,7 @@ from them before. **Frequency charges once for the introduction. After that they
   are not in it. There is no rung where a tip is taxed.
 - **Own bookings, clients, classes: 0% platform fee, always, flat subscriptions only.** In this vertical a
   take-rate on a cash-poor solo's thin margins is the single most-resented cost; the tools people love
-  (Punchpass, OfferingTree) win by taking 0%. Research: solo healers are genuinely cash-poor (41% of yoga
+  (Punchpass, OfferingTree) win by taking 0%. Research: solo practitioners are genuinely cash-poor (41% of yoga
   pros earn under $10K/yr from their practice).
 - **Network-generated business: a modest, un-resented take-rate.** Cross-referrals, discovery, marketplace,
   collective sales, money the network *found* for them. Gumroad proves people happily pay ~30% on a customer

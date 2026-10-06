@@ -14,7 +14,7 @@ Add new patterns here as they emerge, one example per element.
 - **Register shifts by pillar** (this is the heart of the rework):
   | Pillar | Subject | Write into the feeling of… |
   |---|---|---|
-  | **The Lab** | the *space* | the body: heat then cold, steam, cedar, low amber light, the exhale, a settled nervous system |
+  | **The Lab** | the *space* | the body: heat then cold, steam, cedar, low amber light, the exhale, your shoulders drop |
   | **The Community** | the *people* | belonging: faces that light up, being known by name, missed when you are gone |
   | **The Quest** | the *program* | meaning + momentum: the satisfaction of showing up, becoming someone your people count on |
 

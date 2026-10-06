@@ -87,7 +87,7 @@ on top of normal Community membership.
 | Partner | Who | Unlocks | Money |
 |---|---|---|---|
 | 📣 **Collaborator** | influencers, authors, teachers, speakers **with an audience** | bring-your-audience tools; their Practices/Journeys in a **featured directory**; **influencer program** (rewards tied to their activity + gamification) | rewards only; no affiliate money, by owner ruling (ADR-1569) |
-| 🧘 **Practitioner** | healers, breathwork, yogis **running their own client network** | **sell what they do** through the live money paths: **tickets** and **Market products** from any account (ADR-914), **paid bookings** and **memberships** from a Space, **Journeys** from a paid Space (ADR-1397). Re-scoped by [ADR-1675](DECISIONS.md) (LIVE-709): the old "paywalled Programs" promise named something nothing can sell | Stripe Connect (verified) |
+| 🧘 **Practitioner** | teachers, coaches and bodyworkers **running their own client network** (the Builders family, CONTENT-VOICE §2f) | **sell what they do** through the live money paths: **tickets** and **Market products** from any account (ADR-914), **paid bookings** and **memberships** from a Space, **Journeys** from a paid Space (ADR-1397). Re-scoped by [ADR-1675](DECISIONS.md) (LIVE-709): the old "paywalled Programs" promise named something nothing can sell | Stripe Connect (verified) |
 | 🏪 **Business** | local businesses | business **listing** + network integration; **loyalty rewards**; **CRM**, **web builder**, deep business tools | payments + loyalty |
 | 🏢 **Organization** | nonprofits / orgs | a full suite tied to whoever's tagged with the org: their own **branded Space website**, CRM, gamification, promotion | tenant billing |
 

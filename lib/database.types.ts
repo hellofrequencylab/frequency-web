@@ -10026,6 +10026,32 @@ export type Database = {
           },
         ]
       }
+      post_embeddings: {
+        Row: {
+          embedding: string | null
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          embedding?: string | null
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          embedding?: string | null
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_embeddings_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_mentions: {
         Row: {
           created_at: string | null
@@ -18037,6 +18063,13 @@ export type Database = {
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }
+      post_interest_scores: {
+        Args: { p_post_ids: string[]; p_viewer: string }
+        Returns: {
+          post_id: string
+          similarity: number
+        }[]
+      }
       postgis_constraint_dims: {
         Args: { geomcolumn: string; geomschema: string; geomtable: string }
         Returns: number

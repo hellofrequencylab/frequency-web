@@ -15,7 +15,8 @@ import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SiteChrome, SITE_CONTAINER } from '@/components/sites/site-chrome'
 import { SITE_BOOK_ANCHOR, siteHasBooking, siteSectionLinks } from '@/components/sites/site-nav'
-import { buttonClasses } from '@/components/ui/button'
+import { buttonClasses, buttonGeometry } from '@/components/ui/button'
+import { siteHeroEyebrow, siteHeroLede } from '@/components/sites/site-hero-copy'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { markAnonymousRender } from '@/lib/core/anonymous-render'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -154,6 +155,7 @@ export async function SitePage({
           grid={grid}
           hasBooking={siteHasBooking(blockIds)}
           bookLabel={defaultPrimaryCtaLabel(space.type)}
+          hasContact={blockIds.includes('contact')}
         />
       </SiteChrome>
     </AccentScope>
@@ -173,6 +175,7 @@ async function SiteBody({
   grid,
   hasBooking,
   bookLabel,
+  hasContact,
 }: {
   space: Space
   brandName: string
@@ -182,6 +185,7 @@ async function SiteBody({
   grid: EntityLayout
   hasBooking: boolean
   bookLabel: string
+  hasContact: boolean
 }) {
   // Stamp the tenant so any block that resolves its rows from the active Space reads THIS one, the same
   // line the public page carries.
@@ -193,11 +197,13 @@ async function SiteBody({
       <SiteHero
         image={safeImageSrc(space.coverImageUrl) ?? coverPlaceholderFor(space.id)}
         focus={readCoverFocus(space.preferences)}
+        eyebrow={home ? siteHeroEyebrow(tagline, space.city) : brandName}
         title={home ? brandName : pageLabel}
-        subtitle={home ? tagline : brandName}
+        lede={home ? siteHeroLede(space.about) : null}
         tall={home}
         bookHref={home && hasBooking ? `#${SITE_BOOK_ANCHOR}` : null}
         bookLabel={bookLabel}
+        contactHref={home && hasContact ? '#contact' : null}
       />
       {home ? (
         <div className="py-6 sm:py-10">
@@ -222,48 +228,81 @@ async function SiteBody({
   )
 }
 
-/** The full-width cover: the Space's cover photo edge to edge at its saved focal point, darkened toward the
- *  bottom so the name, tagline and Book button read on any photo. Home gets the tall version. */
+/** The hero headline's poster size (larger than the display scale tops out at) and a slow settle on the
+ *  cover photo, still for anyone who asked for reduced motion. Static, so safe to inline. */
+const SITE_HERO_CSS = [
+  '.site-hero-title{font-size:clamp(3.25rem,10vw,8.5rem);line-height:.9;letter-spacing:.005em;text-wrap:balance}',
+  '[data-site-hero="short"] .site-hero-title{font-size:clamp(2.75rem,7vw,5.5rem)}',
+  '@keyframes site-hero-settle{from{transform:scale(1.08)}to{transform:scale(1.01)}}',
+  '.site-hero-photo{transform:scale(1.01)}',
+  '@media (prefers-reduced-motion:no-preference){.site-hero-photo{animation:site-hero-settle 14s ease-out both}}',
+].join('\n')
+
+/** The full-width cover (second pass 2026-10-06, owner: "redo the hero with something that vibed"): the
+ *  Space's cover photo edge to edge at its saved focal point, with the town and tagline as an eyebrow, the name set huge in the display face, the
+ *  opening of the Space's own description, and Book plus Get in touch. A dark wash from the text side and
+ *  an accent glow from the bottom keep the words readable on any photo. Home gets the tall version. */
 function SiteHero({
   image,
   focus,
+  eyebrow,
   title,
-  subtitle,
+  lede,
   tall,
   bookHref,
   bookLabel,
+  contactHref,
 }: {
   image: string
   focus: string
+  eyebrow: string | null
   title: string
-  subtitle: string | null
+  lede: string | null
   tall: boolean
   bookHref: string | null
   bookLabel: string
+  contactHref: string | null
 }) {
   return (
     <section
-      className={`relative isolate flex w-full items-end overflow-hidden bg-surface-elevated ${
-        tall ? 'min-h-[26rem] sm:min-h-[34rem] lg:min-h-[40rem]' : 'min-h-[16rem] sm:min-h-[20rem]'
+      data-site-hero={tall ? 'tall' : 'short'}
+      className={`relative isolate flex w-full items-end overflow-hidden bg-ink ${
+        tall ? 'min-h-[36rem] sm:min-h-[42rem] lg:min-h-[48rem]' : 'min-h-[20rem] sm:min-h-[24rem]'
       }`}
     >
+      <style>{SITE_HERO_CSS}</style>
       {/* eslint-disable-next-line @next/next/no-img-element -- operator cover on an arbitrary host, next/image can't allowlist it */}
       <img
         src={image}
         alt=""
         fetchPriority="high"
-        className="absolute inset-0 -z-10 h-full w-full object-cover"
+        className="site-hero-photo absolute inset-0 -z-10 h-full w-full object-cover"
         style={{ objectPosition: focus }}
       />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-ink/75 via-ink/30 to-ink/5" aria-hidden />
-      <div className={`${SITE_CONTAINER} pb-10 pt-24 sm:pb-14`}>
-        <h1 className="max-w-3xl font-display text-display-h2 font-bold tracking-tight text-on-ink">{title}</h1>
-        {subtitle && <p className="mt-3 max-w-2xl text-body-lg leading-relaxed text-on-ink/90">{subtitle}</p>}
-        {bookHref && (
-          <a href={bookHref} data-site-link={SITE_BOOK_ANCHOR} className={buttonClasses('primary', 'md', 'mt-6')}>
-            {bookLabel}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </a>
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink/85 via-ink/45 to-ink/10" aria-hidden />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-primary/35 via-transparent to-ink/40" aria-hidden />
+      <div className={`${SITE_CONTAINER} pb-12 pt-28 sm:pb-16`}>
+        {eyebrow && <p className="eyebrow text-on-ink/85">{eyebrow}</p>}
+        <h1 className="site-hero-title mt-3 max-w-4xl font-display uppercase text-on-ink">{title}</h1>
+        {lede && <p className="mt-5 max-w-xl text-body-lg leading-relaxed text-on-ink/90">{lede}</p>}
+        {(bookHref || contactHref) && (
+          <div className="mt-8 flex flex-wrap gap-3">
+            {bookHref && (
+              <a href={bookHref} data-site-link={SITE_BOOK_ANCHOR} className={buttonClasses('primary', 'md')}>
+                {bookLabel}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </a>
+            )}
+            {contactHref && (
+              <a
+                href={contactHref}
+                data-site-link="contact"
+                className={buttonGeometry('md', 'border border-on-ink/70 text-on-ink hover:bg-on-ink/10')}
+              >
+                Get in touch
+              </a>
+            )}
+          </div>
         )}
       </div>
     </section>
