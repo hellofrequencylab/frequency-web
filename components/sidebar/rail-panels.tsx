@@ -8,12 +8,12 @@ import {
   TEASER_CARDS_PER_SERIES,
   collapseSeriesRows,
   countSeries,
-  seriesFetchLimit,
   seriesUpcomingFloor,
   type SeriesFields,
   type SeriesRow,
 } from '@/lib/events/series'
 import { circleEventVisibilities } from '@/lib/events/circle-upcoming'
+import { readUpcomingSeries } from '@/lib/events/upcoming-series'
 import { relativeTime } from '@/lib/utils'
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { Avatar } from '@/components/ui/avatar'
@@ -48,7 +48,6 @@ function DateChip({ iso }: { iso: string }) {
 const EVENT_PANEL_SLOTS = 3
 
 export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
-  const admin = createAdminClient()
   // The floor is WALL CLOCK in the community's zone, not `new Date()`: events.starts_at stores the
   // host's wall clock kept as UTC parts, so at 5:01pm Pacific `new Date().toISOString()` is already
   // tomorrow and tonight's 7pm gathering drops out of the rail. One value feeds the query AND the
@@ -63,11 +62,12 @@ export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
   }
 
   // This panel is the surface the duplication was REPORTED on: one cowork series held all three
-  // slots. Both branches therefore over-fetch (a post-query fold spends the LIMIT on rows it then
-  // discards) and collapse to one card per repeating event before slicing back to three.
-  const fetchLimit = seriesFetchLimit(EVENT_PANEL_SLOTS)
-  const fold = (raw: unknown) =>
-    collapseSeriesRows((raw ?? []) as EventRow[], {
+  // slots. Both branches now read one row per series from SQL (LIVE-731,
+  // lib/events/upcoming-series.ts), and the fold below stays the authority (the identity on that
+  // list) before slicing to three.
+  const EVENT_COLUMNS = `id, title, slug, location, starts_at, ${SERIES_COLUMNS}`
+  const fold = (raw: EventRow[]) =>
+    collapseSeriesRows(raw, {
       upcomingFrom: floor,
       perSeries: TEASER_CARDS_PER_SERIES,
     }).slice(0, EVENT_PANEL_SLOTS)
@@ -81,18 +81,15 @@ export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
   // listable here — the same rule the Circle's own block applies, from the same one list.
   let events: EventRow[] = []
   if (circleIds.length > 0) {
-    const { data: raw } = await admin
-      .from('events')
-      .select(`id, title, slug, location, starts_at, ${SERIES_COLUMNS}`)
-      .in('scope_id', circleIds)
-      .in('scope_type', ['circle', 'group'])
-      .eq('status', 'published')
-      .in('visibility', circleEventVisibilities(true))
-      .eq('is_cancelled', false)
-      .is('removed_at', null)
-      .gte('starts_at', floor)
-      .order('starts_at', { ascending: true })
-      .limit(fetchLimit)
+    // One row per series, counted in SQL (LIVE-731); the arguments are the gate described above.
+    const raw = await readUpcomingSeries<EventRow>({
+      from: floor,
+      limit: EVENT_PANEL_SLOTS,
+      visibilities: circleEventVisibilities(true),
+      scopeIds: circleIds,
+      scopeTypes: ['circle', 'group'],
+      columns: EVENT_COLUMNS,
+    })
     events = fold(raw)
   }
 
@@ -103,16 +100,12 @@ export async function EventsPanel({ circleIds }: { circleIds: string[] }) {
   // visitor could already see: public, published, live.
   const fellBack = events.length === 0
   if (fellBack) {
-    const { data: anyUpcoming } = await admin
-      .from('events')
-      .select(`id, title, slug, location, starts_at, ${SERIES_COLUMNS}`)
-      .eq('status', 'published')
-      .eq('visibility', 'public')
-      .eq('is_cancelled', false)
-      .is('removed_at', null)
-      .gte('starts_at', floor)
-      .order('starts_at', { ascending: true })
-      .limit(fetchLimit)
+    const anyUpcoming = await readUpcomingSeries<EventRow>({
+      from: floor,
+      limit: EVENT_PANEL_SLOTS,
+      visibilities: ['public'],
+      columns: EVENT_COLUMNS,
+    })
     events = fold(anyUpcoming)
   }
   if (events.length === 0) return null
