@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-799",
+  "title": "A Space owner switching DNS to their website sees a 'Securing your site' step and a heads-up about the browser warning, instead of a site that looks broken",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/sites/site-domain-panel.tsx",
+    "ref": "Owner report 2026-10-06 (danieltyack.com showed NET::ERR_CERT_COMMON_NAME_INVALID right after the DNS switch): 'how do we avoid this with others?'; white label sites build ADR-1708"
+  },
+  "detail": "FILED AND CLOSED 2026-10-06. THE CONSEQUENCE: Vercel issues a domain's certificate only after DNS points at it, so for minutes (up to an hour) after an owner switches DNS, the domain shows a browser privacy error while the Domain section already said Live and the website card already linked there. THE FIX: siteDomainStatus gains `secure` (a short https HEAD to the Space's own domain once DNS is ready; any response means the TLS handshake passed). The panel's Live needs it; between DNS ready and secure it shows a 'Securing your site' badge, a fourth status line and a note that a browser may say the connection is not private until the certificate lands, and keeps re-checking. The DNS steps warn about it up front. The website card links the domain only once it is secure. An unpublished site already shows Coming soon with a link back to the Space, so no redirect was added.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const v=r('lib/sites/vercel-domains.ts');if(!/secure:\\s*dnsReady\\s*&&\\s*\\(await httpsReady\\(domain\\)\\)/.test(v))miss.push('the domain status never checks that https works once DNS is ready');const p=r('components/sites/site-domain-panel.tsx');if(!/status\\.dnsReady\\s*&&\\s*status\\.secure/.test(p)||!/Securing your site/.test(p)||!/not private/.test(p))miss.push('the domain panel calls a domain live before its certificate is issued, or never warns about the browser warning');if(miss.length){console.error('LIVE-799: '+miss.join('; '));process.exit(1)}\"",
+    "note": "Fails on main (no secure field, Live on DNS alone, no warning copy); passes once the status checks https and the panel shows the securing step."
+  },
+  "closed": "2026-10-06",
+  "wave": "W7"
+}
