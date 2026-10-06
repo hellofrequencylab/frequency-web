@@ -300,7 +300,7 @@ export interface StoredTakeRateFields {
  *  Per-rung: a finite number stored under the rung's key wins, anything else is the seeded rung. The
  *  retired plan-named keys `business` and `independent` are NOT read (they are not rung names). The
  *  `collective` key IS a rung name again (ADR-1709), so a pre-LIVE-230 row's `collective: 300` reads as
- *  the Collective rung, which is the ruled number anyway; migration 20270346004100 rewrites the stored
+ *  the Collective rung, which is the ruled number anyway; migration 20270346005300 rewrites the stored
  *  row in the rung shape so the question does not arise in production. PURE. */
 export function networkTakeRateFromStored(stored: StoredTakeRateFields | null | undefined): NetworkTakeRate {
   const bps = (v: unknown, fallback: number): number =>

@@ -228,14 +228,14 @@ describe('the stored row: either vintage resolves to the same vector', () => {
     expect('business' in vec).toBe(false)
   })
 
-  it('the rung-shape row migration 20270346004100 writes reads back as the ladder', () => {
+  it('the rung-shape row migration 20270346005300 writes reads back as the ladder', () => {
     const vec = networkTakeRateFromStored({
       network_bps: { free: 1000, paid: 500, collective: 300, nonprofit: 0 },
       member_free_bps: 1000,
       member_bps: 800,
     })
     expect(vec).toEqual(NETWORK_TAKE_RATE_DEFAULT)
-    const sql = readFileSync('supabase/migrations/20270346004100_take_rate_rungs.sql', 'utf8')
+    const sql = readFileSync('supabase/migrations/20270346005300_take_rate_rungs.sql', 'utf8')
     expect(sql).toMatch(/"paid":\s*500/)
     expect(sql).toMatch(/"collective":\s*300/)
     expect(sql).toMatch(/on conflict \(key\) do update/i)
