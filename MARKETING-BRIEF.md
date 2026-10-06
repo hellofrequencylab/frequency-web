@@ -299,7 +299,7 @@ real members arrive. Location search *always* excludes demo content.
 > brainstorm.
 
 ### The audience
-Primary target: **"the High-Functioning Lonely."** They are **allergic to funnels.** The
+Two readers, four families ([`docs/CONTENT-VOICE.md`](docs/CONTENT-VOICE.md) §2, ADR-1715): **the Seeker** and **the Latent Leader**, with the Seekers, Latent Leaders, a Supporter and the Builders who run a Space. They are **allergic to funnels.** The
 governing law: **marketing that *persuades* repels them; marketing that *recognizes* them
 converts.** The goal is *"a magical connection, not an advertisement"*, copy that
 *"reflects the collective ache back so precisely they feel seen."*
@@ -320,7 +320,7 @@ The marketing site is built on three pillars, each written into a different *fee
 
 | Pillar | Subject | Write into the feeling of… |
 |---|---|---|
-| **The Lab** | the space | the body: heat then cold, steam, cedar, low amber light, the exhale, a settled nervous system |
+| **The Lab** | the space | the body: heat then cold, steam, cedar, low amber light, the exhale, your shoulders drop |
 | **The Community** | the people | belonging: faces that light up, being known by name, missed when you're gone |
 | **The Quest** | the program | meaning + momentum: the satisfaction of showing up, becoming someone your people count on |
 
@@ -375,7 +375,7 @@ If you hand the next chat just one block, hand it this:
 - **What it is:** a local, real-world community platform, *the antidote to the feed.* Free
   Foundation mission + a for-profit Labs (physical third spaces). Live in open Beta at
   frequencylocal.com.
-- **Who it's for:** the "High-Functioning Lonely", allergic to funnels; converted by
+- **Who it's for:** the Seeker and the Latent Leader (CONTENT-VOICE §2), allergic to funnels; converted by
   recognition, not persuasion.
 - **The promise:** turn the things you love into real community you show up for in person.
 - **The mechanic:** a game (The Quest) that rewards *showing up, inviting people, and

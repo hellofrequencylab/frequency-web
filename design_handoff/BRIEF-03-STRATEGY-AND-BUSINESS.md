@@ -27,8 +27,9 @@
 - **One price per plan, no anchor.** The Opening Beta window closed on 2026-08-17
   (ADR-1060). Nothing shows a struck-through list price, a "beta rate" caption, or a
   countdown to a rise. The year is the only discount.
-- **Five persona doors** market the same system: coaches-and-healers, studios,
-  event-hosts, community-builders, nonprofits, on chrome-free funnel pages at
+- **Five persona doors** market the same system, each keyed to a Builder or Latent Leader archetype
+  (`docs/CONTENT-VOICE.md` §2f): coaches-and-healers (Second-Act Practitioner), studios (Studio Keeper),
+  event-hosts (Gathering Host), community-builders (Host-Connector, Network Steward), nonprofits (Network Steward), on chrome-free funnel pages at
   `/for/coaches`, `/studios`, `/hosts`, `/communities`, `/nonprofits`. Every dollar
   figure on those pages interpolates from the one code catalog, so a door can never
   quote a price the checkout does not charge. One CTA label everywhere: **Start free**.
@@ -103,7 +104,7 @@ and doubles as grant-funder evidence. Labs scale flagship → franchise.
 public, claimable, SEO/AIO-ranking profile with full CRM + email + memberships for
 non-technical operators. "Your profile is free marketing that ranks; everything
 else is the business you run on top." Built for the people inside the offering
-(practitioners who show up), not community operators marketing at audiences.
+(the two readers and the Builders in `docs/CONTENT-VOICE.md` §2), not community operators marketing at audiences.
 
 Consumer-side positioning: Calm's warmth + Duolingo's play, minus the guilt, plus
 physical reality neither has (brief 02 §5).

@@ -265,7 +265,7 @@ member cap**. In-person is not the opposite of virtual; it's a *property layered
 on top* of a circle that is always virtual underneath.
 
 This matters because it's Frequency's differentiator (the roadmap reframe:
-"embodied members," not creators marketing to an audience) **and** because
+members who show up in person, not creators marketing to an audience) **and** because
 it's the engine of how the community spreads (see §3a).
 
 Today `circles.type` = `in-person` | `online` and `/circles` renders the raw

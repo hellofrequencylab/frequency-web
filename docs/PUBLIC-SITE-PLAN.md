@@ -64,6 +64,25 @@ single decision at the top of `/start`.
 | **Community Builder / Leader** | "Host one thing that sticks." | "Host one Circle. We hand you the format. You are not alone in this." | Programs, Circles, Crew, Hubs | Start one Circle from the first-night format |
 | **Investor / Lab Champion** | "Put a Lab in my town." | "See where a Lab could open, and who is already showing up there." | The Lab page, Nexuses/Outposts (`/nexuses/[slug]`), Resonance/first-party data | Request a real contact path + see local density |
 
+
+### The archetypes inside the readers (ADR-1715)
+
+Internal names from [`CONTENT-VOICE.md`](CONTENT-VOICE.md) §2d and §2f; they never appear in page copy.
+Three readers had no door; their doors are named here.
+
+| Archetype | Reader | Door | First action |
+|---|---|---|---|
+| Wired Professional | Seeker | `/calm-down-fast`, the Mindless timer | One timed sit |
+| Transplant | Seeker | `/nearby`, Events this week | RSVP one Event near them |
+| Activity-First Man | Seeker | **Door to build:** run, walk and sauna Circles, sober socials, Get Moving | Join one activity Circle |
+| Evidence-First Skeptic | Seeker | **Door to build:** the plain timer and cited articles, no account first | Use the timer once |
+| Host-Connector | Latent Leader | `/how-to-start-a-circle`, the host kit | Start one Circle |
+| Gathering Host | Latent Leader, becoming a Builder | `/for/event-hosts` | Put the next gathering on the calendar |
+| Mission Patron | Supporter | **Door to build:** a Crew page that says what support keeps free | Start Crew |
+| Portfolio Teacher | Builder | `/for/teachers` (LIVE-797) | Open a free Space |
+| Second-Act Practitioner | Builder | `/for/coaches-and-healers` | Open a free Space |
+| Studio Keeper | Builder | `/for/studios` | Open a Business Space |
+| Network Steward | Builder | `/for/nonprofits`, `/for/community-builders` | Open a Non Profit or Collective Space |
 ---
 
 ## The funnels

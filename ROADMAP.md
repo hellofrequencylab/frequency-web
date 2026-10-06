@@ -6,7 +6,7 @@
 > its shipped items (P0–P3, P7) record what was done; its open items are folded into the
 > Development Map's stages. Do not plan from this file; plan from the Development Map.
 
-**Audience reframe:** Circle.so sells to community *operators* marketing to their audiences. Frequency is built for the **people inside the offering** — embodied practitioners who show up to rides, gatherings, circles. That changes what's worth building and what's noise.
+**Audience reframe:** Circle.so sells to community *operators* marketing to their audiences. Frequency is built for the **people inside the offering** — the people who show up to rides, gatherings and circles (the two readers in docs/CONTENT-VOICE.md §2). That changes what's worth building and what's noise.
 
 This roadmap is mirrored to [MVP Build List in Notion](https://www.notion.so/36efb0d4b941813e8e04d8a4d30d1dc3). The repo file is the source of truth — update both when status changes.
 
