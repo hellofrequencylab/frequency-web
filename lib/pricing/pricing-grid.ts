@@ -63,7 +63,7 @@ import {
 import { allowanceLabel, currentMeterStepIndex, featureMeter } from './feature-meters'
 import { isBetaPricingActive } from './beta'
 import { meetsGate, mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
-import { planTakesPayments } from './payments-gate'
+import { planTakesPayments } from './payments-plan'
 import {
   ADDON_ENTITLEMENT_KEYS,
   SPACE_PLAN_LABEL,
