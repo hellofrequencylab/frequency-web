@@ -7,6 +7,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { validateThemeTokens, isSafeSlug } from '@/lib/theme/validate'
 import type { Database } from '@/lib/database.types'
 import type { ThemeInput, ThemeKind, ThemeStatus } from '@/lib/theme/admin-types'
+import { setCommunityDefaultGeneration } from '@/lib/theme/server/default-generation'
 
 type ThemeInsert = Database['public']['Tables']['themes']['Insert']
 type ThemeUpdate = Database['public']['Tables']['themes']['Update']
@@ -164,4 +165,20 @@ export async function deleteTheme(id: string): Promise<ActionResult> {
   revalidatePath(LIST_PATH)
   revalidatePath('/', 'layout')
   return ok()
+}
+
+/** Set the community default generation (LIVE-658): the feel every member gets when neither their
+ *  own choice nor their Space's says otherwise. Janitor-gated like every Studio write; the stored
+ *  id is coerced to a registered generation. Revalidates the root layout so it applies at once. */
+export async function setDefaultGeneration(id: string): Promise<ActionResult<{ generation: string }>> {
+  const profileId = await gate()
+  try {
+    const generation = await setCommunityDefaultGeneration(id, profileId)
+    revalidatePath(LIST_PATH)
+    revalidatePath('/', 'layout')
+    return ok({ generation })
+  } catch (error) {
+    console.error('[theme studio] default generation write failed', { error })
+    return fail('That didn’t save. Try again in a moment.')
+  }
 }

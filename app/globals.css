@@ -1017,10 +1017,12 @@
    base body text is already ~AAA and muted is AA, so no preset drops below WCAG AA. Raw
    feel values live here; @theme inline above stays the var() bridge.
 
-   FOLLOW-UP (deliberately NOT done here): per-preset contrast/saturation tuning (e.g. AAA
-   text for the calm/kids ends, higher-saturation accents for bold/playful) is a real want,
-   but it must ship with proper `.dark` variants per preset — never light-only — so it is
-   intentionally deferred rather than reintroducing dark-mode-invisible text.
+   THE ONE PALETTE EXCEPTION (LIVE-658): the AAA presets (spacious, classic, and the three kids
+   bands; minContrast in lib/theme/generations.ts) lift the two secondary inks to AAA. They are
+   not new colours: each is DERIVED from the current mode's own --color-text and --color-canvas
+   with color-mix, so the one block is correct in light AND dark and on every skin with no
+   per-mode copy that could fall out of step. That is the per-preset `.dark` tuning, done the
+   way that cannot reintroduce dark-mode-invisible text. See the block after kids-tween.
 
    INVARIANTS held in every block (evidence-grounded):
      · Text contrast never below WCAG AA — inherited from the base/skin/occasion palette,
@@ -1147,6 +1149,29 @@
   --motion-slow: 540ms;
   --ornament:    0.6;
   --tap-min:     46px;           /* still ≥ 44px (kids invariant) */
+}
+
+/* ── AAA inks for the AAA presets (LIVE-658) ──────────────────────────────────
+   The calm adult end and every kids band promise AAA (7:1) text, but they inherited the base
+   secondary inks, which are AA (text-muted 5.2-6.0:1 on DAWN light). Here both secondary inks
+   are pulled toward the body ink of whatever mode and skin is live: 90% / 88% of --color-text
+   over --color-canvas, which holds at least 7.3:1 on every text surface in all four render
+   states (scripts/check-contrast.mjs measures it; the AAA floor fails the gate below 7).
+   The hierarchy survives as a smaller step rather than vanishing.
+
+   WHY `:is(html, [data-skin])`: the skin dark blocks are (0,2,0) and set these same two inks,
+   and data-generation shares an element with data-skin on the shell root. A bare
+   `[data-generation]` (0,1,0) would lose to midnight dark and the promise would silently not
+   hold there. `:is()` takes its strongest argument, so this is (0,2,0), authored later, and it
+   wins in both places the attribute lands (<html> and the shell root). The light lock still
+   wins inside its own subtree, by position, which is its job. */
+:is(html, [data-skin])[data-generation="spacious"],
+:is(html, [data-skin])[data-generation="classic"],
+:is(html, [data-skin])[data-generation="kids-early"],
+:is(html, [data-skin])[data-generation="kids-mid"],
+:is(html, [data-skin])[data-generation="kids-tween"] {
+  --color-text-muted:  color-mix(in srgb, var(--color-text) 90%, var(--color-canvas));
+  --color-text-subtle: color-mix(in srgb, var(--color-text) 88%, var(--color-canvas));
 }
 
 /* ── Reduced-motion override for the FEEL axis ─────────────────────────────────

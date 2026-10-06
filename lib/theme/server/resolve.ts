@@ -1,6 +1,7 @@
 import 'server-only'
 import { cookies } from 'next/headers'
-import { type GenerationId, DEFAULT_GENERATION, resolveGeneration } from '../generations'
+import { type GenerationId, resolveGeneration } from '../generations'
+import { communityDefaultGeneration } from './default-generation'
 import { type SkinId, DEFAULT_SKIN, resolveSkin } from '../skins'
 import { type OccasionId, resolveOccasionForDate } from '../occasions'
 import { THEME_COOKIE, parseThemeCookie } from '../cookie'
@@ -18,7 +19,9 @@ import { THEME_COOKIE, parseThemeCookie } from '../cookie'
 // Precedence (docs/SPACES.md adaptive-theming ADR):
 //   1. The member's `fxtheme` cookie  — an explicit personal override wins.
 //   2. The Space default (spaceSkin / spaceGeneration) — the operator's choice next.
-//   3. The system/time default — DEFAULT_* for skin/generation; the calendar window for
+//   3. The system/time default — DEFAULT_SKIN for skin; for generation the community default
+//      an operator sets in Theme Studio (./default-generation.ts, falling back to
+//      DEFAULT_GENERATION); the calendar window for
 //      the occasion (which has no Space default — it is purely time-driven unless the
 //      member pins one via the cookie).
 // Every value is passed through a resolve* guard, so the result is always valid ids.
@@ -50,9 +53,10 @@ export async function resolveTheme(input?: {
   const cookie = await readThemeCookie()
   const now = input?.now ?? new Date()
 
-  // generation: member cookie → Space default → system default.
+  // generation: member cookie → Space default → community default (Theme Studio, LIVE-658).
+  // The community read only happens when neither of the first two answered.
   const generation = resolveGeneration(
-    cookie.gen ?? input?.spaceGeneration ?? DEFAULT_GENERATION,
+    cookie.gen ?? input?.spaceGeneration ?? (await communityDefaultGeneration()),
   )
 
   // skin: member cookie → Space default → system default.

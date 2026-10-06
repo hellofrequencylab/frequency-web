@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-658",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),cp=require(\"child_process\");const die=m=>{console.error(m);process.exit(1)};const studio=fs.readdirSync(\"app/(main)/admin/appearance\").filter(f=>/\\.tsx?$/.test(f)).map(f=>fs.readFileSync(\"app/(main)/admin/appearance/\"+f,\"utf8\")).join(\"\\n\");if(!/generation/i.test(studio))die(\"Theme Studio (app/(main)/admin/appearance) never mentions generation, so an operator cannot change it\");const r=fs.readFileSync(\"lib/theme/server/resolve.ts\",\"utf8\");if(!/communityDefaultGeneration\\(/.test(r))die(\"resolveTheme does not read the Studio-set community default generation\");const css=fs.readFileSync(\"app/globals.css\",\"utf8\");if(/FOLLOW-UP \\(deliberately NOT done here\\): per-preset contrast/.test(css))die(\"app/globals.css still describes per-preset contrast tuning as not done\");const reg=fs.readFileSync(\"lib/theme/generations.ts\",\"utf8\");for(const m of reg.matchAll(/id:\\s*\\x27([a-z-]+)\\x27[\\s\\S]*?minContrast:\\s*\\x27(AAA|AA)\\x27/g)){if(m[2]===\"AAA\"&&!css.includes(\"[data-generation=\\\"\"+m[1]+\"\\\"]\")||m[2]===\"AAA\"&&!new RegExp(\":is\\\\(html, \\\\[data-skin\\\\]\\\\)\\\\[data-generation=\\\"\"+m[1]+\"\\\"\\\\]\").test(css))die(\"AAA preset \"+m[1]+\" has no tuned ink block in app/globals.css\")}const out=cp.spawnSync(\"node\",[\"scripts/check-contrast.mjs\"],{encoding:\"utf8\"});if(out.status!==0)die(\"check:contrast fails:\\n\"+(out.stderr||out.stdout).slice(0,800));if(!/· spacious/.test(out.stdout))die(\"check:contrast does not measure the AAA presets as their own states\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nTheme Studio has a Community feel picker that stores the default generation in platform_settings (theme_default_generation, no migration); resolveTheme uses it as the third rung after the member cookie and the Space. The five AAA presets (spacious, classic, kids bands) derive AAA secondary inks from the live mode's text and canvas with color-mix, so one block holds in light, dark and every skin; check:contrast now measures each AAA preset over all four base states at 7:1. The AA presets keep the base palette, which already holds AA in both modes; no saturation change was made to bold or playful."
+  }
+}
