@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-663",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const page=fs.readFileSync(\"app/(main)/feed/page.tsx\",\"utf8\");const f=\"components/feed/reach-out-card.tsx\";if(!/<ReachOutCard\\b/.test(page)){console.error(\"LIVE-663: the feed does not render a reach-out card\");process.exit(1)}if(!fs.existsSync(f)||!/listDueReminders\\(/.test(fs.readFileSync(f,\"utf8\"))){console.error(\"LIVE-663: the feed card does not read the contacts page reminders (listDueReminders)\");process.exit(1)}console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nShipped 2026-10-06: the feed shows the soonest follow-up a member set (overdue first, due within three days) with a count of the rest, from the contacts page's listDueReminders read. Nothing due, nothing shown."
+  }
+}
