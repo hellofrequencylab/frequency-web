@@ -273,7 +273,7 @@ export const data: Data = {
           {
             icon: 'HandHeart',
             title: 'A door held open',
-            body: 'Your people join free, always, and a free Space sells from day one. You keep 100% of the bookings you bring yourself, and the network earns only on the business it sends you.',
+            body: 'Your people join free, always, and a free Space hosts free for as long as you like. When you start charging, that is Business: you keep 100% of the bookings you bring yourself, and the network earns only on a customer it introduces, once.',
           },
           {
             icon: 'LineChart',
@@ -323,7 +323,7 @@ export const data: Data = {
             icon: '',
             image: '',
             title: 'You: free until you charge',
-            body: 'Hosting is free. Open a Space, run Circles and Events, sell tickets and take donations from day one. A plan is what you take when money starts moving, never a bill for access to people.',
+            body: 'Hosting is free. Open a Space, run Circles and Events, and take tips with no fee. Business is what you take when you start charging, never a bill for access to people.',
             href: '',
           },
         ],
@@ -337,7 +337,7 @@ export const data: Data = {
       type: 'Text',
       props: {
         id: 'sp-deal-note',
-        body: "That's the whole shape of it. A free Space is the whole thing, not a trial of it, and a plan is one honest monthly price. Your own bookings stay yours: 0% on what you book yourself, always. We earn a share only of the business the network brings you, and you see exactly what the network earned you. The full breakdown lives on the [pricing page](/pricing).",
+        body: "That's the whole shape of it. A free Space is the whole thing, not a trial of it, and selling starts at Business, one honest monthly price. Your own bookings stay yours: 0% on what you book yourself, always. We earn a share only of the business the network brings you, and you see exactly what the network earned you. The full breakdown lives on the [pricing page](/pricing).",
         size: 'base',
         tone: 'surface',
         width: 'default',

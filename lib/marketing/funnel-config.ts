@@ -10,15 +10,15 @@
 // NO em dashes, never "AI Engine" (the add-on is listed as Vera AI, 2026-07 overhaul; the Resonance Engine is the machinery, ADR-590), marketing email is
 // "Email + Automations" (never "Dispatch", a reserved broadcast term), the Space site is "Profile and
 // brand" / "your page", the CRM tool is "Contacts", the scheduler is "Bookings", the code tool is
-// "QR Studio". The free tier RUNS THE BUSINESS: it sells, takes payments, and holds a contact list, on
-// starter caps.
+// "QR Studio". The free tier RUNS THE BUSINESS: it hosts, holds a contact list, and takes tips, on
+// launch-sized limits. Selling starts at Business (ADR-1709, the five-tier ladder).
 //
 // 🔴 THE ARGUMENT FOR PAYING IS MONEY, NOT MORE (LIVE-255). Every door says the same sentence in its
 // own words: PEOPLE JOIN FREE, BUSINESSES HOST FREE, YOU PAY WHEN YOU START CHARGING. The three
 // capabilities that genuinely need a plan are still named plainly, because naming them is what makes
 // the promise checkable, but they are the CONSEQUENCE of that sentence rather than the pitch:
-// campaigns and funnels (Business). Selling memberships is open on a free Space once payouts are
-// ready (LIVE-410). Do not
+// taking payments (paid tickets, memberships, donations, shop checkout, booking deposits) opens at
+// Business, and tips stay open on every plan (ADR-1709). Do not
 // reintroduce a "paid does more / lifts the caps / unlocks" beat here, and that includes a SECTION
 // TITLE: the five step-up cards each read "When you start charging, it does more." until LIVE-255,
 // which is this rule broken by the heading above the copy that obeys it. A card that names a plan
@@ -74,7 +74,7 @@ export interface FunnelPriceRow {
   kind: 'free' | 'business' | 'nonprofit' | 'resonance'
   /** The plan name shown, e.g. "Free", "Business", "+ Resonance". */
   name: string
-  /** The right-hand descriptor, e.g. "Sell from day one, 10% on network introductions", "AI that works
+  /** The right-hand descriptor, e.g. "Host free, with tips at 0%", "AI that works
    *  for you". Rates come from the shared RATE map, never typed here. */
   detail: string
   /** Featured row (the one the niche is steered toward). */
@@ -187,38 +187,32 @@ function buildFunnelConfigs(input: PricingGridInput): Record<string, FunnelConfi
 const P = priceStringsFrom(input.catalog)
 
 // Every RATE interpolates from the take-rate vector in the input (the operator's config over the code
-// defaults, resolved by the route), including the FREE Space rung. The free rung is quoted on
-// purpose: selling is free on every tier, so the free row has a real rate of its own and a paid row is a
-// lower number beside it, never a door that opens. The pricing beat is a ladder, not a gate.
-// The ladder is two numbers (LIVE-230): the free rung and the paid rung. Business and Collective both
-// stand on the paid rung, so the same figure is quoted wherever either plan is named.
+// defaults, resolved by the route). Only a plan that takes payments has a fee (ADR-1709): the free row
+// quotes tips at 0%, never the free rung, which stays in the vector as a default-deny value only.
 const rates = networkTakeRateFromStored(input.values.take_rate)
 const RATE = {
-  free: formatBps(networkTakeRateBpsForPlan('free', rates)),
   business: formatBps(networkTakeRateBpsForPlan('business', rates)),
 }
-/** The free-tier row's honest descriptor: a free Space sells from day one, at its own network rate. */
-const FREE_ROW_DETAIL = `Sell from day one, ${RATE.free} on network introductions`
-/** The business row's descriptor: what the plan actually adds, plus the lower fee on network sales. */
-const BUSINESS_ROW_DETAIL = `Memberships and campaigns, ${RATE.business} on network introductions`
-/** The break-even proof, stated once: the rate only ever applies to a NEW person the network brought. */
+/** The free-tier row's honest descriptor: a free Space hosts, and takes tips with no fee. */
+const FREE_ROW_DETAIL = 'Host free, with tips at 0%'
+/** The business row's descriptor: selling opens here, with the introduction fee beside it. */
+const BUSINESS_ROW_DETAIL = `Selling starts here, ${RATE.business} once per introduced customer`
+/** The break-even proof, stated once: the fee only ever applies to a NEW person the network brought. */
 function breakEvenCaption(keep: string): string {
-  return `You keep 100% of ${keep}, on every plan including the free one. Frequency earns only when the network introduces someone new, and once they are yours it is 0% for good.`
+  return `You keep 100% of ${keep}, always. Frequency earns only when the network introduces someone new, once, and after that it is 0% for good.`
 }
 
-/** The shared pricing-beat intro. It leads with the promise, not the plan: the transaction is never
- *  behind a wall, so a paid rung is what a Space takes once it is charging the same person again
- *  (docs/CORE-MODEL.md §2, ADR-1350), and where the rate settles follows from that rather than being
- *  the offer. The doc line here said the opposite until LIVE-253. The per-niche clause names the
- *  moment a door's reader would actually step up. */
+/** The shared pricing-beat intro. It leads with the promise, not the plan: hosting is free, and that
+ *  is the point; Business is what a Space takes when it starts charging (ADR-1709). The per-niche
+ *  clause names the moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
-  return `People join free, businesses host free, and you pay when you start charging. Selling is never behind a plan: a free Space takes payments from day one, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
+  return `People join free, businesses host free, and you pay when you start charging. A free Space runs the whole thing and takes tips with no fee, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
 }
 
 /** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Nothing to be here, and nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it is what memberships and campaigns run on, settling at ${RATE.business} on network introductions. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
+  return `Nothing to be here, and nothing to host. A free Space runs your page, contacts, bookings and events, and takes tips with no fee. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop, with ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. You keep 100% of ${keep}.${extra} You always see the full number, nothing hidden.`
 }
 
 
@@ -290,7 +284,7 @@ const COACHES_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your practice starts running campaigns, that is Business, and the network rate drops with it.'),
+    intro: pricingIntro('When your practice starts charging for sessions and packages, that is Business.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -381,7 +375,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your studio starts running campaigns, that is Business, and the network rate drops with it.'),
+    intro: pricingIntro('When your studio starts selling classes and memberships, that is Business.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -472,7 +466,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your events start running campaigns off the ticket list, that is Business, and the network rate drops with it.'),
+    intro: pricingIntro('When your events start selling tickets, that is Business.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -482,7 +476,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
     note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you are never locked in.",
   },
   faq: [
-    { q: 'Do I need to be technical?', a: 'No. Most hosts are selling tickets the same afternoon.' },
+    { q: 'Do I need to be technical?', a: 'No. Most hosts have their first event up the same afternoon.' },
     {
       q: 'What does it actually cost?',
       a: costAnswer('the tickets you sell'),
@@ -564,7 +558,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your community starts running campaigns, that is Business, and the network rate drops with it.'),
+    intro: pricingIntro('When your community starts charging for memberships, that is Business, and when you run several groups together, that is Collective.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -579,7 +573,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
       q: 'What does it actually cost?',
       a: costAnswer(
         'the memberships you sell',
-        ` When you grow a team and host collaborators, that is still Business, at ${P.businessList} a month.`,
+        ` When you run several groups together, Collective connects them under one account, at ${P.collective} a month.`,
       ),
     },
     { q: 'Can I take my members with me?', a: 'Yes, any time. Export your whole member list whenever you want.' },
@@ -659,9 +653,9 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'Free to start. Nothing taken on what you raise.',
-    intro: 'Start free, and stay free while you grow. Verified 501(c)(3) organizations run the Non Profit plan, flat and never per seat, with no take-rate on what you raise.',
+    intro: 'Start free, and host free while you grow. Donations open on the Non Profit plan, flat and never per seat, for verified 501(c)(3) organizations, with no network fee on what you raise.',
     rows: [
-      { kind: 'free', name: 'Free', detail: `Take gifts from day one, ${RATE.free} on network introductions` },
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'nonprofit', name: 'Non Profit', detail: '0% on what you raise', featured: true },
       { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
     ],
@@ -670,10 +664,10 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
     note: 'We never take a share of your donations. Your supporters export any time, so you are never locked in.',
   },
   faq: [
-    { q: 'Do I need to be technical?', a: 'No. Most organizations are taking donations the same afternoon.' },
+    { q: 'Do I need to be technical?', a: 'No. Most organizations have their Space running the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: `Free to start. The Non Profit plan is ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no take-rate on what you raise. You always see the full number, nothing hidden.`,
+      a: `Free to start and free to host. Taking donations is the Non Profit plan, ${P.nonprofit} a month flat, never per seat, for verified 501(c)(3) organizations, and there is no network fee on what you raise. You always see the full number, nothing hidden.`,
     },
     { q: 'Do you take a cut of donations?', a: 'No. You keep 100% of what you raise. We never take a share of a donation.' },
     { q: 'Can I take my supporters with me?', a: 'Yes, any time. Export your whole supporter list whenever you want.' },

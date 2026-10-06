@@ -36,12 +36,19 @@ import { listDensityCities } from '@/app/discover/cities/_data'
  *  that need a paid plan, and the plan each opens at, are read off the gate map the same way
  *  (paidWallsPhrase), so this sentence can never name a plan for a wall the product does not enforce. */
 function takeRateStory(input: PricingGridInput, offerings: Offering[]): string {
-  const rates = offerings.map((o) => `${offeringLadderLabel(o)} ${formatBps(o.networkRateBps)}`).join(', ')
+  // Only the rungs that take payments have a fee (ADR-1709). The personal tiers and the free Space take
+  // tips only, at 0%, so they are named as such rather than given a rate nobody is charged.
+  const rates = offerings
+    .filter((o) => o.sells)
+    .map((o) => `${offeringLadderLabel(o)} ${formatBps(o.networkRateBps)}`)
+    .join(', ')
+  const tipsOnly = offerings.filter((o) => !o.sells).map((o) => offeringLadderLabel(o)).join(', ')
+  const walls = paidWallsPhrase(input.gateOverrides)
   // LIVE-253: this sentence used to tell eighteen named AI crawlers that "what a paid rung buys is
   // a lower rate plus the tools that build the list which takes that rate to zero", which is the
   // inverse of docs/CORE-MODEL.md. The reason and the rate are both PLAN_STORY now, one sentence
   // each, shared with /pricing so the corpus and the page cannot argue different models.
-  return `People join free, businesses host free, and you pay when you start charging. Selling is NOT gated on any tier: every rung, including a free Member and a free Space, can sell tickets and take payments and donations from day one. ${PLAN_STORY.paid} ${PLAN_STORY.rate} The take-rate applies ONLY to a sale the network introduced: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free. Tips are always 0%. What does need a paid plan, and nothing else does: ${paidWallsPhrase(input.gateOverrides)}.`
+  return `People join free, businesses host free, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} Tips only, at 0%: ${tipsOnly}. ${PLAN_STORY.rate} The network fee applies ONLY to a customer the network introduced, once: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
 }
 
 /** The plain "the ladder is X, then Y" sentence, priced from the same offerings. */
@@ -259,7 +266,7 @@ export async function GET() {
     ...help,
     ...cities,
     '## Pricing for Spaces (a Community Collective, not a tax on your work)',
-    `The core promise: people join free, businesses host free, and you pay when you start charging. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective). ${PLAN_STORY.rate} The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
+    `The core promise: people join free, businesses host free, and you pay when you start charging. Selling starts at Business. Your own people are always free, on every tier, forever, and a business never pays for access to people. You keep 100% of the bookings and sales you bring in yourself. Frequency earns a share ONLY of the business the network sends you (a referral or a discovery inside the collective). ${PLAN_STORY.rate} The whole ladder: ${ladderSentence(offerings)}. Monthly or yearly, two months free.`,
     ...pricingLadderSummary(input),
     takeRateStory(input, offerings),
     '',
