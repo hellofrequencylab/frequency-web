@@ -29,6 +29,7 @@ import { listPublishedSpotlightHandles } from "@/lib/spotlight/data";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
 import { getCityCategoryHubs } from "@/app/discover/events/_data";
 import { listDiscoverCities } from "@/app/discover/places/_data";
+import { meetsIndexFloor } from "@/lib/seo/index-floor";
 import { listDensityCities } from "@/app/discover/cities/_data";
 import { COMPARISONS, comparisonPath } from "@/lib/marketing/comparisons";
 import { funnelSlugs } from "@/lib/marketing/funnel-config";
@@ -527,15 +528,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // sends crawlers to a page that points elsewhere (SCAN-656). The density slug and the
     // places slug are the same `citySlug(name)` form, so set membership is the page's rule.
     const densitySlugs = new Set(densityCities.map((c) => c.slug));
+    // THE LOCAL INDEX FLOOR (LIVE-807): a place page is advertised only when it says index, the
+    // same rule its robots meta reads. The summary carries no Space count (a Space never creates
+    // a place URL on its own), so the sitemap asks the Event half of the floor.
     const placeRoutes: MetadataRoute.Sitemap = cities
       .filter((c) => !densitySlugs.has(c.slug))
+      .filter((c) => meetsIndexFloor({ upcomingEvents: c.eventCount }))
       .map((c) => ({
       url: `${SITE_URL}/discover/places/${c.slug}`,
       changeFrequency: "daily" as const,
       priority: 0.6,
     }));
 
-    hubRoutes = hubs.map((h) => ({
+    hubRoutes = hubs
+      .filter((h) => meetsIndexFloor({ upcomingEvents: h.events.length }))
+      .map((h) => ({
       url: `${SITE_URL}/discover/events/in/${h.citySlug}/${h.category.slug}`,
       changeFrequency: "daily" as const,
       priority: 0.6,

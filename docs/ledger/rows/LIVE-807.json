@@ -1,7 +1,7 @@
 {
   "id": "LIVE-807",
   "title": "City by practice pages are indexed only with 3 or more upcoming Events or 2 or more active Spaces, and carry Event schema",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,11 +9,12 @@
     "file": "docs/ledger/adr/ADR-1720.md",
     "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
   },
-  "detail": "WORKSTREAM 9 of the launch brief (ADR-1720). TODAY: three local page families gate indexing three different ways and none matches the brief. /discover/cities/[citySlug] uses a density score >= 40 (app/discover/cities/_data.ts:33,66). /discover/places/[citySlug] indexes with 1 Circle or 1 Event (app/discover/places/_data.ts:45,72). /discover/events/in/[city]/[category] indexes with 1 Event (app/discover/events/_data.ts:358). There is no city by practice page, and city pages emit an ItemList of URLs (lib/jsonld.ts:363-380), not schema.org Event nodes. THE FIX: one shared rule (3 upcoming Events or 2 active Spaces) read by the page, robots meta and sitemap; city by practice pages built on it; list pages emit Event nodes for each upcoming Event. Wave 2.",
+  "detail": "WORKSTREAM 9 of the launch brief (ADR-1720). TODAY: three local page families gate indexing three different ways and none matches the brief. /discover/cities/[citySlug] uses a density score >= 40 (app/discover/cities/_data.ts:33,66). /discover/places/[citySlug] indexes with 1 Circle or 1 Event (app/discover/places/_data.ts:45,72). /discover/events/in/[city]/[category] indexes with 1 Event (app/discover/events/_data.ts:358). There is no city by practice page, and city pages emit an ItemList of URLs (lib/jsonld.ts:363-380), not schema.org Event nodes. THE FIX: one shared rule (3 upcoming Events or 2 active Spaces) read by the page, robots meta and sitemap; city by practice pages built on it; list pages emit Event nodes for each upcoming Event. Wave 2. CLOSED 2026-10-06: lib/seo/index-floor.ts holds the one rule (MIN_UPCOMING_EVENTS = 3, MIN_ACTIVE_SPACES = 2, meetsIndexFloor). /discover/places/[citySlug] and the city x practice pages (/discover/events/in/[city]/[category]) say noindex below it and app/sitemap.ts lists only pages at it. lib/jsonld.ts cityEventListSchema nests a full Event node (eventSchema output, city-level Place) per located event on the places, cities and city x practice lists; eventListSchema keeps the summary form elsewhere (SCAN-664). /discover/cities keeps its density gate (it canonicalises the overlapping places page).",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-807\";const all=walk(\"lib\").concat(walk(\"app\"));const rule=all.find(f=>/MIN_UPCOMING_EVENTS\\s*=\\s*3/.test(r(f))&&/MIN_ACTIVE_SPACES\\s*=\\s*2/.test(r(f)));if(!rule)fail(ID+\": no shared index rule (MIN_UPCOMING_EVENTS = 3, MIN_ACTIVE_SPACES = 2)\");const mod=rule.replace(/\\.tsx?$/,\"\").replace(/^/,\"@/\");const readers=all.filter(f=>f!==rule&&r(f).includes(mod));if(!readers.some(f=>/sitemap/.test(f)))fail(ID+\": the sitemap does not read the index rule\");if(readers.filter(f=>/page\\.tsx$/.test(f)).length<2)fail(ID+\": fewer than two local page families read the index rule\");if(!/@type.{0,4}Event\\b/.test(r(\"lib/jsonld.ts\").slice(r(\"lib/jsonld.ts\").indexOf(\"eventListSchema\"))))fail(ID+\": city lists still emit no Event nodes\")'",
     "note": "Fails until one 3-Events-or-2-Spaces rule is read by the sitemap and local pages, and city lists emit Event schema."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-06"
 }
