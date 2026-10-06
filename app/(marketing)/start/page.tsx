@@ -111,6 +111,14 @@ export default function StartPage() {
         <p className="mt-10 text-center text-body-sm text-subtle">
           Not sure yet? Any door works. You can change your mind, and most people end up doing a little of all three.
         </p>
+        {/* ADR-1715: the Builders' door. Teachers, practitioners and studio owners have a Space, not a
+            member role, so they get a plain line here rather than a fourth card. */}
+        <p className="mt-3 text-center text-body-sm text-subtle">
+          Run a studio or a practice?{' '}
+          <Link href="/for/teachers" className="font-semibold text-primary-strong underline-offset-4 hover:underline">
+            See how a Space works
+          </Link>
+        </p>
       </Section>
 
       {/* 🔴 THE ORPHAN FIX (LIVE-256). These three pillar pages are in the sitemap and in llms.txt
@@ -125,11 +133,12 @@ export default function StartPage() {
         <p className="mx-auto mt-3 max-w-xl text-center text-body text-muted leading-relaxed">
           Start with whichever one sounds like your week. Each is a plain answer, no signup.
         </p>
-        <ul className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-3">
+        <ul className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-2">
           {[
             { href: '/friendship-as-an-adult', label: 'It is hard to make friends as an adult', note: 'Why it gets harder after 30, and what actually works.' },
             { href: '/how-to-be-more-social', label: 'I want to be more social', note: 'Without a new personality, and without drinking.' },
             { href: '/calm-down-fast', label: 'I cannot switch off', note: 'What to do in the next five minutes when you are wired.' },
+            { href: '/events', label: 'I would rather start with something to do', note: 'A run club, a cold plunge, a supper club. Find one near you.' },
           ].map((g) => (
             <li key={g.href}>
               <Link

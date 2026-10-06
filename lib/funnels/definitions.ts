@@ -158,6 +158,8 @@ export const NICHE_FUNNEL_DESTINATIONS: Record<string, FunnelDestination> = {
   hosts: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'ticketed' }) },
   communities: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'cohort' }) },
   nonprofits: { mode: 'direct', url: spaceCreatePath({ type: 'nonprofit', variant: 'donations' }) },
+  // ADR-1715: the Portfolio Teacher door. Paid programs is the Practitioner Focus a workshop runs on.
+  teachers: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'programs' }) },
 }
 
 /** The funnel destination for a sequence slug: a known niche funnel's Space-create section, else

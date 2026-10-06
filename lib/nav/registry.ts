@@ -205,6 +205,7 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
       { label: 'For event hosts', href: '/for/event-hosts', desc: 'Tickets, check-in, and a full room' },
       { label: 'For nonprofits', href: '/for/nonprofits', desc: 'Donations, supporters, and programs' },
       { label: 'For studios', href: '/for/studios', desc: 'Classes, memberships, and check-in' },
+      { label: 'For teachers', href: '/for/teachers', desc: 'Your classes and students across every studio' },
       { label: 'Business pricing', href: '/pricing', desc: 'Plans and what each one includes' },
     ],
   },

@@ -28,6 +28,7 @@
 // stays qualitative.
 
 import { OPERATOR_CTA_LABEL } from '@/lib/site'
+import type { ArchetypeId } from '@/lib/audience/archetypes'
 import { NICHE_FUNNEL_DESTINATIONS, type FunnelDestination } from '@/lib/funnels/definitions'
 import { priceStringsFrom, defaultPricingInput } from '@/lib/pricing/pricing-page'
 import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
@@ -97,6 +98,9 @@ export interface FunnelConfig {
    *  (`coaches-and-healers`) and the funnel vocabulary (`coaches`); the Mode itself is declared once, on
    *  the destination row, never here. */
   niche: string
+  /** The Builder or Latent Leader archetypes this door is written for (ADR-1715, CONTENT-VOICE §2).
+   *  Internal: it steers copy and reporting, and never renders on the page. */
+  archetypes: readonly ArchetypeId[]
   hero: FunnelHero
   /** Answer-first meta description (~150 chars). The hero subhead is written for the page and runs long
    *  (184 chars truncates in SERPs), so set this for the crawlable summary. Falls back to subhead. */
@@ -225,6 +229,7 @@ const COACHES_FUNNEL: FunnelConfig = {
   // registry all speak ONE slug vocabulary now, so the strip card lands here instead of 404ing.
   slug: 'coaches-and-healers',
   niche: 'coaches',
+  archetypes: ['second_act'],
   hero: {
     eyebrow: 'For coaches, healers, and guides',
     h1: 'Your practice, made perfect.',
@@ -320,6 +325,7 @@ const COACHES_FUNNEL: FunnelConfig = {
 const STUDIOS_FUNNEL: FunnelConfig = {
   slug: 'studios',
   niche: 'studios',
+  archetypes: ['studio_keeper'],
   hero: {
     eyebrow: 'For studios and class-based spaces',
     h1: 'Every class, every member, one place.',
@@ -410,6 +416,7 @@ const STUDIOS_FUNNEL: FunnelConfig = {
 const EVENTS_FUNNEL: FunnelConfig = {
   slug: 'event-hosts',
   niche: 'hosts',
+  archetypes: ['gathering_host'],
   hero: {
     eyebrow: 'For event hosts and organizers',
     h1: 'Sell the tickets. Keep the room.',
@@ -500,6 +507,7 @@ const EVENTS_FUNNEL: FunnelConfig = {
 const COMMUNITY_FUNNEL: FunnelConfig = {
   slug: 'community-builders',
   niche: 'communities',
+  archetypes: ['host_connector', 'network_steward'],
   loopProminent: true,
   hero: {
     eyebrow: 'For community builders and organizers',
@@ -594,6 +602,7 @@ const COMMUNITY_FUNNEL: FunnelConfig = {
 const NONPROFITS_FUNNEL: FunnelConfig = {
   slug: 'nonprofits',
   niche: 'nonprofits',
+  archetypes: ['network_steward'],
   nonprofit: true,
   hero: {
     eyebrow: 'For nonprofits and 501(c)(3) organizations',
@@ -681,6 +690,93 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
   },
 }
 
+// ── Config #6: Teachers who work across studios (business:programs; ADR-1715 Portfolio Teacher) ──────
+// The teacher who runs classes at three studios and a workshop on Sundays. Their students follow THEM,
+// not the room, and today that list lives in each studio's software. This door is the one place it
+// stays theirs.
+
+const TEACHERS_FUNNEL: FunnelConfig = {
+  slug: 'teachers',
+  niche: 'teachers',
+  archetypes: ['portfolio_teacher'],
+  hero: {
+    eyebrow: 'For teachers who work across studios',
+    h1: 'Your students follow you. Now your list does too.',
+    seoTitle: 'Student list + workshop software for teachers who work across studios',
+    subhead:
+      'You teach at three rooms and run a workshop on the side. Frequency keeps every student in one list that is yours, so wherever you teach next, they can find you. Start free.',
+    microcopy: 'No card. You pay when you start charging.',
+    trustLine: 'You keep 100% of what you bring in.',
+  },
+  metaDescription:
+    'Frequency gives teachers who work across studios one student list, workshops, and paid programs in one place, wherever they teach. Free to start, no card.',
+  problem: {
+    header: 'You built the following. The studio owns the list.',
+    body: 'Your regulars booked through four different studio apps, so their names live in four places you cannot reach. When a studio changes your slot or closes, the students who came for you have no way to follow. The work is yours. The relationships should be too.',
+    caption: 'Four studios, zero lists.',
+  },
+  howItWorks: {
+    header: 'One place. Ready before your next class.',
+    steps: [
+      { title: 'Make your Space.', body: 'Your page, your schedule across every studio, and your workshops, ready in a few minutes. Free to start, always.' },
+      { title: 'Bring your students in.', body: 'Share your Frequency card at the end of class. Everyone who scans lands in your Contacts.' },
+      { title: 'Open a workshop.', body: 'Sell a workshop or a short program from your own page, the same day.' },
+    ],
+    caption: 'Set up between classes.',
+  },
+  features: [
+    {
+      icon: 'contact',
+      title: 'One student list, wherever you teach.',
+      body: 'Every student you meet, at any studio, in one list that is yours. When your schedule changes, you tell them yourself.',
+    },
+    {
+      icon: 'calendar',
+      title: 'Workshops and programs, booked and paid.',
+      body: 'Sell a Sunday workshop or a four-week program from your own page. Students pay up front, and you keep what you bring in.',
+    },
+    {
+      icon: 'qr',
+      title: 'Your following grows through the people in the room.',
+      body: 'Share your Frequency card after class and every hello becomes a saved contact. The student who loved your class brings a friend to the next one.',
+    },
+    {
+      icon: 'spark',
+      soft: true,
+      title: 'A plan is for the student who drifts.',
+      body: 'Email to bring quiet students back, reminders that send themselves, and a nudge when a regular stops showing up.',
+    },
+  ],
+  loop: {
+    header: 'Every class, an open door.',
+    intro: 'This is how a teaching practice grows here. Not through one studio, but through the students who follow you.',
+    payoff: 'A student takes your class, saves you with a scan, and comes to your workshop. They stay with you, and they bring the next one.',
+  },
+  pricing: {
+    header: 'One honest price.',
+    intro: pricingIntro('When your teaching starts running campaigns, that is Business, and the network rate drops with it.'),
+    rows: [
+      { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
+      { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
+      { kind: 'resonance', name: '+ Resonance', detail: 'AI that works for you' },
+    ],
+    breakEvenCaption: breakEvenCaption('the workshops you sell yourself'),
+    note: "We earn only on what the network sends you, and you always see the full number. Your contacts export any time, so you're never locked in.",
+  },
+  faq: [
+    { q: 'I already teach at studios that use other software. Does this replace it?', a: 'No. Keep booking through the studios. Frequency is the list and the page that stay yours, wherever you teach.' },
+    { q: 'What does it actually cost?', a: costAnswer('your own workshops') },
+    { q: 'Can I take my students with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
+    { q: 'Will my students need to download anything?', a: 'No. They save you, book, and pay from a link.' },
+    { q: 'Is my student information private?', a: 'Yes. Your contacts are yours, held securely, never sold.' },
+  ],
+  finalCta: {
+    header: 'Keep the people who come for you.',
+    subhead: 'Your students, your workshops, and your schedule across every studio, held together. Start free, and take your following wherever you teach.',
+    microcopy: 'No card. You pay when you start charging.',
+  },
+}
+
 // ── The registry (ADR-591): one config per persona door, keyed by the SAME canonical slug the pricing
 // "by who you are" strip and the persona registry use, so every strip card lands on a real, on-topic page
 // (never a 404). Adding a door = one config + one row here. ────────────────────────────────────────────
@@ -690,6 +786,7 @@ return {
   'event-hosts': EVENTS_FUNNEL,
   'community-builders': COMMUNITY_FUNNEL,
   nonprofits: NONPROFITS_FUNNEL,
+  teachers: TEACHERS_FUNNEL,
 }
 }
 

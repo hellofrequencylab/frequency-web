@@ -158,7 +158,7 @@ export default async function UpgradePage({
             <Zap className="w-7 h-7 text-on-primary" />
           </div>
           <p className="text-page-title font-bold text-on-primary mb-1">Join the Crew</p>
-          <p className="text-primary-bg/80 text-body-sm">The personal tier: a lower fee, your badge, and backing the community</p>
+          <p className="text-primary-bg/80 text-body-sm">The personal tier: a lower fee, your badge, and backing the community so it stays free for everyone</p>
           {/* PWYW (ADR-908): Crew has no single price to headline, so the hero states the FLOOR and
               the picker below carries the choice. Never render a struck-through anchor here: there is
               no list price to discount against when the member sets the amount. */}

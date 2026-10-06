@@ -1,0 +1,164 @@
+# Apply ONE pull request's new migration files to production, then re-run that PR's CI so the
+# ADR-1111 gate (`check:migrations --require-ledger`) goes green and the PR can merge right after.
+#
+# WHY THIS EXISTS. ADR-1111 says a migration PR stays red until its SQL is in production, and the
+# SQL runs only when that PR is next to merge. Until now the only apply path was a person pasting
+# the SQL into the Supabase SQL Editor, because a Claude session must not write to production on its
+# own. This workflow is the sanctioned middle: the owner holds the credential in a protected GitHub
+# environment, and every apply is a logged, single-file, add-only run that is identical to the paste
+# path (DDL first, THEN the explicit ledger insert at the repo file's own version, never
+# `apply_migration` and never `supabase db push`, docs/DATABASE.md).
+#
+# SETUP (owner, once): Settings > Environments > New environment `production-db`, add the secret
+# SUPABASE_DB_URL (Supabase > Connect > Session pooler URI, with the password filled in). Optionally
+# add yourself as a required reviewer to approve each run by hand.
+#
+# WHAT IT REFUSES, so a run can only do what the paste path did:
+#   - a PR that is closed, a draft, from a fork, or not based on main;
+#   - a PR whose diff MODIFIES, DELETES or RENAMES any file under supabase/migrations (add-only);
+#   - a new version that is not above every version already on main AND in the production ledger;
+#   - a PR whose `db-tests`, `test` or `lint` checks are not green on its head commit (db-tests is
+#     the gate that applies every migration to an empty database, so the SQL is proven first).
+# A version already in the ledger under the same name is skipped, so a re-run is harmless.
+# One apply at a time across the repo: the concurrency group never cancels an in-flight run.
+name: apply-migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Pull request number whose new migration files to apply'
+        required: true
+        type: number
+      dry_run:
+        description: 'Check everything and print the plan, but apply nothing'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: read
+  actions: write
+
+concurrency:
+  group: apply-migration-production
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-db
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR: ${{ inputs.pr }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Read the pull request
+        id: pr
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}" > pr.json
+          state=$(jq -r .state pr.json); draft=$(jq -r .draft pr.json)
+          base=$(jq -r .base.ref pr.json); head_repo=$(jq -r .head.repo.full_name pr.json)
+          sha=$(jq -r .head.sha pr.json)
+          [ "$state" = open ] || { echo "::error::PR #$PR is $state"; exit 1; }
+          [ "$draft" = false ] || { echo "::error::PR #$PR is a draft"; exit 1; }
+          [ "$base" = main ] || { echo "::error::PR #$PR is based on $base, not main"; exit 1; }
+          [ "$head_repo" = "$GITHUB_REPOSITORY" ] || { echo "::error::PR #$PR comes from a fork"; exit 1; }
+          git fetch -q origin "pull/${PR}/head:pr-head"
+          [ "$(git rev-parse pr-head)" = "$sha" ] || { echo "::error::PR head moved while reading it"; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Require db-tests, test and lint green on the PR head
+        env:
+          SHA: ${{ steps.pr.outputs.sha }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/commits/${SHA}/check-runs?per_page=100" \
+            --jq '.check_runs[] | "\(.name)\t\(.conclusion)"' > runs.tsv
+          gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/status" \
+            --jq '.statuses[] | "\(.context)\t\(.state)"' >> runs.tsv
+          for need in db-tests test lint; do
+            if ! awk -F'\t' -v n="$need" '$1==n && ($2=="success") {ok=1} END {exit !ok}' runs.tsv; then
+              echo "::error::'$need' is not green on ${SHA}. Fix the PR first; this run applies nothing."
+              exit 1
+            fi
+          done
+
+      - name: Plan the apply (add-only, versions above main and the ledger)
+        id: plan
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          [ -n "${SUPABASE_DB_URL}" ] || { echo "::error::SUPABASE_DB_URL is not set on the production-db environment"; exit 1; }
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          base=$(git merge-base origin/main pr-head)
+          git diff --name-status "$base" pr-head -- supabase/migrations/ > changes.tsv
+          if grep -vE '^A\s' changes.tsv | grep -q .; then
+            echo "::error::PR #$PR modifies, deletes or renames an existing migration. Only new files can be applied:"
+            grep -vE '^A\s' changes.tsv; exit 1
+          fi
+          grep -E '^A\s+supabase/migrations/[0-9]{14}_[a-z0-9_]+\.sql$' changes.tsv | cut -f2 | sort > files.txt || true
+          [ -s files.txt ] || { echo "::error::PR #$PR adds no migration file"; exit 1; }
+          main_max=$(git ls-tree --name-only origin/main supabase/migrations/ | sed -nE 's#.*/([0-9]{14})_.*\.sql$#\1#p' | sort | tail -1)
+          ledger_max=$(psql "$SUPABASE_DB_URL" -At -v ON_ERROR_STOP=1 -c "select coalesce(max(version),'0') from supabase_migrations.schema_migrations")
+          : > plan.tsv
+          while read -r f; do
+            b=$(basename "$f" .sql); v=${b%%_*}; n=${b#*_}
+            have=$(psql "$SUPABASE_DB_URL" -At -v ON_ERROR_STOP=1 -c "select name from supabase_migrations.schema_migrations where version = '$v'")
+            if [ -n "$have" ]; then
+              [ "$have" = "$n" ] || { echo "::error::$v is in the ledger as '$have', the file says '$n'"; exit 1; }
+              echo "skip	$v	$n	$f" >> plan.tsv; continue
+            fi
+            if [ "$v" \< "$main_max" ] || [ "$v" = "$main_max" ] || [ "$v" \< "$ledger_max" ]; then
+              echo "::error::$b must be stamped above main ($main_max) and the ledger ($ledger_max). Re-stamp it."
+              exit 1
+            fi
+            echo "apply	$v	$n	$f" >> plan.tsv
+          done < files.txt
+          {
+            echo "### Migration plan for #$PR"; echo
+            echo "main newest: \`$main_max\` · ledger newest: \`$ledger_max\`"; echo
+            awk -F'\t' '{print "- " $1 " `" $2 "_" $3 "`"}' plan.tsv
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat plan.tsv
+
+      - name: Apply, then record each version in the ledger
+        if: ${{ !inputs.dry_run }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r action v n f; do
+            [ "$action" = apply ] || continue
+            git show "pr-head:$f" > migration.sql
+            # A file that opens its own transaction keeps it; any other file runs in one.
+            if grep -qiE '^\s*begin\s*;' migration.sql; then one=""; else one="--single-transaction"; fi
+            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 $one -f migration.sql
+            psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -c \
+              "insert into supabase_migrations.schema_migrations (version, name) values ('$v', '$n') on conflict (version) do nothing"
+            echo "- applied \`${v}_${n}\`" >> "$GITHUB_STEP_SUMMARY"
+          done < plan.tsv
+
+      - name: Re-run the PR's failed CI so the ledger gate sees the apply
+        if: ${{ !inputs.dry_run }}
+        env:
+          SHA: ${{ steps.pr.outputs.sha }}
+        run: |
+          set -euo pipefail
+          run=$(gh run list --workflow ci.yml --commit "$SHA" --event pull_request --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          if [ -n "$run" ]; then
+            gh run rerun "$run" --failed || echo "::notice::CI run $run had nothing failed to re-run"
+            echo "Re-ran failed jobs of CI run $run. Merge #$PR as soon as it is green." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::No CI run found for $SHA. Push to the PR or re-run CI by hand."
+          fi
