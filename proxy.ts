@@ -30,6 +30,10 @@ import {
   MARKETPLACE_ENTRY_MAX_AGE,
   stampMarketplaceView,
 } from '@/lib/commerce/marketplace-entry'
+import { parseSiteHosts, routeSiteHost } from '@/lib/sites/host'
+
+// The custom-domain site allowlist (PROG-E10 phase 2, lib/sites/host.ts), parsed once per instance.
+const SITE_HOSTS = parseSiteHosts(process.env.SITE_HOSTS)
 
 // The referral attribution cookie — the referrer's profile id, consumed once at
 // onboarding by applyReferralAttribution (lib/qr/referral.ts). Name + attributes MUST
@@ -64,6 +68,18 @@ const PROTECTED_PATHS = [
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // A SPACE WEBSITE ON ITS OWN DOMAIN (customDomain, PROG-E10 phase 2). A listed site host never
+  // reaches the app below: no session read, no attribution cookie, no tenancy. Its pages rewrite to
+  // the /hosted site route and anything deeper goes to the same path on Frequency. A string compare
+  // against an env allowlist, so every other host pays nothing (lib/sites/host.ts).
+  const site = routeSiteHost(request.headers.get('host'), pathname, request.nextUrl.search, SITE_HOSTS)
+  if (site.kind === 'redirect') return NextResponse.redirect(site.location, site.permanent ? 308 : 307)
+  if (site.kind === 'rewrite') {
+    const url = request.nextUrl.clone()
+    url.pathname = site.pathname
+    return NextResponse.rewrite(url)
+  }
 
   // Expose the current route to server components — next/headers can't see the URL
   // otherwise. The right rail reads `x-pathname` to choose its page-specific panels

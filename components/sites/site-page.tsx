@@ -43,7 +43,16 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
   }
 }
 
-export async function SitePage({ slug, pageSlug = HOME_SLUG }: { slug: string; pageSlug?: string }) {
+export async function SitePage({
+  slug,
+  pageSlug = HOME_SLUG,
+  base,
+}: {
+  slug: string
+  pageSlug?: string
+  /** The path the site's links hang off: `/sites/<slug>` by default, `` on the Space's own domain. */
+  base?: string
+}) {
   const space = await getVisibleSpaceBySlug(slug, null)
   if (!space) notFound()
 
@@ -51,6 +60,7 @@ export async function SitePage({ slug, pageSlug = HOME_SLUG }: { slug: string; p
   const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
   const theme = parseSpaceTheme(space.preferences)
   const profileHref = `/spaces/${space.slug}`
+  const siteBase = base ?? `/sites/${space.slug}`
 
   if (!readWebsitePublished(space.preferences)) {
     // A deep link into an unpublished site has nothing to show yet; only the root gets the notice.
@@ -73,7 +83,7 @@ export async function SitePage({ slug, pageSlug = HOME_SLUG }: { slug: string; p
         logoUrl={space.brandLogoUrl}
         pages={readProfilePages(space.preferences)}
         activePageSlug={pageSlug}
-        base={`/sites/${space.slug}`}
+        base={siteBase}
         profileHref={profileHref}
       >
         <Suspense fallback={<ProfileBodySkeleton />}>
