@@ -40,7 +40,7 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createElement } from 'react'
-import { enqueueEmail } from '@/lib/email'
+import { RECEIPT_FOOTER, emailShell, enqueueEmail } from '@/lib/email'
 import { ReceiptEmail } from '@/lib/email-react/receipt'
 import { renderEmail } from '@/lib/email-react/render'
 import { resolveSendGate } from '@/lib/comms/send-gate'
@@ -105,17 +105,32 @@ function usableLines(lines: ReceiptLine[]): ReceiptLine[] {
 }
 
 /** The receipt's HTML, rendered through the React Email base template (LIVE-695,
- *  lib/email-react/receipt.tsx). lib/billing/__golden__ pins the output. */
-export function receiptHtml(c: ReceiptContent): Promise<string> {
-  return renderEmail(
-    createElement(ReceiptEmail, {
-      greeting: greeting(c.greetingName),
-      lead: c.lead,
-      lines: usableLines(c.lines),
-      closing: c.closing.filter((p) => p.trim().length > 0),
-      action: c.actionLabel && c.actionUrl ? { label: c.actionLabel, url: c.actionUrl } : null,
-    }),
-  )
+ *  lib/email-react/receipt.tsx). lib/billing/__golden__ pins the output.
+ *
+ *  A render that throws must not cost the payer their receipt: it falls back to the plain-text
+ *  receipt inside the string brand shell, still with RECEIPT_FOOTER (never the member default,
+ *  which tells a guest payer they joined Frequency, LIVE-365), and logs at ERROR so the fallback
+ *  firing is seen. */
+function escapeText(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+export async function receiptHtml(c: ReceiptContent): Promise<string> {
+  try {
+    return await renderEmail(
+      createElement(ReceiptEmail, {
+        greeting: greeting(c.greetingName),
+        lead: c.lead,
+        lines: usableLines(c.lines),
+        closing: c.closing.filter((p) => p.trim().length > 0),
+        action: c.actionLabel && c.actionUrl ? { label: c.actionLabel, url: c.actionUrl } : null,
+      }),
+    )
+  } catch (err) {
+    console.error('[receipt] React Email render failed; sending the plain receipt in the brand shell', { err })
+    const body = `<pre style="white-space:pre-wrap;font-family:inherit;margin:0;">${escapeText(receiptText(c))}</pre>`
+    return emailShell(body, RECEIPT_FOOTER)
+  }
 }
 
 export function receiptText(c: ReceiptContent): string {

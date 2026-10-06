@@ -346,3 +346,19 @@ describe('the small shared reads', () => {
     err.mockRestore()
   })
 })
+
+describe('receiptHtml when the React render fails (LIVE-695)', () => {
+  it('still sends the receipt, as plain text in the brand shell with the receipt footer', async () => {
+    vi.resetModules()
+    vi.doMock('@/lib/email-react/render', () => ({ renderEmail: async () => { throw new Error('render down') } }))
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const mod = await import('./receipt-email')
+    const html = await mod.receiptHtml({ greetingName: 'Ana', lead: 'Thanks <3', lines: [{ label: 'Amount', value: '$5.00' }], closing: [] } as never)
+    expect(html).toContain('Thanks &lt;3')
+    expect(html).toContain('Amount: $5.00')
+    expect(html).not.toContain('you joined Frequency')
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
+    vi.doUnmock('@/lib/email-react/render')
+  })
+})
