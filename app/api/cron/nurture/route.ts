@@ -1,4 +1,6 @@
-// LIVE-190 budget (ADR-1252): 200 due enrollments per invocation; the enrollment status flip is the claim; the tail is the next run's head.
+// LIVE-190 budget (ADR-1252): 200 due enrollments in ENABLED sequences per invocation (a paused sequence's
+// rows never take the budget, SCAN-732); the next_run_at compare-and-swap is the claim; a transient skip is
+// pushed back 15 minutes; the tail is the next run's head.
 // The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
 // declaration is applied, not merely written down.
 /**

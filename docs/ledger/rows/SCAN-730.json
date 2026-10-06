@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-730",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/outreach/actions.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-730: missing \"+p);process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const asDispatch=/sendDispatchNotificationEmail\\(/.test(s);const feedLink=/(url|dispatchUrl):\\s*[^\\n]*\\/feed/.test(s);if(asDispatch||feedLink){console.error(\"SCAN-730: Outreach still sends through the dispatch template or deep-links to /feed, so the note arrives labelled New dispatch with a Read dispatch button that lands on a feed where the note does not exist.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nNew sendOutreachNoteEmail (subject A note from, full body, no Read dispatch CTA, dispatches unsubscribe); an in-app notification row per recipient; email and push point at /notifications."
+  }
+}

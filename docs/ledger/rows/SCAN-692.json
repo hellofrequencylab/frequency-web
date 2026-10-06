@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-692",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"lib/circles/social-fuel.ts\",b=\"app/(main)/crew/leaderboard/streak-actions.ts\";if(!fs.existsSync(a)||!fs.existsSync(b))process.exit(79);const s=fs.readFileSync(a,\"utf8\"),t=fs.readFileSync(b,\"utf8\");const i=s.indexOf(\"export async function nudgeCircleMate\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);const both=body+t;const noBlock=!/isBlockedBetween/.test(both);const noLimit=!/rateLimitOk|created_at/.test(both);const blindInsert=/\\n\\s*await admin\\.from\\(.notifications.\\)\\.insert\\(/.test(body);if(noBlock||noLimit||blindInsert){console.error(\"SCAN-692: the streak nudge still has no block check, no per-pair rate limit, or discards the notification insert error, so a blocked member can flood a mate and a failed nudge reports success.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: nudgeCircleMate refuses across a block (reusing not_circle_mates), skips a repeat inside 24 hours, and reads the insert error; nudgeStreakMate adds a one-per-pair-per-day rateLimitOk."
+  }
+}

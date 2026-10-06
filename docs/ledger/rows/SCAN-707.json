@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-707",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f1=\"lib/spaces/automation.ts\",f2=\"lib/spaces/drip-enroll.ts\";for(const f of [f1,f2]){if(!fs.existsSync(f)){console.error(\"SCAN-707: missing \"+f);process.exit(79)}}const a=fs.readFileSync(f1,\"utf8\"),d=fs.readFileSync(f2,\"utf8\");const serial=/for\\s*\\(\\s*const\\s+\\w+\\s+of\\s+recipients\\s*\\)[\\s\\S]{0,240}?await\\s+enrollContactInSequence\\(/.test(a);const bulk=/export\\s+async\\s+function\\s+enrollContactsInSequence\\b/.test(d);if(serial||!bulk){console.error(\"SCAN-707: starting a sequence still enrolls each contact with its own serial enrollContactInSequence call (serial loop=\"+serial+\", bulk enroll exported=\"+bulk+\"), about four round trips per contact, so a large audience can outrun the action timeout and stop partway.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: enrollContactsInSequence reads the sequence and steps once and upserts in chunks of 500 with select(contact_id), startSequenceForAudience calls it once, and enrollContactInSequence counts enrolled only when a row came back."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-688",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/(main)/circles/admin-actions.ts\",l=\"app/(main)/circles/[slug]/(circle)/layout.tsx\";if(!fs.existsSync(a)||!fs.existsSync(l))process.exit(79);const s=fs.readFileSync(a,\"utf8\");const i=s.indexOf(\"export async function updateCircleSettings\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);const writesStatus=/status:\\s*fd\\.get\\(.status.\\)/.test(body)&&!/draft/.test(body);const banner=/status to Active in the settings panel/.test(fs.readFileSync(l,\"utf8\"));if(writesStatus||banner){console.error(\"SCAN-688: the Settings rail still writes any status onto a draft with no draft guard, or the draft banner still sends hosts to the settings panel, so a circle goes live without the publish gate, reward and announcement.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: updateCircleSettings reads the stored status and refuses to move a draft to any other status (Publish from the builder), and the draft banner points at the builder's Publish."
+  }
+}

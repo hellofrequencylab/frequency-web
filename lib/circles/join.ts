@@ -2,7 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isPlatformStaff } from '@/lib/auth'
-import { asCircleAccess, canJoinCircle } from '@/lib/circles/visibility'
+import { asCircleAccess, canJoinCircle, LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 import { isSpacePaidMember, isSpaceTeamSeat } from '@/lib/circles/space-entry'
 import { processGamificationEvent } from '@/lib/achievements'
 import { awardGems } from '@/lib/gems'
@@ -55,11 +55,17 @@ export async function joinCircleAsMember(
     }
   })
     .from('circles')
-    .select('member_count, member_cap, hub_id, access, unlisted, space_id, host_id')
+    .select('member_count, member_cap, hub_id, access, unlisted, space_id, host_id, status')
     .eq('id', circleId)
     .maybeSingle()
 
   if (!circleRaw) return fail('This circle is no longer available.')
+  // SCAN-691: only a LIVE circle (forming or active) takes a join. The page hides Join on a draft,
+  // but a stale QR code or a direct call reached this insert for a draft, inactive or archived
+  // circle, and the admin client skips RLS, so the status is the gate here.
+  if (!(LISTABLE_CIRCLE_STATUS as readonly string[]).includes(String(circleRaw.status))) {
+    return fail('This circle is no longer available.')
+  }
   const circle = circleRaw as unknown as { member_count: number; member_cap: number; hub_id: string | null }
 
   // THE ACCESS GATE. Every closed mode has its own door; the default is deny.
