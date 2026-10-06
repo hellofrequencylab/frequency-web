@@ -33,6 +33,7 @@ import { payoutsLive } from '@/lib/billing/connect'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { checkSpaceBookingMeter } from '@/lib/spaces/counted-meters'
 import { blockingRange, type EntryRow } from '@/lib/calendar/entries'
 import { expandPencilSeries, seriesRule } from '@/lib/calendar/pencil-series'
 import { eventInstant } from '@/lib/time/zone'
@@ -1581,6 +1582,13 @@ async function validateAndPlaceBooking(params: {
   if (serviceTypeId) optional.service_type_id = serviceTypeId
   const hasOptional = Object.keys(optional).length > 0
 
+  // The bookings-a-month meter (space_bookings, LIVE-749). A reschedule moves a booking the Space
+  // already counted, so it never asks.
+  if (!rescheduledFrom) {
+    const meter = await checkSpaceBookingMeter(spaceId)
+    if (!meter.ok) return { ok: false, error: meter.error }
+  }
+
   try {
     let res = await bookingsTable()
       .insert([{ ...baseRow, ...optional }])
@@ -2018,6 +2026,8 @@ export async function holdSlotForBooking(
   const slotMinutes = slotLengthAt(windows, startsAt.getTime(), now)
   if (slotMinutes == null) return null
   const endsAt = new Date(startsAt.getTime() + slotMinutes * 60000)
+  // A deposit hold is a booking for the month meter too (it holds the slot and counts as pending).
+  if (!(await checkSpaceBookingMeter(spaceId)).ok) return null
   try {
     const { data, error } = await bookingsTable()
       .insert([

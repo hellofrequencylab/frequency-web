@@ -1,7 +1,7 @@
 {
   "id": "LIVE-749",
-  "title": "Bookings, pipelines, membership tiers, Collaborators hosted and people per Journey are counted at their write paths",
-  "status": "open",
+  "title": "Bookings, membership tiers, Collaborators hosted and people per Journey are counted at their write paths",
+  "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "M",
@@ -9,10 +9,11 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 2 of the five-tier ladder (ADR-1709). TARGET: merged before 2026-11-24, because pricing_settings.beta_grace ends 2026-12-01 and every count limit enforces that day with no deploy. These five meters are display-only today: nothing counts them, so the 2026-12-01 switch would enforce nothing. Each write path counts and asks the write seam (spaceAllowanceVerdict) before adding one. A full meter stops the next write and never hides what exists.",
+  "detail": "PHASE 2 of the five-tier ladder (ADR-1709). TARGET: merged before 2026-11-24, because pricing_settings.beta_grace ends 2026-12-01 and every count limit enforces that day with no deploy. These five meters are display-only today: nothing counts them, so the 2026-12-01 switch would enforce nothing. Each write path counts and asks the write seam (spaceAllowanceVerdict) before adding one. A full meter stops the next write and never hides what exists.\n\nSCOPE NOTE (2026-10-06, same unmerged change that filed the row): pipelines were dropped from this row and its probe. A Space has exactly one pipeline (its crm_stages rows); there is no table or write that creates a second, so space_multi_pipeline has nothing to count. The ladder's Business 5 / Collective unlimited pipelines describe a feature that is not built; that is raised with the owner in the pricing thread.\n\nBookings a month, membership tiers, hosted Collaborators and people per Space Journey count at their write paths through lib/spaces/counted-meters.ts and ask spaceAllowanceVerdict.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const f of fs.readdirSync(d,{withFileTypes:true})){const p=d+\"/\"+f.name;if(f.isDirectory()){if(f.name!==\"node_modules\")walk(p,o)}else if(/\\.tsx?$/.test(f.name)&&!/\\.test\\./.test(f.name))o.push(p)}return o};const src=[...walk(\"lib\"),...walk(\"app\")].filter((f)=>!f.startsWith(\"lib/pricing/\")).map((f)=>[f,r(f)]);const usedAt=(k,seam)=>src.some(([f,s])=>s.includes(JSON.stringify(k).replace(/\"/g,String.fromCharCode(39)))&&seam.test(s));const seam=/spaceAllowance(Verdict|Headroom)\\(/;const miss=[\"space_bookings\",\"space_multi_pipeline\",\"space_membership_tiers\",\"space_collaborators\",\"space_journey\"].filter((k)=>!usedAt(k,seam));if(miss.length)fail(\"no write path counts: \"+miss.join(\",\"));console.log(\"ok: the five display-only meters are counted where they are written\")'"
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const f of fs.readdirSync(d,{withFileTypes:true})){const p=d+\"/\"+f.name;if(f.isDirectory()){if(f.name!==\"node_modules\")walk(p,o)}else if(/\\.tsx?$/.test(f.name)&&!/\\.test\\./.test(f.name))o.push(p)}return o};const src=[...walk(\"lib\"),...walk(\"app\")].filter((f)=>!f.startsWith(\"lib/pricing/\")).map((f)=>[f,r(f)]);const usedAt=(k,seam)=>src.some(([f,s])=>s.includes(JSON.stringify(k).replace(/\"/g,String.fromCharCode(39)))&&seam.test(s));const seam=/spaceAllowance(Verdict|Headroom)\\(/;const miss=[\"space_bookings\",\"space_membership_tiers\",\"space_collaborators\",\"space_journey\"].filter((k)=>!usedAt(k,seam));if(miss.length)fail(\"no write path counts: \"+miss.join(\",\"));console.log(\"ok: the five display-only meters are counted where they are written\")'"
   },
-  "notes": "Target: merged before 2026-11-24 (beta_grace ends 2026-12-01)."
+  "notes": "Target: merged before 2026-11-24 (beta_grace ends 2026-12-01).",
+  "closed": "2026-10-06"
 }
