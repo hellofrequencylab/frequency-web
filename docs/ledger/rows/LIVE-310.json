@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-310",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/gates.ts\",\"utf8\");if(!/custom_domain/.test(s)){console.error(\"lib/pricing/gates.ts has no custom_domain gate\");process.exit(1)}const {execSync}=require(\"child_process\");const n=execSync(\"grep -rl custom_domain app lib --include=*.ts --include=*.tsx | grep -v test | wc -l\").toString().trim();if(+n<2){console.error(\"custom_domain is defined but enforced nowhere (\"+n+\" files)\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe custom_domain gate is in lib/pricing/gates.ts (Business and up) with its tier ladder, and is enforced where a host is served: getSpaceByDomain does not resolve a Space without the plan, so the request falls back to the root Space. It is a gate, not a meter (the repo's gate-or-meter rule; one domain per Space is structural, recorded in NON_METERED_FEATURES). The space_whitelabel DB row was already gone (pricing_feature_gates is empty in production, reset by 20270201000000), so no migration. When the Sites bind action is built it calls the same gate. Inert while the gates are soft."
+  }
+}

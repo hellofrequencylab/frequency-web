@@ -163,7 +163,20 @@ export async function getSpaceByDomain(domain: string): Promise<Space | null> {
     .eq('domain', host)
     .eq('status', 'active')
     .maybeSingle()) as { data: SpaceRow | null }
-  return mapOneSpace(data)
+  const space = await mapOneSpace(data)
+  if (!space) return null
+  // LIVE-310: serving a Space on its own domain is the `custom_domain` gate (Business and up). A
+  // Space without it is not resolved for its domain, so the request falls back to the root Space.
+  // Lazy imports, the same shape lib/spaces/campaigns.ts uses, so the pricing modules stay off this
+  // shared module's static graph; the lookup only runs once a domain has matched, which is rare.
+  // Inert while the gates are soft (featureAllowed grants until featureGatesLive()).
+  const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan }] = await Promise.all([
+    import('@/lib/pricing/gates'),
+    import('@/lib/pricing/settings'),
+    import('@/lib/pricing/plans'),
+  ])
+  const allowed = await featureAllowed('custom_domain', { plan: asSpacePlan(space.plan) }, { gatesLive: await featureGatesLive() })
+  return allowed ? space : null
 }
 
 /** The Space with this slug, or null. REQUEST-CACHED (React.cache) keyed on the normalized slug so

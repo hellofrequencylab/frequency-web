@@ -381,6 +381,7 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // converts badly and teaches nothing; the honest line is between messaging your own people (metered
   // by space_email sends, available free) and running an acquisition machine (paid).
   space_campaigns: 'On/off capability (campaigns and funnels); the SEND volume that pairs with it is metered on space_email.',
+  custom_domain: 'On/off capability (LIVE-310): a Space holds one domain in spaces.domain, so the quantity is structural and needs no meter.',
   // 🔴 `space_revenue_splits` and `space_sms` were listed here until HYG-079 and are gone with their
   // gates. Neither feature is built or live (revenue splitting is unwritten; group SMS waits on the
   // A2P 10DLC registration), so both entries described the metering story of something that cannot yet
