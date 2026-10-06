@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-731",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const d='supabase/migrations';const hit=fs.readdirSync(d).filter((f)=>f.endsWith('.sql')).some((f)=>/distinct\\s+on\\s*\\(\\s*coalesce\\s*\\(\\s*parent_event_id\\s*,\\s*id\\s*\\)\\s*\\)/i.test(fs.readFileSync(d+'/'+f,'utf8')));if(!hit){console.error('LIVE-731: no migration pushes the series fold into SQL with DISTINCT ON (coalesce(parent_event_id, id))');process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "\n\nOne shared function, per the owner ruling: public.upcoming_event_series (migration 20270346001600) folds a series with DISTINCT ON (coalesce(parent_event_id, id)) over a matching functional index, so the LIMIT counts series. Service role only; its arguments are the gate the three reads applied by hand. The Channel strip and both rail events branches read it through lib/events/upcoming-series.ts; collapseSeriesRows stays the authority. The source guards now read the function's live definition."
+  }
+}
