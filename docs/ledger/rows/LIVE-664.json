@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-664",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const t=fs.readFileSync(\"lib/page-editor/templates/circles.ts\",\"utf8\");const b=fs.readFileSync(\"components/page-editor/blocks/circles.tsx\",\"utf8\");const d=fs.readFileSync(\"lib/circles/index-data.ts\",\"utf8\");if(!/type:\\s*.CirclesMap./.test(t)){console.error(\"LIVE-664: the /circles default template has no map block\");process.exit(1)}if(!/<MapZone\\b/.test(b)||!/<MapBanner\\b/.test(b)){console.error(\"LIVE-664: the Circles map block does not render the map\");process.exit(1)}if(!/isListedCircle\\(c\\.unlisted\\)/.test(d)){console.error(\"LIVE-664: the map set no longer drops unlisted Circles\");process.exit(1)}console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nRe-tested 2026-10-06 (ADR-1082): the premise did not hold. /circles renders its body from the page-editor template, whose CirclesMap block (components/page-editor/blocks/circles.tsx) already opens a map of located in-person Circles plus Starter pins, from a set that drops unlisted Circles (lib/circles/index-data.ts). The 2026-09-29 check read app/(main)/circles/page.tsx only. The probe now pins the map, the block and the unlisted filter."
+  }
+}
