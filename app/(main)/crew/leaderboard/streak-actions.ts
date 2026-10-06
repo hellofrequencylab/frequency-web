@@ -5,6 +5,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { setStreakPause, clearStreakPause, MAX_PAUSE_DAYS } from '@/lib/practice-streak'
 import { nudgeCircleMate } from '@/lib/circles/social-fuel'
+import { rateLimitOk } from '@/lib/rate-limit'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -52,6 +53,11 @@ export async function nudgeStreakMate(mateProfileId: string): Promise<ActionResu
   if (!profileId) return fail('Not signed in')
   const mate = String(mateProfileId || '').trim()
   if (!UUID_RE.test(mate)) return fail('That member id does not look right.')
+
+  // SCAN-692: a per-pair daily cap at the door, beside the recency check inside nudgeCircleMate.
+  if (!(await rateLimitOk('streak-nudge', `${profileId}:${mate}`, 1, '1 d'))) {
+    return fail('You already nudged them today.')
+  }
 
   const res = await nudgeCircleMate(profileId, mate)
   if (!res.nudged) {

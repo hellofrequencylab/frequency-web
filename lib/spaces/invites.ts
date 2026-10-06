@@ -24,6 +24,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendInviteEmail } from '@/lib/email'
 import { getMyProfileId } from '@/lib/auth'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { addSpaceMember, getSpaceMembership, isSpaceRole, listSpaceMembers, type SpaceRole } from '@/lib/spaces/membership'
@@ -190,6 +191,12 @@ export async function createInvite(
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canManageMembers)
     return fail('You do not have permission to invite teammates to this space.')
+
+  // SCAN-693: the same daily budget as the Circle invite, because both share sendInviteEmail and
+  // the transactional lane; a team is a handful of people, not a mailing list.
+  if (!(await rateLimitOk('space:invite-email', profileId, 20, '1 d'))) {
+    return fail('You have sent today’s invites. Try again tomorrow.')
+  }
 
   // SEAT-LIMIT ENFORCEMENT (Phase D, ADR-465). Inviting an operator-role member (editor / moderator /
   // admin) beyond the licensed allowance is blocked with a clean "add a seat" failure. GATED on

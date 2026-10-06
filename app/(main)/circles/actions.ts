@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { joinCircleAsMember } from '@/lib/circles/join'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { sendInviteEmail } from '@/lib/email'
 import { SITE_URL } from '@/lib/site'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
@@ -29,6 +30,9 @@ import {
   type FieldChange,
 } from '@/lib/studio/kernel/redraw'
 import { saveSteer } from '@/lib/studio/steer-store'
+
+// One address, nothing else: no spaces, exactly one at sign, a dotted domain.
+const SINGLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Vera's start-a-circle assist: suggest a name + about from the chosen Interest.
 // Live (Haiku) when AI is on; a deterministic draft otherwise — so the modal's
@@ -126,12 +130,25 @@ export async function inviteByEmail(
   if (!myProfileId) return { ok: false, error: 'Not signed in.' }
 
   const clean = email.trim().toLowerCase()
-  if (!clean || !clean.includes('@')) return { ok: false, error: 'Enter a valid email address.' }
+  // SCAN-693: one real address, not any string with an at sign in it.
+  if (!clean || clean.length > 254 || !SINGLE_EMAIL_RE.test(clean)) {
+    return { ok: false, error: 'Enter a valid email address.' }
+  }
 
   // Same gate as the Host Tools UI: host + janitors + area guides/mentors.
   const caps = await getCircleCapabilities(circleId)
   if (!caps.has('circle.editSettings')) {
     return { ok: false, error: 'You do not manage this circle.' }
+  }
+
+  // SCAN-693: the invite goes out on the transactional lane, which welcome mail shares, and the
+  // only gate was the host capability any self-made host holds. Twenty a day per host, then a
+  // sentence; the second budget keys on the circle so one host cannot spend it across circles.
+  if (
+    !(await rateLimitOk('circle:invite-email', myProfileId, 20, '1 d')) ||
+    !(await rateLimitOk('circle:invite-email:circle', circleId, 40, '1 d'))
+  ) {
+    return { ok: false, error: 'You have sent today’s invites. Share the invite link instead, or try again tomorrow.' }
   }
 
   const admin = createAdminClient()
@@ -148,18 +165,31 @@ export async function inviteByEmail(
     .eq('id', myProfileId)
     .maybeSingle()
 
-  const token = randomBytes(12).toString('base64url')
-  const { error } = await admin
+  // SCAN-693: reuse the circle's live invite link; every email used to mint a fresh row that was
+  // never deactivated, so invite_links grew with every send.
+  const { data: existing } = await admin
     .from('invite_links')
-    .insert({ token, circle_id: circleId, created_by: myProfileId })
-  if (error) {
-    // The detail belongs in the log, where it can be acted on. The host gets a sentence they can
-    // read (matching createHostInviteLink above), not a PostgREST string about a table they have
-    // never heard of.
-    console.error('[inviteByEmail] invite link insert failed', {
-      code: error.code, message: error.message, circleId, profileId: myProfileId,
-    })
-    return { ok: false, error: 'Could not send that invite. Try again in a moment.' }
+    .select('token')
+    .eq('circle_id', circleId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  let token = existing?.token ?? null
+  if (!token) {
+    token = randomBytes(12).toString('base64url')
+    const { error } = await admin
+      .from('invite_links')
+      .insert({ token, circle_id: circleId, created_by: myProfileId })
+    if (error) {
+      // The detail belongs in the log, where it can be acted on. The host gets a sentence they can
+      // read (matching createHostInviteLink above), not a PostgREST string about a table they have
+      // never heard of.
+      console.error('[inviteByEmail] invite link insert failed', {
+        code: error.code, message: error.message, circleId, profileId: myProfileId,
+      })
+      return { ok: false, error: 'Could not send that invite. Try again in a moment.' }
+    }
   }
 
   // Enqueue the invite email best-effort: the link is already created, so a mail hiccup

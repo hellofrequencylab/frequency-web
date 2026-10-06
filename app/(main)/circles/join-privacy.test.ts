@@ -94,6 +94,7 @@ const CLOSED = {
   unlisted: false, // LISTED and closed: the lead funnel
   space_id: 'space-1',
   host_id: 'host-1',
+  status: 'active', // SCAN-691: joinCircle reads it; only forming/active take a join
 }
 
 const CLOSED_MODES = ['circle_members', 'invite', 'tier', 'space_members', 'space_paid_members'] as const
@@ -241,4 +242,16 @@ describe('joinCircle narrows nothing that was open before', () => {
     expect(res.error).toContain('full')
     expect(membershipInserts).toHaveLength(0)
   })
+})
+
+// SCAN-691: a circle that is not live takes no join, whatever its access mode, and inserts nothing.
+describe('joinCircle refuses a circle that is not live', () => {
+  for (const status of ['draft', 'inactive', 'archived'] as const) {
+    it(`an OPEN ${status} circle is "no longer available" and inserts no membership`, async () => {
+      circleRow = { ...CLOSED, access: 'open', status }
+      const res = (await joinCircle('circle-1', 'sunset')) as { error?: string }
+      expect(res.error).toContain('no longer available')
+      expect(membershipInserts).toHaveLength(0)
+    })
+  }
 })
