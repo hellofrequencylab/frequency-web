@@ -60,9 +60,9 @@
     },
     "app/(main)/people/[handle]/vcard/route.ts": {
       "verdict": "public",
-      "reason": "Public 'Save contact' vCard behind a member's own profile QR. Reads through the admin client but selects only columns the public profile page already shows, and buildVcf emits ONLY the fields the member opted into via `vcard`; 404 when they have not enabled a card.",
-      "checked": "2026-08-17",
-      "digest": "2b3c2bc5554cc766"
+      "reason": "Public 'Save contact' vCard behind a member's own profile QR. Reads through the admin client but selects only columns the public profile page already shows plus the two gate flags (is_active, is_system, never printed), and buildVcf emits ONLY the fields the member opted into via `vcard`; 404 when they have not enabled a card, and 404 for a deactivated or system profile (SCAN-720, re-read 2026-10-05).",
+      "checked": "2026-10-05",
+      "digest": "b017faab1984f4cb"
     },
     "app/api/check-handle/route.ts": {
       "verdict": "public",
