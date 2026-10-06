@@ -14,6 +14,15 @@ import { canModeratePost } from '@/lib/moderation/scope'
 import { isBlockedBetween } from '@/lib/blocking'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { log } from '@/lib/log'
+import { listShareablesFor } from '@/lib/feed/shareables'
+import { asWebRole, isStaff, type CommunityRole } from '@/lib/core/roles'
+import {
+  DISPATCH_VISIBILITY,
+  dispatchScopesFor,
+  isDispatchScope,
+  normalizePollOptions,
+  type DispatchScope,
+} from '@/lib/feed/compose-kinds'
 import {
   assembleThread,
   aggregateReactionState,
@@ -28,7 +37,9 @@ const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
 // `space_update`, `blog` and `recap`, which the platform writes itself; a crafted action call
 // used to reach the insert with any of them (the admin client bypasses RLS), and `system`
 // renders as an unattributed line in the platform voice with no Report menu.
-const MEMBER_POST_TYPES = ['feed', 'note', 'announcement'] as const
+const WRITTEN_POST_TYPES = ['feed', 'note', 'announcement'] as const
+// LIVE-682: a Poll and an Ask are member kinds too; neither renders in the platform voice.
+const MEMBER_POST_TYPES = [...WRITTEN_POST_TYPES, 'poll', 'ask'] as const
 type MemberPostType = (typeof MEMBER_POST_TYPES)[number]
 const MEMBER_VISIBILITIES = ['public', 'group', 'cluster'] as const
 type MemberVisibility = (typeof MEMBER_VISIBILITIES)[number]
@@ -162,10 +173,22 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
   const requestedVisibility = rawVisibility as MemberVisibility
   const isAnnouncement = postType === 'announcement'
 
-  // A host announcement broadcasts beyond the circle (to the hub, or the
-  // topical channel's followers if hub-less) — that wider reach is what
-  // `cluster` visibility resolves. A member's post stays circle-only (`group`).
-  const visibility: MemberVisibility = isAnnouncement ? 'cluster' : requestedVisibility
+  // LIVE-682: a Dispatch carries a scope from the picker. A request without one is today's
+  // Dispatch, the Hub reach (`cluster`): beyond the circle, to the hub or the topical channel's
+  // followers if hub-less. A member's post stays circle-only (`group`).
+  const rawScope = formData.get('dispatch_scope')
+  const dispatchScope: DispatchScope = isDispatchScope(rawScope) ? rawScope : 'hub'
+  const visibility: MemberVisibility | 'region' = isAnnouncement ? DISPATCH_VISIBILITY[dispatchScope] : requestedVisibility
+
+  // LIVE-682: a Poll carries 2 to 6 options; the post body is its question.
+  let pollOptions: string[] = []
+  if (postType === 'poll') {
+    const r = normalizePollOptions(formData.getAll('poll_option'))
+    if (!r.ok) return fail(r.error)
+    pollOptions = r.options
+    if (!body) return fail('Ask the question your poll is about.')
+  }
+  if (postType === 'ask' && !body) return fail('Write the question you want to ask.')
 
   if ((!body && !imageUrl) || !scopeId) return fail('Write something to post.')
 
@@ -175,18 +198,30 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
   // The admin client bypasses RLS, so authorisation MUST be enforced here.
   const admin = createAdminClient()
 
-  // Announcements pin to the top and broadcast beyond the circle (cluster
-  // reach) — restricted to host+. The UI hides the toggle for everyone else;
-  // this stops a crafted request from self-elevating a post.
+  // Announcements pin to the top and broadcast beyond the circle, so they are restricted to the
+  // scopes the author leads (dispatchScopesFor: host+ for circle and hub, Mentor for the Nexus,
+  // platform staff for everyone). The UI offers only those; this stops a crafted request.
+  let postScopeId: string = scopeId
   if (isAnnouncement) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('community_role')
+      .select('community_role, web_role, nexus_region_id')
       .eq('id', profileId)
       .maybeSingle()
-    if (!profile || !HOST_PLUS.includes(profile.community_role ?? '')) {
+    const row = profile as { community_role: string | null; web_role: string | null; nexus_region_id: string | null } | null
+    if (!row || (!HOST_PLUS.includes(row.community_role ?? '') && !isStaff(asWebRole(row.web_role)))) {
       return fail('Only hosts can post an announcement.')
     }
+    const allowed = dispatchScopesFor({
+      communityRole: row.community_role as CommunityRole | null,
+      isStaff: isStaff(asWebRole(row.web_role)),
+      hasRegion: !!row.nexus_region_id,
+    })
+    if (!allowed.includes(dispatchScope)) return fail('You can’t send a Dispatch that far.')
+    // The two wide scopes are not about this circle: the Nexus reach is the author's region, and
+    // Everyone is posted from the author's own wall.
+    if (dispatchScope === 'nexus' && row.nexus_region_id) postScopeId = row.nexus_region_id
+    if (dispatchScope === 'everyone') postScopeId = profileId
   }
 
   // Circle-scoped posts require a real relationship to that circle.
@@ -231,7 +266,7 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
 
   // SCAN-683: a public post whose scope is ANOTHER member's profile is a note on their wall.
   // A block in either direction closes the wall, matching what the help center promises.
-  const wallId: string = scopeId
+  const wallId: string = postScopeId
   if (visibility === 'public' && wallId !== profileId) {
     const { data: wallOwner } = await admin.from('profiles').select('id').eq('id', wallId).maybeSingle()
     if (wallOwner && (await isBlockedBetween(profileId, wallId))) {
@@ -244,7 +279,7 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
   const { data: post, error } = await admin.from('posts').insert({
     author_id: profileId,
     body: body || '',
-    scope_id: scopeId,
+    scope_id: postScopeId,
     visibility,
     post_type: postType,
     is_pinned: isAnnouncement,
@@ -254,6 +289,19 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
   if (error) {
     console.error('[createPost]', error.message)
     return fail('Could not save your post. Please try again.')
+  }
+
+  // A poll is its options: if they do not land, the post goes too rather than show a question
+  // nobody can answer.
+  if (post && pollOptions.length > 0) {
+    const { error: optError } = await admin
+      .from('post_poll_options')
+      .insert(pollOptions.map((label, position) => ({ post_id: post.id, label, position })))
+    if (optError) {
+      console.error('[createPost] poll options', optError.message)
+      await admin.from('posts').delete().eq('id', post.id)
+      return fail('Could not save your poll. Please try again.')
+    }
   }
 
   // Fire gamification events (non-blocking)
@@ -659,4 +707,61 @@ export async function updateMyAvatar(avatarUrl: string): Promise<void> {
   if (error) throw new Error(error.message)
   revalidatePath('/feed')
   revalidatePath('/people', 'layout')
+}
+
+// LIVE-682: vote in a feed poll, change the vote, or (same option again) take it back. The post is
+// read UNDER RLS first, so a member can only vote in a poll they can see; the vote itself is
+// written by the service role (post_poll_votes has no client write policy) and the trigger keeps
+// each option's tally.
+export async function votePoll(postId: string, optionId: string): Promise<ActionResult<{ myOptionId: string | null }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to vote.')
+  if (typeof postId !== 'string' || typeof optionId !== 'string') return fail('That vote could not be read.')
+
+  const supabase = await createClient()
+  const { data: visible } = await supabase.from('posts').select('id, post_type').eq('id', postId).maybeSingle()
+  if (!visible || visible.post_type !== 'poll') return fail('That poll is not available.')
+
+  const admin = createAdminClient()
+  const { data: option } = await admin
+    .from('post_poll_options')
+    .select('id')
+    .eq('id', optionId)
+    .eq('post_id', postId)
+    .maybeSingle()
+  if (!option) return fail('That option is not on this poll.')
+
+  const { data: existing } = await admin
+    .from('post_poll_votes')
+    .select('option_id')
+    .eq('post_id', postId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+
+  // Delete-then-insert rather than update, so the tally trigger moves one option down and the
+  // other up through the same two arms it always uses.
+  if (existing) {
+    const { error } = await admin.from('post_poll_votes').delete().eq('post_id', postId).eq('profile_id', profileId)
+    if (error) return fail('Could not change your vote. Please try again.')
+    if (existing.option_id === optionId) {
+      revalidatePath('/feed')
+      return ok({ myOptionId: null })
+    }
+  }
+  const { error } = await admin.from('post_poll_votes').insert({ post_id: postId, option_id: optionId, profile_id: profileId })
+  if (error) return fail('Could not save your vote. Please try again.')
+  revalidatePath('/feed')
+  return ok({ myOptionId: optionId })
+}
+
+// LIVE-682: what a member can share into a post, the Practices they keep and the Journeys they
+// follow, as links the composer drops into the body. Read for the caller only. FAIL-SAFE: [].
+export async function listShareables(): Promise<{ label: string; href: string; kind: 'practice' | 'journey' }[]> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+  try {
+    return await listShareablesFor(profileId)
+  } catch {
+    return []
+  }
 }

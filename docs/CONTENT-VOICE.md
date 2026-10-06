@@ -18,9 +18,9 @@
 
 Frequency is community infrastructure for real-world connection. A worldwide
 community framework (Circles, Hubs, Nexuses, The Quest) plus brick-and-mortar
-third spaces (Outposts, Frequency Labs). The mission: help people heal. Regulate
-their nervous systems, find friends, reduce stress, find hope, by bringing them
-together in person and by inspiring people to lead in their own communities.
+third spaces (Outposts, Frequency Labs). The mission: help people calm down, find
+friends and lead in their own communities, by bringing them together in person.
+Keep the science inside the pages, never in the pitch.
 
 The feel: summer camp for adults. A gamified journey into practices that change
 people's lives. Dead serious about the mission, light about the delivery. The
@@ -74,20 +74,24 @@ which re-exports it for existing callers but carries the whole pricing engine be
 
 ---
 
-## 2. The demographic: two people
+## 2. The demographic: two readers, eleven archetypes
 
-All content serves one of these two readers. Before writing anything, decide
-which one it's for.
+All content serves one of two readers. Before writing anything, decide which
+one it's for. The archetypes in 2d and 2f say who is actually inside each
+reader. They are internal names: members never see them (2g). Decision record:
+ADR-1715, which links the research behind it.
 
 ### 2a. The Seeker (the "high-functioning lonely")
 - Late 20s to 50s. Capable, employed, looks fine on paper.
-- Often relocated, post-breakup, post-kids-left, new-to-town, or simply drifted
-  out of friendships the way adults do.
+- The core: practice skews toward college-educated women aged 25 to 44.
+  Loneliness peaks at 30 to 44 for men and women alike.
+- Often relocated, post-breakup, post-kids-left, new-to-town, or simply
+  drifted out of friendships the way adults do.
 - Digitally saturated and tired of it. Knows the feed is hurting them.
 - Wellness-adjacent: has tried meditation apps, maybe breathwork, maybe cold
   plunges. Allergic to anything culty, salesy, preachy, or precious.
-- Does NOT identify as "spiritual" at the front door. Will go deep once trust is
-  earned.
+- Does NOT identify as "spiritual" at the front door. Will go deep once trust
+  is earned.
   - AMENDED (owner directive, 2026-07-28): this governs BODY COPY, not names.
     Category and Channel NAMES may use plain wellness and spiritual terms out
     loud: Spirituality, Meditation, Holistic Health, Functional Medicine. A
@@ -105,6 +109,9 @@ which one it's for.
 
 ### 2b. The Latent Leader
 - Feels the pull to gather people. Has no container, framework, or permission.
+- Most often a Gen X or older millennial woman, often a parent, already the
+  one who organizes. About one adult in ten leads any group at all, which is
+  why this reader is the growth model.
 - May have tried hosting something that fizzled.
 - Doesn't want to "build a community" from scratch. Wants rails: a format, a
   script, a structure that already works, and backup.
@@ -112,13 +119,54 @@ which one it's for.
   - "I want to bring people together but I don't know how"
   - "I tried hosting something and nobody came back"
   - "I don't want to do this alone"
-- This person becomes Crew, then Host. The entire growth model runs on them.
-  Leader-track content is never an afterthought.
+- This person becomes Crew, then Host. Leader-track content is never an
+  afterthought.
 
 ### 2c. What both readers share
 They have been marketed at their whole lives. They can smell hype, jargon, and
 manufactured intimacy instantly. The only register they haven't been sold in is
 plain. Write plain.
+
+### 2d. Who is inside the readers
+
+| Archetype | Reader | Who | Comes for |
+|---|---|---|---|
+| Wired Professional | Seeker | Women 25 to 44, college-educated, often single | Mindless, Practices, Journeys, calm Events |
+| Transplant | Seeker | 22 to 39, just moved or fully remote | Events this week, Circles near them |
+| Activity-First Man | Seeker | Men 18 to 34 | Run and walk Circles, sauna and sober socials, Get Moving |
+| Evidence-First Skeptic | Seeker | 30 to 60, neither spiritual nor religious | The plain Mindless timer, cited articles |
+| Host-Connector | Latent Leader | Gen X and older millennial women, often parents | Starter Circles, the host kit |
+| Gathering Host | Latent Leader, becoming a Builder | Gen Z and millennial organizers | A recurring gathering that starts to charge |
+| Mission Patron | Supporter | 45 to 65, college-educated | Crew, so Frequency stays free for everyone |
+
+### 2e. Three rules the archetypes add
+1. **Men come through activities.** Never pitch a man on finding friends. Lead
+   with the run, the sauna, the game night, Get Moving. The friendship happens
+   on the way.
+2. **Write for the spiritual and the skeptic at once.** About a fifth of adults
+   are spiritual but not religious and about a fifth are neither. Plain surface
+   copy with depth inside the page is the only register both accept.
+3. **Supporters pay so it stays free.** Crew copy speaks to the Mission Patron:
+   what their support keeps open for others. Never guilt, never a wall.
+
+### 2f. The Builders (the Space side)
+People who run a Space are mostly women, mostly solo, often part-time, often in
+a second career. Their shared pains: finding clients, uneven income, too many
+tools, burnout. Write to them in the same plain voice. A Builder is also a
+Seeker who happens to run a practice.
+
+| Archetype | Who | Comes for | Tier path |
+|---|---|---|---|
+| Portfolio Teacher | Women 28 to 45 teaching at several studios, part-time | A page, workshop tickets, a student list they keep | Free Space, then Business |
+| Second-Act Practitioner | Career-changers 45 to 62: coaches, bodyworkers, energy workers | Booking, intake, a CRM with notes | Free Space, then Business |
+| Studio Keeper | Owners of studios with 1 to 10 staff | Schedule, memberships, staff seats, migration help | Business, then Collective |
+| Network Steward | Leaders of many small groups and small nonprofits | One home for many groups, dues, donations | Non Profit or Collective |
+
+Their own words are added here only from real practitioner conversations.
+
+### 2g. Archetype names are internal
+Archetype names are for planning, briefs, analytics and AI prompts. They never
+appear in member-facing copy. Copy speaks to the person in their own words.
 
 ---
 
@@ -314,15 +362,29 @@ articles, all internally linked:
    "dopamine detox that actually works")
 5. New-city connection ("how to meet people in a new city," city-specific
    variants as Circles open)
+6. Something to do (the activity-first reader, §2e rule 1): "run clubs near
+   me," "sober social events," "things to do alone on a weeknight," "sauna
+   meetups." Lead with the activity; the friendship is on the way.
+7. Plain and proven (the evidence-first reader): "does breathwork actually
+   work," "meditation without the woo," "simple breathing timer." Cite the
+   research inside the page, keep the surface plain.
 
 Target the pain, never the practice. The practice is the answer inside the page,
 not the keyword.
 
 ### 7b. Leader track (activation, the growth engine)
+For the Host-Connector (already the one who organizes, has never hosted on
+purpose):
 1. How to host a gathering that doesn't fizzle
 2. How to start a Circle (the rails: format, script, first-night plan)
 3. Why groups die (structure, not charisma)
 4. Becoming a Host: what Crew training actually involves
+5. Hosting with kids in the room or at home
+
+For the Gathering Host (already runs something that is growing):
+1. Making a recurring gathering sustainable (a rhythm, a co-host, a list)
+2. When and how to start charging, plainly
+3. Moving from a group chat to a Space
 
 Frame: "You don't have to build a community. Host one Circle. We'll hand you the
 format." Empower the natural connectors; never co-opt them.
@@ -419,7 +481,8 @@ analytics must not quietly become the feed.
 
 ## 10. Quick review checklist (run on every piece of copy)
 
-1. Which reader is this for: Seeker or Latent Leader?
+1. Which reader and archetype is this for? (Seeker or Latent Leader, then the
+   archetype in §2d or §2f. The archetype name stays out of the copy.)
 2. Does the surface pass the skeptic test?
 3. Are the proper nouns doing the magic while the sentences stay plain?
 4. Did we narrate the reader's feelings anywhere? Cut it.
@@ -434,4 +497,5 @@ analytics must not quietly become the feed.
 ---
 
 *Companion docs: [`docs/NAMING.md`](NAMING.md) (terminology canon, always wins on
-names). Owner: Daniel (Vision Steward). Last locked: June 2026.*
+names). Decision record for §2: ADR-1715 (two readers, eleven archetypes).
+Owner: Daniel (Vision Steward). Last locked: June 2026; §2 re-locked 6 October 2026.*

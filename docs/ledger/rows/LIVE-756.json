@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-756",
+  "title": "Crew gives one Boost a month to a Circle or Space, lifting it in discovery for a week",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 4 of the five-tier ladder (ADR-1709). A crew_boosts table (one per Crew per calendar month), a give action, and a discovery ranking lift for 7 days.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const mig=fs.readdirSync(\"supabase/migrations\").map((f)=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/create table[^;]*crew_boosts/i.test(mig))fail(\"no crew_boosts table\");if(!fs.existsSync(\"lib/crew/boost.ts\"))fail(\"no boost module\");console.log(\"ok: the monthly Boost exists\")'"
+  },
+  "wave": "WR"
+}

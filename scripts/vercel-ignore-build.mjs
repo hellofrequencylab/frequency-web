@@ -24,9 +24,10 @@
 // moment it reaches the front of the queue:
 //   - SUPERSEDED: the branch head on GitHub is no longer this commit (or the branch is gone). The
 //     newer push has its own deployment, which builds.
-//   - DRAFT: the branch's open pull requests are all drafts. Marking the PR ready does not start a
-//     build; the next push to it does (bringing main in counts), and main's production build is the
-//     backstop.
+//   - NOT READY: the branch has no open pull request, or its open pull requests are all drafts
+//     (HYG-167: threads push before they open the PR, so "no PR" was the biggest leak). Marking a
+//     PR ready, or opening it ready, does not start a build; the next push to it does (bringing
+//     main in counts), and main's production build is the backstop.
 // Both read public GitHub (the repo is public; GITHUB_TOKEN is used when set) and build on any
 // failure, timeout or rate limit.
 //
@@ -73,10 +74,13 @@ export function decideQueue({ env, sha, branchHead, prs }) {
   if (branchHead && sha && branchHead !== sha) {
     return { skip: true, reason: `superseded: the branch is now at ${branchHead.slice(0, 7)}; skipping` }
   }
-  if (Array.isArray(prs) && prs.length > 0 && prs.every((pr) => pr.draft === true)) {
+  if (Array.isArray(prs) && prs.length === 0) {
+    return { skip: true, reason: 'no open pull request on this branch; skipping' }
+  }
+  if (Array.isArray(prs) && prs.every((pr) => pr.draft === true)) {
     return { skip: true, reason: 'every open pull request on this branch is a draft; skipping' }
   }
-  return { skip: false, reason: 'current head of a branch with no draft-only pull request' }
+  return { skip: false, reason: 'current head of a branch with a ready pull request' }
 }
 
 /** The branch's head SHA on GitHub: '' when the branch is gone, null when it cannot be read. */
@@ -138,19 +142,21 @@ function probe() {
   const wf = decide(['.github/workflows/e2e.yml'])
   if (wf.skip) problems.push('a workflow change skipped the build; e2e needs the preview')
   if (decide(null).skip || decide([]).skip) problems.push('an unknown or empty diff skipped the build; it must fail safe and build')
-  const q = (o) => decideQueue({ env: 'preview', sha: 'a1', branchHead: 'a1', prs: [], ...o }).skip
+  const q = (o) => decideQueue({ env: 'preview', sha: 'a1', branchHead: 'a1', prs: [{ draft: false }], ...o }).skip
   if (!q({ branchHead: 'b2' })) problems.push('a superseded preview still builds and holds the queue')
   if (!q({ prs: [{ draft: true }] })) problems.push('a draft-only preview still builds and holds the queue')
   if (decideQueue({ env: 'production', sha: 'a1', branchHead: 'b2', prs: [{ draft: true }] }).skip) {
     problems.push('a production build skipped on a queue rule; production must always build')
   }
+  if (!q({ prs: [] })) problems.push('a preview for a branch with no pull request still builds and holds the queue (HYG-167)')
+  if (q({ prs: [{ draft: false }] })) problems.push('a ready pull request skipped its preview')
   if (q({ branchHead: null, prs: null })) problems.push('an unreadable GitHub skipped a preview; it must fail safe and build')
   if (q({ prs: [{ draft: true }, { draft: false }] })) problems.push('a branch with a ready pull request skipped its preview')
   if (problems.length) {
     console.error('HYG-162: ' + problems.join('; '))
     process.exit(1)
   }
-  console.log('✅ vercel-ignore-build — docs-only pushes, superseded previews and draft previews skip; production and unknowns build.')
+  console.log('✅ vercel-ignore-build — docs-only pushes, superseded previews and previews without a ready PR skip; production and unknowns build.')
 }
 
 async function main() {
