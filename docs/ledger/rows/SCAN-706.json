@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-706",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f1=\"lib/spaces/campaigns.ts\",f2=\"components/spaces/email/campaign-list.tsx\";for(const f of [f1,f2]){if(!fs.existsSync(f)){console.error(\"SCAN-706: missing \"+f);process.exit(79)}}const s=fs.readFileSync(f1,\"utf8\"),l=fs.readFileSync(f2,\"utf8\");const st=s.match(/STATUSES[^\\n]*=[^\\n]*\\[[^\\]]*\\]/);const knowsFailed=!!st&&/failed/.test(st[0])&&/sending/.test(st[0]);const cols=s.match(/CAMPAIGN_COLS\\s*=\\s*\\n?\\s*[\"\\x27`][^\"\\x27`]*[\"\\x27`]/);const readsError=!!cols&&/send_error/.test(cols[0]);const listFailed=/Failed/.test(l)&&/sendError/.test(l);if(!knowsFailed||!readsError||!listFailed){console.error(\"SCAN-706: a campaign the cron stamped failed or sending is folded to draft (statuses known=\"+knowsFailed+\"), its send_error is never read (\"+readsError+\") and the list has no Failed state (\"+listFailed+\"), so the owner sees a plain Draft with no reason and can edit or resend a campaign that is going out right now.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: CampaignStatus and STATUSES know sending and failed, CAMPAIGN_COLS reads send_error into sendError, edit/schedule/send refuse a sending campaign (isLocked) while a failed one stays open, and the list shows Sending, Failed and a Didn't send reason."
+  }
+}

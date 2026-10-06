@@ -7,6 +7,7 @@ import { getActivePersonas } from '@/lib/personas'
 import { slugify } from '@/lib/utils'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { buildOfferRow, type OfferInput } from '@/lib/partners/offers'
+import { hidePartnerListing } from '@/lib/partners/unpublish'
 
 export interface ListingInput {
   name: string
@@ -68,6 +69,18 @@ export async function saveListing(input: ListingInput): Promise<ActionResult<{ s
   revalidatePath('/partners')
   revalidatePath('/partners/listing')
   return ok({ slug })
+}
+
+// Take the listing down (SCAN-761). Keyed only on partners.contact_profile_id = caller, with no
+// persona gate on purpose: an owner can always remove their own listing, even after the program
+// that let them publish it is released or suspended. Saving the listing again republishes it.
+export async function unpublishListing(): Promise<ActionResult<void>> {
+  const me = await getCallerProfile()
+  if (!me) return fail('Sign in first.')
+  const hidden = await hidePartnerListing(me.id)
+  if ('error' in hidden) return fail(hidden.error)
+  if (hidden.slugs.length === 0) return fail('You have no listing to take down.')
+  return ok()
 }
 
 // Offers (scan2 L9-04, 2026-09-05). partner_offers had a reader and no writer, so the "Member

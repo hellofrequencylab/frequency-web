@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { listPublicPractices } from '@/lib/practices'
 import { emptyUnlessTransient } from '@/lib/discover'
 import { getPillars } from '@/lib/pillars'
-import { OG_SITE, SITE_NAME } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { IndexTemplate } from '@/components/templates'
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: '/discover/practices' },
-  openGraph: { ...OG_SITE, title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION, url: '/discover/practices', type: 'website' },
+  openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION, url: '/discover/practices', type: 'website' },
   twitter: { card: 'summary_large_image', title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION },
 }
 

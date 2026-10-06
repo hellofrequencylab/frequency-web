@@ -14,6 +14,8 @@ import { catalogConfigByKey, defaultCatalogConfig } from '@/lib/pricing/catalog-
 import { allOfferings, spaceOfferings, type PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { pricingLadderSummary, pricingTiers } from '@/lib/pricing/pricing-page'
 import { SPACE_PLANS } from '@/lib/pricing/plans'
+import { whatIsFrequencySpec } from '@/lib/page-editor/templates/what-is-frequency'
+import { getFunnelConfig, funnelSlugs } from '@/lib/marketing/funnel-config'
 
 // PHASE 5 GATE 2 — THE SINGLE-SOURCE ASSERTION (docs/VALUE-LADDER.md §6, ADR-916).
 //
@@ -288,6 +290,34 @@ describe('one source: every published ladder moves when the config moves', () =>
     expect(ladder).toContain('7.77%')
     // And the number it replaced is gone from the published corpus entirely.
     expect(ladder).not.toContain('3% on network-sourced sales')
+  })
+
+  it('the same rate edit moves the what-is-frequency FAQ and every /for door, because both read the input (SCAN-793)', () => {
+    const edited777 = input(edited)
+    // what-is-frequency: the money answers quote the edited Business rate, and the old one is gone.
+    const faq = whatIsFrequencySpec(edited777).faq.map((f) => f.a).join('\n')
+    expect(faq).toContain('7.77%')
+    const stock = whatIsFrequencySpec(input()).faq.map((f) => f.a).join('\n')
+    expect(stock).not.toContain('7.77%')
+    // every niche door: the pricing beat and the cost FAQ interpolate the edited rate.
+    for (const slug of funnelSlugs()) {
+      const door = getFunnelConfig(slug, edited777)!
+      const text = [door.pricing.intro, ...door.pricing.rows.map((r) => r.detail), ...door.faq.map((f) => f.a)].join('\n')
+      if (door.nonprofit) continue // the nonprofit door quotes the free rung and 0%, never the paid rung
+      expect(text, slug).toContain('7.77%')
+      expect(getFunnelConfig(slug)!.faq.map((f) => f.a).join('\n'), slug).not.toContain('7.77%')
+    }
+  })
+
+  it('a catalog price edit moves both surfaces too', () => {
+    const pricier = {
+      ...catalog,
+      business_base: { ...catalog.business_base, month: { ...catalog.business_base.month, listCents: 123_400 } },
+    }
+    const spec = whatIsFrequencySpec({ values: PRICING_DEFAULTS, catalog: pricier, betaActive: true })
+    expect(JSON.stringify(spec)).toContain('$1,234')
+    const door = getFunnelConfig('coaches-and-healers', { values: PRICING_DEFAULTS, catalog: pricier, betaActive: true })!
+    expect(door.faq.map((f) => f.a).join('\n')).toContain('$1,234')
   })
 
   it('every rung the grid publishes carries its rate as a number, not only as prose', () => {

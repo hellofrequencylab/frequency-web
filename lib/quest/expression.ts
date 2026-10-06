@@ -28,7 +28,8 @@ interface CompleteExpressionOpts {
 
 interface CompleteExpressionResult {
   ok: boolean
-  /** false when there is no active season or no Expression Challenge for the Journey. */
+  /** false when there is no active season or no Expression Challenge for the Journey.
+   *  true with ok false when the challenge exists but the member is not enrolled in the Journey. */
   found: boolean
   zaps: number
   gems: number
@@ -97,6 +98,21 @@ export async function completeExpressionChallenge(
 
     const challengeId = (challenge as { id: string } | null)?.id
     if (!challengeId) return { ok: false, found: false, zaps: 0, gems: 0 }
+
+    // SCAN-767: the act is self-attested (ADR-287), but it is the capstone of a Journey the
+    // member is ON. Nothing on this path read enrolment, so any member could tap "At a Circle"
+    // on every seeded Expression Challenge and bank 50 Zaps per Journey they never started.
+    // journey_enrollments is the one record both the solo and the Run enrol paths write and
+    // leaving deletes (lib/journey-plans.ts adoptPlan / leavePlan, lib/journeys/runs.ts).
+    // A completed enrollment still counts: re-running is idempotent further down.
+    const { data: enrollment } = await admin
+      .from('journey_enrollments')
+      .select('id')
+      .eq('profile_id', profileId)
+      .eq('plan_id', journeyId)
+      .limit(1)
+      .maybeSingle()
+    if (!enrollment) return { ok: false, found: true, zaps: 0, gems: 0 }
 
     // Mark the challenge done. Upsert on the (profile_id, challenge_id) unique key so a
     // re-run is a no-op on an already-completed row.

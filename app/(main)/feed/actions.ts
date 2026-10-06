@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Database } from '@/lib/database.types'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
 import { recordEngagementEvent } from '@/lib/engagement/events'
@@ -12,6 +11,8 @@ import { awardGems } from '@/lib/gems'
 import { isReactionKey } from '@/lib/feed/reactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { canModeratePost } from '@/lib/moderation/scope'
+import { isBlockedBetween } from '@/lib/blocking'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { log } from '@/lib/log'
 import {
   assembleThread,
@@ -22,6 +23,60 @@ import {
 } from '@/lib/feed/comment-thread'
 
 const HOST_PLUS = ['host', 'guide', 'mentor', 'janitor']
+
+// SCAN-680: the post types and visibilities a MEMBER may send. The enum also holds `system`,
+// `space_update`, `blog` and `recap`, which the platform writes itself; a crafted action call
+// used to reach the insert with any of them (the admin client bypasses RLS), and `system`
+// renders as an unattributed line in the platform voice with no Report menu.
+const MEMBER_POST_TYPES = ['feed', 'note', 'announcement'] as const
+type MemberPostType = (typeof MEMBER_POST_TYPES)[number]
+const MEMBER_VISIBILITIES = ['public', 'group', 'cluster'] as const
+type MemberVisibility = (typeof MEMBER_VISIBILITIES)[number]
+
+// SCAN-682 / SCAN-683: the parent of a reply, read UNDER RLS (the session client) so the posts
+// SELECT policy answers every visibility arm (public, region, group, cluster, Space); a parent
+// the caller may not read comes back null. Both the reply writer and the thread reader use it.
+async function readVisibleParent(parentId: string) {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('posts')
+    .select('scope_id, visibility, author_id')
+    .eq('id', parentId)
+    .maybeSingle()
+  return data
+}
+
+// May this profile WRITE a post with this visibility into this scope? The posts INSERT policy,
+// mirrored, because the admin client skips it (SCAN-210 for createPost; SCAN-682 widened it to
+// replies, which used to gate `group` only and so let any member write into a cluster or region
+// thread): `public` always; `region` only the caller's own region; `group` active membership;
+// `cluster` active membership OR hosting the circle.
+async function canWriteInScope(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string,
+  visibility: string,
+  scopeId: string | null,
+): Promise<boolean> {
+  if (visibility === 'public') return true
+  if (!scopeId) return false
+  if (visibility === 'region') {
+    const { data: me } = await admin
+      .from('profiles')
+      .select('nexus_region_id')
+      .eq('id', profileId)
+      .maybeSingle()
+    return !!me?.nexus_region_id && me.nexus_region_id === scopeId
+  }
+  if (visibility === 'group') return isActiveMember(admin, profileId, scopeId)
+  if (visibility === 'cluster') {
+    const [member, { data: hosted }] = await Promise.all([
+      isActiveMember(admin, profileId, scopeId),
+      admin.from('circles').select('id').eq('id', scopeId).eq('host_id', profileId).maybeSingle(),
+    ])
+    return member || !!hosted
+  }
+  return false
+}
 
 // Is this profile an active member of the circle? Gates writes/reads on
 // group-scoped (private circle) content.
@@ -54,7 +109,17 @@ async function fanOutMentions(
   ]
   if (handles.length === 0) return
   const { data: mentioned } = await admin.from('profiles').select('id, handle').in('handle', handles)
-  const targets = (mentioned ?? []).filter((p) => p.id !== authorId)
+  const candidates = (mentioned ?? []).filter((p) => p.id !== authorId)
+  if (candidates.length === 0) return
+  // SCAN-683: a block in either direction ends the mention. One batched read over the pair set
+  // instead of a per-handle RPC.
+  const ids = candidates.map((p) => p.id)
+  const { data: blocks } = await admin
+    .from('blocked_users')
+    .select('blocker_id, blocked_id')
+    .or(`and(blocker_id.eq.${authorId},blocked_id.in.(${ids.join(',')})),and(blocked_id.eq.${authorId},blocker_id.in.(${ids.join(',')}))`)
+  const blocked = new Set((blocks ?? []).flatMap((b) => [b.blocker_id, b.blocked_id]))
+  const targets = candidates.filter((p) => !blocked.has(p.id))
   if (targets.length === 0) return
   try {
     await admin
@@ -82,15 +147,25 @@ async function fanOutMentions(
 export async function createPost(formData: FormData): Promise<ActionResult> {
   const body = (formData.get('body') as string | null)?.trim()
   const scopeId = formData.get('scopeId') as string | null
-  const requestedVisibility = (formData.get('visibility') as string) || 'public'
-  const postType = (formData.get('post_type') as string | null) || 'feed'
+  const rawVisibility = (formData.get('visibility') as string | null) || 'public'
+  const rawType = (formData.get('post_type') as string | null) || 'feed'
   const imageUrl = (formData.get('imageUrl') as string | null)?.trim() || null
+  // SCAN-680: refuse anything outside the member allowlists BEFORE any database work, so a forged
+  // `system` or `space_update` never reaches the insert. The composer only sends these values.
+  if (
+    !(MEMBER_POST_TYPES as readonly string[]).includes(rawType) ||
+    !(MEMBER_VISIBILITIES as readonly string[]).includes(rawVisibility)
+  ) {
+    return fail('Could not save your post. Please try again.')
+  }
+  const postType = rawType as MemberPostType
+  const requestedVisibility = rawVisibility as MemberVisibility
   const isAnnouncement = postType === 'announcement'
 
   // A host announcement broadcasts beyond the circle (to the hub, or the
   // topical channel's followers if hub-less) — that wider reach is what
   // `cluster` visibility resolves. A member's post stays circle-only (`group`).
-  const visibility = isAnnouncement ? 'cluster' : requestedVisibility
+  const visibility: MemberVisibility = isAnnouncement ? 'cluster' : requestedVisibility
 
   if ((!body && !imageUrl) || !scopeId) return fail('Write something to post.')
 
@@ -154,14 +229,24 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  // SCAN-683: a public post whose scope is ANOTHER member's profile is a note on their wall.
+  // A block in either direction closes the wall, matching what the help center promises.
+  const wallId: string = scopeId
+  if (visibility === 'public' && wallId !== profileId) {
+    const { data: wallOwner } = await admin.from('profiles').select('id').eq('id', wallId).maybeSingle()
+    if (wallOwner && (await isBlockedBetween(profileId, wallId))) {
+      return fail('You can’t post here.')
+    }
+  }
+
   const mediaUrls = imageUrl ? [imageUrl] : []
 
   const { data: post, error } = await admin.from('posts').insert({
     author_id: profileId,
     body: body || '',
     scope_id: scopeId,
-    visibility: visibility as Database['public']['Tables']['posts']['Insert']['visibility'],
-    post_type: postType as Database['public']['Tables']['posts']['Insert']['post_type'],
+    visibility,
+    post_type: postType,
     is_pinned: isAnnouncement,
     media_urls: mediaUrls,
   }).select('id').single()
@@ -273,26 +358,28 @@ export async function createReply(parentId: string, body: string): Promise<Actio
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
 
-  // Inherit scope from the parent post so RLS scoping remains consistent
-  const admin = createAdminClient()
-  const { data: parent } = await admin
-    .from('posts')
-    .select('scope_id, visibility, author_id')
-    .eq('id', parentId)
-    .maybeSingle()
+  // SCAN-682: the parent is read UNDER RLS, so a cluster or region post the caller may not see is
+  // "no longer available" to them, exactly as the SELECT policy would answer. The admin client is
+  // kept for the insert and the fan-out below, which is why the write gate is mirrored here too.
+  const parent = await readVisibleParent(parentId)
   if (!parent) return fail('That post is no longer available.')
 
   // Self-reply guard: replying to your OWN post grants nothing (anti-farming).
   // A user can't pump Gems or a comment badge by talking to himself.
   const isSelfReply = parent.author_id === profileId
 
-  // Replying inside a circle requires active membership, same as a top-level
-  // group post (createPost above) — otherwise any user could post into a
-  // private circle's thread by replying.
-  if (parent.visibility === 'group') {
-    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) {
-      return fail('Join this circle to reply here.')
-    }
+  // SCAN-683: a block in either direction between the replier and the post's author closes the
+  // thread to them, with the same answer an unreadable post gives.
+  if (!isSelfReply && parent.author_id && (await isBlockedBetween(profileId, parent.author_id))) {
+    return fail('That post is no longer available.')
+  }
+
+  // Replying inherits the parent's scope and visibility, so the reply must pass the same INSERT
+  // predicate a top-level post in that scope passes (group membership, cluster membership or
+  // hosting, the caller's own region). Any user could otherwise write into a thread by replying.
+  const admin = createAdminClient()
+  if (!(await canWriteInScope(admin, profileId, parent.visibility ?? '', parent.scope_id))) {
+    return fail(parent.visibility === 'group' ? 'Join this circle to reply here.' : 'You can’t reply here.')
   }
 
   const { data: reply, error } = await admin.from('posts').insert({
@@ -312,6 +399,13 @@ export async function createReply(parentId: string, body: string): Promise<Actio
   // Notify members @mentioned in the reply (same fan-out as top-level posts).
   if (reply) await fanOutMentions(admin, reply.id, trimmed, profileId, 'a reply')
 
+  // SCAN-685: the Replies switch promised reply alerts and nothing sent one. Tell the parent's
+  // author, in-app, through the comments gate (the same gate the guestbook notice reads); skip a
+  // self-reply and an author the reply already @mentions (they get the mention). Best-effort.
+  if (reply && !isSelfReply && parent.author_id) {
+    await notifyParentAuthor(admin, parent.author_id, profileId, parentId, trimmed)
+  }
+
   // Only reward replies to OTHER people's posts — never your own.
   if (!isSelfReply) {
     awardGems(profileId, 'comment_reply').catch((e) => console.error('[feed gamification]', e))
@@ -323,6 +417,32 @@ export async function createReply(parentId: string, body: string): Promise<Actio
   // only refetch the whole feed RPC for nothing (the same wasted work as the old
   // reaction lag).
   return ok()
+}
+
+async function notifyParentAuthor(
+  admin: ReturnType<typeof createAdminClient>,
+  authorId: string,
+  replierId: string,
+  postId: string,
+  replyBody: string,
+) {
+  try {
+    const { data: author } = await admin.from('profiles').select('handle').eq('id', authorId).maybeSingle()
+    const handle = author?.handle?.toLowerCase()
+    if (handle && new RegExp(`@${handle}(?![a-zA-Z0-9_])`, 'i').test(replyBody)) return
+    if (!(await resolveSendGate(authorId, 'inapp', 'comments')).allowed) return
+    const { error } = await admin.from('notifications').insert({
+      recipient_id: authorId,
+      actor_id: replierId,
+      type: 'reply',
+      reference_type: 'post',
+      reference_id: postId,
+      body: 'replied to your post',
+    })
+    if (error) log.warn('[feed] reply notice insert failed', { authorId, postId, error: error.message })
+  } catch (err) {
+    log.warn('[feed] reply notice failed', { authorId, postId, error: err instanceof Error ? err.message : String(err) })
+  }
 }
 
 // The columns every comment row needs (author drives avatar + ProfileFlair).
@@ -361,17 +481,11 @@ async function fetchRepliesUncounted(parentId: string): Promise<CommentThread> {
   const profileId = await getMyProfileId()
   if (!profileId) return empty
 
-  const admin = createAdminClient()
-  // Don't expose replies inside a private circle to non-members.
-  const { data: parent } = await admin
-    .from('posts')
-    .select('scope_id, visibility')
-    .eq('id', parentId)
-    .maybeSingle()
+  // SCAN-682: the parent is read UNDER RLS. A thread the caller may not see (a private circle,
+  // another region, a cluster they are outside of) is empty to them, whatever its visibility.
+  const parent = await readVisibleParent(parentId)
   if (!parent) return empty
-  if (parent.visibility === 'group') {
-    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) return empty
-  }
+  const admin = createAdminClient()
 
   // 1. Direct children of the root post.
   const { data: topRows } = await admin

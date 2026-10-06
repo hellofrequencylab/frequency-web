@@ -47,14 +47,19 @@ function revalidate() {
 export async function saveDefaultFunnelCopy(payload: { vera: VeraCopy }): Promise<{ ok: boolean }> {
   if (!(await getJanitor())) return { ok: false }
   const me = await getCallerProfile()
-  await saveFunnelOverride(
-    DEFAULT_FUNNEL,
-    {
-      audience: 'Every new member (default)',
-      vera: cleanVera(payload?.vera),
-    },
-    me?.id ?? null,
-  )
+  // A failed write returns ok: false so the editor's "Could not save" branch runs (SCAN-777).
+  try {
+    await saveFunnelOverride(
+      DEFAULT_FUNNEL,
+      {
+        audience: 'Every new member (default)',
+        vera: cleanVera(payload?.vera),
+      },
+      me?.id ?? null,
+    )
+  } catch {
+    return { ok: false }
+  }
   revalidate()
   return { ok: true }
 }
@@ -63,7 +68,11 @@ export async function saveDefaultFunnelCopy(payload: { vera: VeraCopy }): Promis
  *  freshly-resolved copy so the editor can repaint without a reload. */
 export async function resetDefaultFunnelCopy(): Promise<{ ok: true; vera: VeraCopy } | { ok: false }> {
   if (!(await getJanitor())) return { ok: false }
-  await deleteFunnelVersion(DEFAULT_FUNNEL)
+  try {
+    await deleteFunnelVersion(DEFAULT_FUNNEL)
+  } catch {
+    return { ok: false }
+  }
   revalidate()
   const seq = await resolveDefaultFunnel()
   return { ok: true, vera: seq.vera }

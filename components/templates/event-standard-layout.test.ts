@@ -21,12 +21,12 @@ const templateCode = template.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/
 // cards, rows and rails are not layouts and are not here either.
 // Loading skeletons are in here too: a skeleton IS a claim about the destination's shape, and a
 // hand-rolled one drifts from the page it stands in for (both of these already had).
+// The /discover/events/<slug> twin and its loading file were on this list until SCAN-672 retired
+// that route (a 308 to /events/<slug> in next.config.ts).
 const EVENT_PAGES = [
   'app/(public)/events/[slug]/page.tsx',
   'app/(main)/events/[slug]/event-member-page.tsx',
-  'app/discover/events/[slug]/page.tsx',
   'app/(main)/events/[slug]/loading.tsx',
-  'app/discover/events/[slug]/loading.tsx',
 ] as const
 
 describe('the standard exists and is a composition, not a fork', () => {

@@ -29,47 +29,10 @@
 
 import { OPERATOR_CTA_LABEL } from '@/lib/site'
 import { NICHE_FUNNEL_DESTINATIONS, type FunnelDestination } from '@/lib/funnels/definitions'
-import { priceStrings } from '@/lib/pricing/pricing-page'
+import { priceStringsFrom, defaultPricingInput } from '@/lib/pricing/pricing-page'
+import type { PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { formatBps } from '@/lib/pricing/display'
-import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
-
-// Every dollar figure in the funnel copy interpolates from the ONE code catalog (priceStrings), so no
-// FAQ answer here can quote a price the catalog does not carry.
-const P = priceStrings()
-
-// Every RATE interpolates from the same take-rate map lib/billing/fees.ts falls back to (kept pure, so
-// this config stays safe to import anywhere), including the FREE Space rung. The free rung is quoted on
-// purpose: selling is free on every tier, so the free row has a real rate of its own and a paid row is a
-// lower number beside it, never a door that opens. The pricing beat is a ladder, not a gate.
-// The ladder is two numbers (LIVE-230): the free rung and the paid rung. Business and Collective both
-// stand on the paid rung, so the same figure is quoted wherever either plan is named.
-const RATE = {
-  free: formatBps(NETWORK_TAKE_RATE_DEFAULT.free),
-  business: formatBps(NETWORK_TAKE_RATE_DEFAULT.paid),
-}
-/** The free-tier row's honest descriptor: a free Space sells from day one, at its own network rate. */
-const FREE_ROW_DETAIL = `Sell from day one, ${RATE.free} on network introductions`
-/** The business row's descriptor: what the plan actually adds, plus the lower fee on network sales. */
-const BUSINESS_ROW_DETAIL = `Memberships and campaigns, ${RATE.business} on network introductions`
-/** The break-even proof, stated once: the rate only ever applies to a NEW person the network brought. */
-function breakEvenCaption(keep: string): string {
-  return `You keep 100% of ${keep}, on every plan including the free one. Frequency earns only when the network introduces someone new, and once they are yours it is 0% for good.`
-}
-
-/** The shared pricing-beat intro. It leads with the promise, not the plan: the transaction is never
- *  behind a wall, so a paid rung is what a Space takes once it is charging the same person again
- *  (docs/CORE-MODEL.md §2, ADR-1350), and where the rate settles follows from that rather than being
- *  the offer. The doc line here said the opposite until LIVE-253. The per-niche clause names the
- *  moment a door's reader would actually step up. */
-function pricingIntro(stepUp: string): string {
-  return `People join free, businesses host free, and you pay when you start charging. Selling is never behind a plan: a free Space takes payments from day one, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
-}
-
-/** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
- *  optional extra sentence (the community-builders Collective line). One template, five doors. */
-function costAnswer(keep: string, extra = ''): string {
-  return `Nothing to be here, and nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it is what memberships and campaigns run on, settling at ${RATE.business} on network introductions. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
-}
+import { networkTakeRateBpsForPlan, networkTakeRateFromStored } from '@/lib/billing/pricing-keys'
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
 export type FunnelIconName = 'calendar' | 'contact' | 'qr' | 'envelope' | 'spark'
@@ -208,9 +171,56 @@ export const FUNNEL_FOOTER = {
   ],
 } as const
 
+// ── THE CONFIGS ARE BUILT FROM THE PRICING INPUT (SCAN-793) ───────────────────────────────────────
+// This module used to compute P and RATE at load from the code defaults, so an /admin/pricing edit
+// moved /pricing and llms.txt and left every /for door quoting the old fee. The route resolves the
+// operator's config (loadPricingInput) and hands it to getFunnelConfig; the words are unchanged, only
+// the figures they interpolate now come from the input. The body is not re-indented on purpose, so the
+// copy diff stays readable.
+function buildFunnelConfigs(input: PricingGridInput): Record<string, FunnelConfig> {
+// Every dollar figure in the funnel copy interpolates from the resolved catalog in the input, so no FAQ
+// answer here can quote a price the catalog does not carry.
+const P = priceStringsFrom(input.catalog)
+
+// Every RATE interpolates from the take-rate vector in the input (the operator's config over the code
+// defaults, resolved by the route), including the FREE Space rung. The free rung is quoted on
+// purpose: selling is free on every tier, so the free row has a real rate of its own and a paid row is a
+// lower number beside it, never a door that opens. The pricing beat is a ladder, not a gate.
+// The ladder is two numbers (LIVE-230): the free rung and the paid rung. Business and Collective both
+// stand on the paid rung, so the same figure is quoted wherever either plan is named.
+const rates = networkTakeRateFromStored(input.values.take_rate)
+const RATE = {
+  free: formatBps(networkTakeRateBpsForPlan('free', rates)),
+  business: formatBps(networkTakeRateBpsForPlan('business', rates)),
+}
+/** The free-tier row's honest descriptor: a free Space sells from day one, at its own network rate. */
+const FREE_ROW_DETAIL = `Sell from day one, ${RATE.free} on network introductions`
+/** The business row's descriptor: what the plan actually adds, plus the lower fee on network sales. */
+const BUSINESS_ROW_DETAIL = `Memberships and campaigns, ${RATE.business} on network introductions`
+/** The break-even proof, stated once: the rate only ever applies to a NEW person the network brought. */
+function breakEvenCaption(keep: string): string {
+  return `You keep 100% of ${keep}, on every plan including the free one. Frequency earns only when the network introduces someone new, and once they are yours it is 0% for good.`
+}
+
+/** The shared pricing-beat intro. It leads with the promise, not the plan: the transaction is never
+ *  behind a wall, so a paid rung is what a Space takes once it is charging the same person again
+ *  (docs/CORE-MODEL.md §2, ADR-1350), and where the rate settles follows from that rather than being
+ *  the offer. The doc line here said the opposite until LIVE-253. The per-niche clause names the
+ *  moment a door's reader would actually step up. */
+function pricingIntro(stepUp: string): string {
+  return `People join free, businesses host free, and you pay when you start charging. Selling is never behind a plan: a free Space takes payments from day one, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
+}
+
+/** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
+ *  optional extra sentence (the community-builders Collective line). One template, five doors. */
+function costAnswer(keep: string, extra = ''): string {
+  return `Nothing to be here, and nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it is what memberships and campaigns run on, settling at ${RATE.business} on network introductions. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
+}
+
+
 // ── Config #1: Coaches & Healers (the reference build) ─────────────────────────────────────────────
 
-export const COACHES_FUNNEL: FunnelConfig = {
+const COACHES_FUNNEL: FunnelConfig = {
   // Canonical persona slug (ADR-590): the /for door, the pricing "by who you are" strip, and the persona
   // registry all speak ONE slug vocabulary now, so the strip card lands here instead of 404ing.
   slug: 'coaches-and-healers',
@@ -674,22 +684,41 @@ const NONPROFITS_FUNNEL: FunnelConfig = {
 // ── The registry (ADR-591): one config per persona door, keyed by the SAME canonical slug the pricing
 // "by who you are" strip and the persona registry use, so every strip card lands on a real, on-topic page
 // (never a 404). Adding a door = one config + one row here. ────────────────────────────────────────────
-const FUNNEL_CONFIGS: Record<string, FunnelConfig> = {
+return {
   'coaches-and-healers': COACHES_FUNNEL,
   studios: STUDIOS_FUNNEL,
   'event-hosts': EVENTS_FUNNEL,
   'community-builders': COMMUNITY_FUNNEL,
   nonprofits: NONPROFITS_FUNNEL,
 }
+}
 
-/** Resolve a funnel config by slug, or undefined. PURE. */
-export function getFunnelConfig(slug: string): FunnelConfig | undefined {
-  return FUNNEL_CONFIGS[slug]
+/** The code-default configs: the slug list, the tests, and any caller that passes no input. */
+const DEFAULT_FUNNEL_CONFIGS = buildFunnelConfigs(defaultPricingInput())
+/** Built once per resolved input (a route resolves one per revalidation), never per call. */
+const CONFIGS_BY_INPUT = new WeakMap<PricingGridInput, Record<string, FunnelConfig>>()
+function funnelConfigsFor(input?: PricingGridInput): Record<string, FunnelConfig> {
+  if (!input) return DEFAULT_FUNNEL_CONFIGS
+  let built = CONFIGS_BY_INPUT.get(input)
+  if (!built) {
+    built = buildFunnelConfigs(input)
+    CONFIGS_BY_INPUT.set(input, built)
+  }
+  return built
+}
+
+/** The reference build, evaluated against the code defaults (the routing tests read it). */
+export const COACHES_FUNNEL: FunnelConfig = DEFAULT_FUNNEL_CONFIGS['coaches-and-healers']
+
+/** Resolve a funnel config by slug, or undefined. PURE. A route passes the pricing input it resolved
+ *  from the operator config (SCAN-793); without one the code defaults apply. */
+export function getFunnelConfig(slug: string, input?: PricingGridInput): FunnelConfig | undefined {
+  return funnelConfigsFor(input)[slug]
 }
 
 /** Every funnel slug (drives generateStaticParams + sitemap + llms.txt). PURE. */
 export function funnelSlugs(): string[] {
-  return Object.keys(FUNNEL_CONFIGS)
+  return Object.keys(DEFAULT_FUNNEL_CONFIGS)
 }
 
 /** The assurance-bar items for a config (the nonprofit swap, else the base four). PURE. */

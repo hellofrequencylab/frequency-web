@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
-import { buttonClasses } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { ACCESSIBILITY_TAGS, ADDRESS_PRECISIONS, AMENITIES, LAUNDRY_OPTIONS, PARKING_OPTIONS, PROPERTY_TYPES } from '@/lib/listings/types'
 import { createHousingListingAction } from '@/app/(main)/marketplace/actions'
+import { HousingSubmit } from './submit'
 
 // The listing compose form (client) — hosts the photo gallery (MultiImageUpload,
 // browser upload into the shared event-media bucket under the signer's own uid
@@ -417,9 +417,7 @@ export function HousingForm({
       </div>
 
       <div className="flex justify-end">
-        <button type="submit" className={buttonClasses('primary', 'md')}>
-          {initial ? 'Save changes' : 'List housing'}
-        </button>
+        <HousingSubmit>{initial ? 'Save changes' : 'List housing'}</HousingSubmit>
       </div>
     </form>
   )

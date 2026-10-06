@@ -1527,8 +1527,12 @@ export type Database = {
           owner_space_id: string | null
           platform_fee_cents: number
           refund_reversal_cents: number
+          reversal_attempt_floor: number
           reversal_attempts: number
+          reversal_attempts_since_target: number | null
+          reversal_lease_until: string
           reversal_owed_cents: number | null
+          reversal_refusals: number
           reversed_cents: number
           seller_key: string
           source_charge_id: string | null
@@ -1552,8 +1556,12 @@ export type Database = {
           owner_space_id?: string | null
           platform_fee_cents?: number
           refund_reversal_cents?: number
+          reversal_attempt_floor?: number
           reversal_attempts?: number
+          reversal_attempts_since_target?: never
+          reversal_lease_until?: string
           reversal_owed_cents?: never
+          reversal_refusals?: number
           reversed_cents?: number
           seller_key: string
           source_charge_id?: string | null
@@ -1577,8 +1585,12 @@ export type Database = {
           owner_space_id?: string | null
           platform_fee_cents?: number
           refund_reversal_cents?: number
+          reversal_attempt_floor?: number
           reversal_attempts?: number
+          reversal_attempts_since_target?: never
+          reversal_lease_until?: string
           reversal_owed_cents?: never
+          reversal_refusals?: number
           reversed_cents?: number
           seller_key?: string
           source_charge_id?: string | null

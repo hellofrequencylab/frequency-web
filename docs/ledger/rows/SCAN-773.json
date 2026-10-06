@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-773",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const pg=\"app/(main)/upgrade/page.tsx\",tg=\"app/(main)/upgrade/upgrade-toggle.tsx\";if(!fs.existsSync(pg)||!fs.existsSync(tg)){console.error(\"SCAN-773: upgrade page or toggle missing\");process.exit(79)}const page=fs.readFileSync(pg,\"utf8\"),tog=fs.readFileSync(tg,\"utf8\");const gatedOnSellable=/const live = crewSellable/.test(page)&&/\\{!live \\? \\(\\s*<UpgradeToggle/.test(page);if(gatedOnSellable){console.error(\"SCAN-773: the upgrade page still shows UpgradeToggle whenever Crew is not sellable, while toggleMembership refuses whenever billing is live, so with billing on and Crew off the Join the Crew button always fails.\");process.exit(1)}if(!/result\\.error/.test(tog)){console.error(\"SCAN-773: UpgradeToggle still discards the action error, so a refused toggle looks like a click that did nothing.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe upgrade page gated the free beta toggle on !crewSellable (billingLive AND tier_crew_enabled) while toggleMembership refuses on billingLive alone, so with billing on and Crew off the page showed a Free Beta Active banner and a Join the Crew button that always failed, and upgrade-toggle.tsx dropped the error so the tap looked dead. page.tsx now also reads billingLive() and derives betaOpen as its negation; the beta banner and UpgradeToggle render only while betaOpen, PwywPicker only while live, and the billing-on-but-Crew-off state renders a static Crew opens soon notice (data-crew-opens-soon) with no button, with existing Crew members still getting the Manage your membership link. upgrade-toggle.tsx keeps the action result in state and renders result.error in a role=alert paragraph in text-danger. Pinned by app/(main)/upgrade/upgrade-toggle.test.tsx: a jsdom render that taps the button with a refused action and asserts the alert text and no refresh (both the free and Crew branches), the success path refreshing with no alert, and a source-shape check that page.tsx derives betaOpen from billingLive and gates the toggle on it."
+  }
+}

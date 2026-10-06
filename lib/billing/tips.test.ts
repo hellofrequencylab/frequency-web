@@ -113,6 +113,16 @@ describe('recordTipFromSession - the succeed path', () => {
     await recordTipFromSession(tipSession({ metadata: { kind: 'commerce_order' } }))
     expect(tipsUpdate).not.toHaveBeenCalled()
   })
+
+  it('a DB refusal on the flip THROWS so the webhook releases its claim and Stripe redelivers (SCAN-764)', async () => {
+    // Before: the error was never read, zero rows looked like a redelivery, the route acked 200
+    // and the paid tip stayed pending forever. Nothing downstream may run on a flip that failed.
+    tipsSelectRows.mockReturnValue(null)
+    tipsUpdateError.mockReturnValue({ code: '57P01', message: 'terminating connection' })
+    await expect(recordTipFromSession(tipSession())).rejects.toThrow(/settle flip failed/)
+    expect(notifyTipRecipient).not.toHaveBeenCalled()
+    expect(recordFinancialTransaction).not.toHaveBeenCalled()
+  })
 })
 
 describe('recordTipRefundFromCharge - dashboard refund reconciliation (L2-07)', () => {

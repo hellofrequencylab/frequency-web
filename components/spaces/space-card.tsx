@@ -31,7 +31,7 @@ function SpaceCover({ coverUrl }: { coverUrl: string | null }) {
   if (coverUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- operator-supplied cover URL, not a build-time asset (matches BrandMark / logo)
-      <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+      <img src={coverUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
     )
   }
   return (

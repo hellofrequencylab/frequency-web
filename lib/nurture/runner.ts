@@ -82,10 +82,19 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
   const db = createAdminClient()
   const nowIso = new Date().toISOString()
 
+  // PAUSED SEQUENCES STAY OUT OF THE BUDGET (SCAN-732). A paused sequence's enrollments are
+  // skipped without touching next_run_at, so they keep the oldest timestamps and, once there are
+  // `limit` or more of them, every run read only those rows, skipped them all, reported ok and
+  // every enabled sequence stalled. The due query is scoped to enabled sequences up front.
+  const { data: enabledRows } = await db.from('nurture_sequences').select('id').eq('enabled', true)
+  const enabledIds = ((enabledRows as { id: string }[] | null) ?? []).map((s) => s.id)
+  if (enabledIds.length === 0) return { processed: 0, sent: 0, completed: 0, cancelled: 0 }
+
   const { data: dueRows } = await db
     .from('nurture_enrollments')
     .select('id, sequence_id, contact_id, email, persona, next_step_order, next_run_at')
     .eq('status', 'active')
+    .in('sequence_id', enabledIds)
     .lte('next_run_at', nowIso)
     .order('next_run_at', { ascending: true })
     .limit(limit)
@@ -122,9 +131,18 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
     db.from('nurture_enrollments').update({ status: 'completed', last_sent_at: new Date().toISOString() }).eq('id', id)
   const cancel = (id: string) =>
     db.from('nurture_enrollments').update({ status: 'cancelled' }).eq('id', id)
+  // A transient skip (a flaky gate read, a frequency cap) pushes the row back a quarter hour so
+  // it falls behind rows that can go out, instead of keeping the head of every run's budget.
+  const deferTransient = (e: EnrRow) =>
+    db
+      .from('nurture_enrollments')
+      .update({ next_run_at: new Date(Date.now() + 15 * 60 * 1000).toISOString() })
+      .eq('id', e.id)
+      .eq('next_run_at', e.next_run_at)
 
   for (const e of due) {
-    // A disabled sequence is paused: leave the enrollment due for when it's re-enabled.
+    // A disabled sequence is paused: leave the enrollment due for when it's re-enabled. The due
+    // query already excludes these; this is the backstop for a sequence paused mid-run.
     if (!seqEnabled.get(e.sequence_id)) continue
 
     const steps = stepsBySeq.get(e.sequence_id) ?? []
@@ -146,7 +164,7 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
         // cancelled, so one flaky gate read silently dropped the member from steps 2..N.)
         const optedOut =
           gate.reason === 'suppressed' || gate.reason === 'no_consent' || gate.reason === 'pref_off'
-        if (optedOut) { await cancel(e.id); cancelled++ }
+        if (optedOut) { await cancel(e.id); cancelled++ } else await deferTransient(e)
         continue
       }
     } else {

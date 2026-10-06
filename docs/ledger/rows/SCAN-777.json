@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-777",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const o=\"lib/funnels/overrides.ts\",b=\"app/(main)/pages/sequences/builder-actions.ts\";if(!fs.existsSync(o)||!fs.existsSync(b)){console.error(\"SCAN-777: a file the probe must read is missing\");process.exit(79)}const ov=fs.readFileSync(o,\"utf8\"),ba=fs.readFileSync(b,\"utf8\");const save=ov.match(/export async function saveFunnelOverride\\([\\s\\S]*?\\n\\}/);const saveSwallows=!save||!/error|throwOnError/.test(save[0]);const ren=ba.match(/export async function renameFunnelSlug\\([\\s\\S]*?\\n\\}/);const renameUnguarded=!ren||!/try\\s*\\{|getFunnelOverride\\(next\\)/.test(ren[0].slice(ren[0].indexOf(\"saveFunnelOverride(next\")));if(saveSwallows||renameUnguarded){console.error(\"SCAN-777: renaming a funnel permalink can still delete the funnel on a failed write: \"+(saveSwallows?\"saveFunnelOverride discards the upsert error so a failed save reports success; \":\"\")+(renameUnguarded?\"renameFunnelSlug deletes the old row without confirming the new one was written.\":\"\"));process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: saveFunnelOverride and deleteFunnelVersion in lib/funnels/overrides.ts read { error } and throw on it (setFunnelPublishStatus and duplicateFunnel inherit the check). renameFunnelSlug wraps the save in try/catch, reads the new row back with getFunnelOverride(next) and only then deletes the old slug, returning { ok: false, error } at each failed step. saveFunnelVersion, saveDefaultFunnelCopy and resetDefaultFunnelCopy return { ok: false } on a caught failure so the editor's existing Could not save branch runs."
+  }
+}

@@ -673,6 +673,23 @@ describe('commerce_orders status flips surface the update error (SCAN-710)', () 
     ).rejects.toThrow(/cs_err.*pooler blip/)
   })
 
+  it('a failed paid flip runs no stock, ledger or fulfilment work (SCAN-764)', async () => {
+    // The throw above is only half the contract: nothing downstream may act on a flip that failed,
+    // or a redelivery would decrement stock and grant goods twice.
+    state.setHandler(failing)
+    await expect(
+      recordCommerceOrderFromSession({
+        id: 'cs_err',
+        metadata: { kind: 'commerce_order' },
+        payment_status: 'paid',
+        payment_intent: 'pi_1',
+      } as unknown as Stripe.Checkout.Session),
+    ).rejects.toThrow(/settle flip failed|paid flip failed/)
+    expect(state.calls.filter((c) => c.op === 'rpc')).toHaveLength(0)
+    expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
+    expect(booking.confirmBookingByOrder).not.toHaveBeenCalled()
+  })
+
   it('the expired-session cancel throws on a database error', async () => {
     state.setHandler(failing)
     await expect(

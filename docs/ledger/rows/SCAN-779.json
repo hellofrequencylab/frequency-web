@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-779",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"components/page-editor/editor.tsx\";if(!fs.existsSync(f)){console.error(\"SCAN-779: a file the probe must read is missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const sig=s.match(/function PublishButton\\(\\{([^}]*)\\}/);const ignoresPublished=!sig||!/published/.test(sig[1]);const usage=/<PublishButton slug=\\{slug\\} \\/>/.test(s);if(ignoresPublished||usage){console.error(\"SCAN-779: after Unpublish the marketing editor still shows a disabled Published check and will not republish without a dummy edit, because PublishButton decides its label and enabled state from the dirty flag alone and never reads the server published state.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: PublishButton in components/page-editor/editor.tsx now takes the server published flag, decides its label, enabled state, check and title from publishable = dirty || !published, and calls router.refresh() after a publish so the Unpublish button appears; the editor renders it with published."
+  }
+}

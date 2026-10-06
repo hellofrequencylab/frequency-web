@@ -57,11 +57,6 @@ export async function logPracticeAction(
   practiceId: string,
   circleId?: string | null,
   clientTimezone?: string | null,
-  // Completion economy (practice-timer redesign): optional timed-log seconds. Omitted by
-  // the one-tap "Log it" callers, which keep the unchanged FULL behavior (no target → full
-  // reward, streak tick). A timed caller (e.g. a "Finish Practice" top-up from the practices
-  // page) passes both, and logPractice routes partial / full / finish off the ratio.
-  timed?: { secondsDone?: number | null; secondsTarget?: number | null } | null,
 ): Promise<ActionResult<LogPracticeResult>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
@@ -82,8 +77,13 @@ export async function logPracticeAction(
       practiceId,
       circleId: circleId ?? null,
       clientTimezone: clientTimezone ?? null,
-      secondsDone: timed?.secondsDone ?? null,
-      secondsTarget: timed?.secondsTarget ?? null,
+      // ALWAYS a one-tap log (SCAN-723). This action used to accept client-supplied
+      // { secondsDone, secondsTarget } and forward them, which let any member claim a full
+      // Heavy-tier timed sit with secondsTarget: 1 and the timer never running. No caller ever
+      // passed them. Timed logs and "Finish Practice" top-ups go only through the On Air
+      // completeSession path, which derives elapsed time from the server-side session row.
+      secondsDone: null,
+      secondsTarget: null,
     }),
   )
   // Timer gate: a practice with a set timer can only be logged from inside its session (which
@@ -659,7 +659,8 @@ export async function suggestPracticeAction(
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
   const template = await getPractice(templateId)
-  if (!template) return fail('Practice not found')
+  // Public or own only (SCAN-726): this sends the body to the model, so it is a read of the guide.
+  if (!template || (!template.is_public && template.created_by !== profileId)) return fail('Practice not found')
   const suggestion = await personalizePractice({
     template: {
       title: template.title,
@@ -683,6 +684,8 @@ export async function claimPracticeAction(
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
   if (!fields.title?.trim()) return fail('Give your practice a name')
+  // claimPractice refuses a private or non-template source (SCAN-726), so the claim Zaps below
+  // only pay for a real template.
   const copy = await claimPractice(profileId, templateId, fields)
   if (!copy) return fail('Could not claim this practice')
   try {
