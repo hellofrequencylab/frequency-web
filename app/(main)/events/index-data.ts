@@ -16,7 +16,7 @@ import { demoModeEnabled, eventsListingHorizonDays } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
-import { CATEGORY_OPTIONS } from '@/lib/events/options'
+import { CATEGORY_OPTIONS, ENERGY_OPTIONS as SHARED_ENERGY_OPTIONS, PACE_LABEL } from '@/lib/events/options'
 import { collapseSeries, onePerSeries, SERIES_WIDE_READ } from '@/lib/events/series'
 import { goingCountsByEvent } from '@/lib/events/going-counts'
 import { tierSummariesByEvent, priceLabelFromSummary } from '@/lib/events/tier-prices'
@@ -116,13 +116,8 @@ const PRICE_OPTIONS: { value: string; label: string }[] = [
   { value: 'paid', label: 'Paid' },
 ]
 
-// Nervous-system framing (events.energy_tag) — matches the DB check constraint.
-const ENERGY_OPTIONS: { value: string; label: string }[] = [
-  { value: 'grounding', label: 'Grounding' },
-  { value: 'high_activation', label: 'High activation' },
-  { value: 'social', label: 'Social' },
-  { value: 'ceremonial', label: 'Ceremonial' },
-]
+// The Pace facet (events.energy_tag): the shared options minus the blank "not sure yet".
+const ENERGY_OPTIONS: { value: string; label: string }[] = SHARED_ENERGY_OPTIONS.filter((o) => o.value)
 
 // "Has spots" — the only real scarcity signal: capacity IS NULL (unlimited) OR
 // fewer 'going' than capacity. One option toggles the facet on/off via the URL.
@@ -841,7 +836,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     { label: 'Format', paramKey: 'format', options: FORMAT_OPTIONS },
     { label: 'Date', paramKey: 'date', options: DATE_OPTIONS },
     { label: 'Price', paramKey: 'price', options: PRICE_OPTIONS },
-    { label: 'Energy', paramKey: 'energy', options: ENERGY_OPTIONS },
+    { label: PACE_LABEL, paramKey: 'energy', options: ENERGY_OPTIONS },
     { label: 'Spots', paramKey: 'spots', options: SPOTS_OPTIONS },
     { label: 'Distance', paramKey: 'near', options: NEAR_OPTIONS, show: !!myGeocell },
   ]

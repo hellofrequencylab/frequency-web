@@ -418,8 +418,8 @@ describe('seats and the AI add-on', () => {
     }
   })
 
-  it('keeps the AI add-on keys out of every tier base (so no tier claims it as included)', () => {
-    for (const plan of SPACE_PLANS) {
+  it('keeps the AI add-on keys out of every Business-depth base (only Collective includes it, ADR-1709)', () => {
+    for (const plan of SPACE_PLANS.filter((p) => p !== 'collective' && p !== 'nonprofit_collective')) {
       const keys = planEntitlementKeys(plan)
       for (const k of ADDON_ENTITLEMENT_KEYS.ai) expect(keys).not.toContain(k)
     }
@@ -561,16 +561,18 @@ describe('derivation guard: changing a depth key set changes the grid', () => {
 // a feature the product would then refuse. The page resolves the overrides and threads them in.
 
 describe('operator gate overrides move the comparison cell', () => {
-  it('raising space_storefront to nonprofit drops the Business cell to Not included', () => {
+  it('raising space_storefront to collective drops the Business and Non Profit cells to Not included', () => {
     expect(cellsByColumn(spaceFeatureGrid(input), 'space_storefront').free).toBe('Included')
+    // Non Profit sits beside Business on the capability ladder (ADR-1709), so the override that splits
+    // them now is a Collective floor.
     const raised = spaceFeatureGrid({
       ...input,
-      gateOverrides: { space_storefront: { minEntitlement: 'nonprofit' } },
+      gateOverrides: { space_storefront: { minEntitlement: 'collective' } },
     })
     const cells = cellsByColumn(raised, 'space_storefront')
     expect(cells.free).toBe('Not included')
     expect(cells.business).toBe('Not included')
-    expect(cells.nonprofit).toBe('Included')
+    expect(cells.nonprofit).toBe('Not included')
     // The unmocked grid still reads the code answer, so this is the override talking.
     expect(cellsByColumn(spaceFeatureGrid(input), 'space_storefront').business).toBe('Included')
   })

@@ -9,6 +9,7 @@ import { PWYW_CONFIG_DEFAULT } from './catalog-config'
 import {
   SPACE_PLANS,
   asSpacePlan,
+  planRank,
   planEntitlementKeys,
   planEntitlements,
   planKeysWithAddons,
@@ -35,14 +36,20 @@ import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 
 describe('space tiers (Community Collective ladder · ADR-811)', () => {
-  it('SPACE_PLANS is free < business ~ nonprofit ~ independent (LIVE-228)', () => {
-    expect([...SPACE_PLANS]).toEqual(['free', 'business', 'nonprofit', 'independent'])
+  it('SPACE_PLANS carries Collective again, ranked above the Business depth (ADR-1709)', () => {
+    expect([...SPACE_PLANS]).toEqual(['free', 'business', 'nonprofit', 'independent', 'collective', 'nonprofit_collective'])
+    expect(planRank('free')).toBe(0)
+    for (const p of ['business', 'nonprofit', 'independent']) expect(planRank(p)).toBe(1)
+    expect(planRank('collective')).toBe(2)
+    expect(planRank('nonprofit_collective')).toBe(2)
+    expect(planRank('nonsense')).toBe(0)
   })
 
   it('narrows unknown / null labels to free, and OLD labels to their new tier (transition shim)', () => {
     // The first-class tiers (+ free) pass through unchanged.
     expect(asSpacePlan('business')).toBe('business')
-    expect(asSpacePlan('collective')).toBe('business')
+    expect(asSpacePlan('collective')).toBe('collective')
+    expect(asSpacePlan('nonprofit_collective')).toBe('nonprofit_collective')
     expect(asSpacePlan('nonprofit')).toBe('nonprofit')
     expect(asSpacePlan('independent')).toBe('independent')
     expect(asSpacePlan('free')).toBe('free')
@@ -66,7 +73,7 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
     for (const plan of SPACE_PLANS) expect(planEntitlementKeys(plan)).not.toContain('crm.autonomy')
   })
 
-  it('Business = former Collective depth; Non Profit matches; Independent adds branding (LIVE-228)', () => {
+  it('Business depth; Non Profit matches; Independent adds branding; Collective adds Vera AI (ADR-1709)', () => {
     const businessDepth = [
       'crm',
       'crm.playbooks',
@@ -84,24 +91,27 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
     expect(planEntitlements('business').whitelabel).toBeUndefined()
     expect(planEntitlements('business').team).toBe(true)
     expect(planEntitlements('independent').whitelabel).toBe(true)
-    for (const plan of SPACE_PLANS) {
+    const collectiveDepth = [...businessDepth, 'crm.resonance', 'crm.resonance_ai'].sort()
+    expect([...planEntitlementKeys('collective')].sort()).toEqual(collectiveDepth)
+    expect([...planEntitlementKeys('nonprofit_collective')].sort()).toEqual(collectiveDepth)
+    for (const plan of ['free', 'business', 'nonprofit', 'independent'] as const) {
       expect(planEntitlements(plan)['crm.resonance']).toBeUndefined()
       expect(planEntitlements(plan)['crm.resonance_ai']).toBeUndefined()
     }
   })
 
-  it('AI is the SOLE metered add-on; its keys are the resonance depth and are in NO tier base', () => {
+  it('AI is the SOLE metered add-on; only the Collective rungs include it in their base (ADR-1709)', () => {
     expect([...ADDON_KEYS]).toEqual(['ai'])
     expect(ADDON_ENTITLEMENT_KEYS.ai).toEqual(['crm.resonance', 'crm.resonance_ai'])
-    // No tier base contains the AI keys.
-    for (const plan of SPACE_PLANS) {
+    // No Business-depth base contains the AI keys; Collective includes Vera AI.
+    for (const plan of ['free', 'business', 'nonprofit', 'independent'] as const) {
       expect(planEntitlementKeys(plan)).not.toContain('crm.resonance')
       expect(planEntitlementKeys(plan)).not.toContain('crm.resonance_ai')
     }
   })
 
   it('planKeysWithAddons layers the AI add-on keys onto a tier base (the set-to-target source)', () => {
-    // Collective + AI: the Collective depth PLUS the resonance keys.
+    // Business + AI: the Business depth PLUS the resonance keys.
     const collAi = planKeysWithAddons('business', ['ai'])
     expect(collAi).toContain('email')
     expect(collAi).toContain('team')
