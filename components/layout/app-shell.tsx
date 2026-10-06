@@ -369,6 +369,7 @@ function MobileLeftDrawer({
             <Link href="/about" onClick={onClose} className="hover:text-text transition-colors">About</Link>
             <Link href="/what-is-frequency" onClick={onClose} className="hover:text-text transition-colors">What is Frequency</Link>
             <Link href="/terms" onClick={onClose} className="hover:text-text transition-colors">Terms</Link>
+            <Link href="/guidelines" onClick={onClose} className="hover:text-text transition-colors">Guidelines</Link>
             <Link href="/privacy" onClick={onClose} className="hover:text-text transition-colors">Privacy</Link>
           </div>
 

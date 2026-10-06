@@ -184,3 +184,17 @@ export const appConfigView = z.object({
 })
 export type AppConfigView = z.infer<typeof appConfigView>
 export const appConfigResponse = envelope(appConfigView)
+
+// ── /api/v1/reports and /api/v1/blocks: report and block (LIVE-723, App Store 1.2) ─────────────
+
+export const reportInput = z.object({
+  targetType: z.enum(['post', 'dispatch', 'comment', 'member', 'event', 'guestbook']),
+  targetId: z.uuid(),
+  reason: z.enum(['spam', 'harassment', 'inappropriate', 'misinformation', 'other']),
+  details: z.string().max(2000).optional(),
+})
+export type ReportInput = z.infer<typeof reportInput>
+export const reportResponse = envelope(z.object({ reported: z.literal(true) }))
+
+export const blockInput = z.object({ profileId: z.uuid() })
+export const blockResponse = envelope(z.object({ blocked: z.boolean() }))

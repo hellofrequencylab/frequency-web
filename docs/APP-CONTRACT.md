@@ -146,6 +146,8 @@ under the same RLS. On the cookie path it is a plain call. View-as never applies
 | `DELETE /api/v1/account` | bearer or cookie | Body `{ "confirm": "DELETE" }`. Erases the caller's own account (App Store 5.1.1(v)) through the web's `deleteMyAccount`. Refused inside a staff act-as. |
 | `GET /api/v1/account/export` | bearer or cookie | The member data export, the same object the web's "Download my data" builds. 5 per 10 minutes. |
 | `GET /api/v1/app-config?platform=&version=` | public | `AppConfigView`: the minimum supported and latest version for the platform (`platform_settings` rows `app_min_supported_version_<platform>` and `app_latest_version_<platform>`), `updateRequired` for the reporting build, and the client-safe flags. Cached 5 minutes. |
+| `POST /api/v1/reports` | bearer or cookie | Report `{ targetType, targetId, reason, details? }` through the web's `reportContent`. A repeat report is `conflict`. |
+| `POST` / `DELETE /api/v1/blocks` | bearer or cookie | Block or unblock `{ profileId }` as the caller (`lib/blocking.ts`). |
 
 The rest of the app's surface (feed, Circles, events, practices, messages, notifications, the
 capability projection, native sign-in, account deletion and export, push devices, capture and

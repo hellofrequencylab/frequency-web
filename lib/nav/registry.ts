@@ -223,6 +223,7 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
       { label: 'Help center', href: '/help', desc: 'Answers, guides, and support' },
       { label: 'Privacy', href: '/privacy', desc: 'How we handle your data' },
       { label: 'Terms', href: '/terms', desc: 'The rules of the road' },
+      { label: 'Community guidelines', href: '/guidelines', desc: 'How we treat each other, and how reports work' },
     ],
   },
 ] as const
@@ -384,6 +385,7 @@ const MEMBER_FOOTER_COLUMNS: readonly { title: string; links: readonly MemberFoo
     links: [
       { id: 'privacy', label: 'Privacy', href: '/privacy' },
       { id: 'terms', label: 'Terms', href: '/terms' },
+      { id: 'guidelines', label: 'Guidelines', href: '/guidelines' },
     ],
   },
 ] as const

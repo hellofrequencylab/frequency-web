@@ -31,7 +31,7 @@ export default function TermsPage() {
       <div className="px-6 py-16">
         <FocusTemplate
           title="Terms of Service"
-          description="Last updated: September 30, 2026"
+          description="Last updated: October 6, 2026"
           width="default"
         >
           <div className="prose prose-sm prose-gray dark:prose-invert max-w-none space-y-8">
@@ -89,7 +89,13 @@ export default function TermsPage() {
               <li>Use Frequency for anything illegal</li>
             </ul>
             <p className="text-muted leading-relaxed">
-              We may remove content or suspend accounts that break these rules.
+              <strong className="text-text">Zero tolerance.</strong> There is no tolerance on
+              Frequency for objectionable content or abusive members. Anyone can report a post, a
+              comment, an event or a member from the menu on it, and anyone can block a member. We
+              review every report within 24 hours. Content that breaks these rules comes down, and
+              the account that posted it may be suspended or removed. Our{' '}
+              <Link href="/guidelines" className="text-primary-strong hover:underline">community guidelines</Link>{' '}
+              say what that looks like in practice.
             </p>
             <p className="text-muted leading-relaxed">
               If you run a Space that sends email, our{' '}

@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-723",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.readFileSync(f,\"utf8\");const walk=(d)=>{if(!fs.existsSync(d))return[];return fs.readdirSync(d,{withFileTypes:true}).flatMap((x)=>{const p=path.join(d,x.name);return x.isDirectory()?(x.name===\"node_modules\"?[]:walk(p)):[p]})};const v1=()=>walk(\"app/api/v1\").filter((f)=>/route\\.ts$/.test(f));const v1src=()=>v1().map(read).join(\"\\n\");const t=read(\"app/terms/page.tsx\");if(!/objectionable/i.test(t)||!/tolerance/i.test(t))fail(\"the terms carry no zero-tolerance clause for objectionable content and abusive members (App Store 1.2)\");const g=[\"app/guidelines/page.tsx\",\"app/community-guidelines/page.tsx\"].find((f)=>fs.existsSync(f));if(!g)fail(\"there is no community guidelines page\");const s=v1src();if(!/blockUser/.test(s))fail(\"a native client cannot block a member\");if(!/report/i.test(s))fail(\"a native client cannot report content\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-06: the terms carry a zero-tolerance clause (24-hour review, removal and suspension); /guidelines is the public rule set, linked from the terms, the report dialog, both footers, the nav registry and the sitemap; POST /api/v1/reports runs the web's reportContent as the caller and POST/DELETE /api/v1/blocks call lib/blocking. The wording is a draft for the owner's review, not legal advice (the terms banner says so). Tested in app/api/v1/reports/route.test.ts."
+  }
+}
