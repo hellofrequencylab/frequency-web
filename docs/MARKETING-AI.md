@@ -8,7 +8,8 @@ seat was reserved by the `/marketing/agent` console ("a live Claude operator slo
 here later").
 
 ## The reframe (why it's not an ad engine)
-The primary audience (the High-Functioning Lonely, see [`CREATIVE-PLATFORM.md`](CREATIVE-PLATFORM.md))
+The audience is two readers and eleven archetypes ([`CONTENT-VOICE.md`](CONTENT-VOICE.md) §2, ADR-1715); the Seeker family
+(the Wired Professional, the Transplant, the Activity-First Man, the Evidence-First Skeptic)
 is allergic to funnels. Marketing that **persuades** repels them; marketing that
 **recognizes** them converts. So this is a **resonance engine**: it reflects the
 collective ache back so precisely they feel *seen*. Voice is load-bearing: warm,
@@ -25,7 +26,7 @@ plainspoken, *missed / exhale / home*; never *unlock / limited time / elevate*.
 
 ## The five layers
 1. **Listen**: live signal → a structured market snapshot.
-2. **Read the ache**: cluster into named pain points with evidence, mapped to the personas.
+2. **Read the ache**: cluster into named pain points with evidence, each mapped to an archetype (CONTENT-VOICE §2d).
 3. **Generate**: draft outbound assets (social / ad / hook) per pain point, in the brand voice.
 4. **Govern**: propose → Action Queue → approve → runs through the comms **spine** (consent +
    suppression + unsubscribe); usage caps + kill switch; AI-labeled.

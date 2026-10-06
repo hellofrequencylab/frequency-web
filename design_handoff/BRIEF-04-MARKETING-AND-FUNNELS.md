@@ -9,8 +9,8 @@
 
 ## 1. The governing law
 
-The primary audience (the high-functioning lonely, brief 02) is **allergic to
-funnels**: marketing that *persuades* repels them; marketing that *recognizes*
+Both readers (the Seeker and the Latent Leader, brief 02 and `docs/CONTENT-VOICE.md`
+§2) are **allergic to funnels**: marketing that *persuades* repels them; marketing that *recognizes*
 them converts. Every asset aims for "a magical connection, not an advertisement."
 
 ## 2. The marketing angles (the named positioning concepts)
@@ -24,11 +24,11 @@ them converts. Every asset aims for "a magical connection, not an advertisement.
 | Third Spaces movement | The locked vision frame (July 2026): the loneliness epidemic broadened to the Third Spaces movement; Labs = the infrastructure | Everyone |
 | The honest game | "Yes, it's meditation. We made it a game so you'd actually do it" | Seeker |
 | Anti-Duolingo forgiveness | "One miss is nothing. Two is a pattern. We catch you at one" — streak freeze as kindness | Seeker |
-| First responder | "78% of buyers pick whoever replies first. Now that's you" — enquiry opens a DM instantly | Latent Leader |
-| No lead left behind | "The room's full. Now none of them walk out as strangers" — QR → RSVP → Questionnaire → exportable Roster | Latent Leader |
-| One-timer to regular | One event becomes a Run; the return is built in, not begged for | Latent Leader |
+| First responder | "78% of buyers pick whoever replies first. Now that's you" — enquiry opens a DM instantly | Builder (Space side) |
+| No lead left behind | "The room's full. Now none of them walk out as strangers" — QR → RSVP → Questionnaire → exportable Roster | Builder (Space side) |
+| One-timer to regular | One event becomes a Run; the return is built in, not begged for | Gathering Host, becoming a Builder |
 | Access not extraction | Pricing voice: "what membership funds" names the room's lights and insurance; "no card today, leave anytime"; roles earned, not bought; no fake scarcity | Everyone |
-| Anti-culty trust | Transparency + humans: self-aware game framing, honest thinness, a real founder, "Ghost is a real status, not a guilt trip" | Skeptics |
+| Anti-culty trust | Transparency + humans: self-aware game framing, honest thinness, a real founder, "Ghost is a real status, not a guilt trip" | Seeker (the evidence-first skeptic) |
 
 **Hard guardrail across all business-facing assets: money is dark.** No flow ends
 on a $ / Paid / Sale node. Land on Captured, Booked, Return.
@@ -54,7 +54,7 @@ on a $ / Paid / Sale node. Land on Captured, Booked, Return.
   "Founder's First Week" 7-task set ending in a Founding Founder badge, Vera
   surfacing the single next best action.
 
-### Operator (Latent Leader / business)
+### Operator (Latent Leader, and the Builders who run a Space)
 
 - **Funnel B (Latent Leader):** leader landing + articles → "Your last event
   didn't fizzle because of you" → proof (bylined Host stories) → CTA "Get the
