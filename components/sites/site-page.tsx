@@ -14,6 +14,7 @@ import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SiteChrome } from '@/components/sites/site-chrome'
 import { SiteHero } from '@/components/sites/site-hero'
+import { buttonClasses } from '@/components/ui/button'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). /sites/<slug> and /sites/<slug>/<page>
 // render the Space's own pages (the same block docs the Space page editor saves, so the owner edits once
@@ -112,7 +113,7 @@ function SiteComingSoon({ brandName, profileHref }: { brandName: string; profile
         </p>
         <Link
           href={profileHref}
-          className="mt-8 inline-flex items-center gap-2 rounded-control bg-primary px-5 py-3 text-body-sm font-bold text-on-primary transition-opacity hover:opacity-90"
+          className={buttonClasses('primary', 'md', 'mt-8')}
         >
           Visit {brandName} on Frequency
           <ArrowRight className="h-4 w-4" aria-hidden />
