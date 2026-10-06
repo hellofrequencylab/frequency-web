@@ -184,11 +184,13 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     beta.active = false // the window is SHUT, which is the only world the grant exists for
   })
 
-  it('WITHOUT the grant: Business resolves the LIST key; legacy collective loadout bills business_base', async () => {
+  it('WITHOUT the grant: Business resolves the LIST key; a Collective loadout bills collective_base (ADR-1709)', async () => {
     await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
     expect(prices()).toEqual(['price_business_base_month_list'])
     await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'year' })
-    expect(prices()).toEqual(['price_business_base_year_list'])
+    expect(prices()).toEqual(['price_collective_base_year_list'])
+    await createSpaceLoadoutCheckout('space-1', { plan: 'nonprofit_collective', interval: 'month' })
+    expect(prices()).toEqual(['price_nonprofit_collective_month_list'])
   })
 
   it('WITH the grant: the same calls resolve the FOUNDING key instead', async () => {
@@ -196,13 +198,16 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
     expect(prices()).toEqual(['price_business_base_month'])
     await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'year' })
-    expect(prices()).toEqual(['price_business_base_year'])
+    expect(prices()).toEqual(['price_collective_base_year'])
   })
 
   it('the grant reaches EVERY item in the loadout, not only the base', async () => {
     grant.granted = true
-    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month', addons: ['ai'] })
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month', addons: ['ai'] })
     expect(prices()).toEqual(['price_business_base_month', 'price_addon_ai_month'])
+    // Collective includes Vera AI, so no add-on line rides on its base (ADR-1709).
+    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month', addons: ['ai'] })
+    expect(prices()).toEqual(['price_collective_base_month'])
   })
 
   it('the grant reaches the YEARLY key too, not only the monthly one', async () => {
@@ -226,7 +231,7 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     const ungranted = prices()
     grant.granted = true
     await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month' })
-    expect(ungranted).toEqual(['price_business_base_month'])
+    expect(ungranted).toEqual(['price_collective_base_month'])
     expect(prices()).toEqual(ungranted)
   })
 })

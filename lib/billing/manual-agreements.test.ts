@@ -346,11 +346,11 @@ describe('correctPaidThrough', () => {
 describe('createManualAgreement', () => {
   const input = {
     spaceId: 'space-1',
-    plan: 'collective',
+    plan: 'business',
     interval: 'year',
     amountCents: 49000,
     method: 'cash',
-    label: 'Grandfathered at $49/mo ($490/yr), normally $79',
+    label: 'Grandfathered at $49/mo ($490/yr)',
     startedAt: '2026-07-27',
     paidThrough: '2027-07-27',
   }
