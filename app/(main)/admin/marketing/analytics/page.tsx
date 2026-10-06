@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic'
 // cohort heatmap, the CRM counts, and the email log — in the operator-chosen order. Each block is a
 // self-fetching RSC in components/widgets/marketing/* isolated in its own <Suspense>, so a slow read
 // never blocks the shell (ADR-233 §5) and staff arrange them from the on-page Settings → Layout panel.
+// The launch north star (LIVE-809, ADR-1720) leads, fixed above the movable modules.
 export default async function AnalyticsPage() {
   return (
     <AdminTemplate
@@ -19,7 +20,6 @@ export default async function AnalyticsPage() {
       description="Read-models off the one event backbone + the email log."
       width="wide"
     >
-      {/* The launch north star (LIVE-809, ADR-1720) leads, fixed above the movable modules. */}
       <Suspense fallback={null}>
         <ShowingUpBand />
       </Suspense>
