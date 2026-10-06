@@ -26,6 +26,8 @@ const APP_LINK_PATHS = [
   '/q/*',
   '/spaces/*',
   '/practices/*',
+  // The native sign-in return (LIVE-718): a magic link opened on the phone lands in the app.
+  '/auth/native',
 ]
 
 const TEAM_ID_SHAPE = /^[A-Z0-9]{10}$/

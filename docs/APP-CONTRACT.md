@@ -146,6 +146,7 @@ under the same RLS. On the cookie path it is a plain call. View-as never applies
 | `DELETE /api/v1/account` | bearer or cookie | Body `{ "confirm": "DELETE" }`. Erases the caller's own account (App Store 5.1.1(v)) through the web's `deleteMyAccount`. Refused inside a staff act-as. |
 | `GET /api/v1/account/export` | bearer or cookie | The member data export, the same object the web's "Download my data" builds. 5 per 10 minutes. |
 | `GET /api/v1/app-config?platform=&version=` | public | `AppConfigView`: the minimum supported and latest version for the platform (`platform_settings` rows `app_min_supported_version_<platform>` and `app_latest_version_<platform>`), `updateRequired` for the reporting build, and the client-safe flags. Cached 5 minutes. |
+| `POST /api/v1/session/bootstrap` | bearer | `SessionBootstrapView`: the caller's `MeView` plus `seatLanding` / `orderLanding`, after running the web's post-sign-in claims (guest seats, leads, tickets, orders). Idempotent: call after sign-in and on every cold start. |
 | `POST /api/v1/reports` | bearer or cookie | Report `{ targetType, targetId, reason, details? }` through the web's `reportContent`. A repeat report is `conflict`. |
 | `POST` / `DELETE /api/v1/blocks` | bearer or cookie | Block or unblock `{ profileId }` as the caller (`lib/blocking.ts`). |
 
@@ -164,3 +165,26 @@ backlog.
 |---|---|---|
 | `APPLE_TEAM_ID` | `LIVE-714` | The Apple team id in `/.well-known/apple-app-site-association` (app/.well-known/). Unset, the file claims no app. |
 | `ANDROID_SHA256_FINGERPRINTS` | `LIVE-714` | Comma-separated signing-cert fingerprints for `/.well-known/assetlinks.json`. Unset, an empty list. |
+
+## 11. Native sign-in
+
+The app signs in with supabase-js (email OTP or magic link, Google OAuth; Sign in with Apple comes
+with the app, `LIVE-725`) and exchanges the PKCE code itself. It never reaches the web's
+`/auth/callback`, so it calls **`POST /api/v1/session/bootstrap`** right after sign-in. That runs
+the same post-sign-in step as the callback (`lib/auth/post-sign-in.ts`), so a ticket or an RSVP
+made as a guest shows up in the app.
+
+**Redirect URLs.** The app passes one of these as `emailRedirectTo` / `redirectTo`:
+
+| URL | When |
+|---|---|
+| `frequency://auth/callback` | The app's own scheme, for OAuth in an in-app browser session. |
+| `https://frequencylocal.com/auth/native` | Magic links. With the app installed, iOS opens the app (the path is claimed in the association file). Without it, the web route forwards the code to `/auth/callback` and the person is signed in on the web. |
+
+Both must be on the Supabase Auth redirect allow-list (dashboard config, an owner step when the
+app is built, `OWN-091`).
+
+**Token refresh.** supabase-js holds the session: `persistSession: true` with the device keychain
+(Expo SecureStore) as storage, and `autoRefreshToken: true` while the app is in the foreground
+(start and stop it on app state changes). The server never sees the refresh token. On a `401` the
+app refreshes once and retries; a second `401` signs out (§2).

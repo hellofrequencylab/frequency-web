@@ -198,3 +198,16 @@ export const reportResponse = envelope(z.object({ reported: z.literal(true) }))
 
 export const blockInput = z.object({ profileId: z.uuid() })
 export const blockResponse = envelope(z.object({ blocked: z.boolean() }))
+
+// ── POST /api/v1/session/bootstrap: the native post-sign-in step (LIVE-718) ─────────────────────
+
+/** What the app gets after it signs in (and on every cold start): who it is, and where a guest
+ *  claim says to land. `seatLanding` (a live event) outranks `orderLanding` (a paid Journey's
+ *  welcome); both are site paths the app maps to its own screens, or opens on the web. */
+export const sessionBootstrapView = z.object({
+  me: meView,
+  seatLanding: z.string().nullable(),
+  orderLanding: z.string().nullable(),
+})
+export type SessionBootstrapView = z.infer<typeof sessionBootstrapView>
+export const sessionBootstrapResponse = envelope(sessionBootstrapView)
