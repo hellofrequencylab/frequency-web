@@ -82,7 +82,10 @@ export function SiteDomainPanel({
     })
   }
 
-  const live = status ? status.attached && status.verified && status.dnsReady : false
+  const live = status ? status.attached && status.verified && status.dnsReady && status.secure : false
+  // DNS is done and only the certificate is left: Vercel issues it on its own once it sees the new
+  // records, and until then a browser warns on the domain. Say so, so nobody thinks it is broken.
+  const securing = status ? status.attached && status.verified && status.dnsReady && !status.secure : false
 
   // Quiet auto re-check while waiting on DNS (no error banner on a failed poll; Check again still shows one).
   const polls = useRef(0)
@@ -101,7 +104,7 @@ export function SiteDomainPanel({
   // Connect automatically: ask once per pending domain whether its DNS provider can apply Frequency's
   // template. Any failure just leaves the copy steps, which are always shown.
   const [oneClick, setOneClick] = useState<{ domain: string; providerName: string; applyUrl: string } | null>(null)
-  const oneClickFor = status && !live && !status.providerIsVercel ? status.domain : null
+  const oneClickFor = status && !status.dnsReady && !status.providerIsVercel ? status.domain : null
   useEffect(() => {
     if (!oneClickFor) return
     let cancelled = false
@@ -188,18 +191,33 @@ export function SiteDomainPanel({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-text">{status.domain}</span>
-            {live ? <Badge tone="success">Live</Badge> : <Badge tone="warning">Waiting on DNS</Badge>}
+            {live ? (
+              <Badge tone="success">Live</Badge>
+            ) : securing ? (
+              <Badge tone="warning">Securing your site</Badge>
+            ) : (
+              <Badge tone="warning">Waiting on DNS</Badge>
+            )}
           </div>
 
           <ul className="space-y-1 text-body-sm">
             <StatusLine done={status.attached} label="Connected to Frequency hosting" />
             <StatusLine done={status.verified} label="Ownership confirmed" />
             <StatusLine done={status.dnsReady} label="DNS points to your website" />
+            <StatusLine done={status.secure} label="Secure connection (https) ready" />
           </ul>
 
           {status.problem && <p className="text-body-sm text-warning">{status.problem}</p>}
 
-          {!live && (
+          {securing && (
+            <p className="text-body-sm text-muted">
+              Your DNS is set. We are now getting the security certificate for {status.domain}, which usually takes a
+              few minutes and can take up to an hour. Until it is ready, a browser may say the connection is not
+              private. Nothing to do: this page checks again on its own.
+            </p>
+          )}
+
+          {!status.dnsReady && (
             <div className="space-y-3">
               {connectLink && (
                 <div className="space-y-2 rounded-card border border-primary bg-primary-bg px-3 py-3">
@@ -230,7 +248,11 @@ export function SiteDomainPanel({
                     Add each record below. If a record with the same type and name is already there, edit it to match
                     instead of adding a second one.
                   </li>
-                  <li>Save. This page checks again every 30 seconds, and it usually goes live within an hour.</li>
+                  <li>
+                    Save. This page checks again every 30 seconds, and it usually goes live within an hour. Right
+                    after the switch, a browser may warn that the connection is not private while we get your
+                    security certificate. That clears on its own.
+                  </li>
                 </ol>
               )}
               {!status.providerIsVercel && (

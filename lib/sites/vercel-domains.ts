@@ -32,6 +32,10 @@ export interface DomainStatus {
   verified: boolean
   /** DNS points at Vercel (false until the A / CNAME records are set and have spread). */
   dnsReady: boolean
+  /** The domain answers over https with a valid certificate. Vercel issues the certificate only after
+   *  DNS points at it, so for a few minutes (up to an hour) after the switch a browser shows a
+   *  "connection is not private" warning. False until DNS is ready. */
+  secure: boolean
   /** What the owner should set at their registrar. */
   records: DnsRecord[]
   /** A plain-English problem to show, when something went wrong talking to Vercel. */
@@ -183,6 +187,7 @@ async function readStatus(domain: string): Promise<DomainStatus> {
       attached: false,
       verified: false,
       dnsReady: false,
+      secure: false,
       records: recordsFor(domain),
       problem: 'Hosting is not connected yet, so Frequency cannot add your domain on its own.',
     }
@@ -204,11 +209,13 @@ async function readStatus(domain: string): Promise<DomainStatus> {
     const cname = configRes.json.recommendedCNAME as { rank: number; value: string }[] | undefined
     const apexA = ipv4?.find((r) => r.rank === 1)?.value?.[0]
     const wwwCname = cname?.find((r) => r.rank === 1)?.value?.replace(/\.$/, '')
+    const dnsReady = configRes.ok && configRes.json.misconfigured === false
 
     return {
       attached,
       verified,
-      dnsReady: configRes.ok && configRes.json.misconfigured === false,
+      dnsReady,
+      secure: dnsReady && (await httpsReady(domain)),
       records: recordsFor(domain, { apexA, wwwCname, verification: verified ? [] : verification }),
       problem: attached ? undefined : 'This domain is not connected to Frequency hosting yet. Press Connect again.',
     }
@@ -217,8 +224,26 @@ async function readStatus(domain: string): Promise<DomainStatus> {
       attached: false,
       verified: false,
       dnsReady: false,
+      secure: false,
       records: recordsFor(domain),
       problem: 'Could not reach the hosting service just now. Try Check again in a minute.',
     }
+  }
+}
+
+/** Does `domain` answer over https with a certificate the runtime trusts? Any response at all means
+ *  the TLS handshake passed; a certificate Vercel has not issued yet fails the handshake and throws.
+ *  Only ever called with the Space's own validated domain. Never throws. */
+async function httpsReady(domain: string): Promise<boolean> {
+  try {
+    await fetch(`https://${domain}/`, {
+      method: 'HEAD',
+      redirect: 'manual',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(4000),
+    })
+    return true
+  } catch {
+    return false
   }
 }
