@@ -1,0 +1,19 @@
+{
+  "id": "HYG-170",
+  "title": "Docs and design briefs still describe the audience with the retired persona trio and nervous-system framing",
+  "status": "open",
+  "priority": "P3",
+  "lane": "hygiene",
+  "size": "M",
+  "source": {
+    "file": "docs/CREATIVE-PLATFORM.md",
+    "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
+  },
+  "detail": "PR 9 (ADR-1715). Re-keys or supersedes every doc in the handoff's conflict sweep: CREATIVE-PLATFORM section 1 (superseded, core truth recast as being missed when you do not show up), MARKETING-AI, MARKETING-BRIEF, MARKETING-STYLE-GUIDE, ROADMAP, IA-STRATEGY, PUBLIC-SITE-PLAN (archetype rows and the missing doors), LEAD-FLOWS and SPLASH-FUNNELS (persona-to-family map), MARKETING-BUILD-PLAN, COMMUNITY-COLLECTIVE-STRATEGY, ROLES, and the design briefs (BRIEF-00, 02, 03, 04, dawn/readme, claude-design-briefs, funnels-brief) regenerated from the new section 2 and synced per design_handoff/SYNC.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};const {execSync}=require(\"child_process\");let out=\"\";try{out=execSync(\"git grep -n -E \\\"The High-Functioning Lonely|Post-Screen Skeptic|All three personas|settled nervous system|settle your nervous system|[Ee]mbodied (practitioners|members)|Primary target: the High\\\" -- . \\\":!docs/DECISIONS.md\\\" \\\":!docs/BUILD-BACKLOG.json\\\" \\\":!docs/ledger\\\" \\\":!scripts\\\"\",{encoding:\"utf8\"})}catch(e){out=e.stdout||\"\"}if(out.trim())fail(\"retired audience framings remain outside DECISIONS:\\n\"+out.trim().split(\"\\n\").slice(0,15).join(\"\\n\"))'",
+    "note": "A repo grep outside DECISIONS, the backlog, the ledger and the guard scripts fails while any retired persona name or nervous-system framing remains."
+  },
+  "wave": "W7"
+}
