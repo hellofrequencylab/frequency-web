@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-725",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"app/(main)/journeys/[slug]/learn/actions.ts\";if(!fs.existsSync(p))process.exit(79);const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"export async function completeJourneyLessonAction(\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);if(!/canEnterJourney|isPlanAdopted/.test(body)){console.error(\"SCAN-725: completeJourneyLessonAction records a lesson and pays its rewards without the enrolment door the learn page enforces, so a member can complete lessons on a Journey they cannot open.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: completeJourneyLessonAction in app/(main)/journeys/[slug]/learn/actions.ts now runs the learn page's door (getJourneyCapabilities + isPlanAdopted through canEnterJourney, failing with Journey not found), refuses an itemId outside loaded.items, and refuses a lesson whose phase is still drip-locked for a learner using the same Run or solo enrolment anchor and isPhaseUnlocked the player uses.\n\nCLOSED 2026-10-05: completeJourneyLessonAction in app/(main)/journeys/[slug]/learn/actions.ts now runs the learn page's door through the new shared lib/journeys/entry-door.ts (loadJourneyEntryFacts, fed to canEnterJourney; the page uses the same helper), failing with Journey not found, refuses an itemId outside loaded.items, and refuses a lesson whose phase is still drip-locked for a learner using the same Run or solo enrolment anchor and isPhaseUnlocked the player uses."
+  }
+}

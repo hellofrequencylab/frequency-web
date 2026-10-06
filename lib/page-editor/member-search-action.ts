@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { DIRECTORY_VISIBILITY_COLUMNS, isListableInDirectory, type DirectoryTarget } from '@/lib/connections/directory-visibility'
 
 // Server actions behind the Team block's NETWORK MEMBER PICKER
 // (lib/page-editor/member-picker-field.tsx). A 'use server' module exports ONLY async
@@ -45,6 +46,9 @@ async function isSpaceEditor(slug: string | null | undefined): Promise<boolean> 
 
 const SEARCH_LIMIT = 12
 
+/** A profiles row carrying the four privacy columns the directory predicate reads. */
+type DirectoryRow = Record<string, unknown> & DirectoryTarget
+
 function toMember(row: Record<string, unknown>): MemberPick | null {
   const handle = row.handle
   if (typeof handle !== 'string' || handle.length === 0) return null
@@ -64,17 +68,23 @@ export async function searchNetworkMembers(slug: string, query?: string): Promis
   const needle = (query ?? '').replace(/[(),%]/g, ' ').trim()
   if (needle.length < 2) return []
 
+  // 2026-10-05 (SCAN-776): the directory scope this picker claims to mirror honours "Show me in the
+  // Community directory" and Ghost mode (lib/connections/directory-visibility). The column filters
+  // keep hidden rows from using up the limit; the predicate is the shared authority.
   const admin = createAdminClient()
   const { data } = await admin
     .from('profiles')
-    .select('id, handle, display_name, avatar_url')
+    .select(`id, handle, display_name, avatar_url, ${DIRECTORY_VISIBILITY_COLUMNS}`)
     .eq('is_active', true)
+    .eq('directory_visible', true)
+    .eq('ghost_mode', false)
     .not('handle', 'is', null)
     .or(`display_name.ilike.%${needle}%,handle.ilike.%${needle}%`)
     .order('display_name', { ascending: true })
     .limit(SEARCH_LIMIT)
 
-  return ((data ?? []) as Record<string, unknown>[])
+  return ((data ?? []) as DirectoryRow[])
+    .filter(isListableInDirectory)
     .map(toMember)
     .filter((m): m is MemberPick => Boolean(m))
 }
@@ -95,13 +105,14 @@ export async function resolveNetworkMembers(slug: string, ids: string[]): Promis
   const admin = createAdminClient()
   const { data } = await admin
     .from('profiles')
-    .select('id, handle, display_name, avatar_url')
+    .select(`id, handle, display_name, avatar_url, ${DIRECTORY_VISIBILITY_COLUMNS}`)
     .in('id', clean)
     .eq('is_active', true)
     .not('handle', 'is', null)
 
   const byId = new Map<string, MemberPick>()
-  for (const row of ((data ?? []) as Record<string, unknown>[])) {
+  // Same predicate as the search (SCAN-776): a member who opted out after being picked drops off.
+  for (const row of ((data ?? []) as DirectoryRow[]).filter(isListableInDirectory)) {
     const member = toMember(row)
     if (member) byId.set(member.id, member)
   }

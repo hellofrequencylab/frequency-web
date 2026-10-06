@@ -20,6 +20,7 @@
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { DIRECTORY_VISIBILITY_COLUMNS, isListableInDirectory, type DirectoryTarget } from '@/lib/connections/directory-visibility'
 import { resolveProfileStats, type ResolvedStat } from '@/lib/spaces/profile-stats'
 import type { SectionPresence } from '@/lib/spaces/section-anchors'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
@@ -798,14 +799,17 @@ export async function resolveMemberCards(ids: string[]): Promise<SpaceTeamMember
   if (clean.length === 0) return []
   try {
     const admin = createAdminClient()
+    // 2026-10-05 (SCAN-776): a public Team card is a directory listing for anonymous visitors, so
+    // it honours "Show me in the Community directory" and Ghost mode. A member who opts out after
+    // being picked drops off the published cards; the operator's other picks keep their order.
     const { data } = await admin
       .from('profiles')
-      .select('id, display_name, handle, avatar_url')
+      .select(`id, display_name, handle, avatar_url, ${DIRECTORY_VISIBILITY_COLUMNS}`)
       .in('id', clean)
       .eq('is_active', true)
       .not('handle', 'is', null)
     const byId = new Map<string, SpaceTeamMember>()
-    for (const r of (data ?? []) as Row[]) {
+    for (const r of ((data ?? []) as (Row & DirectoryTarget)[]).filter(isListableInDirectory)) {
       const handle = strOrNull(r.handle)
       if (!handle) continue
       byId.set(str(r.id), {
