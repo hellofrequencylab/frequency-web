@@ -1,0 +1,17 @@
+{
+  "id": "SCAN-636",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const T=\"app/discover/events/[slug]/page.tsx\";const e=fs.readFileSync(\"app/(public)/events/[slug]/page.tsx\",\"utf8\");const memberIsr=/export const revalidate/.test(e);if(fs.existsSync(T)){const d=fs.readFileSync(T,\"utf8\");const twinToMember=/canonical: `\\/events\\/\\$\\{/.test(d);process.exit(twinToMember && !memberIsr ? 1 : 0)}const retired=/source: \\x27\\/discover\\/events\\/:slug\\x27/.test(fs.readFileSync(\"next.config.ts\",\"utf8\"));process.exit(retired && memberIsr ? 0 : 1)'",
+      "note": "The twin canonicalised to /events/<slug>, so that page must be ISR. Since SCAN-672 retired the twin behind a 308 the probe reads the rule in next.config.ts instead of the deleted page and still requires the member page to be ISR."
+    },
+    "source": {
+      "file": "app/(public)/events/[slug]/page.tsx",
+      "ref": "meta-scan 2026-09-19; the /discover/events twin it read retired 2026-10-05 (SCAN-672)"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05 (SCAN-672): the /discover/events/<slug> twin this row read is retired behind a 308 to /events/<slug>; the probe now reads that rule in next.config.ts when the twin file is gone. Nothing about the member page's ISR changed."
+  }
+}

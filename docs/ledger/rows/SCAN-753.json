@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-753",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const rd=(p)=>{if(!fs.existsSync(p)){console.error(\"indeterminate: missing \"+p);process.exit(79)}return fs.readFileSync(p,\"utf8\")};const slice=(t,name)=>{const i=t.indexOf(\"export async function \"+name);if(i<0)return null;const j=t.indexOf(\"export async function \",i+10);return t.slice(i,j<0?t.length:j)};const t=rd(\"app/(main)/admin/actions.ts\");const bad=[];for(const n of [\"approveVerification\",\"rejectVerification\"]){const s=slice(t,n)||\"\";if(!/profile_id/.test(s)||!/requireScopedManage|getCircleCapabilities|isStaff\\(/.test(s))bad.push(n+\" has no self or scope check\")}for(const n of [\"createCrewTask\",\"updateCrewTask\",\"deleteCrewTask\"]){const s=slice(t,n)||\"\";if(/requireCommunityOps\\(\\)/.test(s)&&!/requireScopedManage|isStaff\\(|staffCan\\(/.test(s))bad.push(n+\" lets any host edit the global catalogue\")}if(bad.length){console.error(\"SCAN-753: \"+bad.join(\"; \")+\", so a host can release their own held Zaps and reshape the Zap economy.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\napproveVerification and rejectVerification in app/(main)/admin/actions.ts gated on requireCommunityOps, a global host-or-above floor that never read whose completion was being released, so any host could approve their own held Zaps or approve or reject anyone's in any circle, and createCrewTask, updateCrewTask and deleteCrewTask let any host rewrite the global Zap catalogue. Both verification actions now load the completion (profile_id and the task's circle_id) through loadCompletionScope, refuse when the completion is gone, refuse the member's own completion (You cannot verify / reject your own completion.), and run requireScopedManage(caller, hasScopeCap, 'community') where hasScopeCap is circle.assignTask on the task's own circle for a circle-scoped task or on any circle the member is active in for a global-catalogue task; staff web_role and the community staff domain keep global reach. The three catalogue actions gate on requireCatalogueEditor, which is requireScopedManage with hasScopeCap false, so only staff edit the global catalogue while hosts keep their circle-scoped tasks through circle-task-actions. Pinned by app/(main)/admin/verification-scope.test.ts (8 tests: self refusal, host in a managed circle allowed, host outside refused, circle-task scope, staff reach, missing completion, catalogue host refused, catalogue staff admitted) and the probe."
+  }
+}

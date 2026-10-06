@@ -135,10 +135,10 @@ describe('source shape: the write can only happen from the click', () => {
 })
 
 describe('the confirm step names the category in plain words', () => {
-  it('reads "roommate match alerts" for a matches token, not the raw key (SCAN-733)', async () => {
+  it('reads "housing match alerts" for a matches token, not the raw key (SCAN-733)', async () => {
     const t = makeUnsubscribeToken('profile-1', 'matches')
     const html = await render({ p: 'profile-1', c: 'matches', t })
-    expect(html).toContain('Unsubscribe from roommate match alerts?')
+    expect(html).toContain('Unsubscribe from housing match alerts?')
     expect(html).not.toContain('Unsubscribe from matches?')
   })
 })

@@ -8,7 +8,7 @@ import { FocusTemplate } from '@/components/templates'
 import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_PAGE } from '@/lib/onboarding/founder-config'
 import { FounderClaim } from './founder-claim'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +22,7 @@ export function generateMetadata(): Metadata {
     alternates: { canonical: '/founder' },
     openGraph: {
       ...OG_SITE,
+      images: ROOT_OG_IMAGES,
       title: FOUNDER_PAGE.title,
       description: FOUNDER_PAGE.description,
       url: '/founder',

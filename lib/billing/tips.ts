@@ -195,12 +195,19 @@ export async function recordTipFromSession(session: Stripe.Checkout.Session): Pr
   // Only advance pending → succeeded (idempotent; a redelivered event is a no-op).
   // `.select()` returns the rows we actually flipped, so the ledger append below runs
   // exactly once per tip.
-  const { data: updated } = await db()
+  const { data: updated, error } = await db()
     .from('tips')
     .update({ status: 'succeeded', succeeded_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
     .select('id, platform_fee_cents, from_profile_id, currency, to_profile_id, amount_cents, message')
+  // SCAN-764: the flip is NOT best-effort. A DB refusal used to be read as "zero rows flipped",
+  // which is also what a redelivery looks like, so the webhook acked 200 with its claim kept and
+  // the tip stayed `pending` forever: money taken, recipient unpaid, no retry. Throwing hands the
+  // error to the Stripe route, which releases the claim and 500s so Stripe redelivers; the
+  // on-page backstops catch it (they are never fatal to the tipper). Safe because the update is
+  // guarded on `status = 'pending'`, so the redelivery flips exactly once.
+  if (error) throw new Error(`[tips] settle flip failed (session=${session.id}): ${error.message}`)
   const rows = (updated ?? []) as {
     id: string
     platform_fee_cents: number

@@ -29,6 +29,6 @@ describe('manage-emails CATEGORY_LABELS', () => {
     )
     const switches = html.match(/role="switch"/g) ?? []
     expect(switches).toHaveLength(EMAIL_WIRED.length)
-    expect(html).toContain('aria-label="Roommate matches"')
+    expect(html).toContain('aria-label="Housing matches"')
   })
 })

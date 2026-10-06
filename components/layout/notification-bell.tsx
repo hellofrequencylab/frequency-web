@@ -57,24 +57,27 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
   function handleOpen() {
     if (!open) {
       setOpen(true)
-      // Opening the panel counts as "checked" — clear the unread badge immediately
-      // and persist it (markAllRead), so notifications turn off once they're seen.
-      if (unread > 0) {
-        setUnread(0)
+      // Opening the panel counts as "checked": clear the unread badge immediately and persist it
+      // (markAllRead) so notifications turn off once they're seen.
+      //
+      // SCAN-686: the list loads FIRST and the read mark runs AFTER it, in one transition. Server
+      // actions dispatch in order, so a markAllRead sent before getMyNotifications committed
+      // before the read, and every row came back already read: nothing ever looked new.
+      const hadUnread = unread > 0
+      if (hadUnread) setUnread(0)
+      if (!loaded || hadUnread) {
         startTransition(async () => {
-          await markAllRead()
-        })
-      }
-      if (!loaded) {
-        startTransition(async () => {
-          const res = await getMyNotifications()
-          if (res.kind === 'error') {
-            setLoadFailed(true)
-            return
+          if (!loaded) {
+            const res = await getMyNotifications()
+            if (res.kind === 'error') {
+              setLoadFailed(true)
+            } else {
+              setLoadFailed(false)
+              setNotifications(res.items)
+              setLoaded(true)
+            }
           }
-          setLoadFailed(false)
-          setNotifications(res.items)
-          setLoaded(true)
+          if (hadUnread) await markAllRead()
         })
       }
     } else {

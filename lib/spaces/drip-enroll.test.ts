@@ -43,9 +43,15 @@ function builder(table: string) {
       }
       return { data: null, error: null }
     },
+    // SCAN-707: the enroll reads the rows the upsert returns; a duplicate (same sequence + contact
+    // already stored) returns nothing, like ignoreDuplicates does.
     upsert: (rows: Record<string, unknown>[]) => {
-      store.upserts.push(...rows)
-      return Promise.resolve({ error: null })
+      const fresh = rows.filter(
+        (r) => !store.upserts.some((u) => u.sequence_id === r.sequence_id && u.contact_id === r.contact_id),
+      )
+      store.upserts.push(...fresh)
+      const result = { error: null, data: fresh.map((r) => ({ contact_id: r.contact_id })) }
+      return Object.assign(Promise.resolve(result), { select: () => Promise.resolve(result) })
     },
     // rules read (fireSpaceTrigger): .eq().eq().eq() then awaited
     then: (resolve: (r: { data: unknown[]; error: null }) => unknown) => {

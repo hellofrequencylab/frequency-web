@@ -9,7 +9,9 @@ import { OutreachForm } from './outreach-form'
 export const dynamic = 'force-dynamic'
 
 // The scope a steward reaches, by role: host → their circle, guide → their hub,
-// mentor/janitor → their nexus.
+// mentor/janitor → their nexus. The send itself reaches the UNION of everything they lead
+// (hosted Circles plus the hubs and nexuses they steward), the way the Leader dashboard counts
+// it; this word names the widest of those for the page copy.
 function scopeFor(role: CommunityRole): string {
   if (role === 'mentor' || role === 'janitor') return 'nexus'
   if (role === 'guide') return 'hub'

@@ -136,16 +136,28 @@ async function grantExtraCreditZaps(
 }
 
 /** If `itemId` is an extra-credit block on this plan, pay its bonus Zaps (idempotent). Loads the
- *  block's own `settings.bonus_zaps` (falls back to the default). Returns Zaps newly awarded. */
+ *  block's own `settings.bonus_zaps` (falls back to the default). Returns Zaps newly awarded.
+ *
+ *  NEVER PAYS THE AUTHOR (SCAN-722). Whoever can set `bonus_zaps` on a block must not be able to
+ *  collect it: every member may create a Journey, there is no cap on extra-credit blocks, and the
+ *  once-only key is per block, so an author ticking off their own blocks was an unlimited Zap mint.
+ *  The plan's author_id is read with the item here (defence in depth, no extra round trip); the
+ *  lesson action also refuses the wider editor set through canEditJourney before calling this. */
 export async function grantExtraCreditIfAny(profileId: string, planId: string, itemId: string): Promise<number> {
   const admin = db()
   const { data } = await admin
     .from('journey_plan_items')
-    .select('title, settings')
+    .select('title, settings, plan:journey_plans!inner(author_id)')
     .eq('id', itemId)
     .eq('plan_id', planId)
     .maybeSingle()
-  const row = data as { title: string | null; settings: Record<string, unknown> | null } | null
+  const row = data as {
+    title: string | null
+    settings: Record<string, unknown> | null
+    plan: { author_id: string | null } | { author_id: string | null }[] | null
+  } | null
+  const plan = Array.isArray(row?.plan) ? row?.plan[0] : row?.plan
+  if (plan?.author_id && plan.author_id === profileId) return 0
   const s = row?.settings
   if (!s || s.extra_credit !== true) return 0
   const amount = typeof s.bonus_zaps === 'number' && s.bonus_zaps > 0 ? Math.floor(s.bonus_zaps) : DEFAULT_EXTRA_CREDIT_ZAPS

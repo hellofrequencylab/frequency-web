@@ -28,8 +28,9 @@ const MAX_IMAGE_URL_LEN = 2048
 
 /** One link/CTA on a splash. `label` is the plain button/link text the visitor reads; `url` is any
  *  http(s) URL or a site-relative path (validated by isValidTargetUrl, the same guard the resolver
- *  uses). The FIRST link in `links` is the PRIMARY CTA: when a splash has one, the /q resolver may
- *  redirect straight to it (see render-time handling in app/q/[slug]/route.ts). */
+ *  uses). The FIRST link in `links` is the PRIMARY CTA: the landing styles it as the main button, and
+ *  when it is the ONLY thing the splash has to show (see splashRedirectLink) the /q resolver sends
+ *  the scan straight to it instead of rendering the landing. */
 export interface SplashLink {
   label: string
   url: string
@@ -109,6 +110,17 @@ export function normalizeSplash(raw: unknown): Splash | null {
  *  scan can redirect straight to the splash's primary action instead of rendering the landing. Pure. */
 export function primarySplashLink(splash: Splash | null | undefined): SplashLink | null {
   if (!splash) return null
+  return splash.links[0] ?? null
+}
+
+/** The link a scan may be sent STRAIGHT to instead of rendering the landing, or null. A splash
+ *  promises a small landing page (heading, blurb, image, links) and the /q resolver must show what
+ *  the owner authored, so the shortcut only applies when the landing would add nothing over its one
+ *  button: exactly one link, no blurb, no image. A splash with a blurb, an image or more than one
+ *  link renders (renderSplashPage styles links[0] as the primary button). Pure. SCAN-780. */
+export function splashRedirectLink(splash: Splash | null | undefined): SplashLink | null {
+  if (!splash) return null
+  if (splash.links.length !== 1 || splash.blurb || splash.imageUrl) return null
   return splash.links[0] ?? null
 }
 

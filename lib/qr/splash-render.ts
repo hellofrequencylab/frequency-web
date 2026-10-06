@@ -1,6 +1,6 @@
 // SPLASH PAGE RENDERER for the /q/<slug> resolver (ENTITY-SPACES-BUILD §C, Phase 2). Produces a
-// self-contained HTML string for a code's splash landing, when the splash has no primary CTA to
-// redirect to (the resolver handles the redirect case itself). This is a PUBLIC, unauthenticated
+// self-contained HTML string for a code's splash landing, whenever the splash has more to show than a
+// bare single link (the resolver handles that one redirect case itself via splashRedirectLink). This is a PUBLIC, unauthenticated
 // route-handler response OUTSIDE the React app shell, so it cannot reach the DAWN CSS tokens; it
 // mirrors the established standalone-HTML pattern for public /q and /u/scan responses (inline styles,
 // escaped content) rather than composing kit components (which only exist inside the rendered app).

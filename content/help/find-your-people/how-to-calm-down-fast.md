@@ -8,6 +8,7 @@ updated: 2026-10-05
 audience: member
 featureKeys: [practices, on-air]
 status: published
+canonical: /calm-down-fast
 ---
 Read the full guide first: [How to calm down fast](/calm-down-fast). This page is the short version for members, with the Frequency features that help.
 

@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   Search, ChevronDown, ChevronUp, Mail, Pencil,
-  UserX, UserCheck, Trash2, Loader2, Check, Sparkles,
+  UserX, UserCheck, Trash2, Loader2, Check, Sparkles, AlertCircle,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -55,10 +55,15 @@ export function MemberAdmin({
   members,
   emailMap,
   canGrantModerator = false,
+  canManageAccounts = false,
 }: {
   members: Member[]
   emailMap: Record<string, string>
   canGrantModerator?: boolean
+  /** SCAN-755: the page admits Operations / Support staff (ADR-223), but edit profile, the
+   *  sign-in link, deactivate / reactivate and delete are web_role janitor actions server-side.
+   *  Only a janitor viewer sees those buttons, so a staffer is never handed a button that fails. */
+  canManageAccounts?: boolean
 }) {
   // Deep-link support: a profile's "Manage account" link lands here as
   // ?q=<handle>&member=<id> — pre-filter the roster to that member and open their row.
@@ -126,6 +131,7 @@ export function MemberAdmin({
               isExpanded={expandedId === m.id}
               onToggle={() => setExpandedId(expandedId === m.id ? null : m.id)}
               canGrantModerator={canGrantModerator}
+              canManageAccounts={canManageAccounts}
             />
           ))
         )}
@@ -142,26 +148,37 @@ function MemberRow({
   isExpanded,
   onToggle,
   canGrantModerator,
+  canManageAccounts,
 }: {
   member: Member
   email: string | null
   isExpanded: boolean
   onToggle: () => void
   canGrantModerator: boolean
+  canManageAccounts: boolean
 }) {
   const [isPending, startTransition] = useTransition()
   const [editMode, setEditMode] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmDeactivate, setConfirmDeactivate] = useState(false)
   const [spotlightOn, setSpotlightOn] = useState(m.spotlightEnabled)
 
   const initials = getInitials(m.display_name)
 
+  // SCAN-755: every handler catches. React 19 rethrows an error thrown inside an async
+  // transition to the nearest error boundary (app/(main)/admin/error.tsx), so a bare await on a
+  // server action that throws (Unauthorized, a duplicate handle, a non-https avatar URL) replaced
+  // the whole admin page with the error screen. The row's status line shows it instead.
   function handleRoleChange(role: string) {
     startTransition(async () => {
-      await assignRole(m.id, role as CommunityRole)
-      setStatus(`Role changed to ${role}`)
-      setTimeout(() => setStatus(null), 2000)
+      try {
+        await assignRole(m.id, role as CommunityRole)
+        setStatus(`Role changed to ${role}`)
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 3000)
     })
   }
 
@@ -191,17 +208,26 @@ function MemberRow({
 
   function handleDeactivate() {
     startTransition(async () => {
-      await deactivateMember(m.id)
-      setStatus('Member deactivated')
-      setTimeout(() => setStatus(null), 2000)
+      try {
+        await deactivateMember(m.id)
+        setStatus('Member deactivated')
+        setConfirmDeactivate(false)
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 3000)
     })
   }
 
   function handleReactivate() {
     startTransition(async () => {
-      await reactivateMember(m.id)
-      setStatus('Member reactivated')
-      setTimeout(() => setStatus(null), 2000)
+      try {
+        await reactivateMember(m.id)
+        setStatus('Member reactivated')
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 3000)
     })
   }
 
@@ -220,10 +246,15 @@ function MemberRow({
 
   function handleProfileSave(fd: FormData) {
     startTransition(async () => {
-      await updateMemberProfile(m.id, fd)
-      setEditMode(false)
-      setStatus('Profile updated')
-      setTimeout(() => setStatus(null), 2000)
+      try {
+        await updateMemberProfile(m.id, fd)
+        // The form closes only on success, so a rejected save keeps what was typed.
+        setEditMode(false)
+        setStatus('Profile updated')
+      } catch (err) {
+        setStatus(`Error: ${err instanceof Error ? err.message : String(err)}`)
+      }
+      setTimeout(() => setStatus(null), 3000)
     })
   }
 
@@ -280,9 +311,15 @@ function MemberRow({
       {isExpanded && (
         <div className="px-4 pb-4 pt-1 bg-surface/50 dark:bg-surface-elevated/20">
           {status && (
-            <div className="flex items-center gap-2 mb-3 text-meta font-medium text-success bg-success-bg/30 px-3 py-2 rounded-lg">
-              <Check className="w-3.5 h-3.5" /> {status}
-            </div>
+            status.startsWith('Error:') ? (
+              <div role="alert" className="flex items-center gap-2 mb-3 text-meta font-medium text-danger bg-danger-bg/30 px-3 py-2 rounded-control">
+                <AlertCircle className="w-3.5 h-3.5" /> {status}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mb-3 text-meta font-medium text-success bg-success-bg/30 px-3 py-2 rounded-control">
+                <Check className="w-3.5 h-3.5" /> {status}
+              </div>
+            )
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -362,15 +399,19 @@ function MemberRow({
             <EconomyPanel profileId={m.id} displayName={m.display_name} />
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons. Edit profile, the sign-in link, deactivate / reactivate and delete
+              are janitor-only server-side (app/(main)/admin/actions.ts), so only a janitor viewer
+              gets them (SCAN-755). Spotlight switches stay for every admitted staffer. */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setEditMode(!editMode)}
-            >
-              <Pencil className="w-3 h-3" /> Edit profile
-            </Button>
+            {canManageAccounts && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditMode(!editMode)}
+              >
+                <Pencil className="w-3 h-3" /> Edit profile
+              </Button>
+            )}
             {/* Spotlight page (opt-in public mini-site) — off for everyone by
                 default, flipped on here per member to let them set theirs up. */}
             {!m.is_system && (
@@ -414,7 +455,7 @@ function MemberRow({
             )}
             {/* No sign-in link or delete for the system voice: she has no auth user,
                 and deleteUserAccount guards her server-side anyway (ADR-231). */}
-            {!m.is_system && (
+            {canManageAccounts && !m.is_system && (
               <Button
                 variant="secondary"
                 size="sm"
@@ -424,16 +465,26 @@ function MemberRow({
                 <Mail className="w-3 h-3" /> Send sign-in link
               </Button>
             )}
-            {m.is_active ? (
-              <Button variant="warningOutline" size="sm" onClick={handleDeactivate} disabled={isPending}>
-                <UserX className="w-3 h-3" /> Deactivate
-              </Button>
-            ) : (
+            {!canManageAccounts ? null : !m.is_active ? (
               <Button variant="successOutline" size="sm" onClick={handleReactivate} disabled={isPending}>
                 <UserCheck className="w-3 h-3" /> Reactivate
               </Button>
+            ) : !confirmDeactivate ? (
+              <Button variant="warningOutline" size="sm" onClick={() => setConfirmDeactivate(true)} disabled={isPending}>
+                <UserX className="w-3 h-3" /> Deactivate
+              </Button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="text-meta text-warning font-medium">Deactivate this member?</span>
+                <Button variant="warningOutline" size="sm" onClick={handleDeactivate} disabled={isPending}>
+                  Yes, deactivate
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmDeactivate(false)}>
+                  Cancel
+                </Button>
+              </div>
             )}
-            {m.is_system ? null : !confirmDelete ? (
+            {!canManageAccounts || m.is_system ? null : !confirmDelete ? (
               <Button variant="dangerOutline" size="sm" onClick={() => setConfirmDelete(true)}>
                 <Trash2 className="w-3 h-3" /> Delete account
               </Button>

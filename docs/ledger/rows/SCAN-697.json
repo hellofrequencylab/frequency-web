@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-697",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/events/[slug]/social-actions.ts\",g=\"lib/events/rsvp-depth.ts\";if(!fs.existsSync(f)||!fs.existsSync(g))process.exit(79);const s=fs.readFileSync(f,\"utf8\"),d=fs.readFileSync(g,\"utf8\");const i=s.indexOf(\"export async function setEventRsvpDepth\");if(i<0)process.exit(79);const body=s.slice(i,s.indexOf(\"\\nexport \",i+10));const gated=/eventOpenForRsvp\\s*\\(/.test(body);const capped=/MAX_PLUS_ONES/.test(body)||/MAX_PLUS_ONES/.test(d)||/slice\\(\\s*0\\s*,\\s*[1-9]\\d?\\s*\\)/.test(body);if(!gated||!capped){console.error(\"SCAN-697: setEventRsvpDepth still writes an RSVP without the open/window gate or a plus-ones cap, so a member can join a cancelled, past or closed event with any number of plus-ones.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: eventOpenForRsvp, RsvpGate and MAX_PLUS_ONES moved to lib/events/rsvp-gate.ts; setEventRsvpDepth consults the gate (closed event refuses everything, closed window refuses a new going row and any plus-one increase, leaving stays open) and names are trimmed, capped at 80 chars and sliced to MAX_PLUS_ONES, with the same cap on setRsvp; rsvp-enforcement.test now reads the gate module and pins the depth sheet."
+  }
+}
