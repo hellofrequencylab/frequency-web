@@ -20,6 +20,7 @@ import {
   User,
 } from 'lucide-react'
 import { getSpaceContactDetail, type SpaceContactInsight } from '@/lib/crm/space-contact-detail'
+import { ContactCustomFieldsEditor } from './contact-custom-fields-editor'
 import { formatMoney } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -157,11 +158,14 @@ export async function SpaceContactDetail({
         {/* Imported custom fields (contacts.meta.custom). Shown when the contact carries any, so imported
             data that used to be write-only is now visible on the record. Each value renders per its
             registry type: a date reads as a date, a phone dials, a url / email is a link. */}
-        {identity.customFields.length > 0 && (
+        {/* LIVE-662: an editor of this Space edits them in place, segment template fields included. */}
+        {!readOnly && slug ? (
+          <ContactCustomFieldsEditor spaceId={spaceId} slug={slug} contactId={contactId} fields={identity.customFields} />
+        ) : identity.customFields.some((f) => f.value) && (
           <div className="mt-4 border-t border-border pt-4">
             <p className="mb-2 eyebrow text-subtle">Custom fields</p>
             <dl className="grid gap-x-6 gap-y-3 @md:grid-cols-2">
-              {identity.customFields.map((f) => (
+              {identity.customFields.filter((f) => f.value).map((f) => (
                 <div key={f.key} className="min-w-0">
                   <dt className="text-meta font-medium text-muted">{f.label}</dt>
                   <dd className="truncate text-body-sm text-text">

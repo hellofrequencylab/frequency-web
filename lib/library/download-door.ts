@@ -40,6 +40,7 @@ export type DownloadableAsset = {
   url: string | null
   mime: string | null
   storagePath: string | null
+  storageBucket: string | null
   isProtected: boolean
   downloadPolicy: LibraryDownloadPolicy
   expiresAt: string | null
@@ -125,7 +126,7 @@ export async function isLoomStudioStaff(caller: NonNullable<DownloadCaller>): Pr
   )
 }
 
-const ASSET_COLUMNS = 'id, kind, slug, url, mime, storage_path, is_protected, download_policy, expires_at'
+const ASSET_COLUMNS = 'id, kind, slug, url, mime, storage_bucket, storage_path, is_protected, download_policy, expires_at'
 
 async function readDownloadableAsset(id: string): Promise<DownloadableAsset | null> {
   const { data, error } = await createAdminClient()
@@ -141,6 +142,7 @@ async function readDownloadableAsset(id: string): Promise<DownloadableAsset | nu
     url: data.url ?? null,
     mime: data.mime ?? null,
     storagePath: data.storage_path ?? null,
+    storageBucket: data.storage_bucket ?? null,
     isProtected: data.is_protected === true,
     downloadPolicy: readDoorPolicy(data.download_policy),
     expiresAt: data.expires_at ?? null,

@@ -677,6 +677,7 @@ lib/circles/events.ts
 lib/circles/handoff.ts
 lib/circles/join.ts
 lib/circles/remix.ts
+lib/circles/sister.ts
 lib/circles/social-fuel.ts
 lib/circles/store.ts
 lib/circles/templates-data.ts
@@ -747,6 +748,7 @@ lib/crm/people-search.ts
 lib/crm/person.ts
 lib/crm/pipeline.ts
 lib/crm/relationships.ts
+lib/crm/segment-fields.ts
 lib/crm/signup-lead-recovery.ts
 lib/crm/signup-leads.ts
 lib/crm/space-contact-detail.ts
@@ -816,6 +818,7 @@ lib/events/store.ts
 lib/events/ticket-space-access.ts
 lib/events/ticket-tiers.ts
 lib/events/tier-prices.ts
+lib/events/upcoming-series.ts
 lib/events/waitlist-notify.test.ts
 lib/events/waitlist-notify.ts
 lib/feed/density.ts

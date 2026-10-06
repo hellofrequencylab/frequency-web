@@ -20,6 +20,7 @@ export const LIBRARY_KINDS = [
   'sequence', // a managed onboarding/wizard flow (config = a SequenceDef; see lib/onboarding/sequence-schema.ts)
   'audio', // an Airwaves audio Recording file (file-backed; referenced by recordings.loom_asset_id)
   'video', // an Airwaves video Recording file (file-backed; referenced by recordings.loom_asset_id)
+  'document', // a document file (PDF, text, Word), private in library-files and served signed (LIVE-692)
 ] as const
 type LibraryKind = (typeof LIBRARY_KINDS)[number]
 

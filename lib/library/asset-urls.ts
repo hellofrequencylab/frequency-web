@@ -1,6 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { LIBRARY_PRIVATE_BUCKET } from './protect-move'
+import { LIBRARY_FILES_BUCKET } from './upload-kinds'
 import { renditionUrl } from './rendition-url'
 import type { LoomPickAsset } from './store'
 import { libraryProofPath, writeLibraryProof } from './proof-object'
@@ -37,6 +38,8 @@ export type SignableLibraryAsset = {
   isProtected: boolean
   url: string | null
   storagePath: string | null
+  /** Read only to find a font or document in the private `library-files` bucket (LIVE-692). */
+  storageBucket?: string | null
 }
 
 /**
@@ -59,11 +62,15 @@ export async function signedLibraryAssetUrl(
   ttlSeconds: number = LIBRARY_SIGNED_URL_TTL_SECONDS,
   opts?: { download?: string },
 ): Promise<string | null> {
-  if (!asset.isProtected || asset.url) return asset.url
-  if (!asset.storagePath) return null
+  if (asset.url) return asset.url
+  // A font or document lives in the private library-files bucket from the moment it is uploaded, so
+  // it is signed from there whether or not it is flagged protected (LIVE-692).
+  const bucket =
+    asset.storageBucket === LIBRARY_FILES_BUCKET ? LIBRARY_FILES_BUCKET : asset.isProtected ? LIBRARY_PRIVATE_BUCKET : null
+  if (!bucket || !asset.storagePath) return null
   try {
     const { data } = await createAdminClient()
-      .storage.from(LIBRARY_PRIVATE_BUCKET)
+      .storage.from(bucket)
       .createSignedUrl(asset.storagePath, ttlSeconds, opts?.download ? { download: opts.download } : undefined)
     return data?.signedUrl ?? null
   } catch {

@@ -1225,6 +1225,7 @@ export type Database = {
           origin_template_id: string | null
           primary_pillar: string | null
           resonance_public: boolean
+          seeded_from_circle_id: string | null
           sidebar_order: Json | null
           slug: string
           space_id: string | null
@@ -1257,6 +1258,7 @@ export type Database = {
           origin_template_id?: string | null
           primary_pillar?: string | null
           resonance_public?: boolean
+          seeded_from_circle_id?: string | null
           sidebar_order?: Json | null
           slug: string
           space_id?: string | null
@@ -1289,6 +1291,7 @@ export type Database = {
           origin_template_id?: string | null
           primary_pillar?: string | null
           resonance_public?: boolean
+          seeded_from_circle_id?: string | null
           sidebar_order?: Json | null
           slug?: string
           space_id?: string | null
@@ -14634,6 +14637,7 @@ export type Database = {
         Row: {
           created_at: string
           definition: Json
+          field_keys: string[]
           id: string
           name: string
           space_id: string
@@ -14642,6 +14646,7 @@ export type Database = {
         Insert: {
           created_at?: string
           definition?: Json
+          field_keys?: string[]
           id?: string
           name: string
           space_id: string
@@ -14650,6 +14655,7 @@ export type Database = {
         Update: {
           created_at?: string
           definition?: Json
+          field_keys?: string[]
           id?: string
           name?: string
           space_id?: string
@@ -18933,6 +18939,22 @@ export type Database = {
         Returns: boolean
       }
       unlockrows: { Args: { "": string }; Returns: number }
+      upcoming_event_series: {
+        Args: {
+          p_from: string
+          p_limit: number
+          p_scope_ids?: string[]
+          p_scope_types?: string[]
+          p_visibilities: string[]
+        }
+        Returns: Database["public"]["Tables"]["events"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       update_guest_seat: {
         Args: { p_answers?: Json; p_plus_ones?: number; p_token: string }
         Returns: boolean

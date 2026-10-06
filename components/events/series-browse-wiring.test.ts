@@ -27,13 +27,15 @@ type Surface = {
 }
 
 const SURFACES: Surface[] = [
-  { path: 'components/sidebar/rail-panels.tsx', sizing: 'seriesFetchLimit(', oldLimit: '.limit(3)' },
+  // The two 3-slot blocks fold in SQL (LIVE-731): public.upcoming_event_series counts SERIES, so
+  // their sizing is the shared read itself rather than an over-fetch.
+  { path: 'components/sidebar/rail-panels.tsx', sizing: 'readUpcomingSeries<', oldLimit: '.limit(3)' },
   {
     path: 'components/widgets/circles/circle-events.tsx',
     sizing: 'seriesFetchLimit(',
     oldLimit: '.limit(CIRCLE_UPCOMING_LIMIT + 1)',
   },
-  { path: 'components/events/upcoming-widget.tsx', sizing: 'seriesFetchLimit(', oldLimit: '.limit(3)' },
+  { path: 'components/events/upcoming-widget.tsx', sizing: 'readUpcomingSeries<', oldLimit: '.limit(3)' },
   { path: 'app/discover/events/_data.ts', sizing: 'SERIES_WIDE_READ', oldLimit: 'limit = 500' },
   { path: 'app/(main)/search/page.tsx', sizing: 'seriesFetchLimit(' },
   { path: 'app/api/search/route.ts', sizing: 'seriesFetchLimit(' },
@@ -114,18 +116,17 @@ describe('the surfaces with a shape of their own', () => {
     const code = stripComments(read('components/sidebar/rail-panels.tsx'))
     // Two reads: the viewer's Circles, and the community-wide fallback when those are quiet.
     // Wiring only the first leaves the unscoped one flooding every member's rail.
-    // THREE reads in this file select the series columns now: the two LIST branches below, and the
-    // Pulse panel's "N this week" COUNT (LIVE-198), which folds through countSeries. The two list
-    // branches are pinned precisely by their shared over-fetch limit on the next line, so this
-    // number is the file total, not the branch count.
-    expect(code.split('${SERIES_COLUMNS}').length).toBe(4)
-    expect(code.split('.limit(fetchLimit)').length).toBe(3)
+    // LIVE-731: both list branches read through the ONE shared series function, which counts series
+    // in SQL; the Pulse panel's "N this week" COUNT (LIVE-198) still selects the series columns
+    // itself and folds through countSeries.
+    expect(code.split('readUpcomingSeries<EventRow>(').length).toBe(3)
     expect(code.split('= fold(').length).toBe(3) // one shared fold, called by BOTH branches
-    // The gate is the query here: this panel reads through the RLS-bypassing admin client, and it
-    // used to filter is_cancelled alone, so drafts and removed events were eligible for the rail.
-    expect(code.split("eq('status', 'published')").length).toBe(3)
-    expect(code.split("is('removed_at', null)").length).toBe(3)
-    expect(code).toContain("eq('visibility', 'public')")
+    expect(code).toContain('columns: EVENT_COLUMNS')
+    // The gate is the function's arguments here: the fallback branch is unscoped, so it may only
+    // ask for what any visitor could see. Status, cancellation and removal live in the function
+    // (components/events/upcoming-widget.test.ts reads its live definition).
+    expect(code).toContain("visibilities: ['public']")
+    expect(code).toContain('visibilities: circleEventVisibilities(true)')
   })
 
   it('the Circle block folds BEFORE it selects, and never hides its own escape hatch', () => {

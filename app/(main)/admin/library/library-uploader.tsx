@@ -8,7 +8,16 @@ import { appendImageDescriptor, describeImage } from '@/lib/library/image-descri
 import { uploadLibraryImage } from './actions'
 
 // The upload control for the Library gallery. Picks a file, posts it to the
-// Studio-gated server action, and refreshes the grid on success.
+// Studio-gated server action, and refreshes the grid on success. It takes images, audio and video,
+// and (LIVE-692) fonts and documents, which land in the private library-files bucket.
+
+/** What the picker offers: the action's lanes (lib/library/upload-kinds.ts). Font types are listed by
+ *  extension too, because most systems report a font with no MIME type at all. */
+const ACCEPT = [
+  'image/*', 'audio/*', 'video/*',
+  '.woff2', '.woff', '.ttf', '.otf', '.ttc',
+  '.pdf', '.txt', '.md', '.csv', '.doc', '.docx',
+].join(',')
 export function LibraryUploader() {
   const [err, setErr] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
@@ -34,7 +43,7 @@ export function LibraryUploader() {
       }
       const file = prepared.file
       if (file.size > SERVER_MAX_BYTES) {
-        setErr(`That image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
+        setErr(`That file is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Try a smaller one.`)
         if (inputRef.current) inputRef.current.value = ''
         return
       }
@@ -60,11 +69,11 @@ export function LibraryUploader() {
         }`}
       >
         <Upload className="h-4 w-4" aria-hidden />
-        {pending ? 'Uploading…' : 'Upload image'}
+        {pending ? 'Uploading…' : 'Upload a file'}
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={ACCEPT}
           className="hidden"
           onChange={onFile}
           disabled={pending}

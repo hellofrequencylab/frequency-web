@@ -12,6 +12,7 @@ import { assertCanCreate } from '@/lib/core/load-capabilities'
 import { remixTemplate, publishCircle } from '@/lib/circles/remix'
 import { generateCircleEvents } from '@/lib/circles/events'
 import { getTemplateById } from '@/lib/circles/templates-data'
+import { seedSisterCircle, sisterCircleOffer } from '@/lib/circles/sister'
 
 /** The signed-in REAL member's profile id. Demo profiles cannot remix (mirrors
  *  the claim guard). */
@@ -81,3 +82,33 @@ export async function generateCircleEventsAction(input: {
   revalidatePath('/circles')
   return res
 }
+
+/** "Start a sister Circle" (LIVE-665): the host of a nearly full Circle, or a member who finds it
+ *  full, seeds a private draft they host. The offer is re-derived here from the live row, so the
+ *  button is never the gate. Starting one mints a Circle the caller hosts, so the create gate
+ *  applies exactly as it does to a remix. */
+export async function seedSisterCircleAction(circleId: string): Promise<{ slug: string; circleId: string }> {
+  const profileId = await callerProfileId()
+  const admin = createAdminClient()
+  const [{ data: circle }, { data: membership }] = await Promise.all([
+    admin.from('circles').select('host_id, member_count, member_cap, status').eq('id', circleId).maybeSingle(),
+    admin.from('memberships').select('status').eq('circle_id', circleId).eq('profile_id', profileId).maybeSingle(),
+  ])
+  const c = circle as { host_id: string | null; member_count: number; member_cap: number; status: string } | null
+  if (!c) throw new Error('That Circle is not available.')
+  const offer = sisterCircleOffer({
+    memberCount: c.member_count,
+    memberCap: c.member_cap,
+    isLive: c.status === 'forming' || c.status === 'active',
+    signedIn: true,
+    isHost: c.host_id === profileId,
+    isMember: (membership as { status: string } | null)?.status === 'active',
+  })
+  if (!offer) throw new Error('A sister Circle opens once this one is nearly full.')
+  await assertCanCreate('circle.create')
+  const res = await seedSisterCircle({ circleId, profileId })
+  revalidatePath('/circles')
+  revalidatePath('/lead')
+  return res
+}
+

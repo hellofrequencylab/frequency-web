@@ -8,7 +8,7 @@
 // PURE (mime string in, target out), so it is trivially testable and carries no server-only imports.
 
 /** The file-backed Loom lanes an upload can classify into (a subset of LIBRARY_KINDS). */
-type LoomUploadKind = 'image' | 'audio' | 'video'
+type LoomUploadKind = 'image' | 'audio' | 'video' | 'font' | 'document'
 
 /** Where an upload of a given kind lands: its Loom `kind`, its Storage bucket, and its byte ceiling. */
 interface LoomUploadTarget {
@@ -26,13 +26,37 @@ const MEDIA_MAX_BYTES = 500 * 1024 * 1024
 export const LIBRARY_MEDIA_BUCKET = 'library-media' as const
 /** The A/V bucket (Airwaves P0). */
 const RECORDINGS_MEDIA_BUCKET = 'recordings-media' as const
+/** The PRIVATE font + document bucket (LIVE-692, 20270346001700). Its rows carry no url and are
+ *  served signed (signedLibraryAssetUrl). */
+export const LIBRARY_FILES_BUCKET = 'library-files' as const
+/** The 25 MB file-lane ceiling. Matches the bucket file_size_limit. */
+const FILE_MAX_BYTES = 25 * 1024 * 1024
+
+/** The font MIME types the library-files bucket accepts (lockstep with its allowed_mime_types). */
+const FONT_MIMES = new Set([
+  'font/woff2', 'font/woff', 'font/ttf', 'font/otf', 'font/collection',
+  'application/font-woff', 'application/x-font-ttf', 'application/x-font-otf', 'application/vnd.ms-opentype',
+])
+/** The document MIME types the library-files bucket accepts (lockstep with its allowed_mime_types). */
+const DOCUMENT_MIMES = new Set([
+  'application/pdf', 'text/plain', 'text/markdown', 'text/csv',
+  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+])
+
+/** True when the target bucket is private, so the row stores no public url. PURE. */
+export function isPrivateUploadBucket(bucket: string): boolean {
+  return bucket === LIBRARY_FILES_BUCKET
+}
 
 /**
  * Classify an upload by MIME type into its Loom lane, or null when the type is not an accepted Loom
  * file (the caller then rejects it). Images route to library-media (20 MB) exactly as before; audio +
  * video route to recordings-media (500 MB). PURE.
  */
-export function classifyLoomUpload(mime: string | null | undefined): LoomUploadTarget | null {
+export function classifyLoomUpload(
+  mime: string | null | undefined,
+  opts: { files?: boolean } = {},
+): LoomUploadTarget | null {
   const m = (mime ?? '').toLowerCase().trim()
   if (m.startsWith('image/')) {
     return { kind: 'image', bucket: LIBRARY_MEDIA_BUCKET, maxBytes: IMAGE_MAX_BYTES }
@@ -43,6 +67,11 @@ export function classifyLoomUpload(mime: string | null | undefined): LoomUploadT
   if (m.startsWith('video/')) {
     return { kind: 'video', bucket: RECORDINGS_MEDIA_BUCKET, maxBytes: MEDIA_MAX_BYTES }
   }
+  // The file lanes (LIVE-692): private, served signed. Only the Studio's own upload opts in, so an
+  // image picker can never take a PDF.
+  if (!opts.files) return null
+  if (FONT_MIMES.has(m)) return { kind: 'font', bucket: LIBRARY_FILES_BUCKET, maxBytes: FILE_MAX_BYTES }
+  if (DOCUMENT_MIMES.has(m)) return { kind: 'document', bucket: LIBRARY_FILES_BUCKET, maxBytes: FILE_MAX_BYTES }
   return null
 }
 
@@ -61,6 +90,22 @@ const IMAGE_EXT_MIME: Record<string, string> = {
   heic: 'image/heic',
   heif: 'image/heif',
   svg: 'image/svg+xml',
+}
+
+// Font and document extensions, for the same reason: browsers report fonts with an empty or
+// vendor-specific type more often than not (LIVE-692).
+const FILE_EXT_MIME: Record<string, string> = {
+  woff2: 'font/woff2',
+  woff: 'font/woff',
+  ttf: 'font/ttf',
+  otf: 'font/otf',
+  ttc: 'font/collection',
+  pdf: 'application/pdf',
+  txt: 'text/plain',
+  md: 'text/markdown',
+  csv: 'text/csv',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 }
 
 /** The lowercased extension of a filename (no dot), or '' when it has none. PURE. */
@@ -82,6 +127,16 @@ export function effectiveMime(type: string | null | undefined, filename: string 
   return IMAGE_EXT_MIME[ext] ?? ''
 }
 
+/** effectiveMime for the Studio's file lanes (LIVE-692): a font often arrives typed
+ *  application/octet-stream or not at all, so a known font or document extension wins over those
+ *  two. Every other type is the browser's, as in effectiveMime. PURE. */
+export function effectiveFileMime(type: string | null | undefined, filename: string | null | undefined): string {
+  const t = (type ?? '').toLowerCase().trim()
+  const fromExt = FILE_EXT_MIME[extOf(filename)]
+  if (fromExt && (!t || t === 'application/octet-stream')) return fromExt
+  return effectiveMime(type, filename)
+}
+
 /** Whether a file looks like an image the Loom accepts — by MIME OR by a known image extension. Used by
  *  the client upload gates so a blank-MIME camera-roll photo is not filtered out before it can upload. PURE. */
 export function looksLikeImage(type: string | null | undefined, filename: string | null | undefined): boolean {
@@ -96,6 +151,10 @@ export function fallbackExtFor(kind: LoomUploadKind): string {
       return 'mp3'
     case 'video':
       return 'mp4'
+    case 'font':
+      return 'woff2'
+    case 'document':
+      return 'pdf'
     default:
       return 'jpg'
   }
@@ -108,6 +167,10 @@ export function fallbackMimeFor(kind: LoomUploadKind): string {
       return 'audio/mpeg'
     case 'video':
       return 'video/mp4'
+    case 'font':
+      return 'font/woff2'
+    case 'document':
+      return 'application/pdf'
     default:
       return 'image/jpeg'
   }
