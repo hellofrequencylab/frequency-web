@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-790",
+  "title": "The demographic canon names two readers but none of the eleven archetypes or the three rules they add",
+  "status": "done",
+  "closed": "2026-10-06",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/CONTENT-VOICE.md",
+    "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
+  },
+  "detail": "PR 1 of the demographic canon (ADR-1715). Replaces CONTENT-VOICE section 2 with two readers and eleven archetypes in four families (2d, 2f), the three archetype rules (2e) and the internal-names rule (2g); plain-ifies the section 1 mission line (no nervous-system language in the paragraph prompts paraphrase); adds activity-first and evidence-first clusters to 7a, splits the leader track in 7b into Host-Connector and Gathering Host, and opens the section 10 checklist with which reader and archetype. Rows LIVE-791 to LIVE-798 and HYG-170 carry PRs 2 to 10.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};const s=r(\"docs/CONTENT-VOICE.md\");const i=s.indexOf(\"## 2. The demographic\"),j=s.indexOf(\"## 3. The voice\");if(i<0||j<i)fail(\"CONTENT-VOICE has no section 2\");const t=s.slice(i,j);for(const n of [\"Wired Professional\",\"Transplant\",\"Activity-First Man\",\"Evidence-First Skeptic\",\"Host-Connector\",\"Gathering Host\",\"Mission Patron\",\"Portfolio Teacher\",\"Second-Act Practitioner\",\"Studio Keeper\",\"Network Steward\"])if(!t.includes(n))fail(\"CONTENT-VOICE section 2 does not name the \"+n+\" archetype\");for(const x of [\"Men come through activities\",\"Write for the spiritual and the skeptic at once\",\"Supporters pay so it stays free\",\"Archetype names are internal\"])if(!t.includes(x))fail(\"CONTENT-VOICE section 2 is missing the rule: \"+x);if(/nervous system/i.test(s.slice(0,s.indexOf(\"## 1a.\"))))fail(\"section 1 still paraphrases nervous-system language into prompts and briefs\")'",
+    "note": "Fails while CONTENT-VOICE section 2 lacks any of the eleven archetypes, the three section 2e rules or the 2g internal-names rule, or section 1 still carries nervous-system language."
+  },
+  "wave": "W7"
+}

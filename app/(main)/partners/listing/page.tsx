@@ -4,6 +4,7 @@ import { getActivePersonas } from '@/lib/personas'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { FocusTemplate } from '@/components/templates'
 import { listOffersOfPartner } from '@/lib/partners/read'
+import { getSeasonalQuests } from '@/lib/quests'
 import { ListingForm } from './listing-form'
 import { OffersSection } from './offers-section'
 
@@ -25,7 +26,9 @@ export default async function PartnerListingPage() {
     .maybeSingle()
 
   // Offers ride the listing (scan2 L9-04): none to show until the listing row exists.
-  const offers = listing ? await listOffersOfPartner(listing.id) : []
+  const [offers, quests] = listing
+    ? await Promise.all([listOffersOfPartner(listing.id), getSeasonalQuests()])
+    : [[], []]
 
   return (
     <FocusTemplate
@@ -35,7 +38,7 @@ export default async function PartnerListingPage() {
       width="wide"
     >
       <ListingForm initial={listing ?? null} />
-      {listing && <OffersSection offers={offers} />}
+      {listing && <OffersSection offers={offers} quests={quests.map((q) => ({ id: q.id, name: q.name }))} />}
     </FocusTemplate>
   )
 }

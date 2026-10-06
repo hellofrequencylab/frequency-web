@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getSiteSpace } from '@/lib/sites/site-cache'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { hasPage, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
@@ -13,35 +13,78 @@ import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SiteChrome } from '@/components/sites/site-chrome'
-import { SiteHero } from '@/components/sites/site-hero'
 import { buttonClasses } from '@/components/ui/button'
+import { DetailTemplate } from '@/components/templates'
+import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
+import { markAnonymousRender } from '@/lib/core/anonymous-render'
+import { setActiveSpace } from '@/lib/spaces/active-space'
+import { readTagline } from '@/lib/spaces/tagline'
+import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
+import { readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
+import { toProfileContext } from '@/lib/spaces/profile-modules'
+import { parseEntityLayout } from '@/lib/entity-blocks/layout'
+import type { Space } from '@/lib/spaces/types'
+import { appOrigin } from '@/lib/sites/host'
+import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
+import { boundSiteDomain } from '@/lib/sites/site-domain'
 
-// THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). /sites/<slug> and /sites/<slug>/<page>
-// render the Space's own pages (the same block docs the Space page editor saves, so the owner edits once
-// and the site and the profile stay in sync) inside a slim site chrome with no Frequency app shell.
+// THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). The Space's own website, served on its
+// free subdomain (`<slug>.frequencylocal.com`, LIVE-782), on its own domain once connected, and at
+// /sites/<slug> inside a slim site chrome with no Frequency app shell.
+//
+// BUILT ON THE PUBLIC SPACE PAGE (owner ask 2026-10-06: the Puck-doc render "looks like hot garbage", the
+// signed-out public page is the good one). The body is the same render app/(public)/spaces/[slug]/page.tsx
+// performs: the same detail-hero cover band (resolveDetailHero off the Space's cover and focal point),
+// the brand name and tagline under it, and on Home the same <SpaceProfileModules> grid off the operator's
+// own `preferences.profileLayout`, parsed by the same pure parseEntityLayout. A custom page renders the
+// way the profile renders it, its own page doc through SpaceLanding (app/(main)/spaces/[slug]/(profile)/
+// [page]/page.tsx), here with an anonymous viewer. Left out on purpose, because they are Frequency's and
+// not the owner's: the app shell and Frequency menu, the sign-in and BETA cards, Follow and Share, and
+// owner tools. With no viewer (markAnonymousRender), every member and owner check resolves false.
 //
 // FAIL-CLOSED twice: the Space is resolved with an ANONYMOUS viewer, so a Private Space 404s and this
 // route never confirms one exists; and the site only renders once the owner has published it
 // (preferences.websitePublished, written by setWebsitePublished). An unpublished site shows a friendly
 // Coming soon page that points back to the Space on Frequency, so a shared link never dead-ends.
 //
-// noindex until the site SEO phase lands its own canonical, robots and sitemap: today the same content
-// is also the indexable /spaces/<slug> profile, and two indexable copies would compete.
+// CACHED (PROG-E10 phase 5, LIVE-784). The routes are ISR and the Space row comes through getSiteSpace,
+// cached under `site:<slug>`; the owner's saves and the publish switch expire it (lib/sites/site-cache.ts),
+// so the publish gate below is re-decided on the first request after a toggle.
+//
+// INDEXABLE ONCE PUBLISHED (PROG-E10 phase 4, LIVE-783). A published site is its own site to a search
+// engine: its canonical is the Space's bound domain when it has one, else its free `<slug>.frequencylocal.com`
+// subdomain (lib/sites/seo.ts siteBaseUrl), and its title,
+// description, share card and favicon come from the Space's brand. The /spaces/<slug> profile points
+// its canonical at the domain too (lib/spaces/profile-metadata.ts), so the two copies never compete.
+// An unpublished site, a Private Space and an unknown page all stay noindex.
 
 export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): Promise<Metadata> {
-  const space = await getVisibleSpaceBySlug(slug, null)
+  const space = await getSiteSpace(slug)
   if (!space) return { title: 'Site', robots: { index: false } }
   const brandName = space.brandName?.trim() || space.name
   if (!readWebsitePublished(space.preferences)) {
     return { title: `${brandName} website coming soon`, robots: { index: false } }
   }
   const page = readProfilePages(space.preferences).find((p) => p.slug === pageSlug)
-  const title = !page || page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`
+  if (!page) return { title: { absolute: brandName }, robots: { index: false } }
+  const title = page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`
+  const description = space.tagline?.trim() || undefined
+  const canonical = sitePageUrl(siteBaseUrl(space.slug, await boundSiteDomain(space), appOrigin()), page.slug)
+  const shareImage = space.coverImageUrl || space.brandLogoUrl || null
+  const images = shareImage ? [{ url: shareImage, alt: brandName }] : undefined
   return {
     // `absolute` so the root layout's "| Frequency" template never brands somebody's own website.
     title: { absolute: title },
-    description: space.tagline ?? undefined,
-    robots: { index: false },
+    description,
+    alternates: { canonical },
+    robots: { index: true, follow: true },
+    openGraph: { title, description, url: canonical, siteName: brandName, type: 'website', images },
+    twitter: { card: shareImage ? 'summary_large_image' : 'summary', title, description, images: shareImage ? [shareImage] : undefined },
+    // The Space's logo as the tab icon, so the site never wears Frequency's favicon.
+    ...(space.brandLogoUrl
+      ? { icons: { icon: [{ url: space.brandLogoUrl }], apple: [{ url: space.brandLogoUrl }] } }
+      : {}),
   }
 }
 
@@ -52,10 +95,13 @@ export async function SitePage({
 }: {
   slug: string
   pageSlug?: string
-  /** The path the site's links hang off: `/sites/<slug>` by default, `` on the Space's own domain. */
+  /** The path the site's links hang off: `/sites/<slug>` by default, `` on the Space's own domain or
+   *  its free subdomain. */
   base?: string
 }) {
-  const space = await getVisibleSpaceBySlug(slug, null)
+  // FIRST, before any read: the site is cached and served to everyone, so it has no viewer.
+  markAnonymousRender()
+  const space = await getSiteSpace(slug)
   if (!space) notFound()
 
   const brandName = space.brandName?.trim() || space.name
@@ -87,16 +133,48 @@ export async function SitePage({
         activePageSlug={pageSlug}
         base={siteBase}
       >
-        {/* The Space page's own cover (owner ask: the website mirrors the Space page), then the page's blocks. */}
-        <SiteHero space={space} brandName={brandName} />
-        <div className="mt-8">
-          <Suspense fallback={<ProfileBodySkeleton />}>
-            <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous />
-          </Suspense>
-        </div>
+        <SiteBody space={space} brandName={brandName} pageSlug={pageSlug} />
       </SiteChrome>
     </AccentScope>
   )
+}
+
+/** The website body: the public Space page's cover band and identity, then Home's block grid or a
+ *  custom page's doc. Mirrors app/(public)/spaces/[slug]/page.tsx, minus Frequency's own chrome. */
+async function SiteBody({ space, brandName, pageSlug }: { space: Space; brandName: string; pageSlug: string }) {
+  // Stamp the tenant so any block that resolves its rows from the active Space reads THIS one, the same
+  // line the public page carries.
+  setActiveSpace(space)
+  const [tagline, hero] = await Promise.all([
+    readTagline(space.id),
+    resolveDetailHero(`/spaces/${space.slug}`, {
+      entityImage: space.coverImageUrl || coverPlaceholderFor(space.id),
+      entityFocus: readCoverFocus(space.preferences),
+    }),
+  ])
+
+  return (
+    <DetailTemplate {...hero} title={brandName} subtitle={tagline ?? undefined}>
+      {pageSlug === HOME_SLUG ? (
+        <SpaceProfileModules space={toProfileContext(space)} grid={profileGrid(space.preferences)} />
+      ) : (
+        <Suspense fallback={<ProfileBodySkeleton />}>
+          <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous />
+        </Suspense>
+      )}
+    </DetailTemplate>
+  )
+}
+
+/** The operator's saved Home arrangement, read exactly as the public page reads it. FAIL-SAFE: a
+ *  malformed or absent node parses to null, and `?? {}` keeps the grid truthy so the renderer resolves
+ *  the kind's starter layout instead of its flat fallback. */
+function profileGrid(prefs: unknown) {
+  const rawLayout =
+    prefs && typeof prefs === 'object' && !Array.isArray(prefs)
+      ? (prefs as Record<string, unknown>).profileLayout
+      : null
+  return parseEntityLayout(rawLayout) ?? {}
 }
 
 function SiteComingSoon({ brandName, profileHref }: { brandName: string; profileHref: string }) {

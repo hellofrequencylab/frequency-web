@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-791",
+  "title": "No AI prompt knows who it is writing for, and Vera calls Frequency a revolution",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/ai/voice.ts",
+    "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
+  },
+  "detail": "PR 2 (ADR-1715). Adds the audience block (two readers, Builders, men through activities, spiritual and skeptic, supporters, never name an archetype or guess age, gender or feelings) to VOICE_PRIMER after the skeptic test, so every withVoice prompt carries it. Replaces Vera's default register line (This is a revolution and you say so) in lib/ai/vera/agent-claude.ts and docs/AI-VERA.md with conviction that never calls it a revolution. Wraps the support reply draft prompt (app/(main)/admin/support/actions.ts) and the demo palette prompt (lib/demo/ai-palette.ts) in withVoice. No dollar figures or percentages in the primer (marketing-figures.test.ts scans it).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};if(!r(\"lib/ai/voice.ts\").includes(\"Who you\\u2019re writing for\")&&!r(\"lib/ai/voice.ts\").includes(\"Who you\"+String.fromCharCode(39)+\"re writing for\"))fail(\"VOICE_PRIMER has no audience block, so no AI prompt knows its reader\");if(/revolution and you say so/i.test(r(\"lib/ai/vera/agent-claude.ts\")))fail(\"Vera system prompt still says this is a revolution\");if(!/withVoice\\(\\s*DRAFT_SYSTEM/.test(r(\"app/(main)/admin/support/actions.ts\")))fail(\"support reply drafts are written without withVoice\");if(!/withVoice/.test(r(\"lib/demo/ai-palette.ts\")))fail(\"demo palette copy is generated without withVoice\")'",
+    "note": "Fails while VOICE_PRIMER lacks the audience block, Vera's prompt says revolution, or the support draft or demo palette prompt skip withVoice."
+  },
+  "wave": "W7"
+}

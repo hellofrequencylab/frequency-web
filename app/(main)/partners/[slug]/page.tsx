@@ -120,8 +120,9 @@ export default async function PartnerPage({
                     </div>
                   }
                   title={o.title}
-                  context={o.memberTerms ?? undefined}
-                  description={o.description ?? undefined}
+                  // LIVE-673: a Quest sponsor reward says which Quest earns it.
+                  context={o.quest ? `For finishing ${o.quest.name}` : (o.memberTerms ?? undefined)}
+                  description={(o.quest ? o.memberTerms : o.description) ?? o.description ?? undefined}
                 />
               ))}
             </div>

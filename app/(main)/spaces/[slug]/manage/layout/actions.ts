@@ -21,13 +21,21 @@ import { withProfileData, type ProfileDataPatch } from '@/lib/spaces/profile-dat
 import { normalizeSpaceLocation } from '@/lib/spaces/location'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { parseSiteDomain } from '@/lib/sites/domain'
+import { refreshSite } from '@/lib/sites/site-cache'
+import { siteSubdomainHost } from '@/lib/sites/host'
+import { briefError, log } from '@/lib/log'
 import {
   addSiteDomain,
+  addSiteSubdomain,
   removeSiteDomain as detachSiteDomain,
   siteDomainStatus,
   vercelDomainsConfigured,
   type DomainStatus,
 } from '@/lib/sites/vercel-domains'
+import { appOrigin } from '@/lib/sites/host'
+import { DC_RETURN_PATH } from '@/lib/sites/domain-connect/constants'
+import { findOneClickConnect, type OneClickConnect } from '@/lib/sites/domain-connect/discovery'
+import { signDomainConnectState } from '@/lib/sites/domain-connect/state'
 import {
   nextCoverScrimPreferences,
   nextLogoBackdropPreferences,
@@ -125,6 +133,7 @@ export async function setSpaceBusinessInfo(slug: string, patch: ProfileDataPatch
   // The profile data shows across every public profile route (Home + custom pages + the Spotlight),
   // so revalidate the whole space layout, not just the landing.
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -168,6 +177,7 @@ export async function setSpaceImages(
   if (error) return fail('Could not save your images. Try again.')
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -230,6 +240,7 @@ export async function setSpaceCoverScrim(slug: string, scrim: CoverScrim): Promi
   }
 
   revalidatePath(`/spaces/${slug}`)
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -254,6 +265,7 @@ export async function setSpaceLogoBackdrop(slug: string, backdrop: LogoBackdrop)
   }
 
   revalidatePath(`/spaces/${slug}`)
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -276,6 +288,7 @@ export async function setSpaceCoverFocus(slug: string, focus: string): Promise<A
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -319,6 +332,7 @@ export async function setSpaceHeaderCta(
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -349,6 +363,7 @@ export async function setSpaceHeroLook(
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -381,6 +396,7 @@ export async function setSpaceAccent(slug: string, token: string): Promise<Actio
   if (error) return fail('Could not update the accent. Try again.')
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -399,7 +415,24 @@ export async function setWebsitePublished(slug: string, published: boolean): Pro
   const saved = await writePreferences(auth.spaceId, { ...auth.preferences, websitePublished: published === true })
   if (!saved) return fail('Could not update your website. Try again.')
 
-  revalidatePath(`/sites/${slug}`, 'layout')
+  // Expire the cached site (LIVE-784): its `site:<slug>` tag covers /sites/<slug> and the Space's own
+  // domain, so the publish gate is re-decided on the next request either way.
+  refreshSite(slug)
+
+  // THE FREE SUBDOMAIN (LIVE-782): attach `<slug>.frequencylocal.com` to the Vercel project so it serves
+  // with a certificate. Best effort: addSiteSubdomain never throws, a failure only logs (so the fallback
+  // firing is visible) and the publish still succeeds. Nothing comes off on unpublish: the subdomain
+  // then serves Coming soon, like every other address of the site.
+  const subdomain = published ? siteSubdomainHost(slug) : null
+  if (subdomain) {
+    try {
+      const attached = await addSiteSubdomain(subdomain)
+      if (!attached.ok) log.warn('site_subdomain_attach_failed', { slug, host: subdomain, error: attached.error })
+    } catch (err) {
+      log.warn('site_subdomain_attach_failed', { slug, host: subdomain, error: briefError(err) })
+    }
+  }
+
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -459,6 +492,9 @@ export async function connectSiteDomain(slug: string, input: string): Promise<Ac
     }
   }
 
+  // The site's canonical moves to the domain, and a 404 cached for the domain before it was bound must go.
+  refreshSite(slug)
+  revalidatePath(`/hosted/${domain}`, 'layout')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok({ domain, ...(await siteDomainStatus(domain)) })
 }
@@ -486,8 +522,39 @@ export async function removeSiteDomain(slug: string): Promise<ActionResult> {
     if (!removed.ok) return fail('Could not remove the domain from hosting. Try again.')
   }
   if ((await writeSpaceDomain(auth.spaceId, null)) !== 'ok') return fail('Could not remove your domain. Try again.')
+  // The site's pages cached for the old domain stop serving, and its canonical returns to /sites.
+  refreshSite(slug)
+  revalidatePath(`/hosted/${auth.domain}`, 'layout')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
+}
+
+/** Connect automatically (LIVE-780): when the domain's DNS provider has onboarded Frequency's Domain
+ *  Connect template, the provider's name and a signed apply URL for the "Connect with <provider>"
+ *  button; otherwise { supported: false } and the panel keeps the copy-records steps. Re-gates the
+ *  editor role and the custom_domain plan gate exactly as connectSiteDomain does. Never throws. */
+export async function domainConnectLink(slug: string): Promise<ActionResult<OneClickConnect>> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+  if (!(await customDomainAllowed(auth.plan))) return fail('Your own domain comes with the Business plan.')
+  if (!auth.domain) return fail('Connect a domain first.')
+
+  const state = signDomainConnectState(slug)
+  if (!state) return ok({ supported: false })
+  const status = await siteDomainStatus(auth.domain)
+  if (status.providerIsVercel || (status.attached && status.verified && status.dnsReady)) return ok({ supported: false })
+  const ip = status.records.find((r) => r.type === 'A' && r.name === '@')?.value
+  const target = status.records.find((r) => r.type === 'CNAME' && r.name === 'www')?.value
+  if (!ip || !target) return ok({ supported: false })
+
+  return ok(
+    await findOneClickConnect({
+      domain: auth.domain,
+      variables: { ip, target },
+      redirectUri: `${appOrigin()}${DC_RETURN_PATH}`,
+      state,
+    }),
+  )
 }
 
 // ── THE NAV MANAGER actions (multi-page model). Create / rename / reorder / delete the operator-defined
@@ -500,6 +567,7 @@ export async function removeSiteDomain(slug: string): Promise<ActionResult> {
  *  page) + the Page manager. */
 function revalidateNav(slug: string): void {
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
 }
 
@@ -650,6 +718,7 @@ export async function setSpaceLocation(slug: string, input: unknown): Promise<Ac
   // The pin feeds the Around You map, and the address feeds every public profile route's Contact
   // card, so both the community surface and the whole space layout have to be refreshed.
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage`)
   revalidatePath('/nearby')
   return ok()

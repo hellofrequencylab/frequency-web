@@ -3,21 +3,29 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Copy, Globe, Loader2, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/field'
 import { SectionHeader } from '@/components/ui/section-header'
 import { isError } from '@/lib/action-result'
 import type { DomainStatus } from '@/lib/sites/vercel-domains'
 import { DOMAIN_METHODS } from '@/lib/sites/domain-methods'
-import { connectSiteDomain, checkSiteDomain, removeSiteDomain } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import {
+  connectSiteDomain,
+  checkSiteDomain,
+  removeSiteDomain,
+  domainConnectLink,
+} from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { DomainBuyPanel } from './domain-buy-panel'
 
-// THE DOMAIN SECTION (PROG-E10, LIVE-743). Where a Space owner puts their website on their own domain:
-// pick how (DOMAIN_METHODS: own domain via DNS is live; connect automatically and buy a domain show as
-// coming), type the domain, press Connect, then copy the records shown here into the DNS provider the
-// panel names. While DNS is pending the panel re-checks on its own, so the owner never has to guess.
-// Every write re-gates in its server action; this client is feedback only. DAWN semantic tokens only,
-// sentence-case copy, no em dashes.
+// THE DOMAIN SECTION (PROG-E10, LIVE-743, LIVE-780). Where a Space owner puts their website on their
+// own domain: pick how (DOMAIN_METHODS: own domain via DNS and connect automatically are live; buy a
+// domain is live behind its switch), type the domain, press Connect. When the domain's DNS provider has
+// onboarded Frequency's Domain Connect template, a "Connect with <provider>" button sets the records
+// in one approval; otherwise (or as well) the owner copies the records shown here into the DNS
+// provider the panel names. While DNS is pending the panel re-checks on its own, so the owner never
+// has to guess. Every write re-gates in its server action; this client is feedback only. DAWN semantic
+// tokens only, sentence-case copy, no em dashes.
 
 /** Re-check every 30 seconds while waiting on DNS, for up to 20 minutes per page visit. */
 const AUTO_CHECK_MS = 30_000
@@ -29,11 +37,14 @@ export function SiteDomainPanel({
   slug,
   initial,
   websitePublished,
+  buyOpen = false,
 }: {
   slug: string
   /** The bound domain and its status, read on the server, or null when none is connected. */
   initial: Status | null
   websitePublished: boolean
+  /** Domain sales are switched on (LIVE-781, domainPurchaseOpen on the server). Off: Coming soon. */
+  buyOpen?: boolean
 }) {
   const router = useRouter()
   const [status, setStatus] = useState<Status | null>(initial)
@@ -87,6 +98,25 @@ export function SiteDomainPanel({
     return () => window.clearInterval(id)
   }, [waiting, slug])
 
+  // Connect automatically: ask once per pending domain whether its DNS provider can apply Frequency's
+  // template. Any failure just leaves the copy steps, which are always shown.
+  const [oneClick, setOneClick] = useState<{ domain: string; providerName: string; applyUrl: string } | null>(null)
+  const oneClickFor = status && !live && !status.providerIsVercel ? status.domain : null
+  useEffect(() => {
+    if (!oneClickFor) return
+    let cancelled = false
+    domainConnectLink(slug)
+      .then((result) => {
+        if (cancelled || isError(result) || !result.data.supported) return
+        setOneClick({ domain: oneClickFor, providerName: result.data.providerName, applyUrl: result.data.applyUrl })
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [oneClickFor, slug])
+  const connectLink = oneClick && oneClick.domain === oneClickFor ? oneClick : null
+
   const where = status?.provider ?? 'the company that manages your domain'
 
   return (
@@ -102,27 +132,30 @@ export function SiteDomainPanel({
         <>
           <p className="-mt-2 mb-3 text-body-sm text-muted">Put your website on your own domain, like yourname.com.</p>
           <ul className="mb-4 grid gap-2 sm:grid-cols-3">
-            {DOMAIN_METHODS.map((m) => (
-              <li
-                key={m.key}
-                className={
-                  m.available
-                    ? 'rounded-card border border-primary bg-primary-bg px-3 py-2'
-                    : 'rounded-card border border-border px-3 py-2 opacity-70'
-                }
-                aria-disabled={!m.available || undefined}
-              >
-                <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
-                  {m.label}
-                  {!m.available && (
-                    <Badge tone="neutral" size="sm">
-                      Coming soon
-                    </Badge>
-                  )}
-                </p>
-                <p className="mt-0.5 text-body-sm text-muted">{m.description}</p>
-              </li>
-            ))}
+            {DOMAIN_METHODS.map((m) => {
+              const open = m.available && (!m.switch || buyOpen)
+              return (
+                <li
+                  key={m.key}
+                  className={
+                    open
+                      ? 'rounded-card border border-primary bg-primary-bg px-3 py-2'
+                      : 'rounded-card border border-border px-3 py-2 opacity-70'
+                  }
+                  aria-disabled={!open || undefined}
+                >
+                  <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
+                    {m.label}
+                    {!open && (
+                      <Badge tone="neutral" size="sm">
+                        Coming soon
+                      </Badge>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-body-sm text-muted">{m.description}</p>
+                </li>
+              )
+            })}
           </ul>
           <form
             className="flex flex-wrap items-center gap-2"
@@ -149,6 +182,7 @@ export function SiteDomainPanel({
               Connect
             </Button>
           </form>
+          {buyOpen && <DomainBuyPanel slug={slug} />}
         </>
       ) : (
         <div className="space-y-4">
@@ -167,6 +201,19 @@ export function SiteDomainPanel({
 
           {!live && (
             <div className="space-y-3">
+              {connectLink && (
+                <div className="space-y-2 rounded-card border border-primary bg-primary-bg px-3 py-3">
+                  <p className="text-body-sm text-text">
+                    {connectLink.providerName} can set these records for you. Sign in there, approve, and you come
+                    straight back here.
+                  </p>
+                  <a href={connectLink.applyUrl} rel="noopener" className={buttonClasses('primary', 'sm')}>
+                    <Globe className="h-4 w-4" aria-hidden />
+                    Connect with {connectLink.providerName}
+                  </a>
+                  <p className="text-body-sm text-muted">Or add the records yourself:</p>
+                </div>
+              )}
               {status.providerIsVercel ? (
                 <p className="text-body-sm text-muted">
                   Your domain&apos;s DNS is already managed by our hosting, so there is nothing to add. This page checks

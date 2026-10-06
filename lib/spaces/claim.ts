@@ -92,6 +92,39 @@ export async function getSpaceClaimToken(spaceId: string): Promise<string | null
   }
 }
 
+/**
+ * Of the given Space ids, the ones that are SEEDED AND STILL UNCLAIMED (a live claim token, no
+ * claimed_at). The operator who seeded them owns them only as a placeholder until the real owner
+ * claims, so the My Frequency menu leaves them out (owner ruling 2026-10-06: "keep them linked to
+ * me, I just don't want to see them on the left menu"). Returns ids only, never the token.
+ * FAIL-SAFE to an empty set, which shows everything, the pre-existing behavior.
+ */
+export async function listUnclaimedSeededSpaceIds(spaceIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  if (spaceIds.length === 0) return out
+  try {
+    const q = spacesTable() as unknown as {
+      select: (c: string) => {
+        in: (col: string, v: string[]) => {
+          not: (col: string, op: string, v: null) => {
+            is: (col: string, v: null) => Promise<{ data: { id: string }[] | null; error: unknown }>
+          }
+        }
+      }
+    }
+    const { data, error } = await q
+      .select('id')
+      .in('id', spaceIds)
+      .not('claim_token', 'is', null)
+      .is('claimed_at', null)
+    if (error || !data) return out
+    for (const row of data) out.add(row.id)
+  } catch {
+    // fall through: show everything
+  }
+  return out
+}
+
 /** A resolved, still-claimable Space behind a token (what the claim page renders). */
 interface ResolvedSpaceClaim {
   spaceId: string
