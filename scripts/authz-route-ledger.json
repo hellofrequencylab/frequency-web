@@ -60,9 +60,9 @@
     },
     "app/(main)/people/[handle]/vcard/route.ts": {
       "verdict": "public",
-      "reason": "Public 'Save contact' vCard behind a member's own profile QR. Reads through the admin client but selects only columns the public profile page already shows, and buildVcf emits ONLY the fields the member opted into via `vcard`; 404 when they have not enabled a card.",
-      "checked": "2026-08-17",
-      "digest": "2b3c2bc5554cc766"
+      "reason": "Public 'Save contact' vCard behind a member's own profile QR. Reads through the admin client but selects only columns the public profile page already shows plus the two gate flags (is_active, is_system, never printed), and buildVcf emits ONLY the fields the member opted into via `vcard`; 404 when they have not enabled a card, and 404 for a deactivated or system profile (SCAN-720, re-read 2026-10-05).",
+      "checked": "2026-10-05",
+      "digest": "b017faab1984f4cb"
     },
     "app/api/check-handle/route.ts": {
       "verdict": "public",
@@ -108,9 +108,9 @@
     },
     "app/api/vera/turn/route.ts": {
       "verdict": "public",
-      "reason": "The streaming Vera concierge door (ADR-1287, PROG-E8): the same turn as the intentionally PUBLIC `conciergeTurn` server action in app/onboarding/vera-actions.ts, answered as NDJSON so the reply streams. Anonymous by design because the concierge serves signed-out visitors. The handler itself reads no DB and holds no admin client: it validates the body with a zod schema, throttles per IP, and forwards to lib/ai/vera/turn, where the only identity is the caller's OWN session (optional personalization, null for anonymous) and write proposals are RETURNED for confirmation, never executed. Nothing caller-supplied selects another principal.",
-      "checked": "2026-09-08",
-      "digest": "1d6921ef8bb45e61"
+      "reason": "The streaming Vera concierge door (ADR-1287, PROG-E8): the same turn as the intentionally PUBLIC `conciergeTurn` server action in app/onboarding/vera-actions.ts, answered as NDJSON so the reply streams. Anonymous by design because the concierge serves signed-out visitors. The handler itself reads no DB and holds no admin client: it validates the body with a zod schema, throttles per IP, and forwards to lib/ai/vera/turn, where the only identity is the caller's OWN session (optional personalization, null for anonymous) and write proposals are RETURNED for confirmation, never executed. Nothing caller-supplied selects another principal. 2026-10-06 re-read (SCAN-736): the body schema moved to VERA_TURN_BODY in lib/ai/vera/turn-input.ts (the same bounds, now shared with the server action) and the caller IP is passed into runConciergeTurn so the AI window keys an anonymous turn on ip:<ip>. Still no caller identity read here, same public output; the change only tightens the throttle.",
+      "checked": "2026-10-06",
+      "digest": "30e9e1324dda4baf"
     },
     "app/api/vitals/route.ts": {
       "verdict": "public",

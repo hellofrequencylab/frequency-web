@@ -5,6 +5,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { awardGems } from '@/lib/gems'
+import { isBlockedBetween } from '@/lib/blocking'
 import { processGamificationEvent } from '@/lib/achievements'
 import { getConnectionSettings } from '@/lib/connections/connection-settings'
 
@@ -85,6 +86,11 @@ export async function recordWelcome(newcomerId: string): Promise<WelcomeResult> 
   if (!shared) {
     return { awarded: false, gems: 0, error: 'You don’t share a circle with them.' }
   }
+
+  // SCAN-718: a block in either direction ends the welcome, quietly (no reward, no notice, no
+  // error that would say a block exists). welcome_targets filters the same pairs since the
+  // migration beside this change; this is the write-side twin.
+  if (await isBlockedBetween(me.id, newcomerId)) return { awarded: false, gems: 0, error: null }
 
   // Insert-first; the unique constraint makes a repeat a harmless no-op (already welcomed).
   const { error: insErr } = await db

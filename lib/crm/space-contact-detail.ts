@@ -28,7 +28,7 @@ import { listInteractionsForPerson } from '@/lib/crm/interactions'
 import { buildTimeline, type TimelineEntry } from '@/lib/crm/timeline'
 import { getMemberScores, type MemberScores } from '@/lib/dashboard/scores'
 import { draftContextLine, explainMemberScores, type ScoreReadout } from '@/lib/dashboard/person-band'
-import { getMemberContext, type MemberFacts } from '@/lib/ai/memory'
+import type { MemberFacts } from '@/lib/ai/memory'
 import { resolvePlaybookForScores } from '@/lib/playbooks/resolve'
 import { effectiveAutonomyTier, type AutonomyTier } from '@/lib/playbooks/registry'
 import { listSpaceCustomFields } from '@/lib/crm/import/store'
@@ -221,13 +221,15 @@ async function buildInsight(
   const scores = await getMemberScores(profileId)
   const hasScores = scores.resonanceTier != null || scores.lifecycleStage != null
   const readout = explainMemberScores(scores)
-  // The context line drafts from the standing (deterministic fallback, never throws). Facts come from
-  // Vera's per-member memory, member-only and best-effort.
-  const [contextLine, context] = await Promise.all([
-    draftContextLine(name.trim(), scores),
-    profileId ? getMemberContext(profileId) : Promise.resolve(null),
-  ])
-  const facts = context?.facts && hasAnyFact(context.facts) ? context.facts : null
+  // The context line drafts from the standing (deterministic fallback, never throws).
+  const contextLine = await draftContextLine(name.trim(), scores)
+  // NO VERA MEMORY HERE (SCAN-742). What a member tells Vera in private (goals, interests,
+  // constraints, neighborhood) is member-only under own-row RLS (docs/AI-VERA.md) and the privacy
+  // page never names Spaces as recipients, yet this read model showed it to every Space editor
+  // whose Space the member had bought a ticket from. ai_memory consent covers remembering, not
+  // sharing. The About panel hides itself when facts is null. If Spaces should ever see facts, that
+  // is a separate per-member, per-Space opt-in checked here, an ADR, and a line on the privacy page.
+  const facts: MemberFacts | null = null
 
   // The one-tap next-best-action play (Altitude 3 picker). Resolved PURELY from the scores via the
   // shared registry resolver (the same choice the worklist + Today make), with this Space's effective
@@ -247,16 +249,6 @@ async function buildInsight(
   })()
 
   return { profileId, scores, hasScores, contextLine, readout, facts, nextBestPlay }
-}
-
-/** True when a facts record carries at least one usable value (so an empty {} hides the About panel). */
-function hasAnyFact(f: MemberFacts): boolean {
-  return Boolean(
-    (f.interests && f.interests.length > 0) ||
-      (f.goals && f.goals.length > 0) ||
-      (f.constraints && f.constraints.length > 0) ||
-      (f.neighborhood && f.neighborhood.trim()),
-  )
 }
 
 /** Best-effort phone/company/city for a contact from any `network_contacts` capture that shares its

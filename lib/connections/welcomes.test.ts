@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }))
 vi.mock('@/lib/auth', () => ({ getCallerProfile: async () => ({ id: 'welcomer-1' }) }))
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }))
+// SCAN-718: the block check runs before the insert; no block in these fixtures.
+vi.mock('@/lib/blocking', () => ({ isBlockedBetween: async () => false }))
 vi.mock('@/lib/gems', () => ({
   awardGems: (...args: unknown[]) => {
     mocks.calls.push('awardGems')

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-718",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const dir=\"supabase/migrations\";const wf=\"lib/connections/welcomes.ts\";if(!fs.existsSync(dir)||!fs.existsSync(wf)){console.error(\"SCAN-718: migrations dir or welcomes.ts missing\");process.exit(79)}const files=fs.readdirSync(dir).filter(x=>x.endsWith(\".sql\")).sort();const latest=(fn)=>{let body=null;for(const x of files){const s=fs.readFileSync(path.join(dir,x),\"utf8\");const re=new RegExp(\"create or replace function public\\\\.\"+fn+\"\\\\b\",\"i\");const m=re.exec(s);if(m){const end=s.indexOf(\"$$;\",m.index);body=s.slice(m.index,end<0?s.length:end)}}return body};const bad=[];for(const fn of [\"near_misses\",\"welcome_targets\"]){const b=latest(fn);if(b===null){console.error(\"SCAN-718: no definition of \"+fn+\" found\");process.exit(79)}if(!/blocked_users/.test(b))bad.push(fn+\"() has no blocked_users exclusion\")}if(!/isBlockedBetween/.test(fs.readFileSync(wf,\"utf8\")))bad.push(\"recordWelcome never checks isBlockedBetween\");if(bad.length){console.error(\"SCAN-718: blocked members still surface as near-misses and welcome targets and can notify the person who blocked them: \"+bad.join(\"; \")+\".\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: migration 20270346000720 redefines near_misses and welcome_targets with a two-direction blocked_users exclusion and restates the browser grants; recordWelcome returns quietly across a block before the insert."
+  }
+}

@@ -196,6 +196,19 @@ export const VERA_TOOLS: readonly VeraToolDef[] = [
 
 const BY_KEY = new Map(VERA_TOOLS.map((t) => [t.key, t]))
 
+/** The tools the MEMBER chat (and the anonymous concierge) may offer the model (SCAN-738): the two
+ *  reads and the four self-scoped writes a member can confirm. The operator playbook tools and
+ *  create_entity stay in the catalog for the operator path and never reach a member turn. The
+ *  member confirm action derives its allow-list from this set, so the two cannot drift. */
+export const MEMBER_CHAT_TOOL_KEYS: ReadonlySet<string> = new Set([
+  'suggest_circle',
+  'find_host',
+  'remember_fact',
+  'set_profile_field',
+  'draft_intro',
+  'join_circle',
+])
+
 export function getTool(key: string): VeraToolDef | undefined {
   return BY_KEY.get(key)
 }

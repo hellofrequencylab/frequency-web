@@ -57,11 +57,18 @@ export async function runConciergeTurn(
   stage: string,
   memberText: string,
   history: VeraMessage[] = [],
-  opts: { onText?: (delta: string, round: number) => void } = {},
+  opts: {
+    onText?: (delta: string, round: number) => void
+    /** The caller's IP, so an ANONYMOUS turn still has an actor for the per-actor AI window
+     *  (SCAN-736). A null profile and no ip means nobody is throttled, which is the hole both
+     *  doors used to have. */
+    ip?: string | null
+  } = {},
 ): Promise<ConciergeTurnResult> {
   if (aiEnabled()) {
     const ident = await callerIdentity()
     const profileId = ident?.id ?? null
+    const actorKey = profileId ?? (opts.ip ? `ip:${opts.ip}` : null)
     const [memberContext, supportSummary] = profileId
       ? await Promise.all([getMemberContext(profileId), supportSummaryForVera(profileId).catch(() => '')])
       : [null, '']
@@ -74,6 +81,7 @@ export async function runConciergeTurn(
       memberContext,
       supportSummary,
       profileId,
+      actorKey,
       tier: ident?.tier ?? null,
       viewer,
       onText: opts.onText,

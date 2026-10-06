@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-720",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"proxy.ts\",ind=\"app/join/(induction)/induction.tsx\",r=\"app/(main)/people/[handle]/vcard/route.ts\";for(const f of [p,ind,r]){if(!fs.existsSync(f)){console.error(\"SCAN-720: \"+f+\" missing\");process.exit(79)}}const bad=[];if(!/vcard/.test(fs.readFileSync(p,\"utf8\")))bad.push(\"proxy.ts has no /people/<handle>/vcard exemption so an anonymous scanner is bounced to /sign-in\");if(!/vcard/.test(fs.readFileSync(ind,\"utf8\")))bad.push(\"the /join splash never renders a Save contact link\");if(!/is_active/.test(fs.readFileSync(r,\"utf8\")))bad.push(\"the vcard route serves deactivated profiles\");if(bad.length){console.error(\"SCAN-720: the opt-in Save contact card never reaches the person who scans the code: \"+bad.join(\"; \")+\".\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: proxy.ts exempts /people/<handle>/vcard (anchored) from the sign-in bounce, the induction splash shows a Save contact link when the referrer's card is on, and the vcard route 404s a deactivated or system profile; route.test and the authz route ledger carry the new projection and digest."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-736",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/onboarding/vera-actions.ts\",g=\"lib/ai/vera/agent-claude.ts\";if(!fs.existsSync(a)||!fs.existsSync(g))process.exit(79);const A=fs.readFileSync(a,\"utf8\"),G=fs.readFileSync(g,\"utf8\");const bare=/aiRateLimited\\(FEATURE,\\s*input\\.profileId\\)/.test(G);const noIp=!/callerIp|clientIp|headers\\(|ip:/.test(A);const noSchema=!/parse|safeParse|schema/i.test(A);if(bare||noIp||noSchema){console.error(\"SCAN-736: the public conciergeTurn server action still runs an anonymous Vera turn with no IP throttle and no input bounds (the rate limit keys on profileId alone), so a signed-out loop can burn the daily AI caps for everyone.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nrunConciergeTurn takes the caller IP and keys the AI window on profileId or ip:<ip>; both doors parse VERA_TURN_BODY from lib/ai/vera/turn-input.ts; the stream client returns a throttled reply on 429 instead of falling back."
+  }
+}
