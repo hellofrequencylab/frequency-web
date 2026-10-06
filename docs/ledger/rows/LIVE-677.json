@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-677",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const mig=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/create table if not exists public\\.post_embeddings[\\s\\S]{0,200}vector\\(384\\)/.test(mig))die(\"no post_embeddings table: posts are never embedded\");if(!/create or replace function public\\.post_interest_scores/.test(mig))die(\"nothing scores a post against what the viewer engages with\");const cron=r(\"app/api/cron/embed-posts/route.ts\");if(!/backfillPostEmbeddings\\(/.test(cron))die(\"no embed-posts cron\");const v=JSON.parse(r(\"vercel.json\"));if(!(v.crons||[]).some(c=>c.path===\"/api/cron/embed-posts\"))die(\"embed-posts is not scheduled in vercel.json\");const br=r(\"lib/feed/blend-rank.ts\");if(/post-content embeddings land later/.test(br))die(\"blend-rank still says post-content embeddings land later\");if(!/interest: number/.test(br)||!/ctx\\.interest\\?\\.get\\(item\\.id\\)/.test(br))die(\"blend-rank has no interest term\");const fl=r(\"components/feed/feed-list.tsx\");if(!/getPostInterest\\(/.test(fl)||!/interest, radiusM/.test(fl))die(\"the For you feed does not pass the interest map to the blend\");const t=r(\"lib/feed/blend-rank.test.ts\");if(!/leaves the ranking exactly as it was when no post has an interest score/.test(t))die(\"nothing measures the new term against the current ranking\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nPosts are embedded and ranked on it. Migration 20270346002300 adds post_embeddings (384-d gte-small, service role only, hnsw) and post_interest_scores(viewer, post_ids): cosine similarity to the centroid of the posts the viewer recently reacted to, replied to or wrote, service role only. The embed-posts cron (hourly, budget 100, newest top-level posts first, AI kill switch respected) fills it. blend-rank gains an interest signal (weight 0.25) that is present only when both vectors exist, so it renormalises away otherwise; measured against the current ranking by a test that pins the order and every score unchanged with no interest scores, and lifts or lowers a post when it has one. Both blend callers (feed-list For you, feed-page) pass it."
+  }
+}

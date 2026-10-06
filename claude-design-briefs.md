@@ -60,7 +60,7 @@ round caps. One idea each (see per-flow). Keep them childlike-simple; this is a 
 ---
 
 ## FLOW 1 — The First Win  ·  REFERENCE (built)
-**Reader:** the Seeker. **Intent:** kill week-one churn with a fast, earned first reward.
+**Reader:** the Seeker (Wired Professional, Transplant). **Intent:** kill week-one churn with a fast, earned first reward.
 **Accent:** gold `#ffd25e`. **Node ramp:** `#3a2b2f` → `#4a2f2a` → `#5a3a24` → gold-lit.
 
 - **Eyebrow:** The first win
@@ -80,7 +80,7 @@ round caps. One idea each (see per-flow). Keep them childlike-simple; this is a 
 ---
 
 ## FLOW 2 — The Focus Ritual
-**Reader:** the Seeker. **Intent:** a 5-minute timed sit that ends by pointing at tomorrow.
+**Reader:** the Seeker (Wired Professional, Evidence-First Skeptic). **Intent:** a 5-minute timed sit that ends by pointing at tomorrow.
 **Accent:** lotus teal `#7fd1c4`. **Node ramp:** `#232a2c` → `#26383a` → `#284a48` → teal-lit.
 
 - **Eyebrow:** The focus ritual
@@ -101,7 +101,7 @@ round caps. One idea each (see per-flow). Keep them childlike-simple; this is a 
 ---
 
 ## FLOW 3 — Never Miss Twice
-**Reader:** the Seeker. **Intent:** the anti-Duolingo beat. A missed day is forgiven, not punished.
+**Reader:** the Seeker (any of the four). **Intent:** the anti-Duolingo beat. A missed day is forgiven, not punished.
 **Accent:** ice blue `#8ab6e0`. **Node ramp:** warm `#4a2f2a` (streak alive) → **muted grey**
 `#2e2a30` on the "miss" node (deliberately drained of color) → warm again → ice-blue "freeze".
 
@@ -123,7 +123,7 @@ round caps. One idea each (see per-flow). Keep them childlike-simple; this is a 
 ---
 
 ## FLOW 4 — No Lead Left Behind
-**Reader:** the Latent Leader (host). **Intent:** one QR turns a roomful of strangers into a list.
+**Reader:** the Builder running a Space (Studio Keeper, Gathering Host). **Intent:** one QR turns a roomful of strangers into a list.
 **Accent:** amber `#e0a24a`. **Node ramp:** `#3a2b2f` → `#4a2f2a` → `#5a3a24` → amber-lit.
 
 - **Eyebrow:** No lead left behind
@@ -145,7 +145,7 @@ round caps. One idea each (see per-flow). Keep them childlike-simple; this is a 
 ---
 
 ## FLOW 5 — Be the First Responder
-**Reader:** the Latent Leader (host). **Intent:** the enquiry opens a real conversation instantly.
+**Reader:** the Builder running a Space (Second-Act Practitioner, Portfolio Teacher). **Intent:** the enquiry opens a real conversation instantly.
 **Accent:** signal coral `#ff8a6b`. **Node ramp:** `#3a2b2f` → `#4a2f2a` → `#5a3a24` → coral-lit.
 
 - **Eyebrow:** Be the first responder
@@ -168,7 +168,7 @@ round caps. One idea each (see per-flow). Keep them childlike-simple; this is a 
 ---
 
 ## FLOW 6 — One-Timer to Regular
-**Reader:** the Latent Leader (host). **Intent:** one event becomes a reason to come back.
+**Reader:** the Latent Leader becoming a Builder (Gathering Host). **Intent:** one event becomes a reason to come back.
 **Accent:** return green-gold `#c9d16b`. **Node ramp:** `#3a2b2f` → `#4a2f2a` → `#5a3a24` →
 green-gold-lit. **This is the one flow with a curved return arrow.**
 
@@ -192,7 +192,7 @@ green-gold-lit. **This is the one flow with a curved return arrow.**
 ---
 
 ## FLOW 7 — The Marketplace  ·  OVERVIEW (not a chain)
-**Reader:** both (Seeker browsing, Latent Leader selling). **Intent:** teach the difference
+**Reader:** both (Seeker browsing, a Builder selling). **Intent:** teach the difference
 between the three commerce surfaces in one glance. **This is the one non-linear teaser:** an
 overview of three peer surfaces on a spectrum, not a pain→relief chain. Same canvas, palette,
 type scale, and wordmark as the others, but the flow band holds **three vertical lane cards**

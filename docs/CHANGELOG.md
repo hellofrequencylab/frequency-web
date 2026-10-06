@@ -12,6 +12,10 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Five new help guides.** Start with something to do, Just the timer, What Crew keeps free, Hosting with kids, and Teaching across studios. Each one is in the help center and linked from the guides around it.
+- **Joining asks one optional follow-up.** After you say who you are, you can pick the line that sounds most like you, like "I'm new around here" or "I teach at a few studios." It only changes what we show you first, it never appears on your profile, and it's never sent to advertisers. Skip it if you like.
+- **Vera's first hello fits why you came.** If you host, she starts you on one Circle. If you practice, she points you to a free Space. Everyone else gets the usual tour.
+- **Teachers have their own page.** If you teach at a few studios, For teachers shows how to keep your classes and your students in one place, and Pricing has a Teachers card.
 - **You can drag the steps of a Journey into any order.** Lessons, practices, and modules mix freely, so a practice can sit between two lessons. The builder shows the order members follow.
 - **Space email has a written policy.** It says who a Space can email, what it can send, the 500-a-day limit, and what happens after a bounce or a spam complaint. The Turn on email card links it, and so do the Terms.
 
