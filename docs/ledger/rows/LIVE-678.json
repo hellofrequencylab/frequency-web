@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-678",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const walk=(d)=>fs.readdirSync(d,{withFileTypes:true}).flatMap((x)=>{const p=path.join(d,x.name);return x.isDirectory()?walk(p):[p]});const hit=walk(\"app/(main)/circles/[slug]\").some((f)=>/\\.tsx$/.test(f)&&!/\\.test\\./.test(f)&&/<CircleTasksSection\\b/.test(fs.readFileSync(f,\"utf8\")));if(!hit){console.error(\"LIVE-678: no Circle page renders the Crew tasks a member can volunteer for\");process.exit(1)}const sec=fs.readFileSync(\"app/(main)/crew/circle-task-controls.tsx\",\"utf8\");if(!/claimCircleTask/.test(sec)){console.error(\"LIVE-678: the task section has no claim\");process.exit(1)}console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nShipped 2026-10-06: the Circle's Program tab shows its Crew tasks to members and managers with the existing Claim, Release and completion flow (CircleTasksSection, the section /crew already shows). It renders nothing when the Circle has no tasks."
+  }
+}

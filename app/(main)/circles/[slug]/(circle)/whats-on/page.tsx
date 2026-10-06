@@ -20,6 +20,7 @@ import {
   loadCircleUpcomingEvents,
 } from '../tab-facts'
 import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
+import { CircleTasksSection } from '@/app/(main)/crew/circle-tasks-section'
 
 // ── THE PROGRAM TAB ─────────────────────────────────────────────────────────────────────────────
 //
@@ -86,25 +87,39 @@ export default async function CircleWhatsOnPage({
 
   // Nothing on any horizon. One answer for the tab, with the manager's next step attached, rather
   // than three empty sections that each say a smaller version of it.
+  // HOW TO HELP (LIVE-678). The Circle's Crew tasks with a one-tap volunteer, for the people
+  // inside it: the same section /crew shows for a member's own Circle (Claim with task.claim,
+  // Release, and the existing completion flow). It renders nothing when the Circle has no tasks,
+  // and streams so its reads never hold the tab.
+  const tasks =
+    myProfileId && (isMember || canManage) ? (
+      <Suspense fallback={null}>
+        <CircleTasksSection circleId={circle.id} circleName={circle.name} viewerProfileId={myProfileId} />
+      </Suspense>
+    ) : null
+
   if (!practice && !hasEvents && !run) {
     return (
-      <EmptyState
-        variant="first-use"
-        icon={Sprout}
-        title="Nothing scheduled yet"
-        description={
-          canManage
-            ? 'Set a practice, book an event, or start a journey from the circle tools. Whatever this circle has going shows up here.'
-            : 'The host has not set a practice, booked an event, or started a journey yet. All three show up here when they do.'
-        }
-        action={
-          canManage ? (
-            <Link href={`/events/new?circle=${circle.id}`} className={buttonClasses('primary', 'sm')}>
-              Create an event
-            </Link>
-          ) : undefined
-        }
-      />
+      <div className="space-y-8">
+        <EmptyState
+          variant="first-use"
+          icon={Sprout}
+          title="Nothing scheduled yet"
+          description={
+            canManage
+              ? 'Set a practice, book an event, or start a journey from the circle tools. Whatever this circle has going shows up here.'
+              : 'The host has not set a practice, booked an event, or started a journey yet. All three show up here when they do.'
+          }
+          action={
+            canManage ? (
+              <Link href={`/events/new?circle=${circle.id}`} className={buttonClasses('primary', 'sm')}>
+                Create an event
+              </Link>
+            ) : undefined
+          }
+        />
+        {tasks}
+      </div>
     )
   }
 
@@ -183,6 +198,8 @@ export default async function CircleWhatsOnPage({
           </Suspense>
         </section>
       )}
+
+      {tasks}
     </div>
   )
 }
