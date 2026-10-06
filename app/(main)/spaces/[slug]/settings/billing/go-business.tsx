@@ -102,9 +102,10 @@ export function GoBusinessCta({
         <div className="min-w-0">
           <h2 className="text-body font-bold text-text">Go Business</h2>
           <p className="mt-1 text-body-sm text-muted">
-            Keep everything you already have, with the caps lifted: the full CRM, email, reporting, your
-            own website, more seats, and higher limits. You still keep 100% of what you bring in, and
-            Business buys down your rate on the business the network sends you.
+            Go Business to start charging: paid tickets, memberships, donations, your shop and booking
+            deposits. Everything you already have stays, with higher limits, your own website and more
+            seats. You keep 100% of what you bring in, and the network fee applies only to a customer
+            the network introduces, once.
           </p>
           {/* Mission framing (CONTENT-VOICE §1a, voice-bound): plain, no guilt, no hype. */}
           <p className="mt-2 text-meta text-muted">

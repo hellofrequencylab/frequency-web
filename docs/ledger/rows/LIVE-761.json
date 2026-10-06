@@ -1,7 +1,7 @@
 {
   "id": "LIVE-761",
   "title": "In-product billing, upgrade prompts, locked notices, onboarding and Vera tell the ladder",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,10 +9,11 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 6 of the five-tier ladder (ADR-1709). Billing settings (plan-ladder, go-business, billing-body), memberships section, payments body, components/pricing, components/upsell, feature-locked notice, Crew upgrade lightbox, onboarding personas, Vera create tools, the admin pricing console copy.",
+  "detail": "PHASE 6 of the five-tier ladder (ADR-1709). Billing settings (plan-ladder, go-business, billing-body), memberships section, payments body, components/pricing, components/upsell, feature-locked notice, Crew upgrade lightbox, onboarding personas, Vera create tools, the admin pricing console copy. Closed 2026-10-06: plan ladder names Collective, Business is where selling starts, the Crew upgrade page and lightbox sell the host kit instead of a fee, meter upsells drop the rate clause, and the Practitioner promise sells from Business.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const bad=[[\"app/(main)/spaces/[slug]/settings/billing/plan-ladder.tsx\",/buys down that rate/],[\"app/(main)/spaces/[slug]/settings/billing/go-business.tsx\",/buys down your rate/i],[\"app/(main)/spaces/[slug]/settings/billing/billing-body.tsx\",/Collective toolkit/i],[\"app/(main)/spaces/[slug]/settings/memberships/section.tsx\",/stay open on every plan/i],[\"lib/spaces/memberships.ts\",/stay open on every plan/i]].filter(([f,re])=>re.test(r(f))).map(([f])=>f);if(bad.length)fail(\"old model in product: \"+bad.join(\", \"));console.log(\"ok: in-product copy tells the ladder\")'"
   },
+  "closed": "2026-10-06",
   "wave": "WR"
 }

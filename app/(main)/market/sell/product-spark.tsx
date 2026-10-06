@@ -137,8 +137,8 @@ function FullShopUpsell() {
         <h2 className="text-body font-bold text-text">Want a full shop?</h2>
       </div>
       <p className="mb-4 text-body-sm text-muted">
-        A Business Space gets a real storefront: products, bookable services, tickets, collections, and
-        a lower fee. This member listing is the quick way to sell one thing.
+        A Business Space gets a real storefront: products, bookable services, tickets, and collections,
+        with checkout built in. A listing from your own account takes inquiries.
       </p>
       <Link href="/spaces/new" className={buttonClasses('secondary', 'md')}>
         Start a Business Space

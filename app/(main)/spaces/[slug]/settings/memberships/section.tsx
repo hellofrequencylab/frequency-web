@@ -218,7 +218,7 @@ function MembershipWallNotice({
         here. That is why it comes with {wall} and not with a free Space.
       </p>
       <p>
-        A free-to-join tier stays open on every plan, and so do tips.
+        A free membership tier and tips are open on every plan.
         {canManageMembers ? '' : ' Ask an admin about the plan for this space.'}
       </p>
     </GateNotice>
