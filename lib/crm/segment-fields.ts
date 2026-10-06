@@ -105,16 +105,18 @@ export function mergeCustomValues(
   submitted: Record<string, unknown>,
   allowed: ReadonlyMap<string, Pick<CustomFieldEntry, 'label' | 'valueType' | 'options'>>,
 ): { custom: Record<string, unknown> } | { error: string } {
-  const next: Record<string, unknown> = { ...existing }
+  // A Map, not property writes on a plain object: a submitted key never names an object property
+  // (no `__proto__` path), and only registry keys in `allowed` are ever written.
+  const next = new Map<string, unknown>(Object.entries(existing))
   for (const [key, raw] of Object.entries(submitted)) {
     const field = allowed.get(key)
     if (!field) continue
     const v = normalizeCustomValue(raw, field)
     if (v && typeof v === 'object') return v
-    if (v === null) delete next[key]
-    else next[key] = v
+    if (v === null) next.delete(key)
+    else next.set(key, v)
   }
-  return { custom: next }
+  return { custom: Object.fromEntries(next) }
 }
 
 // ── IO ───────────────────────────────────────────────────────────────────────────────────────────────
