@@ -4,12 +4,12 @@
 // URL passes through pixelSafePath, so a Journey, Circle or topic slug never reaches Vercel.
 // A client wrapper because beforeSend is a function, which a Server Component cannot pass.
 
-import { Analytics } from '@vercel/analytics/next'
+import { Analytics as VercelAnalytics } from '@vercel/analytics/next'
 import { pixelSafePath } from '@/lib/analytics/sanitize'
 
-export function VercelAnalytics() {
+export function Analytics() {
   return (
-    <Analytics
+    <VercelAnalytics
       beforeSend={(event) => {
         const m = /^(https?:\/\/[^/]+)(\/[^?#]*)?(.*)$/.exec(event.url)
         if (!m) return event

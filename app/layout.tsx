@@ -24,7 +24,7 @@ import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { CookieBanner } from "@/components/consent/cookie-banner";
 import { WebVitals } from "@/components/analytics/web-vitals";
-import { VercelAnalytics } from "@/components/analytics/vercel-analytics";
+import { Analytics } from "@/components/analytics/vercel-analytics";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
@@ -220,8 +220,10 @@ export default function RootLayout({
             enabled without this. It covers the SIGNED-OUT funnel, which is the gap: the repo's own
             nav.page_view events cover members well and see nothing of the ~20 public marketing
             surfaces or the /for/* operator doors, which is where every acquisition decision is
-            made. Cookie-free and ~1KB, so it costs the shell budget nothing meaningful. */}
-        <VercelAnalytics />
+            made. Cookie-free and ~1KB, so it costs the shell budget nothing meaningful. This is
+            @vercel/analytics behind a client wrapper whose beforeSend replaces Journey, Circle and
+            topic slugs with [slug] (LIVE-810). */}
+        <Analytics />
         {/* The cookie consent banner (OWN-061). It mounts here, in the ROOT layout, because the gap
             it closes is exactly the one the (main) layout cannot see: an anonymous visitor on a
             marketing, discover or help page, who never reaches the authenticated shell. It renders
