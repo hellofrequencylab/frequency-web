@@ -202,7 +202,10 @@ platform_settings                    internal
 playbook_runs                        internal
 playbooks                            internal
 podcast_shows                        internal
+post_embeddings                      internal
 post_mentions                        public
+post_poll_options                    public
+post_poll_votes                      authenticated
 post_reactions                       authenticated
 posts                                authenticated
 practice_logs                        authenticated
