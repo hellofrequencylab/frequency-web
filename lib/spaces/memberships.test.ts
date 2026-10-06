@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { isPaymentsRefusal } from '@/lib/pricing/payments-copy'
 
 // MEMBERSHIPS (ENTITY-SPACES-SYSTEM §2.5, memberships v1). What is locked here, all network-free
 // (the supabase admin client + auth + store + capability seam are mocked):
@@ -31,6 +32,7 @@ let resolvedSpace: {
   brandName?: string | null
   type?: string
   ownerProfileId?: string | null
+  plan?: string | null
 } | null = {
   id: 'space-1',
   slug: 'river-studio',
@@ -40,6 +42,7 @@ let resolvedSpace: {
 }
 const extraSpaces: Record<string, NonNullable<typeof resolvedSpace>> = {}
 vi.mock('./store', () => ({
+  loadRootSpaceId: async () => 'root-space',
   getSpaceById: async (id: string) => {
     if (resolvedSpace && id === resolvedSpace.id) return resolvedSpace
     return extraSpaces[id] ?? null
@@ -292,6 +295,8 @@ beforeEach(() => {
     name: 'River Studio',
     type: 'space',
     ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+    // Paid tiers sell from Business up (ADR-1709, LIVE-753); the free-Space case is its own test.
+    plan: 'business',
   }
   for (const k of Object.keys(extraSpaces)) delete extraSpaces[k]
   billingOn = true
@@ -452,6 +457,21 @@ describe('setMembershipTiers (action) — permission gating', () => {
     const r = await setMembershipTiers('nope', [tier()])
     expect('error' in r).toBe(true)
     expect(db.inserts).toHaveLength(0)
+  })
+
+  it('refuses a PAID tier on a free Space with the upgrade moment sentence, and writes nothing (LIVE-753)', async () => {
+    resolvedSpace = { ...resolvedSpace!, plan: 'free' }
+    const r = await setMembershipTiers('space-1', [tier({ name: 'Gold', priceCents: 2500 })])
+    expect('error' in r).toBe(true)
+    if ('error' in r) expect(isPaymentsRefusal(r.error)).toBe(true)
+    expect(db.inserts).toHaveLength(0)
+  })
+
+  it('saves a FREE-to-join tier on a free Space (the free Space keeps its one tier)', async () => {
+    resolvedSpace = { ...resolvedSpace!, plan: 'free' }
+    const r = await setMembershipTiers('space-1', [tier({ name: 'Friends', priceCents: 0 })])
+    expect('error' in r).toBe(false)
+    expect(db.inserts).toHaveLength(1)
   })
 
   it('an authorized editor saves the tiers (upsert-by-id), dropping invalid ones', async () => {

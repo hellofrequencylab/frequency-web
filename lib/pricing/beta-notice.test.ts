@@ -40,9 +40,10 @@ const SEPT = betaGraceEndsAtMs('2026-09-01') // the window's end, read the way t
 describe('targetForGate (a feature names the tier its REAL gate sits on)', () => {
   it('a Business feature resolves to the Business tier', () => {
     // `space_crm` / `space_email` were the examples here until ADR-917 turned both into meters.
-    // LIVE-410 moved memberships to the free floor and ADR-1709 moved campaigns and automation there
-    // too (metered instead), so a remaining Business wall is the custom domain.
-    expect(targetForGate(FEATURE_GATES.space_memberships)).toBeNull()
+    // ADR-1709 moved campaigns and automation to the free floor (metered instead) and put taking money
+    // at Business (LIVE-753), so paid memberships and the payments gate are Business walls again.
+    expect(targetForGate(FEATURE_GATES.space_memberships)).toEqual({ axis: 'plan', tier: 'business' })
+    expect(targetForGate(FEATURE_GATES.space_payments)).toEqual({ axis: 'plan', tier: 'business' })
     expect(targetForGate(FEATURE_GATES.space_campaigns)).toBeNull()
     expect(targetForGate(FEATURE_GATES.space_automation)).toBeNull()
     expect(targetForGate(FEATURE_GATES.custom_domain)).toEqual({ axis: 'plan', tier: 'business' })
@@ -70,7 +71,7 @@ describe('targetForGate (a feature names the tier its REAL gate sits on)', () =>
   })
 
   it('a FREE floor names nothing, and neither does an absent gate', () => {
-    expect(targetForGate(FEATURE_GATES.space_storefront)).toBeNull() // minEntitlement 'free'
+    expect(targetForGate(FEATURE_GATES.space_campaigns)).toBeNull() // minEntitlement 'free' (ADR-1709)
     expect(targetForGate(null)).toBeNull()
     expect(targetForGate(undefined)).toBeNull()
   })

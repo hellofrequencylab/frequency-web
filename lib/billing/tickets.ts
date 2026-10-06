@@ -77,6 +77,8 @@ import { payableCents, type MemberBenefit, type AppliedBenefit } from '@/lib/spa
 import { ticketSalesWindowError } from '@/lib/events/sales-window'
 import { eventInstant, resolveZone } from '@/lib/time/zone'
 import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
+import { spacePaymentsVerdict, personalPaymentsRefusal, type PaymentsRefusal } from '@/lib/pricing/payments-gate'
+import { PAYMENTS_BUYER_REFUSAL } from '@/lib/pricing/payments-copy'
 
 const TICKET_MAX_QTY = 10
 
@@ -208,6 +210,9 @@ interface TicketResult {
    *  tier id for a guest (LIVE-318, 20270345004000). The result is the same shape for both; the
    *  identity the caller holds decides which recorder it uses. */
   free?: boolean
+  /** Set with `error` when the seller's plan cannot take payments (LIVE-753). The buyer is shown
+   *  the neutral `error`; a host surface turns this into the upgrade moment (LIVE-758). */
+  refusal?: PaymentsRefusal
 }
 
 interface EventRow {
@@ -763,13 +768,21 @@ export async function createTicketCheckout(opts: {
   // the tier's own `quantity`. The sold-out check above still refuses a sold-out tier.
   if (unitCents <= 0) return { free: true }
 
-  // ── MAY THIS EVENT SELL AT ALL? (ADR-914, reversing ADR-913) ─────────────────────────────
-  // ONE condition, on every tier: the payee (the hosting space's owner, else the personal host) can
-  // actually receive money. There is no longer a tier check here. A free Member sells at 10%, a free
-  // Space at 10%, Crew at 8%, Business at 5% — the ladder is the RATE, never the permission
-  // (docs/VALUE-LADDER.md §2). The `profiles.membership_tier` read this branch used to do is gone
-  // with it; the tier still decides the FEE, which is resolved further down from the same row the
-  // money routes to.
+  // ── MAY THIS EVENT SELL AT ALL? (ADR-1709, LIVE-753, superseding ADR-914) ────────────────
+  // TWO conditions. First the PAYMENTS GATE: only a Space on Business or above takes money
+  // (space_payments, lib/pricing/payments-gate.ts), and a PERSONAL event (a Member or Crew host, no
+  // hosting Space) never sells a paid ticket. It does not wait for the grace window. The platform's
+  // own event (hosted by the root Space) clears it. A free tier still gets RSVPs and tips at 0%.
+  // The buyer sees a neutral sentence; the HOST meets the upgrade moment where they set the price.
+  {
+    const root = await loadRootSpaceId()
+    const sellerSpaceId =
+      root && event.host_space_id === root ? root : await resolveHostingSpaceIdFromRow(event)
+    const payments = sellerSpaceId ? await spacePaymentsVerdict(sellerSpaceId) : personalPaymentsRefusal()
+    if (!payments.ok) return { error: PAYMENTS_BUYER_REFUSAL, refusal: payments.refusal }
+  }
+
+  // Second, the payee (the hosting space's owner) can actually receive money.
   //
   // Still checked HERE rather than only at the write seams, and the reason survives the reversal: the
   // buy path is the only place that sees every sale. An account that was ready when the event was
@@ -850,6 +863,8 @@ export async function createTicketCheckout(opts: {
       rateBps = effectiveSource === 'self' ? 0 : networkTakeRateBpsForPlan(plan, await resolvedNetworkRate())
     }
   } else {
+    // ⚠️ UNREACHABLE FOR A SALE since LIVE-753: the payments gate above refuses every personal event,
+    // so this branch is the default-deny pricing kept for the receipt math, not a permission.
     // A PERSONAL event (no owning space): the host is an individual seller. 0% on their own sale, and
     // their TIER's rung on a sale the collective sourced — 10% on the free Member tier, 8% on Crew
     // (ADR-914). This is the ladder's reference case: the free rung is what makes the 8% mean something.

@@ -259,12 +259,37 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       'Host other businesses inside your space, and co-host events with Collaborator Spaces. They keep their own page and pay for their own space.',
     ),
   },
-  // 🔴 `space_memberships` and `space_membership_tickets` LADDERS USED TO SIT HERE and no longer do
-  // (LIVE-410 / ADR-1415). A ladder answers "which tier UNLOCKS this", and both now sit on the free
-  // floor the way the storefront does: selling a membership, and including events in it, is open on
-  // every plan. Checkout still refuses when Connect is not payout-ready. An operator override that
-  // raises either gate can still name the wall through featureWallLabel; there is no unlock rung to
-  // display on the default map.
+  // ── TAKING MONEY (ADR-1709, LIVE-753) ───────────────────────────────────────────────────────────
+  // These four ladders came back when ADR-1709 superseded LIVE-410 / ADR-1415: selling is what Business
+  // is for. The free rung names what a free Space KEEPS (tips, free-to-join tiers, inquiries), so no
+  // ladder reads as a locked door. No prices are typed; tierPriceLabel reads the catalog.
+  space_payments: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Take payments',
+    rungs: spaceRungs(
+      'Free Events, free-to-join memberships, and tips with no fee.',
+      'Paid tickets, paid memberships, donations, shop checkout and booking deposits.',
+    ),
+  },
+  space_memberships: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Paid memberships',
+    rungs: spaceRungs('One free-to-join membership tier.', 'Paid membership tiers, monthly or yearly.'),
+  },
+  space_membership_tickets: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Members-only tickets',
+    rungs: spaceRungs('Event tickets anyone can claim.', 'Ticket tiers only your members can buy.'),
+  },
+  space_storefront: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Shop checkout',
+    rungs: spaceRungs('Shop listings people ask you about.', 'Shop listings people buy on the spot.'),
+  },
   custom_domain: {
     axis: 'plan',
     minTier: 'business',

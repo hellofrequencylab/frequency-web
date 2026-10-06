@@ -4,11 +4,11 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listAllMembershipTiers } from '@/lib/spaces/memberships'
 import { listSpaceEventAccess } from '@/lib/events/space-event-access'
-import { featureAllowed, loadFeatureGateOverrides } from '@/lib/pricing/gates'
+import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
+import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
 import { featureWallLabel } from '@/lib/pricing/feature-tiers'
 import { METER_UPSELL_CTA } from '@/lib/pricing/meter-upsell'
-import { featureGatesLive } from '@/lib/pricing/settings'
-import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
+import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { resolveMembershipTicketGate } from '@/lib/events/ticket-space-access'
 import { isError } from '@/lib/action-result'
 import { MembershipTierForm } from '@/components/spaces/membership-tier-form'
@@ -40,11 +40,9 @@ import type { Space } from '@/lib/spaces/types'
 // em/en dashes.
 //
 // THE WALL IS SAID OUT LOUD HERE, NOT DISCOVERED AT SAVE (LIVE-231). The section asks the same
-// `featureAllowed('space_memberships')` seam the write asks. The CODE default is the free floor, so
-// a free Space sees the editor. An operator override that raises the gate still names the plan
-// through featureWallLabel (never typed) and shows the house GateNotice. A Space that later sits
-// below a raised wall with tiers still listed keeps the editor under the notice, because clearing
-// tiers is always allowed (memberships.ts).
+// payments gate the write asks (lib/pricing/payments-gate.ts, ADR-1709 / LIVE-753). A free Space keeps
+// the editor, because a free-to-join tier is open on every plan, under the house GateNotice that names
+// what a PRICE needs through featureWallLabel (never typed).
 
 export async function MembershipsSection({
   space,
@@ -80,33 +78,25 @@ export async function MembershipsSection({
   const tiers = await listAllMembershipTiers(space.id)
 
   // Staff keep their read-only preview of the editor whatever the plan; every write re-gates.
-  const canSell =
-    staffViewing ||
-    (await featureAllowed(
-      'space_memberships',
-      { plan: asSpacePlan(space.plan) },
-      { gatesLive: await featureGatesLive() },
-    ))
+  // ADR-1709 (LIVE-753): CHARGING members is the payments gate (space_payments + the space_memberships
+  // floor, both at Business), asked outside the grace window exactly as the write asks it. A free Space
+  // still gets the editor, because a free-to-join tier is open on every plan; the notice names what a
+  // PRICE needs, read off the merged gate.
+  const canCharge = staffViewing || (await spaceCanTakePayments(space.id, { plan: space.plan ?? null }))
 
-  if (!canSell) {
-    // The same overrides the seam just enforced (memoized per request), so the name and the gate agree.
+  if (!canCharge) {
     const wall =
-      featureWallLabel('space_memberships', await loadFeatureGateOverrides()) ?? SPACE_PLAN_LABEL.free
-    const notice = (
-      <MembershipWallNotice
-        wall={wall}
-        slug={space.slug}
-        canManageMembers={caps.canManageMembers}
-      />
-    )
-    // Nothing to clear and nothing to list: the sentence is the whole section.
-    if (tiers.length === 0) return notice
+      featureWallLabel('space_memberships', await loadFeatureGateOverrides()) ?? SPACE_PLAN_LABEL.business
     return (
       <div className="space-y-8">
-        {notice}
-        <fieldset className="contents">
-          <MembershipTierForm spaceId={space.id} slug={space.slug} initialTiers={tiers} />
-        </fieldset>
+        <MembershipWallNotice wall={wall} slug={space.slug} canManageMembers={caps.canManageMembers} />
+        <MeterUpsell
+          featureKey="space_membership_tiers"
+          currentTier={space.plan}
+          usage={tiers.length}
+          upgradeHref={`/spaces/${space.slug}/settings/billing`}
+        />
+        <MembershipTierForm spaceId={space.id} slug={space.slug} initialTiers={tiers} />
         <section>
           <SectionHeader title="Members" />
           <Suspense fallback={<MembersSkeleton />}>
@@ -220,7 +210,7 @@ function MembershipWallNotice({
         here. That is why it comes with {wall} and not with a free Space.
       </p>
       <p>
-        Tickets, donations, and your shop stay open on every plan.
+        A free-to-join tier stays open on every plan, and so do tips.
         {canManageMembers ? '' : ' Ask an admin about the plan for this space.'}
       </p>
     </GateNotice>

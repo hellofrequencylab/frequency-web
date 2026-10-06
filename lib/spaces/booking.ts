@@ -29,6 +29,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { canTakePayments } from '@/lib/commerce/selling'
+import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
 import { payoutsLive } from '@/lib/billing/connect'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
@@ -1929,10 +1930,13 @@ export async function listMyBookings(spaceId: string): Promise<MyBooking[]> {
 // AND payouts must be live (payoutsLive(), ADR-178) — both must hold, so it NO-OPS until an owner
 // turns payments on. Everything is additive + fail-soft; nothing new is written until then.
 
-/** Whether the deposit-at-booking path is live for a Space (DOUBLE-GATED, dark by default). A Space is
- *  a 'space' owner-kind for commerce, so this reduces to "payouts are live". Server-only. */
-export async function bookingDepositsLive(): Promise<boolean> {
-  return canTakePayments('space') && (await payoutsLive())
+/** Whether the deposit-at-booking path is live for a Space (dark by default). Three gates: a 'space'
+ *  owner-kind may take payments, payouts are live, and THIS Space clears the payments gate on its plan
+ *  (space_payments at Business, ADR-1709 / LIVE-753, outside the grace window). A free Space keeps the
+ *  confirm-only booking path. Server-only. */
+export async function bookingDepositsLive(spaceId: string): Promise<boolean> {
+  if (!canTakePayments('space') || !(await payoutsLive())) return false
+  return spaceCanTakePayments(spaceId)
 }
 
 /**
@@ -1951,7 +1955,7 @@ export async function startServiceDeposit(
   if (!profileId) return { error: 'Sign in to book.' }
 
   // DOUBLE GATE (dark): both must hold or this no-ops back to the free path.
-  if (!(await bookingDepositsLive())) return { error: 'Payments are not turned on yet.' }
+  if (!(await bookingDepositsLive(spaceId))) return { error: 'Payments are not turned on yet.' }
 
   const service = await resolveService(spaceId, serviceTypeId)
   if (!service || !service.productId) return { error: 'This service is not set up for paid booking.' }

@@ -81,6 +81,13 @@ vi.mock('@/lib/supabase/admin', () => ({
   },
 }))
 
+// The payments gate (ADR-1709, LIVE-753) is measured in ./tickets-payments-gate.test.ts. It is held
+// open here so this file keeps measuring what it was written for, not the seller's plan.
+vi.mock('@/lib/pricing/payments-gate', () => ({
+  spacePaymentsVerdict: async () => ({ ok: true }),
+  personalPaymentsRefusal: () => ({ ok: true }),
+}))
+
 import { createTicketCheckout } from './tickets'
 
 const EVENT = {
