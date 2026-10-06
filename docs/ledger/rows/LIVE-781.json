@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-781",
+  "title": "A Space owner can buy a new domain inside Frequency and have their website on it with no DNS step",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "lib/sites/domain-methods.ts",
+    "ref": "The buy method slot in DOMAIN_METHODS (owner ask 2026-10-06: ability to buy a domain); white label sites build ADR-1708"
+  },
+  "detail": "FILED 2026-10-06 by owner ask (\"I also want ... ability to buy a domain\"). THE CONSEQUENCE: a client without a domain has to buy one elsewhere and then do the DNS step. THE FIX: the 'buy' method in lib/sites/domain-methods.ts over Vercel's registrar API: search and price a name, take payment through the checkout contract (lib/billing/checkout-ui.ts + checkout-panel, docs/CHECKOUT.md), then purchase on Frequency's Vercel team, attach it to the project and bind it to the Space (domains bought on the team use Vercel DNS, so no records are needed). Needs a record of each purchase for renewal and transfer-out. LIFT: L, about 10 files (registrar client, search and price action, checkout wiring, purchase webhook step, renewal job, panel UI, tests), ONE migration (a space_domains purchase table: domain, space, price, renews_at, status, with RLS). Vercel's Registrar API sells at cost (upstream name.com) with auto-renew and an auth code for transfer-out; the end customer is the registrant (contactInformation), so the domain is theirs. OWNER STEPS: confirm with Vercel that buying on behalf of customers is allowed, a pricing ruling (pass-through or markup, who pays renewal), and the Vercel team's payment method covers the purchases. Probe flips when the method is available.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/sites/domain-methods.ts','utf8');const m=s.match(/key: 'buy'[\\s\\S]*?available: (true|false)/);if(!m||m[1]!=='true'){console.error('LIVE-781: buying a domain is not available yet (DOMAIN_METHODS buy.available is false)');process.exit(1)}\"",
+    "note": "Fails today: the buy method is listed as coming. Passes when it is built and switched on."
+  },
+  "wave": "W7"
+}
