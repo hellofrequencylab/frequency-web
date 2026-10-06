@@ -38,7 +38,7 @@ const PILLAR_LABELS: Record<PillarSlug, string> = {
   expression: 'Expression',
 }
 
-type SaveState = 'idle' | 'saving' | 'saved'
+type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
 export function CircleBuilder({ draft }: { draft: CircleDraft }) {
   const router = useRouter()
@@ -78,7 +78,10 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
           savedTimer.current = setTimeout(() => setSaveState('idle'), 1500)
           startRefresh(() => router.refresh())
         } catch {
-          setSaveState('idle')
+          // The write failed (saveCircleDraft throws on a database error, SCAN-694): say so
+          // instead of quietly resetting, or the host leaves believing the edit stuck.
+          if (savedTimer.current) clearTimeout(savedTimer.current)
+          setSaveState('error')
         }
       })()
     },
@@ -140,7 +143,13 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
 
   // Apply a plain-language edit, then sync the whole form from the fresh draft.
   const onEdit = async (request: string): Promise<string | null> => {
-    const res = await editDraftAction({ circleId, request })
+    let res: Awaited<ReturnType<typeof editDraftAction>>
+    try {
+      res = await editDraftAction({ circleId, request })
+    } catch {
+      // The write failed (SCAN-694): the panel shows this note instead of "Vera updated the Circle."
+      return "Couldn't save Vera's change. Try again."
+    }
     if (!res) return null
     const d = res.draft
     setName(d.name)
@@ -539,6 +548,12 @@ function SaveIndicator({ state }: { state: SaveState }) {
     return (
       <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-success">
         <Check className="h-3.5 w-3.5" aria-hidden /> Saved
+      </span>
+    )
+  if (state === 'error')
+    return (
+      <span role="alert" className="text-2xs font-medium text-danger">
+        Couldn&apos;t save that change. Try again.
       </span>
     )
   return <span className="text-2xs font-medium text-muted">Saves automatically</span>

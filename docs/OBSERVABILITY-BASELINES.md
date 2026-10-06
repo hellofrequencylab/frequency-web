@@ -272,11 +272,13 @@ monthly; the trend matters more than any single month.
 | Vendor | What it bills for | Plan / tier | Monthly spend (USD) | Primary cost driver | Notes |
 |---|---|---|---|---|---|
 | **Supabase** | Postgres, Auth, Storage, Realtime, egress | ✅ **pro** (org `hkveprznovcteywuczcv`, read from the management API 2026-09-07) | ⏳ owner | DB compute + storage + egress | watch egress as media grows (H3-6) |
-| **Vercel** | Hosting, edge, functions, bandwidth, Analytics | ✅ **pro** (team `team_BQT87yt90JOxQEh0efoVZnQh`, read from the platform API 2026-09-07) | ⏳ owner | function invocations + bandwidth | **28** crons + RSC traffic (re-counted in `vercel.json` 2026-09-08; this line said 18 until 2026-09-07 and 27 until 2026-09-08) |
-| **Anthropic** | Vera + embeddings (Claude API) | ⏳ owner | ⏳ owner | tokens (Haiku-default) | governed by AI-CONTROLS.md caps |
-| **Resend** | Transactional + digest email | ⏳ owner | ⏳ owner | emails sent / month | digest + lifecycle + nurture |
+| **Vercel** | Hosting, edge, functions, bandwidth, Analytics | ✅ **pro** (team `team_BQT87yt90JOxQEh0efoVZnQh`, read from the platform API 2026-09-07) | **$690.52** usage billed 2026-08-31 to 2026-09-30 (FOCUS billing export read through the Vercel API 2026-10-05, five adjacent windows; Build CPU Minutes ≈ $282 and Observability Events ≈ $233 are two thirds of it) | function invocations + bandwidth | **28** crons + RSC traffic (re-counted in `vercel.json` 2026-09-08; this line said 18 until 2026-09-07 and 27 until 2026-09-08) |
+| **Anthropic** | Vera + embeddings (Claude API) | API credits, pay as you go (auto-recharge) | **$15.00** (one auto-recharge receipt dated 2026-09-19, invoice PMJRAAII-0005; the $200 Max plan receipt of 2026-08-25 is a personal subscription, not this line) | tokens (Haiku-default) | governed by AI-CONTROLS.md caps |
+| **Resend** | Transactional + digest email | $20/month subscription | **$20.00** billed, UNPAID: the card ending 5013 has been declined on every retry since 2026-09-02 (nine notices to 2026-09-16); the queue still delivered 23 emails in the 14 days to 2026-10-05, so the account has not been cut off yet | emails sent / month | digest + lifecycle + nurture |
 | **Upstash** | Redis (rate-limit, cache) | ⏳ owner | ⏳ owner | commands / month | sliding-window rate limits |
-| **Total** | | | **⏳ owner** | | |
+| **Total** | | | **⏳ owner** (Supabase and Upstash still unread) | | |
+
+Snapshot month: September 2026, partial. Supabase and Upstash figures still need their billing pages (no invoice email reaches the connected inbox for either); the row `OWN-062` closes when those two land.
 
 Add any other live vendor (geocoder once H3-3 swaps off keyless Nominatim, a CDN once
 H3-6 lands, Sentry once volume exceeds the free tier) as a row when it starts billing.

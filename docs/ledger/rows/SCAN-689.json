@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-689",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/(main)/circles/admin-actions.ts\";if(!fs.existsSync(a))process.exit(79);const s=fs.readFileSync(a,\"utf8\");const i=s.indexOf(\"export async function deleteCircle\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);if(/caps\\.has\\(.circle\\.editSettings.\\)/.test(body)&&!/circle\\.manageRoles/.test(body)){console.error(\"SCAN-689: deleteCircle still gates on circle.editSettings, which a circle-scoped Admin holds, so an Admin can permanently delete the circle its Host owns.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: deleteCircle gates on circle.manageRoles, getCircleAdminData returns can_delete from the same capability, and the settings module renders the danger zone only when it is true."
+  }
+}

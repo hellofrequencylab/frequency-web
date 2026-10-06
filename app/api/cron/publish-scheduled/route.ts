@@ -1,4 +1,6 @@
-// LIVE-190 budget (ADR-1252): 200 due dispatches per invocation; the status flip to published is the claim; oldest scheduled_for first.
+// LIVE-190 budget (ADR-1252): 200 due dispatches per invocation; the status flip to published is the claim (conditional on
+// status = draft, so an overlapping run cannot claim the same row); oldest scheduled_for first. Each claimed Dispatch is
+// then emailed and pushed to its audience through lib/dispatches/fan-out (SCAN-756); it used to flip status only.
 // The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
 // declaration is applied, not merely written down.
 import { NextResponse } from 'next/server'
@@ -8,6 +10,7 @@ import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
 import { log, briefError } from '@/lib/log'
+import { notifyDispatchAudience } from '@/lib/dispatches/fan-out'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -36,24 +39,44 @@ async function handler(request: Request) {
     return NextResponse.json({ published: 0 })
   }
 
-  const ids = due.map((d: { id: string }) => d.id)
-  const { error: updateError } = await admin
+  const dueIds = due.map((d: { id: string }) => d.id)
+  const { data: claimed, error: updateError } = await admin
     .from('dispatches')
     .update({ status: 'published', published_at: now, updated_at: now })
-    .in('id', ids)
+    .in('id', dueIds)
+    .eq('status', 'draft')
+    .select('id')
 
   if (updateError) {
     log.error('cron.publish_scheduled.update_failed', { error: updateError.message })
     return NextResponse.json({ error: updateError.message }, { status: 500 })
   }
+  const ids = (claimed ?? []).map((d: { id: string }) => d.id)
 
   revalidatePath('/nearby')
   revalidatePath('/feed')
   revalidatePath('/admin/dispatches')
 
+  // The fan-out the immediate publish does, for each Dispatch this run claimed. Per id, within the
+  // budget; a Dispatch whose fan-out does not fit stays published and is logged, never re-sent.
+  let notified = 0
+  let reached = 0
+  for (const id of ids) {
+    if (budget.exhausted()) {
+      log.warn('cron.publish_scheduled.fan_out_deferred', { id, remaining: ids.length - notified })
+      break
+    }
+    try {
+      reached += await notifyDispatchAudience(admin, id)
+      notified++
+    } catch (err) {
+      log.error('cron.publish_scheduled.fan_out_failed', { id, error: briefError(err) })
+    }
+  }
+
   const summary = budget.summary(ids.length)
-  log.info('cron.publish_scheduled', { published: ids.length, ...summary })
-  return NextResponse.json({ published: ids.length, ids, budget: summary })
+  log.info('cron.publish_scheduled', { published: ids.length, notified, reached, ...summary })
+  return NextResponse.json({ published: ids.length, ids, notified, reached, budget: summary })
 }
 
 export const GET = withCronHeartbeat('publish-scheduled', handler)

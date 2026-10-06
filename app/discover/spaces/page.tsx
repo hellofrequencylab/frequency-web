@@ -7,7 +7,7 @@ import { spaceListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { BetaCTA } from '@/components/marketing/marketing-ui'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { DirectorySearch } from '@/components/ui/directory-search'
-import { OG_SITE, SITE_NAME } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { listNetworkedSpacesPage, normalizeSpaceSort } from '@/lib/spaces/discovery'
 import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
 import {
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: '/discover/spaces' },
-  openGraph: { ...OG_SITE, title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION, url: '/discover/spaces', type: 'website' },
+  openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION, url: '/discover/spaces', type: 'website' },
   twitter: { card: 'summary_large_image', title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION },
 }
 

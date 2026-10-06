@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Loader2, Store } from 'lucide-react'
+import { Check, EyeOff, Loader2, Store } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
-import { saveListing, type ListingInput } from './actions'
+import { saveListing, unpublishListing, type ListingInput } from './actions'
 import { isError } from '@/lib/action-result'
 
 const FIELDS: { key: keyof ListingInput; label: string; placeholder: string; textarea?: boolean }[] = [
@@ -31,6 +31,18 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
 
   function set<K extends keyof ListingInput>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  function takeDown() {
+    setResult(null)
+    startTransition(async () => {
+      const r = await unpublishListing()
+      if (isError(r)) setResult({ ok: false, text: r.error })
+      else {
+        setResult({ ok: true, text: 'Listing taken down. Save it again whenever you want it back in the directory.' })
+        router.refresh()
+      }
+    })
   }
 
   function submit() {
@@ -75,11 +87,22 @@ export function ListingForm({ initial }: { initial: Partial<Record<keyof Listing
             {result.ok && <Check className="h-4 w-4 shrink-0" />} {result.text}
           </p>
         )}
+        {initial && (
+          <button
+            type="button"
+            onClick={takeDown}
+            disabled={isPending}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-body-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60"
+          >
+            <EyeOff className="h-4 w-4" />
+            Take listing down
+          </button>
+        )}
         <button
           type="button"
           onClick={submit}
           disabled={isPending || !form.name.trim()}
-          className="ml-auto inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className={`${initial ? '' : 'ml-auto '}inline-flex items-center gap-1.5 rounded-control bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60`}
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Store className="h-4 w-4" />}
           {initial ? 'Save listing' : 'Publish listing'}

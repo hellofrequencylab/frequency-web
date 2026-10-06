@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 // SPACE EMAIL ACCEPTABLE-USE POLICY: LIVE (LIVE-729, ADR-1673). Drafted by LIVE-707 (ADR-1658) as a
 // draft for counsel; the owner ruled on 2026-09-30 "Ship without counsel review" (OWN-085), so this is
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: '/space-email-policy' },
-  openGraph: { ...OG_SITE, title: TITLE, description: DESCRIPTION, url: '/space-email-policy' },
+  openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: TITLE, description: DESCRIPTION, url: '/space-email-policy' },
   // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
   // block verbatim. Mirror this page's own, as /privacy and /terms do.
   twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },

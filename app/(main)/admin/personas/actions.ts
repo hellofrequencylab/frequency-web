@@ -16,6 +16,7 @@ import {
 import { getConnectStatus } from '@/lib/billing/connect'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { trustSource } from '@/lib/trust'
+import { hidePartnerListing, listingProgramLost } from '@/lib/partners/unpublish'
 
 // Staff verification queue (P2.7). A 'profiles'-domain operator (or community janitor)
 // runs the claimed → verified → active ladder and can suspend/reinstate. Every move is
@@ -92,6 +93,13 @@ export async function transitionPersona(
     } catch {
       /* trust emit is best-effort */
     }
+  }
+
+  // SCAN-761: suspending the member's last Business or Organization program takes their
+  // directory listing and offers down too (same rule as the member's own release).
+  if (to === 'suspended' && (await listingProgramLost(persona, profileId))) {
+    const hidden = await hidePartnerListing(profileId)
+    if ('error' in hidden) return fail(hidden.error)
   }
 
   // Personas feed the capability resolver — refresh the member's shell + this queue.

@@ -33,10 +33,14 @@ export async function ChallengesSeason() {
 
   const admin = createAdminClient()
   const season = 1
-  const [{ data: challengeRows }, { data: progress }] = await Promise.all([
+  // SCAN-767: the Expression share control is only offered for Journeys the viewer is enrolled
+  // in (journey_enrollments, the same record lib/quest/expression.ts gates the payout on).
+  const [{ data: challengeRows }, { data: progress }, { data: enrollmentRows }] = await Promise.all([
     admin.from('season_challenges').select('*').eq('season', season).eq('is_active', true).order('sort_order'),
     admin.from('challenge_progress').select('challenge_id, current, completed_at').eq('profile_id', profileId),
+    admin.from('journey_enrollments').select('plan_id').eq('profile_id', profileId),
   ])
+  const enrolledPlanIds = new Set(((enrollmentRows ?? []) as { plan_id: string }[]).map((r) => r.plan_id))
 
   const progressMap = new Map((progress ?? []).map((p) => [p.challenge_id, p]))
   const challenges = ((challengeRows ?? []) as Record<string, unknown>[]).map((c) => {
@@ -149,6 +153,7 @@ export async function ChallengesSeason() {
                 const isExpression =
                   (challenge.criteria as { type?: string } | null)?.type === 'expression' &&
                   !!challenge.journey_id
+                const isEnrolled = !!challenge.journey_id && enrolledPlanIds.has(challenge.journey_id)
 
                 return (
                   <div
@@ -190,7 +195,11 @@ export async function ChallengesSeason() {
                             </p>
                           )
                         ) : isExpression ? (
-                          <ExpressionAction journeyId={challenge.journey_id as string} />
+                          isEnrolled ? (
+                            <ExpressionAction journeyId={challenge.journey_id as string} />
+                          ) : (
+                            <p className="mt-2 text-meta text-subtle">Start this Journey to unlock its Expression Challenge.</p>
+                          )
                         ) : (
                           <div className="mt-2.5">
                             <div className="mb-1 flex items-center justify-between text-meta tabular-nums text-subtle">

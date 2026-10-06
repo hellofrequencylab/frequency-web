@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-698",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/events/host-transfer-actions.ts\";if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(f,\"utf8\");const i=s.indexOf(\"update({ status: next\");if(i<0)process.exit(79);const seg=s.slice(i,i+900);const selects=/\\.select\\(/.test(seg.slice(0,seg.indexOf(\"if (\")));const zeroRow=/length\\s*===\\s*0|!updated\\b/.test(seg);if(!selects||!zeroRow){console.error(\"SCAN-698: respond() still updates event_host_transfers with no returned rows and no zero-row check, so an accept that lost to a concurrent revoke or decline still moves events.host_space_id.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: respond() updates with .select('id') and refuses on zero rows (That host offer has already been resolved) before applyHost and notify. The status flip and the host_space_id write are still two statements; making them atomic is a SECURITY DEFINER RPC for a follow-up."
+  }
+}

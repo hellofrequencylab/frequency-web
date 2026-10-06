@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-715",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const files={checkout:\"lib/commerce/checkout.ts\",actions:\"app/(main)/market/service-actions.ts\",booking:\"lib/spaces/booking.ts\"};for(const p of Object.values(files)){if(!fs.existsSync(p)){console.error(\"SCAN-715: \"+p+\" missing\");process.exit(79)}}const rd=(p)=>fs.readFileSync(p,\"utf8\");const fn=(s,name)=>{const a=s.indexOf(\"export async function \"+name);if(a<0)return null;const b=s.indexOf(\"\\nexport \",a+1);return s.slice(a,b<0?s.length:b)};const co=rd(files.checkout);const book=fn(rd(files.actions),\"bookServiceAction\");const dep=fn(rd(files.booking),\"startServiceDeposit\");if(!book||!dep){console.error(\"SCAN-715: bookServiceAction or startServiceDeposit not found\");process.exit(79)}const bad=[];if(!/expires_at/.test(co))bad.push(\"createCommerceCheckout never sets expires_at on the Checkout session, so a booking hold lasts the Stripe default of 24 hours\");if(!/rateLimitOk/.test(book))bad.push(\"bookServiceAction has no rate limit before it holds a slot\");if(!/rateLimitOk/.test(dep))bad.push(\"startServiceDeposit has no rate limit before it holds a slot\");if(bad.length){console.error(\"SCAN-715: \"+bad.join(\"; \")+\", so one member can lock every paid slot of a Space for a day.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: CheckoutInput.expiresInSeconds sets expires_at on the Checkout session (Stripe minimum 30 minutes); bookServiceAction and startServiceDeposit pass BOOKING_CHECKOUT_SECONDS and refuse past rateLimitOk(service_book, buyer, 5, 1 h)."
+  }
+}

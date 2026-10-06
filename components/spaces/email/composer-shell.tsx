@@ -74,6 +74,10 @@ export function ComposerShell({
   const [when, setWhen] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // SCAN-703: ONE draft row per composition. Every click used to create a fresh campaign row, so a
+  // second Send now after a success (the form stayed filled) sent the whole campaign again under a
+  // new id, past the server's already-gone-out check and the per-recipient idempotency key.
+  const [draftId, setDraftId] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
   const ready = subject.trim().length > 0 && body.trim().length > 0
@@ -86,16 +90,24 @@ export function ComposerShell({
 
   // Ensure the draft exists, returning its id (or null on failure, with the error surfaced).
   async function ensureDraft(): Promise<string | null> {
+    if (draftId) {
+      // A retry (a failed send, a second click) edits the row it already has instead of minting one.
+      const upd = await updateSpaceCampaign(spaceId, slug, draftId, { subject, body, topic: effectiveTopic })
+      if (isError(upd)) {
+        setError(upd.error)
+        return null
+      }
+      return draftId
+    }
     const res = await createSpaceCampaign(spaceId, slug, { subject, body, topic: effectiveTopic })
     if (isError(res)) {
       setError(res.error)
       return null
     }
-    // Keep the body in sync (a create stores the current text); update is a no-op here but keeps the
-    // edit path honest if the owner tweaks before sending.
-    await updateSpaceCampaign(spaceId, slug, res.data.id, { subject, body, topic: effectiveTopic })
+    setDraftId(res.data.id)
     return res.data.id
   }
+
 
   function handleSend() {
     if (!ready || disabled) return
@@ -109,7 +121,16 @@ export function ComposerShell({
         setError(res.error)
         return
       }
-      setNotice('Your campaign is on its way.')
+      // SCAN-704: say what actually happened. The server refuses a zero-delivered send, so a success
+      // here always carries a real count.
+      const n = res.data.recipientCount
+      setNotice(`Sent to ${n.toLocaleString()} ${n === 1 ? 'person' : 'people'}.`)
+      // The campaign is out of the composer's hands: clear it, and the draft id with it, so the next
+      // click cannot resend (SCAN-703).
+      setSubject('')
+      setBody('')
+      setWhen('')
+      setDraftId(null)
       router.refresh()
     })
   }
@@ -138,6 +159,7 @@ export function ComposerShell({
       setSubject('')
       setBody('')
       setWhen('')
+      setDraftId(null)
       router.refresh()
     })
   }

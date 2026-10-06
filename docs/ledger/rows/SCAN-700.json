@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-700",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/events/actions.ts\",b=\"app/(main)/events/[slug]/manage/cancel-event-button.tsx\";if(!fs.existsSync(f)||!fs.existsSync(b))process.exit(79);const s=fs.readFileSync(f,\"utf8\");const i=s.indexOf(\"export async function cancelEvent(\");if(i<0)process.exit(79);const body=s.slice(i,s.indexOf(\"\\nexport \",i+10));const bareReturn=/\\breturn\\s*$/m.test(body);const readsError=/\\{\\s*data:\\s*flipped\\s*,\\s*error\\s*\\}/.test(body);const btn=fs.readFileSync(b,\"utf8\");const btnChecks=/(const|let)\\s+\\w+\\s*=\\s*await cancelEvent\\(/.test(btn);if(bareReturn||!readsError||!btnChecks){console.error(\"SCAN-700: cancelEvent still returns nothing on refusal and ignores the update error, and its button never reads a result, so a failed cancel looks like success to the host.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: cancelEvent in app/(main)/events/actions.ts now returns Promise<{ error?: string }>: an error when there is no profile or the caller lacks event.editSettings, and when the update fails it logs and returns Could not cancel the event before any revalidate or refund; the Manage CancelEventButton reads the result, shows inline danger text and skips the navigation on an error, and the admin event edit client throws the returned error into its existing setError. The Space calendar manager already handled { error }."
+  }
+}

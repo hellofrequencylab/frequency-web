@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-734",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const files=[\"app/manage-emails/manage-form.tsx\",\"app/(main)/settings/notifications/form.tsx\",\"app/unsubscribe/page.tsx\"];for(const p of files){if(!fs.existsSync(p)){console.error(\"SCAN-734: missing \"+p);process.exit(79)}}const bad=files.filter((p)=>/onboarding nudges/i.test(fs.readFileSync(p,\"utf8\")));if(bad.length){console.error(\"SCAN-734: \"+bad.join(\", \")+\" still labels the lifecycle category Onboarding nudges, though that one switch also stops leader messages, automations, nurture steps and newsletters, so members turn off mail they meant to keep and newsletter unsubscribers are told they only left onboarding nudges.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nlifecycle is labelled Updates and messages on manage-emails and settings, and updates and messages from Frequency and your leaders on unsubscribe."
+  }
+}

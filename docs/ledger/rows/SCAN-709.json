@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-709",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const d=\"supabase/migrations\";if(!fs.existsSync(d)){console.error(\"SCAN-709: migrations dir missing\");process.exit(79)}const names=[\"commerce_reviews_member_insert\",\"commerce_reviews_author_update\",\"commerce_disputes_buyer_update\",\"commerce_disputes_buyer_insert\"];const live=Object.fromEntries(names.map((n)=>[n,false]));const files=fs.readdirSync(d).filter((f)=>f.endsWith(\".sql\")).sort();let seen=false;for(const f of files){const s=fs.readFileSync(d+\"/\"+f,\"utf8\");const re=/\\b(create|drop)\\s+policy\\s+(?:if\\s+exists\\s+)?(commerce_reviews_member_insert|commerce_reviews_author_update|commerce_disputes_buyer_update|commerce_disputes_buyer_insert)\\b/gi;let m;while((m=re.exec(s))){seen=true;live[m[2].toLowerCase()]=m[1].toLowerCase()===\"create\"}}if(!seen){console.error(\"SCAN-709: no migration mentions the review or dispute member policies\");process.exit(79)}const still=names.filter((n)=>live[n]);if(still.length){console.error(\"SCAN-709: the member-facing write policies \"+still.join(\", \")+\" are still live, so any signed-in member can insert a verified-purchase review or rewrite a dispute status directly through PostgREST, skipping every server gate.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: migration 20270346000710 drops commerce_reviews_member_insert, commerce_reviews_author_update, commerce_disputes_buyer_insert and commerce_disputes_buyer_update (every app writer already uses the service role); supabase/tests/commerce_reviews_member_writes.test.sql pins that no insert or update policy remains on either table and the read policies stay."
+  }
+}

@@ -17,6 +17,7 @@ import { getJourneyTree } from '@/lib/journeys/store'
 import type { JourneyTree } from '@/lib/journeys/tree'
 import { rewardEventsForTransition, type JourneyRewardEvent } from '@/lib/journeys/rewards'
 import { grantJourneyRewards, grantExtraCreditIfAny, type GrantedJourneyReward } from '@/lib/journeys/grants'
+import { canEditJourney } from '@/lib/journeys/authoring'
 
 /** Is the phase holding `itemId` still drip-locked? Mirrors the phaseLock map in learn-player.tsx. */
 function isLessonDripLocked(tree: JourneyTree, itemId: string, anchorStart: Date, dripIntervalDays: number): boolean {
@@ -74,9 +75,14 @@ export async function completeJourneyLessonAction(
   const events =
     before && after ? rewardEventsForTransition({ profileId: caller.id, planId, before, after }) : []
 
+  // SCAN-722: nobody who can edit this Journey (author, Space manager, operator) collects its
+  // rewards. Editors set the phase count and every block's bonus_zaps, so paying them would let a
+  // member mint unlimited Zaps and Gems from a private draft. Their check-offs still track progress.
+  const editor = await canEditJourney(planId, caller.id)
+
   // Grant the milestone Gems for any phase/journey just completed (idempotent, best-effort).
   let granted: GrantedJourneyReward[] = []
-  if (events.length) {
+  if (events.length && !editor) {
     try {
       granted = await grantJourneyRewards({
         profileId: caller.id,
@@ -91,10 +97,12 @@ export async function completeJourneyLessonAction(
   // Extra-credit Challenge (ADR-300 Part 2): if this block is an above-and-beyond bonus task,
   // pay its bonus Zaps exactly once. Best-effort — never blocks the check-off.
   let bonusZaps = 0
-  try {
-    bonusZaps = await grantExtraCreditIfAny(caller.id, planId, itemId)
-  } catch {
-    /* best-effort */
+  if (!editor) {
+    try {
+      bonusZaps = await grantExtraCreditIfAny(caller.id, planId, itemId)
+    } catch {
+      /* best-effort */
+    }
   }
 
   revalidatePath(`/journeys/${slug}/learn`)

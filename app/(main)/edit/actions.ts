@@ -13,15 +13,20 @@ import { EDITABLE_PAGES, pathForSlug, isEditableSlug, resolveSpaceId } from '@/l
 
 // Save + publish a page (MVP: publishing writes both the working draft and the
 // live version, then revalidates the public route).
+//
+// Both actions THROW on a failed write (SCAN-778). supabase-js reports a PostgREST error in the
+// result and never rejects, so a swallowed `{ error }` would let the editor's catch (which shows
+// Retry publish) stay dead and the header read Published while the live page kept the old document.
 export async function publishPage(slug: string, data: Data, spaceId?: string | null): Promise<void> {
   const janitor = await requireJanitor()
-  if (!isEditableSlug(slug)) return
+  if (!isEditableSlug(slug)) throw new Error('That page cannot be edited here.')
   const meta = EDITABLE_PAGES.find((p) => p.slug === slug)!
   const sid = await resolveSpaceId(spaceId)
+  if (!sid) throw new Error('No space to publish into.')
 
   const db = createAdminClient()
   const now = new Date().toISOString()
-  await db.from('pages').upsert(
+  const { error } = await db.from('pages').upsert(
     {
       slug,
       space_id: sid,
@@ -39,6 +44,7 @@ export async function publishPage(slug: string, data: Data, spaceId?: string | n
     // authoring un-gates and overwrite its published document.
     { onConflict: 'space_id,slug' },
   )
+  if (error) throw new Error(error.message)
 
   revalidatePath(pathForSlug(slug))
   revalidatePath('/pages')
@@ -49,8 +55,9 @@ export async function publishPage(slug: string, data: Data, spaceId?: string | n
 // content isn't lost; only `published_data` is cleared.
 export async function unpublishPage(slug: string, spaceId?: string | null): Promise<void> {
   const janitor = await requireJanitor()
-  if (!isEditableSlug(slug)) return
+  if (!isEditableSlug(slug)) throw new Error('That page cannot be edited here.')
   const sid = await resolveSpaceId(spaceId)
+  if (!sid) throw new Error('No space to unpublish from.')
 
   const db = createAdminClient()
   // space_id isn't in the generated types yet, so reach the .eq('space_id', …) scope with an
@@ -62,9 +69,13 @@ export async function unpublishPage(slug: string, spaceId?: string | null): Prom
     updated_at: new Date().toISOString(),
     updated_by: janitor.profileId,
   }) as unknown as {
-    eq: (col: string, val: string) => { eq: (col: string, val: string | null) => Promise<unknown> }
+    eq: (
+      col: string,
+      val: string,
+    ) => { eq: (col: string, val: string | null) => Promise<{ error: { message: string } | null }> }
   }
-  await q.eq('slug', slug).eq('space_id', sid)
+  const { error } = await q.eq('slug', slug).eq('space_id', sid)
+  if (error) throw new Error(error.message)
 
   revalidatePath(pathForSlug(slug))
   revalidatePath('/pages')

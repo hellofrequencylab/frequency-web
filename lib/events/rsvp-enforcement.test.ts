@@ -15,16 +15,16 @@ import path from 'node:path'
 
 const read = (p: string) => readFileSync(path.join(process.cwd(), p), 'utf8')
 const ACTIONS = read('app/(main)/events/actions.ts')
+// SCAN-697: the gate moved to its own module so the depth sheet can consult it too.
+const GATE = read('lib/events/rsvp-gate.ts')
+const DEPTH = sourceWithoutComments('app/(main)/events/[slug]/social-actions.ts', { imports: true })
 // Comment- and import-free (LIVE-167): the page's window needles must hit the calls.
 const PAGE = sourceWithoutComments('app/(main)/events/[slug]/event-member-page.tsx', { imports: true })
 const SQL = read('supabase/migrations/20270343000000_guest_rsvp_honours_the_booking_window.sql')
 
 describe('the booking window gates the MEMBER paths', () => {
   it('the shared gate consults the window and the end of the event', () => {
-    const fn = ACTIONS.slice(
-      ACTIONS.indexOf('async function eventOpenForRsvp('),
-      ACTIONS.indexOf('// Drop / update / remove the "<Name> RSVP'),
-    )
+    const fn = GATE.slice(GATE.indexOf('async function eventOpenForRsvp('))
     expect(fn).toContain('rsvpWindowStateFromDetails(')
     // A finished event takes no RSVP either; the page has hidden the controls since #2319 and the
     // action never enforced it, so a stale tab still minted a seat.
@@ -47,6 +47,14 @@ describe('the booking window gates the MEMBER paths', () => {
 
   it('a plus-one INCREASE is gated but a decrease is not', () => {
     expect(ACTIONS).toMatch(/if \(n > current && \(!gate\.open \|\| !gate\.windowOpen\)\) return/)
+  })
+
+  it('the RSVP depth sheet consults the same gate and caps plus-ones (SCAN-697)', () => {
+    const fn = DEPTH.slice(DEPTH.indexOf('async function setEventRsvpDepth('))
+    expect(fn).toContain('eventOpenForRsvp(')
+    expect(fn).toMatch(/if \(!gate\.open\) return/)
+    expect(fn).toMatch(/args\.status === 'going' && !wasGoing/)
+    expect(fn).toContain('.slice(0, MAX_PLUS_ONES)')
   })
 })
 

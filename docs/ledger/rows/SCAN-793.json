@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-793",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const w=\"lib/page-editor/templates/what-is-frequency.ts\",f=\"lib/marketing/funnel-config.ts\";for(const p of [w,f]){if(!fs.existsSync(p)){console.error(\"SCAN-793: \"+p+\" missing\");process.exit(79)}}const ws=fs.readFileSync(w,\"utf8\"),fsrc=fs.readFileSync(f,\"utf8\");const bad=[];if(/^const P = priceStrings\\(\\)/m.test(ws)||/^const TAKE = PRICING_DEFAULTS\\.take_rate/m.test(ws))bad.push(\"what-is-frequency.ts still derives its prices and rates at module load from the code defaults\");if(/^const P = priceStrings\\(\\)/m.test(fsrc)||/formatBps\\(NETWORK_TAKE_RATE_DEFAULT\\.(free|paid)\\)/.test(fsrc))bad.push(\"funnel-config.ts still derives its prices and RATE rows at module load from the code defaults\");if(bad.length){console.error(\"SCAN-793: an /admin/pricing edit moves /pricing and llms.txt but not /what-is-frequency or the /for/<niche> doors: \"+bad.join(\"; \")+\".\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nwhatIsFrequencySpec(input) and getFunnelConfig(slug, input) take the pricing input the route resolves through the shared loadPricingInput(); llms.txt, llms-full.txt, /what-is-frequency and the /for doors now quote the operator config."
+  }
+}

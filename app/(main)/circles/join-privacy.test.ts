@@ -84,6 +84,7 @@ vi.mock('@/lib/supabase/admin', () => {
 })
 
 import { joinCircle } from './actions'
+import { joinCircleAsMember } from '@/lib/circles/join'
 
 const CLOSED = {
   member_count: 2,
@@ -93,6 +94,7 @@ const CLOSED = {
   unlisted: false, // LISTED and closed: the lead funnel
   space_id: 'space-1',
   host_id: 'host-1',
+  status: 'active', // SCAN-691: joinCircle reads it; only forming/active take a join
 }
 
 const CLOSED_MODES = ['circle_members', 'invite', 'tier', 'space_members', 'space_paid_members'] as const
@@ -152,10 +154,20 @@ describe('every closed access mode refuses a stranger', () => {
 })
 
 describe('each mode`s own door opens', () => {
-  it('the QR route`s invited: true opens an invite circle', async () => {
+  it('the QR route`s invited: true opens an invite circle, through the helper only (SCAN-774)', async () => {
     circleRow = { ...CLOSED, access: 'invite' }
-    await joinCircle('circle-1', 'closed-circle', { invited: true })
+    await joinCircleAsMember('stranger-1', 'circle-1', { invited: true })
     expect(membershipInserts).toHaveLength(1)
+  })
+
+  it('the exported action has no invited flag a client could pass', async () => {
+    circleRow = { ...CLOSED, access: 'invite' }
+    // A third argument is not part of the signature; a client sending one gets the default deny.
+    const res = await (joinCircle as unknown as (a: string, b: string, c: unknown) => Promise<ActionResult>)(
+      'circle-1', 'closed-circle', { invited: true },
+    )
+    expect(isError(res)).toBe(true)
+    expect(membershipInserts).toHaveLength(0)
   })
 
   it('a TEAM seat opens a space_members circle — the staff semantics OWN-034 ruling C keeps', async () => {
@@ -230,4 +242,16 @@ describe('joinCircle narrows nothing that was open before', () => {
     expect(res.error).toContain('full')
     expect(membershipInserts).toHaveLength(0)
   })
+})
+
+// SCAN-691: a circle that is not live takes no join, whatever its access mode, and inserts nothing.
+describe('joinCircle refuses a circle that is not live', () => {
+  for (const status of ['draft', 'inactive', 'archived'] as const) {
+    it(`an OPEN ${status} circle is "no longer available" and inserts no membership`, async () => {
+      circleRow = { ...CLOSED, access: 'open', status }
+      const res = (await joinCircle('circle-1', 'sunset')) as { error?: string }
+      expect(res.error).toContain('no longer available')
+      expect(membershipInserts).toHaveLength(0)
+    })
+  }
 })

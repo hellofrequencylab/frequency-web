@@ -395,6 +395,29 @@ export async function getCityCategoryHubs(): Promise<CityCategoryHub[]> {
   return [...byKey.values()]
 }
 
+/** The region and country a city's events agree on: the most common non-null value of each among
+ *  the hub-enriched events. The city name itself comes from `city` text with no state attached, so
+ *  the city landing pages borrow the qualifier from the events (SCAN-810); a city with no event
+ *  that names a region gets neither key, never a guess. Pure, so it is unit-testable. */
+export function cityRegion(
+  events: readonly Pick<EnrichedPublicEvent, 'region' | 'country'>[],
+): { region?: string; country?: string } {
+  const mode = (key: 'region' | 'country'): string | undefined => {
+    const counts = new Map<string, number>()
+    for (const e of events) {
+      const v = e[key]?.trim()
+      if (v) counts.set(v, (counts.get(v) ?? 0) + 1)
+    }
+    let best: string | undefined
+    let n = 0
+    for (const [v, c] of counts) if (c > n) [best, n] = [v, c]
+    return best
+  }
+  const region = mode('region')
+  const country = mode('country')
+  return { ...(region ? { region } : {}), ...(country ? { country } : {}) }
+}
+
 // One hub by its URL params. Returns null when the pair has no live events so the
 // route can 404 rather than render an empty, low-value facet page.
 export async function getCityCategoryHub(

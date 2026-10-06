@@ -58,6 +58,7 @@ export function BlockDocJsonLd({
   published,
   updated,
   image,
+  schemaType,
 }: {
   data: Data
   /** The route's canonical path — becomes the Article url / @id. */
@@ -76,6 +77,9 @@ export function BlockDocJsonLd({
    *  first image found in the document is used, so a converted page keeps an image by default
    *  rather than by remembering. */
   image?: string | string[]
+  /** Article (default), or WebPage / AboutPage for a document that IS the page rather than an
+   *  editorial piece on it (the home page, /about). See articleSchema. */
+  schemaType?: 'Article' | 'WebPage' | 'AboutPage'
 }) {
   const headline = (title ?? firstProp(data, ['title', 'heading', 'text'])).trim()
   const desc = (description ?? firstProp(data, ['subtitle', 'lead', 'body', 'text'])).trim().slice(0, 300)
@@ -90,6 +94,7 @@ export function BlockDocJsonLd({
         path,
         published,
         updated,
+        ...(schemaType ? { type: schemaType } : {}),
         ...(img && img.length > 0 ? { image: img } : {}),
       })}
     />

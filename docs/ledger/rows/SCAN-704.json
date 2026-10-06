@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-704",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f1=\"components/spaces/email/composer-shell.tsx\",f2=\"lib/spaces/campaigns.ts\";for(const f of [f1,f2]){if(!fs.existsSync(f)){console.error(\"SCAN-704: missing \"+f);process.exit(79)}}const c=fs.readFileSync(f1,\"utf8\"),s=fs.readFileSync(f2,\"utf8\");const a=c.indexOf(\"function handleSend\"),b=c.indexOf(\"function handleSchedule\");if(a<0||b<0){console.error(\"SCAN-704: handleSend not found; re-anchor the probe.\");process.exit(79)}const send=c.slice(a,b);const readsCount=/recipientCount/.test(send);const i=s.indexOf(\"function sendSpaceCampaign\");if(i<0){console.error(\"SCAN-704: sendSpaceCampaign not found; re-anchor the probe.\");process.exit(79)}const fn=s.slice(i);const zeroGate=/\\.sent\\s*(===|==|<=|<)\\s*[01]\\b|!res\\.data\\.sent\\b/.test(fn);if(!readsCount||!zeroGate){console.error(\"SCAN-704: a campaign whose every recipient is suppressed for consent is still stamped sent (zero-sent gate=\"+zeroGate+\") and the composer still says it is on its way without reading recipientCount (reads=\"+readsCount+\"), so the owner gets a false success while nothing was emailed.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: sendSpaceCampaign fails with 'Nobody on this list has opted in to email yet, so nothing was sent' when the seam delivered zero and no longer stamps sent; the composer reads recipientCount and says 'Sent to N people'. The picker's emailable count is left for a follow-up."
+  }
+}

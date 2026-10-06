@@ -11,7 +11,7 @@
 //   - Voice canon: no em or en dashes in any surfaced string.
 
 import type { Metadata } from 'next'
-import { OG_SITE, SITE_NAME, SITE_URL, SITE_OG_IMAGE } from '@/lib/site'
+import { OG_SITE, SITE_NAME, SITE_URL, SITE_OG_IMAGE, ROOT_OG_IMAGES } from '@/lib/site'
 import { breadcrumbSchema, aggregateRatingNode, productReviewNodes } from '@/lib/jsonld'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 
@@ -41,10 +41,12 @@ function snippet(text: string, max = 155): string {
 }
 
 /** Best-effort numeric price (in cents) parsed from a free-text price label like
- *  "$299, open to reasonable offers" or "$2,400/mo". Returns null when no leading dollar amount is
- *  present (e.g. "Free", "Make an offer"), in which case the Offer node is omitted rather than faked. */
+ *  "$299, open to reasonable offers" or "$2,400/mo". A label that leads with "Free" is a real $0
+ *  price (SCAN-792). Returns null when no amount is present (e.g. "Make an offer"), in which case
+ *  the Offer node is omitted rather than faked. */
 function priceCentsFromLabel(label: string | null): number | null {
   if (!label) return null
+  if (/^\s*free\b/i.test(label)) return 0
   const m = label.match(/\$\s*([\d,]+(?:\.\d{1,2})?)/)
   if (!m) return null
   const value = Number(m[1].replace(/,/g, ''))
@@ -82,13 +84,14 @@ export function listingMetadata(view: ListingDetailView): Metadata {
       description,
       type: 'website',
       url: path,
-      ...(image ? { images: [{ url: image }] } : {}),
+      // No listing photo: the ROOT card. The listing routes have no segment card, so a block
+      // without `images` ships no og:image at all (SCAN-798). twitter.images inherits this.
+      images: image ? [{ url: image }] : ROOT_OG_IMAGES,
     },
     twitter: {
       card: 'summary_large_image',
       title: ogTitle,
       description,
-      ...(image ? { images: [image] } : {}),
     },
   }
 }
@@ -174,19 +177,24 @@ export function listingJsonLd(view: ListingJsonLdInput): object[] {
   // the builder caps + drops any without a real author or body, so an empty set yields no `review`.
   const reviews = productReviewNodes(view.reviews)
 
+  // Google's Product snippet requires one of offers, review or aggregateRating; a Product with none
+  // is reported as an invalid item (SCAN-792). A non-housing listing with no priced Offer, no rating
+  // and no reviews (e.g. "Make an offer") is therefore a plain Thing, which carries no such rule.
+  const type = isHousing ? 'Accommodation' : offer || rating || reviews.length ? 'Product' : 'Thing'
+
   const primary = {
     '@context': 'https://schema.org',
-    '@type': isHousing ? 'Accommodation' : 'Product',
+    '@type': type,
     name: view.title,
     ...(view.description?.trim() ? { description: snippet(view.description, 300) } : {}),
     image,
     url,
     ...(view.categoryLabel ? { category: view.categoryLabel } : {}),
-    ...(view.locationLabel
+    // Housing facts (Accommodation only) — rooms, size, pets, amenities. addressLocality is the
+    // ONLY address field: never a street address (fair housing/privacy). Product has no address.
+    ...(isHousing && view.locationLabel
       ? { address: { '@type': 'PostalAddress', addressLocality: view.locationLabel } }
       : {}),
-    // Housing facts (Accommodation only) — rooms, size, pets, amenities. addressLocality
-    // above stays the ONLY address field: never a street address (fair housing/privacy).
     ...(housing?.bedrooms != null ? { numberOfBedrooms: housing.bedrooms } : {}),
     ...(housing?.bathrooms != null ? { numberOfBathroomsTotal: housing.bathrooms } : {}),
     ...(housing?.sqft != null
@@ -202,7 +210,7 @@ export function listingJsonLd(view: ListingJsonLdInput): object[] {
           })),
         }
       : {}),
-    ...(!isHousing && view.seller ? { brand: { '@type': 'Brand', name: view.seller.displayName } } : {}),
+    ...(type === 'Product' && view.seller ? { brand: { '@type': 'Brand', name: view.seller.displayName } } : {}),
     ...(rating ? { aggregateRating: rating } : {}),
     ...(reviews.length ? { review: reviews } : {}),
     ...(offer ? { offers: offer } : {}),

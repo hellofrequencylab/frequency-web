@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-719",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/network/friends/friend-row-actions.tsx\";if(!fs.existsSync(f)){console.error(\"SCAN-719: \"+f+\" missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const swallow=/\\.then\\(\\(\\)\\s*=>\\s*\\{\\s*\\}\\)/.test(s);const blindSent=/\\.then\\(\\(\\)\\s*=>\\s*setSent\\(true\\)\\)/.test(s);const noIsError=!/\\bisError\\b/.test(s);if(swallow||blindSent||noIsError){console.error(\"SCAN-719: the Friends page row actions still discard the ActionResult (swallowed then: \"+swallow+\", Connect flips to Request sent regardless: \"+blindSent+\", isError unused: \"+noIsError+\"), so a refused or failed request reads as success with no message.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: friend-row-actions.tsx now runs every action through a useFriendAction helper that reads the ActionResult with isError and keeps the error in each button's own state, rendered as a role=alert text-meta text-danger line beside the button; Connect flips to Request sent only when the server did not refuse."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-713",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/commerce/checkout.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-713: checkout.ts missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const a=s.indexOf(\"export async function createCommerceCheckout\");const b=s.indexOf(\"\\nexport async function\",a+1);if(a<0){console.error(\"SCAN-713: createCommerceCheckout not found\");process.exit(79)}const body=s.slice(a,b<0?s.length:b).replace(/\\/\\/[^\\n]*/g,\"\");const pre=/\\b(p|product)\\.stock\\b/.test(body);const k=s.indexOf(\"if (stockError)\");if(k<0){console.error(\"SCAN-713: the stock decrement arm was not found\");process.exit(79)}const arm=s.slice(k,s.indexOf(\"\\n    }\",k));const refunds=/refund/i.test(arm.replace(/\\/\\/[^\\n]*/g,\"\"));const bad=[];if(!pre)bad.push(\"createCommerceCheckout never compares a plain product stock to the quantity before charging\");if(!refunds)bad.push(\"the settle only logs a failed stock decrement instead of refunding the buyer\");if(bad.length){console.error(\"SCAN-713: \"+bad.join(\"; \")+\", so a sold-out tracked product can still be bought and the oversell is only a log line.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: createCommerceCheckout refuses a variant-less line whose summed quantity exceeds the product's tracked stock (This item is sold out), and the settle arm refunds an out_of_stock oversell in full through refundCommerceOrder and tells the buyer."
+  }
+}

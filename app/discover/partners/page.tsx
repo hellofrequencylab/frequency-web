@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { MapPin, Store } from 'lucide-react'
 import { listActivePartners } from '@/lib/partners/read'
 import { emptyUnlessTransient } from '@/lib/discover'
-import { OG_SITE, SITE_NAME } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { partnerListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { IndexTemplate } from '@/components/templates'
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: '/discover/partners' },
-  openGraph: { ...OG_SITE, title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION, url: '/discover/partners', type: 'website' },
+  openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION, url: '/discover/partners', type: 'website' },
   twitter: { card: 'summary_large_image', title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION },
 }
 

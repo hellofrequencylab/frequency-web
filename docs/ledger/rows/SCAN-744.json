@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-744",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/(main)/admin/actions.ts\",p=\"app/join/[slug]/page.tsx\";if(!fs.existsSync(a)||!fs.existsSync(p))process.exit(79);const A=fs.readFileSync(a,\"utf8\"),P=fs.readFileSync(p,\"utf8\");const manual=/update\\(\\s*\\{\\s*member_count:\\s*\\([^)]*member_count[^)]*\\)\\s*\\+\\s*1/.test(A);const anyRow=/alreadyMember\\s*=\\s*!!membership/.test(P);if(manual){console.error(\"SCAN-744: joinViaInviteLink still adds one to circles.member_count by hand on top of the trg_memberships_member_count trigger, so every invite-link join counts twice and the circle reports full while seats are free.\");process.exit(1)}if(anyRow){console.error(\"SCAN-744: the invite page still treats any membership row, pending or inactive included, as already joined.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\njoinViaInviteLink added one to circles.member_count by hand on top of trg_memberships_member_count (20270345000500), so every invite-link join counted twice and the circle reported full while seats were free; it also treated any membership row, pending or inactive included, as already joined, as did app/join/[slug]/page.tsx. The action no longer writes member_count: it inserts the active row and lets the trigger count, maps the P0001 circle_full raise on insert and on reactivation to 'This circle is full.', wakes a pending or inactive row with the same status UPDATE joinCircle uses, treats only status active as already joined, settles a 23505 insert race by reading the row, and bumps invite_links.used_count with a compare-and-set that re-reads on a lost race. The invite page selects status and sets alreadyMember only for active. Migration 20270345013000_scan_744_resync_circle_member_count.sql re-runs the section 3 resync so inflated circles are repaired. Pinned by app/(main)/admin/invite-link-join.test.ts (6 tests: no circles write, CAS used_count, full on insert, active no-op, pending reactivated, inactive full) and by the probe."
+  }
+}
