@@ -23,7 +23,7 @@ import { join } from 'node:path'
 // ── The north star: the six tiers are Member / Crew / Business / Collective / Non Profit / Independent
 // (docs/COMMUNITY-COLLECTIVE-STRATEGY.md). The NEW space tiers this rebuild introduces (must be fully
 // wired once they appear anywhere) are: ──
-const NEW_SPACE_TIERS = ['independent']
+const NEW_SPACE_TIERS = ['independent', 'collective', 'nonprofit_collective']
 
 // ── NON-TRIVIALITY FLOORS (scan2 L8-02, 2026-09-05) ──
 // Phase 0 already fails on a missing north star, but every tripwire below is a WALK, and a walk over
@@ -105,10 +105,14 @@ line('\nPhase 1 · Pricing engine — tier wiring')
       else if (present.length === Object.keys(surfaces).length) ok(`tier "${tier}" wired across the label + display + price surfaces`)
       else fail(`tier "${tier}" is HALF-WIRED — only in: ${present.join(', ')} (add it to the rest, or it will resolve inconsistently)`)
     }
+    // ADR-1709 (the five-tier ladder) brought Collective back as its own plan above Business, so the
+    // gate now asserts the opposite of LIVE-228's: collective IS a live plan and no longer remaps.
     const arr = plans.match(/export const SPACE_PLANS = \[([^\]]*)\]/)
-    if (arr && /\bcollective\b/.test(arr[1])) {
-      fail('SPACE_PLANS still names collective as a live plan (LIVE-228 merged it into business)')
-    } else ok('SPACE_PLANS has no live collective plan (legacy remap only)')
+    if (!arr || !/'collective'/.test(arr[1])) {
+      fail('SPACE_PLANS does not name collective (ADR-1709 restored it as the rung above Business)')
+    } else if (/\n\s*collective: 'business'/.test(plans)) {
+      fail('collective is a live plan but LEGACY_PLAN_REMAP still folds it into business')
+    } else ok('SPACE_PLANS carries collective as its own plan (ADR-1709)')
   }
 }
 

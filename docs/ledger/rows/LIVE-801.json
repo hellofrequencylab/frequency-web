@@ -1,7 +1,7 @@
 {
   "id": "LIVE-801",
   "title": "Every completion screen shows one next step chosen by the funnel the person came in through",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,11 +9,12 @@
     "file": "docs/ledger/adr/ADR-1720.md",
     "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
   },
-  "detail": "FIVE FUNNELS section of the launch brief (ADR-1720): \"Every completion screen shows one next step, chosen by the funnel the person came in through, and each step moves them closer to a room with other people.\" TODAY: the only per-funnel routing is the landing after signup (funnelLanding in lib/funnels/destination.ts). The Mindless reveal (components/on-air/reveal.tsx), the RSVP confirmation and the Circle Remix publish never read persona, acquisition or the funnel. THE FIX: one pure resolver, lib/funnels/next-step.ts, nextStepFor(funnel, moment), read from the first-touch campaign or persona; mounted on the Mindless reveal, the RSVP confirmation, the Remix publish and Space creation. One step only, always toward a gathering. Mission Patron lands on Crew from any member funnel. No archetype or persona is sent to analytics (LIVE-810).",
+  "detail": "FIVE FUNNELS section of the launch brief (ADR-1720): \"Every completion screen shows one next step, chosen by the funnel the person came in through, and each step moves them closer to a room with other people.\" TODAY: the only per-funnel routing is the landing after signup (funnelLanding in lib/funnels/destination.ts). The Mindless reveal (components/on-air/reveal.tsx), the RSVP confirmation and the Circle Remix publish never read persona, acquisition or the funnel. THE FIX: one pure resolver, lib/funnels/next-step.ts, nextStepFor(funnel, moment), read from the first-touch campaign or persona; mounted on the Mindless reveal, the RSVP confirmation, the Remix publish and Space creation. One step only, always toward a gathering. Mission Patron lands on Crew from any member funnel. No archetype or persona is sent to analytics (LIVE-810). CLOSED 2026-10-06: lib/funnels/next-step.ts (funnelFrom reads the door campaign, then the induction persona, then Find your people; nextStepFor gives one step per funnel and moment, Mission Patron to Crew). components/funnels/next-step-link.tsx reads the cookies client-side and renders one link, nothing tracked. Mounted on the Mindless reveal Dispatch card, the guest RSVP confirmation and the Circle builder after Publish. Help (how-to-rsvp) and changelog updated.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-801\";if(!/export (async )?function nextStepFor/.test(r(\"lib/funnels/next-step.ts\")))fail(ID+\": no nextStepFor resolver in lib/funnels/next-step.ts\");const users=[...walk(\"app\"),...walk(\"components\")].filter(f=>/funnels\\/next-step/.test(r(f)));if(users.length<3)fail(ID+\": the next step is on \"+users.length+\" completion screens, want Mindless, RSVP and Circle at least\")'",
     "note": "Fails until a funnel-aware next-step resolver exists and at least three completion screens render it."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-06"
 }
