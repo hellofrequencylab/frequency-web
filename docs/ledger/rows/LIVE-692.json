@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-692",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.readFileSync(f,\"utf8\");const mig=fs.readdirSync(\"supabase/migrations\").filter((f)=>/\\.sql$/.test(f)).map((f)=>read(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/insert\\s+into\\s+storage\\.buckets[\\s\\S]{0,200}\\x27library-files\\x27[\\s\\S]{0,80}false/i.test(mig))fail(\"no migration creates a private library-files bucket, so a font or document has nowhere to go\");const k=read(\"lib/library/upload-kinds.ts\");if(!/font\\/woff2/.test(k)||!/application\\/pdf/.test(k)||!/library-files/.test(k))fail(\"the upload lanes do not route a font or a document to library-files\");const a=read(\"app/(main)/admin/library/actions.ts\");if(!/classifyLoomUpload\\([^)]*files:\\s*true/.test(a))fail(\"the Studio upload never opens the font and document lanes\");const s=read(\"lib/library/asset-urls.ts\");if(!/LIBRARY_FILES_BUCKET/.test(s))fail(\"nothing signs a file out of the private library-files bucket\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nA private library-files bucket (25 MB, fonts and documents, no storage policies, served signed) and a document kind (20270346001700). The Studio upload opens the font and document lanes, stores no url for them, and the download door signs them out of library-files."
+  }
+}

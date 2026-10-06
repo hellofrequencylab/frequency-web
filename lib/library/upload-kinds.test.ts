@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyLoomUpload, effectiveMime, looksLikeImage } from './upload-kinds'
+import { classifyLoomUpload, effectiveFileMime, effectiveMime, isPrivateUploadBucket, looksLikeImage } from './upload-kinds'
 
 describe('effectiveMime', () => {
   it('uses the browser-reported type when present', () => {
@@ -42,5 +42,32 @@ describe('classifyLoomUpload with recovered heic mime', () => {
     expect(target).not.toBeNull()
     expect(target!.kind).toBe('image')
     expect(target!.bucket).toBe('library-media')
+  })
+})
+
+describe('the font and document lanes (LIVE-692)', () => {
+  it('routes fonts and documents to the private library-files bucket, only when the caller opts in', () => {
+    expect(classifyLoomUpload('font/woff2', { files: true })).toEqual({ kind: 'font', bucket: 'library-files', maxBytes: 25 * 1024 * 1024 })
+    expect(classifyLoomUpload('application/pdf', { files: true })?.kind).toBe('document')
+    expect(classifyLoomUpload('text/csv', { files: true })?.bucket).toBe('library-files')
+    // An image picker never opts in, so it can never take a PDF or a font.
+    expect(classifyLoomUpload('application/pdf')).toBeNull()
+    expect(classifyLoomUpload('font/woff2')).toBeNull()
+    // Images keep their lane either way.
+    expect(classifyLoomUpload('image/png', { files: true })?.bucket).toBe('library-media')
+    expect(classifyLoomUpload('application/zip', { files: true })).toBeNull()
+  })
+
+  it('reads a font or document type from its extension when the browser reports none', () => {
+    expect(effectiveFileMime('', 'Brand.WOFF2')).toBe('font/woff2')
+    expect(effectiveFileMime('application/octet-stream', 'brand.otf')).toBe('font/otf')
+    expect(effectiveFileMime('', 'deck.pdf')).toBe('application/pdf')
+    expect(effectiveFileMime('application/pdf', 'odd.txt')).toBe('application/pdf')
+    expect(effectiveFileMime('', 'IMG_1.heic')).toBe('image/heic')
+  })
+
+  it('marks only library-files as private', () => {
+    expect(isPrivateUploadBucket('library-files')).toBe(true)
+    expect(isPrivateUploadBucket('library-media')).toBe(false)
   })
 })
