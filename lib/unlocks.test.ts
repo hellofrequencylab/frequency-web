@@ -7,7 +7,16 @@ import { describe, it, expect } from 'vitest'
 // `pnpm unlocks:doc` (UNLOCKS_WRITE=1) rewrites the doc from the map.
 
 import { MEMBER_STAGES } from './member-progress'
-import { STAGE_ORDER, UNLOCKS, isUnlocked, renderUnlocksDoc, roleUnlocked, stageUnlocked } from './unlocks'
+import {
+  MODULE_STAGE_FLOORS,
+  STAGE_ORDER,
+  UNLOCKS,
+  isUnlocked,
+  lockedModules,
+  renderUnlocksDoc,
+  roleUnlocked,
+  stageUnlocked,
+} from './unlocks'
 
 const DOC = join(process.cwd(), 'docs/UNLOCKS.md')
 
@@ -39,6 +48,22 @@ describe('the unlock map', () => {
     expect(roleUnlocked('view-as', null)).toBe(false)
     expect(isUnlocked('profile.member-support', { role: 'guide' })).toBe(true)
     expect(isUnlocked('profile.member-support', {})).toBe(false)
+  })
+})
+
+describe('stage reveals past the feed (LIVE-669)', () => {
+  it('holds the My Quest leaderboard module back until Regular', () => {
+    expect(MODULE_STAGE_FLOORS.get('quest-leaderboard')).toBe('regular')
+    const ids = ['quest-season-map', 'quest-leaderboard', 'quest-today']
+    expect([...lockedModules(ids, 1)]).toEqual(['quest-leaderboard'])
+    expect(lockedModules(ids, 2).size).toBe(0)
+  })
+
+  it('holds the rail leaderboard and the own-profile grid back by stage', () => {
+    expect(stageUnlocked('rail.leaderboard', 1)).toBe(false)
+    expect(stageUnlocked('rail.leaderboard', 2)).toBe(true)
+    expect(stageUnlocked('profile.achievements', 0)).toBe(false)
+    expect(stageUnlocked('profile.achievements', 1)).toBe(true)
   })
 })
 

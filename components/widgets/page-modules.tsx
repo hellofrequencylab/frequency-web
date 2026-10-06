@@ -7,6 +7,8 @@ import { moduleIdsForScope } from '@/lib/widgets/modules'
 import { componentFor } from '@/lib/widgets/registry'
 import { SectionHeader } from '@/components/ui/section-header'
 import type { TemplateId } from '@/lib/widgets/templates'
+import { getCachedViewerProfile } from '@/lib/auth'
+import { MODULE_STAGE_FLOORS, lockedModules } from '@/lib/unlocks'
 
 // The renderer for the per-route module-assignment engine (ADR-270/271/272). Resolves the
 // interior TEMPLATE + per-slot module ids for a route across the scope cascade (exact → section
@@ -32,7 +34,11 @@ export async function PageModules({
 }) {
   const config = await loadLayoutForRoute(route, spaceId)
   const viewerRole = role ?? (await getViewerCommunityRole())
-  const bySlot = resolveSlots(config, moduleIds ?? moduleIdsForScope(route), viewerRole)
+  const routeModules = moduleIds ?? moduleIdsForScope(route)
+  // Stage reveals (LIVE-669, lib/unlocks.ts): a module with a stage floor waits until the viewer
+  // reaches it. The stage is read only when this route HAS such a module.
+  const locked = await stageLockedModules(routeModules)
+  const bySlot = resolveSlots(config, routeModules.filter((id) => !locked.has(id)), viewerRole)
   // Owner-toggled row headers (ADR-562), keyed by slot id — rendered above a row that has content.
   const headerBySlot = resolveSlotHeaders(config)
 
@@ -62,6 +68,22 @@ export async function PageModules({
   }
 
   return <TemplateGrid template={config.template} slot={slot} />
+}
+
+/** The route's modules the signed-in viewer's stage has not reached yet. Empty when none of them
+ *  has a stage floor (no read at all), for a visitor, and on any read error (fail-open: a blip
+ *  must never hide a member's own blocks). The progress spine is imported on demand so it stays
+ *  out of this shared renderer's static graph. */
+async function stageLockedModules(ids: readonly string[]): Promise<Set<string>> {
+  if (!ids.some((id) => MODULE_STAGE_FLOORS.has(id))) return new Set()
+  try {
+    const viewer = await getCachedViewerProfile()
+    if (!viewer) return new Set()
+    const { getCachedMemberProgress } = await import('@/lib/member-progress')
+    return lockedModules(ids, (await getCachedMemberProgress(viewer.id)).stage.index)
+  } catch {
+    return new Set()
+  }
 }
 
 // The interior grid per template. Each slot is its OWN container context (`@container`, Tailwind

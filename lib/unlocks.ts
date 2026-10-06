@@ -39,6 +39,8 @@ export interface UnlockDef {
   stage?: StageKey
   /** The community role floor; omitted ⇒ no role floor. */
   role?: CommunityRole
+  /** The layout module id this unlock holds back, for module-driven pages (PageModules). */
+  module?: string
 }
 
 export const UNLOCKS = {
@@ -52,6 +54,23 @@ export const UNLOCKS = {
     label: 'Pillar balance on the practice board',
     where: 'Feed',
     stage: 'established',
+  },
+  // The comparison surfaces wait until a member has a habit of their own (LIVE-669).
+  'quest.leaderboard': {
+    label: 'The Circle leaderboard',
+    where: 'My Quest',
+    stage: 'regular',
+    module: 'quest-leaderboard',
+  },
+  'rail.leaderboard': {
+    label: 'The leaderboard panel (also needs Crew standing)',
+    where: 'Right rail',
+    stage: 'regular',
+  },
+  'profile.achievements': {
+    label: 'The full Achievements grid on your own profile',
+    where: 'Your profile',
+    stage: 'finding_feet',
   },
   // ── Role unlocks (the trust ladder) ──────────────────────────────────────────────────────
   'lead.outreach': {
@@ -100,6 +119,21 @@ export function isUnlocked(
   viewer: { stageIndex?: number | null; role?: CommunityRole | null },
 ): boolean {
   return stageUnlocked(feature, viewer.stageIndex ?? 0) && roleUnlocked(feature, viewer.role ?? 'member')
+}
+
+/** Module id → the stage it wakes up at, for the module-driven pages. */
+export const MODULE_STAGE_FLOORS: ReadonlyMap<string, StageKey> = new Map(
+  (Object.values(UNLOCKS) as UnlockDef[]).flatMap((u) => (u.module && u.stage ? [[u.module, u.stage] as const] : [])),
+)
+
+/** The module ids a member at `stageIndex` may not see yet. */
+export function lockedModules(moduleIds: readonly string[], stageIndex: number): Set<string> {
+  const out = new Set<string>()
+  for (const id of moduleIds) {
+    const stage = MODULE_STAGE_FLOORS.get(id)
+    if (stage && stageIndex < stageIndexOf(stage)) out.add(id)
+  }
+  return out
 }
 
 /** docs/UNLOCKS.md, rendered from the map. */

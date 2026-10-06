@@ -12,6 +12,9 @@ Stages, in order: Newcomer, Finding your feet, Regular, Established, Anchor.
 |---|---|---|---|
 | `feed.resource-doors` | The "Keep exploring" doors on the practice board | Feed | stage Regular |
 | `feed.pillar-balance` | Pillar balance on the practice board | Feed | stage Established |
+| `quest.leaderboard` | The Circle leaderboard | My Quest | stage Regular |
+| `rail.leaderboard` | The leaderboard panel (also needs Crew standing) | Right rail | stage Regular |
+| `profile.achievements` | The full Achievements grid on your own profile | Your profile | stage Finding your feet |
 | `lead.outreach` | Outreach: message the members you steward | Lead tools, /outreach | role host and up |
 | `lead.inbox` | The group inbox | Lead tools | role host and up |
 | `view-as` | View as: preview the app as a lower role | Header | role host and up |
