@@ -72,6 +72,17 @@ surface interpolates, and never retype it. That module is a **leaf with no impor
 instead of arguing it again; import it from there rather than through `lib/pricing/pricing-page.ts`,
 which re-exports it for existing callers but carries the whole pricing engine behind it.
 
+🔴 **AMENDED again ([ADR-1709](DECISIONS.md), 2026-10-06): selling is what Business is for.** The three
+lines stand, and LIVE-253's rule stands with them: no tier is framed as buying down a rate, and **you pay
+when you start charging** is still the reason. What changed is which tier "starting to charge" means.
+ADR-914's "never gate the transaction" is superseded: hosting is free and that is the point, tips stay
+open at 0% on every tier, and paid tickets, paid memberships, donations, shop checkout and booking
+deposits open at Business. Write the ladder as five tiers, one verb each (members join, Crew hosts, a
+Space runs, Business sells, Collective connects), from `PLAN_STORY.ladder`, `.paid` and `.selling`.
+Never say a free Space or a personal account sells. Crew is "contribute what you want" and sells a host
+kit and backing the community, never a lower fee. Collective is named in member copy as the plan for
+groups of groups.
+
 ---
 
 ## 2. The demographic: two people

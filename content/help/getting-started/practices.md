@@ -4,7 +4,7 @@ description: Adopt a practice or follow your Circle's, then log it each day to e
 category: getting-started
 order: 3
 published: 2026-05-31
-updated: 2026-09-30
+updated: 2026-10-06
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -78,8 +78,8 @@ You can shape practices, not just pick them:
   change anything, and create; every part of the timer still tunes in the editor. Already
   wrote your practice somewhere else? Paste it and Vera shapes it into the same fields.
   Want to start from scratch instead? Pick "Skip, I'll build it myself" to go straight to the editor.
-  Creating a practice is a **Crew** thing: if you are not Crew yet, "Create a practice"
-  offers a one-tap upgrade. Any member can **adopt** a practice and log it.
+  Any signed-in member can create a practice. A free Member publishes a few, and **Crew**
+  publishes as many as they like. Any member can **adopt** a practice and log it.
 - **Edit yours.** Any practice you created shows an **Edit** button. Change its name,
   summary, full "how to" guide, cadence, Pillar, category, and icon by hand, or use
   **Edit with Vera** to make a change in plain language ("make it a morning sit," "cut it

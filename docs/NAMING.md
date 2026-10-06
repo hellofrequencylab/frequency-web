@@ -287,8 +287,8 @@
   inside a Channel, not its definition.)
 - **Program** = a Channel with a Chapter blueprint (`topical_channels.template_id`),
   run by Frequency (`owner_space_id` NULL) or by a Space (a Collective business
-  member). Examples: Meld Community Coworking, MoFlow. Never "Collective" (a Space
-  membership plan), never "Hub" (the community tree), never "Franchise".
+  member). Examples: Meld Community Coworking, MoFlow. Never "Collective" (that is the
+  Space plan for groups of groups), never "Hub" (the community tree), never "Franchise".
 - **Chapter** = one local Circle running a Program's model
   (`circles.topical_channel_id` points at the Program's Channel). Verbs: **"Start a
   Chapter"** (the Remix flow with the Program's blueprint) and **"Find a Chapter near
@@ -621,15 +621,17 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   **Collective** ($79) ·
   **Non Profit** ($39) · **Independent** (white-label, ~$249). "Business" and "Non Profit" remain the two
   space *designators* (the public chip); **Collective** and **Independent** are the higher space tiers.
-  - 🔴 **AMENDED ([ADR-1294](DECISIONS.md), [ADR-1438](DECISIONS.md), September 2026): the ladder above is
-    history, not the live set.** **Collective is no longer a plan**: it merged into Business, and Business
-    rose from $29 to $49 with two operator seats. The public Space ladder is **Free · Business · Non
-    Profit** (`ADVERTISED_SPACE_PLANS`, `lib/pricing/display.ts`). **Independent is kept and hand-sold**,
-    never on a public pricing surface (LIVE-227). The brand is still a Community Collective; "the
-    Collective plan" is a retired tier name and no member copy ships it. The commercial law is three lines,
-    [CORE-MODEL.md](CORE-MODEL.md) §1: people join free, businesses host free, you pay when you start
-    charging. Prices are read from the catalog, never typed into copy (ADR-916); the figures in this bullet
-    are the record of a decision, not a source.
+  - 🔴 **AMENDED ([ADR-1709](DECISIONS.md), 2026-10-06): the live ladder is five tiers, one verb each.**
+    **Member** (free, personal: joins) · **Crew** (personal, contribute what you want: hosts) · **Space**
+    (the free Space plan: runs) · **Business** (sells) · **Collective** (connects). Collective is a live
+    Space plan again, the rung above Business, for groups of groups with member Spaces included; it is no
+    longer merged into Business, and member copy names it from LIVE-759 on. **Non Profit** (and Non Profit
+    Collective) sit beside the ladder; **Independent** is kept and hand-sold, never on a public pricing
+    surface (LIVE-227). The public Space ladder is `ADVERTISED_SPACE_PLANS` in `lib/pricing/display.ts`.
+    The commercial law is still three lines, [CORE-MODEL.md](CORE-MODEL.md) §1: people join free,
+    businesses host free, you pay when you start charging. Prices are read from the catalog, never typed
+    into copy (ADR-916); the figures in the bullet above are the record of an earlier decision, not a
+    source. The ADR-1294 and ADR-1438 merge of Collective into Business is history.
 - **Signal** = the earned exposure measure (owner ruling 2026-09-22, [ADR-1293](DECISIONS.md) accepted):
   the score that orders the Space directory and fills the featured slots; earned, never purchasable.
   No plan, tier, entitlement or Stripe field is ever an input. Member-facing copy: "Signal", one
@@ -655,8 +657,8 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   settings key. Renaming an identifier buys grandfather churn and nothing a member can see, which is
   ADR-590's standing precedent. The label is what changes; the key never does.
 - **"Collective" (capitalized) means two things ON PURPOSE, and they nest:** the **brand** (Frequency, the
-  Community Collective) and the **$79 tier** (your own collective *within* the Collective, a collective of
-  collectives). Copy keeps them legible ("Frequency, the community collective" = the brand; "the Collective
+  Community Collective) and the **Collective plan** (your own collective *within* the Collective, a collective of
+  collectives; ADR-1709). Copy keeps them legible ("Frequency, the community collective" = the brand; "the Collective
   plan" / "your Collective" = the tier).
 - **Collision guards for "collective":**
   - **The Quest keeps its word.** The game's "collective standing" and `components/quest/collective-goal.tsx`

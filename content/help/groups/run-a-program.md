@@ -4,7 +4,7 @@ description: For Space owners: turn your model into a Program so members anywher
 category: groups
 order: 5
 published: 2026-07-27
-updated: 2026-09-19
+updated: 2026-10-06
 audience: host
 featureKeys: [channels, circles]
 status: published
@@ -53,8 +53,8 @@ Three things happen at once:
 - Your flagship circle becomes **Chapter one**, listed on the Channel like every
   Chapter that follows.
 
-From then on, any Crew member can open your Channel and start a Chapter (the button
-offers a one-tap upgrade to anyone who is not Crew yet). They get a private draft
+From then on, any member can open your Channel and start a Chapter (it counts toward
+the Circles they can host, and Crew hosts more). They get a private draft
 built from your blueprint, they shape it, and they publish it when it's ready.
 
 ## What can I change later?
@@ -121,7 +121,7 @@ city. What you own is the model and the Channel it lives on.
 
 ### Can I stop someone from starting a Chapter?
 
-Not one person at a time. Starting a Chapter is open to any Crew member while
+Not one person at a time. Starting a Chapter is open to any member while
 your Program is running, which is what makes a Program spread. If you need to stop
 new Chapters entirely, pause the Program.
 

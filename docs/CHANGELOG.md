@@ -12,6 +12,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Pricing is now a five-tier ladder, one verb each.** Members join. Crew hosts. A Space runs. Business sells. Collective connects. Hosting stays free on every tier, tips stay open with no fee, and selling starts at Business. Collective is back as the plan for groups of groups, and Crew is contribute what you want, with room to host more. The [pricing page](/pricing) has every price and allowance.
 - **You can drag the steps of a Journey into any order.** Lessons, practices, and modules mix freely, so a practice can sit between two lessons. The builder shows the order members follow.
 - **Space email has a written policy.** It says who a Space can email, what it can send, the 500-a-day limit, and what happens after a bounce or a spam complaint. The Turn on email card links it, and so do the Terms.
 
