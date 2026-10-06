@@ -109,6 +109,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
     "@iconify/utils": "^3.1.7",
+    "@react-email/render": "^2.1.0",
     "@resvg/resvg-wasm": "^2.6.2",
     "@sentry/nextjs": "^10.75.0",
     "@stripe/react-stripe-js": "^6.12.0",

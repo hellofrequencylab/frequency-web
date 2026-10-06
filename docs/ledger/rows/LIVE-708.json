@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-708",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const die=(m)=>{console.error(\"LIVE-708: \"+m);process.exit(1)};const lib=r(\"lib/partners/collaborators.ts\");if(!/featured_at/.test(lib)||!/href: `\\/journeys\\//.test(lib)||!/href: `\\/practices\\//.test(lib))die(\"the directory does not list featured work with a link to it\");if(!/c\\.work\\.map/.test(r(\"app/(main)/partners/collaborators/page.tsx\")))die(\"the directory page does not show what each collaborator made\");const e=r(\"lib/partners/collaborator-earnings.ts\");if(!/export function foldJourneyEarnings/.test(e)||!/partialRefundedCents/.test(e))die(\"there is no earnings read over what paid Journeys settled\");if(!/getCollaboratorEarnings\\(me\\.id\\)/.test(r(\"app/(main)/partners/collaborators/earnings/page.tsx\")))die(\"a collaborator cannot see their earnings\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nRe-tested: the directory existed (/partners/collaborators) but listed only a Journey count for persona holders. It now lists Collaborator persona holders and every author of featured public work, each with up to three Practices and Journeys linked, featured first. /partners/collaborators/earnings shows the signed-in author what their paid Journeys settled: sale lines on settled orders, the platform fee shared by subtotal, partial and full refunds netted out on the Orders tab's rules. Own sales only, no affiliate money (LIVE-607)."
+  }
+}

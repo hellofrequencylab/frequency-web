@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-695",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const die=(m)=>{console.error(\"LIVE-695: \"+m);process.exit(1)};if(!/\"@react-email\\/render\"/.test(r(\"package.json\")))die(\"React Email is not a dependency\");if(!/export function EmailShell/.test(r(\"lib/email-react/shell.tsx\")))die(\"there is no React Email base template\");const re=r(\"lib/billing/receipt-email.ts\");const rIdx=re.search(/renderEmail\\(/),sIdx=re.search(/emailShell\\(/);if(rIdx<0||!/ReceiptEmail/.test(re)||(sIdx>=0&&!(sIdx>rIdx&&/\\bcatch\\b/.test(re.slice(rIdx,sIdx)))))die(\"the receipt family is still a hand-built string template (the string shell may only be the fallback when the React render throws)\");const g=r(\"lib/billing/receipt-email.golden.test.ts\");if(!/visible\\.txt/.test(g))die(\"no golden test pins what a member receives\");for(const id of [\"order-buyer\",\"seller-notice\",\"donation-guest\"])for(const ext of [\"html\",\"txt\",\"visible.txt\"])if(!fs.existsSync(\"lib/billing/__golden__/\"+id+\".\"+ext))die(\"missing golden \"+id+\".\"+ext);console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nReact Email is the renderer (@react-email/render, no component kit). lib/email-react/shell.tsx is the base template, the same wrapper emailShell writes and reading its own style constants; lib/email-react/receipt.tsx is the receipt family's body, so every money receipt and the earner notice render through it. lib/billing/receipt-email.golden.test.ts pins the HTML and text byte for byte, and the words a reader sees against a capture taken from the string template before the move: identical. Other email families move onto the base template one family at a time."
+  }
+}

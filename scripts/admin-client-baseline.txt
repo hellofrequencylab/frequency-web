@@ -916,6 +916,7 @@ lib/page-editor/member-search-action.ts
 lib/page-settings/actions.ts
 lib/page-settings/store.test.ts
 lib/page-settings/store.ts
+lib/partners/collaborator-earnings.ts
 lib/partners/collaborators.ts
 lib/partners/read.ts
 lib/partners/unpublish.ts

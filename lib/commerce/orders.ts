@@ -404,7 +404,7 @@ export async function listSpaceOrders(spaceId: string, opts: { limit?: number } 
  *  `metadata.refund`. A summary that reads `status` alone therefore counts a half-refunded order at full
  *  gross. Returns 0 for anything that is not a well-formed partial record, and never more than the order.
  *  PURE. */
-function partialRefundedCents(metadata: unknown, amountCents: number): number {
+export function partialRefundedCents(metadata: unknown, amountCents: number): number {
   const refund = (metadata as { refund?: unknown } | null | undefined)?.refund as
     | { kind?: unknown; refunded_cents?: unknown }
     | null
