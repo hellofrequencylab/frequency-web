@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-234",
+  "patch": {
+    "title": "Prove each money path once in production: a ticket, a paid membership, a booking deposit, a shop order and a donation, each paid out",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Re-scoped 2026-10-06 to the launch brief (ADR-1720): five paths, each with one real payment that reached the Space's payout. 1 ticket: event_tickets status succeeded (one House of Fates $44 ticket, and the owner reported a second working ticket purchase on 2026-10-06); the payout reaching the Space's Stripe balance is still to verify. 2 paid membership, 3 booking deposit, 4 shop order (commerce_orders), 5 donation (supporter_contributions): none yet. Counted from settled rows plus the Stripe payout or transfer to the connected account, never a pending or expired checkout.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\n── RE-SCOPED 2026-10-06 to the Frequency Launch Build Brief (ADR-1720, workstream 2). The brief's five paths are a ticket, a paid membership, a booking deposit, a shop order and a donation, each PAID OUT once in production; the Space subscription is no longer one of the five. The ticket path is done pending a check that its payout reached the Space (owner, 2026-10-06: \"I've already made an event ticket purchase which went great\"). OWNER RULING 2026-10-06 18:34 via the coordinator: \"Wait for them\", so the other four close as real customers trigger them, not by deliberate purchases. After LIVE-753 only a Business or Collective Space can take these payments, so the proving Spaces must be on a paid plan. The brief's window-1 gate (\"every money path paid once\") depends on this row."
+  }
+}

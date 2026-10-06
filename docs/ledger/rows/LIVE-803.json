@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-803",
+  "title": "After a gathering, a \"Did you make it?\" check-in records attendance and carries the Circle's next date and a bring-a-friend link",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1720.md",
+    "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
+  },
+  "detail": "WORKSTREAM 6 of the launch brief (ADR-1720). Done when the check-in records attendance. TODAY: self check-in exists only inside the event window (checkInEvent, app/(main)/events/actions.ts:1715). Hosts can mark present (attended_at / attended_by on event_rsvps and event_tickets, lib/events/attendance.ts, ADR-1332). The interest_followup trait (lib/traits/registry.ts:247) promises \"a post-event email that thanks guests and points at the next date\" but no sender exists. THE FIX: a cron after each gathering ends sends RSVPs (members and guests) \"Did you make it?\" with yes/no; yes records attendance through the same attendance seam (marked as self-reported, so the host mark stays the north-star source), and the message carries the Circle's next date and a bring-a-friend invite link. Member-facing: help line and changelog entry.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-803\";const crons=walk(\"app/api/cron\").filter(f=>/Did you make it/i.test(r(f))||walk(p.dirname(f)).some(g=>/Did you make it/i.test(r(g))));const libs=walk(\"lib\").filter(f=>/Did you make it/i.test(r(f)));if(!crons.length&&!libs.length)fail(ID+\": nothing asks \\\"Did you make it?\\\" after a gathering\");const all=[...libs,...crons].map(r).join(\"\\n\");if(!/attend/i.test(all))fail(ID+\": the check-in does not record attendance\");if(!/(invite|bring a friend)/i.test(all))fail(ID+\": the check-in carries no bring-a-friend link\")'",
+    "note": "Fails until a post-event \"Did you make it?\" message exists, writes attendance and carries an invite link."
+  },
+  "wave": "W0b"
+}

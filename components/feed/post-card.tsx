@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -10,6 +11,7 @@ import {
   Users,
   Hash,
   Building2,
+  HelpCircle,
 } from 'lucide-react'
 import { PostReplies } from './post-replies'
 import { ContextActions } from '@/components/context-actions'
@@ -18,6 +20,7 @@ import { getInitials, relativeTime } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { PostBody } from './post-body'
 import { SystemLine } from './system-line'
+import { PostPoll } from './post-poll'
 
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
 
@@ -165,6 +168,7 @@ export function PostCard({
   const isOwn = author.id === myProfileId
   const isAnnouncement = post.post_type === 'announcement'
   const isNote = post.post_type === 'note'
+  const isAsk = post.post_type === 'ask'
   const totalReactions = reactions.length
   const replyCount = post.replyCount ?? 0
   // Zaps this post has earned: each reaction is worth 1, each reply 2. One clean
@@ -217,7 +221,7 @@ export function PostCard({
       <div className="p-4">
         {/* Kicker — the ONE slot for a post's special state (announcement / pinned /
             note), a single quiet uppercase line instead of three banner treatments. */}
-        {(isAnnouncement || post.is_pinned || isNote) && (
+        {(isAnnouncement || post.is_pinned || isNote || isAsk) && (
           <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             {isAnnouncement && (
               <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-eyebrow text-primary-strong">
@@ -232,6 +236,11 @@ export function PostCard({
             {isNote && (
               <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wider text-muted">
                 <NotebookPen className="h-3 w-3" /> Note
+              </span>
+            )}
+            {isAsk && (
+              <span className="inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-eyebrow text-primary-strong">
+                <HelpCircle className="h-3 w-3" /> Asking
               </span>
             )}
           </div>
@@ -314,6 +323,13 @@ export function PostCard({
             habits its own diagnosis blames for the app reading as a SaaS template. */}
         {post.body && (
           <PostBody body={post.body} className="mb-2.5 text-body leading-relaxed text-text" />
+        )}
+
+        {/* LIVE-682: a poll's options under its question. */}
+        {post.post_type === 'poll' && (
+          <Suspense fallback={null}>
+            <PostPoll postId={post.id} myProfileId={myProfileId} />
+          </Suspense>
         )}
 
         {/* Post image — inset media, no second frame around it. `h-54` is 13.5rem = 229.5px,
