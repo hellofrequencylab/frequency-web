@@ -12,7 +12,6 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
-- **Joining asks one optional follow-up.** After you say who you are, you can pick the line that sounds most like you, like "I'm new around here" or "I teach at a few studios." It only changes what we show you first, it never appears on your profile, and it's never sent to advertisers. Skip it if you like.
 - **You can drag the steps of a Journey into any order.** Lessons, practices, and modules mix freely, so a practice can sit between two lessons. The builder shows the order members follow.
 - **Space email has a written policy.** It says who a Space can email, what it can send, the 500-a-day limit, and what happens after a bounce or a spam complaint. The Turn on email card links it, and so do the Terms.
 

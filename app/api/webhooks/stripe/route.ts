@@ -79,6 +79,7 @@ import {
   abandonCommerceOrderFromSession,
 } from '@/lib/commerce/checkout'
 import { recordTransferCreated, recordTransferReversed } from '@/lib/commerce/transfers'
+import { recordDomainPurchaseFromSession, abandonDomainPurchaseFromSession } from '@/lib/sites/domain-purchase'
 import { track } from '@/lib/analytics/track'
 import { purchaseConversionFromSession } from '@/lib/analytics/purchase'
 
@@ -202,6 +203,9 @@ export async function POST(req: Request) {
     // `async_payment_succeeded` consume) is what stops a delayed-payment donation from being the
     // recorder someone forgets.
     await recordSpaceDonationFromSession(s)
+    // LIVE-781: a Space buying a domain. Only after the payment is confirmed does it buy at Vercel, and
+    // it claims its `pending` row once, so a redelivery or the on-page settle cannot buy twice.
+    await recordDomainPurchaseFromSession(s)
     // LIVE-348: the conversion. Recorded here, not on the buy click, because checkout
     // settles on Stripe (or an Elements form that never navigates). Idempotent per
     // session id so completed + async_payment_succeeded cannot double-count.
@@ -311,6 +315,7 @@ export async function POST(req: Request) {
         // consume.
         await abandonTicketFromSession(s)
         await abandonTipFromSession(s)
+        await abandonDomainPurchaseFromSession(s)
         break
       }
 

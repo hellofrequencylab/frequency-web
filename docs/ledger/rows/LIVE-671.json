@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-671",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const mig=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/create trigger \\w+\\s+after insert on public\\.zap_transactions[\\s\\S]{0,120}broadcast_member_reward/.test(mig)||!/create trigger \\w+\\s+after insert on public\\.gem_transactions[\\s\\S]{0,120}broadcast_member_reward/.test(mig))die(\"the Zap and Gem ledgers publish no reward Broadcast\");if(!/realtime\\.send\\([\\s\\S]{0,300}\\x27member:\\x27 \\|\\| new\\.profile_id/.test(mig))die(\"rewards are not sent to the member private topic\");if(!/create policy [^\\n]*\\n\\s*on realtime\\.messages\\s*\\n\\s*for select\\s*\\n\\s*to authenticated[\\s\\S]{0,300}\\x27member:\\x27 \\|\\| \\(select private\\.get_my_profile_id\\(\\)\\)/.test(mig))die(\"no Realtime authorization lets a member receive their own member channel\");const c=r(\"components/reward-live.tsx\");if(!/channel\\(`member:\\$\\{profileId\\}`, \\{ config: \\{ private: true \\} \\}\\)/.test(c)||!/on\\(\\x27broadcast\\x27, \\{ event: \\x27reward\\x27 \\}/.test(c))die(\"the shell does not listen on the member reward channel\");if(!/router\\.refresh\\(\\)/.test(c))die(\"a pushed reward does not refresh the page\");if(/^import [^\\n]*lib\\/supabase\\/client/m.test(c))die(\"the reward listener statically imports the Supabase client into the shell\");const l=r(\"app/(main)/layout.tsx\");if(!/<RewardLive profileId=/.test(l))die(\"the member layout does not mount the reward listener\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nRewards are pushed across devices. Migration 20270346002200 puts an AFTER INSERT trigger on zap_transactions and gem_transactions (every reward writer ends there) that sends a private Realtime Broadcast to member:<profile_id> (positive rows only, can never fail the write), and adds the Realtime authorization the row named: one SELECT policy on realtime.messages admitting a member to their own member topic, no publish policy. components/reward-live.tsx, mounted in the member layout, subscribes (Supabase client loaded lazily, nothing added to the shell eager chunk), raises the Zap or Gem toast unless this tab just showed it, and refreshes the page so balances move."
+  }
+}
