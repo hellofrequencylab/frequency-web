@@ -99,7 +99,7 @@ export function sanitizeProps(
  * (who someone said they are), the arrival answer, mood, and any topic, interest, Journey or
  * Circle label (what they came for). Ids stay: an opaque uuid says nothing about a person.
  */
-export const PIXEL_SENSITIVE_KEYS: ReadonlySet<string> = new Set([
+const PIXEL_SENSITIVE_KEYS: ReadonlySet<string> = new Set([
   'persona',
   'personas',
   'archetype',
