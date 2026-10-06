@@ -34,15 +34,18 @@ describe('yearlyFromMonthly (two months free)', () => {
 })
 
 describe('the clean catalog shape (collapsed · ADR-552)', () => {
-  it('holds exactly five live items (Business/Independent bases, AI add-on, nonprofit seat, operator seat)', () => {
+  it('holds exactly eight live items (the five-tier ladder adds three Collective items, ADR-1709)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
       'business_base',
+      'collective_base',
+      'collective_space',
+      'nonprofit_collective',
       'independent_base',
       'addon_ai',
       'nonprofit_seat',
       'operator_seat',
     ])
-    expect(catalogItems()).toHaveLength(5)
+    expect(catalogItems()).toHaveLength(8)
   })
 
   it('Business base: $49 flat, no founding rate (LIVE-228)', () => {
@@ -53,10 +56,18 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(biz.perSeat).toBe(false)
   })
 
-  it('collective_base is retired and no longer a catalog item (LIVE-228)', () => {
-    expect(asCatalogItemKey('collective_base')).toBeNull()
-    expect(RETIRED_CATALOG_KEYS).toContain('collective_base_month')
-    expect(RETIRED_CATALOG_KEYS).toContain('collective_base_month_list')
+  it('Collective is re-opened at $149, an extra member Space is $29, Non Profit Collective $119 (ADR-1709)', () => {
+    expect(asCatalogItemKey('collective_base')).toBe('collective_base')
+    expect(RETIRED_CATALOG_KEYS).not.toContain('collective_base_month')
+    expect(catalogItem('collective_base').month).toEqual({ listCents: 14900, foundingCents: 14900 })
+    expect(catalogItem('collective_base').year).toEqual({ listCents: 149000, foundingCents: 149000 })
+    expect(catalogItem('collective_base').perSeat).toBe(false)
+    expect(catalogItem('collective_space').month).toEqual({ listCents: 2900, foundingCents: 2900 })
+    expect(catalogItem('collective_space').year.listCents).toBe(29000)
+    expect(catalogItem('collective_space').perSeat).toBe(true)
+    expect(catalogItem('nonprofit_collective').month).toEqual({ listCents: 11900, foundingCents: 11900 })
+    expect(catalogItem('nonprofit_collective').year.listCents).toBe(119000)
+    expect(catalogItem('nonprofit_collective').perSeat).toBe(false)
   })
 
   it('Independent base: $249/mo flat white-label, no founding discount (ADR-811)', () => {
@@ -66,7 +77,7 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(ind.perSeat).toBe(false)
   })
 
-  it('Operator seat: $12/seat/mo, live, the only perSeat item (ADR-799 / LIVE-229)', () => {
+  it('Operator seat: $12/seat/mo, live, a perSeat item beside the extra member Space (ADR-799 / LIVE-229)', () => {
     const seat = catalogItem('operator_seat')
     expect(seat.perSeat).toBe(true)
     expect(seat.placeholder).toBeFalsy()
@@ -74,8 +85,9 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     expect(seat.month.foundingCents).toBe(1200)
     expect(seat.year.listCents).toBe(12000)
     expect(seat.year.foundingCents).toBe(12000)
-    // It is the ONLY per-seat item; every flat plan/add-on stays perSeat:false.
-    expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['operator_seat'])
+    // The two quantity items are the extra member Space and the operator seat; every flat plan/add-on
+    // stays perSeat:false.
+    expect(catalogItems().filter((i) => i.perSeat).map((i) => i.key)).toEqual(['collective_space', 'operator_seat'])
   })
 
   it('every item has a founding <= list amount on both intervals', () => {
@@ -117,12 +129,14 @@ describe('catalog price keys', () => {
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 5 items x 2 intervals x 2 variants = 20 keys', () => {
+  it('allCatalogPriceKeys = 8 items x 2 intervals x 2 variants = 32 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(20)
+    expect(keys).toHaveLength(32)
     expect(keys).toContain('business_base_month')
     expect(keys).toContain('business_base_month_list')
-    expect(keys).not.toContain('collective_base_month')
+    expect(keys).toContain('collective_base_month')
+    expect(keys).toContain('collective_space_year')
+    expect(keys).toContain('nonprofit_collective_month_list')
     expect(keys).toContain('independent_base_year_list')
     expect(keys).toContain('addon_ai_month')
     expect(keys).toContain('nonprofit_seat_year')

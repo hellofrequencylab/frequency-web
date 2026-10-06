@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-228",
+  "patch": {
+    "verify": {
+      "kind": "manual",
+      "evidence": "SUPERSEDED 2026-10-06 by ADR-1709 (the five-tier pricing ladder, owner ruling): Collective is a Space plan again above Business, so the consequence this row proved (Collective folded into Business, collective_base retired) was deliberately reversed. The row stays done as history. Its original cmd probe is preserved verbatim in the detail for anyone auditing the old model.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\n── SUPERSEDED 2026-10-06 by ADR-1709 (LIVE-747). The owner reworked pricing into a five-tier ladder with Collective back as its own plan, so this probe now fails by design. Original probe, kept verbatim: node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/plans.ts\",\"utf8\");const m=s.match(/SPACE_PLANS[^=]*=\\s*\\[([^\\]]*)\\]/);if(!m){console.error(\"SPACE_PLANS not found\");process.exit(1)}if(/collective/.test(m[1])){console.error(\"collective still in SPACE_PLANS\");process.exit(1)}process.exit(0)'"
+  }
+}

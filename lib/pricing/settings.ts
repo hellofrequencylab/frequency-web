@@ -56,6 +56,8 @@ const SETTING_DEFAULTS: Record<string, unknown> = {
   'plan.business': PRICING_DEFAULTS.plan.business,
   'plan.independent': PRICING_DEFAULTS.plan.independent,
   'plan.nonprofit': PRICING_DEFAULTS.plan.nonprofit,
+  'plan.collective': PRICING_DEFAULTS.plan.collective,
+  'plan.nonprofit_collective': PRICING_DEFAULTS.plan.nonprofit_collective,
   take_rate: PRICING_DEFAULTS.take_rate,
   vera_free_daily_cap: PRICING_DEFAULTS.vera_free_daily_cap,
   trial: PRICING_DEFAULTS.trial,
@@ -135,6 +137,8 @@ export async function getPricingValues(): Promise<PricingDefaults> {
       business: pick('plan.business', PRICING_DEFAULTS.plan.business),
       nonprofit: pick('plan.nonprofit', PRICING_DEFAULTS.plan.nonprofit),
       independent: pick('plan.independent', PRICING_DEFAULTS.plan.independent),
+      collective: pick('plan.collective', PRICING_DEFAULTS.plan.collective),
+      nonprofit_collective: pick('plan.nonprofit_collective', PRICING_DEFAULTS.plan.nonprofit_collective),
     },
     // Merge each bps field over the default so a legacy DB row (written before `free_bps` existed) still
     // resolves a free rate instead of an undefined → NaN fee. The default is the code source of truth.
@@ -157,8 +161,9 @@ export const PRICING_FLAG_KEYS = [
   'tier_supporter_enabled',
   'plan_business_enabled',
   'plan_nonprofit_enabled',
-  // Collective ($79 list / $49 beta) + Independent ($249 white-label) sell via the loadout checkout
-  // (collective_base / independent_base catalog items). Default OFF; ON + billing_live to sell (ADR-811).
+  // Collective and Non Profit Collective (ADR-1709) share `plan_collective_enabled`, the Founding
+  // Collective switch: it goes on only after member Spaces and the network home work (OWN-096).
+  // Independent sells via independent_base. Default OFF; ON + billing_live to sell.
   'plan_collective_enabled',
   'plan_independent_enabled',
   'gamification_full_member',

@@ -91,7 +91,9 @@ describe('loomQuotaFor: the cap', () => {
     expect(loomQuotaFor({ plan: 'nope' })).toEqual({ capped: true, capBytes: LOOM_STORAGE_CAP_BYTES.free })
     expect(loomQuotaFor(null)).toEqual({ capped: true, capBytes: LOOM_STORAGE_CAP_BYTES.free })
     // A legacy label narrows through asSpacePlan like every other plan read.
-    expect(loomQuotaFor({ plan: 'collective' })).toEqual({ capped: true, capBytes: LOOM_STORAGE_CAP_BYTES.business })
+    expect(loomQuotaFor({ plan: 'pro' })).toEqual({ capped: true, capBytes: LOOM_STORAGE_CAP_BYTES.business })
+    // Collective is its own plan again (ADR-1709) and holds the larger shared library.
+    expect(loomQuotaFor({ plan: 'collective' })).toEqual({ capped: true, capBytes: LOOM_STORAGE_CAP_BYTES.collective })
   })
   it('an entitlements blob changes nothing: the larger-library key is deferred to the owner', () => {
     const granted = { plan: 'free', entitlements: { 'loom.storage.large': true } }

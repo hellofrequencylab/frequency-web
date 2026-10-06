@@ -35,7 +35,7 @@
 import { formatCents } from './display'
 import { PWYW_CONFIG_DEFAULT } from './catalog-config'
 import { effectiveCatalogAmounts, isBetaPricingActive } from './beta'
-import { SPACE_PLAN_LABEL, SPACE_PLANS, type SpacePlan } from './plans'
+import { PLAN_CAPABILITY_RANK, SPACE_PLAN_LABEL, type SpacePlan } from './plans'
 import { ENTITLEMENT_LABEL, ENTITLEMENT_TIERS, deriveTier, type EntitlementTier } from '@/lib/core/entitlement'
 import { catalogItem, type CatalogAmounts, type CatalogItemKey } from '@/lib/billing/pricing-keys'
 import { mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
@@ -58,6 +58,8 @@ const PLAN_CATALOG_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
   business: 'business_base',
   nonprofit: 'nonprofit_seat',
   independent: 'independent_base',
+  collective: 'collective_base',
+  nonprofit_collective: 'nonprofit_collective',
 }
 
 /** THE Space price map, DERIVED (Phase 5, ADR-916). One row per plan, each carrying BOTH numbers the
@@ -75,6 +77,8 @@ export const SPACE_PLAN_PRICE_CENTS: Record<SpacePlan, CatalogAmounts> = {
   business: catalogItem(PLAN_CATALOG_ITEM.business).month,
   nonprofit: catalogItem(PLAN_CATALOG_ITEM.nonprofit).month,
   independent: catalogItem(PLAN_CATALOG_ITEM.independent).month,
+  collective: catalogItem(PLAN_CATALOG_ITEM.collective).month,
+  nonprofit_collective: catalogItem(PLAN_CATALOG_ITEM.nonprofit_collective).month,
 }
 
 /** @deprecated The LIST monthly price per Space plan, in cents. Derived from SPACE_PLAN_PRICE_CENTS and
@@ -85,9 +89,12 @@ export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
   business: SPACE_PLAN_PRICE_CENTS.business.listCents,
   nonprofit: SPACE_PLAN_PRICE_CENTS.nonprofit.listCents,
   independent: SPACE_PLAN_PRICE_CENTS.independent.listCents,
+  collective: SPACE_PLAN_PRICE_CENTS.collective.listCents,
+  nonprofit_collective: SPACE_PLAN_PRICE_CENTS.nonprofit_collective.listCents,
 }
 
-/** The monthly price per SELLABLE personal membership tier, in cents: Member free, Crew $9 (ADR-878).
+/** The monthly price per SELLABLE personal membership tier, in cents: Member free, Crew from the
+ *  contribute-what-you-want floor (ADR-878, ADR-1084).
  *  THE one place the Crew price is written down. It is not in the Stripe plan catalog (the member ladder
  *  is not sold through the plan loadout), so this pure, client-safe map is the source, and
  *  PRICING_DEFAULTS.tier.crew reads it rather than restating it.
@@ -140,8 +147,10 @@ export const MEMBER_LADDER_TIERS: readonly EntitlementTier[] = ['free', 'crew']
 /** The rank of a tier label on its axis (Space plan rank, else membership tier rank). Unknown → 0
  *  (lowest, default-deny), so an unrecognized tier never reads as "already unlocked". PURE. */
 export function tierRankOnAxis(axis: GateAxis, tier: string): number {
-  const list = axis === 'plan' ? SPACE_PLANS : ENTITLEMENT_TIERS
-  const i = (list as readonly string[]).indexOf(tier)
+  // Space plans rank by CAPABILITY (ADR-1709): Non Profit and Independent sit beside Business, and
+  // Non Profit Collective beside Collective, whatever their position in SPACE_PLANS.
+  if (axis === 'plan') return PLAN_CAPABILITY_RANK[tier as SpacePlan] ?? 0
+  const i = (ENTITLEMENT_TIERS as readonly string[]).indexOf(tier)
   return i < 0 ? 0 : i
 }
 

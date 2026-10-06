@@ -1,7 +1,7 @@
 {
   "id": "LIVE-747",
   "title": "Collective is a Space plan again above Business, and the catalog holds Collective, the extra member Space and Non Profit Collective",
-  "status": "open",
+  "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "M",
@@ -9,10 +9,11 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 1 of the five-tier ladder (ADR-1709). TARGET: merged before 2026-11-24, because pricing_settings.beta_grace ends 2026-12-01 and every count limit enforces that day with no deploy. SPACE_PLANS gains collective as the rung above Business (the remap to business goes), catalog re-opens collective_base at 14900/149000 and adds collective_space 2900/29000 and nonprofit_collective 11900/119000, a Collective sell switch stays off, the admin pricing console stops reading a missing catalog row, and space_billing_agreements re-admits collective (migration). scripts/check-collective.mjs is inverted in the same PR. Production plan_collective_enabled read TRUE on 2026-10-06 (the brief said off); the owner ruled 2026-10-06 (decision card) to leave it on, so Collective is purchasable once this merges and OWN-094 mints its Stripe prices. Public pages advertise it at LIVE-759.",
+  "detail": "PHASE 1 of the five-tier ladder (ADR-1709). TARGET: merged before 2026-11-24, because pricing_settings.beta_grace ends 2026-12-01 and every count limit enforces that day with no deploy. SPACE_PLANS gains collective as the rung above Business (the remap to business goes), catalog re-opens collective_base at 14900/149000 and adds collective_space 2900/29000 and nonprofit_collective 11900/119000, a Collective sell switch stays off, the admin pricing console stops reading a missing catalog row, and space_billing_agreements re-admits collective (migration). scripts/check-collective.mjs is inverted in the same PR. Production plan_collective_enabled read TRUE on 2026-10-06 (the brief said off); the owner ruled 2026-10-06 (decision card) to leave it on, so Collective is purchasable once this merges and OWN-094 mints its Stripe prices. Public pages advertise it at LIVE-759.\n\nShipped: SPACE_PLANS carries collective and nonprofit_collective with an explicit capability rank (PLAN_CAPABILITY_RANK; gates and the display ladder rank by it, so Non Profit never clears a Collective floor). Catalog re-opens collective_base 14900 and adds collective_space 2900 (per Space) and nonprofit_collective 11900; checkout bills them under plan_collective_enabled; Collective includes Vera AI; subscription items reconcile to collective. Migration 20270346003000 widens the agreements and item_key CHECKs (repairing production drift: item_key lacked collective and independent) and seeds plan.collective / plan.nonprofit_collective. The admin pricing console renders the three items (it read a missing collective_base row before). check-collective.mjs now asserts Collective is a live plan.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const p=r(\"lib/pricing/plans.ts\");const m=p.match(/SPACE_PLANS = \\[([^\\]]*)\\]/);if(!m||!/\\x27collective\\x27/.test(m[1]))fail(\"SPACE_PLANS has no collective plan\");const rk=(p.split(\"PLAN_CAPABILITY_RANK\")[1]||\"\");const rb=rk.match(/business: (\\d)/),rc=rk.match(/collective: (\\d)/);if(!rb||!rc||Number(rc[1])<=Number(rb[1]))fail(\"collective does not rank above business\");if(/\\n\\s*collective: \\x27business\\x27/.test(p))fail(\"collective still remaps to business\");const k=r(\"lib/billing/pricing-keys.ts\");for(const key of [\"collective_base\",\"collective_space\",\"nonprofit_collective\"])if(!new RegExp(\"CATALOG_ITEM_KEYS = \\\\[[^\\\\]]*\\x27\"+key+\"\\x27\").test(k))fail(key+\" is not a catalog item\");for(const amt of [\"14900, 14900\",\"2900, 2900\",\"11900, 11900\"])if(!k.includes(\"amountsFromMonthly(\"+amt+\")\"))fail(\"no catalog amount \"+amt);if(/RETIRED_CATALOG_ITEM_KEYS[^\\]]*\\x27collective_base\\x27/.test(k))fail(\"collective_base is still retired\");console.log(\"ok: Collective is a plan and the three new prices are in the catalog\")'"
   },
-  "notes": "Target: merged before 2026-11-24 (beta_grace ends 2026-12-01)."
+  "notes": "Target: merged before 2026-11-24 (beta_grace ends 2026-12-01).",
+  "closed": "2026-10-06"
 }

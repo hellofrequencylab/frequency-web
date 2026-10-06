@@ -68,11 +68,12 @@ export async function setOperatorSeats(slug: string, seats: number): Promise<Act
   return ok({ seats: res.seats })
 }
 
-/** The base tiers the multi-item loadout checkout sells (ADR-811): Business + Collective run on their
- *  base plus the optional AI add-on; Independent is the flat standalone white-label base; Nonprofit is
- *  the flat per-mission item. All go through the SAME createSpaceLoadoutCheckout, so interval + seat
- *  count thread identically, and each gates on its own per-plan switch inside the checkout. */
-const LOADOUT_PLANS = ['business', 'nonprofit', 'independent'] as const
+/** The base tiers the multi-item loadout checkout sells (ADR-811, ADR-1709): Business runs on its base
+ *  plus the optional AI add-on; Collective and Non Profit Collective bill their own base with Vera AI
+ *  included; Independent is the flat standalone white-label base; Nonprofit is the flat per-mission
+ *  item. All go through the SAME createSpaceLoadoutCheckout, so interval + seat count thread
+ *  identically, and each gates on its own per-plan switch inside the checkout. */
+const LOADOUT_PLANS = ['business', 'nonprofit', 'independent', 'collective', 'nonprofit_collective'] as const
 type LoadoutPlan = (typeof LOADOUT_PLANS)[number]
 function asLoadoutPlan(plan: string | undefined): LoadoutPlan {
   const key = asSpacePlan(plan)

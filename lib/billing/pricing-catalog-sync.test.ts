@@ -139,10 +139,22 @@ const FROZEN_SYNCED_KEYS = [
   'business_base_month_list',
   'business_base_year',
   'business_base_year_list',
+  'collective_base_month',
+  'collective_base_month_list',
+  'collective_base_year',
+  'collective_base_year_list',
+  'collective_space_month',
+  'collective_space_month_list',
+  'collective_space_year',
+  'collective_space_year_list',
   'independent_base_month',
   'independent_base_month_list',
   'independent_base_year',
   'independent_base_year_list',
+  'nonprofit_collective_month',
+  'nonprofit_collective_month_list',
+  'nonprofit_collective_year',
+  'nonprofit_collective_year_list',
   'nonprofit_seat_month',
   'nonprofit_seat_month_list',
   'nonprofit_seat_year',
@@ -277,9 +289,9 @@ describe('a re-sync is idempotent', () => {
     expect(store.prices.map((p) => p.id)).toEqual(pricesAfterFirst)
     expect(written.map((r) => `${r.key}:${r.productId}:${r.priceId}`)).toEqual(rowsAfterFirst)
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
-    // 5 live items, each flat: 5 standard products, 20 price keys.
-    expect(store.products).toHaveLength(5)
-    expect(store.prices).toHaveLength(20)
+    // 8 live items (ADR-1709 added three Collective items), each flat: 8 standard products, 32 price keys.
+    expect(store.products).toHaveLength(8)
+    expect(store.prices).toHaveLength(32)
   })
 
   it('a name drift on an existing product is corrected in place, never duplicated', async () => {

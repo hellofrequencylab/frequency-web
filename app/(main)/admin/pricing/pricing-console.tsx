@@ -99,7 +99,7 @@ function CatalogSection({
     >
       <FormSection
         title="Business base"
-        description="The run-your-practice base (ADR-811): CRM, email, reporting, your own website. Free-vs-paid is a usage state within Business, not a separate plan."
+        description="Where selling starts (ADR-1709): every money path, the full toolkit, two seats included."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.business_base} />
@@ -107,11 +107,13 @@ function CatalogSection({
       </FormSection>
 
       <FormSection
-        title="Collective base"
-        description="Everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators (ADR-811). The list price is what is charged today (the Opening Beta window closed, ADR-1060); run the catalog sync after changing it."
+        title="Collective"
+        description="Groups of groups (ADR-1709): five member Spaces and Vera AI included, extra member Spaces billed per Space, and Non Profit Collective for verified 501(c)(3)s. Sold only while the Collective switch is on. Run the catalog sync after changing an amount."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.collective_base} />
+          <CatalogItemRow item={byKey.collective_space} />
+          <CatalogItemRow item={byKey.nonprofit_collective} />
         </div>
       </FormSection>
 
