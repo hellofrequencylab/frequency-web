@@ -12,7 +12,7 @@ import { breadcrumbSchema } from '@/lib/jsonld'
 // every release. Keep CHANGELOG entries written for humans (Keep a Changelog);
 // technical detail belongs in git history, not here.
 export const metadata: Metadata = {
-  title: "What's new | Help",
+  title: "What's new · Help",
   description: 'Recent changes and improvements to Frequency.',
   alternates: { canonical: '/help/changelog' },
   openGraph: {

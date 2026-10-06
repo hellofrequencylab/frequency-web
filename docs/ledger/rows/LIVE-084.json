@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-084",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/discover.ts','utf8');const t=fs.readFileSync('lib/discover.test.ts','utf8');const guard=s.includes(\\\"code !== '' &&\\\")&&!/typeof e\\\\.code === 'string' && !TRANSIENT_RE/.test(s);const OG='app/discover/events/[slug]/opengraph-image.tsx';const ogSafe=fs.existsSync(OG)?fs.readFileSync(OG,'utf8').includes('getPublicEventBySlug(slug).catch('):/source: '\\/discover\\/events\\/:slug'/.test(fs.readFileSync('next.config.ts','utf8'));const proven=t.includes('PRODUCTION_KILLER')&&/code: ''/.test(t);process.exit(guard&&ogSafe&&proven?0:1)\""
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05 (SCAN-672): the /discover/events/<slug> OG route whose guarded read this probe checked is retired behind a 308 to /events/<slug> (the route no longer prerenders at all); when the file is gone the probe reads that rule in next.config.ts instead. The lib/discover.ts transport guard is unchanged."
+  }
+}

@@ -48,15 +48,22 @@ const environment =
   process.env.NODE_ENV ||
   'development'
 
-/** Trace sample rate: 100% in dev, low in prod (override with SENTRY_TRACES_SAMPLE_RATE).
- *  Tracing only runs when Sentry is enabled at all, so this is moot when no DSN is set. */
-function tracesSampleRate(): number {
-  const raw = process.env.SENTRY_TRACES_SAMPLE_RATE
+/** Trace sample rate: 100% in dev, low in prod, ZERO on a preview deployment (override with
+ *  SENTRY_TRACES_SAMPLE_RATE). Tracing only runs when Sentry is enabled at all, so this is moot
+ *  when no DSN is set.
+ *
+ *  Previews are zero (HYG-162, ADR-1706): the DSN is set for preview AND production, so every
+ *  e2e, visual and Lighthouse run against a preview was also a traced session nobody reads.
+ *  Errors on previews still go through; only the performance spans stop. */
+export function tracesSampleRate(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = env.SENTRY_TRACES_SAMPLE_RATE
   if (raw) {
     const n = Number(raw)
     if (Number.isFinite(n) && n >= 0 && n <= 1) return n
   }
-  return process.env.NODE_ENV === 'development' ? 1.0 : 0.1
+  if (env.NODE_ENV === 'development') return 1.0
+  if (env.VERCEL_ENV === 'preview') return 0
+  return 0.1
 }
 
 /** The init options shared across all runtimes. Runtime-specific configs spread

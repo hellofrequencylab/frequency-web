@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-767",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"lib/quest/expression.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-767: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"export async function completeExpressionChallenge\");if(i<0){console.error(\"SCAN-767: completeExpressionChallenge not found\");process.exit(79)}const body=s.slice(i);if(!/journey_enrollments/.test(body)){console.error(\"SCAN-767: completeExpressionChallenge still pays the Expression Challenge without reading journey_enrollments, so any member can claim 50 Zaps per Journey they never enrolled in.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\ncompleteExpressionChallenge (lib/quest/expression.ts) resolved the season_challenges row for the journey and paid the Expression reward (50 Zaps at a Circle, 30 Gems online) without ever reading enrolment, so any member could claim the capstone for every Journey in the season they never started, about 350 season Zaps per member. The fix reads journey_enrollments (profile_id, plan_id; the one record both the solo and Run enrol paths write and leaving deletes) after the challenge is resolved and returns { ok: false, found: true, zaps: 0, gems: 0 } with nothing marked, claimed or paid when no row exists. The /crew/challenges widget (components/widgets/challenges/challenges-season.tsx) loads the viewer's enrolled plan ids alongside the challenge rows and only renders ExpressionAction for an enrolled Journey, showing a short start-this-Journey line otherwise. Pinned by lib/quest/expression.test.ts (unenrolled: refused on both paths; enrolled: paid once at a Circle, Gem purse online) and by the probe, which reads the function for a journey_enrollments read."
+  }
+}

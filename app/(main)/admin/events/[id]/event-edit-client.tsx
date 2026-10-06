@@ -138,6 +138,7 @@ export function EventEditClient({
         if (event.is_cancelled) {
           await reinstateEvent(event.id)
         } else {
+          // The console's cancelEvent throws on a refused or failed write; the catch below shows it.
           await cancelEvent(event.id)
         }
         router.refresh()

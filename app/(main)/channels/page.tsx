@@ -10,6 +10,7 @@ import { PageIntro } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
+import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
 
 // Channels (ADR-270/294). The page now opens on the SHARED MarketHero header (the same hero band
 // Events / Classifieds / Business Spaces / Circles use) so every browse surface reads as one
@@ -79,7 +80,9 @@ export default async function ChannelsPage() {
         .from('circles')
         .select('id', { count: 'exact', head: true })
         .not('topical_channel_id', 'is', null)
-        .neq('status', 'archived'),
+        // Same gate as the Channel page's circle list, so the headline count matches it (SCAN-690).
+        .in('status', [...LISTABLE_CIRCLE_STATUS])
+        .eq('unlisted', false),
     ])
 
   // The create dialog needs the Pillar options (id + name) to sort a new Channel into a Pillar.

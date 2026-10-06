@@ -58,6 +58,12 @@ export interface HelpArticle {
   /** Code areas this article documents; powers drift detection (docs/HELP-CENTER.md). */
   featureKeys: string[]
   status: HelpStatus
+  /** Optional `canonical:` key: the path (or absolute URL) that should rank for this article's query
+   *  instead of the article itself. A member-facing twin of a marketing guide names the guide here,
+   *  so the two stop competing for one query (SCAN-673, ruling b); the page emits it as the
+   *  canonical link and the sitemap leaves the twin out. Empty string when the key is absent, which
+   *  is every article but the twins: the page then stays self-canonical, exactly as before. */
+  canonical: string
   body: string
   /** Q&A pairs DERIVED from the body's FAQ section, for FAQPage schema (CONTENT-VOICE §8b:
    *  "FAQPage schema on every article with an FAQ"). Empty for articles without one.
@@ -197,6 +203,7 @@ async function readArticle(category: string, file: string): Promise<HelpArticle>
     role: str(data.role) || undefined,
     featureKeys: arr(data.featureKeys),
     status: (str(data.status, 'published') as HelpStatus) === 'draft' ? 'draft' : 'published',
+    canonical: str(data.canonical).trim(),
     body: content,
     faq: extractFaq(content),
   }

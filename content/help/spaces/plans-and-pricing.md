@@ -77,17 +77,18 @@ nothing. A Space that is off the network has no network-sourced sales, so it pay
 exact rates are on the [pricing page](/pricing), on every plan card and in the comparison.
 
 **Every plan can sell, including Free.** A Free Space creates events, takes RSVPs, sells tickets, and
-takes payments from day one. You do not buy the ability to charge, you buy the rate down. A paid plan
-lowers what Frequency takes on the sales the network brings you, and it gives you the tools that turn
-those buyers into your own people, where the rate is 0% on every plan.
+takes payments from day one. A plan is what you take when money starts moving, never the transaction.
+What a plan carries is the repeat: campaigns and funnels that bring new people in. The rate is what a
+plan settles at, not what a plan is for: it applies only to a sale the network introduced, it is lower
+on a paid plan, and it is 0% on your own people on every plan.
 
 One thing still needs a plan, and it is about bringing people in: **campaigns and funnels**. That
 opens at Business. Selling memberships, tickets, bookings, orders, and donations is open on every
 plan, including Free. A Journey needs a paid Space. A payout account is what starts the money, not
 the plan. Nothing about being here, gathering people, or being found needs a plan.
 
-On your personal account the same shape applies: a free Member sells at the free rate, and **Crew**
-brings it down. Crew is contribute what you want: pick any monthly amount at or above the floor shown
+On your personal account the same shape applies: a free Member can sell from day one, and **Crew**
+settles at the lower rate. Crew is contribute what you want: pick any monthly amount at or above the floor shown
 on the [upgrade page](/upgrade).
 
 The idea is simple: we earn when the network earns you something, and never on the work you brought

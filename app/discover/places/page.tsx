@@ -9,7 +9,7 @@ import {
 import { PlacesFinder } from '@/components/discover/places-finder'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
-import { OG_SITE, SITE_NAME, SITE_URL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: '/discover/places' },
-  openGraph: { ...OG_SITE, title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION, url: '/discover/places', type: 'website' },
+  openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION, url: '/discover/places', type: 'website' },
   twitter: { card: 'summary_large_image', title: `${TITLE} · ${SITE_NAME}`, description: DESCRIPTION },
 }
 

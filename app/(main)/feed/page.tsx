@@ -55,7 +55,6 @@ export default async function FeedPage({
   let myProfileId: string | null = null
   let myRole: CommunityRole = 'member'
   let primaryCircleId: string | null = null
-  let canAnnounce = false
   let firstName: string | null = null
   let streak = 0
   let homeLat: number | null = null
@@ -121,7 +120,6 @@ export default async function FeedPage({
         idempotencyKey: `onboarding.vera_opened:${profile.id}`,
       })
     }
-    canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
   }
 
   // A post written from the HOME feed lands on the member's own wall + the public feed,
@@ -308,7 +306,11 @@ export default async function FeedPage({
             scopeId={composerScopeId}
             visibility={composerVisibility}
             placeholder="What’s on your mind?"
-            canAnnounce={canAnnounce}
+            // SCAN-681: never offer Dispatch here. The home box is scoped to the member's own
+            // profile (their wall), and createPost refuses an announcement whose scope is not a
+            // circle, so every home-feed Dispatch was refused with the draft kept. Circle
+            // announcements go through the circle page, which passes a real circle scope.
+            canAnnounce={false}
           />
         </div>
       )}

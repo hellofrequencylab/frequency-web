@@ -1,6 +1,10 @@
 import { AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getCallerProfile } from '@/lib/auth'
+import { getStaffMember } from '@/lib/staff'
+import { staffCan } from '@/lib/core/staff-roles'
+import { canModeratePlatform } from '@/lib/moderation/scope'
 import { ModerationQueue } from '@/app/(main)/admin/moderation/moderation-queue'
 
 // Admin Moderation layout module (LP7, ADR-270/294): the community report queue — the pending
@@ -28,6 +32,37 @@ type RawReport = {
 
 type ReportWithPreview = RawReport & { preview: string; priorReports?: number }
 
+// SCAN-679: the queue shows a viewer only what the actions in feed/report-actions.ts would let
+// them act on. Platform scope (staff, a granted Platform moderator, or a community-domain staff
+// role) sees every pending report. A community host sees only reports on posts and comments
+// inside Circles they host, and never their own reports. Fail-safe: a missing caller sees nothing.
+async function scopeReportsToViewer(
+  admin: ReturnType<typeof createAdminClient>,
+  reports: RawReport[],
+): Promise<RawReport[]> {
+  const caller = await getCallerProfile()
+  if (!caller) return []
+  const notOwn = reports.filter((r) => r.reporter.id !== caller.id)
+  if (canModeratePlatform(caller.webRole)) return notOwn
+  const staff = await getStaffMember().catch(() => null)
+  if (staffCan(staff?.role, 'community', 'write')) return notOwn
+  const { data: hosted } = await admin.from('circles').select('id').eq('host_id', caller.id)
+  const hostedIds = new Set((hosted ?? []).map((c: { id: string }) => c.id))
+  if (hostedIds.size === 0) return []
+  const postReports = notOwn.filter((r) => r.target_type === 'post' || r.target_type === 'comment')
+  if (postReports.length === 0) return []
+  const { data: posts } = await admin
+    .from('posts')
+    .select('id, author_id, scope_id')
+    .in('id', postReports.map((r) => r.target_id))
+  const inScope = new Set(
+    (posts ?? [])
+      .filter((p: { author_id: string; scope_id: string | null }) => p.author_id !== caller.id && p.scope_id != null && hostedIds.has(p.scope_id))
+      .map((p: { id: string }) => p.id),
+  )
+  return postReports.filter((r) => inScope.has(r.target_id))
+}
+
 export async function AdminModerationQueue() {
   const admin = createAdminClient()
 
@@ -42,7 +77,7 @@ export async function AdminModerationQueue() {
     .order('created_at', { ascending: false })
     .limit(100)
 
-  const reports = (rawReports ?? []) as unknown as RawReport[]
+  const reports = await scopeReportsToViewer(admin, (rawReports ?? []) as unknown as RawReport[])
 
   // Gather target previews for each report
   const postIds = reports.filter((r) => r.target_type === 'post' || r.target_type === 'comment').map((r) => r.target_id)

@@ -223,7 +223,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
         log.info('cron.space_campaigns.resumed', { id: row.id, remaining: recipients.length })
         if (recipients.length === 0) {
           // Everyone already has a row: the fan-out had finished, only the terminal stamp was lost.
-          await stampStatus(db, row.id, 'sent')
+          await stampStatus(db, row.id, 'sent', undefined, plan.recipients.length)
           sent++
           continue
         }
@@ -241,7 +241,9 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
         log.error('cron.space_campaigns.send_failed', { id: row.id, error: res.error })
         continue
       }
-      await stampStatus(db, row.id, 'sent')
+      // The delivered total is what the seam sent now plus the recipients a resumed send had already
+      // reached (they were filtered out above, so plan minus remaining counts them) (SCAN-705).
+      await stampStatus(db, row.id, 'sent', undefined, res.data.sent + (plan.recipients.length - recipients.length))
       sent++
     } catch (err) {
       await stampStatus(db, row.id, 'failed', briefError(err))
@@ -253,8 +255,9 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
   return { due: due.length, claimed, sent, failed }
 }
 
-/** Stamp a claimed campaign to a terminal status ('sent' or 'failed'), setting sent_at on a send and
- *  send_error on a failure (scan2 L6-10, so the operator sees why without the logs).
+/** Stamp a claimed campaign to a terminal status ('sent' or 'failed'), setting sent_at and the delivered
+ *  recipient_count on a send (the count the campaign list prints, SCAN-705) and send_error on a failure
+ *  (scan2 L6-10, so the operator sees why without the logs).
  *  Best-effort: the email already went out, so a failed status write must not surface as an error.
  *  2026-09-05 (scan2 L6-10): a lost stamp no longer strands the row. It stays 'sending' under its lease,
  *  the next pass after the lease re-claims it, finds every recipient in the ledger, and stamps 'sent'. */
@@ -263,10 +266,16 @@ async function stampStatus(
   id: string,
   status: 'sent' | 'failed',
   error?: string,
+  recipientCount?: number,
 ): Promise<void> {
   const patch =
     status === 'sent'
-      ? ({ status, sent_at: new Date().toISOString(), send_error: null } as TablesUpdate<'campaigns'>)
+      ? ({
+          status,
+          sent_at: new Date().toISOString(),
+          send_error: null,
+          recipient_count: recipientCount ?? 0,
+        } as TablesUpdate<'campaigns'>)
       : ({ status, send_error: (error ?? 'send failed').slice(0, 300) } as TablesUpdate<'campaigns'>)
   try {
     const { error: stampErr } = await db.from('campaigns').update(patch).eq('id', id)

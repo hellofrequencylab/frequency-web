@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-787",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/spaces/discovery.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-787: \"+f+\" missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");if(/^\\s*push\\(\\x27book\\x27\\)\\s*$/m.test(s)){console.error(\"SCAN-787: listNetworkedSpaceProfileTabs still advertises the book tab for every networked Space unconditionally, so the sitemap carries a Book URL for Spaces whose Book page renders only an empty state.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: the Book page's Focus-to-widget rule moved to lib/spaces/cta-kind.ts (ctaKindFor), shared by components/widgets/entity/entity-cta.tsx and lib/spaces/discovery.ts; listNetworkedSpaceProfileTabs now selects mode_variant, reads space_donation_asks presence, and emits /book only when a membership-Focus Space has an active tier or a donations-Focus Space has an active ask (booking, enroll and tickets stay advertised). discovery.test.ts pins the gate."
+  }
+}

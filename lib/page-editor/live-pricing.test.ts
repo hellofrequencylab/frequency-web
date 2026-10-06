@@ -87,7 +87,7 @@ describe('the binding fails in the editorial direction', () => {
 describe('the CMS route actually receives the live data', () => {
   it('/pricing renders published content and passes metadata through', () => {
     const page = readFileSync('app/(marketing)/pricing/page.tsx', 'utf8')
-    expect(page).toContain('getPublishedData')
+    expect(page).toMatch(/getPublished(Data|Page)\(/)
     expect(page).toContain('getLiveData')
     expect(page).toMatch(/metadata=\{live \? \{ live \} : \{\}\}/)
   })

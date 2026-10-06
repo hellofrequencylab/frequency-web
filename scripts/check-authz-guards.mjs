@@ -171,6 +171,10 @@ const GUARD = new RegExp(
     'get\\w*Capabilities',
     'getJanitor',
     'getStaffMember',
+    // staffCanNow (SCAN-757): getStaffMember + staffCan + the owner capability grid in one
+    // fail-closed boolean; an action that returns on its false is gated exactly as one that
+    // reads getStaffMember and staffCan itself.
+    'staffCanNow',
     'getMyWebRole',
     'surfaceAccess',
     'verify\\w*Token',
