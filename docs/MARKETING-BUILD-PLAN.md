@@ -32,9 +32,9 @@ Everything ladders to one of **three roles** the visitor self-selects at `/start
 
 | Role | Who | What we hand them | First action |
 |---|---|---|---|
-| **Lead** | The community builder (the founder's audience; original adopters) | The format, the first-night script, the rails, and backup | Start one Circle |
-| **Practice** | The participant who can engage from anywhere right now | Journeys, Practices, the Mindless timer (virtual, solo-first) | Do one practice today |
-| **Spread** | Everyone else | A way to take a role in building community around them (invite, host once, share) | Share / bring one person |
+| **Lead** | The Latent Leader: the Host-Connector and the Gathering Host (CONTENT-VOICE §2d) | The format, the first-night script, the rails, and backup | Start one Circle |
+| **Practice** | The Seeker who can engage from anywhere right now (the Wired Professional, the Evidence-First Skeptic) | Journeys, Practices, the Mindless timer (virtual, solo-first) | Do one practice today |
+| **Spread** | Everyone else, including the Transplant, the Activity-First Man and the Mission Patron | A way to take a role in building community around them (invite, host once, share) | Share / bring one person |
 
 The build is mostly **authoring**, not net-new engineering: the Puck page editor, a 24-block
 kit, the `marketing-ui` component set, the JSON-LD helpers, and the sitemap already exist.

@@ -75,6 +75,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/event-followups",
+      "schedule": "20 * * * *"
+    },
+    {
       "path": "/api/cron/weekly-digest",
       "schedule": "0 14 * * 0"
     },
@@ -93,6 +97,10 @@
     {
       "path": "/api/cron/embed-events",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/embed-posts",
+      "schedule": "20 * * * *"
     },
     {
       "path": "/api/cron/embed-practices",

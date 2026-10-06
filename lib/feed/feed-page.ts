@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { readFeedRpc, type FeedLoad } from '@/lib/feed/load-feed'
 import { rankFeedPosts } from '@/lib/feed-rank'
 import { blendRank, feedNowMs } from '@/lib/feed/blend-rank'
+import { getPostInterest } from '@/lib/feed/post-interest'
 import { getViewerResonanceMap } from '@/lib/feed/viewer-resonance'
 
 // One page of the feed for /api/v1/feed (LIVE-716). The same two RPCs the web's FeedList reads
@@ -55,7 +56,9 @@ export async function loadFeedPage(args: {
   if (loaded.kind === 'error') return loaded
   if (resonance) {
     const items = loaded.items.map((p) => ({ ...p, authorId: p.author.id, distance_m: p.distance_m ?? null }))
-    return { kind: 'ok', items: blendRank(items, { nowMs: feedNowMs(), resonance, radiusM: 25000 }, PAGE) }
+    // LIVE-677: the content-interest term, for the posts the viewer's RLS read returned.
+    const interest = await getPostInterest(profileId, items.map((p) => p.id))
+    return { kind: 'ok', items: blendRank(items, { nowMs: feedNowMs(), resonance, interest, radiusM: 25000 }, PAGE) }
   }
   return { kind: 'ok', items: rankFeedPosts(loaded.items, fetchSort, PAGE) }
 }

@@ -1015,6 +1015,55 @@ ${footerText}
 }
 
 
+// ── Guest follow-up after a gathering (LIVE-802, ADR-1720) ─────────────────────────────────
+//
+// The invite loop's first half: a guest who RSVPd or bought a ticket without an account hears
+// from us once, the day after the gathering, with one button that turns their seat into a
+// Member account. ADR-854 lets an unproven address receive a delivery about the thing it said
+// yes to and nothing else; this note is about that one event and its one account offer, and it
+// is sent once per address per event (the caller's dedupe key). The suppression list is the
+// gate, checked by the caller and again inside sendRawEmail at drain.
+export async function sendGuestFollowUpEmail(params: {
+  to:         string
+  guestName:  string | null
+  eventTitle: string
+  eventUrl:   string
+  /** A /sign-in link carrying the address, so the tap is what proves it. */
+  joinUrl:    string
+  dedupeKey:  string
+}) {
+  const { to, guestName, eventTitle, eventUrl, joinUrl, dedupeKey } = params
+  const greeting = guestGreeting(guestName)
+  const intro = `thanks for saying yes to ${eventTitle}.`
+  const offer = 'Join Frequency, free, and this RSVP moves into your account. You will see when the group meets next, and the people you met will be easier to find again.'
+  const footer = `You are getting this once because this address was used to RSVP to ${eventTitle}. We will not email it again unless you join.`
+
+  await enqueueEmail({
+    to,
+    subject: `Thanks for coming to ${eventTitle}`,
+    html: emailShell(`
+      <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+      <p style="${pStyle}">${escapeHtml(greeting)}${escapeHtml(intro)}</p>
+      <p style="${pStyle}">${escapeHtml(offer)}</p>
+      <a href="${joinUrl}" style="${btnStyle}">Join free &rarr;</a>
+      <p style="${pStyle}margin-top:20px;"><a href="${eventUrl}" style="color:#9A5E12;">See the event page</a></p>
+      <hr style="${dividerStyle}">
+      <p style="font-size:13px;color:#8F8675;">${escapeHtml(footer)}</p>
+    `),
+    text: `Thanks for coming to ${eventTitle}
+
+${greeting}${intro}
+
+${offer}
+
+Join free: ${joinUrl}
+See the event page: ${eventUrl}
+
+${footer}
+`,
+  }, { dedupeKey })
+}
+
 // ── Guest event update email (a host broadcast to a guest ticket holder, LIVE-320) ──────
 //
 // The guest half of sendEventUpdateEmail below, for the platform-hosted broadcast lane: the host

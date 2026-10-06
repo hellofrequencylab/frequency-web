@@ -14,6 +14,7 @@ import { spec as howToBeMoreSocial } from '@/lib/page-editor/templates/how-to-be
 import { spec as toolsForCommunityBuilders } from '@/lib/page-editor/templates/tools-for-community-builders'
 import { spec as whatIsFrequency } from '@/lib/page-editor/templates/what-is-frequency'
 import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
+import { WHO_FREQUENCY_IS_FOR, WHO_FREQUENCY_IS_FOR_HEADING } from '@/lib/marketing/who-its-for'
 
 // /llms-full.txt — the comprehensive, self-maintaining companion to the curated /llms.txt route
 // (AIO, docs/CONTENT-VOICE §8). Where llms.txt is a hand-written brand summary, this dumps the
@@ -103,6 +104,10 @@ export async function GET() {
     '## About Frequency',
     '',
     'Frequency is a Community Collective. We exist to support every community effort and help everyone in it succeed, together. Everything a community needs sits in one place: start a Circle, host Events near you, and grow a Space (your own community, business, or nonprofit). The Quest is the light game everyone plays alongside that.',
+    '',
+    `### ${WHO_FREQUENCY_IS_FOR_HEADING}`,
+    '',
+    ...WHO_FREQUENCY_IS_FOR.map((line) => `- ${line}`),
     '',
     '### The honest-money model',
     '',
