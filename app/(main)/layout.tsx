@@ -169,8 +169,9 @@ export default async function MainLayout({
    */
   wizard: React.ReactNode
 }) {
-  // SCAN-643: publicChrome is defined and returned BEFORE getCachedUser so leftover
-  // public views (Space profiles, /events index) skip the auth cookie read.
+  // SCAN-643: publicChrome is defined here, but it is returned only AFTER headers() and
+  // getCachedUser below, so leftover public views (Space profile tabs, the /events index)
+  // still pay the auth cookie read. Accepted by ADR-1707 (SCAN-788) at the current size.
   // Sitemap share URLs for events + listings moved to app/(public)/ (no cookies/headers).
   const publicChrome = async () => {
     // SiteHeader fetches its own header menu. The footer stays the marketing one: this row is
