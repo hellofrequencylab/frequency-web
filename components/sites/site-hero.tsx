@@ -55,7 +55,7 @@ export async function SiteHero({ space, brandName }: { space: Space; brandName: 
                 {hero.eyebrow && (
                   <p
                     className={cn(
-                      'font-eyebrow mb-1 text-2xs font-semibold uppercase tracking-wide',
+                      'eyebrow mb-1',
                       onInk ? 'text-on-ink-muted' : 'text-primary-strong',
                     )}
                   >
