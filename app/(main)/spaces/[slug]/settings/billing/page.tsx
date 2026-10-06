@@ -63,7 +63,7 @@ export default async function SpaceBillingPage({
     <FocusTemplate
       eyebrow={brandName}
       title="Plan and usage"
-      description="See your current plan and how much of each tool you are using. Every tool is available on every plan. You pay to use more as you grow, never to unlock."
+      description="See your current plan and how much of each tool you are using. Hosting tools are on every plan. Business is where selling starts, and a full meter only pauses new things, never what you built."
       width="wide"
     >
       <BillingBody slug={slug} />

@@ -48,12 +48,12 @@ export const PERSONA_META: Record<
   practitioner: {
     label: 'Practitioner', emoji: '🧘',
     tagline: 'Healers, breathwork facilitators, yogis running their own network',
-    // LIVE-709 (ADR-1675): this line promised "paywalled Programs", which nothing can sell. It now
-    // names only money paths that are live (lib/billing/payout-prompt.ts PAYOUT_CHANNELS) and the
-    // rule each one runs on: tickets and Market products sell from any account (ADR-914), bookings
-    // and memberships need a Space, and only a paid Space may price a Journey (ADR-1397). Every tool
-    // below opens a real page; lib/personas-practitioner-promise.test.ts holds both halves.
-    unlocks: 'Get paid for what you already do. Sell tickets to your events and list products in the Market from any account. Open a Space to take paid bookings and sell memberships, and once it’s on a paid plan, sell your Journeys.',
+    // LIVE-709 (ADR-1675) named only live money paths. LIVE-761 (ADR-1709) moves them: personal
+    // selling is off on every personal tier and selling starts at Business, so the promise is now
+    // "host free, take tips, and sell from a Business Space". Every path it names is a live
+    // PayoutChannel (lib/billing/payout-prompt.ts); lib/personas-practitioner-promise.test.ts holds both
+    // halves.
+    unlocks: 'Get paid for what you already do. Open a Space and host for free, with tips open from day one. When you start charging, Business sells your tickets, bookings, memberships, Journeys and Market products.',
     tools: [
       { label: 'Host an event', href: '/events/new' },
       { label: 'List a product', href: '/market/sell' },

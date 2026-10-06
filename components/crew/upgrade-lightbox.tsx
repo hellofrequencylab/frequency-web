@@ -47,11 +47,12 @@ export const UPGRADE_COPY: Record<string, { title: string; blurb: string }> = {
 // Store", and every clause of that is now something every signed-in member does: the `vault_cash_in`
 // and `gamification_full` gates are deleted. This dialog is raised from every gate in the app, so a
 // default that names what everyone already gets is the most-seen false sentence in the product. What
-// Crew actually adds is the rate, the AI cap, and the badge.
+// Crew actually adds is the host kit, the AI cap, and the badge. The rate was here until ADR-1709 turned
+// personal selling off, so Crew no longer has a fee to lower.
 const DEFAULT_COPY = {
   title: 'Join the Crew',
   blurb:
-    'Crew is the personal tier: a lower fee on the business the network sends you, Vera without the daily cap, and the Crew badge.',
+    'Crew is the personal tier: contribute what you want, host more Circles, Events and Journeys, use Vera without the daily cap, and wear the Crew badge.',
 }
 
 export function UpgradeLightbox({

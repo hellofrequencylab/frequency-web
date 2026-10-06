@@ -10,6 +10,7 @@ import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { resolvedNetworkRate } from '@/lib/billing/fees'
 import { networkTakeRateBpsForPlan } from '@/lib/billing/pricing-keys'
 import { isNetworkConnected } from '@/lib/pricing/network-world'
+import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
 import { PAYOUT_CHANNEL_WORDS, type PayoutChannel } from '@/lib/billing/payout-prompt'
 import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import type { Space } from '@/lib/spaces/types'
@@ -186,15 +187,30 @@ async function RateBand({ space }: { space: Space }) {
   const bps = networkTakeRateBpsForPlan(space.plan, rate)
   const connected = isNetworkConnected(space.networkConnected)
   const pct = (bps / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })
+  // A Space below Business takes tips only (ADR-1709): selling starts at Business, so it has no fee to
+  // show. Asked through the payments gate (LIVE-753), the same check every money path makes.
+  const sells = await spaceCanTakePayments(space.id, { plan: space.plan ?? null })
+
+  if (!sells) {
+    return (
+      <div className="rounded-card border border-border bg-surface p-5">
+        <p className="text-body font-bold leading-tight text-text">Tips are open, with no fee.</p>
+        <p className="mt-2 text-body-sm leading-relaxed text-muted">
+          A free Space takes tips from day one. Selling tickets, memberships, donations, your shop and
+          booking deposits starts at Business, and your own people stay 0% on every plan.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-card border border-border bg-surface p-5">
       <p className="text-body font-bold leading-tight text-text">
-        {connected ? `0% on your own people. ${pct}% on a sale the network sends you.` : '0% on everything.'}
+        {connected ? `0% on your own people. ${pct}% once, on a customer the network introduces.` : '0% on everything.'}
       </p>
       <p className="mt-2 text-body-sm leading-relaxed text-muted">
         {connected
-          ? `Someone who already follows you, or who you brought here yourself, costs you nothing, on every plan, always. The ${pct}% applies only when Frequency found the buyer.`
+          ? `Someone who already follows you, or who you brought here yourself, costs you nothing, on every plan, always. The ${pct}% applies only when Frequency found the buyer, and only on their first purchase.`
           : 'This space takes no sales from the network, so the network takes no rate.'}
       </p>
     </div>
