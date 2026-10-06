@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-804",
+  "title": "Space booking pages and receipts carry \"Made with Frequency\"",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1720.md",
+    "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
+  },
+  "detail": "WORKSTREAM 6 of the launch brief (ADR-1720). TODAY: the only \"Made with\" or \"Powered by\" mark is on the QR splash (lib/qr/splash-render.ts:86). The Space booking page (app/(main)/spaces/[slug]/(profile)/book/page.tsx), booking emails (lib/spaces/booking-notify.ts) and order receipts (lib/commerce/order-receipt.ts) carry none. THE FIX: one small shared mark linking to the home page with a UTM, on the booking page and in booking and order receipts. Name per docs/NAMING.md.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-804\";const f=[\"app/(main)/spaces/[slug]/(profile)/book/page.tsx\",\"lib/spaces/booking-notify.ts\",\"lib/commerce/order-receipt.ts\"];const has=x=>{const s=r(x);if(/Made with Frequency/.test(s))return true;const imps=[...s.matchAll(/from \\\"@\\/([^\\\"]+)\\\"/g)].map(m=>m[1]);return imps.some(i=>[i+\".tsx\",i+\".ts\"].some(c=>/Made with Frequency/.test(r(c))))};const miss=f.filter(x=>!has(x));if(miss.length)fail(ID+\": no \\\"Made with Frequency\\\" on \"+miss.join(\", \"))'",
+    "note": "Fails while the booking page, booking email or order receipt (or a module each imports directly) lacks the mark."
+  },
+  "wave": "W7"
+}

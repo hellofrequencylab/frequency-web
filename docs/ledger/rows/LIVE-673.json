@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-673",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const mig=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/alter table public\\.partner_offers\\s+add column if not exists quest_id uuid references public\\.quests/.test(mig))die(\"a partner offer cannot point at a Quest\");const a=r(\"app/(main)/partners/listing/actions.ts\");if(!/from\\(.quests.\\)[\\s\\S]{0,120}status., .active./.test(a))die(\"saveOffer does not check the sponsored Quest is live\");const os=r(\"app/(main)/partners/listing/offers-section.tsx\");if(!/Sponsor a Quest/.test(os))die(\"a partner has no way to attach a reward to a Quest\");const jp=r(\"app/(main)/journeys/[slug]/page.tsx\");if(!/<QuestSponsorRewards /.test(jp))die(\"the member never sees a sponsor reward on the Quest\");const c=r(\"lib/engagement/capture.ts\");if(!/pickPlaqueOffer\\(live, earned, claimed\\)/.test(c))die(\"a plaque tap does not log the earned Quest reward\");const o=r(\"lib/partners/offers.ts\");if(/cash/i.test(o)&&!/never cash/i.test(r(\"components/quest/quest-sponsor-rewards.tsx\")))die(\"the no-cash rule is not stated where members read it\");const t=r(\"lib/partners/offers.test.ts\");if(!/never claims a Quest reward twice/.test(t))die(\"nothing measures the one-off redemption\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nA partner offer can sponsor a Quest (partner_offers.quest_id, migration 20270346002500). The listing form has a Sponsor a Quest picker, the Quest's official Journeys show the reward, and a member who finished the Quest claims it once by tapping the partner's plaque, logged in partner_redemptions against the offer. Goods or a discount, never cash. Capture Phases 2-4 stay a later arm, not built here."
+  }
+}

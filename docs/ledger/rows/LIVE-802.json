@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-802",
+  "title": "A guest who RSVPs without an account gets a follow-up that invites them to become a Member",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1720.md",
+    "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
+  },
+  "detail": "WORKSTREAM 6 of the launch brief (ADR-1720), the invite loop. TODAY: guest RSVP works (app/(main)/events/guest-rsvp-actions.ts, capture_guest_rsvp), sends a receipt (lib/events/guest-rsvp-email.ts) and reminders (app/api/cron/event-reminders/route.ts), and writes a lead with source event_rsvp. But RECOVERY_EXCLUDED_SOURCES = [event_rsvp] (lib/crm/lead-sources.ts:33) keeps those leads out of the only follow-up mailer, so nothing turns a guest into a Member. THE FIX: a guest follow-up sequence after the gathering (or a set number of days after RSVP) with one button to claim their seat history and join; it stops the moment the guest signs up (convert_signup_leads_for_me). Respects unsubscribe and the send gate. Member-facing: needs a help line and changelog entry.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-802\";const crons=walk(\"app/api/cron\").filter(f=>/route\\.ts$/.test(f)&&/guest/i.test(r(f))&&/(follow.?up|become a member|join)/i.test(r(f))&&!/event-reminders/.test(f));if(!crons.length)fail(ID+\": no cron sends guests a follow-up to become a Member\");const v=r(\"vercel.json\");if(!crons.some(f=>v.includes(\"/\"+p.dirname(f).replace(/^app\\//,\"\"))))fail(ID+\": the guest follow-up route is not scheduled in vercel.json\")'",
+    "note": "Fails while no scheduled cron, other than the reminder, follows up a guest RSVP with an invitation to join."
+  },
+  "wave": "W0b"
+}
