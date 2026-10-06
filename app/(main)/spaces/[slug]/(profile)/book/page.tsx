@@ -40,7 +40,7 @@ export default async function SpaceActionPage({ params }: { params: Promise<{ sl
         <EntityCta />
       </Suspense>
       {/* The quiet mark that lets a customer find Frequency (LIVE-804). */}
-      <p className="mt-8 text-center text-2xs text-subtle">
+      <p className="mt-8 text-center text-2xs text-muted">
         <a href={madeWithUrl('booking-page')} className="hover:text-text hover:underline">
           Made with Frequency
         </a>
