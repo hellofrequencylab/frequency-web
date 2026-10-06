@@ -12,8 +12,6 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
-- **A 5-minute breathing timer anyone can use without an account.** It lives at /mindless, saves nothing, and ends by asking "Same time tomorrow?", which leads to a free account.
-
 - **You can drag the steps of a Journey into any order.** Lessons, practices, and modules mix freely, so a practice can sit between two lessons. The builder shows the order members follow.
 - **Space email has a written policy.** It says who a Space can email, what it can send, the 500-a-day limit, and what happens after a bounce or a spam complaint. The Turn on email card links it, and so do the Terms.
 
