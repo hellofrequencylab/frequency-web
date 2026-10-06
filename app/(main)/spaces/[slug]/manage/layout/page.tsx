@@ -15,8 +15,6 @@ import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
 import { SpaceCanvasEditorSection } from '@/components/entity-blocks/space-canvas/space-canvas-editor-section'
-import { SiteDomainPanel } from '@/components/sites/site-domain-panel'
-import { siteDomainStatus } from '@/lib/sites/vercel-domains'
 
 // SPACE PAGE SETTINGS (multi-page model). The "Page" quick-edit surface in the unified console: a
 // compact panel that manages the operator-defined PAGES (create / rename / reorder / delete + pick the
@@ -66,11 +64,6 @@ export default async function SpacePageSettingsPage({
   const activePageSlug = hasPage(space.preferences, requested) ? requested : HOME_SLUG
   const websitePublished = readWebsitePublished(space.preferences)
   const readOnly = staffViewing && !canManage
-  // The website's own domain (PROG-E10, LIVE-743): its live status from hosting, read here so the Domain
-  // section opens on the truth. Only for an editor with a bound domain; the read never throws.
-  const domainStatus =
-    !readOnly && space.domain ? { domain: space.domain, ...(await siteDomainStatus(space.domain)) } : null
-
   return (
     <FocusTemplate
       eyebrow="Manage space"
@@ -100,11 +93,6 @@ export default async function SpacePageSettingsPage({
         canManagePages={spaceCanUseFullWebsite(space)}
         readOnly={readOnly}
       />
-      {!readOnly && (
-        <div className="mt-8">
-          <SiteDomainPanel slug={slug} initial={domainStatus} websitePublished={websitePublished} />
-        </div>
-      )}
     </FocusTemplate>
   )
 }
