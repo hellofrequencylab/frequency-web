@@ -9,6 +9,11 @@
  *  ladder + `withinAllowance` treat `null` as "never blocked". */
 export type Allowance = number | null // a numeric cap, or null = unlimited
 
+/** Plans that share a rank with a ladder rung (Non Profit and Independent with Business, Non Profit
+ *  Collective with Collective). A row MAY give one of them its own number, which wins for that plan;
+ *  otherwise it reads its rung. They are never rungs of the displayed ladder themselves. */
+export const SIBLING_PLAN_TIERS: readonly string[] = ['nonprofit', 'independent', 'nonprofit_collective']
+
 
 // ── THE ONE GO-LIVE MAP OF QUANTITIES (ADR-837) ─────────────────────────────────────────────────────
 
@@ -24,6 +29,8 @@ export type Allowance = number | null // a numeric cap, or null = unlimited
  *  Non Profit and Independent rank with Business and Non Profit Collective ranks with Collective
  *  (PLAN_CAPABILITY_RANK), so they read those rungs with no column of their own. Tier-axis rows carry
  *  `free` (a Member) and `crew` (the Crew host kit).
+ *
+ *  A row may also name a SIBLING_PLAN_TIERS plan when the owner gave it its own number (space_qr).
  *
  *  Rows the ladder report does not name keep their earlier free and Business numbers, and Collective
  *  never gets LESS than Business: space_tickets, space_crm_playbooks, space_member_benefits.
@@ -42,7 +49,10 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_journey: { free: 25, business: null, collective: null },
   space_journey_publish: { free: 1, business: 10, collective: null },
   space_tickets: { free: 50, business: null, collective: null },
-  space_qr: { free: 5, business: null, collective: null },
+  // QR codes (owner ruling 2026-10-06, after the ladder report): a free Space gets its stock QR code,
+  // downloadable and not editable, and no managed (dynamic) codes. Business 3. Collective and Non
+  // Profit 5 per entity: per Space, so each member Space of a Collective carries its own 5.
+  space_qr: { free: 0, business: 3, collective: 5, nonprofit: 5, nonprofit_collective: 5 },
   space_automation: { free: 100, business: 2_000, collective: 10_000 },
   space_team: { free: 1, business: 2, collective: 5 },
   space_multi_pipeline: { free: 1, business: 5, collective: null },
