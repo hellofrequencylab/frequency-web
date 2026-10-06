@@ -22,6 +22,7 @@ import { heroOverlayForScrim } from '@/lib/layout/cover-scrim'
 import { readTagline } from '@/lib/spaces/tagline'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
+import { BoostButton } from '@/components/crew/boost-button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
@@ -297,18 +298,33 @@ export default async function SpaceProfileChromeLayout({
   // A COMPACT Follow chip (owner ask): smaller than a standard sm button so it reads as the quiet social
   // action sitting above the name, not competing with the primary CTA. tailwind-merge lets the tighter
   // padding/size win over the base secondary tokens.
+  // The Crew Boost (LIVE-756) rides beside Follow for a visitor who does not run this Space. The
+  // server checks Crew, the one-a-month rule and the not-your-own rule.
   const followButton = (onInk = false) =>
     viewerProfileId ? (
-      <FollowSpaceButton
-        spaceId={space.id}
-        spaceName={brandName}
-        initialFollowing={viewerFollows}
-        className={
-          onInk
-            ? cn(onInkSecondaryClasses, 'gap-1 px-2.5 py-1 text-2xs')
-            : buttonClasses('secondary', 'sm', 'gap-1 px-2.5 py-1 text-2xs')
-        }
-      />
+      <span className="inline-flex flex-wrap items-start gap-2">
+        <FollowSpaceButton
+          spaceId={space.id}
+          spaceName={brandName}
+          initialFollowing={viewerFollows}
+          className={
+            onInk
+              ? cn(onInkSecondaryClasses, 'gap-1 px-2.5 py-1 text-2xs')
+              : buttonClasses('secondary', 'sm', 'gap-1 px-2.5 py-1 text-2xs')
+          }
+        />
+        {!canSeeAsOwner && (
+          <BoostButton
+            kind="space"
+            targetId={space.id}
+            className={
+              onInk
+                ? cn(onInkSecondaryClasses, 'gap-1 px-2.5 py-1 text-2xs')
+                : buttonClasses('secondary', 'sm', 'gap-1 px-2.5 py-1 text-2xs')
+            }
+          />
+        )}
+      </span>
     ) : null
 
   // The dominant primary CTA + the Connect (QR) affordance, factored out so both the desktop action row and

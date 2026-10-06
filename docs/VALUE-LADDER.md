@@ -153,7 +153,9 @@ Crew has no price. The operator sets a **floor** ($4.99/mo), a **suggested** amo
 row of presets ($4.99, $10, $25: ADR-1709, LIVE-755); the member picks any monthly amount from the floor up, and **every amount buys
 identical access**. Annual is ten months of whatever they picked. Any active Crew
 carries the **Supporter badge**, which fades 45 days after support stops (`supporterMarkShows`,
-LIVE-755). Recognition only, never access.
+LIVE-755). Recognition only, never access. Crew also gives **one Boost a calendar month** to a Circle or a Space
+(`crew_boosts`, `lib/crew/boost.ts`, LIVE-756): the target leads the default discovery order for 7
+days, outside the standing score.
 
 | Concern | Where it lives |
 |---|---|

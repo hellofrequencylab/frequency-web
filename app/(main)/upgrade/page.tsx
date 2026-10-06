@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Zap, Check, MessageSquare, Users, Star, Radio, BarChart3, ArrowRight } from 'lucide-react'
+import { Zap, Check, MessageSquare, Users, Star, Radio, BarChart3, ArrowRight, Rocket } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { billingLive } from '@/lib/pricing/settings'
 import { memberTierSellable } from '@/lib/pricing/settings'
@@ -117,6 +117,8 @@ export default async function UpgradePage({
   const benefits = [
     { icon: BarChart3, label: hostLine },
     { icon: Radio, label: 'Branded QR codes, short links, and print-ready flyers for what you run' },
+    // LIVE-756: the monthly Boost, given from a Circle or a Space page.
+    { icon: Rocket, label: 'One Boost a month to lift a Circle or Space you love in discovery for a week' },
     { icon: MessageSquare, label: 'Vera without the daily cap' },
     { icon: Star, label: 'The Crew badge on your profile' },
     { icon: Users, label: 'List what you author in the public library' },

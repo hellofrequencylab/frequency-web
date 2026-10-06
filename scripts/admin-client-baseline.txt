@@ -720,6 +720,7 @@ lib/connections/welcomes.ts
 lib/consent/consent.ts
 lib/consent/retention.ts
 lib/core/load-capabilities.ts
+lib/crew/boost.ts
 lib/crew/circle-tasks.ts
 lib/crew/verification-queue.ts
 lib/crew/verify.ts
