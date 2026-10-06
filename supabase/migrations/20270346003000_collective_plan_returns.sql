@@ -1,4 +1,4 @@
--- LIVE-747 / ADR-1709: the five-tier ladder brings Collective back as its own Space plan above
+-- LIVE-747 (pricing ladder decision record, pricing PR #3206): the five-tier ladder brings Collective back as its own Space plan above
 -- Business, with Non Profit Collective beside it and an extra member Space as a per-Space item.
 --
 -- 1. space_billing_agreements.plan admits `collective` and `nonprofit_collective` again
