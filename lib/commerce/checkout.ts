@@ -41,6 +41,7 @@ import { checkoutGaMetadata } from '@/lib/analytics/ga-client-id'
 import { sendOrderReceipts } from './order-receipt'
 import type { CheckoutInput, CommerceVariant, OrderOwnerKind, ServiceConfig } from './types'
 import { SHIP_TO_COUNTRIES, cartNeedsShipping, shippingDetailsFromSession } from './shipping'
+import { emitDisputeLost } from '@/lib/trust/emitters'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -1208,13 +1209,16 @@ export async function recordCommerceDisputeClosed(dispute: Stripe.Dispute): Prom
   if (!paymentIntentId) return
   const { data, error } = await db()
     .from('commerce_orders')
-    .select('id, amount_cents, funds_flow')
+    .select('id, amount_cents, funds_flow, owner_profile_id')
     .eq('stripe_payment_intent_id', paymentIntentId)
     .in('status', ['paid', 'fulfilled', 'refunded'])
     .maybeSingle()
   if (error) throw new Error(`order for disputed ${paymentIntentId} unreadable: ${error.message}`)
-  const order = data as { id: string; amount_cents: number; funds_flow: string | null } | null
+  const order = data as { id: string; amount_cents: number; funds_flow: string | null; owner_profile_id: string | null } | null
   if (!order) return
+  // A lost chargeback is a trust penalty for the member who sold it (LIVE-679). Keyed on the dispute,
+  // so a redelivered webhook counts it once.
+  await emitDisputeLost(order, dispute.id)
 
   let refundedBefore = 0
   if (dispute.charge && typeof dispute.charge === 'object') {

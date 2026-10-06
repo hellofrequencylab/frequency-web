@@ -7,6 +7,7 @@ import { unblockFromSettings } from './actions'
 import { DeleteAccount } from './delete-account'
 import { DownloadData } from './download-data'
 import { EraseDrafts } from './erase-drafts'
+import { YourStanding } from './standing'
 
 // The Account and privacy SECTION of the unified Settings page (DAWN 2 screen pass).
 // This is the server half that used to be app/(main)/settings/account/page.tsx,
@@ -59,6 +60,13 @@ export async function AccountSection() {
           </ul>
         )}
       </div>
+
+      {myProfileId && (
+        <div>
+          <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">Your standing</p>
+          <YourStanding profileId={myProfileId} />
+        </div>
+      )}
 
       <div>
         <p className="text-meta font-medium text-muted uppercase tracking-wide mb-2">Your data</p>

@@ -10,6 +10,7 @@ import { refreshResonanceEdges } from '@/lib/resonance/edges'
 import { refreshResonanceEmbeddings } from '@/lib/resonance/embeddings'
 import { refreshResonanceDensityCells } from '@/lib/resonance/density'
 import { refreshSpaceStanding } from '@/lib/spaces/standing-rollup'
+import { recomputeAllTrustScores } from '@/lib/trust/store'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
@@ -80,6 +81,17 @@ async function handler(req: NextRequest) {
     log.info('cron.refresh_space_standing', spaceStandingStep)
   }
 
+  // Trust recompute step (LIVE-679, ADR-247): replay the trust ledger with tonight's weight catalog,
+  // so a weight tuned in lib/trust/weights.ts reaches every member, not just the next one to earn a
+  // signal. Same contract as the standing step: never throws, an error is logged at ERROR level.
+  const trust = await recomputeAllTrustScores()
+  const trustStep = { ok: !trust.error, ...trust }
+  if (trust.error) {
+    log.error('cron.recompute_trust.failed', trustStep)
+  } else {
+    log.info('cron.recompute_trust', trustStep)
+  }
+
   const summary = budget.summary(resonance.anchors)
   log.info('cron.refresh_traits.budget', { ...summary })
   return NextResponse.json({
@@ -89,6 +101,7 @@ async function handler(req: NextRequest) {
     resonanceEmbeddings,
     resonanceDensity: resonanceDensityStep,
     spaceStanding: spaceStandingStep,
+    trust: trustStep,
     budget: summary,
   })
 }

@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-679",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const sites={\"marketplace (a closed sale)\":[\"lib/commerce/fulfilment.ts\",/emitDealCompleted\\(/],\"marketplace (a lost dispute)\":[\"lib/commerce/checkout.ts\",/emitDisputeLost\\(/],\"moderation (an upheld report)\":[\"app/(main)/feed/report-actions.ts\",/emitReportUpheld\\(/],\"verification (a Non Profit)\":[\"lib/spaces/nonprofit-verification.ts\",/emitOrgVerified\\(/]};for(const [k,[f,re]] of Object.entries(sites)){if(!re.test(read(f)))fail(\"no trust signal is emitted from \"+k)}const e=read(\"lib/trust/emitters.ts\");if(!/trustSource\\(/.test(e))fail(\"the emitters do not go through the trust source adapter\");if(!/export function explainTrust/.test(read(\"lib/trust/explain.ts\")))fail(\"there is no explainable read of a member trust score\");const s=read(\"app/(main)/settings/account/standing.tsx\");if(!/explainTrust\\(/.test(s)||!/readOwnTrustSignals\\(/.test(s))fail(\"a member cannot see their own standing explained\");if(!/recomputeAllTrustScores\\(/.test(read(\"app/api/cron/refresh-traits/route.ts\")))fail(\"no job recomputes trust scores\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nTrust emitters (lib/trust/emitters.ts): a closed sale credits each seller, a lost dispute and an upheld report or suspension are penalties, a verified Non Profit credits its submitter; each keyed once per record and best-effort. The explainable read is app code, not an RPC: readOwnTrustSignals is called only with the signed-in member's own id, and explainTrust gives one line per signal kind under Settings, Account and privacy. The nightly refresh-traits cron replays the ledger with the current weights (recomputeAllTrustScores). No migration."
+  }
+}

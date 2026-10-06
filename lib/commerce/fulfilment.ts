@@ -47,6 +47,8 @@ import {
   type ReceiptContent,
 } from '@/lib/billing/receipt-email'
 import type { FulfillmentStatus, OwnerKind } from './types'
+// Relative, not '@/': the LIVE-705 probe loads this module with every '@/' import stubbed.
+import { emitDealCompleted } from '../trust/emitters'
 import {
   FULFILLMENT_LADDER,
   fulfillmentTransition,
@@ -208,6 +210,8 @@ export async function setOrderFulfillment(
   if (!updated || (updated as unknown[]).length === 0) {
     return { ok: false, error: 'Someone else updated this order first. Reload to see where it stands.' }
   }
+  // A closed sale is a trust credit for the member who sold it (LIVE-679). Best-effort, once.
+  if (closesOrder) await emitDealCompleted(orderId, [order.owner_profile_id])
 
   if (input.status === 'shipped') {
     const notify = deps.notifyShipped ?? notifyOrderShipped
@@ -459,6 +463,13 @@ async function rollUpSplitOrder(
     return kept
   }
   if (!moved || (moved as unknown[]).length === 0) return kept
+  // Every member who sold a share of a split cart gets the closed-sale credit (LIVE-679).
+  if (closesOrder) {
+    await emitDealCompleted(order.id, [
+      order.owner_profile_id,
+      ...((data ?? []) as { owner_profile_id: string | null }[]).map((r) => r.owner_profile_id),
+    ])
+  }
   return { fulfillmentStatus: target, status: closesOrder ? 'fulfilled' : order.status }
 }
 
