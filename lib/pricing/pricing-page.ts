@@ -75,6 +75,8 @@ interface PriceStrings {
    *  constant away from re-opening, but NO copy surface may quote it while `isBetaPricingActive()` is
    *  false: a sentence that offers a founding rate the checkout refuses. */
   businessBeta: string
+  /** Collective flat (ADR-1709), e.g. "$149". */
+  collective: string
   /** Non Profit flat, e.g. "$39". */
   nonprofit: string
   /** The Vera AI add-on monthly, e.g. "$20". */
@@ -103,6 +105,7 @@ export function priceStringsFrom(cat: Record<CatalogItemKey, ResolvedCatalogItem
   return {
     businessList: formatLoadoutCents(cat.business_base.month.listCents),
     businessBeta: formatLoadoutCents(cat.business_base.month.foundingCents),
+    collective: formatLoadoutCents(cat.collective_base.month.foundingCents),
     nonprofit: formatLoadoutCents(cat.nonprofit_seat.month.foundingCents),
     veraAi: formatLoadoutCents(cat.addon_ai.month.foundingCents),
     veraAiYear: formatLoadoutCents(cat.addon_ai.year.foundingCents),
