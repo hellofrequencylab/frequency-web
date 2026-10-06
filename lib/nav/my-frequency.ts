@@ -27,7 +27,9 @@
 // read. So the policies ARE this function's access rule, and reaching for the service key
 // would be bypassing a gate that already fits, on a menu that renders for every member on
 // every page. The explicit `.eq(...)` filters stay as defense in depth: RLS decides what is
-// visible, the filters say what we asked for, and the two agreeing is the point.
+// visible, the filters say what we asked for, and the two agreeing is the point. The ONE
+// exception is `listUnclaimedSeededSpaceIds`, which lives in lib/spaces/claim.ts (already on the
+// admin baseline) because `claim_token` is revoked from members; it returns ids only.
 
 // THE DRAFTS COUNT IS THE ONE READ THAT IS NOT A NOTIFICATION (owner ruling 2026-08-12: "wire
 // the badge into the My Frequency menu, alongside the /drafts entrance"). It counts OPEN CREATE
@@ -50,6 +52,7 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
+import { listUnclaimedSeededSpaceIds } from '@/lib/spaces/claim'
 import { countMyCreateProposals } from '@/lib/ai/vera/create-entity'
 
 /** One thing the member owns or belongs to, ready to render as a rail row. */
@@ -81,7 +84,7 @@ function emptyFor(profileHref: string): MyFrequency {
 
 type NoticeRow = { reference_type: string | null; reference_id: string | null }
 type CircleRow = { circle_id: string }
-type CircleNameRow = { id: string; name: string | null; slug: string | null }
+type CircleNameRow = { id: string; name: string | null; slug: string | null; space_id?: string | null }
 
 /**
  * Unread notice counts for this member, keyed `${reference_type}:${reference_id}`.
@@ -119,17 +122,19 @@ async function myCircles(profileId: string): Promise<CircleNameRow[]> {
     .select('circle_id')
     .eq('profile_id', profileId)
     .eq('status', 'active')
-    .limit(MAX_ENTRIES)
+    // Read past the cap: seeded Circles are filtered out after this, so they must not eat the 8 slots.
+    .limit(CIRCLE_READ_LIMIT)
   if (error || !memberships?.length) return []
   const ids = (memberships as CircleRow[]).map((m) => m.circle_id).filter(Boolean)
   if (ids.length === 0) return []
-  const { data: circles } = await db.from('circles').select('id, name, slug').in('id', ids)
+  const { data: circles } = await db.from('circles').select('id, name, slug, space_id').in('id', ids)
   return (circles ?? []) as CircleNameRow[]
 }
 
 /** The menu shows what a member can scan, not everything they have. Past this, the row links
  *  to the full index instead — a disclosure that needs its own scrollbar is a page. */
 const MAX_ENTRIES = 8
+const CIRCLE_READ_LIMIT = 50
 
 /**
  * Resolve the My Frequency menu for one member. React-cached per request, so the rail and the
@@ -146,15 +151,29 @@ export const getMyFrequency = cache(
         countMyCreateProposals(),
       ])
 
-      const spaces: MyFrequencyEntry[] = spacesRaw.slice(0, MAX_ENTRIES).map((s) => ({
-        key: `space:${s.id}`,
-        label: s.name,
-        href: `/spaces/${s.slug}`,
-        notices: notices.get(`space:${s.id}`) ?? 0,
-      }))
+      // Seeded Spaces still waiting on their real owner stay owned by the seeder but stay OFF the
+      // seeder's menu, along with their Circles (owner ruling 2026-10-06). Janitor reaches them
+      // through the staff preview, so hiding the row hides nothing they need.
+      const spaceIdsSeen = [
+        ...new Set([
+          ...spacesRaw.map((s) => s.id),
+          ...circlesRaw.map((c) => c.space_id).filter((id): id is string => Boolean(id)),
+        ]),
+      ]
+      const seeded = await listUnclaimedSeededSpaceIds(spaceIdsSeen)
+
+      const spaces: MyFrequencyEntry[] = spacesRaw
+        .filter((s) => !seeded.has(s.id))
+        .slice(0, MAX_ENTRIES)
+        .map((s) => ({
+          key: `space:${s.id}`,
+          label: s.name,
+          href: `/spaces/${s.slug}`,
+          notices: notices.get(`space:${s.id}`) ?? 0,
+        }))
 
       const circles: MyFrequencyEntry[] = circlesRaw
-        .filter((c) => c.slug)
+        .filter((c) => c.slug && !(c.space_id && seeded.has(c.space_id)))
         .slice(0, MAX_ENTRIES)
         .map((c) => ({
           key: `circle:${c.id}`,

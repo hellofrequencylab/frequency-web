@@ -54,67 +54,79 @@ function rowMarginClass(row: RowDef): string {
 export function EntityGrid({
   rows,
   renderBlock,
+  wrapRow,
+  className = 'space-y-8',
 }: {
   /** The effective freeform rows (from resolveRows). */
   rows: RowDef[]
   /** Render a single block by its id (returns null / empty when the caller does not render it). The
    *  returned node MUST carry its own React key (the callers wrap each block in a keyed <Suspense>). */
   renderBlock: (blockId: string) => ReactNode
+  /** OPTIONAL per-row wrapper (the Space website's full-width section bands). It receives the row's id
+   *  and its rendered node and MUST key what it returns on that id. Omitted = every row renders bare. */
+  wrapRow?: (rowId: string, node: ReactNode) => ReactNode
+  /** The outer stack's spacing; the website's bands carry their own and pass ''. */
+  className?: string
 }) {
   return (
-    <div className="@container space-y-8">
+    <div className={`@container ${className}`.trim()}>
       {rows.map((row) => {
-        // The optional LIVE row header (Fix 5): shown only when the toggle is on, the title is non-blank,
-        // AND the row actually holds blocks (never a lone header over an empty row).
-        const showHeader = rowShowsHeader(row) && rowHasBlocks(row)
-        // The optional per-row MARGIN (ADR-569 C3). When set (or a header is shown) the row is wrapped in a
-        // <section> so the extra space renders; otherwise the bare fast path is kept byte-identical.
-        const mCls = rowMarginClass(row)
-        const wrap = showHeader || !!mCls
-
-        // A 1-column row emits its column's stacked blocks directly into the shared stack — no grid wrapper
-        // — so a single-column layout WITHOUT a header renders byte-identically to before (N stacked blocks
-        // in one `space-y-8` container). A header wraps that row in its own <section> so the heading sits
-        // above the stack.
-        if (row.columns === 1) {
-          const stack = row.cells[0] ?? []
-          if (!wrap) return stack.map((id) => renderBlock(id))
-          return (
-            <section key={row.id} className={`space-y-8 ${mCls}`.trim()}>
-              {showHeader && <RowHeader title={row.title!} />}
-              {stack.map((id) => renderBlock(id))}
-            </section>
-          )
-        }
-        const grid = (
-          <div className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
-            {row.cells.map((stack, i) => (
-              <div key={`${row.id}-${i}`} className="@container space-y-8">
-                {stack.map((id) => renderBlock(id))}
-              </div>
-            ))}
-          </div>
-        )
-        // No header / margin: the grid div is the row (byte-identical to before, keyed on the row id). With
-        // either, wrap the grid in a <section> that carries the heading and / or the margin.
-        if (!wrap) {
-          return (
-            <div key={row.id} className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
-              {row.cells.map((stack, i) => (
-                <div key={`${row.id}-${i}`} className="@container space-y-8">
-                  {stack.map((id) => renderBlock(id))}
-                </div>
-              ))}
-            </div>
-          )
-        }
-        return (
-          <section key={row.id} className={mCls || undefined}>
-            {showHeader && <RowHeader title={row.title!} />}
-            {grid}
-          </section>
-        )
+        const node = renderRow(row)
+        return wrapRow ? wrapRow(row.id, node) : node
       })}
     </div>
   )
+
+  function renderRow(row: RowDef): ReactNode {
+    // The optional LIVE row header (Fix 5): shown only when the toggle is on, the title is non-blank,
+    // AND the row actually holds blocks (never a lone header over an empty row).
+    const showHeader = rowShowsHeader(row) && rowHasBlocks(row)
+    // The optional per-row MARGIN (ADR-569 C3). When set (or a header is shown) the row is wrapped in a
+    // <section> so the extra space renders; otherwise the bare fast path is kept byte-identical.
+    const mCls = rowMarginClass(row)
+    const wrap = showHeader || !!mCls
+
+    // A 1-column row emits its column's stacked blocks directly into the shared stack — no grid wrapper
+    // — so a single-column layout WITHOUT a header renders byte-identically to before (N stacked blocks
+    // in one `space-y-8` container). A header wraps that row in its own <section> so the heading sits
+    // above the stack.
+    if (row.columns === 1) {
+      const stack = row.cells[0] ?? []
+      if (!wrap) return stack.map((id) => renderBlock(id))
+      return (
+        <section key={row.id} className={`space-y-8 ${mCls}`.trim()}>
+          {showHeader && <RowHeader title={row.title!} />}
+          {stack.map((id) => renderBlock(id))}
+        </section>
+      )
+    }
+    const grid = (
+      <div className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
+        {row.cells.map((stack, i) => (
+          <div key={`${row.id}-${i}`} className="@container space-y-8">
+            {stack.map((id) => renderBlock(id))}
+          </div>
+        ))}
+      </div>
+    )
+    // No header / margin: the grid div is the row (byte-identical to before, keyed on the row id). With
+    // either, wrap the grid in a <section> that carries the heading and / or the margin.
+    if (!wrap) {
+      return (
+        <div key={row.id} className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
+          {row.cells.map((stack, i) => (
+            <div key={`${row.id}-${i}`} className="@container space-y-8">
+              {stack.map((id) => renderBlock(id))}
+            </div>
+          ))}
+        </div>
+      )
+    }
+    return (
+      <section key={row.id} className={mCls || undefined}>
+        {showHeader && <RowHeader title={row.title!} />}
+        {grid}
+      </section>
+    )
+  }
 }

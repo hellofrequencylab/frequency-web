@@ -102,12 +102,15 @@ const PRACTITIONER: Persona = {
       'Grow a following that comes back',
       'Open a Space and host for free',
     ],
-    learnMoreHref: '/the-quest',
-    learnMoreLabel: 'See the path',
+    learnMoreHref: '/for/coaches-and-healers',
+    learnMoreLabel: 'See how a Space works',
   },
 }
 
-// ── Partner business — a local spot (loyalty rewards + gamified foot traffic) ─
+// ── Partner business — a local spot (hosting + discovery) ─────────────────────
+// The reel used to promise a rewards program for regulars and gamified foot traffic. Neither is built,
+// so the promise is cut until they ship (ADR-1715, LIVE-793). It names what is live instead:
+// hosting in your own space and being found on the map.
 const PARTNER: Persona = {
   id: 'partner',
   label: 'Partner business',
@@ -116,15 +119,15 @@ const PARTNER: Persona = {
   emoji: '🏪',
   marketingTag: 'persona_partner',
   reel: [
-    { kind: 'render', render: 'feed', title: 'Reward your regulars', line: 'A loyalty program that turns first-timers into regulars: perks, rewards, and real reasons to come back.' },
-    { kind: 'render', render: 'circles', title: 'Gamified foot traffic', line: 'Quests and challenges that send the community through your doors, not past them.' },
+    { kind: 'render', render: 'feed', title: 'Bring the community in', line: 'Host a gathering, a workshop or a regular meetup in your space, and the people nearby can find it.' },
+    { kind: 'render', render: 'circles', title: 'Open a free Space', line: 'Put your place, your Events and your offerings on one page. Hosting is free.' },
     { kind: 'render', render: 'events', title: 'Show up on the map', line: 'Get discovered by everyone nearby looking for somewhere real to go tonight.' },
   ],
   track: {
     headline: 'Make your place the place.',
     shows: [
-      'A loyalty rewards program for your regulars',
-      'Gamified quests that drive foot traffic',
+      'Host gatherings people nearby can find',
+      'A free Space for your place',
       'Discovery by everyone gathering nearby',
     ],
     learnMoreHref: '/the-lab',
@@ -132,10 +135,13 @@ const PARTNER: Persona = {
   },
 }
 
-// ── Community builder / volunteer — wants to help build + grow it ─────────────
+// ── Host or organizer — wants to help build + grow it ─────────────────────────
+// Labelled "Community builder" until 2026-10-06; that collided with the Builders family (the
+// people who run a Space, CONTENT-VOICE §2f), so the label says what the person does. The id,
+// tag and segments stay `builder` so nothing downstream breaks (ADR-1715).
 const BUILDER: Persona = {
   id: 'builder',
-  label: 'Community builder',
+  label: 'Host or organizer',
   pitch: 'I want to help build it',
   Icon: Handshake,
   emoji: '🤝',

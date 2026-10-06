@@ -7,6 +7,12 @@ import {
   helpCurriculumSteps,
   helpHref,
   tierCurriculumViews,
+  normalizeCurriculumEdit,
+  parseCurriculumOverrides,
+  applyCurriculumOverrides,
+  doneStepIds,
+  stepIdFrom,
+  isInternalHref,
   type RoleTaggedArticle,
 } from './training-curriculum'
 
@@ -71,7 +77,7 @@ describe('helpCurriculumSteps — deriving a path from role-tagged help articles
 
   it('treats articles with no status as published', () => {
     const steps = helpCurriculumSteps(articles, 'guide')
-    expect(steps).toEqual([{ label: 'Hubs', href: '/help/groups/hubs' }])
+    expect(steps).toEqual([{ id: 'groups-hubs', label: 'Hubs', href: '/help/groups/hubs' }])
   })
 
   it('returns an empty path for a role with no tagged articles', () => {
@@ -103,9 +109,94 @@ describe('tierCurriculumViews — the authoring surface model', () => {
     expect(views.map((v) => v.role)).toEqual([...TRAINING_TIERS])
     const host = views.find((v) => v.role === 'host')!
     expect(host.def?.role).toBe('host')
-    expect(host.taggedSteps).toEqual([{ label: 'Events', href: '/help/groups/events' }])
+    expect(host.taggedSteps).toEqual([{ id: 'groups-events', label: 'Events', href: '/help/groups/events' }])
     const mentor = views.find((v) => v.role === 'mentor')!
     expect(mentor.taggedSteps).toEqual([])
     expect(mentor.def).not.toBeNull()
+  })
+})
+
+describe('in-place curriculum edits (LIVE-690)', () => {
+  const host = TRAINING.host!
+
+  it('gives every registry step an id that is unique within its tier', () => {
+    for (const role of TRAINING_TIERS) {
+      const ids = TRAINING[role]!.steps.map((s) => s.id)
+      expect(new Set(ids).size, role).toBe(ids.length)
+      for (const id of ids) expect(id, role).toMatch(/^[a-z0-9][a-z0-9-]*$/)
+    }
+  })
+
+  it('keeps a valid step id through a relabel and mints one for a new step', () => {
+    const r = normalizeCurriculumEdit({
+      title: ' Host basics ',
+      blurb: 'Run your first circle.',
+      steps: [
+        { id: 'events', label: 'Plan your first event', href: '/help/groups/events' },
+        { label: 'Say hello', href: '/help/groups/hello' },
+        { id: 'events', label: 'Events again', href: '/help/groups/events' },
+      ],
+    })
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.edit.title).toBe('Host basics')
+    expect(r.edit.steps.map((s) => s.id)).toEqual(['events', 'say-hello', 'events-again'])
+  })
+
+  it('refuses an empty path, a missing label and an outside link', () => {
+    expect(normalizeCurriculumEdit({ title: 'x', blurb: '', steps: [] }).ok).toBe(false)
+    expect(normalizeCurriculumEdit({ title: '', blurb: '', steps: [{ label: 'a', href: '/a' }] }).ok).toBe(false)
+    expect(normalizeCurriculumEdit({ title: 'x', blurb: '', steps: [{ label: '', href: '/a' }] }).ok).toBe(false)
+    for (const href of ['https://evil.example', '//evil.example', 'javascript:alert(1)', '/a b', '']) {
+      expect(normalizeCurriculumEdit({ title: 'x', blurb: '', steps: [{ label: 'a', href }] }).ok, href).toBe(false)
+    }
+    const many = Array.from({ length: 13 }, (_, i) => ({ label: `s${i}`, href: '/a' }))
+    expect(normalizeCurriculumEdit({ title: 'x', blurb: '', steps: many }).ok).toBe(false)
+  })
+
+  it('accepts only site paths as links', () => {
+    expect(isInternalHref('/help/groups/events')).toBe(true)
+    expect(isInternalHref('//x')).toBe(false)
+    expect(isInternalHref('help')).toBe(false)
+  })
+
+  it('suffixes a minted id that is already taken', () => {
+    expect(stepIdFrom('Run events!', new Set(['run-events']))).toBe('run-events-2')
+    expect(stepIdFrom('***', new Set())).toBe('step')
+  })
+
+  it('reads stored edits fail-safe: bad JSON, unknown rungs and invalid tiers drop out', () => {
+    expect(parseCurriculumOverrides('not json')).toEqual({})
+    expect(parseCurriculumOverrides('')).toEqual({})
+    const o = parseCurriculumOverrides(
+      JSON.stringify({
+        host: { title: 'Edited', blurb: 'b', steps: [{ id: 'events', label: 'E', href: '/help/groups/events' }] },
+        guide: { title: '', blurb: '', steps: [] },
+        admin: { title: 'x', blurb: '', steps: [{ label: 'a', href: '/a' }] },
+      }),
+    )
+    expect(Object.keys(o)).toEqual(['host'])
+  })
+
+  it('lays an edit over the registry and keeps the reward from code', () => {
+    const defs = applyCurriculumOverrides(TRAINING, {
+      host: { title: 'Edited', blurb: 'b', steps: [{ id: 'events', label: 'E', href: '/help/groups/events' }] },
+    })
+    expect(defs.host).toMatchObject({ role: 'host', title: 'Edited', reward: host.reward })
+    expect(defs.host!.steps).toHaveLength(1)
+    expect(defs.crew).toBe(TRAINING.crew)
+    expect(applyCurriculumOverrides(TRAINING, {})).toEqual(TRAINING)
+  })
+
+  it('counts only finished steps that are still on the path', () => {
+    expect(doneStepIds(host.steps, ['events', 'gone', 'hubs'])).toEqual(['events', 'hubs'])
+    expect(doneStepIds(host.steps, null)).toEqual([])
+  })
+
+  it('lets the authoring view read the edited curriculum', () => {
+    const defs = applyCurriculumOverrides(TRAINING, {
+      host: { title: 'Edited', blurb: 'b', steps: [{ id: 'events', label: 'E', href: '/help/groups/events' }] },
+    })
+    expect(tierCurriculumViews([], defs).find((v) => v.role === 'host')!.def!.title).toBe('Edited')
   })
 })
