@@ -1,6 +1,10 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+// authz-delegated: a read-only .rpc (upcoming_event_series is a STABLE select with no write). The
+// caller passes the visibility and scope gate as arguments, as its admin-client reads did before.
+// Approved by the owner on 2026-10-06 (LIVE-731).
+
 // THE 3-SLOT READ (LIVE-731). One shared call for the small upcoming-events blocks (the Channel
 // strip, both branches of the rail events panel): `public.upcoming_event_series` returns the next
 // date of each series, so the LIMIT counts series and a daily series can no longer fill a block.
