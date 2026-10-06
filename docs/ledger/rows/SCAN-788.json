@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-788",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Accepted 2026-10-06 by owner ruling, multiple choice in the project thread (accept it, full fix, later): \"Accept it\". ADR-1707 records the accepted crawl cost and the revisit trigger (networked Spaces past 100, or crawler load measurable in Vercel invocations or Supabase auth reads). The misleading SCAN-643 comment in app/(main)/layout.tsx is corrected. Nothing to measure until the trigger fires.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\nACCEPTED 2026-10-06 by owner ruling (ADR-1707): the leftover Space tabs, the per-Space podcasts index and the /events index stay dynamic for crawlers at about 150 URLs; the ISR split is not built. Revisit when networked Spaces pass 100 or crawler load is measurable. The original probe, kept for whoever reopens this: node -e 'const fs=require(\"fs\");const lay=\"app/(main)/layout.tsx\",rw=\"lib/nav/member-space-rewrite.ts\",sm=\"app/sitemap.ts\";for(const f of [lay,rw,sm]){if(!fs.existsSync(f)){console.error(\"SCAN-788: \"+f+\" missing\");process.exit(79)}}const bad=[];const smap=fs.readFileSync(sm,\"utf8\");const adv=(re)=>re.test(smap);if(adv(/\\$\\{SITE_URL\\}\\/events`/)&&!fs.existsSync(\"app/(public)/events/page.tsx\"))bad.push(\"the /events index is in the sitemap but has no ISR public page\");if(adv(/\\/spaces\\/\\$\\{s\\.slug\\}\\/podcasts`/)&&!fs.existsSync(\"app/(public)/spaces/[slug]/podcasts/page.tsx\"))bad.push(\"the per-Space podcasts index is in the sitemap but has no ISR public page\");if(adv(/listNetworkedSpaceProfileTabs\\(/)&&!fs.existsSync(\"app/(public)/spaces/[slug]/book/page.tsx\"))bad.push(\"the profile tabs are in the sitemap but none has an ISR public page\");const r=fs.readFileSync(rw,\"utf8\");if(!/\\/spaces\\\\\\/\\(\\[\\^\\/\\]\\+\\)\\\\\\/\\(/.test(r)&&!/book/.test(r))bad.push(\"memberSpaceRewrite still rewrites only the Space home and the Show page, so a signed-in member of a private Space would 404 on a moved tab\");const l=fs.readFileSync(lay,\"utf8\");const a=l.indexOf(\"await getCachedUser()\"),b=l.indexOf(\"if (isPublicView) return publicChrome()\");if(a>-1&&b>-1&&a<b)bad.push(\"the (main) layout still reads the auth cookie before returning publicChrome for a leftover public view\");if(bad.length){console.error(\"SCAN-788: crawlers fetch sitemap-advertised Space tabs, the podcasts index and the events index as fully dynamic renders with an auth read: \"+bad.join(\"; \")+\".\");process.exit(1)}'"
+  }
+}
