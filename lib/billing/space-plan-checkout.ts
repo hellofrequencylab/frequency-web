@@ -43,14 +43,16 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
   return flags[PLAN_FLAG[key]] === true
 }
 
-// ADR-811: the paid loadout tiers map 1:1 onto their per-plan switches. Always GATED on billingLive(),
-// so this is FALSE while billing is OFF. Business/Collective/Independent buy the depth ladder; Nonprofit
-// is the flat per-mission plan. Collective + Independent bill via their own catalog bases (ADR-811).
+// ADR-811 / ADR-1709: the paid loadout tiers map onto their per-plan switches. Always GATED on
+// billingLive(). Collective and Non Profit Collective share ONE sell switch, `plan_collective_enabled`
+// (Founding Collective, OWN-096): neither sells until member Spaces and the network home work.
 type LoadoutPlan = Exclude<SpacePlan, 'free'>
 const LOADOUT_FLAG: Record<LoadoutPlan, PricingFlagKey> = {
   business: 'plan_business_enabled',
   nonprofit: 'plan_nonprofit_enabled',
   independent: 'plan_independent_enabled',
+  collective: 'plan_collective_enabled',
+  nonprofit_collective: 'plan_collective_enabled',
 }
 
 function asLoadoutPlan(plan: string): LoadoutPlan | null {
@@ -58,8 +60,8 @@ function asLoadoutPlan(plan: string): LoadoutPlan | null {
   return key === 'free' ? null : key
 }
 
-/** Is a loadout tier sellable right now? billingLive() AND its mapped per-plan switch.
- *  A stored `collective` label remaps to Business (LIVE-228). GATED, FAIL-SAFE FALSE. */
+/** Is a loadout tier sellable right now? billingLive() AND its mapped per-plan switch. GATED,
+ *  FAIL-SAFE FALSE. */
 export async function spaceLoadoutSellable(plan: string): Promise<boolean> {
   try {
     const key = asLoadoutPlan(plan)
@@ -134,10 +136,10 @@ export async function createSpaceBillingPortal(spaceId: string): Promise<string 
 /** The loadout the caller selects: the base tier, the active add-ons, and the seat counts. Monthly or
  *  yearly via `interval`. */
 interface SpaceLoadout {
-  /** The base tier the loadout is for. 'business' = the run-your-practice base; 'collective' = the
-   *  network-depth base (automations, team, collaborators); 'independent' = the standalone white-label
-   *  base (off-network); 'nonprofit' = the flat per-mission item. The AI add-on layers on any paid tier.
-   *  'free' is not a checkout. */
+  /** The base tier the loadout is for. 'business' = where selling starts; 'collective' = groups of
+   *  groups (five member Spaces and Vera AI included); 'nonprofit_collective' = Collective, verified;
+   *  'independent' = the standalone white-label base (off-network); 'nonprofit' = the flat per-mission
+   *  item. The AI add-on layers on Business and Non Profit. 'free' is not a checkout. */
   plan: string
   /** The active metered add-ons (only AI now, ADR-552). Ignored for nonprofit framing. */
   addons?: readonly (AddonKey | string)[]
@@ -187,7 +189,7 @@ async function resolveLoadoutPriceId(
 /** The catalog item keys + their seat-ness a loadout maps to. PURE (ADR-552). Business -> business_base
  *  plus one item per active metered add-on (only AI now); Nonprofit -> the single flat nonprofit item.
  *  The Business base is the full depth; the AI add-on layers on top. NOTHING here is per-seat: Nonprofit
- *  is a FLAT $29/mo (ADR-590), not a per-seat charge, so it bills quantity 1 like the Business base. The
+ *  is a FLAT plan (ADR-811), not a per-seat charge, so it bills quantity 1 like the Business base. The
  *  `nonprofit_seat` catalog key is a legacy name (the item is flat); see pricing-catalog.test.ts. */
 function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; perSeat: boolean }[] {
   // OPERATOR SEATS (ADR-799): a per-seat add-on available on ANY paid plan. Included only when the owner
@@ -198,9 +200,12 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
     ? [{ key: 'operator_seat', perSeat: true }]
     : []
   if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: false }, ...operatorSeat]
+  // Collective (ADR-1709) bills its own base; Vera AI is included, so no add-on line rides on it.
+  if (loadout.plan === 'collective') return [{ key: 'collective_base', perSeat: false }, ...operatorSeat]
+  if (loadout.plan === 'nonprofit_collective') return [{ key: 'nonprofit_collective', perSeat: false }, ...operatorSeat]
   // Independent is a flat standalone white-label base, OFF the network — no metered add-ons layer on it.
   if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }, ...operatorSeat]
-  // Business + Collective share the depth ladder: a flat base plus the optional AI add-on (and seats).
+  // Business: a flat base plus the optional AI add-on (and seats).
   const base: CatalogItemKey = 'business_base'
   const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: base, perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
@@ -312,7 +317,14 @@ export async function createSpaceLoadoutCheckout(
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
       // that add-on from the loadout rather than blocking the whole checkout.
-      if (key === 'business_base' || key === 'independent_base' || key === 'nonprofit_seat') return null
+      if (
+        key === 'business_base' ||
+        key === 'independent_base' ||
+        key === 'nonprofit_seat' ||
+        key === 'collective_base' ||
+        key === 'nonprofit_collective'
+      )
+        return null
       continue
     }
     lineItems.push({ price: priceId, quantity: perSeat ? seatQuantity : 1 })

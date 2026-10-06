@@ -21,7 +21,7 @@ import {
 } from '@/components/marketing/marketing-ui'
 import { Stat } from '@/components/ui/stat'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema, circleListSchema, eventListSchema, spaceListSchema } from '@/lib/jsonld'
+import { breadcrumbSchema, circleListSchema, cityEventListSchema, spaceListSchema } from '@/lib/jsonld'
 import { OG_SITE, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const revalidate = 3600
@@ -120,7 +120,7 @@ export default async function DiscoverCityPage({
             },
           },
           circles.length > 0 && circleListSchema(circles, `Circles in ${city}`),
-          events.length > 0 && eventListSchema(events, `Upcoming events in ${city}`),
+          events.length > 0 && cityEventListSchema(events, `Upcoming events in ${city}`),
           spaces.length > 0 && spaceListSchema(spaces, `Local Spaces in ${city}`),
         ].filter(Boolean)}
       />

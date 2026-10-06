@@ -36,6 +36,7 @@ import { awardZaps } from '@/lib/zaps'
 import { funnelLanding, isSafeInAppPath } from '@/lib/funnels/destination'
 import type { FunnelDestination } from '@/lib/funnels/definitions'
 import { personaTag, isPersonaId, DEFAULT_PERSONA } from '@/lib/onboarding/personas'
+import { archetypeTag, resolveArchetype } from '@/lib/audience/archetypes'
 import { enrollInNurture } from '@/lib/nurture/enroll'
 import { getSequenceByPersona } from '@/lib/nurture/store'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -104,6 +105,29 @@ async function readPersonaSlugs(): Promise<string[]> {
     return v.split(',').map((s) => s.trim()).filter((s) => isPersonaId(s))
   } catch {
     return []
+  }
+}
+
+/** The archetype the member's arrival follow-up answer maps to (fq_archetype cookie, ADR-1715). Resolved
+ *  against the PRIMARY persona so a stale answer from a persona they later unpicked is dropped. Internal
+ *  only: stored at meta.archetype and as an archetype_<id> tag, never shown to the member and never sent
+ *  to a pixel. Skipping is allowed, so null is the common case. */
+async function readArchetype(personaSlug: string | null): Promise<string | null> {
+  try {
+    return resolveArchetype(personaSlug, (await cookies()).get('fq_archetype')?.value ?? null)
+  } catch {
+    return null
+  }
+}
+
+/** Stamp the archetype's marketing tag (best-effort; never blocks). */
+async function tagArchetype(profileId: string, archetype: string | null): Promise<void> {
+  const key = archetypeTag(archetype)
+  if (!key) return
+  try {
+    await assignTag(profileId, key)
+  } catch {
+    /* tagging is best-effort */
   }
 }
 
@@ -320,6 +344,7 @@ async function writeInduction(data: InductionData): Promise<void> {
   const personaSlugs = await readPersonaSlugs()
   // Primary first, then any other personas they also picked (multi-select), de-duped.
   const allPersonas = Array.from(new Set([...(personaSlug ? [personaSlug] : []), ...personaSlugs]))
+  const archetype = await readArchetype(personaSlug)
   // How they first reached us (ADR-095) — resolved from the attribution cookies.
   const acquisition = await resolveAcquisition()
 
@@ -362,6 +387,8 @@ async function writeInduction(data: InductionData): Promise<void> {
     persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
     // Every persona they picked (the picker is multi-select); primary is `persona`.
     personas: (allPersonas.length ? allPersonas : ((meta.personas as Json) ?? null)) as Json,
+    // The arrival follow-up's archetype (ADR-1715), beside the persona. Internal; never blanks one.
+    archetype: archetype ?? ((meta.archetype as string | undefined) ?? null),
     beta: {
       ...beta,
       version: FUNNEL_INDUCTION_VERSION,
@@ -413,6 +440,7 @@ async function writeInduction(data: InductionData): Promise<void> {
     await clearFunnelCookie()
     // Tag every persona they selected (multi-select); each tag is registered + idempotent.
     for (const p of allPersonas) await tagPersona(prof.id as string, p)
+    await tagArchetype(prof.id as string, archetype)
     // Tag the event-host interests they ticked on the niche funnel (segmentation).
     await tagInterests(prof.id as string)
     // Cue future onboarding: enroll the member into their PRIMARY persona's nurture / onboarding sequence
@@ -582,6 +610,7 @@ async function mergeInduction(data: InductionData): Promise<void> {
   const personaSlug = await readPersonaSlug()
   const personaSlugs = await readPersonaSlugs()
   const allPersonas = Array.from(new Set([...(personaSlug ? [personaSlug] : []), ...personaSlugs]))
+  const archetype = await readArchetype(personaSlug)
 
   const clean = sanitizeProfileInput(data)
   const newDisplayName = clean.displayName?.trim()
@@ -600,6 +629,8 @@ async function mergeInduction(data: InductionData): Promise<void> {
     // New persona choice wins; never blanks an existing one (ADR-125).
     persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
     personas: (allPersonas.length ? allPersonas : ((meta.personas as Json) ?? null)) as Json,
+    // The arrival follow-up's archetype (ADR-1715), beside the persona. Internal; never blanks one.
+    archetype: archetype ?? ((meta.archetype as string | undefined) ?? null),
     beta: {
       ...beta,
       version: FUNNEL_INDUCTION_VERSION,
@@ -636,6 +667,7 @@ async function mergeInduction(data: InductionData): Promise<void> {
   }).catch(() => {})
 
   for (const p of allPersonas) await tagPersona(profile.id as string, p)
+  await tagArchetype(profile.id as string, archetype)
   // Tag the event-host interests they ticked on the niche funnel (segmentation).
   await tagInterests(profile.id as string)
   // A returning member who re-ran the intake also converted whatever lead row this browser opened
