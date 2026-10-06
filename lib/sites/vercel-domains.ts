@@ -8,6 +8,8 @@
 // still saves the domain and shows the standard records, saying hosting is not connected yet, so
 // nothing fails silently.
 
+import { detectDnsProvider } from './dns-provider'
+
 const API = 'https://api.vercel.com'
 
 /** Vercel's documented defaults, shown when the API gives no recommendation. */
@@ -34,6 +36,10 @@ export interface DomainStatus {
   records: DnsRecord[]
   /** A plain-English problem to show, when something went wrong talking to Vercel. */
   problem?: string
+  /** Who runs the domain's DNS, read from its nameservers, so the steps can name it. */
+  provider?: string | null
+  /** The domain's DNS is already Vercel's, so no records are needed. */
+  providerIsVercel?: boolean
 }
 
 interface VercelConfig {
@@ -138,6 +144,11 @@ export async function removeSiteDomain(domain: string): Promise<{ ok: true } | {
 /** Read where `domain` stands: attached, verified, DNS pointed, and the records to set. Never throws:
  *  an unreachable API returns the default records with a `problem`. */
 export async function siteDomainStatus(domain: string): Promise<DomainStatus> {
+  const [base, provider] = await Promise.all([readStatus(domain), detectDnsProvider(domain)])
+  return { ...base, provider: provider?.name ?? null, providerIsVercel: provider?.vercel === true }
+}
+
+async function readStatus(domain: string): Promise<DomainStatus> {
   const cfg = config()
   if (!cfg) {
     return {

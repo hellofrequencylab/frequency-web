@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-747",
+  "title": "A Space owner can connect their domain in one click by signing in to their DNS provider, instead of copying records",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/sites/domain-methods.ts",
+    "ref": "The one-click method slot in DOMAIN_METHODS (owner ask 2026-10-06: fool-proof domains with one-click installs); white label sites build ADR-1708"
+  },
+  "detail": "FILED 2026-10-06 by owner ask (\"I also want one click installs ... set up the framework for that but build the core right now\"). THE CONSEQUENCE: a client whose domain is at GoDaddy, Cloudflare, Squarespace and the like still has to copy records by hand (LIVE-743). THE FIX: the 'one-click' method in lib/sites/domain-methods.ts, through a Domain Connect broker (Entri is the practical route; registering as a Domain Connect service provider with each DNS provider directly takes months). Flow: the Domain section opens the broker's modal with the records siteDomainStatus already computes, the client signs in to their provider and approves, the broker's callback marks the method used, and the existing auto re-check confirms it. Falls back to the copy-records flow for unsupported providers. LIFT: M, about 6 files (the broker client and its server-signed token, a callback route, the panel button, the methods flag, tests), no migration. OWNER STEP: a broker account (paid) and its app id and secret in Vercel env. Probe flips when the method is available.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/sites/domain-methods.ts','utf8');const m=s.match(/key: 'one-click'[\\s\\S]*?available: (true|false)/);if(!m||m[1]!=='true'){console.error('LIVE-747: one-click domain connect is not available yet (DOMAIN_METHODS one-click.available is false)');process.exit(1)}\"",
+    "note": "Fails today: the one-click method is listed as coming. Passes when it is built and switched on."
+  },
+  "wave": "W7"
+}
