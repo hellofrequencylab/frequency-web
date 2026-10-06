@@ -58,6 +58,9 @@ export interface CreateSpaceInput {
    * Mode + Focus (`setupPresetForMode`), and apply none when that pair has no honest preset.
    */
   preset?: string | null
+  /** "How did you hear about us?" (LIVE-808). Optional; stored on the Space's preferences as
+   *  `heardAbout` and in the audit draft. First-party only, never sent to a pixel. */
+  heardAbout?: string | null
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped `from`
@@ -195,6 +198,13 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   const entityId = await rootEntityId()
   if (!entityId) return fail('Spaces are not ready yet. Try again in a moment.')
 
+  // The source answer (LIVE-808), clipped like the signup one (meta.beta.heard_about). Blank = skipped.
+  const heardAbout = (input.heardAbout ?? '').trim().slice(0, 120)
+  const seedPreferences: Record<string, unknown> = {
+    ...(seededKind ? withProfileData(null, { kind: seededKind }) : {}),
+    ...(heardAbout ? { heardAbout } : {}),
+  }
+
   // Seed the new Space's tools (entitlements on/off + feature_roles min-role) from the operator's
   // per-type defaults merged over the CODE defaults (per-space-roles Phase 2). FAIL-SAFE: the read is
   // fail-safe to [] and the pure seed returns empty blobs with no defaults, so a Space stands up with
@@ -228,6 +238,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
       visibility,
       modeVariant: modeVariant ?? '',
       preset: setupPreset?.id ?? '',
+      heardAbout,
     },
     rationale: 'Space builder: the member named the Space and tapped Create.',
     commit: async () => {
@@ -248,9 +259,9 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
             owner_profile_id: profileId,
             brand_name: brandName,
             mode_variant: modeVariant,
-            // The ADR-887 KIND seed (see above); omitted entirely when there is nothing to seed so an
-            // unseeded Space keeps a bare row exactly as today.
-            ...(seededKind ? { preferences: withProfileData(null, { kind: seededKind }) } : {}),
+            // The ADR-887 KIND seed and the LIVE-808 source answer (see above); omitted entirely when
+            // there is nothing to seed so an unseeded Space keeps a bare row exactly as today.
+            ...(Object.keys(seedPreferences).length ? { preferences: seedPreferences } : {}),
           })
           .select('id')
           .maybeSingle()
