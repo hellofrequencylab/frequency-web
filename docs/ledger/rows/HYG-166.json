@@ -1,0 +1,20 @@
+{
+  "id": "HYG-166",
+  "title": "Vercel skips preview builds for draft pull requests and for pushes a newer push has replaced, so production deploys stop queueing behind them",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-06",
+  "wave": "W7",
+  "source": {
+    "file": "scripts/vercel-ignore-build.mjs",
+    "ref": "owner 2026-10-06 ~17:00Z: 'Do whatever you can to speed it up and clear all these' (about 14 queued Vercel builds, production #3198 stuck behind previews)"
+  },
+  "detail": "FILED AND CLOSED 2026-10-06. On-demand concurrent builds are off for cost, so Vercel builds one deployment at a time (7 to 9 minutes) and a production deploy from main waits behind every queued preview. On 2026-10-06 about 14 were queued: most were draft PRs, and several were older pushes to a branch that already had a newer one (three for the domain setup branch, two for the pricing ladder). The Ignored Build Step (HYG-162) now also skips a PREVIEW when, as it reaches the front of the queue, the branch head on GitHub is a different commit or the branch is gone, or every open pull request on the branch is a draft. Production never takes these rules. Both checks read public GitHub (git ls-remote and the pulls API, GITHUB_TOKEN when set) and build on any failure. An ignored build reports the Vercel status as success ('Canceled by Ignored Build Step', checked on b1aae32), so the required Vercel check stays green. Trade-off: marking a draft ready does not start a build; the next push does (bringing main in counts), and main's production build is the backstop.\n\nEXPECTED LIFT: production deploys start within one build of merging instead of after the whole preview queue, and the preview build count falls by the draft and superseded share (most of the 2026-10-06 queue).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/vercel-ignore-build.mjs --probe && node -e 'const s=require(\"fs\").readFileSync(\"scripts/vercel-ignore-build.mjs\",\"utf8\");if(!/export function decideQueue/.test(s)||!/VERCEL_ENV === .preview./.test(s)){console.error(\"HYG-166: the preview queue rules are not wired into the ignore step\");process.exit(1)}'",
+    "note": "The probe fails while a superseded or draft-only preview still builds, while production can skip on a queue rule, or while an unreadable GitHub skips a preview. Fails on main, where decideQueue does not exist."
+  }
+}
