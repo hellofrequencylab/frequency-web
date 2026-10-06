@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { FocusTemplate } from '@/components/templates'
 import { getActiveTraining } from '@/lib/onboarding/training'
 import { CompleteButton } from './complete-button'
+import { StepToggle } from './step-toggle'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,18 +46,23 @@ export default async function TrainingPage() {
             </div>
           </div>
 
+          <p className="text-meta font-semibold tabular-nums text-muted">
+            {active.completedSteps.length} of {active.steps.length} steps done
+          </p>
+
           <ul className="space-y-2">
-            {active.steps.map((s) => (
-              <li key={s.href}>
-                <Link
-                  href={s.href}
-                  className="group flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 transition-colors hover:border-broadcast hover:bg-broadcast-bg/30"
-                >
-                  <span className="text-body-sm font-semibold text-text">{s.label}</span>
-                  <ArrowRight className="ml-auto h-4 w-4 text-subtle transition-colors group-hover:text-broadcast-strong" aria-hidden />
-                </Link>
-              </li>
-            ))}
+            {active.steps.map((s) => {
+              const done = active.completedSteps.includes(s.id)
+              return (
+                <li key={s.id} className="flex items-center gap-3 rounded-card border border-border bg-surface px-4 py-3">
+                  <StepToggle stepId={s.id} label={s.label} done={done} />
+                  <Link href={s.href} className="group flex min-w-0 flex-1 items-center gap-3">
+                    <span className={`text-body-sm font-semibold ${done ? 'text-muted line-through' : 'text-text'}`}>{s.label}</span>
+                    <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-subtle transition-colors group-hover:text-broadcast-strong" aria-hidden />
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
 
           <CompleteButton reward={active.reward} />

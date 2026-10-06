@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-746",
+  "title": "Seeded Spaces still waiting on their owner stay off the seeder's left menu, with their Circles, while staying linked to the seeder",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "XS",
+  "closed": "2026-10-06",
+  "source": {
+    "file": "lib/nav/my-frequency.ts",
+    "ref": "Owner report 2026-10-06: \"let's keep the spaces linked to me until I get them claimed ... I just don't want to see it on the left menu.\" (screenshot of the My Frequency Spaces and Circles lists)"
+  },
+  "detail": "FILED AND CLOSED 2026-10-06. PREMISE. The business seeder makes the operator the owner of every seeded Space and the host of its Circle until the real owner claims it. listOperatedSpaces counts ownership, and the Circles list counts active memberships, so the owner's My Frequency menu listed 10 unclaimed seeded Spaces and their 10 Circles beside his own (read from production 2026-10-06). WHAT CHANGED. lib/spaces/claim.ts gains listUnclaimedSeededSpaceIds(ids): the ids among them with a live claim token and no claimed_at (admin client, already on the baseline; returns ids only, never the token). getMyFrequency drops those Spaces and any Circle whose space_id is one of them, and reads up to 50 memberships before applying the 8-row cap so hidden Circles do not eat the slots. Ownership, seats and the claim flow are unchanged; a janitor still reaches the console through the staff preview. lib/nav/my-frequency.seeded.test.ts pins it and fails on main. No migration, no data change.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(\"LIVE-746: \"+m);process.exit(1)};const m=\"lib/nav/my-frequency.ts\",c=\"lib/spaces/claim.ts\";if(!fs.existsSync(m)||!fs.existsSync(c))fail(\"a source file is gone\");const s=fs.readFileSync(m,\"utf8\");if(!/listUnclaimedSeededSpaceIds\\(/.test(s))fail(\"the menu no longer asks which Spaces are unclaimed seeds, so seeded Spaces crowd the seeder menu\");if(!/seeded\\.has\\(c\\.space_id\\)/.test(s))fail(\"seeded Circles are no longer filtered out of the menu\");const k=fs.readFileSync(c,\"utf8\");if(!/export async function listUnclaimedSeededSpaceIds[\\s\\S]*?not\\(.claim_token., .is., null\\)[\\s\\S]*?is\\(.claimed_at., null\\)/.test(k))fail(\"the seeded test is no longer live token AND unclaimed\");console.log(\"ok: unclaimed seeded Spaces and their Circles stay off the My Frequency menu\")'",
+    "note": "Closed 2026-10-06. Reads lib/nav/my-frequency.ts for the seeded-id lookup and the Circle filter, and lib/spaces/claim.ts for the live-token-and-unclaimed test. Fails on main at the first arm."
+  }
+}
