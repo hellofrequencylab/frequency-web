@@ -48,7 +48,7 @@ import {
 export interface MeterRateLadder extends StoredTakeRateFields {
   /** NETWORK-sourced take rate in basis points, per Space RUNG (free 1000 → paid 300 → nonprofit 0,
    *  LIVE-230). A plan is placed on its rung by the one resolver; nothing here indexes by plan name. */
-  network_bps: { free: number; paid: number; nonprofit: number }
+  network_bps: { free: number; paid: number; collective: number; nonprofit: number }
   /** The free Member rung, in basis points. The reference rate the whole ladder descends from. */
   member_free_bps: number
   /** The Crew rung, in basis points. */

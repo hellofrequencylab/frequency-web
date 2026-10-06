@@ -32,12 +32,12 @@ export function platformFeeCents(grossCents: number): number {
 }
 
 // ── The NETWORK take-rate (ADR-811 §A, ruled ADR-913) ─────────────────────────────────────
-// A Space sale on Connect carries an application fee ONLY when the NETWORK sourced it. The ladder is two
-// numbers plus two zeros (LIVE-230), keyed by RUNG in pricing_settings.take_rate.network_bps (editable at
-// /admin/pricing): a free Space 10% → a paid Space 3% → a Non Profit 0%, and 0%, always, when the buyer
-// is the seller's own audience — that short-circuits before any IO below. A plan finds its rung through
-// `takeRateRungForPlan` (Business, Collective and Independent all stand on `paid`). An individual seller
-// pays `member_free_bps` (10%) on the free Member tier or `member_bps` (8%) on Crew.
+// A Space sale on Connect carries an application fee ONLY when the NETWORK sourced it. The ladder
+// is 5%, 3%, 0% (ADR-1709, LIVE-754), keyed by RUNG in pricing_settings.take_rate.network_bps (editable at
+// /admin/pricing): Business and Independent 5%, Collective 3%, Non Profit 0%, and 0%, always, when the
+// buyer is the seller's own audience; that short-circuits before any IO below. A plan finds its rung
+// through `takeRateRungForPlan`. The free Space and individual-seller rungs are default-deny values only:
+// the payments gate refuses those sellers (LIVE-753). A Founding Business keeps its locked 3%.
 //
 // The pure math lives in lib/billing/pricing-keys.ts (sourceAwareTakeRateCents); this IO wrapper reads the
 // operator rates and applies them. FAIL-SAFE in two layers: `networkTakeRateFromStored` rebuilds the vector
@@ -68,22 +68,47 @@ export async function resolvedNetworkRate(): Promise<import('./pricing-keys').Ne
   }
 }
 
+/** A Founding Business's lifetime `locked_take_bps`, or null. FAIL-SAFE to null: an unreadable row
+ *  prices at the plan's rung, the higher rate, never at 0. */
+async function foundingLockedTakeBps(spaceId: string): Promise<number | null> {
+  try {
+    const { getFoundingStatus } = await import('@/lib/founding/status')
+    const f = await getFoundingStatus({ spaceId })
+    return f && f.kind === 'business' && f.status === 'active' ? f.lockedTakeBps : null
+  } catch {
+    return null
+  }
+}
+
+/** The NETWORK bps a Space sale settles at (ADR-1709, LIVE-754): the plan's rung off the operator vector
+ *  (Business 5%, Collective 3%, Non Profit 0), bought down to a Founding Business's locked 3% when the
+ *  Space holds one (the owner default keeps the buy-down for Spaces already in it). Exported so a receipt
+ *  records the same number the fee was computed at. Server-only. */
+export async function spaceNetworkBps(
+  plan: string | null | undefined,
+  spaceId?: string | null,
+  rate?: import('./pricing-keys').NetworkTakeRate,
+): Promise<number> {
+  const { networkTakeRateBpsForPlan, foundingBuyDownBps } = await import('./pricing-keys')
+  const rung = networkTakeRateBpsForPlan(plan, rate ?? (await resolvedNetworkRate()))
+  return spaceId ? foundingBuyDownBps(rung, await foundingLockedTakeBps(spaceId)) : rung
+}
+
 /** The application fee (cents) on a Space charge: 0 for the Space's own audience, else the plan's
- *  network-sourced rate. Reads the operator pricing_settings (fail-safe to the seeded defaults, then to
- *  the flat platform fee — never 0). Server-only (dynamic imports keep the pure platformFee* helpers
- *  above client-safe). Floors fractional cents (recipient never short). */
+ *  network-sourced rate (with the Founding Business buy-down when `spaceId` is passed). Reads the
+ *  operator pricing_settings (fail-safe to the seeded defaults, then to the flat platform fee, never 0).
+ *  Server-only. Floors fractional cents (recipient never short). */
 export async function spaceTakeRateCents(
   grossCents: number,
   plan: string | null | undefined,
   source: import('./pricing-keys').OrderSource = 'self',
+  spaceId?: string | null,
 ): Promise<number> {
   // A member's OWN booking is always 0% (the hard promise, ADR-811). Short-circuit before any IO.
   if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   try {
-    const { sourceAwareTakeRateCents } = await import('./pricing-keys')
-    const rate = await resolvedNetworkRate()
-    return sourceAwareTakeRateCents(grossCents, plan, source, rate)
+    return Math.floor((grossCents * (await spaceNetworkBps(plan, spaceId))) / 10000)
   } catch {
     // Fail-safe to the platform default fee rather than 0 (never under-collect on a network sale error).
     return platformFeeCents(grossCents)
