@@ -8,6 +8,7 @@ const headroom = vi.fn()
 const queries: { table: string; filters: unknown[][] }[] = []
 let nextCount = 0
 let planSpaceId: string | null = 'space-1'
+let authoredPlans: { id: string }[] = [{ id: 'p1' }, { id: 'p2' }]
 
 vi.mock('@/lib/pricing/settings', () => ({ featureGatesLive: () => gatesLive() }))
 vi.mock('@/lib/pricing/space-allowance', () => ({
@@ -36,9 +37,10 @@ vi.mock('@/lib/supabase/admin', () => ({
       chain.maybeSingle = async () => {
         if (table === 'events') return { data: eventRow }
         if (table === 'profiles') return { data: { membership_tier: 'crew' } }
-        return { data: { space_id: planSpaceId } }
+        return { data: { space_id: planSpaceId, author_id: 'author-1' } }
       }
-      chain.then = (resolve: (v: unknown) => unknown) => resolve({ count: nextCount, error: null })
+      chain.then = (resolve: (v: unknown) => unknown) =>
+        resolve({ count: nextCount, error: null, data: table === 'journey_plans' ? authoredPlans : null })
       return chain
     },
   }),
@@ -52,7 +54,7 @@ import {
   checkHostedCollaboratorMeter,
   checkMembershipTierMeter,
   checkSpaceBookingMeter,
-  checkSpaceJourneyMeter,
+  checkJourneyPeopleMeter,
   monthStartIso,
 } from './counted-meters'
 
@@ -60,6 +62,7 @@ beforeEach(() => {
   queries.length = 0
   nextCount = 0
   planSpaceId = 'space-1'
+  authoredPlans = [{ id: 'p1' }, { id: 'p2' }]
   gatesLive.mockReset().mockResolvedValue(true)
   verdict.mockReset().mockResolvedValue({ allowed: true })
   headroom.mockReset().mockResolvedValue(null)
@@ -73,7 +76,7 @@ describe('during the beta nothing is counted and every write passes', () => {
     ['bookings', () => checkSpaceBookingMeter('s1')],
     ['tiers', () => checkMembershipTierMeter('s1', 9)],
     ['collaborators', () => checkHostedCollaboratorMeter('s1')],
-    ['journey', () => checkSpaceJourneyMeter('p1', 'root')],
+    ['journey', () => checkJourneyPeopleMeter('p1', 'root')],
   ])('%s', async (_name, run) => {
     gatesLive.mockResolvedValue(false)
     expect(await run()).toEqual({ ok: true })
@@ -135,15 +138,20 @@ describe('people per Journey', () => {
   it('a Space Journey asks the seam with its active enrolments', async () => {
     nextCount = 25
     verdict.mockResolvedValue({ allowed: false })
-    expect((await checkSpaceJourneyMeter('p1', 'root')).ok).toBe(false)
+    expect((await checkJourneyPeopleMeter('p1', 'root')).ok).toBe(false)
     expect(verdict).toHaveBeenCalledWith('space-1', 'space_journey', 25)
   })
 
-  it('a personal Journey (root or no Space) is not this meter', async () => {
+  it('a personal Journey (root or no Space) asks its author\'s tier across every Journey they wrote', async () => {
     planSpaceId = 'root'
-    expect(await checkSpaceJourneyMeter('p1', 'root')).toEqual({ ok: true })
+    nextCount = 10
+    leadership.mockResolvedValue(false)
+    expect((await checkJourneyPeopleMeter('p1', 'root')).ok).toBe(false)
+    expect(leadership).toHaveBeenCalledWith('journey_enrollees', 'crew', 10)
+    expect(queries.some((q) => q.filters.some((f) => f[0] === 'in' && f[1] === 'plan_id'))).toBe(true)
     planSpaceId = null
-    expect(await checkSpaceJourneyMeter('p1', 'root')).toEqual({ ok: true })
+    leadership.mockResolvedValue(true)
+    expect(await checkJourneyPeopleMeter('p1', 'root')).toEqual({ ok: true })
     expect(verdict).not.toHaveBeenCalled()
   })
 })
@@ -216,5 +224,27 @@ describe('the marketing meters (LIVE-751)', () => {
     await checkActiveAutomationMeter('s1')
     expect(verdict).toHaveBeenLastCalledWith('s1', 'space_automations_active', 0)
     expect(queries[1]!.filters).toContainEqual(['eq', 'enabled', true])
+  })
+})
+
+describe('published personal Practices (LIVE-752)', () => {
+  it('counts live and pending Practices on the root and asks the member tier', async () => {
+    const { checkPersonalPracticeMeter } = await import('./counted-meters')
+    nextCount = 3
+    leadership.mockResolvedValue(false)
+    const r = await checkPersonalPracticeMeter('me', 'free', 'root')
+    expect(r.ok).toBe(false)
+    expect(leadership).toHaveBeenCalledWith('practice_publish', 'free', 3)
+    const f = queries[0]!.filters
+    expect(f).toContainEqual(['eq', 'created_by', 'me'])
+    expect(f).toContainEqual(['or', 'is_public.eq.true,status.eq.pending'])
+    expect(f).toContainEqual(['eq', 'space_id', 'root'])
+  })
+
+  it('is off during the beta', async () => {
+    const { checkPersonalPracticeMeter } = await import('./counted-meters')
+    gatesLive.mockResolvedValue(false)
+    expect(await checkPersonalPracticeMeter('me', 'free', 'root')).toEqual({ ok: true })
+    expect(queries).toHaveLength(0)
   })
 })

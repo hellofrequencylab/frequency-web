@@ -50,10 +50,10 @@ import { featureGatesLive } from './settings'
 
 /** The METERED leadership quantities (feature-meters.ts, tier axis). First one free, then Crew.
  *
- *  `practice_publish` is deliberately NOT here: `practice.create` (lib/core/capabilities.ts) already
- *  enforces it live as a paid-tier door, so its meter row exists only to DISPLAY that on /pricing.
- *  Adding a second enforcement path would either duplicate the rule or, worse, loosen it. */
-type MemberLeadershipMeter = 'circle_host' | 'event_create' | 'event_guests'
+ *  `practice_publish` joined in LIVE-752: `practice.create` opened to every signed-in member in
+ *  LIVE-222, so the meter (free 3, Crew unlimited) is now the only thing that limits publishing and
+ *  lib/spaces/counted-meters.ts asks it on submit. `journey_enrollees` is asked on enrol there too. */
+type MemberLeadershipMeter = 'circle_host' | 'event_create' | 'event_guests' | 'practice_publish' | 'journey_enrollees'
 
 /**
  * Is a member still within their allowance for a metered leadership quantity? FAIL-SAFE to allowed.

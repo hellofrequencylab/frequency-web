@@ -304,7 +304,10 @@ async function memberEventAllowanceOk(
       .from('events')
       .select(`id, starts_at, time_zone, ${SERIES_COLUMNS}`)
       .eq('host_id', profileId)
-      .is('space_id', null)
+      // Personal = not hosted by a Space. Every event is stamped with a space_id (the root for a
+      // personal one, stampEventSpaceId), so `space_id is null` counted almost nothing and the cap
+      // never bit (LIVE-752). A Space-hosted event is the Space's space_events meter instead.
+      .is('host_space_id', null)
       .gte('starts_at', new Date(Date.now() - MAX_TZ_OFFSET_MS).toISOString())
     const upcoming = ((upcomingRows ?? []) as (SeriesRow & { time_zone: string | null })[]).filter(
       (r): r is SeriesRow & { time_zone: string | null; starts_at: string } =>
