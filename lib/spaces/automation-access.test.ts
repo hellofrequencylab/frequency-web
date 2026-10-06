@@ -34,8 +34,8 @@ describe('automationWallSentence (LIVE-432)', () => {
 })
 
 describe('automationWallLabel (LIVE-432)', () => {
-  it('on the code default the wall word is Business', () => {
-    expect(automationWallLabel()).toBe(SPACE_PLAN_LABEL.business)
+  it('on the code default the floor is free (ADR-1709): there is no wall to name', () => {
+    expect(automationWallLabel()).toBe(SPACE_PLAN_LABEL.free)
   })
 
   it('an override that raises the wall names that plan', () => {

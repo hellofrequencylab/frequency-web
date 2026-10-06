@@ -70,6 +70,11 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_practice_publish: { free: 5, business: null, collective: null },
   space_services: { free: 1, business: null, collective: null },
   space_shop_listings: { free: 5, business: null, collective: null },
+  // Marketing meters (LIVE-751, ADR-1709). They replace the space_campaigns Business wall: a free Space
+  // sends 2 campaigns a month with a Frequency footer; live funnels are the splash pages on its codes.
+  space_campaigns_month: { free: 2, business: null, collective: null },
+  space_funnels: { free: 0, business: 5, collective: null },
+  space_automations_active: { free: 1, business: 10, collective: null },
   vera_unlimited: { free: 10, crew: null },
   // FIRST ONE FREE — the personal leadership allowances. A free Member leads at one of each; Crew gets
   // the host kit (ADR-1709): 5 Circles, 10 Events, 5 Journeys, 50 people per Journey. Nothing here is

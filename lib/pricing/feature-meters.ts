@@ -305,6 +305,34 @@ const RAW_METERS: Record<string, RawMeter> = {
     allowances: PLACEHOLDER_METER_LIMITS.space_shop_listings!,
     allowanceTextByTier: { free: 'Up to 5 listings, taking inquiries' },
   },
+  space_campaigns_month: {
+    axis: 'plan',
+    title: 'Email campaigns',
+    dimension: 'Campaigns a month',
+    unit: 'campaigns',
+    period: 'month',
+    // Free 2 a month with a Frequency footer; Business and Collective unlimited (ADR-1709).
+    allowances: PLACEHOLDER_METER_LIMITS.space_campaigns_month!,
+    allowanceTextByTier: { free: 'Up to 2 campaigns a month, with a Frequency footer' },
+  },
+  space_funnels: {
+    axis: 'plan',
+    title: 'Live funnels',
+    dimension: 'Live funnels and splash pages',
+    unit: 'funnels',
+    period: null,
+    // Free none, Business 5, Collective unlimited (ADR-1709). Counted as live splash pages on codes.
+    allowances: PLACEHOLDER_METER_LIMITS.space_funnels!,
+  },
+  space_automations_active: {
+    axis: 'plan',
+    title: 'Active automations',
+    dimension: 'Active automations',
+    unit: 'automations',
+    period: null,
+    // Free 1, Business 10, Collective unlimited (ADR-1709). An automation is an enabled sequence.
+    allowances: PLACEHOLDER_METER_LIMITS.space_automations_active!,
+  },
   // ── Space AI depth (plan axis; the Resonance Engine metered usage · ADR-387) ─────────────────────
   space_vera: {
     axis: 'plan',
@@ -447,7 +475,7 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // Campaigns are the same shape. "One free campaign" is not enough to learn anything from, so it
   // converts badly and teaches nothing; the honest line is between messaging your own people (metered
   // by space_email sends, available free) and running an acquisition machine (paid).
-  space_campaigns: 'On/off capability (campaigns and funnels); the SEND volume that pairs with it is metered on space_email.',
+  space_campaigns: 'Operator switch only since ADR-1709: campaigns are metered on space_campaigns_month and funnels on space_funnels, with send volume on space_email.',
   custom_domain: 'On/off capability (LIVE-310): a Space holds one domain in spaces.domain, so the quantity is structural and needs no meter.',
   // 🔴 `space_revenue_splits` and `space_sms` were listed here until HYG-079 and are gone with their
   // gates. Neither feature is built or live (revenue splitting is unwritten; group SMS waits on the

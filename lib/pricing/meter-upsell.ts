@@ -361,6 +361,21 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
     kind: 'ladder',
     note: 'Shop listings are created in the shop flow; the plan hub carries the ladder (LIVE-750).',
   },
+  space_campaigns_month: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Campaigns a month are counted at schedule and send; the plan hub carries the ladder (LIVE-751).',
+  },
+  space_funnels: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Live splash pages are counted when one is set; the plan hub carries the ladder (LIVE-751).',
+  },
+  space_automations_active: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Enabled sequences are counted when one is switched on; the plan hub carries the ladder (LIVE-751).',
+  },
   // ── Personal tier axis. All six were total gaps: the plan hub filters to axis === 'plan' and the
   // member upgrade page mounted no meter at all. /upgrade is now the tier-axis ladder, and the two
   // authoring surfaces that already hold a real count carry the 80% prompt as well.
