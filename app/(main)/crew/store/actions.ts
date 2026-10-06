@@ -274,11 +274,13 @@ export async function equipCosmetic(itemId: string | null, slot: CosmeticType): 
   let value: string | null = null
 
   if (itemId) {
+    // limit(1), as in redeemItem: a duplicate pair still reads as owned (SCAN-695).
     const { data: owned } = await admin
       .from('store_redemptions')
       .select('id')
       .eq('profile_id', profileId)
       .eq('item_id', itemId)
+      .limit(1)
       .maybeSingle()
     if (!owned) return fail('You don’t own this item yet')
 
