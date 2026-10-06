@@ -250,6 +250,61 @@ const RAW_METERS: Record<string, RawMeter> = {
     // Business: unlimited. Collective: unlimited.
     allowances: PLACEHOLDER_METER_LIMITS.space_member_benefits!,
   },
+  space_circles: {
+    axis: 'plan',
+    title: 'Circles',
+    dimension: 'Circles',
+    unit: 'circles',
+    period: null,
+    // Free 3 (the Space Circle counts), Business 10, Collective unlimited (ADR-1709).
+    allowances: PLACEHOLDER_METER_LIMITS.space_circles!,
+  },
+  space_events: {
+    axis: 'plan',
+    title: 'Upcoming events',
+    dimension: 'Upcoming events',
+    unit: 'events',
+    period: null,
+    // Free 5 upcoming at a time; past events never count. Business and Collective unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_events!,
+  },
+  space_event_guests: {
+    axis: 'plan',
+    title: 'Guests per event',
+    dimension: 'Guests per event',
+    unit: 'guests',
+    period: null,
+    // Free 100 per event. Business and Collective unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_event_guests!,
+  },
+  space_practice_publish: {
+    axis: 'plan',
+    title: 'Published Practices',
+    dimension: 'Published Practices',
+    unit: 'practices',
+    period: null,
+    // Free 5. Business and Collective unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_practice_publish!,
+  },
+  space_services: {
+    axis: 'plan',
+    title: 'Bookable services',
+    dimension: 'Bookable services',
+    unit: 'services',
+    period: null,
+    // Free 1. Business and Collective unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_services!,
+  },
+  space_shop_listings: {
+    axis: 'plan',
+    title: 'Shop listings',
+    dimension: 'Shop listings',
+    unit: 'listings',
+    period: null,
+    // Free 5, taking inquiries. Business and Collective unlimited, with checkout (LIVE-753).
+    allowances: PLACEHOLDER_METER_LIMITS.space_shop_listings!,
+    allowanceTextByTier: { free: 'Up to 5 listings, taking inquiries' },
+  },
   // ── Space AI depth (plan axis; the Resonance Engine metered usage · ADR-387) ─────────────────────
   space_vera: {
     axis: 'plan',
@@ -346,6 +401,15 @@ const RAW_METERS: Record<string, RawMeter> = {
     // (ADR-914), so a free Member's two events can both sell tickets.
     allowances: PLACEHOLDER_METER_LIMITS.event_create!,
     allowanceTextByTier: { free: 'Up to 2 active events, free or RSVP' },
+  },
+  event_guests: {
+    axis: 'tier',
+    title: 'Guests per event',
+    dimension: 'Guests per event',
+    unit: 'guests',
+    period: null,
+    // Member 30 per personal event, Crew 100 (ADR-1709).
+    allowances: PLACEHOLDER_METER_LIMITS.event_guests!,
   },
 }
 

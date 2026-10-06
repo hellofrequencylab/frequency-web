@@ -33,7 +33,7 @@ import { payoutsLive } from '@/lib/billing/connect'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { checkSpaceBookingMeter } from '@/lib/spaces/counted-meters'
+import { checkSpaceBookingMeter, checkSpaceServicesMeter } from '@/lib/spaces/counted-meters'
 import { blockingRange, type EntryRow } from '@/lib/calendar/entries'
 import { expandPencilSeries, seriesRule } from '@/lib/calendar/pencil-series'
 import { eventInstant } from '@/lib/time/zone'
@@ -1281,6 +1281,10 @@ export async function setSpaceServiceTypes(
       const c = cleanServiceInput(s, i)
       return c ? [c] : []
     })
+
+  // Bookable services (space_services, LIVE-750). Only a set that grows asks.
+  const servicesMeter = await checkSpaceServicesMeter(spaceId, clean.length)
+  if (!servicesMeter.ok) return fail(servicesMeter.error)
 
   try {
     // Existing rows for this Space (to know which to update vs delete). FAIL-SOFT to [] if the table
