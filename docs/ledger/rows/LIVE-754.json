@@ -13,5 +13,6 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const k=r(\"lib/billing/pricing-keys.ts\");const d=(k.split(\"NETWORK_TAKE_RATE_DEFAULT: NetworkTakeRate = {\")[1]||\"\").split(\"}\")[0];if(!/paid:\\s*500/.test(d))fail(\"paid rung is not 500\");if(!/collective:\\s*300/.test(d))fail(\"no collective rung at 300\");if(!/case \\x27collective\\x27/.test((k.split(\"export function takeRateRungForPlan\")[1]||\"\").split(\"\\n}\")[0]))fail(\"takeRateRungForPlan does not place collective\");const mig=fs.readdirSync(\"supabase/migrations\").filter((f)=>f>\"20270346002700\").map((f)=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/take_rate[\\s\\S]{0,400}\"paid\":\\s*500/.test(mig))fail(\"no migration rewrites the stored take_rate in the rung shape\");console.log(\"ok: the fee ladder is 500/300/0\")'"
-  }
+  },
+  "wave": "WR"
 }

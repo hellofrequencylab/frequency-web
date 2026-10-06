@@ -13,5 +13,6 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const ps=r(\"lib/pricing/plan-story.ts\");if(/^import /m.test(ps))fail(\"plan-story.ts imports something\");if(/free Space sells|sells tickets, takes donations/i.test(ps))fail(\"PLAN_STORY still says a free Space sells\");if(!/Collective/.test(ps))fail(\"PLAN_STORY never names Collective\");if(!/collective/.test((r(\"lib/pricing/display.ts\").split(\"ADVERTISED_SPACE_PLANS\")[1]||\"\").split(\"\\n\\n\")[0]))fail(\"Collective is not advertised\");if(/Every rung on both sells/i.test(r(\"app/(marketing)/pricing/page.tsx\")))fail(\"the pricing page still says every rung sells\");console.log(\"ok: the pricing page tells the ladder\")'"
-  }
+  },
+  "wave": "WR"
 }

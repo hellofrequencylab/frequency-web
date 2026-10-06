@@ -13,5 +13,6 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const c=r(\"lib/pricing/catalog-config.ts\");const d=(c.split(\"PWYW_CONFIG_DEFAULT: PwywConfig = {\")[1]||\"\").split(\"}\")[0];if(!/suggestedCents:\\s*1000/.test(d))fail(\"suggested is not 1000\");if(!/presetCents:\\s*\\[499,\\s*1000,\\s*2500\\]/.test(d))fail(\"presets are not 499/1000/2500\");if(/suggestedCents/.test((c.split(\"export function earnsSupporterMark\")[1]||\"\").split(\"\\n}\")[0]))fail(\"the supporter mark still keys off the suggested amount\");if(!/45/.test(c))fail(\"no 45-day fade\");console.log(\"ok: Crew presets and the fading mark are in\")'"
-  }
+  },
+  "wave": "WR"
 }

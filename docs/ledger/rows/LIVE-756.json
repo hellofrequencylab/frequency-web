@@ -13,5 +13,6 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const mig=fs.readdirSync(\"supabase/migrations\").map((f)=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/create table[^;]*crew_boosts/i.test(mig))fail(\"no crew_boosts table\");if(!fs.existsSync(\"lib/crew/boost.ts\"))fail(\"no boost module\");console.log(\"ok: the monthly Boost exists\")'"
-  }
+  },
+  "wave": "WR"
 }

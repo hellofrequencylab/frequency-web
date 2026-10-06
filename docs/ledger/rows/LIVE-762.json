@@ -13,5 +13,6 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const h=r(\"content/help/spaces/plans-and-pricing.md\");if(/Every plan can sell/i.test(h))fail(\"help still says every plan can sell\");if(/October 1, 2026/.test(h))fail(\"help still carries the expired October 1 date\");if(!fs.existsSync(\"content/help/spaces/collective.md\"))fail(\"no Collective help article\");if(!/five-tier|five tiers/i.test(r(\"docs/CHANGELOG.md\")))fail(\"no changelog entry\");if(/Collective[^.\\n]{0,80}retired/i.test(r(\"docs/NAMING.md\")))fail(\"NAMING.md still retires Collective\");console.log(\"ok: help and canons carry the ladder\")'"
-  }
+  },
+  "wave": "WR"
 }

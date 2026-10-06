@@ -15,5 +15,6 @@
     "evidence": "Open until the owner says yes and the three production confirmations are recorded here.",
     "checked": "2026-10-06"
   },
-  "ownerAction": "config"
+  "ownerAction": "config",
+  "wave": "owner-timed"
 }
