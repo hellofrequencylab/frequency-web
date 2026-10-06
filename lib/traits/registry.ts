@@ -199,7 +199,7 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
   },
   {
     key: 'persona_builder',
-    label: 'Persona · Community builder',
+    label: 'Persona · Host or organizer',
     description: 'Identified as someone who wants to help build + grow the community — the crew / host / guide path.',
     kind: 'tag', category: 'marketing', type: 'boolean',
     pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',

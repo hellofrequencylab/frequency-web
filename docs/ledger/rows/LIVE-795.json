@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-795",
+  "title": "New members cannot say which kind of reader they are, so nothing downstream can speak to an archetype",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "app/join/(induction)/actions.ts",
+    "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
+  },
+  "detail": "PR 6 (ADR-1715). lib/audience/archetypes.ts is the single registry (id, family, reader, funnel) for the eleven archetypes; the arrival flow keeps the persona question and adds one follow-up per persona in members' own words; the answer is stored at profiles.meta.archetype (app/join/(induction)/actions.ts) and contacts.meta.archetype (app/(marketing)/start/actions.ts); an archetype_<id> tag per archetype in lib/traits/registry.ts; one saved segment per archetype in a new migration modelled on 20260607010000_persona_segments.sql; a help line and a CHANGELOG Unreleased entry. Skipping is allowed. Never sent to an ad or analytics pixel: the step fires a generic event name.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};const a=r(\"lib/audience/archetypes.ts\");if(!a)fail(\"there is no archetype registry, so nothing can map a member to an archetype\");for(const id of [\"wired_professional\",\"transplant\",\"activity_first\",\"evidence_first\",\"host_connector\",\"gathering_host\",\"mission_patron\",\"portfolio_teacher\",\"second_act\",\"studio_keeper\",\"network_steward\"]){if(!a.includes(id))fail(\"the archetype registry is missing \"+id);if(!r(\"lib/traits/registry.ts\").includes(\"archetype_\"+id)&&!/archetype_\\$\\{/.test(r(\"lib/traits/registry.ts\")))fail(\"no archetype_\"+id+\" tag is registered, so assignTag would throw\")}if(!/meta[\\s\\S]{0,80}archetype/.test(r(\"app/join/(induction)/actions.ts\")))fail(\"the induction never writes profiles.meta.archetype\")'",
+    "note": "Fails while the registry, any of the eleven ids or their tags are missing, or the induction never stores meta.archetype."
+  },
+  "wave": "W7"
+}

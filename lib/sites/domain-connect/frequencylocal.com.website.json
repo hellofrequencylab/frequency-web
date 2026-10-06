@@ -1,0 +1,30 @@
+{
+  "providerId": "frequencylocal.com",
+  "providerName": "Frequency",
+  "serviceId": "website",
+  "serviceName": "Frequency website",
+  "version": 1,
+  "logoUrl": "https://frequencylocal.com/icons/icon-192.png",
+  "description": "Points a domain at the owner's Frequency website: the domain itself and www.",
+  "variableDescription": "ip: the IPv4 address Frequency's hosting gives for the domain itself. target: the host name www points to.",
+  "syncBlock": false,
+  "sharedProviderName": false,
+  "syncPubKeyDomain": "frequencylocal.com",
+  "syncRedirectDomain": "frequencylocal.com",
+  "warnPhishing": true,
+  "hostRequired": false,
+  "records": [
+    {
+      "type": "A",
+      "host": "@",
+      "pointsTo": "%ip%",
+      "ttl": 3600
+    },
+    {
+      "type": "CNAME",
+      "host": "www",
+      "pointsTo": "%target%",
+      "ttl": 3600
+    }
+  ]
+}

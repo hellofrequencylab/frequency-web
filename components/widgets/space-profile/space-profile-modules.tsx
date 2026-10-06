@@ -263,6 +263,7 @@ export async function SpaceProfileModules({
   layout,
   grid,
   editHref,
+  wrapRow,
 }: {
   space: SpaceProfileContext
   /** Override the derived layout (e.g. a caller-supplied order). Omitted = the operator's saved
@@ -277,6 +278,9 @@ export async function SpaceProfileModules({
    *  linking there. Omitted (the default, and every visitor / non-owner render) leaves the render
    *  byte-identical — no frame, no overlay. */
   editHref?: (blockId: string) => string
+  /** GRID path only: wrap each row (the Space website's full-width section bands, components/sites). The
+   *  row stack then drops its own spacing, since the bands carry theirs. Omitted = the page render. */
+  wrapRow?: (rowId: string, node: React.ReactNode) => React.ReactNode
 }) {
   // ONE request-cached pass for every section's live data, with the SAME identity/profile inputs the
   // live Puck landing feeds, so the preview shows the operator's real content (not editor placeholders).
@@ -320,7 +324,12 @@ export async function SpaceProfileModules({
   if (grid) {
     return (
       <div className="@container/profile">
-        <EntityGrid rows={resolveRows(grid, 'space')} renderBlock={renderBlock} />
+        <EntityGrid
+          rows={resolveRows(grid, 'space')}
+          renderBlock={renderBlock}
+          wrapRow={wrapRow}
+          className={wrapRow ? '' : undefined}
+        />
       </div>
     )
   }

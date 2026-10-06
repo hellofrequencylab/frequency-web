@@ -1,7 +1,7 @@
 {
   "id": "LIVE-782",
   "title": "Every published Space website gets a free <slug> subdomain address with no setup",
-  "status": "open",
+  "status": "done",
   "priority": "P3",
   "lane": "live",
   "size": "S",
@@ -9,11 +9,12 @@
     "file": "lib/sites/host.ts",
     "ref": "Owner ruling 2026-10-06: \"I like the free address thing but let's bring that in as a feature later\"; design note /mnt/project-files/white-label/2026-10-06-domain-design.md (Optional: a free address for every Space); white label sites build ADR-1708"
   },
-  "detail": "FILED 2026-10-06 by owner ruling, as a later feature. THE CONSEQUENCE: a published Space website's only no-setup address is <app>/sites/<slug>, which reads as a Frequency page, not the Space's own site. THE FIX: serve <slug>.<a Frequency domain> as the Space's website. Needs a Frequency domain whose nameservers are on Vercel plus one wildcard domain on the project (owner steps), then lib/sites/host.ts treats a one-label subdomain of that domain as a site host and rewrites it to the site route by slug (today every subdomain of APP_APEXES is the app). Reserved labels (www, app, api, admin and the like) stay the app. LIFT: S, about 4 files, no migration. Probe flips when host.ts exports the subdomain resolver.",
+  "detail": "FILED 2026-10-06 by owner ruling, as a later feature. THE CONSEQUENCE: a published Space website's only no-setup address is <app>/sites/<slug>, which reads as a Frequency page, not the Space's own site. THE FIX: serve <slug>.<a Frequency domain> as the Space's website. Needs a Frequency domain whose nameservers are on Vercel plus one wildcard domain on the project (owner steps), then lib/sites/host.ts treats a one-label subdomain of that domain as a site host and rewrites it to the site route by slug (today every subdomain of APP_APEXES is the app). Reserved labels (www, app, api, admin and the like) stay the app. LIFT: S, about 4 files, no migration. Probe flips when host.ts exports the subdomain resolver.\n\nCLOSED 2026-10-06 (owner ask: a separate website at <slug>.frequencylocal.com). lib/sites/host.ts exports siteSlugFromSubdomain and siteSubdomainHost off one SITE_BASE_DOMAIN constant (env, default frequencylocal.com); routeSiteHost rewrites a one-label, non-reserved, valid-slug subdomain to /hosted/<host> like a custom domain, and proxy.ts's matcher host arm lets its robots.txt and sitemap.xml through. lib/sites/hosted.ts resolves a subdomain by slug through getSiteSpace (anonymous, cached, publish gate in SitePage); a custom domain still resolves through getSpaceByDomain. Canonical, robots and sitemap use the bound custom domain when there is one, else the subdomain. Publishing attaches the subdomain to the Vercel project (addSiteSubdomain, best effort, logged on failure). The Your website card shows and opens the subdomain, or the own domain once it serves. OWNER STEP: a wildcard CNAME * on frequencylocal.com at GoDaddy pointing at Vercel's recommended CNAME target (the rank-1 recommendedCNAME Vercel's domain config returns, cname.vercel-dns.com by default).",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e \"const s=require('fs').readFileSync('lib/sites/host.ts','utf8');if(!/export function siteSlugFromSubdomain\\b/.test(s)){console.error('LIVE-782: no free <slug> subdomain resolver in lib/sites/host.ts yet');process.exit(1)}\"",
     "note": "Fails today: host.ts treats every subdomain of a Frequency apex as the app. Passes when siteSlugFromSubdomain exists and routes a Space slug subdomain to its website."
   },
+  "closed": "2026-10-06",
   "wave": "W7"
 }

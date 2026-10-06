@@ -11,8 +11,12 @@
 // surface (7.5) reads this registry, and `role`-tagged help articles feed it.
 
 import type { CommunityRole } from '@/lib/core/roles'
+import { slugify } from '@/lib/utils'
 
 export interface TrainingStep {
+  /** Stable id a trainee's per-step completion is stored against (training_paths.completed_steps).
+   *  Survives a relabel or reorder, so editing the curriculum never loses anyone's progress. */
+  id: string
   label: string
   href: string
 }
@@ -43,10 +47,10 @@ export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
     title: 'Welcome to Crew',
     blurb: 'You’re in. Here’s how to get the most out of the community: find your circles and start a practice.',
     steps: [
-      { label: 'Join a local circle', href: '/help/getting-started/join-a-circle' },
-      { label: 'Adopt a practice', href: '/help/getting-started/practices' },
-      { label: 'Follow a Journey', href: '/help/the-quest/your-journey' },
-      { label: 'Earn Zaps and Gems', href: '/help/the-quest/zaps-and-gems' },
+      { id: 'join-a-circle', label: 'Join a local circle', href: '/help/getting-started/join-a-circle' },
+      { id: 'practices', label: 'Adopt a practice', href: '/help/getting-started/practices' },
+      { id: 'your-journey', label: 'Follow a Journey', href: '/help/the-quest/your-journey' },
+      { id: 'zaps-and-gems', label: 'Earn Zaps and Gems', href: '/help/the-quest/zaps-and-gems' },
     ],
     reward: 15,
   },
@@ -55,10 +59,10 @@ export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
     title: 'Host Training',
     blurb: 'You can host now. This walks you through running a circle and the admin tools that just became yours.',
     steps: [
-      { label: 'Run events', href: '/help/groups/events' },
-      { label: 'Use channels', href: '/help/groups/channels' },
-      { label: 'Send a Dispatch', href: '/help/sharing/dispatches' },
-      { label: 'Hubs & scope', href: '/help/groups/hubs' },
+      { id: 'events', label: 'Run events', href: '/help/groups/events' },
+      { id: 'channels', label: 'Use channels', href: '/help/groups/channels' },
+      { id: 'dispatches', label: 'Send a Dispatch', href: '/help/sharing/dispatches' },
+      { id: 'hubs', label: 'Hubs & scope', href: '/help/groups/hubs' },
     ],
     reward: 25,
   },
@@ -67,10 +71,10 @@ export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
     title: 'Guide Training',
     blurb: 'You guide a Hub now, a family of Circles. This covers stewarding hosts, shaping the hub, and the wider tools that just became yours.',
     steps: [
-      { label: 'Steward a hub', href: '/help/groups/hubs' },
-      { label: 'Support your hosts', href: '/help/groups/events' },
-      { label: 'Curate channels across circles', href: '/help/groups/channels' },
-      { label: 'Dispatch to the Hub', href: '/help/sharing/dispatches' },
+      { id: 'hubs', label: 'Steward a hub', href: '/help/groups/hubs' },
+      { id: 'events', label: 'Support your hosts', href: '/help/groups/events' },
+      { id: 'channels', label: 'Curate channels across circles', href: '/help/groups/channels' },
+      { id: 'dispatches', label: 'Dispatch to the Hub', href: '/help/sharing/dispatches' },
     ],
     reward: 40,
   },
@@ -79,10 +83,10 @@ export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
     title: 'Mentor Training',
     blurb: 'You mentor a Nexus now, a region of Hubs. This is the widest stewardship: growing guides, holding the standard, and the regional tools that just became yours.',
     steps: [
-      { label: 'Hold a nexus', href: '/help/groups/hubs' },
-      { label: 'Grow and back your guides', href: '/help/groups/events' },
-      { label: 'Set the regional rhythm', href: '/help/sharing/dispatches' },
-      { label: 'Keep the standard', href: '/help/safety/reporting' },
+      { id: 'hubs', label: 'Hold a nexus', href: '/help/groups/hubs' },
+      { id: 'events', label: 'Grow and back your guides', href: '/help/groups/events' },
+      { id: 'dispatches', label: 'Set the regional rhythm', href: '/help/sharing/dispatches' },
+      { id: 'reporting', label: 'Keep the standard', href: '/help/safety/reporting' },
     ],
     reward: 60,
   },
@@ -141,7 +145,7 @@ export function helpCurriculumSteps(
     .filter((a) => a.role === role && (a.status ?? 'published') === 'published')
     .slice()
     .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
-    .map((a) => ({ label: a.title, href: helpHref(a.category, a.slug) }))
+    .map((a) => ({ id: `${a.category}-${a.slug}`, label: a.title, href: helpHref(a.category, a.slug) }))
 }
 
 /**
@@ -158,10 +162,116 @@ interface TierCurriculumView {
 
 export function tierCurriculumViews(
   articles: readonly RoleTaggedArticle[],
+  defs: Partial<Record<CommunityRole, TrainingDef>> = TRAINING,
 ): TierCurriculumView[] {
   return TRAINING_TIERS.map((role) => ({
     role,
-    def: curriculumForPromotion(role),
+    def: defs[role] ?? null,
     taggedSteps: helpCurriculumSteps(articles, role),
   }))
+}
+
+// ── In-place edits (LIVE-690) ─────────────────────────────────────────────────
+//
+// An operator edits a tier's title, blurb and steps from /admin/content/training. The edit is
+// stored as JSON in platform_settings (curriculum-store.ts) and laid OVER the registry above:
+// the registry stays the code default and the reward stays in code, so an edit can reword and
+// reorder a path but never change what it pays. No stored edit means the registry, unchanged.
+
+export const CURRICULUM_LIMITS = { title: 80, blurb: 300, label: 80, href: 200, minSteps: 1, maxSteps: 12 } as const
+
+/** What an operator may change on one tier. */
+export interface CurriculumEdit {
+  title: string
+  blurb: string
+  steps: TrainingStep[]
+}
+
+export type CurriculumOverrides = Partial<Record<CommunityRole, CurriculumEdit>>
+
+const STEP_ID = /^[a-z0-9][a-z0-9-]{0,47}$/
+
+/** A step id from a label, for a step an operator just added. PURE. */
+export function stepIdFrom(label: string, taken: ReadonlySet<string>): string {
+  const base = slugify(label).slice(0, 40) || 'step'
+  let id = base
+  for (let n = 2; taken.has(id); n++) id = `${base}-${n}`
+  return id
+}
+
+/** An internal link only: a site path, never another origin or a protocol-relative URL. PURE. */
+export function isInternalHref(href: string): boolean {
+  return href.startsWith('/') && !href.startsWith('//') && !/[\s\\]/.test(href) && href.length <= CURRICULUM_LIMITS.href
+}
+
+/**
+ * Validate and tidy one tier's edit. Returns the clean edit, or an error a person can act on.
+ * Keeps a valid incoming step id (so progress survives a relabel or reorder) and mints one for a
+ * new step. PURE.
+ */
+export function normalizeCurriculumEdit(input: unknown): { ok: true; edit: CurriculumEdit } | { ok: false; error: string } {
+  const o = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const title = String(o.title ?? '').trim()
+  const blurb = String(o.blurb ?? '').trim()
+  if (!title) return { ok: false, error: 'Give the path a title.' }
+  if (title.length > CURRICULUM_LIMITS.title) return { ok: false, error: `Keep the title under ${CURRICULUM_LIMITS.title} characters.` }
+  if (blurb.length > CURRICULUM_LIMITS.blurb) return { ok: false, error: `Keep the intro under ${CURRICULUM_LIMITS.blurb} characters.` }
+  const rawSteps = Array.isArray(o.steps) ? o.steps : []
+  if (rawSteps.length < CURRICULUM_LIMITS.minSteps) return { ok: false, error: 'A path needs at least one step.' }
+  if (rawSteps.length > CURRICULUM_LIMITS.maxSteps) return { ok: false, error: `A path holds at most ${CURRICULUM_LIMITS.maxSteps} steps.` }
+
+  const taken = new Set<string>()
+  const steps: TrainingStep[] = []
+  for (const [i, raw] of rawSteps.entries()) {
+    const s = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+    const label = String(s.label ?? '').trim()
+    const href = String(s.href ?? '').trim()
+    if (!label) return { ok: false, error: `Step ${i + 1} needs a label.` }
+    if (label.length > CURRICULUM_LIMITS.label) return { ok: false, error: `Step ${i + 1}: keep the label under ${CURRICULUM_LIMITS.label} characters.` }
+    if (!isInternalHref(href)) return { ok: false, error: `Step ${i + 1}: the link must be a page on this site, starting with /.` }
+    const wanted = String(s.id ?? '').trim()
+    const id = STEP_ID.test(wanted) && !taken.has(wanted) ? wanted : stepIdFrom(label, taken)
+    taken.add(id)
+    steps.push({ id, label, href })
+  }
+  return { ok: true, edit: { title, blurb, steps } }
+}
+
+/** Parse the stored overrides JSON, dropping anything that no longer validates. PURE, never throws. */
+export function parseCurriculumOverrides(raw: string | null | undefined): CurriculumOverrides {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw || '{}')
+  } catch {
+    return {}
+  }
+  if (!parsed || typeof parsed !== 'object') return {}
+  const out: CurriculumOverrides = {}
+  for (const role of TRAINING_TIERS) {
+    const v = (parsed as Record<string, unknown>)[role]
+    if (v === undefined) continue
+    const r = normalizeCurriculumEdit(v)
+    if (r.ok) out[role] = r.edit
+  }
+  return out
+}
+
+/** The registry with the operator's edits laid over it; the reward always comes from code. PURE. */
+export function applyCurriculumOverrides(
+  base: Partial<Record<CommunityRole, TrainingDef>>,
+  overrides: CurriculumOverrides,
+): Partial<Record<CommunityRole, TrainingDef>> {
+  const out: Partial<Record<CommunityRole, TrainingDef>> = { ...base }
+  for (const role of TRAINING_TIERS) {
+    const def = base[role]
+    const edit = overrides[role]
+    if (def && edit) out[role] = { ...def, title: edit.title, blurb: edit.blurb, steps: edit.steps }
+  }
+  return out
+}
+
+/** The step ids a trainee has done, kept to steps still on the path. PURE. */
+export function doneStepIds(steps: readonly TrainingStep[], completed: readonly string[] | null | undefined): string[] {
+  const done = new Set(completed ?? [])
+  return steps.filter((s) => done.has(s.id)).map((s) => s.id)
 }
