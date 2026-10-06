@@ -21,6 +21,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getJourneyOffer } from './paid'
 import { journeyHasRoom, JOURNEY_FULL_MESSAGE } from './journey-access'
 import { checkJourneyTier } from './tier-gate'
+import { checkSpaceJourneyMeter } from '@/lib/spaces/counted-meters'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 
 type FreeEnrolCheck = { ok: true } | { ok: false; error: string }
 
@@ -71,6 +73,11 @@ export async function checkFreeEnrol(
     if (!journeyHasRoom({ enrollCap, activeEnrollmentCount: count ?? 0 })) {
       return { ok: false, error: JOURNEY_FULL_MESSAGE }
     }
+
+    // People per Journey on its Space's plan (space_journey, LIVE-749): a free Space's Journey holds
+    // 25 at once. A personal Journey is the author's own meter and passes here.
+    const meter = await checkSpaceJourneyMeter(planId, await loadRootSpaceId())
+    if (!meter.ok) return { ok: false, error: meter.error }
   } catch (error) {
     // Fail-safe: a broken count must not close a free Journey.
     console.error('[journeys] seat check failed, admitting', { planId, error })
