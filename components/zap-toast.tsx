@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Zap } from 'lucide-react'
+import { Gem, Zap } from 'lucide-react'
 import { Toast } from '@/components/ui/toast'
 
 // Lightweight "you earned zaps" toast. Mirrors the achievement-toast pattern: a
@@ -15,6 +15,8 @@ import { Toast } from '@/components/ui/toast'
 export interface ZapReward {
   amount: number
   label?: string
+  /** Gems ride the same lane (LIVE-671, a reward pushed from another device). Default 'zaps'. */
+  kind?: 'zaps' | 'gems'
 }
 
 const EVENT = 'zaps-earned'
@@ -22,13 +24,13 @@ const EVENT = 'zaps-earned'
 function ZapToastCard({ reward, onDismiss }: { reward: ZapReward; onDismiss: () => void }) {
   return (
     <Toast
-      icon={<Zap className="h-5 w-5" strokeWidth={2.5} />}
-      title={`+${reward.amount} Zaps`}
+      icon={reward.kind === 'gems' ? <Gem className="h-5 w-5" strokeWidth={2.5} /> : <Zap className="h-5 w-5" strokeWidth={2.5} />}
+      title={`+${reward.amount} ${reward.kind === 'gems' ? 'Gems' : 'Zaps'}`}
       tone="primary"
       duration={4000}
       onDismiss={onDismiss}
     >
-      {reward.label ?? 'Verified practice'}
+      {reward.label ?? (reward.kind === 'gems' ? 'Reward earned' : 'Verified practice')}
     </Toast>
   )
 }
@@ -65,7 +67,30 @@ export function ZapToastContainer() {
   )
 }
 
+// The toasts this tab raised itself, briefly remembered so the cross-device feed
+// (components/reward-live.tsx) does not repeat a reward the member is already looking at.
+const recentLocal: { kind: 'zaps' | 'gems'; amount: number; at: number }[] = []
+const ECHO_WINDOW_MS = 15_000
+
 export function showZapToast(reward: ZapReward) {
+  if (typeof window === 'undefined' || reward.amount <= 0) return
+  const now = Date.now()
+  recentLocal.push({ kind: reward.kind ?? 'zaps', amount: reward.amount, at: now })
+  while (recentLocal.length > 20 || (recentLocal[0] && now - recentLocal[0].at > ECHO_WINDOW_MS)) recentLocal.shift()
+  window.dispatchEvent(new CustomEvent(EVENT, { detail: reward }))
+}
+
+/** Did this tab just show this reward itself? Consumes the match, so a second real reward of the
+ *  same size still shows. PURE apart from that one-shot memory. */
+export function consumeLocalEcho(kind: 'zaps' | 'gems', amount: number, now = Date.now()): boolean {
+  const i = recentLocal.findIndex((r) => r.kind === kind && r.amount === amount && now - r.at <= ECHO_WINDOW_MS)
+  if (i === -1) return false
+  recentLocal.splice(i, 1)
+  return true
+}
+
+/** Raise a reward toast that arrived from elsewhere, without recording it as local. */
+export function showRemoteRewardToast(reward: ZapReward) {
   if (typeof window === 'undefined' || reward.amount <= 0) return
   window.dispatchEvent(new CustomEvent(EVENT, { detail: reward }))
 }

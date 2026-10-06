@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-762",
+  "title": "Help articles, the changelog and the naming and voice canons carry the ladder",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 6 of the five-tier ladder (ADR-1709). content/help/spaces/plans-and-pricing.md (Every plan can sell; the expired October 1 date), get-paid.md, billing.md, membership and Journey articles, practices.md and programs-and-chapters.md checked against live gates, a new Collective article, a Crew article, a CHANGELOG entry, docs/NAMING.md (Collective no longer retired) and docs/CONTENT-VOICE.md section 1a. pnpm check:help passes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const h=r(\"content/help/spaces/plans-and-pricing.md\");if(/Every plan can sell/i.test(h))fail(\"help still says every plan can sell\");if(/October 1, 2026/.test(h))fail(\"help still carries the expired October 1 date\");if(!fs.existsSync(\"content/help/spaces/collective.md\"))fail(\"no Collective help article\");if(!/five-tier|five tiers/i.test(r(\"docs/CHANGELOG.md\")))fail(\"no changelog entry\");if(/Collective[^.\\n]{0,80}retired/i.test(r(\"docs/NAMING.md\")))fail(\"NAMING.md still retires Collective\");console.log(\"ok: help and canons carry the ladder\")'"
+  },
+  "wave": "WR"
+}

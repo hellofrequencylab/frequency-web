@@ -25,7 +25,7 @@ export const PRACTITIONER_SEQUENCE: SequenceDef = {
       label: 'You',
       content: {
         title: 'Set up your guide profile',
-        description: 'How should seekers find you?',
+        description: 'How should people find you?',
       },
     },
     {
@@ -43,7 +43,7 @@ export const PRACTITIONER_SEQUENCE: SequenceDef = {
       label: 'Where you practice',
       content: {
         title: 'Where do you guide?',
-        description: 'We will connect you to seekers near you.',
+        description: 'We will connect you to people near you.',
       },
     },
     // The marketing-email opt-in (LIVE-168). The runner guarantees this step in any flow that lacks
