@@ -1,7 +1,8 @@
 {
   "id": "LIVE-793",
   "title": "Persona copy says seekers to members and promises loyalty rewards that are not built",
-  "status": "open",
+  "status": "done",
+  "closed": "2026-10-06",
   "priority": "P2",
   "lane": "live",
   "size": "S",
@@ -9,7 +10,7 @@
     "file": "lib/onboarding/personas.ts",
     "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
   },
-  "detail": "PR 4 (ADR-1715). lib/onboarding/example-sequences.ts: How should seekers find you becomes How should people find you, and connect you to people near you. lib/onboarding/personas.ts: the Community builder label becomes Host or organizer (it collides with the Builders family), the Partner reel drops the loyalty rewards and gamified foot traffic promise until it ships, and the Practitioner track points at the coaches door or /spaces instead of /the-quest. Persona ids, tags, segments and sequences stay.",
+  "detail": "PR 4 (ADR-1715). lib/onboarding/example-sequences.ts: How should seekers find you becomes How should people find you, and connect you to people near you. lib/onboarding/personas.ts: the Community builder label becomes Host or organizer (it collides with the Builders family), the Partner reel drops the loyalty rewards and gamified foot traffic promise until it ships, and the Practitioner track points at the coaches door or /spaces instead of /the-quest. Persona ids, tags, segments and sequences stay.\n\nCLOSED 2026-10-06. lib/onboarding/personas.ts: the Community builder label is Host or organizer (id, tag and segments stay builder; the CRM trait label follows); the Partner reel and track drop the loyalty rewards and gamified foot traffic promise and name hosting and a free Space instead; the Practitioner track links to /for/coaches-and-healers. The two seekers strings in example-sequences.ts were fixed in LIVE-792. lib/onboarding/personas-promises.test.ts pins all three.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};if(/seekers/i.test(r(\"lib/onboarding/example-sequences.ts\")))fail(\"example sequences tell members about seekers\");const p=r(\"lib/onboarding/personas.ts\");if(/loyalty/i.test(p))fail(\"a persona promises loyalty rewards, which are not built\");if(/label:\\s*\"?.Community builder/.test(p))fail(\"the persona label Community builder collides with the Builders family\");if(/the-quest/.test(p))fail(\"the Practitioner track still links to /the-quest\")'",
