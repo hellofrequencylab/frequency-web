@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-529",
+  "patch": {
+    "verify": {
+      "kind": "manual",
+      "evidence": "Superseded by LIVE-744 on the owner ruling of 2026-10-06: the Space menu is one horizontal scroll rail with Manage pinned, not a budgeted bar with a More fold. The fold module this probe imported is deleted. Nothing left to measure here; LIVE-744 holds the new contract.",
+      "checked": "2026-10-06"
+    },
+    "source": {
+      "file": "components/spaces/space-profile-menu-view.tsx",
+      "ref": "Spaces restructure Phase 4b, the condensed menu (superseded by LIVE-744)"
+    }
+  },
+  "append": {
+    "detail": "\n\nSUPERSEDED 2026-10-06 by LIVE-744. Daniel asked for the truncated menu to become a horizontal scroll rail with Manage locked in place, and reported that the More popup never closed. The fold and lib/spaces/profile-nav-condense.ts are gone; the hidden-scrollbar cost this row measured is answered by faded rail edges instead."
+  }
+}
