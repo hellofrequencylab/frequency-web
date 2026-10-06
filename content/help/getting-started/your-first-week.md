@@ -12,6 +12,10 @@ status: published
 
 You can land in Frequency before you finish a welcome. If the app still knows you by a generated handle, the getting-started guide on your feed asks for a name first. Pick one at your profile. No long forms, no homework. The welcome also asks how you heard about us. It is optional, you can skip it, and the answer stays with us: it is never shared with ad or analytics tools. The same question shows up, just as optional, when you create a Space. Then **Vera**, your guide, points you toward a Circle worth joining and steps back out of the way. A few gentle tips show up as you explore after that, never all at once, never blocking your way.
 
+## Who you are, in a tap
+
+When you join, we ask who you are (pick all that fit), then one optional follow-up in plain words, like "I'm new around here" or "Just a timer, no fluff." Your answer only changes what we show you first. It never appears on your profile, it isn't shared with other members, and it's never sent to advertisers. Skip it if you like.
+
 ## Meet Vera
 
 Vera is the guide who keeps this place running. Right after you join, she uses what you told us about your interests to suggest a circle that fits, and offers to get you in with a tap. She's a bridge to your people, not a chatbot to hang out with: once she's pointed you somewhere real, she steps aside. You can always skip straight to [Circles](/help/getting-started/join-a-circle) instead.

@@ -21,6 +21,8 @@ import { isSafeInAppPath } from '@/lib/funnels/destination'
 import { completeInduction, stashPendingInduction } from './actions'
 import { captureLead, updateLead } from './lead-actions'
 import { logPersonaSelection } from './persona-log'
+import { ArrivalFollowUp } from '@/components/onboarding/arrival-follow-up'
+import type { ArchetypeId } from '@/lib/audience/archetypes'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
 
@@ -162,6 +164,9 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
   // site and Vera read; every selected persona is tagged at completion.
   const [personas, setPersonas] = useState<PersonaId[]>(() => (isPersonaId(initialPersona) ? [initialPersona] : []))
   const primaryPersona: PersonaId = personas[0] ?? DEFAULT_PERSONA
+  // The arrival follow-up's answer (ADR-1715): optional, asked under the PRIMARY persona, carried to
+  // completion in its own cookie by ArrivalFollowUp. Never logged to analytics.
+  const [archetype, setArchetype] = useState<ArchetypeId | null>(null)
   const reel = getPersona(primaryPersona).reel
   function togglePersona(id: PersonaId) {
     setPersonas((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]))
@@ -855,6 +860,9 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
                         )
                       })}
                     </div>
+                    {personas.length > 0 && (
+                      <ArrivalFollowUp persona={personas[0]} value={archetype} onChange={setArchetype} persist={!preview} />
+                    )}
                   </>
                 )}
 

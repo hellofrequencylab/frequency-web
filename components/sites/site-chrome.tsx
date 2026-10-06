@@ -162,7 +162,7 @@ export function SiteChrome({
                 </summary>
                 <nav
                   aria-label={`${brandName} menu`}
-                  className="absolute right-0 top-12 w-56 rounded-card border border-border bg-surface p-2 shadow-lg"
+                  className="absolute right-0 top-12 w-56 rounded-card border border-border bg-surface p-2 lift-3"
                 >
                   <ul className="flex flex-col">{links}</ul>
                 </nav>
@@ -187,7 +187,7 @@ export function SiteChrome({
 
           {hasMenu && (
             <nav aria-label={`${brandName} footer`}>
-              <h2 className="text-meta font-semibold uppercase tracking-wide text-muted">Explore</h2>
+              <h2 className="eyebrow text-muted">Explore</h2>
               <ul className="mt-3 -ml-3 flex flex-col">
                 {sections.map((s) => (
                   <li key={s.anchor} data-site-link={s.anchor}>
@@ -215,7 +215,7 @@ export function SiteChrome({
 
           {hasContact && (
             <div>
-              <h2 className="text-meta font-semibold uppercase tracking-wide text-muted">Get in touch</h2>
+              <h2 className="eyebrow text-muted">Get in touch</h2>
               <ul className="mt-3 flex flex-col gap-2 text-body-sm text-text">
                 {address && (
                   <li className="flex gap-2">
