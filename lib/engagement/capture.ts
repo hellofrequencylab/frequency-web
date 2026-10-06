@@ -176,7 +176,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   if (node.partner_id) {
     const { data: offers, error: offersError } = await db
       .from('partner_offers')
-      .select('id, title, valid_until, active, quest_id')
+      .select('id, title, valid_until, active, quest_id, visits_required')
       .eq('partner_id', node.partner_id)
       .eq('active', true)
     if (offersError) {

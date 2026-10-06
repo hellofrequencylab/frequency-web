@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-809",
+  "title": "A weekly reading counts showing-up Members: distinct people a Host marked present in the last 7 days",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1720.md",
+    "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
+  },
+  "detail": "WORKSTREAM 10 and the north star of the launch brief (ADR-1720 supersedes ADR-024's Weekly Active Members as the launch north star). TODAY: the code's north star is WAM, one practice.verified in 7 days (ADR-024; lib/on-air/run-over.ts:107; admin module marketing-analytics-northstar). Host marks exist (attended_at, attended_by) but the only read is scripts/maintenance/prove-it.mjs:90-114, a 42-day count of seats, not distinct members a week. THE FIX: one query (distinct profiles with a host-attested attended_at in the last 7 days, North County first) shown as the north star on the admin analytics page and recorded weekly. Never optimize for time in app.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-809\";const all=walk(\"lib\").concat(walk(\"app\"),walk(\"scripts\"));const q=all.find(f=>/showing.?up/i.test(r(f))&&/attended_by/.test(r(f))&&/(7 days|7d|interval .7 day|7 \\* 24|7\\*24|WEEK)/i.test(r(f)));if(!q)fail(ID+\": no weekly showing-up Members query over host-marked attendance\");const mod=q.replace(/\\.(tsx?|mjs)$/,\"\");if(!all.some(f=>f!==q&&(r(f).includes(mod.replace(/^/,\"@/\"))||r(f).includes(p.basename(mod)))&&/(admin|cron)/.test(f)))fail(ID+\": nothing on an admin page or cron reads the showing-up query\")'",
+    "note": "Fails until a 7-day distinct showing-up query over host-marked attendance exists and an admin page or cron reads it."
+  },
+  "wave": "W7"
+}

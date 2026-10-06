@@ -73,7 +73,7 @@ export function siteSubdomainHost(slug: string, baseDomain: string = SITE_BASE_D
 }
 
 /** Frequency's own apex domains. Every subdomain of these is the app too. */
-const APP_APEXES = ['frequencylocal.com', 'findafreq.com', 'vercel.app', 'localhost']
+const APP_APEXES = ['frequencylocal.com', 'vercel.app', 'localhost']
 
 /** The crawler files a site host answers for itself (PROG-E10 phase 4). */
 export const SITE_CRAWLER_FILES: ReadonlySet<string> = new Set(['/robots.txt', '/sitemap.xml'])
@@ -88,7 +88,7 @@ export const SITE_CRAWLER_FILES: ReadonlySet<string> = new Set(['/robots.txt', '
  *  sitemap.xml must reach the proxy, which rewrites a site's and passes a reserved host's through
  *  untouched. Spelled for the default SITE_BASE_DOMAIN; host.test.ts fails if the two drift. */
 export const APP_HOST_PATTERN =
-  '(?:(?:www\\.|(?:[^.]+\\.){2,})?frequencylocal\\.com|(?:.+\\.)?(?:findafreq\\.com|vercel\\.app)|localhost|[\\d.]+)'
+  '(?:(?:www\\.|(?:[^.]+\\.){2,})?frequencylocal\\.com|(?:.+\\.)?vercel\\.app|localhost|[\\d.]+)'
 
 /** The route a custom-domain site is rewritten to. */
 export const HOSTED_PREFIX = '/hosted'
