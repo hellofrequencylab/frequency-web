@@ -59,8 +59,8 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
   it('Collective is re-opened at $149, an extra member Space is $29, Non Profit Collective $119 (ADR-1709)', () => {
     expect(asCatalogItemKey('collective_base')).toBe('collective_base')
     expect(RETIRED_CATALOG_KEYS).not.toContain('collective_base_month')
-    expect(catalogItem('collective_base').month).toEqual({ listCents: 14900, foundingCents: 14900 })
-    expect(catalogItem('collective_base').year).toEqual({ listCents: 149000, foundingCents: 149000 })
+    expect(catalogItem('collective_base').month).toEqual({ listCents: 14900, foundingCents: 9900 })
+    expect(catalogItem('collective_base').year).toEqual({ listCents: 149000, foundingCents: 99000 })
     expect(catalogItem('collective_base').perSeat).toBe(false)
     expect(catalogItem('collective_space').month).toEqual({ listCents: 2900, foundingCents: 2900 })
     expect(catalogItem('collective_space').year.listCents).toBe(29000)

@@ -560,7 +560,7 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     key: 'collective_base',
     label: 'Frequency Collective',
     perSeat: false,
-    ...amountsFromMonthly(14900, 14900), // $149/mo, 5 member Spaces included
+    ...amountsFromMonthly(14900, 9900), // $149/mo list, $99 Founding Collective (owner 2026-10-06), 5 member Spaces included
   },
   collective_space: {
     // An extra member Space under a Collective beyond the five included (ADR-1709). Per Space, so a
