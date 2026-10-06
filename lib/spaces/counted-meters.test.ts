@@ -14,19 +14,30 @@ vi.mock('@/lib/pricing/space-allowance', () => ({
   spaceAllowanceVerdict: (...a: unknown[]) => verdict(...a),
   spaceAllowanceHeadroom: (...a: unknown[]) => headroom(...a),
 }))
+const leadership = vi.fn()
+let eventRow: Record<string, unknown> | null = { space_id: 'root', host_space_id: 'space-9', host_id: 'host-1' }
+let hostingSpace: string | null = 'space-9'
+vi.mock('@/lib/pricing/member-leadership', () => ({
+  memberWithinLeadershipAllowance: (...a: unknown[]) => leadership(...a),
+}))
+vi.mock('@/lib/events/host-space', () => ({ resolveHostingSpaceIdFromRow: async () => hostingSpace }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => {
       const q = { table, filters: [] as unknown[][] }
       queries.push(q)
       const chain: Record<string, unknown> = {}
-      for (const m of ['select', 'eq', 'in', 'gte', 'is']) {
+      for (const m of ['select', 'eq', 'in', 'gte', 'is', 'neq', 'or']) {
         chain[m] = (...args: unknown[]) => {
           q.filters.push([m, ...args])
           return chain
         }
       }
-      chain.maybeSingle = async () => ({ data: { space_id: planSpaceId } })
+      chain.maybeSingle = async () => {
+        if (table === 'events') return { data: eventRow }
+        if (table === 'profiles') return { data: { membership_tier: 'crew' } }
+        return { data: { space_id: planSpaceId } }
+      }
       chain.then = (resolve: (v: unknown) => unknown) => resolve({ count: nextCount, error: null })
       return chain
     },
@@ -34,6 +45,10 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 import {
+  checkEventGuestMeter,
+  checkSpaceCircleMeter,
+  checkSpaceEventMeter,
+  checkSpaceServicesMeter,
   checkHostedCollaboratorMeter,
   checkMembershipTierMeter,
   checkSpaceBookingMeter,
@@ -48,6 +63,9 @@ beforeEach(() => {
   gatesLive.mockReset().mockResolvedValue(true)
   verdict.mockReset().mockResolvedValue({ allowed: true })
   headroom.mockReset().mockResolvedValue(null)
+  leadership.mockReset().mockResolvedValue(true)
+  eventRow = { space_id: 'root', host_space_id: 'space-9', host_id: 'host-1' }
+  hostingSpace = 'space-9'
 })
 
 describe('during the beta nothing is counted and every write passes', () => {
@@ -135,5 +153,46 @@ describe('every failure grants', () => {
     verdict.mockRejectedValue(new Error('down'))
     expect(await checkSpaceBookingMeter('s1')).toEqual({ ok: true })
     expect(await checkHostedCollaboratorMeter('s1')).toEqual({ ok: true })
+  })
+})
+
+describe('the new Space meters (LIVE-750)', () => {
+  it('Circles count the Space Circle and every live or draft Circle', async () => {
+    nextCount = 3
+    await checkSpaceCircleMeter('s1')
+    expect(verdict).toHaveBeenCalledWith('s1', 'space_circles', 3)
+    expect(queries[0]!.filters).toContainEqual(['in', 'status', ['draft', 'forming', 'active']])
+  })
+
+  it('upcoming events count only future, live events the Space hosts', async () => {
+    await checkSpaceEventMeter('s1')
+    expect(verdict.mock.calls[0]![1]).toBe('space_events')
+    const f = queries[0]!.filters
+    expect(f).toContainEqual(['eq', 'host_space_id', 's1'])
+    expect(f).toContainEqual(['is', 'removed_at', null])
+    expect(f.some((x) => x[0] === 'gte' && x[1] === 'starts_at')).toBe(true)
+  })
+
+  it('a service set that grows must fit the headroom', async () => {
+    nextCount = 1
+    headroom.mockResolvedValue(0)
+    expect((await checkSpaceServicesMeter('s1', 2)).ok).toBe(false)
+    expect(await checkSpaceServicesMeter('s1', 1)).toEqual({ ok: true })
+  })
+
+  it('a Space-hosted event reads the Space plan for guests', async () => {
+    nextCount = 100
+    verdict.mockResolvedValue({ allowed: false })
+    expect((await checkEventGuestMeter('e1')).ok).toBe(false)
+    expect(verdict).toHaveBeenCalledWith('space-9', 'space_event_guests', 100)
+    expect(leadership).not.toHaveBeenCalled()
+  })
+
+  it('a personal event reads its host tier for guests', async () => {
+    hostingSpace = null
+    nextCount = 30
+    leadership.mockResolvedValue(false)
+    expect((await checkEventGuestMeter('e1')).ok).toBe(false)
+    expect(leadership).toHaveBeenCalledWith('event_guests', 'crew', 30)
   })
 })

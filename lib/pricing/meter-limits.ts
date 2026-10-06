@@ -62,6 +62,14 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_collaborators: { free: 0, business: 3, collective: null },
   space_membership_tiers: { free: 1, business: 5, collective: null },
   space_member_benefits: { free: 1, business: null, collective: null },
+  // New Space meters (LIVE-750, ADR-1709). The Space Circle counts toward space_circles; events count
+  // while upcoming; guests are per Event; shop listings on free are inquiries only (selling is LIVE-753).
+  space_circles: { free: 3, business: 10, collective: null },
+  space_events: { free: 5, business: null, collective: null },
+  space_event_guests: { free: 100, business: null, collective: null },
+  space_practice_publish: { free: 5, business: null, collective: null },
+  space_services: { free: 1, business: null, collective: null },
+  space_shop_listings: { free: 5, business: null, collective: null },
   vera_unlimited: { free: 10, crew: null },
   // FIRST ONE FREE — the personal leadership allowances. A free Member leads at one of each; Crew gets
   // the host kit (ADR-1709): 5 Circles, 10 Events, 5 Journeys, 50 people per Journey. Nothing here is
@@ -74,4 +82,6 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   // (`practice.create`, lib/core/capabilities.ts), so the free rung is a real quantity.
   practice_publish: { free: 3, crew: null },
   event_create: { free: 2, crew: 10 },
+  // Guests per personal Event (LIVE-750): Member 30, Crew 100.
+  event_guests: { free: 30, crew: 100 },
 }

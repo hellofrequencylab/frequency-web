@@ -21,6 +21,7 @@ import { canCreate } from '@/lib/core/load-capabilities'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { createPractice, getPractice, setPracticeStatus, notifyStaffOfPendingPractice } from '@/lib/practices'
+import { checkSpacePracticeMeter } from '@/lib/spaces/counted-meters'
 
 async function authorizeSpaceAuthor(
   slug: string,
@@ -111,6 +112,10 @@ export async function setSpacePracticeLiveAction(slug: string, practiceId: strin
   if ('error' in gate) return fail(gate.error)
 
   if ((await practiceSpaceId(practiceId)) !== gate.spaceId) return fail('Not allowed.')
+
+  // Live Practices per Space (space_practice_publish, LIVE-750).
+  const meter = await checkSpacePracticeMeter(gate.spaceId)
+  if (!meter.ok) return fail(meter.error)
 
   await setPracticeStatus(practiceId, 'approved')
   revalidatePath(`/spaces/${slug}/practices`)
