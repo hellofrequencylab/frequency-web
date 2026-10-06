@@ -213,6 +213,18 @@
       "reason": "The native sign-in return path (LIVE-718). Reads nothing and grants nothing: it forwards the query string unchanged to the web's own /auth/callback on the same origin, which does the PKCE exchange and validates next. No caller data crosses.",
       "checked": "2026-10-06",
       "digest": "3629805b1c6af11c"
+    },
+    "app/hosted/[host]/robots.txt/route.ts": {
+      "verdict": "public",
+      "reason": "robots.txt for a Space website on its own domain (LIVE-783). proxy.ts rewrites <domain>/robots.txt here. resolveHostedCrawlTarget resolves the host to a PUBLISHED site through the same bound-domain lookup the hosted pages use; an unbound host or unpublished site gets Disallow: /. No caller identity, no private data.",
+      "checked": "2026-10-06",
+      "digest": "f5d75a3df26aecab"
+    },
+    "app/hosted/[host]/sitemap.xml/route.ts": {
+      "verdict": "public",
+      "reason": "sitemap.xml for a Space website on its own domain (LIVE-783). Lists only the published site's own page slugs, the pages the domain already serves anonymously; a host with no published site 404s. No caller identity, no private data.",
+      "checked": "2026-10-06",
+      "digest": "d6be016876878ece"
     }
   }
 }

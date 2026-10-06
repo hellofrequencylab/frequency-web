@@ -15,6 +15,9 @@ import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SiteChrome } from '@/components/sites/site-chrome'
 import { SiteHero } from '@/components/sites/site-hero'
 import { buttonClasses } from '@/components/ui/button'
+import { appOrigin } from '@/lib/sites/host'
+import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
+import { boundSiteDomain } from '@/lib/sites/site-domain'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). /sites/<slug> and /sites/<slug>/<page>
 // render the Space's own pages (the same block docs the Space page editor saves, so the owner edits once
@@ -25,8 +28,11 @@ import { buttonClasses } from '@/components/ui/button'
 // (preferences.websitePublished, written by setWebsitePublished). An unpublished site shows a friendly
 // Coming soon page that points back to the Space on Frequency, so a shared link never dead-ends.
 //
-// noindex until the site SEO phase lands its own canonical, robots and sitemap: today the same content
-// is also the indexable /spaces/<slug> profile, and two indexable copies would compete.
+// INDEXABLE ONCE PUBLISHED (PROG-E10 phase 4, LIVE-783). A published site is its own site to a search
+// engine: its canonical is the Space's bound domain when it has one (else /sites/<slug>), and its title,
+// description, share card and favicon come from the Space's brand. The /spaces/<slug> profile points
+// its canonical at the domain too (lib/spaces/profile-metadata.ts), so the two copies never compete.
+// An unpublished site, a Private Space and an unknown page all stay noindex.
 
 export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): Promise<Metadata> {
   const space = await getVisibleSpaceBySlug(slug, null)
@@ -36,12 +42,24 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
     return { title: `${brandName} website coming soon`, robots: { index: false } }
   }
   const page = readProfilePages(space.preferences).find((p) => p.slug === pageSlug)
-  const title = !page || page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`
+  if (!page) return { title: { absolute: brandName }, robots: { index: false } }
+  const title = page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`
+  const description = space.tagline?.trim() || undefined
+  const canonical = sitePageUrl(siteBaseUrl(space.slug, await boundSiteDomain(space), appOrigin()), page.slug)
+  const shareImage = space.coverImageUrl || space.brandLogoUrl || null
+  const images = shareImage ? [{ url: shareImage, alt: brandName }] : undefined
   return {
     // `absolute` so the root layout's "| Frequency" template never brands somebody's own website.
     title: { absolute: title },
-    description: space.tagline ?? undefined,
-    robots: { index: false },
+    description,
+    alternates: { canonical },
+    robots: { index: true, follow: true },
+    openGraph: { title, description, url: canonical, siteName: brandName, type: 'website', images },
+    twitter: { card: shareImage ? 'summary_large_image' : 'summary', title, description, images: shareImage ? [shareImage] : undefined },
+    // The Space's logo as the tab icon, so the site never wears Frequency's favicon.
+    ...(space.brandLogoUrl
+      ? { icons: { icon: [{ url: space.brandLogoUrl }], apple: [{ url: space.brandLogoUrl }] } }
+      : {}),
   }
 }
 
