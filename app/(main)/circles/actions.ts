@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
-import { joinCircleAsMember } from '@/lib/circles/join'
+import { joinCircleAsMember, leaveCircleAsMember } from '@/lib/circles/join'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { sendInviteEmail } from '@/lib/email'
 import { SITE_URL } from '@/lib/site'
@@ -461,12 +461,7 @@ export async function leaveCircle(circleId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
 
-  const admin = createAdminClient()
-  await admin
-    .from('memberships')
-    .delete()
-    .eq('profile_id', myProfileId)
-    .eq('circle_id', circleId)
+  await leaveCircleAsMember(myProfileId, circleId)
 
   revalidatePath('/circles')
   revalidatePath('/feed')

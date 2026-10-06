@@ -276,3 +276,22 @@ async function settleExistingMembership(
   }
   return 'reactivated'
 }
+
+/**
+ * Leave a circle as `myProfileId` (LIVE-716): the body of the leaveCircle Server Action, shared with
+ * /api/v1/circles/{id}/membership. Service role for the same reason as the join (the memberships
+ * delete policy is crew+); the row it deletes is always the caller's own. Its error is read now:
+ * the action used to discard it and report a leave that did not happen.
+ */
+export async function leaveCircleAsMember(myProfileId: string, circleId: string): Promise<ActionResult> {
+  const { error } = await createAdminClient()
+    .from('memberships')
+    .delete()
+    .eq('profile_id', myProfileId)
+    .eq('circle_id', circleId)
+  if (error) {
+    console.error('[circles] leave failed', { code: error.code, message: error.message })
+    return fail('Could not leave the circle. Try again.')
+  }
+  return ok()
+}

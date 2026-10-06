@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-716",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.readFileSync(f,\"utf8\");const walk=(d)=>{if(!fs.existsSync(d))return[];return fs.readdirSync(d,{withFileTypes:true}).flatMap((x)=>{const p=path.join(d,x.name);return x.isDirectory()?(x.name===\"node_modules\"?[]:walk(p)):[p]})};const v1=()=>walk(\"app/api/v1\").filter((f)=>/route\\.ts$/.test(f));const v1src=()=>v1().map(read).join(\"\\n\");const loops=[\"feed\",\"circles\",\"events\",\"practices\",\"messages\",\"notifications\",\"profile\"];const miss=loops.filter((l)=>!walk(\"app/api/v1/\"+l).some((f)=>/route\\.ts$/.test(f)&&/@\\/lib\\/contract/.test(read(f))));if(miss.length)fail(\"no contract endpoint a native client can call for: \"+miss.join(\", \"));if(!walk(\"app/api/v1/events\").some((f)=>/rsvp/i.test(f)))fail(\"no RSVP endpoint under /api/v1/events\");if(!walk(\"app/api/v1/practices\").some((f)=>/log/i.test(f)))fail(\"no practice-log endpoint under /api/v1/practices\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nShipped 2026-10-06: /api/v1 routes for the feed (page, post, react), Circles (mine, one, join and leave), events (list, RSVP and cancel, check-in), practices (mine, one, log and undo), messages (inbox, conversation, room, send), notifications (list, mark read) and the profile (me, edit, public by handle). Each calls the web's own function under asCaller; the bearer client now answers a no-argument auth.getUser() with the verified user so cookie-era readers see the app's caller."
+  }
+}

@@ -574,6 +574,25 @@ export const myActiveCircleIds = cache(async (profileId: string | null | undefin
   }
 })
 
+/** Every Circle the member is an ACTIVE member of, newest first (LIVE-716, the app's "my Circles").
+ *  The same two bounded reads as `myCirclesInSpace` below, without the Space filter. [] on error. */
+export async function listMyCircles(profileId: string, limit = 100): Promise<SpaceCircle[]> {
+  try {
+    const ids = [...(await myActiveCircleIds(profileId))]
+    if (ids.length === 0) return []
+    const { data } = await createAdminClient()
+      .from('circles')
+      .select(COLS)
+      .in('status', [...LISTABLE_CIRCLE_STATUS])
+      .in('id', ids)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    return (data as SpaceCircle[] | null) ?? []
+  } catch {
+    return []
+  }
+}
+
 /** The viewer's OWN active circles inside one Space. Two bounded reads (their memberships, then
  *  those circles narrowed to this space), never a join, and [] on anything unexpected. */
 async function myCirclesInSpace(

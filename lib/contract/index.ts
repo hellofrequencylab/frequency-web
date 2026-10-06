@@ -242,3 +242,237 @@ export const nearbyNodeView = z.object({
   distanceM: z.number(),
 })
 export const nearbyNodesResponse = envelope(z.object({ items: z.array(nearbyNodeView) }))
+
+// ── The core loops (LIVE-716) ───────────────────────────────────────────────────────────────────
+//
+// Every list is a page: `{ items, nextCursor }`, with `nextCursor` null on the last page. A list
+// whose reader has no cursor yet always answers null (one page), and gains one additively.
+
+export function page<T extends z.ZodType>(item: T) {
+  return z.object({ items: z.array(item), nextCursor: z.string().nullable() })
+}
+
+/** Another member, as every list shows them. */
+export const peerView = z.object({
+  id: z.string(),
+  handle: z.string().nullable(),
+  displayName: z.string().nullable(),
+  avatarUrl: z.string().nullable(),
+})
+export type PeerView = z.infer<typeof peerView>
+
+// Feed: GET /api/v1/feed, POST /api/v1/feed/posts, POST /api/v1/feed/posts/{id}/reactions
+
+export const feedQuery = z.object({
+  sort: z.enum(['recent', 'relevant', 'popular']).default('relevant'),
+  /** A Circle or channel id: that scope's posts only, as its own page shows them. */
+  scope: z.uuid().optional(),
+})
+export const feedPostView = z.object({
+  id: z.string(),
+  body: z.string().nullable(),
+  postType: z.string(),
+  createdAt: z.string(),
+  mediaUrls: z.array(z.string()),
+  visibility: z.string().nullable(),
+  scopeId: z.string().nullable(),
+  isPinned: z.boolean(),
+  reactionCount: z.number(),
+  commentCount: z.number(),
+  author: peerView,
+  /** The reaction keys the caller has on this post. */
+  myReactions: z.array(z.string()),
+})
+export type FeedPostView = z.infer<typeof feedPostView>
+export const feedResponse = envelope(page(feedPostView))
+
+export const postCreateInput = z.object({
+  body: z.string().max(5000).optional(),
+  scopeId: z.uuid(),
+  visibility: z.enum(['public', 'group', 'cluster']).default('public'),
+  postType: z.enum(['feed', 'note', 'announcement']).default('feed'),
+  imageUrl: z.url().max(2000).optional(),
+})
+export const postCreateResponse = envelope(z.object({ posted: z.literal(true) }))
+
+export const reactionInput = z.object({ reaction: z.string().min(1).max(32), active: z.boolean() })
+export const reactionResponse = envelope(z.object({ active: z.boolean(), count: z.number() }))
+
+// Circles: GET /api/v1/circles (mine), GET /api/v1/circles/{id}, POST/DELETE .../membership
+
+export const circleView = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  about: z.string().nullable(),
+  type: z.string(),
+  memberCount: z.number(),
+  status: z.string(),
+  imageUrl: z.string().nullable(),
+})
+export type CircleView = z.infer<typeof circleView>
+export const circlesResponse = envelope(page(circleView))
+export const circleResponse = envelope(circleView)
+export const membershipResponse = envelope(z.object({ member: z.boolean() }))
+
+// Events: GET /api/v1/events, POST/DELETE /api/v1/events/{id}/rsvp, POST .../check-in
+
+export const eventView = z.object({
+  id: z.string(),
+  slug: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  startsAt: z.string(),
+  endsAt: z.string().nullable(),
+  city: z.string().nullable(),
+  circleId: z.string().nullable(),
+  circleName: z.string().nullable(),
+  priceCents: z.number().nullable(),
+})
+export type EventView = z.infer<typeof eventView>
+export const eventsQuery = z.object({ slug: z.string().min(1).max(200).optional() })
+export const eventsResponse = envelope(page(eventView))
+export const eventResponse = envelope(eventView)
+
+export const rsvpInput = z.object({ status: z.enum(['going', 'maybe', 'not_going']) })
+export const rsvpView = z.object({
+  /** going, waitlist, maybe or not_going; null when the caller has no RSVP row. */
+  status: z.string().nullable(),
+  /** pending while a host approval is outstanding. */
+  approvalStatus: z.string().nullable(),
+})
+export const rsvpResponse = envelope(rsvpView)
+
+export const checkInResponse = envelope(
+  z.object({
+    ok: z.boolean(),
+    alreadyCheckedIn: z.boolean(),
+    zapsAwarded: z.number(),
+    reason: z.string().nullable(),
+  }),
+)
+
+// Practices: GET /api/v1/practices (mine), GET /api/v1/practices/{id}, POST/DELETE .../log
+
+export const practiceView = z.object({
+  id: z.string(),
+  slug: z.string().nullable(),
+  title: z.string(),
+  summary: z.string().nullable(),
+  description: z.string().nullable(),
+  icon: z.string().nullable(),
+  headerImage: z.string().nullable(),
+  cadence: z.string().nullable(),
+  durationMin: z.number().nullable(),
+  /** A practice with a timer is logged from inside its session, never with a one-tap log. */
+  usesTimer: z.boolean(),
+  timerKind: z.string(),
+})
+export type PracticeView = z.infer<typeof practiceView>
+export const myPracticeView = practiceView.extend({
+  loggedToday: z.boolean(),
+  source: z.enum(['self', 'journey']),
+  cue: z.string().nullable(),
+})
+export const myPracticesResponse = envelope(page(myPracticeView))
+export const practiceResponse = envelope(practiceView)
+
+export const practiceLogInput = z.object({
+  circleId: z.uuid().nullable().optional(),
+  /** The device's IANA zone, a fallback only: the profile's home zone wins (as on the web). */
+  timezone: z.string().max(64).nullable().optional(),
+})
+export const practiceLogResponse = envelope(
+  z.looseObject({ logged: z.boolean(), zapsAwarded: z.number().optional() }),
+)
+export const practiceUnlogResponse = envelope(z.looseObject({}))
+
+// Messages: GET /api/v1/messages, GET/POST /api/v1/messages/{id}, GET/POST .../rooms/{id}
+
+export const messagesSummaryView = z.object({
+  totalUnread: z.number(),
+  rooms: z.array(
+    z.object({ id: z.string(), name: z.string(), visibility: z.string(), lastMessageAt: z.string().nullable(), unread: z.number() }),
+  ),
+  conversations: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string().nullable(),
+      participants: z.array(peerView),
+      lastMessage: z.object({ body: z.string(), createdAt: z.string() }).nullable(),
+      unread: z.number(),
+    }),
+  ),
+})
+export const messagesSummaryResponse = envelope(messagesSummaryView)
+
+export const threadView = z.object({
+  id: z.string(),
+  title: z.string(),
+  name: z.string().nullable(),
+  participants: z.array(peerView),
+  /** Oldest first, the newest 100. Reading the thread marks it read. */
+  messages: z.array(z.object({ id: z.string(), senderId: z.string(), body: z.string(), createdAt: z.string() })),
+})
+export const threadResponse = envelope(threadView)
+
+export const roomThreadView = z.object({
+  id: z.string(),
+  name: z.string(),
+  visibility: z.string(),
+  canPost: z.boolean(),
+  messages: z.array(
+    z.object({ id: z.string(), authorId: z.string(), body: z.string(), createdAt: z.string(), author: peerView.nullable() }),
+  ),
+})
+export const roomThreadResponse = envelope(roomThreadView)
+
+export const messageSendInput = z.object({ body: z.string().trim().min(1).max(4000) })
+export const messageSendResponse = envelope(z.object({ sent: z.literal(true) }))
+
+// Notifications: GET /api/v1/notifications, POST /api/v1/notifications/read
+
+export const notificationView = z.object({
+  id: z.string(),
+  type: z.string(),
+  referenceType: z.string().nullable(),
+  referenceId: z.string().nullable(),
+  body: z.string().nullable(),
+  readAt: z.string().nullable(),
+  createdAt: z.string(),
+  actor: peerView.nullable(),
+})
+export const notificationsResponse = envelope(
+  page(notificationView).extend({ unread: z.number().nullable() }),
+)
+export const notificationsReadResponse = envelope(z.object({ read: z.literal(true) }))
+
+// Profile: GET/PATCH /api/v1/profile, GET /api/v1/profile/{handle}
+
+export const profileView = z.object({
+  id: z.string(),
+  handle: z.string().nullable(),
+  displayName: z.string().nullable(),
+  avatarUrl: z.string().nullable(),
+  headerImageUrl: z.string().nullable(),
+  bio: z.string().nullable(),
+  website: z.string().nullable(),
+  city: z.string().nullable(),
+  communityRole: z.string().nullable(),
+  membershipTier: z.string().nullable(),
+  createdAt: z.string().nullable(),
+})
+export type ProfileView = z.infer<typeof profileView>
+export const profileResponse = envelope(profileView)
+
+/** The fields Settings → Profile edits. A field left out keeps its stored value. */
+export const profileEditInput = z.object({
+  displayName: z.string().max(80).optional(),
+  handle: z.string().max(40).optional(),
+  bio: z.string().max(1000).optional(),
+  website: z.string().max(200).optional(),
+  city: z.string().max(120).optional(),
+})
+
+export const publicProfileView = profileView.omit({ city: true }).extend({ blockedByMe: z.boolean() })
+export const publicProfileResponse = envelope(publicProfileView)

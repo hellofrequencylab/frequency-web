@@ -14,7 +14,7 @@ type ServerClient = ReturnType<typeof createServerClient<Database>>
 // read runs as the same person under the same RLS. The two clients expose the same query API.
 export async function createClient(): Promise<ServerClient> {
   const bearer = bearerIdentity()
-  if (bearer) return createBearerClient(bearer.token) as unknown as ServerClient
+  if (bearer) return createBearerClient(bearer.token, bearer.user) as unknown as ServerClient
   const cookieStore = await cookies()
 
   return createServerClient<Database>(
