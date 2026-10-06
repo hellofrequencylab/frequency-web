@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-714",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/commerce/checkout.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-714: checkout.ts missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const a=s.indexOf(\"export async function refundCommerceOrder\");const c=s.indexOf(\"async function recordPartialCommerceRefund\");if(a<0||c<0){console.error(\"SCAN-714: refundCommerceOrder or recordPartialCommerceRefund not found\");process.exit(79)}const refund=s.slice(a,s.indexOf(\"\\nexport async function\",a+1));const partial=s.slice(c,s.indexOf(\"\\nasync function\",c+1)>0?s.indexOf(\"\\nasync function\",c+1):s.length);const bad=[];if(/if\\s*\\(\\s*order\\.refunded_at\\s*\\)\\s*return\\s*\\{\\s*ok:\\s*true\\s*\\}/.test(refund))bad.push(\"refundCommerceOrder still returns ok without a Stripe call whenever refunded_at is set, even after a partial refund\");if(/\\.is\\(\\x27refunded_at\\x27,\\s*null\\)/.test(partial))bad.push(\"recordPartialCommerceRefund still drops a second cumulative partial behind the refunded_at is null guard\");if(bad.length){console.error(\"SCAN-714: \"+bad.join(\"; \")+\", so a dispute approved after a goodwill partial closes as Approved and refunded while the buyer stays under-refunded.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: refundCommerceOrder reads metadata.refund, treats a recorded partial as money still owed, refunds the remainder and records a full refund; recordPartialCommerceRefund is cumulative, rewriting the record only when the refunded amount grew and reversing only the delta, guarded on the stored partial amount instead of refunded_at. checkout.test covers the top-up."
+  }
+}

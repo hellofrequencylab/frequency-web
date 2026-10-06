@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-711",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/orders/page.tsx\";if(!fs.existsSync(f)){console.error(\"SCAN-711: orders page missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const reads=/searchParams/.test(s);const settles=/recordCommerceOrderFromSessionId/.test(s);if(!reads||!settles){console.error(\"SCAN-711: app/(main)/orders/page.tsx \"+(reads?\"\":\"takes no searchParams, so ok=1, booked=1 and session_id from the Checkout success URL are ignored\")+(reads||settles?\"\":\"; and \")+(settles?\"\":\"never settles the session_id it is handed, so a hosted buyer sees No orders yet until the webhook lands\")+\".\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: the orders page takes searchParams, settles a cs_ session_id on return through recordCommerceOrderFromSessionId behind the same per-IP rateLimitOk as settleCommerceOrderAction, and shows a confirmation banner for ok=1 or booked=1."
+  }
+}
