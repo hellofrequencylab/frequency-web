@@ -150,7 +150,7 @@ export const data: Data = {
             icon: 'Leaf',
             image: '',
             title: 'Practitioners',
-            body: 'You teach, coach, or hold a regular practice. Bring your class and keep it free for the people who come.',
+            body: 'You teach at a few studios, coach, or are starting a practice as a second career. Bring your classes and your students into one place, and keep it free for the people who come.',
             href: '',
           },
           {
@@ -164,7 +164,7 @@ export const data: Data = {
             icon: 'Coffee',
             image: '',
             title: 'Businesses',
-            body: "You've got a studio, a cafe, or a room and a crowd of regulars. Turn them into people who belong somewhere.",
+            body: "You own a studio, a cafe, or a room with a crowd of regulars. Turn them into people who belong somewhere, and fill the room between classes.",
             href: '',
           },
           {
