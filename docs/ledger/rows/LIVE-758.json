@@ -1,7 +1,7 @@
 {
   "id": "LIVE-758",
   "title": "Setting a price on a free tier shows what Business adds, with keeping it free as an equal choice",
-  "status": "open",
+  "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "M",
@@ -9,9 +9,10 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 5 of the five-tier ladder (ADR-1709). One panel wherever a Member, Crew Host or free Space sets a price (Event, membership, Journey, booking, product): what Business adds, start its 14-day trial in place, or keep it free and receive tips. The draft is kept either way. A generic upgrade event is logged with no wellness detail. Lands with LIVE-753 so the gate never dead-ends.",
+  "detail": "PHASE 5 of the five-tier ladder (ADR-1709). One panel wherever a Member, Crew Host or free Space sets a price (Event, membership, Journey, booking, product): what Business adds, start its 14-day trial in place, or keep it free and receive tips. The draft is kept either way. A generic upgrade event is logged with no wellness detail. Lands with LIVE-753 so the gate never dead-ends. Shipped 2026-10-06: components/pricing/upgrade-moment.tsx lists what Business adds (lib/pricing/payments-copy.ts, the price read from the catalog by lib/pricing/business-offer.ts), starts the Business trial in place through startSpaceLoadoutCheckout and CheckoutPanel for the Space owner (hosted fallback in a new tab), gives Keep it free equal weight, never touches the draft, and logs pricing.upgrade_moment with surface, action and scope only; mounted on the Event form, the membership tier editor, the new-service Spark and the personal product Spark, and a payments refusal from createEvent or setMembershipTiers opens it. Journeys are not wired: the paid-Journey gate already refuses free sellers and there is no Journey price editor to mount on.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const f=\"components/pricing/upgrade-moment.tsx\";const s=r(f);if(!s)fail(\"no upgrade moment panel\");if(!/[Kk]eep it free/.test(s))fail(\"the panel offers no keep-it-free choice\");const walk=(d,o=[])=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=d+\"/\"+e.name;if(e.isDirectory())walk(p,o);else if(/\\.tsx$/.test(e.name))o.push(p)}return o};const n=walk(\"app\").filter((p)=>/upgrade-moment/.test(r(p))).length;if(n<3)fail(\"the panel is mounted on \"+n+\" price surfaces, want Event, membership and booking at least\");console.log(\"ok: the upgrade moment is on the price surfaces\")'"
-  }
+  },
+  "closed": "2026-10-06"
 }

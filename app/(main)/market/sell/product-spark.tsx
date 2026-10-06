@@ -26,6 +26,8 @@ import type { PayoutPrompt } from '@/lib/billing/payout-prompt'
 import { CommerceSpark, type SparkDraft } from '@/components/studio/commerce/commerce-spark'
 import { PRODUCT_MANIFEST } from '@/lib/studio/entities/product'
 import { createMakerProductAction, draftMakerProductCopyAction } from '../../marketplace/commerce-actions'
+import { UpgradeMoment } from '@/components/pricing/upgrade-moment'
+import type { UpgradeOffer } from '@/lib/pricing/business-offer'
 
 /** Read a scalar off the draft as text. */
 function text(draft: SparkDraft, key: string): string {
@@ -33,7 +35,15 @@ function text(draft: SparkDraft, key: string): string {
   return typeof v === 'string' ? v : v === null || v === undefined ? '' : String(v)
 }
 
-export function ProductSpark({ payoutPrompt }: { payoutPrompt: PayoutPrompt | null }) {
+export function ProductSpark({
+  payoutPrompt,
+  upgradeOffer,
+}: {
+  payoutPrompt: PayoutPrompt | null
+  /** The Business offer for the upgrade moment (LIVE-758). A personal listing with a price is an
+   *  inquiry (LIVE-753), so a price typed here opens the panel; absent hides it. */
+  upgradeOffer?: UpgradeOffer
+}) {
   return (
     <CommerceSpark
       manifest={PRODUCT_MANIFEST}
@@ -58,7 +68,7 @@ export function ProductSpark({ payoutPrompt }: { payoutPrompt: PayoutPrompt | nu
         title: 'Have a look before it goes up',
         description: 'Change anything here, or step back to redo the photos and the price.',
         createLabel: 'List it',
-        note: 'Payouts run on Stripe Connect, so the money goes straight to you, and the platform fee stays low.',
+        note: 'A listing from your own account is an inquiry: buyers message you to arrange it. Taking payment comes with a Business Space.',
       }}
       initialDraft={{
         title: '',
@@ -103,6 +113,17 @@ export function ProductSpark({ payoutPrompt }: { payoutPrompt: PayoutPrompt | nu
         return 'That did not go through. Check the name and the price, then try again.'
       }}
       cancel={{ label: 'Not now', href: '/market' }}
+      draftAside={(draft, set) =>
+        upgradeOffer && typeof draft.priceCents === 'number' && draft.priceCents > 0 ? (
+          <UpgradeMoment
+            surface="product"
+            target={{ spaceSlug: null, canUpgrade: false }}
+            offer={upgradeOffer}
+            // Keep it free: list it with no price; buyers message you. Photos and words stay.
+            onKeepFree={() => set('priceCents', null)}
+          />
+        ) : null
+      }
     />
   )
 }

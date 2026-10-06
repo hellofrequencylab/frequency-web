@@ -46,11 +46,12 @@ function parseStringArray(raw: FormDataEntryValue | null): string[] {
 export async function createMakerProductAction(formData: FormData): Promise<void> {
   const profile = await getCallerProfile()
   if (!profile) redirect('/sign-in?next=/market/sell')
-  // 🔴 SIGNED IN IS THE WHOLE GATE. Listing in the Market is open on the free tier (ADR-914, owner
-  // ruling 2026-08-24): never gate the transaction, gate the repeat. A `redirect('/upgrade')` used to
-  // stand on this line and must not come back — the ladder is the RATE the sale settles at (free
-  // Member 10%, Crew 8%, own audience 0%), resolved from the payee's real tier at checkout by
-  // `memberNetworkTakeRateBps`, not a permission to list at all. Locked by ./free-seller.test.ts.
+  // 🔴 SIGNED IN IS THE WHOLE GATE TO LIST. A personal listing stays open on every tier, but since
+  // ADR-1709 (LIVE-753) it is an INQUIRY: personal selling is off, so canTakePayments('profile') is
+  // false and the buyer messages the maker instead of checking out (lib/commerce/checkout.ts). Taking
+  // money for it is what a Business Space is for; tips stay open at 0%. A `redirect('/upgrade')` used
+  // to stand here and must not come back: the listing is never lost behind a wall, and the sell page
+  // offers the upgrade moment beside the price instead. Locked by ./free-seller.test.tsx.
   const profileId = profile.id
 
   const title = String(formData.get('title') ?? '').trim()

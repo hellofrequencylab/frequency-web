@@ -628,8 +628,10 @@ const SPACE_GROUPS: GroupDef[] = [
     rows: [
       {
         key: 'space_storefront',
-        label: 'Storefront and shop',
-        detail: 'Sell your catalog and take orders from your page.',
+        // ADR-1709 (LIVE-753): the gate is shop CHECKOUT at Business. A free Space still lists, inquiries
+        // only (the shop listings meter).
+        label: 'Shop checkout',
+        detail: 'Take orders and payment for your listings from your page.',
         source: { from: 'gate', feature: 'space_storefront' },
       },
       {
@@ -640,10 +642,10 @@ const SPACE_GROUPS: GroupDef[] = [
       },
       {
         key: 'space_memberships',
-        label: 'Memberships',
-        detail: 'Your own membership tiers, and the members on them.',
-        // A GATE, not a meter. LIVE-410 moved the floor to free (ADR-1403 Q3), so every plan
-        // reads Included. The `space_memberships` METER that used to back this row was deleted
+        label: 'Paid memberships',
+        detail: 'Membership tiers people pay for, and the members on them.',
+        // A GATE, not a meter. ADR-1709 (LIVE-753) put PAID memberships at Business; a free Space keeps
+        // one free-to-join tier (the space_membership_tiers row). The `space_memberships` METER that used to back this row was deleted
         // because capping active members punishes a Space for growing. The tier COUNT is a
         // separate row's job (space_membership_tiers). Checkout still refuses when Connect is
         // not payout-ready.

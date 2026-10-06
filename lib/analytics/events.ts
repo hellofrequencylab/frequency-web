@@ -53,6 +53,10 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   { name: 'commerce.checkout_started', category: 'engagement', description: 'A buyer pressed Buy or Get ticket (props.kind).', clientEmittable: true },
   { name: 'commerce.purchase', category: 'engagement', description: 'A Checkout Session settled paid (props.kind, props.value, props.currency, props.transaction_id).', clientEmittable: false },
   { name: 'shop.order_completed', category: 'engagement', description: 'A commerce_order Checkout Session settled paid. Writer for the shop vertical reader.', clientEmittable: false },
+  // ── Pricing (LIVE-758). The upgrade moment on a price surface: shown, trial started, or kept free.
+  // Generic by design: props.surface (event, membership, booking, journey, product), props.action and
+  // props.scope (space or personal) only, never what the event or practice is.
+  { name: 'pricing.upgrade_moment', category: 'feature', description: 'A host met the upgrade moment on a price surface (props.surface, props.action, props.scope).', clientEmittable: true },
 ] as const
 
 const BY_NAME = new Map(ANALYTICS_EVENTS.map((e) => [e.name, e]))

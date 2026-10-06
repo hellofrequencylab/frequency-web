@@ -6,6 +6,9 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { ServiceSpark } from './service-spark'
+import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
+import { loadUpgradeOffer } from '@/lib/pricing/business-offer'
+import type { UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 
 // Add a bookable service to a Space (ADR-596 · docs/STUDIO.md §0, ADR-986). The guided way in to the
 // Shop console's catalog: the Service SPARK, whose fields all come from SERVICE_MANIFEST.
@@ -45,12 +48,22 @@ export default async function NewSpaceServicePage({ params }: { params: Promise<
     channels: ['bookings'],
   })
 
+  // A free Space lists the service, but a price on it is not charged until Business (LIVE-753): the
+  // Spark shows the upgrade moment when one is set (LIVE-758).
+  const upgrade: UpgradeMomentSetup | undefined = (await spaceCanTakePayments(space.id, { plan: space.plan ?? null }))
+    ? undefined
+    : {
+        target: { spaceSlug: slug, canUpgrade: !!viewerProfileId && space.ownerProfileId === viewerProfileId },
+        offer: await loadUpgradeOffer(),
+      }
+
   return (
     <ServiceSpark
       slug={slug}
       spaceId={space.id}
       spaceName={space.brandName ?? space.name}
       payoutPrompt={payoutPrompt}
+      upgrade={upgrade}
     />
   )
 }
