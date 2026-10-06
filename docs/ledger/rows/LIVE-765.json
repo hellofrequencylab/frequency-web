@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-765",
+  "title": "One Journey or Circle can be listed across member Spaces and partner Collectives",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on event sharing. Dated after Founding Collective launch.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"lib/collective/cross-listing.ts\"))fail(\"no cross-listing module\");console.log(\"ok: cross-listing exists\")'"
+  },
+  "wave": "WR"
+}

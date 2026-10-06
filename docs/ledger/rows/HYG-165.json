@@ -1,0 +1,18 @@
+{
+  "id": "HYG-165",
+  "title": "No pricing doc teaches the old model: rewrite PRICING, VALUE-LADDER and PRICING-OPERATIONS, banner the history",
+  "status": "open",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 7 of the five-tier ladder (ADR-1709). docs/PRICING.md, VALUE-LADDER.md, PRICING-OPERATIONS.md rewritten; PRICING-LADDER-PLAN.md, design_handoff/BRIEF-03 and MARKETING-BRIEF bannered or updated; CORE-MODEL, FOCUS-MODEL, SPACES, SPACE-COLLABORATION-AND-SEATS and OFFER-MODEL fixed; Notion training DB updated per DOCS-PROTOCOL.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const bad=[];for(const f of [\"docs/PRICING.md\",\"docs/VALUE-LADDER.md\",\"docs/PRICING-OPERATIONS.md\",\"docs/CORE-MODEL.md\",\"docs/FOCUS-MODEL.md\",\"docs/SPACES.md\",\"docs/OFFER-MODEL.md\"]){const s=r(f);if(/SUPERSEDED/.test(s.split(\"\\n\").slice(0,25).join(\"\\n\")))continue;if(/Business[^\\n]{0,40}\\$29|Collective[^\\n]{0,40}\\$79|free Space sells/i.test(s))bad.push(f)}if(bad.length)fail(\"old model taught in: \"+bad.join(\", \"));console.log(\"ok: no live pricing doc teaches the old model\")'"
+  },
+  "wave": "WR"
+}

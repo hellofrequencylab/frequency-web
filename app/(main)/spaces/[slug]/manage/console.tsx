@@ -402,6 +402,7 @@ export function SpaceManageConsole({
   spaceId,
   sectionHref,
   identityEditor,
+  websiteFeature,
   graceEndsLabel = null,
 }: {
   slug: string
@@ -430,6 +431,8 @@ export function SpaceManageConsole({
    *  beneath its cards (ADR-1336): the one door to a Space's identity, story, location, FAQ and
    *  visibility. */
   identityEditor?: React.ReactNode
+  /** The Website feature card (SpaceWebsiteFeature, built server-side by the board), first on Profile & Settings. */
+  websiteFeature?: React.ReactNode
   /** The beta grace window's end, already formatted ("October 1"), or null when the window is shut or
    *  unreadable. Resolved server-side in manage-board.tsx from the operator's own `beta_grace` setting:
    *  the SAME value featureGatesLive() reads, so the notice and the caps can never disagree. Null means
@@ -476,6 +479,7 @@ export function SpaceManageConsole({
             canDelete={canDelete}
             spaceId={spaceId}
             identityEditor={identityEditor}
+            websiteFeature={websiteFeature}
           />
         ) : inSection.length > 0 ? (
           <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} section={section} />
@@ -509,6 +513,7 @@ export function SpaceSettingsSurface({
   canDelete,
   spaceId,
   identityEditor,
+  websiteFeature,
 }: {
   slug: string
   modules: SpaceModule[]
@@ -517,6 +522,8 @@ export function SpaceSettingsSurface({
   /** The identity editor (SpaceIdentityEditor, built server-side by the board): the same forms the rail
    *  stacks inline for `space.basics`, plus the completeness meter, location and FAQ editors. */
   identityEditor?: React.ReactNode
+  /** The Website feature: leads the tab, above the configuration cards. */
+  websiteFeature?: React.ReactNode
 }) {
   const settingsModules = modules.filter((m) => sectionForModule(m) === 'settings')
   // `space.basics` IS this surface now (the identity editor below), so it draws no card here: a card
@@ -526,6 +533,7 @@ export function SpaceSettingsSurface({
   const danger = settingsModules.find((m) => m.id === 'space.danger')
   return (
     <div className="space-y-6">
+      {websiteFeature}
       {/* MENU & FEATURES (ADR-796): the discoverable entry to the Module Manager, where the owner turns on
           the advanced tools (Enrollment, Check in, Airwaves, Loom, Automation, and the rest) that
           progressive disclosure keeps folded by default, and tidies their menu. Without this card the

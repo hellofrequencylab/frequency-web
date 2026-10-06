@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildOfferRow, isOfferLive, OFFER_TITLE_MAX } from './offers'
+import { buildOfferRow, isOfferLive, OFFER_TITLE_MAX, pickPlaqueOffer } from './offers'
 
 describe('buildOfferRow', () => {
   it('normalises a full offer into partner_offers columns', () => {
@@ -43,5 +43,38 @@ describe('isOfferLive', () => {
     expect(isOfferLive({ active: true, valid_until: '2026-09-06T00:00:00.000Z' }, now)).toBe(true)
     expect(isOfferLive({ active: true, valid_until: '2026-09-01T00:00:00.000Z' }, now)).toBe(false)
     expect(isOfferLive({ active: false, valid_until: null }, now)).toBe(false)
+  })
+})
+
+describe('pickPlaqueOffer (LIVE-673)', () => {
+  const plain = { id: 'plain', quest_id: null }
+  const other = { id: 'other', quest_id: null }
+  const quest = { id: 'quest', quest_id: 'q1' }
+  it('credits the one ordinary offer', () => {
+    expect(pickPlaqueOffer([plain], new Set())).toBe(plain)
+  })
+  it('keeps a Quest sponsor reward from a member who has not finished the Quest', () => {
+    expect(pickPlaqueOffer([quest], new Set())).toBeNull()
+    expect(pickPlaqueOffer([plain, quest], new Set())).toBe(plain)
+  })
+  it('claims the earned Quest reward first, even beside an ordinary offer', () => {
+    expect(pickPlaqueOffer([quest], new Set(['q1']))).toBe(quest)
+    expect(pickPlaqueOffer([plain, quest], new Set(['q1']))).toBe(quest)
+  })
+  it('never claims a Quest reward twice', () => {
+    expect(pickPlaqueOffer([plain, quest], new Set(['q1']), new Set(['quest']))).toBe(plain)
+  })
+  it('does not guess between two ordinary offers', () => {
+    expect(pickPlaqueOffer([plain, other], new Set())).toBeNull()
+  })
+})
+
+describe('buildOfferRow quest link (LIVE-673)', () => {
+  it('stores a sponsored Quest and clears an empty one', () => {
+    const base = { title: 'Free tea', description: '', terms: '', validUntil: '', active: true }
+    const a = buildOfferRow({ ...base, questId: ' q1 ' })
+    const b = buildOfferRow({ ...base, questId: '' })
+    expect(a.ok && a.row.quest_id).toBe('q1')
+    expect(b.ok && b.row.quest_id).toBeNull()
   })
 })
