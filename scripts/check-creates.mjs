@@ -172,6 +172,7 @@ export const ENTITY_WRITES = new Map([
 
   // ── Copies. The source row is the consent; there is no draft to review. ─────────────────────
   ['lib/circles/remix.ts::remixTemplate', { role: 'copy', entity: 'circle', why: 'Remixes an existing template Circle into a private draft the member owns.' }],
+  ['lib/circles/sister.ts::seedSisterCircle', { role: 'copy', entity: 'circle', why: 'Copies a full live Circle into a private sister draft the starter hosts (LIVE-665); publishing goes through publishCircle and its hosting allowance.' }],
   ['lib/journey-plans.ts::forkPlan', { role: 'copy', entity: 'journey', why: 'Forks an existing Journey the member can already see.' }],
   ['lib/practices.ts::forkPractice', { role: 'copy', entity: 'practice', why: 'Forks (remixes or claims) an existing practice into a private copy the member owns, with remixed_from and root_practice_id set.' }],
   ['lib/journey-plans.ts::duplicatePlan', { role: 'copy', entity: 'journey', why: 'Duplicates a Journey the member already owns.' }],
