@@ -55,6 +55,18 @@ describe('routeSiteHost', () => {
   })
 })
 
+describe('the internal /hosted route on Frequency (LIVE-784)', () => {
+  it("404s /hosted asked for directly on Frequency's own host, so a site is never served twice", () => {
+    expect(routeSiteHost('frequencylocal.com', '/hosted/danieltyack.com', '')).toEqual({ kind: 'not-found' })
+    expect(routeSiteHost('frequencylocal.com', '/hosted', '')).toEqual({ kind: 'not-found' })
+    expect(routeSiteHost('frequencylocal.com', '/hostedx', '')).toEqual({ kind: 'none' })
+  })
+
+  it('sends /hosted on a site host off to Frequency, where it 404s', () => {
+    expect(routeSiteHost('danieltyack.com', '/hosted/other.com', '').kind).toBe('redirect')
+  })
+})
+
 describe("a site host's crawler files (LIVE-783)", () => {
   it('rewrites robots.txt and sitemap.xml to the hosted crawler routes', () => {
     expect(routeSiteHost('danieltyack.com', '/robots.txt', '')).toEqual({

@@ -21,6 +21,7 @@ import { withProfileData, type ProfileDataPatch } from '@/lib/spaces/profile-dat
 import { normalizeSpaceLocation } from '@/lib/spaces/location'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { parseSiteDomain } from '@/lib/sites/domain'
+import { refreshSite } from '@/lib/sites/site-cache'
 import {
   addSiteDomain,
   removeSiteDomain as detachSiteDomain,
@@ -125,6 +126,7 @@ export async function setSpaceBusinessInfo(slug: string, patch: ProfileDataPatch
   // The profile data shows across every public profile route (Home + custom pages + the Spotlight),
   // so revalidate the whole space layout, not just the landing.
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -168,6 +170,7 @@ export async function setSpaceImages(
   if (error) return fail('Could not save your images. Try again.')
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -230,6 +233,7 @@ export async function setSpaceCoverScrim(slug: string, scrim: CoverScrim): Promi
   }
 
   revalidatePath(`/spaces/${slug}`)
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -254,6 +258,7 @@ export async function setSpaceLogoBackdrop(slug: string, backdrop: LogoBackdrop)
   }
 
   revalidatePath(`/spaces/${slug}`)
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -276,6 +281,7 @@ export async function setSpaceCoverFocus(slug: string, focus: string): Promise<A
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -319,6 +325,7 @@ export async function setSpaceHeaderCta(
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -349,6 +356,7 @@ export async function setSpaceHeroLook(
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -381,6 +389,7 @@ export async function setSpaceAccent(slug: string, token: string): Promise<Actio
   if (error) return fail('Could not update the accent. Try again.')
 
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -399,7 +408,9 @@ export async function setWebsitePublished(slug: string, published: boolean): Pro
   const saved = await writePreferences(auth.spaceId, { ...auth.preferences, websitePublished: published === true })
   if (!saved) return fail('Could not update your website. Try again.')
 
-  revalidatePath(`/sites/${slug}`, 'layout')
+  // Expire the cached site (LIVE-784): its `site:<slug>` tag covers /sites/<slug> and the Space's own
+  // domain, so the publish gate is re-decided on the next request either way.
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -459,6 +470,9 @@ export async function connectSiteDomain(slug: string, input: string): Promise<Ac
     }
   }
 
+  // The site's canonical moves to the domain, and a 404 cached for the domain before it was bound must go.
+  refreshSite(slug)
+  revalidatePath(`/hosted/${domain}`, 'layout')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok({ domain, ...(await siteDomainStatus(domain)) })
 }
@@ -486,6 +500,9 @@ export async function removeSiteDomain(slug: string): Promise<ActionResult> {
     if (!removed.ok) return fail('Could not remove the domain from hosting. Try again.')
   }
   if ((await writeSpaceDomain(auth.spaceId, null)) !== 'ok') return fail('Could not remove your domain. Try again.')
+  // The site's pages cached for the old domain stop serving, and its canonical returns to /sites.
+  refreshSite(slug)
+  revalidatePath(`/hosted/${auth.domain}`, 'layout')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
@@ -500,6 +517,7 @@ export async function removeSiteDomain(slug: string): Promise<ActionResult> {
  *  page) + the Page manager. */
 function revalidateNav(slug: string): void {
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage/layout`)
 }
 
@@ -650,6 +668,7 @@ export async function setSpaceLocation(slug: string, input: unknown): Promise<Ac
   // The pin feeds the Around You map, and the address feeds every public profile route's Contact
   // card, so both the community surface and the whole space layout have to be refreshed.
   revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
   revalidatePath(`/spaces/${slug}/manage`)
   revalidatePath('/nearby')
   return ok()

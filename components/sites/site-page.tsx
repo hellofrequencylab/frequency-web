@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getSiteSpace } from '@/lib/sites/site-cache'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { hasPage, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
@@ -28,6 +28,10 @@ import { boundSiteDomain } from '@/lib/sites/site-domain'
 // (preferences.websitePublished, written by setWebsitePublished). An unpublished site shows a friendly
 // Coming soon page that points back to the Space on Frequency, so a shared link never dead-ends.
 //
+// CACHED (PROG-E10 phase 5, LIVE-784). The routes are ISR and the Space row comes through getSiteSpace,
+// cached under `site:<slug>`; the owner's saves and the publish switch expire it (lib/sites/site-cache.ts),
+// so the publish gate below is re-decided on the first request after a toggle.
+//
 // INDEXABLE ONCE PUBLISHED (PROG-E10 phase 4, LIVE-783). A published site is its own site to a search
 // engine: its canonical is the Space's bound domain when it has one (else /sites/<slug>), and its title,
 // description, share card and favicon come from the Space's brand. The /spaces/<slug> profile points
@@ -35,7 +39,7 @@ import { boundSiteDomain } from '@/lib/sites/site-domain'
 // An unpublished site, a Private Space and an unknown page all stay noindex.
 
 export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): Promise<Metadata> {
-  const space = await getVisibleSpaceBySlug(slug, null)
+  const space = await getSiteSpace(slug)
   if (!space) return { title: 'Site', robots: { index: false } }
   const brandName = space.brandName?.trim() || space.name
   if (!readWebsitePublished(space.preferences)) {
@@ -73,7 +77,7 @@ export async function SitePage({
   /** The path the site's links hang off: `/sites/<slug>` by default, `` on the Space's own domain. */
   base?: string
 }) {
-  const space = await getVisibleSpaceBySlug(slug, null)
+  const space = await getSiteSpace(slug)
   if (!space) notFound()
 
   const brandName = space.brandName?.trim() || space.name
