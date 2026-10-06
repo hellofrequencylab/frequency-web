@@ -41,6 +41,9 @@ import { readStorefrontConfig } from './storefront'
 import { canSeeSpaceContactTab, readContactFormContent } from './contact-tab'
 import { isReservedSlug } from './profile-pages'
 import { spaceFunctionDef, spaceFunctionEnabled } from './functions'
+// The Book page's widget rule, shared with components/widgets/entity/entity-cta.tsx so the sitemap
+// advertises /book on the same Focus the page renders on (SCAN-787).
+import { ctaKindFor } from './cta-kind'
 // The circle statuses a public list may show, from the circles module's own definition rather than
 // retyped here — a second copy of ['forming','active'] is a drift waiting to happen.
 import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
@@ -85,6 +88,9 @@ export interface NetworkedSpace {
   logoBackdrop: LogoBackdrop
   /** Operator-supplied cover/banner image URL (spaces.cover_image_url), or null. Leads the card. */
   coverUrl: string | null
+  /** The city the Space says it is in (spaces.city, city-level only, never a street), or null. The
+   *  city landing pages filter on it (SCAN-675); a card never paints it. */
+  city: string | null
   /** The card's action button: the operator-configured header CTA resolved to a label + href off the
    *  Space base path (`/spaces/<slug>`). Total (always resolves to at least the per-type default), so
    *  never null in practice; typed nullable so a card can defend against it. */
@@ -189,8 +195,11 @@ export function normalizeSpaceSort(value: string | null | undefined): SpaceSort 
 // updateSpaceProfile) do not stamp the column, so for many rows this reads as the row's creation
 // time. That is a WEAK lastmod, not a false one -- it never claims a change that did not happen --
 // but it is why the sitemap treats it as optional rather than synthesising a date when it is absent.
+// `city` rides along for the city landing pages (SCAN-675): /discover/cities/<slug> and
+// /discover/places/<slug> filter this list on citySlug(city) so a city page can show the local
+// Spaces located there, the same way it already shows that city's Circles and events.
 const COLS =
-  'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, created_at, updated_at, preferences'
+  'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, city, created_at, updated_at, preferences'
 
 /** The jsonb path to a Space's stored SUBJECT (preferences.profileData.subject), used to filter in the
  *  DB. A missing path reads as NULL, which matches no subject (there is no default subject). The KIND
@@ -212,6 +221,7 @@ type SpaceDiscoveryRow = {
   brand_logo_url: string | null
   cover_image_url: string | null
   tagline: string | null
+  city: string | null
   created_at: string | null
   updated_at: string | null
   preferences: unknown
@@ -589,6 +599,7 @@ export const listNetworkedSpaces = cache(
           logoUrl: r.brand_logo_url,
           logoBackdrop: readLogoBackdrop(r.preferences),
           coverUrl: r.cover_image_url,
+          city: r.city?.trim() || null,
           updatedAt: r.updated_at ?? null,
           action: { label: resolved.label, href: resolved.href },
           memberCount: memberCounts?.get(r.id) ?? null,
@@ -723,15 +734,17 @@ interface SpaceProfileTabRoute {
 }
 
 // The tab reader projects MORE than the directory does: `entitlements` (the per-Space function
-// on/off switches that gate Shop / Reviews / Circles) and `updated_at`. It deliberately does NOT
-// reuse COLS — the directory pays for a card's worth of columns on every /spaces render, and this
-// pays for a gate's worth once an hour behind the sitemap's revalidate.
-const TAB_COLS = 'id, slug, type, updated_at, preferences, entitlements'
+// on/off switches that gate Shop / Reviews / Circles), `mode_variant` (the Focus that picks which
+// widget the Book page leads with) and `updated_at`. It deliberately does NOT reuse COLS — the
+// directory pays for a card's worth of columns on every /spaces render, and this pays for a gate's
+// worth once an hour behind the sitemap's revalidate.
+const TAB_COLS = 'id, slug, type, mode_variant, updated_at, preferences, entitlements'
 
 type SpaceTabRow = {
   id: string
   slug: string
   type: string
+  mode_variant: string | null
   updated_at: string | null
   preferences: unknown
   entitlements: unknown
@@ -799,8 +812,12 @@ function spaceOffersContactTab(preferences: unknown): boolean {
  * emits at priority 0.5 beneath each profile's 0.6.
  *
  * Gates, per segment, matched to the page (or, where the page renders an honest empty, to the nav):
- *   · `book`         — always. The reserved action page never 404s and is the destination of the
- *                      profile's single primary CTA, so it is the one tab that is never empty.
+ *   · `book`         — by what the Book page would show a VISITOR (`ctaKindFor`, the page's own
+ *                      widget rule, SCAN-787). The page never 404s, but its surface renders an
+ *                      honest empty state at zero: a membership Focus (the business default) needs
+ *                      >= 1 ACTIVE tier, a donations Focus (the nonprofit default) needs a published
+ *                      ACTIVE ask. The booking, enroll and tickets Focuses stay advertised for now
+ *                      (no presence read yet), so a Space on those loses nothing it had.
  *   · `calendar`     — >= 1 upcoming PUBLIC event. Mirrors the OWNED half of
  *                      `spaceHasPublicUpcomingEvents` (published, not cancelled, public/unlisted,
  *                      not removed, not demo, starting today or later). It deliberately omits that
@@ -847,7 +864,7 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
     // an event happening later TODAY still counts (a `> now` floor would hide it).
     const fromDayIso = `${new Date().toISOString().slice(0, 10)}T00:00:00Z`
 
-    const [withEvents, withCircles, withReviews, withTiers, collabHost, collabPartner] = await Promise.all([
+    const [withEvents, withCircles, withReviews, withTiers, withAsks, collabHost, collabPartner] = await Promise.all([
       presenceIds(
         (q) =>
           q
@@ -889,6 +906,16 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
         'space_id',
         (r) => (typeof r.space_id === 'string' ? r.space_id : null),
       ),
+      // DONATION ASKS (SCAN-787). The Book page of a donations-Focus Space renders DonateMember,
+      // which shows a visitor "No fund posted yet" unless the Space's single ask exists and is
+      // active. `is_active` is nullable and a NULL row is ACTIVE, mirroring readAsk's own
+      // `is_active !== false`, so this is the same `.or()` shape the tiers read uses.
+      presenceIds(
+        (q) => q.or('is_active.is.null,is_active.eq.true').in('space_id', ids),
+        'space_donation_asks',
+        'space_id',
+        (r) => (typeof r.space_id === 'string' ? r.space_id : null),
+      ),
       presenceIds(
         (q) => q.eq('status', 'accepted').in('host_space_id', ids),
         'space_collaborations',
@@ -927,7 +954,18 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
       const enabled = (def: ReturnType<typeof spaceFunctionDef>) =>
         !def || spaceFunctionEnabled({ entitlements: r.entitlements }, def)
 
-      push('book')
+      // BOOK (SCAN-787). Advertised on the SAME rule EntityCta renders on for a visitor: the widget
+      // the Space's Focus leads with must have something to show. A membership surface at zero
+      // tiers and a donate surface with no published ask are the two default-Focus empty states,
+      // the LIVE-184 defect (an empty tab with a URL) that every other gate here prevents.
+      const ctaKind = ctaKindFor(type, r.mode_variant)
+      const bookShowsSomething =
+        ctaKind === 'membership'
+          ? withTiers.has(r.id) // MembershipJoin lists tiers whatever the function switch says
+          : ctaKind === 'donate'
+            ? withAsks.has(r.id)
+            : ctaKind !== undefined
+      if (bookShowsSomething) push('book')
       if (withEvents.has(r.id)) push('calendar')
       if (enabled(circlesDef) && type !== 'root' && withCircles.has(r.id)) push('circles')
       if (collabHost.has(r.id) || collabPartner.has(r.id)) push('collaborators')

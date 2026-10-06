@@ -23,11 +23,13 @@ const DISALLOW = [
   // App-shell TWINS of canonical /discover surfaces — these pages canonical to
   // /discover/partners|journeys, so keep crawlers off the twins to stop them cannibalizing
   // the canonicals. (/discover/* is NOT disallowed.) NOTE: the four marketplace indexes —
-  // /store, /market, /housing, /classifieds — are deliberately NOT listed. Their
-  // /<vertical>/<id> detail pages are self-canonical + indexable (Product / Accommodation
-  // schema) and are what app/sitemap.ts advertises, so a blanket rule on any of the four
-  // would deindex them; each index carries its own `robots: { index: false, follow: true }`
-  // instead, which keeps crawlers walking THROUGH the index to those detail pages.
+  // /store, /market, /housing, /classifieds — are deliberately NOT listed, but only so a
+  // PREFIX rule on any of the four does not catch the /<vertical>/<id> detail URLs beneath
+  // them. Those detail pages are self-canonical + indexable (Product / Accommodation schema)
+  // and are what app/sitemap.ts advertises. The indexes themselves are members-only
+  // (lib/nav/public-detail-routes.ts allows the detail patterns alone): an anonymous visitor
+  // or crawler fetching /store or /market gets a 307 to /, so they are not crawl hubs. Detail
+  // pages are discovered through app/sitemap.ts and the Space shop pages (SCAN-786).
   "/partners",
   "/journeys",
   // /spaces/directory is the app-shell twin of the canonical /discover/spaces (it canonicals there),

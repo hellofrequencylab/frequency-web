@@ -13,6 +13,8 @@ vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({}) }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => ({
+      // The owner gate (SCAN-749) loads the row first; the fixture's caller wrote it.
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: 'd1', author_id: 'staff-1', status: 'draft', published_at: null } }) }) }),
       update: () => ({ eq: async () => ({ error: null }) }),
       delete: () => ({ eq: async () => ({ error: null }) }),
       insert: async (rows: unknown) => { if (table === 'dispatch_poll_options') pollWrites.push(rows); return { error: null } },

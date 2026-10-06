@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { readViewAsTarget } from '@/lib/view-as'
 import { type StaffRole, type StaffDomain, type Access, staffCan } from '@/lib/core/staff-roles'
+import { getCapabilityOverrides } from '@/lib/permissions'
 
 // The role model + capability matrix live in lib/core/staff-roles.ts (client-safe);
 // this module adds the DB lookup + server gates. Re-export so existing imports
@@ -69,12 +70,30 @@ export async function requireStaff(min: StaffRole = 'analyst'): Promise<StaffMem
 }
 
 /**
+ * Does the CURRENT viewer's staff role grant `domain` at `level` (default 'write')?
+ * Pairs getStaffMember with staffCan and the owner-editable capability grid
+ * (ADR-222), so a grid denial or grant is honoured here exactly as requireAdmin
+ * honours it. The grid read is request-cached and fails open to {} (code defaults),
+ * so an empty table resolves exactly as `CAPS`. Not staff ⇒ false. Use this instead
+ * of `staffCan(staff.role, …)` with no overrides, which reads only the code defaults.
+ */
+export async function staffCanNow(domain: StaffDomain, level: Access = 'write'): Promise<boolean> {
+  const member = await getStaffMember()
+  if (!member) return false
+  const overrides = await getCapabilityOverrides().catch(() => undefined)
+  return staffCan(member.role, domain, level, overrides)
+}
+
+/**
  * Capability gate (ADR-127) — redirects unless the caller's staff role grants
  * `domain` at `level` (default 'write'). The way to gate a business surface by
- * function rather than the legacy seniority ladder.
+ * function rather than the legacy seniority ladder. Layers the capability grid
+ * (ADR-222) on top of the code defaults, like requireAdmin does.
  */
 export async function requireStaffCap(domain: StaffDomain, level: Access = 'write'): Promise<StaffMember> {
   const member = await getStaffMember()
-  if (!member || !staffCan(member.role, domain, level)) redirect('/')
+  if (!member) redirect('/')
+  const overrides = await getCapabilityOverrides().catch(() => undefined)
+  if (!staffCan(member.role, domain, level, overrides)) redirect('/')
   return member
 }

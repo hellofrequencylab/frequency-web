@@ -253,6 +253,9 @@ export async function getCircleAdminData(slug: string) {
     status: circle.status,
     image_url: circle.image_url,
     unlisted: circle.unlisted ?? false,
+    /** SCAN-689: delete is an ownership act (circle.manageRoles), so the danger zone renders only
+     *  for someone deleteCircle would admit; a circle-scoped Admin edits settings but never sees it. */
+    can_delete: caps.has('circle.manageRoles'),
     access,
     access_modes: accessModeOptions(space, access, { isSpaceCircle }),
     /** True when the list is narrowed at all, so the control can show the one note that says why.
@@ -338,6 +341,17 @@ export async function updateCircleSettings(id: string, slug: string, fd: FormDat
   if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
+
+  // SCAN-688: a DRAFT leaves draft only through the builder's Publish (publishCircleAction), which
+  // runs the create gate, the leadership allowance, the circle_start reward, the conversion goal
+  // and the pinned announcement. The rail always sends `status`, so a draft that is handed any
+  // other value here would go live around all of that. Read the stored status first and refuse.
+  const requestedStatus = fd.get('status') as Database['public']['Enums']['group_status']
+  const { data: stored } = await admin.from('circles').select('status').eq('id', id).maybeSingle()
+  if (stored?.status === 'draft' && requestedStatus !== 'draft') {
+    throw new Error('This circle is still a draft. Publish it from the builder to go live.')
+  }
+
   const { error } = await admin
     .from('circles')
     .update({
@@ -345,7 +359,7 @@ export async function updateCircleSettings(id: string, slug: string, fd: FormDat
       about: ((fd.get('about') as string) ?? '').trim() || null,
       type: fd.get('type') as Database['public']['Enums']['circle_type'],
       member_cap: parseInt(fd.get('member_cap') as string, 10) || 12,
-      status: fd.get('status') as Database['public']['Enums']['group_status'],
+      status: requestedStatus,
       // Unlisted keeps the circle off discovery (index/map/directory/sitemap) while it stays reachable
       // by direct link and visible to members. Only written when the rail form includes the field.
       ...(fd.has('unlisted') ? { unlisted: fd.get('unlisted') === 'on' } : {}),
@@ -688,16 +702,17 @@ export async function updateCirclePermalink(
 }
 
 /**
- * Permanently delete a circle. Gated on circle.editSettings (its host, a managing
- * guide/mentor of the parent, or staff) — the same gate as editing it. The capability
- * re-check is the FIRST statement (the authz scan is file-level, not a per-function
- * prover). FK cascades clear memberships, invites, circle_practices, tasks, awards;
+ * Permanently delete a circle. Gated on circle.manageRoles (its host, a managing guide/mentor of
+ * the parent, or staff): an OWNERSHIP act, not a settings edit. SCAN-689: it used to gate on
+ * circle.editSettings, which ADR-1014 widened to a circle-scoped volunteer Admin, so an Admin could
+ * cascade-delete the Host's circle with no undo. The capability re-check is the FIRST statement
+ * (the authz scan is file-level, not a per-function prover). FK cascades clear memberships, invites, circle_practices, tasks, awards;
  * the polymorphic refs (posts/events scope, stewardship edges) carry no FK, so they
  * are unlinked here in the same call. Irreversible — the UI requires a typed confirm.
  */
 export async function deleteCircle(id: string, slug: string): Promise<{ error?: string }> {
   const caps = await getCircleCapabilities(id)
-  if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
+  if (!caps.has('circle.manageRoles')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
   const { data: circle } = await admin.from('circles').select('name, is_space_primary').eq('id', id).maybeSingle()

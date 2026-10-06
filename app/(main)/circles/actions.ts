@@ -4,19 +4,22 @@ import { randomBytes } from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
-import { asCircleAccess, canJoinCircle } from '@/lib/circles/visibility'
-import { isSpacePaidMember, isSpaceTeamSeat } from '@/lib/circles/space-entry'
-import { processGamificationEvent } from '@/lib/achievements'
-import { awardGems } from '@/lib/gems'
+import { getMyProfileId } from '@/lib/auth'
+import { joinCircleAsMember } from '@/lib/circles/join'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { sendInviteEmail } from '@/lib/email'
 import { SITE_URL } from '@/lib/site'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
-import { track } from '@/lib/analytics/track'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { suggestCircleDraft, fallbackCircleSuggestion, type CircleSuggestion } from '@/lib/ai/circle-spark'
 import { planCircleEdit } from '@/lib/ai/circle-edit'
-import { getCircleDraft, saveCircleDraft, type CircleDraft, type CircleDraftPatch } from '@/lib/circles/draft'
+import {
+  getCircleDraft,
+  saveCircleDraft,
+  CIRCLE_DRAFT_SAVE_ERROR,
+  type CircleDraft,
+  type CircleDraftPatch,
+} from '@/lib/circles/draft'
 import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
 import {
   applyLock,
@@ -27,6 +30,9 @@ import {
   type FieldChange,
 } from '@/lib/studio/kernel/redraw'
 import { saveSteer } from '@/lib/studio/steer-store'
+
+// One address, nothing else: no spaces, exactly one at sign, a dotted domain.
+const SINGLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Vera's start-a-circle assist: suggest a name + about from the chosen Interest.
 // Live (Haiku) when AI is on; a deterministic draft otherwise — so the modal's
@@ -42,264 +48,21 @@ export async function suggestCircle(
 }
 
 /**
- * Join a circle.
- *
- * 🔴 THIS ACTION IS A SERVICE-ROLE PATH BY DESIGN, so RLS guards none of it (ADR-1015). The admin
- * client is used because the `memberships` insert policy only lets crew+ self-join, while an
- * ordinary member joining a circle is the single most common thing in the product — so every rule
- * that would have been a policy has to be written here instead. Capacity was already such a rule.
- * ACCESS (axis 2) is now another, and it is load-bearing: joining WRITES a memberships row, and a
- * memberships row is what `can_enter_circle` reads. Without a gate here, a stranger who learns the
- * id of a closed circle joins it and thereby grants themselves entry — the model would be circular.
- *
- * NOTE which axis this does NOT consult: `unlisted`. Discoverability says nothing about who may
- * join, and a LISTED closed circle is precisely a circle a stranger is meant to find and then be
- * refused until they are invited, buy the tier, or belong to the Space. That refusal is the funnel
- * working, not a bug.
- *
- * `invited` is passed ONLY by a caller that actually holds an invite — the QR route (`/q/[slug]`,
- * where the code was minted by the Host) is the one such caller today. The invite-link redemption
- * path (`joinViaInviteLink`) writes its own membership row and never comes through here. Default
- * `false`, so a new call site cannot acquire the right by forgetting the argument.
+ * Join a circle. The member-facing Server Action: the caller is the session, and the body lives in
+ * joinCircleAsMember (lib/circles/join.ts). It takes NO `invited` flag (SCAN-774): a Server Action
+ * is a public POST endpoint, and an argument any client can pass is not an invite. The one caller
+ * that holds an invite (the /q resolver) calls the helper directly, after checking the code's minter.
  */
-export async function joinCircle(
-  circleId: string,
-  circleSlug: string,
-  opts?: { invited?: boolean },
-): Promise<ActionResult> {
+export async function joinCircle(circleId: string, circleSlug: string): Promise<ActionResult> {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return fail('Sign in to join a circle.')
 
-  const admin = createAdminClient()
-
-  // Check circle capacity + access. `circles.access` is newer than the generated types, so the row
-  // is read through the sanctioned untyped seam (ADR-246) and narrowed below.
-  const { data: circleRaw } = await (admin as unknown as {
-    from: (t: string) => {
-      select: (c: string) => {
-        eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> }
-      }
-    }
-  })
-    .from('circles')
-    .select('member_count, member_cap, hub_id, access, unlisted, space_id, host_id')
-    .eq('id', circleId)
-    .maybeSingle()
-
-  if (!circleRaw) return fail('This circle is no longer available.')
-  const circle = circleRaw as unknown as { member_count: number; member_cap: number; hub_id: string | null }
-
-  // THE ACCESS GATE. Every closed mode has its own door; the default is deny.
-  const row = circleRaw as {
-    access?: unknown
-    unlisted?: unknown
-    space_id?: string | null
-    host_id?: string | null
-  }
-  const access = asCircleAccess(row.access)
-  if (access !== 'open') {
-    const spaceId = row.space_id ?? null
-    const [alreadyIn, staff, teamSeat, paidMembership] = await Promise.all([
-      admin
-        .from('memberships')
-        .select('id')
-        .eq('circle_id', circleId)
-        .eq('profile_id', myProfileId)
-        .eq('status', 'active')
-        .maybeSingle(),
-      isPlatformStaff(),
-      // Each Space mode gets ITS OWN lookup, and each is skipped unless this circle is on that
-      // mode — a seat opens only 'space_members', a paid membership opens only
-      // 'space_paid_members', and neither is a general key to a Space's Circles (OWN-034 ruling C).
-      access === 'space_members' && spaceId
-        ? isSpaceTeamSeat(admin, spaceId, myProfileId)
-        : Promise.resolve(false),
-      access === 'space_paid_members' && spaceId
-        ? isSpacePaidMember(admin, spaceId, myProfileId)
-        : Promise.resolve(false),
-    ])
-
-    const verdict = canJoinCircle({
-      unlisted: row.unlisted === true,
-      access,
-      hostId: (row.host_id ?? null) as string | null,
-      viewerProfileId: myProfileId,
-      isMember: !!alreadyIn.data,
-      isSpaceMember: teamSeat,
-      isSpacePaidMember: paidMembership,
-      // A steward is resolved through the staff arm only here: the operator surfaces that manage a
-      // Circle do not route through joinCircle, so paying for a second Space lookup on the join
-      // path would buy nothing. FAIL-CLOSED is the right direction for a join.
-      isSpaceSteward: false,
-      isPlatformStaff: staff,
-      invited: opts?.invited === true,
-    })
-
-    if (!verdict.ok) {
-      // ⚠️ ONE refusal string for every closed mode, and it is BYTE-IDENTICAL to the missing-circle
-      // copy above. A per-mode message ("buy the membership", "ask for an invite") would confirm
-      // that this circle exists and hint at its shape, which for an UNLISTED closed circle is
-      // exactly the thing being protected. The join / buy call to action belongs on the circle's
-      // own public face, where the viewer has already been allowed to see that it exists.
-      return fail('This circle is no longer available.')
-    }
-  }
-
-  if (circle.member_count >= circle.member_cap) return fail('This circle is full.') // full
-
-  // Nexus capacity only applies when the circle belongs to a hub → nexus. A
-  // circle with no hub (a standalone / founding circle) has no nexus cap to
-  // enforce, so it falls straight through to the join instead of aborting.
-  if (circle.hub_id) {
-    const { data: hub } = await admin
-      .from('hubs')
-      .select('nexus_id')
-      .eq('id', circle.hub_id)
-      .maybeSingle()
-
-    if (hub?.nexus_id) {
-      const { data: nexus } = await admin
-        .from('nexuses')
-        .select('id, member_cap')
-        .eq('id', hub.nexus_id)
-        .maybeSingle()
-
-      if (nexus) {
-        // Count active memberships across every circle in every hub of this nexus in a
-        // SINGLE round-trip via an inner join (memberships → circles → hubs → nexus),
-        // instead of the old serial N+1 (fetch hub ids, then circle ids, then count with
-        // an unbounded IN(...)). Pre-check only — the F2 trigger is the hard guarantee.
-        const { count } = await admin
-          .from('memberships')
-          .select('id, circles!inner(hubs!inner(nexus_id))', { count: 'exact', head: true })
-          .eq('status', 'active')
-          .eq('circles.hubs.nexus_id', hub.nexus_id)
-
-        if ((count ?? 0) >= nexus.member_cap) return fail('This region is at capacity right now.') // nexus at capacity
-      }
-    }
-  }
-
-  // Use admin client. RLS only permits crew+ to self-join via policy, but new
-  // members (role = 'member') should be able to join circles directly.
-  // Authorization is enforced above in code (capacity, auth check).
-  const { error } = await admin.from('memberships').insert({
-    profile_id: myProfileId,
-    circle_id: circleId,
-    status: 'active',
-  })
-  if (error) {
-    // The DB is the HARD capacity guarantee (enforce_circle_member_cap, migration
-    // 20260726000000); the member_count check above is only fast-fail UX, so a join race arrives
-    // here as a typed raise. Name it, the way the pre-check already does.
-    if (error.code === 'P0001' && (error.message ?? '').includes('circle_full')) {
-      return fail('This circle is full.')
-    }
-
-    // UNIQUE(profile_id, circle_id): a row for this pair ALREADY EXISTS, so "please try again" was
-    // advice that could never work — every retry hits the same constraint, forever. The commonest
-    // way in is the plainest one: an active member taps Join on a page that had not caught up yet,
-    // and gets told the circle they are standing in refused them. Read the row that beat the
-    // insert and finish the job instead (the grantCircleRow shape, lib/spaces/tier-circle.ts).
-    if (error.code !== '23505') {
-      console.error('[joinCircle] membership insert failed', {
-        code: error.code, message: error.message, circleId, profileId: myProfileId,
-      })
-      return fail('Could not join this circle. Please try again.')
-    }
-
-    const settled = await settleExistingMembership(admin, circleId, myProfileId)
-    if (settled === 'full') return fail('This circle is full.')
-    if (settled === 'error') return fail('Could not join this circle. Please try again.')
-    if (settled === 'already_active') {
-      // They are already in. Send them where they asked to go, exactly as the happy path does.
-      // Nothing was joined, so nothing is awarded, tracked, or credited a second time.
-      revalidatePath('/circles')
-      revalidatePath('/feed')
-      redirect(`/circles/${circleSlug}`)
-    }
-    // 'reactivated' — a dormant row waking up IS a join. Falls through to the rewards below.
-  }
-
-  processGamificationEvent({ type: 'circle_join', profileId: myProfileId }).catch(() => {})
-  awardGems(myProfileId, 'circle_join').catch(() => {})
-  // Activation-funnel step 3 + the engagement funnel's join step (ADR-075). Best-effort.
-  await track('circle.joined', { circleId }, myProfileId)
+  const res = await joinCircleAsMember(myProfileId, circleId, { invited: false })
+  if ('error' in res) return res
 
   revalidatePath('/circles')
   revalidatePath('/feed')
   redirect(`/circles/${circleSlug}`)
-}
-
-/** What the row that beat joinCircle's insert turned out to be, once it was read. */
-type MembershipConflict = 'already_active' | 'reactivated' | 'full' | 'error'
-
-/**
- * Settle a UNIQUE(profile_id, circle_id) conflict on the join path. Mirrors grantCircleRow
- * (lib/spaces/tier-circle.ts): an ACTIVE row means the member is already in and there is nothing
- * to do; a dormant row (pending / inactive) is woken up.
- *
- * 🔴 THE CAP IS RE-CHECKED ON THE REACTIVATING UPDATE, and it has to be counted rather than read
- * off circles.member_count (ADR-863). enforce_circle_member_cap is BEFORE INSERT only and counts
- * ACTIVE rows, so flipping a status walks straight past it — while member_count is maintained by
- * an insert/delete trigger and therefore ALREADY counts the dormant row, which is exactly why the
- * pre-check above waved this join through. Two different numbers; the active count is the one the
- * cap means.
- *
- * 2026-09-05 (scan2 L6-13): both sentences above are now history. Migration 20270345000500 makes
- * the cap trigger fire on UPDATE OF status as well as INSERT (locking the circle row, so two dormant
- * members reactivating together serialize), and makes member_count follow status transitions so it
- * counts ACTIVE rows only. The JS count below is still a fast-fail pre-check; the DB is the hard
- * guarantee, and its raise on the update is mapped to 'full' exactly as the insert path maps it.
- *
- * The access gate ran before the insert and does not run again here: it reads active membership
- * (`isMember`), so a dormant row was never a key to a closed circle. Nothing below can widen it.
- */
-async function settleExistingMembership(
-  admin: ReturnType<typeof createAdminClient>,
-  circleId: string,
-  profileId: string,
-): Promise<MembershipConflict> {
-  const { data: existing, error: readError } = await admin
-    .from('memberships')
-    .select('id, status')
-    .eq('circle_id', circleId)
-    .eq('profile_id', profileId)
-    .maybeSingle()
-
-  if (readError || !existing) {
-    console.error('[joinCircle] conflicting membership unreadable', {
-      circleId, profileId, message: readError?.message,
-    })
-    return 'error'
-  }
-  if (existing.status === 'active') return 'already_active'
-
-  const [{ count }, { data: circle }] = await Promise.all([
-    admin
-      .from('memberships')
-      .select('id', { count: 'exact', head: true })
-      .eq('circle_id', circleId)
-      .eq('status', 'active'),
-    admin.from('circles').select('member_cap').eq('id', circleId).maybeSingle(),
-  ])
-  const cap = circle?.member_cap ?? null
-  if (cap != null && typeof count === 'number' && count >= cap) return 'full'
-
-  const { error: updateError } = await admin
-    .from('memberships')
-    .update({ status: 'active' })
-    .eq('id', existing.id)
-  if (updateError) {
-    // The DB guard now fires on this update too (20270345000500): a lost race arrives as the same
-    // typed raise the insert path names.
-    if (updateError.code === 'P0001' && (updateError.message ?? '').includes('circle_full')) return 'full'
-    console.error('[joinCircle] membership reactivate failed', {
-      code: updateError.code, message: updateError.message, circleId, profileId,
-    })
-    return 'error'
-  }
-  return 'reactivated'
 }
 
 // ── Host invite link ──────────────────────────────────────────────────────────
@@ -367,12 +130,25 @@ export async function inviteByEmail(
   if (!myProfileId) return { ok: false, error: 'Not signed in.' }
 
   const clean = email.trim().toLowerCase()
-  if (!clean || !clean.includes('@')) return { ok: false, error: 'Enter a valid email address.' }
+  // SCAN-693: one real address, not any string with an at sign in it.
+  if (!clean || clean.length > 254 || !SINGLE_EMAIL_RE.test(clean)) {
+    return { ok: false, error: 'Enter a valid email address.' }
+  }
 
   // Same gate as the Host Tools UI: host + janitors + area guides/mentors.
   const caps = await getCircleCapabilities(circleId)
   if (!caps.has('circle.editSettings')) {
     return { ok: false, error: 'You do not manage this circle.' }
+  }
+
+  // SCAN-693: the invite goes out on the transactional lane, which welcome mail shares, and the
+  // only gate was the host capability any self-made host holds. Twenty a day per host, then a
+  // sentence; the second budget keys on the circle so one host cannot spend it across circles.
+  if (
+    !(await rateLimitOk('circle:invite-email', myProfileId, 20, '1 d')) ||
+    !(await rateLimitOk('circle:invite-email:circle', circleId, 40, '1 d'))
+  ) {
+    return { ok: false, error: 'You have sent today’s invites. Share the invite link instead, or try again tomorrow.' }
   }
 
   const admin = createAdminClient()
@@ -389,18 +165,31 @@ export async function inviteByEmail(
     .eq('id', myProfileId)
     .maybeSingle()
 
-  const token = randomBytes(12).toString('base64url')
-  const { error } = await admin
+  // SCAN-693: reuse the circle's live invite link; every email used to mint a fresh row that was
+  // never deactivated, so invite_links grew with every send.
+  const { data: existing } = await admin
     .from('invite_links')
-    .insert({ token, circle_id: circleId, created_by: myProfileId })
-  if (error) {
-    // The detail belongs in the log, where it can be acted on. The host gets a sentence they can
-    // read (matching createHostInviteLink above), not a PostgREST string about a table they have
-    // never heard of.
-    console.error('[inviteByEmail] invite link insert failed', {
-      code: error.code, message: error.message, circleId, profileId: myProfileId,
-    })
-    return { ok: false, error: 'Could not send that invite. Try again in a moment.' }
+    .select('token')
+    .eq('circle_id', circleId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  let token = existing?.token ?? null
+  if (!token) {
+    token = randomBytes(12).toString('base64url')
+    const { error } = await admin
+      .from('invite_links')
+      .insert({ token, circle_id: circleId, created_by: myProfileId })
+    if (error) {
+      // The detail belongs in the log, where it can be acted on. The host gets a sentence they can
+      // read (matching createHostInviteLink above), not a PostgREST string about a table they have
+      // never heard of.
+      console.error('[inviteByEmail] invite link insert failed', {
+        code: error.code, message: error.message, circleId, profileId: myProfileId,
+      })
+      return { ok: false, error: 'Could not send that invite. Try again in a moment.' }
+    }
   }
 
   // Enqueue the invite email best-effort: the link is already created, so a mail hiccup
@@ -631,7 +420,12 @@ export async function redrawCircleAction(
     return fail('Vera kept this one as it is. Give her a direction, or unpin something, and try again.')
   }
 
-  await saveCircleDraft(circleId, circleWritePatch(safe, draft, paths))
+  // A failed write is a refusal, not a diff: saveCircleDraft throws on it (SCAN-694).
+  try {
+    await saveCircleDraft(circleId, circleWritePatch(safe, draft, paths))
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : CIRCLE_DRAFT_SAVE_ERROR)
+  }
   revalidatePath('/circles')
   revalidatePath(`/circles/${draft.slug}`)
   revalidatePath(`/circles/${draft.slug}/edit`)
@@ -652,7 +446,11 @@ export async function restoreCircleAction(
   const { draft } = gate
   const paths = Object.keys(before).filter((p) => (CIRCLE_REDRAW_PATHS as readonly string[]).includes(p))
   if (paths.length === 0) return fail('Nothing to put back.')
-  await saveCircleDraft(circleId, circleWritePatch(before, draft, paths))
+  try {
+    await saveCircleDraft(circleId, circleWritePatch(before, draft, paths))
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : CIRCLE_DRAFT_SAVE_ERROR)
+  }
   revalidatePath('/circles')
   revalidatePath(`/circles/${draft.slug}`)
   revalidatePath(`/circles/${draft.slug}/edit`)

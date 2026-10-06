@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-747",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/settings/notifications/sms-actions.ts\";if(!fs.existsSync(f))process.exit(79);const t=fs.readFileSync(f,\"utf8\");if(!/rateLimitOk\\s*\\(/.test(t)){console.error(\"SCAN-747: sendSmsCode and verifySmsCode have no rate limit, so once texting is provisioned any signed-in member can send unlimited verification texts to any number and brute-force a code past its attempt cap.\");process.exit(1)}const k=t.indexOf(\"status: \"+String.fromCharCode(39)+\"opted_in\");if(k<0)process.exit(79);const before=t.slice(Math.max(0,k-260),k);if(!/\\{\\s*error\\s*\\}\\s*=\\s*await/.test(before)){console.error(\"SCAN-747: the opted_in consent insert ignores its returned error, so a failed write still reports the number as verified and turns texting on with no consent row.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nsendSmsCode needed only a signed-in caller and a phone that normalized: no throttle, and it gated on the env-driven isSmsProvisioned only, never the operator sms_enabled platform flag, so once A2P provisioning lands any member could script verification texts to arbitrary numbers. verifySmsCode had no throttle either, so parallel guesses all read the same attempt count and slipped past the five-guess cap; and the opted_in insert never read its resolved { error }, so a database failure reported the number as verified and flipped sms_enabled with no consent row. Fixed in app/(main)/settings/notifications/sms-actions.ts: sendSmsCode now refuses while smsEnabledFlag() is off, then denies with Too many codes sent unless rateLimitOk(sms-code:profile, profileId, 3, 10 m) and rateLimitOk(sms-code:phone, phone, 5, 1 d) both pass, all before the pending insert and enqueueSms; verifySmsCode checks rateLimitOk(sms-verify:profile, profileId, 10, 10 m) before the ledger read; the opted_in insert destructures { error } and fails with Could not save your opt-in before the sms_enabled upsert. Pinned by the new colocated app/(main)/settings/notifications/sms-actions.test.ts (9 tests: both windows, flag off, guess throttle, failed consent insert does not flip the switch)."
+  }
+}

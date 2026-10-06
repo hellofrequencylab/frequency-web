@@ -227,6 +227,9 @@ describe('pure validation', () => {
   it('toCampaignStatus fails closed to draft for unknowns', () => {
     expect(toCampaignStatus('sent')).toBe('sent')
     expect(toCampaignStatus('scheduled')).toBe('scheduled')
+    // SCAN-706: the two states the cron writes are their own, not folded to draft.
+    expect(toCampaignStatus('sending')).toBe('sending')
+    expect(toCampaignStatus('failed')).toBe('failed')
     expect(toCampaignStatus('queued')).toBe('draft')
     expect(toCampaignStatus(null)).toBe('draft')
   })
@@ -237,6 +240,18 @@ describe('pure validation', () => {
     expect(parseScheduleTime('2026-06-19T00:00:00.000Z', now)).toBeNull()
     expect(parseScheduleTime('not-a-date', now)).toBeNull()
     expect(parseScheduleTime(undefined, now)).toBeNull()
+  })
+
+  // SCAN-702: the composer used to send the picker's raw datetime-local value, and the server read
+  // that zone-less wall time as UTC, so a 2:30 PM campaign in Los Angeles went out at 7:30 AM. The
+  // client now converts to an instant and the server refuses anything without a zone.
+  it('parseScheduleTime refuses a zone-less wall time and accepts an offset', () => {
+    const now = new Date('2026-06-20T00:00:00.000Z')
+    expect(parseScheduleTime('2026-06-21T14:30', now)).toBeNull()
+    expect(parseScheduleTime('2026-06-21T14:30:00', now)).toBeNull()
+    expect(parseScheduleTime('2026-06-21T14:30:00-07:00', now)).toBe('2026-06-21T21:30:00.000Z')
+    expect(parseScheduleTime('2026-06-21T14:30:00+0200', now)).toBe('2026-06-21T12:30:00.000Z')
+    expect(parseScheduleTime(new Date('2026-06-21T14:30:00.000Z'), now)).toBe('2026-06-21T14:30:00.000Z')
   })
 })
 

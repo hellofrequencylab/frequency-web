@@ -49,7 +49,9 @@ export async function markAllRead() {
     .update({ read_at: new Date().toISOString() })
     .is('read_at', null)
 
-  revalidatePath('/', 'layout')
+  // SCAN-686: the bell clears its own badge locally; only the full page needs a refetch. The
+  // root-layout revalidation here refetched the whole RSC tree on every open that had unread rows.
+  revalidatePath('/notifications')
 }
 
 export async function getUnreadCount(): Promise<number> {

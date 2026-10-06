@@ -14,7 +14,7 @@ import {
 import { FrequencyArcs, OrganicBlob } from '@/components/marketing/vector-art'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, journeyListSchema } from '@/lib/jsonld'
-import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Journeys',
@@ -23,6 +23,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/discover/journeys' },
   openGraph: {
     ...OG_SITE,
+    images: ROOT_OG_IMAGES,
     title: `Journeys · ${SITE_NAME}`,
     description:
       'A Journey is an ordered set of small daily Practices you run for a season, solo or with your Circle.',

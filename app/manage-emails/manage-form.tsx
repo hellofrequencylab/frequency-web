@@ -16,7 +16,13 @@ const CATEGORY_LABELS: { key: NotificationCategory; label: string; help: string 
   { key: 'events', label: 'Events', help: 'RSVP changes and reminders before an event starts.' },
   { key: 'comments', label: 'Replies', help: 'Replies and mentions on posts and comments you wrote, and notes in your guestbook.' },
   { key: 'mentions', label: 'Mentions', help: 'When someone @mentions you anywhere else.' },
-  { key: 'lifecycle', label: 'Onboarding nudges', help: 'Day 1, Day 3, and Day 7 check-ins after you join a circle.' },
+  // The lifecycle category gates far more than the Day 1 / 3 / 7 check-ins: notes from Hosts and
+  // leaders, automations, nurture steps and newsletters all send under it (SCAN-734), so the label
+  // says so. The wiring does not move; only the words do.
+  { key: 'lifecycle', label: 'Updates and messages', help: 'Check-ins after you join, notes from your Hosts and leaders, and newsletters.' },
+  // Housing matches are email-wired (lib/notifications/wired.ts), so the row needs a label here or
+  // the form builds it and drops it (SCAN-733).
+  { key: 'matches', label: 'Housing matches', help: 'When a new room or roommate lines up with what you are looking for.' },
 ]
 
 export type EmailCategoryState = { category: NotificationCategory; subscribed: boolean }

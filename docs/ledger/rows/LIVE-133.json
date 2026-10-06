@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-133",
+  "patch": {
+    "verify": {
+      "kind": "grep-present",
+      "pattern": "cover=",
+      "paths": [
+        "app/(public)/events/[slug]/page.tsx"
+      ]
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05 (SCAN-672): the /discover/events/<slug> twin this probe read is retired behind a 308 to /events/<slug>; the probe now reads the public event page that serves that address, which renders the same PosterBand cover."
+  }
+}

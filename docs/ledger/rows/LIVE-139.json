@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-139",
+  "patch": {
+    "source": {
+      "file": "app/(public)/events/[slug]/opengraph-image.tsx",
+      "ref": "no cover, while getEventEnrichment already returns one; the /discover/events twin OG route retired 2026-10-05 (SCAN-672), the probe exits 79 on the gone file"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05 (SCAN-672): the /discover/events/<slug> OG route this row was found in is retired behind a 308; the source now points at the surviving public OG route."
+  }
+}

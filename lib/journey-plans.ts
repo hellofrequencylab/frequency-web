@@ -1073,20 +1073,98 @@ export async function adoptPlan(profileId: string, planId: string): Promise<void
   }
 }
 
-/** Fork (remix) a PUBLIC plan into a new private plan owned by the caller,
- *  copying its items and recording lineage (fork_of + source forked_count). */
+type SrcItem = {
+  id: string; practice_id: string | null; domain_id: string | null; sort_order: number | null
+  note: string | null; cadence: string | null; block_type: string | null; parent_id: string | null
+  title: string | null; body: string | null; media: unknown; settings: unknown; required: boolean | null; est_minutes: number | null
+}
+
+/** Deep-copy a plan's whole v2 block tree (phases -> modules -> lessons/practices/checks) from
+ *  `srcPlanId` into `dstPlanId`, parents before children with every child's parent_id remapped to
+ *  its new parent. Shared by forkPlan (public remix) and duplicatePlan (own copy) so the two can
+ *  never drift again: until SCAN-727 the fork copied five practice-combo columns only, and every
+ *  phase, module and lesson landed as a nameless top-level practice block with practice_id NULL.
+ *
+ *  `includeBodies: false` keeps the structure, titles, settings and practice links but drops each
+ *  block's body and media, so a remix of a PRICED Journey cannot carry its paid content out from
+ *  behind the paywall. Returns false when a row failed to insert (the caller treats the copy as
+ *  broken), true when every source row landed. */
+export async function copyItemTree(
+  client: SupabaseClient,
+  srcPlanId: string,
+  dstPlanId: string,
+  { includeBodies }: { includeBodies: boolean },
+): Promise<boolean> {
+  const { data: itemRows, error: readError } = await client
+    .from('journey_plan_items')
+    .select('id, practice_id, domain_id, sort_order, note, cadence, block_type, parent_id, title, body, media, settings, required, est_minutes')
+    .eq('plan_id', srcPlanId)
+    .order('sort_order', { ascending: true })
+  if (readError) return false
+  const items = (itemRows ?? []) as SrcItem[]
+
+  // Iterative two-pass insert: a row goes in once its parent has a new id (or it has no parent),
+  // so phases land before their lessons. Bounded passes guard against an orphaned parent_id.
+  const idMap = new Map<string, string>()
+  let remaining = items
+  for (let pass = 0; pass < 8 && remaining.length; pass++) {
+    const ready = remaining.filter((it) => !it.parent_id || idMap.has(it.parent_id))
+    if (ready.length === 0) break
+    for (const it of ready) {
+      const { data: ins, error } = await client
+        .from('journey_plan_items')
+        .insert({
+          plan_id: dstPlanId,
+          practice_id: it.practice_id,
+          domain_id: it.domain_id,
+          sort_order: it.sort_order ?? 0,
+          note: it.note,
+          cadence: it.cadence,
+          block_type: it.block_type ?? 'practice',
+          parent_id: it.parent_id ? idMap.get(it.parent_id) ?? null : null,
+          title: it.title,
+          body: includeBodies ? it.body : null,
+          media: includeBodies ? it.media : null,
+          settings: it.settings,
+          required: it.required ?? true,
+          est_minutes: it.est_minutes,
+        })
+        .select('id')
+        .maybeSingle()
+      if (error || !ins) return false
+      idMap.set(it.id, (ins as { id: string }).id)
+    }
+    remaining = remaining.filter((it) => !idMap.has(it.id))
+  }
+  return remaining.length === 0
+}
+
+/** Is this plan sold (an active commerce product) or tier-gated (space_tier_id)? A remix of such
+ *  a plan keeps its structure but not its bodies (copyItemTree includeBodies=false). FAIL-SAFE
+ *  towards paywalled: a read error withholds the bodies rather than leaking them. */
+async function planIsPaywalled(client: SupabaseClient, planId: string, spaceTierId: string | null | undefined): Promise<boolean> {
+  if (spaceTierId) return true
+  const { count, error } = await client
+    .from('commerce_products')
+    .select('id', { count: 'exact', head: true })
+    .eq('journey_plan_id', planId)
+    .eq('status', 'active')
+  if (error) return true
+  return (count ?? 0) > 0
+}
+
+/** Fork (remix) a PUBLIC plan into a new private plan owned by the caller, copying its whole
+ *  block tree (copyItemTree) and recording lineage (fork_of + source forked_count). A priced or
+ *  tier-gated source forks as structure + titles only, never bodies or media (SCAN-727). Returns
+ *  null when the source is not public or the copy did not fully land, so the caller never
+ *  redirects to a broken fork. */
 export async function forkPlan(profileId: string, planId: string): Promise<JourneyPlan | null> {
   const client = db()
   const { data: srcRow } = await client.from('journey_plans').select(PLAN_COLS).eq('id', planId).maybeSingle()
   const src = srcRow as JourneyPlan | null
   if (!src || src.visibility !== 'public') return null
 
-  const { data: itemRows } = await client
-    .from('journey_plan_items')
-    .select('practice_id, domain_id, sort_order, note, cadence')
-    .eq('plan_id', planId)
-    .order('sort_order', { ascending: true })
-  const items = (itemRows ?? []) as { practice_id: string; domain_id: string | null; sort_order: number; note: string | null; cadence: string | null }[]
+  const includeBodies = !(await planIsPaywalled(client, planId, src.space_tier_id))
 
   const { data: forkRow } = await client
     .from('journey_plans')
@@ -1103,10 +1181,12 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
   const fork = forkRow as JourneyPlan | null
   if (!fork) return null
 
-  if (items.length > 0) {
-    await client
-      .from('journey_plan_items')
-      .insert(items.map((it) => ({ plan_id: fork.id, practice_id: it.practice_id, domain_id: it.domain_id, sort_order: it.sort_order, note: it.note, cadence: it.cadence })))
+  // Every row must land (block_type, parent_id and the rest ride along): a partial tree is a
+  // broken Journey, so the fork is removed and null returned rather than redirected to.
+  const copied = await copyItemTree(client, planId, fork.id, { includeBodies })
+  if (!copied) {
+    await client.from('journey_plans').delete().eq('id', fork.id)
+    return null
   }
   const { data: cntRow } = await client.from('journey_plans').select('forked_count').eq('id', planId).maybeSingle()
   const forked = (cntRow as { forked_count: number } | null)?.forked_count ?? 0
@@ -1118,8 +1198,8 @@ export async function forkPlan(profileId: string, planId: string): Promise<Journ
 /** Duplicate one of the caller's OWN journeys into a fresh PRIVATE draft, deep-copying the whole
  *  v2 block tree (phases -> modules -> lessons/practices) with parent ids remapped, plus the
  *  authoring settings (difficulty/category/tags/daily minutes/source outline/rewards/delivery).
- *  Unlike forkPlan (public-only, legacy practice-combo copy), this copies any plan you own with
- *  its full structure. Caller enforces ownership. Returns the new private-draft plan. */
+ *  Unlike forkPlan (public-only, bodies withheld on a priced source), this copies any plan you
+ *  own with its full content. Caller enforces ownership. Returns the new private-draft plan. */
 export async function duplicatePlan(profileId: string, planId: string): Promise<JourneyPlan | null> {
   const client = db()
   const { data: srcRow } = await client
@@ -1176,50 +1256,7 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
   const dup = dupRow as JourneyPlan | null
   if (!dup) return null
 
-  const { data: itemRows } = await client
-    .from('journey_plan_items')
-    .select('id, practice_id, domain_id, sort_order, note, cadence, block_type, parent_id, title, body, media, settings, required, est_minutes')
-    .eq('plan_id', planId)
-    .order('sort_order', { ascending: true })
-  type SrcItem = {
-    id: string; practice_id: string | null; domain_id: string | null; sort_order: number | null
-    note: string | null; cadence: string | null; block_type: string | null; parent_id: string | null
-    title: string | null; body: string | null; media: unknown; settings: unknown; required: boolean | null; est_minutes: number | null
-  }
-  const items = (itemRows ?? []) as SrcItem[]
-
-  // Iterative two-pass insert: a row goes in once its parent has a new id (or it has no parent),
-  // so phases land before their lessons. Bounded passes guard against an orphaned parent_id.
-  const idMap = new Map<string, string>()
-  let remaining = items
-  for (let pass = 0; pass < 8 && remaining.length; pass++) {
-    const ready = remaining.filter((it) => !it.parent_id || idMap.has(it.parent_id))
-    if (ready.length === 0) break
-    for (const it of ready) {
-      const { data: ins } = await client
-        .from('journey_plan_items')
-        .insert({
-          plan_id: dup.id,
-          practice_id: it.practice_id,
-          domain_id: it.domain_id,
-          sort_order: it.sort_order ?? 0,
-          note: it.note,
-          cadence: it.cadence,
-          block_type: it.block_type ?? 'practice',
-          parent_id: it.parent_id ? idMap.get(it.parent_id) ?? null : null,
-          title: it.title,
-          body: it.body,
-          media: it.media,
-          settings: it.settings,
-          required: it.required ?? true,
-          est_minutes: it.est_minutes,
-        })
-        .select('id')
-        .maybeSingle()
-      if (ins) idMap.set(it.id, (ins as { id: string }).id)
-    }
-    remaining = remaining.filter((it) => !idMap.has(it.id))
-  }
+  await copyItemTree(client, planId, dup.id, { includeBodies: true })
 
   return dup
 }

@@ -19,11 +19,15 @@ import { listingMetadata, type HousingSeoFacts } from '@/lib/listings-shared/lis
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { ViewerListingClaim } from '@/components/marketplace/listing-claim-box'
+import { ViewerHousingAddress } from '@/components/marketplace/housing-address'
 
 // Public housing detail, advertised in app/sitemap.ts. Auth during render is a dynamic API
 // and would void ISR. Owners still edit at /housing/[id]/edit. The save heart and a ?claim=
 // arrival hydrate from /api/viewer.
 export const revalidate = 3600
+
+// The facts <dl> label, shared with the signed-in Address fact so the two read as one list.
+const FACT_LABEL = 'text-2xs font-semibold uppercase tracking-wide text-muted'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -93,9 +97,11 @@ export default async function HousingDetailPage({
   }
   const firstName = listing.owner?.displayName.split(' ')[0] ?? 'the host'
 
-  // The address, resolved through the member's chosen precision (ADR-867). The street
-  // address is SERVER-checked here: it only renders when the member picked 'exact' AND
-  // the viewer is signed in. It rides the page body only — the view's locationLabel
+  // The address, resolved through the member's chosen precision (ADR-867). This render is
+  // ISR, so it cannot know the viewer and resolves public-safe: the street address NEVER
+  // rides the cached HTML. When the host picked 'exact', <ViewerHousingAddress> below fetches
+  // the line for a signed-in viewer after hydration from /api/housing/[id]/address, which
+  // applies the same rule with signedIn: true (SCAN-760). The view's locationLabel
   // (meta + JSON-LD) is computed public-safe inside listingDetailFromHousing.
   const address = detail
     ? resolveAddressDisplay({
@@ -106,6 +112,7 @@ export default async function HousingDetailPage({
         signedIn: false,
       })
     : null
+  const showsAddressToMembers = detail?.addressPrecision === 'exact' && !!detail.addressLine?.trim()
 
   // Structured facts, rendered as a compact spec grid when present.
   const facts: { label: string; value: string }[] = []
@@ -162,14 +169,15 @@ export default async function HousingDetailPage({
           </div>
       }
     >
-      {facts.length > 0 && (
+      {(facts.length > 0 || showsAddressToMembers) && (
         <dl className="mb-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
           {facts.map((f) => (
             <div key={f.label}>
-              <dt className="text-2xs font-semibold uppercase tracking-wide text-muted">{f.label}</dt>
+              <dt className={FACT_LABEL}>{f.label}</dt>
               <dd className="mt-0.5 text-body-sm font-medium text-text">{f.value}</dd>
             </div>
           ))}
+          {showsAddressToMembers && <ViewerHousingAddress listingId={listing.id} labelClassName={FACT_LABEL} />}
         </dl>
       )}
 
