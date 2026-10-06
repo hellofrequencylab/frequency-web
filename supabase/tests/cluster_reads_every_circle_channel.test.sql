@@ -64,6 +64,10 @@ insert into public.posts (id, author_id, body, scope_id, visibility, post_type, 
   ('00000000-0000-4000-f730-000000000002', '00000000-0000-4000-b730-000000000001', 'L730 group post',
    '00000000-0000-4000-e730-000000000001', 'group', 'feed', null);
 
+-- feed_open (seeded true by 20260706000000) opens feed_for_viewer to every member and bypasses the
+-- reach gate under test; close it for this transaction so the gate itself is what answers.
+update public.platform_flags set value = false where key = 'feed_open';
+
 -- Fresh-stack grants (a local stack lacks the hosted defaults; the POLICIES are under test).
 grant select on public.posts, public.profiles, public.circles, public.circle_channels,
   public.memberships, public.topical_channel_memberships to authenticated;
