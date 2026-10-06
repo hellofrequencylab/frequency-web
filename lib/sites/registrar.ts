@@ -24,7 +24,7 @@ import { usdToCents } from './domain-pricing'
 
 const API = 'https://api.vercel.com'
 
-export type RegistrarError =
+type RegistrarError =
   | 'not-configured'
   | 'invalid-domain'
   | 'unsupported'
@@ -35,9 +35,9 @@ export type RegistrarError =
   | 'upstream'
   | 'network'
 
-export type RegistrarResult<T> = { ok: true; data: T } | { ok: false; error: RegistrarError; code?: string }
+type RegistrarResult<T> = { ok: true; data: T } | { ok: false; error: RegistrarError; code?: string }
 
-export interface DomainPrice {
+interface DomainPrice {
   years: number
   /** First-year price at Vercel, in cents. */
   purchaseCents: number
@@ -45,7 +45,7 @@ export interface DomainPrice {
   renewalCents: number | null
 }
 
-export type DomainOrderStatus = 'draft' | 'purchasing' | 'completed' | 'failed' | 'unknown'
+type DomainOrderStatus = 'draft' | 'purchasing' | 'completed' | 'failed' | 'unknown'
 
 /** The registrant: the person the domain is registered to. Vercel's required fields. */
 export interface RegistrantContact {

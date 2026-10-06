@@ -52,7 +52,7 @@ import {
 } from './registrar'
 import { addSiteDomain } from './vercel-domains'
 
-export const DOMAIN_PURCHASE_KIND = 'domain_purchase'
+const DOMAIN_PURCHASE_KIND = 'domain_purchase'
 const TABLE = 'space_domain_purchases'
 const START_FAILED = 'Could not start checkout for this domain. Try again.'
 
@@ -92,7 +92,7 @@ export async function searchDomain(domain: string): Promise<{ ok: true; data: Do
   }
 }
 
-export interface DomainCheckoutResult {
+interface DomainCheckoutResult {
   url?: string
   clientSecret?: string
   sessionId?: string

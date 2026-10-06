@@ -35,7 +35,7 @@ export function asDomainMarkupCents(raw: unknown): number {
   return Math.min(Math.round(n), DOMAIN_MARKUP_MAX_CENTS)
 }
 
-export interface DomainQuote {
+interface DomainQuote {
   /** What Vercel charges Frequency for the first year, in cents. */
   vercelCents: number
   /** Frequency's markup for the year, in cents. */
