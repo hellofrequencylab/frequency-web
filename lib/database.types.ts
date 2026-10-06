@@ -16308,6 +16308,7 @@ export type Database = {
         Row: {
           assigned_at: string
           completed_at: string | null
+          completed_steps: string[]
           id: string
           profile_id: string
           role: Database["public"]["Enums"]["community_role"]
@@ -16317,6 +16318,7 @@ export type Database = {
         Insert: {
           assigned_at?: string
           completed_at?: string | null
+          completed_steps?: string[]
           id?: string
           profile_id: string
           role: Database["public"]["Enums"]["community_role"]
@@ -16326,6 +16328,7 @@ export type Database = {
         Update: {
           assigned_at?: string
           completed_at?: string | null
+          completed_steps?: string[]
           id?: string
           profile_id?: string
           role?: Database["public"]["Enums"]["community_role"]
