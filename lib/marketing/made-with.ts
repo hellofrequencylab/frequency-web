@@ -9,12 +9,6 @@ type MadeWithSurface = 'booking-page' | 'booking-email' | 'order-receipt'
 /** The campaign every mark shares (the first-touch cookie reads it as utm_campaign). */
 export const MADE_WITH_CAMPAIGN = 'made-with-frequency'
 
-/** A mark ready to render: the words and where they go. */
-interface MadeWithMark {
-  label: string
-  url: string
-}
-
 /** The home page with the mark's UTM. `base` is the absolute origin for email; '' keeps it relative. */
 export function madeWithUrl(surface: MadeWithSurface, base = ''): string {
   const q = new URLSearchParams({ utm_source: 'made-with', utm_medium: surface, utm_campaign: MADE_WITH_CAMPAIGN })
