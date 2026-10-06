@@ -172,7 +172,7 @@ export async function createSpaceDonationCheckout(opts: {
     // A standalone (disconnected) Space has left the graph, so it can have no network-sourced revenue
     // (ADR-811 §3) and the source collapses to self regardless of any referral signal.
     const effective = effectiveOrderSource(source, space.network_connected)
-    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), effective)
+    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), effective, space.id)
 
     const fundLabel = (ask.fund_label ?? '').trim() || 'the fund'
     const spaceName = (space.brand_name ?? space.name ?? 'this space').trim()

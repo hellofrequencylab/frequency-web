@@ -43,6 +43,7 @@ vi.mock('./fees', () => ({
   platformFeeCents: () => 0,
   platformFeePct: () => 10,
   spaceTakeRateCents: async () => 0,
+  spaceNetworkBps: async () => 500,
   memberTakeRateCents: async () => 800,
   resolvedNetworkRate: async () => ({}),
 }))

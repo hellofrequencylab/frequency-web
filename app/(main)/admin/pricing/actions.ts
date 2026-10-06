@@ -155,9 +155,9 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
   }
 }
 
-/** The RUNGS the console may edit, as a TRUSTED constant (the ladder's own enumeration, LIVE-230: free /
- *  paid / nonprofit). Every write target below comes from this list, never from a caller-supplied property
- *  name. There is no per-plan key any more: Business, Collective and Independent all stand on `paid`. */
+/** The RUNGS the console may edit, as a TRUSTED constant (the ladder's own enumeration, LIVE-754: free /
+ *  paid / collective / nonprofit). Every write target below comes from this list, never from a
+ *  caller-supplied property name. Business and Independent stand on `paid`; Collective has its own rung. */
 const NETWORK_TIER_KEYS = TAKE_RATE_RUNGS
 
 /** Save the take-rate, in basis points (800 = 8%). Writes the fields that ACTUALLY CHARGE (ADR-914):
@@ -181,8 +181,8 @@ export async function saveTakeRate(rate: {
   try {
     const current = (await getPricingValues()).take_rate
     // `current.network_bps` is the NORMALISED rung shape (getPricingValues rebuilds it per rung), so this
-    // write only ever stores `free / paid / nonprofit`: a row still carrying the retired plan-named keys
-    // (`business / collective / independent`, pre-LIVE-230) is rewritten in the new shape on the first save.
+    // write only ever stores `free / paid / collective / nonprofit`: a row still carrying the retired
+    // plan-named keys (`business / independent`, pre-LIVE-230) is rewritten in the rung shape on save.
     const network = { ...current.network_bps }
     for (const tier of NETWORK_TIER_KEYS) {
       const next = rate.network_bps[tier]

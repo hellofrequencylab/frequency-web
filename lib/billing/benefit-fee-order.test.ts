@@ -89,6 +89,7 @@ vi.mock('./fees', () => ({
       memberFree: 1000,
       member: 800,
     }),
+  spaceNetworkBps: async () => BUSINESS_BPS,
   spaceTakeRateCents: (grossCents: number, plan: string | null, source: string) => {
     H.takeRateCalls.push({ grossCents, plan, source })
     if (source === 'self') return Promise.resolve(0)

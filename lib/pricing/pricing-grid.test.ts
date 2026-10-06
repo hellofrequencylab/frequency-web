@@ -377,19 +377,21 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     }
   })
 
-  it('holds the model invariants: two numbers plus a zero, and the rate only falls as the plan rises', () => {
+  it('holds the model invariants: 5%, 3%, 0%, and the rate only falls as the plan rises', () => {
     const net = PRICING_DEFAULTS.take_rate.network_bps
     // Non Profit takes nothing.
     expect(net.nonprofit).toBe(0)
     // Across the ladder the rate only ever falls, which is the claim the copy makes out loud
-    // ("the rate drops as your plan rises"), and every paid plan stands on the one paid rung (LIVE-230).
+    // ("the rate drops as your plan rises"); Business and Independent share the paid rung (LIVE-754).
     expect(net.free).toBeGreaterThan(net.paid)
-    expect(net.paid).toBeGreaterThan(net.nonprofit)
+    expect(net.paid).toBeGreaterThan(net.collective)
+    expect(net.collective).toBeGreaterThan(net.nonprofit)
     for (const plan of ['business', 'independent'] as const) {
       expect(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(PRICING_DEFAULTS.take_rate)), plan).toBe(net.paid)
     }
     // The paid rung is the number the whole funnel steers to, so it is stated once, here.
-    expect(net.paid).toBe(300)
+    expect(net.paid).toBe(500)
+    expect(net.collective).toBe(300)
   })
 
   it('a meter row reads the tier rung on the usage ladder, not a typed number', () => {

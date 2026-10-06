@@ -1048,7 +1048,7 @@ function Field({
 }
 
 /** The take-rate editor. These five fields are the ones that ACTUALLY CHARGE: `take_rate.network_bps` per
- *  Space RUNG (free / paid / nonprofit, LIVE-230; what lib/billing/fees.ts spaceTakeRateCents applies
+ *  Space RUNG (free / paid / collective / nonprofit, LIVE-754; what lib/billing/fees.ts spaceTakeRateCents applies
  *  after takeRateRungForPlan places the plan) plus the two individual seller rungs, `member_free_bps` and
  *  `member_bps`, which memberTakeRateCents picks between on the payee's real tier.
  *
@@ -1068,10 +1068,11 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   const bps = (v: string) => Math.round((Number(v) || 0) * 100)
   const [memberFree, setMemberFree] = useState(pct(rate.member_free_bps))
   const [crew, setCrew] = useState(pct(rate.member_bps))
-  // The Space ladder is three RUNGS (LIVE-230): free, paid (Business, and the Collective + Independent
-  // labels that resolve into it), and Non Profit. There is no per-plan field to edit any more.
+  // The Space ladder is four RUNGS (ADR-1709, LIVE-754): free (default-deny only), paid (Business and
+  // Independent), Collective, and Non Profit. There is no per-plan field to edit.
   const [free, setFree] = useState(pct(rate.network_bps.free))
   const [paid, setPaid] = useState(pct(rate.network_bps.paid))
+  const [collective, setCollective] = useState(pct(rate.network_bps.collective))
   const [nonprofit, setNonprofit] = useState(pct(rate.network_bps.nonprofit))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -1087,6 +1088,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
         network_bps: {
           free: bps(free),
           paid: bps(paid),
+          collective: bps(collective),
           nonprofit: bps(nonprofit),
         },
       })
@@ -1104,7 +1106,8 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
         <Field label="Free member %" value={memberFree} onChange={setMemberFree} />
         <Field label="Crew member %" value={crew} onChange={setCrew} />
         <Field label="Free Space %" value={free} onChange={setFree} />
-        <Field label="Paid Space %" value={paid} onChange={setPaid} />
+        <Field label="Business Space %" value={paid} onChange={setPaid} />
+        <Field label="Collective %" value={collective} onChange={setCollective} />
         <Field label="Non Profit %" value={nonprofit} onChange={setNonprofit} />
         <div className="flex items-center gap-2">
           <SaveCue pending={pending} saved={saved} />
