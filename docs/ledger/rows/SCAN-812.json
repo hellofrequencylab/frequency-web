@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-812",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const dir=\"supabase/migrations\";if(!fs.existsSync(dir))process.exit(79);let last=null;for(const f of fs.readdirSync(dir).filter(f=>f.endsWith(\".sql\")).sort()){const s=fs.readFileSync(p.join(dir,f),\"utf8\");const i=s.search(/create\\s+or\\s+replace\\s+function\\s+public\\.friendships_freeze_identity\\s*\\(/i);if(i>=0)last=s.slice(i,s.indexOf(\"$$\",i))}if(last===null)process.exit(79);if(/security\\s+definer/i.test(last)){console.error(\"SCAN-812: the latest definition of public.friendships_freeze_identity() is still SECURITY DEFINER, so current_user is postgres inside it and the trusted-writer branch lets every member rewrite the identity triple.\");process.exit(1)}'",
+      "note": "Finds the latest migration that (re)creates friendships_freeze_identity and fails while its header says security definer; passes once a later migration re-creates it as an invoker function."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-06. Migration 20270346001400 re-creates public.friendships_freeze_identity() without SECURITY DEFINER (body unchanged, search_path pinned, revoke re-stated), so current_user is the real caller and the trusted-writer branch no longer admits members. pgTAP supabase/tests/friendships_freeze_identity.test.sql: the addressee's two forged accepts (requester swapped for a third profile; pair re-pointed) are refused with 42501 and the plain accept still lands with the triple unchanged."
+  }
+}
