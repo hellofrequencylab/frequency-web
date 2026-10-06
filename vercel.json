@@ -99,6 +99,10 @@
       "schedule": "*/30 * * * *"
     },
     {
+      "path": "/api/cron/embed-posts",
+      "schedule": "20 * * * *"
+    },
+    {
       "path": "/api/cron/embed-practices",
       "schedule": "40 3 * * *"
     },

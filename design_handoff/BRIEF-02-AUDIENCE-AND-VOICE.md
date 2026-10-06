@@ -8,42 +8,100 @@
 
 ---
 
-## 1. The two readers
+## 1. The two readers and eleven archetypes
 
-All content serves one of two readers. Before writing anything, decide which.
+> Regenerated 6 October 2026 from `docs/CONTENT-VOICE.md` §2 (ADR-1715). Do not edit here: change the
+> canon, then regenerate this section.
 
-### The Seeker ("the high-functioning lonely") — primary
+All content serves one of two readers. Before writing anything, decide which. The archetypes say who is
+actually inside each reader. They are internal names: they never appear in a design's copy.
 
+### The Seeker (the "high-functioning lonely")
 - Late 20s to 50s. Capable, employed, looks fine on paper.
-- Often relocated, post-breakup, post-kids-left, new-to-town, or drifted out of
-  friendships the way adults do.
+- The core: practice skews toward college-educated women aged 25 to 44.
+  Loneliness peaks at 30 to 44 for men and women alike.
+- Often relocated, post-breakup, post-kids-left, new-to-town, or simply
+  drifted out of friendships the way adults do.
 - Digitally saturated and tired of it. Knows the feed is hurting them.
-- Wellness-adjacent (has tried meditation apps, breathwork, cold plunges) but
-  allergic to anything culty, salesy, preachy, or precious.
-- Does NOT identify as "spiritual" at the front door. Will go deep once trust is
-  earned. Depth is allowed inside pages; the surface always stays plain.
-- Their own words (use these verbatim in copy, never clinical or mystical terms):
-  "I'm always wired / I can't switch off" · "I have a hundred contacts and no real
-  friends" · "It's hard to make friends as an adult" · "I moved here and don't know
-  anyone" · "I doomscroll and I hate it" · "I'm fine but I'm not okay"
+- Wellness-adjacent: has tried meditation apps, maybe breathwork, maybe cold
+  plunges. Allergic to anything culty, salesy, preachy, or precious.
+- Does NOT identify as "spiritual" at the front door. Will go deep once trust
+  is earned.
+  - AMENDED (owner directive, 2026-07-28): this governs BODY COPY, not names.
+    Category and Channel NAMES may use plain wellness and spiritual terms out
+    loud: Spirituality, Meditation, Holistic Health, Functional Medicine. A
+    door can say what is behind it. The rule that survives untouched: never
+    write CONTENT with heavy spiritual flair. The card, the one-liner, the
+    empty state, the notification stay in the plain register; the name is a
+    label, not a sermon.
+- Their words for their pain (use these, never clinical or mystical terms):
+  - "I'm always wired / I can't switch off"
+  - "I have a hundred contacts and no real friends"
+  - "It's hard to make friends as an adult"
+  - "I moved here and don't know anyone"
+  - "I doomscroll and I hate it"
+  - "I'm fine but I'm not okay"
 
-### The Latent Leader — secondary, and the entire growth model runs on them
-
+### The Latent Leader
 - Feels the pull to gather people. Has no container, framework, or permission.
+- Most often a Gen X or older millennial woman, often a parent, already the
+  one who organizes. About one adult in ten leads any group at all, which is
+  why this reader is the growth model.
 - May have tried hosting something that fizzled.
 - Doesn't want to "build a community" from scratch. Wants rails: a format, a
   script, a structure that already works, and backup.
-- Their own words: "I want to bring people together but I don't know how" · "I
-  tried hosting something and nobody came back" · "I don't want to do this alone"
-- Trajectory: becomes Crew, then Host. Leader-track content is never an afterthought.
-- Framing rule: "You don't have to build a community. Host one Circle. We'll hand
-  you the format." Empower the natural connectors; never co-opt them.
+- Their words:
+  - "I want to bring people together but I don't know how"
+  - "I tried hosting something and nobody came back"
+  - "I don't want to do this alone"
+- This person becomes Crew, then Host. Leader-track content is never an
+  afterthought.
 
-### What both share
-
+### What both readers share
 They have been marketed at their whole lives. They can smell hype, jargon, and
 manufactured intimacy instantly. The only register they haven't been sold in is
-plain. **Write plain.**
+plain. Write plain.
+
+### Who is inside the readers
+
+| Archetype | Reader | Who | Comes for |
+|---|---|---|---|
+| Wired Professional | Seeker | Women 25 to 44, college-educated, often single | Mindless, Practices, Journeys, calm Events |
+| Transplant | Seeker | 22 to 39, just moved or fully remote | Events this week, Circles near them |
+| Activity-First Man | Seeker | Men 18 to 34 | Run and walk Circles, sauna and sober socials, Get Moving |
+| Evidence-First Skeptic | Seeker | 30 to 60, neither spiritual nor religious | The plain Mindless timer, cited articles |
+| Host-Connector | Latent Leader | Gen X and older millennial women, often parents | Starter Circles, the host kit |
+| Gathering Host | Latent Leader, becoming a Builder | Gen Z and millennial organizers | A recurring gathering that starts to charge |
+| Mission Patron | Supporter | 45 to 65, college-educated | Crew, so Frequency stays free for everyone |
+
+### Three rules the archetypes add
+1. **Men come through activities.** Never pitch a man on finding friends. Lead
+   with the run, the sauna, the game night, Get Moving. The friendship happens
+   on the way.
+2. **Write for the spiritual and the skeptic at once.** About a fifth of adults
+   are spiritual but not religious and about a fifth are neither. Plain surface
+   copy with depth inside the page is the only register both accept.
+3. **Supporters pay so it stays free.** Crew copy speaks to the Mission Patron:
+   what their support keeps open for others. Never guilt, never a wall.
+
+### The Builders (the Space side)
+People who run a Space are mostly women, mostly solo, often part-time, often in
+a second career. Their shared pains: finding clients, uneven income, too many
+tools, burnout. Write to them in the same plain voice. A Builder is also a
+Seeker who happens to run a practice.
+
+| Archetype | Who | Comes for | Tier path |
+|---|---|---|---|
+| Portfolio Teacher | Women 28 to 45 teaching at several studios, part-time | A page, workshop tickets, a student list they keep | Free Space, then Business |
+| Second-Act Practitioner | Career-changers 45 to 62: coaches, bodyworkers, energy workers | Booking, intake, a CRM with notes | Free Space, then Business |
+| Studio Keeper | Owners of studios with 1 to 10 staff | Schedule, memberships, staff seats, migration help | Business, then Collective |
+| Network Steward | Leaders of many small groups and small nonprofits | One home for many groups, dues, donations | Non Profit or Collective |
+
+Their own words are added here only from real practitioner conversations.
+
+### Archetype names are internal
+Archetype names are for planning, briefs, analytics and AI prompts. They never
+appear in member-facing copy. Copy speaks to the person in their own words.
 
 ---
 

@@ -846,6 +846,8 @@ lib/events/waitlist-notify.test.ts
 lib/events/waitlist-notify.ts
 lib/feed/density.ts
 lib/feed/feed-people.ts
+lib/feed/post-embeddings.ts
+lib/feed/post-interest.ts
 lib/feed/post-origin.ts
 lib/feed/viewer-resonance.ts
 lib/finance/dashboard.ts

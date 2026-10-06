@@ -192,8 +192,8 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'hourly',
     freshByMinutes: 120,
-    jobs: ['journey-prompt', 'practice-lifecycle', 'event-followups'],
-    why: 'the daily Journey prompt at each member\'s local morning (ADR-1225); practice state transitions; the guest follow-up after a gathering (LIVE-802)',
+    jobs: ['journey-prompt', 'practice-lifecycle', 'event-followups', 'embed-posts'],
+    why: 'the daily Journey prompt at each member\'s local morning (ADR-1225); practice state transitions; the guest follow-up after a gathering (LIVE-802); the feed interest signal (LIVE-677)',
   },
   {
     group: 'daily',
@@ -415,6 +415,7 @@ export const CRON_MONITORED: readonly string[] = [
 /** Jobs that deliberately have no monitor. Silence is chosen here, one line each. */
 export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'embed-events', reason: 'embedding derivation; a miss degrades event search gradually and a backfill repairs it' },
+  { job: 'embed-posts', reason: 'embedding derivation (LIVE-677); a miss leaves new posts without the interest term, which the blend drops, and the next run embeds them' },
   { job: 'embed-room-messages', reason: 'embedding derivation; a miss degrades room search gradually and a backfill repairs it' },
   { job: 'embed-practices', reason: 'embedding derivation; a miss degrades practice search gradually and a backfill repairs it' },
   { job: 'embed-library', reason: 'embedding derivation; a miss degrades library search gradually and a backfill repairs it' },
