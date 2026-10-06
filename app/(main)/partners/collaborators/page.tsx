@@ -58,7 +58,7 @@ export default async function CollaboratorsPage() {
                         ) : (
                           <Leaf className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                         )}
-                        <Link href={w.href} className="truncate font-medium text-text hover:text-primary-strong">
+                        <Link href={w.href} className="block min-w-0 truncate font-medium text-text hover:text-primary-strong">
                           {w.title}
                         </Link>
                         {w.featured && <span className="shrink-0 text-subtle">Featured</span>}
