@@ -3,12 +3,11 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import {
   resolveSpaceManageAccess,
   getSpaceCapabilities,
-  spaceHasEntitlement,
 } from '@/lib/spaces/entitlements'
 import { listAudienceTags } from '@/lib/spaces/audiences'
 import { listSpaceSegments } from '@/lib/spaces/segments'
 import { listSpaceSequences } from '@/lib/spaces/automation'
-import { automationWallSentence, resolveAutomationWall } from '@/lib/spaces/automation-access'
+import { automationWallSentence, resolveAutomationWall, spaceAutomationAllowed } from '@/lib/spaces/automation-access'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
@@ -43,7 +42,7 @@ export async function AutomationBody({ slug }: { slug: string }) {
   // The `crm.space.automation` gate: the Space's plan must grant the automation entitlement. A staff
   // janitor keeps a read-only preview even when the plan lacks it (so staff can see the surface).
   // LIVE-432 names the wall through featureWallLabel (never the retired Collective label).
-  if (!staffViewing && !spaceHasEntitlement(space, 'automation')) {
+  if (!staffViewing && !(await spaceAutomationAllowed(space))) {
     const wall = await resolveAutomationWall()
     return (
       <FeatureLockedNotice

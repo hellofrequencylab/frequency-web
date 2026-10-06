@@ -14,14 +14,16 @@
 // getSpaceCapabilities AND re-validate the row belongs to the Space before mutating (the update/delete
 // bind both id AND space_id). Reads FAIL-SAFE (empty / null); writes FAIL-CLOSED on a permission miss.
 //
-// GATE: the automation SURFACE is gated on the `crm.space.automation` capability (spaceHasEntitlement
-// 'automation'); the surface enforces that. These server actions independently gate every write on
+// GATE: the automation SURFACE asks spaceAutomationAllowed (lib/spaces/automation-access.ts), open on
+// every plan since ADR-1709 and metered instead; the surface enforces that. These server actions independently gate every write on
 // canEditProfile, so the data layer is safe even if a surface forgets.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
-import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceAutomationAllowed } from '@/lib/spaces/automation-access'
+import { checkActiveAutomationMeter } from '@/lib/spaces/counted-meters'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { definitionToFilter, resolveAudience } from '@/lib/spaces/audiences'
 import { enrollContactsInSequence } from '@/lib/spaces/drip-enroll'
@@ -203,7 +205,7 @@ async function requireSpaceEditor(spaceId: string): Promise<{ ok: true } | Actio
   return { ok: true }
 }
 
-/** Editor gate PLUS the `crm.space.automation` entitlement (spaceHasEntitlement 'automation'). Used by
+/** Editor gate PLUS the automation access check (spaceAutomationAllowed; free floor since ADR-1709). Used by
  *  the RUNNER-facing action (starting a sequence), which is the live automation lever — not just a rule
  *  edit — so it must be gated on the plan entitlement as well as the editor role. Fail-closed. */
 async function requireAutomationEditor(spaceId: string): Promise<{ ok: true } | ActionResult<never>> {
@@ -214,7 +216,7 @@ async function requireAutomationEditor(spaceId: string): Promise<{ ok: true } | 
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile)
     return fail('You do not have permission to manage automation for this space.')
-  if (!spaceHasEntitlement(space, 'automation'))
+  if (!(await spaceAutomationAllowed(space)))
     return fail('Automation is not available on this space plan.')
   return { ok: true }
 }
@@ -475,6 +477,11 @@ export async function setSpaceSequenceEnabled(
 ): Promise<ActionResult> {
   const gate = await requireSpaceEditor(spaceId)
   if ('error' in gate) return gate
+  // Active automations (space_automations_active, LIVE-751): only switching one ON asks.
+  if (enabled) {
+    const meter = await checkActiveAutomationMeter(spaceId)
+    if (!meter.ok) return fail(meter.error)
+  }
   try {
     const { error } = await table('space_drip_sequences')
       .update({ enabled })

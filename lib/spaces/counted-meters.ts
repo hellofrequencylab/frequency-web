@@ -50,11 +50,11 @@ async function gatesLive(): Promise<boolean> {
 /** The narrow query shape a head count needs. Several of these tables are not in the generated types,
  *  so this reads them loosely, the way booking.ts and memberships.ts already do. */
 interface CountFilter extends PromiseLike<{ count: number | null; error: unknown }> {
-  eq: (column: string, value: string) => CountFilter
+  eq: (column: string, value: string | boolean) => CountFilter
   in: (column: string, values: string[]) => CountFilter
   gte: (column: string, value: string) => CountFilter
   is: (column: string, value: null) => CountFilter
-  neq: (column: string, value: string) => CountFilter
+  not: (column: string, operator: 'is', value: null) => CountFilter
   or: (filters: string) => CountFilter
 }
 interface CountTable {
@@ -297,4 +297,58 @@ export async function checkEventGuestMeter(eventId: string): Promise<MeterCheck>
   } catch {
     return OK
   }
+}
+
+// ── Marketing meters (LIVE-751) ────────────────────────────────────────────────────────────────
+
+const CAMPAIGNS_FULL_MESSAGE =
+  'Your plan includes this many campaigns a month. You can still email your people directly, and see plans for more.'
+const FUNNELS_FULL_MESSAGE = 'Live splash pages come with Business. Your code still sends people to its link.'
+const AUTOMATIONS_FULL_MESSAGE =
+  'Your plan includes this many active automations. Turn one off to switch this on, or see plans for more.'
+
+/**
+ * May this Space commit one more campaign this month (schedule or send)? Scheduled, sending and sent
+ * campaigns count, by the month they go out. `alreadyCounted` is for sending a campaign that is
+ * already scheduled this month: it holds its place.
+ */
+export async function checkCampaignMonthMeter(
+  spaceId: string,
+  opts: { alreadyCounted?: boolean } = {},
+): Promise<MeterCheck> {
+  return oneMore(
+    spaceId,
+    'space_campaigns_month',
+    async () => {
+      const start = monthStartIso()
+      const used = await headCount('campaigns', (q) =>
+        q
+          .eq('space_id', spaceId)
+          .in('status', ['scheduled', 'sending', 'sent'])
+          .or(`sent_at.gte.${start},scheduled_for.gte.${start}`),
+      )
+      return opts.alreadyCounted ? Math.max(0, used - 1) : used
+    },
+    CAMPAIGNS_FULL_MESSAGE,
+  )
+}
+
+/** May this Space put one more splash page live on its codes? */
+export async function checkSpaceFunnelMeter(spaceId: string): Promise<MeterCheck> {
+  return oneMore(
+    spaceId,
+    'space_funnels',
+    () => headCount('qr_codes', (q) => q.eq('space_id', spaceId).eq('active', true).not('splash', 'is', null)),
+    FUNNELS_FULL_MESSAGE,
+  )
+}
+
+/** May this Space switch one more automation (an enabled sequence) on? */
+export async function checkActiveAutomationMeter(spaceId: string): Promise<MeterCheck> {
+  return oneMore(
+    spaceId,
+    'space_automations_active',
+    () => headCount('space_drip_sequences', (q) => q.eq('space_id', spaceId).eq('enabled', true)),
+    AUTOMATIONS_FULL_MESSAGE,
+  )
 }

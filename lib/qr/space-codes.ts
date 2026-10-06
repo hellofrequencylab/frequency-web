@@ -28,6 +28,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { checkSpaceFunnelMeter } from '@/lib/spaces/counted-meters'
 import {
   generateSlug,
   normalizeSlug,
@@ -358,13 +359,13 @@ export async function setCodeSplash(
 
   // Re-resolve the code's space_id from the row, so authorization gates on the code's OWN Space (no
   // cross-space edit via a foreign code id).
-  let row: { space_id: string | null } | null = null
+  let row: { space_id: string | null; splash?: unknown } | null = null
   try {
     const { data } = (await createAdminClient()
       .from('qr_codes')
-      .select('space_id')
+      .select('space_id, splash')
       .eq('id', codeId)
-      .maybeSingle()) as { data: { space_id: string | null } | null }
+      .maybeSingle()) as { data: { space_id: string | null; splash?: unknown } | null }
     row = data
   } catch {
     row = null
@@ -385,6 +386,12 @@ export async function setCodeSplash(
   if (splash !== null) {
     stored = normalizeSplash(splash)
     if (!stored) return fail('Add a heading to your splash before saving.')
+    // Live funnels and splash pages (space_funnels, LIVE-751). Editing a live splash never asks; only
+    // a code going from no splash to one does.
+    if (row.splash == null) {
+      const meter = await checkSpaceFunnelMeter(row.space_id)
+      if (!meter.ok) return fail(meter.error)
+    }
   }
 
   try {

@@ -1,9 +1,16 @@
+// AUTOMATION ACCESS. ADR-1709 (LIVE-751) opened automation to the free Space (1 active automation, 100
+// runs a month, both metered), replacing the default-deny `automation` entitlement read that locked a
+// free Space out even during the beta grace. The code floor is free; an operator override that raises
+// space_automation still locks, and spaceAutomationAllowed is the one place that asks.
+//
 // AUTOMATION WALL NAME (LIVE-432). The lock screen used to type Collective as the plan word.
 // LIVE-228 merged that depth into Business. The code gate is space_automation at
 // minEntitlement business. This seam reads the wall through featureWallLabel so an
 // operator override that moves it moves the sentence with it. Never the retired label.
 
-import { loadFeatureGateOverrides, type FeatureGateOverrides } from '@/lib/pricing/gates'
+import { featureAllowed, loadFeatureGateOverrides, type FeatureGateOverrides } from '@/lib/pricing/gates'
+import { featureGatesLive } from '@/lib/pricing/settings'
+import { asSpacePlan } from '@/lib/pricing/plans'
 import { featureWallLabel } from '@/lib/pricing/feature-tiers'
 import { SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 
@@ -24,4 +31,18 @@ export function automationWallLabel(overrides: FeatureGateOverrides = {}): strin
 /** IO wrapper: load the merged gate, then name the wall. */
 export async function resolveAutomationWall(): Promise<string> {
   return automationWallLabel(await loadFeatureGateOverrides())
+}
+
+/** May this Space use automation? True on every plan by code default; false only when an operator
+ *  override raises the gate and the grace window has closed. FAIL-SAFE to allowed. */
+export async function spaceAutomationAllowed(space: { plan?: string | null }): Promise<boolean> {
+  try {
+    return await featureAllowed(
+      AUTOMATION_FEATURE,
+      { plan: asSpacePlan(space.plan ?? null) },
+      { gatesLive: await featureGatesLive() },
+    )
+  } catch {
+    return true
+  }
 }

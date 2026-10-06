@@ -244,17 +244,10 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   // coverage test below is what keeps this file and the gate map from drifting apart again. Their old
   // rung copy also restated the meter numbers in prose ("your first 200 contacts free", "up to 300
   // email sends"), which is the exact second source Phase 5 spent its whole budget deleting.
-  space_automation: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'Automations',
-    // 2,000 runs/mo mirrors PLACEHOLDER_METER_LIMITS.space_automation.business (ADR-837, ADR-1709).
-    rungs: spaceRungs(
-      'One pipeline, no automations.',
-      'Governed playbooks and multi-step sequences that run the safe, reversible moves for you, with 2,000 runs included each month.',
-      'business',
-    ),
-  },
+  // 🔴 `space_automation` and `space_campaigns` LADDERS USED TO SIT HERE (ADR-1709, LIVE-751). Both
+  // gates moved to the free floor and the limits became meters (space_automation runs,
+  // space_automations_active, space_campaigns_month, space_funnels), so the allowance ladders in
+  // feature-meters.ts are their display, the same way memberships went (LIVE-410).
   space_collaborators: {
     axis: 'plan',
     minTier: 'business',
@@ -272,15 +265,6 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   // every plan. Checkout still refuses when Connect is not payout-ready. An operator override that
   // raises either gate can still name the wall through featureWallLabel; there is no unlock rung to
   // display on the default map.
-  space_campaigns: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'Campaigns and funnels',
-    rungs: spaceRungs(
-      'Email your people directly, inside your send allowance.',
-      'Campaigns, funnels, and saved sequences that bring new people in and follow up for you.',
-    ),
-  },
   custom_domain: {
     axis: 'plan',
     minTier: 'business',

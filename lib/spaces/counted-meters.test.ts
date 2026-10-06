@@ -27,7 +27,7 @@ vi.mock('@/lib/supabase/admin', () => ({
       const q = { table, filters: [] as unknown[][] }
       queries.push(q)
       const chain: Record<string, unknown> = {}
-      for (const m of ['select', 'eq', 'in', 'gte', 'is', 'neq', 'or']) {
+      for (const m of ['select', 'eq', 'in', 'gte', 'is', 'neq', 'or', 'not']) {
         chain[m] = (...args: unknown[]) => {
           q.filters.push([m, ...args])
           return chain
@@ -194,5 +194,27 @@ describe('the new Space meters (LIVE-750)', () => {
     leadership.mockResolvedValue(false)
     expect((await checkEventGuestMeter('e1')).ok).toBe(false)
     expect(leadership).toHaveBeenCalledWith('event_guests', 'crew', 30)
+  })
+})
+
+describe('the marketing meters (LIVE-751)', () => {
+  it('campaigns count what goes out this month; a scheduled one being sent holds its place', async () => {
+    const { checkCampaignMonthMeter } = await import('./counted-meters')
+    nextCount = 2
+    await checkCampaignMonthMeter('s1')
+    expect(verdict).toHaveBeenLastCalledWith('s1', 'space_campaigns_month', 2)
+    await checkCampaignMonthMeter('s1', { alreadyCounted: true })
+    expect(verdict).toHaveBeenLastCalledWith('s1', 'space_campaigns_month', 1)
+    expect(queries[0]!.filters).toContainEqual(['in', 'status', ['scheduled', 'sending', 'sent']])
+  })
+
+  it('live splash pages and enabled sequences ask their meters', async () => {
+    const { checkSpaceFunnelMeter, checkActiveAutomationMeter } = await import('./counted-meters')
+    await checkSpaceFunnelMeter('s1')
+    expect(verdict).toHaveBeenLastCalledWith('s1', 'space_funnels', 0)
+    expect(queries[0]!.filters).toContainEqual(['not', 'splash', 'is', null])
+    await checkActiveAutomationMeter('s1')
+    expect(verdict).toHaveBeenLastCalledWith('s1', 'space_automations_active', 0)
+    expect(queries[1]!.filters).toContainEqual(['eq', 'enabled', true])
   })
 })

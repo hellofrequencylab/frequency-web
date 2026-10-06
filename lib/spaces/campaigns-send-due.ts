@@ -33,6 +33,7 @@ import { isError } from '@/lib/action-result'
 import { log, briefError } from '@/lib/log'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
 import { postalFooterHtml } from '@/lib/email-studio/postal'
+import { frequencyFooterHtml } from '@/lib/spaces/campaign-footer'
 
 /** What one scheduled-send pass reports. */
 interface SendDueResult {
@@ -74,7 +75,7 @@ const LEDGER_PAGE = 1000
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
-function renderCampaignHtml(body: string): string {
+function renderCampaignHtml(body: string, footerHtml: string = ''): string {
   const paras = body
     .split(/\n{2,}/)
     .map(
@@ -82,7 +83,18 @@ function renderCampaignHtml(body: string): string {
         `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`,
     )
     .join('')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/>${footerHtml}<p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
+}
+
+/** The Frequency footer for a free Space's campaign (LIVE-751), '' on a paid plan or a failed read. */
+async function footerForSpace(spaceId: string | null): Promise<string> {
+  if (!spaceId) return ''
+  try {
+    const { data } = await createAdminClient().from('spaces').select('plan').eq('id', spaceId).maybeSingle()
+    return frequencyFooterHtml((data as { plan: string | null } | null)?.plan ?? null)
+  } catch {
+    return ''
+  }
 }
 
 /**
@@ -231,7 +243,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
       const res = await sendSpaceCampaignSystem(row.space_id, {
         campaignId: row.id,
         subject: row.subject,
-        html: renderCampaignHtml(row.body ?? ''),
+        html: renderCampaignHtml(row.body ?? '', await footerForSpace(row.space_id)),
         topic: plan.topic,
         recipients,
       })

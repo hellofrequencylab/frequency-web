@@ -121,7 +121,10 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // The WALL that used to be smuggled inside `space_email` is `space_campaigns` below: messaging your
   // own people is free inside the send allowance, running an acquisition machine is paid. Do not
   // re-add either key; a plan ladder for these two lives in feature-meters.ts.
-  space_automation: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // AUTOMATION OPENS TO THE FREE SPACE (ADR-1709, LIVE-751): 1 active automation and 100 runs a
+  // month, metered by space_automations_active and space_automation. The floor is free; an operator
+  // override that raises it still binds, through spaceAutomationAllowed (lib/spaces/automation-access.ts).
+  space_automation: { axis: 'plan', minEntitlement: 'free', enabled: true },
   // 🔴 `space_team` and `space_multi_pipeline` USED TO SIT HERE and are deliberately gone (ADR-917).
   // Both were decorative AND collided with their own meters: zero call sites outside this file, so
   // neither ever refused anyone, while `space_team` simultaneously promised Collective three included
@@ -177,9 +180,10 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   space_memberships: { axis: 'plan', minEntitlement: 'free', enabled: true },
   // CAMPAIGNS AND FUNNELS. The line is between MESSAGING YOUR PEOPLE, which every Space can do inside
   // its send allowance, and RUNNING AN ACQUISITION MACHINE, which is what someone is paying for. A
-  // metered "one free campaign" converts badly for the same reason a locked preview does: it is not
-  // enough to learn anything from. Business floor. This is the wall that remains.
-  space_campaigns: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // ADR-1709 (LIVE-751) replaced the Business wall with meters: a free Space sends 2 campaigns a month
+  // with a Frequency footer (space_campaigns_month), Business and Collective unlimited; live funnels
+  // and splash pages are space_funnels. The floor is free; an operator override still binds.
+  space_campaigns: { axis: 'plan', minEntitlement: 'free', enabled: true },
   // Membership-linked ticket access (ADR-823): restricting an event ticket tier to the hosting Space's
   // own members. Sits WITH the membership it sells (ADR-914 lowered it from Collective so the two
   // could not part). LIVE-410 moved the membership floor to free, so this floor moves with it —
