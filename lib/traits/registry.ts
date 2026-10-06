@@ -19,6 +19,8 @@
 type TraitKind = 'tag' | 'computed' | 'predicted'
 type TraitType = 'boolean' | 'number' | 'string' | 'enum' | 'timestamp'
 type TraitCategory = 'involvement' | 'lifecycle' | 'engagement' | 'gamification' | 'marketing'
+import { ARCHETYPE_IDS, ARCHETYPES } from '@/lib/audience/archetypes'
+
 /** Privacy class drives retention + erase + export handling (privacy-by-design). */
 type PiiClass = 'none' | 'identity' | 'sensitive'
 export type Freshness = 'static' | 'nightly' | 'realtime'
@@ -192,7 +194,7 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
   {
     key: 'persona_partner',
     label: 'Persona · Partner business',
-    description: 'Identified as a local business — the loyalty-rewards + gamified-foot-traffic track.',
+    description: 'Identified as a local business: hosting in their own space and being found nearby.',
     kind: 'tag', category: 'marketing', type: 'boolean',
     pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
     systemManaged: true,
@@ -205,6 +207,19 @@ export const TRAIT_REGISTRY: readonly TraitDef[] = [
     pii: 'none', freshness: 'static', retentionDays: null, owner: 'marketing',
     systemManaged: true,
   },
+  // ── Tags · marketing · archetype (ADR-1715) ─────────────────────────────────
+  // The arrival follow-up maps each persona to one of the eleven archetypes (lib/audience/archetypes.ts,
+  // CONTENT-VOICE §2d and §2f). One boolean tag per archetype, generated from the registry so the two
+  // can never drift. Internal: segmentable here, never shown to the member, never sent to a pixel.
+  ...ARCHETYPE_IDS.map((id): TraitDef => ({
+    key: `archetype_${id}`,
+    label: `Archetype · ${ARCHETYPES[id].internalName}`,
+    description: `Answered the arrival follow-up as the ${ARCHETYPES[id].internalName} (${ARCHETYPES[id].family.replace('_', ' ')}). Internal; never member-facing.`,
+    kind: 'tag', category: 'marketing', type: 'boolean',
+    // A wellness-adjacent self-report (Washington MHMDA, FTC HBNR), so it is classed sensitive.
+    pii: 'sensitive', freshness: 'static', retentionDays: null, owner: 'marketing',
+    systemManaged: true,
+  })),
   {
     key: 'persona_investor',
     label: 'Persona · Lab champion',

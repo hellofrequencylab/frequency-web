@@ -16,6 +16,9 @@ interface VeraWelcomeContext {
   interests: string | null
   /** City label, e.g. "Encinitas, CA". */
   location: string | null
+  /** The persona they picked at intake (profiles.meta.persona). Branches the opening (ADR-1715): a
+   *  host is handed one Circle, a practitioner a free Space; everyone else keeps the tour. */
+  persona?: string | null
 }
 
 /** Which vector spot-illustration a slide shows (see components/onboarding/
@@ -130,6 +133,22 @@ export function buildVeraOpening(ctx: VeraWelcomeContext): VeraOpening {
   const intent = clean(ctx.intent)
   const interests = clean(ctx.interests, 120)
   const greet = first ? `Welcome in, ${first}.` : 'Welcome in.'
+
+  // A host gets the start-one-Circle handoff, a practitioner gets the free Space (ADR-1715, LIVE-796).
+  if (ctx.persona === 'builder') {
+    return {
+      message: `${greet} You said you want to host. The easiest start is one Circle: we hand you the format, a first-night plan and backup, so you're not building a community from scratch. Want to start one?`,
+      suggestions: ['Start one Circle', 'How does hosting work?', 'Find a circle first'],
+      stage: 'orient',
+    }
+  }
+  if (ctx.persona === 'practitioner') {
+    return {
+      message: `${greet} You've got something to offer. Open a free Space: one page for what you do, your Events and the people who come back. Hosting is free. Want to open one?`,
+      suggestions: ['Open a free Space', 'What does a Space do?', 'Find a circle first'],
+      stage: 'orient',
+    }
+  }
 
   let message: string
   if (intent) {

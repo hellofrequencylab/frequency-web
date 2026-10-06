@@ -35,15 +35,15 @@ Rules, follow exactly:
 - Output ONE sentence, max ~22 words. No greeting, no name, no emoji, no quotes, no hashtags.
 - Use ONLY the facts you are given. NEVER invent a person's name, a friend, an attendance count, or any detail not in the facts.
 - If you are told a number of people the member knows are going, you may reference that count warmly (e.g. "two people from your circles are going"), but never name anyone, never imply more than the count given.
-- Speak to genuine overlap: a shared circle, the event's energy or theme matching what the member is into. Warm and specific, never salesy, never FOMO, never urgent.
-- If the facts are thin, write a calm, honest one-liner about the event's energy or theme. Do not pad with fabricated social proof.`
+- Speak to genuine overlap: a shared circle, the event's pace or theme matching what the member is into. Warm and specific, never salesy, never FOMO, never urgent.
+- If the facts are thin, write a calm, honest one-liner about the event's pace or theme. Do not pad with fabricated social proof.`
 
-// Energy tags → a short human phrase, so the model speaks plainly about fit.
+// Pace tags (events.energy_tag) → a short plain phrase, so the model speaks plainly about fit.
 const ENERGY_PHRASE: Record<string, string> = {
-  grounding: 'a grounding, settling pace',
-  high_activation: 'high-energy, activating',
-  social: 'social and connective',
-  ceremonial: 'ceremonial and intentional',
+  grounding: 'a calm, slow pace',
+  high_activation: 'active, on the move',
+  social: 'social, lots of talking',
+  ceremonial: 'a ceremony, done with intention',
 }
 
 /**
@@ -148,7 +148,7 @@ export async function eventBlurb(profileId: string, eventId: string): Promise<st
     const facts: string[] = []
     facts.push(`Event title: ${clean(event.title, 100) || '(untitled)'}.`)
     if (event.category) facts.push(`Theme/category: ${clean(event.category, 60)}.`)
-    if (event.energy_tag) facts.push(`Energy: ${ENERGY_PHRASE[event.energy_tag] ?? clean(event.energy_tag, 40)}.`)
+    if (event.energy_tag) facts.push(`Pace: ${ENERGY_PHRASE[event.energy_tag] ?? clean(event.energy_tag, 40)}.`)
     if (sharedCircleName) facts.push(`This is hosted by "${clean(sharedCircleName, 80)}", a circle the member is already in.`)
     if (knownGoingCount > 0)
       facts.push(`${knownGoingCount} ${knownGoingCount === 1 ? 'person the member is connected to is' : 'people the member is connected to are'} going (do NOT name anyone).`)

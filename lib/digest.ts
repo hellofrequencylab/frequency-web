@@ -34,6 +34,10 @@ type DigestPayload = {
   email:            string
   dispatches:       DigestDispatch[]
   upcomingEvents:   DigestEvent[]
+  /** Public Events near the member's coarse home cell this week that they have not RSVPd to. The
+   *  digest LEADS with these (launch sweep 2026-10-06, folded into LIVE-795): the Sunday email is the
+   *  weekly nudge to show up, and a calendar of only what you already said yes to is no nudge. */
+  nearbyEvents:     DigestEvent[]
   topStreak:        { type: string; count: number } | null
   rank:             { name: string | null; zaps: number } | null
   /** Practices whose term completed in the last week and were not picked back up — the
@@ -51,7 +55,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, display_name, auth_user_id, current_season_rank, current_season_zaps')
+    .select('id, display_name, auth_user_id, current_season_rank, current_season_zaps, home_geocell_lat, home_geocell_lng')
     .eq('id', profileId)
     .maybeSingle()
 
@@ -151,6 +155,39 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
       url:      `${APP_URL}/events/${e.slug}`,
     }))
 
+  // ── Public Events nearby this week (not already RSVPd) ─────────────
+  // The coarse home geocell only (never the exact home point). The admin client bypasses RLS, so the
+  // RPC's ids are re-read with the public-only filter before anything reaches an email.
+  let nearbyEvents: DigestEvent[] = []
+  try {
+    const cell = profile as { home_geocell_lat?: number | null; home_geocell_lng?: number | null }
+    if (typeof cell.home_geocell_lat === 'number' && typeof cell.home_geocell_lng === 'number') {
+      const { data: near } = await admin.rpc('nearby_events', {
+        _lat: cell.home_geocell_lat, _long: cell.home_geocell_lng, _radius_m: 25_000, _limit: 25,
+      })
+      const going = new Set(upcomingEvents.map((e) => e.id))
+      const ids = ((near ?? []) as { id: string }[]).map((r) => r.id).filter((id) => !going.has(id))
+      if (ids.length) {
+        const nowIso = new Date().toISOString()
+        const { data: pub } = await admin
+          .from('events')
+          .select('id, title, starts_at, location, slug')
+          .in('id', ids)
+          .eq('visibility', 'public')
+          .eq('is_cancelled', false)
+          .eq('is_demo', false)
+          .gte('starts_at', nowIso)
+          .lte('starts_at', weekAhead)
+          .order('starts_at', { ascending: true })
+          .limit(3)
+        nearbyEvents = ((pub ?? []) as { id: string; title: string; starts_at: string; location: string | null; slug: string }[])
+          .map((e) => ({ id: e.id, title: e.title, startsAt: e.starts_at, location: e.location, url: `${APP_URL}/events/${e.slug}` }))
+      }
+    }
+  } catch {
+    nearbyEvents = []
+  }
+
   // ── Top streak ─────────────────────────────────────────────────────
   const { data: streaks } = await admin
     .from('streaks')
@@ -190,7 +227,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
   }
 
   // ── Skip if nothing to say ─────────────────────────────────────────
-  if (!dispatches.length && !upcomingEvents.length && !goAgain.length) return null
+  if (!dispatches.length && !upcomingEvents.length && !nearbyEvents.length && !goAgain.length) return null
 
   type ProfileRow = {
     id: string; display_name: string; auth_user_id: string | null
@@ -204,6 +241,7 @@ export async function assembleDigestForProfile(profileId: string): Promise<Diges
     email:          user.email,
     dispatches,
     upcomingEvents,
+    nearbyEvents,
     topStreak: topStreak
       ? { type: topStreak.streak_type, count: topStreak.current_count }
       : null,

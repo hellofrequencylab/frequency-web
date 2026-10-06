@@ -34,7 +34,9 @@ import {
 export const ITEM_KEYS = [
   'base',
   'business',
-  'collective', // COLLECTIVE base (ADR-811): the network-depth tier (collective_base -> 'collective')
+  'collective', // COLLECTIVE base (ADR-1709): collective_base -> 'collective'
+  'collective_space', // an extra Collective member Space (ADR-1709), quantity = extra Spaces
+  'nonprofit_collective', // NON PROFIT COLLECTIVE base (ADR-1709)
   'independent', // INDEPENDENT base (ADR-811): the standalone white-label tier (independent_base -> 'independent')
   'ai',
   'nonprofit_seat',
@@ -60,7 +62,9 @@ export function asItemKey(raw: string | null | undefined): ItemKey | null {
 export function itemKeyForCatalogKey(catalogKey: string | null | undefined): ItemKey | null {
   const key = asCatalogItemKey(catalogKey)
   if (key === 'business_base') return 'business'
-  if (catalogKey === 'collective_base') return 'business'
+  if (key === 'collective_base') return 'collective'
+  if (key === 'collective_space') return 'collective_space'
+  if (key === 'nonprofit_collective') return 'nonprofit_collective'
   if (key === 'independent_base') return 'independent'
   if (key) {
     const addon = addonKeyForCatalogItem(key)
@@ -102,7 +106,8 @@ export function seatQuantityFromItems(items: readonly ReconciledItem[]): number 
 }
 
 /** The base TIER a set of item keys implies. PURE (ADR-552, ADR-811 tiers added by ADR-881).
- *  Highest-ranked wins: independent > nonprofit > collective > business > free.
+ *  Highest-ranked wins: nonprofit_collective > collective > independent > nonprofit > business > free
+ *  (ADR-1709 put Collective back as its own plan; before that a collective item folded into Business).
  *
  *  ADR-881: 'collective' and 'independent' were MISSING from this ladder while both bases were
  *  sellable and the loadout checkout minted their items. A paid Collective subscription therefore
@@ -113,10 +118,12 @@ export function seatQuantityFromItems(items: readonly ReconciledItem[]): number 
  *  The legacy 'organization' item folds to nonprofit; a 'nonprofit_seat' item -> nonprofit; a
  *  'business' item OR the legacy 'base' (former Pro) item -> business; an empty set -> free. */
 export function planForItemKeys(itemKeys: readonly ItemKey[]): SpacePlan {
+  // Collective rungs first (ADR-1709): they carry the deepest toolkit.
+  if (itemKeys.includes('nonprofit_collective')) return 'nonprofit_collective'
+  if (itemKeys.includes('collective')) return 'collective'
   if (itemKeys.includes('independent')) return 'independent'
   if (itemKeys.includes('organization')) return 'nonprofit' // legacy org folds to nonprofit
   if (itemKeys.includes('nonprofit_seat')) return 'nonprofit'
-  if (itemKeys.includes('collective')) return 'business'
   if (itemKeys.includes('business')) return 'business'
   if (itemKeys.includes('base')) return 'business' // legacy Pro base folds to business
   return 'free'
