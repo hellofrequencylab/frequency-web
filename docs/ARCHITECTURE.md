@@ -177,12 +177,12 @@ type and helpers live in `lib/action-result.ts`.
 ## Cron
 
 **`vercel.json` is the schedule's source of truth**, and every entry maps 1:1 to a route handler
-under `app/api/cron`. **32 jobs as of 2026-09-30** (27 as of 2026-08-17; `signup-lead-recovery` joined on 2026-09-08, ADR-1274; `onboarding-throughput` joined on 2026-09-14, LIVE-311; `tag-library` joined on 2026-09-29, LIVE-587; `reconcile-transfers` joined on 2026-09-29, LIVE-622; `storage-backup` joined on 2026-09-30, HYG-144), in seven families:
+under `app/api/cron`. **33 jobs as of 2026-10-06** (27 as of 2026-08-17; `signup-lead-recovery` joined on 2026-09-08, ADR-1274; `onboarding-throughput` joined on 2026-09-14, LIVE-311; `tag-library` joined on 2026-09-29, LIVE-587; `reconcile-transfers` joined on 2026-09-29, LIVE-622; `storage-backup` joined on 2026-09-30, HYG-144; `event-followups` joined on 2026-10-06, LIVE-802), in seven families:
 
 | Family | Example jobs | Cadence |
 |---|---|---|
 | Delivery + queue | `process-queue`, `weekly-digest`, `nurture`, `conversation-batches` | 2 min → weekly |
-| Events | `event-reminders`, `event-occurrences`, `space-follower-event-reminders` | 15 min / nightly |
+| Events | `event-reminders`, `event-occurrences`, `space-follower-event-reminders`, `event-followups` (the guest follow-up the day after a gathering, LIVE-802) | 15 min / hourly / nightly |
 | Growth + CRM | `space-campaigns`, `space-drips`, `journey-drips`, `referral-release`, `signup-lead-recovery`, `onboarding-throughput` (a nightly reading of accounts stuck behind the admission gate, LIVE-311) | 5–30 min, daily |
 | Embeddings | `embed-events`, `embed-practices`, `embed-help`, `embed-library`, `embed-room-messages`, `tag-library` (Vera names Loom images nobody named, ahead of `embed-library`, LIVE-587) | nightly / 10–30 min |
 | Lifecycle + season | `publish-scheduled`, `season-go-live`, `practice-lifecycle`, `lifecycle-triggers` | 5 min → nightly |
