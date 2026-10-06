@@ -259,6 +259,19 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     lines.push({ product: p, variant, qty, unitCents, title: variant ? `${p.title} (${variant.name})` : p.title })
   }
 
+  // SCAN-713: a PLAIN product's tracked stock, checked before the money. The variant branch above
+  // soft-checks the variant's stock; a variant-less line never compared p.stock to the quantity, so
+  // a sold-out tee on a cached store page (ISR, up to an hour stale) could still be bought and the
+  // oversell only surfaced as a log line at settle. Quantities are summed per product across the
+  // cart so two lines of the same item cannot each pass alone. The concurrent-buyer race remains,
+  // and the settle arm below refunds the loser.
+  const plainQty = new Map<string, number>()
+  for (const l of lines) if (!l.variant) plainQty.set(l.product.id, (plainQty.get(l.product.id) ?? 0) + l.qty)
+  for (const [productId, qty] of plainQty) {
+    const p = products.find((x) => x.id === productId)
+    if (p && p.stock != null && p.stock < qty) return { error: 'This item is sold out.' }
+  }
+
   const gross = lines.reduce((sum, l) => sum + l.unitCents * l.qty, 0)
   if (gross <= 0) return { error: 'Nothing to charge.' }
 
@@ -515,6 +528,10 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       // agree — and so the address the claim later matches on is the one they actually typed.
       ...(guestEmail ? { customer_email: guestEmail } : {}),
       ...(buyerProfileId ? { client_reference_id: buyerProfileId } : {}),
+      // SCAN-715: a hold-first caller shortens the session so an abandoned Checkout frees its slot.
+      ...(input.expiresInSeconds
+        ? { expires_at: Math.floor(Date.now() / 1000) + Math.max(30 * 60, Math.floor(input.expiresInSeconds)) }
+        : {}),
       metadata: {
         kind: 'commerce_order',
         ...(buyerProfileId ? { buyer_profile_id: buyerProfileId } : { guest_email: guestEmail }),
@@ -656,11 +673,14 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // no-ops). Untracked products (stock null) are skipped and stay unlimited.
     const { error: stockError } = await db().rpc('decrement_commerce_stock_atomic', { _order: row.id })
     if (stockError) {
-      // The order is already paid + settled; the RPC raises typed P0001 'out_of_stock'
-      // only when stock raced below the sold quantity. We fail SOFT (log, do not throw)
-      // so the ledger record + paid flip are never blocked. Operators reconcile oversell
-      // out of band; idempotency means a webhook retry re-runs safely once stock is fixed.
+      // The order is already paid + settled; the RPC raises typed P0001 'out_of_stock' only when
+      // stock raced below the sold quantity. The flip is never blocked (the money moved), but the
+      // buyer is not left holding a paid order with nothing to ship (SCAN-713): an oversell is
+      // refunded in full and the buyer told, the way the ticket settle handles capacity. Anything
+      // else stays a log line for the operator; a webhook retry re-runs the idempotent RPC.
       console.error('[commerce] stock decrement failed', { orderId: row.id, error: stockError.message })
+      const oversold = stockError.code === 'P0001' || /out_of_stock/i.test(stockError.message ?? '')
+      if (oversold) await refundOversoldOrder(row.id, row.buyer_profile_id)
     }
 
     const revenue = row.owner_kind === 'platform' ? row.amount_cents : row.platform_fee_cents
@@ -807,6 +827,32 @@ async function bookingPartialRefundCents(order: { id: string; amount_cents: numb
   }
 }
 
+/** SCAN-713: the losing side of a stock race. The buyer paid for a unit the shelf no longer has, so
+ *  the whole order goes back (refundCommerceOrder, the same unwind a dispute approval uses) and the
+ *  buyer gets a bell notice. Best-effort by construction: the settle already flipped the row, and a
+ *  refund that does not land is an operator task, logged, never a thrown webhook. */
+async function refundOversoldOrder(orderId: string, buyerProfileId: string | null): Promise<void> {
+  try {
+    const res = await refundCommerceOrder(orderId)
+    if (res.error) {
+      console.error('[commerce] oversold order refund failed; refund by hand', { orderId, error: res.error })
+      return
+    }
+    if (buyerProfileId) {
+      await db().from('notifications').insert({
+        recipient_id: buyerProfileId,
+        actor_id: null,
+        type: 'order_refunded',
+        reference_type: 'order',
+        reference_id: orderId,
+        body: 'That item sold out just before your order went through, so we refunded you in full.',
+      })
+    }
+  } catch (err) {
+    console.error('[commerce] oversold order refund threw; refund by hand', { orderId, err })
+  }
+}
+
 /** Refund a paid order. Destination charges unwind with reverse_transfer +
  *  refund_application_fee; platform charges refund normally; a split order refunds on the platform
  *  and then reverses each seller's transfer pro rata (LIVE-623). A booking-backed service order with a
@@ -815,7 +861,7 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
   if (!stripe) return { error: 'Payments aren’t turned on yet.' }
   const { data } = await db()
     .from('commerce_orders')
-    .select('id, owner_kind, funds_flow, status, amount_cents, stripe_payment_intent_id, refunded_at')
+    .select('id, owner_kind, funds_flow, status, amount_cents, stripe_payment_intent_id, refunded_at, metadata')
     .eq('id', orderId)
     .maybeSingle()
   const order = data as
@@ -827,25 +873,39 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
         amount_cents: number
         stripe_payment_intent_id: string | null
         refunded_at: string | null
+        metadata: Record<string, unknown> | null
       }
     | null
   if (!order) return { error: 'Order not found.' }
   if (order.status === 'refunded') return { ok: true }
   // L6-08 (2026-09-05): a PARTIAL refund keeps its settled status (the schema has no partial state; see
-  // recordCommerceRefund) but stamps refunded_at, so this guard is what stops a second call from refunding
-  // the retained fee on top. Idempotent: the order has already been refunded as far as it will be.
-  if (order.refunded_at) return { ok: true }
+  // recordCommerceRefund) but stamps refunded_at and records the amount in metadata.refund.
+  // SCAN-714: a bare `refunded_at` short-circuit treated any partial (a booking policy, a goodwill
+  // refund from the Stripe dashboard) as "already refunded", so approving a dispute after one made no
+  // Stripe call and closed as "Approved and refunded" while the buyer stayed under-refunded. The
+  // partial record is what says how much is still owed; only a refund with nothing partial behind
+  // it is finished.
+  const partialRecord = order.metadata?.refund as PartialRefundRecord | undefined
+  const alreadyRefunded = partialRecord?.kind === 'partial' ? Math.max(0, partialRecord.refunded_cents) : 0
+  if (order.refunded_at && alreadyRefunded === 0) return { ok: true }
   if (order.status !== 'paid' && order.status !== 'fulfilled') return { error: 'Only a paid order can be refunded.' }
   if (!order.stripe_payment_intent_id) return { error: 'This order has no charge to refund.' }
+  const remaining = order.amount_cents - alreadyRefunded
+  if (remaining <= 0) return { ok: true }
 
   // Cancellation/no-show ENFORCEMENT (ADR-596, finding #4): a booking-backed service order with a
   // policy refunds only the computed amount (the seller keeps the fee). undefined ⇒ full refund.
-  const partialAmount = await bookingPartialRefundCents({ id: order.id, amount_cents: order.amount_cents })
+  // After an earlier partial the policy has had its say: what is left goes back whole.
+  const partialAmount =
+    alreadyRefunded > 0
+      ? null
+      : await bookingPartialRefundCents({ id: order.id, amount_cents: order.amount_cents })
+  const refundCents = partialAmount != null ? partialAmount : remaining
 
   try {
     await stripe.refunds.create({
       payment_intent: order.stripe_payment_intent_id,
-      ...(partialAmount != null ? { amount: partialAmount } : {}),
+      ...(refundCents < order.amount_cents ? { amount: refundCents } : {}),
       // The unwind follows the FUNDS FLOW (LIVE-621). A destination charge reverses its one transfer
       // and its application fee. A platform charge has neither. A SEPARATE order has neither ON THE
       // CHARGE either: its money landed on the platform and its transfers are separate objects, so
@@ -865,6 +925,7 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
   // and the recorder was then told nothing, so it flipped the order to 'refunded' and reversed the whole
   // revenue: the ledger under-reported by the retained fee and the order read as fully refunded to
   // buyer and seller. The partial path releases the booking slot (this IS the policy-cancel).
+  // A top-up after an earlier partial completes the refund: no options, so the order flips to refunded.
   await recordCommerceRefund(
     order.stripe_payment_intent_id,
     partialAmount != null ? { refundedCents: partialAmount, releaseBooking: true } : undefined,
@@ -876,7 +937,7 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
   // idempotent call again.
   if (order.funds_flow === 'separate') {
     try {
-      await reverseSplitTransfers(order.id, partialAmount ?? order.amount_cents)
+      await reverseSplitTransfers(order.id, alreadyRefunded + refundCents)
     } catch (err) {
       console.error('[commerce] split refund reversal not recorded; the charge.refunded webhook retries it', { orderId, err })
     }
@@ -997,9 +1058,12 @@ async function recordFullCommerceRefund(paymentIntentId: string): Promise<void> 
   }
 }
 
-/** Record a PARTIAL refund once (L6-08): stamp refunded_at + metadata.refund under a `refunded_at is null`
- *  guard, reverse the pro-rated revenue, and release the booking when asked. Both the server action and
- *  the charge.refunded webhook arrive here for the same refund; the guard makes the second a no-op. */
+/** Record a PARTIAL refund (L6-08): stamp refunded_at + metadata.refund, reverse the pro-rated revenue,
+ *  and release the booking when asked. Both the server action and the charge.refunded webhook arrive here
+ *  for the same refund. SCAN-714: the old `refunded_at is null` guard made the SECOND partial (a goodwill
+ *  refund after a policy one, or a cumulative amount from the webhook) a silent no-op. The record is
+ *  cumulative now: it is rewritten only when the refunded amount GREW, and only the delta's revenue is
+ *  reversed, so a replay of the same amount is still a no-op. */
 async function recordPartialCommerceRefund(
   orderId: string,
   paymentIntentId: string,
@@ -1010,10 +1074,15 @@ async function recordPartialCommerceRefund(
   const row = data as RefundedOrderRow | null
   if (!row) return
   const refunded = Math.max(0, Math.min(row.amount_cents, Math.round(refundedCents)))
+  const prior = row.metadata?.refund as PartialRefundRecord | undefined
+  const priorRefunded = prior?.kind === 'partial' ? Math.max(0, prior.refunded_cents) : 0
+  const priorReversed = prior?.kind === 'partial' ? Math.max(0, prior.revenue_reversed_cents) : 0
+  if (refunded <= priorRefunded) return // the same or an earlier amount: already recorded (idempotent)
   const revenue = recordedRevenueCents(row)
   // Pro-rate: Stripe refunds the application fee in the same proportion on a partial refund with
   // refund_application_fee, and a platform sale's revenue IS the amount, so the share is exact there.
   const reversed = row.amount_cents > 0 ? Math.min(revenue, Math.round((revenue * refunded) / row.amount_cents)) : 0
+  const delta = Math.max(0, reversed - priorReversed)
   const record: PartialRefundRecord = {
     kind: 'partial',
     refunded_cents: refunded,
@@ -1021,25 +1090,29 @@ async function recordPartialCommerceRefund(
     revenue_reversed_cents: reversed,
     recorded_at: new Date().toISOString(),
   }
-  const { data: stamped } = await db()
+  // The compare-and-set is on the STORED amount: two writers racing with the same new total leave
+  // one of them matching nothing, so the delta is reversed once.
+  let stamp = db()
     .from('commerce_orders')
     .update({ refunded_at: record.recorded_at, metadata: { ...(row.metadata ?? {}), refund: record } })
     .eq('id', orderId)
     .in('status', ['paid', 'fulfilled'])
-    .is('refunded_at', null)
-    .select('id')
-  if (!(stamped ?? []).length) return // already recorded (idempotent)
+  stamp = prior?.kind === 'partial'
+    ? stamp.eq('metadata->refund->>refunded_cents', String(priorRefunded))
+    : stamp.is('metadata->refund', null)
+  const { data: stamped } = await stamp.select('id')
+  if (!(stamped ?? []).length) return // another writer recorded it first (idempotent)
 
   await recordFinancialTransaction({
     entityId: row.entity_id,
     revenueType: 'refund',
-    amountCents: -reversed,
+    amountCents: -delta,
     profileId: row.buyer_profile_id,
     currency: row.currency,
     stripePaymentIntentId: paymentIntentId,
     sourceTable: 'commerce_orders',
     sourceId: row.id,
-    idempotencyKey: `commerce_order-refund:${row.id}:partial`,
+    idempotencyKey: `commerce_order-refund:${row.id}:partial:${refunded}`,
   }).catch(() => {})
 
   if (releaseBooking) await cancelBookingByOrder(row.id)
