@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-808",
+  "title": "\"How did you hear about us?\" is actually asked at signup and at Space creation",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1720.md",
+    "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
+  },
+  "detail": "WORKSTREAM 10 of the launch brief (ADR-1720). TODAY: the options exist (lib/onboarding/funnel-script.ts:32-40), are admin-editable, and save to meta.beta.heard_about (app/join/(induction)/actions.ts:370), but the induction UI always submits heardAbout: \"\" (app/join/(induction)/induction.tsx:320,342,615), so nobody is ever asked. Space creation (app/(main)/spaces/new/create-space-form.tsx) has no source question. THE FIX: one optional question at signup and one at Space creation, skippable, stored beside first-touch acquisition, never sent to a pixel. Member-facing: help line and changelog entry.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-808\";const ind=r(\"app/join/(induction)/induction.tsx\");if(/heardAbout:\\s*(\\x27\\x27|\\\"\\\")/.test(ind))fail(ID+\": the induction still submits an empty heardAbout\");if(!/hear about/i.test(ind+walk(\"app/join\").map(r).join(\"\")))fail(ID+\": signup never asks how they heard\");const sp=walk(\"app/(main)/spaces/new\").map(r).join(\"\");if(!/hear about|heard_about|heardAbout/i.test(sp))fail(ID+\": Space creation never asks how they heard\")'",
+    "note": "Fails while signup hardcodes an empty answer and Space creation has no source question."
+  },
+  "wave": "W7"
+}
