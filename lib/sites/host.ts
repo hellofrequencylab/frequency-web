@@ -1,18 +1,22 @@
 // CUSTOM-DOMAIN SITE ROUTING (PROG-E10 phase 2, ADR-1708). PURE + dependency-free, because proxy.ts
 // runs it on every request and anything it imports is parsed on every request too.
 //
-// A Space's external website can be served on the Space's own domain (spaces.domain). The proxy must
-// recognise that host without a database call, so the domains are an explicit ALLOWLIST in the
-// SITE_HOSTS env var (comma-separated apex domains, e.g. `danieltyack.com`). An unset or empty list
-// turns the feature off: every host then behaves exactly as before. Self-serve binding (a later
-// phase) replaces the env list with a cached registry; the route below does not change.
+// A Space's external website can be served on the Space's own domain (spaces.domain, set from the
+// Domain section of the Space's Page panel). The proxy cannot ask the database which hosts are sites on
+// every request, so it decides by EXCLUSION: Frequency's own hosts (below) are the app, and any other
+// host that reaches this deployment is a site host. A host only reaches the deployment once it has been
+// added to the Vercel project (which the Domain section does), and the site route then resolves it to a
+// Space by domain, so an unbound host simply 404s.
 //
-// On a listed host:
+// On a site host:
 //   • `www.<apex>` redirects to the apex, so one origin carries the site.
 //   • `/` and `/<page>` rewrite to /hosted/<host>[/<page>], the site route, which re-resolves the Space
 //     by domain (getSpaceByDomain, behind the custom_domain gate) and checks the request host.
 //   • any deeper path (`/spaces/...`, `/events/...`, a block's link into the app) redirects to the
 //     same path on Frequency, so app links on the site keep working.
+
+/** Frequency's own apex domains. Every subdomain of these is the app too. */
+const APP_APEXES = ['frequencylocal.com', 'findafreq.com', 'vercel.app', 'localhost']
 
 /** The route a custom-domain site is rewritten to. */
 export const HOSTED_PREFIX = '/hosted'
@@ -27,14 +31,35 @@ export function normalizeHost(host: string | null | undefined): string {
   return (host ?? '').trim().toLowerCase().replace(/:\d+$/, '')
 }
 
-/** The allowlisted site domains from a SITE_HOSTS value. */
-export function parseSiteHosts(raw: string | undefined): Set<string> {
+/** Extra app hosts from an APP_HOSTS value (comma-separated), for a deployment on another domain. */
+export function parseAppHosts(raw: string | undefined): Set<string> {
   return new Set(
     (raw ?? '')
       .split(',')
-      .map((h) => normalizeHost(h).replace(/^www\./, ''))
+      .map((h) => normalizeHost(h))
       .filter(Boolean),
   )
+}
+
+/** Is `host` one of Frequency's own hosts (the app), rather than a Space's site? An IP address or an
+ *  empty host counts as the app, so nothing unusual is ever sent to a site by accident. */
+export function isAppHost(host: string, extra: Set<string> = new Set()): boolean {
+  const h = normalizeHost(host)
+  if (!h || !h.includes('.') || /^[\d.]+$/.test(h) || h.startsWith('[')) return true
+  if (extra.has(h)) return true
+  const configured = normalizeHost(urlHost(process.env.NEXT_PUBLIC_SITE_URL))
+  const configuredApp = normalizeHost(urlHost(process.env.NEXT_PUBLIC_APP_URL))
+  if (h === configured || h === configuredApp) return true
+  return APP_APEXES.some((apex) => h === apex || h.endsWith(`.${apex}`))
+}
+
+function urlHost(url: string | undefined): string {
+  if (!url) return ''
+  try {
+    return new URL(url).host
+  } catch {
+    return ''
+  }
 }
 
 export type SiteRoute =
@@ -42,21 +67,19 @@ export type SiteRoute =
   | { kind: 'redirect'; location: string; permanent: boolean }
   | { kind: 'rewrite'; pathname: string }
 
-/** Decide what a request on `host` for `pathname` does. `none` means it is not a site host. */
+/** Decide what a request on `host` for `pathname` does. `none` means it is one of Frequency's own hosts. */
 export function routeSiteHost(
   host: string | null | undefined,
   pathname: string,
   search: string,
-  siteHosts: Set<string>,
+  appHosts: Set<string> = new Set(),
 ): SiteRoute {
-  if (siteHosts.size === 0) return { kind: 'none' }
   const h = normalizeHost(host)
-  if (!h) return { kind: 'none' }
+  if (isAppHost(h, appHosts)) return { kind: 'none' }
 
-  if (h.startsWith('www.') && siteHosts.has(h.slice(4))) {
+  if (h.startsWith('www.')) {
     return { kind: 'redirect', location: `https://${h.slice(4)}${pathname}${search}`, permanent: true }
   }
-  if (!siteHosts.has(h)) return { kind: 'none' }
 
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}` }

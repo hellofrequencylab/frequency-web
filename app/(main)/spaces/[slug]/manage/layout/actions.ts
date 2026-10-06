@@ -20,6 +20,14 @@ import {
 import { withProfileData, type ProfileDataPatch } from '@/lib/spaces/profile-data'
 import { normalizeSpaceLocation } from '@/lib/spaces/location'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { parseSiteDomain } from '@/lib/sites/domain'
+import {
+  addSiteDomain,
+  removeSiteDomain as detachSiteDomain,
+  siteDomainStatus,
+  vercelDomainsConfigured,
+  type DomainStatus,
+} from '@/lib/sites/vercel-domains'
 import {
   nextCoverScrimPreferences,
   nextLogoBackdropPreferences,
@@ -62,6 +70,9 @@ async function authorizeEditor(slug: string): Promise<{
   /** Whether the Space may add/manage EXTRA profile pages (the paid multi-page upsell, space_full_website).
    *  DEFAULT-DENY today, so only the one home page is allowed until billing grants the entitlement. */
   canUseFullWebsite: boolean
+  /** The Space's plan and its bound domain (spaces.domain), for the Domain section. */
+  plan: string | null
+  domain: string | null
 } | null> {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -75,6 +86,8 @@ async function authorizeEditor(slug: string): Promise<{
     spaceId: space.id,
     preferences: asRecord(space.preferences),
     canUseFullWebsite: spaceCanUseFullWebsite(space),
+    plan: space.plan ?? null,
+    domain: space.domain ?? null,
   }
 }
 
@@ -387,6 +400,92 @@ export async function setWebsitePublished(slug: string, published: boolean): Pro
   if (!saved) return fail('Could not update your website. Try again.')
 
   revalidatePath(`/sites/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+// ── THE DOMAIN SECTION actions (PROG-E10, LIVE-743). An owner connects their own domain to their
+// website from the Page panel: the domain is stored in spaces.domain (the column getSpaceByDomain reads
+// for host routing), attached to the Frequency Vercel project, and the panel shows the DNS records to
+// set at the registrar. Editor-gated like every action here, and behind the custom_domain plan gate
+// (the same gate getSpaceByDomain enforces when serving the domain).
+
+/** Write spaces.domain for the Space (null clears it). False on a unique-violation or any error. */
+async function writeSpaceDomain(spaceId: string, domain: string | null): Promise<'ok' | 'taken' | 'error'> {
+  const db = createAdminClient() as unknown as {
+    from: (t: string) => {
+      update: (v: Record<string, unknown>) => {
+        eq: (c: string, val: string) => Promise<{ error: { code?: string } | null }>
+      }
+    }
+  }
+  const { error } = await db.from('spaces').update({ domain }).eq('id', spaceId)
+  if (!error) return 'ok'
+  return error.code === '23505' ? 'taken' : 'error'
+}
+
+async function customDomainAllowed(plan: string | null): Promise<boolean> {
+  const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan }] = await Promise.all([
+    import('@/lib/pricing/gates'),
+    import('@/lib/pricing/settings'),
+    import('@/lib/pricing/plans'),
+  ])
+  return featureAllowed('custom_domain', { plan: asSpacePlan(plan) }, { gatesLive: await featureGatesLive() })
+}
+
+/** Connect `input` as the Space's website domain: store it, attach it to hosting, return its status. */
+export async function connectSiteDomain(slug: string, input: string): Promise<ActionResult<DomainStatus & { domain: string }>> {
+  const parsed = parseSiteDomain(input)
+  if (!parsed.ok) return fail(parsed.error)
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+  if (!(await customDomainAllowed(auth.plan))) return fail('Your own domain comes with the Business plan.')
+
+  const domain = parsed.domain
+  if (auth.domain && auth.domain !== domain) return fail('Remove your current domain first, then connect the new one.')
+
+  const saved = await writeSpaceDomain(auth.spaceId, domain)
+  if (saved === 'taken') return fail('That domain is already connected to another Space.')
+  if (saved === 'error') return fail('Could not save your domain. Try again.')
+
+  if (vercelDomainsConfigured()) {
+    const added = await addSiteDomain(domain)
+    if (!added.ok) {
+      if (added.error === 'in-use') {
+        await writeSpaceDomain(auth.spaceId, null)
+        return fail('That domain is already in use on another Vercel account. Remove it there first, then connect it here.')
+      }
+      // The domain stays saved; Check again retries the attach.
+    }
+  }
+
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok({ domain, ...(await siteDomainStatus(domain)) })
+}
+
+/** Re-check the Space's domain: re-attach if needed, then read verification and DNS. */
+export async function checkSiteDomain(slug: string): Promise<ActionResult<DomainStatus & { domain: string }>> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+  if (!auth.domain) return fail('Connect a domain first.')
+  let status = await siteDomainStatus(auth.domain)
+  if (!status.attached && vercelDomainsConfigured()) {
+    await addSiteDomain(auth.domain)
+    status = await siteDomainStatus(auth.domain)
+  }
+  return ok({ domain: auth.domain, ...status })
+}
+
+/** Disconnect the Space's domain: detach it from hosting and clear spaces.domain. */
+export async function removeSiteDomain(slug: string): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+  if (!auth.domain) return ok()
+  if (vercelDomainsConfigured()) {
+    const removed = await detachSiteDomain(auth.domain)
+    if (!removed.ok) return fail('Could not remove the domain from hosting. Try again.')
+  }
+  if ((await writeSpaceDomain(auth.spaceId, null)) !== 'ok') return fail('Could not remove your domain. Try again.')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

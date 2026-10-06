@@ -30,10 +30,10 @@ import {
   MARKETPLACE_ENTRY_MAX_AGE,
   stampMarketplaceView,
 } from '@/lib/commerce/marketplace-entry'
-import { parseSiteHosts, routeSiteHost } from '@/lib/sites/host'
+import { parseAppHosts, routeSiteHost } from '@/lib/sites/host'
 
-// The custom-domain site allowlist (PROG-E10 phase 2, lib/sites/host.ts), parsed once per instance.
-const SITE_HOSTS = parseSiteHosts(process.env.SITE_HOSTS)
+// Extra app hosts beyond Frequency's own domains (PROG-E10 phase 2, lib/sites/host.ts), parsed once.
+const APP_HOSTS = parseAppHosts(process.env.APP_HOSTS)
 
 // The referral attribution cookie — the referrer's profile id, consumed once at
 // onboarding by applyReferralAttribution (lib/qr/referral.ts). Name + attributes MUST
@@ -69,11 +69,11 @@ const PROTECTED_PATHS = [
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // A SPACE WEBSITE ON ITS OWN DOMAIN (customDomain, PROG-E10 phase 2). A listed site host never
-  // reaches the app below: no session read, no attribution cookie, no tenancy. Its pages rewrite to
-  // the /hosted site route and anything deeper goes to the same path on Frequency. A string compare
-  // against an env allowlist, so every other host pays nothing (lib/sites/host.ts).
-  const site = routeSiteHost(request.headers.get('host'), pathname, request.nextUrl.search, SITE_HOSTS)
+  // A SPACE WEBSITE ON ITS OWN DOMAIN (customDomain, PROG-E10 phase 2). Any host that is not one of
+  // Frequency's own never reaches the app below: no session read, no attribution cookie, no tenancy.
+  // Its pages rewrite to the /hosted site route and anything deeper goes to the same path on
+  // Frequency. A few string compares, no database call (lib/sites/host.ts).
+  const site = routeSiteHost(request.headers.get('host'), pathname, request.nextUrl.search, APP_HOSTS)
   if (site.kind === 'redirect') return NextResponse.redirect(site.location, site.permanent ? 308 : 307)
   if (site.kind === 'rewrite') {
     const url = request.nextUrl.clone()
