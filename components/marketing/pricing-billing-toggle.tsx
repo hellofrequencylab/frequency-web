@@ -102,3 +102,44 @@ function IntervalButton({
     </button>
   )
 }
+
+// ── The audience toggle (LIVE-759) ────────────────────────────────────────────────────────────────
+// The five-tier ladder (ADR-1709) has two lines: the personal line (Member, Crew) and the Space line
+// (Space, Business, Collective). A business reader should not have to read past the personal cards to
+// reach the Space ones, so the page shows one line at a time, Space first. Same wiring as the interval
+// toggle: the page renders BOTH lines statically (so crawlers and the FAQ schema see everything), the
+// scope stamps `data-audience`, and CSS in the page hides the other line's `[data-audience-show]`.
+
+export type PricingAudience = 'space' | 'personal'
+
+const AudienceContext = createContext<{
+  audience: PricingAudience
+  setAudience: (next: PricingAudience) => void
+} | null>(null)
+
+/** Wrap everything that differs by audience (the plan cards, the comparison). Defaults to Space. */
+export function PricingAudienceScope({ children }: { children: React.ReactNode }) {
+  const [audience, setAudience] = useState<PricingAudience>('space')
+  return (
+    <AudienceContext.Provider value={{ audience, setAudience }}>
+      <div data-audience={audience}>{children}</div>
+    </AudienceContext.Provider>
+  )
+}
+
+/** The "For your Space / For you" pill. Renders nothing outside a scope. */
+export function PricingAudienceToggle() {
+  const ctx = useContext(AudienceContext)
+  if (!ctx) return null
+  const { audience, setAudience } = ctx
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Who the plans are for"
+      className="mx-auto mb-4 flex w-fit items-center gap-1 rounded-2xl border border-border bg-surface p-1"
+    >
+      <IntervalButton active={audience === 'space'} onClick={() => setAudience('space')} label="For your Space" />
+      <IntervalButton active={audience === 'personal'} onClick={() => setAudience('personal')} label="For you" />
+    </div>
+  )
+}

@@ -141,7 +141,7 @@ interface TierAddonCell {
 export interface PricingTier {
   /** A stable id for keys + JSON-LD (`free` / `business` / `collective` / `nonprofit`). Narrower than
    *  SpacePlan on purpose: this is the ADVERTISED ladder, and Independent is not on it (LIVE-227). */
-  id: 'free' | 'business' | 'nonprofit'
+  id: 'free' | 'business' | 'collective' | 'nonprofit'
   /** The display name. */
   name: string
   /** The rung identity in a few words (the card's one-liner, e.g. "Own your audience."). */
@@ -161,8 +161,11 @@ export interface PricingTier {
   coreIncluded: string
   /** The add-on cells in this column (ADR-472: the AI Engine is the only metered add-on). */
   addons: TierAddonCell[]
-  /** The take-rate line (the network-only story: 0% on your own, tier rate on network sales). */
+  /** The take-rate line (the network-only story: 0% on your own, tier rate on network sales), or the
+   *  tips-only line on a tier that does not take payments. */
   takeRate: string
+  /** Does this tier take payments (ADR-1709)? Read off the offering, which reads the payments gate. */
+  sells: boolean
   /** The CTA for this column: a label + href. */
   cta: { label: string; href: string }
   // `preview?: boolean` used to sit here, for a tier with no catalog entry. Every tier has one now, so
@@ -206,6 +209,7 @@ export function offeringLadderLabel(offering: Offering): string {
 /** The catalog item each SPACE tier is priced from. Free has none ($0 is not a Stripe price). PURE. */
 const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free'>, CatalogItemKey> = {
   business: 'business_base',
+  collective: 'collective_base',
   nonprofit: 'nonprofit_seat',
 }
 
@@ -214,17 +218,20 @@ const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free'>, CatalogItemKey> = {
  *  below, so a rewrite of this prose can never move a price and a price change can never leave this
  *  prose stale. The lines that used to carry rate literals ("5% on network-sourced sales") are gone. */
 const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
-  free: 'Your storefront and page, host events, post, gather members, sell a membership, and be a Collaborator on other Spaces’ events.',
+  free: 'Every business tool with launch-sized limits: your page, Circles, Events, contacts, email, bookings, Journeys, a free membership tier, tips, and being a Collaborator on other Spaces’ events.',
   business:
-    'Unlimited contacts, campaigns at volume, email branding, and exports: the full CRM, email, reporting, bookings, tickets, your own website, team seats, automations, multiple pipelines, and hosting events with Collaborator Spaces.',
+    'Selling opens: paid tickets, paid memberships, donations, shop checkout and booking deposits. The limits lift, and you get your own website, team seats, automations, Programs, and hosting Collaborator Spaces.',
+  collective:
+    'Everything in Business for a group of groups: member Spaces under one account, each with the Business tools, more team seats, and Vera AI included.',
   nonprofit:
-    'The whole paid toolkit for verified nonprofits, with donations built in. Flat, never per seat.',
+    'Everything in Business for verified nonprofits, with donations built in and no network fee. Flat, never per seat.',
 }
 
 /** The CTA per tier. Copy + route only. */
 const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
   free: { label: 'Start free', href: '/spaces' },
-  business: { label: 'Start a Space', href: '/spaces' },
+  business: { label: 'Start with Business', href: '/spaces' },
+  collective: { label: 'Start a Collective', href: '/spaces' },
   nonprofit: { label: 'Get verified', href: '/spaces' },
 }
 
@@ -280,8 +287,10 @@ export function pricingTiers(
       forWho: o.forWho,
       billing: o.billing,
       coreIncluded: TIER_CORE_INCLUDED[id],
-      addons: item ? tierAddons : [],
+      // Vera AI is included in Collective (its depth carries the add-on keys), so it is no add-on there.
+      addons: item && id !== 'collective' ? tierAddons : [],
       takeRate: o.takeRate,
+      sells: o.sells,
       cta: TIER_CTA[id],
     }
   })
@@ -457,6 +466,12 @@ interface PaidWall {
  *  gate carries is exactly the typed claim this list exists to prevent. */
 const PAID_WALL_COPY: readonly Omit<PaidWall, 'plan'>[] = [
   {
+    // THE SELLING LINE (ADR-1709, LIVE-753): one gate on every money path.
+    gate: 'space_payments',
+    what: 'taking payments: paid tickets, paid memberships, donations, shop checkout and booking deposits',
+    why: 'selling is what Business is for, and free hosting is the point of the free Space',
+  },
+  {
     gate: 'space_memberships',
     what: 'selling memberships',
     why: 'a membership is a recurring promise to another person',
@@ -523,7 +538,7 @@ export const CREW_NOTE = (() => {
      *  every caller that had to remember the prefix forgot it, and the result was a marketing page
      *  quoting the cheapest possible Crew as the price of Crew. */
     fromLabel: `from ${floor}`,
-    line: `Being a member is free, and stays free: joining, Circles, events, and the people. Crew is the personal tier and you pick what you pay: anything from ${floor} a month, ${suggested} suggested. Every amount buys the same thing, so pay what it is worth to you. It lives on the personal upgrade page.`,
+    line: `Being a member is free, and stays free: joining, Circles, events, and the people. Crew is the personal tier for backing the community, and you contribute what you want: anything from ${floor} a month, ${suggested} suggested. Every amount buys the same Crew, with a host kit for running more on your own. It lives on the personal upgrade page.`,
     href: '/upgrade',
   } as const
 })()
@@ -549,7 +564,7 @@ export function pricingLadderSummary(input: LadderSummaryInput = {}): string[] {
   const values = input.values ?? PRICING_DEFAULTS
   const catalog = input.catalog ?? pricingCatalog()
   const offerings = allOfferings({ values, catalog, betaActive: input.betaActive })
-  const lines: string[] = [`- ${PLAN_STORY.spine}`]
+  const lines: string[] = [`- ${PLAN_STORY.spine}`, `- ${PLAN_STORY.ladder}`, `- ${PLAN_STORY.selling}`]
   for (const o of offerings) {
     const price = o.listAnchor ? `${o.monthly} (list ${o.listAnchor})` : o.monthly
     // A pay-what-you-want rung carries "from" on BOTH figures, because each has to stand alone in a

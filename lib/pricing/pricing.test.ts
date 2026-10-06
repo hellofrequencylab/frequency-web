@@ -424,10 +424,13 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     // hand rather than published, because the standalone white-label site it is sold on is not
     // finished. It has no display row for exactly that reason, and lib/pricing/display.ts
     // ADVERTISED_SPACE_PLANS is the one list this and every other public surface derives from.
-    expect(rows.map((r) => r.key)).toEqual(['business', 'nonprofit'])
-    expect(rows.map((r) => r.label)).toEqual(['Business', 'Non Profit'])
+    // Collective is advertised again from LIVE-759 (ADR-1709); Non Profit Collective is sold but read
+    // as a line under Non Profit, not a row of its own.
+    expect(rows.map((r) => r.key)).toEqual(['business', 'collective', 'nonprofit'])
+    expect(rows.map((r) => r.label)).toEqual(['Business', 'Collective', 'Non Profit'])
     expect(rows.some((r) => r.key === 'independent')).toBe(false)
-    expect(rows.some((r) => r.key === 'collective')).toBe(false)
+    expect(rows.some((r) => r.key === 'nonprofit_collective')).toBe(false)
+    expect(rows.find((r) => r.key === 'collective')?.annual).toBe('$1,490')
     // every advertised plan carries an annual line (two months free)
     expect(rows.find((r) => r.key === 'business')?.annual).toBe('$490')
     expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$390')

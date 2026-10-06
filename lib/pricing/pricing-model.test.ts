@@ -62,7 +62,8 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
 describe('pricing table model', () => {
   it('leads with Free Space and carries the whole ADVERTISED ladder (owner, 2026-07 / LIVE-227)', () => {
     const tiers = pricingTiers(true)
-    expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'nonprofit'])
+    // Collective is advertised again from LIVE-759 (ADR-1709).
+    expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit'])
     // Business is the highlighted Space column (LIVE-228: the one paid advertised tier at $49).
     expect(tiers.map((t) => [t.id, t.featured])).toContainEqual(['business', true])
     expect(tiers.filter((t) => t.featured).map((t) => t.id)).toEqual(['business'])

@@ -25,17 +25,19 @@
 // VOICE NOTE (CONTENT-VOICE §10): every string here is plain, honest, skeptic-proof, names what the
 // thing is, never narrates the reader's feelings, makes no health claim, and uses NO em dashes.
 
-/** The one narrative spine every pricing/marketing surface can reuse verbatim (owner plan story,
- *  2026-07): what is free, WHY a plan, and how the rate works, stated so a skeptic believes it. No em
- *  dashes.
+/** The one narrative spine every pricing/marketing surface can reuse verbatim: what is free, WHY a
+ *  plan, and how the network fee works, stated so a skeptic believes it. No em dashes.
  *
- *  🔴 THE REASON TO TAKE A PLAN LIVES HERE NOW (LIVE-253, ADR-1350), because it is an argument and
- *  arguments drift exactly the way figures did. Eighteen public strings each typed their own version of
- *  it and fourteen of them said the opposite of the model: that a plan buys a lower rate and higher
- *  caps, which reads a free Space as the small version of a paid one. docs/CORE-MODEL.md is explicit
- *  that it is not (§1 "Businesses host free", §2 "gate at the point where it starts making them
- *  money", which is ADR-914's "never gate the transaction, gate the repeat"). The rate and the meters
- *  are still stated, because both are true; what changed is that neither is the reason any more. */
+ *  🔴 THE FIVE-TIER LADDER (ADR-1709, LIVE-759). Members join, Crew hosts, a Space runs, Business
+ *  sells, Collective connects. Selling is what Business is for: a free Space keeps every business tool
+ *  with limits sized for launch, and it takes tips, but paid tickets, paid memberships, donations, shop
+ *  checkout and booking deposits open at Business. That reverses ADR-914's "never gate the
+ *  transaction" and ADR-1415's free-Space memberships, which is why `paid` below no longer says a free
+ *  Space sells. The reason to take a plan still lives here, in one place (LIVE-253, ADR-1350), and it
+ *  is still never "a lower rate": the fee is a fact about introductions, stated in `rate`.
+ *
+ *  Plan NAMES may appear here (they are the canon in docs/NAMING.md); prices and percentages never do.
+ *  A surface that needs a figure reads it from the catalog or the rate vector beside this sentence. */
 export const PLAN_STORY = {
   /** The whole spine in one breath. */
   spine:
@@ -45,20 +47,28 @@ export const PLAN_STORY = {
    *  <meta> description and the crawler corpus READ the lines rather than retype them; the spine
    *  above keeps them too, because the home document's hero is the spine verbatim. */
   lines: 'People join free. Businesses host free. You pay when you start charging.',
-  /** WHY a plan, in the model's own terms: the moment, not the meter. The free rung is the whole
-   *  product, the transaction is never walled, and a plan is what the REPEAT runs on. Every surface
-   *  interpolates this instead of arguing it again; the capabilities it names are read off the gate map
-   *  (paidWalls), so the sentence and the product cannot disagree. */
+  /** The ladder in one line: five tiers, one verb each (ADR-1709). */
+  ladder: 'Five tiers, one verb each. Members join. Crew hosts. A Space runs. Business sells. Collective connects.',
+  /** WHY a plan, in the model's own terms: free hosting is the point, and a plan is what you take when
+   *  you start charging. Every surface interpolates this instead of arguing it again. */
   paid:
-    'A plan is what you take when money starts moving. Never the transaction: a free Space sells tickets, takes donations, and sells memberships from day one once payouts are ready, and a free Space is the whole thing, not a trial of it. What a plan carries is the repeat: campaigns and funnels that bring new people in, month after month.',
-  /** The rate, stated as the consequence it is. It used to be the sales argument on every surface,
-   *  which made the ladder read as a fee ladder you climb to pay less, rather than as one price you
-   *  take once you are charging. */
+    'Hosting is free, and that is the point, not a teaser. A free Space runs the whole thing: your page, Circles, Events, contacts, email, bookings and Journeys, with limits sized for a launch. Business is what you take when you start charging, and Collective is Business for a group of groups.',
+  /** The selling line: where taking money starts, and the one kind of money every tier receives. */
+  selling:
+    'Selling starts at Business. Paid tickets, paid memberships, donations, shop checkout and booking deposits open there. Tips stay open on every tier, with no fee.',
+  /** The network fee, stated as the consequence it is: an introduction fee, never the reason to take
+   *  a plan, and never a buy-down. */
   rate:
-    'The rate is what a plan settles at, not what a plan is for. It applies only to a sale the network introduced, and it is lower on a paid plan.',
-  /** The meter framing: paid is how much, never whether. */
+    'The network fee applies only to a customer the network introduced, once, at their first purchase. After that they are your people. Your own audience and your tips are free of it on every plan, and Non Profit pays none at all.',
+  /** The meter framing: a full meter stops new writes and takes nothing away. */
   meters:
-    'Everything is included on every plan. The free allowances are real, and a full meter never hides, deletes, or locks what is already there.',
+    'Every business tool is on every Space plan. The free limits are sized for a launch, and a full meter only stops new writes. It never hides, deletes, or locks what is already there.',
+  /** Crew in one breath: support plus a host kit, in the canon's words (ADR-1084). */
+  crew:
+    'Crew is how a member backs the community and hosts a little more. You contribute what you want, and every amount buys the same Crew: more Circles, Events and Journeys, and a monthly Boost for a Circle or Space you love.',
+  /** Collective in one breath: groups of groups. */
+  collective:
+    'Collective is for groups of groups: several member Spaces under one account, each with the Business tools, and Vera AI included.',
   /** The honest yearly framing. It used to carry the Opening Beta line ("beta rates hold through the
    *  Summer of Frequency"), which stopped being true when the owner closed the window on 2026-08-17
    *  (ADR-1060). What replaces it is the deal that survived: the same price whenever you start, and two
