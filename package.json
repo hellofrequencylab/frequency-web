@@ -99,6 +99,7 @@
     "maintenance:ledger-parity": "node scripts/maintenance/ledger-parity.mjs",
     "maintenance:menu-drift": "node scripts/maintenance/menu-drift.mjs",
     "eval:copilot": "COPILOT_EVAL_LIVE=1 vitest run lib/ai/space-copilot-eval.test.ts",
+    "unlocks:doc": "UNLOCKS_WRITE=1 vitest run lib/unlocks.test.ts",
     "help:coverage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-coverage.mts",
     "help:index": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts",
     "help:drift": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-drift.mts",

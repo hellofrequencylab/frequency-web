@@ -26,7 +26,6 @@ import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
 import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
-import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
 import { ProfileSettingsDrawer } from './profile-settings-drawer'
@@ -63,6 +62,7 @@ import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-la
 import { safeWebsite } from '@/lib/profiles/website'
 import { ShareRefProvider } from '@/components/qr/share-ref-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
+import { roleUnlocked } from '@/lib/unlocks'
 
 export default async function ProfilePage({
   params,
@@ -613,7 +613,7 @@ export default async function ProfilePage({
           )}
 
           {/* Staff-only: this member's support history, wired into the console. */}
-          {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
+          {!isOwner && roleUnlocked('profile.member-support', myRole) && <MemberSupportPanel profileId={profileId} />}
 
           {/* The member's page-builder content (ADR-508 → ADR-516 Phase C → ADR-522). ONE engine: both
               branches render the member's freeform grid (resolveRows over meta.entityGrid). For the OWNER

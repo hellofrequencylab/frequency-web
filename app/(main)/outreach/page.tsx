@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import type { CommunityRole } from '@/lib/core/roles'
 import { ROLE_LABEL } from '@/lib/community-roles'
 import { FocusTemplate } from '@/components/templates'
 import { OutreachForm } from './outreach-form'
+import { roleUnlocked } from '@/lib/unlocks'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +33,7 @@ export default async function OutreachPage() {
 
   const role = ((profile?.community_role as CommunityRole) ?? 'member')
   // Outreach is a steward tool — hosts and up.
-  if (!atLeastRole(role, 'host')) redirect('/feed')
+  if (!roleUnlocked('lead.outreach', role)) redirect('/feed')
 
   const scope = scopeFor(role)
 

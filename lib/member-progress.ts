@@ -13,10 +13,13 @@ import { getPracticeStreak, type PracticeStreakState } from '@/lib/practice-stre
 import { getMemberJourneyProgress, type MemberJourneyProgress } from '@/lib/journeys/progress'
 import { rankForCompletion, getRankDef, SEASON_RANKS, RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
+import type { StageKey as UnlockStageKey } from '@/lib/unlocks'
 
 // --- the ladder ------------------------------------------------------------
 
-type StageKey = 'newcomer' | 'finding_feet' | 'regular' | 'established' | 'anchor'
+// The ladder's keys and order live in the unlock map (LIVE-668), so a stage gate and the deriver
+// share one definition.
+type StageKey = UnlockStageKey
 
 interface MemberStage {
   key: StageKey

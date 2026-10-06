@@ -8,8 +8,9 @@ import {
   ROLE_LABEL,
   RoleBadge,
 } from '@/lib/community-roles'
-import { ROLE_HIERARCHY, atLeastRole, roleRank } from '@/lib/core/roles'
+import { ROLE_HIERARCHY, roleRank } from '@/lib/core/roles'
 import { setViewAsRole } from '@/app/(main)/view-as-actions'
+import { roleUnlocked } from '@/lib/unlocks'
 
 // "View as a role under you" control — for every steward HOST and above. It lives at
 // the TOP of the left profile dock's slide-up menu; picking a role below your own
@@ -66,7 +67,7 @@ export function ViewAsControl({
     }
   }, [open])
 
-  if (!atLeastRole(realRole, 'host')) return null
+  if (!roleUnlocked('view-as', realRole)) return null
 
   const impersonating = asVisitor || currentRole !== realRole
 
