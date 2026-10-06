@@ -84,6 +84,7 @@ vi.mock('@/lib/supabase/admin', () => {
 })
 
 import { joinCircle } from './actions'
+import { joinCircleAsMember } from '@/lib/circles/join'
 
 const CLOSED = {
   member_count: 2,
@@ -152,10 +153,20 @@ describe('every closed access mode refuses a stranger', () => {
 })
 
 describe('each mode`s own door opens', () => {
-  it('the QR route`s invited: true opens an invite circle', async () => {
+  it('the QR route`s invited: true opens an invite circle, through the helper only (SCAN-774)', async () => {
     circleRow = { ...CLOSED, access: 'invite' }
-    await joinCircle('circle-1', 'closed-circle', { invited: true })
+    await joinCircleAsMember('stranger-1', 'circle-1', { invited: true })
     expect(membershipInserts).toHaveLength(1)
+  })
+
+  it('the exported action has no invited flag a client could pass', async () => {
+    circleRow = { ...CLOSED, access: 'invite' }
+    // A third argument is not part of the signature; a client sending one gets the default deny.
+    const res = await (joinCircle as unknown as (a: string, b: string, c: unknown) => Promise<ActionResult>)(
+      'circle-1', 'closed-circle', { invited: true },
+    )
+    expect(isError(res)).toBe(true)
+    expect(membershipInserts).toHaveLength(0)
   })
 
   it('a TEAM seat opens a space_members circle — the staff semantics OWN-034 ruling C keeps', async () => {

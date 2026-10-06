@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { PARTNER_PERSONAS, type PartnerPersona } from '@/lib/personas'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { hidePartnerListing, listingProgramLost } from '@/lib/partners/unpublish'
 
 // Self-serve partner persona claim/release (P2.7, ADR-163 System 2). Claiming lands
 // the persona in 'claimed' (pending review) — a staff operator verifies it from the
@@ -33,6 +34,15 @@ export async function setPersona(persona: PartnerPersona, claim: boolean): Promi
       .eq('profile_id', me.id)
       .eq('persona', persona)
     if (error) return fail(error.message)
+
+    // SCAN-761: the directory reads partners.status, not the persona, and the listing writers
+    // refuse a caller without a live Business or Organization program. Releasing the last of
+    // those takes the listing and its offers down with it, or it stays public with no owner
+    // door to remove it.
+    if (await listingProgramLost(persona, me.id)) {
+      const hidden = await hidePartnerListing(me.id)
+      if ('error' in hidden) return fail(hidden.error)
+    }
   }
 
   // Personas feed the capability resolver → refresh the whole shell.

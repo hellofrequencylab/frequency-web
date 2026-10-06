@@ -25,7 +25,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { isSmsProvisioned, isSmsConsentTableReady } from '@/lib/comms/sms'
+import { smsEnabledFlag } from '@/lib/platform-flags'
 import { enqueueSms } from '@/lib/comms/sms-send'
+import { rateLimitOk } from '@/lib/rate-limit'
 import {
   normalizeE164,
   generateSmsCode,
@@ -78,6 +80,27 @@ export async function sendSmsCode(rawPhone: string): Promise<ActionResult<{ phon
   if (!isSmsProvisioned() || !(await isSmsConsentTableReady())) {
     // Honest, in-voice: texts are not live yet (the A2P legal track is the gate).
     return fail('Texts are not turned on yet. Check back soon.')
+  }
+
+  // The operator kill-switch (platform_flags.sms_enabled) holds this door too, not only the
+  // outbound send: while it is OFF a code text could never be delivered, so do not write a
+  // pending row or queue a message the member can never receive (SCAN-747).
+  if (!(await smsEnabledFlag())) {
+    return fail('Texts are not turned on yet. Check back soon.')
+  }
+
+  // Throttle BEFORE any write or enqueue (SCAN-747). Each code is a real outbound text to a
+  // phone the caller typed, so an unthrottled door is SMS pumping / toll fraud / harassment
+  // of an arbitrary number. Two windows: per member (a few codes in ten minutes covers a
+  // typo and a retry) and per phone (five a day across every member, so a target number
+  // cannot be flooded from many accounts). Default policy: an unconfigured limiter in
+  // production DENIES, which is right for an abuse door.
+  const [memberOk, phoneOk] = await Promise.all([
+    rateLimitOk('sms-code:profile', profileId, 3, '10 m'),
+    rateLimitOk('sms-code:phone', phone, 5, '1 d'),
+  ])
+  if (!memberOk || !phoneOk) {
+    return fail('Too many codes sent. Wait a few minutes and try again.')
   }
 
   const code = generateSmsCode()
@@ -134,6 +157,13 @@ export async function verifySmsCode(rawCode: string): Promise<ActionResult> {
     return fail('Texts are not turned on yet. Check back soon.')
   }
 
+  // Throttle the guesses BEFORE the ledger read (SCAN-747). The per-code attempt cap is
+  // written back as attempts + 1 from a value read earlier, so a parallel burst all reads
+  // the same count and slips past the cap; this window bounds the burst itself.
+  if (!(await rateLimitOk('sms-verify:profile', profileId, 10, '10 m'))) {
+    return fail('Too many tries. Wait a few minutes and send yourself a new code.')
+  }
+
   let latest: Record<string, unknown> | null = null
   try {
     const { data } = await smsConsentTable()
@@ -185,9 +215,12 @@ export async function verifySmsCode(rawCode: string): Promise<ActionResult> {
     return fail("That code didn't match. Check it and try again.")
   }
 
-  // Match: record express written consent (opted_in) + turn the channel on.
+  // Match: record express written consent (opted_in) + turn the channel on. The insert
+  // RESOLVES with { error } on a database failure rather than throwing, so the error is
+  // read: a consent row that was never written must not report the number as verified
+  // or flip the channel on (SCAN-747).
   try {
-    await smsConsentTable().insert([
+    const { error } = await smsConsentTable().insert([
       {
         profile_id: profileId,
         phone,
@@ -196,6 +229,7 @@ export async function verifySmsCode(rawCode: string): Promise<ActionResult> {
         consent_text: CONSENT_TEXT,
       },
     ])
+    if (error) return fail('Could not save your opt-in. Try again.')
   } catch {
     return fail('Could not save your opt-in. Try again.')
   }

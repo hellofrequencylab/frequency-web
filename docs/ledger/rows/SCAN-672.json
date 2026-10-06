@@ -1,19 +1,14 @@
 {
   "id": "SCAN-672",
-  "title": "/discover/events/<slug> is a prerendered twin of /events/<slug> that nothing links to",
-  "status": "open",
-  "priority": "P3",
-  "lane": "hygiene",
-  "size": "S",
-  "wave": "W6",
-  "source": {
-    "file": "docs/META-SCAN-STATUS.md",
-    "ref": "found 2026-10-05 by the scan-seven SEO/GEO finders (26-agent fan-out), confirmed by hand against the tree"
+  "patch": {
+    "status": "done",
+    "detail": "FOUND 2026-10-05 (scan seven, seo-urls finder). app/discover/events/[slug]/ has a page with generateStaticParams, a loading file and its own opengraph-image.tsx, so every public event is built twice, and a grep of app/, components/ and lib/ finds no link to it but its own self-references. SCAN-668 already pointed its og:url and breadcrumb at the canonical. THE FIX: a redirect { source: '/discover/events/:slug', destination: '/events/:slug', permanent: true } in next.config.ts (the single segment does not shadow /discover/events/in/... or /discover/events/organizer/...; lib/marketing/redirect-shadow.test.ts confirms), then delete the segment and update the two gate tests that name its OG file (scripts/build-fanout.test.ts, scripts/check-tokens.test.ts).\n\nCLOSED 2026-10-05: next.config.ts sends /discover/events/:slug to /events/:slug with a 308 (one segment, so the /in and /organizer hubs are untouched, redirect-shadow.test.ts proves it) and app/discover/events/[slug] (page, loading, OG image route and its test) is deleted. The five tests that named the twin (build-fanout, check-tokens, event-standard-layout, series-seo, redirect-shadow RETIRED list) follow it, and the done rows SCAN-636, SCAN-668 and LIVE-084 whose probes read the twin's files take ledger patches that read the 308 rule instead when the file is gone (the LIVE-138 / SCAN-655 pattern).",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");if(fs.existsSync(\"app/discover/events/[slug]/page.tsx\")){console.error(\"SCAN-672: /discover/events/<slug> still exists as a prerendered twin of /events/<slug> (its own page, loading and OG image route per event), reachable only by its own self-references; a 308 to /events/:slug retires it and halves the per-event build.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    },
+    "closed": "2026-10-05"
   },
-  "detail": "FOUND 2026-10-05 (scan seven, seo-urls finder). app/discover/events/[slug]/ has a page with generateStaticParams, a loading file and its own opengraph-image.tsx, so every public event is built twice, and a grep of app/, components/ and lib/ finds no link to it but its own self-references. SCAN-668 already pointed its og:url and breadcrumb at the canonical. THE FIX: a redirect { source: '/discover/events/:slug', destination: '/events/:slug', permanent: true } in next.config.ts (the single segment does not shadow /discover/events/in/... or /discover/events/organizer/...; lib/marketing/redirect-shadow.test.ts confirms), then delete the segment and update the two gate tests that name its OG file (scripts/build-fanout.test.ts, scripts/check-tokens.test.ts).",
-  "verify": {
-    "kind": "cmd",
-    "cmd": "node -e 'const fs=require(\"fs\");if(fs.existsSync(\"app/discover/events/[slug]/page.tsx\")){console.error(\"SCAN-672: /discover/events/<slug> still exists as a prerendered twin of /events/<slug> (its own page, loading and OG image route per event), reachable only by its own self-references; a 308 to /events/:slug retires it and halves the per-event build.\");process.exit(1)}'",
-    "note": "Measures the consequence; fails until the fix lands."
-  }
+  "wave": null
 }

@@ -15,10 +15,7 @@ import {
   paidWallsPhrase,
   PLAN_STORY,
 } from '@/lib/pricing/pricing-page'
-import { getPricingValues } from '@/lib/pricing/settings'
-import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
-import { isBetaPricingActive } from '@/lib/pricing/beta'
-import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
+import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { formatBps } from '@/lib/pricing/display'
 import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
 import { countUpcomingPublicSeries } from '@/lib/events/series-seo'
@@ -32,16 +29,6 @@ import { listDensityCities } from '@/app/discover/cities/_data'
 // release quoting a rate an operator had already changed at /admin/pricing. Both failures had the same
 // cause: it kept its own copy of the numbers.
 
-/** Resolve the pricing model exactly as /pricing does: the operator's config over the code defaults.
- *  This route already reads the DB for its live stats and is daily-ISR, so it can afford the same reads. */
-async function pricingInput(): Promise<PricingGridInput> {
-  const [values, catalog, gateOverrides] = await Promise.all([
-    getPricingValues(),
-    loadCatalogConfig(),
-    loadFeatureGateOverrides(),
-  ])
-  return { values, catalog: catalogConfigByKey(catalog), betaActive: isBetaPricingActive(), gateOverrides }
-}
 
 /** The whole money model in one citable sentence pair (ADR-913 / ADR-914), with the rate for EVERY rung
  *  read off the offerings, so a rung cannot be omitted and a number cannot go stale. The capabilities
@@ -238,7 +225,7 @@ async function citiesSection(): Promise<string[]> {
 }
 
 export async function GET() {
-  const [stats, input, help, cities] = await Promise.all([statsSection(), pricingInput(), helpSection(), citiesSection()])
+  const [stats, input, help, cities] = await Promise.all([statsSection(), loadPricingInput(), helpSection(), citiesSection()])
   const offerings = allOfferings(input)
   const out: string[] = [
     `# ${SITE_NAME}`,
@@ -273,7 +260,7 @@ export async function GET() {
     '',
     '## Frequency by who you are (operator funnel doors)',
     ...funnelSlugs().map((slug) => {
-      const c = getFunnelConfig(slug)!
+      const c = getFunnelConfig(slug, input)!
       return `- [${c.hero.h1}](${abs(`/for/${slug}`)}): ${c.hero.eyebrow}. ${c.hero.subhead}`
     }),
     '',

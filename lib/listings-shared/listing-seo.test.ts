@@ -141,6 +141,49 @@ describe('listingJsonLd — Review nodes', () => {
   })
 })
 
+// ── Product validity (SCAN-792) ───────────────────────────────────────────────
+// Google's Product snippet requires one of offers, review or aggregateRating. A listing that has
+// none of the three must not be typed Product at all.
+
+describe('listingJsonLd — a Product always carries offers, review or aggregateRating', () => {
+  function primaryNode(view: ListingDetailView) {
+    return listingJsonLd(view)[0] as Record<string, unknown>
+  }
+
+  it('prices a Free listing as a $0 Offer so it stays a valid Product', () => {
+    const node = primaryNode(marketView({ priceLabel: 'Free', priceShort: 'Free' }))
+    expect(node['@type']).toBe('Product')
+    expect(node.offers).toMatchObject({ '@type': 'Offer', price: '0.00' })
+  })
+
+  it('types a Make an offer listing with no rating or reviews as a Thing, not an invalid Product', () => {
+    const node = primaryNode(
+      marketView({ vertical: 'classifieds', priceLabel: 'Make an offer', priceShort: 'Make an offer', back: { href: '/classifieds', label: 'Classifieds' } }),
+    )
+    expect(node['@type']).toBe('Thing')
+    expect(node).not.toHaveProperty('offers')
+    expect(node).not.toHaveProperty('brand')
+  })
+
+  it('keeps a reviewed but unpriced listing a Product', () => {
+    const node = primaryNode(marketView({ priceLabel: 'Make an offer', reviews: [review()] }))
+    expect(node['@type']).toBe('Product')
+  })
+
+  it('never emits a Product node with none of offers, review or aggregateRating', () => {
+    const views = [
+      marketView(),
+      marketView({ priceLabel: 'Free' }),
+      marketView({ priceLabel: 'Make an offer' }),
+      marketView({ priceLabel: 'Make an offer', aggregateRating: { ratingValue: 4.5, reviewCount: 3 } }),
+    ]
+    for (const v of views) {
+      const node = primaryNode(v)
+      if (node['@type'] === 'Product') expect(node.offers ?? node.review ?? node.aggregateRating).toBeTruthy()
+    }
+  })
+})
+
 // ── Housing (Accommodation) ───────────────────────────────────────────────────
 
 /** An active housing view with the structured-facts block the detail page attaches. */

@@ -11,7 +11,8 @@ import { LIBRARY_DOWNLOAD_POLICIES, isLibraryAssetExpired, type LibraryDownloadP
 // Every download of a file-backed Loom asset goes through app/api/library/download/[id]/route.ts,
 // and that route is this module. In order: read the row; refuse a missing file or an expired
 // license; apply the asset's download policy to the caller (open: anyone who reached the link;
-// members: a signed-in profile; staff: the Loom Studio gate); mint where the file is (a ONE-MINUTE
+// members: a signed-in profile; staff: the Loom Studio gate; a PROTECTED asset left on the default
+// `open` reads as staff, SCAN-652); mint where the file is (a ONE-MINUTE
 // signed URL for a protected original, the public url for everything else, both served as an
 // attachment); write ONE row to public.library_downloads; and only then answer with the redirect.
 //
@@ -65,6 +66,20 @@ export type DownloadOutcome = { ok: true; location: string } | { ok: false; refu
  *  safe misreading is the strictest one (the Studio reads the same column as `open`, the default). */
 export function readDoorPolicy(v: unknown): LibraryDownloadPolicy {
   return (LIBRARY_DOWNLOAD_POLICIES as readonly string[]).includes(String(v)) ? (v as LibraryDownloadPolicy) : 'staff'
+}
+
+/**
+ * PURE. The policy the door applies. `open` is the column DEFAULT (20260920000000_library_dam.sql),
+ * not a choice, so a PROTECTED asset still sitting on it reads as `staff` at the door: a protected
+ * image is never its original (LIVE-580), and the picker hands the asset id to every picker user,
+ * so an open door on a protected master was one GET away from anyone, signed out included (SCAN-652,
+ * ruling b). An operator who PICKED `members` or `staff` on a protected asset keeps that pick; the
+ * two knobs stay independent (ADR-1594) except for the default nobody chose.
+ */
+export function effectiveDownloadPolicy(
+  asset: Pick<DownloadableAsset, 'isProtected' | 'downloadPolicy'>,
+): LibraryDownloadPolicy {
+  return asset.isProtected && asset.downloadPolicy === 'open' ? 'staff' : asset.downloadPolicy
 }
 
 /**
@@ -149,7 +164,8 @@ export async function openLibraryDownload(
   if (!asset || (!asset.url && !asset.storagePath)) return { ok: false, refusal: 'missing' }
   if (isLibraryAssetExpired(asset.expiresAt, deps.now)) return { ok: false, refusal: 'expired' }
 
-  const refusal = await admitDownload(asset.downloadPolicy, caller, deps.isStudioStaff ?? isLoomStudioStaff)
+  const policy = effectiveDownloadPolicy({ isProtected: asset.isProtected, downloadPolicy: asset.downloadPolicy })
+  const refusal = await admitDownload(policy, caller, deps.isStudioStaff ?? isLoomStudioStaff)
   if (refusal) return { ok: false, refusal }
 
   const filename = downloadFilename(asset)
@@ -161,7 +177,7 @@ export async function openLibraryDownload(
   // The record comes BEFORE the redirect, and a failed write refuses the download (invariant 1).
   const { error } = await createAdminClient()
     .from('library_downloads')
-    .insert({ asset_id: asset.id, profile_id: caller?.id ?? null, policy: asset.downloadPolicy })
+    .insert({ asset_id: asset.id, profile_id: caller?.id ?? null, policy })
   if (error) return { ok: false, refusal: 'unrecorded' }
 
   return { ok: true, location }

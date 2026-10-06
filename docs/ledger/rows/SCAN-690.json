@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-690",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/(main)/channels/[id]/page.tsx\",b=\"app/(main)/channels/page.tsx\";if(!fs.existsSync(a)||!fs.existsSync(b))process.exit(79);const bad=(p)=>{const s=fs.readFileSync(p,\"utf8\");return /\\.neq\\(.status.,\\s*.archived.\\)/.test(s)&&!/LISTABLE_CIRCLE_STATUS/.test(s)};if(bad(a)||bad(b)){console.error(\"SCAN-690: a Channel page or the Channels count still filters circles with status not archived instead of the listable statuses, so draft and inactive circles show on discovery and link to a 404.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: The Channel page circle list and the Channels headline count now filter circles with .in(status, LISTABLE_CIRCLE_STATUS) from lib/circles/visibility instead of status not archived, and the count also requires unlisted false so it matches the Channel page."
+  }
+}

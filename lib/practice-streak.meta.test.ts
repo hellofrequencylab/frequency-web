@@ -61,6 +61,7 @@ import {
   grantStreakFreeze,
   setStreakPause,
   clearStreakPause,
+  derivePracticeStreak,
 } from './practice-streak'
 
 const TODAY = '2026-09-05'
@@ -166,6 +167,25 @@ describe('setStreakPause / clearStreakPause', () => {
     const patch = lastRpc().args.p_patch as { practiceStreak: { rest: unknown } }
     expect(Object.keys(patch)).toEqual(['practiceStreak'])
     expect(patch.practiceStreak.rest).toEqual(res.rest)
+  })
+
+  it('a second rest taken the day after the first ended banks the first window, so the streak it protected survives (SCAN-771)', async () => {
+    // Rest Oct 1 to 7 on a streak that last logged Sep 30. On Oct 8, before logging, rest again.
+    const OCT_8 = '2026-10-08'
+    mocks.resolveMemberDay.mockResolvedValue(OCT_8)
+    mocks.profileMeta = {
+      ...mocks.profileMeta,
+      practiceStreak: { freezeTokens: 0, frozenDates: [], milestonesPaid: [], longest: 40, fullDayFreezesApplied: 0, rest: { from: '2026-10-01', through: '2026-10-07' } },
+    }
+    const res = await setStreakPause('p1', 7)
+    expect(res.rest).toEqual({ from: OCT_8, through: '2026-10-14' })
+    const next = (lastRpc().args.p_patch as { practiceStreak: { rest: unknown; frozenDates: string[] } }).practiceStreak
+    // The old window's seven days are now permanent frozen records, not dropped.
+    expect([...next.frozenDates].sort()).toEqual(['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07'])
+    // And the streak reads as alive through the bridge: logs up to Sep 30, frozen Oct 1 to 7, resting Oct 8.
+    const logged = new Set(['2026-09-29', '2026-09-30'])
+    const frozen = new Set([...next.frozenDates, ...['2026-10-08']])
+    expect(derivePracticeStreak(logged, frozen, OCT_8).alive).toBe(true)
   })
 
   it('both throw when the merge did not land, so the action reports it instead of revalidating', async () => {

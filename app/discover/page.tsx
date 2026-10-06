@@ -26,7 +26,7 @@ import {
   CircleConstellation,
   OrganicBlob,
 } from '@/components/marketing/vector-art'
-import { OG_SITE, SITE_NAME, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SOCIAL_PROOF_FLOOR, FOUNDING_PLACE, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import {
   breadcrumbSchema,
@@ -67,6 +67,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/discover' },
   openGraph: {
     ...OG_SITE,
+    images: ROOT_OG_IMAGES,
     title: `Discover the community · ${SITE_NAME}`,
     description:
       'Browse local circles, real-world events, and channels across the Frequency community.',

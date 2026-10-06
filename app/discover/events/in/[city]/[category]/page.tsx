@@ -15,7 +15,7 @@ import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema } from '@/lib/jsonld'
-import { OG_SITE, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import {
   getCategoryBySlug,
   getCityCategoryHub,
@@ -65,7 +65,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title,
     description,
     alternates: { canonical: path },
-    openGraph: { ...OG_SITE, title: ogTitle, description, url: path },
+    openGraph: { ...OG_SITE, images: ROOT_OG_IMAGES, title: ogTitle, description, url: path },
     twitter: { card: 'summary_large_image', title: ogTitle, description },
   }
 }

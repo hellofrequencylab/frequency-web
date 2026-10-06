@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-699",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/events/[slug]/event-member-page.tsx\";if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(f,\"utf8\");const selected=/\\.select\\(\\s*[\\x27\"][^\\x27\"]*\\bremoved_at\\b[^\\x27\"]*[\\x27\"]/.test(s);const gated=/if\\s*\\([^)]*removed_at[^)]*\\)\\s*notFound\\(\\)/.test(s);if(!selected||!gated){console.error(\"SCAN-699: the member event page still neither selects removed_at nor gates on it, so a staff-removed event renders in full for every signed-in member.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: the member event page selects removed_at (same single-quoted literal), ExtraMeta declares it, and a removed event is notFound for anyone without event.editSettings."
+  }
+}

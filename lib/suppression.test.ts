@@ -5,7 +5,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // scoped to one Space. isSuppressed reads the rows for an address (.select().eq('email', ...)) and
 // matches the scope in code; suppress pre-checks the (scope, address) row then inserts. The mock
 // records the .eq() filter, the rows returned for a read, and the .insert() payload.
-const state: { rows: { space_id: string | null }[] } = { rows: [] }
+const state: {
+  rows: { space_id: string | null }[]
+  readError: { code: string; message: string } | null
+  insertError: { code: string; message: string } | null
+} = { rows: [], readError: null, insertError: null }
 const eqSpy = vi.fn()
 const insertSpy = vi.fn()
 
@@ -16,18 +20,20 @@ vi.mock('@/lib/supabase/admin', () => ({
         eq: (col: string, val: unknown) => {
           eqSpy(col, val)
           // Terminal read: a thenable resolving to the address's suppression rows.
-          return Promise.resolve({ data: state.rows })
+          return Promise.resolve(
+            state.readError ? { data: null, error: state.readError } : { data: state.rows, error: null },
+          )
         },
       }),
       insert: (payload: unknown) => {
         insertSpy(payload)
-        return Promise.resolve({ error: null })
+        return Promise.resolve({ error: state.insertError })
       },
     }),
   }),
 }))
 
-import { isSuppressed, suppress } from '@/lib/suppression'
+import { isSuppressed, suppress, recordEmailEvent } from '@/lib/suppression'
 
 describe('isSuppressed (global-only, the existing behavior)', () => {
   beforeEach(() => {
@@ -77,6 +83,8 @@ describe('suppress', () => {
   beforeEach(() => {
     insertSpy.mockClear()
     state.rows = []
+    state.readError = null
+    state.insertError = null
   })
 
   it('inserts the lowercased email with its reason as a GLOBAL suppression (no space_id)', async () => {
@@ -93,5 +101,53 @@ describe('suppress', () => {
     state.rows = [{ space_id: null }] // already globally suppressed
     await suppress('a@b.com', 'hard_bounce')
     expect(insertSpy).not.toHaveBeenCalled()
+  })
+})
+
+// SCAN-763: supabase-js resolves with { error } instead of rejecting. Before this, suppress() had an
+// empty catch and recordEmailEvent() never read the error, so the Resend webhook could never 503 and
+// release its svix claim: a bounce or complaint that failed to save during a database blip was
+// acked as handled and the address kept getting mail.
+describe('suppress surfaces a database failure (SCAN-763)', () => {
+  beforeEach(() => {
+    insertSpy.mockClear()
+    state.rows = []
+    state.readError = null
+    state.insertError = null
+  })
+
+  it('rejects when the insert resolves with a non-duplicate error (XX000)', async () => {
+    state.insertError = { code: 'XX000', message: 'internal_error' }
+    await expect(suppress('a@b.com', 'complaint')).rejects.toThrow('internal_error')
+  })
+
+  it('resolves on a duplicate-key race (23505): the row we wanted now exists', async () => {
+    state.insertError = { code: '23505', message: 'duplicate key value violates unique constraint' }
+    await expect(suppress('a@b.com', 'complaint')).resolves.toBeUndefined()
+  })
+
+  it('rejects when the pre-check read fails, and never inserts blind', async () => {
+    state.readError = { code: '57P01', message: 'terminating connection' }
+    await expect(suppress('a@b.com', 'hard_bounce')).rejects.toThrow('terminating connection')
+    expect(insertSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('recordEmailEvent surfaces a database failure (SCAN-763)', () => {
+  beforeEach(() => {
+    insertSpy.mockClear()
+    state.insertError = null
+  })
+
+  it('resolves and writes the normalized row when the insert succeeds', async () => {
+    await recordEmailEvent({ email: ' A@B.com ', eventType: 'delivered', providerId: 'r-1' })
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'a@b.com', event_type: 'delivered', provider_id: 'r-1' }),
+    )
+  })
+
+  it('rejects when the insert resolves with an error', async () => {
+    state.insertError = { code: 'XX000', message: 'internal_error' }
+    await expect(recordEmailEvent({ email: 'a@b.com', eventType: 'bounced' })).rejects.toThrow('internal_error')
   })
 })

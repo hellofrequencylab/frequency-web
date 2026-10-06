@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-755",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const rd=(p)=>{if(!fs.existsSync(p)){console.error(\"indeterminate: missing \"+p);process.exit(79)}return fs.readFileSync(p,\"utf8\")};const t=rd(\"app/(main)/admin/members/member-admin.tsx\");const fn=(n)=>{const i=t.indexOf(\"function \"+n+\"(\");if(i<0)return null;const j=t.indexOf(\"\\n  function \",i+10);return t.slice(i,j<0?t.length:j)};const bare=[\"handleRoleChange\",\"handleDeactivate\",\"handleReactivate\",\"handleProfileSave\"].filter((n)=>{const s=fn(n);return s&&!/try\\s*\\{/.test(s)});const noFlag=!/canManageAccounts/.test(t);if(bare.length||noFlag){console.error(\"SCAN-755: \"+(noFlag?\"member rows render janitor-only buttons for every admitted staffer (no canManageAccounts flag)\":\"\")+(bare.length?(noFlag?\"; \":\"\")+bare.join(\", \")+\" call their action with no try/catch so an Unauthorized throw replaces the admin page\":\"\")+\".\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe members page admits Operations and Support staff (requireAdmin janitor or staff members domain, ADR-223) but rendered every row action, and edit profile, send sign-in link, deactivate, reactivate and delete are web_role janitor server actions, so a staffer saw buttons that always threw Unauthorized; and handleRoleChange, handleDeactivate, handleReactivate and handleProfileSave awaited their action inside startTransition with no try/catch, so React 19 rethrew to app/(main)/admin/error.tsx and one click replaced the whole admin page (janitors hit it too on a duplicate handle or non-https avatar). Fix: page.tsx computes isJanitorViewer from isJanitor(caller.webRole) and passes canManageAccounts to MemberAdmin and each row; the four janitor-only buttons render only when it is true (Spotlight switches stay for every admitted staffer); the four handlers now catch and setStatus the error like their siblings, the status line renders errors in the danger style with role=alert, handleProfileSave closes the form only on success, and Deactivate got the same two-step confirm as Delete. Server gates untouched. Pinned by app/(main)/admin/members/member-admin.test.tsx: renders MemberAdmin with and without the flag and asserts the buttons, pins the page wiring and every handler's try/catch via sourceWithoutComments."
+  }
+}

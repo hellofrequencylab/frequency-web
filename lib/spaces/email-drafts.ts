@@ -195,7 +195,7 @@ export async function listSpaceEmailMessagingItems(spaceId: string): Promise<Mes
   if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
   try {
     const { data, error } = await campaignsTable()
-      .select('id, subject, status, recipient_count, sent_at')
+      .select('id, subject, status, recipient_count, sent_at, sending_started_at')
       .eq('space_id', spaceId)
       .not('block_json', 'is', null)
       .order('created_at', { ascending: false })
@@ -206,7 +206,7 @@ export async function listSpaceEmailMessagingItems(spaceId: string): Promise<Mes
       id: r.id,
       name: r.subject ?? '',
       segment: 'Your contacts',
-      status: campaignStatusToMessaging(r.status ?? 'draft', (r as { sending_started_at?: string | null }).sending_started_at ?? null),
+      status: campaignStatusToMessaging(r.status ?? 'draft', r.sending_started_at ?? null),
       recipientCount: r.recipient_count ?? 0,
       sentAt: r.sent_at ?? null,
       href: '',
@@ -472,11 +472,12 @@ export async function sendSpaceEmailDraft(
   const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
   if (isError(res)) return res
 
-  // Stamp the draft as sent (best-effort: the emails already went out, so a failed status write must not
-  // surface as a send failure).
+  // Stamp the draft as sent with how many it reached (best-effort: the emails already went out, so a
+  // failed status write must not surface as a send failure). recipient_count feeds the campaign list
+  // and the Marketing Sent column (SCAN-705).
   try {
     await campaignsTable()
-      .update({ status: 'sent', sent_at: new Date().toISOString() })
+      .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: res.data.sent })
       .eq('id', id)
       .eq('space_id', spaceId)
       .maybeSingle()
@@ -528,10 +529,10 @@ export async function sendSpaceEmailDraftToRecipients(
   const res = await sendViaSeam(spaceId, { campaignId: id, subject, html, recipients })
   if (isError(res)) return res
 
-  // Stamp the draft as sent (best-effort: the emails already went out).
+  // Stamp the draft as sent with how many it reached (best-effort: the emails already went out).
   try {
     await campaignsTable()
-      .update({ status: 'sent', sent_at: new Date().toISOString() })
+      .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: res.data.sent })
       .eq('id', id)
       .eq('space_id', spaceId)
       .maybeSingle()
@@ -658,10 +659,10 @@ export async function sendSpaceEmailDraftAsConversations(
   }
 
   if (sent > 0) {
-    // Stamp the draft as sent (best-effort: the messages already went out).
+    // Stamp the draft as sent with how many it reached (best-effort: the messages already went out).
     try {
       await campaignsTable()
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .update({ status: 'sent', sent_at: new Date().toISOString(), recipient_count: sent })
         .eq('id', id)
         .eq('space_id', spaceId)
         .maybeSingle()

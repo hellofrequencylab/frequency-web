@@ -2,10 +2,29 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { awardGems } from '@/lib/gems'
 import { getFounderTasks, type FounderTaskKey } from '@/lib/onboarding/founder-tasks'
-import { FOUNDER_REWARD } from '@/lib/onboarding/founder-config'
+import { FOUNDER_REWARD, FOUNDER_TASKS } from '@/lib/onboarding/founder-config'
+
+type ClaimRpc = {
+  rpc: (
+    fn: 'claim_founder_flags',
+    args: { p_profile_id: string; p_tasks: string[]; p_complete: boolean },
+  ) => Promise<{ data: unknown; error: { message: string } | null }>
+}
+
+const FOUNDER_TASK_KEYS = new Set<string>(FOUNDER_TASKS.map((t) => t.key))
+function isFounderTaskKey(k: string): k is FounderTaskKey {
+  return FOUNDER_TASK_KEYS.has(k)
+}
+
+/** What the database says this call claimed. Anything but a well-formed answer claims nothing:
+ *  an unknown shape must never read as "pay everything". */
+function readClaim(data: unknown): { added: string[]; completing: boolean } {
+  const d = (data && typeof data === 'object' ? data : {}) as { added?: unknown; completing?: unknown }
+  const added = Array.isArray(d.added) ? d.added.filter((k): k is string => typeof k === 'string') : []
+  return { added, completing: d.completing === true }
+}
 
 // Reward-on-first-occurrence + the badge (build item 1.4). Reconciliation, not a
 // new engine: each first-week task pays a small gem bonus the first time it's seen
@@ -13,6 +32,14 @@ import { FOUNDER_REWARD } from '@/lib/onboarding/founder-config'
 // the 'founders-first-week' badge + a completion bonus exactly once. Idempotent —
 // safe to call on every page view; the meta flags are the guard, the awards the
 // side effect (flag-first doctrine, matching the chores reward).
+//
+// 2026-10-05 (SCAN-759): the stamp is a COMPARE-AND-SET, not a merge. The old shape read
+// profiles.meta with no lock, decided newlyRewarded from that snapshot, merged the flags and paid:
+// two tabs (or five parallel posts of this action) all read rewarded=[] before any stamp landed,
+// each merged the same stamp, each succeeded and each paid. claim_founder_flags (migration
+// 20270345011800) selects the row FOR UPDATE, stamps only what is not yet stamped and returns
+// {added, completing}: the exact set THIS call claimed. The Gems are paid for that set only, so
+// the second overlapping call gets added=[] and pays nothing.
 
 // All tunable in lib/onboarding/founder-config.ts (the single edit point).
 const PER_TASK_GEMS = FOUNDER_REWARD.perTaskGems
@@ -41,27 +68,21 @@ export async function claimFounderRewards(): Promise<FounderClaimResult> {
   const tasks = await getFounderTasks(profileId)
   const admin = createAdminClient()
 
-  const { data: row } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
-  const meta = (row?.meta ?? {}) as Record<string, unknown>
-  const founder = (meta.founder ?? {}) as { rewarded?: FounderTaskKey[]; badge?: boolean }
-  const rewarded = new Set<FounderTaskKey>(founder.rewarded ?? [])
-
-  const newlyRewarded = tasks.tasks.filter((t) => t.done && !rewarded.has(t.key)).map((t) => t.key)
-  newlyRewarded.forEach((k) => rewarded.add(k))
-
-  const completing = tasks.complete && !founder.badge
-
-  // Stamp the flags FIRST so a double-call can't double-pay; worst case we miss a
-  // reward rather than grant it twice.
-  // 2026-09-05 (scan2 L6-09): only the `founder` key is merged server-side, and the merge is checked: an
-  // unstamped flag pays nothing, because it would pay again on the next claim.
-  const { error } = await mergeProfileMeta(admin, profileId, {
-    founder: { rewarded: [...rewarded], badge: !!founder.badge || tasks.complete },
+  // The compare-and-set. The RPC post-dates the generated types, so the call is cast (repo
+  // convention for not-yet-typed DB objects); it is called inline on the client so `this`
+  // survives (scripts/check-detached-client-methods.test.ts).
+  const { data, error } = await (admin as unknown as ClaimRpc).rpc('claim_founder_flags', {
+    p_profile_id: profileId,
+    p_tasks: tasks.tasks.filter((t) => t.done).map((t) => t.key),
+    p_complete: tasks.complete,
   })
   if (error) {
     console.error('[claimFounderRewards] founder stamp failed, paying nothing', { profileId, error })
     return empty
   }
+  const claimed = readClaim(data)
+  const newlyRewarded = claimed.added.filter((k): k is FounderTaskKey => isFounderTaskKey(k))
+  const completing = claimed.completing
 
   let gemsAwarded = 0
 
