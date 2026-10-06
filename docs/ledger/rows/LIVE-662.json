@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-662",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const mig=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/alter table public\\.space_segments[\\s\\S]{0,80}add column if not exists field_keys text\\[\\]/.test(mig))die(\"no migration gives space_segments a field template (field_keys)\");const lib=r(\"lib/crm/segment-fields.ts\");if(!/export async function templateFieldsForContact/.test(lib)||!/resolveAudience\\(/.test(lib))die(\"lib/crm/segment-fields.ts does not resolve which segment templates apply to a contact through the send resolver\");if(!/export async function saveContactCustomFields/.test(lib)||!/\\.eq\\(\\x27space_id\\x27, spaceId\\)/.test(lib)||!/canEditProfile/.test(lib))die(\"there is no Space-bound, editor-gated save of a contact custom fields\");const det=r(\"lib/crm/space-contact-detail.ts\");if(!/templateFieldsForContact\\(/.test(det))die(\"the contact detail does not show the segment template fields\");const card=r(\"components/spaces/crm/space-contact-detail.tsx\");if(!/<ContactCustomFieldsEditor/.test(card))die(\"the contact card has no custom field editor\");const body=r(\"app/(main)/spaces/[slug]/crm/crm-body.tsx\");if(!/<SegmentFieldsManager|<SegmentFields /.test(body))die(\"the Space CRM has no place to set a segment field template\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nPer-segment custom contact fields, light JSON as ruled: space_segments.field_keys (migration 20270346001900) names custom_field_registry keys in order. The Space CRM Import view has Fields by segment (tick fields per segment, add a field by hand); a contact card shows the template fields of every segment it is in (membership by resolveAudience, the send resolver) and an editor saves them into contacts.meta.custom, editor-gated, Space-bound and typed by the registry. CSV import already maps columns to the same keys. Custom objects stay ruled out."
+  }
+}

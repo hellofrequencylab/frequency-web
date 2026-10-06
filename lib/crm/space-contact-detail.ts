@@ -32,6 +32,7 @@ import type { MemberFacts } from '@/lib/ai/memory'
 import { resolvePlaybookForScores } from '@/lib/playbooks/resolve'
 import { effectiveAutonomyTier, type AutonomyTier } from '@/lib/playbooks/registry'
 import { listSpaceCustomFields } from '@/lib/crm/import/store'
+import { templateFieldsForContact } from '@/lib/crm/segment-fields'
 import { humanizeFieldKey } from '@/lib/crm/import/custom-fields'
 import type { ValueType } from '@/lib/crm/import/types'
 
@@ -50,7 +51,20 @@ interface SpaceContactIdentity {
    *  -field registry for its human label + value type (so the card can format a date, dial a phone,
    *  link a url). An unknown key still shows, with a label humanized from the key + a text type, so
    *  imported data is never hidden. Empty when the contact carries none. */
-  customFields: { key: string; label: string; value: string; valueType: ValueType }[]
+  customFields: SpaceContactCustomField[]
+}
+
+/** One custom field on the card. A field a segment template asks for shows even before it has a value
+ *  (value ''), so the operator can fill it in (LIVE-662). */
+export interface SpaceContactCustomField {
+  key: string
+  label: string
+  value: string
+  valueType: ValueType
+  /** For a choice field, its options. */
+  options?: string[]
+  /** The segments whose template asks for this field. Empty for an imported value no template names. */
+  segments: string[]
 }
 
 /** The Altitude 3 "where this person is" band + shared scores for the detail header. All fail-safe:
@@ -136,12 +150,13 @@ export async function getSpaceContactDetail(
   // Fold the sources in parallel; each is independently fail-safe. The Space's custom-field registry labels
   // + types this contact's meta.custom (fail-safe to []). The person-stitch read is STRICTLY scoped to this
   // Space (listInteractionsForPerson(..., spaceId)), so it never surfaces another party's platform touches.
-  const [enrichment, interactions, notes, dealsAll, registry] = await Promise.all([
+  const [enrichment, interactions, notes, dealsAll, registry, templated] = await Promise.all([
     enrichFromCapture(contact.email),
     listInteractionsForPerson([contactId, profileId], 100, spaceId),
     listClientNotes(spaceId, contactId),
     getDeals(spaceId),
     listSpaceCustomFields(spaceId),
+    templateFieldsForContact(spaceId, contactId),
   ])
   const registryByKey = new Map(registry.map((f) => [f.key, f]))
 
@@ -163,15 +178,30 @@ export async function getSpaceContactDetail(
     city: enrichment.city,
     consentState: contact.consent_state,
     createdAt: contact.created_at,
-    customFields: Object.entries(contact.custom ?? {}).map(([key, value]) => {
-      const def = registryByKey.get(key)
-      return {
-        key,
-        label: def?.label || humanizeFieldKey(key),
-        value,
-        valueType: def?.valueType ?? 'text',
-      }
-    }),
+    // Template fields first, in template order (filled or not), then any other imported value.
+    customFields: [
+      ...templated.map((f) => ({
+        key: f.key,
+        label: f.label || humanizeFieldKey(f.key),
+        value: contact.custom?.[f.key] ?? '',
+        valueType: f.valueType,
+        options: f.options,
+        segments: f.segments,
+      })),
+      ...Object.entries(contact.custom ?? {})
+        .filter(([key]) => !templated.some((f) => f.key === key))
+        .map(([key, value]) => {
+          const def = registryByKey.get(key)
+          return {
+            key,
+            label: def?.label || humanizeFieldKey(key),
+            value,
+            valueType: def?.valueType ?? 'text',
+            options: def?.options,
+            segments: [] as string[],
+          }
+        }),
+    ],
   }
 
   // The Space's effective autonomy allowance sets the picker's EFFECTIVE tier (fail-closed to
