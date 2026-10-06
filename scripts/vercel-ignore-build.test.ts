@@ -29,7 +29,7 @@ describe('vercel-ignore-build (HYG-162)', () => {
 })
 
 describe('vercel-ignore-build preview queue (HYG-166)', () => {
-  const preview = { env: 'preview', sha: 'aaa111', branchHead: 'aaa111', prs: [] }
+  const preview = { env: 'preview', sha: 'aaa111', branchHead: 'aaa111', prs: [{ draft: false }] }
 
   it('skips a preview whose branch has moved on, or is gone', () => {
     expect(decideQueue({ ...preview, branchHead: 'bbb222' }).skip).toBe(true)
@@ -41,13 +41,14 @@ describe('vercel-ignore-build preview queue (HYG-166)', () => {
     expect(decideQueue({ ...preview, prs: [{ draft: true }, { draft: false }] }).skip).toBe(false)
   })
 
-  it('builds the current head of a ready pull request, or of a branch with no pull request yet', () => {
+  it('builds only the current head of a ready pull request; a branch with no pull request skips (HYG-167)', () => {
     expect(decideQueue({ ...preview, prs: [{ draft: false }] }).skip).toBe(false)
-    expect(decideQueue(preview).skip).toBe(false)
+    expect(decideQueue({ ...preview, prs: [] }).skip).toBe(true)
   })
 
   it('never skips production, and builds when GitHub cannot be read', () => {
     expect(decideQueue({ ...preview, env: 'production', branchHead: 'bbb222', prs: [{ draft: true }] }).skip).toBe(false)
     expect(decideQueue({ ...preview, branchHead: null, prs: null }).skip).toBe(false)
+    expect(decideQueue({ ...preview, branchHead: null, prs: [{ draft: false }] }).skip).toBe(false)
   })
 })
