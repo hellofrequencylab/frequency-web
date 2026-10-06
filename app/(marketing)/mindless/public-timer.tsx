@@ -49,7 +49,7 @@ export function PublicTimer() {
   if (phase.kind === 'done') {
     return (
       <div className="mx-auto max-w-md space-y-4 text-center" role="status">
-        <p className="text-2xs font-bold uppercase tracking-widest text-primary-strong">Five minutes, done</p>
+        <p className="eyebrow text-primary-strong">Five minutes, done</p>
         <h2 className="text-display-h3 font-semibold text-text">Same time tomorrow?</h2>
         <p className="text-body text-muted">
           Make a free account and tomorrow&apos;s session is one tap away, with every one after it counted toward your streak.
