@@ -25,6 +25,7 @@ import {
   renameSpacePage,
   reorderSpacePages,
   deleteSpacePage,
+  setWebsitePublished,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { Input } from '@/components/ui/field'
 
@@ -42,6 +43,7 @@ export function SpacePagePanel({
   pages,
   activePageSlug,
   maxPages,
+  websitePublished = false,
   canManagePages = false,
   readOnly = false,
 }: {
@@ -65,9 +67,6 @@ export function SpacePagePanel({
   const pathname = usePathname()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
-  // Item 5: publishing a standalone website is not live yet — the button reveals a Coming soon notice
-  // instead of publishing.
-  const [comingSoon, setComingSoon] = useState(false)
 
   function run<T = void>(fn: () => Promise<ActionResult<T>>, onSuccess?: (data: T) => void) {
     setError(null)
@@ -164,29 +163,51 @@ export function SpacePagePanel({
               ))}
           </section>
 
-          {/* EXTERNAL WEBSITE — publishing your Home page as a standalone public site is COMING SOON
-              (item 5): the button reveals a notice instead of publishing. */}
+          {/* EXTERNAL WEBSITE: publish the Space's pages as a standalone website at /sites/<slug>
+              (PROG-E10 phase 1). It renders the same page docs as the profile, so it stays in sync. */}
           {!readOnly && (
             <section>
               <SectionHeader title="External website" />
               <p className="-mt-2 mb-3 text-body-sm text-muted">
-                Publish your Home page as a standalone website with its own link. It will show the same
-                content as your profile, so you edit once and it stays in sync.
+                {websitePublished
+                  ? 'Your pages are live as a standalone website. It shows the same content as your profile, so you edit once and it stays in sync.'
+                  : 'Publish your pages as a standalone website with its own link. It shows the same content as your profile, so you edit once and it stays in sync.'}
               </p>
               <div className="flex flex-wrap items-center gap-3">
-                <Button type="button" variant="primary" size="sm" onClick={() => setComingSoon(true)}>
-                  <Globe className="h-4 w-4" aria-hidden />
-                  Publish website
-                </Button>
+                {websitePublished ? (
+                  <>
+                    <Link
+                      href={`/sites/${slug}`}
+                      target="_blank"
+                      rel="noopener"
+                      className={buttonClasses('primary', 'sm')}
+                    >
+                      <Globe className="h-4 w-4" aria-hidden />
+                      View website
+                    </Link>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => run(() => setWebsitePublished(slug, false))}
+                    >
+                      Unpublish
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => run(() => setWebsitePublished(slug, true))}
+                  >
+                    {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Globe className="h-4 w-4" aria-hidden />}
+                    Publish website
+                  </Button>
+                )}
               </div>
-              {comingSoon && (
-                <p
-                  className="mt-3 rounded-card border border-border bg-surface-elevated/60 px-3 py-2 text-body-sm font-medium text-text"
-                  role="status"
-                >
-                  Coming soon. Standalone websites are on the way. For now your profile is your public page.
-                </p>
-              )}
             </section>
           )}
       </div>

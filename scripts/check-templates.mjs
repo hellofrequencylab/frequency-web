@@ -72,8 +72,12 @@ const ROOT = 'app'
  *  The observable consequence: app/(main)/settings/profile/spotlight/page.tsx IS governed here
  *  (its 'spotlight' is nested, not top-level) and is NOT governed by check:headers (which drops
  *  any path containing that segment). Widening either set is a scope change to that gate's
- *  baseline, so do not "unify" them without re-freezing both numbers. */
-const SKIP_DIRS = new Set(['(marketing)', '(capture)', 'sites', 'print', 'discover', 'dev', 'for', 'spotlight'])
+ *  baseline, so do not "unify" them without re-freezing both numbers.
+ *
+ *  'hosted' (PROG-E10 phase 2, ADR-1708) is the SAME surface as 'sites': a Space's external website,
+ *  served on the Space's own domain. proxy.ts rewrites a custom host there and it renders the one
+ *  SitePage /sites uses, inside the site's own chrome, never an app shell. */
+const SKIP_DIRS = new Set(['(marketing)', '(capture)', 'sites', 'hosted', 'print', 'discover', 'dev', 'for', 'spotlight'])
 
 /** The real shells. A page composing any of these has a layout; anything else does not. */
 export const SHELLS = [
