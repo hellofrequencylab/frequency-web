@@ -12,7 +12,6 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
-- **Guests hear from us once after a gathering.** If you RSVP without an account, you get one note the day after, thanking you for coming, with a button to join free and keep your RSVP.
 - **You can drag the steps of a Journey into any order.** Lessons, practices, and modules mix freely, so a practice can sit between two lessons. The builder shows the order members follow.
 - **Space email has a written policy.** It says who a Space can email, what it can send, the 500-a-day limit, and what happens after a bounce or a spam complaint. The Turn on email card links it, and so do the Terms.
 
