@@ -68,8 +68,9 @@ export function UnderlineTabs({
       {tabs.map((t) =>
         'menu' in t ? (
           // Long-tail group. A native <details> so it needs no client JS, and its links are in the
-          // DOM whether it is open or shut.
-          <details key={`menu:${t.label}`} className="group relative shrink-0">
+          // DOM whether it is open or shut. `data-popover` gives it light dismiss (outside click,
+          // item pick, Escape) from lib/ui/popover-dismiss.ts; a bare <details> never closes.
+          <details key={`menu:${t.label}`} data-popover className="group relative shrink-0">
             <summary
               className={cn(
                 TAB,

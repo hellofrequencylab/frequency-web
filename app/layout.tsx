@@ -17,6 +17,7 @@ import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
 import { THEME_BOOTSTRAP_SCRIPT, THEME_COLOR_LIGHT } from '@/lib/theme/mode'
 import { INSTALL_CAPTURE_SCRIPT } from '@/lib/pwa/install-capture'
+import { POPOVER_DISMISS_SCRIPT } from '@/lib/ui/popover-dismiss'
 import { ThemeModeSync } from '@/components/layout/theme-mode-sync'
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
@@ -189,6 +190,9 @@ export default function RootLayout({
             stamps the device's first visit (LIVE-703). Here, not in a component, because the
             prompt can fire before hydration and is not fired again until the next full load. */}
         <script dangerouslySetInnerHTML={{ __html: INSTALL_CAPTURE_SCRIPT }} />
+        {/* Closes any <details data-popover> on an outside click, an item pick or Escape (LIVE-745).
+            Document listeners from the head, so it covers prerendered pages and every navigation. */}
+        <script dangerouslySetInnerHTML={{ __html: POPOVER_DISMISS_SCRIPT }} />
         {/* Site-wide structured data for search/answer engines. The Organization
             node carries the founding location (city-level only) so engines can
             resolve Frequency as a real, place-rooted entity. */}

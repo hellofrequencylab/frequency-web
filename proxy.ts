@@ -30,7 +30,7 @@ import {
   MARKETPLACE_ENTRY_MAX_AGE,
   stampMarketplaceView,
 } from '@/lib/commerce/marketplace-entry'
-import { parseAppHosts, routeSiteHost } from '@/lib/sites/host'
+import { SITE_CRAWLER_FILES, parseAppHosts, routeSiteHost } from '@/lib/sites/host'
 
 // Extra app hosts beyond Frequency's own domains (PROG-E10 phase 2, lib/sites/host.ts), parsed once.
 const APP_HOSTS = parseAppHosts(process.env.APP_HOSTS)
@@ -75,11 +75,17 @@ export async function proxy(request: NextRequest) {
   // Frequency. A few string compares, no database call (lib/sites/host.ts).
   const site = routeSiteHost(request.headers.get('host'), pathname, request.nextUrl.search, APP_HOSTS)
   if (site.kind === 'redirect') return NextResponse.redirect(site.location, site.permanent ? 308 : 307)
+  // The internal site route asked for directly on Frequency's host: never a second copy of a site.
+  if (site.kind === 'not-found') return new NextResponse('Not found', { status: 404 })
   if (site.kind === 'rewrite') {
     const url = request.nextUrl.clone()
     url.pathname = site.pathname
     return NextResponse.rewrite(url)
   }
+  // A crawler file on one of Frequency's own hosts only reaches here through the matcher's host arm
+  // (an APP_HOSTS host it cannot name). It is Frequency's own robots.txt / sitemap.xml: pass it
+  // through untouched, with no session read and no attribution cookie (HYG-048).
+  if (SITE_CRAWLER_FILES.has(pathname)) return NextResponse.next()
 
   // Expose the current route to server components — next/headers can't see the URL
   // otherwise. The right rail reads `x-pathname` to choose its page-specific panels
@@ -462,5 +468,17 @@ export const config = {
     // fetch them with no cookies and need a plain 200 with no hop, so a session refresh and a
     // first-touch cookie on them were pure noise.
     '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|\\.well-known/|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|sw\\.js$|offline\\.html$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // A SPACE WEBSITE'S OWN CRAWLER FILES (PROG-E10 phase 4, LIVE-783). The entry above skips
+    // robots.txt and sitemap.xml on every host, so a Space's domain would serve Frequency's. This arm
+    // runs the proxy for exactly those two files on any host that is NOT one of Frequency's own, and
+    // the proxy rewrites them to the site's /hosted/<host>/robots.txt|sitemap.xml. On Frequency's own
+    // hosts nothing changes: the files still skip the proxy (HYG-048). The host regex is
+    // APP_HOST_PATTERN in lib/sites/host.ts, repeated here because a matcher must be a literal. It
+    // leaves one-label subdomains of frequencylocal.com out, so a Space's free website subdomain
+    // (LIVE-782) gets its own crawler files too.
+    {
+      source: '/(robots\\.txt|sitemap\\.xml)',
+      missing: [{ type: 'host', value: '(?:(?:www\\.|(?:[^.]+\\.){2,})?frequencylocal\\.com|(?:.+\\.)?(?:findafreq\\.com|vercel\\.app)|localhost|[\\d.]+)' }],
+    },
   ],
 }

@@ -31,6 +31,7 @@ import {
 } from './bundle'
 import { asBetaGrace, betaGraceActive, BETA_GRACE_DEFAULT, type BetaGraceConfig } from './beta'
 import { asFoundingConfig, FOUNDING_DEFAULT, type FoundingConfig } from './founding'
+import { asDomainMarkupCents, DOMAIN_MARKUP_DEFAULT_CENTS, DOMAIN_MARKUP_SETTING_KEY } from '@/lib/sites/domain-pricing'
 
 // ── The seeded DEFAULT values ─────────────────────────────────────────────────────────────
 // They live in lib/pricing/defaults.ts, a PURE module, so the derived pricing model (pricing-grid,
@@ -175,6 +176,10 @@ export const PRICING_FLAG_KEYS = [
   // skips it, no Stripe price minted). Flipping it ON drops the placeholder so a re-sync mints the live
   // seat price from the operator-set amount. Never charges on its own (billingLive() still gates money).
   'catalog_operator_seat_active',
+  // Buying a domain inside Frequency (LIVE-781). Default OFF: the Domain section shows Buy a new domain
+  // as Coming soon until an operator turns this on, which waits on Vercel confirming that buying
+  // domains for customers is allowed. Sells only with billing_live too (domainPurchaseEnabled).
+  'domain_purchase_enabled',
 ] as const
 
 export type PricingFlagKey = (typeof PRICING_FLAG_KEYS)[number]
@@ -195,6 +200,7 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   // OFF = checkout does not offer seats (`operatorSeatsSellable`). The catalog amount is live
   // (LIVE-229); this switch is the sell gate, not the mint gate (ADR-803 / ADR-1435).
   catalog_operator_seat_active: false,
+  domain_purchase_enabled: false,
 }
 
 /** Read all pricing flags as a key -> boolean map, merged over the safe defaults. REQUEST-CACHED;
@@ -343,6 +349,32 @@ export async function getFoundingConfig(): Promise<FoundingConfig> {
     return asFoundingConfig(raw.founding)
   } catch {
     return FOUNDING_DEFAULT
+  }
+}
+
+/** The yearly markup Frequency adds to Vercel's at-cost domain price, in whole cents (LIVE-781; owner
+ *  ruling 2026-10-06: a small markup, operator-set). Read from the `domain_markup` pricing_settings key
+ *  ({ cents }), edited in /admin/pricing. FAIL-SAFE to DOMAIN_MARKUP_DEFAULT_CENTS ($3), never to 0
+ *  and never to an unbounded figure (asDomainMarkupCents clamps it). */
+export async function getDomainMarkupCents(): Promise<number> {
+  try {
+    const { values, ok } = await readPricingSettings()
+    if (!ok) return DOMAIN_MARKUP_DEFAULT_CENTS
+    return asDomainMarkupCents(values[DOMAIN_MARKUP_SETTING_KEY])
+  } catch {
+    return DOMAIN_MARKUP_DEFAULT_CENTS
+  }
+}
+
+/** May a Space buy a domain right now? billingLive() AND the `domain_purchase_enabled` switch. FAIL-SAFE
+ *  FALSE: the buy method shows Coming soon on any doubt. The registrar config is checked by the caller. */
+export async function domainPurchaseEnabled(): Promise<boolean> {
+  try {
+    if (!(await billingLive())) return false
+    const flags = await loadPricingFlags()
+    return flags.domain_purchase_enabled === true
+  } catch {
+    return false
   }
 }
 

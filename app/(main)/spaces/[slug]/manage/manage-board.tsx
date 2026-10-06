@@ -18,6 +18,7 @@ import { ConsoleThumbBar } from '@/components/spaces/console-thumb-bar'
 import { thumbActionsFor } from '@/lib/spaces/console-thumb'
 import { SpaceManageConsole } from './console'
 import { SpaceIdentityEditor } from './identity-editor'
+import { SpaceWebsiteFeature } from '@/components/sites/space-website-feature'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
 // gates on manage access, computes the gated surface spine + Mode emphasis, and renders the console.
@@ -136,6 +137,16 @@ export async function SpaceManageBoard({
       </Suspense>
     ) : undefined
 
+  // The Website feature leads the Profile & Settings tab (owner ask 2026-10-06): publish the Space's pages as
+  // a standalone site and connect its own domain. Its domain read talks to hosting, so it streams behind
+  // Suspense like the identity editor. A staff previewer gets nothing here: every write is editor-gated.
+  const websiteFeature =
+    section === 'settings' && canManage ? (
+      <Suspense fallback={<div aria-hidden className="h-48 animate-pulse rounded-card bg-surface-elevated" />}>
+        <SpaceWebsiteFeature space={space} />
+      </Suspense>
+    ) : undefined
+
   // Deleting a Space is OWNER-grade (or platform staff): the Profile & Settings tab's Danger zone renders
   // its delete control only when true; otherwise header-only.
   const canDelete = caps.isOwner || isStaff(caller?.webRole)
@@ -161,6 +172,7 @@ export async function SpaceManageBoard({
         spaceId={space.id}
         sectionHref={sectionHref}
         identityEditor={identityEditor}
+        websiteFeature={websiteFeature}
         graceEndsLabel={graceEndsLabel}
       />
       {thumbBar && <ConsoleThumbBar actions={thumbActionsFor(modules, space.slug)} />}

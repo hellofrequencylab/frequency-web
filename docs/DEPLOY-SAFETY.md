@@ -318,6 +318,8 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
 
 `vercel.json` carries `ignoreCommand: node scripts/vercel-ignore-build.mjs`. A push whose every changed file since the branch's last successful deployment is documentation (`docs/**`, any `*.md`, `.claude/**`, `scripts/planning-docs.txt`, `LICENSE`) does not build, on previews or on `main`; the artifact would be byte-identical. Any other file, or any doubt about the diff, builds. September's Build CPU Minutes ($265) and Observability Events ($234) both tracked the build count, and the Sentry upload alone wrote about 10,000 billed log lines per build; see [ADR-1706](DECISIONS.md). If a docs-only PR seems not to deploy, that is this rule working. If a code change ever sits under a path the list calls documentation, add the path to the test in `scripts/vercel-ignore-build.test.ts` and move it out of the list, never the other way round.
 
+The same step also skips a **preview** (never production) that has been overtaken while it queued: the branch head on GitHub is a newer commit or the branch is gone, or every open pull request on the branch is a draft (HYG-166), or the branch has no open pull request at all (HYG-167). On-demand concurrent builds are off for cost, so without this a production deploy from `main` waited behind every queued draft. Marking a draft ready, or opening the PR, does not build it; push once (bringing `main` in counts) so the PR has a real preview before it merges. GitHub unreadable means build.
+
 ## The checklist, before merging anything structural
 
 1. `pnpm build` locally, then read the `postbuild` output. **Every** gate must be ✅ —

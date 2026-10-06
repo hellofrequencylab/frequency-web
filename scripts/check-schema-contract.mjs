@@ -107,6 +107,14 @@ export const ALLOWLIST = [
       'SCAN-759: migration 20270345013100_claim_founder_flags_compare_and_set.sql adds the RPC that stamps the founder reward flags under a row lock, so two tabs cannot pay the member twice. lib/database.types.ts has not been regenerated since; this entry retires on the next regeneration after the migration is applied.',
     owner: 'SCAN-759',
   },
+  {
+    file: 'lib/sites/domain-purchase.ts',
+    table: 'space_domain_purchases',
+    added: '2026-10-06',
+    reason:
+      'LIVE-781: migration 20270346003100_space_domain_purchases.sql creates the domain purchase record (service role only, untyped admin client). lib/database.types.ts has not been regenerated since; this entry retires on the next regeneration after the migration is applied.',
+    owner: 'LIVE-781',
+  },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */

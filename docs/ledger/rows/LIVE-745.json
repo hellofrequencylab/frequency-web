@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-745",
+  "title": "Dropdown popups built on <details> never closed on an outside click, an item pick or Escape",
+  "status": "done",
+  "closed": "2026-10-06",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/ui/popover-dismiss.ts",
+    "ref": "Owner report 2026-10-06: once a popup is up it never closes, seen in several places"
+  },
+  "detail": "Root cause shared by the site's no-JS dropdowns (the Space menu More and the More group in components/ui/underline-tabs.tsx): a native <details> is an accordion and closes only from its own summary. A link that changed only the query or hash (?panel=manage, #section) did not remount it either. Fix: lib/ui/popover-dismiss.ts, a leaf inline script the root layout puts in <head> beside the install-capture script, installs document listeners that close any <details data-popover> on a click outside, on a link or button pick inside, and on Escape (focus back to its summary), and close others when one opens. Plain accordions carry no marker and are untouched. No client bundle weight; covers the prerendered public pages. The probe runs the real script in jsdom.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst L=fs.readFileSync(\"app/layout.tsx\",\"utf8\")\nif(!/__html:\\s*POPOVER_DISMISS_SCRIPT/.test(L))fail(\"the root layout does not install the popup dismiss script, so details popups never close on an outside click\")\nconst T=fs.readFileSync(\"components/ui/underline-tabs.tsx\",\"utf8\")\nif(!/<details[^>]*data-popover/.test(T))fail(\"the underline-tabs More menu is not marked as a popup, so it stays hanging open\")\nconst lib=fs.readFileSync(\"lib/ui/popover-dismiss.ts\",\"utf8\")\nconst m=lib.match(/POPOVER_DISMISS_SCRIPT = `([\\s\\S]*?)`\\n/)\nif(!m)fail(\"the dismiss script is gone\")\nconst script=m[1].replace(/\\$\\{POPOVER_ATTR\\}/g,\"data-popover\")\nconst {JSDOM}=require(\"jsdom\")\nconst dom=new JSDOM(\"<details id=a data-popover open><summary id=sa>More</summary><a id=l href=#x>R</a></details><details id=c open><summary>Acc</summary></details><p id=o>x</p>\",{runScripts:\"outside-only\"})\ndom.window.eval(script)\nconst d=dom.window.document,$=(i)=>d.getElementById(i)\nconst click=(i)=>$(i).dispatchEvent(new dom.window.MouseEvent(\"click\",{bubbles:true}))\nclick(\"o\")\nif($(\"a\").hasAttribute(\"open\"))fail(\"a popup stays open after a click outside it\")\nif(!$(\"c\").hasAttribute(\"open\"))fail(\"the dismiss closed a plain accordion, which is not a popup\")\n$(\"a\").setAttribute(\"open\",\"\")\nclick(\"l\")\nif($(\"a\").hasAttribute(\"open\"))fail(\"a popup stays open after an item inside it is picked\")\n$(\"a\").setAttribute(\"open\",\"\")\nd.dispatchEvent(new dom.window.KeyboardEvent(\"keydown\",{key:\"Escape\",bubbles:true}))\nif($(\"a\").hasAttribute(\"open\"))fail(\"a popup stays open on Escape\")\nconsole.log(\"LIVE-745 ok\")'",
+    "note": "Runs the dismiss script in jsdom: fails if an open popup survives an outside click, an item pick or Escape, if an accordion is closed, or if the layout or underline-tabs stop wiring it."
+  },
+  "wave": "W7"
+}
