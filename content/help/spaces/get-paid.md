@@ -55,15 +55,15 @@ There are six ways a Space can take money, and Get paid lists all six with the s
 
 | Money path | What it is |
 | --- | --- |
-| **Memberships** | Paid tiers people join. Open on every plan. The money lands once a payout account is ready. |
-| **Bookings** | Paid time on your calendar, deposit included at checkout. |
-| **Orders** | Sales from your Shop. |
-| **Donations** | Your fund and the amounts people can pick. |
-| **Tickets** | Paid tickets on an event your Space hosts. |
+| **Memberships** | Paid tiers people join. Paid tiers open at Business; a free tier works on every plan. |
+| **Bookings** | Paid time on your calendar, deposit included at checkout. Deposits open at Business. |
+| **Orders** | Sales from your Shop. Checkout opens at Business. |
+| **Donations** | Your fund and the amounts people can pick. Opens at Business. |
+| **Tickets** | Paid tickets on an event your Space hosts. Opens at Business. |
 | **Journeys** | A price on a Journey this Space sells. |
 
-Two things have to be true for a path to take money: the path needs its own setup, and the payout
-account needs to exist. So a path can read **Ready once payouts are on** while everything else about it
+Three things have to be true for a path to take money: your Space is on a plan that sells (Business,
+Collective, or Non Profit), the path has its own setup, and the payout account exists. So a path can read **Ready once payouts are on** while everything else about it
 is finished, and a path you have not turned on reads **Turned off in your settings** even when payouts
 are live.
 
@@ -76,9 +76,10 @@ beside Get paid under **Offerings & Money**. Tickets live in the event's own set
 Get paid shows two numbers, and they are the whole story.
 
 - **0% on your own people, always, on every plan.** Someone who already follows your Space, or who you
-  brought here yourself, costs you nothing.
-- **The network rate, only when Frequency found the buyer.** Discovery, a referral, or the Market. The
-  page shows the rate your plan is on.
+  brought here yourself, costs you nothing. Tips are 0% too, on every plan.
+- **The network fee, only when Frequency found the buyer.** Discovery, a referral, or the Market, and
+  only once, at that customer's first purchase. The page shows the fee your plan is on. A free Space
+  takes tips, which carry no fee.
 
 If your Space is not connected to the network, it takes no network sales at all, so it pays **0% on
 everything**.
@@ -96,10 +97,11 @@ You **pay** Frequency for your plan. That is a separate charge, and it is the on
 
 ## Common questions
 
-**Do I need a plan to take money?** No. Every plan can sell, including Free, and a paid plan lowers
-what the network takes rather than turning selling on. Memberships, tickets, bookings, orders, and
-donations all follow that rule. A Journey needs a paid Space. A payout account is what actually
-starts the money.
+**Do I need a plan to take money?** For tips, no: tips are open on every plan, with no fee. For
+selling, yes. Paid tickets, paid memberships, donations, shop checkout, booking deposits and priced
+Journeys open at Business. Hosting stays free, so you can build everything on a free Space and pick
+Business on the day you start charging. Nothing you built is lost either way. A payout account is what
+actually starts the money.
 
 **Get paid says payments are not turned on yet. Is something wrong?** No. That line is about the
 platform, not your account. You can set your money paths up now, and payouts go live with the rest of

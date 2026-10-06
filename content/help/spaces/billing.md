@@ -4,7 +4,7 @@ description: Where your plan, payments, and invoices live, how a cash agreement 
 category: spaces
 order: 3
 published: 2026-07-27
-updated: 2026-09-20
+updated: 2026-10-06
 audience: member
 featureKeys: [billing]
 status: published
@@ -41,8 +41,12 @@ Pick the plan you want on the billing page. The card fields open under the butto
 - **Yearly saves two months.** A yearly plan costs ten months of the monthly price.
 - Moving up takes effect right away. Moving down takes effect at the end of what you have paid for,
   so you keep what you bought.
-- Your plan is what turns on the paid tools. Campaigns and funnels are the money one. The rest are
-  allowances. If a tool is greyed out, the billing page tells you which plan turns it on.
+- Your plan is what turns on selling. Paid tickets, paid memberships, donations, shop checkout and
+  booking deposits open at Business. Tips are open on every plan. Everything else is an allowance:
+  a free Space has every hosting tool with room to start, and Business and Collective raise the limits.
+  When an allowance is full, only the next new thing waits. Nothing you made is hidden or locked.
+- Collective is Business for a group of groups: it includes member Spaces and a lower network fee.
+  See [Collective](/help/spaces/collective).
 - Your plan is not the only switch. You can also turn a feature off for your own Space in **Manage,
   then Menu and features**, and it stays off whether or not your plan pays for it. So if billing
   says a tool is included and you still cannot find it, look there before you look at your plan.

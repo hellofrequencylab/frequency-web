@@ -4,7 +4,7 @@ description: Turn what you know into a guided program. Let Vera draft a balanced
 category: sharing
 order: 3
 published: 2026-06-06
-updated: 2026-09-30
+updated: 2026-10-06
 audience: member
 featureKeys: [journeys]
 status: published
@@ -140,7 +140,7 @@ counts as one.
 
 ## Sell it from a Space
 
-A **paid Space** can put a price on a Journey from **Sell this Journey** in its settings. Leave
+Selling starts at Business, so a Space on **Business, Collective, or Non Profit** can put a price on a Journey from **Sell this Journey** in its settings. Leave
 **Also list it in the main Market** off to sell only from the Journey page and that Space's Shop.
 Turn it on to show the same offer in the Market too. There is still one price and one set of seats.
 If the Space cannot take money yet, that same panel asks the owner to add a payout account. It
