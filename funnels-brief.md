@@ -18,7 +18,7 @@ Then salt everything with **physical, specific detail and real numbers**. Freque
 - **No em dashes** anywhere in copy. Periods, commas, parentheses, or rewrite.
 - **Sentence case** headlines and buttons. Contractions always. Max one exclamation point across the whole set, ideally zero.
 - **Money is dark by default.** Payouts and paid memberships are flag-gated off in the product today, so **no flow ends on a literal $ / Paid / Sale node.** Revenue is the implied next step, never a claimed one. Business flows land on **Captured**, **Booked**, **Return**.
-- **Two readers.** Personal flows speak to the **Seeker** (capable, a bit lonely, allergic to culty/salesy). Business flows speak to the **Latent Leader** (wants to gather people, needs rails, not a pep talk). Each flow tags its reader so the tone lands.
+- **Two readers.** Personal flows speak to the **Seeker** (capable, a bit lonely, allergic to culty/salesy). Hosting flows speak to the **Latent Leader** (wants to gather people, needs rails, not a pep talk); business flows speak to the **Builders** who run a Space. Each flow tags its reader and archetype (`docs/CONTENT-VOICE.md` §2) so the tone lands; archetype names never appear in the copy.
 - **Proper nouns to keep exact:** Circle, Journey, Practice, Mindless, "tune out," Zaps, Gems, Spark, Pillar Trophy, Dispatch from Vera, Connect, My Contacts, the Market, Space, Host, Run. Lowercase the common verbs (scan, join, book, show up).
 - **Format:** left-to-right arrow chain, one icon + a 1 to 3 word label per node, arrows between. One optional stat as a footnote strip. The six should read as one system (shared node shape, arrow, type scale).
 
@@ -64,7 +64,7 @@ Then salt everything with **physical, specific detail and real numbers**. Freque
 
 ---
 
-## BUSINESS (reader: the Latent Leader)
+## BUSINESS (reader: the Builders, with the Gathering Host on the way in)
 *All three land before money changes hands. Do not draw a checkout, a card, or a dollar sale.*
 
 ### 4 — No Lead Left Behind

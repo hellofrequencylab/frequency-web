@@ -8,6 +8,7 @@ import {
 } from '@/lib/site'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
+import { WHO_FREQUENCY_IS_FOR, WHO_FREQUENCY_IS_FOR_HEADING } from '@/lib/marketing/who-its-for'
 import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
 import {
   pricingLadderSummary,
@@ -239,6 +240,10 @@ export async function GET() {
     `> ${PLAN_STORY.lines} Taking root in ${FOUNDING_PLACE}.`,
     '',
     ...stats,
+    // Who Frequency is for (ADR-1715): one list, shared with /llms-full.txt and What is Frequency.
+    `## ${WHO_FREQUENCY_IS_FOR_HEADING}`,
+    ...WHO_FREQUENCY_IS_FOR.map((line) => `- ${line}`),
+    '',
     '## Key pages',
     ...pages(input, offerings).map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',

@@ -1,7 +1,8 @@
 {
   "id": "HYG-170",
   "title": "Docs and design briefs still describe the audience with the retired persona trio and nervous-system framing",
-  "status": "open",
+  "status": "done",
+  "closed": "2026-10-06",
   "priority": "P3",
   "lane": "hygiene",
   "size": "M",
@@ -9,7 +10,7 @@
     "file": "docs/CREATIVE-PLATFORM.md",
     "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
   },
-  "detail": "PR 9 (ADR-1715). Re-keys or supersedes every doc in the handoff's conflict sweep: CREATIVE-PLATFORM section 1 (superseded, core truth recast as being missed when you do not show up), MARKETING-AI, MARKETING-BRIEF, MARKETING-STYLE-GUIDE, ROADMAP, IA-STRATEGY, PUBLIC-SITE-PLAN (archetype rows and the missing doors), LEAD-FLOWS and SPLASH-FUNNELS (persona-to-family map), MARKETING-BUILD-PLAN, COMMUNITY-COLLECTIVE-STRATEGY, ROLES, and the design briefs (BRIEF-00, 02, 03, 04, dawn/readme, claude-design-briefs, funnels-brief) regenerated from the new section 2 and synced per design_handoff/SYNC.md.",
+  "detail": "PR 9 (ADR-1715). Re-keys or supersedes every doc in the handoff's conflict sweep: CREATIVE-PLATFORM section 1 (superseded, core truth recast as being missed when you do not show up), MARKETING-AI, MARKETING-BRIEF, MARKETING-STYLE-GUIDE, ROADMAP, IA-STRATEGY, PUBLIC-SITE-PLAN (archetype rows and the missing doors), LEAD-FLOWS and SPLASH-FUNNELS (persona-to-family map), MARKETING-BUILD-PLAN, COMMUNITY-COLLECTIVE-STRATEGY, ROLES, and the design briefs (BRIEF-00, 02, 03, 04, dawn/readme, claude-design-briefs, funnels-brief) regenerated from the new section 2 and synced per design_handoff/SYNC.md.\n\nCLOSED 2026-10-06. CREATIVE-PLATFORM section 1 is marked superseded and points to the canon, with the old personas mapped to archetypes; its core truth is recast as being missed when you don't show up and its nervous-system surface lines are gone. MARKETING-AI, MARKETING-BRIEF, MARKETING-STYLE-GUIDE, ROADMAP, IA-STRATEGY, MARKETING-BUILD-PLAN, COMMUNITY-COLLECTIVE-STRATEGY and ROLES name the two readers, families or archetypes in plain words. PUBLIC-SITE-PLAN gains the archetype table with the three missing doors named (Activity-First, Evidence-First, Mission Patron). LEAD-FLOWS documents the persona-to-family map and Vera's reader note; SPLASH-FUNNELS keys the planned demographic style on archetypes. Design briefs: BRIEF-02 section 1 regenerated from CONTENT-VOICE section 2, BRIEF-00's description, dawn/readme, BRIEF-03 and BRIEF-04 (business on the Builders side), claude-design-briefs Reader lines, funnels-brief, and two DAWN marketing kit lines. check:dawn-bundle stays green.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};const {execSync}=require(\"child_process\");let out=\"\";try{out=execSync(\"git grep -n -E \\\"The High-Functioning Lonely|Post-Screen Skeptic|All three personas|settled nervous system|settle your nervous system|[Ee]mbodied (practitioners|members)|Primary target: the High\\\" -- . \\\":!docs/DECISIONS.md\\\" \\\":!docs/BUILD-BACKLOG.json\\\" \\\":!docs/ledger\\\" \\\":!scripts\\\"\",{encoding:\"utf8\"})}catch(e){out=e.stdout||\"\"}if(out.trim())fail(\"retired audience framings remain outside DECISIONS:\\n\"+out.trim().split(\"\\n\").slice(0,15).join(\"\\n\"))'",

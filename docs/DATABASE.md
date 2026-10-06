@@ -637,6 +637,13 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
   ALONE, naming files that exist on another open PR, is an ordering fact rather than a defect in
   that branch. The gate is symmetric — a committed-but-unapplied migration fails it from the other
   side — so the file and the apply always travel together.
+- **The apply itself runs from GitHub Actions** (`.github/workflows/apply-migration.yml`, Run
+  workflow, PR number). It holds the production URL as the `SUPABASE_DB_URL` secret on the protected
+  `production-db` environment, applies only files the PR ADDS, only when they are stamped above
+  every version on `main` and in the ledger, only after `db-tests`, `test` and `lint` are green on
+  the PR head, and then re-runs the PR's failed CI so it can merge at once. It does exactly what
+  the SQL Editor paste did (DDL, then the ledger insert at the file's version), one run at a time.
+  The paste path stays the fallback when the secret is not set.
 - **Author + review** happen on the repo file. Local/branch/CI ephemeral databases build from the
   repo files on a clean slate (there is no prod history to collide with there), so `db push` is fine
   *only* against a throwaway DB, never the linked prod project.

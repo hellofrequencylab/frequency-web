@@ -470,6 +470,9 @@ const WIZARD_CHOICES: readonly { type: SpaceType; variant: ModeVariant; label: s
   // the wizard did not offer it, so that door silently landed every arrival on `Coach / packages` —
   // the first choice. Label and hint are this profile's own `modeLabel` and `focusLabel`, not new copy.
   { type: 'business', variant: 'cohort', label: 'Coach', hint: 'Programs and enrollment' },
+  // Added 2026-10-06 (ADR-1715). The /for/teachers door routes to `business:programs`; without a
+  // row here that door would land on the first choice, the same bug the cohort row above fixed.
+  { type: 'business', variant: 'programs', label: 'Teacher', hint: 'I teach at several studios' },
   { type: 'nonprofit', variant: 'donations', label: 'Nonprofit', hint: 'Programs and donations' },
 ]
 
