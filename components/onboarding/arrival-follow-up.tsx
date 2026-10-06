@@ -53,14 +53,14 @@ export function ArrivalFollowUp({
               type="button"
               aria-pressed={active}
               onClick={() => onChange(active ? null : o.archetype)}
-              className={`rounded-pill border px-4 py-2 text-body-sm transition-colors ${active ? 'border-primary bg-primary/10 text-text' : 'border-border bg-surface text-muted hover:border-primary/40'}`}
+              className={`rounded-pill border px-4 py-2 text-body-sm transition-colors ${active ? 'border-primary bg-surface text-text ring-1 ring-primary' : 'border-border bg-surface text-muted hover:border-primary/40'}`}
             >
               {o.label}
             </button>
           )
         })}
       </div>
-      <p className="mt-2 text-2xs text-subtle">Optional. It only changes what we show you first.</p>
+      <p className="mt-2 text-meta text-muted">Optional. It only changes what we show you first.</p>
     </fieldset>
   )
 }
