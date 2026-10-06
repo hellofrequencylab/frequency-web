@@ -106,7 +106,7 @@ export const SEAT_CONFIG_DEFAULT: SeatConfig = { bundledFloor: 3 }
  *
  *  🔴 The stored `catalog.pwyw` row must agree with this default. It carried suggested 2499 over a
  *  1200 code default once, and every surface that read the default anchored people at the wrong
- *  number. Migration 20270346004200_crew_presets.sql moves the stored row with this change. */
+ *  number. Migration 20270346005600_crew_presets_five_dollars.sql moves the stored row with this change. */
 export const PWYW_CONFIG_DEFAULT: PwywConfig = {
   minCents: 499,
   suggestedCents: 1000,

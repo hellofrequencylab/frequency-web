@@ -108,7 +108,7 @@ describe('seat / pwyw / add-on-enable config', () => {
   })
   it('ships the $4.99 floor and $10 suggested, with presets of $5, $10 and $25 (ADR-1709)', () => {
     // The five-tier ladder's Crew ask (LIVE-755). The stored catalog.pwyw row moves with it
-    // (20270346004200_crew_presets.sql), so code default and production agree.
+    // (20270346005600_crew_presets_five_dollars.sql), so code default and production agree.
     expect(PWYW_CONFIG_DEFAULT.minCents).toBe(499)
     expect(PWYW_CONFIG_DEFAULT.suggestedCents).toBe(1000)
     expect(PWYW_CONFIG_DEFAULT.presetCents).toEqual([500, 1000, 2500])
@@ -116,7 +116,7 @@ describe('seat / pwyw / add-on-enable config', () => {
     expect(PWYW_CONFIG_DEFAULT.presetCents).toContain(PWYW_CONFIG_DEFAULT.suggestedCents)
   })
   it('the crew_presets migration writes the same presets and suggestion as the code default', () => {
-    const sql = readFileSync('supabase/migrations/20270346004200_crew_presets.sql', 'utf8')
+    const sql = readFileSync('supabase/migrations/20270346005600_crew_presets_five_dollars.sql', 'utf8')
     expect(sql).toContain('"suggestedCents": 1000')
     expect(sql).toContain('"presetCents": [500, 1000, 2500]')
   })

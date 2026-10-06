@@ -1,7 +1,7 @@
 {
   "id": "PROG-E10",
   "append": {
-    "detail": "\n\n── NARROWED + SLICE UNPARKED 2026-10-06 (ADR-1708, owner ruling). The Sites slice is built now on the Space page blocks, ahead of the full editor, with danieltyack.com first: phase 1 LIVE-741 (the site renders at /sites/<slug> with a publish switch), then host routing in proxy.ts, the danieltyack.com binding, site SEO and caching, each its own row. This row keeps what that slice leaves: self-serve domain binding through the Vercel API, a free subdomain on any paid plan, and site templates. Its probe is unchanged.\n\n2026-10-06 (LIVE-821): probe narrowed to a migration that ADDS a custom_domain column. The custom domain add-on migration (20270346004350) admits 'custom_domain' as a subscription item_key, which the old any-mention match read as the column and flipped this row to done. The row's open scope is unchanged."
+    "detail": "\n\n── NARROWED + SLICE UNPARKED 2026-10-06 (ADR-1708, owner ruling). The Sites slice is built now on the Space page blocks, ahead of the full editor, with danieltyack.com first: phase 1 LIVE-741 (the site renders at /sites/<slug> with a publish switch), then host routing in proxy.ts, the danieltyack.com binding, site SEO and caching, each its own row. This row keeps what that slice leaves: self-serve domain binding through the Vercel API, a free subdomain on any paid plan, and site templates. Its probe is unchanged.\n\n2026-10-06 (LIVE-821): probe narrowed to a migration that ADDS a custom_domain column. The custom domain add-on migration (20270346005700) admits 'custom_domain' as a subscription item_key, which the old any-mention match read as the column and flipped this row to done. The row's open scope is unchanged."
   },
   "patch": {
     "verify": {

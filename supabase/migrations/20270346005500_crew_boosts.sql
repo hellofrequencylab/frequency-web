@@ -1,14 +1,13 @@
--- LIVE-756 / ADR-1709: Crew gives one Boost a month to a Circle or a Space for a week: a Circle
--- moves up in discovery, a Space gets a Boosted mark (owner ruling 2026-10-06, "Circles only"). See docs/BUILD-BACKLOG.json for status; this file explains the work.
+-- LIVE-756 / ADR-1709: Crew gives one Boost a month to a Circle or a Space, lifting it in discovery
+-- for a week. See docs/BUILD-BACKLOG.json for status; this file explains the work.
 --
 -- One row per Boost. `boost_month` is the first day of the calendar month (UTC) the Boost was given
 -- in, and the unique (giver_profile_id, boost_month) key is what makes it ONE a month: a second give
 -- in the same month is a duplicate-key refusal, never a second row. Exactly one target is set, and it
 -- matches `target_kind`.
 --
--- Discovery reads it (lib/crew/boost.ts activeBoostIds): a Circle with a Boost given in the last 7
--- days sorts ahead in the default Circle order, and a Space wears the mark while its directory order
--- stays earned (LIVE-262). The row itself never expires;
+-- The lift is read by discovery (lib/crew/boost.ts activeBoostIds): a target with a Boost given in
+-- the last 7 days sorts ahead in the default Circle and Space orders. The row itself never expires;
 -- the window is applied at read time, so the history stays for the giver.
 --
 -- Reads and writes go through the service role only (lib/crew/boost.ts giveBoost checks Crew and the
@@ -34,7 +33,7 @@ create table if not exists public.crew_boosts (
 );
 
 comment on table public.crew_boosts is
-  'Crew Boosts (LIVE-756, ADR-1709): one per Crew member per calendar month, given to a Circle or a Space. A Boost given in the last 7 days lifts a Circle in the default Circle order and marks a Space as Boosted, never reordering the Space directory (lib/crew/boost.ts). Service-role writes only.';
+  'Crew Boosts (LIVE-756, ADR-1709): one per Crew member per calendar month, given to a Circle or a Space. A Boost given in the last 7 days lifts its target in the default discovery order (lib/crew/boost.ts). Service-role writes only.';
 comment on column public.crew_boosts.boost_month is
   'First day (UTC) of the calendar month the Boost was given in. Unique per giver: the one-a-month rule.';
 
