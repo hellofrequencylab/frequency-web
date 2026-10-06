@@ -1,0 +1,15 @@
+{
+  "id": "OWN-062",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const d=fs.readFileSync(\"docs/OBSERVABILITY-BASELINES.md\",\"utf8\");const a=d.indexOf(\"### 3a.\");const b=d.indexOf(\"### 3b.\");const s=d.slice(a,b);const rows=s.split(\"\\n\").filter((l)=>/^\\| \\*\\*(Supabase|Vercel|Anthropic|Resend|Upstash)\\*\\*/.test(l));const pending=rows.filter((l)=>l.split(\"|\")[4].includes(\"owner\"));const month=/snapshot month[^\\n]*\\b(20\\d\\d-\\d\\d|January|February|March|April|May|June|July|August|September|October|November|December) 20\\d\\d/i.test(s);if(rows.length!==5||pending.length||!month){console.error(\"OWN-062: docs/OBSERVABILITY-BASELINES.md 3a still has \"+pending.length+\" vendor row(s) with no monthly figure\"+(month?\"\":\" and no snapshot month stated\")+\"; the five dollar figures come from each vendor billing console and only the owner can read them.\");process.exit(1)}'",
+      "note": "Reads docs/OBSERVABILITY-BASELINES.md 3a: fails while any of the five vendor rows still has no monthly figure in its Monthly spend column, or no snapshot month is stated in the section. Passes the moment the owner pastes the five figures and the month; nothing in the repo can make it pass."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-06 by owner ruling (multiple choice in the project thread, \"Drop it\"; the options were paste them once, forward invoices, drop it). The owner keeps the Supabase and Upstash billing emails as they are and does not collect those two figures. docs/OBSERVABILITY-BASELINES.md 3a marks both as not tracked, states the total as a floor ($705.52: Vercel, Anthropic, Resend), and corrects Resend to the free sending team at $0 (the $20 declines were a second, unused login with no bill on 2026-10-06). 3b stays gated on 1,000 profiles."
+  }
+}
