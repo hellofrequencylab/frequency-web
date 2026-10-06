@@ -4,7 +4,7 @@ description: Open the next gathering, tap RSVP, and add it to your calendar. Tha
 category: getting-started
 order: 6
 published: 2026-06-23
-updated: 2026-09-14
+updated: 2026-10-06
 audience: member
 featureKeys: [events, circles]
 status: published
@@ -148,5 +148,12 @@ Yes. Every event gives you your own invite link and QR to share, and the people
 you bring can RSVP without an account. Bringing people who RSVP, show up, or join
 also earns you **Zaps** as a Connector. See
 [Events & RSVPs](/help/groups/events) for how the invite loop works.
+
+### I RSVPd without an account. Will you email me again?
+
+Once. The day after the gathering we send one short note thanking you for coming,
+with a button to join free. Joining moves your RSVP into your account, so you can
+see when the group meets next. If you do not join, we do not email that address
+again about it.
 
 Next: [what happens at a gathering](/help/getting-started/what-happens-at-a-gathering).
