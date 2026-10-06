@@ -1,5 +1,16 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { isAppHost, normalizeHost, parseAppHosts, routeSiteHost } from './host'
+import {
+  APP_HOST_PATTERN,
+  RESERVED_SITE_SUBDOMAINS,
+  SITE_BASE_DOMAIN,
+  isAppHost,
+  normalizeHost,
+  parseAppHosts,
+  routeSiteHost,
+  siteSlugFromSubdomain,
+  siteSubdomainHost,
+} from './host'
 
 describe('normalizeHost', () => {
   it('lowercases and strips the port', () => {
@@ -51,5 +62,142 @@ describe('routeSiteHost', () => {
     const route = routeSiteHost('danieltyack.com', '/spaces/danieltyack/book', '')
     expect(route.kind).toBe('redirect')
     expect(route.kind === 'redirect' && route.location.endsWith('/spaces/danieltyack/book')).toBe(true)
+  })
+})
+
+describe('the internal /hosted route on Frequency (LIVE-784)', () => {
+  it("404s /hosted asked for directly on Frequency's own host, so a site is never served twice", () => {
+    expect(routeSiteHost('frequencylocal.com', '/hosted/danieltyack.com', '')).toEqual({ kind: 'not-found' })
+    expect(routeSiteHost('frequencylocal.com', '/hosted', '')).toEqual({ kind: 'not-found' })
+    expect(routeSiteHost('frequencylocal.com', '/hostedx', '')).toEqual({ kind: 'none' })
+  })
+
+  it('sends /hosted on a site host off to Frequency, where it 404s', () => {
+    expect(routeSiteHost('danieltyack.com', '/hosted/other.com', '').kind).toBe('redirect')
+  })
+})
+
+describe("a site host's crawler files (LIVE-783)", () => {
+  it('rewrites robots.txt and sitemap.xml to the hosted crawler routes', () => {
+    expect(routeSiteHost('danieltyack.com', '/robots.txt', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/danieltyack.com/robots.txt',
+    })
+    expect(routeSiteHost('danieltyack.com', '/sitemap.xml', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/danieltyack.com/sitemap.xml',
+    })
+  })
+
+  it("leaves Frequency's own crawler files alone", () => {
+    expect(routeSiteHost('frequencylocal.com', '/robots.txt', '')).toEqual({ kind: 'none' })
+  })
+
+  it("matches the proxy matcher's host arm to isAppHost, anchored the way Next anchors it", () => {
+    const re = new RegExp(`^${APP_HOST_PATTERN}$`)
+    for (const h of ['frequencylocal.com', 'www.frequencylocal.com', 'go.findafreq.com', 'frequency-web-git-x.vercel.app', 'localhost', '127.0.0.1']) {
+      expect(re.test(h), h).toBe(true)
+      expect(isAppHost(h), h).toBe(true)
+    }
+    for (const h of ['danieltyack.com', 'www.danieltyack.com', 'mylocalhostshop.com', 'frequencylocal.com.evil.org']) {
+      expect(re.test(h), h).toBe(false)
+      expect(isAppHost(h), h).toBe(false)
+    }
+  })
+
+  it('proxy.ts carries the same host pattern, literally, in its matcher', () => {
+    const proxy = readFileSync('proxy.ts', 'utf8')
+    const config = proxy.slice(proxy.indexOf('export const config'))
+    // The source spells each backslash twice (a TS string literal); the runtime value has one.
+    const asSource = APP_HOST_PATTERN.split('\\').join('\\\\')
+    expect(config).toContain(`value: '${asSource}'`)
+    expect(config).toContain(`source: '/(robots\\\\.txt|sitemap\\\\.xml)'`)
+  })
+})
+
+describe('the free website subdomain (LIVE-782)', () => {
+  it('defaults the base domain to frequencylocal.com', () => {
+    expect(SITE_BASE_DOMAIN).toBe('frequencylocal.com')
+  })
+
+  it('reads the Space slug off a one-label subdomain', () => {
+    expect(siteSlugFromSubdomain('danieltyack.frequencylocal.com')).toBe('danieltyack')
+    expect(siteSlugFromSubdomain('DanielTyack.FrequencyLocal.com:443')).toBe('danieltyack')
+    expect(siteSlugFromSubdomain('encinitas-nexus.frequencylocal.com')).toBe('encinitas-nexus')
+  })
+
+  it('keeps the apex, reserved labels, deeper subdomains and other domains off the site path', () => {
+    for (const h of [
+      'frequencylocal.com',
+      'www.frequencylocal.com',
+      'app.frequencylocal.com',
+      'api.frequencylocal.com',
+      'send.frequencylocal.com',
+      'people.frequencylocal.com',
+      'help.frequencylocal.com',
+      'www.danieltyack.frequencylocal.com',
+      'danieltyack.findafreq.com',
+      'danieltyack.com',
+      'frequencylocal.com.evil.org',
+      'danieltyack.frequencylocal.com.evil.org',
+    ]) {
+      expect(siteSlugFromSubdomain(h), h).toBeNull()
+    }
+  })
+
+  it('rejects labels that are not a valid Space slug', () => {
+    for (const h of ['-bad.frequencylocal.com', 'bad-.frequencylocal.com', 'a--b.frequencylocal.com', 'xn--abc.frequencylocal.com', 'a_b.frequencylocal.com', `${'a'.repeat(64)}.frequencylocal.com`]) {
+      expect(siteSlugFromSubdomain(h), h).toBeNull()
+    }
+  })
+
+  it('honours another base domain', () => {
+    expect(siteSlugFromSubdomain('danieltyack.example.net', 'example.net')).toBe('danieltyack')
+    expect(siteSlugFromSubdomain('danieltyack.frequencylocal.com', 'example.net')).toBeNull()
+  })
+
+  it('spells the free host for a slug, or null when the slug cannot be one', () => {
+    expect(siteSubdomainHost('danieltyack')).toBe('danieltyack.frequencylocal.com')
+    expect(siteSubdomainHost('www')).toBeNull()
+    expect(siteSubdomainHost('Not A Slug')).toBeNull()
+    for (const label of RESERVED_SITE_SUBDOMAINS) expect(siteSubdomainHost(label), label).toBeNull()
+  })
+
+  it('stays one of Frequency own hosts, so nobody claims it as a custom domain', () => {
+    expect(isAppHost('danieltyack.frequencylocal.com')).toBe(true)
+  })
+
+  it('rewrites the subdomain root, pages and crawler files to the hosted route', () => {
+    const h = 'danieltyack.frequencylocal.com'
+    expect(routeSiteHost(h, '/', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}` })
+    expect(routeSiteHost(h, '/about', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}/about` })
+    expect(routeSiteHost(h, '/robots.txt', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}/robots.txt` })
+    expect(routeSiteHost(h, '/sitemap.xml', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}/sitemap.xml` })
+  })
+
+  it('sends deeper paths and /hosted on the subdomain to Frequency', () => {
+    const h = 'danieltyack.frequencylocal.com'
+    const deep = routeSiteHost(h, '/spaces/danieltyack/book', '?x=1')
+    expect(deep).toEqual({ kind: 'redirect', location: 'https://frequencylocal.com/spaces/danieltyack/book?x=1', permanent: false })
+    expect(routeSiteHost(h, '/hosted/other.com', '').kind).toBe('redirect')
+  })
+
+  it('leaves reserved subdomains and an APP_HOSTS override as the app', () => {
+    expect(routeSiteHost('www.frequencylocal.com', '/', '')).toEqual({ kind: 'none' })
+    expect(routeSiteHost('app.frequencylocal.com', '/feed', '')).toEqual({ kind: 'none' })
+    expect(routeSiteHost('help.frequencylocal.com', '/hosted/x', '')).toEqual({ kind: 'not-found' })
+    expect(routeSiteHost('staging2.frequencylocal.com', '/', '', parseAppHosts('staging2.frequencylocal.com'))).toEqual({ kind: 'none' })
+  })
+
+  it("lets a website subdomain's crawler files through the proxy matcher", () => {
+    const re = new RegExp(`^${APP_HOST_PATTERN}$`)
+    expect(re.test('danieltyack.frequencylocal.com')).toBe(false)
+    // A reserved one-label host also reaches the proxy, which passes Frequency's own file through.
+    expect(routeSiteHost('help.frequencylocal.com', '/robots.txt', '')).toEqual({ kind: 'none' })
+    // Every host the matcher keeps away from the proxy is one routeSiteHost leaves alone.
+    for (const h of ['frequencylocal.com', 'www.frequencylocal.com', 'www.danieltyack.frequencylocal.com', 'a.b.frequencylocal.com']) {
+      expect(re.test(h), h).toBe(true)
+      expect(routeSiteHost(h, '/robots.txt', ''), h).toEqual({ kind: 'none' })
+    }
   })
 })

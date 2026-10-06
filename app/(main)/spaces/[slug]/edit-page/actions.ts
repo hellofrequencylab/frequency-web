@@ -10,6 +10,7 @@ import { isWellFormedSpaceDoc } from '@/lib/page-editor/templates/space'
 import { withPageDoc, withoutPageDoc, hasPage, readPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { withParkedBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { refreshSite } from '@/lib/sites/site-cache'
 
 // SPACE PAGE editor actions (multi-page model). The operator edits a SPECIFIC profile page
 // through Puck and PUBLISHES its doc to spaces.preferences.pageDocs[pageSlug] (the additive
@@ -93,6 +94,8 @@ export async function publishSpaceLanding(
 
   revalidatePath(pagePath(slug, pageSlug))
   revalidatePath(`/spaces/${slug}/edit-page`)
+  // The Space website renders the same page docs (LIVE-784): expire its cached pages too.
+  refreshSite(slug)
   return ok()
 }
 
@@ -115,5 +118,7 @@ export async function resetSpaceLanding(
 
   revalidatePath(pagePath(slug, pageSlug))
   revalidatePath(`/spaces/${slug}/edit-page`)
+  // The Space website renders the same page docs (LIVE-784): expire its cached pages too.
+  refreshSite(slug)
   return ok()
 }
