@@ -9580,6 +9580,7 @@ export type Database = {
           id: string
           member_terms: string | null
           partner_id: string
+          quest_id: string | null
           title: string
           valid_until: string | null
         }
@@ -9590,6 +9591,7 @@ export type Database = {
           id?: string
           member_terms?: string | null
           partner_id: string
+          quest_id?: string | null
           title: string
           valid_until?: string | null
         }
@@ -9600,6 +9602,7 @@ export type Database = {
           id?: string
           member_terms?: string | null
           partner_id?: string
+          quest_id?: string | null
           title?: string
           valid_until?: string | null
         }
@@ -9609,6 +9612,13 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_offers_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
             referencedColumns: ["id"]
           },
         ]
@@ -10042,6 +10052,84 @@ export type Database = {
           },
           {
             foreignKeyName: "post_mentions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_poll_options: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          position: number
+          post_id: string
+          vote_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          position: number
+          post_id: string
+          vote_count?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          position?: number
+          post_id?: string
+          vote_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_poll_options_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_poll_votes: {
+        Row: {
+          created_at: string
+          option_id: string
+          post_id: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          option_id: string
+          post_id: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          option_id?: string
+          post_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "post_poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_poll_votes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_poll_votes_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -19058,6 +19146,8 @@ export type Database = {
         | "note"
         | "system"
         | "space_update"
+        | "poll"
+        | "ask"
       post_visibility: "public" | "region" | "cluster" | "group"
       practice_mindless_mode:
         | "meditate"
@@ -19241,6 +19331,8 @@ export const Constants = {
         "note",
         "system",
         "space_update",
+        "poll",
+        "ask",
       ],
       post_visibility: ["public", "region", "cluster", "group"],
       practice_mindless_mode: [

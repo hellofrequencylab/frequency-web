@@ -16,7 +16,7 @@ import { currencyForSource } from './currency'
 import { trustSource } from '@/lib/trust'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { resolveMemberDay } from '@/lib/member-day'
-import { isOfferLive } from '@/lib/partners/offers'
+import { isOfferLive, pickPlaqueOffer } from '@/lib/partners/offers'
 import type { EngagementSource } from './events'
 
 // node.type → engagement source. Ghost nodes are a geo source.
@@ -176,7 +176,7 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   if (node.partner_id) {
     const { data: offers, error: offersError } = await db
       .from('partner_offers')
-      .select('id, title, valid_until, active')
+      .select('id, title, valid_until, active, quest_id')
       .eq('partner_id', node.partner_id)
       .eq('active', true)
     if (offersError) {
@@ -184,7 +184,31 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
     }
     const nowIso = new Date().toISOString()
     const live = (offers ?? []).filter((o) => isOfferLive(o, nowIso))
-    const offer = live.length === 1 ? live[0] : null
+    // LIVE-673: a Quest sponsor reward counts only for a member who finished that Quest (an
+    // official Journey of it in journey_completions). Read only when such an offer is live.
+    const questIds = [...new Set(live.map((o) => o.quest_id).filter((q): q is string => !!q))]
+    const earned = new Set<string>()
+    if (questIds.length > 0) {
+      const { data: done } = await db
+        .from('journey_completions')
+        .select('journey_plans!inner(quest_id)')
+        .eq('profile_id', attempt.actorProfileId)
+        .in('journey_plans.quest_id', questIds)
+      for (const r of (done ?? []) as unknown as { journey_plans: { quest_id: string | null } | null }[]) {
+        if (r.journey_plans?.quest_id) earned.add(r.journey_plans.quest_id)
+      }
+    }
+    const claimed = new Set<string>()
+    if (earned.size > 0) {
+      const { data: mine } = await db
+        .from('partner_redemptions')
+        .select('offer_id')
+        .eq('profile_id', attempt.actorProfileId)
+        .eq('partner_id', node.partner_id)
+        .in('offer_id', live.filter((o) => o.quest_id).map((o) => o.id))
+      for (const r of (mine ?? []) as { offer_id: string | null }[]) if (r.offer_id) claimed.add(r.offer_id)
+    }
+    const offer = pickPlaqueOffer(live, earned, claimed)
     await db.from('partner_redemptions').insert({
       partner_id: node.partner_id,
       offer_id: offer?.id ?? null,
