@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-812",
+  "title": "A Space website opens on a hero with presence: the name set poster-size over the cover, the tagline and town above it, the Space's own description under it, and Book plus Get in touch",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/sites/site-page.tsx",
+    "ref": "Owner review of danieltyack.com after LIVE-811, 2026-10-06: 'This got reverted back to the stone ages. I just wanted you to redo the hero with something that vibed'. Picked option A (Arrival) from three mockups. White label sites build ADR-1708"
+  },
+  "detail": "FILED AND CLOSED 2026-10-06. THE CONSEQUENCE: the LIVE-811 hero was a dark gradient with a small name and one button in the corner, so the first screen of a client's website read as a template rather than the business. THE FIX: SiteHero sets the name in the display face at poster size (up to 8.5rem), puts the tagline and town as an eyebrow above it (components/sites/site-hero-copy.ts siteHeroEyebrow), and the opening of the Space's own description under it (siteHeroLede: whole sentences up to 220 characters). The Book button sits beside a Get in touch outline button when the Space placed a contact block. The photo gets a side wash plus an accent glow from the bottom and a slow settle on load (none under reduced motion). Every field already exists on every Space, so each published website gets the hero with no new setup.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const p=r('components/sites/site-page.tsx');const h=r('components/sites/site-hero-copy.ts');if(!/export function siteHeroEyebrow\\(/.test(h)||!/export function siteHeroLede\\(/.test(h))miss.push('the website hero has no eyebrow or description line built from the Space');if(!/site-hero-title/.test(p)||!/8\\.5rem/.test(p))miss.push('the website hero name is not set poster-size');if(!/lede=\\{home \\? siteHeroLede\\(space\\.about\\)/.test(p)||!/Get in touch/.test(p))miss.push('the website hero does not show the description or the Get in touch button');if(miss.length){console.error('LIVE-812: '+miss.join('; '));process.exit(1)}\"",
+    "note": "Fails on main (small name, tagline only, one button); passes once the hero lands."
+  },
+  "closed": "2026-10-06",
+  "wave": "W7"
+}
