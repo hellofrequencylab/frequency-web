@@ -478,7 +478,7 @@ export const config = {
     // (LIVE-782) gets its own crawler files too.
     {
       source: '/(robots\\.txt|sitemap\\.xml)',
-      missing: [{ type: 'host', value: '(?:(?:www\\.|(?:[^.]+\\.){2,})?frequencylocal\\.com|(?:.+\\.)?(?:findafreq\\.com|vercel\\.app)|localhost|[\\d.]+)' }],
+      missing: [{ type: 'host', value: '(?:(?:www\\.|(?:[^.]+\\.){2,})?frequencylocal\\.com|(?:.+\\.)?vercel\\.app|localhost|[\\d.]+)' }],
     },
   ],
 }
