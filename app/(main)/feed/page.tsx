@@ -6,6 +6,7 @@ import { CreateMenu } from '@/components/feed/create-menu'
 import { FeedList } from '@/components/feed/feed-list'
 import { LocalCornerCard } from '@/components/feed/local-corner-card'
 import { HostPromptCard } from '@/components/feed/host-prompt-card'
+import { ReachOutCard } from '@/components/feed/reach-out-card'
 import { RomanceStrip } from '@/components/feed/romance-strip'
 import { getLocalActivity } from '@/lib/feed/density'
 import { StreamTemplate } from '@/components/templates/stream-template'
@@ -373,6 +374,17 @@ export default async function FeedPage({
               <HostPromptCard viewerProfileId={myProfileId} />
             </Suspense>
           </div>
+        )}
+
+        {/* Reach out (LIVE-663): the soonest follow-up the member set for someone in their
+            contacts, so the nudge reaches people who never open the contacts page. Renders
+            nothing when nothing is due. Streamed so it never blocks the feed. */}
+        {myProfileId && sort !== 'story' && (
+          <Suspense fallback={null}>
+            <div className="mb-4 empty:hidden">
+              <ReachOutCard viewerProfileId={myProfileId} />
+            </div>
+          </Suspense>
         )}
 
         {/* Romance lane (Phase 5, ADR-419): renders ONLY for members who opted into
