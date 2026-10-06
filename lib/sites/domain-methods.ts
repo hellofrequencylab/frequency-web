@@ -15,8 +15,13 @@ export interface DomainMethod {
   key: DomainMethodKey
   label: string
   description: string
-  /** Built and switched on. A method that is not yet built shows as Coming soon. */
+  /** Built and switched on in code. A method that is not yet built shows as Coming soon. A built method
+   *  can still wait on an operator switch (`switch`), and shows as Coming soon until it is on. */
   available: boolean
+  /** The operator switch this method also waits on, when it has one. `buy` waits on the
+   *  `domain_purchase_enabled` pricing flag with billing live (lib/sites/domain-purchase.ts
+   *  domainPurchaseOpen), because selling domains waits on Vercel confirming resale is allowed. */
+  switch?: 'domain_purchase_enabled'
 }
 
 export const DOMAIN_METHODS: readonly DomainMethod[] = [
@@ -36,6 +41,9 @@ export const DOMAIN_METHODS: readonly DomainMethod[] = [
     key: 'buy',
     label: 'Buy a new domain',
     description: 'Search for a domain and buy it here. It works right away with nothing to set up.',
-    available: false,
+    // Built (LIVE-781): search, one yearly price, Stripe checkout, then the purchase at Vercel. Sold
+    // only while the operator switch is on, so it reads Coming soon until then.
+    available: true,
+    switch: 'domain_purchase_enabled',
   },
 ]

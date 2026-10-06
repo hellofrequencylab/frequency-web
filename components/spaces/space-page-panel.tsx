@@ -25,7 +25,6 @@ import {
   renameSpacePage,
   reorderSpacePages,
   deleteSpacePage,
-  setWebsitePublished,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { Input } from '@/components/ui/field'
 
@@ -163,52 +162,17 @@ export function SpacePagePanel({
               ))}
           </section>
 
-          {/* EXTERNAL WEBSITE: publish the Space's pages as a standalone website at /sites/<slug>
-              (PROG-E10 phase 1). It renders the same page docs as the profile, so it stays in sync. */}
+          {/* YOUR WEBSITE moved to Profile & Settings (owner ask 2026-10-06): publishing and the domain are a
+              feature of the Space, not a page-editing control, so the rail only points there. */}
           {!readOnly && (
-            <section>
-              <SectionHeader title="External website" />
-              <p className="-mt-2 mb-3 text-body-sm text-muted">
-                {websitePublished
-                  ? 'Your pages are live as a standalone website. It shows the same content as your profile, so you edit once and it stays in sync.'
-                  : 'Publish your pages as a standalone website with its own link. It shows the same content as your profile, so you edit once and it stays in sync.'}
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                {websitePublished ? (
-                  <>
-                    <Link
-                      href={`/sites/${slug}`}
-                      target="_blank"
-                      rel="noopener"
-                      className={buttonClasses('primary', 'sm')}
-                    >
-                      <Globe className="h-4 w-4" aria-hidden />
-                      View website
-                    </Link>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={pending}
-                      onClick={() => run(() => setWebsitePublished(slug, false))}
-                    >
-                      Unpublish
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    disabled={pending}
-                    onClick={() => run(() => setWebsitePublished(slug, true))}
-                  >
-                    {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Globe className="h-4 w-4" aria-hidden />}
-                    Publish website
-                  </Button>
-                )}
-              </div>
-            </section>
+            <Link
+              href={`/spaces/${slug}/manage?section=settings`}
+              className="flex items-center gap-2 text-body-sm font-semibold text-primary-strong hover:underline"
+            >
+              <Globe className="h-4 w-4" aria-hidden />
+              {websitePublished ? 'Your website is live. Manage it in Profile & Settings' : 'Publish your website from Profile & Settings'}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
           )}
       </div>
     </div>
