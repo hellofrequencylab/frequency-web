@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-717",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.readFileSync(f,\"utf8\");const walk=(d)=>{if(!fs.existsSync(d))return[];return fs.readdirSync(d,{withFileTypes:true}).flatMap((x)=>{const p=path.join(d,x.name);return x.isDirectory()?(x.name===\"node_modules\"?[]:walk(p)):[p]})};const v1=()=>walk(\"app/api/v1\").filter((f)=>/route\\.ts$/.test(f));const v1src=()=>v1().map(read).join(\"\\n\");const f=v1().filter((x)=>/@\\/lib\\/core\\/(load-capabilities|capabilities)/.test(read(x)));if(!f.length)fail(\"no /api/v1 endpoint projects the capability resolver to a client, so a native app cannot know which actions to show\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-06: GET /api/v1/capabilities?kind=&id= projects the web's capability loaders (lib/core/load-capabilities, and the Space role as space.* names) to a client; display only, every write re-checks. Bearer callers reach lib code through asCaller, which binds the verified token so createClient() and getCachedUser() answer as that caller under RLS (lib/supabase/request-identity.ts); view-as never applies there. Tested in app/api/v1/capabilities/route.test.ts and lib/supabase/request-identity.test.ts."
+  }
+}

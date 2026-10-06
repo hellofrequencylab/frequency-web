@@ -115,3 +115,29 @@ export const meView = z.object({
 export type MeView = z.infer<typeof meView>
 
 export const meResponse = envelope(meView)
+
+// ── GET /api/v1/capabilities: what may the caller do here? (LIVE-717) ─────────────────────────
+
+/** The scopes the capability projection answers for. */
+export const capabilityScopeKind = z.enum(['global', 'circle', 'hub', 'nexus', 'event', 'practice', 'journey', 'profile', 'space'])
+export type CapabilityScopeKind = z.infer<typeof capabilityScopeKind>
+
+/**
+ * The caller's capabilities on one scope, the SAME set the web resolves to render its affordances
+ * (lib/core/load-capabilities.ts, and lib/spaces/entitlements.ts for a Space). It tells an app
+ * which actions to SHOW. It is never permission: every write re-checks on the server.
+ *
+ * `capabilities` are the resolver's dotted names (`circle.editSettings`, `event.create`, ...). A
+ * client ignores a name it does not know; new names are additive. For a Space they are the
+ * `space.*` projection of the Space role: `space.owner`, `space.admin`, `space.editProfile`,
+ * `space.manageMembers`, `space.invite`, and `spaceRole` carries the role itself.
+ */
+export const capabilitiesView = z.object({
+  kind: capabilityScopeKind,
+  id: z.string().nullable(),
+  capabilities: z.array(z.string()),
+  spaceRole: z.string().nullable(),
+})
+export type CapabilitiesView = z.infer<typeof capabilitiesView>
+
+export const capabilitiesResponse = envelope(capabilitiesView)

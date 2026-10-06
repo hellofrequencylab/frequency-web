@@ -118,6 +118,14 @@ write that needs a tighter per-person budget adds its own call after `authorizeC
 Lists page with a cursor: `?cursor=<opaque>&limit=<n>` in, `{ items, nextCursor }` out, where
 `nextCursor` is `null` on the last page. The cursor is opaque to the client.
 
+### Reusing lib code as the caller
+
+A route that calls an existing lib function wraps it in `asCaller(auth, fn)` (`lib/contract/caller.ts`).
+On the bearer path it binds the verified token for that call tree (`lib/supabase/request-identity.ts`),
+so `createClient()` returns the bearer client and `getCachedUser()` returns the verified user: every
+reader, gate and capability loader built on them sees the app's caller as the web sees the cookie's,
+under the same RLS. On the cookie path it is a plain call. View-as never applies inside it.
+
 ## 7. Versioning and deprecation
 
 - **Additive only within v1.** A new endpoint, a new optional field, a new error code. A client
@@ -133,6 +141,7 @@ Lists page with a cursor: `?cursor=<opaque>&limit=<n>` in, `{ items, nextCursor 
 | Method and path | Auth | Returns |
 |---|---|---|
 | `GET /api/v1/me` | bearer or cookie | `MeView`: the caller's id, handle, display name, avatar, community role and level, staff role, tier, and which credential was used. |
+| `GET /api/v1/capabilities?kind=&id=` | bearer or cookie | `CapabilitiesView`: the caller's capability names on one scope (global, Circle, Hub, Nexus, event, practice, Journey, profile, Space). Display only; every write re-checks. |
 
 The rest of the app's surface (feed, Circles, events, practices, messages, notifications, the
 capability projection, native sign-in, account deletion and export, push devices, capture and

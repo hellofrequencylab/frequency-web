@@ -13,6 +13,7 @@
 
 import { cookies } from 'next/headers'
 import { ROLE_HIERARCHY, atLeastRole, roleRank, type CommunityRole } from '@/lib/core/roles'
+import { bearerIdentity } from '@/lib/supabase/request-identity'
 
 export const VIEW_AS_COOKIE = 'freq-view-as'
 
@@ -80,6 +81,8 @@ export function isEntityTarget(
 
 /** Raw target requested by the view-as cookie (not yet gated on the real role). */
 export async function readViewAsTarget(): Promise<ViewAsTarget | null> {
+  // View-as never applies to a native /api/v1 bearer caller (app contract rule 4, LIVE-717).
+  if (bearerIdentity()) return null
   const value = (await cookies()).get(VIEW_AS_COOKIE)?.value
   return parseViewAsCookie(value)
 }
