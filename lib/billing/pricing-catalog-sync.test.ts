@@ -219,10 +219,12 @@ describe('standard pricing carries no founding rate (LIVE-228 flat catalog)', ()
     expect(priceById(rowFor('business_base_month_list')?.priceId)?.unit_amount).toBe(4900)
   })
 
-  it('NO item in the live catalog mints a founding product (collective_base retired, LIVE-228)', async () => {
+  it('only Collective mints a founding product: Founding Collective $99 against the $149 list (owner 2026-10-06)', async () => {
     await syncPricingCatalogToStripe('op-1')
     const founding = store.products.filter((p) => p.metadata.frequency_product_line === 'founding')
-    expect(founding).toHaveLength(0)
+    expect(founding.map((p) => p.metadata.frequency_catalog_item)).toEqual(['collective_base'])
+    expect(priceById(rowFor('collective_base_month')?.priceId)?.unit_amount).toBe(9900)
+    expect(priceById(rowFor('collective_base_month_list')?.priceId)?.unit_amount).toBe(14900)
   })
 
   it('every live item is flat: founding == list, one standard product each', async () => {
@@ -233,7 +235,7 @@ describe('standard pricing carries no founding rate (LIVE-228 flat catalog)', ()
       expect(rowFor(`${key}_month`)?.productId).toBe(rowFor(`${key}_month_list`)?.productId)
       expect(rowFor(`${key}_month`)?.priceId).toBeTruthy()
     }
-    expect(store.products.filter((p) => p.metadata.frequency_product_line === 'founding')).toHaveLength(0)
+    expect(store.products.filter((p) => p.metadata.frequency_product_line === 'founding')).toHaveLength(1)
   })
 
   it('the standard product is looked up by its stable metadata key', async () => {
@@ -289,8 +291,9 @@ describe('a re-sync is idempotent', () => {
     expect(store.prices.map((p) => p.id)).toEqual(pricesAfterFirst)
     expect(written.map((r) => `${r.key}:${r.productId}:${r.priceId}`)).toEqual(rowsAfterFirst)
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
-    // 8 live items (ADR-1709 added three Collective items), each flat: 8 standard products, 32 price keys.
-    expect(store.products).toHaveLength(8)
+    // 8 live items (ADR-1709 added three Collective items): 8 standard products plus Collective's
+    // founding product ($99 Founding Collective, owner 2026-10-06), 32 price keys.
+    expect(store.products).toHaveLength(9)
     expect(store.prices).toHaveLength(32)
   })
 
