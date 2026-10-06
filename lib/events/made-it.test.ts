@@ -1,5 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { beforeAll, describe, it, expect } from 'vitest'
 import { madeItKey, madeItUrl, makeMadeItToken, verifyMadeItToken } from './made-it'
+
+// A fixed key so signing works without a deployed secret, as lib/qr/node-code.test.ts does.
+beforeAll(() => {
+  process.env.MADE_IT_SECRET = 'test-made-it-secret-0000000000000000'
+})
 
 // LIVE-803: the Yes link is the credential, and a member's Yes shares the check-in's ledger key.
 describe('made-it tokens', () => {
