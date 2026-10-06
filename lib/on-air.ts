@@ -49,9 +49,9 @@ export const BREATH_PATTERNS: BreathPattern[] = [
   {
     slug: 'cohere',
     name: 'Coherence',
-    blurb: 'Five in, five out. Steady the heart.',
+    blurb: 'Five in, five out. Nice and even.',
     instructions:
-      'Breathe in for 5 and out for 5, with no holds, in one smooth wave. That is about six breaths a minute, the pace where the heart and breath fall into sync. The everyday balancer: a few minutes settles the nervous system and clears the head.',
+      'Breathe in for 5 and out for 5, with no holds, in one smooth wave. That is about six breaths a minute. The everyday one: a few minutes, then back to your day.',
     phases: [IN(5), OUT(5)],
   },
   {
