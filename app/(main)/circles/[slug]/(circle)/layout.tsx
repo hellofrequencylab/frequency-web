@@ -34,6 +34,8 @@ import { ClaimCircle } from '@/components/circles/claim-circle'
 import { listPublicPractices } from '@/lib/practices'
 import { circleEventInsider, loadCircleContentFacts } from './tab-facts'
 import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
+import { sisterCircleOffer } from '@/lib/circles/sister'
+import { SisterCirclePrompt } from '@/components/circles/sister-circle-prompt'
 
 // ── THE CIRCLE DETAIL SHELL (PAGE-FRAMEWORK §3, "How templates map to Next.js") ──────────────────
 //
@@ -288,6 +290,15 @@ export default async function CircleDetailLayout({
   const isLive = (LISTABLE_CIRCLE_STATUS as readonly string[]).includes(String(circle.status))
   const canJoin = !isMember && !!myProfileId && !full && isLive
   const primary = isMember || isHost || canManage ? 'create' : canJoin ? 'join' : 'none'
+  // A full Circle seeds a sister instead of turning people away (LIVE-665).
+  const sisterOffer = sisterCircleOffer({
+    memberCount: circle.member_count,
+    memberCap: circle.member_cap,
+    isLive,
+    signedIn: !!myProfileId,
+    isHost,
+    isMember,
+  })
 
   return (
     <div>
@@ -514,6 +525,7 @@ export default async function CircleDetailLayout({
               className="mt-2 max-w-xs"
               label={`${circle.member_count} of ${circle.member_cap} seats taken`}
             />
+            {sisterOffer && <SisterCirclePrompt circleId={circle.id} reason={sisterOffer} />}
           </div>
         }
         tabs={

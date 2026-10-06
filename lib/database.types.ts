@@ -1225,6 +1225,7 @@ export type Database = {
           origin_template_id: string | null
           primary_pillar: string | null
           resonance_public: boolean
+          seeded_from_circle_id: string | null
           sidebar_order: Json | null
           slug: string
           space_id: string | null
@@ -1257,6 +1258,7 @@ export type Database = {
           origin_template_id?: string | null
           primary_pillar?: string | null
           resonance_public?: boolean
+          seeded_from_circle_id?: string | null
           sidebar_order?: Json | null
           slug: string
           space_id?: string | null
@@ -1289,6 +1291,7 @@ export type Database = {
           origin_template_id?: string | null
           primary_pillar?: string | null
           resonance_public?: boolean
+          seeded_from_circle_id?: string | null
           sidebar_order?: Json | null
           slug?: string
           space_id?: string | null
