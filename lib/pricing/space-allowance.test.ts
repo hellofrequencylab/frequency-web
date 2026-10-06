@@ -132,7 +132,7 @@ describe('the enforced case, with the grandfather rule applied', () => {
 })
 
 describe('the always-on QR cap keeps biting (a refactor must not switch a live limit off)', () => {
-  it('refuses a free Space its 6th code even though the gates are not live', async () => {
+  it('refuses a free Space past its codes even though the gates are not live', async () => {
     mockGatesLive.mockResolvedValue(false)
     const v = await spaceAllowanceVerdict('s1', 'space_qr', 5, { alwaysOn: true })
     expect(v.allowed).toBe(false)

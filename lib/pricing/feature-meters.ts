@@ -61,7 +61,7 @@ export const ALLOWANCE_NUDGE = 'Nearly full. Move up a plan for a higher allowan
 // The quantities map and its `Allowance` type now live in ./meter-limits, so a caller that only needs
 // a number does not drag this file's copy into its chunk (check:shell-weight). Re-exported here so
 // `@/lib/pricing/feature-meters` stays the one import site for everything else (ADR-837).
-import { PLACEHOLDER_METER_LIMITS, type Allowance } from './meter-limits'
+import { PLACEHOLDER_METER_LIMITS, SIBLING_PLAN_TIERS, type Allowance } from './meter-limits'
 
 export { PLACEHOLDER_METER_LIMITS }
 export type { Allowance }
@@ -162,12 +162,16 @@ const RAW_METERS: Record<string, RawMeter> = {
   space_qr: {
     axis: 'plan',
     title: 'QR codes',
-    dimension: 'QR codes',
+    dimension: 'Editable QR codes',
     unit: 'codes',
     period: null,
-    // Free 5, Business and Collective unlimited (ADR-1709). lib/qr/space-codes.ts enforces THIS row
-    // as its live cap, so the number a Space hits and the number the ladder shows are one value.
+    // Managed (dynamic, editable) codes. Free 0 with the stock Space code to download, Business 3,
+    // Collective and Non Profit 5 per Space (owner ruling 2026-10-06). lib/qr/space-codes.ts enforces
+    // THIS row as its live cap, so the number a Space hits and the number the ladder shows are one value.
     allowances: PLACEHOLDER_METER_LIMITS.space_qr!,
+    allowanceTextByTier: {
+      free: 'Your Space QR code to download, not editable',
+    },
   },
   space_automation: {
     axis: 'plan',
@@ -453,7 +457,9 @@ export interface FeatureMeterLadder {
 
 /** The tier order for a meter, ascending by rank on its axis (from the allowance keys). PURE. */
 function orderedTiers(raw: RawMeter): string[] {
-  return Object.keys(raw.allowances).sort((a, b) => tierRankOnAxis(raw.axis, a) - tierRankOnAxis(raw.axis, b))
+  return Object.keys(raw.allowances)
+    .filter((tier) => !SIBLING_PLAN_TIERS.includes(tier)) // a sibling's own number is not a rung
+    .sort((a, b) => tierRankOnAxis(raw.axis, a) - tierRankOnAxis(raw.axis, b))
 }
 
 /** Build the display meter ladder for a raw config entry: fill each rung's label + placeholder price +
@@ -518,7 +524,10 @@ export function currentMeterStepIndex(ladder: FeatureMeterLadder, tier: string):
 export function allowanceAt(featureKey: string, tier: string): Allowance {
   const ladder = featureMeter(featureKey)
   if (!ladder) return null // not metered → no cap
-  // Rank, not name: nonprofit_collective lands on the collective rung, nonprofit on business.
+  // A sibling plan the row names gets its own number (space_qr: Non Profit 5 beside Business 3).
+  const own = RAW_METERS[featureKey]?.allowances
+  if (own && SIBLING_PLAN_TIERS.includes(tier) && tier in own) return own[tier] ?? null
+  // Otherwise rank, not name: nonprofit_collective lands on the collective rung, nonprofit on business.
   const idx = currentMeterStepIndex(ladder, tier)
   return ladder.steps[idx]?.allowance ?? null
 }

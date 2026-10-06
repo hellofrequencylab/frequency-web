@@ -13,7 +13,6 @@ const SPACE_LIMITS: SpaceRow[] = [
   ['space_email', 1_000, 25_000, 100_000],
   ['space_automation', 100, 2_000, 10_000],
   ['space_multi_pipeline', 1, 5, null],
-  ['space_qr', 5, null, null],
   ['space_journey_publish', 1, 10, null],
   ['space_journey', 25, null, null],
   ['space_bookings', 20, null, null],
@@ -49,6 +48,15 @@ describe('the five-tier ladder limits (ADR-1709)', () => {
   it.each(PERSONAL_LIMITS)('%s: Member %s, Crew %s', (key, member, crew) => {
     expect(allowanceAt(key, 'free')).toBe(member)
     expect(allowanceAt(key, 'crew')).toBe(crew)
+  })
+
+  it('space_qr: editable QR codes per the owner ruling (Space 0, Business 3, Collective and Non Profit 5)', () => {
+    expect(allowanceAt('space_qr', 'free')).toBe(0)
+    expect(allowanceAt('space_qr', 'business')).toBe(3)
+    expect(allowanceAt('space_qr', 'independent')).toBe(3)
+    expect(allowanceAt('space_qr', 'nonprofit')).toBe(5)
+    expect(allowanceAt('space_qr', 'collective')).toBe(5)
+    expect(allowanceAt('space_qr', 'nonprofit_collective')).toBe(5)
   })
 
   it('an unknown plan falls to the free Space floor', () => {

@@ -162,8 +162,8 @@ describe('one source of quantities — PLACEHOLDER_METER_LIMITS is the map every
   })
 
   it('mirrors the LIVE caps the codebase already enforces (never invents a conflict)', () => {
-    // QR codes: lib/qr/space-codes.ts reads this row as its live cap (ADR-1709: free 5, paid unlimited).
-    expect(PLACEHOLDER_METER_LIMITS.space_qr).toMatchObject({ free: 5, business: null, collective: null })
+    // QR codes: lib/qr/space-codes.ts reads this row as its live cap (owner ruling 2026-10-06).
+    expect(PLACEHOLDER_METER_LIMITS.space_qr).toMatchObject({ free: 0, business: 3, collective: 5, nonprofit: 5 })
     // Team seats: lib/spaces/seats.ts BASE_SEAT_ALLOWANCE = 1 (the owner's free seat, ADR-799).
     expect(PLACEHOLDER_METER_LIMITS.space_team!.free).toBe(1)
     // Vera: mirrors PRICING_DEFAULTS.vera_free_daily_cap (~10/day, §2).
