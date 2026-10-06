@@ -58,7 +58,7 @@ export function FunnelNextStep({
 
   return (
     <div className={className ?? 'rounded-card border border-border bg-surface px-4 py-3 text-left'}>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Your next step</p>
+      <p className="eyebrow text-muted">Your next step</p>
       <Link
         href={step.href}
         onClick={() => onNavigate?.()}
