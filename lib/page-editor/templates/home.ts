@@ -264,7 +264,7 @@ export const data: Data = {
         eyebrow: "Who we're calling in",
         title: 'The people who start things.',
         titleAccent: 'start things',
-        kicker: 'Creators, coaches, healers, and small businesses. The ones who gather everyone else.',
+        kicker: 'Hosts, teachers, practitioners, studio owners, and the people who back them. The ones who gather everyone else.',
         body: "Frequency is a Community Collective. We exist to support every community effort and help everyone in it succeed, together. You bring a Channel you care about, a few people near you, and a format you can run.\n\nWe hand you the rest, and a whole ladder of people who have your back. You keep 0% on your own bookings, and you see exactly what the network earned you, down to the dollar. Start one Circle, and you're part of a Collective of builders holding doors open in their own towns at the same time.",
         side: 'right',
         imgAspect: 'landscape',

@@ -21,13 +21,14 @@ import {
 // here: the general funnel stays on the waitlist/Beta-list landing, every niche funnel routes to its own
 // Space-create section, and every niche destination is a safe in-app path.
 
-// The five operator niches and the Space Mode each targets (OPERATOR-FUNNELS.md §5 Start-free bridge).
+// The six operator niches and the Space Mode each targets (OPERATOR-FUNNELS.md §5 Start-free bridge).
 const EXPECTED_NICHE_MODE: Record<string, string> = {
   coaches: 'business:packages',
   studios: 'business:membership',
   hosts: 'business:ticketed',
   communities: 'business:cohort',
   nonprofits: 'nonprofit:donations',
+  teachers: 'business:programs',
 }
 
 describe('spaceCreatePath', () => {
@@ -53,7 +54,7 @@ describe('the general funnel keeps the Beta-list landing', () => {
 })
 
 describe('every niche funnel routes to its own section', () => {
-  it('covers exactly the five operator niches', () => {
+  it('covers exactly the six operator niches', () => {
     expect(Object.keys(NICHE_FUNNEL_DESTINATIONS).sort()).toEqual(Object.keys(EXPECTED_NICHE_MODE).sort())
   })
 
@@ -116,7 +117,7 @@ describe('marketing door destinations agree with the onboarding side (one source
     }
   })
 
-  it('the five doors cover the five destination rows, so no row is unreachable from a door', () => {
+  it('every door covers every destination row, so no row is unreachable from a door', () => {
     const fromDoors = funnelSlugs()
       .map((slug) => getFunnelConfig(slug)!.niche)
       .sort()
