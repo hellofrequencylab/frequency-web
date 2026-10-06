@@ -4,7 +4,9 @@
 // never changes when it lands.
 //
 //   dns        Copy records into the DNS provider, guided and re-checked by the app (LIVE-743, live).
-//   one-click  Sign in to the DNS provider and approve, through a Domain Connect service (LIVE-780).
+//   one-click  Sign in to the DNS provider and approve, through Frequency's own Domain Connect template
+//              (LIVE-780, live; lib/sites/domain-connect). Where the provider has not onboarded the
+//              template, or the signing key is not set, the panel shows the dns steps instead.
 //   buy        Buy a new domain inside Frequency; it is configured with no DNS step (LIVE-781).
 
 export type DomainMethodKey = 'dns' | 'one-click' | 'buy'
@@ -32,8 +34,8 @@ export const DOMAIN_METHODS: readonly DomainMethod[] = [
   {
     key: 'one-click',
     label: 'Connect automatically',
-    description: 'Sign in to your domain provider and approve. We set the records for you.',
-    available: false,
+    description: 'If your domain provider supports it, sign in there and approve. We set the records for you.',
+    available: true,
   },
   {
     key: 'buy',
