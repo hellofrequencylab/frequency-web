@@ -193,7 +193,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Team seats',
     unit: 'seats',
     period: null,
-    // Free: 1 seat, the owner's. Business: 2 included. Collective: 5, plus 2 per member Space
+    // Free: 1 seat, the owner's. Business: 2 included. Collective: 3 (owner 2026-10-06), plus 2 per member Space
     // (ADR-1709). Extra seats are the ADR-799 per-seat add-on.
     //
     // Extra seats are the ADR-799 per-seat add-on at the catalog amount (LIVE-229, $12/seat/mo).
@@ -202,7 +202,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     allowanceTextByTier: {
       free: '1 seat included (the owner)',
       business: '2 seats included, add more per seat',
-      collective: '5 seats included, plus 2 per member Space',
+      collective: '3 seats included, plus 2 per member Space',
     },
   },
   space_multi_pipeline: {

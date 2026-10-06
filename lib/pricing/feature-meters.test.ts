@@ -189,7 +189,7 @@ describe('label + readout formatting', () => {
     const business = seats.steps.find((s) => s.tier === 'business')!
     expect(business.allowanceText).toBe('2 seats included, add more per seat')
     const top = seats.steps[seats.steps.length - 1]!
-    expect(top.allowanceText).toBe('5 seats included, plus 2 per member Space')
+    expect(top.allowanceText).toBe('3 seats included, plus 2 per member Space')
   })
 
   it('allowanceReadout renders "X of N used" or the unlimited form; null for a non-metered feature', () => {

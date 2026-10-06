@@ -54,7 +54,7 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   // Profit 5 per entity: per Space, so each member Space of a Collective carries its own 5.
   space_qr: { free: 0, business: 3, collective: 5, nonprofit: 5, nonprofit_collective: 5 },
   space_automation: { free: 100, business: 2_000, collective: 10_000 },
-  space_team: { free: 1, business: 2, collective: 5 },
+  space_team: { free: 1, business: 2, collective: 3 },
   space_multi_pipeline: { free: 1, business: 5, collective: null },
   space_vera: { free: 10, business: 200, collective: null },
   space_crm_playbooks: { free: 100, business: 5_000, collective: 5_000 },
