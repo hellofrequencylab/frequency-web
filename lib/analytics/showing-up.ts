@@ -24,7 +24,7 @@ export interface AttendedSeat {
   attendedBy: string | null
 }
 
-export interface ShowingUpReading {
+interface ShowingUpReading {
   /** Distinct Members a Host marked present in the window. THE north star. */
   members: number
   /** Distinct guests (no account) a Host marked present in the window. */
