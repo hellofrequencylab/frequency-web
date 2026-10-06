@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-744",
+  "title": "The Space menu hid tabs behind a More popup; the owner wants one horizontal scroll rail with Manage pinned in place",
+  "status": "done",
+  "closed": "2026-10-06",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/spaces/space-profile-menu-view.tsx",
+    "ref": "Owner request 2026-10-06 (Space page tab bar screenshot)"
+  },
+  "detail": "Owner ruling 2026-10-06 reverses the LIVE-529 fold. The Space menu showed four tabs and folded the rest into a More <details> that stayed hanging open over the page. Now the <nav> holds two children: a rail (flex-1 min-w-0 overflow-x-auto, faded edges via admin-subnav-scroll so a cut pill reads as more to scroll) carrying EVERY tab, and the Manage entry pinned outside it (shrink-0) so it never scrolls with the tabs. The view stays hook-free and server-renderable (LIVE-522). lib/spaces/profile-nav-condense.ts is deleted, having no callers. The probe reads the view: no details fold, a rail that scrolls, the tab list inside the rail, and Manage after the rail closes with its own shrink floor.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\")\nconst fail=(m)=>{console.error(m);process.exit(1)}\nconst V=\"components/spaces/space-profile-menu-view.tsx\"\nconst src=fs.readFileSync(V,\"utf8\")\nconst code=src.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\" \").replace(/\\{\\/\\*[\\s\\S]*?\\*\\/\\}/g,\" \").replace(/^\\s*\\/\\/.*$/gm,\" \")\nif(/<details[\\s>]/.test(code))fail(\"the Space menu folds tabs behind a details popup again, the More menu the owner asked to remove\")\nconst r=code.indexOf(\"data-space-menu-rail\")\nif(r<0)fail(\"the Space menu has no scroll rail\")\nconst open=code.lastIndexOf(\"<div\",r)\nconst cls=code.slice(r,code.indexOf(\">\",r))\nif(!/overflow-x-auto/.test(cls)||!/min-w-0/.test(cls))fail(\"the rail is not a shrinkable horizontal scroller, so the tabs cannot scroll\")\nconst m=code.indexOf(\"tabs.map(\",r)\nconst close=code.indexOf(\"</div>\",m)\nif(m<0||close<0)fail(\"the rail does not render the tab list\")\nconst manage=code.indexOf(\"panel=manage\")\nif(manage<0)fail(\"the Manage entry is gone\")\nif(manage<close)fail(\"Manage renders inside the scrolling rail, so it scrolls away with the tabs instead of staying pinned\")\nconst pin=code.slice(close,manage)\nif(!/shrink-0/.test(pin))fail(\"the Manage pin can be squeezed by the rail\")\nif(/use client/.test(src.slice(0,40)))fail(\"the view became a client component, which costs the prerendered share URL its menu (LIVE-522)\")\nconsole.log(\"LIVE-744 ok\")'",
+    "note": "Fails if the menu folds tabs behind a details popup, if the rail stops being a shrinkable horizontal scroller, or if Manage renders inside the rail."
+  },
+  "wave": "W7"
+}
