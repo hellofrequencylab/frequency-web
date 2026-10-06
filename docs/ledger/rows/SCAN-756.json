@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-756",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const rd=(p)=>{if(!fs.existsSync(p)){console.error(\"indeterminate: missing \"+p);process.exit(79)}return fs.readFileSync(p,\"utf8\")};const slice=(t,name)=>{const i=t.indexOf(\"export async function \"+name);if(i<0)return null;const j=t.indexOf(\"export async function \",i+10);return t.slice(i,j<0?t.length:j)};const cron=rd(\"app/api/cron/publish-scheduled/route.ts\");const act=rd(\"app/(main)/admin/actions.ts\");const cli=rd(\"app/(main)/admin/dispatches/dispatches-client.tsx\");const pub=slice(act,\"publishDispatch\")||\"\";const bad=[];if(!/notifyDispatchAudience|sendDispatchNotificationEmail|sendPushToProfile/.test(cron))bad.push(\"the cron publishes scheduled dispatches with no email or push fan-out\");if(/fd\\.set\\(\"scheduled_for\",\\s*scheduledFor\\)|fd\\.set\\(.scheduled_for.,\\s*scheduledFor\\)/.test(cli)&&!/toISOString/.test(cli))bad.push(\"the editor sends the datetime-local value with no offset so it is read as UTC\");if(/\\(async \\(\\) =>/.test(pub)&&!/after\\(/.test(pub))bad.push(\"publishDispatch fans out in a detached promise with no after()\");if(bad.length){console.error(\"SCAN-756: \"+bad.join(\"; \")+\".\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nlib/dispatches/fan-out.ts notifyDispatchAudience shared by publishDispatch (via after()) and the publish-scheduled cron (claim conditional on draft, per id within the budget); the editor sends an ISO instant and prefills in local time."
+  }
+}

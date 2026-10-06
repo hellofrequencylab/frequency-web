@@ -159,6 +159,8 @@ describe('the retired stubs really are gone, not merely redirected past', () => 
     // served by a rule AND that no route file answers there any more.
     '/admin/marketing/contacts',
     '/admin/marketing/contacts/:id',
+    // SCAN-672: the prerendered /discover/events/<slug> twin of /events/<slug> retires behind a 308.
+    '/discover/events/:slug',
   ]
 
   it('each retired path is served by a config rule', async () => {

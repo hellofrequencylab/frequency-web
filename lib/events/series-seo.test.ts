@@ -344,15 +344,6 @@ describe('event page robots wiring', () => {
     expect(share).toContain('canonical: `/events/${event.slug}`')
   })
 
-  it('applies the same two rules on the /discover twin', () => {
-    const twin = readFileSync(join(process.cwd(), 'app/discover/events/[slug]/page.tsx'), 'utf8')
-    expect(twin).toContain('seriesRobots(facts, indexedOccurrences)')
-    // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
-    // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
-    expect(
-      sourceWithoutComments(join(process.cwd(), 'app/discover/events/[slug]/page.tsx'), { imports: true }),
-    ).toContain('!suppressPastNoindex(facts)')
-    // A canonical is only a HINT; the directive is what keeps date twenty out of the index.
-    expect(twin).toContain('canonical: `/events/${event.slug}`')
-  })
+  // The /discover/events/<slug> twin carried the same two rules until SCAN-672 retired it (a 308 to
+  // /events/<slug> in next.config.ts), so there is no second public page left to pin.
 })

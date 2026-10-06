@@ -126,9 +126,31 @@ export async function getPage(slug: string, spaceId?: string | null): Promise<Pa
 // that re-points an asset reaches every published page without re-saving documents;
 // the refresh fails open to each ref's cached url, and a ref-free document costs no query.
 export async function getPublishedData(slug: string, spaceId?: string | null): Promise<Data | null> {
+  return (await getPublishedPage(slug, spaceId))?.doc ?? null
+}
+
+/** The live document PLUS the row's real timestamps, for a route that publishes Article dates.
+ *  `published_at` is the last Publish from /edit/<slug>; `updated_at` moves on every draft save, so
+ *  it is NOT a publish signal. Null when nothing is published (the route falls to its template). */
+export interface PublishedPage {
+  doc: Data
+  published_at: string | null
+  updated_at: string | null
+}
+
+export async function getPublishedPage(slug: string, spaceId?: string | null): Promise<PublishedPage | null> {
   const page = await getPage(slug, spaceId).catch(() => null)
   const doc = (page?.published_data as Data | null) ?? null
-  return doc ? refreshAssetRefUrls(doc) : null
+  if (!page || !doc) return null
+  return { doc: await refreshAssetRefUrls(doc), published_at: page.published_at, updated_at: page.updated_at }
+}
+
+/** The Article dateModified for a block-document route: the day of the row's last Publish when it
+ *  is newer than the coded UPDATED literal, else the literal. A real timestamp always beats a frozen
+ *  one; nothing is invented when no row is published (SCAN-781, SCAN-797). */
+export function latestDay(literal: string, publishedAt: string | null | undefined): string {
+  const day = publishedAt ? publishedAt.slice(0, 10) : null
+  return day && day > literal ? day : literal
 }
 
 export async function listPages(spaceId?: string | null): Promise<Record<string, PageRow>> {

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-760",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const page=\"app/(public)/housing/[id]/page.tsx\",types=\"lib/listings/types.ts\";if(!fs.existsSync(page)||!fs.existsSync(types)){console.error(\"SCAN-760: housing detail page or listings types missing\");process.exit(79)}const s=fs.readFileSync(page,\"utf8\"),t=fs.readFileSync(types,\"utf8\");const promise=/Signed-in members see the street address/.test(t);const serverFalse=/signedIn:\\s*false/.test(s);const route=fs.existsSync(\"app/api/housing/[id]/address/route.ts\");const serverTrue=/signedIn:\\s*true/.test(s);if(promise&&(serverFalse||!serverTrue)&&!route){console.error(\"SCAN-760: the housing detail page resolves the address with signedIn false and no signed-in address route exists, while lib/listings/types.ts still promises that signed-in members see the street address, so the exact address is shown to nobody.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe housing detail page is ISR and resolved the address with signedIn false, so a host who chose 'Exact address for signed-in members' had their street address shown to nobody while lib/listings/types.ts promised members would see it. Added app/api/housing/[id]/address/route.ts (force-dynamic, no-store private): it checks supabase.auth.getUser(), returns null for anonymous callers or non-active non-housing listings, and otherwise runs resolveAddressDisplay with signedIn true. Added components/marketplace/housing-address.tsx, a client component inside the page's ViewerProvider that fetches the line only once the viewer is signed in and renders the Address row; the page mounts it only when the host chose exact, keeps the address out of the cached HTML, and its comment now says so. Pinned by app/api/housing/[id]/address/route.test.ts (signed-in exact returns the line; anonymous, coarser precision, inactive or non-housing listing return null; no-store header; force-dynamic)."
+  }
+}

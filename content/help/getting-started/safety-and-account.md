@@ -23,7 +23,8 @@ Open the member's profile and choose **Block**. When you block someone:
 - neither of you can start a direct message with the other,
 - neither of you can send the other a friend request,
 - you are removed as friends, and
-- you stop seeing each other across the app.
+- they can no longer reply to your posts, mention you, or write on your wall, and
+- you stop seeing each other in messages, friends, events and the market.
 
 You can review and undo this anytime under **Settings, Account & privacy**, where
 your blocked members are listed with an **Unblock** button.

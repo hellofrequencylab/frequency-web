@@ -76,15 +76,21 @@ export default async function UpgradePage({
   //
   // crewSellable is billingLive() AND the tier switch: false while billing is OFF, so the page degrades
   // to the beta toggle. The catalog config carries the PWYW amounts.
-  const [values, catalog, crewSellable] = await Promise.all([
+  const [values, catalog, crewSellable, chargingLive] = await Promise.all([
     getPricingValues(),
     loadCatalogConfig(),
     memberTierSellable('crew'),
+    billingLive(),
   ])
 
-  // Live = the Crew checkout is actually sellable (billing on + the tier switch on). While OFF the
-  // upgrade is the free beta toggle, exactly as before, with a disabled price preview beneath it.
+  // Live = the Crew checkout is actually sellable (billing on + the tier switch on).
   const live = crewSellable
+  // 🔴 THE BETA TOGGLE FOLLOWS THE SERVER GATE, NOT THE SELLABLE FLAG (SCAN-773). toggleMembership
+  // refuses whenever billingLive() is true, so the page shows that button only while billing is OFF.
+  // Gating it on `!live` showed "Join the Crew" under a "Free Beta Active" banner whenever billing was
+  // on but tier_crew_enabled was off (a staged launch where Space plans sell before Crew opens), and
+  // every tap was refused. Billing on + Crew not sellable is its own state: no beta, no checkout.
+  const betaOpen = !chargingLive
   // Crew has no single price: the operator's PWYW config carries the floor, the suggested amount, and
   // the preset anchors the picker offers.
   const pwyw = catalog.pwyw
@@ -123,8 +129,8 @@ export default async function UpgradePage({
       title="Membership"
       description="Belonging is free, and stays free. Crew is the personal tier: a lower fee on network sales, the badge, and a way to back the community."
     >
-      {/* Beta banner — shown while paid membership has not gone live. */}
-      {!live && (
+      {/* Beta banner, shown while billing is off, which is exactly when the beta toggle works. */}
+      {betaOpen && (
         <div className="rounded-2xl bg-primary-bg border border-primary-bg/50 px-5 py-4 mb-8">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-meta font-black uppercase tracking-widest text-primary-strong">
@@ -168,11 +174,13 @@ export default async function UpgradePage({
                 <span className="text-stat-md font-black text-on-primary">{formatCents(pwyw.minCents)}</span>
                 <span className="text-primary-strong text-body-sm ml-1">/ month</span>
               </>
-            ) : (
+            ) : betaOpen ? (
               <>
                 <span className="text-stat-md font-black text-on-primary">Free</span>
                 <span className="text-primary-strong text-body-sm ml-1">during beta</span>
               </>
+            ) : (
+              <span className="text-stat-md font-black text-on-primary">Opening soon</span>
             )}
           </div>
           {live && (
@@ -201,7 +209,7 @@ export default async function UpgradePage({
 
         {/* CTA */}
         <div className="px-6 pb-6">
-          {!live ? (
+          {betaOpen ? (
             <UpgradeToggle isCrew={isCrew} />
           ) : isCrew ? (
             <Link
@@ -210,13 +218,22 @@ export default async function UpgradePage({
             >
               Manage your membership <ArrowRight className="h-4 w-4" />
             </Link>
-          ) : (
+          ) : live ? (
             <PwywPicker
               minCents={pwyw.minCents}
               suggestedCents={pwyw.suggestedCents}
               presetCents={pwyw.presetCents}
               maxCents={pwyw.maxCents}
             />
+          ) : (
+            // Billing is on but Crew is not on sale yet: no beta toggle (the action refuses) and no
+            // checkout (the tier switch is off). A static notice, no button.
+            <p
+              data-crew-opens-soon
+              className="rounded-control border border-border px-4 py-3 text-center text-body-sm text-muted"
+            >
+              Crew opens soon. You set the amount when it does.
+            </p>
           )}
         </div>
       </div>

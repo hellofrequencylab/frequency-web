@@ -1,11 +1,19 @@
 import { getAllCategories, helpHref } from '@/lib/help/content'
 import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
-import { getPricingValues } from '@/lib/pricing/settings'
-import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
-import { isBetaPricingActive } from '@/lib/pricing/beta'
-import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
-import { allOfferings, type Offering, type PricingGridInput } from '@/lib/pricing/pricing-grid'
+import { loadPricingInput } from '@/lib/pricing/pricing-input'
+import { allOfferings, type Offering } from '@/lib/pricing/pricing-grid'
 import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/pricing-page'
+import { EDITABLE_PAGES, pathForSlug } from '@/lib/page-editor/data'
+import type { ArticleSpec } from '@/lib/page-editor/templates/article'
+import { spec as howToStartACircle } from '@/lib/page-editor/templates/how-to-start-a-circle'
+import { spec as howToBuildCommunity } from '@/lib/page-editor/templates/how-to-build-community'
+import { spec as loneliness } from '@/lib/page-editor/templates/loneliness'
+import { spec as friendshipAsAnAdult } from '@/lib/page-editor/templates/friendship-as-an-adult'
+import { spec as calmDownFast } from '@/lib/page-editor/templates/calm-down-fast'
+import { spec as howToBeMoreSocial } from '@/lib/page-editor/templates/how-to-be-more-social'
+import { spec as toolsForCommunityBuilders } from '@/lib/page-editor/templates/tools-for-community-builders'
+import { spec as whatIsFrequency } from '@/lib/page-editor/templates/what-is-frequency'
+import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
 
 // /llms-full.txt — the comprehensive, self-maintaining companion to the curated /llms.txt route
 // (AIO, docs/CONTENT-VOICE §8). Where llms.txt is a hand-written brand summary, this dumps the
@@ -20,19 +28,6 @@ import { offeringLadderLabel, paidWallsPhrase, PLAN_STORY } from '@/lib/pricing/
 
 export const revalidate = 3600
 
-/** Resolve the whole pricing model the way /pricing does: the operator's editable config layered over
- *  the code defaults. This route already reads the DB (the help center) and is ISR, so it can afford the
- *  same reads /pricing makes, and an edit at /admin/pricing now moves the answer-engine corpus in the
- *  same revalidation it moves the page. Before Phase 5 (ADR-916) it read the code defaults only, so a
- *  price or rate an operator changed was published here at the old number until the next deploy. */
-async function pricingInput(): Promise<PricingGridInput> {
-  const [values, catalog, gateOverrides] = await Promise.all([
-    getPricingValues(),
-    loadCatalogConfig(),
-    loadFeatureGateOverrides(),
-  ])
-  return { values, catalog: catalogConfigByKey(catalog), betaActive: isBetaPricingActive(), gateOverrides }
-}
 
 /** The network-only take-rate, one line per rung, straight off the offerings. Every ADVERTISED rung is
  *  listed, so the ladder cannot silently omit one the way a hand-written list did (it named Member,
@@ -54,8 +49,48 @@ function tierLadderLines(offerings: Offering[]): string[] {
   })
 }
 
+/** The seeker articles' static specs, keyed by their EDITABLE_PAGES slug (SCAN-796). The spec is the
+ *  seed the editor publishes from, so this reads the answer-first copy with no database round trip; a
+ *  published edit to one of these pages is not reflected here until the spec moves with it. A slug in
+ *  EDITABLE_PAGES with no spec here (the six primary pages) is simply not an article and is skipped. */
+const ARTICLE_SPECS: Record<string, ArticleSpec> = {
+  'how-to-start-a-circle': howToStartACircle,
+  'how-to-build-community': howToBuildCommunity,
+  loneliness,
+  'friendship-as-an-adult': friendshipAsAnAdult,
+  'calm-down-fast': calmDownFast,
+  'how-to-be-more-social': howToBeMoreSocial,
+  'tools-for-community-builders': toolsForCommunityBuilders,
+  'what-is-frequency': whatIsFrequency,
+}
+
+/** One question and its answer, in the form an answer engine lifts whole. */
+function qaLines(faq: { q: string; a: string }[]): string[] {
+  return faq.flatMap((f) => [`Q: ${f.q}`, `A: ${f.a}`])
+}
+
+/** The pages written to be quoted: each seeker article's answer and FAQ, then each comparison's FAQ.
+ *  Fail-safe to an empty list, so a bad spec can never take the help center down with it. */
+function guidesAndAnswers(): string[] {
+  const out: string[] = []
+  try {
+    for (const page of EDITABLE_PAGES) {
+      const spec = ARTICLE_SPECS[page.slug]
+      if (!spec) continue
+      out.push('', `### ${spec.title}`, `${SITE_URL}${pathForSlug(page.slug)}`, spec.answer, ...qaLines(spec.faq))
+    }
+    for (const c of COMPARISONS) {
+      const copy = comparisonCopy(c)
+      out.push('', `### ${copy.h1}`, `${SITE_URL}${comparisonPath(c.slug)}`, copy.lede, ...qaLines(copy.faq))
+    }
+  } catch {
+    return []
+  }
+  return out
+}
+
 export async function GET() {
-  const [cats, input] = await Promise.all([getAllCategories(), pricingInput()])
+  const [cats, input] = await Promise.all([getAllCategories(), loadPricingInput()])
   const offerings = allOfferings(input)
 
   const out: string[] = [
@@ -97,6 +132,12 @@ export async function GET() {
     '',
     `Full pricing: ${SITE_URL}/pricing`,
     '',
+    // The answer-first guides and the comparison pages, before the help center, so an engine that
+    // takes this file as the whole corpus sources what Frequency is from here rather than from a
+    // third party (SCAN-796).
+    '## Guides and answers',
+    ...guidesAndAnswers(),
+    '',
     '## Help center',
   ]
 
@@ -109,8 +150,20 @@ export async function GET() {
         `#### ${a.title}`,
         `${SITE_URL}${helpHref(cat.slug, a.slug)}`,
       )
+      if (a.updated) out.push(`Updated: ${a.updated}`)
       if (a.description) out.push(a.description)
-      out.push('', a.body.trim())
+      // The body as the corpus carries it (SCAN-806). Root-relative markdown links become absolute,
+      // so an engine can resolve and cite them, and every heading is demoted three levels so a body
+      // `##` sits under the `####` article title instead of outranking it (`##` -> `#####`,
+      // `###` -> `######`; +3 keeps the two apart where +4 would flatten both to `######`). The
+      // heading regex also matches inside a fenced code block; no help body carries a `#` fence.
+      out.push(
+        '',
+        a.body
+          .trim()
+          .replace(/\]\(\/(?!\/)/g, `](${SITE_URL}/`)
+          .replace(/^(#{1,6})[ \t]/gm, (_m, h: string) => '#'.repeat(Math.min(h.length + 3, 6)) + ' '),
+      )
     }
   }
 

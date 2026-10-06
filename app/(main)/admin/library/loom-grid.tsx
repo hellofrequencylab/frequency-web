@@ -1164,7 +1164,9 @@ function DetailDrawer({
             />
             <p className="text-meta text-subtle">
               Protected moves the original into a locked bucket, off the open web. You still see it here. An
-              image placed on a page cannot be protected until it is swapped out there.
+              image placed on a page cannot be protected until it is swapped out there. While Protected is on
+              and the download setting is still Anyone, only the Loom team can download the original. Pick
+              Members to open it to members.
             </p>
           </div>
 

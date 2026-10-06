@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStaffMember, staffCan } from '@/lib/staff'
+import { getStaffMember, staffCanNow } from '@/lib/staff'
 import {
   isAutomationActionType,
   parseConditions,
@@ -41,7 +41,7 @@ async function gate(): Promise<
   { ok: true; profileId: string } | { ok: false; error: string }
 > {
   const staff = await getStaffMember()
-  if (!staff || !staffCan(staff.role, 'marketing')) {
+  if (!staff || !(await staffCanNow('marketing'))) {
     return { ok: false, error: 'Marketer access required.' }
   }
   return { ok: true, profileId: staff.profileId }

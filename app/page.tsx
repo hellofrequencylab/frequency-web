@@ -87,15 +87,15 @@ const EMPTY: Data = { content: [], root: {} }
 // FAQPage for weeks (LIVE-040) because a `faqSchema()` call rode a legacy branch that never
 // rendered. This route carried the same shape — `faqSchema(HOME_FAQ)` sat INSIDE `Splash` — so it
 // is worth being blunt: `/` HAS EMITTED NO FAQPage SINCE THE `home` TEMPLATE LANDED, and deleting
-// HOME_FAQ neither caused that nor cured it. MEASURED with renderToStaticMarkup over
-// `<BlockDocJsonLd data={data} path="/" />` + `<BlockRender config={config} data={data} />`, the
-// exact pair this route renders (no breadcrumb — this IS the root, and an empty BreadcrumbList is
-// worse than none; no metadata overrides passed):
+// HOME_FAQ neither caused that nor cured it. MEASURED with renderToStaticMarkup over the
+// BlockDocJsonLd + BlockRender pair this route renders (path "/", no breadcrumb — this IS the root,
+// and an empty BreadcrumbList is worse than none; no metadata overrides passed):
 //   · the PUBLISHED document → 1 ld+json script, { Article 1, WebPage 1, Organization 2,
 //     ImageObject 1 }
 //   · getTemplate('home')    → 1 ld+json script, { Article 1, WebPage 1, Organization 2,
 //     ImageObject 1 }
-// Byte-identical before and after this change, on both rungs. NOT verified against production HTML
+// Byte-identical before and after this change, on both rungs. (The Article node has since become a
+// WebPage, SCAN-802; the count of scripts is unchanged.) NOT verified against production HTML
 // — frequencylocal.com is outside this session's egress allowlist.
 //
 // NOTHING RENDERED WAS LOST, and nothing was recovered, BY DESIGN. The five retirements before this
@@ -162,10 +162,12 @@ export default async function RootPage() {
 
   return (
     <>
-      {/* The Article comes from the rendered document via BlockDocJsonLd. No breadcrumb: this IS
-          the root, so the list would be empty. No FAQPage: the home document carries no Accordion,
-          and asserting answers no visitor can read is what /pricing:309-313 forbids. */}
-      <BlockDocJsonLd data={data} path="/" />
+      {/* The page node comes from the rendered document via BlockDocJsonLd, as a WebPage rather than
+          an Article (SCAN-802): the front door is not an editorial piece headlined by its hero line,
+          and Organization + WebSite already come from the root layout. No breadcrumb: this IS the
+          root, so the list would be empty. No FAQPage: the home document carries no Accordion, and
+          asserting answers no visitor can read is what /pricing:309-313 forbids. */}
+      <BlockDocJsonLd data={data} path="/" schemaType="WebPage" />
       {/* No ctaLabel override: the header falls back to BETA_CTA_LABEL, the one shared primary
           (ADR-1197). The front door used to say "Join the beta" while every other marketing page said
           "Start a Circle", the niche doors said "Start free", /pricing said "Join free" and /join

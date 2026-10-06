@@ -150,6 +150,7 @@ vi.mock('./order-receipt', () => ({ sendOrderReceipts: vi.fn(async () => {}) }))
 import {
   createCommerceCheckout,
   recordCommerceOrderFromSession,
+  abandonCommerceOrderFromSession,
   refundCommerceOrder,
   recordCommerceRefund,
   recordCommerceRefundFromCharge,
@@ -675,6 +676,56 @@ describe('recordCommerceOrderFromSession — persists Stripe shipping (LIVE-346)
       paid_at: expect.any(String),
       stripe_payment_intent_id: 'pi_1',
     })
+  })
+})
+
+// ── A DROPPED UPDATE ERROR IS A STRANDED ORDER (SCAN-710) ────────────────────────────────────────
+// supabase-js never throws; it returns { data: null, error }. Both status flips used to read only
+// data, so a transient database error left the loop empty, the webhook acked 200, Stripe never
+// redelivered and the paid order stayed pending forever. Both now throw, so the webhook releases
+// its claim and 500s; the retry is safe because each update is guarded by status = 'pending'.
+describe('commerce_orders status flips surface the update error (SCAN-710)', () => {
+  const failing = (c: Call) =>
+    c.table === 'commerce_orders' && c.op === 'update' ? { data: null, error: { message: 'pooler blip' } } : {}
+
+  it('the pending-to-paid flip throws on a database error', async () => {
+    state.setHandler(failing)
+    await expect(
+      recordCommerceOrderFromSession({
+        id: 'cs_err',
+        metadata: { kind: 'commerce_order' },
+        payment_status: 'paid',
+        payment_intent: 'pi_1',
+      } as unknown as Stripe.Checkout.Session),
+    ).rejects.toThrow(/cs_err.*pooler blip/)
+  })
+
+  it('a failed paid flip runs no stock, ledger or fulfilment work (SCAN-764)', async () => {
+    // The throw above is only half the contract: nothing downstream may act on a flip that failed,
+    // or a redelivery would decrement stock and grant goods twice.
+    state.setHandler(failing)
+    await expect(
+      recordCommerceOrderFromSession({
+        id: 'cs_err',
+        metadata: { kind: 'commerce_order' },
+        payment_status: 'paid',
+        payment_intent: 'pi_1',
+      } as unknown as Stripe.Checkout.Session),
+    ).rejects.toThrow(/settle flip failed|paid flip failed/)
+    expect(state.calls.filter((c) => c.op === 'rpc')).toHaveLength(0)
+    expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
+    expect(booking.confirmBookingByOrder).not.toHaveBeenCalled()
+  })
+
+  it('the expired-session cancel throws on a database error', async () => {
+    state.setHandler(failing)
+    await expect(
+      abandonCommerceOrderFromSession({
+        id: 'cs_err',
+        metadata: { kind: 'commerce_order' },
+      } as unknown as Stripe.Checkout.Session),
+    ).rejects.toThrow(/cs_err.*pooler blip/)
+    expect(booking.cancelBookingByOrder).not.toHaveBeenCalled()
   })
 })
 

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-763",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"lib/suppression.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-763: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const a=s.indexOf(\"export async function suppress(\");const b=s.indexOf(\"export async function recordEmailEvent(\");if(a<0||b<0){console.error(\"SCAN-763: suppress or recordEmailEvent not found in \"+p);process.exit(79)}const sup=s.slice(a,b);const rest=s.slice(b);const c=rest.indexOf(\"\\nexport \",10);const rec=c>0?rest.slice(0,c):rest;const supThrows=/\\bthrow\\b/.test(sup)&&/\\{\\s*error\\s*\\}\\s*=\\s*await\\s+db\\(\\)/.test(sup);const recThrows=/\\{\\s*error\\s*\\}\\s*=\\s*await\\s+db\\(\\)/.test(rec)&&/if\\s*\\(\\s*error\\s*\\)\\s*throw/.test(rec);if(!supThrows||!recThrows){console.error(\"SCAN-763: \"+(supThrows?\"recordEmailEvent()\":\"suppress()\")+\" in lib/suppression.ts never reads the supabase { error } and never throws, so the Resend webhook acks 200 with the svix claim kept and a failed bounce/complaint suppression or email_events append is never redelivered.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nsuppress() in lib/suppression.ts wrapped its pre-check and insert in a blanket try/catch with an empty catch and never read the supabase { error } that supabase-js resolves with instead of rejecting, and recordEmailEvent() awaited its insert without reading error either. So a bounce or complaint whose suppression or email_events append failed during a database blip could never reject, the Resend webhook never released its svix claim or returned 503, Resend never redelivered, and the address kept getting mail; the unsubscribe action likewise told a member they were unsubscribed when no row landed. Fixed by removing the blanket catch: suppress() throws when the pre-check read carries an error, captures { error } from the insert, returns on code 23505 (a concurrent insert means the row exists, so it stays idempotent) and otherwise throws new Error(error.message); recordEmailEvent() captures { error } and throws on it. Every caller (resend webhook, unsubscribe action, recordGlobalStop, handleSpaceSendWebhook) already wraps the call in try/catch. Pinned in lib/suppression.test.ts: an insert resolving with code XX000 rejects, code 23505 resolves, a failed pre-check read rejects without inserting, and recordEmailEvent rejects on an insert error."
+  }
+}

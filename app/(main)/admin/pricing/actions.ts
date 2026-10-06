@@ -35,13 +35,26 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 
 const PATH = '/admin/pricing'
 
+/** Every write here refreshes the admin page AND the public surfaces that quote the live pricing
+ *  config (SCAN-795): /pricing and /llms-full.txt are hourly ISR and /llms.txt is daily, so a rate the
+ *  operator just lowered otherwise stays quoted to visitors and answer engines until the window
+ *  expires. All three read pricingInput() / getPricingValues(), which also read gate overrides and
+ *  the beta state, so a flag-only write needs this too. Add a surface only after confirming it
+ *  reads the pricing config. */
+function revalidatePricingSurfaces() {
+  revalidatePath(PATH)
+  revalidatePath('/pricing')
+  revalidatePath('/llms.txt')
+  revalidatePath('/llms-full.txt')
+}
+
 /** Set a pricing platform flag (master billing_live, per-tier/plan enable, per-role gamification).
  *  Janitor-only; audited in platform_flag_events. */
 export async function setPricingFlag(key: string, value: boolean): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   try {
     await setPlatformFlag(key, value, { changedBy: ctx.profileId, source: 'admin' })
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the switch.')
@@ -71,7 +84,7 @@ export async function saveCatalogItem(item: string, config: CatalogItemConfig): 
   }
   try {
     await setPricingSetting(catalogConfigKey(key), value, ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the catalog item.')
@@ -84,7 +97,7 @@ export async function saveSeatConfig(seat: SeatConfig): Promise<ActionResult> {
   const value: SeatConfig = { bundledFloor: Math.max(1, Math.round(Number(seat.bundledFloor) || 1)) }
   try {
     await setPricingSetting(SEAT_CONFIG_KEY, value, ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the seat config.')
@@ -112,7 +125,7 @@ export async function savePwywConfig(
       suggestedCents: Math.max(min, nonNegCents(pwyw.suggestedCents)),
     })
     await setPricingSetting(PWYW_CONFIG_KEY, value, ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the contribute-what-you-want config.')
@@ -135,7 +148,7 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
     const next: Record<string, boolean> = {}
     for (const k of ADDON_KEYS) next[k] = k === key ? enabled : current[k]
     await setPricingSetting(ADDON_ENABLED_KEY, next, ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the add-on switch.')
@@ -182,7 +195,7 @@ export async function saveTakeRate(rate: {
       network_bps: network,
     }
     await setPricingSetting('take_rate', value, ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the take-rate.')
@@ -203,7 +216,7 @@ export async function saveKnobs(knobs: {
       setPricingSetting('trial', { days: n(knobs.trial_days) }, ctx.profileId),
       setPricingSetting('annual_discount', { months_free: n(knobs.annual_months_free) }, ctx.profileId),
     ])
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save.')
@@ -218,7 +231,7 @@ export async function saveFeatureGate(
   const ctx = await requireAdmin('janitor')
   try {
     await setFeatureGateOverride(feature, patch, ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the feature gate.')
@@ -236,7 +249,7 @@ export async function syncStripeProducts(): Promise<
   if (!billingEnabled()) return fail('Connect Stripe first. Set the Stripe env keys, then sync.')
   try {
     const res = await syncPricingProductsToStripe(ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     if (!res.ok && res.synced.length === 0) {
       return fail(res.errors[0]?.message ?? 'Could not sync products to Stripe.')
     }
@@ -258,7 +271,7 @@ export async function syncStripeCatalog(): Promise<
   if (!billingEnabled()) return fail('Connect Stripe first. Set the Stripe env keys, then sync.')
   try {
     const res = await syncPricingCatalogToStripe(ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     if (!res.ok && res.synced.length === 0) {
       return fail(res.errors[0]?.message ?? 'Could not sync the catalog to Stripe.')
     }
@@ -284,7 +297,7 @@ export async function saveFoundingConfig(config: Partial<FoundingConfig>): Promi
     const current = await getFoundingConfig()
     const value = sanitizeFoundingConfig({ ...current, ...config })
     await setPricingSetting('founding', value, ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the founding config.')
@@ -317,7 +330,7 @@ export async function setOperatorSeatActive(value: boolean): Promise<ActionResul
   }
   try {
     await setPlatformFlag('catalog_operator_seat_active', value, { changedBy: ctx.profileId, source: 'admin' })
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the switch.')
@@ -344,7 +357,7 @@ export async function setBetaFlag(key: string, value: boolean): Promise<ActionRe
   if (!(BETA_FLAG_KEYS as readonly string[]).includes(key)) return fail('Unknown beta switch.')
   try {
     await setPlatformFlag(key as BetaFlagKey, value, { changedBy: ctx.profileId, source: 'admin' })
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the switch.')
@@ -368,7 +381,7 @@ export async function saveBetaGrace(value: string): Promise<ActionResult> {
   }
   try {
     await setPricingSetting('beta_grace', { until: raw || null }, ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the date.')
@@ -388,7 +401,7 @@ export async function saveAnnouncementMessage(value: string): Promise<ActionResu
   if (raw.length > 280) return fail('Keep the announcement under 280 characters.')
   try {
     await setPlatformSetting('announcement_message', raw, ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the announcement.')
@@ -403,7 +416,7 @@ export async function saveAnnouncementEndsAt(value: string): Promise<ActionResul
   if (!raw) {
     try {
       await setPlatformSetting('announcement_ends_at', '', ctx.profileId)
-      revalidatePath(PATH)
+      revalidatePricingSurfaces()
       return ok()
     } catch (e) {
       return fail(e instanceof Error ? e.message : 'Could not save the date.')
@@ -413,7 +426,7 @@ export async function saveAnnouncementEndsAt(value: string): Promise<ActionResul
   if (Number.isNaN(ms)) return fail('Enter a valid date (for example 2026-09-01).')
   try {
     await setPlatformSetting('announcement_ends_at', new Date(ms).toISOString(), ctx.profileId)
-    revalidatePath(PATH)
+    revalidatePricingSurfaces()
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the date.')

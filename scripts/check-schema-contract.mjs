@@ -98,6 +98,15 @@ export const ALLOWLIST = [
   // `kind` is optional (matches any). For an rpc finding the FUNCTION name goes in `table` and
   // `column` is null (see flattenViolations). An entry that matches nothing FAILS the guard, which
   // is the whole reason this list can only shrink.
+  {
+    file: 'app/(main)/founder/founder-actions.ts',
+    table: 'claim_founder_flags',
+    kind: 'rpc',
+    added: '2026-10-05',
+    reason:
+      'SCAN-759: migration 20270345013100_claim_founder_flags_compare_and_set.sql adds the RPC that stamps the founder reward flags under a row lock, so two tabs cannot pay the member twice. lib/database.types.ts has not been regenerated since; this entry retires on the next regeneration after the migration is applied.',
+    owner: 'SCAN-759',
+  },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */

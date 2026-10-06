@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
-import { SupportChatWidget } from '@/components/chat/support-chat-widget'
+import { SupportChatLauncher } from '@/components/chat/support-chat-launcher'
 import { isSupportChatAvailable, supportChatFlagEnabled } from '@/lib/comms/chat-token'
 import { Wordmark } from '@/components/layout/wordmark'
 
@@ -59,7 +59,7 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
       {/* 2026-09-05 (scan2 L3-06): the build flag alone mounted the widget even when the server could
           not mint its token (CONVERSATION_TOKEN_SECRET unset in production) or had no inbox owner, so
           every chat attempt failed after writing rows. isSupportChatAvailable is the server-side gate. */}
-      {supportChatFlagEnabled() && isSupportChatAvailable() && <SupportChatWidget />}
+      {supportChatFlagEnabled() && isSupportChatAvailable() && <SupportChatLauncher />}
     </ViewerProvider>
   )
 }

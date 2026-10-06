@@ -345,7 +345,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       getAllCategories(),
     ]);
 
-    const articleRoutes: MetadataRoute.Sitemap = articles.map((a) => ({
+    // An article whose canonical is another page (a twin of a marketing guide, SCAN-673) is not a
+    // URL this site asks crawlers to rank, so it stays out of the sitemap; the guide is already in.
+    const articleRoutes: MetadataRoute.Sitemap = articles.filter((a) => !a.canonical).map((a) => ({
       url: `${SITE_URL}/help/${a.category}/${a.slug}`,
       ...((a.updated) ? { lastModified: new Date(a.updated) } : {}),
       changeFrequency: "weekly",

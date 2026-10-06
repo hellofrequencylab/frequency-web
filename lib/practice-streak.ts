@@ -829,10 +829,20 @@ export async function setStreakPause(
   const meta = (prof?.meta ?? {}) as Record<string, unknown>
   const stored = readStored(meta)
 
+  // Bank the days the OLD window already covered before replacing it (SCAN-771), exactly as
+  // clearStreakPause does. A stored rest is only retired on a log, so a member who taps "Rest a
+  // week" again the morning after a rest ended (or from a second tab mid-rest) used to have the
+  // first window overwritten with its days never banked: derivePracticeStreak then found the gap
+  // and the streak the first rest was protecting read as broken. pauseCoveredDays clamps to today,
+  // so only days already rested become permanent frozen records; the new window covers the rest.
+  const frozen = new Set(stored.frozenDates)
+  for (const d of pauseCoveredDays(stored.rest, today)) frozen.add(d)
+  const prunedFrozen = [...frozen].filter((d) => dayDiff(today, d) <= WINDOW_DAYS)
+
   const nextStreak = {
     ...meta.practiceStreak as Record<string, unknown> | undefined,
     freezeTokens: stored.freezeTokens,
-    frozenDates: stored.frozenDates,
+    frozenDates: prunedFrozen,
     milestonesPaid: stored.milestonesPaid,
     longest: stored.longest,
     fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,

@@ -453,15 +453,20 @@ async function respond(transferId: string, next: 'accepted' | 'declined' | 'revo
     if (blocked) return fail(blocked)
   }
 
-  const { error } = await admin
+  // Compare-and-set: only a row still `pending` flips, and the flipped row comes back. SCAN-698: a
+  // PATCH that matched nothing returned no error, so an accept that lost to a revoke or a decline a
+  // moment earlier fell through and moved the event payee anyway. Zero rows is now a refusal.
+  const { data: updated, error } = await admin
     .from('event_host_transfers')
     .update({ status: next, responded_at: new Date().toISOString(), responded_by: profileId })
     .eq('id', transferId)
-    .eq('status', 'pending') // lost-update guard: a concurrent reply wins and this one reports it
+    .eq('status', 'pending')
+    .select('id')
   if (error) {
     console.error('[host-transfer] respond failed', { code: error.code, message: error.message, transferId })
     return fail('Could not answer that offer. Please try again.')
   }
+  if (!updated || updated.length === 0) return fail('That host offer has already been resolved.')
 
   if (next === 'accepted' && !(await applyHost(admin, row.event_id, row.to_space_id))) {
     return fail('Could not change the host. Please try again.')

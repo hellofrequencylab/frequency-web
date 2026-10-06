@@ -257,7 +257,8 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
   })
 
   it('joinCircle gates on ACCESS, and refuses every closed mode with one identical string', () => {
-    const src = read('app/(main)/circles/actions.ts')
+    // The join body lives in lib/circles/join.ts since SCAN-774; the Server Action only wraps it.
+    const src = read('lib/circles/join.ts')
     expect(src).toContain('canJoinCircle')
     expect(src).toContain("if (access !== 'open')")
     // Exactly one refusal string in the access gate — a per-mode message would confirm the circle
@@ -266,8 +267,15 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
     expect(gate.match(/return fail\(/g) ?? []).toHaveLength(1)
   })
 
-  it('the QR route is the ONLY caller that passes invited: true', () => {
-    expect(read('app/q/[slug]/route.ts')).toContain('{ invited: true }')
+  it('the QR route is the ONLY caller that can pass invited, and only after checking the minter (SCAN-774)', () => {
+    const route = read('app/q/[slug]/route.ts')
+    // The invite rides on who minted the code, never on the row alone: the route computes it from
+    // minterHoldsCircle (Host, Space steward or staff) and hands it to the non-action helper.
+    expect(route).toContain('const invited = await minterHoldsCircle(admin, code, circle)')
+    expect(route).toContain('joinCircleAsMember(profileId, code.circle_id, { invited })')
+    expect(route).not.toContain('{ invited: true }')
+    // The exported Server Action takes no invited flag at all: a client could pass one.
+    expect(read('app/(main)/circles/actions.ts')).toMatch(/export async function joinCircle\(circleId: string, circleSlug: string\)/)
     for (const f of ['components/circles/join-circle-button.tsx', 'app/onboarding/vera-actions.ts']) {
       expect(read(f)).not.toContain('invited: true')
     }
