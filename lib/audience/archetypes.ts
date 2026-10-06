@@ -24,8 +24,8 @@ export type ArchetypeId =
   | 'studio_keeper'
   | 'network_steward'
 
-export type ArchetypeFamily = 'seekers' | 'latent_leaders' | 'supporter' | 'builders'
-export type ArchetypeReader = 'seeker' | 'leader' | 'builder'
+type ArchetypeFamily = 'seekers' | 'latent_leaders' | 'supporter' | 'builders'
+type ArchetypeReader = 'seeker' | 'leader' | 'builder'
 
 export interface Archetype {
   id: ArchetypeId
@@ -66,7 +66,7 @@ export function archetypeTag(id: unknown): string | null {
 }
 
 /** One arrival follow-up option: the member's own words, and the archetype it stamps. */
-export interface FollowUpOption {
+interface FollowUpOption {
   label: string
   archetype: ArchetypeId
 }
@@ -107,5 +107,3 @@ export function resolveArchetype(persona: string | null | undefined, answer: unk
   return followUpsFor(persona).some((o) => o.archetype === answer) ? answer : null
 }
 
-/** The fallbacks the handoff names: a member who starts Crew without an archetype is a supporter. */
-export const CREW_FALLBACK_ARCHETYPE: ArchetypeId = 'mission_patron'
