@@ -1,0 +1,20 @@
+{
+  "id": "HYG-167",
+  "title": "Vercel skips preview builds for branches with no open pull request, so only ready PRs take the single build slot",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-06",
+  "wave": "W7",
+  "source": {
+    "file": "scripts/vercel-ignore-build.mjs",
+    "ref": "owner 2026-10-06 19:43Z 'yo WTF' (a hung Domain Connect preview held the slot 28 minutes with the LIVE-690 production deploy queued behind it); coordinator: make only previews for ready PRs build"
+  },
+  "detail": "FILED AND CLOSED 2026-10-06. HYG-166 skipped drafts and superseded pushes, but threads push a branch before they open its pull request, and a branch with no open PR still built (launch and LIVE branches on 2026-10-06). decideQueue now also skips a PREVIEW when the pulls API returns no open PR for the branch. Production never takes the rule, and an unreadable GitHub (null) still builds. Two misses remain outside the script: a branch that has not brought main in runs its own older copy of the ignore step, and a hung build holds the single slot until Vercel's own timeout.\n\nEXPECTED LIFT: previews build only for the current head of a ready PR, so production deploys wait behind fewer builds.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/vercel-ignore-build.mjs --probe && node -e 'const m=require(\"fs\").readFileSync(\"scripts/vercel-ignore-build.mjs\",\"utf8\");if(!/prs\\.length === 0/.test(m)){console.error(\"HYG-167: a preview with no open pull request still builds\");process.exit(1)}'",
+    "note": "The probe fails while a preview for a branch with no open pull request builds, or while a ready pull request skips its preview. Fails on main, where the no-PR rule does not exist."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-690",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const mig=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/alter table public\\.training_paths[\\s\\S]{0,80}add column if not exists completed_steps text\\[\\]/.test(mig))die(\"no migration stores a trainee completion per step (training_paths.completed_steps)\");const t=r(\"lib/onboarding/training.ts\");if(!/export async function setTrainingStep/.test(t)||!/completed_steps/.test(t))die(\"lib/onboarding/training.ts does not record a step completion\");if(!/loadCurriculum\\(/.test(t))die(\"training reads the code registry, not the edited curriculum\");const st=r(\"lib/onboarding/curriculum-store.ts\");if(!/export async function saveTierCurriculum/.test(st)||!/normalizeCurriculumEdit\\(/.test(st))die(\"there is no validated save of an operator curriculum edit\");const act=r(\"app/(main)/admin/content/training/actions.ts\");if(!/requireStaffCap\\(\\x27community\\x27, \\x27write\\x27\\)/.test(act)||!/saveTierCurriculum\\(/.test(act))die(\"the admin training page has no staff-gated edit action\");const pg=r(\"app/(main)/admin/content/training/page.tsx\");if(!/<TierEditor/.test(pg))die(\"the admin training page renders the curriculum as copy with no editor\");if(/scoped for a follow-up/.test(pg))die(\"the admin training page still says editing is scoped for a follow-up\");const tp=r(\"app/(main)/training/page.tsx\");if(!/<StepToggle/.test(tp))die(\"a trainee cannot mark a step done\");const ta=r(\"app/(main)/training/actions.ts\");if(!/setTrainingStep\\(/.test(ta))die(\"the trainee step action stores nothing\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nOperators edit each tier's title, intro and ordered steps in place on /admin/content/training (community staff write; stored as JSON over the code registry in platform_settings training_curriculum, no seed row; reward stays in code; Reset to default per tier). Every step carries a stable id, and training_paths.completed_steps (migration 20270346002100) stores a trainee's completion per step from a done toggle on /training, which shows N of M and moves the path to started. A relabel or reorder keeps progress."
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "OWN-096",
+  "title": "Turn on Founding Collective and confirm the ladder in production",
+  "status": "open",
+  "priority": "P2",
+  "lane": "owner",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 9 of the five-tier ladder (ADR-1709). After LIVE-763 and LIVE-764 work in production and OWN-095 is sent: the owner says yes, Collective is advertised as Founding Collective (plan_collective_enabled already reads true by owner ruling 2026-10-06), and production shows the pricing page with five tiers, a free Space checkout refused with the upgrade prompt, and a Business checkout end to end.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Open until the owner says yes and the three production confirmations are recorded here.",
+    "checked": "2026-10-06"
+  },
+  "ownerAction": "config",
+  "wave": "owner-timed"
+}

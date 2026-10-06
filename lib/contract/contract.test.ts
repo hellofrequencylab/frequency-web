@@ -133,14 +133,15 @@ describe('meView', () => {
 
 describe('the proxy does not run on /api/v1', () => {
   // The matcher is a constant Next compiles at build time (a path-to-regexp source whose one group
-  // is a plain regex). Read the value the proxy exports and test it as that regex.
+  // is a plain regex). Read the value the proxy exports and test it as that regex. The object entry is
+  // the host-scoped crawler-file arm (LIVE-783), which only runs on a Space's own domain.
   it('excludes /api/v1 and nothing else it used to cover', async () => {
     vi.doMock('@supabase/ssr', () => ({ createServerClient: () => ({ auth: { getUser: async () => ({ data: { user: null } }) } }) }))
     vi.doMock('@/lib/platform-flags', () => ({ referralsEnabled: async () => true }))
     process.env.NEXT_PUBLIC_SUPABASE_URL ||= 'https://example.supabase.co'
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||= 'anon-key-for-tests'
     const { config } = await import('@/proxy')
-    const runs = (path: string) => config.matcher.some((m: string) => new RegExp(`^${m}$`).test(path))
+    const runs = (path: string) => config.matcher.some((m: unknown) => typeof m === 'string' && new RegExp(`^${m}$`).test(path))
     expect(runs('/api/v1/me')).toBe(false)
     expect(runs('/api/v1')).toBe(false)
     expect(runs('/api/v1/circles/abc/join')).toBe(false)

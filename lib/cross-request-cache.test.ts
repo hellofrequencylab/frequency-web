@@ -28,6 +28,8 @@ const READ = 'lib/menus/read.ts'
 const SOURCES = 'lib/layout/chrome-sources.ts'
 const FLAGS = 'lib/platform-flags.ts'
 const SEAM = 'lib/cross-request-cache.ts'
+/** The Space website's row (PROG-E10 phase 5, LIVE-784), cached per Space under `site:<slug>`. */
+const SITE = 'lib/sites/site-cache.ts'
 
 /** Every non-test source file under the app tree. Dirents, so the walk asks the filesystem once
  *  per entry (scripts/walker-dirents.mjs, ADR-1185). */
@@ -100,11 +102,11 @@ describe('the census: what is cached, at which scope, under which tag', () => {
     expect(callers).toEqual([SEAM])
   })
 
-  it('exactly five row sources are cached across requests, each under its own tag', () => {
+  it('exactly six row sources are cached across requests, each under its own tag', () => {
     const sites = TREE.filter((f) => /\bcrossRequestCached\(/.test(sourceWithoutComments(f, { imports: true })))
       .map(rel)
       .sort()
-    expect(sites).toEqual([SOURCES, READ, FLAGS].sort())
+    expect(sites).toEqual([SOURCES, READ, FLAGS, SITE].sort())
 
     const read = src(READ)
     const sources = src(SOURCES)
@@ -112,6 +114,7 @@ describe('the census: what is cached, at which scope, under which tag', () => {
     expect(count(read, /\bcrossRequestCached\(/g)).toBe(2)
     expect(count(sources, /\bcrossRequestCached\(/g)).toBe(2)
     expect(count(flags, /\bcrossRequestCached\(/g)).toBe(1)
+    expect(count(src(SITE), /\bcrossRequestCached\(/g)).toBe(1)
 
     // menus (menus + menu_categories + menu_items + menu_rail_cards) and menu_settings
     expect(between(read, 'const menuRows = crossRequestCached(', '\n)')).toContain('tags: [CHROME_CACHE_TAGS.menus]')
@@ -129,6 +132,8 @@ describe('the census: what is cached, at which scope, under which tag', () => {
     expect(between(flags, 'const demoModeFlagRow = crossRequestCached(', '\n)')).toContain(
       'tags: [CHROME_CACHE_TAGS.platformFlags]',
     )
+    // the Space website's row, one tag per Space, expired by the owner's writes (refreshSite)
+    expect(between(src(SITE), 'const read = crossRequestCached(', '\n')).toContain('tags: [siteCacheTag(norm)]')
   })
 
   it('the six chrome loaders are deduped per request with React cache()', () => {
@@ -173,6 +178,7 @@ describe('the privilege rule: rows cross the boundary, viewers never do', () => 
       between(read, 'const menuSettingsRow = crossRequestCached(', 'export const getMenuSettings'),
       src(SOURCES),
       between(src(FLAGS), 'const demoModeFlagRow = crossRequestCached(', '\n)'),
+      between(src('lib/spaces/store.ts'), 'export async function getPublicSpaceBySlugOrThrow(', '\n}'),
     ]
     for (const body of bodies) for (const re of VIEWER_SHAPED) expect(body).not.toMatch(re)
   })
@@ -195,6 +201,9 @@ describe('the privilege rule: rows cross the boundary, viewers never do', () => 
     expect(between(read, 'const menuSettingsRow = crossRequestCached(', '\n)')).toMatch(/if \(error\) throw new Error\(/)
     expect(count(src(SOURCES), /if \(error\) throw new Error\(/g)).toBe(2)
     expect(between(src(FLAGS), 'const demoModeFlagRow = crossRequestCached(', '\n)')).toMatch(/if \(error\) throw new Error\(/)
+    expect(between(src('lib/spaces/store.ts'), 'export async function getPublicSpaceBySlugOrThrow(', '\n}')).toMatch(
+      /if \(error\) throw new Error\(/,
+    )
   })
 
   it('the per-viewer menu filter still runs in the renderer, after both caches', () => {

@@ -197,6 +197,26 @@ export const getSpaceBySlug = cache(async (slug: string): Promise<Space | null> 
   return mapOneSpace(data)
 })
 
+/** The ACTIVE, network-visible Space with this slug as an ANONYMOUS visitor sees it, or null. The
+ *  same answer as getVisibleSpaceBySlug(slug, null), in one read, but it THROWS on a failed query
+ *  instead of reading as "missing" or "private", because its caller caches the result across
+ *  requests (lib/sites/site-cache.ts) and a cached fallback would hide a site until the next save. */
+export async function getPublicSpaceBySlugOrThrow(slug: string): Promise<Space | null> {
+  const norm = slug.trim().toLowerCase()
+  if (!norm) return null
+  const { data, error } = (await createAdminClient()
+    .from('spaces')
+    .select(`${COLS_FULL}, visibility`)
+    .eq('slug', norm)
+    .maybeSingle()) as {
+    data: (SpaceRow & { visibility?: string | null }) | null
+    error: { message?: string } | null
+  }
+  if (error) throw new Error(`space read failed: ${error.message ?? 'unknown'}`)
+  if (!data || data.status !== 'active' || data.visibility === 'private') return null
+  return mapOneSpace(data)
+}
+
 /** A Space's `visibility` ('network' | 'private'), defaulting to 'network' when the column is
  *  absent (pre-migration) or unset. Read alongside getSpaceBySlug so the profile can fail closed on
  *  Private spaces a viewer may not see. */

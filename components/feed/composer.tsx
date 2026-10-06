@@ -5,9 +5,9 @@ import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import { Dialog } from '@/components/ui/dialog'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
-import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera, type LucideIcon } from 'lucide-react'
+import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera, Plus, BarChart3, HelpCircle, type LucideIcon } from 'lucide-react'
 import { IconButton } from '@/components/ui/icon-button'
-import { Textarea } from '@/components/ui/field'
+import { Input, Textarea } from '@/components/ui/field'
 import { createPost } from '@/app/(main)/feed/actions'
 import { isError } from '@/lib/action-result'
 import { createClient } from '@/lib/supabase/client'
@@ -17,14 +17,21 @@ import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { EmojiPicker } from './emoji-picker'
 import { ComposeLightbox } from './compose-lightbox'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { Select } from '@/components/ui/select'
+import { DISPATCH_SCOPE_LABEL, POLL_LIMITS, type DispatchScope } from '@/lib/feed/compose-kinds'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024 // 5 MB (post-prep; raw camera shots are converted + downscaled first)
 
 // The composer's two send modes. Same shape as the Capture box's feature row so the two
 // selectors read as one control (see the render, "PATTERN:" note).
-const MODES: { label: string; icon: LucideIcon; announcement: boolean; hint: string }[] = [
-  { label: 'Post', icon: PenLine, announcement: false, hint: 'A regular post' },
-  { label: 'Dispatch', icon: Megaphone, announcement: true, hint: 'Dispatch: send an announcement to your group' },
+type PostKind = 'feed' | 'poll' | 'ask'
+
+// LIVE-682: Post, Poll and Ask for every member; Dispatch for whoever may announce here.
+const MODES: { key: PostKind | 'dispatch'; label: string; icon: LucideIcon; hint: string }[] = [
+  { key: 'feed', label: 'Post', icon: PenLine, hint: 'A regular post' },
+  { key: 'poll', label: 'Poll', icon: BarChart3, hint: 'Poll: ask a question with options to vote on' },
+  { key: 'ask', label: 'Ask', icon: HelpCircle, hint: 'Ask: a question the replies answer' },
+  { key: 'dispatch', label: 'Dispatch', icon: Megaphone, hint: 'Dispatch: send an announcement to your group' },
 ]
 
 type HandleResult = { id: string; handle: string; display_name: string; avatar_url: string | null }
@@ -82,6 +89,9 @@ export function Composer({
   compactTools = true,
   onSubmit,
   onUploadImage,
+  postKind = 'feed',
+  dispatchScopes = [],
+  initialBody = '',
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -109,8 +119,22 @@ export function Composer({
   /** Override image upload (e.g. the Space's follower-gated community-image action). Returns the public
    *  URL, or null on failure. When omitted, the default upload to the `posts` bucket runs. */
   onUploadImage?: (file: File) => Promise<string | null>
+  /** LIVE-682: the kind this box sends. A 'poll' adds its options under the question; an 'ask'
+   *  is a question the replies answer. Ignored for a note, a Dispatch or a custom onSubmit. */
+  postKind?: PostKind
+  /** LIVE-682: the Dispatch reach this author may pick (lib/feed/compose-kinds dispatchScopesFor).
+   *  With two or more, a Dispatch shows a "Send to" picker; createPost re-checks the pick. */
+  dispatchScopes?: DispatchScope[]
+  /** Seed the editor (the Share kind drops a Practice or Journey link in). */
+  initialBody?: string
 }) {
-  const [body, setBody] = useState('')
+  const [body, setBody] = useState(initialBody)
+  const [pollOptions, setPollOptions] = useState<string[]>(['', ''])
+  const [dispatchScope, setDispatchScope] = useState<DispatchScope | null>(dispatchScopes.includes('hub') ? 'hub' : (dispatchScopes[0] ?? null))
+  // The kind picked on the default bottom row; a mount that passes its own row (Capture) sets it.
+  const [pickedKind, setPickedKind] = useState<PostKind>(postKind)
+  const sendKind: PostKind = onSubmit ? 'feed' : pickedKind
+  const isPoll = sendKind === 'poll' && kind !== 'note'
   // Capture remounts the composer per feature (key=mode), so the Dispatch feature's
   // `forceAnnouncement` seeds the initial state — no effect needed.
   const [isAnnouncement, setIsAnnouncement] = useState(!!forceAnnouncement)
@@ -274,7 +298,9 @@ export function Composer({
         fd.set('body', trimmed)
         fd.set('scopeId', scopeId)
         fd.set('visibility', visibility)
-        fd.set('post_type', isAnnouncement ? 'announcement' : kind === 'note' ? 'note' : 'feed')
+        fd.set('post_type', isAnnouncement ? 'announcement' : kind === 'note' ? 'note' : sendKind)
+        if (isAnnouncement && dispatchScope) fd.set('dispatch_scope', dispatchScope)
+        if (!isAnnouncement && isPoll) for (const o of pollOptions) fd.append('poll_option', o)
         if (imageUrl) fd.set('imageUrl', imageUrl)
 
         // Keep the composed text (and image) if the write failed, so nothing is lost.
@@ -286,6 +312,7 @@ export function Composer({
       }
 
       setBody('')
+      setPollOptions(['', ''])
       setIsAnnouncement(false)
       setManualHeight(null)
       setExpanded(false)
@@ -460,7 +487,14 @@ export function Composer({
     return () => document.removeEventListener('click', handleOutside)
   }, [suggestions.length])
 
-  const canPost = (!!body.trim() || !!imageFile) && !isPending
+  // The default bottom row's modes: Poll and Ask ride the createPost path, Dispatch needs the right.
+  const rowModes =
+    kind === 'note' ? [] : MODES.filter((m) => (m.key === 'dispatch' ? canAnnounce : m.key === 'feed' || !onSubmit))
+
+  const canPost =
+    (!!body.trim() || !!imageFile) &&
+    !isPending &&
+    (!isPoll || isAnnouncement || pollOptions.filter((o) => o.trim()).length >= POLL_LIMITS.minOptions)
 
   // ── The editor body — rendered the same inline or inside the lightbox. ──────
   const editor = (
@@ -488,11 +522,19 @@ export function Composer({
         <Textarea
           variant="seamless"
           ref={textareaRef}
-          aria-label={isAnnouncement ? 'Your announcement' : 'Your post'}
+          aria-label={isAnnouncement ? 'Your announcement' : isPoll ? 'Your poll question' : sendKind === 'ask' ? 'Your question' : 'Your post'}
           value={body}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder={isAnnouncement ? 'Share an announcement with your group…' : placeholder}
+          placeholder={
+            isAnnouncement
+              ? 'Share an announcement with your group…'
+              : isPoll
+                ? 'What do you want to ask?'
+                : sendKind === 'ask'
+                  ? 'Ask the community something. Replies are the answers.'
+                  : placeholder
+          }
           rows={expanded ? 6 : 3}
           disabled={isPending}
           // `focus-visible:shadow-none` stays: this box is the `data-tour-anchor="composer"`
@@ -556,6 +598,60 @@ export function Composer({
           </div>
         )}
       </div>
+
+      {/* LIVE-682: a poll's options, under its question. */}
+      {isPoll && !isAnnouncement && (
+        <div role="group" aria-label="Poll options" className="mt-3 space-y-2">
+          {pollOptions.map((o, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input
+                aria-label={`Option ${i + 1}`}
+                value={o}
+                maxLength={POLL_LIMITS.label}
+                placeholder={`Option ${i + 1}`}
+                disabled={isPending}
+                onChange={(e) => setPollOptions((all) => all.map((x, j) => (j === i ? e.target.value : x)))}
+                className="min-w-0 flex-1"
+              />
+              {pollOptions.length > POLL_LIMITS.minOptions && (
+                <IconButton label={`Remove option ${i + 1}`} disabled={isPending} onClick={() => setPollOptions((all) => all.filter((_, j) => j !== i))}>
+                  <X className="h-4 w-4" aria-hidden />
+                </IconButton>
+              )}
+            </div>
+          ))}
+          {pollOptions.length < POLL_LIMITS.maxOptions && (
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => setPollOptions((all) => [...all, ''])}
+              className="inline-flex items-center gap-1 rounded-control px-1 py-0.5 text-meta font-medium text-muted transition-colors hover:text-text"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden /> Add an option
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* LIVE-682: how far a Dispatch goes, limited to the tiers this author leads. */}
+      {isAnnouncement && dispatchScopes.length > 1 && dispatchScope && (
+        <label className="mt-3 flex items-center gap-2 text-meta font-medium text-muted">
+          Send to
+          <Select
+            value={dispatchScope}
+            disabled={isPending}
+            onChange={(e) => setDispatchScope(e.target.value as DispatchScope)}
+            wrapperClassName="inline-block w-max max-w-full"
+            className="text-meta"
+          >
+            {dispatchScopes.map((d) => (
+              <option key={d} value={d}>
+                {DISPATCH_SCOPE_LABEL[d]}
+              </option>
+            ))}
+          </Select>
+        </label>
+      )}
 
       {/* Image preview */}
       {/* Branch on the GUARDED value, not the raw one. Branching on `imagePreview` rendered the
@@ -682,27 +778,34 @@ export function Composer({
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
         {bottomSlot != null ? (
           bottomSlot
-        ) : canAnnounce && kind !== 'note' ? (
+        ) : rowModes.length > 1 ? (
           // PATTERN: the same DAWN composer row as the Capture box's feature selector
           // (dawn/ui_kits/app/feed.jsx:138-148) — one labelled chip for the active mode
-          // (radius-pill + border-strong hairline), the other mode as a bare 32px
-          // radius-control icon button, and NO `bg-surface-elevated p-0.5` track. WHY the
-          // same pattern rather than tabs: Post/Dispatch is the same choice this box's
-          // richer sibling offers (it is literally the two-mode case of the CaptureBox
-          // row), so the two must read as one control, and neither navigates anywhere.
-          // `title` is kept on both so the "what is a Dispatch" hint survives.
+          // (radius-pill + border-strong hairline), the other modes as bare 32px
+          // radius-control icon buttons, and NO `bg-surface-elevated p-0.5` track. WHY the
+          // same pattern rather than tabs: this is the same choice this box's richer sibling
+          // offers, so the two must read as one control, and neither navigates anywhere.
+          // `title` is kept on each so the "what is a Dispatch" hint survives.
           <div className="inline-flex items-center gap-1">
-            {MODES.map((m) => {
-              const active = m.announcement === isAnnouncement
+            {rowModes.map((m) => {
+              const active = m.key === 'dispatch' ? isAnnouncement : !isAnnouncement && m.key === pickedKind
+              const pick = () => {
+                if (m.key === 'dispatch') {
+                  setIsAnnouncement(true)
+                } else {
+                  setIsAnnouncement(false)
+                  setPickedKind(m.key)
+                }
+              }
               return active ? (
                 <button
-                  key={m.label}
+                  key={m.key}
                   type="button"
-                  onClick={() => setIsAnnouncement(m.announcement)}
+                  onClick={pick}
                   aria-pressed
                   title={m.hint}
                   className={`inline-flex items-center gap-1.5 rounded-pill border border-border-strong px-3 py-1.5 text-meta font-bold ${
-                    m.announcement ? 'text-warning' : 'text-text'
+                    m.key === 'dispatch' ? 'text-warning' : 'text-text'
                   }`}
                 >
                   <m.icon className="h-3.5 w-3.5" aria-hidden />
@@ -710,11 +813,11 @@ export function Composer({
                 </button>
               ) : (
                 <IconButton
-                  key={m.label}
+                  key={m.key}
                   label={m.label}
                   title={m.hint}
-                  tone={m.announcement ? 'warning' : 'default'}
-                  onClick={() => setIsAnnouncement(m.announcement)}
+                  tone={m.key === 'dispatch' ? 'warning' : 'default'}
+                  onClick={pick}
                   aria-pressed={false}
                 >
                   <m.icon className="h-4 w-4" aria-hidden />
