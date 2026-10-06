@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-701",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/events/capacity.ts\";if(!fs.existsSync(f))process.exit(79);const s=fs.readFileSync(f,\"utf8\");const i=s.indexOf(\"export async function promoteFromWaitlist\");if(i<0)process.exit(79);const body=s.slice(i,s.indexOf(\"\\nexport \",i+10)>0?s.indexOf(\"\\nexport \",i+10):s.length);const m=body.match(/update\\(\\{\\s*status:\\s*.going.\\s*\\}\\)[\\s\\S]{0,400}/);if(!m)process.exit(79);const chain=m[0].slice(0,m[0].search(/\\n\\s*(return|if|const|let|for)\\b/)>0?m[0].search(/\\n\\s*(return|if|const|let|for)\\b/):m[0].length);const guarded=/\\.eq\\(.status.,\\s*.waitlist.\\)/.test(chain);const confirmed=/\\.select\\(/.test(chain);if(!guarded||!confirmed){console.error(\"SCAN-701: promoteFromWaitlist still promotes by id alone with no waitlist status guard and no returned row, so two concurrent withdrawals promote the same person twice and leave a seat empty.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: promoteFromWaitlist (lib/events/capacity.ts) now loops up to three candidates and promotes with a compare-and-set on status = waitlist that reads the moved row back, so the losing caller gets zero rows, moves to the next waitlisted person and never reports the same seat twice; lib/events/capacity.test.ts pins the race."
+  }
+}

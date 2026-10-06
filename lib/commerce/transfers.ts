@@ -735,25 +735,39 @@ export async function recordTransferReversed(transfer: Stripe.Transfer): Promise
   const reversed = int(transfer.amount_reversed) ?? 0
   const { data: found, error: readErr } = await db()
     .from(TABLE)
-    .select('id, amount_cents, reversed_cents, status')
+    .select('id, order_id, amount_cents, reversed_cents, status')
     .eq('stripe_transfer_id', transfer.id)
     .maybeSingle()
   if (readErr) throw new Error(`transfer ${transfer.id} unreadable: ${readErr.message}`)
-  const row = found as { id: string; amount_cents: number; reversed_cents: number; status: TransferStatus } | null
+  const row = found as { id: string; order_id: string; amount_cents: number; reversed_cents: number; status: TransferStatus } | null
   if (!row || reversed <= row.reversed_cents) return false
   const cents = Math.min(reversed, row.amount_cents)
+  const closes = cents >= row.amount_cents
   const { data, error } = await db()
     .from(TABLE)
     .update({
       reversed_cents: cents,
-      status: cents >= row.amount_cents ? 'reversed' : row.status,
+      status: closes ? 'reversed' : row.status,
       updated_at: new Date().toISOString(),
     })
     .eq('id', row.id)
     .lt('reversed_cents', cents)
     .select('id')
   if (error) throw new Error(`transfer ${transfer.id} reversal not recorded: ${error.message}`)
-  return (data ?? []).length > 0
+  const landed = (data ?? []).length > 0
+  // A share that just closed leaves the roll-up (SCAN-650): the order's own step must follow the
+  // shares still open, or an order whose other shares were delivered stays shipped. Best-effort,
+  // after the write that matters: the reversal is recorded whether or not the roll-up lands, and
+  // the fulfilment module is loaded here, not at the top, so this ledger stays free of its deps.
+  if (landed && closes) {
+    try {
+      const { rollUpSplitOrderById } = await import('./fulfilment')
+      await rollUpSplitOrderById(row.order_id)
+    } catch (e) {
+      log.error('commerce.transfer.reversed_rollup_failed', { transfer: transfer.id, orderId: row.order_id, error: briefError(e) })
+    }
+  }
+  return landed
 }
 
 // ── Read ────────────────────────────────────────────────────────────────────────────────────────
