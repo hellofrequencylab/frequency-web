@@ -34,6 +34,10 @@ describe('nextStepFor', () => {
     }
   })
 
+  it('sends a would-be Host to the Starter Circles gallery, a real route', () => {
+    expect(nextStepFor('host', 'mindless').href).toBe('/circles/templates')
+  })
+
   it('points a Circle Host at inviting people to the Circle they just published', () => {
     expect(nextStepFor('host', 'circle', { circleHref: '/circles/sunrise' }).href).toBe('/circles/sunrise')
   })

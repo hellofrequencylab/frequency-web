@@ -105,7 +105,7 @@ export function nextStepFor(
     case 'host':
       return {
         label: 'Remix a Starter Circle',
-        href: '/circles/starter',
+        href: '/circles/templates',
         body: 'Pick one, make it yours, and host the first gathering.',
       }
     case 'practice':
