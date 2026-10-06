@@ -285,6 +285,11 @@
 # webhook (no member session) and the on-page confirmation, where Stripe is the authority: it re-fetches the
 # session and acts only on a paid domain_purchase. The claim is a single conditional update, so a retry buys
 # nothing twice.
+# app/(main)/partners/[slug]/loyalty-actions.ts (added 2026-10-06, LIVE-710): a member claims a
+# partner loyalty card at the counter. partner_redemptions has no member write policy (every row is
+# written by the capture path or this action after its own checks), so the claim insert runs as the
+# service role: the offer must be a live loyalty card at an active partner and the caller must hold
+# the visits for it. It writes one row for the caller and reads only the caller's own taps.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -456,6 +461,7 @@ app/(main)/outreach/actions.ts
 app/(main)/outreach/page.tsx
 app/(main)/pages/home/actions.ts
 app/(main)/pages/sequences/page.tsx
+app/(main)/partners/[slug]/loyalty-actions.ts
 app/(main)/partners/join/actions.ts
 app/(main)/partners/listing/actions.ts
 app/(main)/partners/listing/page.tsx
