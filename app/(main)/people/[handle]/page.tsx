@@ -26,7 +26,6 @@ import { getRealCallerWebRole } from '@/lib/auth'
 import { actAsMember } from '@/app/(main)/impersonate-actions'
 import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
-import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
 import { ProfileSettingsDrawer } from './profile-settings-drawer'
@@ -63,6 +62,8 @@ import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-la
 import { safeWebsite } from '@/lib/profiles/website'
 import { ShareRefProvider } from '@/components/qr/share-ref-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
+import { roleUnlocked, stageUnlocked } from '@/lib/unlocks'
+import { getCachedMemberProgress } from '@/lib/member-progress'
 
 export default async function ProfilePage({
   params,
@@ -333,6 +334,14 @@ export default async function ProfilePage({
     .map((r) => ({ ...r, earned: r.current >= r.target, ratio: Math.min(1, r.current / r.target) }))
     .sort((a, b) => Number(b.earned) - Number(a.earned) || b.ratio - a.ratio)
   const rewardsEarned = rewards.filter((r) => r.earned).length
+  // Stage reveal (LIVE-669, lib/unlocks.ts): on your OWN profile the Achievements grid waits until
+  // setup is done, so a newcomer is not handed a row of empty badges. A visitor always sees it.
+  // Fail-open: a progress read error shows the grid.
+  const showAchievements =
+    !isOwner ||
+    (await getCachedMemberProgress(profileId)
+      .then((p) => stageUnlocked('profile.achievements', p.stage.index))
+      .catch(() => true))
 
   // The page route (used for the vCard "Save contact" download when the member enabled
   // a contact card). The profile QR + share link is supplied by the DetailTemplate's
@@ -613,7 +622,7 @@ export default async function ProfilePage({
           )}
 
           {/* Staff-only: this member's support history, wired into the console. */}
-          {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
+          {!isOwner && roleUnlocked('profile.member-support', myRole) && <MemberSupportPanel profileId={profileId} />}
 
           {/* The member's page-builder content (ADR-508 → ADR-516 Phase C → ADR-522). ONE engine: both
               branches render the member's freeform grid (resolveRows over meta.entityGrid). For the OWNER
@@ -729,16 +738,18 @@ export default async function ProfilePage({
           </div>
 
           {/* Achievements — the earned / nearly-earned chips. */}
-          <div className="rounded-card border border-border bg-surface p-4 lift-1">
-            <p className="mb-3 text-body-sm font-bold tracking-tight text-text">
-              Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {rewards.map((r) => (
-                <AchievementChip key={r.label} icon={r.icon} label={r.label} earned={r.earned} current={r.current} target={r.target} milestone={r.milestone} />
-              ))}
+          {showAchievements && (
+            <div className="rounded-card border border-border bg-surface p-4 lift-1">
+              <p className="mb-3 text-body-sm font-bold tracking-tight text-text">
+                Achievements <span className="font-medium text-subtle">· {rewardsEarned}/{rewards.length}</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {rewards.map((r) => (
+                  <AchievementChip key={r.label} icon={r.icon} label={r.label} earned={r.earned} current={r.current} target={r.target} milestone={r.milestone} />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Real earned awards + owned/awarded shop items (renders nothing when empty). */}
           <ProfileAwards awards={awards} firstName={firstName} isOwner={isOwner} />

@@ -15,10 +15,11 @@
 // NO em dashes anywhere: the system prompt forbids them AND we strip them defensively
 // from every output (the long dash is replaced with a comma; ranges collapse to a hyphen).
 //
-// Later (deferred, noted here so nobody re-derives it): an eval harness for these drafts,
-// MCP/tool grounding over the Space's live content, and RAG embeddings over the Space's
-// posts/offerings to ground the copy in real material rather than just the brand fields.
-// Phase 1 stays cheap and model-agnostic (the gateway flag from Epic 0.5b handles swap).
+// GROUNDED AND MEASURED (LIVE-676): the actions hand in the Space's own About and its live
+// offerings (lib/ai/space-grounding.ts, the public readers its profile renders from), and every
+// draft is scored against a fixed set of Spaces by lib/ai/space-copilot-eval.ts (`pnpm
+// eval:copilot` on the live model; the unit test holds the fallbacks to the same bar). Embedding
+// retrieval over the Space's content is not needed at this size: the offerings fit the prompt.
 
 import { completeText, AiUnavailableError } from './complete'
 import { aiEnabled } from './client'
@@ -43,6 +44,8 @@ export interface SpaceContext {
   brandName?: string | null
   /** A short, free-text description of what the owner does — the richest grounding when present. */
   about?: string | null
+  /** The Space's live offerings as short labels ("Event: Sunday sit"), from lib/ai/space-grounding.ts. */
+  offerings?: string[] | null
   /** The actor, for the usage ledger (never blocks). */
   profileId?: string | null
 }
@@ -90,6 +93,12 @@ export function stripEmDashes(text: string): string {
     .trim()
 }
 
+/** The live offerings as one fact line, each label cleaned like any other field. */
+export function offeringFacts(ctx: SpaceContext): string {
+  const lines = (ctx.offerings ?? []).map((o) => clean(o, 120)).filter(Boolean).slice(0, 12)
+  return lines.length ? `What they offer right now: ${lines.join('; ')}.` : ''
+}
+
 const BASE_RULES = `You are Vera, the Frequency co-host, helping a Space owner write their own profile copy. Write as one warm, plain person (a camp counselor you actually respect), never salesy, never hype.
 
 Ground every word in the FACTS you are given about this Space. Never invent a credential, a result, a location, a price, a year in business, or any claim you were not given. When the facts are thin, write something honest and inviting rather than padding with fabricated detail.
@@ -118,6 +127,7 @@ export async function draftSpaceBio(ctx: SpaceContext): Promise<string> {
     `Space name: ${brandLabel(ctx)}.`,
     `Kind of space: ${typeLabel(ctx.type)}.`,
     ctx.about ? `What they do (owner's words): ${clean(ctx.about, 600)}` : '',
+    offeringFacts(ctx),
   ]
     .filter(Boolean)
     .join('\n')
@@ -164,6 +174,7 @@ export async function suggestTagline(ctx: SpaceContext): Promise<string> {
     `Space name: ${brandLabel(ctx)}.`,
     `Kind of space: ${typeLabel(ctx.type)}.`,
     ctx.about ? `What they do (owner's words): ${clean(ctx.about, 400)}` : '',
+    offeringFacts(ctx),
   ]
     .filter(Boolean)
     .join('\n')

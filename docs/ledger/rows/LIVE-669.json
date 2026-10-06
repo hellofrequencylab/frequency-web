@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-669",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const die=(m)=>{console.error(\"LIVE-669: \"+m);process.exit(1)};if(!/lockedModules\\(/.test(r(\"components/widgets/page-modules.tsx\")))die(\"the module-driven dashboard does not hold modules back by stage\");if(!/module: .quest-leaderboard./.test(r(\"lib/unlocks.ts\")))die(\"no My Quest module has a stage floor\");if(!/stageUnlocked\\(.rail\\.leaderboard., stageIndex\\)/.test(r(\"components/sidebar/rail-registry.tsx\")))die(\"the rail modules do not read the member stage\");if(!/stageUnlocked\\(.profile\\.achievements./.test(r(\"app/(main)/people/[handle]/page.tsx\")))die(\"the profile does not read the member stage\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nStage reveals now reach past the feed, from the unlock map (LIVE-668). My Quest: PageModules holds a module back until its stage floor (the Circle leaderboard waits for Regular). The right rail: the leaderboard panel waits for Regular as well as Crew standing. Your own profile: the Achievements grid waits until setup is done. Every read is fail-open and imports the progress spine on demand, so the shared layout graph does not grow. Defaults posted to the owner as a choice card; the map is a one-line retune."
+  }
+}

@@ -296,7 +296,21 @@ async function PagePanels({ profileId, role, pathname }: RightSidebarProps & { p
     }
   }
 
-  const ctx = { profileId, circleIds, isCrew, space }
+  // The member stage, read ONCE iff a selected panel holds something back by stage (LIVE-669,
+  // lib/unlocks.ts). Imported on demand so the progress spine never joins this layout's static
+  // graph. Fail-OPEN: a read error shows the panel, since hiding a member's leaderboard on a
+  // blip reads as losing standing.
+  let stageIndex = Number.MAX_SAFE_INTEGER
+  if (keys.some((key) => RAIL_PANELS[key]?.needsStage)) {
+    try {
+      const { getCachedMemberProgress } = await import('@/lib/member-progress')
+      stageIndex = (await getCachedMemberProgress(profileId)).stage.index
+    } catch {
+      // keep the fail-open default
+    }
+  }
+
+  const ctx = { profileId, circleIds, isCrew, space, stageIndex }
   // 🔴 NO PER-PANEL <Suspense> HERE, AND NO ROUTE IN A BOUNDARY KEY. This used to be
   // `<Suspense key={key} fallback={<PanelSkeleton />}>` around each panel, where `key` came from
   // `pageRailPanels(pathname)` — so a different route meant a different KEY SET, which means

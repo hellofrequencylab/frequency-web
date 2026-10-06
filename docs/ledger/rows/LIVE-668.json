@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-668",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const die=(m)=>{console.error(\"LIVE-668: \"+m);process.exit(1)};const map=r(\"lib/unlocks.ts\");if(!/export const UNLOCKS\\b/.test(map)||!/export function stageUnlocked/.test(map)||!/export function roleUnlocked/.test(map))die(\"there is no declarative unlock map\");for(const f of [\"app/(main)/feed/page.tsx\",\"components/feed/journey-board.tsx\"]){const s=r(f);if(/stageIndex\\s*>=\\s*\\d/.test(s))die(f+\" still carries its own stage threshold\");if(!/stageUnlocked\\(/.test(s))die(f+\" does not read the unlock map\")}for(const f of [\"app/(main)/outreach/page.tsx\",\"app/(main)/outreach/actions.ts\",\"lib/view-as.ts\"])if(!/roleUnlocked\\(/.test(r(f)))die(f+\" does not read the unlock map\");if(!/GENERATED from `lib\\/unlocks.ts`/.test(r(\"docs/UNLOCKS.md\")))die(\"no doc is generated from the map\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nlib/unlocks.ts is the one declarative map (feature, stage floor, role floor). The feed and the practice board read their stage reveals from it, and the Outreach, Inbox, View as and member-support gates read their host floor from it. docs/UNLOCKS.md is generated from the map (pnpm unlocks:doc) and lib/unlocks.test.ts fails when they drift. The stage ladder's keys now come from the map too."
+  }
+}

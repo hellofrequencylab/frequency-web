@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ClipboardList, GraduationCap, BookOpen, ArrowUpRight, Send, Inbox } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { roleUnlocked } from '@/lib/unlocks'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // Leadership dashboard layout module (/lead, per-route module engine): the "Leadership
@@ -38,7 +38,7 @@ export async function LeadTools(): Promise<React.ReactElement | null> {
         />
         {/* Outreach + Inbox are host+ (they self-guard and redirect below that), so only surface the
             links to stewards who can actually use them — otherwise they dead-end back to the feed. */}
-        {atLeastRole(me.community_role, 'host') && (
+        {roleUnlocked('lead.outreach', me.community_role) && (
           <ToolCard
             href="/outreach"
             Icon={Send}
@@ -46,7 +46,7 @@ export async function LeadTools(): Promise<React.ReactElement | null> {
             desc="Message the members you steward, scoped to your circle, hub, or nexus."
           />
         )}
-        {atLeastRole(me.community_role, 'host') && (
+        {roleUnlocked('lead.inbox', me.community_role) && (
           <ToolCard
             href="/lead/inbox"
             Icon={Inbox}

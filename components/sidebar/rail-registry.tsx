@@ -6,6 +6,7 @@ import {
 import { CommunityBoardPanel } from '@/components/sidebar/community-panel'
 import { SpaceEventsPanel, SpaceCirclesPanel, SpaceTeamPanel } from '@/components/sidebar/space-rail-panels'
 import type { PanelKey } from '@/lib/layout/rail-panels'
+import { stageUnlocked } from '@/lib/unlocks'
 import type { Space } from '@/lib/spaces/types'
 
 // The right rail's WIDGET SLOT registry (PAGE-FRAMEWORK §4.4, ADR-250 step 2). The route
@@ -28,6 +29,9 @@ export interface RailPanelContext {
    *  off a Space route (and for a Space this viewer may not see). Same one-prefetch shape as
    *  `circleIds` above: the rail resolves it, never a panel. */
   space: Space | null
+  /** The viewer's member stage index (lib/member-progress.ts), prefetched once when any panel
+   *  needs it; the stage reveals of lib/unlocks.ts read it (LIVE-669). */
+  stageIndex: number
 }
 
 export interface RailPanelDef {
@@ -35,6 +39,8 @@ export interface RailPanelDef {
   needsCircles?: boolean
   /** True if this panel reads `ctx.space` — drives the single viewer-gated Space resolve. */
   needsSpace?: boolean
+  /** True if this panel reads `ctx.stageIndex` — drives the single member-progress read. */
+  needsStage?: boolean
   /** Optional visibility gate; omitted ⇒ always shown. */
   gate?: (ctx: RailPanelContext) => boolean
   /** Render the panel for the given context. */
@@ -72,7 +78,8 @@ export const RAIL_PANELS: Record<PanelKey, RailPanelDef> = {
     render: ({ profileId }) => <ActiveNowPanel profileId={profileId} />,
   },
   leaderboard: {
-    gate: ({ isCrew }) => isCrew,
+    needsStage: true,
+    gate: ({ isCrew, stageIndex }) => isCrew && stageUnlocked('rail.leaderboard', stageIndex),
     render: () => <LeaderboardPanel />,
   },
   // The community board — your Circles' next gathering and what your Spaces have been saying

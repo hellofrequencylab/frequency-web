@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-676",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const die=(m)=>{console.error(\"LIVE-676: \"+m);process.exit(1)};const ev=r(\"lib/ai/space-copilot-eval.ts\");if(!/export async function runSpaceCopilotEval/.test(ev)||!/SPACE_COPILOT_EVAL_SET/.test(ev))die(\"no eval harness scores the copilot drafts over a fixed set of Spaces\");if(!/runSpaceCopilotEval\\(.bio., fallbackBio\\)/.test(r(\"lib/ai/space-copilot-eval.test.ts\")))die(\"the eval is not run in the test suite\");const cp=r(\"lib/ai/space-copilot.ts\");if(/Later \\(deferred/.test(cp))die(\"the deferred note is still in the copilot\");if((cp.match(/offeringFacts\\(ctx\\)/g)||[]).length<2)die(\"the drafts do not read the Space offerings\");const act=r(\"app/(main)/spaces/copilot-actions.ts\");if(!/loadSpaceGrounding\\(spaceId\\)/.test(act)||!/offerings: grounding\\.offerings/.test(act))die(\"the copilot actions do not hand in the Space live content\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nShipped the eval harness and the grounding. lib/ai/space-copilot-eval.ts scores every draft against a fixed set of six Spaces (voice canon, shape, no invented number, no hype or health claim); the unit test holds the deterministic fallbacks to the pass bar and pnpm eval:copilot runs the live model. lib/ai/space-grounding.ts hands the copilot the Space's About and its live public offerings (upcoming events, practices, Journeys, products), the readers its profile renders from. Embedding retrieval over posts is not needed at this size: the offerings fit the prompt."
+  }
+}

@@ -22,6 +22,7 @@ import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welc
 import { track } from '@/lib/analytics/track'
 import { getPracticesToLogToday, getPartialPracticesToday } from '@/lib/practices'
 import { getCachedMemberProgress } from '@/lib/member-progress'
+import { stageUnlocked } from '@/lib/unlocks'
 import { getMemberPillarBalance } from '@/lib/pillars'
 import { StageCelebration } from '@/components/progress/stage-celebration'
 import { AmplitudeCelebration } from '@/components/progress/amplitude-celebration'
@@ -166,9 +167,9 @@ export default async function FeedPage({
   const practiceStreak = progress?.streakState ?? null
   const stageIndex = progress?.stage.index ?? 0
 
-  // Pillar balance for the graduated board — only surfaced once the member is
-  // Established (stage 3), so fetch it only then.
-  const pillarBalance = myProfileId && stageIndex >= 3
+  // Pillar balance for the graduated board: only surfaced once the stage reaches its unlock
+  // (lib/unlocks.ts), so fetch it only then.
+  const pillarBalance = myProfileId && stageUnlocked('feed.pillar-balance', stageIndex)
     ? await getMemberPillarBalance(myProfileId)
     : undefined
 

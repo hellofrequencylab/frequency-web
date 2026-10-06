@@ -4,13 +4,13 @@ import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
 import { sendOutreachNoteEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { enqueue } from '@/lib/queue/outbox'
 import { log } from '@/lib/log'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
+import { roleUnlocked } from '@/lib/unlocks'
 
 // Outreach — a steward's DIRECT note to the members they lead (distinct from a public
 // Broadcast/dispatch). Reaches the inbox, the in-app notifications and the push of everyone
@@ -34,7 +34,7 @@ function noteKey(callerId: string, body: string): string {
 
 export async function sendOutreach(message: string): Promise<ActionResult<{ sent: number }>> {
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'host')) return fail('Outreach is a steward tool.')
+  if (!caller || !roleUnlocked('lead.outreach', caller.community_role)) return fail('Outreach is a steward tool.')
 
   const body = message.trim()
   if (!body) return fail('Write a message first.')

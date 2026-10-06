@@ -12,8 +12,9 @@
 // if someone forges the cookie (a forged at-or-above target is ignored).
 
 import { cookies } from 'next/headers'
-import { ROLE_HIERARCHY, atLeastRole, roleRank, type CommunityRole } from '@/lib/core/roles'
+import { ROLE_HIERARCHY, roleRank, type CommunityRole } from '@/lib/core/roles'
 import { bearerIdentity } from '@/lib/supabase/request-identity'
+import { roleUnlocked } from '@/lib/unlocks'
 
 export const VIEW_AS_COOKIE = 'freq-view-as'
 
@@ -31,7 +32,7 @@ const SPACE_ID_RE = /^[a-zA-Z0-9_-]{1,128}$/
 
 /** Who may use "view as": any steward Host and above. */
 export function canViewAs(realRole: CommunityRole): boolean {
-  return atLeastRole(realRole, 'host')
+  return roleUnlocked('view-as', realRole)
 }
 
 /**

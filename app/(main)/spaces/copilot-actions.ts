@@ -18,6 +18,7 @@ import {
   suggestTagline,
   type SpaceContext,
 } from '@/lib/ai/space-copilot'
+import { loadSpaceGrounding } from '@/lib/ai/space-grounding'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** Resolve the caller + the Space and confirm they may edit its profile. Returns the Space
@@ -35,12 +36,16 @@ async function authorizeEdit(
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile) return { error: 'You do not have permission to edit this Space' }
 
+  // The Space's own About and live offerings ground the draft (LIVE-676).
+  const grounding = await loadSpaceGrounding(spaceId)
   return {
     ctx: {
       spaceId,
       name: space.name,
       type: space.type,
       brandName: space.brandName,
+      about: grounding.about,
+      offerings: grounding.offerings,
       profileId,
     },
   }
