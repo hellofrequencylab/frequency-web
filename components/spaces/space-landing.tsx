@@ -48,10 +48,20 @@ function stripIdentityHeader(data: Data): Data {
 // `<BlockRender>` (lib/page-editor/block-render.tsx) is the in-house server-friendly
 // renderer the public marketing pages already use (app/page.tsx), so the public landing
 // ships no editor runtime. Server Component throughout; static-friendly.
-export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: string; pageSlug?: string }) {
+export async function SpaceLanding({
+  slug,
+  pageSlug = HOME_SLUG,
+  anonymous = false,
+}: {
+  slug: string
+  pageSlug?: string
+  /** Render as a signed-out visitor (the external website, /sites/<slug>): the page never varies by
+   *  who is looking, so a Private Space stays walled off and the site reads the same for everyone. */
+  anonymous?: boolean
+}) {
   // Re-resolve the Space (request-cached via getSpaceBySlug) + re-stamp the active
   // Space so any dynamic block reads THIS tenant's rows.
-  const viewerProfileId = await getMyProfileId()
+  const viewerProfileId = anonymous ? null : await getMyProfileId()
   const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
   if (!space) notFound()
   setActiveSpace(space)

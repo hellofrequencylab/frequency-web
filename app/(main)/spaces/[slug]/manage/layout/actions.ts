@@ -372,11 +372,24 @@ export async function setSpaceAccent(slug: string, token: string): Promise<Actio
   return ok()
 }
 
-// setWebsitePublished (the external-website publish switch, ADR-508 U4-B) was DELETED by OWNER
-// RULING (LIVE-062 batch 6, 2026-08-20): no UI ever mounted it. The publish switch returns with
-// PROG-E10 (Sites); git history keeps the implementation. The READ half stays live and fail-closed:
-// lib/spaces/website.ts readWebsitePublished gates the public /sites/<slug> route, so with no writer
-// the site simply stays unpublished.
+/**
+ * Publish or unpublish the Space's EXTERNAL WEBSITE (/sites/<slug>, ADR-508 U4-B), the switch PROG-E10
+ * phase 1 brings back. Writes only preferences.websitePublished (a literal boolean, the one value
+ * lib/spaces/website.ts readWebsitePublished accepts), preserving every other key. The site renders the
+ * same page docs as the profile, so there is nothing else to copy. Owner/admin/editor-gated (staff
+ * preview fails closed). Returns ActionResult.
+ */
+export async function setWebsitePublished(slug: string, published: boolean): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const saved = await writePreferences(auth.spaceId, { ...auth.preferences, websitePublished: published === true })
+  if (!saved) return fail('Could not update your website. Try again.')
+
+  revalidatePath(`/sites/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
 
 // ── THE NAV MANAGER actions (multi-page model). Create / rename / reorder / delete the operator-defined
 // profile pages. Each calls a PURE mutator from profile-pages.ts and writes the WHOLE preferences blob
