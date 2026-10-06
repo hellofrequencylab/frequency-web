@@ -14,6 +14,7 @@ import {
   circleListSchema,
   circleSchema,
   eventListSchema,
+  cityEventListSchema,
   eventsListingSchema,
   faqSchema,
   personSchema,
@@ -486,6 +487,22 @@ describe('circleSchema', () => {
       '@type': 'Place',
       address: { '@type': 'PostalAddress', addressLocality: 'Austin' },
     })
+  })
+})
+
+// ── cityEventListSchema (LIVE-807) ──
+describe('cityEventListSchema', () => {
+  const base = { id: 'e1', slug: 'sunrise-sit', title: 'Sunrise sit', starts_at: '2026-12-02T07:00:00', ends_at: null, city: 'Encinitas' }
+  it('nests a full Event node with a city-level Place for each located event, and skips city-less ones', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- a minimal PublicEvent fixture
+    const list = cityEventListSchema([base, { ...base, id: 'e2', slug: 'online', city: null }] as any, 'Upcoming events in Encinitas')
+    expect(list['@type']).toBe('ItemList')
+    expect(list.numberOfItems).toBe(1)
+    const item = list.itemListElement[0].item as Record<string, unknown>
+    expect(item['@type']).toBe('Event')
+    expect(item['@context']).toBeUndefined()
+    expect(item.url).toMatch(/\/events\/sunrise-sit$/)
+    expect(JSON.stringify(item.location)).toContain('Encinitas')
   })
 })
 

@@ -53,6 +53,8 @@ export interface PricingDefaults {
     business: TierPrice
     nonprofit: TierPrice
     independent: TierPrice
+    collective: TierPrice
+    nonprofit_collective: TierPrice
   }
   /** Take-rate in basis points (500 = 5%). The LIVE rates are `network_bps` (per Space tier) plus the
    *  two individual seller rungs, `member_free_bps` (free Member, 10%) and `member_bps` (Crew, 8%) — see
@@ -125,6 +127,9 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     business: planPrice('business_base'),
     nonprofit: planPrice('nonprofit_seat'),
     independent: planPrice('independent_base'),
+    // The five-tier ladder (ADR-1709): Collective and Non Profit Collective read their catalog items.
+    collective: planPrice('collective_base'),
+    nonprofit_collective: planPrice('nonprofit_collective'),
   },
   take_rate: {
     // LEGACY flat trio (the retired ADR-552 paying-state ladder). Off the charging path — kept only so a

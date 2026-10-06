@@ -36,13 +36,17 @@ export const VISIBILITY_OPTIONS: EventOption[] = [
   { value: 'private', label: 'Invite only' },
 ]
 
-/** How the gathering tends to land on the nervous system. Blank = unset (stored as null). */
+/** The event's Pace: what the gathering is like to be at. Blank = unset (stored as null).
+ *  Member-facing label is "Pace" with plain options (ADR-1715, LIVE-794); it was "Energy", with
+ *  options framed around the nervous system. The stored values (events.energy_tag, and its check
+ *  constraint) are unchanged, so no migration and no filter URL breaks. */
+export const PACE_LABEL = 'Pace'
 export const ENERGY_OPTIONS: EventOption[] = [
   { value: '', label: 'Not sure yet' },
-  { value: 'grounding', label: 'Grounding' },
-  { value: 'high_activation', label: 'High activation' },
+  { value: 'grounding', label: 'Calm' },
+  { value: 'high_activation', label: 'Active' },
   { value: 'social', label: 'Social' },
-  { value: 'ceremonial', label: 'Ceremonial' },
+  { value: 'ceremonial', label: 'Ceremony' },
 ]
 
 /** How people attend. in_person resolves to a map point from the address; online carries a

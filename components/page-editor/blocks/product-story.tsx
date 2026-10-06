@@ -625,7 +625,7 @@ export const productStoryComponents: Record<string, ComponentConfig> = {
         {
           pillar: 'Mind',
           weeks: '~4 weeks',
-          blurb: 'Meditation, breathwork, and the quiet practices that settle a nervous system.',
+          blurb: 'Meditation, breathwork, and quiet practices for when everything is too loud.',
         },
         {
           pillar: 'Body',

@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-259",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const S='lib/onboarding/steps.ts';if(!fs.existsSync(S))process.exit(79);const s=fs.readFileSync(S,'utf8');const m=/DEFAULT_ONBOARDING_ORDER[^=]*=\\\\s*\\\\[([^\\\\]]*)\\\\]/.exec(s);if(!m)process.exit(79);const got=m[1].split(',').map(x=>x.trim().replace(/'/g,'')).filter(Boolean).join(',');if(got!=='avatar,identity,circle,event,host'){console.error('the first-run checklist is not photo, identity, then the four nouns in order: '+got);process.exit(1)}const D='DEFAULT_ONBOARDING_STEPS';const i=s.indexOf(D);if(i<0)process.exit(79);for(const k of ['identity','avatar','circle','event','host'])if(s.indexOf(k+': {',i)<0){console.error('no default copy for checklist step '+k);process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "\n\nAMENDED 2026-10-06 (owner ruling on the ADR-1715 decision card, Photo first): the probe now pins avatar,identity,circle,event,host."
+  }
+}
