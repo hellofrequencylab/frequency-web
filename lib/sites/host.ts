@@ -12,11 +12,25 @@
 //   • `www.<apex>` redirects to the apex, so one origin carries the site.
 //   • `/` and `/<page>` rewrite to /hosted/<host>[/<page>], the site route, which re-resolves the Space
 //     by domain (getSpaceByDomain, behind the custom_domain gate) and checks the request host.
+//   • `/robots.txt` and `/sitemap.xml` rewrite to /hosted/<host>/robots.txt|sitemap.xml, so a site
+//     host describes the SITE to a crawler, not Frequency (PROG-E10 phase 4). proxy.ts's matcher skips
+//     both files on Frequency's own hosts (HYG-048) and lets them through on any other host, using
+//     APP_HOST_PATTERN below.
 //   • any deeper path (`/spaces/...`, `/events/...`, a block's link into the app) redirects to the
 //     same path on Frequency, so app links on the site keep working.
 
 /** Frequency's own apex domains. Every subdomain of these is the app too. */
 const APP_APEXES = ['frequencylocal.com', 'findafreq.com', 'vercel.app', 'localhost']
+
+/** The crawler files a site host answers for itself (PROG-E10 phase 4). */
+export const SITE_CRAWLER_FILES: ReadonlySet<string> = new Set(['/robots.txt', '/sitemap.xml'])
+
+/** APP_APEXES (plus `localhost` and bare IPs) as the anchored host regex proxy.ts's matcher uses in
+ *  its `missing: [{ type: 'host' }]` arm. The matcher must be a literal, so proxy.ts repeats this
+ *  string; host.test.ts holds the two equal and checks it against isAppHost. Wrapped in one group
+ *  because Next anchors it as `^${value}$`, and a bare alternation would anchor only its ends. */
+export const APP_HOST_PATTERN =
+  '(?:(?:.+\\.)?(?:frequencylocal\\.com|findafreq\\.com|vercel\\.app)|localhost|[\\d.]+)'
 
 /** The route a custom-domain site is rewritten to. */
 export const HOSTED_PREFIX = '/hosted'
@@ -80,6 +94,8 @@ export function routeSiteHost(
   if (h.startsWith('www.')) {
     return { kind: 'redirect', location: `https://${h.slice(4)}${pathname}${search}`, permanent: true }
   }
+
+  if (SITE_CRAWLER_FILES.has(pathname)) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}${pathname}` }
 
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}` }

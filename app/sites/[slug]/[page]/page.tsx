@@ -1,24 +1,8 @@
-import type { Metadata } from 'next'
-import { SitePage, siteMetadata } from '@/components/sites/site-page'
+import { redirect } from 'next/navigation'
 
-// One of the external website's custom pages (the Space's operator-defined pages, the same nav the
-// profile shows). A slug that is not a declared page 404s inside SitePage.
-export const dynamic = 'force-dynamic'
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string; page: string }>
-}): Promise<Metadata> {
+// Owner ask 2026-10-06: /sites/<slug>/<page> forwards to the same page on the Space's public profile.
+// The website itself is served on the Space's own subdomain and custom domain (app/hosted).
+export default async function SpaceWebsitePage({ params }: { params: Promise<{ slug: string; page: string }> }) {
   const { slug, page } = await params
-  return siteMetadata(slug, page)
-}
-
-export default async function SpaceWebsitePage({
-  params,
-}: {
-  params: Promise<{ slug: string; page: string }>
-}) {
-  const { slug, page } = await params
-  return <SitePage slug={slug} pageSlug={page} />
+  redirect(`/spaces/${encodeURIComponent(slug)}/${encodeURIComponent(page)}`)
 }
