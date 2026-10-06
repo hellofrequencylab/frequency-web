@@ -18,6 +18,7 @@
 //     trailing CHIPS line held back by `createChipsFilter` so a member never watches the chip
 //     syntax type itself out. The ledger still records usage from the final message of each round.
 
+import { veraReaderNote, type VeraReader } from './reader-note'
 import type Anthropic from '@anthropic-ai/sdk'
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages'
 import { aiEnabled } from '@/lib/ai'
@@ -183,13 +184,18 @@ export function buildVeraSystem(
   cfg: VeraConfig,
   supportSummary?: string,
   viewer?: VeraViewer | null,
+  reader?: VeraReader | null,
 ): { stable: string; volatile: string } {
   const facts = ctx?.facts
   const known: string[] = []
   if (facts?.interests?.length) known.push(`interests: ${facts.interests.join(', ')}`)
   if (facts?.goals?.length) known.push(`goals: ${facts.goals.join(', ')}`)
   if (facts?.neighborhood) known.push(`neighborhood: ${facts.neighborhood}`)
-  const grounding = known.length ? `\n\nWhat you already know about them (use it, don't re-ask): ${known.join('; ')}.` : ''
+  // Who signed up (ADR-1715): one plain line from meta.persona and meta.archetype. Volatile, because it is
+  // this member's. No demographic field ever enters it, and never an archetype name.
+  const readerLine = veraReaderNote({ persona: reader?.persona, archetype: reader?.archetype })
+  const grounding = (known.length ? `\n\nWhat you already know about them (use it, don't re-ask): ${known.join('; ')}.` : '')
+    + (readerLine ? `\n\n${readerLine}` : '')
 
   // Their support history (ADR-159) — so Vera can speak to open reports and, when
   // they describe a problem, point them at the report dialog (which captures their
@@ -256,6 +262,8 @@ export async function runVeraClaudeTurn(input: {
   tier?: EntitlementTier | null
   /** Who's asking (ADR-208) — operators get operator-to-operator candor. */
   viewer?: VeraViewer | null
+  /** Who signed up (ADR-1715): the persona and archetype from profiles.meta. */
+  reader?: VeraReader | null
   /** Stream the prose as it is generated (the CHIPS line is held back). Each round of the tool
    *  loop is a fresh reply, so a consumer resets its draft when `round` moves. */
   onText?: (delta: string, round: number) => void
@@ -277,7 +285,7 @@ export async function runVeraClaudeTurn(input: {
     if (await veraDailyCapReached(input.profileId ?? null, input.tier ?? null)) return null
 
     const cfg = await getVeraConfig()
-    const system: SystemPrompt = buildVeraSystem(input.memberContext, cfg, input.supportSummary, input.viewer)
+    const system: SystemPrompt = buildVeraSystem(input.memberContext, cfg, input.supportSummary, input.viewer, input.reader)
     // The MEMBER chat set only (SCAN-738): the operator playbook tools and create_entity are not
     // confirmable from a member session, so offering them produced proposals the client rendered
     // as empty Remember cards and the server then refused. Every turn also paid for their schemas.
