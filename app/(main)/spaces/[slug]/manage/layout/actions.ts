@@ -22,8 +22,11 @@ import { normalizeSpaceLocation } from '@/lib/spaces/location'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { parseSiteDomain } from '@/lib/sites/domain'
 import { refreshSite } from '@/lib/sites/site-cache'
+import { siteSubdomainHost } from '@/lib/sites/host'
+import { briefError, log } from '@/lib/log'
 import {
   addSiteDomain,
+  addSiteSubdomain,
   removeSiteDomain as detachSiteDomain,
   siteDomainStatus,
   vercelDomainsConfigured,
@@ -415,6 +418,21 @@ export async function setWebsitePublished(slug: string, published: boolean): Pro
   // Expire the cached site (LIVE-784): its `site:<slug>` tag covers /sites/<slug> and the Space's own
   // domain, so the publish gate is re-decided on the next request either way.
   refreshSite(slug)
+
+  // THE FREE SUBDOMAIN (LIVE-782): attach `<slug>.frequencylocal.com` to the Vercel project so it serves
+  // with a certificate. Best effort: addSiteSubdomain never throws, a failure only logs (so the fallback
+  // firing is visible) and the publish still succeeds. Nothing comes off on unpublish: the subdomain
+  // then serves Coming soon, like every other address of the site.
+  const subdomain = published ? siteSubdomainHost(slug) : null
+  if (subdomain) {
+    try {
+      const attached = await addSiteSubdomain(subdomain)
+      if (!attached.ok) log.warn('site_subdomain_attach_failed', { slug, host: subdomain, error: attached.error })
+    } catch (err) {
+      log.warn('site_subdomain_attach_failed', { slug, host: subdomain, error: briefError(err) })
+    }
+  }
+
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

@@ -5,7 +5,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
-import { appOrigin } from '@/lib/sites/host'
+import { appOrigin, siteSubdomainHost } from '@/lib/sites/host'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { siteDomainStatus } from '@/lib/sites/vercel-domains'
 import { domainPurchaseOpen } from '@/lib/sites/domain-purchase'
@@ -14,7 +14,8 @@ import { WebsitePublishControls } from './website-publish-controls'
 
 // THE WEBSITE FEATURE on a Space's Profile & Settings tab (owner ask 2026-10-06: "a prominent feature in
 // profile and settings with a little CTA to upgrade"). One card: what the website is, its live state,
-// Publish / View / Unpublish, then the domain section. Publishing is open to every Space (/sites/<slug>);
+// Publish / View / Unpublish, then the domain section. Publishing is open to every Space, at its free
+// `<slug>.frequencylocal.com` address (LIVE-782), or its own domain once that domain is serving;
 // the own-domain half is the `custom_domain` gate (Business and up, LIVE-310). A plan below that sees a
 // small upgrade nudge; during the open-access window it can still connect, and the nudge says where the
 // domain lives after it. Server Component: the board renders it only on the settings tab, behind Suspense.
@@ -34,7 +35,8 @@ export async function SpaceWebsiteFeature({
     domainPurchaseOpen(),
   ])
   const domainStatus = space.domain ? { domain: space.domain, ...(await siteDomainStatus(space.domain)) } : null
-  const address = space.domain ?? `${appOrigin().replace(/^https?:\/\//, '')}/sites/${space.slug}`
+  const siteUrl = websiteUrl(space.slug, domainStatus)
+  const address = siteUrl.replace(/^https?:\/\//, '')
 
   return (
     <section aria-labelledby="website-feature-title" className="rounded-card border border-primary bg-surface p-5 lift-1">
@@ -55,7 +57,7 @@ export async function SpaceWebsiteFeature({
           </p>
           {published && <p className="mt-1 break-all text-body-sm font-semibold text-text">{address}</p>}
           <div className="mt-4">
-            <WebsitePublishControls slug={space.slug} published={published} />
+            <WebsitePublishControls slug={space.slug} published={published} siteUrl={siteUrl} />
           </div>
         </div>
       </div>
@@ -68,6 +70,15 @@ export async function SpaceWebsiteFeature({
       </div>
     </section>
   )
+}
+
+/** Where the website is today: the owner's own domain once it is attached and its DNS
+ *  points at hosting (a domain still being set up would open nothing), else the free
+ *  `<slug>.frequencylocal.com` subdomain, else (a slug that cannot be a subdomain) /sites/<slug>. */
+function websiteUrl(slug: string, domain: { domain: string; attached: boolean; dnsReady: boolean } | null): string {
+  if (domain && domain.attached && domain.dnsReady) return `https://${domain.domain}`
+  const subdomain = siteSubdomainHost(slug)
+  return subdomain ? `https://${subdomain}` : `${appOrigin()}/sites/${slug}`
 }
 
 function DomainUpgradeNudge({ slug, openNow }: { slug: string; openNow: boolean }) {
