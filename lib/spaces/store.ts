@@ -170,12 +170,19 @@ export async function getSpaceByDomain(domain: string): Promise<Space | null> {
   // Lazy imports, the same shape lib/spaces/campaigns.ts uses, so the pricing modules stay off this
   // shared module's static graph; the lookup only runs once a domain has matched, which is rare.
   // Inert while the gates are soft (featureAllowed grants until featureGatesLive()).
-  const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan }] = await Promise.all([
-    import('@/lib/pricing/gates'),
-    import('@/lib/pricing/settings'),
-    import('@/lib/pricing/plans'),
-  ])
-  const allowed = await featureAllowed('custom_domain', { plan: asSpacePlan(space.plan) }, { gatesLive: await featureGatesLive() })
+  // LIVE-821: past the Business floor, Business holds the domain only while the custom domain add-on
+  // is active; Collective and Independent include it (spaceHasCustomDomain). Same soft-gate rule.
+  const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan, addonsHeldBy, spaceHasCustomDomain }, { spaceHasEntitlement }] =
+    await Promise.all([
+      import('@/lib/pricing/gates'),
+      import('@/lib/pricing/settings'),
+      import('@/lib/pricing/plans'),
+      import('@/lib/spaces/entitlements'),
+    ])
+  const gatesLive = await featureGatesLive()
+  const allowed =
+    (await featureAllowed('custom_domain', { plan: asSpacePlan(space.plan) }, { gatesLive })) &&
+    (!gatesLive || spaceHasCustomDomain(space.plan, addonsHeldBy((k) => spaceHasEntitlement(space, k))))
   return allowed ? space : null
 }
 

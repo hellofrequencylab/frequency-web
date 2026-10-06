@@ -1,6 +1,13 @@
 {
   "id": "PROG-E10",
   "append": {
-    "detail": "\n\n── NARROWED + SLICE UNPARKED 2026-10-06 (ADR-1708, owner ruling). The Sites slice is built now on the Space page blocks, ahead of the full editor, with danieltyack.com first: phase 1 LIVE-741 (the site renders at /sites/<slug> with a publish switch), then host routing in proxy.ts, the danieltyack.com binding, site SEO and caching, each its own row. This row keeps what that slice leaves: self-serve domain binding through the Vercel API, a free subdomain on any paid plan, and site templates. Its probe is unchanged."
+    "detail": "\n\n── NARROWED + SLICE UNPARKED 2026-10-06 (ADR-1708, owner ruling). The Sites slice is built now on the Space page blocks, ahead of the full editor, with danieltyack.com first: phase 1 LIVE-741 (the site renders at /sites/<slug> with a publish switch), then host routing in proxy.ts, the danieltyack.com binding, site SEO and caching, each its own row. This row keeps what that slice leaves: self-serve domain binding through the Vercel API, a free subdomain on any paid plan, and site templates. Its probe is unchanged.\n\n2026-10-06 (LIVE-821): probe narrowed to a migration that ADDS a custom_domain column. The custom domain add-on migration (20270346004350) admits 'custom_domain' as a subscription item_key, which the old any-mention match read as the column and flipped this row to done. The row's open scope is unchanged."
+  },
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const hit=fs.readdirSync(\"supabase/migrations\").some(f=>/add column[^;]*\\bcustom_domain\\b/i.test(fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\")));const host=/custom_domain|customDomain/.test(fs.readFileSync(\"proxy.ts\",\"utf8\"));if(!hit||!host){console.error(\"PROG-E10: no tenant can serve a custom domain: \"+(hit?\"\":\"no custom_domain column in any migration; \")+(host?\"\":\"proxy.ts does not route by custom domain\")+\" (EDITOR-ARCHITECTURE §8 E10 gate).\");process.exit(1)}'",
+      "note": "Measures the E10 gate (a tenant serves a custom domain off the same registry) at its two necessary seams: a custom_domain COLUMN added in a migration and host routing for it in proxy.ts. Narrowed 2026-10-06 (LIVE-821) to an `add column` statement, so a migration that only names the custom domain add-on's item_key does not read as the column."
+    }
   }
 }

@@ -81,7 +81,7 @@ const BUSINESS_DEPTH = {
   program: true,
 }
 const COLLECTIVE_DEPTH = BUSINESS_DEPTH
-const INDEPENDENT_DEPTH = { ...BUSINESS_DEPTH, whitelabel: true }
+const INDEPENDENT_DEPTH = { ...BUSINESS_DEPTH, whitelabel: true, custom_domain: true } // LIVE-821: Independent keeps its domain
 
 describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
   it('writes the plan + REPLACES entitlements.billing with the Business depth set', async () => {

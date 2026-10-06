@@ -205,14 +205,15 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
   if (loadout.plan === 'nonprofit_collective') return [{ key: 'nonprofit_collective', perSeat: false }, ...operatorSeat]
   // Independent is a flat standalone white-label base, OFF the network — no metered add-ons layer on it.
   if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }, ...operatorSeat]
-  // Business: a flat base plus the optional AI add-on (and seats).
+  // Business: a flat base plus the optional add-ons, Vera AI and the custom domain (LIVE-821), and seats.
+  // Collective never reaches here, so it is never billed for an add-on it includes.
   const base: CatalogItemKey = 'business_base'
   const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: base, perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
   for (const addon of addons) {
     const catalogKey = asCatalogItemKey(`addon_${addon}`)
     if (!catalogKey) continue
-    out.push({ key: catalogKey, perSeat: false }) // the AI add-on is not per-seat
+    out.push({ key: catalogKey, perSeat: false }) // neither add-on is per-seat
   }
   return [...out, ...operatorSeat]
 }

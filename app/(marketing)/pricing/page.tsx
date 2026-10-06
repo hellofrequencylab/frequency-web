@@ -506,14 +506,14 @@ export default async function PricingPage() {
         </Section>
       </PricingAudienceScope>
 
-      {/* Seats + the AI add-on: the two things you can add to a plan, priced from the same config. */}
+      {/* Seats, the AI add-on and the custom domain add-on: what you can add to a plan, priced from the same config. */}
       <Section tone="surface">
         <SectionHeading
           eyebrow="Add to a plan"
-          title="Seats and AI, priced in the open."
-          kicker="Two things ride on top of a plan instead of being one. Neither is a surprise line item, and both show up in the comparison above."
+          title="Seats, AI, and your own domain, priced in the open."
+          kicker="A few things ride on top of a plan instead of being one. None is a surprise line item, and each shows up in the comparison above."
         />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {extras.map((extra) => (
             <ExtraCard key={extra.key} extra={extra} />
           ))}

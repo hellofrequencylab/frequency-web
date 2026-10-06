@@ -135,6 +135,10 @@ const FROZEN_SYNCED_KEYS = [
   'addon_ai_month_list',
   'addon_ai_year',
   'addon_ai_year_list',
+  'addon_custom_domain_month',
+  'addon_custom_domain_month_list',
+  'addon_custom_domain_year',
+  'addon_custom_domain_year_list',
   'business_base_month',
   'business_base_month_list',
   'business_base_year',
@@ -290,8 +294,8 @@ describe('a re-sync is idempotent', () => {
     expect(written.map((r) => `${r.key}:${r.productId}:${r.priceId}`)).toEqual(rowsAfterFirst)
     expect(second.synced.map((s) => s.key)).toEqual(first.synced.map((s) => s.key))
     // 8 live items (ADR-1709 added three Collective items), each flat: 8 standard products, 32 price keys.
-    expect(store.products).toHaveLength(8)
-    expect(store.prices).toHaveLength(32)
+    expect(store.products).toHaveLength(9)
+    expect(store.prices).toHaveLength(36)
   })
 
   it('a name drift on an existing product is corrected in place, never duplicated', async () => {

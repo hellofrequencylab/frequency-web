@@ -139,6 +139,9 @@ export const COLLECTIVE_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
   ...BUSINESS_DEPTH_ENTITLEMENT_KEYS,
   'crm.resonance',
   'crm.resonance_ai',
+  // Custom domain (owner ruling 2026-10-06, LIVE-821): a paid add-on on Business, included here so the
+  // step up to Collective carries it, the same way Vera AI rides along.
+  'custom_domain',
 ]
 
 /** Independent (~$249, white-label, network-disconnected) depth = Business depth PLUS branding
@@ -146,19 +149,25 @@ export const COLLECTIVE_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
 export const INDEPENDENT_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
   ...BUSINESS_DEPTH_ENTITLEMENT_KEYS,
   'whitelabel',
+  // Independent has always sold "your own brand + custom domain" (ADR-811), so the domain stays
+  // included in its depth when Business starts paying for it as an add-on (LIVE-821).
+  'custom_domain',
 ]
 
-/** The metered ADD-ON(S) -> the entitlement keys each turns on (ADR-472 §1b). AI Engine is now the
- *  SOLE cross-tier metered add-on: it is usage-priced, available on every paid tier, and its keys are
- *  NEVER in a tier base. Marketing / Team / Branding are GONE as add-ons (folded into Business depth). */
+/** The paid ADD-ON(S) -> the entitlement keys each turns on (ADR-472 §1b). Vera AI is usage-priced
+ *  and sold on Business; the custom domain add-on (owner ruling 2026-10-06, LIVE-821) is a flat
+ *  monthly add-on on Business. Collective includes both (its depth carries their keys), and
+ *  Independent includes the domain. Marketing / Team / Branding are GONE as add-ons (folded into
+ *  Business depth). */
 export const ADDON_ENTITLEMENT_KEYS = {
   ai: ['crm.resonance', 'crm.resonance_ai'],
+  custom_domain: ['custom_domain'],
 } as const
 
 /** The metered add-on item keys (the toggles a Space can turn on independently of its tier). */
 export type AddonKey = keyof typeof ADDON_ENTITLEMENT_KEYS
 
-/** The add-on item keys, for iteration / validation. Just `['ai']` now (ADR-472). */
+/** The add-on item keys, for iteration / validation: `ai` and `custom_domain` (LIVE-821). */
 export const ADDON_KEYS = Object.keys(ADDON_ENTITLEMENT_KEYS) as readonly AddonKey[]
 
 /** Narrow an arbitrary value to a known add-on key, or null (default-deny). PURE. */
@@ -177,6 +186,20 @@ export function planKeysWithAddons(plan: SpacePlan, addons: readonly AddonKey[])
     for (const k of ADDON_ENTITLEMENT_KEYS[key]) set.add(k)
   }
   return [...set]
+}
+
+/** Does a Space serve its own custom domain (owner ruling 2026-10-06, LIVE-821)? PURE. Collective and
+ *  Non Profit Collective include it, Independent always has, and Business (or Non Profit) holds it
+ *  while the custom domain add-on is active. Free never does. Read the same way Collective includes
+ *  Vera AI: the plan depth plus the active add-ons, through planKeysWithAddons. */
+export function spaceHasCustomDomain(
+  plan: SpacePlan | string | null | undefined,
+  addons: readonly (AddonKey | string)[],
+): boolean {
+  const tier = asSpacePlan(plan)
+  if (tier === 'free') return false // an add-on rides a paid plan; a lapsed plan never keeps it
+  const active = addons.map((a) => asAddonKey(a)).filter((a): a is AddonKey => a !== null)
+  return planKeysWithAddons(tier, active).includes('custom_domain')
 }
 
 // The tier depth sets (no add-ons), the seed for the tier map below. free = nothing; business /

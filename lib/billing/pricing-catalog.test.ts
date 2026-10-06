@@ -34,7 +34,7 @@ describe('yearlyFromMonthly (two months free)', () => {
 })
 
 describe('the clean catalog shape (collapsed · ADR-552)', () => {
-  it('holds exactly eight live items (the five-tier ladder adds three Collective items, ADR-1709)', () => {
+  it('holds exactly nine live items (three Collective items, ADR-1709; the custom domain add-on, LIVE-821)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
       'business_base',
       'collective_base',
@@ -42,10 +42,22 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
       'nonprofit_collective',
       'independent_base',
       'addon_ai',
+      'addon_custom_domain',
       'nonprofit_seat',
       'operator_seat',
     ])
-    expect(catalogItems()).toHaveLength(8)
+    expect(catalogItems()).toHaveLength(9)
+  })
+
+  it('the custom domain add-on is $19/mo flat, yearly two months free, not per seat (LIVE-821)', () => {
+    const d = catalogItem('addon_custom_domain')
+    expect(d.label).toBe('Frequency Custom Domain (add-on)')
+    expect(d.perSeat).toBe(false)
+    expect(d.month).toEqual({ listCents: 1900, foundingCents: 1900 })
+    expect(d.year).toEqual({ listCents: 19000, foundingCents: 19000 })
+    expect(addonKeyForCatalogItem('addon_custom_domain')).toBe('custom_domain')
+    // Business + the add-on is the owner's $68.
+    expect(catalogItem('business_base').month.foundingCents + d.month.foundingCents).toBe(6800)
   })
 
   it('Business base: $49 flat, no founding rate (LIVE-228)', () => {
@@ -129,9 +141,11 @@ describe('catalog price keys', () => {
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 8 items x 2 intervals x 2 variants = 32 keys', () => {
+  it('allCatalogPriceKeys = 9 items x 2 intervals x 2 variants = 36 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(32)
+    expect(keys).toHaveLength(36)
+    expect(keys).toContain('addon_custom_domain_month')
+    expect(keys).toContain('addon_custom_domain_year_list')
     expect(keys).toContain('business_base_month')
     expect(keys).toContain('business_base_month_list')
     expect(keys).toContain('collective_base_month')

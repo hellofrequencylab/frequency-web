@@ -132,6 +132,7 @@ const spaceTierCard = (t: PricingTier, i: number) => {
 // placeholder, so this card publishes the catalog amount with no further edit.
 const EXTRAS = planExtras({ values: PRICING_DEFAULTS, catalog: CAT })
 const SEATS = EXTRAS.find((e) => e.key === 'seats')!
+const DOMAIN = EXTRAS.find((e) => e.key === 'custom_domain')!
 const SEATS_PLACEHOLDER = catalogItem('operator_seat').placeholder === true
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -294,6 +295,18 @@ export const data: Data = {
             features: [
               { text: 'Live matches from the community signals' },
               { text: 'Next-best actions for you and your members' },
+              { text: 'Included in Collective' },
+            ],
+            ctaLabel: 'Add it from your Space billing', ctaHref: '/spaces', ctaStyle: 'secondary',
+          },
+          {
+            name: 'Custom domain', price: `+${P.customDomain}`, strikePrice: '', cadence: '/mo',
+            priceNote: DOMAIN.availability,
+            tagline: 'Your Space site on your own domain.',
+            highlight: 'normal', badge: 'none',
+            features: [
+              { text: 'Connect a domain you already own' },
+              { text: 'We show you the records to set' },
               { text: 'Included in Collective' },
             ],
             ctaLabel: 'Add it from your Space billing', ctaHref: '/spaces', ctaStyle: 'secondary',

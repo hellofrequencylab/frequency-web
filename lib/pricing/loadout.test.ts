@@ -165,7 +165,7 @@ describe('seat / pwyw / add-on-enable config', () => {
     expect(supporterMarkShows({ membership_tier: 'free', membership_payment_status: 'canceled', last_stripe_event_at: null }, now)).toBe(false)
   })
   it('add-ons default to all-enabled; only an explicit false disables one (only AI now, ADR-472)', () => {
-    expect(asAddonEnabled(undefined)).toEqual({ ai: true })
+    expect(asAddonEnabled(undefined)).toEqual({ ai: true, custom_domain: true })
     expect(asAddonEnabled({ ai: false }).ai).toBe(false)
   })
 })
@@ -207,8 +207,9 @@ describe('addonCatalogKey + normalizeAddons (re-tiered · ADR-472)', () => {
   it('dedupes, drops the retired/unknown add-on keys, and honors the enabled map', () => {
     // marketing/team/branding are no longer AddonKeys; only ai survives.
     expect(normalizeAddons(['ai', 'ai', 'marketing', 'nope'] as string[])).toEqual(['ai'])
-    expect(normalizeAddons(['ai'], { ai: false })).toEqual([]) // AI disabled by the operator map
-    expect(normalizeAddons(['ai'], { ai: true })).toEqual(['ai'])
+    expect(normalizeAddons(['ai'], { ai: false, custom_domain: true })).toEqual([]) // AI disabled by the operator map
+    expect(normalizeAddons(['ai'], { ai: true, custom_domain: true })).toEqual(['ai'])
+    expect(normalizeAddons(['ai', 'custom_domain'], { ai: true, custom_domain: false })).toEqual(['ai'])
   })
 })
 

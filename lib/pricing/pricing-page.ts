@@ -31,7 +31,7 @@ import {
   formatLoadoutCents,
   type LoadoutTotal,
 } from './loadout'
-import { SPACE_PLAN_LABEL, type AddonKey, type SpacePlan } from './plans'
+import { ADDON_ENTITLEMENT_KEYS, SPACE_PLAN_LABEL, planEntitlementKeys, type AddonKey, type SpacePlan } from './plans'
 import { mergeGate, type FeatureGateOverrides } from './gates'
 import { PLACEHOLDER_MEMBER_PRICE_CENTS } from './feature-tiers'
 import { isBetaPricingActive, effectiveCatalogAmounts } from './beta'
@@ -39,7 +39,7 @@ import { PRICING_DEFAULTS, type PricingDefaults } from './defaults'
 // The approved copy spine, which deliberately lives in a LEAF module (ADR-1368). Imported here only
 // so this module can read it (pricingLadderSummary) and re-export it for existing callers.
 import { PLAN_STORY } from './plan-story'
-import { allOfferings, spaceOfferings, type Offering, type PricingGridInput } from './pricing-grid'
+import { addonAvailability, allOfferings, spaceOfferings, type Offering, type PricingGridInput } from './pricing-grid'
 import {
   type BillingInterval,
   type CatalogAmounts,
@@ -83,6 +83,8 @@ interface PriceStrings {
   veraAi: string
   /** The Vera AI add-on yearly, e.g. "$200". */
   veraAiYear: string
+  /** The custom domain add-on monthly on Business, e.g. "$19" (LIVE-821). */
+  customDomain: string
 }
 
 /** Build the interpolable price strings from the ONE code catalog. PURE. Marketing SPECS that a route
@@ -109,6 +111,7 @@ export function priceStringsFrom(cat: Record<CatalogItemKey, ResolvedCatalogItem
     nonprofit: formatLoadoutCents(cat.nonprofit_seat.month.foundingCents),
     veraAi: formatLoadoutCents(cat.addon_ai.month.foundingCents),
     veraAiYear: formatLoadoutCents(cat.addon_ai.year.foundingCents),
+    customDomain: formatLoadoutCents(cat.addon_custom_domain.month.foundingCents),
   }
 }
 
@@ -182,6 +185,8 @@ export const PRICING_ADDONS: readonly { key: AddonKey; glyph: string; label: str
   // Listed as "Vera AI" (owner, 2026-07 pricing overhaul): Vera is the one system voice (ADR-231); the
   // Resonance Engine machinery powers it under the hood. The catalog key stays addon_ai.
   { key: 'ai', glyph: '🧠', label: 'Vera AI', turnsOn: "Turns your community's signals into live matches and next-best actions." },
+  // LIVE-821 (owner ruling 2026-10-06): a flat add-on on Business, included with Collective.
+  { key: 'custom_domain', glyph: '🌐', label: 'Custom domain', turnsOn: 'Your Space site on your own domain.' },
 ]
 
 /** The catalog item key for a metered add-on (ai -> addon_ai). PURE. */
@@ -265,8 +270,15 @@ export function pricingTiers(
   const values = opts.values ?? PRICING_DEFAULTS
   const offerings = spaceOfferings({ values, catalog: cat, betaActive })
 
-  // Vera AI is the only metered add-on. It is priced on, and available on, every paid tier.
-  const tierAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key, cat) }))
+  // Each add-on reads Included on a tier whose depth carries its keys (Collective carries Vera AI and the
+  // custom domain), and its catalog price everywhere else.
+  const tierAddons = (plan: SpacePlan): TierAddonCell[] =>
+    PRICING_ADDONS.map((a) => ({
+      addon: a.key,
+      value: ADDON_ENTITLEMENT_KEYS[a.key].every((k) => planEntitlementKeys(plan).includes(k))
+        ? 'Included'
+        : proAddonPrice(a.key, cat),
+    }))
 
   // BETA AUTO-REVERT (ADR-811): during beta, a plan with a beta anchor shows it struck under the list;
   // once beta ends the list becomes the price (no strike, no beta caption).
@@ -290,8 +302,7 @@ export function pricingTiers(
       forWho: o.forWho,
       billing: o.billing,
       coreIncluded: TIER_CORE_INCLUDED[id],
-      // Vera AI is included in Collective (its depth carries the add-on keys), so it is no add-on there.
-      addons: item && id !== 'collective' ? tierAddons : [],
+      addons: item ? tierAddons(id as SpacePlan) : [],
       takeRate: o.takeRate,
       sells: o.sells,
       cta: TIER_CTA[id],
@@ -578,7 +589,7 @@ export function pricingLadderSummary(input: LadderSummaryInput = {}): string[] {
     )
   }
   for (const a of PRICING_ADDONS) {
-    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key, catalog)}, optional on any paid plan.`)
+    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key, catalog)}. ${addonAvailability(a.key)}`)
   }
   const seatPrice = formatLoadoutCents(catalog.operator_seat.month.foundingCents)
   lines.push(`- Operator seats: add-on seats for your team on any paid plan, ${seatPrice}/seat/mo.`)
