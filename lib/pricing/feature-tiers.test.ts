@@ -45,6 +45,8 @@ const PLAN_ITEM: Record<Exclude<SpacePlan, 'free'>, CatalogItemKey> = {
   business: 'business_base',
   nonprofit: 'nonprofit_seat',
   independent: 'independent_base',
+  collective: 'collective_base',
+  nonprofit_collective: 'nonprofit_collective',
 }
 
 describe('coverage — every tier-gated FEATURE_GATES key has a ladder that matches the gate', () => {

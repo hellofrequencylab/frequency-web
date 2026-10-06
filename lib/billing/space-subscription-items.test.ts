@@ -61,31 +61,38 @@ describe('planForItemKeys (collapsed · ADR-552; collective/independent · ADR-8
     expect(planForItemKeys([])).toBe('free')
   })
 
-  // LIVE-228: legacy collective item keys fold into business; loadout checkout bills business_base.
-  it('a paid Collective base resolves to business, never to free', () => {
-    expect(planForItemKeys(['collective'])).toBe('business')
-    expect(planForItemKeys(['collective', 'ai'])).toBe('business')
-    expect(planForItemKeys(['collective', 'operator_seat'])).toBe('business')
+  // ADR-1709: Collective is its own plan again, so a collective base item resolves to collective.
+  it('a paid Collective base resolves to collective, never to business or free', () => {
+    expect(planForItemKeys(['collective'])).toBe('collective')
+    expect(planForItemKeys(['collective', 'collective_space'])).toBe('collective')
+    expect(planForItemKeys(['collective', 'operator_seat'])).toBe('collective')
+    expect(planForItemKeys(['nonprofit_collective'])).toBe('nonprofit_collective')
   })
 
-  it('a paid Independent base resolves to independent and outranks every other base', () => {
+  it('a paid Independent base resolves to independent and outranks the Business-depth bases', () => {
     expect(planForItemKeys(['independent'])).toBe('independent')
-    expect(planForItemKeys(['independent', 'collective'])).toBe('independent')
     expect(planForItemKeys(['independent', 'business'])).toBe('independent')
     expect(planForItemKeys(['independent', 'organization'])).toBe('independent')
   })
 
-  it('collective folds to business, and nonprofit still outranks business', () => {
-    expect(planForItemKeys(['collective', 'business'])).toBe('business')
-    expect(planForItemKeys(['collective', 'base'])).toBe('business')
-    expect(planForItemKeys(['organization', 'collective'])).toBe('nonprofit')
-    expect(planForItemKeys(['nonprofit_seat', 'collective'])).toBe('nonprofit')
+  it('the Collective rungs outrank every Business-depth base, and nonprofit still outranks business', () => {
+    expect(planForItemKeys(['collective', 'business'])).toBe('collective')
+    expect(planForItemKeys(['independent', 'collective'])).toBe('collective')
+    expect(planForItemKeys(['nonprofit_seat', 'collective'])).toBe('collective')
+    expect(planForItemKeys(['nonprofit_collective', 'collective'])).toBe('nonprofit_collective')
+    expect(planForItemKeys(['organization', 'business'])).toBe('nonprofit')
+  })
+
+  it('the catalog keys map to their own DB item keys (ADR-1709)', () => {
+    expect(itemKeyForCatalogKey('collective_base')).toBe('collective')
+    expect(itemKeyForCatalogKey('collective_space')).toBe('collective_space')
+    expect(itemKeyForCatalogKey('nonprofit_collective')).toBe('nonprofit_collective')
   })
 
   // The guard that keeps this from regressing: EVERY sellable base must map to a paid plan, so the
   // empty set stays the only road to 'free'. A new base added to the catalog fails here first.
   it('every sellable base item resolves to a paid plan (only the empty set is free)', () => {
-    for (const base of ['business', 'collective', 'independent', 'nonprofit_seat'] as const) {
+    for (const base of ['business', 'collective', 'nonprofit_collective', 'independent', 'nonprofit_seat'] as const) {
       expect(planForItemKeys([base])).not.toBe('free')
     }
   })

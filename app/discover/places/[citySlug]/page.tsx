@@ -16,7 +16,8 @@ import {
 } from '@/components/marketing/marketing-ui'
 import { Stat } from '@/components/ui/stat'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema, circleListSchema, eventListSchema, spaceListSchema } from '@/lib/jsonld'
+import { breadcrumbSchema, circleListSchema, cityEventListSchema, spaceListSchema } from '@/lib/jsonld'
+import { meetsIndexFloor } from '@/lib/seo/index-floor'
 import { OG_SITE, ROOT_OG_IMAGES, SITE_NAME, SITE_URL, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 
 export const revalidate = 3600
@@ -65,9 +66,12 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical },
-    // An empty place 404s, but guard the index signal anyway: a hub with nothing
-    // live should never be advertised as a landing page.
-    ...(hub ? {} : { robots: { index: false, follow: true } }),
+    // THE LOCAL INDEX FLOOR (LIVE-807): index only with 3+ upcoming Events or 2+ active Spaces,
+    // the same rule app/sitemap.ts reads. Below it the page still renders for a visitor with the
+    // link; it just is not advertised as a landing page.
+    ...(hub && meetsIndexFloor({ upcomingEvents: hub.events.length, activeSpaces: hub.spaces.length })
+      ? {}
+      : { robots: { index: false, follow: true } }),
     openGraph: {
       ...OG_SITE,
       images: ROOT_OG_IMAGES,
@@ -127,7 +131,7 @@ export default async function DiscoverPlacePage({
             },
           },
           circles.length > 0 && circleListSchema(circles, `Circles in ${city}`),
-          events.length > 0 && eventListSchema(events, `Upcoming events in ${city}`),
+          events.length > 0 && cityEventListSchema(events, `Upcoming events in ${city}`),
           spaces.length > 0 && spaceListSchema(spaces, `Local Spaces in ${city}`),
         ].filter(Boolean)}
       />

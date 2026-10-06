@@ -1,5 +1,5 @@
 // LIVE-795 (ADR-1715): the archetype registry, the arrival follow-up, and the no-pixel rule.
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ARCHETYPE_IDS, ARCHETYPES, FOLLOW_UPS, archetypeTag, followUpsFor, resolveArchetype } from './archetypes'
@@ -50,9 +50,10 @@ describe('no pixel ever carries an archetype (ADR-1715 privacy rule)', () => {
   // Any track()/gtag/fbq/dataLayer/posthog call in a file that touches the archetype must not pass it.
   const SINKS = /\b(track|gtag|fbq|posthog\.capture|sendGAEvent)\s*\(|dataLayer\.push\s*\(/g
   function walk(dir: string, out: string[] = []): string[] {
-    for (const name of readdirSync(join(ROOT, dir))) {
+    for (const entry of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+      const name = entry.name
       const p = `${dir}/${name}`
-      if (statSync(join(ROOT, p)).isDirectory()) { if (name !== 'node_modules') walk(p, out) }
+      if (entry.isDirectory()) { if (name !== 'node_modules') walk(p, out) }
       else if (/\.(ts|tsx)$/.test(name) && !/\.test\.tsx?$/.test(name)) out.push(p)
     }
     return out

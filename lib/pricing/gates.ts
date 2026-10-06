@@ -18,7 +18,7 @@
 // is fail-safe to the code map on any DB error.
 
 import { ENTITLEMENT_TIERS, type EntitlementTier } from '@/lib/core/entitlement'
-import { SPACE_PLANS, asSpacePlan, isSpacePlanLabel, type SpacePlan } from './plans'
+import { PLAN_CAPABILITY_RANK, asSpacePlan, isSpacePlanLabel, type SpacePlan } from './plans'
 
 // ── The two entitlement ladders (low → high) ────────────────────────────────────────────
 // Personal: free < crew (ENTITLEMENT_TIERS from lib/core/entitlement.ts).
@@ -26,15 +26,14 @@ const TIER_RANK: Record<EntitlementTier, number> = Object.fromEntries(
   ENTITLEMENT_TIERS.map((t, i) => [t, i]),
 ) as Record<EntitlementTier, number>
 
-// Space: free < business ~ nonprofit (SPACE_PLANS, ADR-552; business/nonprofit are full depth). The
+// Space: free < business ~ nonprofit ~ independent < collective ~ nonprofit_collective
+// (PLAN_CAPABILITY_RANK, ADR-1709; array position is not rank). The
 // plan-rank gate is the COARSE paid-floor check; the FINE per-feature gating is the entitlement-key
 // UNION (spaceHasEntitlement,
 // lib/spaces/entitlements.ts) the tier/add-on resolver writes. The marketing/team/branding depth now
 // rides the Business tier and the AI add-on is metered, so a feature that needs a specific capability
 // gates on its entitlement KEY, not on this coarse ladder.
-const PLAN_RANK: Record<SpacePlan, number> = Object.fromEntries(
-  SPACE_PLANS.map((p, i) => [p, i]),
-) as Record<SpacePlan, number>
+const PLAN_RANK: Record<SpacePlan, number> = PLAN_CAPABILITY_RANK
 
 export type GateAxis = 'tier' | 'plan'
 

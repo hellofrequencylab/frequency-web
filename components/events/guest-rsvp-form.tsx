@@ -5,6 +5,7 @@ import { Check } from 'lucide-react'
 import { submitGuestRsvp } from '@/app/(main)/events/guest-rsvp-actions'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/field'
+import { FunnelNextStep } from '@/components/funnels/next-step-link'
 
 // THE SIGNED-OUT DOOR. What stood here was a link to /sign-in: someone followed a shared link,
 // wanted to say they were coming, and was asked to make an account first. An account is a real
@@ -52,17 +53,21 @@ export function GuestRsvpForm({
 
   if (done) {
     return (
-      <div
-        // Announced rather than silently swapped: the submit button is gone by the time this
-        // renders, so a screen reader user has nothing left to move back to.
-        role="status"
-        className="flex items-start gap-2.5 rounded-card bg-success-bg px-4 py-3 text-success"
-      >
-        <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        <div className="space-y-1">
-          <p className="text-body-sm font-semibold">{CONFIRMATION.heading}</p>
-          <p className="text-meta">{CONFIRMATION.body}</p>
+      <div className="space-y-3">
+        <div
+          // Announced rather than silently swapped: the submit button is gone by the time this
+          // renders, so a screen reader user has nothing left to move back to.
+          role="status"
+          className="flex items-start gap-2.5 rounded-card bg-success-bg px-4 py-3 text-success"
+        >
+          <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <div className="space-y-1">
+            <p className="text-body-sm font-semibold">{CONFIRMATION.heading}</p>
+            <p className="text-meta">{CONFIRMATION.body}</p>
+          </div>
         </div>
+        {/* The funnel's one next step (LIVE-801), under the confirmation. */}
+        <FunnelNextStep moment="rsvp" />
       </div>
     )
   }
