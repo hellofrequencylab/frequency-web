@@ -91,7 +91,10 @@ export const loadAppOverrides = cache(async (scopeKey: string): Promise<AppOverr
     const { createAdminClient } = await import('@/lib/supabase/admin')
     // app_overrides isn't in the generated types until its migration is applied + typegen re-runs,
     // so reach it with an untyped client (the ADR-246 pattern used for page_settings / new tables).
-    // Scope-kind defaults only today (space_id IS NULL); the per-space layer is Phase 2 (migration TODO).
+    // Scope-kind defaults only (space_id IS NULL). The PER-SPACE layer is not this table: a Space hides
+    // and reorders its own Apps in its Module Manager (spaces.preferences.moduleMenu, ADR-546b), which
+    // appsForScope applies on the space branch (lib/apps/for-scope.ts applySpaceModuleMenu). The
+    // reserved space_id column stays unused so there is one per-Space store, not two (LIVE-691).
     const db = createAdminClient() as unknown as {
       from: (t: string) => {
         select: (cols: string) => {

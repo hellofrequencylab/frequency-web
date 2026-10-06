@@ -6,7 +6,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { listThemes } from '@/lib/theme/server/admin-themes'
 import type { ThemeRow, ThemeStatus } from '@/lib/theme/admin-types'
+import { communityDefaultGeneration } from '@/lib/theme/server/default-generation'
 import { ThemeRowActions } from './row-actions'
+import { DefaultGenerationPicker } from './default-generation'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,7 +85,7 @@ function ThemeRowCard({ t }: { t: ThemeRow }) {
 
 export default async function ThemeStudioPage() {
   await requireAdmin('janitor')
-  const themes = await listThemes()
+  const [themes, defaultGeneration] = await Promise.all([listThemes(), communityDefaultGeneration()])
 
   const skins = themes.filter((t) => t.kind === 'skin')
   const occasions = themes.filter((t) => t.kind === 'occasion')
@@ -105,6 +107,14 @@ export default async function ThemeStudioPage() {
           one-time step: the database migration must be applied for the theme system to be live.
           Until then you can still design and preview themes here.
         </div>
+      </AdminSection>
+
+      {/* The community default generation (LIVE-658): the feel axis as editable data. */}
+      <AdminSection
+        title="Community feel"
+        description="Type size, spacing and motion for everyone whose Space and own settings have not picked one."
+      >
+        <DefaultGenerationPicker current={defaultGeneration} />
       </AdminSection>
 
       {themes.length === 0 ? (
