@@ -230,6 +230,21 @@ async function readActiveEnrollments(spaceId: string): Promise<EnrollmentRow[]> 
 }
 
 /** Count a Space's active enrollments (service-role; FAIL-SAFE to 0). */
+/** The shape supabase-js hands back for a Postgres error: sqlstate in `code`, the raise text in `message`. */
+type PgError = { code?: string | null; message?: string | null }
+
+/** enforce_space_program_capacity (20270346001300) raises 'program_full' with errcode check_violation
+ *  (sqlstate 23514). Both halves are checked so an unrelated CHECK failure is not read as a full program. */
+function isProgramFull(error: unknown): boolean {
+  const e = (error ?? {}) as PgError
+  return e.code === '23514' && (e.message ?? '').includes('program_full')
+}
+
+/** The partial unique index space_enrollments_one_active_per_member (sqlstate 23505). */
+function isUniqueViolation(error: unknown): boolean {
+  return ((error ?? {}) as PgError).code === '23505'
+}
+
 async function countActiveEnrollments(spaceId: string): Promise<number> {
   return (await readActiveEnrollments(spaceId)).length
 }
@@ -408,7 +423,10 @@ export async function enrollInProgram(spaceId: string): Promise<ActionResult> {
   const existing = await readMyActiveEnrollment(spaceId, profileId)
   if (existing) return fail('You are already enrolled here.')
 
-  // Capacity guard: refuse when a capped program is full.
+  // Capacity guard: refuse when a capped program is full. This is the FAST PATH, not the guard: two
+  // members racing for the last seat both pass this count. The guard is
+  // enforce_space_program_capacity (20270346001300), a BEFORE trigger that locks the program row
+  // and raises program_full; the insert below maps that onto the same message (SCAN-708).
   if (program.capacity > 0) {
     const activeCount = await countActiveEnrollments(spaceId)
     if (activeCount >= program.capacity) return fail('This program is full right now.')
@@ -428,9 +446,12 @@ export async function enrollInProgram(spaceId: string): Promise<ActionResult> {
       .select(ENROLLMENT_COLS)
       .maybeSingle()
     if (error) {
+      // The capacity trigger lost the race for the last seat: the same words the count above shows.
+      if (isProgramFull(error)) return fail('This program is full right now.')
       // The partial unique index rejects a second active row for the same member: translate the race
       // into the friendly message rather than a raw DB error.
-      return fail('You are already enrolled here.')
+      if (isUniqueViolation(error)) return fail('You are already enrolled here.')
+      return fail('Could not enroll right now. Try again.')
     }
     enrollmentRowId = data?.id ?? null
   } catch {

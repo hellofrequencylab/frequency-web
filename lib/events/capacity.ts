@@ -85,31 +85,50 @@ export async function promoteFromWaitlist(eventId: string): Promise<PromotedSeat
   if (isFull) return null
 
   const admin = createAdminClient()
-  // guest_email postdates the generated types, so the row is read untyped and cast to the
-  // shape used here (ADR-246, same seam as lib/events/cancellation.ts).
-  // ⚠️ AND PROMOTION MUST NOT BYPASS THE APPROVAL GATE (SCAN-105). This read used to take the
-  // oldest waitlist row whatever its approval state, so a STILL-PENDING request could be lifted
-  // straight into a confirmed seat by someone else's cancellation — approval granted by timing
-  // rather than by the host. Skipping pending rows means the next APPROVED person moves up, and a
-  // pending one waits for the host either way.
-  const { data: nextRaw } = await admin
-    .from('event_rsvps')
-    .select('id, profile_id, guest_email')
-    .eq('event_id', eventId)
-    .eq('status', 'waitlist')
-    .neq('approval_status', 'pending')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-  const next = nextRaw as unknown as {
-    id: string; profile_id: string | null; guest_email: string | null
-  } | null
+  // TWO WITHDRAWALS AT ONCE (SCAN-701): two callers can read the same oldest waitlist row. The
+  // promotion below lands only on a row STILL waitlisted and reads itself back, so the loser gets
+  // zero rows instead of a second "promotion" of the same person, and tries the next candidate.
+  // Three attempts bound the loop; a withdrawal storm bigger than that waits for the next one.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    // guest_email postdates the generated types, so the row is read untyped and cast to the
+    // shape used here (ADR-246, same seam as lib/events/cancellation.ts).
+    // ⚠️ AND PROMOTION MUST NOT BYPASS THE APPROVAL GATE (SCAN-105). This read used to take the
+    // oldest waitlist row whatever its approval state, so a STILL-PENDING request could be lifted
+    // straight into a confirmed seat by someone else's cancellation — approval granted by timing
+    // rather than by the host. Skipping pending rows means the next APPROVED person moves up, and a
+    // pending one waits for the host either way.
+    const { data: nextRaw } = await admin
+      .from('event_rsvps')
+      .select('id, profile_id, guest_email')
+      .eq('event_id', eventId)
+      .eq('status', 'waitlist')
+      .neq('approval_status', 'pending')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    const next = nextRaw as unknown as {
+      id: string; profile_id: string | null; guest_email: string | null
+    } | null
 
-  if (!next) return null
-  await admin.from('event_rsvps').update({ status: 'going' }).eq('id', next.id)
-  return {
-    rsvpId: next.id,
-    profileId: next.profile_id ?? null,
-    guestEmail: next.guest_email ?? null,
+    if (!next) return null
+    const { data: movedRaw, error } = await admin
+      .from('event_rsvps')
+      .update({ status: 'going' })
+      .eq('id', next.id)
+      .eq('status', 'waitlist')
+      .select('id, status')
+      .maybeSingle()
+    if (error) throw new Error(`waitlist promotion failed: ${error.message}`)
+    const moved = movedRaw as unknown as { id: string; status: string } | null
+    // No row: another promotion took this person first. The next candidate is theirs to lose.
+    if (!moved) continue
+    // The capacity trigger coerced the write because the room filled again meanwhile.
+    if (moved.status !== 'going') return null
+    return {
+      rsvpId: next.id,
+      profileId: next.profile_id ?? null,
+      guestEmail: next.guest_email ?? null,
+    }
   }
+  return null
 }

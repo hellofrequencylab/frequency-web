@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-712",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"lib/commerce/checkout.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-712: checkout.ts missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const a=s.indexOf(\"export async function createCommerceCheckout\");if(a<0){console.error(\"SCAN-712: createCommerceCheckout not found\");process.exit(79)}const b=s.indexOf(\"\\nexport async function\",a+1);const body=s.slice(a,b<0?s.length:b).replace(/\\/\\/[^\\n]*/g,\"\");const guarded=/commerce_variants|Pick an option|!\\s*it\\.variantId|it\\.variantId\\s*==\\s*null|hasVariants|activeVariant|requiresVariant/i.test(body);if(!guarded){console.error(\"SCAN-712: createCommerceCheckout still accepts a line with no variantId for a product that has active variants, so a direct action call buys at the base price and past the sold-out option stock.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: createCommerceCheckout (lib/commerce/checkout.ts) runs one batched read of active commerce_variants for the variant-less products in the cart and refuses a line with no variantId on a product that has any with Pick an option, before any price or session is made."
+  }
+}

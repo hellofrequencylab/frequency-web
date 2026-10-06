@@ -133,13 +133,16 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
     }
   }
 
-  // Check if already purchased (for non-stackable items like cosmetics/titles)
+  // Check if already purchased (for non-stackable items like cosmetics/titles). limit(1) so a
+  // duplicate pair, should one exist, is still "owned" and never the multiple-rows error that
+  // maybeSingle turns into data null (SCAN-695). The RPC below rechecks this under its lock.
   if (['cosmetic', 'title', 'collectible'].includes(item.category)) {
     const { data: existing } = await admin
       .from('store_redemptions')
       .select('id')
       .eq('profile_id', profileId)
       .eq('item_id', itemId)
+      .limit(1)
       .maybeSingle()
 
     if (existing) return fail('You already own this item')
@@ -192,6 +195,9 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
     }
     if (error.message?.includes('out_of_stock')) {
       return fail('Out of stock')
+    }
+    if (error.message?.includes('already_owned')) {
+      return fail('You already own this item')
     }
     console.error('[redeemItem] redeem_store_item_atomic failed', error.message)
     return fail('We could not complete that redemption. Your Gems stay safe.')
@@ -268,11 +274,13 @@ export async function equipCosmetic(itemId: string | null, slot: CosmeticType): 
   let value: string | null = null
 
   if (itemId) {
+    // limit(1), as in redeemItem: a duplicate pair still reads as owned (SCAN-695).
     const { data: owned } = await admin
       .from('store_redemptions')
       .select('id')
       .eq('profile_id', profileId)
       .eq('item_id', itemId)
+      .limit(1)
       .maybeSingle()
     if (!owned) return fail('You don’t own this item yet')
 

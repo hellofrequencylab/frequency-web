@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-651",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs = require(\"fs\")\nconst d = \"supabase/migrations\"\nlet last = null\nfor (const f of fs.readdirSync(d).filter((x) => x.endsWith(\".sql\")).sort()) {\n  const s = fs.readFileSync(d + \"/\" + f, \"utf8\")\n  const re = /create\\s+policy\\s+\"[^\"]*\"\\s+on\\s+public\\.circle_channels\\s+for\\s+select[\\s\\S]*?;/gi\n  let m\n  while ((m = re.exec(s)) !== null) last = m[0]\n}\nif (last === null) { console.error(\"probe could not look: no select policy on circle_channels\"); process.exit(79) }\nif (/using\\s*\\(\\s*true\\s*\\)/i.test(last)) { console.error(\"SCAN-651: circle_channels is readable by anon with using (true), so anyone with the anon key lists the ids of unlisted, closed Circles (ADR-1015) and the Channels they carry.\"); process.exit(1) }\n'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: migration 20270346001100_circle_channels_inherit_circle_visibility.sql replaces the using (true) select policy on circle_channels with an exists on public.circles, so the row inherits circles_access_restrictive; supabase/tests/circle_channels_visibility.test.sql proves anon still reads a listed Circle's rows and never a hidden one's. Not applied: the thread owner applies it after merge."
+  }
+}
