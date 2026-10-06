@@ -11,6 +11,7 @@ import { isError } from '@/lib/action-result'
 import type { DomainStatus } from '@/lib/sites/vercel-domains'
 import { DOMAIN_METHODS } from '@/lib/sites/domain-methods'
 import { connectSiteDomain, checkSiteDomain, removeSiteDomain } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { DomainBuyPanel } from './domain-buy-panel'
 
 // THE DOMAIN SECTION (PROG-E10, LIVE-743). Where a Space owner puts their website on their own domain:
 // pick how (DOMAIN_METHODS: own domain via DNS is live; connect automatically and buy a domain show as
@@ -29,11 +30,14 @@ export function SiteDomainPanel({
   slug,
   initial,
   websitePublished,
+  buyOpen = false,
 }: {
   slug: string
   /** The bound domain and its status, read on the server, or null when none is connected. */
   initial: Status | null
   websitePublished: boolean
+  /** Domain sales are switched on (LIVE-781, domainPurchaseOpen on the server). Off: Coming soon. */
+  buyOpen?: boolean
 }) {
   const router = useRouter()
   const [status, setStatus] = useState<Status | null>(initial)
@@ -102,27 +106,30 @@ export function SiteDomainPanel({
         <>
           <p className="-mt-2 mb-3 text-body-sm text-muted">Put your website on your own domain, like yourname.com.</p>
           <ul className="mb-4 grid gap-2 sm:grid-cols-3">
-            {DOMAIN_METHODS.map((m) => (
-              <li
-                key={m.key}
-                className={
-                  m.available
-                    ? 'rounded-card border border-primary bg-primary-bg px-3 py-2'
-                    : 'rounded-card border border-border px-3 py-2 opacity-70'
-                }
-                aria-disabled={!m.available || undefined}
-              >
-                <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
-                  {m.label}
-                  {!m.available && (
-                    <Badge tone="neutral" size="sm">
-                      Coming soon
-                    </Badge>
-                  )}
-                </p>
-                <p className="mt-0.5 text-body-sm text-muted">{m.description}</p>
-              </li>
-            ))}
+            {DOMAIN_METHODS.map((m) => {
+              const open = m.available && (!m.switch || buyOpen)
+              return (
+                <li
+                  key={m.key}
+                  className={
+                    open
+                      ? 'rounded-card border border-primary bg-primary-bg px-3 py-2'
+                      : 'rounded-card border border-border px-3 py-2 opacity-70'
+                  }
+                  aria-disabled={!open || undefined}
+                >
+                  <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
+                    {m.label}
+                    {!open && (
+                      <Badge tone="neutral" size="sm">
+                        Coming soon
+                      </Badge>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-body-sm text-muted">{m.description}</p>
+                </li>
+              )
+            })}
           </ul>
           <form
             className="flex flex-wrap items-center gap-2"
@@ -149,6 +156,7 @@ export function SiteDomainPanel({
               Connect
             </Button>
           </form>
+          {buyOpen && <DomainBuyPanel slug={slug} />}
         </>
       ) : (
         <div className="space-y-4">

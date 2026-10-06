@@ -279,6 +279,12 @@
 # its callers are the refund recorder (already authorized as the order's seller or an operator), the
 # Stripe webhook (charge.refunded, charge.dispute.closed) and the reconcile-transfers cron, none of
 # which has a member session to run under. Nothing leaves it but counts and log lines.
+# lib/sites/domain-purchase.ts (added 2026-10-06, LIVE-781): settles a paid domain purchase. It writes
+# space_domain_purchases, which is RLS on with ZERO policies and both client roles revoked because the row
+# holds the registrant's contact details until the Vercel order is placed. Its callers are the Stripe
+# webhook (no member session) and the on-page confirmation, where Stripe is the authority: it re-fetches the
+# session and acts only on a paid domain_purchase. The claim is a single conditional update, so a retry buys
+# nothing twice.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -988,6 +994,7 @@ lib/rewards/creation.ts
 lib/rewards/gifts.ts
 lib/rewards/spark.ts
 lib/seasons.ts
+lib/sites/domain-purchase.ts
 lib/spaces/ai-usage.ts
 lib/spaces/analytics.ts
 lib/spaces/audiences.ts
