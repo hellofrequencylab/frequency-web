@@ -394,12 +394,12 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
 
   it('a meter row reads the tier rung on the usage ladder, not a typed number', () => {
     const contacts = cellsByColumn(grid, 'space_crm')
-    expect(contacts.free).toBe('Up to 200 contacts')
-    expect(contacts.business).toBe('Unlimited contacts')
-    // A tier above the top rung reads the top rung, exactly as the enforcement seam resolves it.
-    expect(contacts.nonprofit).toBe('Unlimited contacts')
+    expect(contacts.free).toBe('Up to 250 contacts')
+    expect(contacts.business).toBe('Up to 5,000 contacts')
+    // A plan between two rungs reads the lower rung, exactly as the enforcement seam resolves it.
+    expect(contacts.nonprofit).toBe('Up to 5,000 contacts')
     const sends = cellsByColumn(grid, 'space_email')
-    expect(sends.free).toBe('Up to 300 sends/mo')
+    expect(sends.free).toBe('Up to 1,000 sends/mo')
     expect(sends.business).toBe('Up to 25,000 sends/mo')
   })
 })
