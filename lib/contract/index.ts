@@ -141,3 +141,24 @@ export const capabilitiesView = z.object({
 export type CapabilitiesView = z.infer<typeof capabilitiesView>
 
 export const capabilitiesResponse = envelope(capabilitiesView)
+
+// ── /api/v1/account: deletion and the data export (LIVE-719) ───────────────────────────────────
+
+/** GET /api/v1/account: what the app shows before it offers deletion. */
+export const accountView = z.object({
+  /** Spaces whose paid plan ends when this account is deleted; null when it could not be read
+   *  (say it in general terms then, never "nothing"). */
+  paidSpacesEndedByDelete: z.array(z.object({ name: z.string(), plan: z.string() })).nullable(),
+})
+export type AccountView = z.infer<typeof accountView>
+export const accountResponse = envelope(accountView)
+
+/** DELETE /api/v1/account takes this body, so a stray DELETE cannot erase an account. */
+export const accountDeleteInput = z.object({ confirm: z.literal('DELETE') })
+export const accountDeleteResponse = envelope(z.object({ deleted: z.literal(true) }))
+
+/** GET /api/v1/account/export: the member data export, the same object the web downloads. Its
+ *  sections are documented in lib/privacy/export.ts (`meta.format` names the shape and version). */
+export const accountExportResponse = envelope(
+  z.object({ filename: z.string(), export: z.object({ meta: z.looseObject({ format: z.string(), version: z.number() }), data: z.record(z.string(), z.unknown()) }) }),
+)

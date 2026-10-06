@@ -142,6 +142,9 @@ under the same RLS. On the cookie path it is a plain call. View-as never applies
 |---|---|---|
 | `GET /api/v1/me` | bearer or cookie | `MeView`: the caller's id, handle, display name, avatar, community role and level, staff role, tier, and which credential was used. |
 | `GET /api/v1/capabilities?kind=&id=` | bearer or cookie | `CapabilitiesView`: the caller's capability names on one scope (global, Circle, Hub, Nexus, event, practice, Journey, profile, Space). Display only; every write re-checks. |
+| `GET /api/v1/account` | bearer or cookie | `AccountView`: the paid Spaces deleting the account would end, so the app warns first. |
+| `DELETE /api/v1/account` | bearer or cookie | Body `{ "confirm": "DELETE" }`. Erases the caller's own account (App Store 5.1.1(v)) through the web's `deleteMyAccount`. Refused inside a staff act-as. |
+| `GET /api/v1/account/export` | bearer or cookie | The member data export, the same object the web's "Download my data" builds. 5 per 10 minutes. |
 
 The rest of the app's surface (feed, Circles, events, practices, messages, notifications, the
 capability projection, native sign-in, account deletion and export, push devices, capture and
