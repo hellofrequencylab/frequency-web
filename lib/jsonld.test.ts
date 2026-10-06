@@ -275,13 +275,22 @@ describe('eventSchema', () => {
     })
   })
 
-  it('uses generic location placeholder when city is null (privacy contract)', () => {
+  it('uses generic location placeholder when city, region and country are all null (privacy contract)', () => {
     const result = eventSchema(makeEvent({ city: null }))
     const loc = result.location as Record<string, unknown>
     expect(loc['@type']).toBe('Place')
     // Must NOT expose precise location; name is a generic placeholder
     expect(loc.name).toMatch(/member/i)
     expect(loc).not.toHaveProperty('address')
+  })
+
+  it('still emits a PostalAddress from region when city is null (SCAN-790)', () => {
+    const result = eventSchema({ ...makeEvent({ city: null }), region: 'CA' })
+    const loc = result.location as Record<string, unknown>
+    expect(loc.name).toBe('CA')
+    expect(loc.address).toMatchObject({ '@type': 'PostalAddress', addressRegion: 'CA' })
+    expect(loc.address).not.toHaveProperty('addressLocality')
+    expect(loc.address).not.toHaveProperty('streetAddress')
   })
 
   it('defaults to a scheduled, offline (in-person) event with no enrichment', () => {
@@ -343,6 +352,13 @@ describe('eventSchema', () => {
     expect((result as Record<string, unknown>).organizer).toMatchObject({
       '@type': 'Organization',
       name: 'Surf Club',
+    })
+  })
+
+  it('links the circle organizer to the public circle page the event page links (SCAN-791)', () => {
+    const result = eventSchema(makeEvent({ circle_name: 'Surf Club', circle_id: 'c-1' }))
+    expect((result as Record<string, unknown>).organizer).toMatchObject({
+      url: `${SITE_URL}/discover/circles/c-1`,
     })
   })
 
@@ -698,19 +714,32 @@ describe('spaceOfferingsSchema', () => {
     expect((product.offers as Record<string, unknown>).price).toBe('20.00')
   })
 
-  it("emits a 'free' offering as a $0 Offer and a 'contact' / priceless offering with no Offer", () => {
+  it("emits a 'free' offering as a $0 Offer and a 'contact' / priceless offering as a Service (SCAN-792)", () => {
     const items = spaceOfferingsSchema(
       [
         { title: 'Community class', priceModel: 'free' },
-        { title: 'Private coaching', priceModel: 'contact' },
+        { title: 'Private coaching', priceModel: 'contact', blurb: 'One on one.' },
         { title: 'Workshop' },
       ],
-      { slug: 's', listName },
+      { slug: 's', sellerName: 'River Yoga', listName },
     ).itemListElement as Record<string, unknown>[]
     const free = items[0].item as Record<string, unknown>
+    expect(free['@type']).toBe('Product')
     expect((free.offers as Record<string, unknown>).price).toBe('0.00')
+    // An unpriced offering is never a Product with no Offer: Google reports that as an invalid item.
+    expect(items[1].item).toMatchObject({
+      '@type': 'Service',
+      name: 'Private coaching',
+      description: 'One on one.',
+      provider: { '@type': 'Organization', name: 'River Yoga' },
+      url: `${SITE_URL}/spaces/s#offerings`,
+    })
     expect(items[1].item).not.toHaveProperty('offers')
-    expect(items[2].item).not.toHaveProperty('offers')
+    expect((items[2].item as Record<string, unknown>)['@type']).toBe('Service')
+    for (const it of items) {
+      const node = it.item as Record<string, unknown>
+      if (node['@type'] === 'Product') expect(node.offers ?? node.review ?? node.aggregateRating).toBeTruthy()
+    }
   })
 })
 
@@ -780,11 +809,11 @@ describe('SCAN-207 · Event startDate carries the event zone, not a bare Z', () 
     }
   })
 
-  it('keeps the offer opening at the same moment the event starts', () => {
-    // startDate and offers.validFrom are resolved once and shared, so the two cannot drift into a
-    // page-vs-schema contradiction about when the event is.
+  it('publishes no offers.validFrom: the event start is not the sale-open moment (SCAN-789)', () => {
+    // Offer.validFrom means "tickets go on sale at"; the builder has no sale-open instant, so it
+    // says nothing rather than claiming the sale opens when the doors do.
     const r = eventSchema(makeEvent({ starts_at: '2026-08-27T18:30:00Z', time_zone: 'America/Los_Angeles' }))
-    expect((r.offers as Record<string, unknown>).validFrom).toBe(r.startDate)
+    expect((r.offers as Record<string, unknown>).validFrom).toBeUndefined()
   })
 
   it('degrades to the raw stored value on a malformed timestamp rather than dropping the field', () => {
@@ -804,6 +833,19 @@ describe('SCAN-207 · Event startDate carries the event zone, not a bare Z', () 
 // Google reads, and given neither it must omit the keys rather than emit empty ones.
 describe('articleSchema — image + datePublished (LIVE-183)', () => {
   const base = { title: 'How to join a Circle', description: 'Find a local group.', path: '/help/getting-started/join-a-circle' }
+
+  it('emits a WebPage or AboutPage that carries its own @id instead of an Article (SCAN-802)', () => {
+    const page = articleSchema({ ...base, path: '/', type: 'WebPage' }) as Record<string, unknown>
+    expect(page['@type']).toBe('WebPage')
+    expect(page['@id']).toBe(`${SITE_URL}/`)
+    expect(page).not.toHaveProperty('mainEntityOfPage')
+    const about = articleSchema({ ...base, path: '/about', type: 'AboutPage' }) as Record<string, unknown>
+    expect(about['@type']).toBe('AboutPage')
+    // The default is still an Article pointing at the page it is the main entity of.
+    const article = articleSchema(base) as Record<string, unknown>
+    expect(article['@type']).toBe('Article')
+    expect(article.mainEntityOfPage).toEqual({ '@type': 'WebPage', '@id': `${SITE_URL}${base.path}` })
+  })
 
   it('emits datePublished and dateModified when both are given', () => {
     const node = articleSchema({ ...base, published: '2026-05-31', updated: '2026-06-16' }) as Record<string, unknown>

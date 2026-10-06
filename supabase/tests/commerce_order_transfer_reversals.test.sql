@@ -7,11 +7,13 @@
 --     code never writes.
 --   GENERATED: reversal_owed_cents is the target minus what is reversed, never below zero, and it
 --     follows both columns, which is the reconciler's queue.
+--   SCAN-649 (20270346000700): a new row holds no lease, no refusals and a zero floor;
+--     reversal_attempts_since_target follows attempts and the floor; the floor cannot pass attempts.
 --
 -- One transaction, rolled back: nothing persists. Fixture style follows commerce_order_transfers.test.sql.
 
 begin;
-select plan(8);
+select plan(11);
 
 -- ── Fixture ──────────────────────────────────────────────────────────────────────────────────
 insert into auth.users (id, email) values
@@ -101,6 +103,28 @@ select throws_ok($$
   update public.commerce_order_transfers set status = 'refunded'
    where id = '00000000-0000-4000-e623-000000000002'
 $$, '23514', null, 'a status the code never writes is refused');
+
+-- ── 4. The lease, the refusals and the budget floor (SCAN-649) ──────────────────────────────
+select is(
+  (select reversal_refusals || ':' || reversal_attempt_floor || ':' || reversal_attempts_since_target
+        || ':' || (reversal_lease_until <= now())::text
+     from public.commerce_order_transfers where id = '00000000-0000-4000-e623-000000000001'),
+  '0:0:0:true',
+  'a row starts with no refusals, a zero floor, no attempts since the target and a free lease'
+);
+
+update public.commerce_order_transfers set reversal_attempts = 5, reversal_attempt_floor = 3
+ where id = '00000000-0000-4000-e623-000000000001';
+select is(
+  (select reversal_attempts_since_target from public.commerce_order_transfers where id = '00000000-0000-4000-e623-000000000001'),
+  2,
+  'attempts since the target are counted from the floor, so a raised target gets fresh budget without the counter going back'
+);
+
+select throws_ok($$
+  update public.commerce_order_transfers set reversal_attempt_floor = 9
+   where id = '00000000-0000-4000-e623-000000000001'
+$$, '23514', null, 'the floor can never pass the attempts counter');
 
 select * from finish();
 rollback;

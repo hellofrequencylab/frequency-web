@@ -34,7 +34,10 @@ describe('every fan-out with a Space or Circle in scope names it as the subject'
   })
 
   it('a member Dispatch names its Circle on both channels (nearby + admin publish)', () => {
-    for (const file of ['app/(main)/nearby/actions.ts', 'app/(main)/admin/actions.ts']) {
+    // The admin publish fan-out lives in lib/dispatches/fan-out.ts since SCAN-756 (publishDispatch
+    // hands it to after()), so that module is the admin leg this test reads.
+    expect(read('app/(main)/admin/actions.ts')).toMatch(/after\(\(\) => notifyDispatchAudience\(/)
+    for (const file of ['app/(main)/nearby/actions.ts', 'lib/dispatches/fan-out.ts']) {
       const src = read(file)
       expect(src, file).toMatch(/subjectType: 'circle', subjectId: (dispatch\.)?audience_id/)
       expect(src, file).toContain("'email', 'dispatches', { email")

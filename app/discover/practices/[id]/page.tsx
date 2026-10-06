@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { getPublicPractice, listPublicPractices } from '@/lib/practices'
 import { SignInCta } from '@/components/discover/cards'
@@ -47,6 +47,12 @@ export default async function PublicPracticePage({
   const { id } = await params
   const practice = await getPublicPractice(id)
   if (!practice) notFound()
+
+  // The uuid form 308s to the slug, as the circle twin does (LIVE-182, SCAN-811): both resolve,
+  // but a page reachable at two addresses splits its own crawl signal, and the uuid is the form
+  // members share from /practices/<id>. Guarded on a non-null slug that differs from the segment,
+  // so it cannot loop and a practice with no slug still resolves by uuid.
+  if (practice.slug && id !== practice.slug) permanentRedirect(`/discover/practices/${practice.slug}`)
 
   // The standard entity cover (PROG-P5, ADR-1117). The public twin of /practices/<id>: the SAME
   // ladder and the SAME `header_image`, so a practice whose photo already showed in-app now shows

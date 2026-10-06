@@ -1965,9 +1965,25 @@ export async function setPracticeTags(
  *  lineage (Phase 3 "Grow"): remixed_from = the direct parent, root_practice_id = the
  *  parent's root (so a remix-of-a-remix still credits the ORIGINAL), or the parent
  *  itself when the parent is a root. */
-export async function forkPractice(profileId: string, practiceId: string): Promise<Practice | null> {
+export async function forkPractice(
+  profileId: string,
+  practiceId: string,
+  opts: {
+    /** Admin curation only: fork a private practice the caller does not own. Gate on admin.access
+     *  at the action layer; the default refuses so a uuid alone never copies a private guide. */
+    allowPrivate?: boolean
+    /** Claim path: refuse anything that is not a template, so the claim Zaps only pay for real ones. */
+    requireTemplate?: boolean
+  } = {},
+): Promise<Practice | null> {
   const src = await getPractice(practiceId)
   if (!src) return null
+  // VISIBILITY IS THE GATE (SCAN-726). getPractice reads through the admin client, so RLS does not
+  // apply here: without this check a member holding another member's private or pending practice
+  // uuid landed in the editor of a copy carrying the full guide body the detail page refuses to
+  // show them. Same rule as remixDirectionsAction: public, or your own.
+  if (!src.is_public && src.created_by !== profileId && !opts.allowPrivate) return null
+  if (opts.requireTemplate && !src.is_template) return null
   // PRACTICE_COLS doesn't carry the lineage columns, so read the parent's root directly.
   const { data: lineageRow } = await db()
     .from('practices')
@@ -2010,14 +2026,15 @@ export async function forkPractice(profileId: string, practiceId: string): Promi
 
 /** Claim a template: fork a private, owned copy, personalize it with the member's
  *  (Vera-assisted) title / cadence / summary / body, and adopt it. Returns the new
- *  practice. The claim reward is awarded by the action layer (lib/zaps). The copy is
- *  never a template (forkPractice leaves is_template at its default false). */
+ *  practice, or null when the source is not a public (or own) TEMPLATE (SCAN-726), so the
+ *  claim reward the action layer pays (lib/zaps) only ever pays for a real template. The copy
+ *  is never a template (forkPractice leaves is_template at its default false). */
 export async function claimPractice(
   profileId: string,
   templateId: string,
   fields: { title?: string; summary?: string | null; body?: string | null; cadence?: string | null },
 ): Promise<Practice | null> {
-  const copy = await forkPractice(profileId, templateId)
+  const copy = await forkPractice(profileId, templateId, { requireTemplate: true })
   if (!copy) return null
   const patch: PracticeEdit = {}
   if (fields.title !== undefined) patch.title = fields.title
@@ -2680,8 +2697,10 @@ export async function logPractice(input: {
   // Completion economy (ADR-443, achieved tier). A TIMED log earns the tier its REAL engaged
   // time reaches (achievedTier below); under the Light floor it is a partial (clears the day,
   // 1 Zap, "Finish Practice" tops up). A one-tap / quick-log (no target) is always FULL — the
-  // unchanged recommended path. The timer-completion proof in completeSession still guarantees
-  // the claimed seconds were actually spent before any of this runs.
+  // unchanged recommended path. NOTHING HERE PROVES THE SECONDS: the numbers are trusted as
+  // given, so the only callers allowed to pass a target are server-side ones that derived it
+  // from a session row (completeSession). logPracticeAction never forwards client seconds
+  // (SCAN-723).
   const tgt = Math.max(0, Math.round(secondsTarget ?? 0))
   const done = Math.max(0, Math.round(secondsDone ?? 0))
   const isTimed = tgt > 0

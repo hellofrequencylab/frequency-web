@@ -244,10 +244,12 @@ describe('recordTicketFromSession — the flip and the sold bump are ONE stateme
     expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
   })
 
-  it('a failed settle is logged, never thrown, NOT retried, and records no ledger row', async () => {
+  it('a failed settle is logged AND thrown (so Stripe redelivers, SCAN-764), NOT retried, and records no ledger row', async () => {
     state.setRpcRows([TICKET])
     state.setRpcError({ message: 'function unavailable' })
-    await expect(recordTicketFromSession(paidSession())).resolves.toBeUndefined()
+    // Thrown, not swallowed: a swallowed error read as "zero rows flipped", the webhook acked 200
+    // with its claim kept, and the paid ticket stayed pending forever with no redelivery.
+    await expect(recordTicketFromSession(paidSession())).rejects.toThrow(/settle_ticket_atomic failed/)
     // Not retried on purpose: a call that commits and loses its response would return zero rows on
     // a retry, and zero rows is how this path says "somebody else settled it".
     expect(rpcCalls()).toHaveLength(1)
@@ -288,9 +290,9 @@ describe('recordTicketRefund — the mirror image gives the seat back in the sam
     expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
   })
 
-  it('a failed refund RPC is logged and never throws', async () => {
+  it('a failed refund RPC is logged and thrown, so the charge.refunded webhook redelivers (SCAN-764)', async () => {
     state.setRpcError({ message: 'deadlock detected' })
-    await expect(recordTicketRefund('pi_1')).resolves.toBeUndefined()
+    await expect(recordTicketRefund('pi_1')).rejects.toThrow(/refund_ticket_atomic failed/)
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('refund_ticket_atomic failed'),
       expect.objectContaining({ error: 'deadlock detected' }),

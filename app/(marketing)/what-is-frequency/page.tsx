@@ -8,13 +8,13 @@ import type { Data } from '@/lib/page-editor/types'
 import { BlockRender } from '@/lib/page-editor/block-render'
 import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
-import { getPublishedData } from '@/lib/page-editor/data'
+import { getPublishedPage, latestDay } from '@/lib/page-editor/data'
 import { isWellFormed } from '@/lib/page-editor/templates'
 import { whatIsFrequencyData } from '@/lib/page-editor/templates/what-is-frequency'
 import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 export const revalidate = 3600
 
@@ -51,6 +51,7 @@ export function generateMetadata(): Metadata {
     alternates: { canonical: PATH },
     openGraph: {
       ...OG_SITE,
+      images: ROOT_OG_IMAGES,
       title: OG_TITLE,
       description: OG_DESCRIPTION,
       url: PATH,
@@ -103,7 +104,8 @@ export default async function WhatIsFrequencyPage() {
   // The template rung is evaluated against the OPERATOR'S pricing config (SCAN-793), the same input
   // /pricing and llms.txt resolve, so an /admin/pricing edit moves this page's ladder, FAQ and JSON-LD
   // in the same revalidation. getTemplate(SLUG) is the code-default seed and stays the editor's.
-  const [published, input] = await Promise.all([getPublishedData(SLUG), loadPricingInput()])
+  const [page, input] = await Promise.all([getPublishedPage(SLUG), loadPricingInput()])
+  const published = page?.doc ?? null
   const template = whatIsFrequencyData(input)
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
   return (
@@ -115,7 +117,7 @@ export default async function WhatIsFrequencyPage() {
         title={TITLE}
         description={DESCRIPTION}
         published={PUBLISHED}
-        updated={UPDATED}
+        updated={latestDay(UPDATED, page?.published_at)}
         image={HERO_IMAGE}
       />
       <BlockRender config={config} data={data} />
