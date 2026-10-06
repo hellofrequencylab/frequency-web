@@ -378,6 +378,28 @@ export function eventListSchema(events: PublicEvent[], listName: string) {
   }
 }
 
+// ── City event list WITH Event nodes (LIVE-807, ADR-1720 workstream 9) ─────────
+// A city page (or a city × practice page) is the one place a search engine should learn what is
+// on, where, and when, so its list carries a full schema.org Event per item instead of bare URLs.
+// Each node is eventSchema's own output (city-level Place, image, offers, the zone-correct
+// startDate), so it is valid on its own: the SCAN-664 failure was items missing location and
+// image, which this cannot produce. Only events WITH a city are listed, because a city-less node
+// would carry the members-only placeholder Place Google flags. Privacy is eventSchema's: city
+// level only, never a venue or coordinates (ADR-186).
+export function cityEventListSchema(events: (PublicEvent & EventSchemaEnrichment)[], listName: string) {
+  const located = events.filter((e) => e.city)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: located.length,
+    itemListElement: located.map((e, i) => {
+      const { '@context': _context, ...node } = eventSchema(e)
+      return { '@type': 'ListItem', position: i + 1, item: { ...node, '@type': 'Event' } }
+    }),
+  }
+}
+
 // ── ItemList of upcoming events (the /events listing) ───────────────────────────
 // The AEO signal for the member's own events home + the marketplace Events tab's
 // canonical target (/events). Bare ListItems pointing at the CANONICAL public event page
