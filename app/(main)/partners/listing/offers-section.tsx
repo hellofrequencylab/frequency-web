@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Pencil, Plus, Ticket } from 'lucide-react'
 import { Field, Input, Textarea } from '@/components/ui/field'
+import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,7 +19,7 @@ import { saveOffer } from './actions'
 // an offer and to edit one (pick a row and it loads into the form). Writes go through saveOffer,
 // which re-checks that the offer belongs to the caller's listing.
 
-const EMPTY: OfferInput = { id: null, title: '', description: '', terms: '', validUntil: '', active: true }
+const EMPTY: OfferInput = { id: null, title: '', description: '', terms: '', validUntil: '', active: true, questId: '' }
 
 function toInput(o: OwnedOffer): OfferInput {
   return {
@@ -28,6 +29,7 @@ function toInput(o: OwnedOffer): OfferInput {
     terms: o.memberTerms ?? '',
     validUntil: o.validUntil ? o.validUntil.slice(0, 10) : '',
     active: o.active,
+    questId: o.questId ?? '',
   }
 }
 
@@ -35,7 +37,8 @@ function expired(o: OwnedOffer): boolean {
   return Boolean(o.validUntil && o.validUntil < new Date().toISOString())
 }
 
-export function OffersSection({ offers }: { offers: OwnedOffer[] }) {
+export function OffersSection({ offers, quests = [] }: { offers: OwnedOffer[]; quests?: { id: string; name: string }[] }) {
+  const questName = new Map(quests.map((q) => [q.id, q.name]))
   const [form, setForm] = useState<OfferInput>(EMPTY)
   const [isPending, startTransition] = useTransition()
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
@@ -87,6 +90,9 @@ export function OffersSection({ offers }: { offers: OwnedOffer[] }) {
                     <Badge tone="success">Live</Badge>
                   )}
                 </div>
+                {o.questId && (
+                  <div className="text-meta text-primary-strong">Reward for finishing {questName.get(o.questId) ?? 'a past Quest'}</div>
+                )}
                 {o.memberTerms && <div className="text-meta text-muted">{o.memberTerms}</div>}
                 {o.validUntil && (
                   <div className="text-meta text-subtle">Valid until {o.validUntil.slice(0, 10)}</div>
@@ -115,6 +121,19 @@ export function OffersSection({ offers }: { offers: OwnedOffer[] }) {
         <Field label="Valid until" hint="Leave empty for no end date.">
           <Input type="date" value={form.validUntil} onChange={(e) => set('validUntil', e.target.value)} className="bg-surface px-4 py-2.5" />
         </Field>
+        {quests.length > 0 && (
+          // LIVE-673: sponsor a Quest with goods. Members who finish one of its Journeys see the
+          // reward on the Journey and redeem it at your plaque. Never cash.
+          <Field label="Sponsor a Quest" hint="Members who finish this Quest see your reward and claim it in person. Goods or a discount, never cash.">
+            <Select
+              value={form.questId ?? ''}
+              onChange={(e) => set('questId', e.target.value)}
+              emptyLabel="Not a Quest reward"
+              options={quests.map((q) => ({ value: q.id, label: q.name }))}
+              className="bg-surface"
+            />
+          </Field>
+        )}
         <Checkbox label="Live" hint="Switch off to hide it without deleting it." checked={form.active} onChange={(e) => set('active', e.target.checked)} />
 
         <div className="flex flex-wrap items-center justify-between gap-3">

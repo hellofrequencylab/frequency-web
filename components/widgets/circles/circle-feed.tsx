@@ -5,6 +5,7 @@ import { FeedList } from '@/components/feed/feed-list'
 import { Avatar } from '@/components/ui/avatar'
 import { getCircleContext } from '@/lib/circles/active-circle'
 import { isoDaysAgo } from '@/lib/utils'
+import { getMyDispatchScopes } from '@/lib/feed/my-dispatch-scopes'
 import {
   ARRIVAL_NAMES_SHOWN,
   ARRIVAL_WINDOW_DAYS,
@@ -55,6 +56,8 @@ export const CircleFeed = async () => {
     : 0
   const extra = Math.max(0, arrivalTotal - ARRIVAL_NAMES_SHOWN)
   const names = arrivalNames(arrivals, extra)
+  // LIVE-682: how far this manager's Dispatch may go (the tiers they lead).
+  const dispatchScopes = isMember && canManage ? await getMyDispatchScopes() : []
 
   return (
     <section>
@@ -126,6 +129,7 @@ export const CircleFeed = async () => {
                 : `Share something with ${circle.name}…`
           }
           canAnnounce={canManage}
+          dispatchScopes={dispatchScopes}
         />
       ) : (
         myProfileId && (
