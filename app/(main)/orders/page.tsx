@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import { Receipt, ShoppingBag, Truck } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
@@ -6,6 +7,8 @@ import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
+import { rateLimitOk } from '@/lib/rate-limit'
+import { recordCommerceOrderFromSessionId } from '@/lib/commerce/checkout'
 import { listOrdersForBuyer, sellerNames, sellerNameKey, type CommerceOrder } from '@/lib/commerce/orders'
 import { disputesForOrders, type CommerceDispute } from '@/lib/commerce/disputes'
 import { DisputeButton } from '@/components/marketplace/dispute-button'
@@ -133,9 +136,34 @@ function OrderCard({
   )
 }
 
-export default async function OrdersPage() {
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ok?: string; booked?: string; session_id?: string }>
+}) {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in?next=/orders')
+  const params = await searchParams
+  const justPaid = params.ok === '1'
+  const justBooked = params.booked === '1'
+
+  // SCAN-711: hosted Checkout lands here with ?ok=1&session_id=cs_… BEFORE the webhook has usually
+  // arrived, and the list hides pending rows, so a buyer who had just been charged read "No orders
+  // yet" with no confirmation. Settle the session on the way in, the same backstop the on-page form
+  // runs (settleCommerceOrderAction): rate-limited per IP, fails open when the limiter is unwired
+  // because this runs after a successful charge, and never fatal, since the webhook still owes the
+  // order. The flip is guarded by status = pending, so a second visit is a no-op.
+  const sessionId = params.session_id ?? ''
+  if (sessionId.startsWith('cs_')) {
+    const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    if (await rateLimitOk('settle_commerce_order', ip, 30, '1 m', { whenUnconfigured: 'allow' })) {
+      try {
+        await recordCommerceOrderFromSessionId(sessionId)
+      } catch (e) {
+        console.error('[orders] settle on return failed; the webhook still owes the order', { sessionId, e })
+      }
+    }
+  }
   const orders = await listOrdersForBuyer(profileId)
   const [disputes, names] = await Promise.all([
     disputesForOrders(orders.map((o) => o.id)),
@@ -151,6 +179,14 @@ export default async function OrdersPage() {
       title="My orders"
       description="Everything you've bought from the Market and the Frequency Store."
     >
+      {(justPaid || justBooked) && (
+        <div
+          role="status"
+          className="mb-4 rounded-card border border-success bg-success-bg px-4 py-3 text-body-sm text-success"
+        >
+          {justBooked ? 'You’re booked. Your booking is below.' : 'Payment received. Your order is below.'}
+        </div>
+      )}
       {orders.length === 0 ? (
         <EmptyState
           icon={Receipt}
