@@ -94,6 +94,14 @@ the pull to gather people and has no container or permission. Wants rails, not a
 blank page. The framing: *"You don't have to build a community. Host one Circle.
 We'll hand you the format."*
 
+**Who is inside them (internal names, never in copy).** Seekers: the Wired
+Professional, the Transplant, the Activity-First Man, the Evidence-First Skeptic.
+Latent Leaders: the Host-Connector and the Gathering Host. A supporter: the
+Mission Patron. Builders, who run a Space: the Portfolio Teacher, the Second-Act
+Practitioner, the Studio Keeper and the Network Steward. Three rules: men come
+through activities; write for the spiritual and the skeptic at once; supporters
+pay so it stays free. Full canon: `docs/CONTENT-VOICE.md` §2 (ADR-1715).
+
 Both have been marketed at their whole lives. The only register they have not been
 sold in is plain. **Write plain.**
 

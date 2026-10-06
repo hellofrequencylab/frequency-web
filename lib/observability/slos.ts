@@ -192,8 +192,8 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'hourly',
     freshByMinutes: 120,
-    jobs: ['journey-prompt', 'practice-lifecycle'],
-    why: 'the daily Journey prompt at each member\'s local morning (ADR-1225); practice state transitions',
+    jobs: ['journey-prompt', 'practice-lifecycle', 'event-followups', 'embed-posts'],
+    why: 'the daily Journey prompt at each member\'s local morning (ADR-1225); practice state transitions; the guest follow-up after a gathering (LIVE-802); the feed interest signal (LIVE-677)',
   },
   {
     group: 'daily',
@@ -415,6 +415,7 @@ export const CRON_MONITORED: readonly string[] = [
 /** Jobs that deliberately have no monitor. Silence is chosen here, one line each. */
 export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'embed-events', reason: 'embedding derivation; a miss degrades event search gradually and a backfill repairs it' },
+  { job: 'embed-posts', reason: 'embedding derivation (LIVE-677); a miss leaves new posts without the interest term, which the blend drops, and the next run embeds them' },
   { job: 'embed-room-messages', reason: 'embedding derivation; a miss degrades room search gradually and a backfill repairs it' },
   { job: 'embed-practices', reason: 'embedding derivation; a miss degrades practice search gradually and a backfill repairs it' },
   { job: 'embed-library', reason: 'embedding derivation; a miss degrades library search gradually and a backfill repairs it' },
@@ -424,6 +425,7 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'refresh-traits', reason: 'AI derivation; traits go stale by a day and the next run recomputes them' },
   { job: 'vera-owner-brief', reason: 'mails one person, the owner, who notices its absence tomorrow; self-monitoring' },
   { job: 'reconcile-transfers', reason: 'retries split-order seller transfers (LIVE-622); the settle pays first, every stuck row logs at error, and a monitor is a Healthchecks check the owner adds (the account holds 20)' },
+  { job: 'event-followups', reason: 'the guest follow-up after a gathering (LIVE-802); a missed hour is re-read by the next one inside its 24-hour window, and the dedupe key keeps it to one send' },
   { job: 'onboarding-throughput', reason: 'a read-only daily reading (LIVE-311); a miss delays a log line and the next run reads the same state' },
   // HYG-144: unmonitored only because the Healthchecks free tier's 20 checks are all taken. It is
   // the one opt-out whose silence is costly (a dead copy means new files have no second home), so

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeProps } from './sanitize'
+import { pixelSafePath, pixelSafeProps, sanitizeProps } from './sanitize'
 
 // Locks the prop-bag allowlist. The bag is built from attacker-influenced KEY names as well
 // as values, so the key tests matter as much as the value ones.
@@ -41,5 +41,39 @@ describe('sanitizeProps', () => {
 
   it('treats non-objects as an empty bag', () => {
     for (const v of [null, undefined, 'str', 7, true]) expect(sanitizeProps(v)).toEqual({})
+  })
+})
+
+// LIVE-810: what a pixel may see. Persona, archetype and topics never leave; slugs that name
+// a Journey, Circle or topic are redacted from every path.
+describe('pixelSafeProps', () => {
+  it('drops persona, archetype, topic and mood keys, case-insensitively', () => {
+    const out = pixelSafeProps({
+      feature: 'onboarding_persona_select',
+      persona: 'builder',
+      Personas: 'builder,visitor',
+      archetype: 'wired_professional',
+      topic: 'grief',
+      mood: 'low',
+      count: 2,
+    })
+    expect(out).toEqual({ feature: 'onboarding_persona_select', count: 2 })
+  })
+
+  it('redacts slugs in path-shaped values and keeps the origin of full URLs', () => {
+    expect(pixelSafeProps({ path: '/journeys/grief-walks/day-2' })).toEqual({
+      path: '/journeys/[slug]/day-2',
+    })
+    expect(pixelSafeProps({ page_location: 'https://x.test/circles/sober-run?ref=1' })).toEqual({
+      page_location: 'https://x.test/circles/[slug]',
+    })
+  })
+})
+
+describe('pixelSafePath', () => {
+  it('leaves non-sensitive paths and index pages alone', () => {
+    expect(pixelSafePath('/events/abc')).toBe('/events/abc')
+    expect(pixelSafePath('/circles')).toBe('/circles')
+    expect(pixelSafePath('/discover/topics/breathwork')).toBe('/discover/topics/[slug]')
   })
 })

@@ -57,7 +57,7 @@ Each style row declares:
 | --- | --- | --- | --- |
 | **Onboarding** | ✅ live | The existing induction (`app/join/(induction)/induction.tsx`). All existing funnels default to this `kind`. Zero breakage. | None (already shipped) |
 | **Feature** | ✅ live | Visitor plays a stripped-down single feature before signing up. First shipped: **Breathwork** (`app/join/(induction)/feature-funnel.tsx`, ADR-619) — the real box-breath visualizer, a first-hold "get yours free" capture, and a Day 1 streak + Zaps reward beat. Meditation Timer / QR Studio / CRM previews slot in behind the same `feature` config. | Big (first one shipped) |
-| **Demographic** | ⏳ planned | Niche teaser tuned to a persona. Spine: `lib/onboarding/personas.ts` (visitor / practitioner / partner / builder / investor); niche assets in `components/marketing/funnel/*`, `lib/marketing/funnel-config.ts`, `/for/<niche>` pages. Content = the DAWN "Teaser" infographics (see §7). | Medium |
+| **Demographic** | ⏳ planned | Niche teaser tuned to an archetype (ADR-1715): keyed on `lib/audience/archetypes.ts` (eleven archetypes in four families, internal names), with the persona as the coarse fork. Spine: `lib/onboarding/personas.ts` (visitor / practitioner / partner / builder / investor); niche assets in `components/marketing/funnel/*`, `lib/marketing/funnel-config.ts`, `/for/<niche>` pages. Content = the DAWN "Teaser" infographics (see §7). | Medium |
 
 DAWN teaser set for the Demographic style: The First Win, Focus Ritual, Never Miss
 Twice, No Lead Left Behind, One-Timer to Regular, The Marketplace, Practice Loop.

@@ -16,7 +16,8 @@
 // registry we do not edit from here. A dedicated `onboarding.persona_selected` event would be cleaner but
 // needs a one-line taxonomy registry edit (a shared seam) — see the handoff report.
 
-import { track } from '@/lib/analytics/track'
+import { sanitizeProps } from '@/lib/analytics/sanitize'
+import { recordEngagementEvent } from '@/lib/engagement/events'
 import { resolveAcquisition } from '@/lib/attribution/server'
 import { isPersonaId } from '@/lib/onboarding/personas'
 
@@ -39,18 +40,23 @@ export async function logPersonaSelection(input: {
     // Anonymous-safe attribution key: the first-touch channel + any beta-sequence signal, so an
     // abandoned selection is still tied to how the visitor arrived without any profile write.
     const acq = await resolveAcquisition()
-    await track(
-      'feature.used',
-      {
+    // LIVE-810: a persona is who someone says they are, so it is first-party only. This writes
+    // the engagement ledger directly instead of going through track(), which would also mirror
+    // the event to Google Analytics. Same row shape track() writes (source web, feature.used).
+    await recordEngagementEvent({
+      idempotencyKey: `track:feature.used:anon:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+      source: 'web',
+      eventType: 'feature.used',
+      actorProfileId: null, // no actor: the visitor is anonymous at selection time
+      context: sanitizeProps({
         feature: 'onboarding_persona_select',
         persona,
         personas: personas.join(','),
         count: personas.length,
         sequence: input.sequence ?? '',
         channel: acq.channel,
-      },
-      null, // no actor: the visitor is anonymous at selection time
-    )
+      }),
+    })
   } catch {
     // Selection logging is best-effort; it must never block or break onboarding.
   }

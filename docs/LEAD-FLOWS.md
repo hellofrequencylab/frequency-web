@@ -30,9 +30,28 @@ Five types. **Visitor is the default fall-through**; the rest are the forks wort
 |---|---|---|---|---|
 | 🧍 Visitor / regular member | `visitor` | "I want to find my people" | Feed · circles · events · why join | `persona_visitor` |
 | 🛠️ Practitioner | `practitioner` | "I have something to offer" | Sell tickets, bookings and Journeys · grow a following · open a Space and host for free | `persona_practitioner` |
-| 🏪 Partner business | `partner` | "I run a local spot" | Loyalty rewards · gamified foot traffic · local discovery | `persona_partner` |
-| 🤝 Community builder / volunteer | `builder` | "I want to help build it" | Lead a circle · welcome crew · earn guide | `persona_builder` |
+| 🏪 Partner business | `partner` | "I run a local spot" | Host in your own space · a free Space · local discovery | `persona_partner` |
+| 🤝 Host or organizer (was "Community builder") | `builder` | "I want to help build it" | Lead a circle · welcome crew · earn guide | `persona_builder` |
 | 💡 Investor / Lab champion | `investor` | "I want a Frequency Lab in my town" | A Lab in your town · ground-floor partner · build the movement | `persona_investor` |
+
+### Persona to archetype (ADR-1715)
+
+Each persona asks one optional follow-up in the member's own words, and the answer stamps an
+archetype beside the persona (`lib/audience/archetypes.ts`, the single registry;
+[`CONTENT-VOICE.md`](CONTENT-VOICE.md) §2d and §2f). Persona ids, tags, segments and nurture
+sequences are unchanged. Stored at `profiles.meta.archetype` / `contacts.meta.archetype` and as an
+`archetype_<id>` tag; never shown to the member and never sent to a pixel.
+
+| Persona | Family | Archetypes the follow-up can stamp |
+|---|---|---|
+| `visitor` | Seekers, Supporter | Wired Professional · Transplant · Activity-First · Evidence-First Skeptic · Mission Patron |
+| `builder` | Latent Leaders | Host-Connector · Gathering Host |
+| `practitioner` | Builders | Portfolio Teacher · Second-Act Practitioner |
+| `partner` | Builders | Studio Keeper · Network Steward |
+| `investor` | (no follow-up) | none |
+
+Vera reads both: `lib/ai/vera/reader-note.ts` turns them into one plain line in her prompt, and
+her opening hands a host one Circle and a practitioner a free Space.
 
 Each persona's full copy (pitch, the persona-true tour reel, the track's three bullets, and
 its learn-more link) is authored in `lib/onboarding/personas.ts`. The reels **reuse the three

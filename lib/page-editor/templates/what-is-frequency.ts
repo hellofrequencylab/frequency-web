@@ -246,8 +246,10 @@ return {
     },
     {
       question: 'Who is Frequency for?',
+      // ADR-1715: every family of reader, in their own words, never by an internal archetype name.
+      // The bullet form of the same answer is lib/marketing/who-its-for.ts (llms.txt reads it).
       answer:
-        'Anyone who wants to belong, and everyone who brings people together: the creators, coaches, healers, and small businesses who host the Circles and run the rooms.',
+        'People who want to calm down fast with a few minutes on the breathing timer. People who just moved and want friends nearby, or would rather start with a run club or a supper club than small talk. The ones who already bring others together and want to host one Circle, and members who pay for Crew so it stays free for everyone. And the teachers, practitioners, studio owners and organizers who run the rooms.',
       body: 'This is what makes Frequency a Community Collective. Hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings. We earn only on what the network sends them. People join free. Businesses host free. You pay when you start charging: a free Space sells tickets on day one, and a plan is what you take once money starts moving, never a bill for access to people. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
       links: [{ label: 'See the plans and take-rates', href: '/pricing', variant: 'secondary' }],
     },

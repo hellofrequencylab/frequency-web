@@ -101,3 +101,38 @@ describe('blendRank', () => {
     expect(blendRank(items, c, 5)[0].id).toBe('friend-near-fresh')
   })
 })
+
+describe('content interest (LIVE-677)', () => {
+  const now = Date.parse('2026-10-06T12:00:00Z')
+  const hoursAgo = (h: number) => new Date(now - h * 3_600_000).toISOString()
+  const items = [
+    { id: 'a', authorId: 'u1', created_at: hoursAgo(1), engagement_score: 2 },
+    { id: 'b', authorId: 'u2', created_at: hoursAgo(5), engagement_score: 10 },
+    { id: 'c', authorId: 'u3', created_at: hoursAgo(20), engagement_score: 0, distance_m: 1000 },
+    { id: 'd', authorId: 'u4', created_at: hoursAgo(30), engagement_score: 40 },
+  ]
+  const resonance = new Map([['u3', 0.5]])
+
+  it('leaves the ranking exactly as it was when no post has an interest score', () => {
+    const base = { nowMs: now, resonance, radiusM: 25000 }
+    const before = blendRank(items, base).map((i) => i.id)
+    expect(blendRank(items, { ...base, interest: new Map() }).map((i) => i.id)).toEqual(before)
+    for (const it of items) {
+      expect(blendScore(it, { ...base, interest: new Map() })).toBe(blendScore(it, base))
+    }
+  })
+
+  it('lifts a post the viewer is interested in and never penalises one without a vector', () => {
+    const base = { nowMs: now, resonance, radiusM: 25000 }
+    const withInterest = { ...base, interest: new Map([['d', 1]]) }
+    expect(blendScore(items[3], withInterest)).toBeGreaterThan(blendScore(items[3], base))
+    expect(blendScore(items[0], withInterest)).toBe(blendScore(items[0], base))
+    const order = blendRank(items, withInterest).map((i) => i.id)
+    expect(order.indexOf('d')).toBeLessThan(blendRank(items, base).map((i) => i.id).indexOf('d'))
+  })
+
+  it('a low interest score pulls a post down relative to no score', () => {
+    const base = { nowMs: now, resonance, radiusM: 25000 }
+    expect(blendScore(items[0], { ...base, interest: new Map([['a', 0]]) })).toBeLessThan(blendScore(items[0], base))
+  })
+})
