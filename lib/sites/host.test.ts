@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { isAppHost, normalizeHost, parseAppHosts, routeSiteHost } from './host'
+import { APP_HOST_PATTERN, isAppHost, normalizeHost, parseAppHosts, routeSiteHost } from './host'
 
 describe('normalizeHost', () => {
   it('lowercases and strips the port', () => {
@@ -51,5 +52,43 @@ describe('routeSiteHost', () => {
     const route = routeSiteHost('danieltyack.com', '/spaces/danieltyack/book', '')
     expect(route.kind).toBe('redirect')
     expect(route.kind === 'redirect' && route.location.endsWith('/spaces/danieltyack/book')).toBe(true)
+  })
+})
+
+describe("a site host's crawler files (LIVE-783)", () => {
+  it('rewrites robots.txt and sitemap.xml to the hosted crawler routes', () => {
+    expect(routeSiteHost('danieltyack.com', '/robots.txt', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/danieltyack.com/robots.txt',
+    })
+    expect(routeSiteHost('danieltyack.com', '/sitemap.xml', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/danieltyack.com/sitemap.xml',
+    })
+  })
+
+  it("leaves Frequency's own crawler files alone", () => {
+    expect(routeSiteHost('frequencylocal.com', '/robots.txt', '')).toEqual({ kind: 'none' })
+  })
+
+  it("matches the proxy matcher's host arm to isAppHost, anchored the way Next anchors it", () => {
+    const re = new RegExp(`^${APP_HOST_PATTERN}$`)
+    for (const h of ['frequencylocal.com', 'www.frequencylocal.com', 'go.findafreq.com', 'frequency-web-git-x.vercel.app', 'localhost', '127.0.0.1']) {
+      expect(re.test(h), h).toBe(true)
+      expect(isAppHost(h), h).toBe(true)
+    }
+    for (const h of ['danieltyack.com', 'www.danieltyack.com', 'mylocalhostshop.com', 'frequencylocal.com.evil.org']) {
+      expect(re.test(h), h).toBe(false)
+      expect(isAppHost(h), h).toBe(false)
+    }
+  })
+
+  it('proxy.ts carries the same host pattern, literally, in its matcher', () => {
+    const proxy = readFileSync('proxy.ts', 'utf8')
+    const config = proxy.slice(proxy.indexOf('export const config'))
+    // The source spells each backslash twice (a TS string literal); the runtime value has one.
+    const asSource = APP_HOST_PATTERN.split('\\').join('\\\\')
+    expect(config).toContain(`value: '${asSource}'`)
+    expect(config).toContain(`source: '/(robots\\\\.txt|sitemap\\\\.xml)'`)
   })
 })
