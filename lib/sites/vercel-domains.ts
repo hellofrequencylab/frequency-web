@@ -42,10 +42,16 @@ export interface DomainStatus {
   providerIsVercel?: boolean
 }
 
-interface VercelConfig {
+export interface VercelConfig {
   token: string
   projectId: string
   teamId: string
+}
+
+/** The one platform Vercel config, shared with the registrar client (lib/sites/registrar.ts) so both
+ *  read the same token and team. Null when any of the three is missing. Server-only. */
+export function vercelApiConfig(): VercelConfig | null {
+  return config()
 }
 
 function config(): VercelConfig | null {

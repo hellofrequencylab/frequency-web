@@ -28,6 +28,7 @@ import { setFeatureGateOverride } from '@/lib/pricing/gates'
 import { billingEnabled } from '@/lib/billing/stripe'
 import { syncPricingCatalogToStripe, syncPricingProductsToStripe } from '@/lib/billing/pricing-products'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
+import { DOMAIN_MARKUP_MAX_CENTS, DOMAIN_MARKUP_SETTING_KEY } from '@/lib/sites/domain-pricing'
 
 // Operator writes for /admin/pricing (ADR-362, docs/PRICING.md). EVERYTHING SHIPS OFF: these only
 // edit operator config (prices, gates, switches); nothing charges and no Stripe call is made in P1.
@@ -220,6 +221,22 @@ export async function saveKnobs(knobs: {
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save.')
+  }
+}
+
+/** Save the yearly markup Frequency adds to Vercel's at-cost domain price (LIVE-781), in whole cents,
+ *  clamped to DOMAIN_MARKUP_MAX_CENTS. Config only: nothing sells until `domain_purchase_enabled` is on. */
+export async function saveDomainMarkup(cents: number): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const value = Math.round(Number(cents))
+  if (!Number.isFinite(value) || value < 0) return fail('Enter a markup of $0 or more.')
+  if (value > DOMAIN_MARKUP_MAX_CENTS) return fail('That markup is higher than the $100 a year ceiling.')
+  try {
+    await setPricingSetting(DOMAIN_MARKUP_SETTING_KEY, { cents: value }, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the domain markup.')
   }
 }
 

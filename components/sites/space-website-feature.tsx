@@ -8,6 +8,7 @@ import { asSpacePlan } from '@/lib/pricing/plans'
 import { appOrigin, siteSubdomainHost } from '@/lib/sites/host'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { siteDomainStatus } from '@/lib/sites/vercel-domains'
+import { domainPurchaseOpen } from '@/lib/sites/domain-purchase'
 import { SiteDomainPanel } from './site-domain-panel'
 import { WebsitePublishControls } from './website-publish-controls'
 
@@ -27,9 +28,11 @@ export async function SpaceWebsiteFeature({
   const published = readWebsitePublished(space.preferences)
   const plan = asSpacePlan(space.plan)
   // `entitled` is the plan itself (gates live); `canConnect` is what the connect action allows today.
-  const [entitled, canConnect] = await Promise.all([
+  // `buyOpen`: domain sales are switched on (LIVE-781); off, Buy a new domain reads Coming soon.
+  const [entitled, canConnect, buyOpen] = await Promise.all([
     featureAllowed('custom_domain', { plan }, { gatesLive: true }),
     featureGatesLive().then((gatesLive) => featureAllowed('custom_domain', { plan }, { gatesLive })),
+    domainPurchaseOpen(),
   ])
   const domainStatus = space.domain ? { domain: space.domain, ...(await siteDomainStatus(space.domain)) } : null
   const siteUrl = websiteUrl(space.slug, domainStatus)
@@ -61,7 +64,7 @@ export async function SpaceWebsiteFeature({
 
       <div className="mt-6 border-t border-border pt-5">
         {canConnect || domainStatus ? (
-          <SiteDomainPanel slug={space.slug} initial={domainStatus} websitePublished={published} />
+          <SiteDomainPanel slug={space.slug} initial={domainStatus} websitePublished={published} buyOpen={buyOpen} />
         ) : null}
         {!entitled && <DomainUpgradeNudge slug={space.slug} openNow={canConnect} />}
       </div>

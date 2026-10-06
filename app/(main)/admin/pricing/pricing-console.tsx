@@ -33,6 +33,7 @@ import {
   saveAnnouncementEndsAt,
   saveAnnouncementMessage,
   saveBetaGrace,
+  saveDomainMarkup,
 } from './actions'
 import type { FoundingConfig } from '@/lib/pricing/founding'
 
@@ -71,6 +72,7 @@ export function PricingConsole({ data }: { data: PricingConsoleData }) {
       <CatalogSection catalog={data.catalog} operatorSeatActive={data.flags.catalog_operator_seat_active} />
       <PlansSection values={data.values} />
       <FoundingConfigSection founding={data.founding} />
+      <DomainSalesSection enabled={data.flags.domain_purchase_enabled} markupCents={data.domainMarkupCents} />
       <BetaControlsSection beta={data.beta} gating={data.gating} announcement={data.announcement} />
       <FeatureGatesSection gates={data.gates} />
       <StripeStatusSection stripe={data.stripe} />
@@ -947,6 +949,60 @@ function FlagRow({
         />
       </div>
     </div>
+  )
+}
+
+// ── Domain sales (LIVE-781) ─────────────────────────────────────────────────────────────
+
+/** The two controls behind "Buy a new domain": the sell switch and the yearly markup. */
+function DomainSalesSection({ enabled, markupCents }: { enabled: boolean; markupCents: number }) {
+  const [markup, setMarkup] = useState(centsToDollars(markupCents))
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  function save() {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await saveDomainMarkup(dollarsToCents(markup))
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  return (
+    <AdminSection
+      title="Domain sales"
+      description="Spaces can buy a new domain from their website settings. They pay Vercel's price plus your markup, and they pay each renewal."
+    >
+      <FormSection
+        title="Sell domains"
+        description="Off by default. Turn this on only after Vercel confirms that buying domains for customers is allowed. Nothing sells while the billing master switch is off."
+      >
+        <FlagRow flagKey="domain_purchase_enabled" initial={enabled} label="Buy a new domain" />
+      </FormSection>
+      <FormSection
+        title="Markup"
+        description="Added to Vercel's price each year, in dollars. A Space sees one yearly price that includes it."
+      >
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="Markup per year ($)" value={markup} onChange={setMarkup} />
+            <div className="flex items-center gap-2">
+              <SaveCue pending={pending} saved={saved} />
+              <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
+                Save
+              </Button>
+            </div>
+          </div>
+          {error && <p className="text-meta text-danger">{error}</p>}
+        </div>
+      </FormSection>
+    </AdminSection>
   )
 }
 
