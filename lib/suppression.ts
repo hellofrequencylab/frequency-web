@@ -62,23 +62,28 @@ export async function isSuppressed(email: string, spaceId?: string): Promise<boo
  */
 export async function suppress(email: string, reason: string, spaceId?: string): Promise<void> {
   const addr = norm(email)
-  try {
-    // Pre-check the exact (scope, address) row so re-running is a no-op.
-    const existing = await db()
-      .from('email_suppressions')
-      .select('space_id')
-      .eq('email', addr)
-    const rows = existing.data ?? []
-    const wanted = spaceId ?? null
-    if (rows.some((r) => r.space_id === wanted)) return
+  // Pre-check the exact (scope, address) row so re-running is a no-op. A read failure THROWS
+  // (SCAN-763): the Resend webhook relies on a rejection to release its svix claim and 503 so the
+  // bounce / complaint is redelivered, and the unsubscribe action relies on it to tell the member
+  // the preference did not save. Swallowing here acked both as handled with no row written.
+  const existing = await db()
+    .from('email_suppressions')
+    .select('space_id')
+    .eq('email', addr)
+  if (existing.error) throw new Error(existing.error.message)
+  const rows = existing.data ?? []
+  const wanted = spaceId ?? null
+  if (rows.some((r) => r.space_id === wanted)) return
 
-    await db()
-      .from('email_suppressions')
-      .insert({ email: addr, reason, ...(spaceId ? { space_id: spaceId } : {}) })
-  } catch {
-    // A unique-index race (the row was inserted concurrently) is the only expected failure here,
-    // and the row we wanted now exists, so swallowing it keeps suppress() idempotent.
-  }
+  const { error } = await db()
+    .from('email_suppressions')
+    .insert({ email: addr, reason, ...(spaceId ? { space_id: spaceId } : {}) })
+  if (!error) return
+  // A unique-index race (23505: the row was inserted concurrently) is the one expected failure,
+  // and the row we wanted now exists, so returning keeps suppress() idempotent. Anything else
+  // (a connection blip, a permission error) means NO row landed and the caller must know.
+  if (error.code === '23505') return
+  throw new Error(error.message)
 }
 
 /**
@@ -96,7 +101,7 @@ export async function recordEmailEvent(input: {
   payload?: Record<string, unknown>
   campaignId?: string | null
 }): Promise<void> {
-  await db()
+  const { error } = await db()
     .from('email_events')
     .insert({
       email: norm(input.email),
@@ -106,4 +111,7 @@ export async function recordEmailEvent(input: {
       payload: (input.payload ?? {}) as Json,
       ...(input.campaignId ? { campaign_id: input.campaignId } : {}),
     })
+  // supabase-js resolves with { error } rather than rejecting (SCAN-763). Throw so the webhook can
+  // release its claim and 503; a swallowed failure would lose the event for good.
+  if (error) throw new Error(error.message)
 }

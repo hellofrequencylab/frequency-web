@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
-import { resolveMode, type ModeVariant } from '@/lib/spaces/modes'
+import { ctaKindFor } from '@/lib/spaces/cta-kind'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { listEventsForSpace } from '@/lib/events/store'
 import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
@@ -66,21 +66,10 @@ import { EntityCtaLink } from '@/components/widgets/entity/entity-cta-link'
 // COPY: the CTA is the per-type default primary-CTA label (profile-config, operator-overridable); the
 // empty names the situation + next step; no em/en dashes, no narrated feelings (CONTENT-VOICE §10).
 
-// The transactional widget a Focus (mode_variant) leads with. Keyed by the resolved Focus so every
-// widget path stays reachable regardless of the (now two-value) Space type. A Focus not listed
-// (or a Space with no Mode) falls through to the upcoming-sessions list below.
-type CtaKind = 'booking' | 'membership' | 'donate' | 'enroll' | 'tickets'
-const CTA_KIND_BY_VARIANT: Partial<Record<ModeVariant, CtaKind>> = {
-  appointments: 'booking',
-  service: 'membership',
-  product: 'membership',
-  membership: 'membership',
-  packages: 'enroll',
-  cohort: 'enroll',
-  programs: 'enroll',
-  donations: 'donate',
-  ticketed: 'tickets',
-}
+// The transactional widget a Focus (mode_variant) leads with lives in lib/spaces/cta-kind.ts
+// (`ctaKindFor`), shared with the sitemap tab reader so the Book URL is advertised on the same rule
+// this renders on (SCAN-787). A Focus not listed (or a Space with no Mode) falls through to the
+// upcoming-sessions list below.
 
 export async function EntityCta() {
   const space = getActiveSpace()
@@ -89,8 +78,7 @@ export async function EntityCta() {
 
   // Pick the transactional widget from the resolved FOCUS (mode_variant), not the type. A null Mode
   // (the `root` host) has no Focus, so it falls through to the sessions list below.
-  const mode = resolveMode(space.type, space.modeVariant)
-  const ctaKind = mode ? CTA_KIND_BY_VARIANT[mode.variant] : undefined
+  const ctaKind = ctaKindFor(space.type, space.modeVariant)
 
   // The appointments Focus leads with real 1:1 booking (the "Book" CTA).
   if (ctaKind === 'booking') {

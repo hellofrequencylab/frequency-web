@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-694",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"lib/circles/draft.ts\";if(!fs.existsSync(a))process.exit(79);const s=fs.readFileSync(a,\"utf8\");const i=s.indexOf(\"export async function saveCircleDraft\");if(i<0)process.exit(79);const j=s.indexOf(\"\\nexport \",i+10);const body=s.slice(i,j<0?s.length:j);const blindCircle=/\\n\\s*await admin\\.from\\(.circles.\\)\\.update\\(/.test(body);const blindProfile=/\\n\\s*await db\\(\\)\\s*\\.from\\(.circle_profiles.\\)/.test(body);if(blindCircle||blindProfile){console.error(\"SCAN-694: saveCircleDraft still discards the result of the circles update or the circle_profiles upsert, so the builder and Vera report saved when the write failed.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: saveCircleDraft in lib/circles/draft.ts reads { error } from the circles update and the circle_profiles upsert and throws CIRCLE_DRAFT_SAVE_ERROR, coerces type and clamps member_cap to the resulting type's ceiling (50 in-person, 100 online, 300 Space primary) in the same update; redrawCircleAction and restoreCircleAction wrap the save in try/catch and return fail(); the builder shows a text-danger save error and the Vera edit path returns a failure note instead of claiming the change stuck."
+  }
+}

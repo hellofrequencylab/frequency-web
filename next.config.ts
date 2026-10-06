@@ -418,6 +418,13 @@ const nextConfig: NextConfig = {
       // one events home. Permanent (308), same shape as the housing pair above.
       { source: '/marketplace/events', destination: '/events', permanent: true },
       { source: '/marketplace/events/:path*', destination: '/events/:path*', permanent: true },
+      // The /discover/events/<slug> twin (SCAN-672): a second prerendered copy of /events/<slug>,
+      // with its own loading file and OG image route per event, that already canonicalised to the
+      // member page and that nothing linked to but itself. Retired; every event now builds once.
+      // Permanent (308) so any crawl signal the twin collected transfers. ONE segment only: it must
+      // not shadow the live /discover/events/in/<city>/<category> hubs or
+      // /discover/events/organizer/<handle>, and lib/marketing/redirect-shadow.test.ts proves it.
+      { source: '/discover/events/:slug', destination: '/events/:slug', permanent: true },
       // /broadcast -> /nearby (ADR-1020). "Broadcast" was retired from member copy long ago
       // (NAMING.md §Dispatch) and the route was its last member-reachable survivor. The visible
       // label did not change: it was, and stays, "Around You".
@@ -652,12 +659,27 @@ const nextConfig: NextConfig = {
 // and with no SENTRY_AUTH_TOKEN / org / project the build-time source-map upload is
 // skipped — withSentryConfig becomes a near pass-through that doesn't break the build.
 // org/project/authToken come from env so nothing Sentry-specific is hardcoded.
+//
+// THE BUILD LOG IS BILLED (HYG-162, ADR-1706). Vercel counts build log lines as observability
+// events, and one build of this app wrote about 10,000 lines, nearly all of them this plugin
+// listing every `.js.map` it uploaded (`silent: !process.env.CI` was *loud* on Vercel, where CI
+// is set). September's Observability Events line ($234) tracked the build count day by day, not
+// member traffic: days with no build billed cents. So the upload is quiet, and source maps go up
+// for PRODUCTION only: a preview's stack traces are read by nobody, and the upload was also the
+// slowest step of the build. Errors in the upload still surface: the plugin warns and continues
+// by default, which is the behaviour this config had before.
+const isProductionBuild = process.env.VERCEL_ENV === 'production'
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
-  // Only chatter about source-map upload in CI.
-  silent: !process.env.CI,
+  // Quiet: the per-file upload listing is thousands of billed log lines per build.
+  silent: true,
+  telemetry: false,
+  sourcemaps: {
+    // Readable production stacks only. A preview is an e2e target, not a place anyone debugs.
+    disable: !isProductionBuild,
+  },
   // Upload a wider set of source maps for readable client stack traces.
   widenClientFileUpload: true,
   // Tree-shake Sentry logger statements from the production client bundle.

@@ -24,16 +24,32 @@
 // NEVER TWICE, NEVER TOO MUCH. The refund writes a TARGET on the row (refund_reversal_cents,
 // cumulative, only ever raised, never above the transfer) before any money moves, so a reversal that
 // fails is still owed and the reconciler finds it. A reversal then:
-//   1. claims the row with a compare-and-set on reversal_attempts, so two workers cannot both call;
+//   1. claims the row with a compare-and-set on reversal_attempts AND a lease (reversal_lease_until,
+//      REVERSAL_LEASE_MS long), so two workers cannot both call, whatever else moves on the row;
 //   2. asks Stripe how much of the transfer is already reversed (amount_reversed), which counts a
 //      reversal whose write here was lost and one made by hand in the dashboard;
-//   3. reverses only target minus that, under the key transfer-reversal:<row>:<from>-<to>. The key
-//      names the refund by where it moves this transfer from and to, which is what every caller of
-//      the same refund knows identically: the refund action, its charge.refunded webhook (whose
-//      payload carries the cumulative amount_refunded, not the refund's id) and a lost dispute
-//      (which has no refund at all). A replay computes the same target, finds nothing owed and
-//      calls nothing; a replay inside the key window with the write lost gets the same reversal back.
+//   3. reverses only target minus that, under the key transfer-reversal:<row>:<from>-<to>, suffixed
+//      with the refusal count once Stripe has refused the row deterministically. The key names the
+//      refund by where it moves this transfer from and to, which is what every caller of the same
+//      refund knows identically: the refund action, its charge.refunded webhook (whose payload
+//      carries the cumulative amount_refunded, not the refund's id) and a lost dispute (which has
+//      no refund at all). A replay computes the same target, finds nothing owed and calls nothing;
+//      a replay inside the key window with the write lost gets the same reversal back.
 // Stripe itself refuses to reverse more than the transfer, and the target never asks for more.
+//
+// TWO DEFECTS THIS SHAPE CLOSED (SCAN-649, migration 20270346000700). Stripe stores the result of a
+// request under its idempotency key for about 24 hours, ERRORS INCLUDED. With the key fixed to
+// (row, from, to), a seller whose balance was empty once got the stored refusal back on every retry
+// until the reconciler's ceiling and was logged stuck forever, the platform carrying their share.
+// So a DETERMINISTIC refusal (Stripe's invalid_request_error family: an empty balance, a bad
+// amount) bumps reversal_refusals, and the next attempt's key carries it: a new request. A network
+// failure bumps nothing, because there the fixed key is exactly what dedupes a request that may
+// have gone through. And raising the target used to write reversal_attempts = 0, which undid the
+// compare-and-set claim of a worker already at Stripe for the old target: a second refund then
+// claimed, read amount_reversed before the first reversal landed, and reversed 0 -> T2 under a
+// different key, so T1 + T2 left the seller. The counter now only ever rises; a raise moves
+// reversal_attempt_floor instead (fresh budget, same claim), and the lease covers the window the
+// counter cannot.
 //
 // THE BUYER FIRST. The refund to the buyer is made before any reversal and never waits on one. A
 // reversal that fails (the seller's balance is empty, the network) is recorded on the row, retried by
@@ -62,8 +78,14 @@ import {
   cancelOpenTransfers,
   MAX_TRANSFER_ATTEMPTS,
   RECONCILE_STALE_MS,
+  REVERSAL_LEASE_FREE,
   type OrderTransfer,
 } from './transfers'
+
+/** How long a worker's claim on a row stands if it dies mid-flight. Two Stripe calls take seconds;
+ *  the reconciler leaves a row alone for RECONCILE_STALE_MS anyway, so this only has to outlive a
+ *  function timeout. */
+export const REVERSAL_LEASE_MS = 5 * 60_000
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -73,10 +95,30 @@ const TABLE = 'commerce_order_transfers'
 
 const int = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) ? v : null)
 
-/** The Stripe idempotency key of one reversal: the row, and the cumulative reversed cents it moves
- *  the transfer from and to. Deterministic for every caller of the same refund. */
-export function reversalIdempotencyKey(rowId: string, fromCents: number, toCents: number): string {
-  return `transfer-reversal:${rowId}:${fromCents}-${toCents}`
+/** The Stripe idempotency key of one reversal: the row, the cumulative reversed cents it moves the
+ *  transfer from and to, and, once Stripe has refused this row deterministically, how many times, so
+ *  the retry is a new request rather than the stored refusal (SCAN-649). With no refusal the key is
+ *  the one every caller of the same refund computes identically. */
+export function reversalIdempotencyKey(rowId: string, fromCents: number, toCents: number, refusals = 0): string {
+  const base = `transfer-reversal:${rowId}:${fromCents}-${toCents}`
+  return refusals > 0 ? `${base}:r${refusals}` : base
+}
+
+/** Whether Stripe REFUSED the request (it ran and said no: an empty connected balance, an amount
+ *  over the transfer), as opposed to a failure we cannot read (a timeout, a 5xx, a rate limit),
+ *  where the request may have gone through and the fixed key is what dedupes it. Stripe's node
+ *  errors carry `type` (StripeInvalidRequestError and friends) and `rawType`. Unknown shapes read
+ *  as NOT deterministic: the safe side keeps the key. */
+export function isDeterministicStripeRefusal(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false
+  const e = err as { type?: unknown; rawType?: unknown }
+  if (e.rawType === 'invalid_request_error' || e.rawType === 'idempotency_error' || e.rawType === 'card_error') return true
+  return (
+    e.type === 'StripeInvalidRequestError' ||
+    e.type === 'StripeIdempotencyError' ||
+    e.type === 'StripeCardError' ||
+    e.type === 'StripePermissionError'
+  )
 }
 
 // ── The proportion (pure) ───────────────────────────────────────────────────────────────────────
@@ -150,10 +192,17 @@ export function proportionRefund(refundedCents: number, splits: RefundSplit[]): 
 
 type ReversalOutcome = 'reversed' | 'settled' | 'failed' | 'skipped'
 
-async function markReversalFailed(row: OrderTransfer, reason: string): Promise<void> {
+/** Record a failed attempt and free the lease. A deterministic refusal also bumps the refusal count,
+ *  so the next attempt's key is new and Stripe answers it rather than replaying this error. */
+async function markReversalFailed(row: OrderTransfer, reason: string, opts: { refused?: boolean } = {}): Promise<void> {
   const { error } = await db()
     .from(TABLE)
-    .update({ last_error: `reversal: ${reason}`.slice(0, 500), updated_at: new Date().toISOString() })
+    .update({
+      last_error: `reversal: ${reason}`.slice(0, 500),
+      reversal_lease_until: REVERSAL_LEASE_FREE,
+      ...(opts.refused ? { reversal_refusals: row.reversalRefusals + 1 } : {}),
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', row.id)
     .eq('status', 'created')
   log.warn('commerce.transfer.reversal_failed', {
@@ -162,6 +211,7 @@ async function markReversalFailed(row: OrderTransfer, reason: string): Promise<v
     transferId: row.stripeTransferId,
     attempt: row.reversalAttempts + 1,
     owedCents: row.reversalOwedCents,
+    refused: !!opts.refused,
     reason,
     ...(error ? { recordError: error.message } : {}),
   })
@@ -177,6 +227,7 @@ async function markReversed(row: OrderTransfer, reversedCents: number): Promise<
       reversed_cents: cents,
       status: cents >= row.amountCents ? 'reversed' : 'created',
       last_error: null,
+      reversal_lease_until: REVERSAL_LEASE_FREE,
       updated_at: new Date().toISOString(),
     })
     .eq('id', row.id)
@@ -193,12 +244,21 @@ async function markReversed(row: OrderTransfer, reversedCents: number): Promise<
 async function reverseTransferRow(row: OrderTransfer): Promise<ReversalOutcome> {
   if (row.status !== 'created' || !row.stripeTransferId || row.reversalOwedCents <= 0) return 'skipped'
 
-  // THE CLAIM: a compare-and-set on the attempts this worker read. A second worker matches nothing.
+  // THE CLAIM: a compare-and-set on the attempts this worker read, AND a lease that must be free. A
+  // second worker matches nothing on either count: the counter only ever rises (a raised target moves
+  // the floor, never the counter), and the lease holds while this worker is at Stripe even if the
+  // counter were somehow read stale (SCAN-649).
+  const nowIso = new Date().toISOString()
   const { data: claimed, error: claimErr } = await db()
     .from(TABLE)
-    .update({ reversal_attempts: row.reversalAttempts + 1, updated_at: new Date().toISOString() })
+    .update({
+      reversal_attempts: row.reversalAttempts + 1,
+      reversal_lease_until: new Date(Date.now() + REVERSAL_LEASE_MS).toISOString(),
+      updated_at: nowIso,
+    })
     .eq('id', row.id)
     .eq('reversal_attempts', row.reversalAttempts)
+    .lte('reversal_lease_until', nowIso)
     .eq('status', 'created')
     .select('id')
   if (claimErr || !(claimed ?? []).length) return 'skipped'
@@ -231,13 +291,15 @@ async function reverseTransferRow(row: OrderTransfer): Promise<ReversalOutcome> 
         amount: to - from,
         metadata: { kind: 'commerce_order_transfer_reversal', order_id: row.orderId, commerce_order_transfer_id: row.id },
       },
-      { idempotencyKey: reversalIdempotencyKey(row.id, from, to) },
+      { idempotencyKey: reversalIdempotencyKey(row.id, from, to, row.reversalRefusals) },
     )) as Stripe.TransferReversal
     await markReversed(row, from + (int(reversal?.amount) ?? to - from))
-    log.info('commerce.transfer.reversal_created', { orderId: row.orderId, rowId: row.id, reversalId: reversal?.id, from, to })
+    log.info('commerce.transfer.reversal_created', { orderId: row.orderId, rowId: row.id, reversalId: reversal?.id, from, to, refusals: row.reversalRefusals })
     return 'reversed'
   } catch (err) {
-    await markReversalFailed(row, briefError(err))
+    // A refusal Stripe would store under this key gets a new key next time; a failure we cannot read
+    // keeps the key, so a request that did go through is deduped rather than repeated.
+    await markReversalFailed(row, briefError(err), { refused: isDeterministicStripeRefusal(err) })
     return 'failed'
   }
 }
@@ -358,10 +420,14 @@ export async function reverseSplitTransfers(
     if (row.status === 'reversed' || row.status === 'cancelled') continue
     const target = full ? row.amountCents : Math.min(row.amountCents, parts.get(row.id)?.reversalCents ?? 0)
     if (target <= row.refundReversalCents) continue
-    // Only ever raised: a lower target from an older or replayed refund matches nothing.
+    // Only ever raised: a lower target from an older or replayed refund matches nothing. The attempt
+    // budget restarts for the new target by moving the FLOOR to the counter's current value; the
+    // counter itself is never written here, because a worker already at Stripe holds its claim on it
+    // (SCAN-649). The floor is what the counter read when this row was listed; a claim since then
+    // only makes the budget one attempt shorter, never the claim invalid.
     const { data: raised, error: raiseErr } = await db()
       .from(TABLE)
-      .update({ refund_reversal_cents: target, reversal_attempts: 0, updated_at: now })
+      .update({ refund_reversal_cents: target, reversal_attempt_floor: row.reversalAttempts, updated_at: now })
       .eq('id', row.id)
       .in('status', ['planned', 'failed', 'created'])
       .lt('refund_reversal_cents', target)
@@ -434,7 +500,7 @@ export async function reconcileSplitReversals(opts: {
     .select('order_id')
     .eq('status', 'created')
     .gt('reversal_owed_cents', 0)
-    .lt('reversal_attempts', MAX_TRANSFER_ATTEMPTS)
+    .lt('reversal_attempts_since_target', MAX_TRANSFER_ATTEMPTS)
     .lt('updated_at', staleBefore)
     .order('updated_at', { ascending: true })
     .limit(opts.limit)
@@ -447,17 +513,17 @@ export async function reconcileSplitReversals(opts: {
     }
     out.orders += 1
     for (const row of await listOrderTransfers(orderId)) {
-      if (row.status !== 'created' || row.reversalOwedCents <= 0 || row.reversalAttempts >= MAX_TRANSFER_ATTEMPTS) continue
+      if (row.status !== 'created' || row.reversalOwedCents <= 0 || row.reversalAttemptsSinceTarget >= MAX_TRANSFER_ATTEMPTS) continue
       out[await reverseTransferRow(row)] += 1
     }
   }
 
   const { data: stuck, error: stuckErr } = await db()
     .from(TABLE)
-    .select('id, order_id, stripe_account_id, stripe_transfer_id, reversal_owed_cents, currency, reversal_attempts, last_error')
+    .select('id, order_id, stripe_account_id, stripe_transfer_id, reversal_owed_cents, currency, reversal_attempts, reversal_refusals, last_error')
     .eq('status', 'created')
     .gt('reversal_owed_cents', 0)
-    .gte('reversal_attempts', MAX_TRANSFER_ATTEMPTS)
+    .gte('reversal_attempts_since_target', MAX_TRANSFER_ATTEMPTS)
     .order('updated_at', { ascending: true })
     .limit(opts.limit)
   if (stuckErr) throw new Error(`stuck reversals unreadable: ${stuckErr.message}`)
@@ -469,6 +535,7 @@ export async function reconcileSplitReversals(opts: {
     reversal_owed_cents: number
     currency: string
     reversal_attempts: number
+    reversal_refusals: number | null
     last_error: string | null
   }[]) {
     out.stuck += 1
@@ -480,6 +547,7 @@ export async function reconcileSplitReversals(opts: {
       owedCents: r.reversal_owed_cents,
       currency: r.currency,
       attempts: r.reversal_attempts,
+      refusals: r.reversal_refusals ?? 0,
       lastError: r.last_error,
     })
   }

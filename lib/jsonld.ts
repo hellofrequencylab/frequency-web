@@ -168,10 +168,10 @@ const ATTENDANCE_MODE_URL: Record<'in_person' | 'online' | 'hybrid', string> = {
 
 export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   const mode: 'in_person' | 'online' | 'hybrid' = event.attendance_mode ?? 'in_person'
-  // Resolved ONCE and reused by startDate, endDate and offers.validFrom, so the three can never
-  // disagree about when the event is — a page whose offer opens at a different moment than the
-  // event starts is a page-vs-schema contradiction of the same kind the availability note below
-  // guards against.
+  // Resolved ONCE and reused by startDate and endDate, so the two can never disagree about when
+  // the event is. Offer.validFrom is deliberately NOT published: schema.org defines it as the
+  // moment tickets go on sale, not the moment the event begins, and the sale-open instant lives on
+  // the ticket tiers (lib/events/sales-window.ts), which this builder does not receive (SCAN-789).
   const startIso = eventIsoWithOffset(event.starts_at, event.time_zone)
   const endIso = eventIsoWithOffset(event.ends_at, event.time_zone)
   // Canonical public event URL is /events/<slug> (both the /events page's
@@ -179,18 +179,23 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   // canonicalizes to it), so the schema url/image/offers all consolidate there.
   const url = abs(`/events/${event.slug}`)
 
-  // City-level Place: addressLocality + optional city-level region/country. We
-  // never include streetAddress, venue name, or coordinates.
-  const place = event.city
+  // City-level Place: addressLocality + optional city-level region/country, built from WHICHEVER
+  // of the three exist (SCAN-790): Google treats location.address as required for a physical
+  // Place, so an event with a region or country but no city still gets an address rather than
+  // the bare placeholder. We never include streetAddress, venue name, or coordinates, and never
+  // fall back to location / street / venue_name (SCAN-209, ADR-825). An event with none of the
+  // three is knowingly ineligible for the Event rich result; nothing is invented for it.
+  const addr = {
+    ...(event.city ? { addressLocality: event.city } : {}),
+    ...(event.region ? { addressRegion: event.region } : {}),
+    ...(event.country ? { addressCountry: event.country } : {}),
+  }
+  const placeName = event.city ?? event.region ?? event.country ?? null
+  const place = placeName
     ? {
         '@type': 'Place',
-        name: event.city,
-        address: {
-          '@type': 'PostalAddress',
-          addressLocality: event.city,
-          ...(event.region ? { addressRegion: event.region } : {}),
-          ...(event.country ? { addressCountry: event.country } : {}),
-        },
+        name: placeName,
+        address: { '@type': 'PostalAddress', ...addr },
       }
     : { '@type': 'Place', name: 'Location shared with members' }
 
@@ -259,8 +264,18 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     ...(event.description ? { description: event.description } : {}),
     location,
     url,
+    // The hosting Circle, with the url the page itself links (the circle route is keyed by id, not
+    // slug), so an answer engine can join the event to the host's indexed profile instead of a bare
+    // name (SCAN-791). An event hosted by a person or a Space still emits no organizer: nothing here
+    // can name their profile path yet.
     ...(event.circle_name
-      ? { organizer: { '@type': 'Organization', name: event.circle_name } }
+      ? {
+          organizer: {
+            '@type': 'Organization',
+            name: event.circle_name,
+            ...(event.circle_id ? { url: abs(`/discover/circles/${event.circle_id}`) } : {}),
+          },
+        }
       : {}),
     // Pricing. A TICKETED event carries its price on its active tiers, not on events.price_cents
     // (which stays null for them), so reading price_cents alone published "this event is free"
@@ -290,7 +305,6 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
                 ? 'https://schema.org/SoldOut'
                 : 'https://schema.org/InStock',
             url,
-            validFrom: startIso ?? event.starts_at,
           },
         }),
   }
@@ -883,7 +897,12 @@ export function articleSchema(article: {
   updated?: string | null
   /** One or more image URLs (absolute, or root-relative — normalized via abs). */
   image?: string | string[] | null
+  /** The node type. Article (default) is right for an editorial document; a block document that IS
+   *  the page (the home page, /about) is a WebPage or AboutPage, which carries the same headline,
+   *  dates, author and publisher but is not an Article headlined by its hero line (SCAN-802). */
+  type?: 'Article' | 'WebPage' | 'AboutPage'
 }) {
+  const type = article.type ?? 'Article'
   const images = article.image
     ? (Array.isArray(article.image) ? article.image : [article.image]).map((src) =>
         src.startsWith('http') ? src : abs(src),
@@ -891,11 +910,15 @@ export function articleSchema(article: {
     : undefined
   return {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': type,
     headline: article.title,
     description: article.description,
     url: abs(article.path),
-    mainEntityOfPage: { '@type': 'WebPage', '@id': abs(article.path) },
+    // An Article points at the WebPage it is the main entity of; a WebPage node IS that page, so it
+    // carries the @id itself rather than pointing at a second copy of itself.
+    ...(type === 'Article'
+      ? { mainEntityOfPage: { '@type': 'WebPage', '@id': abs(article.path) } }
+      : { '@id': abs(article.path) }),
     ...(article.published ? { datePublished: article.published } : {}),
     ...(article.updated ? { dateModified: article.updated } : {}),
     ...(images ? { image: images } : {}),
@@ -1102,8 +1125,9 @@ export function productSchema(p: {
 // engine cites for "what does <space> offer / cost". Composed from the shared productSchema builder so
 // the Offer shape can't drift. Spaces have no per-offering page, so every Product deep-links to the
 // profile's Offerings section anchor. Structurally typed (a subset of SpaceOffering) so lib/jsonld stays
-// dependency-light. An offering with no set price ('contact', or none) still emits a Product (name +
-// blurb) with no Offer; a 'free' offering is a $0 Offer.
+// dependency-light. An offering with no set price ('contact', or none) is emitted as a Service (name +
+// blurb + provider), not a Product: Google's Product snippet requires an Offer, a review or a rating,
+// and a Product with none is reported as an invalid item (SCAN-792). A 'free' offering is a $0 Offer.
 type OfferingSchemaInput = {
   title: string
   blurb?: string
@@ -1118,14 +1142,24 @@ export function spaceOfferingsSchema(
 ) {
   const path = `/spaces/${opts.slug}#offerings`
   const itemListElement = offerings.map((o, i) => {
-    // A set price → cents. 'free' is $0; 'contact' or a missing price carries NO price (undefined), so
-    // productSchema omits the Offer rather than emit a misleading $0.
+    // A set price → cents. 'free' is $0; 'contact' or a missing price carries NO price (undefined), and
+    // that offering is a Service rather than a Product with no Offer (never a misleading $0).
     const priceCents =
       o.priceModel === 'free'
         ? 0
         : o.priceModel === 'contact' || typeof o.price !== 'number'
           ? undefined
           : Math.round(o.price * 100)
+    if (priceCents === undefined) {
+      const service = {
+        '@type': 'Service',
+        name: o.title,
+        ...(o.blurb ? { description: o.blurb } : {}),
+        ...(opts.sellerName ? { provider: { '@type': 'Organization', name: opts.sellerName } } : {}),
+        url: abs(path),
+      }
+      return { '@type': 'ListItem', position: i + 1, item: service }
+    }
     // Nest the Product WITHOUT its own @context (the parent ItemList carries it; a nested @context is
     // redundant in JSON-LD).
     const { '@context': _context, ...product } = productSchema({

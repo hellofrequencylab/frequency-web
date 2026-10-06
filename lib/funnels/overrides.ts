@@ -75,13 +75,16 @@ export async function getFunnelOverride(slug: string): Promise<FunnelOverride | 
   return merged
 }
 
-/** Save a full Funnel override / authored Funnel. Mirrors splash + audience for fast reads. */
+/** Save a full Funnel override / authored Funnel. Mirrors splash + audience for fast reads.
+ *  THROWS on a failed write (SCAN-777): supabase-js returns the error as a value, and a discarded
+ *  one let every funnel save report success, and let a permalink rename delete the old row after
+ *  the new one was never written. */
 export async function saveFunnelOverride(
   slug: string,
   override: FunnelOverride,
   by: string | null,
 ): Promise<void> {
-  await db().from('sequence_overrides').upsert(
+  const { error } = await db().from('sequence_overrides').upsert(
     {
       slug,
       data: override,
@@ -92,6 +95,7 @@ export async function saveFunnelOverride(
     },
     { onConflict: 'slug' },
   )
+  if (error) throw new Error(error.message)
 }
 
 /** Every DB-backed Funnel row (overrides of code Funnels + created Funnels),
@@ -140,6 +144,8 @@ export async function duplicateFunnel(
   await saveFunnelOverride(toSlug, override, by)
 }
 
+/** Delete a Funnel row. Throws on a failed delete, like saveFunnelOverride (SCAN-777). */
 export async function deleteFunnelVersion(slug: string): Promise<void> {
-  await db().from('sequence_overrides').delete().eq('slug', slug)
+  const { error } = await db().from('sequence_overrides').delete().eq('slug', slug)
+  if (error) throw new Error(error.message)
 }

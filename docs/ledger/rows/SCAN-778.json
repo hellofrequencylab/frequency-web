@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-778",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/edit/actions.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-778: a file the probe must read is missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const pub=s.match(/export async function publishPage\\([\\s\\S]*?\\n\\}/),un=s.match(/export async function unpublishPage\\([\\s\\S]*?\\n\\}/);const pubSwallows=!pub||!/\\{\\s*error\\s*\\}|throwOnError/.test(pub[0]);const unSwallows=!un||!/\\{\\s*error\\s*\\}|throwOnError/.test(un[0]);if(pubSwallows||unSwallows){console.error(\"SCAN-778: the marketing page editor still shows Published on a failed write because \"+(pubSwallows?\"publishPage\":\"\")+(pubSwallows&&unSwallows?\" and \":\"\")+(unSwallows?\"unpublishPage\":\"\")+\" never read the database error, so the client catch and Retry publish can never run.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: publishPage and unpublishPage in app/(main)/edit/actions.ts now read { error } from the upsert and the update and throw on it, throw when the slug is not editable or no space resolves, and revalidate only after the write succeeded, so the editor's existing catch shows Retry publish. pages-tenancy.test.ts asserts both actions check the error."
+  }
+}

@@ -167,3 +167,49 @@ describe('the QR door carries its outcome to the event page', () => {
     expect(fx.checkInEvent).toHaveBeenCalledWith('event-1')
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPLASH (SCAN-780): the editor promises a small landing page (heading, blurb, image, links). A scan
+// renders that page whenever the splash has more to show than one bare link; only a single link with
+// no blurb and no image skips straight to its url.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('a splash scan shows what the owner authored (SCAN-780)', () => {
+  const withSplash = async (splash: Row | null) => {
+    const prev = CODE.splash
+    CODE.splash = splash
+    try {
+      return await GET(new Request('https://frequency.test/q/moon'), { params: Promise.resolve({ slug: 'moon' }) })
+    } finally {
+      CODE.splash = prev
+    }
+  }
+
+  it('🔴 heading + blurb + image + three links → the landing page renders with all of it', async () => {
+    const res = await withSplash({
+      heading: 'Moon Circle',
+      blurb: 'Every full moon, on the hill.',
+      imageUrl: 'https://img.test/moon.png',
+      links: [
+        { label: 'Book a seat', url: 'https://a.test/book' },
+        { label: 'The menu', url: '/menu' },
+        { label: 'Say hi', url: 'https://c.test' },
+      ],
+    })
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/html')
+    const html = await res.text()
+    expect(html).toContain('Moon Circle')
+    expect(html).toContain('Every full moon, on the hill.')
+    expect(html).toContain('https://img.test/moon.png')
+    expect(html).toContain('Book a seat')
+    expect(html).toContain('https://frequency.test/menu')
+    expect(html).toContain('Say hi')
+  })
+
+  it('a bare single link (no blurb, no image) still goes straight to it', async () => {
+    const res = await withSplash({ heading: 'Moon Circle', links: [{ label: 'Book', url: 'https://a.test/book' }] })
+    expect(res.status).toBeGreaterThanOrEqual(300)
+    expect(res.status).toBeLessThan(400)
+    expect(res.headers.get('location')).toBe('https://a.test/book')
+  })
+})

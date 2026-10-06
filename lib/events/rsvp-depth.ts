@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { MAX_PLUS_ONES } from '@/lib/events/rsvp-gate'
 
 // RSVP depth data layer (EVENTS-REWORK A1) — maybe / waitlist / plus-ones,
 // host-only decline reasons, the approval queue, and per-event mute.
@@ -63,9 +64,11 @@ interface SetRsvpArgs {
  */
 export async function setRsvp(args: SetRsvpArgs): Promise<{ id: string } | null> {
   const admin = createAdminClient()
+  // SCAN-697: the cap lives on the write too, so no caller can store more than MAX_PLUS_ONES.
   const names = (args.plusOneNames ?? [])
     .map((n) => n.trim())
     .filter((n) => n.length > 0)
+    .slice(0, MAX_PLUS_ONES)
 
   const { data, error } = await admin
     .from('event_rsvps')

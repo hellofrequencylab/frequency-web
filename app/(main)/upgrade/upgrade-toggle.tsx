@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Zap, ArrowDown, Loader2 } from 'lucide-react'
 import { toggleMembership } from './actions'
@@ -8,16 +8,28 @@ import { isError } from '@/lib/action-result'
 
 export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
   const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   function handleToggle() {
+    setError(null)
     startTransition(async () => {
       const result = await toggleMembership()
-      if (!isError(result)) {
-        router.refresh()
+      // A refused toggle used to look like a click that did nothing (SCAN-773): the server gate
+      // in toggleMembership says why, so show it.
+      if (isError(result)) {
+        setError(result.error)
+        return
       }
+      router.refresh()
     })
   }
+
+  const errorLine = error ? (
+    <p role="alert" className="text-center text-body-sm text-danger">
+      {error}
+    </p>
+  ) : null
 
   if (isCrew) {
     return (
@@ -40,22 +52,26 @@ export function UpgradeToggle({ isCrew }: { isCrew: boolean }) {
           )}
           Switch back to the free tier
         </button>
+        {errorLine}
       </div>
     )
   }
 
   return (
-    <button
-      onClick={handleToggle}
-      disabled={isPending}
-      className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
-    >
-      {isPending ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : (
-        <Zap className="w-4 h-4" />
-      )}
-      {isPending ? 'Updating...' : 'Join the Crew'}
-    </button>
+    <div className="space-y-3">
+      <button
+        onClick={handleToggle}
+        disabled={isPending}
+        className="flex items-center justify-center gap-2 w-full rounded-xl bg-primary px-4 py-3.5 text-body-sm font-bold text-on-primary hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
+      >
+        {isPending ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Zap className="w-4 h-4" />
+        )}
+        {isPending ? 'Updating...' : 'Join the Crew'}
+      </button>
+      {errorLine}
+    </div>
   )
 }
