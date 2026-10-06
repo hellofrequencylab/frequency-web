@@ -5,6 +5,7 @@
 // skins later (gated by `requiredItem`) is additive — no render site changes.
 
 import { SELECTABLE_SKINS, resolveSkin, type SkinId } from './skins'
+import { isCrewTheme } from '@/lib/crew/perks'
 
 export interface ProfileSkin {
   id: SkinId
@@ -15,6 +16,9 @@ export interface ProfileSkin {
    *  appearance rail hides it, both through lib/spotlight/cosmetics.ts + lib/awards/holdings.ts.
    *  Every listed skin is free today; the sticker list carries the first earned row. */
   requiredItem?: string
+  /** A Crew theme (LIVE-757, lib/crew/perks.ts): only a member on Crew may pick it. The writer
+   *  refuses it to anyone else and the appearance rail hides it. */
+  crewOnly?: boolean
 }
 
 /** Skins offered in the Spotlight theme picker, in display order.
@@ -29,6 +33,7 @@ export const PROFILE_SKINS: readonly ProfileSkin[] = SELECTABLE_SKINS.map((s) =>
   label: s.label,
   description: s.description,
   requiredItem: undefined,
+  crewOnly: isCrewTheme(s.id),
 }))
 
 const ALLOWED = new Set<SkinId>(PROFILE_SKINS.map((s) => s.id))

@@ -15,6 +15,7 @@ import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
 import { SectionHeader } from '@/components/ui/section-header'
 import { UpgradeToggle } from './upgrade-toggle'
 import { PwywPicker } from './pwyw-picker'
+import { CREW_PERKS } from '@/lib/crew/perks'
 
 // MEMBER UPGRADE SURFACE (Pricing P3, ADR-362/363). Renders CREW, the one sellable member tier
 // (ADR-878: the ladder is Member free and Crew), and gates the live checkout CTA behind
@@ -123,6 +124,9 @@ export default async function UpgradePage({
     { icon: MessageSquare, label: 'Vera without the daily cap' },
     { icon: Star, label: 'The Crew badge on your profile' },
     { icon: Users, label: 'List what you author in the public library' },
+    // Crew perks beyond hosting (LIVE-757): listed only once one is live, so the page never sells a
+    // perk with nothing behind it.
+    ...CREW_PERKS.filter((p) => p.live).map((p) => ({ icon: Star, label: p.label })),
   ]
 
   return (

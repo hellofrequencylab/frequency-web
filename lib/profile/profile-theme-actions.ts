@@ -27,12 +27,22 @@ export async function updateProfileTheme(themeId: string): Promise<void> {
   const admin = createAdminClient()
   const { data: me } = await admin
     .from('profiles')
-    .select('id, handle, meta')
+    .select('id, handle, meta, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!me) throw new Error('Profile not found')
   if (!readSpotlightEnabled((me as { meta?: unknown }).meta)) {
     throw new Error('Your Spotlight page is not turned on yet.')
+  }
+
+  // The Crew gate (LIVE-757, lib/crew/perks.ts). Only reads the tier when the pick is a Crew theme,
+  // and reads the REAL effective tier, never the Beta grant.
+  if (PROFILE_SKINS.find((s) => s.id === themeId)?.crewOnly) {
+    const { effectiveTierFor } = await import('@/lib/billing/crew-grants')
+    const me2 = me as { id: string; membership_tier?: string | null }
+    if ((await effectiveTierFor(me2.id, me2.membership_tier ?? null)).tier !== 'crew') {
+      throw new Error('That theme comes with Crew.')
+    }
   }
 
   // The earned gate. Only reads the inventory when the pick needs an item (free skins cost no query).
