@@ -9580,6 +9580,7 @@ export type Database = {
           id: string
           member_terms: string | null
           partner_id: string
+          quest_id: string | null
           title: string
           valid_until: string | null
         }
@@ -9590,6 +9591,7 @@ export type Database = {
           id?: string
           member_terms?: string | null
           partner_id: string
+          quest_id?: string | null
           title: string
           valid_until?: string | null
         }
@@ -9600,6 +9602,7 @@ export type Database = {
           id?: string
           member_terms?: string | null
           partner_id?: string
+          quest_id?: string | null
           title?: string
           valid_until?: string | null
         }
@@ -9609,6 +9612,13 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_offers_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
             referencedColumns: ["id"]
           },
         ]
