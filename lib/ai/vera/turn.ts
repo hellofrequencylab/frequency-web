@@ -17,6 +17,7 @@ import { isStaff, type WebRole } from '@/lib/core/roles'
 import { getMemberContext } from '@/lib/ai/memory'
 import { supportSummaryForVera } from '@/lib/support/store'
 import { runVeraTurn } from './loop'
+import type { VeraReader } from './reader-note'
 import { runVeraClaudeTurn, type VeraMessage } from './agent-claude'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { ConciergeStage, ProposedToolCall } from './concierge'
@@ -69,9 +70,9 @@ export async function runConciergeTurn(
     const ident = await callerIdentity()
     const profileId = ident?.id ?? null
     const actorKey = profileId ?? (opts.ip ? `ip:${opts.ip}` : null)
-    const [memberContext, supportSummary] = profileId
-      ? await Promise.all([getMemberContext(profileId), supportSummaryForVera(profileId).catch(() => '')])
-      : [null, '']
+    const [memberContext, supportSummary, reader] = profileId
+      ? await Promise.all([getMemberContext(profileId), supportSummaryForVera(profileId).catch(() => ''), readerFor(profileId)])
+      : [null, '', null]
     const viewer = ident
       ? { isOperator: isStaff(ident.webRole), roleLabel: isStaff(ident.webRole) ? ident.webRole : ident.communityRole }
       : null
@@ -84,6 +85,7 @@ export async function runConciergeTurn(
       actorKey,
       tier: ident?.tier ?? null,
       viewer,
+      reader,
       onText: opts.onText,
     })
     if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: live.suggestions, done: false }
@@ -92,4 +94,20 @@ export async function runConciergeTurn(
   // Deterministic fallback (also the path when AI is off / over budget).
   const turn = await runVeraTurn({ stage: stage === 'chat' ? 'done' : (stage as ConciergeStage), memberText })
   return { message: turn.message, stage: turn.stage, proposals: turn.proposals, suggestions: turn.suggestions, done: turn.done }
+}
+
+/** The persona and archetype the member gave at intake (profiles.meta), for Vera's one-line reader note
+ *  (ADR-1715). Only those two keys are read; never age or gender. Best-effort: null on any miss. */
+async function readerFor(profileId: string): Promise<VeraReader | null> {
+  try {
+    const supabase = await createClient()
+    const { data } = await supabase.from('profiles').select('meta').eq('id', profileId).maybeSingle()
+    const meta = (data?.meta ?? {}) as { persona?: unknown; archetype?: unknown }
+    return {
+      persona: typeof meta.persona === 'string' ? meta.persona : null,
+      archetype: typeof meta.archetype === 'string' ? meta.archetype : null,
+    }
+  } catch {
+    return null
+  }
 }
