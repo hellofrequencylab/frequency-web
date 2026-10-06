@@ -7,26 +7,28 @@ There are two separate money flows. Keep them straight.
 
 ## 1. Plan billing (money in)
 
-Members and Spaces pay Frequency for a plan. The current catalog (the Community Collective
-ladder, ADR-811; every yearly price is two months free):
+Members and Spaces pay Frequency for a plan. The ladder is five tiers, one verb each ([ADR-1709](DECISIONS.md),
+2026-10-06): **members join, Crew hosts, a Space runs, Business sells, Collective connects.** Every
+yearly price is ten months of the monthly. Prices live in the catalog (`/admin/pricing`, Catalog) and
+every surface reads them from there, so this table names who buys what and never the amount. The
+amounts the owner ruled are recorded in [PRICING.md](PRICING.md), top banner. Status lives in
+[`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
 
-| Plan | Who buys it | Price |
+| Plan | Who buys it | What it is for |
 |---|---|---|
-| **Business** | a Space | $29/mo, charged today (the $19 beta rate is closed) |
-| **Collective** | a Space | $79/mo, charged today (the $49 beta rate is closed) |
-| **Non Profit** | a verified 501(c)(3) Space | $39/mo flat, never per seat |
-| **Independent** | a Space going white-label, off the network | $249/mo flat, no founding discount |
-| **Crew** | a member | **Pay what you want**, from $4.99/mo (floor), $24.99 suggested |
-| **Supporter** | not a tier | A badge earned by paying at or above the suggested Crew amount |
+| **Member** | everyone | Free. Joins Circles and Events, hosts 1 Circle and 2 upcoming free Events |
+| **Crew** | a member | **Contribute what you want** above a floor. Backing the community plus a host kit |
+| **Space** (free) | any member | Every hosting tool with launch limits, tips at 0%. Does not sell |
+| **Business** | a Space | Selling opens here. Higher limits, 2 operator seats |
+| **Collective** | a Space | Business for a group of groups: 5 member Spaces included, more at the extra-Space price, Vera AI included, a lower network fee |
+| **Non Profit** | a verified 501(c)(3) Space | Everything Business does, with no network fee. Non Profit Collective is the Collective version |
+| **Independent** | a Space going white-label, off the network | Hand-sold, never on a public surface |
 
-⚠️ The founding beta anchors ($19 Business, $49 Collective) HAVE reverted to list: the owner closed the
-window early on **2026-08-17** ([ADR-1060](DECISIONS.md)), so `BETA_PRICING_ENDS_AT`
-(`lib/pricing/beta.ts`) is a past instant and the checkout charges $29 / $79. A Space that had bought at
-the founding rate would keep it; none had (0 subscription items on 2026-08-17). The Collective beta
-price is one cell of `SPACE_PLAN_PRICE_CENTS` (`lib/pricing/feature-tiers.ts`), read by every
-surface that shows it, and resolved through `tierPriceCents` exactly as the checkout does. (It had
-its own `COLLECTIVE_BETA_CENTS` constant until 2026-08-10; a per-tier patch is a list of tiers
-somebody remembered, which is the whole mechanism [ADR-916](DECISIONS.md) records for the $19/$29 split.) **Vera AI** is the sole add-on: +$20/mo on any paid Space plan.
+**Vera AI** is the add-on on Business and Non Profit (included in Collective). Operator seats beyond
+the included ones are a priced add-on. The supporter mark is not a tier.
+
+The Founding Business 3% buy-down stays for Spaces already in it, and the six hand-granted Business
+Spaces stay Business (ADR-1709 owner defaults).
 
 All of this bills through Stripe subscriptions and one-time payments.
 
@@ -34,50 +36,42 @@ All of this bills through Stripe subscriptions and one-time payments.
 
 | Capability | Plan floor | The rule |
 |---|---|---|
-| Collaborator hosting | Collective (Non Profit clears it) | Hosting an event or a venue WITH Collaborator Spaces needs the HOST Space on Collective (feature gate `space_collaborators`, ADR-835). Being a Collaborator on someone else's event stays free on every plan. A member-hosted event has no host Space, so it can never take on Collaborators; a person helping run an event is a Cohost. During the beta the gate is soft (nothing blocks until the paid-gates date, `beta_grace`); the Collective badge previews the post-launch model. |
+| Selling | Business (Non Profit and Collective clear it) | Paid tickets, paid memberships, donations, shop checkout, booking deposits and priced Journeys need the `space_payments` gate (`LIVE-753`). It does not wait for `beta_grace`. A refusal shows what Business adds and offers its 14-day trial in place, with "keep it free" as an equal choice. |
+| Tips | every tier | Open at 0%, always. The only money a free tier receives. |
+| Collaborator hosting | Business (meter `space_collaborators`) | Hosting WITH Collaborator Spaces is metered on the host Space (`PLACEHOLDER_METER_LIMITS.space_collaborators`). Being a Collaborator on someone else's event stays free on every plan. |
+| Count limits | per meter | One map, `lib/pricing/meter-limits.ts`. A full meter only stops new writes; nothing is hidden, deleted or locked. |
 
 ## 2. Payouts (money through)
 
-When a member tips a host, buys an event ticket, or buys from a Space storefront, the money goes to that
-host or Space through **Stripe Connect**. Three rules come first (ADR-913):
+When a member tips a host, or a Space sells a ticket, membership, booking or product, the money goes
+to that host or Space through **Stripe Connect**. The rules ([ADR-1709](DECISIONS.md)):
 
 1. **Tips carry no platform fee. Zero, on every tier.** A tip is a gift between two people; we are not
    in it.
-2. **A sale to the seller's own audience costs them nothing.** Always 0%.
-3. ~~**A free Member cannot sell.**~~ **Anyone can sell, on any tier** (corrected 2026-08-19,
-   [ADR-914](DECISIONS.md), which reversed ADR-913's seller gate the day it was written). A free Member
-   sells tickets, takes donations, and receives payouts on day one, no upgrade; the only setup step is
-   completing Stripe onboarding at first sale. Paying does not buy the right to sell — it buys the
-   **rate** down. Never gate the transaction, gate the repeat.
+2. **Selling starts at Business.** Personal accounts and the free Space do not sell; they take tips.
+   ADR-914's "anyone can sell, on any tier" is superseded.
+3. **A sale to the seller's own audience costs them nothing.** Always 0%.
 
 Every order that is not a tip is classified as `self` (the seller's own audience) or `network` (the
 network sourced it: referral, discovery, the marketplace). **Own-audience is a relationship, not a
 cookie**: the buyer follows the Space, is on its team or holds an active membership in one of its tiers
-([ADR-1600](DECISIONS.md)), is in its Space Contacts, is in the seller's own contact list, or has
-bought from them before. A person selling without a Space is measured against their profile plus
-every Space they own: their accepted friends and the active members of any Space they own count too
-([ADR-1584](DECISIONS.md)). Any one of those makes the order `self` and the fee 0%. Network orders pay
-the ladder for the seller's tier:
+([ADR-1600](DECISIONS.md)), is in its Space Contacts, or has bought from it before
+([ADR-1584](DECISIONS.md)). Any one of those makes the order `self` and the fee 0%. A network customer
+is charged once, at their first purchase; after that they are the Space's people.
 
-| Seller | Network-sourced take-rate | Own audience |
+| Seller | Network fee (first purchase only) | Own audience |
 |---|---|---|
-| Member (free) | 10% ~~(cannot sell, RSVPs only)~~ | 0% |
-| Crew | 8% | 0% |
-| Free Space | 10% | 0% |
+| Member, Crew, free Space | does not sell (tips only) | 0% |
 | Business | 5% | 0% |
-| Collective | 3% ~~(5%)~~ | 0% |
-| Non Profit | 0% | 0% |
-| Independent | 0% (off the network, so no network sales) | 0% |
+| Collective | 3% | 0% |
+| Non Profit, Non Profit Collective | 0% | 0% |
+| Independent | 5% in code, but off the network, so no network sales | 0% |
 | Tips, any tier | **0%** | **0%** |
 
-⚠️ Corrected 2026-08-19 ([ADR-914](DECISIONS.md)): the struck cells are the retired sell-wall, the free
-rungs were missing, and Collective is 3%. Rates verified against `NETWORK_TAKE_RATE_DEFAULT`
-(`lib/billing/pricing-keys.ts`).
-
-Upgrading buys the fee down: free Member 10% to Crew 8%, free Space 10% to Business 5% to Collective 3%
-to Non Profit 0%. The rates are set in the pricing console (`/admin/pricing`, Take-rate); the seeded
-defaults live in `NETWORK_TAKE_RATE_DEFAULT` (`lib/billing/pricing-keys.ts`, mirrored by
-`lib/pricing/defaults.ts`).
+The free and personal rungs stay in code only as default-deny values (`LIVE-754`). The rates are set in
+the pricing console (`/admin/pricing`, Take-rate); the seeded defaults live in
+`NETWORK_TAKE_RATE_DEFAULT` (`lib/billing/pricing-keys.ts`, mirrored by `lib/pricing/defaults.ts`). A
+paid rung is never framed as buying a rate down (ADR-1350).
 
 The one line to give a member who asks: **Frequency charges once for the introduction. After that
 they're your people, free.**
@@ -92,10 +86,10 @@ when, old to new) in `platform_flag_events`.
   the environment. It answers ONE question: **may we charge.** It does not decide whether paid features
   lock (see the next line, ADR-874).
 - **The paid-gates date (`beta_grace`, at `/admin/pricing` under Beta controls).** The day the paid feature
-  gates start blocking, set to **2026-09-01**. Until it arrives, billing can be fully live and every plan
-  can sell while every member and Space keeps their paid features. On that date at 00:00 UTC the ladder
-  starts biting, with no further operator action. The date itself is the first enforced day, so the last
-  free day is Aug 31. Clearing the field means "no grace window": paid features would lock the moment
+  gates start blocking, set to **2026-12-01** (kept by ADR-1709). Until it arrives, billing can be fully
+  live while every member and Space keeps room past the free limits. On that date at 00:00 UTC the count
+  limits start biting, with no further operator action. The `space_payments` selling gate is the
+  exception: it does not wait for this date. Clearing the field means "no grace window": paid features would lock the moment
   billing goes live. **This is the only date on this page that changes access.**
 - **`plan_business_enabled` / `plan_collective_enabled` / `plan_nonprofit_enabled` /
   `plan_independent_enabled`.** Show and sell each Space plan. A plan sells only when its switch **and**
@@ -108,7 +102,7 @@ when, old to new) in `platform_flag_events`.
   use the paid-gates date above instead: it covers every gate at once and turns them all on by itself on
   the day you set, so nothing depends on remembering a dozen toggles.
 
-## The beta "free until Sept 1" setup (current state)
+## The beta setup (history: the "free until Sept 1" window, moved to 1 December by ADR-1709)
 
 Where things stand today, in one paragraph: **nobody is charged.** The master switch
 (`billing_live`) is **off**, and the code-side preview switch `PLACEHOLDER_PRICING`
@@ -120,10 +114,10 @@ Stripe keys and turn `billing_live` on at `/admin/pricing`, and have an engineer
 
 On top of that, three beta pieces are currently set:
 
-- **The paid-gates date (`beta_grace`) is `2026-09-01`.** This is what makes "explore every level, pay on
-  Sept 1" work. You can turn `billing_live` on **today** and start selling plans: nobody loses a feature,
-  because the gates do not begin until that date. No action is needed on Sept 1; the gates turn themselves
-  on at 00:00 UTC.
+- **The paid-gates date (`beta_grace`) is `2026-12-01`** (it was `2026-09-01`; ADR-1709 kept the moved
+  date). Count limits do not begin until that date, and no action is needed on the day: they turn
+  themselves on at 00:00 UTC. Selling is not part of this window: the `space_payments` gate refuses a
+  free Space from the day it ships.
 - **The countdown clock (`beta_ends_at`)** is set to `2026-09-01`. It drives the "Summer of Frequency ends
   Sept 1" banner only; it changes nothing about access on its own. The founding beta prices ($19 Business,
   $49 Collective) auto-revert to list on the same date in code.
@@ -152,13 +146,13 @@ paid-gates date and the gates will follow the master billing switch exactly.
 - **Founding Members (personal).** A paid Founding Member is flagged for life and grandfathered at their
   rate. The founding rate and seat cap are edited in the `Founding rates` section of `/admin/pricing`.
 - **Founding Businesses.** ⚠️ There is no beta rate to buy at any more ([ADR-1060](DECISIONS.md)): a
-  Space subscribing today pays $29 / $79. The grandfather mechanism itself is unchanged (a locked Stripe
+  Space subscribing today pays the catalog list price. The grandfather mechanism itself is unchanged (a locked Stripe
   price id on the subscription item), and `FOUNDING_DEFAULT.business_monthly_cents` is still **$19**, so
   the beta-founder grant still stamps a $19 lifetime rate that nothing sells. Whether that stays is an
   open owner decision. The locked Founding Business display values are edited under `Founding rates`.
 - **Business plan (ongoing).** A Space owner buys it from their Space billing settings once the plan is
-  enabled and billing is live. It includes a trial with a card upfront. Business is the full-depth tier;
-  free is a usage state within Business, not a separate plan.
+  enabled and billing is live. It includes a trial with a card upfront. Business is where selling opens
+  (ADR-1709); the free Space is a real plan with every hosting tool.
 - **Managing a paid plan.** A paying Space shows a "Manage subscription" button in its billing settings
   that opens the Stripe billing portal, where the owner updates the payment method, changes or cancels the
   plan, and adjusts seats where the portal allows. It is Stripe hosted, so cancellation and payment updates
@@ -180,7 +174,8 @@ locked display value, and the money flip is still the master switch.
   While it is off, the seat is a placeholder the catalog sync skips (no Stripe price is minted). Turning
   it on drops the placeholder so the next **Sync the catalog to Stripe** mints the live seat price from
   the amount you set. Activation is audited in `platform_flag_events`.
-- **Member take-rates** (`Plans and prices` > `Take-rate`, the **Free member %** and **Member %**
+- **Member take-rates** (history: ADR-1709 turned personal selling off, so these two fields are
+  default-deny values only) (`Plans and prices` > `Take-rate`, the **Free member %** and **Member %**
   fields). The rate on a member's network-sourced sale: **Free member %** is what a free Member pays
   (default 10%) and **Member %** is the Crew rate (default 8%); their own audience is 0% regardless.
   ~~A free Member has no rate because a free Member cannot sell.~~ (Corrected 2026-08-19,

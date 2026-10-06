@@ -1,5 +1,14 @@
 # Frequency brief 03 — Strategy & business (for Claude Design)
 
+> ## ⚠️ SUPERSEDED on pricing by [ADR-1709](../docs/DECISIONS.md) (2026-10-06).
+>
+> The ladder below predates the five-tier model. The live one: Member (free), Crew (contribute what
+> you want), Space (free), Business (selling starts here), Collective (groups of groups, member Spaces
+> included), with Non Profit and Independent beside it. Tips are 0% on every tier. Read prices from
+> `docs/PRICING.md` (top banner) and the catalog, and the story from `lib/pricing/plan-story.ts`. Status
+> lives in [`docs/BUILD-BACKLOG.json`](../docs/BUILD-BACKLOG.json).
+
+
 > Part of the project-orientation set for Claude Design. Sources: `docs/PRICING.md`
 > (its top banners are the live ladder: ADR-1060, ADR-1067, ADR-1084) and
 > `lib/billing/pricing-keys.ts`, `docs/BUSINESS-MODEL-PLAN.md` (ADR-552),

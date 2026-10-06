@@ -1,46 +1,38 @@
 # The Value Ladder — strategy, tier map, and the phased build
 
-**Status:** 🔴 canonical as of 2026-07-30. This document SUPERSEDES the tier/rate strategy in
-`docs/PRICING-LADDER-PLAN.md` §1–§1b. `docs/PRICING.md` remains the mechanical reference (three-flag
-model, gate table, Stripe wiring); where the two disagree on WHAT a tier includes or WHAT it costs,
-this document wins.
+**Status:** 🔴 canonical strategy for the five-tier ladder, rewritten 2026-10-06 for
+[ADR-1709](DECISIONS.md), which supersedes the ADR-914 model this file used to argue ("never gate the
+transaction"). Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json). On WHAT a tier costs,
+[`PRICING.md`](PRICING.md) and the catalog are the reference; this file is the reasoning and the tier
+map. §4 onward is kept as the record of the ADR-914 build and is marked HISTORY.
 
 ⚠️ It does **not** supersede `docs/PRICING-OPTIONS-STRATEGY.md`, which an earlier draft of this line
 wrongly claimed. That document is about what a *creator* charges *their own* customers (price modes,
 pay-what-you-want, sliding scale). This one is about what a creator pays *Frequency*. Two different
 pricing systems that share a vocabulary; conflating them is exactly the mistake to avoid.
 
-> ⚠️ **Correction (2026-09-04): on WHAT a tier costs, [`PRICING.md`](PRICING.md) is now the reference, not this file.** Its ladder (ADR-1060) matches the code exactly (`lib/pricing/founding.ts`, `lib/pricing/pricing.test.ts`), so the "this document wins" clause above no longer holds for numbers; the strategy and tier map here still stand. The verification rows near the end that call the plan ladder "one line to fix (`spacePlanPriceCents`)" describe a bug that was fixed: `app/(main)/spaces/[slug]/settings/billing/plan-ladder.tsx` calls it. Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
-
 ---
 
 ## The answer up front
 
-Frequency charges for **the introduction, never the relationship**. Two sentences carry the whole model:
+**Five tiers, one verb each. Members join. Crew hosts. A Space runs. Business sells. Collective
+connects.** Hosting is free, and that is the point, not a teaser. Selling is what Business is for.
 
-> **Never gate the transaction. Gate the repeat.**
-> **Your list is your discount.**
+Three lines still carry the whole commercial law: people join free, businesses host free, you pay
+when you start charging. What ADR-1709 changed is what "start charging" means: it means taking
+Business. Tips are the only money a free tier receives, and they are 0% on every tier.
 
-A free Member can take money on day one. What they cannot do is take money *at scale, repeatedly,
-without doing the work by hand.* Every paid rung buys back time and takes a slice off the rate. The
-result is a ladder people climb because their own success pushes them up it, not because we put a
-wall in front of the door.
+| | Member | Crew | Space (free) | Business | Collective | Non Profit |
+|---|---|---|---|---|---|---|
+| **Price** | free | contribute what you want | free | catalog | catalog, 5 member Spaces | catalog |
+| **Hosts** | 1 Circle, 2 Events | host kit | every hosting tool, launch limits | higher limits | highest limits | Business limits |
+| **Tips** | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% |
+| **Sells** (tickets, memberships, donations, shop, deposits) | ⛔ | ⛔ | ⛔ | ✅ | ✅ | ✅ |
+| **Network fee, introduced customer, once** | n/a | n/a | n/a | 5% | 3% | 0% |
+| **Own audience** | 0% | 0% | 0% | 0% | 0% | 0% |
 
-| | Free Member | Crew · contribute what you want | Business Space · $29/mo | Collective · $79/mo | Non Profit · $39/mo |
-|---|---|---|---|---|---|
-| **Take rate, network-sourced** | 10% | 8% | 5% | 3% | 0% |
-| **Take rate, your own audience** | **0%** | **0%** | **0%** | **0%** | **0%** |
-| **Tips** | 0%, always | 0% | 0% | 0% | 0% |
-| **Sell tickets** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Take donations** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Sell memberships** | ⛔ | ⛔ | ✅ | ✅ | ✅ |
-| **Contacts** | your own list | your own list | unlimited Space CRM | unlimited + pipelines | unlimited |
-| **Space CRM** | 200 contacts, basic messaging | 200 contacts | unlimited, campaigns, funnels | + automation, multi-pipeline | full |
-
-Everything below is the reasoning, the exact per-feature map, the phased build, and the protocol for
-checking the work.
-
----
+Every limit is read from `PLACEHOLDER_METER_LIMITS` (`lib/pricing/meter-limits.ts`); the figures in
+this file are never a source.
 
 ## 1. The psychology we are actually using
 
@@ -102,20 +94,18 @@ they own (ADR-1584).
 Not a cookie. A cookie cannot survive a phone-to-laptop switch and cannot answer a host asking "why
 did you charge me for that sale?"
 
-### The network rates
+### The network fee (ADR-1709)
 
-| Seller | Rate on a Frequency-sourced sale | Why this number |
+| Seller | Fee on a customer the network introduced, once | Why this number |
 |---|---|---|
-| Free Member | 10% | The reference rate. High enough that the ladder has somewhere to go, low enough to beat doing it yourself once you count the page, the checkout, and the list |
-| Crew (PWYW, from $4.99/mo) | 8% | At the $4.99 floor it pays for itself at ~$250/mo of network-sourced sales; at the $24.99 suggested amount, ~$1,250/mo. Deliberately reachable at either end |
-| Business Space ($29/mo) | 5% | The rate a working small business can build on |
-| Collective ($79/mo) | 3% | Near cost. A collective's volume is the point, not the rake |
-| Non Profit ($39/mo) | 0% | Verified 501(c)(3). We do not take money from donations to a nonprofit |
-| Independent (~$249/mo) | 0% | White-label and deliberately disconnected from the network, so there is no network-sourced sale for a rate to apply to |
+| Member, Crew, free Space | does not sell | Free hosting is the point; selling is the paid unlock. The free and personal rungs stay in code only as default-deny values |
+| Business | 5% | The rate a working small business can build on |
+| Collective | 3% | A group of groups brings volume; the rake is not the point |
+| Non Profit, Non Profit Collective | 0% | Verified 501(c)(3). We do not take money from donations to a nonprofit |
+| Independent | 5% in code, no network sales | White-label and off the network, so there is no introduced customer for a fee to apply to |
 
-⚠️ **Free Spaces are held to the free-Member standard: 10%.** A free Space is a real Space with real
-limits, not a discount Business. It cannot sell memberships. It can sell tickets, take donations, and
-receive tips.
+The fee is charged once, at the introduced customer's first purchase; after that they are the Space's
+people. A paid tier is never framed as buying a rate down (ADR-1350).
 
 ### What is never charged
 
@@ -215,46 +205,46 @@ The lock is `app/(main)/marketplace/free-seller.test.tsx`: it runs the real page
 server action against a free-tier profile and asserts what they DID, proven by mutation (re-adding
 either wall fails it), plus the take-rate rungs and the five untouched Crew gates.
 
-### Space ladder (`spaces.plan`)
+### Space ladder (`spaces.plan`, ADR-1709)
 
-| Capability | Free Space | Business ($29) | Collective ($79) | Non Profit ($39) | Independent (~$249) |
+The counts are `PLACEHOLDER_METER_LIMITS` on 2026-10-06; that map wins over this table.
+
+| Capability | Free Space | Business | Collective | Non Profit | Independent |
 |---|---|---|---|---|---|
-| Public Space page | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Events + RSVPs | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Sell tickets** | ✅ 10% | ✅ 5% | ✅ 3% | ✅ 0% | ✅ 0% |
-| **Donations** | ✅ | ✅ | ✅ | ✅ 0% | ✅ |
-| Storefront / shop | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Sell memberships** | ⛔ | ✅ | ✅ | ✅ | ✅ |
-| Membership-gated tickets | ⛔ | ✅ | ✅ | ✅ | ✅ |
-| Space CRM contacts | ◐ 200 | ✅ unlimited | ✅ unlimited | ✅ unlimited | ✅ |
-| Messaging | ◐ basic, 300 sends/mo | ✅ 5,000/mo | ✅ 25,000/mo | ✅ 5,000/mo | ✅ |
-| Campaigns + funnels | ⛔ | ✅ | ✅ | ✅ | ✅ |
-| Multiple pipelines | ⛔ | ⛔ | ✅ | ✅ | ✅ |
-| Automations | ⛔ | ◐ governed playbooks | ✅ full, 1,000 runs/mo | ✅ | ✅ |
-| Team seats | ◐ 1 | ◐ 1 | ✅ 3 + per-seat | ✅ 3 | ✅ |
-| Collaborator hosting | ◐ preview only | ◐ 3 | ✅ unlimited | ✅ | ✅ |
-| Revenue splits | ⛔ | ⛔ | ✅ | ✅ | ✅ |
-| Group SMS | ⛔ | ⛔ | ✅ | ✅ | ✅ |
-| Bookings | ◐ 15/mo | ✅ | ✅ | ✅ | ✅ |
+| Public Space page, Events, RSVPs | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Tips** | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% | ✅ 0% |
+| **Paid tickets, memberships, donations, shop checkout, booking deposits** | ⛔ (`space_payments`) | ✅ | ✅ | ✅ | ✅ |
+| Circles (`space_circles`) | ◐ 3 | ◐ 10 | ✅ | as Business | as Business |
+| Upcoming Events (`space_events`) | ◐ 5 | ✅ | ✅ | ✅ | ✅ |
+| Space CRM contacts (`space_crm`) | ◐ 250 | ◐ 5,000 | ◐ 25,000 | as Business | as Business |
+| Email sends (`space_email`) | ◐ 1,000 | ◐ 25,000 | ◐ 100,000 | as Business | as Business |
+| Campaigns a month (`space_campaigns_month`) | ◐ 2 | ✅ | ✅ | ✅ | ✅ |
+| Live funnels (`space_funnels`) | ⛔ | ◐ 5 | ✅ | as Business | as Business |
+| Active automations (`space_automations_active`) | ◐ 1 | ◐ 10 | ✅ | as Business | as Business |
+| Operator seats (`space_team`) | 1 | 2 | 5 | as Business | as Business |
+| Editable QR codes (`space_qr`) | stock code only | 3 | 5 | 5 | as Business |
+| Collaborators hosted (`space_collaborators`) | ⛔ | ◐ 3 | ✅ | as Business | as Business |
+| Membership tiers (`space_membership_tiers`) | 1 free tier | ◐ 5 | ✅ | as Business | as Business |
+| Member Spaces | ⛔ | ⛔ | 5 included, more at the extra-Space price | ⛔ (Non Profit Collective: 5) | ⛔ |
+| Vera AI | add-on | add-on | included | add-on | add-on |
 | Own brand + domain | ⛔ | ⛔ | ⛔ | ⛔ | ✅ |
 
-### The three walls, and why each is a wall rather than a meter
+Multi-pipeline and Space Entry Points stay off public comparisons until they are built (owner ruling,
+2026-10-06).
 
-Everything else is a meter. A wall is only justified where a quantity cannot express the difference.
+### The one wall, and why it is a wall
 
-| Wall | Floor | Why not a meter |
-|---|---|---|
-| **Sell memberships** | Free (Connect readiness) | Amended [ADR-1415](DECISIONS.md) / LIVE-410. ADR-914 put this at Business as a recurring promise. FOCUS-MODEL Q3 ruled that is a readiness concern wearing a pricing gate: host free until you charge. Checkout still refuses when Connect is not payout-ready. |
-| **Campaigns + funnels** | Business | "One campaign free" teaches nothing and converts badly. The line is between *messaging your people* (free) and *running an acquisition machine* (paid) |
-| **Revenue splits** | Collective | Automatic money-splitting between businesses is the collective's actual job. Hosting a few partners is Business; sharing revenue with them is the engine |
+Everything else is a meter. **Selling is the one wall** (`space_payments`, Business floor). The owner
+chose free hosting as the point and selling as the paid unlock, with tips and the upgrade moment as the
+answer to the "they will just use Venmo" risk ADR-914 named. A refusal is never a dead end: it shows
+what Business adds, offers the 14-day trial in place, and keeps "keep it free" as an equal choice. The
+gate does not wait for `beta_grace`.
 
-Everything else — contacts, sends, seats, collaborators, bookings, Circles, Journeys, Practices,
-events, Vera — is a **meter with a real, usable free allowance**, because a used feature with a
-ceiling converts, and a locked preview does not.
+A full meter only stops new writes. It never hides, deletes, or locks what exists.
 
 ---
 
-## 4. What has to change
+## 4. HISTORY: what had to change for ADR-914 (superseded by ADR-1709)
 
 An audit of the current code against the map above. Each row is a defect against the new canon.
 
@@ -274,7 +264,7 @@ An audit of the current code against the map above. Each row is a defect against
 
 ---
 
-## 5. The phased build
+## 5. HISTORY: the ADR-914 phased build
 
 Nine phases. Each ships independently, each is verifiable on its own, and each leaves the product in
 a shippable state. Phases 1–3 are behaviour, 4–6 are surfaces, 7–9 are proof.
@@ -414,7 +404,7 @@ phase: **a tenth source would have made it worse.**
 
 | # | Contradiction (A2) | Status |
 |---|---|---|
-| 1 | Business $29 vs $19 | ✅ `SPACE_PLAN_PRICE_CENTS` carries `{list, beta}` for every plan, read off the code catalog; `tierPriceCents` resolves through the beta window. `COLLECTIVE_BETA_CENTS` is now one cell of that map, not a patch. ⚠️ the in-app `plan-ladder.tsx` still renders list |
+| 1 | Business list vs beta price | ✅ `SPACE_PLAN_PRICE_CENTS` carries `{list, beta}` for every plan, read off the code catalog; `tierPriceCents` resolves through the beta window. `COLLECTIVE_BETA_CENTS` is now one cell of that map, not a patch. ⚠️ the in-app `plan-ladder.tsx` still renders list |
 | 2 | Three take-rate sources | ✅ collapsed to one code vector (`NETWORK_TAKE_RATE_DEFAULT`), which `PRICING_DEFAULTS.take_rate` now READS. The operator overlay layers on top wherever a DB read is available |
 | 3 | `pricingTiers()` rate literals | ✅ derived from `spaceOfferings`; both `/llms*.txt` routes resolve the operator's config, so an admin edit moves the corpus |
 | 4 | Stale `$49` comparison anchor | ✅ `FREQUENCY_BUSINESS_MONTHLY` / `FREQUENCY_ALL_IN_MONTHLY` read the catalog through the beta window |
@@ -640,7 +630,7 @@ ADR-918, which meant the marketing page and the actual upgrade screen were selli
 
 ---
 
-## Appendix A — the surface inventory (measured 2026-07-30)
+## Appendix A — HISTORY: the surface inventory (measured 2026-07-30, before ADR-1709)
 
 ### A1. Nine structures enumerate what a tier gets. They do not share one source.
 
@@ -651,7 +641,7 @@ ADR-918, which meant the marketing page and the actual upgrade screen were selli
 | 3 | `FEATURE_TIER_LADDERS` (21 ladders) | `lib/pricing/feature-tiers.ts` | ✅ Phase 5: prices read from the catalog, beta-aware |
 | 4 | `FEATURE_METERS` (22 ladders) | `lib/pricing/feature-meters.ts` | ⚠️ hardcoded quantities |
 | 5 | `FEATURE_GATES` | `lib/pricing/gates.ts` | ✅ the only structure enforcement reads |
-| 6 | `PlanLadder` in-app rungs | `…/settings/billing/plan-ladder.tsx` | ⚠️ prices now derived, but it renders the LIST price, so Business reads $29 against /pricing's $19. One line to fix (`spacePlanPriceCents`) |
+| 6 | `PlanLadder` in-app rungs | `…/settings/billing/plan-ladder.tsx` | ⚠️ prices now derived, but it renders the LIST price, so Business read its list price against /pricing's beta price. One line to fix (`spacePlanPriceCents`) |
 | 7 | Value comparison anchors | `lib/pricing/comparison.ts` | ✅ Phase 5: read from the catalog through the beta window |
 | 8 | Puck pricing template | `lib/page-editor/templates/pricing.ts` | ⚠️ reachable from `/pages` (ADR-915), inert output; its `$90` literals are gone |
 | 9 | Funnel plan rows (5 niches) | `lib/marketing/funnel-config.ts` | ✅ Phase 5: on the one rate vector, no literals |
@@ -660,7 +650,7 @@ ADR-918, which meant the marketing page and the actual upgrade screen were selli
 
 | # | Contradiction | Evidence |
 |---|---|---|
-| 1 | **Business price: $29 vs $19** | `/pricing` quotes $19 beta under a $29 anchor (`PRICING_DEFAULTS.plan.business`); every `FeatureTierRange` rung and `PlanLadder` quote a flat $29 (`PLACEHOLDER_SPACE_PRICE_CENTS.business`). Collective got a `COLLECTIVE_BETA_CENTS` patch; Business never did |
+| 1 | **Business price: list vs beta** | `/pricing` quoted the beta price under a list anchor (`PRICING_DEFAULTS.plan.business`); every `FeatureTierRange` rung and `PlanLadder` quoted a flat list price (`PLACEHOLDER_SPACE_PRICE_CENTS.business`). Collective got a `COLLECTIVE_BETA_CENTS` patch; Business never did |
 | 2 | **Three take-rate sources** | `/pricing` reads the operator DB; `app/page.tsx` + `/what-is-frequency` + `/llms.txt` read `PRICING_DEFAULTS.take_rate`; the funnels read `NETWORK_TAKE_RATE_DEFAULT`. An operator edit moves exactly one of the three |
 | 3 | **`pricingTiers()` rates are literals** | They drive `/llms.txt` and `/llms-full.txt`, so an operator edit desyncs the answer-engine corpus from the page |
 | 4 | **Value-comparison anchor is stale** | `FREQUENCY_BUSINESS_MONTHLY = 49` is neither the beta ($19) nor the list ($29). It renders live on `/pricing` |
@@ -740,7 +730,7 @@ if nothing can reach it, and "nothing" includes the operator.*
 
 ---
 
-## Appendix B — the enforcement audit (measured 2026-07-30 against `1b5e878`)
+## Appendix B — HISTORY: the enforcement audit (measured 2026-07-30 against `1b5e878`)
 
 **The one-line finding: the gate system is not the tier system.** It is a second, quieter opinion
 about the tier system, and the two disagree in ten places.

@@ -1,14 +1,55 @@
 # Pricing & entitlements
 
-> ## ✅ CURRENT (the ladder): the Opening Beta price is CLOSED, and yearly is the only discount (ADR-1060, 2026-08-17).
+> ## ✅ CURRENT (the five-tier ladder): members join, Crew hosts, a Space runs, Business sells, Collective connects (ADR-1709, 2026-10-06).
+>
+> Owner-ruled (the Frequency Pricing Ladder Report, 2026-10-06). **This overrides every banner and every
+> rule below it.** The banners that follow are kept as the record of how the model got here; each one
+> is marked HISTORY where ADR-1709 replaced it. Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
+> (rows `LIVE-747` to `LIVE-767`, `HYG-165`, `OWN-094` to `OWN-096`).
+>
+> 1. **The tiers.** Personal: **Member** (free) and **Crew** (contribute what you want). Space plans:
+>    **Space** (the free plan), **Business**, and **Collective** (5 member Spaces included). Beside the
+>    ladder: **Non Profit**, **Non Profit Collective**, and **Independent** (hand-sold, off the network,
+>    never on a public surface). `ADVERTISED_SPACE_PLANS` (`lib/pricing/display.ts`) is business,
+>    collective, nonprofit.
+> 2. **Prices are catalog data, never copy** (ADR-916). The figures here are the record of the ruling,
+>    not a source: Business 4900 cents a month, Collective 14900 (`collective_base`, re-opened), an extra
+>    member Space 2900 (`collective_space`), Non Profit 3900, Non Profit Collective 11900, Independent
+>    24900, Vera AI 2000 (included in Collective), operator seats 1200. Yearly is ten months.
+> 3. **Selling is what Business is for.** The `space_payments` gate (Business floor, `LIVE-753`) guards
+>    paid tickets, paid memberships, donations, shop checkout and booking deposits. Personal selling is
+>    off on every personal tier. The gate does not wait for `beta_grace`. A refusal is never a dead end:
+>    it shows what Business adds and starts its 14-day trial in place, with "keep it free" as an equal
+>    choice. There is no free Business trial for a new Space.
+> 4. **Tips are open at 0% on every tier.** They are the only money a free tier receives.
+> 5. **The network fee ladder is 500, 300, 0 bps** (`LIVE-754`): Business and Independent 500,
+>    Collective 300, Non Profit and Non Profit Collective 0, charged once per customer the network
+>    introduces, at their first purchase. 0% on a Space's own audience and on tips, always. The free and
+>    personal rungs stay in code only as default-deny values; tests assert those sellers are refused,
+>    not priced.
+> 6. **Limits are sized to launch, and a full meter only stops new writes.** The one map is
+>    `PLACEHOLDER_METER_LIMITS` in `lib/pricing/meter-limits.ts` (free, business and collective columns;
+>    Non Profit and Independent read Business, Non Profit Collective reads Collective). Counts enforce
+>    when `pricing_settings.beta_grace` passes `2026-12-01`, with no deploy. QR codes: a free Space gets a
+>    downloadable stock code, Business 3 editable, Collective and Non Profit 5.
+> 7. **Crew is support plus a host kit**, read from the meter map (`circle_host`, `event_create`,
+>    `event_guests`, `journey_publish`, `journey_enrollees`, each `.crew`). Presets and floor come from
+>    `catalog.pwyw`. The word is "contribute what you want" (ADR-1084).
+> 8. **The story** is `PLAN_STORY` in `lib/pricing/plan-story.ts`, a zero-import leaf (ADR-1368). Every
+>    pricing surface reads it; nobody retypes it.
+>
+> The meters and the money mechanism are described in [PRICING-OPERATIONS.md](PRICING-OPERATIONS.md);
+> the strategy behind the ladder is in [VALUE-LADDER.md](VALUE-LADDER.md).
+
+> ## 📜 HISTORY (prices superseded by ADR-1709): the Opening Beta price is CLOSED, and yearly is the only discount (ADR-1060, 2026-08-17).
 >
 > Owner-ruled: *"scratch the beta pricing and just charge full price. They can get 2 months free for
 > purchasing the year."* This overrides every beta rate quoted anywhere below this banner.
 >
-> 1. **The charged ladder is the LIST ladder.** Member $0 · Crew contribute-what-you-want (floor $4.99) ·
->    Free Space · **Business $29** · **Collective $79** · Non Profit $39 · Independent $249 ·
->    Vera AI add-on +$20. **Exactly two figures moved** (Business $19 → $29, Collective $49 → $79,
->    annuals following at 10x: $190 → $290 and $490 → $790). Independent, Non Profit and the add-on
+> 1. **The charged ladder was the LIST ladder.** At the time: Member free, Crew contribute what you
+>    want, Free Space, Business, Collective, Non Profit, Independent, and the Vera AI add-on, each at its
+>    list price. **Exactly two figures moved**: Business and Collective dropped their beta rates, with
+>    the annuals following at ten months. Independent, Non Profit and the add-on
 >    already had `listCents == foundingCents`, so they did not move.
 > 2. **No struck anchor renders anywhere, and no "Beta rate" caption.** `effectiveCatalogAmounts` /
 >    `effectiveTierPrice` collapse the founding anchor into the list price once the window is past, so
@@ -40,7 +81,7 @@
 >    a proposal, not a migration — the code fail-safes to list pricing until it is applied.
 > 8. **In STRIPE, the founding rates hang on their own Product** ([ADR-1062](DECISIONS.md)). Owner:
 >    *"standard pricing does not have a founding or beta rate ... Regular pricing + a founding beta
->    product."* `syncPricingCatalogToStripe` mints **Frequency Collective** ($79 / $790) and, separately,
+>    product."* `syncPricingCatalogToStripe` minted **Frequency Collective** (its list price) and, separately,
 >    **Frequency Collective (Founding rate)** ($49 / $490) — and Collective ALONE (ADR-1067: the owner's
 >    instruction is one unlisted beta offer, granted by hand). A flat item (Business, Independent,
 >    Non Profit, Vera AI) has no founding rate to separate, so it gets no second product. **6 products,
@@ -49,7 +90,7 @@
 >    exactly what they resolved before, and both variants stay ACTIVE in Stripe so the grant can charge
 >    them.
 
-> ## ✅ CURRENT (money model): selling is FREE on every tier; the RATE is the ladder (ADR-914, 2026-07-30).
+> ## 📜 HISTORY (superseded by ADR-1709): selling was free on every tier and the rate was the ladder (ADR-914, 2026-07-30).
 >
 > Owner-ruled. This overrides every rate and every seller rule stated anywhere below this banner.
 > **The full strategy, per-feature tier map, phased build and verification protocol live in
@@ -125,8 +166,8 @@
 > enforcement and the picker UI are follow-ups; this change is the MAP, which the surfaces derive from.
 
 > ## ✅ The public ladder is SEVEN sellable tiers, and `/pricing` DERIVES them (ADR-1052, 2026-07-28).
-> **The ladder, all of it sellable:** Member $0 · **Crew $9** · **Free Space** · **Business $29** ·
-> **Collective $79** · **Non Profit $39** · **Independent $249**. ⚠️ The public window is CLOSED
+> **The ladder, all of it sellable (at the time):** Member, Crew, Free Space, Business, Collective,
+> Non Profit and Independent, each at its then list price (now ADR-1709, above). ⚠️ The public window is CLOSED
 > (ADR-1060) and Business no longer has a beta rate at all (ADR-1067): the ONLY beta rate in the catalog
 > is Collective's $49 / $490, which is unlisted and granted by hand.
 > While the window was open they were grandfathered: a subscriber keeps the rate for as long as they
@@ -159,8 +200,7 @@
 > **The PUBLIC ladder (founder's ladder, ADR-878, updated 2026-07-30):** Member $0 · **Crew: pay what
 > you want**, floor $4.99/mo, $24.99 suggested, no list anchor (see "Crew is PWYW" below) ·
 > **Free Space** (the first level of
-> Space) · Business $29 (the $19 Opening Beta price is CLOSED, ADR-1060) · Collective $79 (same, the
-> $49 beta price is closed) · Non Profit $39 flat ·
+> Space) · Business (the Opening Beta price is CLOSED, ADR-1060) · Collective (same) · Non Profit flat ·
 > the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats $12/seat/mo (LIVE-229). **Independent
 > (~$249) is NOT listed or sold** (`plan_independent_enabled` OFF; machinery dormant, grandfathered
 > spaces keep resolving). ⚠️ "Opening Beta price" is RETIRED as a copy phrase (ADR-1060): no surface may
@@ -187,7 +227,7 @@
 
 > ## ⚠️ Prior model: FLAT pricing (ADR-590). Also historical.
 >
-> The live model is **flat, never per seat**: **Business $49/mo**, **Non Profit $29/mo flat** (everything in
+> The model then was **flat, never per seat**: **Business** and a flat **Non Profit** (everything in
 > Business, donations built in, verified 501(c)(3)), the **Resonance Engine** add-on **+$20/mo** (optional on
 > any paid plan), and a **flat 3% plus card processing** on every channel. Annual is two months free. **Crew**
 > ($9/mo personal) is unchanged. Presented as five persona doors (coaches-and-healers · studios · event-hosts ·
@@ -478,7 +518,7 @@ unconfigured.
 |---|---|---|
 | Name in the dashboard | `Frequency Collective` | `Frequency Collective (Founding rate)` |
 | Lookup metadata (`frequency_pricing_key`) | `collective_base` | `collective_base_founding` |
-| Prices on it | `collective_base_month_list` $79 · `collective_base_year_list` $790 | `collective_base_month` $49 · `collective_base_year` $490 |
+| Prices on it | `collective_base_month_list` · `collective_base_year_list` (re-priced by ADR-1709) | `collective_base_month` · `collective_base_year` (the founding rate) |
 | Exists for | every synced item | only an item with `foundingCents < listCents` (today: Business, Collective) |
 
 Both Products also carry `frequency_catalog_item` (the item they belong to) and `frequency_product_line`

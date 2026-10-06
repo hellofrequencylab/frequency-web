@@ -1,5 +1,13 @@
 # Frequency: Strategy & Product Briefing (for marketing)
 
+> ## ⚠️ SUPERSEDED on pricing by [ADR-1709](docs/DECISIONS.md) (2026-10-06).
+>
+> Any plan, price or rate named below predates the five-tier ladder: members join, Crew hosts, a
+> Space runs, Business sells, Collective connects. Tips are 0% on every tier and selling opens at
+> Business. Use `docs/PRICING.md` (top banner) and `lib/pricing/plan-story.ts` for the live story.
+> Status lives in [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json).
+
+
 > A self-contained overview of Frequency's strategy and features, written to be handed
 > to a marketing brainstorm. Leads with positioning, lays out every feature (built vs
 > planned), and ends with a distilled marketing starter. Synthesized from the repo docs

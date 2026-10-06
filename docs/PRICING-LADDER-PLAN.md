@@ -1,5 +1,14 @@
 # Pricing & Value Ladder — implementation plan
 
+> ## ⚠️ SUPERSEDED by [ADR-1709](DECISIONS.md) (2026-10-06): the five-tier ladder.
+>
+> Members join, Crew hosts, a Space runs, Business sells, Collective connects. Selling opens at
+> Business, tips are 0% on every tier, and the network fee is 5% (Business), 3% (Collective), 0%
+> (Non Profit), once per introduced customer. The banner below (ADR-914, "selling is free on every
+> tier") is itself history now. Live strategy: [VALUE-LADDER.md](VALUE-LADDER.md); prices:
+> [PRICING.md](PRICING.md). Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+
+
 > ## ⚠️ TRIPLY superseded. Read this first, then stop quoting numbers from this file.
 >
 > **The live strategy is [VALUE-LADDER.md](VALUE-LADDER.md) (ADR-914).** Selling is free on every tier

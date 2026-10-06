@@ -1,5 +1,10 @@
 # Spaces: the white-label tenancy model (one app, one graph, many sub-brands)
 
+> 🔴 **Pricing amended by [ADR-1709](DECISIONS.md) (2026-10-06).** Where this file says a tool is
+> plan-gated, read it against the five-tier ladder: the free Space keeps every hosting tool with launch
+> limits (meters in `lib/pricing/meter-limits.ts`), selling opens at Business (`space_payments`), and
+> Collective is a live plan with member Spaces. Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+
 > **The model, in one line.** Every sub-brand (a practitioner's mini-site, a business
 > with a loyalty program, an organization, a physical Lab, a coaching platform like Hook)
 > is a **Space**: a white-label tenant of the *one* Frequency app and database, with its own
