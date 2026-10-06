@@ -63,6 +63,7 @@ platform_settings
 playbook_runs
 playbooks
 podcast_shows
+post_embeddings
 practice_slug_redirects
 pricing_feature_gates
 pricing_settings

@@ -199,6 +199,7 @@ nearby_events                        public
 node_capture_counts                  internal
 node_within_range                    internal
 nodes_geo                            internal
+post_interest_scores                 internal
 practice_admin_facets                internal
 practices_fill_slug                  internal
 practices_touch_updated_at           public
@@ -266,6 +267,7 @@ trg_increment_member_count           public
 trg_increment_reply_count            internal
 trg_nexus_auto_activate              public
 trg_stewardships_recompute_level     internal
+upcoming_event_series  internal
 update_guest_seat                    public
 update_signup_lead                   public
 visible_room_member_profiles         authenticated

@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-720",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.readFileSync(f,\"utf8\");const walk=(d)=>{if(!fs.existsSync(d))return[];return fs.readdirSync(d,{withFileTypes:true}).flatMap((x)=>{const p=path.join(d,x.name);return x.isDirectory()?(x.name===\"node_modules\"?[]:walk(p)):[p]})};const v1=()=>walk(\"app/api/v1\").filter((f)=>/route\\.ts$/.test(f));const v1src=()=>v1().map(read).join(\"\\n\");const t=read(\"lib/database.types.ts\");if(!/\\b(push_devices|device_tokens|device_push_tokens|native_push_tokens)\\s*:\\s*\\{/.test(t))fail(\"no device-token table: an app build has nowhere to register its Expo or APNs token\");const lib=walk(\"lib\").filter((f)=>/push/i.test(f)&&/\\.ts$/.test(f)&&!/\\.test\\./.test(f)).map(read).join(\"\\n\");if(!/exp\\.host|push\\.apple\\.com/.test(lib))fail(\"lib has no native push transport (Expo or APNs) beside web push\");if(!/resolveSendGate/.test(lib))fail(\"the push transports do not share the send gate and preferences\");if(!/nativePush/.test(read(\"app/api/status/route.ts\")))fail(\"/api/status does not say whether native push can send\");if(!v1().some((f)=>/push/.test(f)))fail(\"no /api/v1 endpoint registers a device token\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-06: push_devices (migration 20270346001500, own-row read and delete, service-role writes) holds native tokens; POST/DELETE /api/v1/push/devices register and revoke for the verified caller; sendPushToProfile runs the one send gate then both transports, web push and the Expo transport in lib/push-native.ts (prunes DeviceNotRegistered, inert without EXPO_ACCESS_TOKEN); /api/status reports monitoring.nativePush. Direct APNs is the documented alternative in docs/APP-CONTRACT.md. Tested in lib/push-native.test.ts and app/api/v1/push/devices/route.test.ts."
+  }
+}

@@ -171,6 +171,7 @@ under the same RLS. On the cookie path it is a plain call. View-as never applies
 | `POST /api/v1/notifications/read` | bearer or cookie | Mark all read. |
 | `GET` / `PATCH /api/v1/profile` | bearer or cookie | The caller's own `ProfileView`. PATCH `{ displayName?, handle?, bio?, website?, city? }` edits through the web's `updateProfile`; a field left out keeps its value. A taken handle is `conflict`. |
 | `GET /api/v1/profile/{handle}` | bearer or cookie | A member's public profile (public fields only) with `blockedByMe`. |
+| `POST` / `DELETE /api/v1/push/devices` | bearer or cookie | Register `{ platform, provider, token, appVersion? }` or revoke `{ token }` the caller's device. Sends run after the same send gate as web push (`lib/push.ts`), so the member's notification settings apply. |
 
 Still filed as their own rows: push devices (`LIVE-720`) and in-app purchase.
 
@@ -184,6 +185,21 @@ Still filed as their own rows: push devices (`LIVE-720`) and in-app purchase.
 |---|---|---|
 | `APPLE_TEAM_ID` | `LIVE-714` | The Apple team id in `/.well-known/apple-app-site-association` (app/.well-known/). Unset, the file claims no app. |
 | `ANDROID_SHA256_FINGERPRINTS` | `LIVE-714` | Comma-separated signing-cert fingerprints for `/.well-known/assetlinks.json`. Unset, an empty list. |
+| `EXPO_ACCESS_TOKEN` | `LIVE-720` | Arms the Expo push transport (`lib/push-native.ts`). Unset, native push is a no-op and `/api/status` reports `monitoring.nativePush: false`. |
+
+## 10. Native push
+
+The app registers its Expo push token with `POST /api/v1/push/devices` after the OS grants
+permission, and on each cold start (it refreshes `last_seen_at`). `DELETE` revokes it on sign-out.
+A token is unique: a phone that signs in as someone else moves its row to the new member.
+
+Sends go through `sendPushToProfile` in `lib/push.ts`: one send gate (preferences, consent,
+suppression, mutes), then each transport. Expo tickets that answer `DeviceNotRegistered` prune the
+row, as a `404`/`410` prunes a web subscription.
+
+**Direct APNs is the documented alternative.** If the app build skips Expo's push service, it
+registers `provider: "apns"` with the raw device token; those rows are stored but not yet sent to.
+The APNs transport (token auth against `api.push.apple.com`) lands with that build.
 
 ## 11. Native sign-in
 

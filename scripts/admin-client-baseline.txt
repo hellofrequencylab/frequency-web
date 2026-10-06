@@ -955,6 +955,8 @@ lib/profile/awards.ts
 lib/profile/profile-theme-actions.ts
 lib/profiles/account-email.ts
 lib/profiles/public-profile.ts
+lib/push-devices.ts
+lib/push-native.ts
 lib/push.ts
 lib/qr/marketing.ts
 lib/qr/referral.ts

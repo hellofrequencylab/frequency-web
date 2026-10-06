@@ -23,7 +23,7 @@
 # `public` table with an anon-readable stripe_customer_id column). `internal` is the load-bearing
 # one, and it is the only verdict that fails closed. If you are unsure, write `internal`.
 #
-# 40 public · 171 authenticated · 81 internal · 292 total (library_downloads 2026-09-29, LIVE-578: the Loom download record, append only, service-role insert and staff read; circle_channels 2026-09-30, LIVE-666 ADR-1679: the one to three Channels a Circle carries, read by the signed-out Circles index on the session client, written only by the service role; commerce_order_transfers 2026-09-29, LIVE-622 ADR-1614: the split-order transfer ledger, service role only like financial_transactions; library_assets + library_collections + library_collection_items + library_versions moved internal to authenticated 2026-09-29, LIVE-570 ADR-1594: the Loom read by its own Space team on the caller session, library_styles stays internal; space_plan_activity 2026-09-28, LIVE-543: the Plan own record, append only, both sides on the caller session; space_plan_comments 2026-09-28, LIVE-542: the thread under a shared Plan, read and written by both sides on the caller session; space_vera_changes 2026-09-23, PROG-CAL11 slice 3: the Vera change log, read and written by the team on the caller session; space_plans + shares + playbooks + private feeds 2026-09-19, ADR-1468; space_calendar_day_notes moved public to authenticated 2026-09-16, ADR-1387; space_calendar_entries + space_calendar_day_notes added 2026-09-16, ADR-1385/1386; recounted 2026-09-15 with the
+# 40 public · 172 authenticated · 81 internal · 293 total (push_devices 2026-10-06, LIVE-720: native app push tokens, own-row read and delete, service-role writes; library_downloads 2026-09-29, LIVE-578: the Loom download record, append only, service-role insert and staff read; circle_channels 2026-09-30, LIVE-666 ADR-1679: the one to three Channels a Circle carries, read by the signed-out Circles index on the session client, written only by the service role; commerce_order_transfers 2026-09-29, LIVE-622 ADR-1614: the split-order transfer ledger, service role only like financial_transactions; library_assets + library_collections + library_collection_items + library_versions moved internal to authenticated 2026-09-29, LIVE-570 ADR-1594: the Loom read by its own Space team on the caller session, library_styles stays internal; space_plan_activity 2026-09-28, LIVE-543: the Plan own record, append only, both sides on the caller session; space_plan_comments 2026-09-28, LIVE-542: the thread under a shared Plan, read and written by both sides on the caller session; space_vera_changes 2026-09-23, PROG-CAL11 slice 3: the Vera change log, read and written by the team on the caller session; space_plans + shares + playbooks + private feeds 2026-09-19, ADR-1468; space_calendar_day_notes moved public to authenticated 2026-09-16, ADR-1387; space_calendar_entries + space_calendar_day_notes added 2026-09-16, ADR-1385/1386; recounted 2026-09-15 with the
 # space_member_benefits recovery, which added three service-role-only tables; before it the line
 # read 81 internal / 276 total, itself recounted 2026-09-15 with LIVE-334,
 # which dropped the retired `channels` + `channel_memberships` rows; the line read 272 and had been
@@ -202,7 +202,10 @@ platform_settings                    internal
 playbook_runs                        internal
 playbooks                            internal
 podcast_shows                        internal
+post_embeddings                      internal
 post_mentions                        public
+post_poll_options                    public
+post_poll_votes                      authenticated
 post_reactions                       authenticated
 posts                                authenticated
 practice_logs                        authenticated
@@ -218,6 +221,7 @@ pricing_settings                     internal
 pricing_stripe_prices                internal
 profile_personas                     authenticated
 profiles                             authenticated
+push_devices                         authenticated
 push_subscriptions                   authenticated
 qr_codes                             authenticated
 qr_scans                             internal
