@@ -51,7 +51,8 @@ export const ERROR_STATUS = {
   conflict: 409,
   /** Too many requests from this caller or address. Retry after the `Retry-After` seconds. */
   rate_limited: 429,
-  /** This app build is older than the server supports (LIVE-722 sends it). Show an update prompt. */
+  /** This app build is older than the server supports. Reserved: today GET /api/v1/app-config
+   *  answers `updateRequired: true` for such a build (LIVE-722). Show an update prompt. */
   update_required: 426,
   /** The server failed. Safe to retry a read; a write should be retried only if idempotent. */
   internal: 500,
@@ -115,3 +116,71 @@ export const meView = z.object({
 export type MeView = z.infer<typeof meView>
 
 export const meResponse = envelope(meView)
+
+// ── GET /api/v1/capabilities: what may the caller do here? (LIVE-717) ─────────────────────────
+
+/** The scopes the capability projection answers for. */
+export const capabilityScopeKind = z.enum(['global', 'circle', 'hub', 'nexus', 'event', 'practice', 'journey', 'profile', 'space'])
+export type CapabilityScopeKind = z.infer<typeof capabilityScopeKind>
+
+/**
+ * The caller's capabilities on one scope, the SAME set the web resolves to render its affordances
+ * (lib/core/load-capabilities.ts, and lib/spaces/entitlements.ts for a Space). It tells an app
+ * which actions to SHOW. It is never permission: every write re-checks on the server.
+ *
+ * `capabilities` are the resolver's dotted names (`circle.editSettings`, `event.create`, ...). A
+ * client ignores a name it does not know; new names are additive. For a Space they are the
+ * `space.*` projection of the Space role: `space.owner`, `space.admin`, `space.editProfile`,
+ * `space.manageMembers`, `space.invite`, and `spaceRole` carries the role itself.
+ */
+export const capabilitiesView = z.object({
+  kind: capabilityScopeKind,
+  id: z.string().nullable(),
+  capabilities: z.array(z.string()),
+  spaceRole: z.string().nullable(),
+})
+export type CapabilitiesView = z.infer<typeof capabilitiesView>
+
+export const capabilitiesResponse = envelope(capabilitiesView)
+
+// ── /api/v1/account: deletion and the data export (LIVE-719) ───────────────────────────────────
+
+/** GET /api/v1/account: what the app shows before it offers deletion. */
+export const accountView = z.object({
+  /** Spaces whose paid plan ends when this account is deleted; null when it could not be read
+   *  (say it in general terms then, never "nothing"). */
+  paidSpacesEndedByDelete: z.array(z.object({ name: z.string(), plan: z.string() })).nullable(),
+})
+export type AccountView = z.infer<typeof accountView>
+export const accountResponse = envelope(accountView)
+
+/** DELETE /api/v1/account takes this body, so a stray DELETE cannot erase an account. */
+export const accountDeleteInput = z.object({ confirm: z.literal('DELETE') })
+export const accountDeleteResponse = envelope(z.object({ deleted: z.literal(true) }))
+
+/** GET /api/v1/account/export: the member data export, the same object the web downloads. Its
+ *  sections are documented in lib/privacy/export.ts (`meta.format` names the shape and version). */
+export const accountExportResponse = envelope(
+  z.object({ filename: z.string(), export: z.object({ meta: z.looseObject({ format: z.string(), version: z.number() }), data: z.record(z.string(), z.unknown()) }) }),
+)
+
+// ── GET /api/v1/app-config: update prompt and client flags (LIVE-722) ───────────────────────────
+
+export const appPlatform = z.enum(['ios', 'android'])
+export type AppPlatform = z.infer<typeof appPlatform>
+
+/**
+ * What an app build reads at launch, before sign-in. `updateRequired` is true when the build's
+ * reported version is below `minSupportedVersion`: show the blocking update prompt. `flags` are the
+ * operator switches a client may read (new keys are additive; a client treats a missing key as
+ * false).
+ */
+export const appConfigView = z.object({
+  platform: appPlatform,
+  minSupportedVersion: z.string(),
+  latestVersion: z.string().nullable(),
+  updateRequired: z.boolean(),
+  flags: z.record(z.string(), z.boolean()),
+})
+export type AppConfigView = z.infer<typeof appConfigView>
+export const appConfigResponse = envelope(appConfigView)

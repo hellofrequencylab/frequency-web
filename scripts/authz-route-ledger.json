@@ -189,6 +189,24 @@
       "reason": "Public per-Space ICS feed (EC1, ADR-800). The handler refuses a private or suspended space BEFORE reading events, then hands the space_id to space_public_calendar_feed, which returns only published, public/unlisted, non-cancelled events. \ud83d\udd01 RE-READ 2026-09-10 (ADR-1299, the repeat rule): the row type gained recurrence_rule, which the feed RPC now projects and planCalendarFeed builds the VEVENT's RRULE from. No gate moved \u2014 the private/suspended refusal still runs BEFORE any event read, and the RPC's own WHERE clauses are unchanged (the migration that added the column recreates both feed functions with their bodies verbatim and re-applies the service-role-only revoke, which a drop/create resets). A cadence is the same class of shape metadata as the recurrence_type beside it, and the public event page prints it in words. Verdict holds.",
       "checked": "2026-09-10",
       "digest": "d1150c10ae04fa75"
+    },
+    "app/.well-known/apple-app-site-association/route.ts": {
+      "verdict": "public",
+      "reason": "The iOS app association file (LIVE-714). Apple's CDN fetches it with no credential; the body is built from APPLE_TEAM_ID and a fixed path list, identical for every caller, and reads no data.",
+      "checked": "2026-10-06",
+      "digest": "3efd98b440ddef56"
+    },
+    "app/.well-known/assetlinks.json/route.ts": {
+      "verdict": "public",
+      "reason": "The Android App Links statement list (LIVE-714). Fetched by Google with no credential; built from ANDROID_SHA256_FINGERPRINTS, identical for every caller, reads no data.",
+      "checked": "2026-10-06",
+      "digest": "8f8dd5792f8c5860"
+    },
+    "app/api/v1/app-config/route.ts": {
+      "verdict": "public",
+      "reason": "The app launch config (LIVE-722). A build must learn it is too old before sign-in, so there is no caller: the answer is the minimum and latest version (platform_settings) and five client-safe platform flags, the same for every caller of a platform and version.",
+      "checked": "2026-10-06",
+      "digest": "bd64c8166a7f9f01"
     }
   }
 }

@@ -87,7 +87,7 @@ status. A client treats an unknown code as `internal`.
 | `invalid_input` | 400 | The body or query failed its schema. The message names the first bad field. |
 | `conflict` | 409 | The write collides with the current state. |
 | `rate_limited` | 429 | Too many requests. Wait for `Retry-After` seconds. |
-| `update_required` | 426 | This app build is below the minimum supported version (sent once `LIVE-722` ships). |
+| `update_required` | 426 | Reserved. Today `GET /api/v1/app-config` answers `updateRequired: true` for a build below the minimum. |
 | `internal` | 500 | The server failed. Retry a read; retry a write only if it is idempotent. |
 
 ## 5. Rate limits
@@ -118,6 +118,14 @@ write that needs a tighter per-person budget adds its own call after `authorizeC
 Lists page with a cursor: `?cursor=<opaque>&limit=<n>` in, `{ items, nextCursor }` out, where
 `nextCursor` is `null` on the last page. The cursor is opaque to the client.
 
+### Reusing lib code as the caller
+
+A route that calls an existing lib function wraps it in `asCaller(auth, fn)` (`lib/contract/caller.ts`).
+On the bearer path it binds the verified token for that call tree (`lib/supabase/request-identity.ts`),
+so `createClient()` returns the bearer client and `getCachedUser()` returns the verified user: every
+reader, gate and capability loader built on them sees the app's caller as the web sees the cookie's,
+under the same RLS. On the cookie path it is a plain call. View-as never applies inside it.
+
 ## 7. Versioning and deprecation
 
 - **Additive only within v1.** A new endpoint, a new optional field, a new error code. A client
@@ -133,6 +141,11 @@ Lists page with a cursor: `?cursor=<opaque>&limit=<n>` in, `{ items, nextCursor 
 | Method and path | Auth | Returns |
 |---|---|---|
 | `GET /api/v1/me` | bearer or cookie | `MeView`: the caller's id, handle, display name, avatar, community role and level, staff role, tier, and which credential was used. |
+| `GET /api/v1/capabilities?kind=&id=` | bearer or cookie | `CapabilitiesView`: the caller's capability names on one scope (global, Circle, Hub, Nexus, event, practice, Journey, profile, Space). Display only; every write re-checks. |
+| `GET /api/v1/account` | bearer or cookie | `AccountView`: the paid Spaces deleting the account would end, so the app warns first. |
+| `DELETE /api/v1/account` | bearer or cookie | Body `{ "confirm": "DELETE" }`. Erases the caller's own account (App Store 5.1.1(v)) through the web's `deleteMyAccount`. Refused inside a staff act-as. |
+| `GET /api/v1/account/export` | bearer or cookie | The member data export, the same object the web's "Download my data" builds. 5 per 10 minutes. |
+| `GET /api/v1/app-config?platform=&version=` | public | `AppConfigView`: the minimum supported and latest version for the platform (`platform_settings` rows `app_min_supported_version_<platform>` and `app_latest_version_<platform>`), `updateRequired` for the reporting build, and the client-safe flags. Cached 5 minutes. |
 
 The rest of the app's surface (feed, Circles, events, practices, messages, notifications, the
 capability projection, native sign-in, account deletion and export, push devices, capture and
@@ -144,3 +157,8 @@ backlog.
 `/api/v1` needs nothing new. It reads `NEXT_PUBLIC_SUPABASE_URL` and
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` (the bearer client) and the limiter's `KV_REST_API_URL` /
 `KV_REST_API_TOKEN`. The app readiness rows add their own names here when they ship.
+
+| Name | Row | What it does |
+|---|---|---|
+| `APPLE_TEAM_ID` | `LIVE-714` | The Apple team id in `/.well-known/apple-app-site-association` (app/.well-known/). Unset, the file claims no app. |
+| `ANDROID_SHA256_FINGERPRINTS` | `LIVE-714` | Comma-separated signing-cert fingerprints for `/.well-known/assetlinks.json`. Unset, an empty list. |

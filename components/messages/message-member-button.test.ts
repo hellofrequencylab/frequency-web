@@ -84,7 +84,7 @@ const REDIRECTORS: Array<[string, string]> = [
 describe('the DM route retires behind a flag, not a deletion', () => {
   it('the route file still exists and still answers', () => {
     // /messages/* is a registered iOS universal-link path
-    // (public/.well-known/apple-app-site-association), so deleting the file breaks links
+    // (app/.well-known/apple-app-site-association), so deleting the file breaks links
     // already in the wild. The gate must be a render-time redirect.
     expect(dmPage.length).toBeGreaterThan(1000)
     expect(dmPage).toContain('export default async function ConversationPage')

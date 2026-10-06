@@ -12,6 +12,7 @@ import {
   type ViewerProfileRow,
 } from '@/lib/auth'
 import { createBearerClient } from '@/lib/supabase/bearer'
+import { runAsBearer, type BearerIdentity } from '@/lib/supabase/request-identity'
 import type { ContractErrorCode, MeView } from '@/lib/contract'
 
 // WHO IS CALLING /api/v1 (LIVE-715, ADR-1643). Two ways in, one caller out.
@@ -47,6 +48,8 @@ export interface ApiCaller {
   caller: CallerProfile
   /** The caller's own profile row (the shared viewer columns), read under RLS. */
   profile: ViewerProfileRow
+  /** The verified token and user, on the bearer path only. `asCaller` binds it for lib code. */
+  identity?: BearerIdentity
 }
 
 export interface ApiAuthFailure {
@@ -116,7 +119,13 @@ async function bearerCaller(token: string): Promise<ApiCaller | ApiAuthFailure> 
   const profile = row as ViewerProfileRow
   // Rule 4: the real role. callerFromViewerRow is the web's mapping, unchanged.
   const realRole = (profile.community_role ?? 'member') as CommunityRole
-  return { ok: true, via: 'bearer', caller: toCallerProfile(callerFromViewerRow(profile, realRole)), profile }
+  return {
+    ok: true,
+    via: 'bearer',
+    caller: toCallerProfile(callerFromViewerRow(profile, realRole)),
+    profile,
+    identity: { token, user: data.user },
+  }
 }
 
 async function cookieCaller(request: Request): Promise<ApiCaller | ApiAuthFailure> {
@@ -147,6 +156,17 @@ export async function authorizeCaller(request: Request): Promise<ApiCaller | Api
   } catch {
     return failure('internal', 'Could not verify the session right now. Try again.')
   }
+}
+
+/**
+ * Run lib code as this caller (LIVE-717). On the bearer path it binds the verified identity
+ * (lib/supabase/request-identity.ts), so `createClient()`, `getCachedUser()` and everything built on
+ * them (getCallerProfile, the capability loaders, the readers and actions a route reuses) see the
+ * app's caller exactly as the web sees the cookie's. On the cookie path it is a plain call: the
+ * cookie already is the identity. Every route that reuses a lib function wraps it in this.
+ */
+export function asCaller<T>(auth: ApiCaller, fn: () => Promise<T>): Promise<T> {
+  return auth.identity ? runAsBearer(auth.identity, fn) : fn()
 }
 
 /** GET /api/v1/me: the caller's own profile summary. */

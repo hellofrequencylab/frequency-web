@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-714",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.readFileSync(f,\"utf8\");const walk=(d)=>{if(!fs.existsSync(d))return[];return fs.readdirSync(d,{withFileTypes:true}).flatMap((x)=>{const p=path.join(d,x.name);return x.isDirectory()?(x.name===\"node_modules\"?[]:walk(p)):[p]})};const v1=()=>walk(\"app/api/v1\").filter((f)=>/route\\.ts$/.test(f));const v1src=()=>v1().map(read).join(\"\\n\");const P=read(\"proxy.ts\");const m=P.match(/matcher:\\s*\\[([\\s\\S]*?)\\]\\s*,?\\s*\\}/);if(!m)process.exit(79);if(!/well-known/.test(m[1]))fail(\"proxy.ts runs on /.well-known/*, so the association files get a session refresh and a first-touch cookie\");const c=walk(\"app\").filter((f)=>/[\\\\/]\\.well-known[\\\\/]/.test(f)).concat(walk(\"public/.well-known\"));const a=c.filter((f)=>/apple-app-site-association/.test(f));if(!a.length)fail(\"no apple-app-site-association is served\");const src=a.map(read).join(\"\\n\");if(/TEAM_ID\\./.test(src))fail(\"the association file hardcodes the TEAM_ID placeholder instead of reading the team id from the environment\");if(!/APPLE_TEAM_ID/.test(src))fail(\"the association file does not read APPLE_TEAM_ID\");if(/\\/broadcast/.test(src))fail(\"the association file still claims /broadcast/*, a route that does not exist\");for(const p of [\"/n/\",\"/q/\",\"/spaces/\",\"/practices/\"])if(!src.includes(p))fail(\"the association file does not claim \"+p+\"*\");if(!/application\\/json/.test(src))fail(\"the association file is not served as application/json\");if(!c.some((f)=>/assetlinks/.test(f)))fail(\"no assetlinks.json for the later Android app\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-06: the association files are route handlers under app/.well-known/ reading APPLE_TEAM_ID and ANDROID_SHA256_FINGERPRINTS (empty claim when unset, never a placeholder), served as application/json; the paths drop the dead broadcast route and add /n, /q, /spaces and /practices; proxy.ts no longer runs on /.well-known. Tested in app/.well-known/well-known.test.ts."
+  }
+}

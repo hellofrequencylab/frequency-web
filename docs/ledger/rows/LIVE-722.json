@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-722",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.readFileSync(f,\"utf8\");const walk=(d)=>{if(!fs.existsSync(d))return[];return fs.readdirSync(d,{withFileTypes:true}).flatMap((x)=>{const p=path.join(d,x.name);return x.isDirectory()?(x.name===\"node_modules\"?[]:walk(p)):[p]})};const v1=()=>walk(\"app/api/v1\").filter((f)=>/route\\.ts$/.test(f));const v1src=()=>v1().map(read).join(\"\\n\");const r=v1().filter((f)=>/min.?supported/i.test(read(f)));if(!r.length)fail(\"no endpoint tells an app build its minimum supported version, so a broken build cannot be told to update\");if(!/platform_flags|[Ff]lag/.test(r.map(read).join(\"\\n\")))fail(\"the app config endpoint exposes no feature flags\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-06: GET /api/v1/app-config?platform=&version= (public, cached 5 minutes) returns the minimum supported and latest version from platform_settings (app_min_supported_version_<platform>, app_latest_version_<platform>; no row means every build is supported), updateRequired for the reporting build, and five client-safe platform flags. Tested in app/api/v1/app-config/route.test.ts."
+  }
+}

@@ -40,6 +40,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/database.types'
 import { applyViewAs } from '@/lib/view-as'
 import { isAnonymousRender } from '@/lib/core/anonymous-render'
+import { bearerIdentity } from '@/lib/supabase/request-identity'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { BETA_OPEN_ACCESS, BETA_GRANTED_TIER } from '@/lib/core/beta'
 import { asWebRole, isStaff, type WebRole } from '@/lib/core/roles'
@@ -64,6 +65,10 @@ export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'a
  *  every block, reader and module added later that nobody thought to audit. See
  *  lib/core/anonymous-render.ts for why the per-call-site alternative does not survive contact. */
 export const getCachedUser = cache(actionScoped(async (): Promise<User | null> => {
+  // A verified /api/v1 bearer caller (LIVE-717): Supabase Auth already accepted the token in
+  // lib/contract/caller.ts, so the user is known and no second round trip is made.
+  const bearer = bearerIdentity()
+  if (bearer) return bearer.user
   if (isAnonymousRender()) return null
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
