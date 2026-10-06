@@ -24,7 +24,7 @@ import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { CookieBanner } from "@/components/consent/cookie-banner";
 import { WebVitals } from "@/components/analytics/web-vitals";
-import { Analytics } from "@vercel/analytics/next";
+import { VercelAnalytics } from "@/components/analytics/vercel-analytics";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
@@ -221,7 +221,7 @@ export default function RootLayout({
             nav.page_view events cover members well and see nothing of the ~20 public marketing
             surfaces or the /for/* operator doors, which is where every acquisition decision is
             made. Cookie-free and ~1KB, so it costs the shell budget nothing meaningful. */}
-        <Analytics />
+        <VercelAnalytics />
         {/* The cookie consent banner (OWN-061). It mounts here, in the ROOT layout, because the gap
             it closes is exactly the one the (main) layout cannot see: an anonymous visitor on a
             marketing, discover or help page, who never reaches the authenticated shell. It renders

@@ -32,7 +32,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 // sanitizeProps lives in ./sanitize (dependency-free) rather than here, so client code
 // can reach it without dragging THIS module's database imports into the browser bundle.
 // Imported for local use and re-exported, because callers already import it from track.
-import { sanitizeProps } from './sanitize'
+import { pixelSafeProps, sanitizeProps } from './sanitize'
 export { sanitizeProps } from './sanitize'
 import { isTrackedEvent } from './events'
 import { gaServerEnabled, sendGa4Event } from './ga-server'
@@ -96,5 +96,8 @@ async function mirrorToGa(
 ): Promise<void> {
   if (!gaServerEnabled()) return
   if (actorProfileId && !(await hasConsent(actorProfileId, 'analytics'))) return
-  await sendGa4Event(event, props, actorProfileId, { clientId })
+  // LIVE-810: the ledger keeps the full bag; Google gets the pixel-safe one (no persona,
+  // archetype, topic or Journey/Circle slug). Anonymous events skip the consent read above,
+  // which is exactly why the strip happens here for every caller rather than per call site.
+  await sendGa4Event(event, pixelSafeProps(props), actorProfileId, { clientId })
 }

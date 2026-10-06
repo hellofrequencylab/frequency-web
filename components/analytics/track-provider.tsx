@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
+import { pixelSafePath, pixelSafeProps } from '@/lib/analytics/sanitize'
 
 // Client-side tracking (ADR-070, ANALYTICS.md). Dual-emit: mirror to GA4 (if the tag
 // is live) AND record first-party via /api/track. PageViewTracker auto-captures
@@ -18,8 +19,9 @@ declare global {
  *  taxonomy events are accepted server-side; unknown ones are dropped there. */
 export function trackClient(event: string, props: Record<string, unknown> = {}): void {
   if (typeof window === 'undefined') return
-  // GA4 mirror (dots → underscores for GA's event-name rules)
-  window.gtag?.('event', event.replace(/\./g, '_'), props)
+  // GA4 mirror (dots → underscores for GA's event-name rules). Pixel-safe props only
+  // (LIVE-810): first-party keeps the full bag, Google never sees persona, topics or slugs.
+  window.gtag?.('event', event.replace(/\./g, '_'), pixelSafeProps(props))
   // First-party — sendBeacon survives navigation; fall back to keepalive fetch.
   try {
     const payload = JSON.stringify({ event, props })
@@ -52,8 +54,16 @@ export function PageViewTracker() {
 
   useEffect(() => {
     if (last.current === pathname) return
+    const first = last.current === null
     last.current = pathname
     trackClient('nav.page_view', { path: pathname })
+    // LIVE-810: GA's own page_view for in-app navigation, with the Journey/Circle/topic slug
+    // redacted. The bootstrap config already sent (and redacted) the first page view.
+    if (!first && typeof window !== 'undefined') {
+      window.gtag?.('event', 'page_view', {
+        page_location: window.location.origin + pixelSafePath(pathname),
+      })
+    }
   }, [pathname])
 
   return null

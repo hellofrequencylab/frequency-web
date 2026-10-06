@@ -81,3 +81,106 @@ export function sanitizeProps(
   }
   return out
 }
+
+// ── Pixel safety (LIVE-810, ADR-1720) ────────────────────────────────────────────────────────
+//
+// The first-party ledger may keep what a member told us; a third-party pixel may not. The
+// launch brief's rule: "Wellness data never reaches ad or analytics pixels. That includes
+// persona, archetype, Journey topics and Circle topics." Washington's My Health My Data Act and
+// the FTC Health Breach Notification Rule treat these signals as sensitive.
+//
+// So every mirror to Google Analytics (the server Measurement Protocol in ./track.ts, the
+// browser gtag in components/analytics/track-provider.tsx) and Vercel Analytics passes its props
+// and paths through the two helpers below. They sit here, beside sanitizeProps, because both
+// halves need them and this file is dependency-free.
+
+/**
+ * Prop keys that never leave for a pixel, compared case-insensitively. Persona and archetype
+ * (who someone said they are), the arrival answer, mood, and any topic, interest, Journey or
+ * Circle label (what they came for). Ids stay: an opaque uuid says nothing about a person.
+ */
+export const PIXEL_SENSITIVE_KEYS: ReadonlySet<string> = new Set([
+  'persona',
+  'personas',
+  'archetype',
+  'archetypes',
+  'arrival',
+  'arrivalanswer',
+  'arrival_answer',
+  'mood',
+  'feeling',
+  'topic',
+  'topics',
+  'interest',
+  'interests',
+  'journey',
+  'journeyslug',
+  'journeytitle',
+  'circle',
+  'circleslug',
+  'circlename',
+  'circletopic',
+  'agerange',
+  'age_band',
+  'ageband',
+  'gender',
+])
+
+/**
+ * Route prefixes whose next segment names a Journey, Circle, topic, Practice or Channel. A page
+ * view on `/journeys/grief-walks` would tell the pixel what someone is working through, so the
+ * slug is replaced with `[slug]` before any path reaches one.
+ */
+export const PIXEL_PATH_PREFIXES: readonly string[] = [
+  '/journeys',
+  '/circles',
+  '/discover/topics',
+  '/discover/journeys',
+  '/discover/circles',
+  '/discover/practices',
+  '/practices',
+  '/channels',
+  '/groups',
+  '/topics',
+]
+
+/** The slug after any sensitive prefix becomes `[slug]`; every other path passes unchanged. */
+export function pixelSafePath(path: string): string {
+  if (typeof path !== 'string') return ''
+  const q = path.search(/[?#]/)
+  const pathname = q === -1 ? path : path.slice(0, q)
+  for (const prefix of PIXEL_PATH_PREFIXES) {
+    if (pathname.startsWith(prefix + '/')) {
+      const rest = pathname.slice(prefix.length + 1)
+      const slash = rest.indexOf('/')
+      const tail = slash === -1 ? '' : rest.slice(slash)
+      if (!rest || rest.startsWith('[')) return pathname
+      return `${prefix}/[slug]${tail}`
+    }
+  }
+  return pathname
+}
+
+/** Path-shaped prop keys whose VALUE is rewritten through pixelSafePath. */
+const PATH_KEYS = new Set(['path', 'page', 'page_path', 'pagepath', 'page_location', 'url', 'href', 'from', 'to'])
+
+/**
+ * A prop bag fit for a pixel: sensitive keys dropped, path-shaped values redacted. Full URLs keep
+ * their origin. Input is assumed already sanitised (primitives only).
+ */
+export function pixelSafeProps(
+  props: Record<string, unknown>,
+): Record<string, string | number | boolean> {
+  const out: Record<string, string | number | boolean> = {}
+  for (const [k, v] of Object.entries(sanitizeProps(props, 40, 500))) {
+    const key = k.toLowerCase()
+    if (PIXEL_SENSITIVE_KEYS.has(key)) continue
+    if (typeof v === 'string' && PATH_KEYS.has(key)) {
+      const m = /^(https?:\/\/[^/]+)(\/.*)?$/.exec(v)
+      out[k] = m ? m[1] + pixelSafePath(m[2] ?? '/') : pixelSafePath(v)
+      continue
+    }
+    out[k] = v
+  }
+  return out
+}
