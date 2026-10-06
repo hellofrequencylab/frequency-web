@@ -75,6 +75,8 @@ export async function proxy(request: NextRequest) {
   // Frequency. A few string compares, no database call (lib/sites/host.ts).
   const site = routeSiteHost(request.headers.get('host'), pathname, request.nextUrl.search, APP_HOSTS)
   if (site.kind === 'redirect') return NextResponse.redirect(site.location, site.permanent ? 308 : 307)
+  // The internal site route asked for directly on Frequency's host: never a second copy of a site.
+  if (site.kind === 'not-found') return new NextResponse('Not found', { status: 404 })
   if (site.kind === 'rewrite') {
     const url = request.nextUrl.clone()
     url.pathname = site.pathname

@@ -11,7 +11,8 @@
 // On a site host:
 //   • `www.<apex>` redirects to the apex, so one origin carries the site.
 //   • `/` and `/<page>` rewrite to /hosted/<host>[/<page>], the site route, which re-resolves the Space
-//     by domain (getSpaceByDomain, behind the custom_domain gate) and checks the request host.
+//     by domain (getSpaceByDomain, behind the custom_domain gate). /hosted asked for directly on
+//     Frequency's own host is a 404 here, so a site is never served twice (LIVE-784).
 //   • `/robots.txt` and `/sitemap.xml` rewrite to /hosted/<host>/robots.txt|sitemap.xml, so a site
 //     host describes the SITE to a crawler, not Frequency (PROG-E10 phase 4). proxy.ts's matcher skips
 //     both files on Frequency's own hosts (HYG-048) and lets them through on any other host, using
@@ -80,8 +81,17 @@ export type SiteRoute =
   | { kind: 'none' }
   | { kind: 'redirect'; location: string; permanent: boolean }
   | { kind: 'rewrite'; pathname: string }
+  | { kind: 'not-found' }
 
-/** Decide what a request on `host` for `pathname` does. `none` means it is one of Frequency's own hosts. */
+/** Is `pathname` the internal site route (/hosted or below)? */
+export function isHostedPath(pathname: string): boolean {
+  return pathname === HOSTED_PREFIX || pathname.startsWith(`${HOSTED_PREFIX}/`)
+}
+
+/** Decide what a request on `host` for `pathname` does. `none` means it is one of Frequency's own hosts.
+ *  `not-found` is the internal /hosted route asked for directly on Frequency's own host: it only ever
+ *  answers through this function's own rewrite of a site host, so the cached site pages need no Host
+ *  header check of their own (PROG-E10 phase 5, LIVE-784). */
 export function routeSiteHost(
   host: string | null | undefined,
   pathname: string,
@@ -89,7 +99,7 @@ export function routeSiteHost(
   appHosts: Set<string> = new Set(),
 ): SiteRoute {
   const h = normalizeHost(host)
-  if (isAppHost(h, appHosts)) return { kind: 'none' }
+  if (isAppHost(h, appHosts)) return isHostedPath(pathname) ? { kind: 'not-found' } : { kind: 'none' }
 
   if (h.startsWith('www.')) {
     return { kind: 'redirect', location: `https://${h.slice(4)}${pathname}${search}`, permanent: true }
