@@ -79,10 +79,18 @@ describe('streamConciergeTurn', () => {
   })
 
   it('falls back to the blocking action exactly once when the door will not open', async () => {
-    respond([], { ok: false, status: 429 })
+    respond([], { ok: false, status: 503 })
     const r = await streamConciergeTurn('chat', 'hi', [], { onDelta: () => {} })
     expect(r.message).toBe('whole reply')
     expect(action.calls).toBe(1)
+  })
+
+  it('answers a 429 with the throttled reply and never retries through the action (SCAN-736)', async () => {
+    respond([], { ok: false, status: 429 })
+    const r = await streamConciergeTurn('chat', 'hi', [], { onDelta: () => {} })
+    expect(r.message).toBe('Give me a moment to catch up, then ask again.')
+    expect(r.proposals).toEqual([])
+    expect(action.calls).toBe(0)
   })
 
   it('falls back when fetch itself throws', async () => {

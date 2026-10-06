@@ -93,11 +93,15 @@ export async function stopActingAsMember(): Promise<void> {
   const store = await cookies()
   if (!stash) redirect('/feed')
 
+  // 2026-10-05 (SCAN-746): revoke the borrowed member session on THIS device before restoring the
+  // janitor. Scope is local: the member's own sessions on their own devices are never touched.
+  await supabase.auth.signOut({ scope: 'local' })
   const { error } = await supabase.auth.setSession({ access_token: stash.at, refresh_token: stash.rt })
   store.delete(IMPERSONATION_COOKIE)
   if (error) {
-    // Failsafe: never strand the browser as the member — sign out so they re-auth as themselves.
-    await supabase.auth.signOut()
+    // Failsafe: never strand the browser as the member — sign out this device so they re-auth as
+    // themselves. Local scope (SCAN-746): a global sign-out here would log the member out everywhere.
+    await supabase.auth.signOut({ scope: 'local' })
     redirect('/sign-in')
   }
   await logAdminAction({

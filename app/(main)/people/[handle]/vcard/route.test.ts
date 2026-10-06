@@ -72,13 +72,22 @@ beforeEach(() => {
 })
 
 describe('the projection IS the fence', () => {
-  it('asks profiles for exactly the five public columns, and never for *', async () => {
+  it('asks profiles for exactly the five public columns plus the two gate flags, and never for *', async () => {
     await call()
     expect(db.tables).toEqual(['profiles'])
     expect(db.selects).toHaveLength(1)
     const columns = db.selects[0].split(',').map((c) => c.trim())
-    expect(columns.sort()).toEqual(['avatar_url', 'bio', 'display_name', 'handle', 'vcard'])
+    // SCAN-720: is_active and is_system are read to refuse a deactivated or system profile; the
+    // fence is still the list, and neither flag is ever printed.
+    expect(columns.sort()).toEqual(['avatar_url', 'bio', 'display_name', 'handle', 'is_active', 'is_system', 'vcard'])
     expect(db.selects[0]).not.toContain('*')
+  })
+
+  it('404s a deactivated profile and a system profile, whatever their stored opt-in says (SCAN-720)', async () => {
+    db.row = PROFILE({ is_active: false })
+    expect((await call()).status).toBe(404)
+    db.row = PROFILE({ is_system: true })
+    expect((await call()).status).toBe(404)
   })
 
   it('binds the read to the requested handle and nothing else', async () => {

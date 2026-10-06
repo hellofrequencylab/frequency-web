@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-766",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const path=require(\"path\");const dir=\"supabase/migrations\";if(!fs.existsSync(dir)){console.error(\"SCAN-766: \"+dir+\" missing\");process.exit(79)}const defs=fs.readdirSync(dir).filter(f=>f.endsWith(\".sql\")).sort().filter(f=>/CREATE(?:\\s+OR\\s+REPLACE)?\\s+FUNCTION\\s+(?:public\\.)?search_handles_public\\s*\\(/i.test(fs.readFileSync(path.join(dir,f),\"utf8\")));if(!defs.length){console.error(\"SCAN-766: no migration defines search_handles_public\");process.exit(79)}const last=defs[defs.length-1];const s=fs.readFileSync(path.join(dir,last),\"utf8\");const i=s.search(/CREATE(?:\\s+OR\\s+REPLACE)?\\s+FUNCTION\\s+(?:public\\.)?search_handles_public\\s*\\(/i);const body=s.slice(i,s.indexOf(\"$$;\",i)+3);if(!/ghost_mode/.test(body)||!/directory_visible/.test(body)){console.error(\"SCAN-766: the live search_handles_public (\"+last+\") filters only on is_active, so Ghost-mode and directory-opted-out members are still listed by name in every DM, invite, mention and cohost picker.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: supabase/migrations/20270346001000_search_handles_public_honours_directory_visibility.sql recreates search_handles_public(q) with the same return shape and grants, filters on directory_visible IS NOT FALSE AND ghost_mode IS NOT TRUE (an accepted connection of the caller stays pickable via an EXISTS over friendships against auth.uid()), and escapes LIKE metacharacters in q. Not applied here; the thread owner applies it after merge. The SCAN-546 probe is a done row's probe and was left untouched."
+  }
+}

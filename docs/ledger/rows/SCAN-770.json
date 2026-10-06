@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-770",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"lib/rewards/gifts.ts\";if(!fs.existsSync(p)){console.error(\"SCAN-770: \"+p+\" missing\");process.exit(79)}const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"function giftGems\");if(i<0){console.error(\"SCAN-770: giftGems not found\");process.exit(79)}const body=s.slice(i);if(!/isBlockedBetween|hasBlocked/.test(body)){console.error(\"SCAN-770: giftGems still sends a Gem gift and a notification to a recipient without checking blocks, so a blocked member can keep reaching the person who blocked them.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: giftGems in lib/rewards/gifts.ts calls isBlockedBetween right after the recipient-exists check and returns the same not-found message when either side has blocked the other, so every gift caller inherits the block and the sender cannot tell they were blocked."
+  }
+}

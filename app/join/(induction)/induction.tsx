@@ -83,7 +83,7 @@ type Props = {
   parkedHandle?: string
   /** Set when the visitor scanned a member's QR code (the fq_ref referrer). Shows an
    *  "Invited by {name}" chip atop the flow so the welcome reads personal. */
-  inviter?: { displayName: string; handle: string; avatarUrl: string | null } | null
+  inviter?: { displayName: string; handle: string; avatarUrl: string | null; vcardEnabled?: boolean } | null
   /** NICHE funnel (ADR-funnels): the 4 "what are you into" cards shown on Beat 0 in place of
    *  the persona fork. Absent / empty = keep the persona fork (the General funnel). */
   slide2Features?: FunnelFeature[]
@@ -744,6 +744,16 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
               <span className="text-body-sm text-muted">
                 Invited by <span className="font-semibold text-text">{inviter.displayName}</span>
               </span>
+              {/* SCAN-720: the member turned on a contact card for their code; this is the one
+                  place the person who scanned it can reach it. */}
+              {inviter.vcardEnabled && (
+                <a
+                  href={`/people/${inviter.handle}/vcard`}
+                  className="ml-1 text-body-sm font-semibold text-primary-strong underline-offset-2 hover:underline"
+                >
+                  Save contact
+                </a>
+              )}
             </div>
           )}
         </div>

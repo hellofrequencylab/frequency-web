@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { sendDispatchNotificationEmail } from '@/lib/email'
@@ -14,6 +15,11 @@ import { assertCanBroadcastTo } from '@/lib/messaging/broadcast-scope'
 
 // Role-ladder comparison — single source in lib/core/roles.
 const hasRole = atLeastRole
+
+// SCAN-721: recipients reached at once inside the fan-out. Each one costs an auth read, the send
+// gate, an email enqueue and a push; a dozen in flight keeps a hub-sized audience inside the
+// route's maxDuration without hammering the mail queue.
+const FAN_OUT_CHUNK = 12
 
 async function getCallerProfileId(): Promise<string | null> {
   const p = await getCallerProfile()
@@ -65,8 +71,12 @@ export async function createAndPublishDispatch(fd: FormData) {
   revalidatePath('/nearby')
   revalidatePath('/feed')
 
-  // Fire-and-forget email fan-out
-  ;(async () => {
+  // The email + push fan-out, registered with the platform through after() (SCAN-721). It used to be
+  // a bare floating promise, which a serverless instance can freeze the moment the action returns,
+  // so some members never got the email or push and no recipient rows were logged. after() keeps the
+  // invocation alive past the response; the work runs in bounded chunks and each chunk's ledger rows
+  // are written as they finish, so a run that still hits the route's maxDuration keeps what landed.
+  after(async () => {
     try {
       const { data: authorProfile } = await admin
         .from('profiles')
@@ -102,10 +112,9 @@ export async function createAndPublishDispatch(fd: FormData) {
 
       // Per-recipient ledger (CRM Phase 5): record the send-gate outcome for each channel so the
       // Dispatch appears in the messaging control panel. Writing it is fire-safe (never breaks a send).
-      const recipientRows: DispatchRecipientRow[] = []
-
-      for (const profile of profiles) {
-        if (!profile.auth_user_id) continue
+      const reachOne = async (profile: (typeof profiles)[number]): Promise<DispatchRecipientRow[]> => {
+        const recipientRows: DispatchRecipientRow[] = []
+        if (!profile.auth_user_id) return recipientRows
 
         // EMAIL — route through the unified send-gate (suppression + consent + preference), the one
         // seam every outbound send passes. It replaces the ad-hoc shouldSend check so a suppressed or
@@ -133,13 +142,20 @@ export async function createAndPublishDispatch(fd: FormData) {
           tag:   `dispatch-${dispatch.id}`,
         }, 'dispatches', { subject })
         recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'push', status: pushed > 0 ? 'sent' : 'skipped', reason: pushed > 0 ? null : 'no delivery (gate off or no subscription)', email: null })
+        return recipientRows
       }
 
-      await logDispatchRecipients(recipientRows)
+      for (let i = 0; i < profiles.length; i += FAN_OUT_CHUNK) {
+        const chunk = profiles.slice(i, i + FAN_OUT_CHUNK)
+        const settled = await Promise.allSettled(chunk.map(reachOne))
+        const rows = settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : []))
+        for (const r of settled) if (r.status === 'rejected') console.error('[createAndPublishDispatch] recipient failed:', r.reason)
+        if (rows.length) await logDispatchRecipients(rows)
+      }
     } catch (err) {
       console.error('[createAndPublishDispatch] email fan-out failed:', err)
     }
-  })()
+  })
 }
 
 export async function toggleDispatchLike(dispatchId: string) {

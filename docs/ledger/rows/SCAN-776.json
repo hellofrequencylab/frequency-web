@@ -1,0 +1,15 @@
+{
+  "id": "SCAN-776",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const m=\"lib/page-editor/member-search-action.ts\",c=\"lib/spaces/content-data.ts\";if(!fs.existsSync(m)||!fs.existsSync(c)){console.error(\"SCAN-776: a file the probe must read is missing\");process.exit(79)}const ms=fs.readFileSync(m,\"utf8\"),cd=fs.readFileSync(c,\"utf8\");const pickerLeaks=!/isListableInDirectory/.test(ms);const cards=cd.match(/export async function resolveMemberCards\\([\\s\\S]*?\\n\\}/);const cardLeaks=!cards||!/isListableInDirectory|directory_visible/.test(cards[0]);if(pickerLeaks||cardLeaks){console.error(\"SCAN-776: a member who hid themselves from the directory is still \"+(pickerLeaks?\"findable by name in the Team block picker\":\"\")+(pickerLeaks&&cardLeaks?\" and \":\"\")+(cardLeaks?\"published on public Space Team cards\":\"\")+\", because the directory visibility filter is not applied there.\");process.exit(1)}'",
+      "note": "Fails on main before this change; passes with it."
+    }
+  },
+  "append": {
+    "detail": "\n\nCLOSED 2026-10-05: lib/page-editor/member-search-action.ts (searchNetworkMembers and resolveNetworkMembers) and lib/spaces/content-data.ts resolveMemberCards select DIRECTORY_VISIBILITY_COLUMNS and filter through isListableInDirectory, with the search also filtering directory_visible and ghost_mode in SQL so hidden rows do not use up the limit; both files are pinned in directory-visibility-second-paths.test.ts."
+  }
+}

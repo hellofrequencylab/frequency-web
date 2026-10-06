@@ -19,11 +19,19 @@ import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { proposeCreateFromTool } from './create-entity'
 import { PLATFORM_POSTAL_LINE, postalFooterHtml } from '@/lib/email-studio/postal'
+import { sanitizeProfileFieldValue } from '@/lib/profile-input'
 
-/** Profile fields Vera may set (the member's own, low-risk). Must stay in sync with the
- *  `set_profile_field` tool advertisement in tools.ts (display_name | bio | neighborhood);
- *  `neighborhood` was advertised but not allowed here, so a member confirm hard-failed. */
-const SETTABLE_FIELDS = new Set(['display_name', 'bio', 'neighborhood'])
+/** Profile fields Vera may set (the member's own, low-risk), mapped to the REAL column. Must stay
+ *  in sync with the `set_profile_field` tool advertisement in tools.ts (display_name | bio |
+ *  neighborhood). `neighborhood` has no column of its own: it is the member-editable `home_label`
+ *  the settings form writes (SCAN-740). Writing a column profiles does not have made PostgREST
+ *  refuse the update while the member was told it saved. */
+const FIELD_COLUMN = {
+  display_name: 'display_name',
+  bio: 'bio',
+  neighborhood: 'home_label',
+} as const satisfies Record<string, 'display_name' | 'bio' | 'home_label'>
+const SETTABLE_FIELDS = new Set(Object.keys(FIELD_COLUMN))
 
 function factField(category: unknown): keyof MemberFacts {
   const c = String(category ?? '')
@@ -69,8 +77,17 @@ export async function executeConfirmedTool(
     case 'set_profile_field': {
       const field = String(args.field)
       if (!SETTABLE_FIELDS.has(field)) return { ok: false, error: `"${field}" can't be set here.` }
+      const column = FIELD_COLUMN[field as keyof typeof FIELD_COLUMN]
+      // The settings form's caps and required-name rule apply here too (SCAN-740): a confirmed
+      // empty display_name used to blank the member's name, and a bio had no cap at all.
+      const clean = sanitizeProfileFieldValue(column, args.value)
+      if (!clean.ok) return { ok: false, error: clean.error }
       const db = createAdminClient()
-      await db.from('profiles').update({ [field]: String(args.value) } as Database['public']['Tables']['profiles']['Update']).eq('id', profileId)
+      const { error } = await db
+        .from('profiles')
+        .update({ [column]: clean.value } as Database['public']['Tables']['profiles']['Update'])
+        .eq('id', profileId)
+      if (error) return { ok: false, error: 'That did not save. Try again from Settings.' }
       return { ok: true }
     }
     case 'draft_intro':

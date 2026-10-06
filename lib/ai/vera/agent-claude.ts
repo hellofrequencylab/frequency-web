@@ -26,7 +26,7 @@ import { estimateCostUsd } from '@/lib/ai/budget'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { aiRateLimited } from '@/lib/ai/rate-limit'
 import type { MemberContext } from '@/lib/ai/memory'
-import { VERA_TOOLS, requiresConfirmation, validateToolCall, type VeraToolDef } from './tools'
+import { VERA_TOOLS, MEMBER_CHAT_TOOL_KEYS, requiresConfirmation, validateToolCall, type VeraToolDef } from './tools'
 import { executeReadTool } from './read-tools'
 import { getVeraConfig, type VeraConfig } from './config'
 import { withVoice } from '@/lib/ai/voice'
@@ -248,6 +248,9 @@ export async function runVeraClaudeTurn(input: {
   supportSummary?: string
   /** For the usage ledger (ADR-041/067). */
   profileId?: string | null
+  /** Who the per-actor AI window keys on (SCAN-736): the profile id, or `ip:<ip>` for an
+   *  anonymous caller. Falls back to profileId, and a null actor is never throttled. */
+  actorKey?: string | null
   /** The member's billing tier — feeds the vera_unlimited daily-cap gate (ADR-370). Defaults to free.
    *  INERT while billing is OFF (the gate grants), so this never changes today's behavior. */
   tier?: EntitlementTier | null
@@ -266,7 +269,7 @@ export async function runVeraClaudeTurn(input: {
     // Per-member window (lib/ai/rate-limit.ts, LIVE-195). A live loop is the fastest door in the
     // app to drive; over the window degrades to the deterministic concierge, EXACTLY like the
     // kill-switch and over-budget paths above, so the member always gets an answer.
-    if (await aiRateLimited(FEATURE, input.profileId)) return null
+    if (await aiRateLimited(FEATURE, input.actorKey ?? input.profileId)) return null
 
     // The vera_unlimited gate (ADR-370): a free member over the operator daily cap degrades to the
     // deterministic concierge, EXACTLY like the kill-switch / over-budget path above. INERT while
@@ -275,7 +278,11 @@ export async function runVeraClaudeTurn(input: {
 
     const cfg = await getVeraConfig()
     const system: SystemPrompt = buildVeraSystem(input.memberContext, cfg, input.supportSummary, input.viewer)
-    const tools = toAnthropicTools(VERA_TOOLS)
+    // The MEMBER chat set only (SCAN-738): the operator playbook tools and create_entity are not
+    // confirmable from a member session, so offering them produced proposals the client rendered
+    // as empty Remember cards and the server then refused. Every turn also paid for their schemas.
+    const memberTools = VERA_TOOLS.filter((t) => MEMBER_CHAT_TOOL_KEYS.has(t.key))
+    const tools = toAnthropicTools(memberTools)
     const messages: CompleteMessage[] = [
       ...input.history.map((m) => ({ role: m.role, content: m.text })),
       { role: 'user' as const, content: input.memberText },
@@ -316,7 +323,7 @@ export async function runVeraClaudeTurn(input: {
       onToolCalls: async (toolCalls) => {
         // Capture valid write proposals — never executed here.
         for (const c of toolCalls) {
-          if (requiresConfirmation(c.name) && validateToolCall(c.name, c.input).ok) {
+          if (MEMBER_CHAT_TOOL_KEYS.has(c.name) && requiresConfirmation(c.name) && validateToolCall(c.name, c.input).ok) {
             if (!proposals.some((p) => p.tool === c.name && JSON.stringify(p.args) === JSON.stringify(c.input))) {
               proposals.push({ tool: c.name, args: c.input })
             }
@@ -325,14 +332,18 @@ export async function runVeraClaudeTurn(input: {
 
         // Only continue the loop when there's a read to run; a turn of writes-only
         // stops here (after capturing the proposals), as before.
-        const reads = toolCalls.filter((c) => !requiresConfirmation(c.name) && validateToolCall(c.name, c.input).ok)
+        const reads = toolCalls.filter(
+          (c) => MEMBER_CHAT_TOOL_KEYS.has(c.name) && !requiresConfirmation(c.name) && validateToolCall(c.name, c.input).ok,
+        )
         if (reads.length === 0) return null
 
         const results: Anthropic.ToolResultBlockParam[] = []
         for (const c of toolCalls) {
-          const content = requiresConfirmation(c.name)
-            ? 'Proposed to the member for confirmation.'
-            : await executeReadTool(c.name, c.input)
+          const content = !MEMBER_CHAT_TOOL_KEYS.has(c.name)
+            ? 'That tool is not available in this chat.'
+            : requiresConfirmation(c.name)
+              ? 'Proposed to the member for confirmation.'
+              : await executeReadTool(c.name, c.input)
           results.push({ type: 'tool_result', tool_use_id: c.id, content })
         }
         return results

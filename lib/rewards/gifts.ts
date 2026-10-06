@@ -26,6 +26,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { awardGems } from '@/lib/gems'
 import { getSpendableBalance } from '@/lib/store/balance'
+import { isBlockedBetween } from '@/lib/blocking'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 export interface GiftGemsResult {
@@ -63,6 +64,12 @@ export async function giftGems(
     .eq('id', toProfileId)
     .maybeSingle()
   if (!recipient) return fail('We could not find that member.')
+
+  // 2026-10-05 (SCAN-770): a gift is a contact (it writes a bell notification naming the sender),
+  // so it honours blocks like every other contact-initiating path. Bidirectional, and the same
+  // not-found message as above so the sender cannot tell they were blocked. Here in giftGems, not
+  // the action, so every caller inherits it.
+  if (await isBlockedBetween(fromProfileId, toProfileId)) return fail('We could not find that member.')
 
   // --- spendable balance must cover the gift (fast-fail UX pre-check) -------
   // ONE shared computation (store + gift agree): earned − store spend − gifts already sent.
