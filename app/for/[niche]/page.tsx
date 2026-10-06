@@ -2,14 +2,16 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
-import { catalogItem } from '@/lib/billing/pricing-keys'
+import { loadPricingInput } from '@/lib/pricing/pricing-input'
 import { getFunnelConfig, funnelSlugs } from '@/lib/marketing/funnel-config'
 import { NicheFunnel } from '@/components/marketing/funnel/niche-funnel'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 // THE OPERATOR FUNNEL DOOR (ADR-591). One chrome-free conversion template, one config per niche. STATIC:
-// generated at build from the funnel registry; `dynamicParams=false` so an unknown niche 404s. Reads only
-// the code catalog + the config (no per-request DB), so it stays fully static/ISR.
+// generated at build from the funnel registry; `dynamicParams=false` so an unknown niche 404s. ISR: the
+// config's prices and rates are built from the OPERATOR'S pricing input (loadPricingInput, the same
+// reads /pricing and llms.txt make, once per revalidation), so an /admin/pricing edit moves the doors
+// with the rest of the marketing surfaces (SCAN-793).
 export const revalidate = 3600
 export const dynamicParams = false
 
@@ -19,7 +21,7 @@ export function generateStaticParams(): { niche: string }[] {
 
 export async function generateMetadata({ params }: { params: Promise<{ niche: string }> }): Promise<Metadata> {
   const { niche } = await params
-  const config = getFunnelConfig(niche)
+  const config = getFunnelConfig(niche, await loadPricingInput())
   if (!config) return {}
   const { hero } = config
   // The <title> leads with the niche keyword (the h1 is a benefit line); OG/Twitter keep the fuller
@@ -39,13 +41,15 @@ export async function generateMetadata({ params }: { params: Promise<{ niche: st
 
 export default async function FunnelDoorPage({ params }: { params: Promise<{ niche: string }> }) {
   const { niche } = await params
-  const config = getFunnelConfig(niche)
+  const input = await loadPricingInput()
+  const config = getFunnelConfig(niche, input)
   if (!config) notFound()
 
   const path = `/for/${niche}`
-  // The Offer is the entry price for the niche's plan (the flat Business/Nonprofit founding rate).
+  // The Offer is the entry price for the niche's plan (the flat Business/Nonprofit founding rate), from
+  // the same resolved catalog the copy interpolates.
   const planKey = config.nonprofit ? 'nonprofit_seat' : 'business_base'
-  const priceCents = catalogItem(planKey).month.foundingCents
+  const priceCents = input.catalog[planKey].month.foundingCents
 
   return (
     <>
