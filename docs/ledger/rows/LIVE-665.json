@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-665",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const mig=fs.readdirSync(\"supabase/migrations\").filter((f)=>/\\.sql$/.test(f)).map((f)=>read(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/alter\\s+table\\s+public\\.circles[\\s\\S]{0,120}seeded_from_circle_id\\s+uuid[\\s\\S]{0,80}references\\s+public\\.circles/i.test(mig))fail(\"no Circle records the Circle it was seeded from: there is no lineage column\");const s=read(\"lib/circles/sister.ts\");if(!/export function sisterCircleOffer/.test(s)||!/seeded_from_circle_id:\\s*src\\.id/.test(s))fail(\"nothing seeds a sister Circle with its lineage\");const l=read(\"app/(main)/circles/[slug]/(circle)/layout.tsx\");if(!/sisterCircleOffer\\(/.test(l)||!/<SisterCirclePrompt\\b/.test(l))fail(\"a full or nearly full Circle still offers nobody a sister Circle\");if(!/seedSisterCircleAction/.test(read(\"app/(main)/circles/remix-actions.ts\")))fail(\"there is no one-tap action to start a sister Circle\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\ncircles.seeded_from_circle_id (20270346001800) records lineage. lib/circles/sister.ts: sisterCircleOffer offers the host at nine tenths of the cap and a signed-in non-member when full; seedSisterCircle copies the Circle and its written profile into a private draft the starter hosts. The Circle header shows the prompt under the seat bar; the action re-checks the offer and the create gate, and publishing stays the hosting-allowance check."
+  }
+}
