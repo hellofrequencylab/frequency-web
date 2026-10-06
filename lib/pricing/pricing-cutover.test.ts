@@ -27,6 +27,7 @@ const catalog = catalogConfigByKey(defaultCatalogConfig())
  *  is no longer quoted on a public surface (LIVE-227), so there is no page number to compare. */
 const BASE_ITEM: Record<string, CatalogItemKey> = {
   business: 'business_base',
+  collective: 'collective_base',
   nonprofit: 'nonprofit_seat',
 }
 

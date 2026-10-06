@@ -30,9 +30,15 @@ import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
  *  standalone white-label site it is sold on is not finished, so the tier is sold by hand instead of
  *  advertised. Its catalog item, its Stripe prices, and its entitlement depth are all untouched, so a
  *  hand-sold Space still gets exactly what it pays for. The list was named PAID_SPACE_PLANS until
- *  that ruling, which is a name that invites putting a paid-but-unadvertised plan back on it. */
+ *  that ruling, which is a name that invites putting a paid-but-unadvertised plan back on it.
+ *
+ *  COLLECTIVE IS BACK ON IT (ADR-1709, LIVE-759): the five-tier ladder re-opened it as the rung above
+ *  Business, its checkout is live, and the owner ruled that public pages name it from this row on.
+ *  NON PROFIT COLLECTIVE stays off the list: it is sold, but a reader meets it as a line under Non
+ *  Profit rather than as a column of its own. */
 export const ADVERTISED_SPACE_PLANS: readonly Exclude<SpacePlan, 'free'>[] = [
   'business',
+  'collective',
   'nonprofit',
 ]
 

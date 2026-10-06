@@ -19,7 +19,8 @@ import { planExtras } from '@/lib/pricing/pricing-grid'
 import { PRICING_DEFAULTS } from '@/lib/pricing/defaults'
 import { formatBps } from '@/lib/pricing/display'
 import { formatLoadoutCents } from '@/lib/pricing/loadout'
-import { NETWORK_TAKE_RATE_DEFAULT, catalogItem, networkTakeRateBpsForPlan } from '@/lib/billing/pricing-keys'
+import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/meter-limits'
+import { catalogItem, networkTakeRateBpsForPlan } from '@/lib/billing/pricing-keys'
 
 // Every dollar figure in this template interpolates from the ONE code catalog (priceStrings /
 // pricingCatalog) and the CREW_NOTE labels, so the CMS fallback can never drift from /pricing.
@@ -30,17 +31,14 @@ import { NETWORK_TAKE_RATE_DEFAULT, catalogItem, networkTakeRateBpsForPlan } fro
 // figures. Do not remove a key when editing this template.
 const P = priceStrings()
 
-// 🔴 RATES ARE DERIVED, NEVER TYPED (ADR-914). Every take-rate below reads the same vector the
-// charging path applies (lib/billing/fees.ts), so a rate this template publishes is the rate a seller
-// is actually charged. It used to type them as prose, which is how a CMS document ships a fee ladder
-// the product stopped using: the free-Member rung did not exist here at all, and the free-Space rung
-// was written into one FAQ answer and nowhere else. The member ladder is a fixed pair (ADR-878), so
-// its two rates read the vector by name; the Space rates read off the ladder below, per rung.
-const RATE = {
-  memberFree: formatBps(NETWORK_TAKE_RATE_DEFAULT.memberFree),
-  member: formatBps(NETWORK_TAKE_RATE_DEFAULT.member),
-}
+// 🔴 RATES ARE DERIVED, NEVER TYPED. Every network fee below reads the same vector the charging path
+// applies (lib/billing/fees.ts), and only on a plan that takes payments: selling starts at Business
+// (ADR-1709), so the personal tiers and the free Space quote no rate at all, only tips at 0%.
 const CAT = pricingCatalog()
+
+// 🔴 LIMITS ARE READ, NEVER TYPED. The personal host kit (ADR-1709) comes off the one quantities map.
+const LIMIT = PLACEHOLDER_METER_LIMITS
+const n = (v: number | null | undefined): string => (v == null ? 'unlimited' : String(v))
 
 // 🔴 THE SPACE LADDER IS READ, NEVER LISTED (LIVE-232). Every Space card, every FAQ answer that
 // walks the plans, and the kicker that lists their rates map SPACE_TIERS, the same derived model
@@ -55,6 +53,7 @@ const PAID_SPACE_TIERS = SPACE_TIERS.filter((t) => t.price.month.foundingCents >
 const monthOf = (t: PricingTier) => formatLoadoutCents(t.price.month.foundingCents)
 const yearOf = (t: PricingTier) => formatLoadoutCents(t.price.year.foundingCents)
 const rateOf = (t: PricingTier) => formatBps(networkTakeRateBpsForPlan(t.id))
+const SELLING_TIERS = SPACE_TIERS.filter((t) => t.sells)
 
 /** Join into a plain English list: "a, b, and c". */
 const andList = (items: readonly string[]): string =>
@@ -70,23 +69,33 @@ const SPACE_TIER_COPY: Record<PricingTier['id'], { inherits: boolean; features: 
   free: {
     inherits: false,
     features: [
-      'Your storefront, page, events, posts, and members',
-      'Show up in Discover',
+      'Every business tool, with limits sized for a launch',
+      'Your page, Circles, Events, contacts, email, and bookings',
+      'Tips, with no fee',
       'Be a Collaborator on other Spaces’ events',
     ],
   },
   business: {
     inherits: true,
     features: [
-      'Unlimited contacts and campaigns at volume',
-      'The full CRM, email branding, reporting, and exports',
-      'Bookings, tickets, memberships, automations, and your own website',
-      'Two operator seats, pipelines, and Collaborator hosting',
+      'Selling opens: paid tickets, memberships, donations, shop checkout, and booking deposits',
+      'Higher limits on contacts, email, and automations',
+      'Your own website, Programs, and Collaborator hosting',
+      'Two operator seats',
+    ],
+  },
+  collective: {
+    inherits: true,
+    features: [
+      'For groups of groups: member Spaces under one account',
+      'The Business tools in every member Space',
+      'Vera AI included',
+      'More operator seats',
     ],
   },
   nonprofit: {
     inherits: false,
-    features: ['The whole paid feature set', 'Donations built in', 'For verified 501(c)(3) nonprofits'],
+    features: ['Everything Business does', 'Donations built in, no network fee', 'For verified 501(c)(3) nonprofits'],
     noteLead: 'Flat. ',
     noteTail: ' Verified 501(c)(3).',
   },
@@ -105,7 +114,7 @@ const spaceTierCard = (t: PricingTier, i: number) => {
     cadence: free ? 'forever' : '/mo',
     priceNote: free
       ? ''
-      : `${copy.noteLead ?? ''}Or ${yearOf(t)} a year, which is two months free. 0% on your own bookings, ${rateOf(t)} on business the network sends you.${copy.noteTail ?? ''}`,
+      : `${copy.noteLead ?? ''}Or ${yearOf(t)} a year, which is two months free.${t.sells ? ` 0% on your own people, ${rateOf(t)} once per customer the network introduces.` : ''}${copy.noteTail ?? ''}`,
     tagline: t.tagline,
     highlight: t.featured ? 'featured' : 'normal',
     badge: 'none',
@@ -128,13 +137,13 @@ const SEATS_PLACEHOLDER = catalogItem('operator_seat').placeholder === true
 // ─────────────────────────────────────────────────────────────────────────────
 // PRICING — the honest, warm version. Copies THE COMMUNITY's shape and rhythm.
 //
-// The one idea (docs/VALUE-LADDER.md): never gate the transaction, gate the repeat.
-// Selling is free on every rung, and your own people are always free. Paying buys a
-// lower rate on the sales the network introduces, plus the tools that build the list
-// which takes that rate to zero. It never buys features you cannot otherwise reach,
-// and it never buys a place at the front. Member is free, forever, and featured.
-// Crew is the paid member tier (docs/NAMING.md: "Crew = paid"). Prices below are the
-// GA defaults (lib/pricing/settings.ts, PRICING_DEFAULTS) and are NOT to be edited.
+// The one idea (ADR-1709, the five-tier ladder): hosting is free, and that is the point.
+// Members join, Crew hosts, a Space runs, Business sells, Collective connects. Selling
+// starts at Business; tips are open on every tier at 0%, and your own people are always
+// free. A plan never buys a place at the front. Member is free, forever, and featured.
+// Crew is contribute what you want (ADR-1084). Prices below read the catalog and are NOT
+// to be typed. Published copies of this document in the pages table freeze its words, so
+// the owner re-publishes /pricing after a change here.
 //
 // HOW TO READ THIS FILE (the contract, same as the-community.ts):
 //  • One `const L` layout literal, reused on every block so the spacing rhythm is
@@ -177,7 +186,7 @@ export const data: Data = {
         // LIVE-253: the last sentence read "Once money is moving, a plan buys a lower rate on the
         // sales the network introduces". The reason is PLAN_STORY.paid now, read from the one spine
         // rather than argued again in a document an operator can publish over the derived page.
-        subtitle: `People join free. Businesses host free. You pay when you start charging. Being a Member is free, forever: browse Circles and Events, show up, earn Zaps, meet Vera, and run a ticketed event and get paid on day one. A business never pays for access to people either. ${PLAN_STORY.paid}`,
+        subtitle: `${PLAN_STORY.lines} ${PLAN_STORY.ladder} Being a Member is free, forever: browse Circles and Events, show up, earn Zaps, meet Vera, and host a Circle of your own. ${PLAN_STORY.paid}`,
         image: '/images/site/lab-lounge.jpg', focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: OPERATOR_CTA_LABEL, ctaPrimaryHref: OPERATOR_CTA_HREF,
@@ -197,7 +206,7 @@ export const data: Data = {
         // LIVE-253: this read "Crew takes the rate down and lifts the caps", the retired sentence
         // verbatim. Crew is the personal rung for someone selling their own events, and every Crew
         // amount buys the same Crew (NAMING.md), so the rung is what it is for, not what it lifts.
-        kicker: 'Free to join, and both rungs sell. Crew is the personal rung for running your own ticketed events without running a Space.',
+        kicker: `Free to join. ${PLAN_STORY.crew} Neither personal tier takes payments: selling runs through a Space on Business. Tips work on both.`,
         items: [
           {
             name: 'Member', livePriceKey: 'member', price: 'Free', strikePrice: '', cadence: 'forever', priceNote: '',
@@ -206,23 +215,24 @@ export const data: Data = {
             features: [
               { text: 'Browse Circles, Events, and Channels' },
               { text: 'Attend gatherings in person' },
-              { text: 'Earn Zaps for real-world activity' },
-              { text: 'Vera, your guide, up to 10 messages a day' },
+              { text: `Host ${n(LIMIT.circle_host?.free)} Circle and ${n(LIMIT.event_create?.free)} upcoming free Events, up to ${n(LIMIT.event_guests?.free)} guests each` },
+              { text: `Vera, your guide, up to ${n(LIMIT.vera_unlimited?.free)} messages a day` },
+              { text: 'Tips, with no fee' },
             ],
             ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'primary',
           },
           {
             name: 'Crew', livePriceKey: 'crew', price: CREW_NOTE.foundingLabel, strikePrice: '', cadence: '/mo',
             priceNote: `You pick the amount: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested. Every amount buys the same thing.`,
-            tagline: 'The same selling at a lower rate, plus the Crew badge, and the tools that build your list.',
+            tagline: 'Back the community, and host a little more.',
             highlight: 'normal', badge: 'none',
             features: [
-              { text: 'Everything in Member, and your own events to sell' },
-              { text: 'Gems and Vault cash-in' },
-              { text: 'Author and share your own Quest' },
+              { text: 'Everything in Member' },
+              { text: `Host up to ${n(LIMIT.circle_host?.crew)} Circles and ${n(LIMIT.event_create?.crew)} upcoming Events, up to ${n(LIMIT.event_guests?.crew)} guests each` },
+              { text: `Publish up to ${n(LIMIT.journey_publish?.crew)} Journeys, ${n(LIMIT.journey_enrollees?.crew)} people each` },
+              { text: 'A monthly Boost for a Circle or Space you love' },
               { text: 'Vera, unlimited' },
-              { text: 'The leaderboard' },
-              { text: 'The Crew badge' },
+              { text: 'The supporter mark while you back Frequency' },
             ],
             ctaLabel: 'Upgrade', ctaHref: '/upgrade', ctaStyle: 'secondary',
           },
@@ -244,7 +254,7 @@ export const data: Data = {
         title: 'For practitioners and businesses.', titleAccent: '',
         // LIVE-253: this kicker argued the plan with "each step up buys it down". It now argues it
         // with PLAN_STORY.paid and keeps the ladder as the fee schedule it is.
-        kicker: `Run your community as a Space. You keep 100% of your own bookings, always. ${PLAN_STORY.paid} The take-rate is only ever on business the network sends you: ${SPACE_TIERS.map((t) => `${t.name} ${rateOf(t)}`).join(', ')}.`,
+        kicker: `Run your community as a Space. ${PLAN_STORY.paid} ${PLAN_STORY.selling} The network fee is only ever on a customer the network introduces, once: ${SELLING_TIERS.map((t) => `${t.name} ${rateOf(t)}`).join(', ')}.`,
         items: SPACE_TIERS.slice(0, 3).map(spaceTierCard),
         footnote: SPACE_TIERS.length > 3 ? '' : 'Every plan is one price, the same whenever you start. Pay yearly and you get two months free.',
         tone: 'canvas', width: 'wide', align: 'left', layout: { spaceTop: 'default', spaceBottom: SPACE_TIERS.length > 3 ? 'none' : 'default', visibility: 'all' },
@@ -274,17 +284,17 @@ export const data: Data = {
         id: 'pr-plan-addons',
         eyebrow: 'Add to any paid plan',
         title: 'Add-ons for your plan.', titleAccent: '',
-        kicker: 'Flat, never a percentage. Add them to any paid Space plan.',
+        kicker: 'Flat, never a percentage. Add them to a paid Space plan.',
         items: [
           {
             name: 'Vera AI', price: `+${P.veraAi}`, strikePrice: '', cadence: '/mo',
-            priceNote: 'A flat add-on on any paid plan.',
+            priceNote: 'A flat add-on on Business and Non Profit. Collective includes it.',
             tagline: 'The AI add-on. It turns the community signals into live matches and next-best actions.',
             highlight: 'normal', badge: 'none',
             features: [
               { text: 'Live matches from the community signals' },
               { text: 'Next-best actions for you and your members' },
-              { text: 'Works on any paid Space plan' },
+              { text: 'Included in Collective' },
             ],
             ctaLabel: 'Add it from your Space billing', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
@@ -319,7 +329,7 @@ export const data: Data = {
         id: 'pr-addons',
         eyebrow: 'Ways to earn',
         title: 'Tools for Space owners.', titleAccent: '',
-        kicker: 'Ways a Space owner can earn. Each one is set by the owner.',
+        kicker: 'Ways a Space owner can earn. Tips work on every plan; the rest open when your Space takes payments, on Business and up.',
         items: [
           {
             name: 'Space Memberships', price: 'Owner-set', strikePrice: '', cadence: '',
@@ -344,6 +354,17 @@ export const data: Data = {
             ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
           {
+            name: 'Tips', price: 'Open', strikePrice: '', cadence: 'on every plan',
+            priceNote: 'Anyone can tip, and we take nothing from it.',
+            tagline: 'The one kind of money every plan receives, free Spaces included.',
+            highlight: 'normal', badge: 'none',
+            features: [
+              { text: 'Open on the free Space' },
+              { text: 'No fee, ever' },
+            ],
+            ctaLabel: 'Start a free Space', ctaHref: '/spaces', ctaStyle: 'secondary',
+          },
+          {
             name: 'Donations', price: 'Suggested', strikePrice: '', cadence: 'amounts',
             priceNote: 'You set the suggested amounts.',
             tagline: 'Let people chip in to support your Space.',
@@ -355,7 +376,7 @@ export const data: Data = {
             ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
           },
         ],
-        footnote: 'Each one is set by the Space owner, from their own settings.',
+        footnote: 'Each one is set by the Space owner, from their own settings. Memberships, bookings, and donations take payments, which starts at Business.',
         tone: 'surface', width: 'wide', align: 'left', layout: L,
       },
     },
@@ -414,7 +435,7 @@ export const data: Data = {
         items: [
           { icon: 'Shield', image: '', title: 'No card today', body: 'Being a Member is free. We do not ask for a card to join.', href: '' },
           { icon: 'Handshake', image: '', title: 'Leave anytime', body: 'No contracts, no lock-in. Switch plans or step away whenever you like.', href: '' },
-          { icon: 'Heart', image: '', title: 'Free stays free', body: 'The free Member tier is here to stay, and it sells. You pay when you start charging, never to be here.', href: '' },
+          { icon: 'Heart', image: '', title: 'Free stays free', body: 'The free Member tier and the free Space are here to stay. Hosting is free. You pay when you start charging, never to be here.', href: '' },
         ],
         tone: 'surface', width: 'default', align: 'left', layout: L,
       },
@@ -426,11 +447,13 @@ export const data: Data = {
       props: {
         id: 'pr-faq', eyebrow: 'Straight answers', title: 'Questions, answered plainly.', titleAccent: '',
         items: [
-          { q: 'Is being a Member really free?', a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.' },
+          { q: 'Is being a Member really free?', a: `Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, host a Circle of your own, and message Vera up to ${n(LIMIT.vera_unlimited?.free)} times a day, all without paying.` },
           { q: 'Is there a discount for paying yearly?', a: `Yes. Pay yearly on any plan and you get two months free: ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${yearOf(t)} a year instead of ${monthOf(t)} a month`))}. Crew is contribute what you want: anything from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested, and every amount buys the same access.` },
-          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. Both tiers can sell: a free Member can run a ticketed event and get paid. Crew is the rung for someone doing that regularly: it adds Gems, Vault cash-in, your own Quest to author, unlimited Vera, and the leaderboard, for whatever you choose to pay, from ${CREW_NOTE.foundingLabel} a month, and it settles at ${RATE.member} on network-sourced sales instead of ${RATE.memberFree}. Those two are the whole member ladder.` },
+          { q: 'What is the difference between Member and Crew?', a: `Member is the free tier, forever, and the community itself is never behind it. ${PLAN_STORY.crew} Crew is from ${CREW_NOTE.foundingLabel} a month, ${CREW_NOTE.suggestedLabel} suggested. Neither personal tier takes payments: tips work on both, and selling runs through a Space on Business. Those two are the whole member ladder.` },
           { q: 'What do the Space plans cost?', a: `A Space is free to start and stays free until you start charging. ${andList(PAID_SPACE_TIERS.map((t) => `${t.name} is ${monthOf(t)} a month or ${yearOf(t)} a year`))}. Every plan is the same price whenever you start, and yearly is two months free.` },
-          { q: 'How does the take-rate work?', a: `You keep 100% of the business you bring yourself, always, on every tier. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. There is a rate only on someone the network introduces. ${PLAN_STORY.rate} Where each rung settles: a free Member is ${RATE.memberFree}, Crew is ${RATE.member}, ${andList(SPACE_TIERS.map((t) => `${t.name} is ${rateOf(t)}`))}.` },
+          { q: 'Why does selling start at Business?', a: `Because free hosting is the point. ${PLAN_STORY.selling} When you set a price on a free Space, you can start a Business trial right there, or keep the thing free. Nothing you built is lost either way.` },
+          { q: 'How does the network fee work?', a: `You keep 100% of the business you bring yourself, always. Someone who already follows you, is on your list, or has bought from you before is yours, and Frequency takes nothing on them. ${PLAN_STORY.rate} Where each selling plan lands: ${andList(SELLING_TIERS.map((t) => `${t.name} is ${rateOf(t)}`))}.` },
+          { q: 'What is Collective?', a: `${PLAN_STORY.collective} ${andList(SPACE_TIERS.filter((t) => t.id === 'collective').map((t) => `${t.name} is ${monthOf(t)} a month or ${yearOf(t)} a year`))}.` },
           { q: 'What about refunds?', a: 'Every plan is month to month, and you can cancel at any time. Cancel and your plan simply runs out its paid period. No contracts, no lock-in.' },
           { q: 'Can I buy my way into a Host or Guide role?', a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.' },
           { q: 'Where does the money go?', a: MISSION_FRAMING },
@@ -440,13 +463,13 @@ export const data: Data = {
     },
 
     // ── Close ── the single ink beat. Shared beta CTA, quiet member link beside
-    // it. The promise is the whole page in one line: show up free, sell free, and
+    // it. The promise is the whole page in one line: show up free, host free, and
     // never pay on the people who were already yours. ───────────────────────────
     {
       type: 'CallToAction',
       props: {
         id: 'pr-cta', eyebrow: '', heading: 'Pull up a chair.', headingAccent: 'chair',
-        body: 'Being a Member is free, and it sells from day one. No card today, leave anytime. Find your people, and keep every dollar the ones you brought yourself spend.',
+        body: 'Being a Member is free, and hosting is free. No card today, leave anytime. When you start charging, your own people stay yours, and so does every tip.',
         ctaPrimaryLabel: OPERATOR_CTA_LABEL, ctaPrimaryHref: OPERATOR_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL, ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         tone: 'ink', width: 'default', align: 'center', layout: L,
