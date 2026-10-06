@@ -14,6 +14,9 @@ import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
 import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
+import { SegmentFieldsManager } from '@/components/spaces/crm/segment-fields-manager'
+import { listSegmentFieldTemplates } from '@/lib/crm/segment-fields'
+import { listSpaceCustomFields } from '@/lib/crm/import/store'
 import { SpaceCockpitBand } from './space-cockpit-band'
 import { AutonomyControl } from './autonomy-control'
 import { AiDepthUpsell } from './ai-depth-upsell'
@@ -177,9 +180,35 @@ export async function CrmBody({
             target={{ kind: 'space', spaceId: space.id }}
             spaceName={space.brandName ?? space.name}
           />
+          {/* LIVE-662: the fields a segment's people carry. Editing is the Space editor's (re-gated in
+              the actions); a viewer who runs CRM but cannot edit the Space does not see it. */}
+          {caps.canEditProfile && (
+            <div className="space-y-3 pt-4">
+              <SectionHeader title="Fields by segment" />
+              <p className="max-w-2xl text-body-sm text-muted">
+                Pick the extra fields each segment&rsquo;s people should have. Everyone in that segment shows them
+                on their card, ready to fill in, and imports can fill them from a column.
+              </p>
+              <Suspense fallback={<ListSkeleton />}>
+                <SegmentFields spaceId={space.id} slug={space.slug} />
+              </Suspense>
+            </div>
+          )}
         </section>
       )}
     </>
+  )
+}
+
+async function SegmentFields({ spaceId, slug }: { spaceId: string; slug: string }) {
+  const [segments, fields] = await Promise.all([listSegmentFieldTemplates(spaceId), listSpaceCustomFields(spaceId)])
+  return (
+    <SegmentFieldsManager
+      spaceId={spaceId}
+      slug={slug}
+      fields={fields.map((f) => ({ key: f.key, label: f.label }))}
+      segments={segments}
+    />
   )
 }
 
