@@ -8,6 +8,15 @@
 > (interior accepted, [ADR-1403](DECISIONS.md)). This file stays commercial law.
 > ADR-1403 does not rewrite it.
 >
+> 🔴 **AMENDED by [ADR-1709](DECISIONS.md) (2026-10-06): the five-tier ladder.** Members join, Crew
+> hosts, a Space runs, Business sells, Collective connects. The three lines below stand (people join
+> free, businesses host free, you pay when you start charging), and "start charging" now means taking
+> Business: the `space_payments` gate puts paid tickets, paid memberships, donations, shop checkout and
+> booking deposits at Business, and tips stay open at 0% on every tier. **Superseded here:** the
+> ADR-914 reading in §2 ("never gate the transaction"), ADR-1415's free-Space memberships, the
+> two-rung take rate in Phase 3.3 (now 5%, 3%, 0%, once per introduced customer) and ruling 3's
+> Collective merge (Collective is a live plan again). Prices: [PRICING.md](PRICING.md) top banner.
+>
 > **This document explains a model and the work to make it true. It does not track whether the work
 > is done.** The row-level state is `PROG-R0`…`PROG-R11` and their children in the backlog.
 >
@@ -128,7 +137,7 @@ Taken by the owner on 2026-09-08 and recorded in [ADR-1294](DECISIONS.md). They 
 |---|---|---|
 | 1 | The grace window | **1 December 2026.** Written to production the same day; the 1 October gate cliff is gone. |
 | 2 | The marketplace | **One umbrella with real sub-tabs** — Classifieds · Housing · Market · Events. It is not four nav areas, and the tab bar was never built. |
-| 3 | The six Collective Spaces | **Grandfather at $49.** Collective merges into Business, which rises $29 → $49 with two seats. |
+| 3 | The six Collective Spaces | **Grandfather on Business.** Collective merged into Business, which rose to the new Business price with two seats. (Collective re-opened as its own plan under ADR-1709; the six granted Spaces stay Business and are offered Founding Collective.) |
 | 4 | The Independent tier | **Keep it, hide it from public pricing.** Hand-sold; its four Stripe prices stay live. |
 | 5 | Hubs and Nexuses | **Fold both into Space.** Each reads as "a Space that contains other Spaces". Member URLs 308 to Space (LIVE-242 / ADR-1439). Geography tables remain. |
 | 6 | Channels | **Fold into Circles.** A Channel reads as a topic Circle, and there are zero channels. |

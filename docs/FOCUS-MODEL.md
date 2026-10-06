@@ -6,6 +6,14 @@
 > [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this file. Filed 2026-09-08
 > from an eight-lane repo sweep plus live production reads.
 >
+> 🔴 **AMENDED by [ADR-1709](DECISIONS.md) (2026-10-06).** The memberships argument below (a free
+> Space sells memberships, ADR-1415) and the ADR-914 "never gate the transaction" reading are
+> superseded: selling, memberships included, opens at Business, and tips stay open at 0% on every
+> tier. The rate ladder named in this file is now Business 5%, Collective 3%, Non Profit 0%, charged
+> once per introduced customer; personal accounts and the free Space do not sell. Q3's answer is
+> replaced by ADR-1709 ruling 2.
+>
+
 > **This document explains a reframe. It does not track whether the reframe is done.**
 
 ---
