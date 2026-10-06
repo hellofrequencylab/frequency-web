@@ -1,7 +1,7 @@
 {
   "id": "LIVE-806",
   "title": "A Thursday \"This week in North County\" email is built from live Events",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,11 +9,12 @@
     "file": "docs/ledger/adr/ADR-1720.md",
     "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
   },
-  "detail": "WORKSTREAM 9 of the launch brief (ADR-1720); marketing sends it from 3 December 2026. TODAY: the only weekly email is the Sunday digest (app/api/cron/weekly-digest/route.ts, vercel.json \"0 14 * * 0\"), per member, showing only Events they already RSVPd to (lib/digest.ts:126-151). Nothing reads upcoming Events by place. Regions are seeded (North County, Carlsbad, Encinitas, Oceanside, Escondido: 20240107000000_seed_nexus_regions.sql). THE FIX: a Thursday cron that builds \"This week in <region>\" from public upcoming Events in the region and sends it to subscribers in that region through the send gate, idempotent per run (the SCAN-611 lesson). Empty regions send nothing. Wave 2 (from 1 December).",
+  "detail": "WORKSTREAM 9 of the launch brief (ADR-1720); marketing sends it from 3 December 2026. TODAY: the only weekly email is the Sunday digest (app/api/cron/weekly-digest/route.ts, vercel.json \"0 14 * * 0\"), per member, showing only Events they already RSVPd to (lib/digest.ts:126-151). Nothing reads upcoming Events by place. Regions are seeded (North County, Carlsbad, Encinitas, Oceanside, Escondido: 20240107000000_seed_nexus_regions.sql). THE FIX: a Thursday cron that builds \"This week in <region>\" from public upcoming Events in the region and sends it to subscribers in that region through the send gate, idempotent per run (the SCAN-611 lesson). Empty regions send nothing. Wave 2 (from 1 December). CLOSED 2026-10-06: app/api/cron/this-week (vercel.json \"0 16 * * 4\") reads public, published, not-cancelled Events in the next 7 days, picks each launch region's (lib/this-week.ts, North County by city name), and sends \"This week in <region>\" (lib/email.ts sendThisWeekEmail) to members whose profile city is in the region, through resolveSendGate events. Idempotent per week by the outbox dedupe key this-week:<region>:<iso week>:<profile>. Empty regions send nothing. A dry run (counts only) until THIS_WEEK_SENDS_FROM = 2026-12-03. Cron count 33 (ARCHITECTURE, cron-freshness test), weekly SLO group, CRON_UNMONITORED (no free check). Help (notifications) and changelog updated. When LIVE-802 (#3230, also a new cron) lands first, the count becomes 34 at merge.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-806\";const v=JSON.parse(r(\"vercel.json\")||\"{}\");const crons=(v.crons||[]).filter(c=>/\\s4$/.test(String(c.schedule).trim())||/\\s(THU|thu)$/.test(String(c.schedule).trim()));const hit=crons.find(c=>{const d=\"app\"+c.path.split(\"?\")[0];return walk(d).concat(walk(\"lib\")).some(f=>/This week in/.test(r(f)))});if(!hit)fail(ID+\": no Thursday cron sends a This week in email\")'",
     "note": "Fails until vercel.json schedules a Thursday cron and the code carries the This week in email."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-06"
 }

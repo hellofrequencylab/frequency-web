@@ -499,6 +499,7 @@ app/api/cron/lifecycle-triggers/route.ts
 app/api/cron/onboarding-throughput/route.ts
 app/api/cron/publish-scheduled/route.ts
 app/api/cron/storage-backup/route.ts
+app/api/cron/this-week/route.ts
 app/api/cron/weekly-digest/route.ts
 app/api/observe/route.ts
 app/api/qr/route.ts

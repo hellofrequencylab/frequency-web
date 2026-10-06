@@ -4,7 +4,7 @@ description: How Frequency lets you know what's happening, and how to tune it.
 category: getting-started
 order: 13
 published: 2026-06-03
-updated: 2026-08-11
+updated: 2026-10-06
 audience: member
 featureKeys: [notifications]
 status: published
@@ -26,6 +26,7 @@ Head to **Settings → Notifications** to choose what you hear about and how it 
 - **Mute one place.** Quiet a single Circle or Space without leaving it. One switch per place you belong to, and it silences that place on every channel. Your topic switches stay as they are, and you still see everything when you open the app. Confirmations, reminders and cancellation notices for events you RSVP'd to still reach you.
 - Everything sends as it happens. There is no digest option today.
 - Every email includes an unsubscribe link, and we honor it everywhere.
+- **This week in North County.** From 3 December 2026, if your city is in North County, you get one email on Thursdays listing the public Events near you in the next seven days. A week with nothing on sends nothing. It follows your event email switch, and its own link stops it.
 - Prefer calm? Keep in-app on and email light; you'll still see everything when you open the app.
 
 Account and security messages, like a password reset, always send. They aren't part of these choices. Full walkthrough in [Your settings](/help/getting-started/your-settings).

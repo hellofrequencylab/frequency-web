@@ -79,6 +79,10 @@
       "schedule": "0 14 * * 0"
     },
     {
+      "path": "/api/cron/this-week",
+      "schedule": "0 16 * * 4"
+    },
+    {
       "path": "/api/cron/demo-decay",
       "schedule": "15 3 * * *"
     },

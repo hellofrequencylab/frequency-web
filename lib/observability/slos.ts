@@ -220,8 +220,8 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'weekly',
     freshByMinutes: 60 * 24 * 7 + 60 * 24, // one week + one day grace
-    jobs: ['weekly-digest'],
-    why: 'digest delivery; a miss is visible to every recipient',
+    jobs: ['weekly-digest', 'this-week'],
+    why: 'digest and This week delivery; a miss is visible to every recipient',
   },
 ]
 
@@ -424,6 +424,7 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   { job: 'refresh-traits', reason: 'AI derivation; traits go stale by a day and the next run recomputes them' },
   { job: 'vera-owner-brief', reason: 'mails one person, the owner, who notices its absence tomorrow; self-monitoring' },
   { job: 'reconcile-transfers', reason: 'retries split-order seller transfers (LIVE-622); the settle pays first, every stuck row logs at error, and a monitor is a Healthchecks check the owner adds (the account holds 20)' },
+  { job: 'this-week', reason: 'the Thursday This week email (LIVE-806); a dry run until 2026-12-03, every send is deduped per week, and no check is free on the 20-check plan' },
   { job: 'onboarding-throughput', reason: 'a read-only daily reading (LIVE-311); a miss delays a log line and the next run reads the same state' },
   // HYG-144: unmonitored only because the Healthchecks free tier's 20 checks are all taken. It is
   // the one opt-out whose silence is costly (a dead copy means new files have no second home), so

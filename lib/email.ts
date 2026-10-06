@@ -416,6 +416,64 @@ export async function sendWeeklyDigestEmail(params: {
 }
 
 
+// ── "This week in <region>" (LIVE-806) ────────────────────────────────────────
+// The Thursday email of live public Events in a member's launch region (lib/this-week.ts). Event
+// times are stored as the host's wall clock in UTC parts, so they are formatted in UTC to print
+// the wall clock the host chose. The send gate is the caller's (the cron); the unsubscribe is the
+// events category, the same lever as every other event email.
+export async function sendThisWeekEmail(params: {
+  to: string
+  recipientName: string
+  recipientProfileId: string
+  regionName: string
+  events: { title: string; startsAt: string; city: string | null; url: string }[]
+  /** The outbox dedupe key: one email per member per region per week. */
+  dedupeKey: string
+}) {
+  const { to, recipientName, recipientProfileId, regionName, events, dedupeKey } = params
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: BASE_URL, profileId: recipientProfileId, category: 'events' })
+  const when = (iso: string) =>
+    new Date(iso).toLocaleString('en-US', {
+      timeZone: 'UTC',
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  const subject = `This week in ${regionName}`
+  const rows = events
+    .map(
+      (e) => `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #E9E1D4;">
+            <a href="${e.url}" style="font-size:15px;font-weight:700;color:#3D352A;text-decoration:none;">${escapeHtml(e.title)}</a>
+            <p style="margin:2px 0 0;font-size:13px;color:#777;">${escapeHtml(when(e.startsAt))}${e.city ? ` · ${escapeHtml(e.city)}` : ''}</p>
+          </td>
+        </tr>`,
+    )
+    .join('')
+  const html = emailShell(`
+    <h1 style="${h1Style}">${escapeHtml(subject)}</h1>
+    <p style="${pStyle}">Hi ${escapeHtml(recipientName)}, here is what is on near you in the next seven days. Pick one and go.</p>
+    <table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;margin:0 0 24px;">${rows}</table>
+    <a href="${BASE_URL}/events" style="${btnStyle}">See every Event &rarr;</a>
+    <p style="font-size:12px;color:#999;margin:28px 0 0;"><a href="${unsubscribeUrl}" style="color:#999;">Stop these weekly emails</a></p>
+  `)
+  const text = [
+    subject,
+    '',
+    `Hi ${recipientName}, here is what is on near you in the next seven days. Pick one and go.`,
+    '',
+    ...events.map((e) => `${e.title}\n${when(e.startsAt)}${e.city ? ` · ${e.city}` : ''}\n${e.url}\n`),
+    `See every Event: ${BASE_URL}/events`,
+    '',
+    `Stop these weekly emails: ${unsubscribeUrl}`,
+  ].join('\n')
+  await enqueueEmail({ to, subject, headers: listUnsubscribeHeaders(unsubscribeUrl), html, text }, { dedupeKey })
+}
+
+
 // ── Event reminder email ──────────────────────────────────────────────────────
 
 export async function sendEventReminderEmail(params: {
