@@ -47,7 +47,7 @@ export const PERSONA_META: Record<
   },
   practitioner: {
     label: 'Practitioner', emoji: '🧘',
-    tagline: 'Healers, breathwork facilitators, yogis running their own network',
+    tagline: 'Practitioners starting a second career and teachers who work across studios',
     // LIVE-709 (ADR-1675): this line promised "paywalled Programs", which nothing can sell. It now
     // names only money paths that are live (lib/billing/payout-prompt.ts PAYOUT_CHANNELS) and the
     // rule each one runs on: tickets and Market products sell from any account (ADR-914), bookings
