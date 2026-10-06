@@ -1,0 +1,19 @@
+{
+  "id": "OWN-095",
+  "title": "Write to the 6 Business Spaces, the 14 Crew members and the 21 free Spaces before the switch",
+  "status": "open",
+  "priority": "P2",
+  "lane": "owner",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 9 of the five-tier ladder (ADR-1709). Needs the owner's explicit yes before anything is sent. Check billed versus granted Crew first.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Open until the owner approves the messages and they are sent; record the send date here.",
+    "checked": "2026-10-06"
+  },
+  "ownerAction": "content"
+}

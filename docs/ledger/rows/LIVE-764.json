@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-764",
+  "title": "A Collective has a network home: one shared calendar and a directory of its member Spaces",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on the collaborator calendar. Required before Founding Collective sells.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"app/(main)/spaces/[slug]/network/page.tsx\"))fail(\"no network home page\");console.log(\"ok: the network home exists\")'"
+  }
+}

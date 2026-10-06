@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-752",
+  "title": "Personal hosting asks its meters: published Practices, guests per personal Event and people per Journey",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 2 of the five-tier ladder (ADR-1709). TARGET: merged before 2026-11-24, because pricing_settings.beta_grace ends 2026-12-01 and every count limit enforces that day with no deploy. practice_publish and journey_enrollees are display-only on the personal axis; event_guests is new (LIVE-750 sets the number). Each write path asks memberWithinLeadershipAllowance. Granted Crew gets the same host kit as billed Crew, never unlimited.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const f of fs.readdirSync(d,{withFileTypes:true})){const p=d+\"/\"+f.name;if(f.isDirectory()){if(f.name!==\"node_modules\")walk(p,o)}else if(/\\.tsx?$/.test(f.name)&&!/\\.test\\./.test(f.name))o.push(p)}return o};const src=[...walk(\"lib\"),...walk(\"app\")].filter((f)=>!f.startsWith(\"lib/pricing/\")).map((f)=>[f,r(f)]);const usedAt=(k,seam)=>src.some(([f,s])=>s.includes(JSON.stringify(k).replace(/\"/g,String.fromCharCode(39)))&&seam.test(s));const seam=/memberWithinLeadershipAllowance\\(/;const miss=[\"practice_publish\",\"journey_enrollees\",\"event_guests\"].filter((k)=>!usedAt(k,seam));if(miss.length)fail(\"personal write paths never ask: \"+miss.join(\",\"));console.log(\"ok: personal hosting caps are asked at write\")'"
+  },
+  "notes": "Target: merged before 2026-11-24 (beta_grace ends 2026-12-01)."
+}

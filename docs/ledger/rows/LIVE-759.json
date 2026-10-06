@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-759",
+  "title": "The pricing page and the plan story tell five tiers, selling at Business, read from the catalog",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 6 of the five-tier ladder (ADR-1709). PLAN_STORY rewritten (zero imports, ADR-1368); ADVERTISED_SPACE_PLANS adds Collective; the pricing page grid, plan cards, comparison table and FAQ follow best-practice structure (personal and Space toggles, one recommended card, the selling line at Business, fee ladder, FAQ). No typed price. Published /pricing documents in the pages table are re-published.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const ps=r(\"lib/pricing/plan-story.ts\");if(/^import /m.test(ps))fail(\"plan-story.ts imports something\");if(/free Space sells|sells tickets, takes donations/i.test(ps))fail(\"PLAN_STORY still says a free Space sells\");if(!/Collective/.test(ps))fail(\"PLAN_STORY never names Collective\");if(!/collective/.test((r(\"lib/pricing/display.ts\").split(\"ADVERTISED_SPACE_PLANS\")[1]||\"\").split(\"\\n\\n\")[0]))fail(\"Collective is not advertised\");if(/Every rung on both sells/i.test(r(\"app/(marketing)/pricing/page.tsx\")))fail(\"the pricing page still says every rung sells\");console.log(\"ok: the pricing page tells the ladder\")'"
+  }
+}

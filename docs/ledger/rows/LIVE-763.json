@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-763",
+  "title": "A Collective owns member Spaces: 5 included, more at the extra-Space price, each with Business tools",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 8 of the five-tier ladder (ADR-1709). App code over spaces.parent_id (the column exists, no code reads it): attach and detach member Spaces, count against 5 included plus collective_space items, member Spaces resolve to Business depth. canCreateSpace follows the owner default (1 free Space per member; owning Business or Collective lets them start more). Required before Founding Collective sells.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const s=r(\"lib/collective/member-spaces.ts\");if(!/parent_id/.test(s)||!/collective_space/.test(s))fail(\"no member-Spaces module over parent_id and the extra-Space item\");console.log(\"ok: member Spaces work\")'"
+  }
+}

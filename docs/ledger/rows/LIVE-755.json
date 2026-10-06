@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-755",
+  "title": "Crew asks $5, $10 or $25 with $10 suggested, and the supporter mark follows active support for 45 days",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 4 of the five-tier ladder (ADR-1709). PWYW_CONFIG_DEFAULT presets 499/1000/2500, suggested 1000, and the catalog.pwyw row in production (suggested 2499 today, a migration). earnsSupporterMark stops reading the suggested amount: any active Crew earns it, fading 45 days after support stops. Picker copy: one impact line, a dignified \"not right now\", \"contribute what you want\" (ADR-1084).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const c=r(\"lib/pricing/catalog-config.ts\");const d=(c.split(\"PWYW_CONFIG_DEFAULT: PwywConfig = {\")[1]||\"\").split(\"}\")[0];if(!/suggestedCents:\\s*1000/.test(d))fail(\"suggested is not 1000\");if(!/presetCents:\\s*\\[499,\\s*1000,\\s*2500\\]/.test(d))fail(\"presets are not 499/1000/2500\");if(/suggestedCents/.test((c.split(\"export function earnsSupporterMark\")[1]||\"\").split(\"\\n}\")[0]))fail(\"the supporter mark still keys off the suggested amount\");if(!/45/.test(c))fail(\"no 45-day fade\");console.log(\"ok: Crew presets and the fading mark are in\")'"
+  }
+}

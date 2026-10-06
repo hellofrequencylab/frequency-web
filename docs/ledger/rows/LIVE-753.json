@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-753",
+  "title": "Only Business and Collective take money: a space_payments gate on every money path, personal selling off, tips open at 0%",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 3 of the five-tier ladder (ADR-1709). space_payments at a Business floor in gates.ts, checked on paid tickets, paid memberships, donations, shop checkout and booking deposits, not waiting for the grace window. space_memberships, space_membership_tickets and space_storefront leave the free floor. Personal paid tickets and personal Market sales are refused. Tips stay open at 0%. A refusal returns the upgrade prompt (LIVE-758), never a dead end. free-seller.test.tsx and gate-meter-drift.test.ts are rewritten, not skipped.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const g=r(\"lib/pricing/gates.ts\");if(!/space_payments:\\s*\\{[^}]*minEntitlement:\\s*\\x27business\\x27/.test(g))fail(\"no space_payments gate at business\");for(const k of [\"space_memberships\",\"space_membership_tickets\",\"space_storefront\"])if(new RegExp(k+\":\\\\s*\\\\{[^}]*minEntitlement:\\\\s*\\x27free\\x27\").test(g))fail(k+\" still sits on the free floor\");const s=r(\"lib/commerce/selling.ts\");if(/ownerKind === \\x27profile\\x27/.test((s.split(\"export function canTakePayments\")[1]||\"\").split(\"}\")[0]))fail(\"a personal seller can still take payments\");const miss=[\"lib/billing/tickets.ts\",\"lib/billing/space-membership-checkout.ts\",\"lib/billing/space-donation-checkout.ts\",\"lib/commerce/checkout.ts\",\"lib/spaces/booking.ts\"].filter((f)=>!/space_payments|spaceCanTakePayments/.test(r(f)));if(miss.length)fail(\"money paths without the payments gate: \"+miss.join(\",\"));console.log(\"ok: every money path asks the payments gate\")'"
+  }
+}

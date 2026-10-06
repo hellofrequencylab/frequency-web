@@ -1,0 +1,17 @@
+{
+  "id": "LIVE-760",
+  "title": "Funnel doors, the /vs comparisons, page templates, block defaults, llms.txt and JSON-LD stop saying free sells",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 6 of the five-tier ladder (ADR-1709). lib/marketing/funnel-config.ts, lib/marketing/comparisons.ts, lib/page-editor/templates/*, components/page-editor/blocks/dawn.tsx and collections.tsx (a typed $4.99 outside the figures scan), app/llms.txt, app/llms-full.txt and lib/jsonld.ts offers.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const bad=[[\"lib/marketing/funnel-config.ts\",/[Ss]ell from day one/],[\"lib/marketing/comparisons.ts\",/selling open on a free/i],[\"app/llms.txt/route.ts\",/NOT gated on any tier/],[\"app/llms-full.txt/route.ts\",/NOT gated on any tier/],[\"components/page-editor/blocks/collections.tsx\",/\\$4\\.99/]].filter(([f,re])=>re.test(r(f))).map(([f])=>f);for(const f of fs.readdirSync(\"lib/page-editor/templates\"))if(/free Space sells|every rung sells/i.test(r(\"lib/page-editor/templates/\"+f)))bad.push(f);if(!/[Cc]ollective/.test(r(\"lib/jsonld.ts\")))bad.push(\"lib/jsonld.ts has no Collective offer\");if(bad.length)fail(\"old model still on: \"+bad.join(\", \"));console.log(\"ok: public surfaces tell the ladder\")'"
+  }
+}

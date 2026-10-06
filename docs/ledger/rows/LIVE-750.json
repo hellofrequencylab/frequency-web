@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-750",
+  "title": "New Space meters for Circles, upcoming Events, guests per Event, published Practices, bookable services and shop listings",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 2 of the five-tier ladder (ADR-1709). TARGET: merged before 2026-11-24, because pricing_settings.beta_grace ends 2026-12-01 and every count limit enforces that day with no deploy. New keys space_circles (3/10/unlimited, the Space Circle counts), space_events (5 upcoming), space_event_guests (100) and personal event_guests (Member 30, Crew 100), space_practice_publish (5), space_services (1), space_shop_listings (5, inquiries only), each with a count at its write path.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const lim=(()=>{const s=r(\"lib/pricing/meter-limits.ts\");const a=s.indexOf(\"PLACEHOLDER_METER_LIMITS\");const b=s.indexOf(\"= {\",a);const e=s.indexOf(\"\\n}\\n\",b);return Function(\"return \"+s.slice(b+2,e+2).replace(/\\/\\/.*$/gm,\"\").replace(/(\\d)_(\\d)/g,\"$1$2\"))()})();const want=(k,t,v)=>{const row=lim[k];if(!row)fail(k+\" is not a meter yet\");if(!(t in row)||row[t]!==v)fail(k+\".\"+t+\" is \"+JSON.stringify(row[t])+\", the ladder says \"+JSON.stringify(v))};const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const f of fs.readdirSync(d,{withFileTypes:true})){const p=d+\"/\"+f.name;if(f.isDirectory()){if(f.name!==\"node_modules\")walk(p,o)}else if(/\\.tsx?$/.test(f.name)&&!/\\.test\\./.test(f.name))o.push(p)}return o};const src=[...walk(\"lib\"),...walk(\"app\")].filter((f)=>!f.startsWith(\"lib/pricing/\")).map((f)=>[f,r(f)]);const usedAt=(k,seam)=>src.some(([f,s])=>s.includes(JSON.stringify(k).replace(/\"/g,String.fromCharCode(39)))&&seam.test(s));want(\"space_circles\",\"free\",3);want(\"space_circles\",\"business\",10);want(\"space_circles\",\"collective\",null);want(\"space_events\",\"free\",5);want(\"space_event_guests\",\"free\",100);want(\"event_guests\",\"free\",30);want(\"event_guests\",\"crew\",100);want(\"space_practice_publish\",\"free\",5);want(\"space_services\",\"free\",1);want(\"space_shop_listings\",\"free\",5);const seam=/spaceAllowance(Verdict|Headroom)\\(|memberWithinLeadershipAllowance\\(/;const miss=[\"space_circles\",\"space_events\",\"space_event_guests\",\"event_guests\",\"space_practice_publish\",\"space_services\",\"space_shop_listings\"].filter((k)=>!usedAt(k,seam));if(miss.length)fail(\"no write path asks: \"+miss.join(\",\"));console.log(\"ok: the new Space meters exist and are asked at write\")'"
+  },
+  "notes": "Target: merged before 2026-11-24 (beta_grace ends 2026-12-01)."
+}
