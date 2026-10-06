@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { LAUNCH_DOORS, launchDoorBySlug } from '@/lib/marketing/launch-doors'
 import { buttonClasses } from '@/components/ui/button'
-import { OG_SITE } from '@/lib/site'
+import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
 
 export const dynamicParams = false
 
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     // A campaign landing, not a search page: the SEO pages (/calm-down-fast and the rest) own the
     // queries, so a door never competes with them in the index.
     robots: { index: false, follow: true },
-    openGraph: { ...OG_SITE, title, description: door.detail, url: path },
+    openGraph: { ...OG_SITE, title, description: door.detail, url: path, images: ROOT_OG_IMAGES },
     twitter: { card: 'summary_large_image', title, description: door.detail },
   }
 }
@@ -39,7 +39,7 @@ export default async function LaunchDoorPage({ params }: Params) {
 
   return (
     <section className="mx-auto flex max-w-2xl flex-col items-center px-4 py-16 text-center sm:py-24">
-      <p className="text-eyebrow font-bold uppercase tracking-widest text-primary-strong">{door.name}</p>
+      <p className="eyebrow text-primary-strong">{door.name}</p>
       <h1 className="mt-3 text-page-title-lg font-semibold text-text">{door.promise}</h1>
       <p className="mt-4 max-w-lg text-lead text-muted">{door.detail}</p>
       <Link href={door.buttonHref} className={buttonClasses('primary', 'md', 'mt-8')}>
