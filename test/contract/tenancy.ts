@@ -105,17 +105,24 @@ export function makeTwoSpaceDb(tables: Record<string, ScopedRow[]>): {
     const rows = tables[table] ?? []
     // The predicate stack the chain accumulates; every terminal applies all of them.
     const preds: ((r: ScopedRow) => boolean)[] = []
-    const apply = () => rows.filter((r) => preds.every((p) => p(r)))
+    // An upsert hands back the rows it wrote (Postgres `upsert ... returning`), so a write awaited after
+    // `.select()` resolves to them; every other builder reads the seeded table.
+    let written: ScopedRow[] | null = null
+    const apply = () => written ?? rows.filter((r) => preds.every((p) => p(r)))
 
     const chain: Record<string, unknown> = {
       select: () => chain,
       order: () => chain,
       limit: () => chain,
       not: () => chain,
-      // upsert/insert/update/delete record nothing in this in-memory oracle (it exists to prove which
-      // ROWS survive the read filters, not to mutate); they return the chain so a `.select().maybeSingle()`
-      // after a write resolves to null (no row), matching a real not-returned write.
-      upsert: () => chain,
+      // insert/update/delete record nothing in this in-memory oracle (it exists to prove which ROWS
+      // survive the read filters, not to mutate); they return the chain so a `.select().maybeSingle()`
+      // after a write resolves to null (no row), matching a real not-returned write. An upsert returns
+      // the rows it was given, which the drip enroll counts (SCAN-707).
+      upsert: (input: ScopedRow | ScopedRow[]) => {
+        written = Array.isArray(input) ? input : [input]
+        return chain
+      },
       insert: () => chain,
       update: () => chain,
       delete: () => chain,
