@@ -45,11 +45,11 @@ export async function BookingMember({
 
   // P1: service-first flow when the Space has any active service type. Operators and members share it.
   if (services.length > 0) {
-    // P4 (dark): deposits are double-gated off (canTakePayments AND payoutsLive), so this resolves
+    // P4 (dark): deposits need canTakePayments, payoutsLive AND the payments gate on this Space (LIVE-753), so this resolves
     // false until an owner turns payments on; the picker then keeps the free confirm-only path.
     const [timezone, depositsLive] = await Promise.all([
       getSpaceBookingTimezone(spaceId),
-      bookingDepositsLive(),
+      bookingDepositsLive(spaceId),
     ])
     return (
       <>

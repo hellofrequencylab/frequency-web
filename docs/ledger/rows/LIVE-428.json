@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-428",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const files=[\"lib/events/ticket-tiers.ts\",\"lib/events/space-event-access.ts\",\"lib/events/ticket-space-access.ts\",\"components/spaces/membership-event-access.tsx\",\"app/(main)/events/[slug]/manage/ticket-tiers-panel.tsx\",\"app/(main)/admin/events/[id]/event-edit-client.tsx\"];for (const f of files){const s=fs.readFileSync(f,\"utf8\");if(/Collective plan/.test(s))fail(f+\" still names the Collective plan\")}const g=fs.readFileSync(\"lib/events/ticket-space-access.ts\",\"utf8\");if(!g.includes(\"featureWallLabel\"))fail(\"ticket-space-access no longer names the wall through featureWallLabel\");if(!g.includes(\"export function membershipTicketWallSentence\"))fail(\"membershipTicketWallSentence is gone\");if(!g.includes(\"export async function resolveMembershipTicketGate\"))fail(\"resolveMembershipTicketGate is gone\");const gates=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=gates.match(/space_membership_tickets:\\s*\\{[^}]+\\}/);if(!m)fail(\"space_membership_tickets gate missing\");if(/minEntitlement:\\s*.collective./.test(m[0]))fail(\"space_membership_tickets climbed to Collective, a tier above the membership it sells\");console.log(\"LIVE-428 ok\")'",
+      "note": "Narrowed 2026-10-06 by LIVE-753: ADR-1709 moves space_membership_tickets to Business with paid memberships, so the free-floor half is dropped. The probe still forbids a typed Collective plan, keeps the featureWallLabel seam, and forbids a Collective floor."
+    }
+  },
+  "append": {
+    "detail": "\n\n── SUPERSEDED IN PART 2026-10-06 by ADR-1709 (LIVE-753). Members-only ticket tiers moved to the Business floor with the paid memberships they sell. The seam, the derived wall name and the no-typed-Collective rule all stand; only the free-floor assertion was dropped from the probe."
+  }
+}

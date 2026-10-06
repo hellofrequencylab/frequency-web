@@ -17,6 +17,7 @@ import { stripe, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
+import { spacePaymentsVerdict } from '@/lib/pricing/payments-gate'
 import { getConnectStatus } from './connect'
 import { spaceTakeRateCents } from './fees'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
@@ -37,7 +38,8 @@ interface SpaceMembershipCheckoutResult {
    *  webhook. Handed back for BOTH shapes. */
   sessionId?: string
   /** Why no URL (when checkout didn't start). 'billing_off' | 'not_payable' | 'no_owner_payouts' |
-   *  'tier_not_found' | 'free_tier' | 'no_annual_price' | 'error'. */
+   *  'tier_not_found' | 'free_tier' | 'no_annual_price' | 'payments_plan' | 'error'. 'payments_plan'
+   *  is the payments gate (LIVE-753): the Space's plan is below Business, so a paid tier cannot sell. */
   reason?:
     | 'billing_off'
     | 'not_payable'
@@ -45,6 +47,7 @@ interface SpaceMembershipCheckoutResult {
     | 'tier_not_found'
     | 'free_tier'
     | 'no_annual_price'
+    | 'payments_plan'
     | 'error'
 }
 
@@ -87,6 +90,10 @@ export async function createSpaceMembershipCheckout(
       } | null
     }
     if (!space?.id || !space.owner_profile_id) return { reason: 'tier_not_found' }
+
+    // THE PAYMENTS GATE (space_payments, ADR-1709, LIVE-753): a paid membership sells from Business up. Asked before
+    // Connect, outside the grace window, with the plan already read (lib/pricing/payments-gate.ts).
+    if (!(await spacePaymentsVerdict(space.id, { plan: space.plan ?? null })).ok) return { reason: 'payments_plan' }
 
     // The owner must be able to receive money (Connect ready), like tips/tickets.
     const ownerStatus = await getConnectStatus(space.owner_profile_id)

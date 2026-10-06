@@ -88,7 +88,7 @@ describe('REMAINING-WORK #4 — space_* feature gates resolve consistently via f
     // removed (a plan gate that takes the whole feature away instead of capping how much you use).
     expect(featureKeyForFunction('crm')).toBeNull()
     expect(featureKeyForFunction('email')).toBeNull()
-    expect(featureKeyForFunction('shop')).toBe('space_storefront')
+    expect(featureKeyForFunction('shop')).toBeNull() // LIVE-753: space_storefront now guards CHECKOUT, not the Shop function
     expect(featureKeyForFunction('members')).toBeNull() // universal
     expect(featureKeyForFunction('made-up')).toBeNull()
   })
@@ -101,7 +101,8 @@ describe('REMAINING-WORK #4 — space_* feature gates resolve consistently via f
   it('ON: the collapsed plan ladder bites (the paid floor for space_* is business · ADR-552)', async () => {
     // The coarse plan-rank gate is now a single paid floor of 'business'; the fine per-feature gating is
     // the entitlement-key union (spaceHasEntitlement), not this ladder.
-    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(true)
+    // Paid memberships sit at Business since ADR-1709 (LIVE-753).
+    expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('space_memberships', { plan: 'business' }, { gatesLive: true })).toBe(true)
     expect(await featureAllowed('space_collaborators', { plan: 'free' }, { gatesLive: true })).toBe(false)
     // A legacy label narrows to business through asSpacePlan inside the gate, so it still clears.

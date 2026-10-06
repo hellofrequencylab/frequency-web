@@ -1,7 +1,7 @@
 {
   "id": "LIVE-753",
   "title": "Only Business and Collective take money: a space_payments gate on every money path, personal selling off, tips open at 0%",
-  "status": "open",
+  "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "L",
@@ -9,9 +9,10 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 3 of the five-tier ladder (ADR-1709). space_payments at a Business floor in gates.ts, checked on paid tickets, paid memberships, donations, shop checkout and booking deposits, not waiting for the grace window. space_memberships, space_membership_tickets and space_storefront leave the free floor. Personal paid tickets and personal Market sales are refused. Tips stay open at 0%. A refusal returns the upgrade prompt (LIVE-758), never a dead end. free-seller.test.tsx and gate-meter-drift.test.ts are rewritten, not skipped.",
+  "detail": "PHASE 3 of the five-tier ladder (ADR-1709). space_payments at a Business floor in gates.ts, checked on paid tickets, paid memberships, donations, shop checkout and booking deposits, not waiting for the grace window. space_memberships, space_membership_tickets and space_storefront leave the free floor. Personal paid tickets and personal Market sales are refused. Tips stay open at 0%. A refusal returns the upgrade prompt (LIVE-758), never a dead end. free-seller.test.tsx and gate-meter-drift.test.ts are rewritten, not skipped. CLOSED 2026-10-06: space_payments (Business floor) lives in lib/pricing/gates.ts and lib/pricing/payments-gate.ts reads it outside the grace window, on tickets (buy path, event price writes, priced ticket tiers), paid membership checkout and paid tier saves, donations, Space shop checkout (with the space_storefront checkout floor) and booking deposits; personal selling is off (canTakePayments refuses profile), tips are untouched at 0%, and paid Journeys keep their existing paid-Space rule. No grandfather clause (owner ruling: the one free Space with paid listings moves to Business). Refusals carry a structured PaymentsRefusal and the host sentence isPaymentsRefusal recognises, for LIVE-758. LIVE-410, LIVE-428 and OWN-046 probes narrowed to the new rule.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const g=r(\"lib/pricing/gates.ts\");if(!/space_payments:\\s*\\{[^}]*minEntitlement:\\s*\\x27business\\x27/.test(g))fail(\"no space_payments gate at business\");for(const k of [\"space_memberships\",\"space_membership_tickets\",\"space_storefront\"])if(new RegExp(k+\":\\\\s*\\\\{[^}]*minEntitlement:\\\\s*\\x27free\\x27\").test(g))fail(k+\" still sits on the free floor\");const s=r(\"lib/commerce/selling.ts\");if(/ownerKind === \\x27profile\\x27/.test((s.split(\"export function canTakePayments\")[1]||\"\").split(\"}\")[0]))fail(\"a personal seller can still take payments\");const miss=[\"lib/billing/tickets.ts\",\"lib/billing/space-membership-checkout.ts\",\"lib/billing/space-donation-checkout.ts\",\"lib/commerce/checkout.ts\",\"lib/spaces/booking.ts\"].filter((f)=>!/space_payments|spaceCanTakePayments/.test(r(f)));if(miss.length)fail(\"money paths without the payments gate: \"+miss.join(\",\"));console.log(\"ok: every money path asks the payments gate\")'"
-  }
+  },
+  "closed": "2026-10-06"
 }

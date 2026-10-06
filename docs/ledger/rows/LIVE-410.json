@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-410",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const s=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");if(!/space_memberships:\\s*\\{[^}]+\\}/.test(s))fail(\"space_memberships gate missing\");const m=fs.readFileSync(\"lib/spaces/memberships.ts\",\"utf8\");const i=m.indexOf(\"export async function setMembershipTiers\");const body=m.slice(i,i+6000);if(!/tiers\\.some\\([\\s\\S]{0,80}priceCents/.test(body))fail(\"setMembershipTiers no longer asks the plan only for a PRICED tier, so a free Space loses its free-to-join tier\");if(!body.includes(\"also: \\x27space_memberships\\x27\"))fail(\"setMembershipTiers does not ask the payments gate for a paid tier\");process.exit(0)'",
+      "note": "Narrowed 2026-10-06 by LIVE-753: ADR-1709 puts PAID memberships at Business (supersedes ADR-1415). What survives of this row is that a free Space keeps a free-to-join tier: the write asks the payments gate only when a tier carries a price."
+    }
+  },
+  "append": {
+    "detail": "\n\n── SUPERSEDED IN PART 2026-10-06 by ADR-1709 (LIVE-753). Paid memberships sit at Business again (space_memberships minEntitlement business, plus space_payments), checked outside the grace window. The free Space keeps one free-to-join tier, which is the half of this row that still holds, so the probe was narrowed to that consequence."
+  }
+}

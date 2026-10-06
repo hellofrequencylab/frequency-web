@@ -148,8 +148,8 @@ describe('every gate is accounted for on the meter side', () => {
     const gate = FEATURE_GATES[key]!
     // A gate that cannot refuse anyone needs no allowance story: `enabled: false` never blocks, and a
     // floor at the bottom of its own ladder ('free') clears for everybody. Both are real states here —
-    // space_full_website is deliberately disabled (a pure entitlement key enforces it instead) and
-    // space_storefront is floored at free because a free Space can sell.
+    // space_full_website was deliberately disabled before HYG-079 deleted it, and campaigns and
+    // automation sit on the free floor since ADR-1709.
     if (!gate.enabled || gate.minEntitlement === 'free') return
     const accounted = key in PLACEHOLDER_METER_LIMITS || key in NON_METERED_FEATURES
     expect(
@@ -161,16 +161,15 @@ describe('every gate is accounted for on the meter side', () => {
 })
 
 describe('the walls are the ones the strategy names, and nothing has crept in', () => {
-  it('selling a membership is open on the free floor (LIVE-410 / ADR-1403 Q3)', () => {
+  it('a PAID membership sits at Business with the payments gate (ADR-1709, LIVE-753)', () => {
     expect(FEATURE_GATES.space_memberships).toEqual({
       axis: 'plan',
-      minEntitlement: 'free',
+      minEntitlement: 'business',
       enabled: true,
     })
     // 🔴 And it is UNMETERED for active members. A cap on members would tell a Space its eleventh
-    // supporter cannot join, which punishes the customer for succeeding at the exact thing we asked
-    // them to do. The TIER count is a separate meter (space_membership_tiers), now with a real free
-    // allowance of 1 so the gate and the meter cannot part again.
+    // supporter cannot join. The TIER count is a separate meter (space_membership_tiers), and the free
+    // Space keeps its one free-to-join tier: the gate only binds a tier that carries a price.
     expect(PLACEHOLDER_METER_LIMITS).not.toHaveProperty('space_memberships')
     expect(PLACEHOLDER_METER_LIMITS.space_membership_tiers?.free).toBe(1)
   })
@@ -205,10 +204,21 @@ describe('the walls are the ones the strategy names, and nothing has crept in', 
     expect(PLACEHOLDER_METER_LIMITS.space_crm?.free).toBe(250) // ADR-1709 ladder
   })
 
-  it('🔴 selling is not gated anywhere on the map', () => {
-    // The Phase 1 reversal, locked. These two keys held the wall that sent free Members to Venmo.
+  it('🔴 taking money is ONE plan gate at Business, and no personal gate (ADR-1709, LIVE-753)', () => {
+    expect(FEATURE_GATES.space_payments).toEqual({ axis: 'plan', minEntitlement: 'business', enabled: true })
+    // The storefront CHECKOUT floor and membership tickets moved off the free floor with it.
+    expect(FEATURE_GATES.space_storefront?.minEntitlement).toBe('business')
+    expect(FEATURE_GATES.space_membership_tickets?.minEntitlement).toBe('business')
+    // Personal selling is off by OWNER KIND (canTakePayments), never by a tier gate: these two keys
+    // held the old wall and stay gone, so the ladder never reads "pay Crew to sell".
     expect(FEATURE_GATES).not.toHaveProperty('event_paid_tickets')
     expect(FEATURE_GATES).not.toHaveProperty('personal_payouts')
+  })
+
+  it('a free Space keeps its shop listings (inquiries only) and its one free tier', () => {
+    // The walls above guard MONEY, not the tools: the listing and tier COUNTS keep free allowances.
+    expect(PLACEHOLDER_METER_LIMITS.space_shop_listings?.free).toBe(5)
+    expect(PLACEHOLDER_METER_LIMITS.space_membership_tiers?.free).toBe(1)
   })
 
   it('🔴 the Quest loop is not gated anywhere on the map (ADR-1295)', () => {

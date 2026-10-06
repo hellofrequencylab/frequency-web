@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveHostingSpaceIdFromRow } from './host-space'
+import { loadRootSpaceId } from '@/lib/spaces/store'
+import { spacePaymentsVerdict, personalPaymentsRefusal } from '@/lib/pricing/payments-gate'
 import {
   membershipTicketWallSentence,
   resolveMembershipTicketGate,
@@ -239,7 +241,7 @@ export function parseTicketTierInput(
  * an ungated tier. For a gated one, requires (in order):
  *   1. a hosting Space — the gate keys on events.host_space_id (falling back to the placement
  *      space_id, the same resolution the checkout + attribution use, ADR-819);
- *   2. the Space's plan to clear `space_membership_tickets` (free floor since LIVE-410; an
+ *   2. the Space's plan to clear `space_membership_tickets` (Business floor since LIVE-753; an
  *      operator override still names the wall through featureWallLabel);
  *   3. a named space_tier_id to be a real membership tier OF that Space (no cross-space gates).
  * Throws a member-readable Error on any miss, exactly like parseTicketTierInput.
@@ -301,6 +303,26 @@ async function validateSpaceAccess(
   }
 }
 
+/**
+ * A PRICED tier (anything but `free`) is money, so it asks the payments gate (ADR-1709, LIVE-753):
+ * the event's hosting Space must clear `space_payments` (Business floor, outside the grace window),
+ * and a personal event never sells. The platform's own event (hosted by the root Space) clears it.
+ * Throws the upgrade moment's sentence, so the tier editor can open the panel (LIVE-758).
+ */
+async function validatePayments(eventId: string, fields: Pick<TicketTierCatalogFields, 'pricing_mode'>): Promise<void> {
+  if (fields.pricing_mode === 'free') return
+  const { data: ev } = await createAdminClient()
+    .from('events')
+    .select('space_id, host_space_id')
+    .eq('id', eventId)
+    .maybeSingle()
+  const evRow = ev as { space_id: string | null; host_space_id: string | null } | null
+  const root = await loadRootSpaceId()
+  const spaceId = root && evRow?.host_space_id === root ? root : await resolveHostingSpaceIdFromRow(evRow)
+  const payments = spaceId ? await spacePaymentsVerdict(spaceId) : personalPaymentsRefusal()
+  if (!payments.ok) throw new Error(payments.refusal.message)
+}
+
 /** The admin client, narrowed to the two writes that touch columns newer than the generated types
  *  (ADR-246 exception, ADR-1373). Deliberately typed to the CATALOG FIELDS rather than to `any`, so
  *  a typo in a column name is still a compile error and only the table's own row type is relaxed. */
@@ -324,6 +346,7 @@ function ticketTypeWriter() {
 export async function createEventTicketTier(eventId: string, fd: FormData): Promise<void> {
   const fields = parseTicketTierInput(fd, { timeZone: await loadEventTimeZone(eventId) })
   await validateSpaceAccess(eventId, fields)
+  await validatePayments(eventId, fields)
   // Untyped write (ADR-246 exception): the sales-window columns are newer than the generated
   // types, exactly as space_members_only / space_tier_id were before their regeneration. The cast
   // narrows nothing else, and the shape being written is TicketTierCatalogFields either way.
@@ -345,6 +368,7 @@ export async function updateEventTicketTier(
 ): Promise<void> {
   const fields = parseTicketTierInput(fd, { timeZone: await loadEventTimeZone(eventId) })
   await validateSpaceAccess(eventId, fields)
+  await validatePayments(eventId, fields)
   const admin = ticketTypeWriter()
   const { error } = await admin
     .from('event_ticket_types')

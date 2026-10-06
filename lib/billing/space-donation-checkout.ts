@@ -18,9 +18,10 @@
 // degrades to 'self' (the fail-safe direction, which never bills a network rate we cannot justify).
 //
 // GATED like every other channel: no-ops unless `stripe` is configured AND payoutsLive(), and the
-// space owner must have a Connect account that is payout-ready. The one thing that is NOT a gate is
-// the operator's plan: taking a donation is free on every tier, and what the paid tiers buy is a
-// lower rate (ADR-914, "never gate the transaction").
+// space owner must have a Connect account that is payout-ready. Since ADR-1709 (LIVE-753, superseding
+// ADR-914's "never gate the transaction") the operator's plan IS a gate: a donation is money, and only
+// a Space on Business or above takes money (space_payments, lib/pricing/payments-gate.ts, outside the
+// grace window). Tips to a person stay open at 0% on every tier (lib/billing/tips.ts).
 
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -29,6 +30,7 @@ import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from '.
 import { getConnectStatus, payoutsLive } from './connect'
 import { spaceTakeRateCents } from './fees'
 import { asSpacePlan } from '@/lib/pricing/plans'
+import { spacePaymentsVerdict } from '@/lib/pricing/payments-gate'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -133,6 +135,11 @@ export async function createSpaceDonationCheckout(opts: {
       .maybeSingle()
     const space = (spaceData ?? null) as SpaceRow | null
     if (!space?.id || !space.owner_profile_id) return { error: 'This fund is not available.' }
+
+    // THE PAYMENTS GATE (LIVE-753). The donor sees a neutral sentence, never the Space's plan.
+    if (!(await spacePaymentsVerdict(space.id, { plan: space.plan ?? null })).ok) {
+      return { error: 'This fund is not open right now.' }
+    }
 
     // The owner must be able to receive money. This is the ONE remaining prerequisite on every money
     // path, and LIVE-233 puts the shared Connect prompt in front of it on the operator's side, so an
@@ -406,9 +413,9 @@ export async function recordSpaceDonationRefundFromCharge(charge: Stripe.Charge)
 
 /**
  * Can this Space actually take a gift right now? The member Donate card asks before it renders a
- * button, so a donor is never handed a control that resolves to a refusal. Same three conditions the
+ * button, so a donor is never handed a control that resolves to a refusal. Same four conditions the
  * checkout enforces (a configured Stripe, the platform payouts switch, an owner who can receive
- * money), read here so the surface and the action agree.
+ * money, a plan that clears the payments gate), read here so the surface and the action agree.
  *
  * FAIL-SAFE to false: an unreadable space renders the honest "giving is not open" copy rather than a
  * button that cannot work. Never calls Stripe.
@@ -419,11 +426,14 @@ export async function spaceCanTakeDonations(spaceId: string): Promise<boolean> {
   try {
     const { data } = await db()
       .from('spaces')
-      .select('owner_profile_id')
+      .select('owner_profile_id, plan')
       .eq('id', spaceId)
       .maybeSingle()
-    const ownerId = (data as { owner_profile_id?: string | null } | null)?.owner_profile_id ?? null
+    const row = data as { owner_profile_id?: string | null; plan?: string | null } | null
+    const ownerId = row?.owner_profile_id ?? null
     if (!ownerId) return false
+    // The payments gate (LIVE-753), so the Donate card never renders a button the checkout refuses.
+    if (!(await spacePaymentsVerdict(spaceId, { plan: row?.plan ?? null })).ok) return false
     const status = await getConnectStatus(ownerId)
     return !!status.accountId && status.ready
   } catch {

@@ -1,0 +1,13 @@
+{
+  "id": "OWN-046",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const p=\"lib/commerce/selling.ts\";if(!fs.existsSync(p))process.exit(79);const body=fs.readFileSync(p,\"utf8\").split(\"\\n\").filter((l)=>!/^\\s*(\\/\\/|\\*|\\/\\*)/.test(l)).join(\"\\n\");const take=body.match(/function canTakePayments[\\s\\S]{0,240}?\\n\\}/);const listNew=body.match(/function canListNew[\\s\\S]{0,240}?\\n\\}/);if(!take||!listNew)throw new Error(\"canTakePayments or canListNew is gone\");if(/[\"\\x27]profile[\"\\x27]/.test(take[0]))throw new Error(\"canTakePayments admits a profile seller again; ADR-1709 (LIVE-753) turned personal selling off\");if(/[\"\\x27]profile[\"\\x27]/.test(listNew[0]))throw new Error(\"canListNew admits a profile seller; an individual lists Used only\");'",
+      "note": "Narrowed 2026-10-06 by LIVE-753: ADR-1709 supersedes the 2026-09-08 ruling, so the probe now asserts personal selling is OFF (canTakePayments refuses profile) and keeps the R3 control (canListNew refuses profile)."
+    }
+  },
+  "append": {
+    "detail": "\n\n── SUPERSEDED 2026-10-06 by ADR-1709 (LIVE-753). The owner's five-tier ladder turns personal selling off on every personal tier: canTakePayments('profile') is false again, a personal Market listing is an inquiry, and a person receives tips at 0%. The probe was narrowed to assert the new rule (profile refused) and keep the canListNew control; canReceivePayouts is untouched (tips still need payouts)."
+  }
+}

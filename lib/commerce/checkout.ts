@@ -30,6 +30,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import { computeBookingRefundCents } from './cancellation'
 import { canTakePayments } from './selling'
+import { spacePaymentsVerdict } from '@/lib/pricing/payments-gate'
+import { PAYMENTS_BUYER_REFUSAL } from '@/lib/pricing/payments-copy'
 import { getVariantsByIds } from './variants'
 import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
 import { planFundsFlow, splitTotals, type SellerSplit } from './funds-flow'
@@ -105,6 +107,8 @@ async function resolveCharge(seller: ProductRow, grossCents: number, source: Ord
     return { platformFeeCents: 0, sellerStripeAccountId: null, source }
   }
   if (seller.owner_kind === 'profile') {
+    // ⚠️ UNREACHABLE FOR A SALE since LIVE-753: canTakePayments('profile') is false, so createCommerceCheckout
+    // refuses a personal seller before pricing. Kept as the default-deny receipt math, not a permission.
     const status = await getConnectStatus(seller.owner_profile_id ?? '')
     if (!status.accountId || !status.ready) return { error: 'This seller can’t take payment yet.' }
     // An individual seller: 0% on their OWN sale, and their TIER's rung on a network-sourced one — free
@@ -147,6 +151,14 @@ async function resolveCharge(seller: ProductRow, grossCents: number, source: Ord
     (data as { owner_profile_id?: string | null; plan?: string | null; network_connected?: boolean | null } | null) ??
     null
   if (!owner?.owner_profile_id) return { error: 'This storefront has no owner to pay.' }
+  // THE PAYMENTS GATE (ADR-1709, LIVE-753): a Space shop takes money from Business up, through
+  // space_payments and the space_storefront checkout floor, outside the grace window. No grandfather
+  // clause (owner ruling 2026-10-06): a free Space's listing is an inquiry. The buyer sees a neutral sentence.
+  const payments = await spacePaymentsVerdict(seller.owner_space_id ?? '', {
+    plan: owner.plan ?? null,
+    also: 'space_storefront',
+  })
+  if (!payments.ok) return { error: PAYMENTS_BUYER_REFUSAL }
   const status = await getConnectStatus(owner.owner_profile_id)
   if (!status.accountId || !status.ready) return { error: 'This storefront can’t take payment yet.' }
   // A standalone (disconnected) Space has left the graph, so it can have NO network-sourced revenue —
