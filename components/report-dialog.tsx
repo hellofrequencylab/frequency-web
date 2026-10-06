@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { reportContent, type ReportTargetType } from '@/app/(main)/feed/report-actions'
 import { isError } from '@/lib/action-result'
 import { Dialog } from '@/components/ui/dialog'
@@ -97,7 +98,9 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
               Report {noun}
             </h3>
             <p className="text-meta text-muted mb-4 leading-relaxed">
-              Why are you reporting this? Select the reason that best applies.
+              Why are you reporting this? Select the reason that best applies. We review every
+              report within 24 hours against our{' '}
+              <Link href="/guidelines" className="text-primary-strong hover:underline">community guidelines</Link>.
             </p>
 
             {/* Reason radio buttons */}

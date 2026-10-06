@@ -766,6 +766,7 @@ lib/email-studio/loom-actions.ts
 lib/email-studio/send.ts
 lib/engagement/capture.ts
 lib/engagement/events.ts
+lib/engagement/nearby.ts
 lib/engagement/verify.ts
 lib/entry-points/ab.ts
 lib/entry-points/campaigns.ts

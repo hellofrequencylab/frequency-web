@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-718",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.readFileSync(f,\"utf8\");const walk=(d)=>{if(!fs.existsSync(d))return[];return fs.readdirSync(d,{withFileTypes:true}).flatMap((x)=>{const p=path.join(d,x.name);return x.isDirectory()?(x.name===\"node_modules\"?[]:walk(p)):[p]})};const v1=()=>walk(\"app/api/v1\").filter((f)=>/route\\.ts$/.test(f));const v1src=()=>v1().map(read).join(\"\\n\");const cb=read(\"app/auth/callback/route.ts\");const need=[\"claimGuestSeatsOnSignIn(\",\"convertLeadsOnSignIn(\",\"claimGuestTicketsOnSignIn(\",\"claimGuestOrdersOnSignIn(\"];const post=walk(\"lib/auth\").concat(walk(\"lib/contract\")).filter((f)=>/\\.ts$/.test(f)&&!/\\.test\\./.test(f)&&need.every((n)=>read(f).includes(n)));if(!post.length)fail(\"the post-sign-in claims (guest seats, leads, tickets, orders) run only inside app/auth/callback, so a native sign-in skips them\");const spec=post.map((f)=>\"@/\"+f.replace(/\\\\/g,\"/\").replace(/\\.ts$/,\"\"));if(!spec.some((s)=>cb.includes(s)))fail(\"app/auth/callback does not run the shared post-sign-in step\");if(!spec.some((s)=>v1src().includes(s)))fail(\"no /api/v1 endpoint runs the post-sign-in step for a native session\");const d=fs.existsSync(\"docs/APP-CONTRACT.md\")?read(\"docs/APP-CONTRACT.md\"):\"\";if(!/refresh/i.test(d)||!/redirect/i.test(d))fail(\"docs/APP-CONTRACT.md does not state the native redirect URLs and the token refresh story\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-06: the four post-sign-in claims live in lib/auth/post-sign-in.ts (runGuestClaims for seats, leads and tickets; runPostSignInClaims adds the order leg); app/auth/callback calls the shared legs and keeps the order leg in place (PROG-GD5 pins it), same order and session client. POST /api/v1/session/bootstrap runs all four as the bearer caller, idempotent, and emits account.created on the callback's key. /auth/native is the universal-link return (claimed in the association file; forwards to /auth/callback on the web). docs/APP-CONTRACT.md §11 states the redirect URLs and the refresh story. Tested in app/api/v1/session/bootstrap/route.test.ts."
+  }
+}

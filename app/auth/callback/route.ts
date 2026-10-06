@@ -10,15 +10,7 @@ import {
 } from '@/lib/auth/sign-in-hint'
 import { createClient } from '@/lib/supabase/server'
 import { track } from '@/lib/analytics/track'
-import { claimGuestSeatsOnSignIn, type SessionClient } from '@/lib/events/guest-seat-claim'
-import {
-  convertLeadsOnSignIn,
-  type SessionClient as LeadSessionClient,
-} from '@/lib/crm/convert-leads-on-sign-in'
-import {
-  claimGuestTicketsOnSignIn,
-  type SessionClient as TicketSessionClient,
-} from '@/lib/events/claim-guest-tickets-on-sign-in'
+import { runGuestClaims } from '@/lib/auth/post-sign-in'
 import {
   claimGuestOrdersOnSignIn,
   type OrderSessionClient,
@@ -118,67 +110,16 @@ export async function GET(request: Request) {
               idempotencyKey: `account.created:${profile.id}`,
             }).catch(() => {})
 
-            // WHY HERE, and not only in onboarding. `claim_guest_rsvps` had one caller,
-            // completeOnboarding, which covers a guest who signs UP and misses the commonest guest
-            // of all: a member who was merely signed OUT when they RSVP'd. Their seat stranded
-            // forever — real capacity held, absent from "my events", and never checkable-in, so
-            // their attendance could never reach WAM (which counts distinct actor_profile_id).
-            //
-            // Sign-in is the seam where both things the SQL requires are true at once: auth.uid()
-            // is the caller, and auth.users.email_confirmed_at was just stamped by the link they
-            // clicked. The SESSION client is passed for the same reason the profile read above uses
-            // it — under the service-role client auth.uid() is null, the claim matches nothing, and
-            // the RLS policies that already grant a member their own seats would be bypassed for no
-            // gain. The session exists here: exchangeCodeForSession has run and set the cookies.
-            //
-            // Cast per ADR-246: the RPC and the guest_claimed_* columns postdate the generated types.
-            seatLanding = await claimGuestSeatsOnSignIn(
-              supabase as unknown as SessionClient,
-              profile.id,
-            )
-
-            // CONVERT-ON-SIGN-IN, the seat claim's CRM twin and the same seam for the same reason:
-            // auth.uid() is the caller and auth.users.email_confirmed_at was just stamped. It joins
-            // every `signup_leads` row held by this proven address to the member it turned out to
-            // be — including the one the signed-out event RSVP form captured beside the seat. On
-            // the call that stamps, the SQL also spends the lead's name onto a profile that is still
-            // the signup trigger's mint (LIVE-450), so the guest keeps the name they typed.
-            //
-            // SESSION client, like the claim above: the function resolves the profile from
-            // auth.uid(), so under the service-role client it would match nothing and convert
-            // nothing. It returns void ON PURPOSE — unlike the seat claim it may NOT influence the
-            // destination, and it swallows its own failures, so it can never block authentication.
-            // Cast per ADR-246: the RPC postdates the generated types.
-            await convertLeadsOnSignIn(supabase as unknown as LeadSessionClient)
-
-            // CLAIM-ON-SIGN-IN, THE TICKET LEG. The third member of this set, and the only one
-            // where somebody paid money: a guest ticket (event_tickets with buyer_profile_id NULL
-            // and guest_email set) is a real payment attached to no account, absent from "my
-            // events" and impossible to check in. `claim_guest_tickets()` attaches every unclaimed
-            // ticket matching the address auth.users has just proven.
-            //
-            // SESSION client, for the reason both neighbours above carry: the RPC resolves the
-            // caller with auth.uid(), so under the service-role client it matches nobody and
-            // returns a healthy 0 having attached nothing. Returns void ON PURPOSE — like the lead
-            // conversion and unlike the seat claim, it may not influence the destination; the seat
-            // claim already owns that decision. Swallows its own failures.
-            // Cast per ADR-246: the RPC postdates the generated types.
-            await claimGuestTicketsOnSignIn(supabase as unknown as TicketSessionClient)
-
-            // CLAIM-ON-SIGN-IN, THE ORDER LEG (LIVE-396). The fourth member of this set and the
-            // second where somebody paid money: a guest Journey purchase (commerce_orders with
-            // buyer_profile_id NULL and guest_email set) is a settled payment granting nothing,
-            // because journey_enrollments.profile_id is NOT NULL and a guest cannot hold one.
-            //
-            // Unlike its three neighbours this does not finish in SQL. `claim_guest_orders()`
-            // attaches the ORDER and returns the ids; the module then runs the ordinary
-            // `enrolByOrder` for each, because adoptPlan is the single authority for what enrolling
-            // means and SQL alone would grant a degraded enrolment missing its practices.
-            //
-            // SESSION client, for the reason all three neighbours carry. Swallows its own failures.
-            // Returns the welcome of the Journey it just attached, or null (PROG-GD5): the second
-            // landing decision after the seat claim, and for the same cookie-less reason.
-            // Cast per ADR-246: the RPC postdates the generated types.
+            // CLAIM-ON-SIGN-IN, the four legs (seats, leads, tickets, orders) a native sign-in also
+            // runs, through the same module (lib/auth/post-sign-in.ts, LIVE-718). WHY HERE: sign-in is
+            // the seam where auth.uid() is the caller and auth.users.email_confirmed_at was just
+            // stamped by the link they clicked, and the SESSION client is passed because every claim
+            // resolves the person from auth.uid() (under the service role each matches nothing).
+            // The session exists here: exchangeCodeForSession has run and set the cookies. The seat
+            // and the order legs each name a landing; precedence is decided below.
+            seatLanding = await runGuestClaims(supabase, profile.id)
+            // THE ORDER LEG (LIVE-396), last, as in runPostSignInClaims: it attaches the guest's
+            // Journey orders and names that Journey's welcome (PROG-GD5). Cast per ADR-246.
             orderLanding = await claimGuestOrdersOnSignIn(supabase as unknown as OrderSessionClient)
           }
 
