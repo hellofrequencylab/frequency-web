@@ -13,6 +13,7 @@ import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SiteChrome } from '@/components/sites/site-chrome'
+import { SiteHero } from '@/components/sites/site-hero'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). /sites/<slug> and /sites/<slug>/<page>
 // render the Space's own pages (the same block docs the Space page editor saves, so the owner edits once
@@ -84,11 +85,14 @@ export async function SitePage({
         pages={readProfilePages(space.preferences)}
         activePageSlug={pageSlug}
         base={siteBase}
-        profileHref={profileHref}
       >
-        <Suspense fallback={<ProfileBodySkeleton />}>
-          <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous />
-        </Suspense>
+        {/* The Space page's own cover (owner ask: the website mirrors the Space page), then the page's blocks. */}
+        <SiteHero space={space} brandName={brandName} />
+        <div className="mt-8">
+          <Suspense fallback={<ProfileBodySkeleton />}>
+            <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous />
+          </Suspense>
+        </div>
       </SiteChrome>
     </AccentScope>
   )

@@ -2,11 +2,14 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import { HOME_SLUG, type ProfilePage } from '@/lib/spaces/profile-pages'
+import { appOrigin } from '@/lib/sites/host'
 
 // THE EXTERNAL WEBSITE CHROME (PROG-E10 phase 1). A published Space website (/sites/<slug>) is the
 // Space's own pages, rendered without any Frequency app chrome: a slim header with the brand and the
-// Space's page nav, the page body, and a small footer. Server Component, no client JS, DAWN semantic
-// tokens only, so the Space's accent and page theme (AccentScope, set by the route) paint it.
+// Space's page nav, the page body, and a small footer. The footer's "Frequency Partner" is the ONLY
+// mention of Frequency on the site (owner ask 2026-10-06); the header is the owner's brand alone.
+// Server Component, no client JS, DAWN semantic tokens only, so the Space's accent and page theme
+// (AccentScope, set by the route) paint it.
 //
 // The nav links are BASE-relative: `base` is `/sites/<slug>` today, and becomes `` (the domain root)
 // once a custom domain routes here, so the same chrome serves both without knowing which it is on.
@@ -22,7 +25,6 @@ export function SiteChrome({
   pages,
   activePageSlug,
   base,
-  profileHref,
   children,
 }: {
   brandName: string
@@ -31,8 +33,6 @@ export function SiteChrome({
   activePageSlug: string
   /** The path prefix every site link hangs off (`/sites/<slug>`, or `` on the Space's own domain). */
   base: string
-  /** The Space's page on Frequency, for the footer link. */
-  profileHref: string
   children: ReactNode
 }) {
   return (
@@ -77,9 +77,9 @@ export function SiteChrome({
           <span>
             © {new Date().getFullYear()} {brandName}
           </span>
-          <Link href={profileHref} className="transition-colors hover:text-text">
-            Made with Frequency
-          </Link>
+          <a href={appOrigin()} className="transition-colors hover:text-text">
+            Frequency Partner
+          </a>
         </div>
       </footer>
     </div>
