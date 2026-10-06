@@ -82,6 +82,8 @@ remove_plan_comment          authenticated
 
 accept_bundle_invite_atomic          internal
 adjust_ticket_sold                   internal
+ai_spend_by_feature_today            internal
+ai_spend_today                       internal
 advance_challenge_progress           internal
 after_achievement_unlocked           internal
 after_crew_completion                internal
