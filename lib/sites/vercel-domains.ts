@@ -32,7 +32,7 @@ export interface DomainStatus {
   verified: boolean
   /** DNS points at Vercel (false until the A / CNAME records are set and have spread). */
   dnsReady: boolean
-  /** The domain answers over https with a valid certificate. Vercel issues the certificate only after
+  /** Vercel has issued the domain's https certificate. Vercel issues the certificate only after
    *  DNS points at it, so for a few minutes (up to an hour) after the switch a browser shows a
    *  "connection is not private" warning. False until DNS is ready. */
   secure: boolean
@@ -215,7 +215,7 @@ async function readStatus(domain: string): Promise<DomainStatus> {
       attached,
       verified,
       dnsReady,
-      secure: dnsReady && (await httpsReady(domain)),
+      secure: dnsReady && (await certificateIssued(cfg, domain)),
       records: recordsFor(domain, { apexA, wwwCname, verification: verified ? [] : verification }),
       problem: attached ? undefined : 'This domain is not connected to Frequency hosting yet. Press Connect again.',
     }
@@ -231,18 +231,23 @@ async function readStatus(domain: string): Promise<DomainStatus> {
   }
 }
 
-/** Does `domain` answer over https with a certificate the runtime trusts? Any response at all means
- *  the TLS handshake passed; a certificate Vercel has not issued yet fails the handshake and throws.
- *  Only ever called with the Space's own validated domain. Never throws. */
-async function httpsReady(domain: string): Promise<boolean> {
+/** Has Vercel issued a live certificate for `domain`? Read from the team's certificate list (Vercel
+ *  issues one only after DNS points at it), never by fetching the owner's host, so no request ever
+ *  goes to an address a Space owner chose. Pages through the list newest first. Never throws. */
+async function certificateIssued(cfg: VercelConfig, domain: string): Promise<boolean> {
   try {
-    await fetch(`https://${domain}/`, {
-      method: 'HEAD',
-      redirect: 'manual',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(4000),
-    })
-    return true
+    const now = Date.now()
+    let until: number | null = null
+    for (let page = 0; page < 10; page++) {
+      const res = await call(cfg, 'GET', `/v8/certs?limit=100${until ? `&until=${until}` : ''}`)
+      if (!res.ok) return false
+      const certs = (res.json.certs as { cns?: string[]; expiresAt?: number }[] | undefined) ?? []
+      if (certs.some((c) => c.cns?.includes(domain) && (c.expiresAt ?? 0) > now)) return true
+      const next = (res.json.pagination as { next?: number | null } | undefined)?.next
+      if (!next) return false
+      until = next
+    }
+    return false
   } catch {
     return false
   }
