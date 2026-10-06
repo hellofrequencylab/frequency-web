@@ -130,6 +130,28 @@ export async function addSiteDomain(domain: string): Promise<{ ok: true } | { ok
   return { ok: true }
 }
 
+/** Attach a Space's free website subdomain (`<slug>.frequencylocal.com`, LIVE-782) to the project, so
+ *  Vercel serves it and issues its certificate. One host, no www twin, no redirect. BEST EFFORT and
+ *  NEVER THROWS: publishing must not fail on hosting, so a missing config or an API error comes back as
+ *  `{ ok: false }` for the caller to log. Idempotent like addSiteDomain. The owner step behind it is one
+ *  wildcard CNAME `*` on the base domain pointing at Vercel's recommended CNAME target. */
+export async function addSiteSubdomain(host: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const cfg = config()
+    if (!cfg) return { ok: false, error: 'not-configured' }
+    const res = await call(cfg, 'POST', `/v10/projects/${encodeURIComponent(cfg.projectId)}/domains`, { name: host })
+    if (res.ok) return { ok: true }
+    const code = errorCode(res.json)
+    if (res.status === 409 && code === 'domain_already_in_use' && (res.json.error as { projectId?: string })?.projectId === cfg.projectId) {
+      return { ok: true }
+    }
+    if (res.status === 409 && code === 'domain_already_exists') return { ok: true }
+    return { ok: false, error: code || `vercel-${res.status}` }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'vercel-unreachable' }
+  }
+}
+
 /** Remove `domain` and its www twin from the project. Missing domains are fine. */
 export async function removeSiteDomain(domain: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const cfg = config()

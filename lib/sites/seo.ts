@@ -1,20 +1,26 @@
-// A SPACE WEBSITE FOR SEARCH ENGINES (PROG-E10 phase 4, LIVE-783). PURE + dependency-free, so the
-// site routes, the hosted crawler-file routes and the Space profile's metadata can all share it, and
-// nothing heavy rides into any of them through this file.
+// A SPACE WEBSITE FOR SEARCH ENGINES (PROG-E10 phase 4, LIVE-783). PURE (its one import, ./host, is
+// pure and dependency-free too), so the site routes, the hosted crawler-file routes and the Space
+// profile's metadata can all share it, and nothing heavy rides into any of them through this file.
 //
 // One rule decides every URL here: a published site lives at ONE origin. When the Space's own domain
 // is bound (spaces.domain, served through the custom_domain gate), that domain is the origin and every
-// canonical, the sitemap and the profile's canonical point at it. Otherwise the origin is Frequency's
-// own /sites/<slug>. The caller works out which (lib/sites/site-domain.ts); this file only spells it.
+// canonical, the sitemap and the profile's canonical point at it. Otherwise the origin is the
+// Space's free website subdomain, `<slug>.frequencylocal.com` (LIVE-782), or /sites/<slug> for the rare
+// slug that cannot be a subdomain (a reserved label). The caller works out whether a domain is bound
+// (lib/sites/site-domain.ts); this file only spells it.
+
+import { siteSubdomainHost } from './host'
 
 /** The site's home page slug. Mirrors HOME_SLUG in lib/spaces/profile-pages.ts, kept local so this
  *  module imports nothing. site-seo.test.ts holds the two equal. */
 export const SITE_HOME_SLUG = 'home'
 
-/** Where a published site lives: `https://<domain>` when its domain is bound, else
- *  `<appOrigin>/sites/<slug>`. No trailing slash. */
+/** Where a published site lives: `https://<domain>` when its domain is bound, else its free subdomain
+ *  `https://<slug>.frequencylocal.com`, else `<appOrigin>/sites/<slug>`. No trailing slash. */
 export function siteBaseUrl(slug: string, boundDomain: string | null, appOrigin: string): string {
   if (boundDomain) return `https://${boundDomain}`
+  const subdomain = siteSubdomainHost(slug)
+  if (subdomain) return `https://${subdomain}`
   return `${appOrigin.replace(/\/$/, '')}/sites/${slug}`
 }
 

@@ -11,10 +11,12 @@ describe('site URLs (LIVE-783)', () => {
     expect(siteBaseUrl('danieltyack', 'danieltyack.com', 'https://frequencylocal.com')).toBe('https://danieltyack.com')
   })
 
-  it('falls back to /sites/<slug> on Frequency', () => {
-    expect(siteBaseUrl('danieltyack', null, 'https://frequencylocal.com/')).toBe(
-      'https://frequencylocal.com/sites/danieltyack',
-    )
+  it('uses the free website subdomain when no domain is bound (LIVE-782)', () => {
+    expect(siteBaseUrl('danieltyack', null, 'https://frequencylocal.com/')).toBe('https://danieltyack.frequencylocal.com')
+  })
+
+  it('falls back to /sites/<slug> on Frequency for a slug that cannot be a subdomain', () => {
+    expect(siteBaseUrl('www', null, 'https://frequencylocal.com/')).toBe('https://frequencylocal.com/sites/www')
   })
 
   it('spells home with the root slash on a domain and without one under /sites', () => {

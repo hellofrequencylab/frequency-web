@@ -473,10 +473,12 @@ export const config = {
     // runs the proxy for exactly those two files on any host that is NOT one of Frequency's own, and
     // the proxy rewrites them to the site's /hosted/<host>/robots.txt|sitemap.xml. On Frequency's own
     // hosts nothing changes: the files still skip the proxy (HYG-048). The host regex is
-    // APP_HOST_PATTERN in lib/sites/host.ts, repeated here because a matcher must be a literal.
+    // APP_HOST_PATTERN in lib/sites/host.ts, repeated here because a matcher must be a literal. It
+    // leaves one-label subdomains of frequencylocal.com out, so a Space's free website subdomain
+    // (LIVE-782) gets its own crawler files too.
     {
       source: '/(robots\\.txt|sitemap\\.xml)',
-      missing: [{ type: 'host', value: '(?:(?:.+\\.)?(?:frequencylocal\\.com|findafreq\\.com|vercel\\.app)|localhost|[\\d.]+)' }],
+      missing: [{ type: 'host', value: '(?:(?:www\\.|(?:[^.]+\\.){2,})?frequencylocal\\.com|(?:.+\\.)?(?:findafreq\\.com|vercel\\.app)|localhost|[\\d.]+)' }],
     },
   ],
 }
