@@ -15,5 +15,6 @@
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const p=r(\"lib/pricing/plans.ts\");const m=p.match(/SPACE_PLANS = \\[([^\\]]*)\\]/);if(!m||!/\\x27collective\\x27/.test(m[1]))fail(\"SPACE_PLANS has no collective plan\");const rk=(p.split(\"PLAN_CAPABILITY_RANK\")[1]||\"\");const rb=rk.match(/business: (\\d)/),rc=rk.match(/collective: (\\d)/);if(!rb||!rc||Number(rc[1])<=Number(rb[1]))fail(\"collective does not rank above business\");if(/\\n\\s*collective: \\x27business\\x27/.test(p))fail(\"collective still remaps to business\");const k=r(\"lib/billing/pricing-keys.ts\");for(const key of [\"collective_base\",\"collective_space\",\"nonprofit_collective\"])if(!new RegExp(\"CATALOG_ITEM_KEYS = \\\\[[^\\\\]]*\\x27\"+key+\"\\x27\").test(k))fail(key+\" is not a catalog item\");for(const amt of [\"14900, 14900\",\"2900, 2900\",\"11900, 11900\"])if(!k.includes(\"amountsFromMonthly(\"+amt+\")\"))fail(\"no catalog amount \"+amt);if(/RETIRED_CATALOG_ITEM_KEYS[^\\]]*\\x27collective_base\\x27/.test(k))fail(\"collective_base is still retired\");console.log(\"ok: Collective is a plan and the three new prices are in the catalog\")'"
   },
   "notes": "Target: merged before 2026-11-24 (beta_grace ends 2026-12-01).",
+  "wave": "WR",
   "closed": "2026-10-06"
 }

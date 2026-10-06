@@ -8,22 +8,29 @@ import { Banner } from '@/components/admin/status'
 import { RoleBadge, ROLE_LABEL } from '@/lib/community-roles'
 import { getAllArticles } from '@/lib/help/content'
 import { tierCurriculumViews } from '@/lib/onboarding/training-curriculum'
+import { loadCurriculum } from '@/lib/onboarding/curriculum-store'
+import { staffCanNow } from '@/lib/staff'
+import { TierEditor } from './tier-editor'
 
 // Role-advancement training — authoring surface (ADR-224 §7.5). The owner/staff view
 // of the curriculum each promotion teaches: per tier (crew → host → guide → mentor),
 // the curated registry path, the reward, and the help articles currently `role`-tagged
-// for that tier (the editable source a tag-driven curriculum draws from). Read-mostly
-// for now: authoring happens by tagging help articles (`role:` front-matter) and
-// editing the registry (lib/onboarding/training-curriculum.ts); in-place DB editing is
-// scoped for a follow-up. Gated to community host+ / content staff.
+// for that tier (the editable source a tag-driven curriculum draws from). Community staff
+// with write access edit a tier's title, intro and steps in place (LIVE-690); the edit is
+// stored over the code registry (lib/onboarding/curriculum-store.ts) and the reward stays
+// in code. Reading is gated to community host+ / community staff.
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminContentTrainingPage() {
   await requireAdmin('host', { staff: 'community' })
 
-  const articles = await getAllArticles()
-  const tiers = tierCurriculumViews(articles)
+  const [articles, curriculum, canEdit] = await Promise.all([
+    getAllArticles(),
+    loadCurriculum(),
+    staffCanNow('community', 'write'),
+  ])
+  const tiers = tierCurriculumViews(articles, curriculum.defs)
 
   const definedTiers = tiers.filter((t) => t.def !== null)
   const taggedArticles = articles.filter((a) => a.role)
@@ -51,27 +58,26 @@ export default async function AdminContentTrainingPage() {
 
       <AdminSection
         title="Authoring"
-        description="Two ways to shape a tier's path. Both live in git and ship with the code."
+        description="Two ways to shape a tier's path."
       >
         <Banner tone="info" title="How to edit the curriculum">
           <p className="mt-1">
+            <span className="font-semibold text-text">Edit the path here.</span> Use Edit this
+            path under a tier to change its title, intro and steps. Members see the change on
+            their next visit, and anyone partway through keeps the steps they already finished.
+            The Gems a path pays stay fixed.
+          </p>
+          <p className="mt-2">
             <span className="font-semibold text-text">Tag help articles.</span> Add{' '}
             <code className="rounded bg-surface px-1 py-0.5 text-meta text-text">role: host</code>{' '}
             (or crew / guide / mentor) to a help article&apos;s front-matter and it joins
-            that tier&apos;s source set below. This keeps the words where they already live.
+            that tier&apos;s source set below, ready to link as a step.
           </p>
-          <p className="mt-2">
-            <span className="font-semibold text-text">Curate the path.</span> The ordered
-            steps and reward each promotion shows come from the registry in{' '}
-            <code className="rounded bg-surface px-1 py-0.5 text-meta text-text">
-              lib/onboarding/training-curriculum.ts
-            </code>
-            . Edit it to add a tier or reorder steps.
-          </p>
-          <p className="mt-2 text-meta text-subtle">
-            In-place editing of the curriculum from this screen is scoped for a follow-up;
-            today this is the authoritative preview of what each promotion delivers.
-          </p>
+          {!canEdit && (
+            <p className="mt-2 text-meta text-subtle">
+              Editing needs community staff write access. You can read every path here.
+            </p>
+          )}
         </Banner>
       </AdminSection>
 
@@ -103,7 +109,18 @@ export default async function AdminContentTrainingPage() {
                 <span className="rounded-md bg-surface-elevated px-2 py-0.5 tabular-nums">
                   {def.reward} Gems on completion
                 </span>
+                {curriculum.edited.includes(role) && (
+                  <span className="rounded-control bg-surface-elevated px-2 py-0.5">Edited here</span>
+                )}
               </div>
+
+              {canEdit && (
+                <TierEditor
+                  role={role}
+                  initial={{ title: def.title, blurb: def.blurb, steps: def.steps }}
+                  edited={curriculum.edited.includes(role)}
+                />
+              )}
 
               <div>
                 <p className="mb-2 eyebrow text-subtle">
@@ -111,7 +128,7 @@ export default async function AdminContentTrainingPage() {
                 </p>
                 <ol className="divide-y divide-border/50 overflow-hidden rounded-2xl border border-border bg-surface">
                   {def.steps.map((s, i) => (
-                    <li key={s.href} className="flex items-center gap-3 px-4 py-3">
+                    <li key={s.id} className="flex items-center gap-3 px-4 py-3">
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-meta font-semibold tabular-nums text-muted">
                         {i + 1}
                       </span>

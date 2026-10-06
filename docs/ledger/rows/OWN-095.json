@@ -15,5 +15,6 @@
     "evidence": "Open until the owner approves the messages and they are sent; record the send date here.",
     "checked": "2026-10-06"
   },
-  "ownerAction": "content"
+  "ownerAction": "content",
+  "wave": "owner-timed"
 }

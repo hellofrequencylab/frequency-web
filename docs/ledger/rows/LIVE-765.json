@@ -13,5 +13,6 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"lib/collective/cross-listing.ts\"))fail(\"no cross-listing module\");console.log(\"ok: cross-listing exists\")'"
-  }
+  },
+  "wave": "WR"
 }

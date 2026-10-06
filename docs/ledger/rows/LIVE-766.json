@@ -13,5 +13,6 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"lib/collective/network-report.ts\"))fail(\"no network report module\");console.log(\"ok: network reporting exists\")'"
-  }
+  },
+  "wave": "WR"
 }

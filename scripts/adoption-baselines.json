@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2147,
+      "baseline": 2146,
       "frozen": {
-        "at": "2026-10-05",
-        "value": 2147,
+        "at": "2026-10-06",
+        "value": 2146,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
-        "from": 2156
+        "reason": "Earned fall, 2147 -> 2146: the site Coming soon link in components/sites/site-page.tsx composes buttonClasses instead of a hand-rolled rounded-control fill (LIVE-741, the main ratchet fix).",
+        "from": 2147
       },
       "history": [
         {
@@ -294,6 +294,13 @@
           "to": 2147,
           "direction": "lowered",
           "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
+        },
+        {
+          "at": "2026-10-06",
+          "from": 2147,
+          "to": 2146,
+          "direction": "lowered",
+          "reason": "Earned fall, 2147 -> 2146: the site Coming soon link in components/sites/site-page.tsx composes buttonClasses instead of a hand-rolled rounded-control fill (LIVE-741, the main ratchet fix)."
         }
       ]
     },
@@ -632,14 +639,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 402,
+      "baseline": 403,
       "frozen": {
-        "at": "2026-10-05",
-        "value": 402,
-        "direction": "lowered",
+        "at": "2026-10-06",
+        "value": 403,
+        "direction": "raised",
         "basis": "c478ed64ec1e",
-        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
-        "from": 403
+        "reason": "Instrument false positive, not a filled button: the +1 is the selected state of the field toggle pills in components/spaces/crm/segment-fields-manager.tsx (LIVE-662, #3203), whose bg-primary-bg tint matches the bg-primary pattern because a hyphen is a word boundary. No pill-toggle primitive exists to compose. The real raw bg-primary button from the same merge window (sister-circle-prompt, LIVE-665) moves to Button in this PR.",
+        "from": 402
       },
       "history": [
         {
@@ -802,6 +809,13 @@
           "to": 402,
           "direction": "lowered",
           "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
+        },
+        {
+          "at": "2026-10-06",
+          "from": 402,
+          "to": 403,
+          "direction": "raised",
+          "reason": "Instrument false positive, not a filled button: the +1 is the selected state of the field toggle pills in components/spaces/crm/segment-fields-manager.tsx (LIVE-662, #3203), whose bg-primary-bg tint matches the bg-primary pattern because a hyphen is a word boundary. No pill-toggle primitive exists to compose. The real raw bg-primary button from the same merge window (sister-circle-prompt, LIVE-665) moves to Button in this PR."
         }
       ]
     },
