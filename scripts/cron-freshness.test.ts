@@ -338,7 +338,8 @@ describe('the floor', () => {
     // 29 since 2026-09-14: onboarding-throughput joined (LIVE-311). 30 since 2026-09-29: tag-library (LIVE-587).
     // 31 since 2026-09-29: reconcile-transfers (LIVE-622).
     // 32 since 2026-09-30: storage-backup (HYG-144). 33 since 2026-10-06: event-followups (LIVE-802).
-    expect(jobs.length).toBe(33)
+    // 34 since 2026-10-06: embed-posts (LIVE-677).
+    expect(jobs.length).toBe(34)
     expect(jobs.length).toBeGreaterThan(MIN_JOBS)
   })
 })

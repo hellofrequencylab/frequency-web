@@ -5,7 +5,8 @@
 //
 //   proximity  · how near the post's scope is, on the fuzzed-geocell distance
 //   graph      · how much the viewer resonates with the author (orbit + edges)
-//   interest   · folded into `graph` for now; post-content embeddings land later
+//   interest   · how close the post's content is to what the viewer engages with (LIVE-677:
+//                post_embeddings + the post_interest_scores centroid, lib/feed/post-interest.ts)
 //   recency    · time-decay, so the feed stays alive
 //   engagement · the post's own reaction/comment heat
 //
@@ -32,15 +33,20 @@ interface BlendWeights {
   graph: number
   engagement: number
   recency: number
+  interest: number
 }
 
 // The default blend. Graph leads (resonance is the point), recency + proximity
 // matter, engagement is the lightest nudge. Tunable per call.
+// `interest` (LIVE-677) sits beside graph: what the post is about matters about as much as who
+// wrote it. It is present only for a post with a vector AND a viewer with engagement history, so
+// for everyone else the renormalisation below leaves today's four-signal blend exactly as it was.
 const DEFAULT_BLEND_WEIGHTS: BlendWeights = {
   proximity: 0.25,
   graph: 0.3,
   engagement: 0.2,
   recency: 0.25,
+  interest: 0.25,
 }
 
 export interface BlendContext {
@@ -48,6 +54,8 @@ export interface BlendContext {
   nowMs: number
   /** authorId → resonance strength in [0, 1] (orbit co-presence + match edges). */
   resonance: Map<string, number>
+  /** postId → content interest in [0, 1] (LIVE-677). A post absent from it has no interest term. */
+  interest?: Map<string, number>
   /** The viewer's feed radius in meters — proximity is normalized against it. */
   radiusM: number
   weights?: Partial<BlendWeights>
@@ -108,9 +116,13 @@ export function blendScore(item: BlendableItem, ctx: BlendContext): number {
   const ageH = Math.max(0, (ctx.nowMs - new Date(item.created_at).getTime()) / 3_600_000)
   const recency: Signal = { weight: w.recency, value: clamp01(Math.pow(0.5, ageH / halfLife)) }
 
+  // Interest — present only when the viewer has an engagement centroid and the post has a vector.
+  const interestValue = ctx.interest?.get(item.id)
+  const interest: Signal = { weight: w.interest, value: interestValue == null ? null : clamp01(interestValue) }
+
   let num = 0
   let den = 0
-  for (const s of [proximity, graph, engagement, recency]) {
+  for (const s of [proximity, graph, engagement, recency, interest]) {
     if (s.value == null) continue
     num += s.weight * s.value
     den += s.weight
