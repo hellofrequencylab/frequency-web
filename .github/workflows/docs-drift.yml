@@ -18,6 +18,9 @@ concurrency:
 
 jobs:
   drift:
+    # Optional on pull requests (owner ruling 2026-10-06, HYG-163): runs only when the PR
+    # carries the `full-ci` label, so the PR list shows required checks only.
+    if: contains(github.event.pull_request.labels.*.name, 'full-ci')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

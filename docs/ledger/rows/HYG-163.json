@@ -1,0 +1,19 @@
+{
+  "id": "HYG-163",
+  "title": "Optional CI jobs (e2e, Lighthouse, pr-compare fallback, docs-drift, help-autodoc) stop running on pull requests unless the PR carries the full-ci label",
+  "status": "done",
+  "priority": "P2",
+  "lane": "hygiene",
+  "size": "S",
+  "closed": "2026-10-06",
+  "source": {
+    "file": ".github/workflows/e2e.yml",
+    "ref": "owner said yes 2026-10-06 ~15:33Z to stopping the optional jobs on PRs, so the PR list only shows real failures"
+  },
+  "detail": "FILED AND CLOSED 2026-10-06. The merge driver cancels the optional jobs on every PR, and GitHub shows a cancelled job as a red X, so every PR in the list looked failed while the required checks were green. The entry job of each optional workflow (e2e preflight, which pr-compare and lighthouse need; pr-compare-fallback; docs-drift; help-autodoc) now has a job-level `if:` on the `full-ci` label, so they report skipped instead of red. The `on:` blocks are unchanged on purpose: scripts/pixel-paths.mjs, workflow-paths.mjs and vercel-ignore-build.mjs read e2e.yml's pull_request paths. Required checks (checks, lint, test, analyze/CodeQL, db-tests, Vercel per ruleset 17640795) are untouched; pr-compare is not required (pr-compare-fallback.yml header). To run them on a PR, add the full-ci label and push; e2e-manual.yml still runs by hand.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const want={e2e:\"preflight\",\"docs-drift\":\"drift\",\"help-autodoc\":\"autodoc\",\"pr-compare-fallback\":\"fallback\"};const bad=[];for(const [f,job] of Object.entries(want)){const p=\".github/workflows/\"+f+\".yml\";if(!fs.existsSync(p)){bad.push(p+\" is gone\");continue}const s=fs.readFileSync(p,\"utf8\");const i=s.indexOf(\"\\n  \"+job+\":\\n\");if(i<0){bad.push(p+\" has no \"+job+\" job\");continue}const rest=s.slice(i+job.length+5);const end=rest.search(/\\n    steps:/);const head=end<0?rest:rest.slice(0,end);if(!/\\n    if: contains\\(github\\.event\\.pull_request\\.labels\\.\\*\\.name, .full-ci.\\)/.test(\"\\n\"+head))bad.push(f+\".\"+job+\" still runs on every pull request\")}for(const f of [\"ci\",\"codeql\",\"db-tests\",\"db-tests-fallback\"]){const s=fs.readFileSync(\".github/workflows/\"+f+\".yml\",\"utf8\");if(/full-ci/.test(s))bad.push(f+\".yml is required and must not be label-gated\")}if(bad.length){console.error(\"HYG-163: \"+bad.join(\"; \"));process.exit(1)}console.log(\"ok: optional PR jobs run only with the full-ci label; required workflows untouched\")'",
+    "note": "Reads the four optional workflows and fails while any entry job lacks the full-ci label condition before its steps; also fails if a required workflow (ci, codeql, db-tests, db-tests-fallback) gets label-gated. Fails on main, where none are gated."
+  }
+}

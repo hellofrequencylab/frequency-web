@@ -94,6 +94,9 @@ jobs:
   # as of 2026-08-18 so is the status it POSTS; the naming rule below still matters, because it is
   # what makes re-requiring `pr-compare` safe rather than a way to overwrite a red visual gate.
   fallback:
+    # Optional on pull requests (owner ruling 2026-10-06, HYG-163): runs only when the PR
+    # carries the `full-ci` label, so the PR list shows required checks only.
+    if: contains(github.event.pull_request.labels.*.name, 'full-ci')
     name: pr-compare fallback (docs-only PRs)
     runs-on: ubuntu-latest
     steps:
