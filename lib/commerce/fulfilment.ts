@@ -580,7 +580,7 @@ export async function notifyOrderShipped(input: ShippedNoticeInput, deps: { clie
           title: 'Your order shipped',
           body: `${what} is on its way from ${seller}.`,
           url: '/orders',
-          ...(to ? { email: { to, subject, html: receiptHtml(content), text: receiptText(content) } } : {}),
+          ...(to ? { email: { to, subject, html: await receiptHtml(content), text: receiptText(content) } } : {}),
         },
       )
       if (result.enqueuedCount === 0) {
@@ -594,7 +594,7 @@ export async function notifyOrderShipped(input: ShippedNoticeInput, deps: { clie
       console.error(`${LOG} no buyer to tell that the order shipped`, { orderId: input.orderId })
       return
     }
-    await enqueueEmail({ to: guest, subject, html: receiptHtml(content), text: receiptText(content) })
+    await enqueueEmail({ to: guest, subject, html: await receiptHtml(content), text: receiptText(content) })
   } catch (err) {
     console.error(`${LOG} shipped notice failed`, { orderId: input.orderId, err })
   }

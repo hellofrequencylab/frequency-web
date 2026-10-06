@@ -39,17 +39,10 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import {
-  enqueueEmail,
-  emailShell,
-  RECEIPT_FOOTER,
-  EMAIL_INK,
-  EMAIL_MUTED,
-  EMAIL_RULE,
-  EMAIL_ACTION,
-  EMAIL_ACTION_INK,
-  EMAIL_P,
-} from '@/lib/email'
+import { createElement } from 'react'
+import { enqueueEmail } from '@/lib/email'
+import { ReceiptEmail } from '@/lib/email-react/receipt'
+import { renderEmail } from '@/lib/email-react/render'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { profileAccountEmail } from '@/lib/profiles/account-email'
 import { formatPriceCents } from '@/lib/commerce/types'
@@ -97,14 +90,9 @@ export function receiptDate(when: Date = new Date()): string {
 
 // ── The message body ───────────────────────────────────────────────────────────────────────────
 //
-// Email HTML, not UI chrome: mail clients read no design tokens, so the palette is literal hex,
-// imported from lib/email.ts rather than re-declared here. The BODY is composed below; the brand
-// wrapper (doctype, head, wordmark, card, unsubscribe footer) comes from `emailShell`, so a money
-// receipt is the same object as a ticket receipt.
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
+// The BODY is the React Email component lib/email-react/receipt.tsx inside the base template
+// (lib/email-react/shell.tsx, the same wrapper `emailShell` writes), so a money receipt is the
+// same object as a ticket receipt. This file shapes the data; the component renders it.
 
 function greeting(name: string | null): string {
   const trimmed = (name ?? '').trim()
@@ -116,34 +104,17 @@ function usableLines(lines: ReceiptLine[]): ReceiptLine[] {
   return lines.filter((l) => (l.value ?? '').trim().length > 0)
 }
 
-export function receiptHtml(c: ReceiptContent): string {
-  const rows = usableLines(c.lines)
-    .map(
-      (l) =>
-        `<tr><td style="padding:6px 16px 6px 0;font-size:14px;color:${EMAIL_MUTED};">${escapeHtml(l.label)}</td>` +
-        `<td style="padding:6px 0;font-size:14px;color:${EMAIL_INK};font-weight:600;">${escapeHtml(l.value)}</td></tr>`,
-    )
-    .join('')
-  const detail = rows
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border-top:1px solid ${EMAIL_RULE};border-bottom:1px solid ${EMAIL_RULE};width:100%;"><tbody>${rows}</tbody></table>`
-    : ''
-  const closing = c.closing
-    .filter((p) => p.trim().length > 0)
-    .map((p) => `<p style="${EMAIL_P}color:${EMAIL_MUTED};">${escapeHtml(p)}</p>`)
-    .join('')
-  const action =
-    c.actionLabel && c.actionUrl
-      ? `<p style="margin:0 0 20px;"><a href="${escapeHtml(c.actionUrl)}" style="display:inline-block;background:${EMAIL_ACTION};color:${EMAIL_ACTION_INK};font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;">${escapeHtml(c.actionLabel)}</a></p>`
-      : ''
-  // RECEIPT_FOOTER, not the shell's default: this body is shared by all four money receipts
-  // (donation, tip, order, subscription), and two of those loops serve people who deliberately
-  // have no account, so the default "you joined Frequency" line would be false. See LIVE-365.
-  return emailShell(
-    `
-<p style="${EMAIL_P}color:${EMAIL_INK};">${escapeHtml(greeting(c.greetingName))}</p>
-<p style="${EMAIL_P}color:${EMAIL_INK};">${escapeHtml(c.lead)}</p>
-${detail}${action}${closing}`,
-    RECEIPT_FOOTER,
+/** The receipt's HTML, rendered through the React Email base template (LIVE-695,
+ *  lib/email-react/receipt.tsx). lib/billing/__golden__ pins the output. */
+export function receiptHtml(c: ReceiptContent): Promise<string> {
+  return renderEmail(
+    createElement(ReceiptEmail, {
+      greeting: greeting(c.greetingName),
+      lead: c.lead,
+      lines: usableLines(c.lines),
+      closing: c.closing.filter((p) => p.trim().length > 0),
+      action: c.actionLabel && c.actionUrl ? { label: c.actionLabel, url: c.actionUrl } : null,
+    }),
   )
 }
 
@@ -205,7 +176,7 @@ export async function sendMoneyReceipt(opts: MoneyReceiptOptions): Promise<boole
     await enqueueEmail({
       to,
       subject: opts.subject,
-      html: receiptHtml(opts.content),
+      html: await receiptHtml(opts.content),
       text: receiptText(opts.content),
     })
     return true

@@ -249,8 +249,8 @@ describe('notifyEarner', () => {
 })
 
 describe('the rendered message', () => {
-  it('prints the facts, drops an empty row, and carries no em dash', () => {
-    const html = receiptHtml(content)
+  it('prints the facts, drops an empty row, and carries no em dash', async () => {
+    const html = await receiptHtml(content)
     const text = receiptText(content)
     expect(text).toContain('Hi Ada,')
     expect(text).toContain('Total: $12')
@@ -266,10 +266,11 @@ describe('the rendered message', () => {
   // The brand wrapper (lib/email.ts `emailShell`). Until 2026-09-16 this module hand-rolled a bare
   // `<div>`: no doctype, no charset, no wordmark, no unsubscribe footer. A money email that does not
   // look like a Frequency email is the one people forward to their bank.
-  it('renders inside the Frequency shell, not a bare div', () => {
-    const html = receiptHtml(content)
-    expect(html).toContain('<!DOCTYPE html>')
-    expect(html).toContain('<meta charset="UTF-8">')
+  it('renders inside the Frequency shell, not a bare div', async () => {
+    const html = await receiptHtml(content)
+    // React Email (LIVE-695) writes the doctype and attributes in its own spelling.
+    expect(html).toMatch(/^<!DOCTYPE html/i)
+    expect(html).toMatch(/<meta charset="UTF-8"\/?>/i)
     expect(html).toContain('>frequency</a>')
     expect(html).not.toMatch(/[\u2014\u2013]/)
   })
@@ -278,8 +279,8 @@ describe('the rendered message', () => {
   // who deliberately have no account: a signed-out donor and a guest payer. The shell's default
   // footer asserts they joined, which is a FACTUAL CLAIM in a transactional email -- the one line a
   // confused recipient acts on, by marking it spam.
-  it('tells the payer why they got it without claiming they joined', () => {
-    const html = receiptHtml(content)
+  it('tells the payer why they got it without claiming they joined', async () => {
+    const html = await receiptHtml(content)
     expect(html).toContain('This is a receipt for a payment you made through Frequency.')
     expect(html).not.toContain('joined Frequency')
   })
@@ -287,19 +288,19 @@ describe('the rendered message', () => {
   // A receipt is transactional, so CAN-SPAM exempts it from the opt-out requirement. Offering the
   // control anyway implies a buyer can opt out of proof of payment, and for a guest it points at a
   // settings page they cannot reach. The sender's address is NOT exempt and stays.
-  it('carries no unsubscribe control but keeps the sender address line', () => {
-    const html = receiptHtml(content)
+  it('carries no unsubscribe control but keeps the sender address line', async () => {
+    const html = await receiptHtml(content)
     expect(html).not.toContain('Unsubscribe or manage emails')
     expect(html).not.toContain('/settings/notifications')
-    expect(html).toMatch(/color:#A89E8C;">[^<]+</)
+    expect(html).toMatch(/color:#A89E8C;?">[^<]+</)
   })
 
   it('greets a payer with no name plainly', () => {
     expect(receiptText({ ...content, greetingName: null })).toContain('Hi there,')
   })
 
-  it('escapes what a payer typed', () => {
-    const html = receiptHtml({ ...content, lines: [{ label: 'Note', value: '<script>x</script>' }] })
+  it('escapes what a payer typed', async () => {
+    const html = await receiptHtml({ ...content, lines: [{ label: 'Note', value: '<script>x</script>' }] })
     expect(html).not.toContain('<script>')
     expect(html).toContain('&lt;script&gt;')
   })

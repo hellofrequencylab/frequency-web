@@ -1628,6 +1628,23 @@ const footerStyle    = `font-size:12px;color:#8F8675;margin-top:24px;text-align:
 const unsubBtnStyle  = `display:inline-block;border:1px solid #E9E1D4;border-radius:999px;padding:7px 18px;color:#6B6253;text-decoration:none;font-weight:600;font-size:12px;`
 const dividerStyle   = `border:none;border-top:1px solid #E9E1D4;margin:26px 0;`
 
+// The shell's parts, for the React Email base template (lib/email-react/shell.tsx, LIVE-695), so
+// the React render and `emailShell` read one set of styles and cannot drift.
+export const EMAIL_SHELL_STYLES = {
+  body: bodyBg,
+  container: containerStyle,
+  card: cardStyle,
+  logo: logoStyle,
+  tagline: taglineStyle,
+  footer: footerStyle,
+  unsub: unsubBtnStyle,
+} as const
+export const EMAIL_BASE_URL = BASE_URL
+/** The CAN-SPAM postal line, unescaped (React escapes it). */
+export function emailPostalAddress(): string {
+  return postalAddress()
+}
+
 // The same palette as named parts, for the modules that compose their OWN body and hand it to
 // `emailShell` (the money receipts in lib/billing/*). They lived as three private copies in three
 // files until 2026-09-16; one source is what keeps a receipt looking like every other Frequency
