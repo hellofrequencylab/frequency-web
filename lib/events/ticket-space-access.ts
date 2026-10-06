@@ -39,16 +39,26 @@ export function membershipTicketWallSentence(wall: string): string {
 
 export async function resolveMembershipTicketGate(
   plan: string | null | undefined,
+  spaceId?: string | null,
 ): Promise<{ allowed: boolean; wall: string }> {
   const [overrides, gatesLive] = await Promise.all([
     loadFeatureGateOverrides(),
     featureGatesLive(),
   ])
-  const allowed = await featureAllowed(
+  let allowed = await featureAllowed(
     MEMBERSHIP_TICKET_FEATURE,
     { plan: asSpacePlan(plan) },
     { gatesLive },
   )
+  // LIVE-822: a staff comp Space clears the gate at Collective. Read only on a refusal.
+  if (!allowed && spaceId) {
+    const { spaceLimitsWaived } = await import('@/lib/pricing/space-allowance')
+    allowed = await featureAllowed(
+      MEMBERSHIP_TICKET_FEATURE,
+      { plan: asSpacePlan(plan), limitsWaived: await spaceLimitsWaived(spaceId) },
+      { gatesLive },
+    )
+  }
   const wall =
     featureWallLabel(MEMBERSHIP_TICKET_FEATURE, overrides) ?? SPACE_PLAN_LABEL.free
   return { allowed, wall }
@@ -77,7 +87,7 @@ export async function loadSpaceAccessContext(eventId: string): Promise<SpaceAcce
 
   const [membershipTiers, gate] = await Promise.all([
     listMembershipTiers(spaceId),
-    resolveMembershipTicketGate(space.plan),
+    resolveMembershipTicketGate(space.plan, spaceId),
   ])
   return {
     spaceName: space.brand_name ?? space.name ?? 'this space',

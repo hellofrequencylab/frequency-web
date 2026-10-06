@@ -50,6 +50,14 @@ export function planRank(raw: string | null | undefined): number {
   return PLAN_CAPABILITY_RANK[asSpacePlan(raw)] ?? 0
 }
 
+/** The plan a STAFF-WAIVED Space is gated at (LIVE-822, `spaces.limits_waived`): Collective, the top
+ *  capability rank, unless the plan already ranks there. Every plan gate then opens; the counted caps
+ *  are lifted separately at the meter seam. PURE. */
+export function limitsWaivedPlan(raw: string | null | undefined): SpacePlan {
+  const plan = asSpacePlan(raw)
+  return PLAN_CAPABILITY_RANK[plan] >= PLAN_CAPABILITY_RANK.collective ? plan : 'collective'
+}
+
 /** Operator-facing label for a Space tier (member/operator copy, plain voice, no em dashes). "Business" and
  *  "Non Profit" are public designators; Independent is the unadvertised white-label tier
  *  (NAMING.md, ADR-811, LIVE-227). Collective is a plan label again (ADR-1709). */

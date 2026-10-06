@@ -18,6 +18,7 @@ import {
   ADDON_KEYS,
   BILLING_MANAGED_KEYS,
   spaceHasCustomDomain,
+  limitsWaivedPlan,
 } from './plans'
 import {
   deriveGamificationAccess,
@@ -32,7 +33,7 @@ import {
   type FeatureGate,
 } from './gates'
 import { PRICING_DEFAULTS } from './settings'
-import { PLACEHOLDER_METER_LIMITS } from './feature-meters'
+import { PLACEHOLDER_METER_LIMITS, allowanceVerdict } from './feature-meters'
 import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 
@@ -455,5 +456,31 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     // NON-VACUITY: the tier the row set omits is still fully priced in the config it derives from, so
     // this is a display decision and not a quietly deleted plan.
     expect(PRICING_DEFAULTS.plan.independent.monthly_cents).toBe(24900)
+  })
+})
+
+describe('LIVE-822: a staff-waived Space clears every plan gate at Collective', () => {
+  it('limitsWaivedPlan lifts a lower plan to Collective and keeps a Collective-rank plan', () => {
+    expect(limitsWaivedPlan('free')).toBe('collective')
+    expect(limitsWaivedPlan('business')).toBe('collective')
+    expect(limitsWaivedPlan(null)).toBe('collective')
+    expect(limitsWaivedPlan('nonprofit_collective')).toBe('nonprofit_collective')
+  })
+
+  it('meetsGate opens every enabled plan gate for a waived free Space, and only for a waived one', () => {
+    const planGates = Object.values(FEATURE_GATES).filter((g) => g.axis === 'plan')
+    expect(planGates.length).toBeGreaterThan(0)
+    for (const gate of planGates) {
+      expect(meetsGate(gate, { plan: 'free', limitsWaived: true })).toBe(true)
+    }
+    expect(planGates.some((g) => !meetsGate(g, { plan: 'free' }))).toBe(true)
+    expect(planGates.some((g) => !meetsGate(g, { plan: 'free', limitsWaived: false }))).toBe(true)
+  })
+
+  it('allowanceVerdict resolves a waived Space to unlimited and leaves an unwaived one capped', () => {
+    const waived = allowanceVerdict('space_qr', 'collective', 5, { gatesLive: true, floor: 5, limitsWaived: true })
+    expect(waived).toMatchObject({ allowed: true, allowance: null, enforced: false })
+    const capped = allowanceVerdict('space_qr', 'collective', 5, { gatesLive: true, floor: 5 })
+    expect(capped).toMatchObject({ allowed: false, allowance: 5, enforced: true })
   })
 })

@@ -183,7 +183,10 @@ export async function getSpaceByDomain(domain: string): Promise<Space | null> {
   const allowed =
     (await featureAllowed('custom_domain', { plan: asSpacePlan(space.plan) }, { gatesLive })) &&
     (!gatesLive || spaceHasCustomDomain(space.plan, addonsHeldBy((k) => spaceHasEntitlement(space, k))))
-  return allowed ? space : null
+  if (allowed || !gatesLive) return space
+  // LIVE-822: a staff comp Space serves its domain at the Collective level. Read only on a refusal.
+  const { spaceLimitsWaived } = await import('@/lib/pricing/space-allowance')
+  return (await spaceLimitsWaived(space.id)) ? space : null
 }
 
 /** The Space with this slug, or null. REQUEST-CACHED (React.cache) keyed on the normalized slug so

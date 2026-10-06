@@ -238,7 +238,7 @@ async function EventAccessLoader({
 }) {
   const [access, gate] = await Promise.all([
     listSpaceEventAccess(space.id),
-    resolveMembershipTicketGate(space.plan),
+    resolveMembershipTicketGate(space.plan, space.id),
   ])
   const rows = isError(access) ? [] : access.data.rows
   return (

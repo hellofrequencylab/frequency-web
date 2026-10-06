@@ -18,7 +18,7 @@
 // is fail-safe to the code map on any DB error.
 
 import { ENTITLEMENT_TIERS, type EntitlementTier } from '@/lib/core/entitlement'
-import { PLAN_CAPABILITY_RANK, asSpacePlan, isSpacePlanLabel, type SpacePlan } from './plans'
+import { PLAN_CAPABILITY_RANK, asSpacePlan, isSpacePlanLabel, limitsWaivedPlan, type SpacePlan } from './plans'
 
 // ── The two entitlement ladders (low → high) ────────────────────────────────────────────
 // Personal: free < crew (ENTITLEMENT_TIERS from lib/core/entitlement.ts).
@@ -247,14 +247,19 @@ export type FeatureKey = keyof typeof FEATURE_GATES | (string & {})
 
 /** Does an entitlement label meet a gate's minimum on its ladder? Unknown labels rank lowest
  *  (default-deny). PURE. */
-export function meetsGate(gate: FeatureGate, account: { tier?: EntitlementTier | null; plan?: SpacePlan | string | null }): boolean {
+export function meetsGate(
+  gate: FeatureGate,
+  account: { tier?: EntitlementTier | null; plan?: SpacePlan | string | null; limitsWaived?: boolean },
+): boolean {
   if (!gate.enabled) return true // a disabled gate never blocks
   if (gate.axis === 'tier') {
     const have = TIER_RANK[(account.tier ?? 'free') as EntitlementTier] ?? 0
     const need = TIER_RANK[gate.minEntitlement as EntitlementTier] ?? 0
     return have >= need
   }
-  const have = PLAN_RANK[asSpacePlan(account.plan)] ?? 0
+  // A staff-waived Space (LIVE-822) is gated at Collective, whatever its stored plan.
+  const plan = account.limitsWaived === true ? limitsWaivedPlan(account.plan) : account.plan
+  const have = PLAN_RANK[asSpacePlan(plan)] ?? 0
   const need = PLAN_RANK[asSpacePlan(gate.minEntitlement)] ?? 0
   return have >= need
 }
@@ -384,6 +389,8 @@ export async function setFeatureGateOverride(
 interface GateAccount {
   tier?: EntitlementTier | null
   plan?: SpacePlan | string | null
+  /** `spaces.limits_waived` (LIVE-822): a staff comp Space clears every plan gate at Collective. */
+  limitsWaived?: boolean
 }
 
 /** Is `feature` ALLOWED for this account? The single entitlements resolver. It reads the DB

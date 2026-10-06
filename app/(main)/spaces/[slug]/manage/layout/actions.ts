@@ -427,16 +427,23 @@ async function writeSpaceDomain(spaceId: string, domain: string | null): Promise
   return error.code === '23505' ? 'taken' : 'error'
 }
 
-async function customDomainAllowed(plan: string | null, entitlements: unknown): Promise<boolean> {
+async function customDomainAllowed(spaceId: string, plan: string | null, entitlements: unknown): Promise<boolean> {
   const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan, addonsHeldBy, spaceHasCustomDomain }] = await Promise.all([
     import('@/lib/pricing/gates'),
     import('@/lib/pricing/settings'),
     import('@/lib/pricing/plans'),
   ])
   const gatesLive = await featureGatesLive()
-  if (!(await featureAllowed('custom_domain', { plan: asSpacePlan(plan) }, { gatesLive }))) return false
-  // LIVE-821: Business needs the custom domain add-on; Collective and Independent include it.
-  return !gatesLive || spaceHasCustomDomain(plan, addonsHeldBy((k) => spaceHasEntitlement({ entitlements }, k)))
+  if (
+    (await featureAllowed('custom_domain', { plan: asSpacePlan(plan) }, { gatesLive })) &&
+    // LIVE-821: Business needs the custom domain add-on; Collective and Independent include it.
+    (!gatesLive || spaceHasCustomDomain(plan, addonsHeldBy((k) => spaceHasEntitlement({ entitlements }, k))))
+  ) {
+    return true
+  }
+  // LIVE-822: a staff comp Space connects a domain at the Collective level. Read only on a refusal.
+  const { spaceLimitsWaived } = await import('@/lib/pricing/space-allowance')
+  return spaceLimitsWaived(spaceId)
 }
 
 /** Connect `input` as the Space's website domain: store it, attach it to hosting, return its status. */
@@ -445,7 +452,7 @@ export async function connectSiteDomain(slug: string, input: string): Promise<Ac
   if (!parsed.ok) return fail(parsed.error)
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
-  if (!(await customDomainAllowed(auth.plan, auth.entitlements))) {
+  if (!(await customDomainAllowed(auth.spaceId, auth.plan, auth.entitlements))) {
     return fail('Your own domain is an add-on on Business, and it comes with Collective.')
   }
 

@@ -26,6 +26,7 @@
 
 import { FEATURE_GATES, mergeGate, meetsGate, loadFeatureGateOverrides, type FeatureGateOverrides } from './gates'
 import { PAYMENTS_REFUSAL_PERSONAL, PAYMENTS_REFUSAL_SPACE } from './payments-copy'
+import { limitsWaivedPlan } from './plans'
 
 /** The gate key, declared in FEATURE_GATES at the Business floor. */
 const PAYMENTS_FEATURE = 'space_payments'
@@ -101,7 +102,13 @@ export async function spacePaymentsVerdict(
       if (error || !data) return refuse
       plan = (data as { plan: string | null }).plan
     }
-    if (planTakesPayments(plan, await loadFeatureGateOverrides(), opts.also)) return { ok: true }
+    const overrides = await loadFeatureGateOverrides()
+    if (planTakesPayments(plan, overrides, opts.also)) return { ok: true }
+    // LIVE-822: a staff comp Space takes payments at the Collective level. Read only on a refusal.
+    const { spaceLimitsWaived } = await import('@/lib/pricing/space-allowance')
+    if ((await spaceLimitsWaived(spaceId)) && planTakesPayments(limitsWaivedPlan(plan), overrides, opts.also)) {
+      return { ok: true }
+    }
     return refuse
   } catch {
     return refuse

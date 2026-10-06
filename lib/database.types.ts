@@ -15176,6 +15176,7 @@ export type Database = {
           last_plan_event_id: string | null
           last_plan_event_rank: number | null
           latitude: number | null
+          limits_waived: boolean
           location_precision: string
           longitude: number | null
           mode_variant: string | null
@@ -15231,6 +15232,7 @@ export type Database = {
           last_plan_event_id?: string | null
           last_plan_event_rank?: number | null
           latitude?: number | null
+          limits_waived?: boolean
           location_precision?: string
           longitude?: number | null
           mode_variant?: string | null
@@ -15286,6 +15288,7 @@ export type Database = {
           last_plan_event_id?: string | null
           last_plan_event_rank?: number | null
           latitude?: number | null
+          limits_waived?: boolean
           location_precision?: string
           longitude?: number | null
           mode_variant?: string | null

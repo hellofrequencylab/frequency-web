@@ -725,15 +725,18 @@ export interface AllowanceVerdict {
  *     floor, used) — so the answer is only ever "no" for growth PAST where the owner already stands.
  *
  *  PURE. `gatesLive` is resolved by the caller (lib/pricing/settings.ts featureGatesLive()), and the
- *  IO wrapper (lib/pricing/space-allowance.ts) is the one place that does the reads. */
+ *  IO wrapper (lib/pricing/space-allowance.ts) is the one place that does the reads. `limitsWaived`
+ *  (LIVE-822) resolves the allowance to unlimited for a staff comp Space. */
 export function allowanceVerdict(
   featureKey: string,
   tier: string,
   used: number,
-  opts: { gatesLive: boolean; floor?: number | null },
+  opts: { gatesLive: boolean; floor?: number | null; limitsWaived?: boolean },
 ): AllowanceVerdict {
   const u = Math.max(0, Math.trunc(Number.isFinite(used) ? used : 0))
-  const allowance = allowanceAt(featureKey, tier)
+  // A staff-waived Space (`spaces.limits_waived`, LIVE-822) has no cap on any dimension: null, the
+  // unlimited sentinel, on every plan.
+  const allowance = opts.limitsWaived === true ? null : allowanceAt(featureKey, tier)
   const unmetered: AllowanceVerdict = {
     allowed: true,
     allowance,

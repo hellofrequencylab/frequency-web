@@ -145,3 +145,42 @@ describe('the always-on QR cap keeps biting (a refactor must not switch a live l
     expect(v.remaining).toBe(0)
   })
 })
+
+describe('LIVE-822: a staff-waived Space (spaces.limits_waived) has no caps', () => {
+  const QR_COLLECTIVE = PLACEHOLDER_METER_LIMITS.space_qr!.collective!
+
+  it('a waived FREE Space resolves every cap to null (unlimited), even an always-on one', async () => {
+    spaceMaybeSingle.mockResolvedValue({ data: { type: 'business', plan: 'free', limits_waived: true } })
+    const crm = await spaceAllowanceVerdict('s1', 'space_crm', FREE_CRM * 10)
+    expect(crm.allowed).toBe(true)
+    expect(crm.allowance).toBeNull()
+    expect(crm.enforced).toBe(false)
+    const qr = await spaceAllowanceVerdict('s1', 'space_qr', 40, { alwaysOn: true })
+    expect(qr.allowed).toBe(true)
+    expect(qr.allowance).toBeNull()
+    expect(await spaceAllowanceHeadroom('s1', 'space_crm', FREE_CRM * 10)).toBeNull()
+  })
+
+  it('a waived COLLECTIVE Space gets null caps where Collective still counts (QR codes 5)', async () => {
+    spaceMaybeSingle.mockResolvedValue({ data: { type: 'business', plan: 'collective', limits_waived: true } })
+    const v = await spaceAllowanceVerdict('s1', 'space_qr', QR_COLLECTIVE, { alwaysOn: true })
+    expect(v.allowed).toBe(true)
+    expect(v.allowance).toBeNull()
+  })
+
+  it('an unwaived Space keeps its caps', async () => {
+    spaceMaybeSingle.mockResolvedValue({ data: { type: 'business', plan: 'collective', limits_waived: false } })
+    const v = await spaceAllowanceVerdict('s1', 'space_qr', QR_COLLECTIVE, { alwaysOn: true })
+    expect(v.allowed).toBe(false)
+    expect(v.allowance).toBe(QR_COLLECTIVE)
+    spaceMaybeSingle.mockResolvedValue({ data: { type: 'business', plan: 'free' } })
+    expect((await spaceAllowanceVerdict('s1', 'space_crm', FREE_CRM)).allowed).toBe(false)
+  })
+
+  it('an unreadable flag enforces as usual (never waives on an error)', async () => {
+    spaceMaybeSingle
+      .mockResolvedValueOnce({ data: { type: 'business', plan: 'free' } })
+      .mockResolvedValueOnce({ data: null, error: { code: '42703' } })
+    expect((await spaceAllowanceVerdict('s1', 'space_crm', FREE_CRM)).allowed).toBe(false)
+  })
+})
