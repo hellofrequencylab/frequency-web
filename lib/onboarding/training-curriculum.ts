@@ -11,6 +11,7 @@
 // surface (7.5) reads this registry, and `role`-tagged help articles feed it.
 
 import type { CommunityRole } from '@/lib/core/roles'
+import { slugify } from '@/lib/utils'
 
 export interface TrainingStep {
   /** Stable id a trainee's per-step completion is stored against (training_paths.completed_steps).
@@ -192,7 +193,7 @@ const STEP_ID = /^[a-z0-9][a-z0-9-]{0,47}$/
 
 /** A step id from a label, for a step an operator just added. PURE. */
 export function stepIdFrom(label: string, taken: ReadonlySet<string>): string {
-  const base = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'step'
+  const base = slugify(label).slice(0, 40) || 'step'
   let id = base
   for (let n = 2; taken.has(id); n++) id = `${base}-${n}`
   return id
