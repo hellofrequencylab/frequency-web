@@ -225,8 +225,8 @@ function seedCode(over: Partial<CodeRow> = {}) {
 
 describe('codeCapForPlan (pure, fail-small)', () => {
   it('maps known plans', () => {
-    expect(codeCapForPlan('free')).toBe(3)
-    // LIVE-228: Business QR is unlimited on the meter (null → UNLIMITED_CODE_CAP).
+    expect(codeCapForPlan('free')).toBe(5)
+    // ADR-1709: Business QR is unlimited on the meter (null → UNLIMITED_CODE_CAP).
     expect(codeCapForPlan('business')).toBe(100_000)
     // The retired ADR-552 labels no longer carry their own stale numbers (`starter` 25, `pro` 100 were
     // still in the hardcoded map years after both tiers were retired). They narrow through asSpacePlan
@@ -234,15 +234,16 @@ describe('codeCapForPlan (pure, fail-small)', () => {
     expect(codeCapForPlan('pro')).toBe(100_000) // -> business
     expect(codeCapForPlan('practitioner')).toBe(100_000) // -> business
     expect(codeCapForPlan('whitelabel')).toBe(codeCapForPlan('independent')) // -> independent
-    // A stored `collective` label remaps to Business (LIVE-228), so it reads the same unlimited cap.
-    expect(codeCapForPlan('collective')).toBe(codeCapForPlan('business'))
+    // Collective is its own plan again (ADR-1709) and is unlimited too.
+    expect(codeCapForPlan('collective')).toBe(100_000)
+    expect(codeCapForPlan('nonprofit_collective')).toBe(100_000)
     expect(codeCapForPlan('nonprofit')).toBe(codeCapForPlan('collective'))
   })
   it('falls to the free cap for unset / unknown plans', () => {
-    expect(codeCapForPlan(null)).toBe(3)
-    expect(codeCapForPlan(undefined)).toBe(3)
-    expect(codeCapForPlan('enterprise-xl')).toBe(3)
-    expect(codeCapForPlan('starter')).toBe(3) // never a real plan label; unknown -> free (fail-small)
+    expect(codeCapForPlan(null)).toBe(5)
+    expect(codeCapForPlan(undefined)).toBe(5)
+    expect(codeCapForPlan('enterprise-xl')).toBe(5)
+    expect(codeCapForPlan('starter')).toBe(5) // never a real plan label; unknown -> free (fail-small)
   })
 })
 
@@ -254,9 +255,9 @@ describe('the QR cap reads the ONE quantity map (ADR-917, no second ladder)', ()
     expect(codeCapForPlan('free')).toBe(PLACEHOLDER_METER_LIMITS.space_qr!.free)
     expect(PLACEHOLDER_METER_LIMITS.space_qr!.business).toBeNull()
     expect(codeCapForPlan('business')).toBe(100_000)
-    // Collective is not a meter rung after LIVE-228; asSpacePlan maps it onto Business.
-    expect(PLACEHOLDER_METER_LIMITS.space_qr!.collective).toBeUndefined()
-    expect(codeCapForPlan('collective')).toBe(codeCapForPlan('business'))
+    // Collective is a meter rung again (ADR-1709), unlimited like Business.
+    expect(PLACEHOLDER_METER_LIMITS.space_qr!.collective).toBeNull()
+    expect(codeCapForPlan('collective')).toBe(100_000)
   })
 })
 
@@ -359,13 +360,11 @@ describe('createSpaceCode (gating + cap + validation)', () => {
     if ('error' in r) expect(r.error).toMatch(/taken/i)
   })
 
-  it('enforces the per-plan cap (free = 3)', async () => {
-    seedCode()
-    seedCode()
-    seedCode() // 3 codes on a free Space (cap 3)
-    const r = await createSpaceCode('space-a', { title: 'Fourth', targetUrl: 'https://x.com' })
+  it('enforces the per-plan cap (free = 5)', async () => {
+    for (let i = 0; i < 5; i++) seedCode() // 5 codes on a free Space (cap 5)
+    const r = await createSpaceCode('space-a', { title: 'Sixth', targetUrl: 'https://x.com' })
     expect('error' in r).toBe(true)
-    if ('error' in r) expect(r.error).toMatch(/plan allows 3/i)
+    if ('error' in r) expect(r.error).toMatch(/plan allows 5/i)
     expect(db.inserts).toHaveLength(0)
   })
 })

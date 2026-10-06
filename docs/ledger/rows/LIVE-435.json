@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-435",
+  "patch": {
+    "verify": {
+      "kind": "manual",
+      "evidence": "SUPERSEDED 2026-10-06 by ADR-1709 (the five-tier pricing ladder, owner ruling): the probe pinned the 1/2 space_team ladder, and LIVE-748 deliberately moved that meter to the ladder numbers and gave it a Collective rung again. The row stays done as history. Its original cmd probe is preserved verbatim in the detail.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\n── SUPERSEDED 2026-10-06 by ADR-1709 (LIVE-748). The meter numbers this probe pinned were changed by the owner's five-tier ladder, so it now fails by design. Original probe, kept verbatim: node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const note=fs.readFileSync(\"lib/spaces/people-catalog-note.ts\",\"utf8\");if(!note.includes(\"export function peopleCatalogNote\"))fail(\"peopleCatalogNote is gone\");if(!note.includes(\"PLACEHOLDER_METER_LIMITS.space_team\"))fail(\"people catalog note does not read the seat meter\");if(!note.includes(\"SPACE_PLAN_LABEL.business\"))fail(\"people catalog note does not name Business from the plan label\");if(/Collective/.test(note))fail(\"people-catalog-note still types Collective\");const cat=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");if(!cat.includes(\"peopleCatalogNote()\"))fail(\"space.people no longer reads peopleCatalogNote\");if(/1 seat free, 3 included on Collective/.test(cat))fail(\"space.people still names 3 Collective seats\");const meters=fs.readFileSync(\"lib/pricing/meter-limits.ts\",\"utf8\");if(!/space_team:\\s*\\{\\s*free:\\s*1,\\s*business:\\s*2\\s*\\}/.test(meters))fail(\"space_team left the 1/2 ladder\");console.log(\"LIVE-435 ok\")'"
+  }
+}
