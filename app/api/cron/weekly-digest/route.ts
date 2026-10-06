@@ -135,6 +135,7 @@ async function handler(req: NextRequest) {
             recipientProfileId: payload.profileId,
             dispatches:         payload.dispatches,
             upcomingEvents:     payload.upcomingEvents,
+            nearbyEvents:       payload.nearbyEvents,
             topStreak:          payload.topStreak,
             rank:               payload.rank,
             goAgain:            payload.goAgain,

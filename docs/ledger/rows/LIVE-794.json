@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-794",
+  "title": "Cards, the breath timer, seeded practice summaries and the event Energy field speak in nervous-system terms",
+  "status": "done",
+  "closed": "2026-10-06",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/events/options.ts",
+    "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
+  },
+  "detail": "PR 5 (ADR-1715). product-story.tsx card blurb becomes Quiet practices for when everything is too loud; lib/on-air.ts keeps about six breaths a minute with no mechanism claim; the event Energy field is relabelled Pace with plain options (Calm, Active, Social, Ceremony) on the same stored values across lib/events/options.ts, the event form, the events index, lib/studio/entities/event.ts and lib/ai/event-blurb.ts; a new data migration rewrites live practice and demo seed summaries that say nervous system (applied migrations are never edited). Production check after apply: select count(*) from practices where summary ilike %nervous system% returns 0.\n\nCLOSED 2026-10-06. The event Energy field reads Pace (Calm, Active, Social, Ceremony) on the same stored values, from one source in lib/events/options.ts (the event form's hand copy is gone; the events index facet and the Studio field read it); event-blurb speaks of pace. The product story card says quiet practices for when everything is too loud; the Coherence timer says about six breaths a minute with no mechanism claim. Migration 20270346005100_plain_seed_summaries.sql rewrites the seeded practice, tier, demo Circle, bio and post copy that said nervous system, by exact substring, so edited rows are untouched. The probe's migration check was corrected before merge: it required update and the phrase in that order, which a values list followed by an update can never satisfy. Production check after apply: select count(*) from practices where summary ilike '%nervous system%' or description ilike '%nervous system%' returns 0.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};if(/nervous system/i.test(r(\"components/page-editor/blocks/product-story.tsx\")))fail(\"a product story card blurb says nervous system\");if(/nervous system/i.test(r(\"lib/on-air.ts\")))fail(\"the breath timer makes a nervous-system claim\");if(!/label:\\s*.Pace/.test(r(\"lib/events/options.ts\"))&&!/Pace/.test(r(\"app/(main)/events/new/event-form.tsx\")))fail(\"the event form still shows Energy instead of Pace\");if(/>\\s*Energy\\s*</.test(r(\"app/(main)/events/new/event-form.tsx\"))||/^\\s*Energy <span/m.test(r(\"app/(main)/events/new/event-form.tsx\")))fail(\"the event form label still reads Energy\");const d=\"supabase/migrations\";if(!fs.readdirSync(d).some(f=>f>\"20270346\"&&/update\\s+public\\.practices\\s+set\\s+(summary|description|body)/i.test(r(d+\"/\"+f))&&/nervous system/i.test(r(d+\"/\"+f))))fail(\"no data migration rewrites the seeded practice summaries that say nervous system\")'",
+    "note": "Fails while a card, the timer or the event form speaks in nervous-system or Energy terms, or no new migration rewrites the seeded practice summaries."
+  },
+  "wave": "W7"
+}

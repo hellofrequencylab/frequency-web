@@ -70,6 +70,11 @@ link. Put it on your calendar. That one step is the best predictor of whether yo
 actually show up. We will send a gentle reminder as the date gets close, never a
 guilt trip.
 
+When you RSVP with just your email, the confirmation shows **Your next step**: one link, picked by how you
+found Frequency, toward the next room with people in it. The end of a Mindless
+session and a newly published Circle show one too. It is a suggestion, so skip it
+if it does not fit.
+
 ## What if the gathering is full?
 
 Join the **waitlist**. If someone's plans change and a spot opens, the next

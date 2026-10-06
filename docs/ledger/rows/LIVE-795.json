@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-795",
+  "title": "New members cannot say which kind of reader they are, so nothing downstream can speak to an archetype",
+  "status": "done",
+  "closed": "2026-10-06",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "app/join/(induction)/actions.ts",
+    "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
+  },
+  "detail": "PR 6 (ADR-1715). lib/audience/archetypes.ts is the single registry (id, family, reader, funnel) for the eleven archetypes; the arrival flow keeps the persona question and adds one follow-up per persona in members' own words; the answer is stored at profiles.meta.archetype (app/join/(induction)/actions.ts) and contacts.meta.archetype (app/(marketing)/start/actions.ts); an archetype_<id> tag per archetype in lib/traits/registry.ts; one saved segment per archetype in a new migration modelled on 20260607010000_persona_segments.sql; a help line and a CHANGELOG Unreleased entry. Skipping is allowed. Never sent to an ad or analytics pixel: the step fires a generic event name.\n\nCLOSED 2026-10-06. lib/audience/archetypes.ts is the single registry (id, family, reader, funnel, internalName) and the follow-up map per persona, in members' own words. components/onboarding/arrival-follow-up.tsx asks it, optionally, in the induction and the /start lead chooser; the answer rides one first-party cookie (fq_archetype) and is resolved against the primary persona. Stored at profiles.meta.archetype (both induction writers) and contacts.meta.archetype (captureLead), tagged archetype_<id> (eleven tags generated from the registry, classed sensitive), and segmented by migration 20270346005200_archetype_segments.sql. Help line in getting-started/your-first-week.md and a CHANGELOG Unreleased entry. No pixel: archetypes.test.ts scans every file that reads the archetype and fails if a track, gtag, fbq, dataLayer or posthog call carries it. Folded in from the launch sweep: the Sunday digest leads with public Events near the member's coarse home cell this week. The Next Steps reorder (photo first) was not made: done row PROG-R9 locks identity then the four nouns, so it needs an owner ruling. Deferred to a later row: stamping Mission Patron on a Crew start without an archetype, and the Builder archetype when a Space sets a price.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};const a=r(\"lib/audience/archetypes.ts\");if(!a)fail(\"there is no archetype registry, so nothing can map a member to an archetype\");for(const id of [\"wired_professional\",\"transplant\",\"activity_first\",\"evidence_first\",\"host_connector\",\"gathering_host\",\"mission_patron\",\"portfolio_teacher\",\"second_act\",\"studio_keeper\",\"network_steward\"]){if(!a.includes(id))fail(\"the archetype registry is missing \"+id);if(!r(\"lib/traits/registry.ts\").includes(\"archetype_\"+id)&&!/archetype_\\$\\{/.test(r(\"lib/traits/registry.ts\")))fail(\"no archetype_\"+id+\" tag is registered, so assignTag would throw\")}if(!/meta[\\s\\S]{0,80}archetype/.test(r(\"app/join/(induction)/actions.ts\")))fail(\"the induction never writes profiles.meta.archetype\")'",
+    "note": "Fails while the registry, any of the eleven ids or their tags are missing, or the induction never stores meta.archetype."
+  },
+  "wave": "W7"
+}

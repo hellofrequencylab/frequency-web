@@ -1,0 +1,19 @@
+{
+  "id": "HYG-164",
+  "title": "Record the five-tier pricing ladder (ADR-1709) and file a row for every phase task",
+  "status": "done",
+  "priority": "P0",
+  "lane": "hygiene",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner pricing ladder report 2026-10-06"
+  },
+  "detail": "PHASE 0 of the five-tier ladder (ADR-1709). TARGET: merged before 2026-11-24, because pricing_settings.beta_grace ends 2026-12-01 and every count limit enforces that day with no deploy. The decision record and the 26 rows of the ladder build, filed together so the board carries the whole plan. Closed in the same PR.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const a=r(\"docs/ledger/adr/ADR-1709.md\")||r(\"docs/DECISIONS.md\");if(!/ADR-1709: The five-tier pricing ladder/.test(a))fail(\"no ladder decision record\");const ids=[\"LIVE-747\",\"LIVE-748\",\"LIVE-749\",\"LIVE-750\",\"LIVE-751\",\"LIVE-752\",\"LIVE-753\",\"LIVE-754\",\"LIVE-755\",\"LIVE-756\",\"LIVE-757\",\"LIVE-758\",\"LIVE-759\",\"LIVE-760\",\"LIVE-761\",\"LIVE-762\",\"LIVE-763\",\"LIVE-764\",\"LIVE-765\",\"LIVE-766\",\"LIVE-767\",\"HYG-165\",\"OWN-094\",\"OWN-095\",\"OWN-096\"];const b=r(\"docs/BUILD-BACKLOG.json\");const miss=ids.filter((i)=>!fs.existsSync(\"docs/ledger/rows/\"+i+\".json\")&&!b.includes(JSON.stringify(i)));if(miss.length)fail(\"ladder rows missing: \"+miss.join(\",\"));console.log(\"ok: the ladder decision and its rows are filed\")'"
+  },
+  "closed": "2026-10-06",
+  "notes": "Target: merged before 2026-11-24 (beta_grace ends 2026-12-01)."
+}

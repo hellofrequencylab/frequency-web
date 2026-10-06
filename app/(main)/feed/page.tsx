@@ -92,7 +92,8 @@ export default async function FeedPage({
     // (profiles.meta.beta), so she never opens cold. Built only when arriving
     // straight from induction (?welcome=vera).
     if (showVeraWelcome) {
-      const beta = ((profile.meta as Record<string, unknown> | null)?.beta ?? {}) as {
+      const metaRec = (profile.meta as Record<string, unknown> | null) ?? {}
+      const beta = (metaRec.beta ?? {}) as {
         intent?: string | null
         interests?: string | null
         location?: { label?: string | null } | null
@@ -102,6 +103,7 @@ export default async function FeedPage({
         intent: beta.intent ?? null,
         interests: beta.interests ?? null,
         location: beta.location?.label ?? null,
+        persona: typeof metaRec.persona === 'string' ? metaRec.persona : null,
       }
       veraWelcome = { slides: buildWelcomeSlides(ctx), opening: buildVeraOpening(ctx) }
 

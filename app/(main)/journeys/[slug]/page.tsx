@@ -37,6 +37,7 @@ import {
   primaryPillar,
 } from '@/components/journey/discovery-widgets'
 import { OG_SITE } from '@/lib/site'
+import { QuestSponsorRewards } from '@/components/quest/quest-sponsor-rewards'
 
 export const dynamic = 'force-dynamic'
 
@@ -323,6 +324,8 @@ export default async function JourneyPlanPage({
             buyControl={buyControl}
             tierGate={tierGate}
           />
+          {/* LIVE-673: what a partner gives for finishing this Journey's Quest. */}
+          {plan.official && plan.quest_id && <QuestSponsorRewards questId={plan.quest_id} profileId={profileId} />}
         </div>
       }
       interiorMain={

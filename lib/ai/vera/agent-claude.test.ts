@@ -104,6 +104,26 @@ describe('buildVeraSystem (the cache split, ADR-1287)', () => {
     expect(volatile).toContain(String(DEFAULT_VERA_CONFIG.maxReplyChars))
     expect(volatile).toContain(DEFAULT_VERA_CONFIG.greeting)
   })
+
+  it('puts one plain reader note for a host in the volatile half, with no age, gender or archetype name (LIVE-796)', () => {
+    const { stable, volatile } = buildVeraSystem(null, DEFAULT_VERA_CONFIG, undefined, null, { persona: 'builder', archetype: 'host_connector' })
+    expect(volatile).toContain('This member signed up to host.')
+    expect(volatile).toContain('They have not hosted yet and want to.')
+    expect(stable).not.toContain('signed up to host')
+    // (The stable primer tells Vera never to guess age or gender; the member's own data never adds either.)
+    expect(volatile).not.toMatch(/\bage\b|gender|Host-Connector/i)
+    // Nothing known, nothing said; an unknown archetype is dropped.
+    expect(buildVeraSystem(null, DEFAULT_VERA_CONFIG).volatile).not.toContain('signed up')
+    expect(buildVeraSystem(null, DEFAULT_VERA_CONFIG, undefined, null, { persona: null, archetype: 'nope' }).volatile).not.toContain('They ')
+  })
+
+  it('carries the audience block and never tells Vera this is a revolution (LIVE-791, ADR-1715)', () => {
+    const hot = buildVeraSystem(null, { ...DEFAULT_VERA_CONFIG, register: 'hot' as const })
+    const all = hot.stable + hot.volatile
+    expect(all).toContain("Who you're writing for")
+    expect(all).not.toMatch(/is a revolution/i)
+    expect(all).not.toMatch(/revolution and you say so/i)
+  })
 })
 
 describe('createChipsFilter (streaming-safe chip stripping, ADR-1287)', () => {

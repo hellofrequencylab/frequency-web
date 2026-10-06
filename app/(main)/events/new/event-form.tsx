@@ -15,7 +15,7 @@ import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import type { PlaceResult } from '@/lib/geocode'
 // The category vocabulary comes from the ONE source (lib/events/options.ts) — this form used to
 // inline an identical copy, which is exactly the drift check:vocab now fails the build on.
-import { CATEGORY_OPTIONS } from '@/lib/events/options'
+import { CATEGORY_OPTIONS, ENERGY_OPTIONS } from '@/lib/events/options'
 import { SPECIAL_INSTRUCTIONS_HELP, SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
 import { RepeatPicker } from '@/components/events/repeat-picker'
 import { repeatUntilDate } from '@/lib/events/repeat-rule'
@@ -82,14 +82,6 @@ const VISIBILITY_OPTIONS: { value: string; label: string }[] = [
   { value: 'private',     label: 'Invite only'          },
 ]
 
-// Blank = unset. How the gathering tends to land on the nervous system.
-const ENERGY_OPTIONS: { value: string; label: string }[] = [
-  { value: '',                label: 'Not sure yet'     },
-  { value: 'grounding',       label: 'Grounding'        },
-  { value: 'high_activation', label: 'High activation'  },
-  { value: 'social',          label: 'Social'           },
-  { value: 'ceremonial',      label: 'Ceremonial'       },
-]
 
 // How people attend. in_person events resolve to a map point from the address
 // below; online events carry a link instead; hybrid carries both.
@@ -1035,7 +1027,7 @@ export function EventForm({
 
           <div className="space-y-1.5">
             <Label className="text-body-sm text-text" htmlFor="event-energy">
-              Energy <span className="text-2xs font-normal text-muted">(optional)</span>
+              Pace <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Select id="event-energy"
               value={energyTag}

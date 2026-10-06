@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Sprout } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { seedSisterCircleAction } from '@/app/(main)/circles/remix-actions'
 
 // "Start a sister Circle" (LIVE-665). Shown under the seat bar when lib/circles/sister.ts
@@ -36,15 +37,10 @@ export function SisterCirclePrompt({ circleId, reason }: { circleId: string; rea
           ? 'Your Circle is nearly full. Start a sister Circle so nobody gets turned away.'
           : 'This Circle is full. Start a sister Circle with the same shape and host it yourself.'}
       </p>
-      <button
-        type="button"
-        onClick={seed}
-        disabled={pending}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
-      >
+      <Button type="button" size="sm" onClick={seed} disabled={pending} className="shrink-0">
         {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
         {pending ? 'Starting…' : 'Start a sister Circle'}
-      </button>
+      </Button>
       {error && <p className="w-full text-meta text-danger">{error}</p>}
     </div>
   )

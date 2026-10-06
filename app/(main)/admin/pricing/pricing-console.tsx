@@ -33,6 +33,7 @@ import {
   saveAnnouncementEndsAt,
   saveAnnouncementMessage,
   saveBetaGrace,
+  saveDomainMarkup,
 } from './actions'
 import type { FoundingConfig } from '@/lib/pricing/founding'
 
@@ -71,6 +72,7 @@ export function PricingConsole({ data }: { data: PricingConsoleData }) {
       <CatalogSection catalog={data.catalog} operatorSeatActive={data.flags.catalog_operator_seat_active} />
       <PlansSection values={data.values} />
       <FoundingConfigSection founding={data.founding} />
+      <DomainSalesSection enabled={data.flags.domain_purchase_enabled} markupCents={data.domainMarkupCents} />
       <BetaControlsSection beta={data.beta} gating={data.gating} announcement={data.announcement} />
       <FeatureGatesSection gates={data.gates} />
       <StripeStatusSection stripe={data.stripe} />
@@ -99,7 +101,7 @@ function CatalogSection({
     >
       <FormSection
         title="Business base"
-        description="The run-your-practice base (ADR-811): CRM, email, reporting, your own website. Free-vs-paid is a usage state within Business, not a separate plan."
+        description="Where selling starts (ADR-1709): every money path, the full toolkit, two seats included."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.business_base} />
@@ -107,11 +109,13 @@ function CatalogSection({
       </FormSection>
 
       <FormSection
-        title="Collective base"
-        description="Everything in Business plus automations, team roles, multiple pipelines, and hosting collaborators (ADR-811). The list price is what is charged today (the Opening Beta window closed, ADR-1060); run the catalog sync after changing it."
+        title="Collective"
+        description="Groups of groups (ADR-1709): five member Spaces and Vera AI included, extra member Spaces billed per Space, and Non Profit Collective for verified 501(c)(3)s. Sold only while the Collective switch is on. Run the catalog sync after changing an amount."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.collective_base} />
+          <CatalogItemRow item={byKey.collective_space} />
+          <CatalogItemRow item={byKey.nonprofit_collective} />
         </div>
       </FormSection>
 
@@ -947,6 +951,60 @@ function FlagRow({
         />
       </div>
     </div>
+  )
+}
+
+// ── Domain sales (LIVE-781) ─────────────────────────────────────────────────────────────
+
+/** The two controls behind "Buy a new domain": the sell switch and the yearly markup. */
+function DomainSalesSection({ enabled, markupCents }: { enabled: boolean; markupCents: number }) {
+  const [markup, setMarkup] = useState(centsToDollars(markupCents))
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  function save() {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await saveDomainMarkup(dollarsToCents(markup))
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  return (
+    <AdminSection
+      title="Domain sales"
+      description="Spaces can buy a new domain from their website settings. They pay Vercel's price plus your markup, and they pay each renewal."
+    >
+      <FormSection
+        title="Sell domains"
+        description="Off by default. Turn this on only after Vercel confirms that buying domains for customers is allowed. Nothing sells while the billing master switch is off."
+      >
+        <FlagRow flagKey="domain_purchase_enabled" initial={enabled} label="Buy a new domain" />
+      </FormSection>
+      <FormSection
+        title="Markup"
+        description="Added to Vercel's price each year, in dollars. A Space sees one yearly price that includes it."
+      >
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="Markup per year ($)" value={markup} onChange={setMarkup} />
+            <div className="flex items-center gap-2">
+              <SaveCue pending={pending} saved={saved} />
+              <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
+                Save
+              </Button>
+            </div>
+          </div>
+          {error && <p className="text-meta text-danger">{error}</p>}
+        </div>
+      </FormSection>
+    </AdminSection>
   )
 }
 

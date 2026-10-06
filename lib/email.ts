@@ -394,8 +394,10 @@ export async function sendWeeklyDigestEmail(params: {
   rank:               { name: string | null; zaps: number } | null
   /** Completed-term practices not picked back up (ADR-920 Phase 3): the "Go again" lines. */
   goAgain?:           { title: string; url: string }[]
+  /** Public Events near the member this week, not yet RSVPd. The digest leads with these. */
+  nearbyEvents?:      { title: string; startsAt: string; location: string | null; url: string }[]
 }) {
-  const { to, recipientName, recipientProfileId, dispatches, upcomingEvents, topStreak, rank, goAgain = [] } = params
+  const { to, recipientName, recipientProfileId, dispatches, upcomingEvents, topStreak, rank, goAgain = [], nearbyEvents = [] } = params
 
   // Lifecycle category covers periodic engagement nudges (Day 1/3/7 emails
   // and this weekly digest). One unsubscribe lever for "Frequency telling
@@ -410,8 +412,8 @@ export async function sendWeeklyDigestEmail(params: {
     to,
     subject: `Your week on Frequency`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
-    html:    digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, goAgain, unsubscribeUrl }),
-    text:    digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, goAgain, unsubscribeUrl }),
+    html:    digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents, topStreak, rank, goAgain, unsubscribeUrl }),
+    text:    digestText({ recipientName, dispatches, upcomingEvents, nearbyEvents, topStreak, rank, goAgain, unsubscribeUrl }),
   })
 }
 
@@ -2000,10 +2002,11 @@ function formatDigestTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
-function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, goAgain, unsubscribeUrl }: {
+function digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents = [], topStreak, rank, goAgain, unsubscribeUrl }: {
   recipientName: string
   dispatches:     { title: string; excerpt: string | null; url: string; authorName: string }[]
   upcomingEvents: { title: string; startsAt: string; location: string | null; url: string }[]
+  nearbyEvents?:  { title: string; startsAt: string; location: string | null; url: string }[]
   topStreak:      { type: string; count: number } | null
   rank:           { name: string | null; zaps: number } | null
   goAgain:        { title: string; url: string }[]
@@ -2040,6 +2043,26 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
     </table>
   ` : ''
 
+  // Leads the email: what is on near you this week that you have not said yes to yet.
+  const nearbyHtml = nearbyEvents.length ? `
+    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:24px 0 12px;">On near you this week</h2>
+    <table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+      ${nearbyEvents.map((e) => `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #E9E1D4;">
+            <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#3D352A;">${escapeHtml(e.title)}</p>
+            <p style="margin:0;font-size:13px;color:#777;">
+              ${formatDigestDate(e.startsAt)} · ${formatDigestTime(e.startsAt)}${e.location ? ` · ${escapeHtml(e.location)}` : ''}
+            </p>
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #E9E1D4;text-align:right;">
+            <a href="${e.url}" style="font-size:13px;font-weight:600;color:#9A5E12;text-decoration:none;">Go</a>
+          </td>
+        </tr>
+      `).join('')}
+    </table>
+  ` : ''
+
   const statusHtml = (topStreak || rank) ? `
     <div style="background:#f9fafb;border-radius:10px;padding:14px 16px;margin:24px 0;">
       <p style="margin:0;font-size:11px;font-weight:800;color:#8F8675;text-transform:uppercase;letter-spacing:0.08em;">Your standing</p>
@@ -2064,6 +2087,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
     </p>
     <h1 style="${h1Style}">Hi ${recipientName},</h1>
     <p style="${pStyle}">Here's what's happening in your community this week.</p>
+    ${nearbyHtml}
     ${statusHtml}
     ${goAgainHtml}
     ${dispatchesHtml}
@@ -2079,16 +2103,26 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
   `)
 }
 
-function digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, goAgain, unsubscribeUrl }: {
+function digestText({ recipientName, dispatches, upcomingEvents, nearbyEvents = [], topStreak, rank, goAgain, unsubscribeUrl }: {
   recipientName: string
   dispatches:     { title: string; excerpt: string | null; url: string; authorName: string }[]
   upcomingEvents: { title: string; startsAt: string; location: string | null; url: string }[]
+  nearbyEvents?:  { title: string; startsAt: string; location: string | null; url: string }[]
   topStreak:      { type: string; count: number } | null
   rank:           { name: string | null; zaps: number } | null
   goAgain:        { title: string; url: string }[]
   unsubscribeUrl: string
 }): string {
   const lines: string[] = [`Hi ${recipientName}, here's your week on Frequency.\n`]
+
+  if (nearbyEvents.length) {
+    lines.push('ON NEAR YOU THIS WEEK')
+    for (const e of nearbyEvents) {
+      lines.push(`  · ${e.title}, ${formatDigestDate(e.startsAt)} ${formatDigestTime(e.startsAt)}${e.location ? ` · ${e.location}` : ''}`)
+      lines.push(`    ${e.url}`)
+    }
+    lines.push('')
+  }
 
   if (rank || topStreak) {
     lines.push('YOUR STANDING')

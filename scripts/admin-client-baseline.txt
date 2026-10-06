@@ -122,6 +122,11 @@
 # private object paths); and the cursor is one platform_settings row, a table with no client
 # policies. It writes that one row and nothing else in the database. Inert (no client created)
 # until the four R2 variables are set.
+# app/api/cron/event-followups/route.ts (added 2026-10-06, LIVE-802, ADR-1720): the hourly
+# post-gathering follow-up. The caller is Vercel Cron, so there is no session, and it must read the
+# guest RSVPs and ticket buyers of EVERY host's events, which RLS limits to that host. READ-ONLY: it
+# reads fixed event, RSVP and ticket columns for events that ended 2 to 26 hours ago and writes
+# nothing; the one email per guest goes through the queue, gated by suppression.
 # app/(main)/events/[slug]/manage/attendance-actions.ts (added 2026-09-14, PROG-GD4): the host's
 # attendance mark on a seat row (event_rsvps / event_tickets attended_at + attended_by). Same
 # posture as manage/actions.ts directly beside it: the caller is re-gated as host, cohost or staff
@@ -279,6 +284,17 @@
 # its callers are the refund recorder (already authorized as the order's seller or an operator), the
 # Stripe webhook (charge.refunded, charge.dispute.closed) and the reconcile-transfers cron, none of
 # which has a member session to run under. Nothing leaves it but counts and log lines.
+# lib/sites/domain-purchase.ts (added 2026-10-06, LIVE-781): settles a paid domain purchase. It writes
+# space_domain_purchases, which is RLS on with ZERO policies and both client roles revoked because the row
+# holds the registrant's contact details until the Vercel order is placed. Its callers are the Stripe
+# webhook (no member session) and the on-page confirmation, where Stripe is the authority: it re-fetches the
+# session and acts only on a paid domain_purchase. The claim is a single conditional update, so a retry buys
+# nothing twice.
+# app/(main)/partners/[slug]/loyalty-actions.ts (added 2026-10-06, LIVE-710): a member claims a
+# partner loyalty card at the counter. partner_redemptions has no member write policy (every row is
+# written by the capture path or this action after its own checks), so the claim insert runs as the
+# service role: the offer must be a live loyalty card at an active partner and the caller must hold
+# the visits for it. It writes one row for the caller and reads only the caller's own taps.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -450,6 +466,7 @@ app/(main)/outreach/actions.ts
 app/(main)/outreach/page.tsx
 app/(main)/pages/home/actions.ts
 app/(main)/pages/sequences/page.tsx
+app/(main)/partners/[slug]/loyalty-actions.ts
 app/(main)/partners/join/actions.ts
 app/(main)/partners/listing/actions.ts
 app/(main)/partners/listing/page.tsx
@@ -493,6 +510,7 @@ app/(marketing)/the-lab/page.tsx
 app/(marketing)/the-quest/page.tsx
 app/(public)/events/[slug]/opengraph-image.tsx
 app/api/cron/billing-renewals/route.ts
+app/api/cron/event-followups/route.ts
 app/api/cron/event-reminders/route.ts
 app/api/cron/journey-prompt/route.ts
 app/api/cron/lifecycle-triggers/route.ts
@@ -536,7 +554,6 @@ components/admin/vera-ai/help-gaps-tab.tsx
 components/admin/vera-ai/studio-tab.tsx
 components/connections/group-map-section.tsx
 components/events/event-belonging.tsx
-components/events/upcoming-widget.tsx
 components/feed/feed-list.tsx
 components/feed/profile-feed.tsx
 components/feed/profile-posts.tsx
@@ -988,6 +1005,7 @@ lib/rewards/creation.ts
 lib/rewards/gifts.ts
 lib/rewards/spark.ts
 lib/seasons.ts
+lib/sites/domain-purchase.ts
 lib/spaces/ai-usage.ts
 lib/spaces/analytics.ts
 lib/spaces/audiences.ts

@@ -36,7 +36,9 @@
 // server seam (lib/pricing/beta-state.ts) resolves the IO and hands the result in.
 
 import type { FeatureGate, GateAxis } from './gates'
-import { planEntitlementKeys, SPACE_PLANS, type SpacePlan } from './plans'
+import { ADDON_ENTITLEMENT_KEYS, planEntitlementKeys, SPACE_PLANS, type SpacePlan } from './plans'
+
+const BILLING_ADDON_KEYS: ReadonlySet<string> = new Set(Object.values(ADDON_ENTITLEMENT_KEYS).flat())
 import { tierLabelOnAxis, tierRankOnAxis } from './feature-tiers'
 
 // ── The target: which tier a capability belongs to ────────────────────────────────────────────
@@ -84,6 +86,9 @@ export function targetForTier(minTier: string): BetaNoticeTarget | null {
 export function targetForEntitlementKey(key: string): BetaNoticeTarget | null {
   const wanted = (key ?? '').trim()
   if (!wanted) return null
+  // An add-on key (Vera AI) is bought on any paid plan; Collective merely includes it (ADR-1709), so
+  // naming Collective as "the plan that unlocks it" would mislead a Business owner. Name nothing.
+  if (BILLING_ADDON_KEYS.has(wanted)) return null
   for (const plan of SPACE_PLANS) {
     if (tierRankOnAxis('plan', plan) <= 0) continue // skip the free floor
     if (planEntitlementKeys(plan as SpacePlan).includes(wanted)) return { axis: 'plan', tier: plan }

@@ -12,7 +12,6 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
-- **"Did you make it?" the day after a gathering.** Everyone who said yes gets one note: tap yes and the Host knows you came. It shows when the group meets next, with a link to bring a friend. Guests without an account also get a button to join free and keep their RSVP.
 - **You can drag the steps of a Journey into any order.** Lessons, practices, and modules mix freely, so a practice can sit between two lessons. The builder shows the order members follow.
 - **Space email has a written policy.** It says who a Space can email, what it can send, the 500-a-day limit, and what happens after a bounce or a spam complaint. The Turn on email card links it, and so do the Terms.
 

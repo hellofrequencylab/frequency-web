@@ -27,6 +27,7 @@ const ACTIONS: { call: string; definition: string }[] = [
   { call: 'startBundleCheckout(', definition: path.join('settings', 'billing', 'actions.ts') },
   { call: 'startSpaceLoadoutCheckout(', definition: path.join('spaces', '[slug]', 'settings', 'billing', 'actions.ts') },
   { call: 'startSpaceMembershipCheckout(', definition: path.join('spaces', 'memberships-actions.ts') },
+  { call: 'startDomainPurchaseCheckout(', definition: path.join('manage', 'layout', 'domain-purchase-actions.ts') },
 ]
 
 /** The creators themselves. A module that ASKS for elements mode must read what elements returns. */
@@ -39,6 +40,7 @@ const CREATORS = [
   'createBundleCheckout(',
   'createSpaceLoadoutCheckout(',
   'createSpaceMembershipCheckout(',
+  'createDomainPurchaseCheckout(',
 ]
 
 function walk(dir: string, out: string[] = []): string[] {
