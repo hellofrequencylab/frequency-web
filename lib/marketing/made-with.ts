@@ -4,13 +4,13 @@
 // and take the link from here, so every mark lands on one campaign.
 
 /** Where the mark was seen. Sent as utm_medium, so each surface can be read on its own. */
-export type MadeWithSurface = 'booking-page' | 'booking-email' | 'order-receipt'
+type MadeWithSurface = 'booking-page' | 'booking-email' | 'order-receipt'
 
 /** The campaign every mark shares (the first-touch cookie reads it as utm_campaign). */
 export const MADE_WITH_CAMPAIGN = 'made-with-frequency'
 
 /** A mark ready to render: the words and where they go. */
-export interface MadeWithMark {
+interface MadeWithMark {
   label: string
   url: string
 }
