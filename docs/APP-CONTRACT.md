@@ -122,7 +122,8 @@ Lists page with a cursor: `?cursor=<opaque>&limit=<n>` in, `{ items, nextCursor 
 
 A route that calls an existing lib function wraps it in `asCaller(auth, fn)` (`lib/contract/caller.ts`).
 On the bearer path it binds the verified token for that call tree (`lib/supabase/request-identity.ts`),
-so `createClient()` returns the bearer client and `getCachedUser()` returns the verified user: every
+so `createClient()` returns the bearer client and `getCachedUser()` returns the verified user (and so
+does that client's no-argument `auth.getUser()`, which cookie-era lib code calls): every
 reader, gate and capability loader built on them sees the app's caller as the web sees the cookie's,
 under the same RLS. On the cookie path it is a plain call. View-as never applies inside it.
 
@@ -151,11 +152,27 @@ under the same RLS. On the cookie path it is a plain call. View-as never applies
 | `GET /api/v1/nodes/nearby?lat=&lng=&radius=` | bearer or cookie | `{ items }`: live nodes to register geofences for, nearest first, at most 20 within 5 km. Never a secret; a Ghost node's point is rounded to about 110 m. |
 | `POST /api/v1/reports` | bearer or cookie | Report `{ targetType, targetId, reason, details? }` through the web's `reportContent`. A repeat report is `conflict`. |
 | `POST` / `DELETE /api/v1/blocks` | bearer or cookie | Block or unblock `{ profileId }` as the caller (`lib/blocking.ts`). |
+| `GET /api/v1/feed?sort=&scope=` | bearer or cookie | A page of `FeedPostView`: the same feed RPCs and ranking as the web (`relevant` resonance, `popular` engagement, `recent`). `scope` is one Circle or channel. One page until the RPC takes a cursor. |
+| `POST /api/v1/feed/posts` | bearer or cookie | Body `{ body?, scopeId, visibility?, postType?, imageUrl? }`. Posts through the web's `createPost`. `201`. |
+| `POST /api/v1/feed/posts/{id}/reactions` | bearer or cookie | Body `{ reaction, active }`. The web's `toggleReaction`; returns `{ active, count }`. |
+| `GET /api/v1/circles` | bearer or cookie | A page of `CircleView`: the Circles the caller is an active member of. |
+| `GET /api/v1/circles/{id}` | bearer or cookie | One public Circle. A closed or unlisted Circle is `not_found`. |
+| `POST` / `DELETE /api/v1/circles/{id}/membership` | bearer or cookie | Join or leave as the caller (`lib/circles/join.ts`). A refused join is `forbidden`. |
+| `GET /api/v1/events?slug=` | bearer or cookie | A page of upcoming public events, one per series; with `slug`, one `EventView`. |
+| `POST` / `DELETE /api/v1/events/{id}/rsvp` | bearer or cookie | Body `{ status }` (`going`, `maybe`, `not_going`); DELETE cancels. The web's `setRsvpStatus`; answers the stored row, so a full event says `waitlist` and an approval event `pending`. Closed RSVPs are `forbidden`. |
+| `POST /api/v1/events/{id}/check-in` | bearer or cookie | The web's `checkInEvent`. A refusal is `ok: false` with the reason. |
+| `GET /api/v1/practices?timezone=` | bearer or cookie | A page of the caller's active practices, each with `loggedToday`. |
+| `GET /api/v1/practices/{id or slug}` | bearer or cookie | One public practice. |
+| `POST` / `DELETE /api/v1/practices/{id}/log` | bearer or cookie | Body `{ circleId?, timezone? }`. Log today's practice, or undo today's log, through the web's actions. A timed practice is `conflict` (it logs from its session). |
+| `GET /api/v1/messages` | bearer or cookie | The inbox: rooms and conversations with unread counts. |
+| `GET` / `POST /api/v1/messages/{conversationId}` | bearer or cookie | Read a conversation (newest 100, oldest first; marks it read), or send `{ body }`. A blocked send is `forbidden`. |
+| `GET` / `POST /api/v1/messages/rooms/{roomId}` | bearer or cookie | Read a room with `canPost`, or post `{ body }`. Not tuned in or not a member is `forbidden`. |
+| `GET /api/v1/notifications` | bearer or cookie | A page of the newest 30 notifications plus `unread` (`null` when the count failed, never a false zero). |
+| `POST /api/v1/notifications/read` | bearer or cookie | Mark all read. |
+| `GET` / `PATCH /api/v1/profile` | bearer or cookie | The caller's own `ProfileView`. PATCH `{ displayName?, handle?, bio?, website?, city? }` edits through the web's `updateProfile`; a field left out keeps its value. A taken handle is `conflict`. |
+| `GET /api/v1/profile/{handle}` | bearer or cookie | A member's public profile (public fields only) with `blockedByMe`. |
 
-The rest of the app's surface (feed, Circles, events, practices, messages, notifications, the
-capability projection, native sign-in, account deletion and export, push devices, capture and
-nearby nodes, app config, report and block, in-app purchase) is filed as its own WM row in the
-backlog.
+Still filed as their own rows: push devices (`LIVE-720`) and in-app purchase.
 
 ## 9. Environment
 
