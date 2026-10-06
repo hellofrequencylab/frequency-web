@@ -56,3 +56,23 @@ describe('buildWelcomeSlides', () => {
     expect(o.message.toLowerCase()).not.toContain('oath')
   })
 })
+
+describe('buildVeraOpening branches by persona (LIVE-796, ADR-1715)', () => {
+  const base = { firstName: 'Sam', intent: null, interests: null, location: null }
+  it('hands a host one Circle', () => {
+    const o = buildVeraOpening({ ...base, persona: 'builder' })
+    expect(o.message).toMatch(/one Circle/)
+    expect(o.suggestions[0]).toBe('Start one Circle')
+  })
+  it('hands a practitioner a free Space', () => {
+    const o = buildVeraOpening({ ...base, persona: 'practitioner' })
+    expect(o.message).toMatch(/free Space/)
+    expect(o.suggestions[0]).toBe('Open a free Space')
+  })
+  it('keeps the tour for everyone else', () => {
+    expect(buildVeraOpening({ ...base, persona: 'visitor' })).toEqual(buildVeraOpening(base))
+  })
+  it('never uses an em dash', () => {
+    for (const persona of ['builder', 'practitioner']) expect(buildVeraOpening({ ...base, persona }).message).not.toContain('—')
+  })
+})

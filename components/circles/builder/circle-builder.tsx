@@ -20,6 +20,7 @@ import { publishCircleAction, generateCircleEventsAction } from '@/app/(main)/ci
 import { CircleCallouts } from './circle-callouts'
 import { CircleVeraPanel } from './circle-vera-panel'
 import { Input, Textarea } from '@/components/ui/field'
+import { FunnelNextStep } from '@/components/funnels/next-step-link'
 
 // The member-facing Starter Circle BUILDER (Stage 4). A full-page editor that
 // mirrors the Journey builder's chrome (deferred creation already happened on
@@ -533,6 +534,8 @@ function CircleActions({
         )}
       </div>
       {error && <p className="text-2xs text-danger">{error}</p>}
+      {/* Just published: the funnel's one next step toward the first gathering (LIVE-801). */}
+      {justPublished && <FunnelNextStep moment="circle" circleHref={`/circles/${slug}`} className="mt-2 rounded-card border border-border bg-surface px-4 py-3 text-left" />}
     </div>
   )
 }

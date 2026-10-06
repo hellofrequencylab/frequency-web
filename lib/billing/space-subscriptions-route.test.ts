@@ -219,7 +219,7 @@ describe('routeSpaceSubscription — same-second lifecycle tiebreaker (LIVE-159,
     await routeSpaceSubscription(planSub('collective'), ev(T0, UPDATED, 'evt_b'))
     expect(planCalls).toEqual([
       { spaceId: 'space-1', plan: 'business' },
-      { spaceId: 'space-1', plan: 'business' }, // legacy collective loadout narrows to business (LIVE-228)
+      { spaceId: 'space-1', plan: 'collective' }, // Collective is its own plan again (ADR-1709)
     ])
     expect(space.last_plan_event_rank).toBe(2)
     expect(space.last_plan_event_id).toBe('evt_b')
@@ -228,7 +228,7 @@ describe('routeSpaceSubscription — same-second lifecycle tiebreaker (LIVE-159,
   it('still skips a same-second `.created` delivered AFTER its `.updated` (out-of-order gets BETTER, not worse)', async () => {
     await routeSpaceSubscription(planSub('collective'), ev(T0, UPDATED, 'evt_b'))
     await expect(routeSpaceSubscription(planSub('business'), ev(T0, CREATED, 'evt_a'))).resolves.toBe(true)
-    expect(planCalls).toEqual([{ spaceId: 'space-1', plan: 'business' }]) // collective narrows to business (LIVE-228)
+    expect(planCalls).toEqual([{ spaceId: 'space-1', plan: 'collective' }]) // the later .updated wins (ADR-1709 plan)
     expect(space.last_plan_event_id).toBe('evt_b')
   })
 

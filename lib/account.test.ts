@@ -181,7 +181,7 @@ describe('paidSpacesEndedByDelete names the plans the customer delete cancels (L
       row({ name: 'raw name', brand_name: 'Anchor Studio', plan: 'collective' }),
     ]
     expect(await paidSpacesEndedByDelete()).toEqual([
-      { name: 'Anchor Studio', plan: 'Business' },
+      { name: 'Anchor Studio', plan: 'Collective' },
       { name: 'Zinnia Hall', plan: 'Non Profit' },
     ])
     expect(calls).toEqual(['spaces.select:stripe_customer_id=cus_123'])

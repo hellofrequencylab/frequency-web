@@ -18,6 +18,7 @@ import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/pra
 import { depthStreakLine } from '@/lib/practices/depth-streak'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { IconButton } from '@/components/ui/icon-button'
+import { FunnelNextStep } from '@/components/funnels/next-step-link'
 
 const fmtMin = (sec: number) => {
   const m = Math.round(sec / 60)
@@ -597,6 +598,9 @@ function DispatchPanel({
             </Link>
           ))}
       </div>
+      {/* One next step toward a room with other people, picked by the funnel this person came
+          in through (LIVE-801). Clicking it drops the overlay like the CTA above. */}
+      <FunnelNextStep moment="mindless" onNavigate={onAction} className="mt-4 rounded-card border border-border bg-surface px-4 py-3 text-left" />
       <div className="mt-5 flex items-center justify-center gap-4">
         <Link href="/on-air/dispatches" className="text-meta font-semibold text-subtle hover:text-text">
           Past Dispatches

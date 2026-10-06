@@ -18,10 +18,10 @@ const ALL_FALSE: Record<OnboardingStepKey, boolean> = {
 const done = (over: Partial<Record<OnboardingStepKey, boolean>> = {}) => ({ ...ALL_FALSE, ...over })
 
 describe('buildOnboardingSteps — no authored slides → default funnel', () => {
-  it('returns all defaults in default order, identity first', () => {
+  it('returns all defaults in default order, photo first', () => {
     const steps = buildOnboardingSteps(null, ALL_FALSE)
-    expect(steps.map((s) => s.key)).toEqual(['identity', 'avatar', 'circle', 'event', 'host'])
-    expect(steps[0].headline).toBe(DEFAULT_ONBOARDING_STEPS.identity.headline)
+    expect(steps.map((s) => s.key)).toEqual(['avatar', 'identity', 'circle', 'event', 'host'])
+    expect(steps[0].headline).toBe(DEFAULT_ONBOARDING_STEPS.avatar.headline)
   })
   it('treats an empty / untagged list as no authoring', () => {
     expect(buildOnboardingSteps([], ALL_FALSE)).toHaveLength(5)
