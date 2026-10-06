@@ -10,7 +10,7 @@
 // Copy rules: no prices or percentages, no em dashes, no hype words, no health claims
 // (docs/CONTENT-VOICE.md).
 
-export interface LaunchDoor {
+interface LaunchDoor {
   /** The door's path segment, /go/<slug>. Also its utm_campaign. */
   slug: string
   /** The funnel's name, as the brief names it. */
