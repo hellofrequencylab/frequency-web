@@ -178,11 +178,12 @@ export async function sendRawEmail(payload: EmailPayload): Promise<{ id: string 
 // `runAfter` lets a fan-out drip itself (lib/queue/outbox bulkRunAfter) instead of coming due at once.
 export async function enqueueEmail(
   payload: EmailPayload,
-  opts?: { lane?: JobLane; runAfter?: Date },
+  opts?: { lane?: JobLane; runAfter?: Date; dedupeKey?: string },
 ): Promise<void> {
   await enqueue('email', payload as unknown as Record<string, unknown>, {
     lane: opts?.lane,
     runAfter: opts?.runAfter,
+    dedupeKey: opts?.dedupeKey,
   })
 }
 
@@ -1443,6 +1444,69 @@ export async function sendDispatchNotificationEmail(params: {
     html:    dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
     text:    dispatchText({ authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
   })
+}
+
+// ── Outreach note (a steward's direct note to the members they lead) ──────────
+// NOT a dispatch (SCAN-730). Outreach writes no post, so the dispatch template's "New dispatch"
+// subject, "Read dispatch" button and "posted to your community" footer all pointed at a feed where
+// the note does not exist. This carries the whole note, no CTA, and says why it arrived. It still
+// gates and unsubscribes under 'dispatches', the category Outreach has always sent in.
+
+export async function sendOutreachNoteEmail(params: {
+  to:                 string
+  recipientName:      string
+  recipientProfileId: string
+  authorName:         string
+  body:               string
+  /** Outbox idempotency key (one per recipient per note), so a retried send is a no-op. */
+  dedupeKey?:         string
+}) {
+  const { to, recipientName, recipientProfileId, authorName, body, dedupeKey } = params
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: BASE_URL, profileId: recipientProfileId, category: 'dispatches' })
+  await enqueueEmail(
+    {
+      to,
+      subject: `A note from ${authorName}`,
+      headers: listUnsubscribeHeaders(unsubscribeUrl),
+      html:    outreachNoteHtml({ recipientName, authorName, body, unsubscribeUrl }),
+      text:    outreachNoteText({ authorName, body, unsubscribeUrl }),
+    },
+    { lane: 'bulk', dedupeKey },
+  )
+}
+
+function outreachNoteHtml({ recipientName, authorName, body, unsubscribeUrl }: {
+  recipientName: string; authorName: string; body: string; unsubscribeUrl: string
+}): string {
+  const paragraphs = body
+    .split(/\n{2,}/)
+    .map((para) => `<p style="${pStyle}">${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
+    .join('')
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      A note from ${escapeHtml(authorName)}
+    </p>
+    ${paragraphs}
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#8F8675;">
+      Hi ${escapeHtml(recipientName)}, you are getting this because ${escapeHtml(authorName)} leads your Circle on Frequency.
+      <a href="${BASE_URL}/notifications" style="color:#8F8675;">See it in your notifications</a>
+      · <a href="${BASE_URL}/settings/notifications" style="color:#8F8675;">Manage preferences</a>
+      · <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from notes like this</a>.
+    </p>
+  `)
+}
+
+function outreachNoteText({ authorName, body, unsubscribeUrl }: { authorName: string; body: string; unsubscribeUrl: string }): string {
+  return `A note from ${authorName}
+
+${body}
+
+You are getting this because ${authorName} leads your Circle on Frequency.
+See it in your notifications: ${BASE_URL}/notifications
+Manage preferences: ${BASE_URL}/settings/notifications
+Unsubscribe from notes like this: ${unsubscribeUrl}
+`
 }
 
 // The beta waitlist's two emails lived here: a double-opt-in "confirm your spot" and an
