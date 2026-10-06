@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-730",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const files=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).sort();const last=(re)=>{let hit=null;for(const f of files){const s=fs.readFileSync(\"supabase/migrations/\"+f,\"utf8\");if(re.test(s))hit=[f,s]}return hit};const pol=last(/(create|alter) policy \"posts: read by visibility \\(crew\\+ or public\\)\"/);if(!pol||!/circle_channels cc where/.test(pol[1]))die(\"the latest posts read policy (\"+(pol&&pol[0])+\") still matches a tuned member on the primary Channel only\");for(const fn of [\"scoped_feed_for_viewer\",\"feed_for_viewer\"]){const d=last(new RegExp(\"create or replace function public\\\\.\"+fn+\"\\\\(\",\"i\"));if(!d||!/from circle_channels cc/.test(d[1]))die(\"the latest \"+fn+\" (\"+(d&&d[0])+\") still matches a tuned member on the primary Channel only\")}const t=\"supabase/tests/cluster_reads_every_circle_channel.test.sql\";if(!fs.existsSync(t)||!/tuned into the second Channel/.test(fs.readFileSync(t,\"utf8\")))die(\"no pgTAP proof that a second-Channel member reads the cluster post\");const hint=fs.readFileSync(\"components/admin/modules/circle-settings-module.tsx\",\"utf8\");if(/join the first one&apos;s feed/.test(hint))die(\"the Circle settings hint still says posts join only the first Channel feed\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nMigration 20270346002000 widens the tuned arm of the posts read policy, scoped_feed_for_viewer and feed_for_viewer to match any of a Circle's Channels (circle_channels), rewritten from the live production definitions; nothing else in the three moves, grants restated (authenticated). pgTAP supabase/tests/cluster_reads_every_circle_channel.test.sql: a member tuned into only the second Channel reads the cluster post through all three, a member tuned elsewhere reads none. check:rls-recursion passes; the exists() is an index-only scan on circle_channels_pkey (1.6 ms on prod). The Circle settings hint now says posts reach everyone tuned into any of its Channels."
+  }
+}

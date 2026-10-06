@@ -305,8 +305,8 @@ export function CircleSettingsModule() {
             </Select>
           )}
           <p className="text-2xs text-muted">
-            Up to three Channels this circle practices in. It shows up on each Channel&apos;s page. Its
-            posts join the first one&apos;s feed.
+            Up to three Channels this circle practices in. It shows up on each Channel&apos;s page, and
+            the posts it shares beyond the circle reach everyone tuned into any of them.
           </p>
           {channelErr && <span className="text-meta font-medium text-danger">{channelErr}</span>}
         </div>
