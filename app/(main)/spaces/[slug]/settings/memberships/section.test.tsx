@@ -59,7 +59,16 @@ vi.mock('@/lib/events/space-event-access', () => ({
 }))
 vi.mock('@/lib/circles/store', () => ({ listCirclesForSpace: async () => [] }))
 vi.mock('@/components/spaces/membership-tier-form', () => ({
-  MembershipTierForm: () => <form data-tier-editor="" />,
+  MembershipTierForm: ({ upgrade }: { upgrade?: { target: { spaceSlug: string | null; canUpgrade: boolean } } }) => (
+    <form
+      data-tier-editor=""
+      data-upgrade={upgrade ? `${upgrade.target.spaceSlug}:${upgrade.target.canUpgrade}` : 'none'}
+    />
+  ),
+}))
+// The upgrade moment's offer (LIVE-758), read on the server and handed to the tier form.
+vi.mock('@/lib/pricing/business-offer', () => ({
+  loadUpgradeOffer: async () => ({ sellable: true, trialDays: 14, monthlyCents: 4900 }),
 }))
 vi.mock('@/components/spaces/membership-owner-list', () => ({ MembershipOwnerList: () => null }))
 vi.mock('@/components/spaces/membership-event-access', () => ({ MembershipEventAccess: () => null }))
@@ -102,6 +111,9 @@ describe('a free Space at the point of tier creation (ADR-1709, LIVE-753)', () =
     expect(html).toContain('data-kind="gated"')
     expect(html).not.toMatch(/lucide-lock/)
     expect(html).not.toContain('—')
+    // A price typed on a tier opens the upgrade moment inside the editor (LIVE-758). The viewer here
+    // is not the owner, so the panel will not offer them the trial.
+    expect(html).toContain('data-upgrade="moon-studio:false"')
   })
 })
 
@@ -111,6 +123,7 @@ describe('above the wall nothing changed, and the grace window does not open the
     state.tiers = []
     const html = await render('business')
     expect(html).toContain('data-tier-editor')
+    expect(html).toContain('data-upgrade="none"')
     expect(html).not.toContain(SENTENCE)
     expect(html).not.toContain('data-kind="gated"')
   })

@@ -106,6 +106,12 @@ export interface CommerceSparkProps {
   onCreate: (draft: SparkDraft) => Promise<string | null>
   /** The way out, on every step. */
   cancel: { label: string; href: string }
+  /**
+   * Rendered under the fields and under the review board, with the live draft and a setter. The
+   * kit stays entity-blind: the surface decides what to show (the upgrade moment when a price is set
+   * where payments are not open, LIVE-758) and which path to write when the host chooses.
+   */
+  draftAside?: (draft: SparkDraft, set: (path: string, value: unknown) => void) => ReactNode
 }
 
 // ── Reading and writing a dotted path on the draft ───────────────────────────────────────
@@ -205,10 +211,13 @@ export function CommerceSpark({
   onDraftCopy,
   onCreate,
   cancel,
+  draftAside,
 }: CommerceSparkProps) {
   const router = useRouter()
   const [stage, setStage] = useState<Stage>('doors')
   const [draft, setDraft] = useState<SparkDraft>(initialDraft)
+  /** Write one dotted path on the draft, for a surface's draftAside. */
+  const setAt = (path: string, value: unknown) => setDraft((d) => writeAt(d, path, value))
   const [sourceText, setSourceText] = useState('')
   const [staged, setStaged] = useState<File[]>([])
   const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
@@ -441,6 +450,7 @@ export function CommerceSpark({
               disabled={pending}
             />
           ))}
+          {draftAside?.(draft, setAt)}
         </div>
       </SparkShell>
     )
@@ -493,6 +503,7 @@ export function CommerceSpark({
       )}
 
       {review.note && <p className="mt-4 text-2xs leading-relaxed text-muted">{review.note}</p>}
+      {draftAside && <div className="mt-4">{draftAside(draft, setAt)}</div>}
     </SparkShell>
   )
 }

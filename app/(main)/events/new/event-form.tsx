@@ -22,6 +22,9 @@ import { repeatUntilDate } from '@/lib/events/repeat-rule'
 import { ticketSellerVerdict, payoutScopeKey, NEEDS_PAYOUT_ACCOUNT } from '@/lib/events/ticket-eligibility'
 import { payeeSetupLine } from '@/lib/billing/payout-prompt'
 import { StartPayoutButton } from '@/components/billing/payout-controls'
+import { UpgradeMoment } from '@/components/pricing/upgrade-moment'
+import { isPaymentsRefusal } from '@/lib/pricing/payments-copy'
+import type { UpgradeOffer, UpgradeTarget } from '@/lib/pricing/business-offer'
 
 // The draggable-pin location picker runs MapLibre, which must never touch the server, so it
 // lazy-mounts client-only (ssr:false) — the same dynamic-import pattern as EventLocationMap.
@@ -175,6 +178,8 @@ export function EventForm({
   home,
   payoutsReadyByScope,
   payoutSelfByScope,
+  paymentsRefusedByScope,
+  upgradeOffer,
 }: {
   groups: Group[]
   /** Journeys the caller may link this event to (create AND edit). Empty/absent hides the field. */
@@ -210,6 +215,11 @@ export function EventForm({
    *  fail-closed in the same direction as `payoutsReadyByScope` and as the server prompt's
    *  `relation` default, because offering onboarding to a non-payee onboards the wrong account. */
   payoutSelfByScope?: Record<string, boolean>
+  /** Scopes whose host cannot take payments (LIVE-753), keyed by `payoutScopeKey`, each with who the
+   *  upgrade moment speaks to (LIVE-758). A key present means a price here opens the panel. */
+  paymentsRefusedByScope?: Record<string, UpgradeTarget>
+  /** The Business offer the upgrade moment shows (trial, catalog price). Absent hides the panel. */
+  upgradeOffer?: UpgradeOffer
 }) {
   const isEdit = !!eventId
   // Sentinel scope for a standalone PUBLIC event (any nearby member — no circle/space needed).
@@ -304,6 +314,14 @@ export function EventForm({
     const bare = scopeId.startsWith(SPACE_PREFIX) ? scopeId.slice(SPACE_PREFIX.length) : scopeId
     return groups.find((g) => g.id === bare)?.name ?? currentScopeName ?? null
   }, [scopeId, groups, currentScopeName])
+
+  // Who the upgrade moment speaks to for the selected scope (LIVE-758). Present only when this scope's
+  // host cannot take payments, or when the server just refused on the payments gate for it.
+  const upgradeTarget: UpgradeTarget | null =
+    paymentsRefusedByScope?.[payoutScopeKey(scopeId)] ??
+    (isPaymentsRefusal(submitError) && payoutScopeKey(scopeId) === payoutScopeKey(PUBLIC_SCOPE)
+      ? { spaceSlug: null, canUpgrade: false }
+      : null)
 
   // Whether the SELECTED scope is a circle: fixed by prop on edit (the scope can't change
   // there), derived live from the select on create (a bare circle id = circle; the public
@@ -446,7 +464,8 @@ export function EventForm({
       setSubmitError(null)
       const res = isEdit ? await updateEvent(eventId, fd) : await createEvent(fd)
       if (isError(res)) {
-        // Keep the editor open and show what went wrong — never close on a failed save.
+        // Keep the editor open and show what went wrong — never close on a failed save. A payments
+        // refusal (LIVE-753) opens the upgrade moment beside the price instead of a red line.
         setSubmitError(res.error)
         return
       }
@@ -982,7 +1001,23 @@ export function EventForm({
                 THEIR OWN /settings/billing, so finishing the flow onboarded the wrong Stripe account
                 and the event still could not sell. They now get the non-payee sentence and no button,
                 the same answer the server card gives them, from the same pure function. */}
-            {priceMode === 'paid' ? (
+            {/* THE UPGRADE MOMENT (LIVE-758). A host who cannot take payments sees what Business adds,
+                its trial in place, and "Keep it free" as an equal choice. Nothing else in the form
+                changes, so the draft survives whichever they pick. */}
+            {priceMode === 'paid' && upgradeTarget && upgradeOffer ? (
+              <div className="mt-2">
+                <UpgradeMoment
+                  surface="event"
+                  target={upgradeTarget}
+                  offer={upgradeOffer}
+                  onKeepFree={() => {
+                    setPriceMode('free')
+                    setSubmitError(null)
+                  }}
+                  onUpgraded={() => setSubmitError(null)}
+                />
+              </div>
+            ) : priceMode === 'paid' ? (
               ticketSellerVerdict({ payoutsReady: payoutsReadyByScope?.[payoutScopeKey(scopeId)] }).allowed ? (
                 <p className="mt-1.5 text-2xs leading-relaxed text-muted">
                   Sets a ticket price. Your payout account is ready, so ticket money lands in your bank.
@@ -1063,7 +1098,7 @@ export function EventForm({
         </div>
       </FormSection>
 
-      {submitError && (
+      {submitError && !(upgradeTarget && isPaymentsRefusal(submitError)) && (
         <p className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-body-sm text-danger">
           {submitError}
         </p>

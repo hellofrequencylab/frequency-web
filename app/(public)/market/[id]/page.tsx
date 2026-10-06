@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { MessageCircle } from 'lucide-react'
 import { getProduct, getSellerContact } from '@/lib/commerce/products'
 import { canTakePayments } from '@/lib/commerce/selling'
+import { spacePaymentsVerdict } from '@/lib/pricing/payments-gate'
 import { buttonClasses } from '@/components/ui/button'
 import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
@@ -153,7 +154,12 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
 
   // R2 (Phase 0): only a Business Space Shop or the Frequency Store may take in-app payments. An
   // individual maker listing is CONNECT-ONLY — the buyer messages the seller instead of a Buy button.
-  const connectOnly = !canTakePayments(product.ownerKind)
+  // ADR-1709 (LIVE-753): personal selling is off, and a Space Shop also has to clear the payments gate
+  // on its plan, so the page offers Buy only where the checkout would accept it.
+  const connectOnly =
+    !canTakePayments(product.ownerKind) ||
+    (product.ownerKind === 'space' &&
+      !(await spacePaymentsVerdict(product.ownerSpaceId ?? '', { also: 'space_storefront' })).ok)
   const sellerContact = connectOnly ? await getSellerContact(product.ownerProfileId) : null
 
   // A service pulls its open slots from the Space's availability calendar (booking_space_id).
