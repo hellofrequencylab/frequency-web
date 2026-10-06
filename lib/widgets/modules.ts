@@ -140,7 +140,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'pages-marketing', label: 'Marketing pages', description: 'The public, editor-backed marketing pages with their publish status (janitor only).' },
 
   // ── Marketing analytics blocks (/admin/marketing/analytics) — read-models off the event backbone ──
-  { id: 'marketing-analytics-northstar', label: 'North Star', description: 'The verified-practice north star: weekly active members, practices this week, activation, and new members.' },
+  { id: 'marketing-analytics-northstar', label: 'Verified practice', description: 'The verified-practice band: weekly active members, practices this week, activation, and new members.' },
   { id: 'marketing-analytics-retention', label: 'Practice retention', description: 'Weekly cohorts: the share of each cohort still logging a practice, the practice-retention (PMF) signal.' },
   { id: 'marketing-analytics-crm', label: 'CRM counts', description: 'Contacts, campaigns, and suppressed addresses at a glance, each linking into its workspace.' },
   { id: 'marketing-analytics-email', label: 'Email', description: 'The email log at a glance: sent, delivered, opened, clicked, bounced, and complained over the last 30 days.' },

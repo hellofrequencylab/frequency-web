@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import { AdminTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
+import { ShowingUpBand } from '@/components/admin/showing-up-band'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,6 +19,10 @@ export default async function AnalyticsPage() {
       description="Read-models off the one event backbone + the email log."
       width="wide"
     >
+      {/* The launch north star (LIVE-809, ADR-1720) leads, fixed above the movable modules. */}
+      <Suspense fallback={null}>
+        <ShowingUpBand />
+      </Suspense>
       <PageModules route="/admin/marketing/analytics" />
     </AdminTemplate>
   )
