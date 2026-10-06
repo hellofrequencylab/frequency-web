@@ -201,7 +201,7 @@ export function buildVeraSystem(
 
   // Operator-tunable knobs (/admin/vera).
   const register = cfg.register === 'hot'
-    ? '\n\nRun HOT by default: conviction turned up, short, punchy, declarative. This is a revolution and you say so, but the heat is earned, never confetti.'
+    ? "\n\nRun HOT by default: conviction turned up, short, punchy, declarative. Point at what we're replacing and what they're early to. Never call it a revolution. The heat is earned, never confetti."
     : ''
   const style = cfg.styleNote.trim() ? `\n\nOperator style note (follow it): ${cfg.styleNote.trim()}` : ''
   const length = `\n\nKeep replies warm but tight, usually under about ${cfg.maxReplyChars} characters. Let depth come from staying in the conversation across turns, not from long messages.`

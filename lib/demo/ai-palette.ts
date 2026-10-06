@@ -8,6 +8,7 @@
 
 import { aiEnabled } from '@/lib/ai/client'
 import { completeText } from '@/lib/ai/complete'
+import { withVoice } from '@/lib/ai/voice'
 import { log } from '@/lib/log'
 
 export type Palette = {
@@ -67,7 +68,8 @@ export async function getDemographicPalette(input: {
     `Return the JSON palette for this exact place.`
   try {
     const { text } = await completeText({
-      system: SYSTEM,
+      // The vibe and journey titles show on seeded demo pages, so the voice rules apply.
+      system: withVoice(SYSTEM),
       messages: [{ role: 'user', content: user }],
       tier: 'haiku',
       maxTokens: 900,
