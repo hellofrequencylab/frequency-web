@@ -7,6 +7,7 @@ import { relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { rankFeedPosts } from '@/lib/feed-rank'
 import { blendRank, feedNowMs } from '@/lib/feed/blend-rank'
 import { getViewerResonanceMap } from '@/lib/feed/viewer-resonance'
+import { getPostInterest } from '@/lib/feed/post-interest'
 import { FeedPeopleStrip } from './feed-people-strip'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import {
@@ -261,6 +262,21 @@ async function loadPosts(args: {
   return readFeedRpc<RawPost>('feed_for_viewer', await supabase.rpc('feed_for_viewer', rpcArgs))
 }
 
+// LIVE-677: the viewer's content-interest scores for the posts the RLS read just returned, read
+// straight after it so the For you lens pays no extra wave. Every other lens (no viewer) skips it.
+// Fail-safe like getPostInterest itself: an error load or a miss is an empty map.
+async function withInterest(
+  posts: Promise<FeedLoad<RawPost>>,
+  viewerProfileId: string | null,
+): Promise<{ loaded: FeedLoad<RawPost>; interest: Map<string, number> }> {
+  const loaded = await posts
+  const interest =
+    viewerProfileId && loaded.kind === 'ok'
+      ? await getPostInterest(viewerProfileId, loaded.items.map((p) => p.id))
+      : new Map<string, number>()
+  return { loaded, interest }
+}
+
 // The Event-Dispatch candidate window + nearest public event, for the furniture rail.
 // Event Dispatches (ADR-255) ride this same rail with dispatch_type='event' and link back
 // to their event via event_dispatches. Pull a small candidate window (not just the single
@@ -380,8 +396,10 @@ export async function FeedList({
   // pair, then the viewer context. Only the scope resolver needs the posts, and only the
   // Dispatch pick needs the viewer, so the rest start together. getMyOrbit is request-memoised,
   // so the resonance map and the viewer context share ONE my_orbit RPC here.
-  const [loaded, resonance, dispatchR, eventR, viewer] = await Promise.all([
-    loadPosts({ myProfileId, circleIds, showPublicLayer, sort, fetchSort, nearby }),
+  // LIVE-677: the content-interest scores need the post ids, so they chain onto the posts read
+  // INSIDE this wave (withInterest) rather than costing a wave of their own.
+  const [{ loaded, interest }, resonance, dispatchR, eventR, viewer] = await Promise.all([
+    withInterest(loadPosts({ myProfileId, circleIds, showPublicLayer, sort, fetchSort, nearby }), resonanceFor),
     resonanceFor ? getViewerResonanceMap(resonanceFor) : null,
     furnitureFor ? dispatchCandidates(admin) : null,
     furnitureFor ? nearestPublicEvent(admin, hideDemoEvents) : null,
@@ -401,7 +419,7 @@ export async function FeedList({
 
   // The "For you" lens (sort='relevant') is the BLENDED resonance rank (Phase 1,
   // ADR-414 → docs/RESONANCE-FEED-ARCHITECTURE.md §3): proximity + graph + recency +
-  // engagement, with a diversity rerank. Every other lens stays literal (recency /
+  // engagement + content interest (LIVE-677), with a diversity rerank. Every other lens stays literal (recency /
   // nearest / chronological). Fail-safe: with no resonance + no geo the blend reduces
   // to recency-led, i.e. today's behavior.
   let ranked: RawPost[]
@@ -411,7 +429,7 @@ export async function FeedList({
       authorId: p.author.id,
       distance_m: (p as { distance_m?: number | null }).distance_m ?? null,
     }))
-    ranked = blendRank(blendItems, { nowMs: feedNowMs(), resonance, radiusM: nearby?.radiusM ?? 25000 }, 40)
+    ranked = blendRank(blendItems, { nowMs: feedNowMs(), resonance, interest, radiusM: nearby?.radiusM ?? 25000 }, 40)
   } else {
     ranked = rankFeedPosts(rawPosts, fetchSort)
   }
