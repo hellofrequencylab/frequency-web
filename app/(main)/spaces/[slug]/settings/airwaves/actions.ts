@@ -56,7 +56,7 @@ export async function uploadRecordingAction(
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) return { ok: false, error: 'Choose an audio or video file.' }
   const target = classifyLoomUpload(file.type)
-  if (!target || target.kind === 'image') {
+  if (!target || (target.kind !== 'audio' && target.kind !== 'video')) {
     return { ok: false, error: 'Airwaves takes an audio or video file. Pick one of those.' }
   }
   if (file.size > target.maxBytes) {

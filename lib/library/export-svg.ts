@@ -134,6 +134,12 @@ export function extForMime(mime: string | null): string {
     'image/gif': 'gif',
     'image/avif': 'avif',
     'image/svg+xml': 'svg',
+    // The library-files lanes (LIVE-692) whose subtype is not already the extension.
+    'text/plain': 'txt',
+    'text/markdown': 'md',
+    'font/collection': 'ttc',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
   }
   return m[mime] ?? mime.split('/').pop() ?? 'img'
 }

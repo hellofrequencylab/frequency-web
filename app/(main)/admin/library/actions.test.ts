@@ -17,6 +17,8 @@ vi.mock('@/lib/library/ingest', () => ({ ingestImageBytes: () => ({}) }))
 vi.mock('@/lib/library/image-describe', () => ({ readImageDescriptor: () => ({}) }))
 vi.mock('@/lib/library/upload-kinds', () => ({
   classifyLoomUpload: () => null,
+  effectiveFileMime: (type: string) => type,
+  isPrivateUploadBucket: () => false,
   fallbackExtFor: () => 'bin',
   fallbackMimeFor: () => 'application/octet-stream',
 }))

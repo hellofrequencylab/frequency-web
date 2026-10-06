@@ -250,3 +250,22 @@ describe('the pure pieces', () => {
     expect(publicDownloadUrl('https://images.example.com/a.jpg', 'x.jpg')).toBe('https://images.example.com/a.jpg')
   })
 })
+
+describe('openLibraryDownload: a font or document in library-files (LIVE-692)', () => {
+  it('signs an unprotected document from the private library-files bucket, never by url', async () => {
+    state.asset = asset({
+      kind: 'document',
+      slug: 'brand-guide',
+      url: null,
+      mime: 'application/pdf',
+      storage_bucket: 'library-files',
+      storage_path: 'root/brand-guide.pdf',
+    })
+    const out = await openLibraryDownload(ID, null)
+    if (!out.ok) throw new Error('expected a download')
+    expect(state.signed).toEqual([
+      { bucket: 'library-files', path: 'root/brand-guide.pdf', ttl: 60, opts: { download: 'brand-guide.pdf' } },
+    ])
+    expect(state.inserts).toEqual([{ asset_id: ID, profile_id: null, policy: 'open' }])
+  })
+})

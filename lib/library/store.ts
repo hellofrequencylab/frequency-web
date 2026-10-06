@@ -404,12 +404,13 @@ export async function insertSpaceLibraryImage(input: {
   slug: string
   storageBucket: string
   storagePath: string
-  url: string
+  /** Null for a file in a private bucket (library-files, LIVE-692): it is served signed, never by url. */
+  url: string | null
   mime: string
   /** Stored size. `null` when the caller genuinely does not know it (a file already in storage that
    *  it never read) — NOT 0, which sorts and renders as a real "0 B" asset. */
   bytes: number | null
-  kind?: 'image' | 'audio' | 'video'
+  kind?: 'image' | 'audio' | 'video' | 'font' | 'document'
   /** ── Ingest metadata (PROG-D1). Every field is optional so pre-ingest callers stay byte-identical.
    *  The SERVER-computed half comes from `ingestImageBytes` (lib/library/ingest.ts): a checksum of the
    *  bytes actually stored, and the dimensions read off the file header. */

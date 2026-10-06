@@ -8,7 +8,13 @@ import { asJson } from '@/lib/supabase/json'
 import { getRootSpaceId, insertSpaceLibraryImage, findLibraryAssetBySha256 } from '@/lib/library/store'
 import { ingestImageBytes } from '@/lib/library/ingest'
 import { readImageDescriptor } from '@/lib/library/image-describe'
-import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
+import {
+  classifyLoomUpload,
+  effectiveFileMime,
+  fallbackExtFor,
+  fallbackMimeFor,
+  isPrivateUploadBucket,
+} from '@/lib/library/upload-kinds'
 import { findLibraryAssetUsage } from '@/lib/library/usage'
 import { normalizeAssetMeta } from '@/lib/library/asset-meta'
 import { LIBRARY_DOWNLOAD_POLICIES, type LibraryDownloadPolicy } from '@/lib/library/types'
@@ -48,8 +54,11 @@ export async function uploadLibraryImage(
   const file = formData.get('file')
   const rawTitle = (formData.get('title') as string | null)?.trim()
   if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
-  const target = classifyLoomUpload(file.type)
-  if (!target) return { error: 'Only image, audio, or video files.' }
+  // The Studio is the one uploader that opts into the font and document lanes (LIVE-692). A font
+  // often arrives with no type at all, so its extension decides.
+  const mime = effectiveFileMime(file.type, file.name)
+  const target = classifyLoomUpload(mime, { files: true })
+  if (!target) return { error: 'Only image, audio, video, font or document files.' }
   if (file.size > target.maxBytes) {
     const limitMb = Math.round(target.maxBytes / 1024 / 1024)
     return { error: `File must be under ${limitMb}MB.` }
@@ -67,16 +76,20 @@ export async function uploadLibraryImage(
   // bypassed the chokepoint; it now runs the same pipeline as every other uploader — strip private
   // metadata, checksum the stored bytes, read the dimensions — and inserts through
   // `insertSpaceLibraryImage` so there is exactly ONE place a Loom row is written.
-  const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), file.type)
+  const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), mime)
   const duplicate = await findLibraryAssetBySha256(spaceId, ingested.sha256)
   if (duplicate) return { ok: true, duplicateOf: duplicate.title || 'an asset already in the Loom' }
 
   const { error: upErr } = await admin.storage
     .from(target.bucket)
-    .upload(path, ingested.bytes, { contentType: file.type || fallbackMimeFor(target.kind), upsert: false })
+    .upload(path, ingested.bytes, { contentType: mime || fallbackMimeFor(target.kind), upsert: false })
   if (upErr) return { error: upErr.message }
 
-  const { data: pub } = admin.storage.from(target.bucket).getPublicUrl(path)
+  // A font or document sits in the private library-files bucket: it has no public url and is served
+  // signed (signedLibraryAssetUrl), so the row stores none.
+  const url = isPrivateUploadBucket(target.bucket)
+    ? null
+    : admin.storage.from(target.bucket).getPublicUrl(path).data.publicUrl
 
   const base = (file.name.replace(/\.[^.]+$/, '') || target.kind).slice(0, 120)
   const slug = `${base}-${stamp}`
@@ -90,8 +103,8 @@ export async function uploadLibraryImage(
     slug,
     storageBucket: target.bucket,
     storagePath: path,
-    url: pub.publicUrl,
-    mime: file.type || fallbackMimeFor(target.kind),
+    url,
+    mime: mime || fallbackMimeFor(target.kind),
     bytes: ingested.bytes.byteLength,
     kind: target.kind,
     source: 'curated',
