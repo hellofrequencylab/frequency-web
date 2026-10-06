@@ -1,5 +1,6 @@
 import 'server-only'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
+import type { Capability } from '@/lib/core/capabilities'
 import { isPlanAdopted } from '@/lib/journey-plans'
 import type { JourneyEntryFacts } from '@/lib/journeys/entry-gate'
 
@@ -8,11 +9,12 @@ import type { JourneyEntryFacts } from '@/lib/journeys/entry-gate'
 // learn page and the lesson-complete action feed the gate from ONE place and cannot drift (SCAN-725:
 // the action used to skip the door the page enforced).
 
-/** Load what canEnterJourney needs for one viewer on one Journey. Two reads, in parallel. */
+/** Load what canEnterJourney needs for one viewer on one Journey. Two reads, in parallel. The
+ *  capability set rides along so the learn page's manager controls reuse it instead of a third read. */
 export async function loadJourneyEntryFacts(
   viewerProfileId: string,
   plan: { id: string; author_id: string | null },
-): Promise<JourneyEntryFacts> {
+): Promise<JourneyEntryFacts & { caps: Set<Capability> }> {
   const [caps, enrolled] = await Promise.all([getJourneyCapabilities(plan.id), isPlanAdopted(viewerProfileId, plan.id)])
-  return { viewerProfileId, authorId: plan.author_id, canManage: caps.has('journey.editSettings'), enrolled }
+  return { viewerProfileId, authorId: plan.author_id, canManage: caps.has('journey.editSettings'), enrolled, caps }
 }

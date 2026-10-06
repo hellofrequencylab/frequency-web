@@ -81,6 +81,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const entry = await loadJourneyEntryFacts(profileId, plan)
   const canManageJourney = entry.canManage
   const adopted = entry.enrolled
+  const journeyCaps = entry.caps
   const isAuthor = plan.author_id === profileId
   if (!canEnterJourney(entry)) {
     redirect(`/journeys/${plan.slug}`)
