@@ -97,10 +97,12 @@ export const DEFAULT_ONBOARDING_STEPS: Record<OnboardingStepKey, Omit<Onboarding
   },
 }
 
-/** The shipped default order (used when no walkthrough authors the checklist). */
+/** The shipped default order (used when no walkthrough authors the checklist). Photo first:
+ *  owner ruling 2026-10-06 (ADR-1715 launch sweep), a face is the fastest proof a real person
+ *  joined, and choosing a name reads easier once the photo is in. */
 export const DEFAULT_ONBOARDING_ORDER: readonly OnboardingStepKey[] = [
-  'identity',
   'avatar',
+  'identity',
   'circle',
   'event',
   'host',
