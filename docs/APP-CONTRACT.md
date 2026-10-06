@@ -147,6 +147,8 @@ under the same RLS. On the cookie path it is a plain call. View-as never applies
 | `GET /api/v1/account/export` | bearer or cookie | The member data export, the same object the web's "Download my data" builds. 5 per 10 minutes. |
 | `GET /api/v1/app-config?platform=&version=` | public | `AppConfigView`: the minimum supported and latest version for the platform (`platform_settings` rows `app_min_supported_version_<platform>` and `app_latest_version_<platform>`), `updateRequired` for the reporting build, and the client-safe flags. Cached 5 minutes. |
 | `POST /api/v1/session/bootstrap` | bearer | `SessionBootstrapView`: the caller's `MeView` plus `seatLanding` / `orderLanding`, after running the web's post-sign-in claims (guest seats, leads, tickets, orders). Idempotent: call after sign-in and on every cold start. |
+| `POST /api/v1/nodes/{id}/capture` | bearer or cookie | Body `{ secret?, location?, attestation? }`. Runs the web's `captureNode` (window, signed code, proximity, capacity, exactly-once ledger, zaps). A refusal is `ok: false` with the verifier's reason. |
+| `GET /api/v1/nodes/nearby?lat=&lng=&radius=` | bearer or cookie | `{ items }`: live nodes to register geofences for, nearest first, at most 20 within 5 km. Never a secret; a Ghost node's point is rounded to about 110 m. |
 | `POST /api/v1/reports` | bearer or cookie | Report `{ targetType, targetId, reason, details? }` through the web's `reportContent`. A repeat report is `conflict`. |
 | `POST` / `DELETE /api/v1/blocks` | bearer or cookie | Block or unblock `{ profileId }` as the caller (`lib/blocking.ts`). |
 
@@ -188,3 +190,13 @@ app is built, `OWN-091`).
 (Expo SecureStore) as storage, and `autoRefreshToken: true` while the app is in the foreground
 (start and stop it on app state changes). The server never sees the refresh token. On a `401` the
 app refreshes once and retries; a second `401` signs out (§2).
+
+## 12. QR, NFC and geofence capture
+
+A QR code and an NFC tag carry the same thing: the `/n/<nodeId>?s=<signed code>` link (an NDEF URI
+record on a tag). The app reads the id and the `s` value and posts them to
+`/api/v1/nodes/{id}/capture` with the device location when it has one. A geofence entry posts with
+no secret and the location. The server decides; the device is never trusted.
+
+`attestation` (App Attest on iOS, Play Integrity on Android) is accepted and not yet verified.
+Verifying it needs the app build and parks with `DEF-MOBILE`.

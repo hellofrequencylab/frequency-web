@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-721",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");const fail=(m)=>{console.error(m);process.exit(1)};const read=(f)=>fs.readFileSync(f,\"utf8\");const walk=(d)=>{if(!fs.existsSync(d))return[];return fs.readdirSync(d,{withFileTypes:true}).flatMap((x)=>{const p=path.join(d,x.name);return x.isDirectory()?(x.name===\"node_modules\"?[]:walk(p)):[p]})};const v1=()=>walk(\"app/api/v1\").filter((f)=>/route\\.ts$/.test(f));const v1src=()=>v1().map(read).join(\"\\n\");const s=v1src();if(!/@\\/lib\\/engagement\\/capture/.test(s))fail(\"no /api/v1 endpoint captures a node, so a native QR, NFC or geofence capture has nowhere to land\");if(!/nodes_geo|node_within_range/.test(s))fail(\"no nearby-nodes endpoint for the app to register geofences from\");console.log(\"ok\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-06: POST /api/v1/nodes/{id}/capture runs the web's captureNode for the verified caller (secret, location; attestation accepted, not yet verified); GET /api/v1/nodes/nearby lists live nodes from nodes_geo through lib/engagement/nearby.ts, nearest first, capped at 20 within 5 km, never a secret, Ghost points rounded to about 110 m. The NFC payload rule (NDEF URI of the same /n/<id>?s= link) is in docs/APP-CONTRACT.md §12. Tested in lib/engagement/nearby.test.ts and app/api/v1/nodes/nearby/route.test.ts."
+  }
+}

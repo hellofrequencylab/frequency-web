@@ -211,3 +211,34 @@ export const sessionBootstrapView = z.object({
 })
 export type SessionBootstrapView = z.infer<typeof sessionBootstrapView>
 export const sessionBootstrapResponse = envelope(sessionBootstrapView)
+
+// ── /api/v1/nodes: capture and nearby (LIVE-721) ────────────────────────────────────────────────
+
+const latLng = z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
+
+/** POST /api/v1/nodes/{id}/capture body. `secret` is the signed code a QR or an NFC tag carries
+ *  (the `?s=` of its /n/<id> link). `attestation` (App Attest / Play Integrity) is accepted and
+ *  not yet verified: that needs the app build (DEF-MOBILE). */
+export const nodeCaptureInput = z.object({
+  secret: z.string().max(512).nullable().optional(),
+  location: latLng.nullable().optional(),
+  attestation: z.string().max(8192).nullable().optional(),
+})
+export const nodeCaptureView = z.object({
+  ok: z.boolean(),
+  reason: z.string().nullable(),
+  zapsAwarded: z.number().nullable(),
+  offerTitle: z.string().nullable(),
+})
+export const nodeCaptureResponse = envelope(nodeCaptureView)
+
+export const nearbyNodeView = z.object({
+  id: z.string(),
+  type: z.string(),
+  label: z.string().nullable(),
+  lat: z.number(),
+  lng: z.number(),
+  radiusM: z.number(),
+  distanceM: z.number(),
+})
+export const nearbyNodesResponse = envelope(z.object({ items: z.array(nearbyNodeView) }))
