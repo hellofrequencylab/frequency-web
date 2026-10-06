@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-798",
+  "title": "The help center has nothing for the activity-first or evidence-first reader, supporters, hosting with kids or teaching across studios",
+  "status": "open",
+  "priority": "P3",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "content/help/find-your-people/make-friends-as-an-adult.md",
+    "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
+  },
+  "detail": "PR 10 (ADR-1715). New help articles: something to do (run clubs, sauna and sober socials, game nights), a plain timer with no fluff, what Crew keeps free for others, hosting with kids, and teaching across several studios. Each indexed so pnpm check:help passes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};for(const p of [\"content/help/find-your-people/start-with-something-to-do.md\",\"content/help/find-your-people/just-the-timer.md\",\"content/help/membership/what-crew-keeps-free.md\",\"content/help/leading/hosting-with-kids.md\",\"content/help/spaces/teaching-across-studios.md\"])if(!/^---[\\s\\S]*?title:/.test(r(p)))fail(\"missing help article: \"+p)'",
+    "note": "Fails while any of the five new help articles is missing or has no title front matter."
+  },
+  "wave": "W7"
+}

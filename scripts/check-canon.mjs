@@ -107,7 +107,22 @@ export const BANNED = [
   // per-rung regex is needed here at all.
   { name: 'banned "find your tribe"', re: /find\s+your\s+tribe/i, hint: 'off-voice (CONTENT-VOICE)' },
   { name: 'banned "on the same wavelength"', re: /on\s+the\s+same\s+wavelength/i, hint: 'off-voice vibe register (CONTENT-VOICE)' },
+  // The retired audience framings (ADR-1715, LIVE-792). The demographic is two readers and eleven
+  // archetypes (CONTENT-VOICE §2); these are the older ways the audience was described, and each is
+  // distinctive enough that a reappearance is drift. The persona names are matched case-sensitively
+  // so the canon's own lowercase gloss ("the high-functioning lonely") stays legal.
+  { name: 'retired audience framing "spiritual refugees"', re: /spiritual\s+refugees?/i, hint: 'two readers, eleven archetypes (CONTENT-VOICE §2)' },
+  { name: 'retired audience framing "witchy wellness"', re: /witchy\s+wellness/i, hint: 'two readers, eleven archetypes (CONTENT-VOICE §2)' },
+  { name: 'retired audience framing "burnt-out seekers"', re: /burn[te][-\s]?out\s+seekers?/i, hint: 'two readers, eleven archetypes (CONTENT-VOICE §2)' },
+  { name: 'retired voice "calm fire"', re: /\bcalm\s+fire\b/i, hint: 'the voice is CONTENT-VOICE §3' },
+  { name: 'retired "quiet revolution"', re: /quiet\s+revolution/i, hint: 'movement language is rationed (CONTENT-VOICE §6d)' },
+  { name: 'retired persona "The High-Functioning Lonely"', re: /High-Functioning Lonely/, hint: 'key to an archetype (CONTENT-VOICE §2d)' },
+  { name: 'retired persona "The Post-Screen Skeptic"', re: /Post-Screen Skeptic/i, hint: 'key to an archetype (CONTENT-VOICE §2d)' },
 ].map((r) => ({ ...r, audience: 'everyone' }))
+
+/** The internal archetype names (CONTENT-VOICE §2d and §2f). Exported so the test can plant one. */
+export const ARCHETYPE_NAME_RE =
+  /\b(?:Wired Professional|Activity-First (?:Man|reader)|Evidence-First Skeptic|Host-Connector|Gathering Host|Mission Patron|Portfolio Teacher|Second-Act Practitioner|Studio Keeper|Network Steward)s?\b/
 
 export const RULES = [
   // CONTENT-VOICE's punctuation hard rule scopes itself: "do not use em dashes anywhere in
@@ -149,6 +164,13 @@ export const RULES = [
     hint: 'say "Dispatch" (NAMING.md §Dispatch). The VERB is fine: "it is never broadcast".',
     audience: 'everyone',
   },
+  // CONTENT-VOICE §2g: archetype names are internal (planning, briefs, analytics, AI prompts) and
+  // never reach member copy, and members are never called "seekers" to their face (the Seeker is a
+  // reader we write FOR, not a word we write). `member` audience: an operator console may name an
+  // archetype, which is what the archetype registry and segments are for. "Transplant" is left out
+  // on purpose: it is a plain English word, and the multi-word names are the distinctive ones.
+  { name: 'internal archetype name in member copy', re: ARCHETYPE_NAME_RE, hint: 'speak to the person in their own words (CONTENT-VOICE §2g, ADR-1715)', audience: 'member' },
+  { name: '"seekers" in member copy', re: /\bseekers\b/i, hint: 'say "people" (CONTENT-VOICE §2g, ADR-1715)', audience: 'member' },
   ...BANNED,
 ]
 

@@ -108,6 +108,12 @@ export async function saveOffer(input: OfferInput): Promise<ActionResult<{ id: s
   if (partnerError) return fail(partnerError.message)
   if (!partner) return fail('Publish your listing first, then add an offer to it.')
 
+  // LIVE-673: a sponsor reward names a live Quest. Refuse an id that is not one rather than store it.
+  if (built.row.quest_id) {
+    const { data: quest } = await admin.from('quests').select('id').eq('id', built.row.quest_id).eq('status', 'active').maybeSingle()
+    if (!quest) return fail('Pick a Quest that is running now, or leave it empty.')
+  }
+
   let id: string
   if (input.id) {
     const { data: updated, error } = await admin

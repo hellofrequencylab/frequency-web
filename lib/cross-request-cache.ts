@@ -57,6 +57,19 @@ export const CHROME_CACHE_TAGS = {
 
 type ChromeCacheTag = (typeof CHROME_CACHE_TAGS)[keyof typeof CHROME_CACHE_TAGS]
 
+/** A Space WEBSITE's tag, one per Space (PROG-E10 phase 5, LIVE-784): the public site's Space row is
+ *  the same for every visitor and changes only when its owner saves, so it fits this seam's rule. The
+ *  owner's write paths call `invalidateCacheTag(siteCacheTag(slug))` beside the write
+ *  (lib/sites/site-cache.ts). Keyed on the normalized slug, the one key both site routes resolve. */
+export type SiteCacheTag = `site:${string}`
+
+/** The tag a Space website's cached reads (and so its ISR pages) carry. */
+export function siteCacheTag(slug: string): SiteCacheTag {
+  return `site:${slug.trim().toLowerCase()}`
+}
+
+type CacheTag = ChromeCacheTag | SiteCacheTag
+
 /** How long a cached row set may live without a tag invalidation (seconds). */
 export const CROSS_REQUEST_CEILING_SECONDS = 600
 
@@ -84,7 +97,7 @@ export function isCacheUnavailable(err: unknown): boolean {
 export function crossRequestCached<A extends (string | number | boolean | null)[], R>(
   read: AsyncFn<A, R>,
   keyParts: readonly string[],
-  opts: { tags: readonly ChromeCacheTag[] },
+  opts: { tags: readonly CacheTag[] },
 ): AsyncFn<A, R> {
   // Built on first use, not at import: a test that partially mocks `next/cache` (most mock only
   // `revalidatePath`) would otherwise throw on the missing export the moment any module that
@@ -131,7 +144,7 @@ function nextCacheFn<T>(pick: () => T): T | null {
  *  that case falls to `revalidateTag(tag, { expire: 0 })`, which is the same immediate expiry
  *  without the action-only guard. Outside a Next request entirely (E263: vitest, a script) there
  *  is nothing cached, so there is nothing to do. Any other error is a real one and surfaces. */
-export function invalidateCacheTag(tag: ChromeCacheTag): void {
+export function invalidateCacheTag(tag: CacheTag): void {
   const update = nextCacheFn(() => updateTag)
   const revalidate = nextCacheFn(() => revalidateTag)
   if (!update && !revalidate) return

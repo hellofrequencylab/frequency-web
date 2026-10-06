@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { PenLine, Megaphone, NotebookPen, UserPlus, Camera } from 'lucide-react'
-import { updateMyAvatar } from '@/app/(main)/feed/actions'
+import { useEffect, useRef, useState } from 'react'
+import { PenLine, Megaphone, NotebookPen, UserPlus, Camera, BarChart3, HelpCircle, Share2 } from 'lucide-react'
+import { updateMyAvatar, listShareables } from '@/app/(main)/feed/actions'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { IconButton } from '@/components/ui/icon-button'
@@ -10,6 +10,9 @@ import { sendSpaceDispatch } from '@/app/(main)/spaces/[slug]/dispatch-actions'
 import { isError } from '@/lib/action-result'
 import { Composer } from './composer'
 import { ContactCaptureForm } from './contact-capture-form'
+import { Select } from '@/components/ui/select'
+import { shareLine, type Shareable } from '@/lib/feed/share-line'
+import type { DispatchScope } from '@/lib/feed/compose-kinds'
 
 // The Capture box — one Substack-style box, one **bottom row of selectable capture
 // features** (the rework): Post · Dispatch · Note · Connect, rendered the way DAWN's
@@ -20,7 +23,7 @@ import { ContactCaptureForm } from './contact-capture-form'
 // behaviour; Dispatch (host announcement) is just one of the features. (Photo is
 // reached through the full-screen Capture's camera, not this inline row.)
 
-type Mode = 'post' | 'dispatch' | 'note' | 'photo' | 'contact'
+type Mode = 'post' | 'poll' | 'ask' | 'share' | 'dispatch' | 'note' | 'photo' | 'contact'
 
 /**
  * THE SPACE SCOPE (LIVE-295, owner ruling 2026-09-10). Present = this box is mounted FOR a Space
@@ -45,6 +48,10 @@ export interface CaptureSpaceScope {
 
 const MODES: { key: Mode; icon: typeof PenLine; label: string; hostOnly?: boolean }[] = [
   { key: 'post', icon: PenLine, label: 'Post' },
+  // LIVE-682 (the S6 owner call): every member also gets Poll, Ask and a Practice / Journey share.
+  { key: 'poll', icon: BarChart3, label: 'Poll' },
+  { key: 'ask', icon: HelpCircle, label: 'Ask' },
+  { key: 'share', icon: Share2, label: 'Share' },
   { key: 'photo', icon: Camera, label: 'Photo' },
   { key: 'note', icon: NotebookPen, label: 'Note' },
   { key: 'contact', icon: UserPlus, label: 'Connect' },
@@ -59,6 +66,7 @@ export function CaptureBox({
   defaultMode = 'post',
   compactTools = true,
   spaceScope,
+  dispatchScopes = [],
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -73,10 +81,14 @@ export function CaptureBox({
    *  Space's members, and `canAnnounce` comes from the Space's manage gate rather than the community
    *  role. Absent = the community box, unchanged. */
   spaceScope?: CaptureSpaceScope
+  /** LIVE-682: the Dispatch reach this author leads (dispatchScopesFor, computed on the server). */
+  dispatchScopes?: DispatchScope[]
 }) {
   // A space mount opens on Dispatch: announcing is what the Space owner came here to do.
   const [mode, setMode] = useState<Mode>(spaceScope ? 'dispatch' : defaultMode)
   const [sent, setSent] = useState(false)
+  // The Share mode's pick. Picking one remounts the composer with its link line in the body.
+  const [shared, setShared] = useState<Shareable | null>(null)
 
   // A SPACE mount carries ONE feature, and that is deliberate rather than a simplification. The other
   // four capture modes write to surfaces that belong to the PERSON, not the Space: Post and Photo go
@@ -165,14 +177,18 @@ export function CaptureBox({
     // leading-relaxed 15px text). Auto-grow still sets an explicit height as you
     // type, so this only lowers the floor and never caps the box.
     <div className="[&_textarea]:min-h-[4.5rem]">
+      {mode === 'share' && <SharePicker value={shared} onPick={setShared} />}
       <Composer
-        key={mode}
+        key={mode === 'share' ? `share:${shared?.href ?? ''}` : mode}
         scopeId={scopeId}
         compactTools={compactTools}
         visibility={visibility}
         kind={mode === 'note' ? 'note' : 'post'}
         autoImage={mode === 'photo'}
         forceAnnouncement={mode === 'dispatch'}
+        postKind={mode === 'poll' ? 'poll' : mode === 'ask' ? 'ask' : 'feed'}
+        dispatchScopes={spaceDispatch ? [] : dispatchScopes}
+        initialBody={mode === 'share' && shared ? `${shareLine(shared)}\n\n` : ''}
         bottomSlot={featureRow}
         placeholder={
           spaceDispatch
@@ -208,6 +224,42 @@ export function CaptureBox({
         </p>
       )}
     </div>
+  )
+}
+
+// The Share mode's chooser: the Practices and Journeys the member is on. A pick drops a link line
+// into the post body (lib/feed/share-line); the post itself is a plain post, so nothing new to gate.
+function SharePicker({ value, onPick }: { value: Shareable | null; onPick: (s: Shareable | null) => void }) {
+  const [items, setItems] = useState<Shareable[] | null>(null)
+  useEffect(() => {
+    let live = true
+    void listShareables().then((rows) => {
+      if (live) setItems(rows)
+    })
+    return () => {
+      live = false
+    }
+  }, [])
+  if (items === null) return <p className="mb-2 text-meta text-muted">Finding your Practices and Journeys…</p>
+  if (items.length === 0)
+    return <p className="mb-2 text-meta text-muted">Start a Practice or a Journey and you can share it here.</p>
+  return (
+    <label className="mb-2 flex items-center gap-2 text-meta font-medium text-muted">
+      Share
+      <Select
+        value={value?.href ?? ''}
+        emptyLabel="Pick a Practice or Journey"
+        onChange={(e) => onPick(items.find((i) => i.href === e.target.value) ?? null)}
+        wrapperClassName="inline-block w-max max-w-full"
+        className="text-meta"
+      >
+        {items.map((i) => (
+          <option key={i.href} value={i.href}>
+            {i.kind === 'practice' ? 'Practice' : 'Journey'}: {i.label}
+          </option>
+        ))}
+      </Select>
+    </label>
   )
 }
 

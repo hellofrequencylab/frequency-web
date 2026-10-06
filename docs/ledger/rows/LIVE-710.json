@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-710",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const mig=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/alter table public\\.partner_offers\\s+add column if not exists visits_required smallint/.test(mig))die(\"a partner offer cannot carry a loyalty rule\");const os=r(\"app/(main)/partners/listing/offers-section.tsx\");if(!/label=\"Loyalty card\"/.test(os))die(\"a Business has no way to set a loyalty rule\");const o=r(\"lib/partners/offers.ts\");if(!/export function loyaltyProgress\\(/.test(o))die(\"nothing counts a member visits toward a card\");const a=r(\"app/(main)/partners/[slug]/loyalty-actions.ts\");if(!/export async function claimLoyaltyReward\\(/.test(a)||!/source: .loyalty./.test(a)||!/progress\\?\\.earned/.test(a))die(\"a member cannot claim an earned card in person, or can claim one not earned\");const pg=r(\"app/(main)/partners/[slug]/page.tsx\");if(!/<LoyaltyStamps/.test(pg))die(\"the member never sees their stamps\");const t=r(\"lib/partners/offers.test.ts\");if(!/counts visits since the last claim of this card/.test(t)||!/is never credited by a plaque tap/.test(t))die(\"nothing measures the visit count or keeps a tap from claiming the card\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nA Business sets a loyalty card on a listing offer (partner_offers.visits_required, 2 to 50 visits; migration 20270346002600). Each plaque tap on the existing capture path is a visit (once a day on a repeatable plaque, LIVE-654); the partner page shows the member's stamps, and once full the member claims it at the counter (claimLoyaltyReward logs a partner_redemptions row with source loyalty and the count starts again). No cash. The plaque's repeatable rule is set by the operator in /admin/qr."
+  }
+}
