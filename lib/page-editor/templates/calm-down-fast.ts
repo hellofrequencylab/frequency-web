@@ -107,7 +107,7 @@ export const spec: ArticleSpec = {
       // of its own, and every other CTA on this page pointed at a browse surface — so the page
       // that tells you to let a timer hold the space had no way to open one. `links` is the
       // shape this block already uses one entry down, so this is a data row, not a new control.
-      links: [{ label: 'Try 5 minutes, no account', href: '/mindless', variant: 'secondary' }],
+      links: [{ label: 'Open Mindless', href: '/on-air', variant: 'secondary' }],
       beat: {
         kind: 'statement',
         text: 'You do not have to fix your whole nervous system today. You have to take one slow breath.',
