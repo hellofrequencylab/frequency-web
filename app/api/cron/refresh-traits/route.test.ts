@@ -15,6 +15,9 @@ const density = vi.hoisted(() => ({
 const standing = vi.hoisted(() => ({
   result: { spaces: 0 } as { spaces: number; error?: string },
 }))
+const trust = vi.hoisted(() => ({
+  result: { profiles: 0, rows: 0, truncated: false } as { profiles: number; rows: number; truncated: boolean; error?: string },
+}))
 const logged = vi.hoisted(() => ({
   error: [] as { event: string; fields?: Record<string, unknown> }[],
   info: [] as { event: string; fields?: Record<string, unknown> }[],
@@ -34,6 +37,9 @@ vi.mock('@/lib/resonance/density', () => ({
 }))
 vi.mock('@/lib/spaces/standing-rollup', () => ({
   refreshSpaceStanding: () => Promise.resolve(standing.result),
+}))
+vi.mock('@/lib/trust/store', () => ({
+  recomputeAllTrustScores: () => Promise.resolve(trust.result),
 }))
 vi.mock('@/lib/cron-auth', () => ({
   rejectUnauthorizedCron: () => null,
@@ -59,6 +65,7 @@ beforeEach(() => {
   logged.info.length = 0
   density.result = { cells: 0 }
   standing.result = { spaces: 0 }
+  trust.result = { profiles: 0, rows: 0, truncated: false }
 })
 
 describe('GET /api/cron/refresh-traits, the density-rollup step', () => {
@@ -127,5 +134,22 @@ describe('GET /api/cron/refresh-traits, the space-standing step', () => {
     expect(logged.error.map((l) => l.event)).not.toContain('cron.refresh_space_standing.failed')
     const line = logged.info.find((l) => l.event === 'cron.refresh_space_standing')
     expect(line?.fields).toEqual({ ok: true, spaces: 22 })
+  })
+})
+
+describe('GET /api/cron/refresh-traits, the trust recompute step (LIVE-679)', () => {
+  it('replays the trust ledger and reports it, without failing the cron when it errors', async () => {
+    trust.result = { profiles: 4, rows: 6, truncated: false }
+    let body = await (await GET(req)).json()
+    expect(body.trust).toEqual({ ok: true, profiles: 4, rows: 6, truncated: false })
+    expect(logged.info.some((l) => l.event === 'cron.recompute_trust')).toBe(true)
+
+    trust.result = { profiles: 0, rows: 0, truncated: false, error: 'boom' }
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    body = await res.json()
+    expect(body.ok).toBe(true)
+    expect(body.trust.ok).toBe(false)
+    expect(logged.error.some((l) => l.event === 'cron.recompute_trust.failed')).toBe(true)
   })
 })

@@ -12,6 +12,8 @@ export const SIGNAL_WEIGHTS: Record<string, number> = {
   'verification.id_verified': 25,
   'verification.phone_verified': 5,
   'verification.persona_verified': 15,
+  // A Space the member submitted was verified as a Non Profit (LIVE-679).
+  'verification.org_verified': 15,
   'account.aged_30d': 3,
   'account.aged_1y': 10,
   // Community behavior

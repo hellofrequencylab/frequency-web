@@ -1,7 +1,8 @@
 // Server-side trust ledger + projection (ADR-247). Emit a signal (append-only, exactly
 // once — mirrors recordEngagementEvent), then recompute the score projection by replaying
-// the ledger. Service-role; reads go through the admin client behind app-code authz (the
-// member-consented, explainable read RPC is a follow-up).
+// the ledger. Service-role; reads go through the admin client behind app-code authz. The member's
+// explainable read is readOwnTrustSignals + explainTrust (LIVE-679): the caller passes the SIGNED-IN
+// member's own profile id, never one from a request, so a member only ever reads their own.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { computeScores, type SignalForCompute } from './compute'
@@ -111,5 +112,83 @@ export async function getGlobalTrustScores(profileIds: string[]): Promise<Map<st
     out.set(r.profile_id, r.score)
   }
   return out
+}
+
+/** A member's OWN signals, for the explainable read (lib/trust/explain.ts). The caller passes the
+ *  signed-in member's profile id; nothing here takes one from a request. FAIL-SAFE to []. */
+export async function readOwnTrustSignals(profileId: string): Promise<SignalForCompute[]> {
+  if (!profileId) return []
+  const { data, error } = await createAdminClient()
+    .from('trust_signals')
+    .select('source, signal_type, context')
+    .eq('profile_id', profileId)
+    .limit(5000)
+  if (error) {
+    console.error('[trust] own signals unreadable', { profileId, error: error.message })
+    return []
+  }
+  return (data ?? []).map((r) => ({ source: r.source, signalType: r.signal_type, context: r.context }))
+}
+
+/** How many ledger rows one recompute pass reads at most (the nightly cron's budget). */
+const RECOMPUTE_PAGE = 1000
+
+/**
+ * THE RECOMPUTE JOB (LIVE-679). Replays the whole ledger with the CURRENT weight catalog and upserts
+ * every (profile, context) projection row, so a weight tuned in weights.ts reaches every member by
+ * the next night instead of waiting for that member's next signal. Signals are append-only, so a
+ * context never disappears and an upsert is the whole write. Bounded by `maxRows`; a ledger past it
+ * is reported as `truncated` and the tail is picked up when a member's next signal recomputes them.
+ * Never throws: the nightly cron logs what it returns.
+ */
+export async function recomputeAllTrustScores(
+  opts: { maxRows?: number } = {},
+): Promise<{ profiles: number; rows: number; truncated: boolean; error?: string }> {
+  const maxRows = opts.maxRows ?? 20000
+  const db = createAdminClient()
+  const byProfile = new Map<string, SignalForCompute[]>()
+  let read = 0
+  try {
+    while (read < maxRows) {
+      const { data, error } = await db
+        .from('trust_signals')
+        .select('profile_id, source, signal_type, context')
+        // By profile first, so a profile's signals are contiguous and only the LAST one can be cut.
+        .order('profile_id', { ascending: true })
+        .order('id', { ascending: true })
+        .range(read, read + RECOMPUTE_PAGE - 1)
+      if (error) throw error
+      const page = data ?? []
+      for (const r of page) {
+        const list = byProfile.get(r.profile_id) ?? []
+        list.push({ source: r.source, signalType: r.signal_type, context: r.context })
+        byProfile.set(r.profile_id, list)
+      }
+      read += page.length
+      if (page.length < RECOMPUTE_PAGE) break
+    }
+    const truncated = read >= maxRows
+    // A profile cut across the bound would be scored on part of its ledger: leave it to its own
+    // next signal rather than write a wrong number.
+    const now = new Date().toISOString()
+    const rows = [...byProfile.entries()].flatMap(([profileId, signals]) =>
+      computeScores(signals).rows.map((r) => ({
+        profile_id: profileId,
+        context: r.context,
+        score: r.score,
+        signal_count: r.signalCount,
+        updated_at: now,
+      })),
+    )
+    const safe = truncated ? rows.filter((r) => r.profile_id !== rows[rows.length - 1]?.profile_id) : rows
+    for (let i = 0; i < safe.length; i += 500) {
+      const { error } = await db.from('trust_scores').upsert(safe.slice(i, i + 500), { onConflict: 'profile_id,context' })
+      if (error) throw error
+    }
+    return { profiles: byProfile.size, rows: safe.length, truncated }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String((error as { message?: string })?.message ?? error)
+    return { profiles: byProfile.size, rows: 0, truncated: false, error: message }
+  }
 }
 

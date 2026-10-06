@@ -10,6 +10,7 @@ import { getStaffMember } from '@/lib/staff'
 import { staffCan } from '@/lib/core/staff-roles'
 import { canModeratePlatform, canModeratePost } from '@/lib/moderation/scope'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
+import { emitMemberSuspended, emitReportUpheld } from '@/lib/trust/emitters'
 
 export type ReportTargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event' | 'guestbook'
 type TargetType = ReportTargetType
@@ -454,6 +455,7 @@ export async function suspendMember(
 
   const result = await closeReport(reportId, caller.id, 'actioned')
   if (!isError(result)) {
+    await emitMemberSuspended(memberProfileId, reportId)
     await logAdminAction({ actorId: caller.id, action: 'moderation.suspend', targetType: 'member', targetId: memberProfileId, detail: { reportId, reason: options.reason ?? null, durationDays: options.durationDays ?? null } })
   }
   return result
@@ -522,6 +524,13 @@ async function closeReport(
   if (error) {
     console.error('[closeReport]', error.message)
     return fail('Failed to update report')
+  }
+
+  // An upheld report is a trust penalty for the member it was about (LIVE-679). Every 'actioned'
+  // path closes through here, so this is the one place it is emitted; once per report, best-effort.
+  if (status === 'actioned') {
+    const report = await loadReport(admin, reportId)
+    if (report) await emitReportUpheld(admin, { id: reportId, target_type: report.target_type, target_id: report.target_id })
   }
 
   revalidatePath('/admin/moderation')

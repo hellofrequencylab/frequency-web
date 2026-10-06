@@ -23,6 +23,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { setSpacePlan } from '@/lib/pricing/space-plan'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { emitOrgVerified } from '@/lib/trust/emitters'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -301,6 +302,8 @@ export async function approveVerification(id: string, reviewerId: string): Promi
     // than believe the Space is on Non Profit when it is not.
     return fail('Marked verified, but granting the Non Profit plan failed. Try again.')
   }
+  // A verified Non Profit is a trust credit for the member who submitted it (LIVE-679). Best-effort.
+  await emitOrgVerified({ id, submittedBy: row.submittedBy, spaceId: row.spaceId })
   return ok()
 }
 
