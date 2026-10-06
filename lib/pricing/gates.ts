@@ -211,6 +211,17 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // (a real per-plan run allowance, which is the honest shape for a cost dial), and the read-only
   // resonance VIEW never needed a gate of its own: its AI usage is metered on space_crm_resonance_ai.
   space_crm_resonance_ai: { axis: 'plan', minEntitlement: 'business', enabled: true },
+
+  // CUSTOM DOMAIN (LIVE-310, ADR-1325 ruling 3). A Space served on its own domain is a paid
+  // capability: Business and up (the comparison page sells "Branded Space site and custom domain"
+  // at Business; Independent and Non Profit rank at or above it). Its meter (custom_domain,
+  // feature-meters.ts) is the quantity: one domain per Space, which the one `spaces.domain` column
+  // already holds. ENFORCED WHERE A HOST IS SERVED (lib/spaces/store.ts getSpaceByDomain): a Space
+  // without the plan is not resolved for its domain and the request falls back to the root Space.
+  // A bind action does not exist yet (domains are set by an operator); when the Sites custom-domains
+  // phase builds it, that action calls this same gate before it writes. Inert while the gates are
+  // soft, like every gate here.
+  custom_domain: { axis: 'plan', minEntitlement: 'business', enabled: true },
 }
 
 export type FeatureKey = keyof typeof FEATURE_GATES | (string & {})

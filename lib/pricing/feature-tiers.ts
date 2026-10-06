@@ -272,6 +272,15 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       'Campaigns, funnels, and saved sequences that bring new people in and follow up for you.',
     ),
   },
+  custom_domain: {
+    axis: 'plan',
+    minTier: 'business',
+    title: 'Custom domain',
+    rungs: spaceRungs(
+      'Your Space lives on Frequency at its own page.',
+      'Your Space site on your own domain.',
+    ),
+  },
   // ── Space AI depth (plan axis; the Resonance Engine paid depth · ADR-387) ────────────────────────
   space_crm_resonance_ai: {
     axis: 'plan',
