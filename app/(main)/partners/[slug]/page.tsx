@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { MapPin, Globe, Ticket, ScanLine } from 'lucide-react'
-import { getPartnerView } from '@/lib/partners/read'
+import { getMyLoyalty, getPartnerView } from '@/lib/partners/read'
+import { getMyProfileId } from '@/lib/auth'
+import { LoyaltyStamps } from './loyalty-stamps'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -45,6 +47,12 @@ export default async function PartnerPage({
   // The standard entity cover (PROG-P5, ADR-1136). Partners carry no image column, so the ladder
   // is the operator's /partners Settings image or nothing — a visual no-op until one is set.
   const hero = await resolveDetailHero(`/partners/${slug}`)
+
+  // LIVE-710: loyalty cards sit apart from the plain offers, with the viewer's stamps.
+  const cards = partner.offers.filter((o) => o.visitsRequired)
+  const offers = partner.offers.filter((o) => !o.visitsRequired)
+  const me = cards.length > 0 ? await getMyProfileId() : null
+  const stamps = me ? await getMyLoyalty(me, partner.id, cards) : new Map()
 
   return (
     <div>
@@ -91,10 +99,42 @@ export default async function PartnerPage({
           </p>
         )}
 
-        <div className="border-t border-border mt-6 pt-6">
-          <SectionHeader title="Member offers" count={partner.offers.length} />
+        {cards.length > 0 && (
+          <div className="border-t border-border mt-6 pt-6">
+            <SectionHeader title="Loyalty" count={cards.length} />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {cards.map((c) =>
+                me ? (
+                  <LoyaltyStamps
+                    key={c.id}
+                    offerId={c.id}
+                    title={c.title}
+                    visits={stamps.get(c.id)?.visits ?? 0}
+                    required={c.visitsRequired as number}
+                  />
+                ) : (
+                  <RowCard
+                    key={c.id}
+                    href={`/sign-in?next=/partners/${partner.slug}`}
+                    anchor={
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+                        <Ticket className="h-4 w-4" />
+                      </div>
+                    }
+                    title={c.title}
+                    context={`Earned after ${c.visitsRequired} visits. Sign in to collect stamps.`}
+                    description={c.description ?? undefined}
+                  />
+                ),
+              )}
+            </div>
+          </div>
+        )}
 
-          {partner.offers.length === 0 ? (
+        <div className="border-t border-border mt-6 pt-6">
+          <SectionHeader title="Member offers" count={offers.length} />
+
+          {offers.length === 0 ? (
             <EmptyState
               icon={Ticket}
               title="No offers right now"
@@ -110,7 +150,7 @@ export default async function PartnerPage({
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {partner.offers.map((o) => (
+              {offers.map((o) => (
                 <RowCard
                   key={o.id}
                   href="/partners"
