@@ -12,10 +12,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ han
   const admin = createAdminClient()
   const { data: p } = await admin
     .from('profiles')
-    .select('display_name, handle, bio, avatar_url, vcard')
+    // SCAN-720: `is_active` and `is_system` are read for the gate below and never printed.
+    .select('display_name, handle, bio, avatar_url, vcard, is_active, is_system')
     .eq('handle', handle)
     .maybeSingle()
   if (!p) return new Response('Not found', { status: 404 })
+  // A deactivated or system profile has no card to hand out, whatever its stored opt-in says.
+  if (p.is_active === false || p.is_system) return new Response('Not found', { status: 404 })
 
   const vcf = buildVcf(
     {

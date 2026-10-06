@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-721",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const f=\"app/(main)/nearby/actions.ts\";if(!fs.existsSync(f)){console.error(\"SCAN-721: \"+f+\" missing\");process.exit(79)}const s=fs.readFileSync(f,\"utf8\");const floating=/;\\(async \\(\\)\\s*=>\\s*\\{/.test(s);const usesAfter=/\\bafter\\(/.test(s)&&/from\\s+.next\\/server./.test(s);if(floating||!usesAfter){console.error(\"SCAN-721: the dispatch email and push fan-out is still a floating unawaited promise (floating IIFE: \"+floating+\", after() from next/server used: \"+usesAfter+\"), so the serverless function can freeze mid-loop and members never get the email or push and no recipient rows are logged.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\n2026-10-05: the Dispatch fan-out runs inside after() from next/server, reaches recipients in chunks of 12 with Promise.allSettled, and writes each chunk's recipient rows as it finishes."
+  }
+}
