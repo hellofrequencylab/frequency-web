@@ -6,7 +6,7 @@
 // read layer agree on what "live" means.
 //
 // Columns are the ones lib/database.types.ts declares for partner_offers: title, description,
-// member_terms, valid_until, active. Nothing else; no migration in this change.
+// member_terms, valid_until, active, and quest_id (LIVE-673: a Quest sponsor reward).
 
 import type { Database } from '@/lib/database.types'
 
@@ -22,6 +22,9 @@ export interface OfferInput {
   /** `YYYY-MM-DD` (a date input) or empty for no expiry. */
   validUntil: string
   active: boolean
+  /** LIVE-673: the Quest this offer rewards (a sponsor reward), or empty for an ordinary offer.
+   *  The action checks the Quest exists; this only shapes it. */
+  questId?: string | null
 }
 
 export const OFFER_TITLE_MAX = 120
@@ -70,6 +73,8 @@ export function buildOfferRow(input: OfferInput): OfferRowResult {
       member_terms: terms || null,
       valid_until,
       active: Boolean(input.active),
+      // Only when the form sent one, so a caller that predates the field never clears a link.
+      ...(input.questId !== undefined ? { quest_id: (input.questId ?? '').trim() || null } : {}),
     },
   }
 }
@@ -80,4 +85,24 @@ export function isOfferLive(
   nowIso: string = new Date().toISOString(),
 ): boolean {
   return offer.active === true && (!offer.valid_until || offer.valid_until >= nowIso)
+}
+
+/**
+ * Which offer a plaque tap redeems (LIVE-673). A Quest sponsor reward is a one-off a member earns
+ * by finishing that Quest (`earnedQuestIds`): an earned one not yet claimed (`redeemedOfferIds`)
+ * is what the tap claims, because it is the reward the member walked in for. Otherwise the tap is
+ * credited to an ordinary offer only when exactly ONE is live: with several, the plaque does not
+ * say which one the member came for (scan2 L9-04), so it stays null rather than guessing. A Quest
+ * reward never goes to a member who has not earned it, or a second time. PURE.
+ */
+export function pickPlaqueOffer<T extends { id: string; quest_id?: string | null }>(
+  live: readonly T[],
+  earnedQuestIds: ReadonlySet<string>,
+  redeemedOfferIds: ReadonlySet<string> = new Set(),
+): T | null {
+  const questRewards = live.filter((o) => !!o.quest_id && earnedQuestIds.has(o.quest_id) && !redeemedOfferIds.has(o.id))
+  if (questRewards.length === 1) return questRewards[0]
+  if (questRewards.length > 1) return null
+  const plain = live.filter((o) => !o.quest_id)
+  return plain.length === 1 ? plain[0] : null
 }
