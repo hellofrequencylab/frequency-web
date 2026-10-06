@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-682",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const mig=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/add value if not exists .poll./.test(mig)||!/add value if not exists .ask./.test(mig))die(\"post_type has no poll or ask kind\");if(!/create table if not exists public\\.post_poll_options/.test(mig)||!/create table if not exists public\\.post_poll_votes/.test(mig))die(\"no table holds a poll option or a vote\");const c=r(\"components/feed/composer.tsx\");if(!/key: .poll., label: .Poll./.test(c)||!/key: .ask., label: .Ask./.test(c))die(\"the composer offers no Poll or Ask\");if(!/fd\\.append\\(.poll_option./.test(c))die(\"the composer sends no poll options\");if(!/fd\\.set\\(.dispatch_scope./.test(c))die(\"a Dispatch carries no scope\");const cb=r(\"components/feed/capture-box.tsx\");if(!/key: .share./.test(cb)||!/shareLine\\(/.test(cb))die(\"Capture has no Practice or Journey share\");const a=r(\"app/(main)/feed/actions.ts\");if(!/dispatchScopesFor\\(/.test(a)||!/allowed\\.includes\\(dispatchScope\\)/.test(a))die(\"createPost does not limit a Dispatch to the tiers the author leads\");if(!/export async function votePoll\\(/.test(a))die(\"nobody can vote on a poll\");const pc=r(\"components/feed/post-card.tsx\");if(!/<PostPoll /.test(pc))die(\"a poll post renders no options\");const cf=r(\"components/widgets/circles/circle-feed.tsx\");if(!/dispatchScopes=\\{dispatchScopes\\}/.test(cf))die(\"the circle composer is not told which tiers its host leads\");const t=r(\"lib/feed/compose-kinds.test.ts\");if(!/adds the Nexus for a Mentor with a region/.test(t))die(\"nothing measures the scope rule\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe composer offers Post, Poll and Ask to every member, Capture adds a Practice or Journey share, and a leader's Dispatch picks its reach (Circle, Hub, Nexus, Everyone) from the tiers they lead; createPost re-checks the pick. Polls are their own tables with a vote tally trigger (migration 20270346002400)."
+  }
+}
