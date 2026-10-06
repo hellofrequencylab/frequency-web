@@ -182,18 +182,26 @@ export async function setLeaderTriage(input: {
   const conv = await ownedConversation(leaderId, input.conversationId)
   if (!conv) return fail('That conversation is not one of yours.')
 
+  // 2026-10-05 (SCAN-735): the assignee can only be cleared, the caller, or the conversation's owner.
+  // Any other profile id would hand the member email, the full thread and the internal notes to someone
+  // who never held it (the RLS policies grant the assignee the whole thread), breaking the header invariant.
+  const target: string | null | undefined = input.assignedTo === undefined ? undefined : input.assignedTo || null
+  if (target !== undefined && target !== null && target !== leaderId && target !== conv.ownerProfileId) {
+    return fail('You can only assign this conversation to yourself.')
+  }
+
   const patch: { status?: string; priority?: string; assignedTo?: string | null } = {}
   if (input.status && input.status !== conv.status) patch.status = input.status
   if (input.priority) patch.priority = input.priority
-  const assigneeChanged = input.assignedTo !== undefined && (input.assignedTo || null) !== conv.assignedTo
-  if (assigneeChanged) patch.assignedTo = input.assignedTo || null
+  const assigneeChanged = target !== undefined && target !== conv.assignedTo
+  if (assigneeChanged) patch.assignedTo = target
   if (Object.keys(patch).length === 0) return ok()
 
   const okUpdate = await updateConversationFields(conv.id, patch)
   if (!okUpdate) return fail('Could not update the conversation. Try again.')
 
   if (assigneeChanged) {
-    await recordAssignment({ conversationId: conv.id, assignedTo: input.assignedTo || null, assignedBy: leaderId, reason: 'manual' })
+    await recordAssignment({ conversationId: conv.id, assignedTo: target, assignedBy: leaderId, reason: 'manual' })
     const note = (input.handoffNote ?? '').trim()
     if (note) {
       await appendConversationMessage({

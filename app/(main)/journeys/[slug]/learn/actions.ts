@@ -9,10 +9,25 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getPlan, completeLesson, uncompleteLesson } from '@/lib/journey-plans'
+import { loadJourneyEntryFacts } from '@/lib/journeys/entry-door'
+import { canEnterJourney } from '@/lib/journeys/entry-gate'
+import { getMemberRunForPlan, getSoloEnrollmentStart } from '@/lib/journeys/runs'
+import { isPhaseUnlocked } from '@/lib/journeys/schedule'
 import { getJourneyTree } from '@/lib/journeys/store'
+import type { JourneyTree } from '@/lib/journeys/tree'
 import { rewardEventsForTransition, type JourneyRewardEvent } from '@/lib/journeys/rewards'
 import { grantJourneyRewards, grantExtraCreditIfAny, type GrantedJourneyReward } from '@/lib/journeys/grants'
 import { canEditJourney } from '@/lib/journeys/authoring'
+
+/** Is the phase holding `itemId` still drip-locked? Mirrors the phaseLock map in learn-player.tsx. */
+function isLessonDripLocked(tree: JourneyTree, itemId: string, anchorStart: Date, dripIntervalDays: number): boolean {
+  for (let i = 0; i < tree.phases.length; i++) {
+    for (const m of tree.phases[i].modules) {
+      if (m.lessons.some((l) => l.id === itemId)) return !isPhaseUnlocked(anchorStart, i, dripIntervalDays)
+    }
+  }
+  return false
+}
 
 export async function completeJourneyLessonAction(
   slug: string,
@@ -24,7 +39,35 @@ export async function completeJourneyLessonAction(
   if (!loaded) return fail('Journey not found.')
   const planId = loaded.plan.id
 
+  // ── THE DOOR (ADR-1397), mirrored from learn/page.tsx (SCAN-725) ────────────────────────────
+  // The page admits the author, a manager or an enrolled member and nobody else. The action used to
+  // admit any signed-in caller, so a member who never enrolled (or never bought) could tick every
+  // lesson and collect the phase Gems, the extra-credit Zaps and a journey_complete event on content
+  // they cannot open. Same helper as the page (lib/journeys/entry-door), so the two cannot drift.
+  const entry = await loadJourneyEntryFacts(caller.id, loaded.plan)
+  if (!canEnterJourney(entry)) return fail('Journey not found.')
+  const { canManage } = entry
+  // The item must belong to THIS plan: completeLesson is a bare upsert keyed by item id.
+  if (!loaded.items.some((it) => it.id === itemId)) return fail('That lesson is not part of this Journey.')
+
   const before = await getJourneyTree(slug, caller.id)
+
+  // The drip lock the page enforces: phase i unlocks at anchor + i × interval, where the anchor is
+  // the Run's start (cohort) or the member's own enrolment start (solo). No anchor, no lock. An
+  // author or manager previews freely, as on the page. Best-effort like the page's own Run read.
+  if (!canManage && loaded.plan.author_id !== caller.id && before) {
+    try {
+      const run = await getMemberRunForPlan(caller.id, planId)
+      const anchorStart = run ? run.startedAt : await getSoloEnrollmentStart(caller.id, planId)
+      const dripIntervalDays = run ? run.dripIntervalDays : ((loaded.plan as { drip_interval_days?: number }).drip_interval_days ?? 7)
+      if (anchorStart && isLessonDripLocked(before, itemId, new Date(anchorStart), dripIntervalDays)) {
+        return fail('That lesson has not unlocked yet.')
+      }
+    } catch {
+      /* Runs not enabled yet — no drip lock to apply */
+    }
+  }
+
   const ticked = await completeLesson(caller.id, planId, itemId)
   if (!ticked.ok) return fail(ticked.error)
   const after = await getJourneyTree(slug, caller.id)

@@ -4,14 +4,14 @@ import type { ReactNode } from 'react'
 import { CalendarClock, Eye, SlidersHorizontal, Tag } from 'lucide-react'
 import { JourneyAuthorActions } from '@/components/journey/v2/learn/journey-author-actions'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
-import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
+import { loadJourneyEntryFacts } from '@/lib/journeys/entry-door'
 import { canEnterJourney } from '@/lib/journeys/entry-gate'
 import { getJourneyOffer, seatLine } from '@/lib/journeys/paid'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, getPhaseEvents, type KickoffEvent } from '@/lib/journeys/runs'
 import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
-import { getPlanAuthor, isPlanAdopted, countActiveAdopters } from '@/lib/journey-plans'
+import { getPlanAuthor, countActiveAdopters } from '@/lib/journey-plans'
 import { getJourneyLearnExtras, getLinkedEvent, getLoggedTodayPracticeIds, pillarsById } from '@/lib/journeys/learn'
 import { getPartialMapToday, type PartialToday } from '@/lib/practices'
 import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
@@ -77,13 +77,13 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   // ⚠️ REFUSAL IS A REDIRECT TO THE JOURNEY'S OWN PAGE, which is its sales page: cover, summary,
   // phase outline, facts and the enrol control all live there. `notFound()` would hide the one page
   // built to convert this visitor, and it stays reserved for the private case above.
-  const [journeyCaps, adopted] = await Promise.all([
-    getJourneyCapabilities(plan.id),
-    isPlanAdopted(profileId, plan.id),
-  ])
-  const canManageJourney = journeyCaps.has('journey.editSettings')
+  // Resolved by the same helper the lesson-complete action uses (lib/journeys/entry-door, SCAN-725).
+  const entry = await loadJourneyEntryFacts(profileId, plan)
+  const canManageJourney = entry.canManage
+  const adopted = entry.enrolled
+  const journeyCaps = entry.caps
   const isAuthor = plan.author_id === profileId
-  if (!canEnterJourney({ viewerProfileId: profileId, authorId: plan.author_id, canManage: canManageJourney, enrolled: adopted })) {
+  if (!canEnterJourney(entry)) {
     redirect(`/journeys/${plan.slug}`)
   }
 
