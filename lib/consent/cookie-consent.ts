@@ -30,6 +30,8 @@
 // same law across the full matrix, so a copy that drifts fails the build (the method
 // lib/theme/mode.test.ts established for the pre-paint bootstrap).
 
+import { PIXEL_PATH_PREFIXES } from '@/lib/analytics/sanitize'
+
 /* ── Storage ──────────────────────────────────────────────────────────────── */
 
 /** The visitor's recorded choice. Readable at the edge and by the head script, so: a cookie. */
@@ -146,15 +148,18 @@ export function shouldAskForConsent(state: ConsentState): boolean {
  */
 export function gaBootstrapScript(gaId: string): string {
   const id = JSON.stringify(gaId)
+  // LIVE-810: the first page view carries a redacted path, same rule as pixelSafePath.
+  const prefixes = JSON.stringify(PIXEL_PATH_PREFIXES)
   return `(function(){try{
-var ID=${id},started=false;
+var ID=${id},started=false,P=${prefixes};
+function safe(p){for(var i=0;i<P.length;i++){var x=P[i]+'/';if(p.indexOf(x)===0){var r=p.slice(x.length),j=r.indexOf('/');if(!r||r.charAt(0)==='[')return p;return P[i]+'/[slug]'+(j<0?'':r.slice(j));}}return p;}
 window.__fqGa=function(){
 if(started)return;started=true;
 window.dataLayer=window.dataLayer||[];
 function gtag(){window.dataLayer.push(arguments);}
 try{if(localStorage.getItem('freq-ga-optout')==='1'){window['ga-disable-'+ID]=true;}}catch(e){}
 gtag('js',new Date());
-gtag('config',ID,{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false});
+gtag('config',ID,{anonymize_ip:true,allow_google_signals:false,allow_ad_personalization_signals:false,page_location:location.origin+safe(location.pathname)});
 var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+ID;
 document.head.appendChild(s);
 };
