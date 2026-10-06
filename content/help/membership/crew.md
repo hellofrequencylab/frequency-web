@@ -22,6 +22,8 @@ hosts.
   Member. The [pricing page](/pricing) shows the exact room on each.
 - **Vera without the daily cap.**
 - **The Crew badge** on your profile.
+- **The Supporter mark** beside your name. It shows while Crew is active, whatever amount you picked,
+  and fades 45 days after you stop.
 - **Listing what you author** in the public library.
 
 Crew is about hosting and backing the community. It does not sell. To charge for something, open a
@@ -29,9 +31,10 @@ Space and take Business. See [Plans and pricing](/help/spaces/plans-and-pricing)
 
 ## What Crew costs
 
-Crew is contribute what you want. Pick any monthly amount at or above the floor, and every amount buys
-exactly the same Crew. The floor and the suggested amount are on the [upgrade page](/upgrade), and the
-card fields open on that page.
+Crew is contribute what you want. The [upgrade page](/upgrade) offers three amounts with the suggested
+one already picked, plus a field for any other amount at or above the floor. Every amount buys exactly
+the same Crew, and the card fields open on that page. If now is not the time, tap **Not right now**.
+Everything free stays free.
 
 Nothing you have earned or made depends on Crew. If you stop, everything you built stays yours. A full
 allowance only means the next new thing waits.

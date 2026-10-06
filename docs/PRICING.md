@@ -134,11 +134,11 @@
 > | Vault, rewards loop, Vera | ~~earn only · earn only~~ **spend · full loop** (ADR-1295) · 10/day | spend · full loop · unlimited |
 > | Network-sourced sale rate | **cannot sell** (RSVPs only, ADR-913) | **8%** |
 >
-> **Crew's price is chosen by the member.** Floor **$4.99**, suggested **$24.99** (pre-selected), five
-> preset anchors plus an always-visible "another amount", annual at **10x the chosen monthly**.
+> **Crew's price is chosen by the member.** Floor **$4.99**, suggested **$10** (pre-selected), three
+> preset anchors ($4.99, $10, $25, ADR-1709 / LIVE-755) plus an always-visible "another amount", annual at **10x the chosen monthly**.
 > 🔴 **Every amount buys IDENTICAL access** — the moment a higher amount buys more, it is a tier ladder
-> and the framing is a lie. Higher amounts buy the Supporter mark (at or above the suggested amount)
-> and fund the build, never capability. Config: `PWYW_CONFIG_DEFAULT` + `isValidPwywAmount` /
+> and the framing is a lie. Higher amounts fund the build, never capability. The Supporter mark
+> follows any active Crew and fades 45 days after support stops (`supporterMarkShows`, LIVE-755). Config: `PWYW_CONFIG_DEFAULT` + `isValidPwywAmount` /
 > `earnsSupporterMark` (`lib/pricing/catalog-config.ts`); operator-editable at `/admin/pricing`.
 >
 > **There is no comped Crew.** "Never gate someone out" rests on the free tier being genuinely
@@ -198,7 +198,7 @@
 > [COMMUNITY-COLLECTIVE-BUILD-PLAN.md](COMMUNITY-COLLECTIVE-BUILD-PLAN.md) · [ADR-811](DECISIONS.md).
 >
 > **The PUBLIC ladder (founder's ladder, ADR-878, updated 2026-07-30):** Member $0 · **Crew: pay what
-> you want**, floor $4.99/mo, $24.99 suggested, no list anchor (see "Crew is PWYW" below) ·
+> you want**, floor $4.99/mo, $10 suggested, no list anchor (see "Crew is PWYW" below) ·
 > **Free Space** (the first level of
 > Space) · Business (the Opening Beta price is CLOSED, ADR-1060) · Collective (same) · Non Profit flat ·
 > the **Vera AI** add-on +$20 (catalog key `addon_ai`) · operator seats $12/seat/mo (LIVE-229). **Independent

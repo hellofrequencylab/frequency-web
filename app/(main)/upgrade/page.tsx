@@ -25,9 +25,9 @@ import { PwywPicker } from './pwyw-picker'
 // picks any monthly amount from the floor up, and every amount buys identical access. This page used to
 // render a fixed "$9 / month" over a checkout that never passed an amount, plus a SEPARATE "become a
 // Supporter" contribution box underneath, which split one offer into two and taught the page to read as
-// "a $9 tier, and also a donation". The picker is the offer. Paying at or above the suggested amount is
-// what earns the Supporter badge (earnsSupporterMark), so the badge is a consequence of the one choice
-// rather than a second purchase.
+// "a $9 tier, and also a donation". The picker is the offer. Any Crew amount earns the Supporter badge
+// (earnsSupporterMark, LIVE-755), so the badge is a consequence of joining rather than a second
+// purchase, and it fades 45 days after support stops.
 //
 // The picker is `PwywPicker`: presets + an open field + an annual toggle, over the ONE checkout seam
 // (startMembershipCheckout, amount required). It also carries the soft-ceiling confirm ADR-908 asks
@@ -261,11 +261,10 @@ export default async function UpgradePage({
 
       {/* 🔴 THE STANDALONE "BECOME A SUPPORTER" BLOCK IS GONE, and its removal is the point of this
           change rather than a side effect. Crew is pay-what-you-want, and `earnsSupporterMark` already
-          grants the badge to anyone who picks at or above the suggested amount. Offering a SECOND
+          grants the badge to anyone on Crew. Offering a SECOND
           pay-what-you-want box underneath a Crew card is what split one offer into two and made the
           page read as "a $9 tier, plus a separate donation" — which is not the model.
-          The badge is now earned by the amount you choose in the picker above. An existing Crew member
-          who wants to change it changes their amount. */}
+          The badge is now earned by joining Crew in the picker above. */}
 
       {/* What happens at launch, stated without a promise we would have to keep. */}
       {!live && (

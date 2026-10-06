@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { Zap, Loader2, ChevronUp } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { startMembershipCheckout, settleMembershipCheckoutAction } from './actions'
@@ -25,7 +26,9 @@ import { warmStripeBrowser } from '@/lib/billing/stripe-browser'
 // recurring amount is more often a slip than a gift) but never refuses.
 //
 // Copy follows docs/CONTENT-VOICE.md: plain, no em dashes, no urgency, no narrating the reader's
-// feelings, and nothing here counts down or manufactures scarcity.
+// feelings, and nothing here counts down or manufactures scarcity. ADR-1709 (LIVE-755) sets the shape:
+// "contribute what you want" (ADR-1084), ONE impact line, three presets with the suggested one
+// selected, and a "Not right now" that is a real way out with the same dignity as the button.
 
 /** Cents to a plain price label: "$4.99", and "$9" when the amount is whole dollars. */
 function priceLabel(cents: number): string {
@@ -125,15 +128,15 @@ export function PwywPicker({
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-body-sm font-semibold text-text">Pay what it is worth to you.</p>
-        <p className="mt-1 text-body-sm text-muted">
+        <p className="text-body-sm font-semibold text-text">Contribute what you want.</p>
+        <p data-crew-impact className="mt-1 text-body-sm text-muted">
           {runningCostCents
-            ? `A seat costs us about ${priceLabel(runningCostCents)} a month to run. Anything above that goes into building the first Outpost.`
-            : 'Everything Crew does is the same at every amount. Anything above the cost of running a seat goes into building the first Outpost.'}
+            ? `A seat costs us about ${priceLabel(runningCostCents)} a month to run, and anything above that builds the first Outpost.`
+            : 'Every amount buys the same Crew, and anything above the cost of a seat builds the first Outpost.'}
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+      <div className="grid grid-cols-3 gap-2">
         {presetCents.map((c) => {
           const selected = !usingCustom && amount === c
           return (
@@ -225,8 +228,15 @@ export function PwywPicker({
         />
       )}
 
+      <Link
+        href="/feed"
+        data-crew-not-now
+        className="block w-full rounded-xl px-4 py-2 text-center text-body-sm font-medium text-muted transition-colors hover:text-text"
+      >
+        Not right now
+      </Link>
       <p className="text-center text-meta text-muted">
-        Change what you give any time, or stop. No penalty either way.
+        Everything free stays free. If you join, change what you give any time, or stop.
       </p>
       {error && <p className="text-center text-body-sm text-danger">{error}</p>}
     </div>
