@@ -1,7 +1,8 @@
 {
   "id": "LIVE-792",
   "title": "The canon guard does not know the retired audience framings, and Market Read is keyed to retired personas",
-  "status": "open",
+  "status": "done",
+  "closed": "2026-10-06",
   "priority": "P1",
   "lane": "live",
   "size": "M",
@@ -9,7 +10,7 @@
     "file": "scripts/check-canon.mjs",
     "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
   },
-  "detail": "PR 3 (ADR-1715). Adds the superseded framings (spiritual refugees, witchy wellness, burnt-out seekers, calm fire, quiet revolution, the retired persona trio) to BANNED in scripts/check-canon.mjs, plus a member-audience rule that fails when an archetype name or the word seekers reaches member copy. Re-keys lib/marketing/market-read.ts cards to archetypes (activation gap: Wired Professional and Transplant; the unmissed: the Seeker family; what is alive: Activity-First Man) and removes its em dashes, since the new rule would fail on it. check-canon.test.ts plants witchy wellness and Wired Professional and proves both fail.",
+  "detail": "PR 3 (ADR-1715). Adds the superseded framings (spiritual refugees, witchy wellness, burnt-out seekers, calm fire, quiet revolution, the retired persona trio) to BANNED in scripts/check-canon.mjs, plus a member-audience rule that fails when an archetype name or the word seekers reaches member copy. Re-keys lib/marketing/market-read.ts cards to archetypes (activation gap: Wired Professional and Transplant; the unmissed: the Seeker family; what is alive: Activity-First Man) and removes its em dashes, since the new rule would fail on it. check-canon.test.ts plants witchy wellness and Wired Professional and proves both fail.\n\nCLOSED 2026-10-06. scripts/check-canon.mjs BANNED gains spiritual refugees, witchy wellness, burnt-out seekers, calm fire, quiet revolution and the two retired persona names (everyone audience), plus member-audience rules for an internal archetype name and the word seekers. lib/marketing/market-read.ts is re-keyed (activation gap: Wired Professional and Transplant; the unmissed: the Seeker family; what is alive: Activity-First) with its em dashes removed, and the two seekers strings in lib/onboarding/example-sequences.ts became people, since the new rule failed on them. check-canon.test.ts plants witchy wellness and Wired Professional and proves both fail.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};const c=r(\"scripts/check-canon.mjs\");if(!/witchy/i.test(c))fail(\"check:canon does not ban the retired witchy wellness framing\");if(!/Wired Professional/.test(c))fail(\"check:canon has no rule stopping an archetype name from leaking into member copy\");if(/High-Functioning Lonely|Post-Screen Skeptic|All three personas/.test(r(\"lib/marketing/market-read.ts\")))fail(\"Market Read is still keyed to the retired personas\")'",

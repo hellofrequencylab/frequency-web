@@ -107,7 +107,7 @@ async function getInAppSignal(): Promise<MarketSignal> {
 
 // ── 2 + 3. Read the ache + draft resonant outbound content ────────────────────
 // Deterministic for now. Each pain point pulls live evidence when the signal is
-// there, and falls back to the persona baseline (CREATIVE-PLATFORM) when it isn't,
+// there, and falls back to the archetype baseline (CONTENT-VOICE §2d, ADR-1715) when it isn't,
 // so the read is always populated and on-brand.
 
 function synthesize(signal: MarketSignal): PainPoint[] {
@@ -116,12 +116,12 @@ function synthesize(signal: MarketSignal): PainPoint[] {
   const activationGap: PainPoint = {
     id: 'activation-gap',
     title: 'The activation ache',
-    ache: 'I signed up to belong — and I’m still on the outside, looking in.',
+    ache: 'I signed up to belong, and I’m still on the outside, looking in.',
     basis: newWithoutCircle > 0 ? 'live' : 'baseline',
     evidence: newWithoutCircle > 0
-      ? `${newWithoutCircle} of ${newThisWeek} people who joined this week haven’t found a circle yet — the gap between signing up and being seen.`
-      : 'Baseline: the High-Functioning Lonely join hopeful, then stall at the threshold of a real room.',
-    persona: 'The High-Functioning Lonely',
+      ? `${newWithoutCircle} of ${newThisWeek} people who joined this week haven’t found a circle yet. That is the gap between signing up and being seen.`
+      : 'Baseline: the Wired Professional and the Transplant join hopeful, then stall at the threshold of a real room.',
+    persona: 'Wired Professional, Transplant',
     ideas: [
       { channel: 'Social', hook: 'You can be in a room full of people and still drive home alone on a Friday.',
         body: 'Frequency isn’t another feed. It’s a few people, near you, who’d notice if you didn’t show up. Come find your circle.' },
@@ -137,9 +137,9 @@ function synthesize(signal: MarketSignal): PainPoint[] {
     ache: 'I showed up once. No one noticed when I stopped.',
     basis: quietMembers > 0 ? 'live' : 'baseline',
     evidence: quietMembers > 0
-      ? `${quietMembers} members have gone quiet — here, but unseen. The ache we sell is being missed; the wider market feels it before they ever arrive.`
-      : 'Baseline: the deepest fear isn’t being disliked — it’s being absent and unnoticed.',
-    persona: 'All three personas',
+      ? `${quietMembers} members have gone quiet: here, but unseen. The ache we sell is being missed; the wider market feels it before they ever arrive.`
+      : 'Baseline: the deepest fear isn’t being disliked. It’s being absent and unnoticed.',
+    persona: 'The Seeker family',
     ideas: [
       { channel: 'Social', hook: 'The opposite of lonely isn’t “a lot of friends.” It’s being missed when you’re gone.',
         body: 'Small circles, on purpose. A place where your absence registers and your return is noticed.' },
@@ -152,12 +152,12 @@ function synthesize(signal: MarketSignal): PainPoint[] {
   const alive: PainPoint = {
     id: 'whats-alive',
     title: 'What’s already alive',
-    ache: 'I want in on something real and early — not a Discord that dies in three weeks.',
+    ache: 'I want in on something real and early, not a Discord that dies in three weeks.',
     basis: topInterest ? 'live' : 'baseline',
     evidence: topInterest
       ? `${topInterest.name} is your most-alive interest right now (${topInterest.activeCircles} active circle${topInterest.activeCircles === 1 ? '' : 's'}). Lead acquisition with the thing already gathering people.`
-      : 'Baseline: the Post-Screen Skeptic acts when it’s framed as a movement they get in on early.',
-    persona: 'The Post-Screen Skeptic',
+      : 'Baseline: the Activity-First reader comes for the run, the sauna or the game night, and stays for the people.',
+    persona: 'Activity-First Man',
     ideas: [
       { channel: 'Social', hook: topInterest ? `${topInterest.name} is taking root near you. In person, off the phone.` : 'Something real is taking root near you. In person, off the phone.',
         body: 'The first circles are forming now. Get in early, shape it from day one, be one of the first through the door.' },
