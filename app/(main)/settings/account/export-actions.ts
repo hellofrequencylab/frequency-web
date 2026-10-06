@@ -8,6 +8,7 @@
 // that lib; this action's only job is to bind the export to the real caller.
 
 import { getMyProfileId } from '@/lib/auth'
+import { readImpersonation } from '@/lib/impersonation'
 import { buildMemberExport, type MemberExport } from '@/lib/privacy/export'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -23,6 +24,11 @@ export type MemberExportPayload = {
 export async function downloadMyData(): Promise<ActionResult<MemberExportPayload>> {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return fail('You need to be signed in to download your data.')
+  // Act-as (ADR-426) swaps the session, so this would hand staff the member's full personal
+  // export with nothing in the audit log naming them (SCAN-748). Refuse while the stash is set.
+  if (await readImpersonation()) {
+    return fail('Exit act-as first. Staff cannot download a member\'s data from inside their session.')
+  }
 
   try {
     const data = await buildMemberExport(myProfileId)

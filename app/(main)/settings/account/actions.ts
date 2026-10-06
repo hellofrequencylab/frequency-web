@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getMyProfileId } from '@/lib/auth'
 import { unblockUser } from '@/lib/blocking'
 import { deleteMyAccount } from '@/lib/account'
+import { readImpersonation } from '@/lib/impersonation'
 import { type ActionResult, fail } from '@/lib/action-result'
 
 export async function unblockFromSettings(profileId: string): Promise<void> {
@@ -24,6 +25,13 @@ export async function deleteAccountAction(): Promise<ActionResult> {
   // and a signed-out call gets a plain refusal instead of a sign-out and a redirect.
   const myId = await getMyProfileId()
   if (!myId) return fail('Sign in to delete your account.')
+  // Act-as (ADR-426) swaps the whole session, so getMyProfileId resolves the MEMBER and this
+  // delete would erase their account, files and Stripe customer with only the act-as start and
+  // stop in the audit log (SCAN-748). The stash is the one signal the session is borrowed, so
+  // staff get a refusal here and the member keeps the only key to this door.
+  if (await readImpersonation()) {
+    return fail('Exit act-as first. Staff cannot delete a member account from inside their session.')
+  }
   const res = await deleteMyAccount()
   if (!res.ok) return fail('Could not delete your account. Please contact support.')
   const supabase = await createClient()

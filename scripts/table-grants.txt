@@ -290,7 +290,7 @@ space_updates                        authenticated
 space_venue_holds                    internal
 space_vera_changes                   authenticated
 spaces                               authenticated
-spotlight_guestbook                  authenticated
+spotlight_guestbook                  authenticated   # UPDATE is column-limited to hidden_at (20270345011700, SCAN-758); the gate cannot see that
 spotlight_top_friends                public
 stewardships                         authenticated
 store_items                          public

@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-748",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const a=\"app/(main)/settings/account/actions.ts\",e=\"app/(main)/settings/account/export-actions.ts\";if(!fs.existsSync(a)||!fs.existsSync(e))process.exit(79);const A=fs.readFileSync(a,\"utf8\"),E=fs.readFileSync(e,\"utf8\");if(!A.includes(\"readImpersonation\")){console.error(\"SCAN-748: deleteAccountAction never consults the act-as stash, so staff acting as a member can permanently delete that member and cancel their paid plans with nothing attributing it to staff.\");process.exit(1)}if(!E.includes(\"readImpersonation\")){console.error(\"SCAN-748: downloadMyData never consults the act-as stash, so staff acting as a member receive the full personal export unlogged.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\ndeleteAccountAction and downloadMyData checked only getMyProfileId(), which under act-as (ADR-426) resolves the member, so a janitor acting as a member could permanently delete that member (files, Stripe customer, paid Space plans) or pull their full personal export with only impersonation.start/stop in the audit log. Both actions now await readImpersonation() from @/lib/impersonation right after establishing the caller and return fail('Exit act-as first. ...') while the stash is present, before deleteMyAccount or buildMemberExport runs; the existing controls surface the refusal inline. ADR-1704 corrects the ADR-426 guardrail note. Pinned by app/(main)/settings/account/act-as-refusal.test.ts: refusal with the stash, unchanged member path without it, source-shape order of the check before the destructive call, and no em dash in the copy."
+  }
+}
