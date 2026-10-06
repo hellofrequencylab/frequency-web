@@ -14,7 +14,7 @@ export type LaunchFunnel = 'calm' | 'people' | 'host' | 'practice' | 'together'
 /** The completion screens that show a next step. */
 export type CompletionMoment = 'mindless' | 'rsvp' | 'circle'
 
-export interface NextStep {
+interface NextStep {
   label: string
   href: string
   /** One short line under the label: why this step, in plain words. */
