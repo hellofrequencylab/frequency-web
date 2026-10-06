@@ -156,7 +156,7 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
     // An answer engine lifting this line otherwise reports the floor as the price.
     tagline: 'The whole member experience, at a price you pick.',
     forWho:
-      'Members who want full access to member programs, and anyone selling tickets to their own events without running a Space. Pick any monthly amount at or above the floor; every amount buys the same Crew.',
+      'Members who want full access to member programs, people who want to back the community so it stays free for everyone, and anyone selling tickets to their own events without running a Space. Pick any monthly amount at or above the floor; every amount buys the same Crew.',
   },
   free: {
     tagline: 'Put your business on the map.',
@@ -165,7 +165,7 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   business: {
     tagline: 'Own your audience.',
     forWho:
-      'Coaches, practitioners, studios, and communities running a book of work, a team, and the events they host.',
+      'Practitioners, teachers who work across studios, studio owners, and community leaders running a book of work, a team, and the events they host.',
   },
   nonprofit: {
     tagline: 'The full toolkit, verified.',

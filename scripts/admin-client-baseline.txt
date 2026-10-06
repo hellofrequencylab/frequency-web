@@ -122,6 +122,11 @@
 # private object paths); and the cursor is one platform_settings row, a table with no client
 # policies. It writes that one row and nothing else in the database. Inert (no client created)
 # until the four R2 variables are set.
+# app/api/cron/event-followups/route.ts (added 2026-10-06, LIVE-802, ADR-1720): the hourly
+# post-gathering follow-up. The caller is Vercel Cron, so there is no session, and it must read the
+# guest RSVPs and ticket buyers of EVERY host's events, which RLS limits to that host. READ-ONLY: it
+# reads fixed event, RSVP and ticket columns for events that ended 2 to 26 hours ago and writes
+# nothing; the one email per guest goes through the queue, gated by suppression.
 # app/(main)/events/[slug]/manage/attendance-actions.ts (added 2026-09-14, PROG-GD4): the host's
 # attendance mark on a seat row (event_rsvps / event_tickets attended_at + attended_by). Same
 # posture as manage/actions.ts directly beside it: the caller is re-gated as host, cohost or staff
@@ -510,6 +515,7 @@ app/(marketing)/the-lab/page.tsx
 app/(marketing)/the-quest/page.tsx
 app/(public)/events/[slug]/opengraph-image.tsx
 app/api/cron/billing-renewals/route.ts
+app/api/cron/event-followups/route.ts
 app/api/cron/event-reminders/route.ts
 app/api/cron/journey-prompt/route.ts
 app/api/cron/lifecycle-triggers/route.ts
@@ -553,7 +559,6 @@ components/admin/vera-ai/help-gaps-tab.tsx
 components/admin/vera-ai/studio-tab.tsx
 components/connections/group-map-section.tsx
 components/events/event-belonging.tsx
-components/events/upcoming-widget.tsx
 components/feed/feed-list.tsx
 components/feed/profile-feed.tsx
 components/feed/profile-posts.tsx

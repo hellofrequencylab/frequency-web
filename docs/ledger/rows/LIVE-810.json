@@ -1,7 +1,7 @@
 {
   "id": "LIVE-810",
   "title": "Persona, archetype and Journey or Circle topics never reach Google Analytics or Vercel Analytics",
-  "status": "open",
+  "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "S",
@@ -9,11 +9,12 @@
     "file": "docs/ledger/adr/ADR-1720.md",
     "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
   },
-  "detail": "WORKSTREAM 10 and a rule of the road in the launch brief (ADR-1720): \"Wellness data never reaches ad or analytics pixels. That includes persona, archetype, Journey topics and Circle topics.\" LIVE TODAY: app/join/(induction)/persona-log.ts:42-50 sends feature.used {persona, personas} through track(), and lib/analytics/track.ts mirrors every event to GA4 Measurement Protocol, skipping the consent check whenever the visitor is anonymous (track.ts:97), which they always are at that step. trackClient mirrors raw props to gtag (components/analytics/track-provider.tsx:22). lib/analytics/sanitize.ts checks key shape only, with no denylist. Page views carry /journeys/<slug> and Circle paths. THE FIX: a sensitive-key denylist (persona, personas, archetype, arrival answer, mood, topic, journey, circle) stripped in the shared sanitizer before any GA mirror, persona-log stops sending persona, and page_view paths for Journeys, Circles and topics collapse to their route pattern. The demographic rollout (LIVE-790 series) adds archetype on top of this guard.",
+  "detail": "WORKSTREAM 10 and a rule of the road in the launch brief (ADR-1720): \"Wellness data never reaches ad or analytics pixels. That includes persona, archetype, Journey topics and Circle topics.\" LIVE TODAY: app/join/(induction)/persona-log.ts:42-50 sends feature.used {persona, personas} through track(), and lib/analytics/track.ts mirrors every event to GA4 Measurement Protocol, skipping the consent check whenever the visitor is anonymous (track.ts:97), which they always are at that step. trackClient mirrors raw props to gtag (components/analytics/track-provider.tsx:22). lib/analytics/sanitize.ts checks key shape only, with no denylist. Page views carry /journeys/<slug> and Circle paths. THE FIX: a sensitive-key denylist (persona, personas, archetype, arrival answer, mood, topic, journey, circle) stripped in the shared sanitizer before any GA mirror, persona-log stops sending persona, and page_view paths for Journeys, Circles and topics collapse to their route pattern. The demographic rollout (LIVE-790 series) adds archetype on top of this guard.\n\nCLOSED 2026-10-06. lib/analytics/sanitize.ts gains pixelSafeProps (drops persona, archetype, arrival, mood, topic, interest, Journey and Circle keys, plus age band and gender) and pixelSafePath (the slug after /journeys, /circles, /discover/topics and similar becomes [slug]). Every pixel mirror reads them: the server GA4 mirror in track.ts (which skips the consent read for anonymous visitors), the browser gtag mirror in trackClient, the first GA page view in the bootstrap script, in-app GA page views from PageViewTracker, and Vercel Analytics through a beforeSend wrapper. The persona pick log writes the first-party ledger directly and no longer goes through track(). OWNER STEP: in GA4 Admin, Data streams, Enhanced measurement, turn off Page changes based on browser history events, so GA stops sending its own unredacted page views on in-app navigation (PageViewTracker now sends redacted ones).",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-810\";const s=r(\"lib/analytics/sanitize.ts\")+r(\"lib/analytics/ga-server.ts\")+r(\"lib/analytics/track.ts\");if(!/persona/.test(s)||!/archetype/.test(s))fail(ID+\": the analytics sanitizer has no persona and archetype denylist\");const pl=r(\"app/join/(induction)/persona-log.ts\");const call=pl.slice(pl.indexOf(\"track(\"),pl.indexOf(\"track(\")+400);if(/^\\s*persona,|\\bpersonas:/m.test(call))fail(ID+\": persona-log still sends persona to track()\")'",
     "note": "Fails while the sanitizer has no persona/archetype denylist or persona-log still passes persona to track()."
   },
-  "wave": "W0b"
+  "wave": "W0b",
+  "closed": "2026-10-06"
 }

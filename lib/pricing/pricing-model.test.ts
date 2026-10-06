@@ -34,6 +34,7 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
       'community-builders': '$69/mo',
       studios: '$49/mo',
       'event-hosts': '$49/mo',
+      teachers: '$49/mo',
     }
     // Explicitly the closed window, so the row this asserts is the one the owner's decision produces
     // rather than whatever the clock happens to say.
