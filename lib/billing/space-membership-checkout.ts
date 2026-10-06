@@ -144,7 +144,7 @@ export async function createSpaceMembershipCheckout(
     // A standalone (disconnected) Space has left the graph → no network-sourced revenue (ADR-811 §3), so
     // the source collapses to self and the fee is 0 regardless of any referral signal.
     const effective = effectiveOrderSource(source, space.network_connected)
-    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), effective) // self → 0, network → tier bps
+    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), effective, space.id) // self → 0, network → tier bps
     const interval: 'month' | 'year' = wantsYear ? 'year' : tier.interval === 'year' ? 'year' : 'month'
 
     // The cadence rides in the metadata so the webhook's membership row can record it even if the
