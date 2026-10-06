@@ -201,6 +201,12 @@
       "reason": "The Android App Links statement list (LIVE-714). Fetched by Google with no credential; built from ANDROID_SHA256_FINGERPRINTS, identical for every caller, reads no data.",
       "checked": "2026-10-06",
       "digest": "8f8dd5792f8c5860"
+    },
+    "app/api/v1/app-config/route.ts": {
+      "verdict": "public",
+      "reason": "The app launch config (LIVE-722). A build must learn it is too old before sign-in, so there is no caller: the answer is the minimum and latest version (platform_settings) and five client-safe platform flags, the same for every caller of a platform and version.",
+      "checked": "2026-10-06",
+      "digest": "bd64c8166a7f9f01"
     }
   }
 }

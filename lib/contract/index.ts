@@ -51,7 +51,8 @@ export const ERROR_STATUS = {
   conflict: 409,
   /** Too many requests from this caller or address. Retry after the `Retry-After` seconds. */
   rate_limited: 429,
-  /** This app build is older than the server supports (LIVE-722 sends it). Show an update prompt. */
+  /** This app build is older than the server supports. Reserved: today GET /api/v1/app-config
+   *  answers `updateRequired: true` for such a build (LIVE-722). Show an update prompt. */
   update_required: 426,
   /** The server failed. Safe to retry a read; a write should be retried only if idempotent. */
   internal: 500,
@@ -162,3 +163,24 @@ export const accountDeleteResponse = envelope(z.object({ deleted: z.literal(true
 export const accountExportResponse = envelope(
   z.object({ filename: z.string(), export: z.object({ meta: z.looseObject({ format: z.string(), version: z.number() }), data: z.record(z.string(), z.unknown()) }) }),
 )
+
+// ── GET /api/v1/app-config: update prompt and client flags (LIVE-722) ───────────────────────────
+
+export const appPlatform = z.enum(['ios', 'android'])
+export type AppPlatform = z.infer<typeof appPlatform>
+
+/**
+ * What an app build reads at launch, before sign-in. `updateRequired` is true when the build's
+ * reported version is below `minSupportedVersion`: show the blocking update prompt. `flags` are the
+ * operator switches a client may read (new keys are additive; a client treats a missing key as
+ * false).
+ */
+export const appConfigView = z.object({
+  platform: appPlatform,
+  minSupportedVersion: z.string(),
+  latestVersion: z.string().nullable(),
+  updateRequired: z.boolean(),
+  flags: z.record(z.string(), z.boolean()),
+})
+export type AppConfigView = z.infer<typeof appConfigView>
+export const appConfigResponse = envelope(appConfigView)
