@@ -64,6 +64,7 @@ import { ShareRefProvider } from '@/components/qr/share-ref-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { roleUnlocked, stageUnlocked } from '@/lib/unlocks'
 import { getCachedMemberProgress } from '@/lib/member-progress'
+import { supporterMarkShows } from '@/lib/pricing/catalog-config'
 
 export default async function ProfilePage({
   params,
@@ -105,7 +106,8 @@ export default async function ProfilePage({
       avatar_url,
       community_role,
       membership_tier,
-      is_supporter,
+      membership_payment_status,
+      last_stripe_event_at,
       is_founding_member,
       created_at,
       current_streak,
@@ -310,14 +312,11 @@ export default async function ProfilePage({
   // free member earns it but it stays in their own Vault, not on their public
   // profile (ADR-141, PB.1i: tier, not role). Inert in Beta (everyone is comped Crew).
   const rankEndorsed = isEndorsed(profile.membership_tier)
-  // The Supporter BADGE is the thank-you for backing the Foundation, orthogonal to role and rank
-  // (ADR-458: `profiles.is_supporter`, granted by a pay-what-you-want contribution). It reads the
-  // badge column and only the badge column. The legacy `membership_tier = 'supporter'` fallback that
-  // used to sit beside it is GONE (owner directive, 2026-08-24): the rung left EntitlementTier, and
-  // the column has CHECKed to exactly ('free','crew') since migration 20260915000100, so the fallback
-  // could not fire. The badge itself is untouched, and every profile that had the retired tier was
-  // backfilled into is_supporter by that same migration.
-  const isSupporter = profile.is_supporter === true
+  // The Supporter BADGE is the thank-you for backing the community, orthogonal to role and rank.
+  // ADR-1709 (LIVE-755): it follows active Crew, whatever amount was picked, and fades 45 days after
+  // support stops (supporterMarkShows). It no longer reads profiles.is_supporter, which recorded the
+  // retired "at or above the suggested amount" rule and was never cleared when support ended.
+  const isSupporter = supporterMarkShows(profile)
 
   // Rewards — surface the "nearly earned" ones so the next milestone feels within
   // reach (the celebration hook from the Progress spec), not just dimmed-out.

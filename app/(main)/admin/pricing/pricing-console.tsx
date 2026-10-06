@@ -173,12 +173,12 @@ function CatalogSection({
       {/* THIS IS THE CREW PRICE CONTROL, not an extras box. It was labelled "Supporter (pay what you
           want)" back when Supporter was a contribution ON TOP of a fixed $9 Crew. Crew itself is now
           PWYW, so these two fields ARE the membership price: the floor is what /upgrade offers and what
-          the checkout re-validates, and the suggested amount is pre-selected on the picker and is the
-          line at which a member earns the Supporter mark. Mislabelling them hid the most consequential
+          the checkout re-validates, and the suggested amount is pre-selected on the picker (the Supporter
+          mark follows any active Crew since LIVE-755). Mislabelling them hid the most consequential
           pricing control in the console inside a section that read as optional. */}
       <FormSection
         title="Member pricing (contribute what you want)"
-        description="Crew is contribute what you want. The minimum is the lowest a member can choose and the floor every price display quotes as 'from'. The suggested amount is pre-selected on the picker, and a member paying it or more earns the Supporter badge."
+        description="Crew is contribute what you want. The minimum is the lowest a member can choose and the floor every price display quotes as 'from'. The suggested amount is pre-selected on the picker. Any active Crew earns the Supporter badge, whatever the amount."
       >
         <PwywConfigRow minCents={catalog.pwyw.minCents} suggestedCents={catalog.pwyw.suggestedCents} />
       </FormSection>
