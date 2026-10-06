@@ -13,6 +13,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuppressed } from '@/lib/suppression'
 import { resolveAcquisition } from '@/lib/attribution/server'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
+import { resolveArchetype } from '@/lib/audience/archetypes'
 import { enrollInNurture } from '@/lib/nurture/enroll'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
@@ -22,6 +23,8 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 export async function captureLead(input: {
   persona: PersonaId
+  /** The arrival follow-up answer (ADR-1715). Optional; validated against the persona's own list. */
+  archetype?: string | null
   /** The lead flow slug they came through (lib/onboarding/lead-flows.ts). */
   flow: string
   /** Attribution source for the lead (the flow's `source`). */
@@ -31,6 +34,7 @@ export async function captureLead(input: {
   name?: string
 }): Promise<LeadResult> {
   const persona = isPersonaId(input.persona) ? input.persona : 'visitor'
+  const archetype = resolveArchetype(persona, input.archetype)
   const flow = (input.flow || '').trim().slice(0, 60)
   const source = (input.source || '').trim().slice(0, 60) || 'lead_flow'
   const email = (input.email || '').trim().toLowerCase()
@@ -65,6 +69,8 @@ export async function captureLead(input: {
   const meta = {
     ...existingMeta,
     persona,
+    // Internal (ADR-1715): never shown to the lead, never sent to a pixel. Never blanks a prior answer.
+    archetype: archetype ?? (existingMeta.archetype ?? null),
     lead_flow: flow,
     persona_captured_at: nowIso,
     acquisition,

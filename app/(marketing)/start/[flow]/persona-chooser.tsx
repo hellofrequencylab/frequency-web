@@ -11,6 +11,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getPersona, type PersonaId } from '@/lib/onboarding/personas'
 import { captureLead } from '../actions'
+import { ArrivalFollowUp } from '@/components/onboarding/arrival-follow-up'
+import type { ArchetypeId } from '@/lib/audience/archetypes'
 
 function ArrowRight() {
   return (
@@ -40,6 +42,7 @@ export function PersonaChooser({
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [archetype, setArchetype] = useState<ArchetypeId | null>(null)
 
   const chosen = selected ? getPersona(selected) : null
   const inductionHref = (id: PersonaId) =>
@@ -50,7 +53,7 @@ export function PersonaChooser({
     setBusy(true)
     setError('')
     if (captureEmail) {
-      const res = await captureLead({ persona: selected, flow, source, email })
+      const res = await captureLead({ persona: selected, archetype, flow, source, email })
       if (!res.ok) {
         setError(res.error)
         setBusy(false)
@@ -105,6 +108,8 @@ export function PersonaChooser({
               </li>
             ))}
           </ul>
+
+          <ArrivalFollowUp persona={selected} value={archetype} onChange={setArchetype} />
 
           {captureEmail && (
             <input

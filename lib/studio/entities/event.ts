@@ -36,6 +36,7 @@ import {
   ATTENDANCE_OPTIONS,
   CATEGORY_OPTIONS,
   ENERGY_OPTIONS,
+  PACE_LABEL,
   VISIBILITY_OPTIONS,
 } from '@/lib/events/options'
 // Three more PURE modules (zero imports each), read for the same reason: the curated zones and the
@@ -271,7 +272,7 @@ export const EVENT_MANIFEST: EntityManifest = {
     { path: 'journeyId', label: 'Part of a Journey', kind: 'reference', section: 'settings', optionsFrom: 'journeys', veraDrafts: false, omitWhenEmpty: true },
     { path: 'visibility', label: 'Who can see it', kind: 'select', section: 'settings', options: VISIBILITY_OPTIONS, veraDrafts: false, read: (d) => str(d.visibility) || 'circle_only' },
     { path: 'capacity', label: 'Group size', kind: 'number', section: 'settings', omitWhenEmpty: true },
-    { path: 'energyTag', label: 'Energy', kind: 'select', section: 'settings', options: ENERGY_OPTIONS, omitWhenEmpty: true },
+    { path: 'energyTag', label: PACE_LABEL, kind: 'select', section: 'settings', options: ENERGY_OPTIONS, omitWhenEmpty: true },
     // Three switches the settings rail persisted without declaring until ADR-1281. Approval is a
     // column (`rsvp_requires_approval`); the other two live in the `events.theme` bag beside the
     // cover focus, read and written by their own pure helpers, and their labels are those helpers'.
