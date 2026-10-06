@@ -1,0 +1,6 @@
+{
+  "id": "DEF-A2P",
+  "append": {
+    "detail": "\n\nRULED 2026-10-06 ~02:18Z by owner in the project thread: \"pause on SMS filing\". Supersedes the 2026-10-05 \"File now\" (ADR-1705 §4): the Twilio brand and campaign are not filed yet and the 10 to 15 day carrier clock has not started. Stays open and owner-timed; the filing packet in docs/A2P-REGISTRATION.md is unchanged. Note for whoever resumes it: /terms still opens with \"Draft pending legal review\", which carriers read during campaign review."
+  }
+}
