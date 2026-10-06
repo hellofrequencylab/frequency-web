@@ -441,6 +441,10 @@ export const config = {
     // about 1,400 proxy invocations a day on the preview deployments alone, every one of them a
     // billed middleware event that did a Supabase session read for a file no one is signed in to.
     // Same test as the crawler files: never a human's landing page, never tenanted, never behind auth.
-    '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|sw\\.js$|offline\\.html$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    //
+    // `/.well-known/*` (LIVE-714) are the app association files (app/.well-known/). Apple and Google
+    // fetch them with no cookies and need a plain 200 with no hop, so a session refresh and a
+    // first-touch cookie on them were pure noise.
+    '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|\\.well-known/|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|sw\\.js$|offline\\.html$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

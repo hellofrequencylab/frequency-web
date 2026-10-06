@@ -24,7 +24,7 @@ export default async function ConversationPage({
   // The owner: "All chats happen in the pop up on the lower right… that page should not
   // exist." When the flag is on, this route stops rendering a chat page and hands the
   // conversation to the dock instead. The route FILE stays: /messages/* is a registered iOS
-  // universal-link path (public/.well-known/apple-app-site-association), and a link that 404s
+  // universal-link path (app/.well-known/apple-app-site-association), and a link that 404s
   // is worse than one that opens the dock.
   //
   // 🔴 THE FLAG IS ON. `platform_flags.chat_dm_routes_retired` has been TRUE in production

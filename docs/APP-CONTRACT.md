@@ -144,3 +144,8 @@ backlog.
 `/api/v1` needs nothing new. It reads `NEXT_PUBLIC_SUPABASE_URL` and
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` (the bearer client) and the limiter's `KV_REST_API_URL` /
 `KV_REST_API_TOKEN`. The app readiness rows add their own names here when they ship.
+
+| Name | Row | What it does |
+|---|---|---|
+| `APPLE_TEAM_ID` | `LIVE-714` | The Apple team id in `/.well-known/apple-app-site-association` (app/.well-known/). Unset, the file claims no app. |
+| `ANDROID_SHA256_FINGERPRINTS` | `LIVE-714` | Comma-separated signing-cert fingerprints for `/.well-known/assetlinks.json`. Unset, an empty list. |

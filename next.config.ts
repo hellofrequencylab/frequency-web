@@ -135,11 +135,11 @@ const csp = [
 // shows the button (frequencylocal.com AND www.frequencylocal.com). Its bytes come from the Stripe
 // Dashboard per domain — Settings → Payment method domains → add the domain → download the file —
 // so no agent can generate them, and a placeholder would register as present and fail at the first
-// tap. `public/.well-known/` therefore still carries apple-app-site-association ONLY, on purpose:
-// the gap is recorded, not papered over. ADR-1369 carries the owner's steps. The PATH itself is
-// already proven: proxy.ts's matcher does not exclude /.well-known, and it does not redirect it
-// either — the universal-links file has been served from public/ there all along, and Apple's check
-// needs a plain 200 with no hop.
+// tap. `/.well-known/` therefore serves only the app association files (app/.well-known/, LIVE-714),
+// on purpose: the gap is recorded, not papered over. ADR-1369 carries the owner's steps. The PATH
+// itself is proven: proxy.ts's matcher excludes /.well-known (LIVE-714) and nothing redirects it,
+// and Apple's check needs a plain 200 with no hop. A file dropped in public/.well-known/ is served
+// the same way.
 
 // Baseline security headers applied to every route. X-Frame-Options is SAMEORIGIN (not
 // DENY) so the Puck editor's same-origin preview iframe keeps working while cross-origin

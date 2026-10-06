@@ -340,7 +340,7 @@ export const veraBreakerArmedFlag = cache(async (): Promise<boolean> => {
 // A FLAG rather than a deleted route, and rather than a next.config.ts redirect, for three
 // reasons. (1) A config redirect is evaluated before routing and cannot read a database row, so
 // it is only revertible by a deploy. (2) /messages/* is registered as an iOS universal-link path
-// in public/.well-known/apple-app-site-association, so the route must keep EXISTING and answer;
+// in app/.well-known/apple-app-site-association, so the route must keep EXISTING and answer;
 // a render-time redirect does that, a deleted file does not. (3) Dock parity for legacy GROUP
 // conversations (rename / leave / roster) had to land first; it did, and the owner flipped this
 // ON, so the flag is now the revert path rather than a staging gate.
