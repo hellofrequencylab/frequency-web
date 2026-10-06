@@ -24,6 +24,7 @@ import { SLOS, CRON_FRESHNESS } from '@/lib/observability/slos'
 import { sentryEnabled } from '@/lib/observability/sentry'
 import { rateLimitConfigured } from '@/lib/rate-limit'
 import { pushSendingEnabled } from '@/lib/push'
+import { nativePushEnabled } from '@/lib/push-native'
 
 export const dynamic = 'force-static'
 export const revalidate = 3600
@@ -102,9 +103,11 @@ export function GET() {
       //     nothing at all about the PRIVATE key the server sends with.
       // Both are booleanized at their source — never the DSN, never the key — and both freeze at
       // build like everything else here, so setting either needs a redeploy to show.
+      //   nativePush — the Expo transport for app builds (lib/push-native.ts, LIVE-720) is a no-op
+      //     until EXPO_ACCESS_TOKEN is set; same booleanized source, same freeze at build.
       //   rateLimit — every AI door allows when the limiter is unconfigured (LIVE-195), which is
       //   the right call but a SILENT one. This is how an operator sees that throttling is off.
-      monitoring: { sentry: sentryEnabled, push: pushSendingEnabled, rateLimit: rateLimitConfigured() },
+      monitoring: { sentry: sentryEnabled, push: pushSendingEnabled, nativePush: nativePushEnabled, rateLimit: rateLimitConfigured() },
       // A timestamp so a consumer can tell roughly when it read the index; the
       // contract itself only changes on deploy (the response is statically cached).
       generatedAt: new Date().toISOString(),

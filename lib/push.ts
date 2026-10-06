@@ -12,6 +12,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { envString } from '@/lib/env/string'
 import { resolveSendGate, type SendCategory } from '@/lib/comms/send-gate'
 import type { PreferenceSubject } from '@/lib/notification-preferences'
+import { nativePushEnabled, sendNativePush } from '@/lib/push-native'
 
 const PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
@@ -66,11 +67,22 @@ export async function sendPushToProfile(
   // is supplied — lib/comms/send-gate.ts), which is how that card wrote 21 rows nothing read.
   options: { subject?: PreferenceSubject } = {},
 ): Promise<number> {
-  if (!configure()) return 0
+  const webReady = configure()
+  // Nothing can leave this process: skip the gate's reads entirely.
+  if (!webReady && !nativePushEnabled) return 0
 
+  // ONE gate for every transport (LIVE-720): preferences, consent, suppression and mutes decide
+  // once, then web push and the native app transport (lib/push-native.ts) each deliver.
   const gate = await resolveSendGate(profileId, 'push', category, { subject: options.subject })
   if (!gate.allowed) return 0
 
+  const native = await sendNativePush(profileId, payload)
+  if (!webReady) return native
+  return native + (await sendWebPush(profileId, payload))
+}
+
+/** The Web Push transport: every browser subscription the profile holds. Gate already passed. */
+async function sendWebPush(profileId: string, payload: PushPayload): Promise<number> {
   const admin = createAdminClient()
   const { data: subs } = await admin
     .from('push_subscriptions')

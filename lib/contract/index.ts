@@ -476,3 +476,19 @@ export const profileEditInput = z.object({
 
 export const publicProfileView = profileView.omit({ city: true }).extend({ blockedByMe: z.boolean() })
 export const publicProfileResponse = envelope(publicProfileView)
+// ── /api/v1/push/devices: native push tokens (LIVE-720) ─────────────────────────────────────────
+
+/** POST body: register this device. An Expo push token, or a raw APNs token for a build that
+ *  skips Expo's push service (stored, not yet sent to). */
+export const pushDeviceInput = z.object({
+  platform: z.enum(['ios', 'android']),
+  provider: z.enum(['expo', 'apns']),
+  token: z.string().min(8).max(4096),
+  appVersion: z.string().max(32).nullable().optional(),
+})
+export type PushDeviceInput = z.infer<typeof pushDeviceInput>
+
+/** DELETE body: revoke this device for the caller. */
+export const pushDeviceRevokeInput = z.object({ token: z.string().min(8).max(4096) })
+
+export const pushDeviceResponse = envelope(z.object({ registered: z.boolean() }))
