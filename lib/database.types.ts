@@ -18933,6 +18933,22 @@ export type Database = {
         Returns: boolean
       }
       unlockrows: { Args: { "": string }; Returns: number }
+      upcoming_event_series: {
+        Args: {
+          p_from: string
+          p_limit: number
+          p_scope_ids?: string[]
+          p_scope_types?: string[]
+          p_visibilities: string[]
+        }
+        Returns: Database["public"]["Tables"]["events"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       update_guest_seat: {
         Args: { p_answers?: Json; p_plus_ones?: number; p_token: string }
         Returns: boolean

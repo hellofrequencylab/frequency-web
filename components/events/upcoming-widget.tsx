@@ -1,12 +1,11 @@
-import { createAdminClient } from '@/lib/supabase/admin'
 import { SectionHeader } from '@/components/ui/section-header'
 import { CIRCLE_SCOPE_TYPES } from '@/lib/events/circle-upcoming'
+import { readUpcomingSeries } from '@/lib/events/upcoming-series'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import {
   SERIES_COLUMNS,
   TEASER_CARDS_PER_SERIES,
   collapseSeriesRows,
-  seriesFetchLimit,
   seriesUpcomingFloor,
   type SeriesFields,
 } from '@/lib/events/series'
@@ -31,7 +30,6 @@ export async function UpcomingEventsWidget({
 }) {
   if (scopeIds.length === 0) return null
 
-  const admin = createAdminClient()
   // Midnight today in the community's zone, not `new Date()`: starts_at is the host's wall clock
   // kept as UTC parts, so a raw ISO instant drops tonight's gathering from 5pm Pacific onward.
   // The same string is the query floor and the fold floor.
@@ -43,7 +41,7 @@ export async function UpcomingEventsWidget({
   // through the ADMIN client, which bypasses RLS. The viewer is not a member of those Circles and
   // may not be signed in at all, so the only safe set is what any visitor could already see.
   //
-  // Without these two filters the query returned drafts and `circle_only` events. That was latent
+  // Without the published and public gate the query returned drafts and `circle_only` events. That was latent
   // rather than live only because circle placement was broken (it wrote a typed column no reader
   // consulted), so no upcoming event was ever circle-scoped and the strip always came back empty.
   // Fixing placement is what would have ARMED it: 18 published `circle_only` events exist right
@@ -52,30 +50,24 @@ export async function UpcomingEventsWidget({
   //
   // A single Circle's own block (components/widgets/circles/circle-events.tsx) is the surface that
   // may widen this, because there the viewer's membership in THAT Circle is known.
-  const { data: raw } = await admin
-    .from('events')
-    // The three recurrence columns are what make the fold below anything other than a no-op.
-    .select(`id, title, slug, location, starts_at, scope_id, ${SERIES_COLUMNS}`)
-    .in('scope_id', scopeIds)
+  //
+  // One row per series, counted in SQL (LIVE-731): the function applies the same gate the
+  // read above describes (published, live, public, in these Circles, from the floor).
+  const raw = await readUpcomingSeries<WidgetEvent>({
+    from: floor,
+    limit: STRIP_SLOTS,
+    visibilities: ['public'],
+    scopeIds,
     // The ONE list of scope_type values that mean "created for a Circle" ('group' is the
-    // pre-rename value still in older rows) — shared with the Circle block and belonging.ts,
-    // never a second hand-written copy.
-    .in('scope_type', [...CIRCLE_SCOPE_TYPES])
-    .eq('status', 'published')
-    .eq('visibility', 'public')
-    .eq('is_cancelled', false)
-    // Staff removal (lib/events/event-drafts.ts removeEvent) also sets is_cancelled, so this is
-    // belt-and-braces — but the Circle's own block filters it, and the two reads should agree.
-    .is('removed_at', null)
-    .gte('starts_at', floor)
-    .order('starts_at', { ascending: true })
-    // Over-fetch, then collapse, then slice. Three rows folded to one card per series would leave a
-    // daily series holding a strip of ONE; thirty rows leave it holding one slot out of three.
-    .limit(seriesFetchLimit(STRIP_SLOTS))
+    // pre-rename value still in older rows), shared with the Circle block and belonging.ts.
+    scopeTypes: CIRCLE_SCOPE_TYPES,
+    // The three recurrence columns are what make the fold below anything other than a no-op.
+    columns: `id, title, slug, location, starts_at, scope_id, ${SERIES_COLUMNS}`,
+  })
 
   // A repeating event takes one slot here and shows its next date. The other dates live on the
   // event page's date rail, so nothing becomes unreachable (ADR-897).
-  const events = collapseSeriesRows((raw ?? []) as WidgetEvent[], {
+  const events = collapseSeriesRows(raw, {
     upcomingFrom: floor,
     perSeries: TEASER_CARDS_PER_SERIES,
   }).slice(0, STRIP_SLOTS)
