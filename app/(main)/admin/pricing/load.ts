@@ -8,6 +8,7 @@ import {
   loadPricingFlags,
   getFoundingConfig,
   getBetaGrace,
+  getDomainMarkupCents,
   type PricingDefaults,
   type PricingFlagKey,
 } from '@/lib/pricing/settings'
@@ -70,6 +71,8 @@ export interface PricingConsoleData {
     graceOpen: boolean
   }
   gates: FeatureGateRow[]
+  /** The yearly markup on a domain bought inside Frequency, in cents (LIVE-781). */
+  domainMarkupCents: number
   stripe: {
     /** Stripe env keys present (billingEnabled). */
     configured: boolean
@@ -89,7 +92,7 @@ export interface PricingConsoleData {
 }
 
 export async function getPricingConsoleData(): Promise<PricingConsoleData> {
-  const [values, catalog, flags, founding, overrides, priceMap, announcementEndsAtRaw, announcementMessageRaw, betaPrompts, grace] =
+  const [values, catalog, flags, founding, overrides, priceMap, announcementEndsAtRaw, announcementMessageRaw, betaPrompts, grace, domainMarkupCents] =
     await Promise.all([
       getPricingValues(),
       loadCatalogConfig(),
@@ -101,6 +104,7 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
       getPlatformSetting('announcement_message', ''),
       betaHostPromptsFlag(),
       getBetaGrace(),
+      getDomainMarkupCents(),
     ])
 
   // The feature->entitlement matrix: every code-declared feature, merged with any DB override, plus
@@ -166,6 +170,7 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
       graceOpen: betaGraceActive(grace),
     },
     gates,
+    domainMarkupCents,
     stripe: {
       configured,
       masterLive,

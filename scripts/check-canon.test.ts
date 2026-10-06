@@ -125,6 +125,37 @@ describe('check-canon · the seam definition (no tree required)', () => {
   })
 })
 
+describe('check-canon · the demographic canon (ADR-1715, LIVE-792)', () => {
+  const hits = (text: string) => rules.filter((r) => r.re.test(text)).map((r) => r.name)
+
+  it('fails a planted retired audience framing in copy', () => {
+    const strings = memberFacingStrings('export const C = { title: "Witchy wellness for spiritual refugees" }', 'app/(marketing)/x.tsx')
+    expect(strings).toHaveLength(1)
+    const found = hits(strings[0].text)
+    expect(found).toContain('retired audience framing "witchy wellness"')
+    expect(found).toContain('retired audience framing "spiritual refugees"')
+    for (const old of ['burnt-out seekers', 'a quiet revolution', 'calm fire', 'The High-Functioning Lonely', 'The Post-Screen Skeptic']) {
+      expect(hits(old).length, old).toBeGreaterThan(0)
+    }
+  })
+
+  it('fails a planted archetype name or "seekers" in member copy, and only there', () => {
+    const strings = memberFacingStrings('export function P() { return <p>Built for the Wired Professional</p> }', 'app/(main)/x.tsx')
+    expect(hits(strings[0].text)).toContain('internal archetype name in member copy')
+    expect(hits('How should seekers find you?')).toContain('"seekers" in member copy')
+    expect(findRule('internal archetype name').audience).toBe('member')
+    expect(findRule('"seekers"').audience).toBe('member')
+  })
+
+  it('leaves the canon\'s own plain words alone', () => {
+    // The lowercase gloss in CONTENT-VOICE §2a, the help article title, and the plain English
+    // "transplant" are not archetype names.
+    for (const ok of ['the high-functioning lonely', 'High-functioning loneliness', 'a heart transplant', 'Studio hours', 'a mission statement']) {
+      expect(hits(ok), ok).toEqual([])
+    }
+  })
+})
+
 describe('check-canon · the audience axis', () => {
   it('splits the rules exactly the way the two canons scope themselves', () => {
     const audience = Object.fromEntries(rules.map((r) => [r.name, r.audience]))

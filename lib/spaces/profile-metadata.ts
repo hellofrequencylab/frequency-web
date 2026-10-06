@@ -4,6 +4,10 @@ import { getSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { readTagline } from '@/lib/spaces/tagline'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { SITE_NAME } from '@/lib/site'
+import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { readWebsitePublished } from '@/lib/spaces/website'
+import { sitePageUrl } from '@/lib/sites/seo'
+import { boundSiteDomain } from '@/lib/sites/site-domain'
 
 // ── SPACE PROFILE METADATA (one builder, every public tab) ──────────────────────────────────────
 //
@@ -39,6 +43,19 @@ function typePhrase(type: string): string {
 /** Trim a description to the ~155 chars a search snippet shows. */
 function snippet(text: string): string {
   return text.length > 155 ? `${text.slice(0, 152).trimEnd()}...` : text
+}
+
+/** The URL of this profile page's twin on the Space's own-domain website, or null when there is none
+ *  (no published site, no bound domain, or a tab that is not one of the Space's pages). The domain
+ *  read only runs for a published site with spaces.domain set. */
+async function siteTwinCanonical(
+  space: { id: string; domain: string | null; preferences?: unknown },
+  pageSlug: string,
+): Promise<string | null> {
+  if (!space.domain || !readWebsitePublished(space.preferences)) return null
+  if (!readProfilePages(space.preferences).some((p) => p.slug === pageSlug)) return null
+  const domain = await boundSiteDomain(space)
+  return domain ? sitePageUrl(`https://${domain}`, pageSlug) : null
 }
 
 /**
@@ -89,7 +106,13 @@ export async function spaceProfileMetadata(
   const rootTitle = city ? `${brandName}, ${typePhrase(space.type)}${where}` : brandName
   const title = tab ? `${tab.label} · ${brandName}` : rootTitle
   const ogTitle = tab ? `${tab.label} · ${brandName} · ${SITE_NAME}` : `${rootTitle} · ${SITE_NAME}`
-  const canonical = tab ? `/spaces/${space.slug}/${tab.segment}` : `/spaces/${space.slug}`
+  const ownCanonical = tab ? `/spaces/${space.slug}/${tab.segment}` : `/spaces/${space.slug}`
+  // THE SITE TWIN (PROG-E10 phase 4, LIVE-783). When the Space has published its website on its own
+  // domain, the profile root and each of its pages are the same content as that site, so their
+  // canonical points at the site and the domain is the one copy a search engine ranks. Tabs with no
+  // site twin (calendar, reviews, shop...) keep their own. Private Spaces have no site at all.
+  const siteCanonical = isPrivate ? null : await siteTwinCanonical(space, tab?.segment ?? HOME_SLUG)
+  const canonical = siteCanonical ?? ownCanonical
 
   const openGraph = { title: ogTitle, description, url: canonical, type: 'profile' as const }
 

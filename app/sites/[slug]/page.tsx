@@ -1,16 +1,18 @@
-import type { Metadata } from 'next'
-import { SitePage, siteMetadata } from '@/components/sites/site-page'
+import { redirect } from 'next/navigation'
+import { markAnonymousRender } from '@/lib/core/anonymous-render'
 
-// The external website's HOME page. The render, the publish gate and the Coming soon fallback all live
-// in components/sites/site-page.tsx, shared with the custom pages route beside this one.
-export const dynamic = 'force-dynamic'
+// Owner ask 2026-10-06: a visitor on Frequency sees the Space's public page (/spaces/<slug>), not the
+// website render. The website moves to the Space's own subdomain and custom domain (app/hosted), so
+// /sites/<slug> forwards to the public page and an old shared link still lands somewhere good.
+// CACHED (LIVE-784): the forward is ISR like the rest of the site routes, so it costs no render per visit.
+export const revalidate = 3600
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params
-  return siteMetadata(slug)
+export function generateStaticParams(): { slug: string }[] {
+  return []
 }
 
 export default async function SpaceWebsiteHome({ params }: { params: Promise<{ slug: string }> }) {
+  markAnonymousRender()
   const { slug } = await params
-  return <SitePage slug={slug} />
+  redirect(`/spaces/${encodeURIComponent(slug)}`)
 }

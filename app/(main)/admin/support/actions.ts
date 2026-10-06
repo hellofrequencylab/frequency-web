@@ -15,6 +15,7 @@ import { TICKET_PRIORITIES, type TicketPriority } from '@/lib/support/types'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import { retrieveHelpChunks } from '@/lib/ai/help-rag'
+import { withVoice } from '@/lib/ai/voice'
 
 async function requireAgent(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
@@ -77,7 +78,7 @@ export async function draftReply(id: string): Promise<ActionResult<{ draft: stri
         : 'HELP CONTEXT: (no relevant help article found — don\'t guess platform specifics)'
 
       const res = await completeText({
-        system: DRAFT_SYSTEM,
+        system: withVoice(DRAFT_SYSTEM),
         messages: [{ role: 'user', content: `TICKET (${ticket.type}): ${ticket.subject}\n\n${convo}\n\n${helpContext}` }],
         tier: 'haiku',
         maxTokens: 320,

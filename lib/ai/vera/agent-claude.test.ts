@@ -104,6 +104,14 @@ describe('buildVeraSystem (the cache split, ADR-1287)', () => {
     expect(volatile).toContain(String(DEFAULT_VERA_CONFIG.maxReplyChars))
     expect(volatile).toContain(DEFAULT_VERA_CONFIG.greeting)
   })
+
+  it('carries the audience block and never tells Vera this is a revolution (LIVE-791, ADR-1715)', () => {
+    const hot = buildVeraSystem(null, { ...DEFAULT_VERA_CONFIG, register: 'hot' as const })
+    const all = hot.stable + hot.volatile
+    expect(all).toContain("Who you're writing for")
+    expect(all).not.toMatch(/is a revolution/i)
+    expect(all).not.toMatch(/revolution and you say so/i)
+  })
 })
 
 describe('createChipsFilter (streaming-safe chip stripping, ADR-1287)', () => {
