@@ -1,7 +1,8 @@
 {
   "id": "LIVE-796",
   "title": "Vera never reads the persona a member picked, so her welcome and her answers ignore who signed up",
-  "status": "open",
+  "status": "done",
+  "closed": "2026-10-06",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,7 +10,7 @@
     "file": "lib/ai/vera/agent-claude.ts",
     "ref": "Owner handoff 2026-10-06: Demographic Canon Handoff (ADR-1715)"
   },
-  "detail": "PR 7 (ADR-1715). buildVeraSystem puts one plain reader note built from profiles.meta.persona and meta.archetype into the volatile block (for example: This member signed up to host). Age band and gender are never passed. lib/onboarding/vera-welcome.ts branches the opening: a host gets the start one Circle handoff, a practitioner gets open a free Space, everyone else keeps the tour. A unit test builds the prompt for a host and finds the note.",
+  "detail": "PR 7 (ADR-1715). buildVeraSystem puts one plain reader note built from profiles.meta.persona and meta.archetype into the volatile block (for example: This member signed up to host). Age band and gender are never passed. lib/onboarding/vera-welcome.ts branches the opening: a host gets the start one Circle handoff, a practitioner gets open a free Space, everyone else keeps the tour. A unit test builds the prompt for a host and finds the note.\n\nCLOSED 2026-10-06. lib/ai/vera/reader-note.ts builds one plain line from profiles.meta.persona and meta.archetype (for example: This member signed up to host. They have not hosted yet and want to.), never an archetype name and never a demographic field. lib/ai/vera/turn.ts reads only those two meta keys and passes them to buildVeraSystem, which puts the line in the volatile half so the cached stable block is unchanged. lib/onboarding/vera-welcome.ts branches the opening: a host gets the start one Circle handoff, a practitioner gets open a free Space, everyone else keeps the tour (the feed passes meta.persona). Tests: agent-claude.test.ts builds the prompt for a host and finds the note with no age, gender or archetype name in the volatile half; vera-welcome.test.ts pins the three branches.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};const v=r(\"lib/ai/vera/agent-claude.ts\");if(!/\\.persona\\b/.test(v))fail(\"Vera system prompt never reads the member persona\");if(/ageBand|age_band|gender/.test(v))fail(\"Vera prompt would carry age or gender\");if(!/host/i.test(r(\"lib/onboarding/vera-welcome.ts\"))||!/persona/.test(r(\"lib/onboarding/vera-welcome.ts\")))fail(\"Vera welcome does not branch by persona\")'",
