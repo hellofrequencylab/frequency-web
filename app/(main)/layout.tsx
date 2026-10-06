@@ -41,6 +41,7 @@ import { NAV_AREAS } from '@/lib/nav-areas'
 import { AchievementToastContainer } from '@/components/achievement-toast'
 import { ToastLane } from '@/components/toast-lane'
 import { ZapToastContainer } from '@/components/zap-toast'
+import { RewardLive } from '@/components/reward-live'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 import { VeraLauncher } from '@/components/vera/vera-launcher'
@@ -758,6 +759,9 @@ export default async function MainLayout({
         <ZapToastContainer />
       </ToastLane>
       <PresenceHeartbeat />
+      {/* LIVE-671: a reward earned on another device shows here without a reload. Not while a
+          staff member previews as a visitor or another role: the feed is the REAL viewer's. */}
+      {!previewingDown && <RewardLive profileId={profile.id} />}
       <PushRegistration />
       {/* One-time browser→home_timezone sync so the practice "day" resolves in the
           member's own tz server-side (their Log Practice buttons reset at THEIR midnight). */}

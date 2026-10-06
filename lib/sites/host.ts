@@ -11,12 +11,84 @@
 // On a site host:
 //   • `www.<apex>` redirects to the apex, so one origin carries the site.
 //   • `/` and `/<page>` rewrite to /hosted/<host>[/<page>], the site route, which re-resolves the Space
-//     by domain (getSpaceByDomain, behind the custom_domain gate) and checks the request host.
+//     by domain (getSpaceByDomain, behind the custom_domain gate). /hosted asked for directly on
+//     Frequency's own host is a 404 here, so a site is never served twice (LIVE-784).
+//   • `/robots.txt` and `/sitemap.xml` rewrite to /hosted/<host>/robots.txt|sitemap.xml, so a site
+//     host describes the SITE to a crawler, not Frequency (PROG-E10 phase 4). proxy.ts's matcher skips
+//     both files on Frequency's own hosts (HYG-048) and lets them through on any other host, using
+//     APP_HOST_PATTERN below.
 //   • any deeper path (`/spaces/...`, `/events/...`, a block's link into the app) redirects to the
 //     same path on Frequency, so app links on the site keep working.
+//
+// THE FREE SUBDOMAIN (LIVE-782, owner ask 2026-10-06: "a separate website at website.frequencylocal.com").
+// Every Space website also lives at `<slug>.<SITE_BASE_DOMAIN>` (danieltyack.frequencylocal.com) with no
+// setup. siteSlugFromSubdomain reads the slug off a one-label subdomain of SITE_BASE_DOMAIN; reserved
+// labels (www, app, api, the mail hosts and the like) and anything that is not a valid Space slug stay
+// the app. A slug subdomain rewrites to the same /hosted/<host> route a custom domain does, and the
+// hosted resolver turns the host back into the Space by slug (lib/sites/hosted.ts). The subdomain is
+// still one of Frequency's own hosts to isAppHost, so nobody can claim it as their custom domain.
+
+/** The domain every Space website gets a free `<slug>.` address under (LIVE-782). The ONE place it is
+ *  named: env SITE_BASE_DOMAIN, defaulting to frequencylocal.com. proxy.ts's matcher literal assumes
+ *  the default (see APP_HOST_PATTERN). */
+export const SITE_BASE_DOMAIN: string =
+  (process.env.SITE_BASE_DOMAIN ?? '').trim().toLowerCase().replace(/^\.+|\.+$/g, '') || 'frequencylocal.com'
+
+/** Subdomain labels that are never a Space website: Frequency's own web, API and mail hosts, plus
+ *  names a future Frequency host is likely to want. A Space whose slug is one of these keeps its
+ *  /sites address instead (siteSubdomainHost returns null). */
+export const RESERVED_SITE_SUBDOMAINS: ReadonlySet<string> = new Set([
+  'www', 'app', 'api', 'admin', 'auth', 'login', 'account', 'dashboard', 'studio',
+  'send', 'reply', 'people', 'inbound', 'mail', 'email', 'smtp', 'imap', 'pop', 'webmail', 'mx',
+  'help', 'support', 'docs', 'status', 'blog', 'news', 'beta', 'go', 'm', 'ns1', 'ns2',
+  'cdn', 'static', 'assets', 'media', 'images', 'files',
+  'dev', 'staging', 'preview', 'test', 'demo', 'sandbox',
+  'sites', 'site', 'hosted', 'spaces', 'space', 'partners', 'partner', 'frequency',
+])
+
+/** A Space slug as a DNS label: lowercase letters and digits in hyphen-joined runs, 63 chars at most. */
+const SITE_LABEL_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+/** Can `slug` be a site subdomain label (valid, short enough, not reserved)? */
+function siteLabelOk(label: string): boolean {
+  return label.length > 0 && label.length <= 63 && SITE_LABEL_RE.test(label) && !RESERVED_SITE_SUBDOMAINS.has(label)
+}
+
+/** The Space slug a free website subdomain names, or null when `host` is not one. `danieltyack.
+ *  frequencylocal.com` is `danieltyack`; the apex, `www.`, any reserved label, a deeper subdomain and
+ *  an invalid slug are all null. */
+export function siteSlugFromSubdomain(host: string | null | undefined, baseDomain: string = SITE_BASE_DOMAIN): string | null {
+  const h = normalizeHost(host)
+  const suffix = `.${baseDomain}`
+  if (!h.endsWith(suffix)) return null
+  const label = h.slice(0, -suffix.length)
+  return siteLabelOk(label) ? label : null
+}
+
+/** The free website host for a Space slug (`<slug>.frequencylocal.com`), or null when the slug cannot
+ *  be a subdomain (reserved or not a valid label), in which case the site keeps its /sites address. */
+export function siteSubdomainHost(slug: string, baseDomain: string = SITE_BASE_DOMAIN): string | null {
+  const label = slug.trim().toLowerCase()
+  return siteLabelOk(label) ? `${label}.${baseDomain}` : null
+}
 
 /** Frequency's own apex domains. Every subdomain of these is the app too. */
 const APP_APEXES = ['frequencylocal.com', 'findafreq.com', 'vercel.app', 'localhost']
+
+/** The crawler files a site host answers for itself (PROG-E10 phase 4). */
+export const SITE_CRAWLER_FILES: ReadonlySet<string> = new Set(['/robots.txt', '/sitemap.xml'])
+
+/** APP_APEXES (plus `localhost` and bare IPs) as the anchored host regex proxy.ts's matcher uses in
+ *  its `missing: [{ type: 'host' }]` arm. The matcher must be a literal, so proxy.ts repeats this
+ *  string; host.test.ts holds the two equal and checks it against isAppHost. Wrapped in one group
+ *  because Next anchors it as `^${value}$`, and a bare alternation would anchor only its ends.
+ *
+ *  On frequencylocal.com it names only the apex, `www.` and deeper subdomains (LIVE-782): a ONE-label
+ *  subdomain may be a Space website (`danieltyack.frequencylocal.com`), so its robots.txt and
+ *  sitemap.xml must reach the proxy, which rewrites a site's and passes a reserved host's through
+ *  untouched. Spelled for the default SITE_BASE_DOMAIN; host.test.ts fails if the two drift. */
+export const APP_HOST_PATTERN =
+  '(?:(?:www\\.|(?:[^.]+\\.){2,})?frequencylocal\\.com|(?:.+\\.)?(?:findafreq\\.com|vercel\\.app)|localhost|[\\d.]+)'
 
 /** The route a custom-domain site is rewritten to. */
 export const HOSTED_PREFIX = '/hosted'
@@ -66,8 +138,17 @@ export type SiteRoute =
   | { kind: 'none' }
   | { kind: 'redirect'; location: string; permanent: boolean }
   | { kind: 'rewrite'; pathname: string }
+  | { kind: 'not-found' }
 
-/** Decide what a request on `host` for `pathname` does. `none` means it is one of Frequency's own hosts. */
+/** Is `pathname` the internal site route (/hosted or below)? */
+export function isHostedPath(pathname: string): boolean {
+  return pathname === HOSTED_PREFIX || pathname.startsWith(`${HOSTED_PREFIX}/`)
+}
+
+/** Decide what a request on `host` for `pathname` does. `none` means it is one of Frequency's own hosts.
+ *  `not-found` is the internal /hosted route asked for directly on Frequency's own host: it only ever
+ *  answers through this function's own rewrite of a site host, so the cached site pages need no Host
+ *  header check of their own (PROG-E10 phase 5, LIVE-784). */
 export function routeSiteHost(
   host: string | null | undefined,
   pathname: string,
@@ -75,11 +156,16 @@ export function routeSiteHost(
   appHosts: Set<string> = new Set(),
 ): SiteRoute {
   const h = normalizeHost(host)
-  if (isAppHost(h, appHosts)) return { kind: 'none' }
+  // A Space's free website subdomain (LIVE-782) is a site host even though it sits under Frequency's
+  // own apex, unless APP_HOSTS names it as the app on purpose.
+  const subdomainSite = !appHosts.has(h) && siteSlugFromSubdomain(h) !== null
+  if (!subdomainSite && isAppHost(h, appHosts)) return isHostedPath(pathname) ? { kind: 'not-found' } : { kind: 'none' }
 
-  if (h.startsWith('www.')) {
+  if (!subdomainSite && h.startsWith('www.')) {
     return { kind: 'redirect', location: `https://${h.slice(4)}${pathname}${search}`, permanent: true }
   }
+
+  if (SITE_CRAWLER_FILES.has(pathname)) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}${pathname}` }
 
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}` }

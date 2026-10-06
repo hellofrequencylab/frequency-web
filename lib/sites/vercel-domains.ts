@@ -8,6 +8,8 @@
 // still saves the domain and shows the standard records, saying hosting is not connected yet, so
 // nothing fails silently.
 
+import { detectDnsProvider } from './dns-provider'
+
 const API = 'https://api.vercel.com'
 
 /** Vercel's documented defaults, shown when the API gives no recommendation. */
@@ -34,12 +36,22 @@ export interface DomainStatus {
   records: DnsRecord[]
   /** A plain-English problem to show, when something went wrong talking to Vercel. */
   problem?: string
+  /** Who runs the domain's DNS, read from its nameservers, so the steps can name it. */
+  provider?: string | null
+  /** The domain's DNS is already Vercel's, so no records are needed. */
+  providerIsVercel?: boolean
 }
 
-interface VercelConfig {
+export interface VercelConfig {
   token: string
   projectId: string
   teamId: string
+}
+
+/** The one platform Vercel config, shared with the registrar client (lib/sites/registrar.ts) so both
+ *  read the same token and team. Null when any of the three is missing. Server-only. */
+export function vercelApiConfig(): VercelConfig | null {
+  return config()
 }
 
 function config(): VercelConfig | null {
@@ -124,6 +136,28 @@ export async function addSiteDomain(domain: string): Promise<{ ok: true } | { ok
   return { ok: true }
 }
 
+/** Attach a Space's free website subdomain (`<slug>.frequencylocal.com`, LIVE-782) to the project, so
+ *  Vercel serves it and issues its certificate. One host, no www twin, no redirect. BEST EFFORT and
+ *  NEVER THROWS: publishing must not fail on hosting, so a missing config or an API error comes back as
+ *  `{ ok: false }` for the caller to log. Idempotent like addSiteDomain. The owner step behind it is one
+ *  wildcard CNAME `*` on the base domain pointing at Vercel's recommended CNAME target. */
+export async function addSiteSubdomain(host: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const cfg = config()
+    if (!cfg) return { ok: false, error: 'not-configured' }
+    const res = await call(cfg, 'POST', `/v10/projects/${encodeURIComponent(cfg.projectId)}/domains`, { name: host })
+    if (res.ok) return { ok: true }
+    const code = errorCode(res.json)
+    if (res.status === 409 && code === 'domain_already_in_use' && (res.json.error as { projectId?: string })?.projectId === cfg.projectId) {
+      return { ok: true }
+    }
+    if (res.status === 409 && code === 'domain_already_exists') return { ok: true }
+    return { ok: false, error: code || `vercel-${res.status}` }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'vercel-unreachable' }
+  }
+}
+
 /** Remove `domain` and its www twin from the project. Missing domains are fine. */
 export async function removeSiteDomain(domain: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const cfg = config()
@@ -138,6 +172,11 @@ export async function removeSiteDomain(domain: string): Promise<{ ok: true } | {
 /** Read where `domain` stands: attached, verified, DNS pointed, and the records to set. Never throws:
  *  an unreachable API returns the default records with a `problem`. */
 export async function siteDomainStatus(domain: string): Promise<DomainStatus> {
+  const [base, provider] = await Promise.all([readStatus(domain), detectDnsProvider(domain)])
+  return { ...base, provider: provider?.name ?? null, providerIsVercel: provider?.vercel === true }
+}
+
+async function readStatus(domain: string): Promise<DomainStatus> {
   const cfg = config()
   if (!cfg) {
     return {

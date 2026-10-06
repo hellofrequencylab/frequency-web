@@ -82,6 +82,7 @@ signup_leads
 space_availability_overrides
 space_benefit_redemptions
 space_collaborations
+space_domain_purchases
 space_donations
 space_follower_event_reminders_sent
 space_function_type_defaults
