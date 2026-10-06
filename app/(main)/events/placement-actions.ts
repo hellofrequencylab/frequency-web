@@ -13,6 +13,8 @@ import {
   resolvePlacementTarget,
   listSpaceStewardIds,
   listSpaceEventCreatorIds,
+  listPlaceLeadIds,
+  listLedPlaceSpaceIds,
   listCircleStewardIds,
   livePlacementPatch,
   clearPlacementPatch,
@@ -49,7 +51,9 @@ async function viewerIsSteward(target: PlacementTarget): Promise<boolean> {
   const [space, profileId] = await Promise.all([getSpaceById(target.id), getMyProfileId()])
   if (!space || !profileId) return false
   const caps = await getSpaceCapabilities(space, profileId)
-  return caps.isAdmin
+  if (caps.isAdmin) return true
+  // LIVE-667: the Guide of a Hub / Mentor of a Nexus stewards events on the Space it now is.
+  return (await listPlaceLeadIds(target.id)).includes(profileId)
 }
 
 /** Best-effort steward notification when a host asks to place an event under their target. */
@@ -314,6 +318,7 @@ export async function approveEventPlacement(requestId: string): Promise<ActionRe
   if (event?.slug) revalidatePath(`/events/${event.slug}`)
   revalidatePath('/events')
   if (target.type === 'space' && ref) revalidatePath(`/spaces/${ref.slug}/manage`)
+  if (target.type === 'space') revalidatePath('/lead')
   if (target.type === 'circle' && ref) revalidatePath(`/circles/${ref.slug}/manage`)
   return ok()
 }
@@ -349,6 +354,7 @@ export async function declineEventPlacement(requestId: string): Promise<ActionRe
   )
 
   if (target.type === 'space' && ref) revalidatePath(`/spaces/${ref.slug}/manage`)
+  if (target.type === 'space') revalidatePath('/lead')
   if (target.type === 'circle' && ref) revalidatePath(`/circles/${ref.slug}/manage`)
   return ok()
 }
@@ -508,8 +514,9 @@ export async function setEventHostEntity(
   return ok({ hostSpace: { id: ref.id, slug: ref.slug, name: ref.name } })
 }
 
-/** The spaces the CALLER can host an event as (owner or active editor+ member), for the
- *  "Hosted by" picker. Small list, name-sorted. FAIL-SAFE: []. */
+/** The spaces the CALLER can host an event as (owner, active editor+ member, or the Guide / Mentor
+ *  of a Hub or Nexus Space, LIVE-667), for the "Hosted by" picker. Small list, name-sorted.
+ *  FAIL-SAFE: []. */
 export async function listMyHostableSpaces(): Promise<{ id: string; slug: string; name: string }[]> {
   const profileId = await getMyProfileId()
   if (!profileId) return []
@@ -533,9 +540,10 @@ export async function listMyHostableSpaces(): Promise<{ id: string; slug: string
       .eq('profile_id', profileId)
       .in('role', ['editor', 'moderator', 'admin'])
       .eq('status', 'active')
-    const ids = ((memberships ?? []) as Array<{ space_id: string }>)
-      .map((m) => m.space_id)
-      .filter((id) => !byId.has(id))
+    const ids = [
+      ...((memberships ?? []) as Array<{ space_id: string }>).map((m) => m.space_id),
+      ...(await listLedPlaceSpaceIds(profileId)),
+    ].filter((id, i, all) => !byId.has(id) && all.indexOf(id) === i)
     if (ids.length > 0) {
       const { data: managed } = await admin
         .from('spaces')

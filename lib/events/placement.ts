@@ -301,9 +301,54 @@ async function listJourneyEditorSpaceIds(profileId: string, rootSpaceId: string 
   return [...ids]
 }
 
-/** Profile ids that may approve placement into a Space: the owner plus every ACTIVE admin member. */
+/** Profile ids that may approve placement into a Space: the owner, every ACTIVE admin member, and
+ *  (LIVE-667) the Guide of the Hub or the Mentor of the Nexus that this Space now is. */
 export async function listSpaceStewardIds(spaceId: string): Promise<string[]> {
-  return listSpaceIdsByRoles(spaceId, ['admin'])
+  const [byRole, leads] = await Promise.all([listSpaceIdsByRoles(spaceId, ['admin']), listPlaceLeadIds(spaceId)])
+  return [...new Set([...byRole, ...leads])]
+}
+
+// ── Hub and Nexus events (LIVE-667) ─────────────────────────────────────────────────────────
+//
+// ADR-1439 folded the Hub and the Nexus into Space: each hubs / nexuses row points at the Space
+// that now is that noun (hubs.space_id, nexuses.space_id), and a Hub-wide gathering is an event
+// placed on that Space, through the same request and approval as any Space and with the same
+// visibility gates. What the fold did not carry is WHO leads it. The place tree still names the
+// Guide (hubs.guide_id) and the Mentor (nexuses.mentor_id), and nothing made them stewards of the
+// Space, so a Hub event request reached nobody but staff. They are stewards of that Space for
+// events (approve, create under it), and only for events: this grants no other Space capability.
+
+/** The Guide / Mentor who leads the Hub or Nexus that `spaceId` is, if any. FAIL-SAFE: []. */
+export async function listPlaceLeadIds(spaceId: string): Promise<string[]> {
+  try {
+    const admin = untyped()
+    const [{ data: hubs }, { data: nexuses }] = await Promise.all([
+      admin.from('hubs').select('guide_id').eq('space_id', spaceId),
+      admin.from('nexuses').select('mentor_id').eq('space_id', spaceId),
+    ])
+    const ids = new Set<string>()
+    for (const h of (hubs ?? []) as Array<{ guide_id: string | null }>) if (h.guide_id) ids.add(h.guide_id)
+    for (const n of (nexuses ?? []) as Array<{ mentor_id: string | null }>) if (n.mentor_id) ids.add(n.mentor_id)
+    return [...ids]
+  } catch {
+    return []
+  }
+}
+
+/** The Hub and Nexus Spaces a profile leads (Guide or Mentor), for the event pickers. FAIL-SAFE: []. */
+export async function listLedPlaceSpaceIds(profileId: string): Promise<string[]> {
+  try {
+    const admin = untyped()
+    const [{ data: hubs }, { data: nexuses }] = await Promise.all([
+      admin.from('hubs').select('space_id').eq('guide_id', profileId),
+      admin.from('nexuses').select('space_id').eq('mentor_id', profileId),
+    ])
+    const ids = new Set<string>()
+    for (const r of [...(hubs ?? []), ...(nexuses ?? [])] as Array<{ space_id: string | null }>) if (r.space_id) ids.add(r.space_id)
+    return [...ids]
+  } catch {
+    return []
+  }
 }
 
 /** Profile ids that may CREATE an event under a Space: the owner plus every ACTIVE editor+ member.
@@ -312,7 +357,11 @@ export async function listSpaceStewardIds(spaceId: string): Promise<string[]> {
  *  honored by the create authority too, or the space attribution is silently dropped (the Royal
  *  Temple bug: an event created from a Business Space calendar landed root-attributed + personal). */
 export async function listSpaceEventCreatorIds(spaceId: string): Promise<string[]> {
-  return listSpaceIdsByRoles(spaceId, ['editor', 'moderator', 'admin'])
+  const [byRole, leads] = await Promise.all([
+    listSpaceIdsByRoles(spaceId, ['editor', 'moderator', 'admin']),
+    listPlaceLeadIds(spaceId),
+  ])
+  return [...new Set([...byRole, ...leads])]
 }
 
 async function listSpaceIdsByRoles(spaceId: string, roles: string[]): Promise<string[]> {

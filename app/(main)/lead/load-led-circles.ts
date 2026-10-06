@@ -66,14 +66,14 @@ export const getLedCircles = cache(async (profileId: string): Promise<LedCircle[
 // Both are scoped strictly to `profileId` (guide_id / mentor_id = me) — never platform-wide,
 // matching the getLedCircles scoping above. A plain host steward leads no network → [].
 
-export type LedHub = { id: string; name: string; slug: string; circle_count: number }
-export type LedNexus = { id: string; name: string; slug: string; hub_count: number }
+export type LedHub = { id: string; name: string; slug: string; space_id: string | null; circle_count: number }
+export type LedNexus = { id: string; name: string; slug: string; space_id: string | null; hub_count: number }
 
 /** Hubs this profile GUIDES (hubs.guide_id = me), each with its circle count. */
 export async function getLedHubs(profileId: string): Promise<LedHub[]> {
   const admin = createAdminClient()
-  const { data } = await admin.from('hubs').select('id, name, slug').eq('guide_id', profileId).order('name')
-  const hubs = (data ?? []) as { id: string; name: string; slug: string }[]
+  const { data } = await admin.from('hubs').select('id, name, slug, space_id').eq('guide_id', profileId).order('name')
+  const hubs = (data ?? []) as { id: string; name: string; slug: string; space_id: string | null }[]
   if (hubs.length === 0) return []
   const ids = hubs.map((h) => h.id)
   const { data: circleRows } = await admin.from('circles').select('hub_id').in('hub_id', ids)
@@ -87,8 +87,8 @@ export async function getLedHubs(profileId: string): Promise<LedHub[]> {
 /** Nexuses this profile MENTORS (nexuses.mentor_id = me), each with its hub count. */
 export async function getLedNexuses(profileId: string): Promise<LedNexus[]> {
   const admin = createAdminClient()
-  const { data } = await admin.from('nexuses').select('id, name, slug').eq('mentor_id', profileId).order('name')
-  const nexuses = (data ?? []) as { id: string; name: string; slug: string }[]
+  const { data } = await admin.from('nexuses').select('id, name, slug, space_id').eq('mentor_id', profileId).order('name')
+  const nexuses = (data ?? []) as { id: string; name: string; slug: string; space_id: string | null }[]
   if (nexuses.length === 0) return []
   const ids = nexuses.map((n) => n.id)
   const { data: hubRows } = await admin.from('hubs').select('nexus_id').in('nexus_id', ids)

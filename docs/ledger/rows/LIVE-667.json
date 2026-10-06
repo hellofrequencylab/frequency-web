@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-667",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const pl=r(\"lib/events/placement.ts\");if(!/export async function listPlaceLeadIds/.test(pl)||!/from\\(\\x27hubs\\x27\\)\\.select\\(\\x27guide_id\\x27\\)\\.eq\\(\\x27space_id\\x27/.test(pl)||!/from\\(\\x27nexuses\\x27\\)\\.select\\(\\x27mentor_id\\x27\\)\\.eq\\(\\x27space_id\\x27/.test(pl))die(\"nothing names the Hub Guide or Nexus Mentor as steward of the Space the Hub or Nexus now is (ADR-1439)\");const st=pl.slice(pl.indexOf(\"export async function listSpaceStewardIds\"),pl.indexOf(\"export async function listSpaceStewardIds\")+400);if(!/listPlaceLeadIds\\(/.test(st))die(\"a Hub event request still reaches nobody but staff: listSpaceStewardIds leaves out the Guide and Mentor\");const cr=pl.slice(pl.indexOf(\"export async function listSpaceEventCreatorIds\"),pl.indexOf(\"export async function listSpaceEventCreatorIds\")+400);if(!/listPlaceLeadIds\\(/.test(cr))die(\"a Guide cannot create an event under their Hub Space\");const act=r(\"app/(main)/events/placement-actions.ts\");const vs=act.slice(act.indexOf(\"async function viewerIsSteward\"),act.indexOf(\"async function viewerIsSteward\")+700);if(!/listPlaceLeadIds\\(/.test(vs))die(\"a Guide cannot approve a Hub event placement\");if(!/listLedPlaceSpaceIds\\(/.test(act))die(\"the Hosted by picker does not offer the Hub or Nexus Space a leader leads\");const ln=r(\"components/widgets/lead/lead-networks.tsx\");if(!/<PlacementApprovals/.test(ln))die(\"a Guide has nowhere to see Hub event requests\");const se=r(\"lib/spaces/content-data.ts\");if(!/listEventsForSpace\\(spaceId/.test(se))die(\"the Space page no longer lists the events placed on it\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nPremise re-tested after ADR-1439: a Hub and a Nexus are now a Space (hubs.space_id, nexuses.space_id; /hubs and /nexuses 308 to /spaces), so a Hub-wide gathering is an event placed on that Space through the existing request and approval, with the Space visibility gates, and the Space page lists it (SpaceEvents, listEventsForSpace). The gap was who leads it: nothing made the Guide (hubs.guide_id) or Mentor (nexuses.mentor_id) a steward of that Space, so a request reached only staff. Now listPlaceLeadIds adds them to the placement approvers and the event creators, viewerIsSteward admits them, the Hosted by picker offers their Hub or Nexus Space, and the Leadership page shows each led Space's pending requests under Your networks. Events only: no other Space capability. No migration."
+  }
+}
