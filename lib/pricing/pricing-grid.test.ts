@@ -454,6 +454,11 @@ describe('seats and the AI add-on', () => {
     expect(domain.availability).toContain('Optional on Business')
     expect(domain.availability).toContain('Included with Collective')
     expect(domain.availability).not.toMatch(/\u2014/)
+    // Non Profit buys both add-ons like Business (owner ruling 2026-10-06 22:37).
+    expect(domain.availability).toBe('Optional on Business and Non Profit. Included with Collective.')
+    expect(planExtras(input).find((e) => e.key === 'ai')!.availability).toBe(
+      'Optional on Business and Non Profit. Included with Collective.',
+    )
   })
 
   it('keeps the AI add-on keys out of every Business-depth base (only Collective includes it, ADR-1709)', () => {

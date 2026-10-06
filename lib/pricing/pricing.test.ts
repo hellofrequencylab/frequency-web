@@ -120,6 +120,9 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
     expect(spaceHasCustomDomain('business', [])).toBe(false)
     expect(spaceHasCustomDomain('business', ['ai'])).toBe(false)
     expect(spaceHasCustomDomain('business', ['custom_domain'])).toBe(true)
+    // Non Profit buys it like Business (owner ruling 2026-10-06 22:37).
+    expect(spaceHasCustomDomain('nonprofit', [])).toBe(false)
+    expect(spaceHasCustomDomain('nonprofit', ['custom_domain'])).toBe(true)
     expect(spaceHasCustomDomain('free', [])).toBe(false)
     expect(spaceHasCustomDomain('free', ['custom_domain'])).toBe(false) // no add-on on the free plan
     expect(spaceHasCustomDomain(null, [])).toBe(false)

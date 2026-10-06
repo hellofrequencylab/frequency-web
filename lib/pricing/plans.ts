@@ -197,8 +197,8 @@ export function planKeysWithAddons(plan: SpacePlan, addons: readonly AddonKey[])
 }
 
 /** Does a Space serve its own custom domain (owner ruling 2026-10-06, LIVE-821)? PURE. Collective and
- *  Non Profit Collective include it, Independent always has, and Business (or Non Profit) holds it
- *  while the custom domain add-on is active. Free never does. Read the same way Collective includes
+ *  Non Profit Collective include it, Independent always has, and Business or Non Profit holds it
+ *  while the custom domain add-on is active (Non Profit buys add-ons too, owner ruling 2026-10-06 22:37). Free never does. Read the same way Collective includes
  *  Vera AI: the plan depth plus the active add-ons, through planKeysWithAddons. */
 export function spaceHasCustomDomain(
   plan: SpacePlan | string | null | undefined,
