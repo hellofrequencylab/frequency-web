@@ -2,12 +2,15 @@ import { Users, Building2 } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EntityCard } from '@/components/cards/entity-card'
+import { PlacementApprovals } from '@/components/events/placement-approvals'
 import { getLedHubs, getLedNexuses } from '@/app/(main)/lead/load-led-circles'
 
 // Leadership dashboard layout module (ADR-270): the networks under this leader — the nexuses they
 // mentor and the hubs they guide, each with its child count. Self-fetching RSC scoped to the caller
 // via getCallerProfile (getLedHubs / getLedNexuses are guide_id = me / mentor_id = me). A plain
 // host steward leads no network, so the block self-hides (returns null) when there are none.
+// Under the cards sit the event placement requests for each Hub / Nexus Space they lead (LIVE-667):
+// the Guide or Mentor is that Space's event steward, and this is where they approve.
 export async function LeadNetworks(): Promise<React.ReactElement | null> {
   const me = await getCallerProfile()
   if (!me) return null
@@ -22,7 +25,7 @@ export async function LeadNetworks(): Promise<React.ReactElement | null> {
         {nexuses.map((n) => (
           <EntityCard
             key={n.id}
-            href={`/nexuses/${n.slug}`}
+            href={`/spaces/${n.slug}`}
             title={n.name}
             context="Nexus"
             meta={
@@ -47,6 +50,13 @@ export async function LeadNetworks(): Promise<React.ReactElement | null> {
             }
           />
         ))}
+      </div>
+      <div className="mt-4 space-y-3">
+        {[...nexuses, ...hubs]
+          .filter((p) => p.space_id)
+          .map((p) => (
+            <PlacementApprovals key={p.id} target={{ type: 'space', id: p.space_id as string }} />
+          ))}
       </div>
     </section>
   )
