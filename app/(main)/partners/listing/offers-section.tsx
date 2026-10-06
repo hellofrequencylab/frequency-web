@@ -19,7 +19,7 @@ import { saveOffer } from './actions'
 // an offer and to edit one (pick a row and it loads into the form). Writes go through saveOffer,
 // which re-checks that the offer belongs to the caller's listing.
 
-const EMPTY: OfferInput = { id: null, title: '', description: '', terms: '', validUntil: '', active: true, questId: '' }
+const EMPTY: OfferInput = { id: null, title: '', description: '', terms: '', validUntil: '', active: true, questId: '', visitsRequired: '' }
 
 function toInput(o: OwnedOffer): OfferInput {
   return {
@@ -30,6 +30,7 @@ function toInput(o: OwnedOffer): OfferInput {
     validUntil: o.validUntil ? o.validUntil.slice(0, 10) : '',
     active: o.active,
     questId: o.questId ?? '',
+    visitsRequired: o.visitsRequired ? String(o.visitsRequired) : '',
   }
 }
 
@@ -66,7 +67,7 @@ export function OffersSection({ offers, quests = [] }: { offers: OwnedOffer[]; q
       <SectionHeader title="Member offers" count={offers.length} />
       <p className="text-body-sm text-muted">
         What a member gets when they tap your plaque or scan your code. Keep one live offer at a
-        time and every capture is credited to it.
+        time and every capture is credited to it. A loyalty card counts those taps as visits instead.
       </p>
 
       {offers.length === 0 ? (
@@ -90,6 +91,7 @@ export function OffersSection({ offers, quests = [] }: { offers: OwnedOffer[]; q
                     <Badge tone="success">Live</Badge>
                   )}
                 </div>
+                {o.visitsRequired && <div className="text-meta text-primary-strong">Loyalty card: {o.visitsRequired} visits</div>}
                 {o.questId && (
                   <div className="text-meta text-primary-strong">Reward for finishing {questName.get(o.questId) ?? 'a past Quest'}</div>
                 )}
@@ -120,6 +122,19 @@ export function OffersSection({ offers, quests = [] }: { offers: OwnedOffer[]; q
         </Field>
         <Field label="Valid until" hint="Leave empty for no end date.">
           <Input type="date" value={form.validUntil} onChange={(e) => set('validUntil', e.target.value)} className="bg-surface px-4 py-2.5" />
+        </Field>
+        {/* LIVE-710: a loyalty card. Each plaque tap is a visit; the member claims it at the counter. */}
+        <Field label="Loyalty card" hint="Visits that earn it, 2 to 50. A plaque tap counts once a day, and the member claims it at your counter. Your plaque has to be set to count repeat visits, which we set up with you. Leave empty for an ordinary offer.">
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={2}
+            max={50}
+            value={String(form.visitsRequired ?? '')}
+            onChange={(e) => set('visitsRequired', e.target.value)}
+            placeholder="e.g. 5"
+            className="bg-surface px-4 py-2.5"
+          />
         </Field>
         {quests.length > 0 && (
           // LIVE-673: sponsor a Quest with goods. Members who finish one of its Journeys see the

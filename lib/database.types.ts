@@ -9583,6 +9583,7 @@ export type Database = {
           quest_id: string | null
           title: string
           valid_until: string | null
+          visits_required: number | null
         }
         Insert: {
           active?: boolean
@@ -9594,6 +9595,7 @@ export type Database = {
           quest_id?: string | null
           title: string
           valid_until?: string | null
+          visits_required?: number | null
         }
         Update: {
           active?: boolean
@@ -9605,6 +9607,7 @@ export type Database = {
           quest_id?: string | null
           title?: string
           valid_until?: string | null
+          visits_required?: number | null
         }
         Relationships: [
           {

@@ -72,11 +72,15 @@ export async function SpaceWebsiteFeature({
   )
 }
 
-/** Where the website is today: the owner's own domain once it is attached and its DNS
- *  points at hosting (a domain still being set up would open nothing), else the free
- *  `<slug>.frequencylocal.com` subdomain, else (a slug that cannot be a subdomain) /sites/<slug>. */
-function websiteUrl(slug: string, domain: { domain: string; attached: boolean; dnsReady: boolean } | null): string {
-  if (domain && domain.attached && domain.dnsReady) return `https://${domain.domain}`
+/** Where the website is today: the owner's own domain once it is attached, its DNS points at
+ *  hosting and it serves https (a domain still being set up would open nothing, or a browser
+ *  warning), else the free `<slug>.frequencylocal.com` subdomain, else (a slug that cannot be a
+ *  subdomain) /sites/<slug>. */
+function websiteUrl(
+  slug: string,
+  domain: { domain: string; attached: boolean; dnsReady: boolean; secure: boolean } | null,
+): string {
+  if (domain && domain.attached && domain.dnsReady && domain.secure) return `https://${domain.domain}`
   const subdomain = siteSubdomainHost(slug)
   return subdomain ? `https://${subdomain}` : `${appOrigin()}/sites/${slug}`
 }

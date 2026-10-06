@@ -289,4 +289,14 @@ const SAMPLES: Record<string, string> = {
   'retired "flat 3%" take-rate': 'We charge a flat 3% and nothing else',
   'banned "find your tribe"': 'Come find your tribe in your own town',
   'banned "on the same wavelength"': 'Neighbors who are on the same wavelength',
+  // The demographic canon rules (ADR-1715, LIVE-792).
+  'internal archetype name in member copy': 'Built for the Studio Keeper in your town',
+  '"seekers" in member copy': 'A home for seekers near you',
+  'retired audience framing "spiritual refugees"': 'A place for spiritual refugees',
+  'retired audience framing "witchy wellness"': 'Witchy wellness, close to home',
+  'retired audience framing "burnt-out seekers"': 'Made for burnt-out seekers',
+  'retired voice "calm fire"': 'We speak with calm fire',
+  'retired "quiet revolution"': 'Join the quiet revolution',
+  'retired persona "The High-Functioning Lonely"': 'For the High-Functioning Lonely',
+  'retired persona "The Post-Screen Skeptic"': 'For the Post-Screen Skeptic',
 }
