@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z, parseInput } from '@/lib/validation'
 import { rateLimitOk, clientIp, tooMany } from '@/lib/rate-limit'
 import { runConciergeTurn, type ConciergeTurnResult } from '@/lib/ai/vera/turn'
+import { VERA_TURN_BODY } from '@/lib/ai/vera/turn-input'
 
 // The STREAMING door for a Vera turn (ADR-1287, PROG-E8). The same turn as the `conciergeTurn`
 // server action (both run lib/ai/vera/turn), answered as newline-delimited JSON so the member
@@ -20,14 +21,9 @@ import { runConciergeTurn, type ConciergeTurnResult } from '@/lib/ai/vera/turn'
 // an anonymous caller has no profile for the per-actor AI window to key on; the signed-in window
 // (lib/ai/rate-limit.ts) still applies inside the turn.
 
-const BODY = z.object({
-  stage: z.string().max(40).default('chat'),
-  text: z.string().max(4000).default(''),
-  history: z
-    .array(z.object({ role: z.enum(['user', 'assistant']), text: z.string().max(8000) }))
-    .max(60)
-    .default([]),
-})
+// The body bounds live in lib/ai/vera/turn-input.ts so the server-action door parses the same
+// shape (SCAN-736).
+const BODY = VERA_TURN_BODY
 
 export type VeraTurnEvent =
   | { t: 'delta'; text: string; round: number }
@@ -38,7 +34,8 @@ const encoder = new TextEncoder()
 const line = (e: VeraTurnEvent) => encoder.encode(JSON.stringify(e) + '\n')
 
 export async function POST(request: Request) {
-  if (!(await rateLimitOk('vera-turn', clientIp(request), 30, '60 s'))) return tooMany()
+  const ip = clientIp(request)
+  if (!(await rateLimitOk('vera-turn', ip, 30, '60 s'))) return tooMany()
 
   let body: z.infer<typeof BODY>
   try {
@@ -52,6 +49,7 @@ export async function POST(request: Request) {
       try {
         const result = await runConciergeTurn(body.stage, body.text, body.history, {
           onText: (text, round) => controller.enqueue(line({ t: 'delta', text, round })),
+          ip,
         })
         controller.enqueue(line({ t: 'final', ...result }))
       } catch {

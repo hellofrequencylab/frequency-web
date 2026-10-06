@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-742",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const c=\"lib/crm/space-contact-detail.ts\";if(!fs.existsSync(c))process.exit(79);const C=fs.readFileSync(c,\"utf8\");if(/getMemberContext\\(/.test(C)&&!/hasConsent\\(|share[_A-Za-z]*facts|facts[_A-Za-z]*share/i.test(C)){console.error(\"SCAN-742: the Space CRM contact read model still pulls the member private Vera memory (goals, interests, constraints) with no per-Space sharing consent, so Space editors see what a member told Vera in private.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nThe Space contact read model no longer calls getMemberContext; facts is always null; source-shape test added and NEXT-GEN-CRM.md updated."
+  }
+}

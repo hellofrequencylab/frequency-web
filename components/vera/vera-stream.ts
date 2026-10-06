@@ -70,6 +70,11 @@ export async function streamConciergeTurn(
   } catch {
     return conciergeTurn(stage, text, history)
   }
+  // A 429 is the per-IP window saying no; falling back to the action here would turn the throttle
+  // into a second door (SCAN-736), so that one gets the deterministic throttled reply instead.
+  if (res.status === 429) {
+    return { message: 'Give me a moment to catch up, then ask again.', stage: 'chat', proposals: [], suggestions: [], done: false }
+  }
   if (!res.ok || !res.body) return conciergeTurn(stage, text, history)
 
   const reader = res.body.getReader()

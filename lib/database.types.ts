@@ -17044,6 +17044,14 @@ export type Database = {
             }
             Returns: Json
           }
+      ai_spend_by_feature_today: {
+        Args: never
+        Returns: { feature: string; spent: number }[]
+      }
+      ai_spend_today: {
+        Args: { p_feature?: string | null; p_space?: string | null }
+        Returns: number
+      }
       award_zaps_atomic: {
         Args: {
           _action: string

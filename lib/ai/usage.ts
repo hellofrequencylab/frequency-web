@@ -60,6 +60,45 @@ export async function recordAiUsage(input: {
   }
 }
 
+/** PostgREST caps every select at 1,000 rows (supabase/config.toml max_rows), silently, service
+ *  role included. The page size the fallback below walks in, kept under that cap. */
+const SPEND_PAGE = 500
+
+/** Today's spend in USD, summed IN THE DATABASE through the ai_spend_today RPC (migration
+ *  20270346000800, SCAN-737). A single unpaged select-and-reduce covered an arbitrary 1,000-row
+ *  subset on a busy day, so the caps undercounted exactly when they mattered. While the migration
+ *  sits unapplied the RPC errors and this pages the rows with .range() instead, so the sum is
+ *  complete either way. Throws only on a failed page read (the caller fails open). */
+async function spendToday(
+  admin: ReturnType<typeof createAdminClient>,
+  sinceIso: string,
+  scope: { feature?: string; spaceId?: string | null },
+): Promise<number> {
+  const { data: viaRpc, error: rpcError } = await admin.rpc('ai_spend_today', {
+    p_feature: scope.feature ?? null,
+    p_space: scope.spaceId ?? null,
+  })
+  if (!rpcError && viaRpc != null) return Number(viaRpc)
+
+  let total = 0
+  for (let from = 0; ; from += SPEND_PAGE) {
+    let q = admin
+      .from('ai_usage')
+      .select('cost_usd')
+      .gte('created_at', sinceIso)
+      .order('created_at', { ascending: true })
+      .range(from, from + SPEND_PAGE - 1)
+    if (scope.feature) q = q.eq('feature', scope.feature)
+    if (scope.spaceId) q = q.eq('space_id', scope.spaceId)
+    const { data, error } = await q
+    if (error) throw error
+    const rows = (data ?? []) as { cost_usd: number }[]
+    for (const r of rows) total += Number(r.cost_usd)
+    if (rows.length < SPEND_PAGE) break
+  }
+  return total
+}
+
 /** Has a feature spent past its daily cap today? Fails open=false on error.
  *  When `spaceId` is given, checks the PER-SPACE cap (spend filtered to that Space) so one
  *  Space can't run up the whole feature's bill. Omit `spaceId` to check the global feature cap
@@ -73,20 +112,12 @@ export async function featureOverBudget(feature: string, spaceId?: string | null
 
     // GLOBAL hard ceiling first: total AI spend across EVERY feature today. One safety net so a spike
     // or a runaway can never exceed GLOBAL_DAILY_CAP_USD/day regardless of the per-feature caps.
-    const { data: allToday } = await admin.from('ai_usage').select('cost_usd').gte('created_at', sinceIso)
-    const totalSpent = ((allToday ?? []) as { cost_usd: number }[]).reduce((s, r) => s + Number(r.cost_usd), 0)
+    const totalSpent = await spendToday(admin, sinceIso, {})
     if (!withinBudget(totalSpent, 0, GLOBAL_DAILY_CAP_USD)) return true
 
-    const query = admin
-      .from('ai_usage')
-      .select('cost_usd')
-      .eq('feature', feature)
-      .gte('created_at', sinceIso)
     // Sums only this Space's spend so the per-Space cap can't be run up by one Space. `space_id`
     // (migration 20260712020000) is in the generated column union, so the filter needs no cast.
-    const scoped = spaceId ? query.eq('space_id', spaceId) : query
-    const { data } = await scoped
-    const spent = ((data ?? []) as { cost_usd: number }[]).reduce((s, r) => s + Number(r.cost_usd), 0)
+    const spent = await spendToday(admin, sinceIso, { feature, spaceId: spaceId ?? null })
     const cap = spaceId ? spaceDailyCapFor(feature) : dailyCapFor(feature)
     return !withinBudget(spent, 0, cap)
   } catch {
