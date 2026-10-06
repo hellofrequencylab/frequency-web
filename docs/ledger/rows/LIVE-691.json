@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-691",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const die=m=>{console.error(m);process.exit(1)};const ov=fs.readFileSync(\"lib/apps/overrides.ts\",\"utf8\");if(/per-space layer is Phase 2 \\(migration TODO\\)/.test(ov))die(\"lib/apps/overrides.ts still says a Space cannot override its own Apps (Phase 2 TODO)\");const fs2=fs.readFileSync(\"lib/apps/for-scope.ts\",\"utf8\");if(!/scope\\.kind === \\x27space\\x27[\\s\\S]{0,600}applySpaceModuleMenu\\(resolved, scope\\.moduleMenu\\)/.test(fs2))die(\"the space scope no longer applies the Space Module Manager overrides to its Apps\");if(!/hidden\\.has\\(a\\.id\\)/.test(fs2)||!/order\\.indexOf\\(id\\)/.test(fs2))die(\"applySpaceModuleMenu no longer hides or reorders\");const act=fs.readFileSync(\"app/(main)/spaces/[slug]/manage/modules/actions.ts\",\"utf8\");if(!/current\\.moduleMenu = node/.test(act))die(\"the Module Manager no longer saves a Space own hide/order\");const lay=fs.readFileSync(\"app/(main)/spaces/[slug]/(profile)/layout.tsx\",\"utf8\");if(!/moduleMenu=\\{\\{/.test(lay))die(\"the Space Customize trigger no longer carries its moduleMenu to the rail\");const t=fs.readFileSync(\"lib/apps/for-scope.test.ts\",\"utf8\");if(!/moduleMenu: \\{ hidden: \\[/.test(t))die(\"no test pins that a Space hidden App leaves its rail\")'"
+    }
+  },
+  "append": {
+    "detail": "\n\nPremise re-tested (ADR-1082): a Space already hides and reorders its own Apps in its Module Manager (/spaces/<slug>/manage/modules saves spaces.preferences.moduleMenu, ADR-546b), and appsForScope applies it on the space branch (applySpaceModuleMenu), pinned by lib/apps/for-scope.test.ts. Building a second per-Space store in app_overrides.space_id would be a parallel system, so the stale Phase 2 TODO in lib/apps/overrides.ts now points at the Module Manager and the reserved column stays unused. No migration."
+  }
+}
