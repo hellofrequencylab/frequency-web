@@ -47,6 +47,7 @@ import { ctaKindFor } from './cta-kind'
 // The circle statuses a public list may show, from the circles module's own definition rather than
 // retyped here — a second copy of ['forming','active'] is a drift waiting to happen.
 import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
+import { activeBoostIds } from '@/lib/crew/boost'
 // 🔴 `./profile-pages` is DELIBERATELY NOT IMPORTED HERE, and the reason is the build budget, not
 // taste. `readProfilePages` is the canonical reader for the operator's custom page list, but its
 // MODULE imports `@/lib/page-editor/templates/space` -> `@/lib/page-editor/config`, which imports
@@ -122,6 +123,10 @@ export interface NetworkedSpace {
   /** The resolved standing detail (which signals were measured, and each one's saturated value), so
    *  the operator receipt page can explain the number instead of asserting it. */
   standingDetail: StandingResult
+  /** True when a Crew member gave this Space a Boost in the last 7 days (LIVE-756, lib/crew/boost.ts).
+   *  A MARK only (owner ruling 2026-10-06, "Circles only"): the card shows a Boosted badge, and the
+   *  directory order ignores it. Exposure here is earned, never sold (LIVE-262). */
+  boosted: boolean
 }
 
 /** How the catalog is ordered. `standing` (earned placement, LIVE-262) is the default; `name` is
@@ -543,12 +548,13 @@ export const listNetworkedSpaces = cache(
       // space id, so adding the badge to the card costs no per-card read (no N+1). Fail-safe to an empty
       // Map, in which case no card is badged.
       const ids = rows.map((r) => r.id)
-      const [memberCounts, followerCounts, upcomingCounts, foundingBadges, rollup] = await Promise.all([
+      const [memberCounts, followerCounts, upcomingCounts, foundingBadges, rollup, boostedIds] = await Promise.all([
         memberCountsFor(ids),
         followerCountsFor(ids),
         upcomingEventCountsFor(ids),
         foundingBadgesForSpaces(ids),
         rollupSignalsFor(ids),
+        activeBoostIds('space', ids),
       ])
 
       const spaces = rows.map((r) => {
@@ -608,6 +614,7 @@ export const listNetworkedSpaces = cache(
           isFoundingBusiness: foundingBadges.get(r.id)?.isFounding === true,
           standing: standingDetail.score,
           standingDetail,
+          boosted: boostedIds.has(r.id),
         }
       })
 
@@ -616,6 +623,9 @@ export const listNetworkedSpaces = cache(
       // "Most members" orders by the resolved active-member count (desc); a Space with no count
       // sinks to the bottom, ties fall back to name so the order stays stable. Name/Newest keep the
       // DB order above.
+      // A Crew Boost (LIVE-756) does NOT move a Space here: the owner ruled Boosts lift Circles only,
+      // and a boosted Space carries a mark on its card instead. The default order stays the earned
+      // standing (LIVE-262: exposure is earned, never sold).
       if (wantSort === 'standing') {
         spaces.sort((a, b) => b.standing - a.standing || a.name.localeCompare(b.name))
       } else if (wantSort === 'members') {
