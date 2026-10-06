@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-738",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const g=\"lib/ai/vera/agent-claude.ts\";if(!fs.existsSync(g))process.exit(79);const G=fs.readFileSync(g,\"utf8\");if(/toAnthropicTools\\(\\s*VERA_TOOLS\\s*\\)/.test(G)){console.error(\"SCAN-738: the member Vera chat still offers the model the whole VERA_TOOLS catalog, operator playbook and create_entity tools included, so their proposals render as broken Remember cards the server then refuses.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nMEMBER_CHAT_TOOL_KEYS in tools.ts; agent-claude filters the model tools, proposals and reads to it; MEMBER_CONFIRMABLE_TOOLS derives from it."
+  }
+}

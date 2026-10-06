@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-737",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-05",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const fs=require(\"fs\");const u=\"lib/ai/usage.ts\",l=\"app/(main)/admin/ai/load-ai.ts\";if(!fs.existsSync(u)||!fs.existsSync(l))process.exit(79);const U=fs.readFileSync(u,\"utf8\"),L=fs.readFileSync(l,\"utf8\");const bad=(t)=>/from\\(\\x27ai_usage\\x27\\)\\s*\\.select\\(\\x27(cost_usd|feature, cost_usd)\\x27\\)/.test(t.replace(/\\n\\s*/g,\"\"))&&!/\\.rpc\\(|\\.range\\(/.test(t);if(bad(U)||bad(L)){console.error(\"SCAN-737: the daily AI spend caps and the admin spend table still sum a single unpaged ai_usage select, which PostgREST caps at 1,000 rows, so the global and per-feature ceilings undercount on a busy day.\");process.exit(1)}'"
+    }
+  },
+  "append": {
+    "detail": "\n\nMigration 20270346000800 adds ai_spend_today and ai_spend_by_feature_today (SECURITY DEFINER, service_role); featureOverBudget and load-ai sum through the RPC with a paged .range() fallback."
+  }
+}
