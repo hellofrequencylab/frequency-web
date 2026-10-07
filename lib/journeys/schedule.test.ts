@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { phaseUnlockAt, isPhaseUnlocked, unlockedPhaseCount } from './schedule'
+import { phaseUnlockAt, isPhaseUnlocked, unlockedPhaseCount, phaseLockStates, unlockLine } from './schedule'
 
 const start = new Date('2026-01-01T00:00:00Z')
 const day = (n: number) => new Date(start.getTime() + n * 86_400_000)
@@ -26,5 +26,25 @@ describe('journey phase drip schedule (ADR-252)', () => {
 
   it('interval 0 means everything is open (no drip)', () => {
     expect(unlockedPhaseCount(start, 0, 4, start)).toBe(4)
+  })
+
+  it('phaseLockStates locks only the phases the anchor has not reached', () => {
+    const states = phaseLockStates(3, start, 7, day(8))
+    expect(states.map((s) => s.locked)).toEqual([false, false, true])
+    expect(states[2].unlockAt?.getTime()).toBe(day(14).getTime())
+  })
+
+  it('phaseLockStates opens everything without an anchor', () => {
+    expect(phaseLockStates(2, null, 7)).toEqual([
+      { locked: false, unlockAt: null },
+      { locked: false, unlockAt: null },
+    ])
+  })
+
+  it('unlockLine names how long until a phase opens', () => {
+    expect(unlockLine(null)).toBe('Locked')
+    expect(unlockLine(day(1), start)).toMatch(/^Opens tomorrow · /)
+    expect(unlockLine(day(5), start)).toMatch(/^Opens in 5 days · /)
+    expect(unlockLine(start, day(1))).toBe('Opening now')
   })
 })

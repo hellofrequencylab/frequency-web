@@ -176,7 +176,12 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
 // (ADR-522 follow-up: the member Spotlight Puck editor that used to live here is retired — its route now
 // redirects to the in-rail grid builder. No member route is a full-viewport editor takeover today; the
 // remaining Puck builders (Space landing / marketing) are FULL-WIDTH editors that keep the header.)
-const FULL_VIEWPORT_EDITOR_PATTERNS: RegExp[] = []
+//
+// THE JOURNEY FOCUS PLAYER (/journeys/<slug>/play) is the one member route here today. It is not an
+// editor, but it wants exactly this contract: no header, no rails, no tab bar, one lesson on screen,
+// with its own strip on top and the Journey dock on the bottom edge (components/journey/nav). Being
+// a takeover it also drops the page gutters, so the page pads itself.
+const FULL_VIEWPORT_EDITOR_PATTERNS: RegExp[] = [/^\/journeys\/[^/]+\/play$/]
 
 /** Whether `pathname` is a full-viewport Puck EDITOR takeover — the shell hides the mobile bottom
  *  nav + drawers (and the desktop header) so the editor's own top bar / thumb-zone dock owns the

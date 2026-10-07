@@ -13,6 +13,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 ### Added
 
 
+- **Every Journey has four views and one bar to move between them.** About is the Journey's page. Course shows how far you are, what is next, and every week with its lessons and the day it opens. Focus opens one lesson at a time with nothing else on screen. Library lists every Journey you are on, with Continue first. The bar sits at the bottom on your phone and on the web.
 - **"Did you make it?" the day after a gathering.** Everyone who said yes gets one note: tap yes and the Host knows you came. It shows when the group meets next, with a link to bring a friend. Guests without an account also get a button to join free and keep their RSVP.
 - **Finishing something shows one next step.** The end of a Mindless session, an RSVP made with just an email, and a Circle you just published each show one link, picked by how you found Frequency, toward the next gathering.
 - **Booking pages and receipts carry a small Made with Frequency line.** It sits at the foot of a Space's booking page, the customer's booking confirmation, and a shop order receipt, and links home.
