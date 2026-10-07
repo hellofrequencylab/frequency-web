@@ -263,7 +263,10 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     expect(labels).toContain('$49/mo')
     expect(labels).toContain('$490/yr')
     expect(cents).toContain(4900)
-    expect(readableTexts(true).some((t) => t.includes('Beta rate'))).toBe(false)
+    // The only beta caption is the Founding Collective rate (owner 2026-10-06), never a Business or
+    // Non Profit one.
+    const captioned = spaceOfferings({ values: PRICING_DEFAULTS, catalog, betaActive: true }).filter((o) => o.betaNote)
+    expect(captioned.map((o) => o.id)).toEqual(['collective'])
   })
 
   it('the surface is byte-identical across a granted and an ungranted world', () => {

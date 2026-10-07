@@ -209,6 +209,12 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
     const byId = Object.fromEntries(spaceOfferings(open).map((o) => [o.id, o]))
     expect(anchored).toEqual([])
     for (const plan of ADVERTISED_SPACE_PLANS) {
+      // The one exception is the Founding Collective rate (owner 2026-10-06): with the window open,
+      // Collective shows its founding price against the list price it charges once the window shuts.
+      if (plan === 'collective') {
+        expect(byId[plan]!.listAnchor, plan).toBe(formatCents(PRICING_DEFAULTS.plan.collective.list_cents!))
+        continue
+      }
       expect(byId[plan]!.listAnchor, plan).toBeNull()
       expect(byId[plan]!.betaNote, plan).toBeNull()
     }

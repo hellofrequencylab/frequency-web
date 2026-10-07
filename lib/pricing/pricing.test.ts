@@ -430,7 +430,8 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     expect(rows.map((r) => r.label)).toEqual(['Business', 'Collective', 'Non Profit'])
     expect(rows.some((r) => r.key === 'independent')).toBe(false)
     expect(rows.some((r) => r.key === 'nonprofit_collective')).toBe(false)
-    expect(rows.find((r) => r.key === 'collective')?.annual).toBe('$1,490')
+    // With the window open the Founding Collective rate shows ($99 a month, owner 2026-10-06).
+    expect(rows.find((r) => r.key === 'collective')?.annual).toBe('$990')
     // every advertised plan carries an annual line (two months free)
     expect(rows.find((r) => r.key === 'business')?.annual).toBe('$490')
     expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$390')
