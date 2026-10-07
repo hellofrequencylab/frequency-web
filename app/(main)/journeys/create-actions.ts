@@ -17,6 +17,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { getTemplate, templateToBlocks, MASTER_FRAMEWORK, masterFrameworkToBlocks } from '@/lib/journeys/templates'
 import { pillarIdsBySlug } from '@/lib/journeys/compose'
+import { normalizeSeedFidelity } from '@/lib/studio/kernel/fidelity'
 import { draftJourneySpark, type SparkAnswers, type JourneySpark, type ArcWeek, type SparkSettings, type SparkMeeting } from '@/lib/ai/journey-spark'
 import { normalizeJourneyMeeting } from '@/lib/journey-plans'
 import { isSeedMood, moodToAccent } from '@/lib/importer/moods'
@@ -199,10 +200,20 @@ export async function createJourneyDraftAction(
 
 /** Vera drafts the Journey identity from the spark answers. Returns the draft for the author to
  *  review/edit; creates nothing. Null-safe: when Vera is offline, the wizard lets them type it. */
-export async function sparkJourneyAction(answers: SparkAnswers, sourceText?: string): Promise<ActionResult<JourneySpark>> {
+export async function sparkJourneyAction(
+  answers: SparkAnswers,
+  sourceText?: string,
+  /** Exact, Edit or Rewrite. Normalized here: a client value is never trusted as-is. */
+  fidelity?: string,
+): Promise<ActionResult<JourneySpark>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Sign in to build a Journey.')
-  const spark = await draftJourneySpark({ ...answers, sourceText, profileId: caller.id })
+  const spark = await draftJourneySpark({
+    ...answers,
+    sourceText,
+    fidelity: normalizeSeedFidelity(fidelity),
+    profileId: caller.id,
+  })
   if (!spark) return fail('Vera is offline right now. Name it yourself and keep going.')
   return ok(spark)
 }

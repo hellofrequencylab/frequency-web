@@ -20,6 +20,7 @@ import { defineSpark, runSpark } from './spark'
 import { coerceEventExtraction } from '@/lib/events/normalize'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import type { ExtractedEvent, EventSparkAnswers } from '@/lib/events/types'
+import { fidelitySourceCap, keepsAuthorWords, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 
 type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/webp'
 
@@ -274,6 +275,7 @@ const eventSpark = (feature: string, tier: ModelTier, system: string) =>
     tool: EXTRACTION_TOOL,
     system: () => dated(system),
     coerce: (raw) => coerceEventExtraction(raw),
+    proseField: 'description',
   })
 
 export const EVENT_POSTER_SCAN = eventSpark('event-poster-scan', 'sonnet', SCAN_SYSTEM)
@@ -288,11 +290,14 @@ export async function scanEventPoster(input: {
   /** Optional pasted write-up / listing text to read ALONGSIDE the image(s) — the
    *  smart-uploader case (a poster photo plus the text copied from its event page). */
   text?: string | null
+  /** Exact, Edit or Rewrite (lib/studio/kernel/fidelity.ts) for the pasted text and the poster's
+   *  own wording. Absent means Rewrite. */
+  fidelity?: SeedFidelity | null
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
   const imgs = input.images.slice(0, 6)
   if (!imgs.length) return null
-  const pasted = input.text?.trim().slice(0, 8000) || undefined
+  const pasted = input.text?.trim().slice(0, fidelitySourceCap(input.fidelity, 8000)) || undefined
   const content: Anthropic.MessageParam['content'] = [
     ...imgs.map((im) => ({
       type: 'image' as const,
@@ -302,7 +307,7 @@ export async function scanEventPoster(input: {
   ]
   // No mood: reading a flyer is extraction, and a mood must never colour what a poster is
   // claimed to say.
-  return runSpark(EVENT_POSTER_SCAN, { content, profileId: input.profileId })
+  return runSpark(EVENT_POSTER_SCAN, { content, fidelity: input.fidelity, profileId: input.profileId })
 }
 
 /** The user instruction for a scan. Merges multiple shots, and when a pasted write-up
@@ -337,16 +342,18 @@ export async function assistEventFromText(input: {
 }
 
 /** Compose the wizard answers (and any pasted flyer text) into one prompt for the spark. */
-function composeSparkText(a: EventSparkAnswers, sourceText?: string | null): string {
-  const src = sourceText?.trim().slice(0, 4000)
+function composeSparkText(a: EventSparkAnswers, sourceText?: string | null, fidelity?: SeedFidelity | null): string {
+  const src = sourceText?.trim().slice(0, fidelitySourceCap(fidelity, 4000))
+  // Kept words (Exact / Edit) read the long answers in full, the same reason the source cap widens.
+  const long = (cap: number) => (keepsAuthorWords(fidelity) ? Math.max(cap, 4000) : cap)
   return [
     src
       ? `The member pasted a flyer or write-up. Read it closely and draft the event FROM it; the short answers below fill any gaps:\n"""\n${src}\n"""\n`
       : '',
-    `What it is: ${a.what.trim().slice(0, 500) || '(not given)'}`,
+    `What it is: ${a.what.trim().slice(0, long(500)) || '(not given)'}`,
     `When: ${a.when.trim().slice(0, 200) || '(not given)'}`,
     `Where: ${a.where.trim().slice(0, 300) || '(not given)'}`,
-    `Who it is for and details: ${a.details.trim().slice(0, 800) || '(none)'}`,
+    `Who it is for and details: ${a.details.trim().slice(0, long(800)) || '(none)'}`,
     '',
     'Turn this into an event draft. Call save_event.',
   ]
@@ -364,11 +371,14 @@ function composeSparkText(a: EventSparkAnswers, sourceText?: string | null): str
 export async function draftEventSpark(input: {
   answers: EventSparkAnswers
   sourceText?: string | null
+  /** Exact, Edit or Rewrite (lib/studio/kernel/fidelity.ts). Absent means Rewrite. */
+  fidelity?: SeedFidelity | null
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
   return runSpark(EVENT_SPARK, {
-    content: [{ type: 'text', text: composeSparkText(input.answers, input.sourceText) }],
+    content: [{ type: 'text', text: composeSparkText(input.answers, input.sourceText, input.fidelity) }],
     mood: input.answers.mood,
+    fidelity: input.fidelity,
     profileId: input.profileId,
   })
 }

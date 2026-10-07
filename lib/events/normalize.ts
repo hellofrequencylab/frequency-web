@@ -342,7 +342,9 @@ export function coerceEventExtraction(raw: unknown): ExtractedEvent {
 
   return {
     title: str(r.title, 160),
-    description: str(r.description, 600),
+    // The same bound the draft editor saves (updateEventDraft, 8000). A pasted write-up kept word
+    // for word (the Spark's Exact / Edit choice) must survive the trip; a rewrite is short anyway.
+    description: str(r.description, 8000),
     startsAt,
     endsAt,
     location: str(r.location, 240),

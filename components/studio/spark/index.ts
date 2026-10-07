@@ -9,6 +9,7 @@ export { SparkDoors, type SparkDoor } from './spark-doors'
 export { SparkDropzone, type SparkDropzoneProps } from './spark-dropzone'
 export { SparkReview, type SparkReviewProps } from './spark-review'
 export { SparkSteer, type SparkSteerProps } from './spark-steer'
+export { SparkFidelity, type SparkFidelityProps } from './spark-fidelity'
 
 // The two review-step OFFERS (ADR-993, ADR-995): a cover Vera can draw, and a second read before
 // it goes out. `SparkReview` renders them itself; a wizard that keeps a bespoke review step renders

@@ -17,6 +17,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import type { SeedMood } from '@/lib/studio/kernel/moods'
+import { fidelitySourceCap, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import type { PillarSlug } from '@/lib/pillars'
 import { defineSpark, runSpark, sparkStr, sparkStrArray } from './spark'
 
@@ -38,6 +39,8 @@ interface CircleSparkAnswers {
   cadence?: string
   /** The MOOD dial (ADR-986): steers TONE only. It never changes what is true, just how it reads. */
   mood?: SeedMood
+  /** Exact, Edit or Rewrite (lib/studio/kernel/fidelity.ts). Absent means Rewrite. */
+  fidelity?: SeedFidelity
 }
 
 export interface CircleSparkDraft {
@@ -115,12 +118,15 @@ export const CIRCLE_SPARK = defineSpark<CircleSparkDraft, PillarSlug | null>({
   tool: TOOL,
   system: SYSTEM,
   coerce,
+  // The Circle's About (createBlankCircleDraft stores one_liner there), so a kept write-up lands
+  // where the Host will read it rather than being squeezed into the Card.
+  proseField: 'one_liner',
 })
 
 export async function draftCircleSpark(
   input: CircleSparkAnswers & { profileId?: string | null; sourceText?: string },
 ): Promise<CircleSparkDraft | null> {
-  const src = input.sourceText?.trim().slice(0, 8000)
+  const src = input.sourceText?.trim().slice(0, fidelitySourceCap(input.fidelity, 8000))
   const pillar = input.primaryPillar && (PILLARS as readonly string[]).includes(input.primaryPillar) ? input.primaryPillar : null
   const userText = [
     src
@@ -140,11 +146,14 @@ export async function draftCircleSpark(
     content: userText,
     context: pillar,
     mood: input.mood,
+    fidelity: input.fidelity,
     profileId: input.profileId,
   })
 }
 
-/** Re-coerce every field. Never trust the raw model shape. */
+/** Re-coerce every field. Never trust the raw model shape. The prose bounds are wide enough for an
+ *  author's own write-up kept word for word (Exact / Edit); a Rewrite draft is short by its brief,
+ *  so the bound never bites there. */
 export function coerce(raw: unknown, primaryPillar: PillarSlug | null): CircleSparkDraft | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
@@ -154,25 +163,25 @@ export function coerce(raw: unknown, primaryPillar: PillarSlug | null): CircleSp
   const pi = r.pillars_inside && typeof r.pillars_inside === 'object' ? (r.pillars_inside as Record<string, unknown>) : {}
   const pillarsInside: Partial<Record<PillarSlug, string>> = {}
   for (const p of PILLARS) {
-    const line = sparkStr(pi[p], 240)
+    const line = sparkStr(pi[p], 1000)
     if (line) pillarsInside[p] = line
   }
 
   return {
     name,
     primaryPillar,
-    card: sparkStr(r.card, 100),
-    oneLiner: sparkStr(r.one_liner, 280),
-    identity: sparkStr(r.identity, 280),
-    audience: sparkStr(r.audience, 280),
+    card: sparkStr(r.card, 280),
+    oneLiner: sparkStr(r.one_liner, 8000),
+    identity: sparkStr(r.identity, 1000),
+    audience: sparkStr(r.audience, 1000),
     pillarsInside,
-    meetup: sparkStr(r.meetup, 600),
-    gathering: sparkStr(r.gathering, 600),
-    thread: sparkStr(r.thread, 400),
-    format: sparkStr(r.format, 400),
+    meetup: sparkStr(r.meetup, 2000),
+    gathering: sparkStr(r.gathering, 2000),
+    thread: sparkStr(r.thread, 2000),
+    format: sparkStr(r.format, 2000),
     sizeLabel: sparkStr(r.size_label, 60),
-    agreements: sparkStrArray(r.agreements, 160, 5),
-    remixOptions: sparkStrArray(r.remix_options, 160, 8),
+    agreements: sparkStrArray(r.agreements, 400, 12),
+    remixOptions: sparkStrArray(r.remix_options, 400, 12),
   }
 }
 
