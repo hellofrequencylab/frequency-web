@@ -17,7 +17,8 @@ import { HouseMenu } from './house-menu'
 //     CSS scroll timeline, so the header itself needs no script.
 //   · SKIN: a Space on the Menswork page theme gets the Menswork website skin layered over the house CSS
 //     (components/sites/menswork-css.ts): the same sections and words in that theme's palette and shapes,
-//     with the current season's accent.
+//     with the current season's accent. A skinned site also sets the Space's logo beside its name, drawn
+//     as a one-colour mark in the theme's text color (a black line logo reads white on charcoal).
 //   · FOOTER: the copyright line and the "Frequency Partner" badge, the ONLY mention of Frequency on the
 //     site (owner ask 2026-10-06).
 //
@@ -50,6 +51,7 @@ export function SiteChrome({
   cta,
   themeFonts,
   skin = null,
+  logoUrl = null,
   children,
 }: {
   brandName: string
@@ -62,6 +64,9 @@ export function SiteChrome({
   themeFonts: boolean
   /** A full website skin from the Space's page theme (only Menswork has one), with its season. */
   skin?: SiteSkin | null
+  /** The Space's logo, set beside the name. Only a skinned site passes one; the house look keeps the
+   *  name in type. */
+  logoUrl?: string | null
   children: ReactNode
 }) {
   return (
@@ -77,6 +82,10 @@ export function SiteChrome({
       <header className="hs-header">
         <div className="hs-pill">
           <a href={homeHref} className="hs-brand">
+            {logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
+              <img src={logoUrl} alt="" className="hs-logo" />
+            )}
             {brandName}
           </a>
           {links.length > 0 && (

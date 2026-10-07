@@ -67,7 +67,8 @@ ${M} .hs-dot{width:10px;height:8.66px;border-radius:0;background:var(--mw-accent
 
 ${M} .hs-header{padding:0;background:var(--mw-charcoal);border-bottom:1px solid var(--mw-hairline)}
 ${M} .hs-pill{max-width:1248px;min-height:64px;padding:0 clamp(16px,3vw,24px);border-radius:0;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;animation:none}
-${M} .hs-brand{font-size:clamp(20px,5.6vw,28px);line-height:1;color:var(--color-text)}
+${M} .hs-brand{display:inline-flex;align-items:center;gap:10px;font-size:clamp(20px,5.6vw,28px);line-height:1;color:var(--color-text)}
+${M} .hs-logo{height:clamp(28px,6vw,36px);width:auto;filter:brightness(0) invert(.93)}
 ${M} .hs-nav{gap:24px;align-self:stretch}
 ${M} .hs-nav a{${LABEL};display:flex;align-items:center;padding:0;border-radius:0;border-bottom:2px solid transparent;color:var(--color-text-muted);transition:color 150ms linear,border-color 150ms linear}
 ${M} .hs-nav a:hover{background:transparent;color:var(--color-text);border-bottom-color:var(--color-primary)}

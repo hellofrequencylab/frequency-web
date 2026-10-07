@@ -220,6 +220,7 @@ export async function SitePage({
         cta={cta}
         themeFonts={hasChosenTheme(space.preferences)}
         skin={skin}
+        logoUrl={skin ? space.brandLogoUrl : null}
       >
         {model ? (
           <HouseHome model={model} />
