@@ -12,6 +12,9 @@ import {
   Fredoka,
   Lexend,
   Atkinson_Hyperlegible,
+  Sofia_Sans_Extra_Condensed,
+  Barlow,
+  IBM_Plex_Mono,
 } from "next/font/google";
 import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
@@ -74,6 +77,11 @@ const ptSerif = PT_Serif({ variable: "--font-pt-serif", subsets: ["latin"], weig
 const fredoka = Fredoka({ variable: "--font-fredoka", subsets: ["latin"], display: "swap", preload: false });
 const lexend = Lexend({ variable: "--font-lexend", subsets: ["latin"], display: "swap", preload: false });
 const atkinson = Atkinson_Hyperlegible({ variable: "--font-atkinson", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
+// Menswork theme faces (lib/theme/menswork.ts): a condensed caps display, a plain body and a mono for
+// labels and numbers. Theme-only, so `preload: false` like the five above.
+const sofiaCondensed = Sofia_Sans_Extra_Condensed({ variable: "--font-sofia-xc", subsets: ["latin"], display: "swap", preload: false });
+const barlow = Barlow({ variable: "--font-barlow", subsets: ["latin"], weight: ["400", "500", "600"], display: "swap", preload: false });
+const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"], display: "swap", preload: false });
 
 // The first-paint theme-color values and the pre-paint bootstrap both come from lib/theme/mode.ts,
 // which is the single statement of the light/dark law (see its header). This file used to re-declare
@@ -181,7 +189,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} ${playfair.variable} ${caveat.variable} ${spaceGrotesk.variable} ${fraunces.variable} ${ptSerif.variable} ${fredoka.variable} ${lexend.variable} ${atkinson.variable} h-full antialiased`}
+      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} ${playfair.variable} ${caveat.variable} ${spaceGrotesk.variable} ${fraunces.variable} ${ptSerif.variable} ${fredoka.variable} ${lexend.variable} ${atkinson.variable} ${sofiaCondensed.variable} ${barlow.variable} ${plexMono.variable} h-full antialiased`}
     >
       <head>
         {/* Theme script must run synchronously before any paint */}

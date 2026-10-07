@@ -25,7 +25,7 @@
 // preferences.profileLayout / moduleMenu). `parseSpaceTheme` is the one fail-safe reader.
 
 /** The set of authored space-theme ids. Add a theme = author its CSS block AND extend this union. */
-export type SpaceThemeId = 'bold' | 'editorial' | 'classic' | 'playful' | 'accessible' | 'modern'
+export type SpaceThemeId = 'bold' | 'editorial' | 'classic' | 'playful' | 'accessible' | 'modern' | 'menswork'
 
 /** The full declaration of a space theme — its id, human copy, and the two font faces it pairs (named so
  *  the picker reads like a real font menu, not an abstract token). */
@@ -85,6 +85,15 @@ export const SPACE_THEMES: readonly SpaceThemeDef[] = [
     description: 'Clean and current: a crisp geometric headline over friendly body text.',
     displayFont: 'Lexend',
     bodyFont: 'Nunito',
+  },
+  {
+    // The one theme that also dresses the WEBSITE end to end (lib/theme/menswork.ts): on the Space page it
+    // is fonts like every other theme; on the Space's website it brings its own palette and shapes too.
+    id: 'menswork',
+    label: 'Menswork',
+    description: 'Grounded and direct: tall condensed caps over plain body text. Your website goes charcoal and teal.',
+    displayFont: 'Sofia Sans Extra Condensed',
+    bodyFont: 'Barlow',
   },
 ]
 
