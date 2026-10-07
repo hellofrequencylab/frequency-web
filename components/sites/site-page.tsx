@@ -209,7 +209,8 @@ export async function SitePage({
           <HouseHome model={model} />
         ) : contactModel ? (
           <>
-            <h1 className="sr-only">Contact {brandName}</h1>
+            {/* The form hero carries the page's h1 when the Contact form block has a heading. */}
+            {!contactModel.blocks.some((b) => b.kind === 'inquiry' && b.hero && b.title) && <h1 className="sr-only">Contact {brandName}</h1>}
             {contactModel.blocks.map((b, i) => (
               <HouseBlock key={b.key} block={b} first={i === 0} />
             ))}

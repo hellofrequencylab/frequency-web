@@ -60,6 +60,8 @@ export type HouseBlockModel =
       body: string[]
       pull: string | null
       facts: HouseFacts | null
+      /** Set the facts as a full-width row under the photo and text, not inside the text column. */
+      factsBelow?: boolean
     }
   | ({ kind: 'facts'; key: string } & HouseFacts)
   | {
@@ -111,6 +113,8 @@ export type HouseBlockModel =
       body: string[]
       /** The Contact form block's own settings, passed through to the CRM-wired form. */
       form: Omit<ContactFormBlockProps, 'eyebrow' | 'title' | 'body' | 'variant'>
+      /** The page's hero (the Contact page): the heading is the page's h1 and the form leads the page. */
+      hero?: boolean
     }
   | { kind: 'other'; key: string; node: ReactNode }
 
@@ -221,9 +225,9 @@ export function HouseHero({ hero }: { hero: HouseHeroModel }) {
   )
 }
 
-function FactsGrid({ items }: { items: HouseFacts['items'] }) {
+function FactsGrid({ items, wide }: { items: HouseFacts['items']; wide?: boolean }) {
   return (
-    <div className="hs-facts">
+    <div className={wide ? 'hs-facts hs-facts-wide' : 'hs-facts'}>
       {items.map((f, i) => (
         <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span className="hs-fact-v">{f.value}</span>
@@ -298,7 +302,7 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
                 </p>
               ))}
               {block.pull && <p className="hs-quote">{block.pull}</p>}
-              {block.facts && (
+              {block.facts && !block.factsBelow && (
                 <div>
                   {(block.facts.eyebrow || block.facts.title) && (
                     <p className="hs-fact-l" style={{ margin: '16px 0 0' }}>
@@ -310,6 +314,16 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
               )}
             </div>
           </div>
+          {block.facts && block.factsBelow && (
+            <div className="hs-facts-row">
+              {(block.facts.eyebrow || block.facts.title) && (
+                <p className="hs-eyebrow" style={{ margin: 0 }}>
+                  {[block.facts.eyebrow, block.facts.title].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              <FactsGrid items={block.facts.items} wide />
+            </div>
+          )}
         </section>
       )
     case 'facts':
@@ -483,6 +497,27 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
         </section>
       )
     case 'inquiry':
+      if (block.hero)
+        return (
+          <section id={block.anchor ?? undefined} className="hs-section hs-inquiry-hero">
+            <div className="hs-split" style={{ alignItems: 'center' }}>
+              <div className="hs-stack">
+                {block.eyebrow && <span className="hs-eyebrow">{block.eyebrow}</span>}
+                {block.title && (
+                  <h1 className="hs-h2 hs-display">
+                    <Accent text={block.title} />
+                  </h1>
+                )}
+                {block.body.map((p, i) => (
+                  <p key={i} className="hs-lead" style={{ fontSize: '1.15rem', lineHeight: 1.7 }}>
+                    {p}
+                  </p>
+                ))}
+              </div>
+              <ContactFormBlock {...block.form} variant="house" />
+            </div>
+          </section>
+        )
       return (
         <section id={block.anchor ?? undefined} className={`hs-section${top}`}>
           <div className="hs-split" style={{ alignItems: 'start' }}>
