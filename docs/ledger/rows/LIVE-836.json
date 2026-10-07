@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-836",
+  "title": "A deeper path on a Space website stays on the site instead of redirecting to Frequency",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/sites/host.ts",
+    "ref": "Owner ruling 2026-10-07: 'When a user is on the website, they should never be re directed back to the main site for anything. The website is stand alone.' ADR-1723 follow-up."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: on a Space website (its own domain or its free subdomain) any path deeper than one page, such as a /spaces/<slug>/book link from a block the theme does not style or an old share link, redirected the visitor to the same path on frequencylocal.com. THE FIX: routeSiteHost lands a /spaces/<slug>[/<page>] path on the site's own page (root to Home, /book, /contact, an owner page) on the same host, and answers any other deeper path with not found on the site.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/sites/host.ts','utf8');if(/appOrigin\\(\\)\\}.\\{pathname\\}/.test(s)||!/export function sitePathForSpacePath\\(/.test(s)){console.error('LIVE-836: a deeper path on a Space website still redirects the visitor to Frequency');process.exit(1)}\"",
+    "note": "Fails on main (deep paths redirect to appOrigin); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

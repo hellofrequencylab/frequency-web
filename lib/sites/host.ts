@@ -182,5 +182,20 @@ export function routeSiteHost(
   if (segments.length === 1 && /^[a-z0-9][a-z0-9-]*$/.test(segments[0])) {
     return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}/${segments[0]}` }
   }
-  return { kind: 'redirect', location: `${appOrigin()}${pathname}${search}`, permanent: false }
+  // A website stands alone (owner ruling 2026-10-07, ADR-1723: "When a user is on the website, they should
+  // never be re directed back to the main site for anything."). A Space path, from a block the theme does
+  // not style or an old share link, lands on the site's own page; anything else deeper is not on the site.
+  const onSite = sitePathForSpacePath(segments)
+  if (onSite) return { kind: 'redirect', location: `https://${h}${onSite}${search}`, permanent: false }
+  return { kind: 'not-found' }
+}
+
+/** The site page a `/spaces/<slug>[/<page>]` path stands for on a website: the root is Home, a page is that
+ *  page at the site's root (`/book`, `/contact`, an owner page). Null for any other path. The host already
+ *  names the Space, so the slug in the path is not consulted: a wrong one just lands on this site's page. */
+export function sitePathForSpacePath(segments: string[]): string | null {
+  if (segments[0] !== 'spaces' || segments.length < 2 || segments.length > 3) return null
+  const page = segments[2]
+  if (page === undefined) return '/'
+  return /^[a-z0-9][a-z0-9-]*$/.test(page) ? `/${page}` : null
 }
