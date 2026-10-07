@@ -69,6 +69,8 @@ export interface ReceiptContent {
   /** One link out, or neither. Both must be present for the button to render. */
   actionLabel?: string | null
   actionUrl?: string | null
+  /** The "Made with Frequency" mark (LIVE-804): a Space customer's receipt carries it. */
+  madeWith?: { label: string; url: string } | null
 }
 
 /** A money amount as a plain label, or null when there is nothing to print. Whole amounts drop the
@@ -124,6 +126,7 @@ export async function receiptHtml(c: ReceiptContent): Promise<string> {
         lines: usableLines(c.lines),
         closing: c.closing.filter((p) => p.trim().length > 0),
         action: c.actionLabel && c.actionUrl ? { label: c.actionLabel, url: c.actionUrl } : null,
+        madeWith: c.madeWith ?? null,
       }),
     )
   } catch (err) {
@@ -142,6 +145,7 @@ export function receiptText(c: ReceiptContent): string {
   }
   if (c.actionLabel && c.actionUrl) lines.push('', `${c.actionLabel}: ${c.actionUrl}`)
   for (const p of c.closing) if (p.trim()) lines.push('', p)
+  if (c.madeWith) lines.push('', `${c.madeWith.label}: ${c.madeWith.url}`)
   return lines.join('\n')
 }
 
