@@ -14,6 +14,7 @@ import { parseEntityLayout, sanitizeEntityLayout, type EntityLayout, type RowDef
  *  (pinned by lib/spaces/spotlight.test.ts), so the Space renderer draws each one with no new view. */
 export const SPACE_SPOTLIGHT_BLOCK_IDS = [
   'about',
+  'linkCards',
   'links',
   'button',
   'booking',
@@ -31,9 +32,9 @@ export const SPACE_SPOTLIGHT_BLOCK_IDS = [
 
 const ALLOWED: ReadonlySet<string> = new Set(SPACE_SPOTLIGHT_BLOCK_IDS)
 
-/** A fresh Spotlight: the Space's story, then each thing it offers, then its links. A data block with
- *  nothing to show renders nothing, so a Space that takes no bookings simply has no Book block. */
-const STARTER_IDS = ['about', 'booking', 'offerings', 'journeys', 'events', 'memberships', 'links'] as const
+/** A fresh Spotlight, the link-in-bio shape: the Space's story, then a card for each thing it offers
+ *  (Link cards picks the first few until the owner chooses), then its own links. */
+const STARTER_IDS = ['about', 'linkCards', 'links'] as const
 
 export interface SpaceSpotlight {
   published: boolean

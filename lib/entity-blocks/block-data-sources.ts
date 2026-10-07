@@ -50,6 +50,8 @@ import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { listTicketTiers } from '@/lib/spaces/tickets'
 import { getDonationAsk } from '@/lib/spaces/donations'
 import { getSpaceProgram } from '@/lib/spaces/enroll'
+import { listPublicSpaceCatalog } from '@/lib/commerce/products'
+import { formatPriceCents } from '@/lib/commerce/types'
 
 // ── The row shape a picker + a pre-populated render read ────────────────────────────────────────────
 
@@ -255,6 +257,65 @@ async function listJourneys(spaceId: string): Promise<BlockDataItem[]> {
   return data.journeys.map((j) => ({ id: j.id, label: j.title, href: `/journeys/${j.slug}` }))
 }
 
+/** The id of a Link cards target: `<kind>:<item id>`, or a bare kind for a Space-wide door (book, contact).
+ *  Typed so the picker id and the render agree on one shape. */
+type LinkCardKind = 'book' | 'product' | 'journey' | 'event' | 'membership' | 'contact'
+
+/** The words a Link card shows above its title, per kind (voice canon, no em dashes). */
+export const LINK_CARD_KIND_LABEL: Record<LinkCardKind, string> = {
+  book: 'Book',
+  product: 'Shop',
+  journey: 'Journey',
+  event: 'Event',
+  membership: 'Membership',
+  contact: 'Contact',
+}
+
+/** The kind of a Link cards target id (the part before the colon), or null for an unknown one. Pure. */
+export function linkCardKind(id: string): LinkCardKind | null {
+  const kind = id.split(':', 1)[0]
+  return Object.hasOwn(LINK_CARD_KIND_LABEL, kind) ? (kind as LinkCardKind) : null
+}
+
+/** LINK CARDS (the Space Spotlight's link-in-bio buttons): every single thing a Space can send someone
+ *  straight to, each with a working link into the flow that already handles it. Booking and contact open
+ *  the Space's own Book and Contact pages; a product opens its Market page; a Journey and an event open
+ *  their own pages; a membership opens the Space's plans. The picker label carries the kind, so the owner
+ *  can tell a "Breathwork" event from a "Breathwork" Journey. Every read is an existing fail-safe reader. */
+async function listLinkCards(spaceId: string): Promise<BlockDataItem[]> {
+  const space = await loadSpace(spaceId)
+  if (!space) return []
+  const base = `/spaces/${space.slug}`
+  const card = (kind: LinkCardKind, id: string | null, title: string, href: string, extra?: Partial<BlockDataItem>) => ({
+    id: id ? `${kind}:${id}` : kind,
+    label: `${LINK_CARD_KIND_LABEL[kind]}: ${title}`,
+    href,
+    ...extra,
+  })
+  const [canBook, products, practices, events, memberships] = await Promise.all([
+    functionSwitchOn(spaceId, 'availability'),
+    listPublicSpaceCatalog(spaceId).catch(() => []),
+    getSpacePractices(spaceId).catch(() => ({ practices: [], journeys: [] })),
+    getSpaceUpcomingEvents(spaceId).catch(() => []),
+    listMemberships(spaceId),
+  ])
+  const out: BlockDataItem[] = []
+  if (canBook) out.push(card('book', null, 'Book a session', `${base}/book`))
+  for (const p of products) {
+    // A Journey sold as a product links to the Journey itself, below.
+    if (p.productKind === 'journey' || !p.title?.trim()) continue
+    const price = p.priceCents > 0 ? formatPriceCents(p.priceCents, p.currency) : undefined
+    out.push(card('product', p.id, p.title.trim(), `/market/${p.id}`, { price, image: p.images[0] }))
+  }
+  for (const j of practices.journeys) out.push(card('journey', j.id, j.title, `/journeys/${j.slug}`))
+  for (const e of events) out.push(card('event', e.id, e.title, `/events/${e.slug}`))
+  for (const m of memberships) {
+    out.push(card('membership', m.id, m.label, `${base}/memberships`, { price: m.price }))
+  }
+  out.push(card('contact', null, 'Get in touch', `${base}/contact`))
+  return out
+}
+
 async function listCircles(spaceId: string): Promise<BlockDataItem[]> {
   const circles = await getSpaceCommunity(spaceId)
   return circles.map((c) => ({ id: c.id, label: c.name, href: `/circles/${c.slug}` }))
@@ -336,6 +397,10 @@ const SOURCES: readonly BlockDataSource[] = [
 
   // FAQ → the operator FAQ rows. No function toggle; hides when none.
   source({ block: 'faq', functionKey: null, moduleId: 'space.basics', list: listFaqs, createLabel: 'Add a question' }),
+
+  // Link cards → every single item a Space can link straight to (listLinkCards). No function toggle: the
+  // Contact door is always there, so the block is always offered.
+  source({ block: 'linkCards', functionKey: null, moduleId: 'space.layout', list: listLinkCards, createLabel: 'Add something to link to', requireRows: false }),
 
   // The 'updates' source (published brand updates) was retired by OWNER RULING (LIVE-062 batch 6,
   // 2026-08-20) with the SpaceUpdates block and its writers; the space_updates table stays (C3.5).
