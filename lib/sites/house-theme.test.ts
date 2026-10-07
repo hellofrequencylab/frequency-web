@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { isReservedSlug } from '@/lib/spaces/profile-pages'
 import {
   accentSegments,
   appHref,
@@ -10,6 +11,8 @@ import {
   plainText,
   siteHasContactPage,
   siteLocalHref,
+  siteTakesBookings,
+  SITE_BOOK_SLUG,
   splitWhoBody,
   stepNumber,
   withoutAccentMarks,
@@ -74,6 +77,17 @@ describe('planHouseSections', () => {
       { kind: 'inquiry', id: 'contactForm' },
       { kind: 'closing', ctaId: 'accentBeat', contactRowTitle: null },
     ])
+  })
+})
+
+describe('siteTakesBookings (LIVE-835)', () => {
+  it('serves /book once the Space has an availability window', () => {
+    expect(SITE_BOOK_SLUG).toBe('book')
+    // No owner page can take the slug, so /book never shadows one.
+    expect(isReservedSlug(SITE_BOOK_SLUG)).toBe(true)
+    expect(siteTakesBookings({ serviceCount: 0, windowCount: 0 })).toBe(false)
+    expect(siteTakesBookings({ serviceCount: 1, windowCount: 0 })).toBe(false)
+    expect(siteTakesBookings({ serviceCount: 0, windowCount: 3 })).toBe(true)
   })
 })
 
@@ -173,8 +187,14 @@ describe('prices and links', () => {
       siteBase: '',
       pages: ['retreats'],
       contactHref: '/contact',
+      bookHref: null as string | null,
       email: 'hi@example.com',
     }
+
+    it('sends Book to the Book page when the site takes bookings', () => {
+      expect(siteLocalHref('/spaces/danieltyack/book', { ...m, bookHref: '/book' })).toEqual({ href: '/book', external: false })
+      expect(siteLocalHref('/spaces/danieltyack/contact', { ...m, bookHref: '/book' })).toEqual({ href: '/contact', external: false })
+    })
 
     it('turns Book and Contact into the website Contact form', () => {
       expect(siteLocalHref('/spaces/danieltyack/book', m)).toEqual({ href: '/contact', external: false })

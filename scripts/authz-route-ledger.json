@@ -222,15 +222,15 @@
     },
     "app/hosted/[host]/sitemap.xml/route.ts": {
       "verdict": "public",
-      "reason": "sitemap.xml for a Space website on its own domain (LIVE-783). Lists only the published site's own page slugs, the pages the domain already serves anonymously; a host with no published site 404s. No caller identity, no private data.",
-      "checked": "2026-10-06",
-      "digest": "d6be016876878ece"
+      "reason": "sitemap.xml for a Space website on its own domain (LIVE-783). Lists only the published site's own page slugs, the pages the domain already serves anonymously; a host with no published site 404s. LIVE-835 adds /book when the Space takes bookings, decided from counts of its active services and windows (readSiteBooking), never who booked. No caller identity, no private data.",
+      "checked": "2026-10-07",
+      "digest": "202cb71b60f085ea"
     },
     "app/hosted/[host]/site-llms/route.ts": {
       "verdict": "public",
-      "reason": "llms.txt for a Space website on its own domain or subdomain. proxy.ts rewrites <domain>/llms.txt here. resolveHostedCrawlTarget resolves the host to a PUBLISHED site; it lists only the brand, its public intro and the page links the domain already serves anonymously, and 404s otherwise. No caller identity, no private data.",
+      "reason": "llms.txt for a Space website on its own domain or subdomain. proxy.ts rewrites <domain>/llms.txt here. resolveHostedCrawlTarget resolves the host to a PUBLISHED site; it lists only the brand, its public intro and the page links the domain already serves anonymously (LIVE-835: /book when the Space takes bookings, from counts of its services and windows), and 404s otherwise. No caller identity, no private data.",
       "checked": "2026-10-07",
-      "digest": "60975e505093922e"
+      "digest": "5a05808e92275b40"
     },
     "app/hosted/[host]/site-sitemap/route.ts": {
       "verdict": "public",

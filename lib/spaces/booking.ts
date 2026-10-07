@@ -1,7 +1,8 @@
 // 1:1 BOOKING for the Practitioner role (ENTITY-SPACES-SYSTEM section 2.4, booking v1). The library
 // plus server actions behind the booking surfaces:
 //   space_availability: the weekly windows an owner publishes (in the Space's IANA timezone).
-//   space_bookings:     a member's confirmed slot against one of those windows.
+//   space_bookings:     a member's confirmed slot against one of those windows (or a guest's, booked on the
+//                       Space website with a name and an email: LIVE-835, createGuestBooking).
 // Backed by the service-role admin client plus untyped casts (the tables are not in the generated
 // DB types yet, ADR-246, mirroring lib/spaces/membership.ts). The server is the authority for
 // "which space" and "what may this caller do here" (P5): every write re-checks authorization and
@@ -153,12 +154,16 @@ function effectiveSlotMinutes(window: AvailabilityWindow, opts?: SlotGenOptions)
 }
 
 /** One of the owner's upcoming bookings (the owner-only list). Carries the member id plus their
- *  display name so the owner sees who is on the calendar. */
+ *  display name so the owner sees who is on the calendar. A guest booking from the Space's website
+ *  (LIVE-835) has no member: memberProfileId is null, memberName is the name they gave, and guestEmail
+ *  is the address they gave. */
 export interface SpaceBooking {
   id: string
   spaceId: string
-  memberProfileId: string
+  memberProfileId: string | null
   memberName: string
+  /** LIVE-835: the email a guest booker gave on the website. Null for a member booking. */
+  guestEmail: string | null
   startsAt: string
   endsAt: string
   note: string | null
@@ -503,7 +508,10 @@ type ServiceTypeRow = {
 type BookingRow = {
   id: string
   space_id: string
-  member_profile_id: string
+  /** Null for a guest booking from the Space's website (LIVE-835); guest_name + guest_email name them. */
+  member_profile_id: string | null
+  guest_name?: string | null
+  guest_email?: string | null
   starts_at: string
   ends_at: string
   status: string
@@ -609,6 +617,9 @@ const AVAILABILITY_COLS = 'id, space_id, weekday, start_minute, end_minute, slot
 const AVAILABILITY_COLS_P1 = `${AVAILABILITY_COLS}, service_type_id`
 const BOOKING_COLS = 'id, space_id, member_profile_id, starts_at, ends_at, status, note'
 const BOOKING_COLS_P3 = `${BOOKING_COLS}, answers, service_type_id`
+// LIVE-835: the guest booker columns. Read first, with the P3 and base reads as fallbacks, so a database
+// without the 20270346005900 migration keeps reading exactly as before.
+const BOOKING_COLS_GUEST = `${BOOKING_COLS_P3}, guest_name, guest_email`
 const SERVICE_TYPE_COLS = 'id, space_id, name, description, duration_minutes, price_cents, active, sort_order, product_id'
 const SERVICE_TYPE_COLS_P3 = `${SERVICE_TYPE_COLS}, questions`
 
@@ -949,16 +960,18 @@ function buildSlotContext(
 /** The confirmed bookings of a Space at/after `fromISO` (service-role; FAIL-SAFE to []). Tries the P3
  *  read (with answers, for the owner calendar); falls back to base columns when that column is absent. */
 async function readConfirmedBookings(spaceId: string, fromISO: string): Promise<BookingRow[]> {
-  try {
-    const ext = await bookingsTable()
-      .select(BOOKING_COLS_P3)
-      .eq('space_id', spaceId)
-      .eq('status', 'confirmed')
-      .gte('starts_at', fromISO)
-      .order('starts_at', { ascending: true })
-    if (!ext.error && ext.data) return ext.data
-  } catch {
-    /* pre-P3 answers column missing: fall through */
+  for (const cols of [BOOKING_COLS_GUEST, BOOKING_COLS_P3]) {
+    try {
+      const ext = await bookingsTable()
+        .select(cols)
+        .eq('space_id', spaceId)
+        .eq('status', 'confirmed')
+        .gte('starts_at', fromISO)
+        .order('starts_at', { ascending: true })
+      if (!ext.error && ext.data) return ext.data
+    } catch {
+      /* a newer column missing (guest pre-LIVE-835, answers pre-P3): try the next read */
+    }
   }
   try {
     const { data, error } = await bookingsTable()
@@ -1015,6 +1028,17 @@ async function readMemberNames(ids: string[]): Promise<Map<string, string>> {
     // fall through to the empty map (callers default to 'A member')
   }
   return out
+}
+
+/** Expire a Space website's cached pages after a booking-setup save, so its Book page (LIVE-835) shows
+ *  the new services and times. Best-effort: a cache miss never fails the owner's save. */
+async function refreshSiteSoft(slug: string): Promise<void> {
+  try {
+    const { refreshSite } = await import('@/lib/sites/site-cache')
+    refreshSite(slug)
+  } catch {
+    /* outside a request (tests) or a cache hiccup: the site's ISR window still caps the staleness */
+  }
 }
 
 // ── PUBLIC SERVER ACTIONS (inline 'use server'; all gated / validated server-side) ─────────────
@@ -1086,6 +1110,8 @@ export async function setSpaceAvailability(
   } catch {
     return fail('Could not save your availability. Try again.')
   }
+  // The website's Book page reads services and windows (LIVE-835): refresh the cached site.
+  await refreshSiteSoft(space.slug)
   return ok()
 }
 
@@ -1112,6 +1138,21 @@ export async function listOpenSlots(
 ): Promise<OpenSlot[]> {
   const profileId = await getMyProfileId()
   if (!profileId) return []
+  return readOpenSlots(spaceId, serviceTypeId)
+}
+
+/** The OPEN slots of a Space, with NO caller check (LIVE-835). Only the guest door calls it, after it
+ *  resolved the Space from a public slug with an anonymous viewer (listGuestOpenSlotsAction), so a
+ *  Private Space never reaches here. Returns instants only, never who booked. FAIL-SAFE to []. */
+export async function listPublicOpenSlots(
+  spaceId: string,
+  serviceTypeId?: string | null,
+): Promise<OpenSlot[]> {
+  return readOpenSlots(spaceId, serviceTypeId)
+}
+
+/** The open-slot read behind listOpenSlots and listPublicOpenSlots. FAIL-SAFE to []. */
+async function readOpenSlots(spaceId: string, serviceTypeId?: string | null): Promise<OpenSlot[]> {
   try {
     const now = new Date()
     // The windows + bookings reads are independent, so start them TOGETHER (Promise.all) instead of
@@ -1174,6 +1215,29 @@ export async function listBookableServices(spaceId: string): Promise<ServiceType
   const profileId = await getMyProfileId()
   if (!profileId) return []
   return readServiceTypes(spaceId, { activeOnly: true })
+}
+
+/** What a Space website's Book page needs (LIVE-835), read with NO caller check: the Space's active
+ *  services, its booking timezone and how many weekly windows it publishes. Only server code that
+ *  already resolved a public, published Space calls it (lib/sites/site-booking.ts). FAIL-SAFE: a read
+ *  miss reads as "no services, no windows", which the site turns into a 404. */
+export async function readPublicBookingSetup(
+  spaceId: string,
+): Promise<{ services: ServiceType[]; timezone: string; windowCount: number }> {
+  try {
+    const [services, schedule, windows] = await Promise.all([
+      readServiceTypes(spaceId, { activeOnly: true }),
+      readSchedule(spaceId),
+      readWindows(spaceId),
+    ])
+    return {
+      services,
+      timezone: schedule.timezone ?? windows[0]?.timezone ?? 'UTC',
+      windowCount: windows.length,
+    }
+  } catch {
+    return { services: [], timezone: 'UTC', windowCount: 0 }
+  }
 }
 
 /** A Space's service types as the OWNER editor reads them back (active + inactive). Gated on
@@ -1337,6 +1401,8 @@ export async function setSpaceServiceTypes(
   } catch {
     return fail('Could not save your services. Try again.')
   }
+  // The website's Book page reads services and windows (LIVE-835): refresh the cached site.
+  await refreshSiteSoft(space.slug)
   return ok()
 }
 
@@ -1482,7 +1548,7 @@ export async function createBooking(
 
   const placed = await validateAndPlaceBooking({
     space,
-    profileId,
+    booker: { profileId },
     startsAtISO,
     note: note ?? null,
     serviceTypeId: serviceTypeId ?? null,
@@ -1496,11 +1562,135 @@ export async function createBooking(
   return ok()
 }
 
+// ── LIVE-835: a guest books from the Space's own website ─────────────────────────────────────────
+// Owner ask 2026-10-07: "If someone clicks book, that happens through the site." A visitor with no
+// Frequency account books with a name and an email. The booking goes through the SAME
+// validateAndPlaceBooking core as a member's (same slot re-validation, buffers, meter, unique index); only
+// the booker differs. The guest door (createGuestBookingAction) resolves the Space from a public slug and
+// carries the honeypot and the per-IP rate limit; this impl trusts neither the client nor that door for
+// anything but the Space id.
+
+/** Who holds a booking: a member profile, or a guest who booked on the Space's website (LIVE-835). */
+type Booker = { profileId: string } | { guestName: string; guestEmail: string }
+
+/** The booker columns a space_bookings row is written with. Pure. Exactly one side is set, which is the
+ *  space_bookings_booker_check constraint. */
+export function bookerColumns(booker: Booker): {
+  member_profile_id: string | null
+  guest_name: string | null
+  guest_email: string | null
+} {
+  return 'profileId' in booker
+    ? { member_profile_id: booker.profileId, guest_name: null, guest_email: null }
+    : { member_profile_id: null, guest_name: booker.guestName, guest_email: booker.guestEmail }
+}
+
+/** The booker of a stored row, or null when it names neither (a row the constraint would refuse). Pure. */
+export function bookerFromRow(row: {
+  member_profile_id: string | null
+  guest_name?: string | null
+  guest_email?: string | null
+}): Booker | null {
+  if (row.member_profile_id) return { profileId: row.member_profile_id }
+  if (row.guest_name && row.guest_email) return { guestName: row.guest_name, guestEmail: row.guest_email }
+  return null
+}
+
+/** A loose email shape check, the expression every public capture door uses. */
+const GUEST_EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+const GUEST_NAME_MAX = 120
+const GUEST_EMAIL_MAX = 254
+
+/** Validate a guest's name and email (LIVE-835). Pure. The name is trimmed with its inner whitespace
+ *  collapsed and must be 1 to 120 characters; the email is trimmed, lowercased, at most 254 characters,
+ *  and must look like an address. */
+export function cleanGuestBooker(
+  rawName: unknown,
+  rawEmail: unknown,
+): { ok: true; guestName: string; guestEmail: string } | { ok: false; error: string } {
+  const name = typeof rawName === 'string' ? rawName.replace(/\s+/g, ' ').trim() : ''
+  if (!name) return { ok: false, error: 'Add your name so they know who is coming.' }
+  if (name.length > GUEST_NAME_MAX) return { ok: false, error: 'That name is too long. Keep it under 120 characters.' }
+  const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : ''
+  if (!email || email.length > GUEST_EMAIL_MAX || !GUEST_EMAIL_RE.test(email))
+    return { ok: false, error: 'Enter an email address so we can send your confirmation.' }
+  return { ok: true, guestName: name, guestEmail: email }
+}
+
+interface GuestBookingInput {
+  spaceId: string
+  startsAtISO: string
+  name: string
+  email: string
+  note?: string | null
+  serviceTypeId?: string | null
+  answers?: Record<string, string> | null
+  /** The guest ticked "Keep me posted". The ONLY thing that makes their CRM contact mailable. */
+  optIn?: boolean
+}
+
+/**
+ * Book an open slot as a GUEST from the Space's website (LIVE-835). Server-only: the caller is the
+ * guest door, which resolved `spaceId` from a public slug. Validates the name and email, refuses a
+ * service that would take a deposit (there is no account to check out against), then places the
+ * booking through the shared core. Side effects: the confirmation (guest + owner, with .ics), the
+ * reminder, and the guest captured into the Space's CRM as a lead. Returns ActionResult.
+ */
+export async function createGuestBooking(input: GuestBookingInput): Promise<ActionResult> {
+  const guest = cleanGuestBooker(input.name, input.email)
+  if (!guest.ok) return fail(guest.error)
+
+  const space = await getSpaceById(input.spaceId)
+  if (!space) return fail('Space not found.')
+
+  const serviceTypeId = input.serviceTypeId ?? null
+  if (serviceTypeId) {
+    // A paid service rides deposit checkout once payments are live, and that needs a buyer account.
+    const service = await resolveService(space.id, serviceTypeId)
+    if (service?.productId && (await bookingDepositsLive(space.id))) {
+      return fail('This one takes a deposit, so it cannot be booked here yet. Send a message and they will set it up with you.')
+    }
+  }
+
+  const placed = await validateAndPlaceBooking({
+    space,
+    booker: { guestName: guest.guestName, guestEmail: guest.guestEmail },
+    startsAtISO: input.startsAtISO,
+    note: input.note ?? null,
+    serviceTypeId,
+    answers: input.answers ?? null,
+    rescheduledFrom: null,
+  })
+  if (!placed.ok) return fail(placed.error)
+
+  await afterBookingPlaced(space, placed)
+
+  // The guest lands in the owner's CRM as a lead (the website-booking door). Best-effort: a CRM miss
+  // (the contact allowance, a write error) never undoes a booking that already stands.
+  try {
+    const { captureLead } = await import('@/lib/crm/lead-capture')
+    await captureLead({
+      spaceId: space.id,
+      door: 'website_booking',
+      email: guest.guestEmail,
+      displayName: guest.guestName,
+      where: space.brandName?.trim() || space.name,
+      label: placed.serviceName ? `Booked: ${placed.serviceName}` : 'Booked a time',
+      optedIn: input.optIn === true,
+      channel: 'system',
+      metadata: { bookingId: placed.bookingId, startsAt: placed.startsAt, serviceName: placed.serviceName },
+    })
+  } catch {
+    /* fail-soft: the booking and both emails already went out */
+  }
+  return ok()
+}
+
 /** The result of a successful placement (used by the confirmation + reminder side effects). */
 interface PlacedBooking {
   ok: true
   bookingId: string
-  profileId: string
+  booker: Booker
   startsAt: string
   endsAt: string
   serviceName: string | null
@@ -1515,14 +1705,14 @@ interface PlacedBooking {
  */
 async function validateAndPlaceBooking(params: {
   space: { id: string; slug: string }
-  profileId: string
+  booker: Booker
   startsAtISO: string
   note: string | null
   serviceTypeId: string | null
   answers: Record<string, string> | null
   rescheduledFrom: string | null
 }): Promise<PlacedBooking | { ok: false; error: string }> {
-  const { space, profileId, startsAtISO, serviceTypeId, rescheduledFrom } = params
+  const { space, booker, startsAtISO, serviceTypeId, rescheduledFrom } = params
   const spaceId = space.id
 
   const startsAt = new Date(startsAtISO)
@@ -1571,9 +1761,13 @@ async function validateAndPlaceBooking(params: {
   const endsAt = new Date(startsAt.getTime() + slotMinutes * 60000)
   const cleanNote = typeof params.note === 'string' ? params.note.trim().slice(0, 500) : ''
 
+  // A guest booker's columns ride the base row: a guest insert must fail on a database without the
+  // LIVE-835 columns rather than retry without them (the booker check would refuse a null member anyway).
+  const bookerCols = bookerColumns(booker)
   const baseRow: Record<string, unknown> = {
     space_id: spaceId,
-    member_profile_id: profileId,
+    member_profile_id: bookerCols.member_profile_id,
+    ...('profileId' in booker ? {} : { guest_name: bookerCols.guest_name, guest_email: bookerCols.guest_email }),
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
     status: 'confirmed',
@@ -1609,7 +1803,7 @@ async function validateAndPlaceBooking(params: {
     return {
       ok: true,
       bookingId: res.data.id,
-      profileId,
+      booker,
       startsAt: res.data.starts_at,
       endsAt: res.data.ends_at,
       serviceName: service?.name ?? null,
@@ -1662,31 +1856,42 @@ export function parseAnswers(raw: unknown): BookingAnswer[] {
   return out
 }
 
-/** Fire the confirmation email (member + owner, with .ics) and schedule the reminder. Best-effort. */
+/** Fire the confirmation email (booker + owner, with .ics) and schedule the reminder. Best-effort. A
+ *  guest booker (LIVE-835) is mailed at the address they gave, and has no member timeline to log onto. */
 async function afterBookingPlaced(
-  space: { id: string; slug: string; name: string; brandName: string | null; ownerProfileId: string | null },
+  space: {
+    id: string
+    slug: string
+    name: string
+    brandName: string | null
+    ownerProfileId: string | null
+    domain?: string | null
+  },
   placed: PlacedBooking,
 ): Promise<void> {
   const { notifyBookingConfirmed, scheduleBookingReminder } = await import('@/lib/spaces/booking-notify')
+  const booker = placed.booker
   await notifyBookingConfirmed({
     bookingId: placed.bookingId,
     spaceId: space.id,
     spaceSlug: space.slug,
     spaceName: space.brandName?.trim() || space.name,
     ownerProfileId: space.ownerProfileId,
-    memberProfileId: placed.profileId,
-    memberName: null,
+    memberProfileId: 'profileId' in booker ? booker.profileId : null,
+    memberName: 'profileId' in booker ? null : booker.guestName,
+    guest: 'profileId' in booker ? null : await guestRecipient(space, booker),
     startsAt: placed.startsAt,
     endsAt: placed.endsAt,
     serviceName: placed.serviceName,
   })
   await scheduleBookingReminder(placed.bookingId, placed.startsAt)
+  if (!('profileId' in booker)) return
   // Log the booking onto the member's Space timeline (event attendance shows on Resonance, ADR-796).
   // Keyed to THIS booking row so a member who books, cancels, and re-books logs each occurrence.
   await recordSpaceMemberActivity({
     spaceId: space.id,
     spaceOwnerProfileId: space.ownerProfileId,
-    memberProfileId: placed.profileId,
+    memberProfileId: booker.profileId,
     channel: 'event',
     summary: placed.serviceName ? `Booked: ${placed.serviceName}` : 'Booked a time',
     idempotencyKey: `booking:${placed.bookingId}`,
@@ -1694,6 +1899,16 @@ async function afterBookingPlaced(
     // Scope spine (ADR-827): first-class booking scope, dual-written next to the legacy metadata.
     scope: { kind: 'booking', id: placed.bookingId },
   })
+}
+
+/** A guest booker as the notify layer mails them: their address, their name, and the link their email
+ *  opens, which is the Space website's Book page (never Frequency: owner ask 2026-10-07, LIVE-835). */
+async function guestRecipient(
+  space: { id: string; slug: string; domain?: string | null },
+  booker: { guestName: string; guestEmail: string },
+): Promise<{ name: string; email: string; manageUrl: string }> {
+  const { siteBookUrl } = await import('@/lib/sites/site-booking')
+  return { name: booker.guestName, email: booker.guestEmail, manageUrl: await siteBookUrl(space) }
 }
 
 /**
@@ -1740,9 +1955,13 @@ export async function rescheduleBooking(
   // question ("Answer the required questions to book.") and silently dropped answers for the rest. Rebuild
   // the id->value map cleanAnswers_ expects from the stored labeled answers.
   const carriedAnswers = answersMapFromStored(old.answers)
+  // The original booker carries over: a member, or a guest from the website (LIVE-835), whom only an
+  // admin can move (a guest has no profile, so isBooker is never true for one).
+  const booker = bookerFromRow(old)
+  if (!booker) return fail('That booking cannot be rescheduled.')
   const placed = await validateAndPlaceBooking({
     space,
-    profileId: old.member_profile_id,
+    booker,
     startsAtISO: newStartsAtISO,
     note: old.note,
     serviceTypeId: carryService,
@@ -1780,11 +1999,13 @@ export function withinModifyWindow(startsAt: string | Date, minNoticeMinutes: nu
 /** Read one booking row by id (service-role; FAIL-SAFE to null). Tries the P3 columns (service_type_id
  *  / answers) and falls back to base when absent. */
 async function readBookingById(bookingId: string): Promise<BookingRow | null> {
-  try {
-    const ext = await bookingsTable().select(BOOKING_COLS_P3).eq('id', bookingId).maybeSingle()
-    if (!ext.error && ext.data) return ext.data
-  } catch {
-    /* pre-P3 columns missing: fall through */
+  for (const cols of [BOOKING_COLS_GUEST, BOOKING_COLS_P3]) {
+    try {
+      const ext = await bookingsTable().select(cols).eq('id', bookingId).maybeSingle()
+      if (!ext.error && ext.data) return ext.data
+    } catch {
+      /* a newer column missing (guest pre-LIVE-835, P3 pre-lifecycle): try the next read */
+    }
   }
   try {
     const { data } = await bookingsTable().select(BOOKING_COLS).eq('id', bookingId).maybeSingle()
@@ -1852,7 +2073,11 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
           spaceName: space.brandName?.trim() || space.name,
           ownerProfileId: space.ownerProfileId,
           memberProfileId: row.member_profile_id,
-          memberName: null,
+          memberName: row.guest_name ?? null,
+          guest:
+            !row.member_profile_id && row.guest_name && row.guest_email
+              ? await guestRecipient(space, { guestName: row.guest_name, guestEmail: row.guest_email })
+              : null,
           startsAt: row.starts_at,
           serviceName: null,
         },
@@ -1861,8 +2086,11 @@ export async function cancelBooking(bookingId: string, reason?: string): Promise
     } catch {
       /* fail-soft */
     }
-    // Log the departure onto the member's Space timeline (ADR-796): the comms center records booking
-    // cancellations too. Keyed to this booking row so it logs exactly once per cancel.
+  }
+  // Log the departure onto the member's Space timeline (ADR-796): the comms center records booking
+  // cancellations too. Keyed to this booking row so it logs exactly once per cancel. A guest booking
+  // (LIVE-835) has no member timeline.
+  if (space && row.member_profile_id) {
     await recordSpaceMemberActivity({
       spaceId: space.id,
       spaceOwnerProfileId: space.ownerProfileId,
@@ -2106,15 +2334,19 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
     const rows = await readConfirmedBookings(spaceId, new Date().toISOString())
     if (rows.length === 0) return []
 
-    // Batch-resolve member display names (one query for all bookers).
-    const ids = [...new Set(rows.map((r) => r.member_profile_id))]
+    // Batch-resolve member display names (one query for all member bookers). A guest booking from the
+    // website (LIVE-835) has no profile: it shows the name and email the guest gave.
+    const ids = [...new Set(rows.flatMap((r) => (r.member_profile_id ? [r.member_profile_id] : [])))]
     const names = await readMemberNames(ids)
 
     return rows.map((r) => ({
       id: r.id,
       spaceId: r.space_id,
       memberProfileId: r.member_profile_id,
-      memberName: names.get(r.member_profile_id) ?? 'A member',
+      memberName: r.member_profile_id
+        ? (names.get(r.member_profile_id) ?? 'A member')
+        : r.guest_name?.trim() || 'A guest',
+      guestEmail: r.member_profile_id ? null : (r.guest_email ?? null),
       startsAt: r.starts_at,
       endsAt: r.ends_at,
       note: r.note,

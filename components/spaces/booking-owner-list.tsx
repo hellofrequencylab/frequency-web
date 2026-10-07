@@ -53,6 +53,8 @@ export async function BookingOwnerList({ spaceId }: { spaceId: string }) {
         <li key={b.id} className="flex items-center justify-between gap-4 px-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-body-sm font-semibold text-text">{b.memberName}</p>
+            {/* A guest who booked on the website (LIVE-835) has no profile: show the address they gave. */}
+            {b.guestEmail && <p className="truncate text-meta text-muted">{b.guestEmail} · Website booking</p>}
             <p className="text-meta text-muted">
               {whenFmt.format(new Date(b.startsAt))} ({tzLabel})
             </p>

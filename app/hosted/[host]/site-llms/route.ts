@@ -2,6 +2,7 @@ import { hostedSitePages, resolveHostedCrawlTarget } from '@/lib/sites/hosted-cr
 import { siteLlmsTxt } from '@/lib/sites/seo'
 import { withoutAccentMarks } from '@/lib/sites/house-theme'
 import { readSiteHero } from '@/lib/spaces/website'
+import { readSiteBooking } from '@/lib/sites/site-booking'
 
 // llms.txt for a Space website on its own domain or free subdomain. proxy.ts rewrites
 // `https://<domain>/llms.txt` here, so an answer engine reads about the site, not Frequency's own
@@ -17,7 +18,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ host: s
   const body = siteLlmsTxt(origin, {
     name: space.brandName?.trim() || space.name,
     summary: summary ? withoutAccentMarks(summary) : null,
-    pages: hostedSitePages(space),
+    pages: hostedSitePages(space, (await readSiteBooking(space.id)).takesBookings),
   })
   return new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8' } })
 }

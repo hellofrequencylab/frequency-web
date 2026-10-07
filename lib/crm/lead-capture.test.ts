@@ -74,6 +74,7 @@ describe('door taxonomy', () => {
       'lead_magnet',
       'share_back',
       'contact_form',
+      'website_booking',
     ])
     for (const d of LEAD_DOORS) expect(isLeadDoor(d)).toBe(true)
     expect(isLeadDoor('nope')).toBe(false)
@@ -108,6 +109,14 @@ describe('consent posture (capture != marketing consent)', () => {
     expect(isMailableDoor('contact_form')).toBe(false)
     expect(isMailableDoor('contact_form', { optedIn: false })).toBe(false)
     expect(isMailableDoor('contact_form', { optedIn: true })).toBe(true)
+  })
+
+  // LIVE-835: a website booking carries the same box. Booking a time is not asking for mail.
+  it('a website booking is mailable ONLY when the guest ticked the box', () => {
+    expect(doorLabel('website_booking')).toBe('Website booking')
+    expect(isMailableDoor('website_booking')).toBe(false)
+    expect(isMailableDoor('website_booking', { optedIn: true })).toBe(true)
+    expect(consentStateForDoor('website_booking', 'unsubscribed', { optedIn: true })).toBe('unsubscribed')
   })
 
   it('an unticked contact form seals an unknown lead; a ticked one subscribes', () => {

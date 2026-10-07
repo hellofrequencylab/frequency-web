@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-835",
+  "title": "A Space website takes bookings on the site, from guests with a name and an email",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/spaces/booking.ts",
+    "ref": "Owner ask 2026-10-07: 'If someone clicks book, that happens through the site. ... When a user is on the website, they should never be re directed back to the main site for anything. The website is stand alone.' Chose 'Build it next' for on-site guest booking. ADR-1724, extends ADR-605."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: booking a Space needed a Frequency account, so a Space website's Book button had to send its visitors to Frequency. THE FIX: the website serves /book (SITE_BOOK_SLUG) when the Space takes bookings; a visitor books there with a name and an email through createGuestBooking, which places the booking through the same validateAndPlaceBooking core as a member's. The guest gets the confirmation and reminder at their own address with links back to the website, the owner gets their copy, and the guest lands in the Space CRM on the website_booking door. MIGRATION 20270346005900_space_bookings_guest.sql (member_profile_id nullable, guest_name / guest_email, a booker CHECK) is applied by hand; until then a guest insert fails and the visitor sees 'That time was just taken', and every member path reads as before.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('lib/spaces/booking.ts','utf8');const p=fs.readFileSync('components/sites/site-page.tsx','utf8');const m=fs.existsSync('supabase/migrations/20270346005900_space_bookings_guest.sql');if(!/export async function createGuestBooking\\(/.test(b)||!/booker: \\{ guestName: guest\\.guestName/.test(b)||!/pageSlug === SITE_BOOK_SLUG && booking\\.takesBookings/.test(p)||!m){console.error('LIVE-835: a Space website still cannot take a guest booking on the site (no createGuestBooking through the shared core, no /book page, or no guest migration)');process.exit(1)}\"",
+    "note": "Fails on main (no createGuestBooking, site-page serves no /book); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

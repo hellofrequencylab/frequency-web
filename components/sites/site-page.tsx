@@ -4,8 +4,10 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
 import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
-import { SITE_CONTACT_SLUG, siteHasContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
+import { SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteHasContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { readSiteBooking } from '@/lib/sites/site-booking'
+import { SiteBooking } from '@/components/sites/site-booking'
 import { buildHouseContact, buildHouseHome, HouseHome } from '@/components/sites/house-home'
 import { HouseBlock } from '@/components/sites/house-sections'
 import { getSiteSpace } from '@/lib/sites/site-cache'
@@ -62,6 +64,11 @@ import { siteEntitySchema } from '@/lib/jsonld'
 // description, share card and favicon come from the Space's brand. The /spaces/<slug> profile points
 // its canonical at the domain too (lib/spaces/profile-metadata.ts), so the two copies never compete.
 // An unpublished site, a Private Space and an unknown page all stay noindex.
+//
+// THE BOOK PAGE (LIVE-835, owner ask 2026-10-07: "If someone clicks book, that happens through the site.").
+// `/book` (SITE_BOOK_SLUG, a reserved page slug like `contact`) is served once the Space takes bookings
+// (lib/sites/site-booking.ts) and 404s otherwise. A visitor books there with a name and an email, through the
+// guest-mode picker (components/sites/site-booking.tsx), and is never sent to Frequency.
 
 export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): Promise<Metadata> {
   const space = await getSiteSpace(slug)
@@ -72,7 +79,8 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
   }
   const page =
     readProfilePages(space.preferences).find((p) => p.slug === pageSlug) ??
-    (pageSlug === SITE_CONTACT_SLUG && siteHasContactPage(space.preferences) ? { slug: SITE_CONTACT_SLUG, label: 'Contact' } : null)
+    (pageSlug === SITE_CONTACT_SLUG && siteHasContactPage(space.preferences) ? { slug: SITE_CONTACT_SLUG, label: 'Contact' } : null) ??
+    (pageSlug === SITE_BOOK_SLUG && (await readSiteBooking(space.id)).takesBookings ? { slug: SITE_BOOK_SLUG, label: 'Book' } : null)
   if (!page) return { title: { absolute: brandName }, robots: { index: false } }
   const title = page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`
   const description = siteDescription(space, brandName, page.slug)
@@ -130,7 +138,11 @@ export async function SitePage({
 
   const hasContact = siteHasContactPage(space.preferences)
   const contactPage = pageSlug === SITE_CONTACT_SLUG && hasContact
-  if (!contactPage && !hasPage(space.preferences, pageSlug)) notFound()
+  // LIVE-835: the Book page reads the Space's services and windows; a Space that takes no bookings 404s.
+  // Every page reads it: Book links on Home and in the header open /book only when it is served.
+  const booking = await readSiteBooking(space.id)
+  const bookPage = pageSlug === SITE_BOOK_SLUG && booking.takesBookings
+  if (!contactPage && !bookPage && !hasPage(space.preferences, pageSlug)) notFound()
 
   // Stamp the tenant so any block that resolves its rows from the active Space reads THIS one, the same
   // line the public page carries.
@@ -146,6 +158,7 @@ export async function SitePage({
     siteBase,
     pages: pages.map((p) => p.slug),
     contactHref: hasContact ? siteHref(siteBase, SITE_CONTACT_SLUG) : null,
+    bookHref: booking.takesBookings ? siteHref(siteBase, SITE_BOOK_SLUG) : null,
     email: readProfileData(space.preferences).email?.trim() || null,
   }
   const cta = siteCta(space, siteLinks)
@@ -201,6 +214,18 @@ export async function SitePage({
               <HouseBlock key={b.key} block={b} first={i === 0} />
             ))}
           </>
+        ) : bookPage && booking ? (
+          <div className={`${SITE_CONTAINER} pb-16 pt-28 sm:pb-24`}>
+            <h1 className="hs-h2">Book a time with {brandName}</h1>
+            <div className="mt-10">
+              <SiteBooking
+                spaceId={space.id}
+                slug={space.slug}
+                services={booking.services}
+                timezone={booking.timezone}
+              />
+            </div>
+          </div>
         ) : (
           <div className={`${SITE_CONTAINER} pb-16 pt-28 sm:pb-24`}>
             <h1 className="hs-h2">{pages.find((p) => p.slug === pageSlug)?.label ?? brandName}</h1>
@@ -217,11 +242,12 @@ export async function SitePage({
 }
 
 /** A site page's meta description: the website intro (the line the hero leads with), else the Space
- *  tagline. The Contact page says it is the way to reach the brand, so it never repeats Home's. */
+ *  tagline. The Contact and Book pages say what they are for, so they never repeat Home's. */
 function siteDescription(space: Space, brandName: string, pageSlug: string): string | undefined {
   const intro = readSiteHero(space.preferences).tagline ?? space.tagline?.trim() ?? ''
   const line = intro ? withoutAccentMarks(intro) : ''
   if (pageSlug === SITE_CONTACT_SLUG) return line ? `Contact ${brandName}. ${line}` : `Contact ${brandName}.`
+  if (pageSlug === SITE_BOOK_SLUG) return line ? `Book a time with ${brandName}. ${line}` : `Book a time with ${brandName}.`
   return line || undefined
 }
 

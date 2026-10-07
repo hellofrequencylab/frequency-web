@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { ArrowLeft, Clock, Loader2 } from 'lucide-react'
-import { listOpenSlotsForService } from '@/lib/spaces/booking-actions'
+import { listGuestOpenSlotsAction, listOpenSlotsForService } from '@/lib/spaces/booking-actions'
 import type { OpenSlot, ServiceType } from '@/lib/spaces/booking'
 import { durationLabel } from '@/lib/spaces/booking-format'
 import { BookingPicker } from '@/components/spaces/booking-picker'
@@ -15,6 +15,10 @@ import { CalendarDays } from 'lucide-react'
 // by day in the Space timezone, and hands them to the same BookingPicker the flat path uses. The chosen
 // service is threaded into createBooking so the server re-validates against its duration.
 //
+// GUEST MODE (LIVE-835): with `guest` (the Space slug) the same two steps run on the Space's website for a
+// visitor with no account. Times load through the anonymous listGuestOpenSlotsAction and the picker books
+// through the guest door; no deposit path.
+//
 // COPY: plain camp-counselor voice, no narrated feelings, no em/en dashes (CONTENT-VOICE §10). Tokens
 // only, no hex.
 
@@ -23,6 +27,7 @@ export function BookingServiceMember({
   services,
   timezone,
   depositsLive = false,
+  guest = null,
 }: {
   spaceId: string
   services: ServiceType[]
@@ -30,6 +35,8 @@ export function BookingServiceMember({
   timezone: string
   /** P4 (dark): when deposits are live, a service with a linked product opens deposit checkout. */
   depositsLive?: boolean
+  /** LIVE-835: list and book as a guest on the Space's website. Null keeps the member flow. */
+  guest?: { slug: string } | null
 }) {
   const [selected, setSelected] = useState<ServiceType | null>(null)
   const [slots, setSlots] = useState<OpenSlot[] | null>(null)
@@ -39,7 +46,9 @@ export function BookingServiceMember({
     setSelected(service)
     setSlots(null)
     startLoad(async () => {
-      const open = await listOpenSlotsForService(spaceId, service.id)
+      const open = guest
+        ? await listGuestOpenSlotsAction(guest.slug, service.id)
+        : await listOpenSlotsForService(spaceId, service.id)
       setSlots(open)
     })
   }
@@ -78,7 +87,11 @@ export function BookingServiceMember({
           <EmptyState
             icon={CalendarDays}
             title="No open times for this service yet."
-            description="Follow this space to hear the moment new times open, or pick a different service."
+            description={
+              guest
+                ? 'Pick a different service, or check back soon for new times.'
+                : 'Follow this space to hear the moment new times open, or pick a different service.'
+            }
           />
         ) : (
           <BookingPicker
@@ -87,7 +100,8 @@ export function BookingServiceMember({
             spaceTimezone={timezone}
             serviceTypeId={selected.id}
             questions={selected.questions}
-            depositProductId={depositsLive && selected.productId ? selected.productId : null}
+            depositProductId={!guest && depositsLive && selected.productId ? selected.productId : null}
+            guest={guest}
           />
         )}
       </div>
