@@ -162,10 +162,10 @@ export function memberTakeRateCents(
 // NETWORK sourced (referral / discovery / marketplace). All PURE; the IO wrappers (lib/billing/fees.ts)
 // resolve the operator-set rates and thread the classified `source`.
 //
-// THE LADDER IS TWO NUMBERS PLUS TWO ZEROS (docs/CORE-MODEL.md §5 phase 4, PROG-R4): a free Space pays
-// 10% on a network-sourced sale, a PAID Space pays 3%, a verified Non Profit pays 0%, and every Space
-// pays 0% on its own audience. It is keyed by RUNG, not by plan name: Collective merged into Business,
-// Independent is kept but off public pricing, and none of the three had a rate of its own any more.
+// THE LADDER IS 5%, 3%, 0% (ADR-1709, LIVE-754, superseding ADR-1335): Business and Independent pay 5% on
+// a network-sourced sale, Collective 3%, Non Profit and Non Profit Collective 0%, and every Space pays 0%
+// on its own audience. The free rung (10%) is a default-deny value only, because a free Space no longer
+// sells (LIVE-753). It is keyed by RUNG, not by plan name.
 // A plan resolves to its rung through `takeRateRungForPlan` below, which is the ONLY place a plan
 // name meets the ladder; no reader indexes the vector by plan name (pinned in take-rate-ladder.test.ts).
 
@@ -174,13 +174,13 @@ export function memberTakeRateCents(
  *  lib/commerce/order-source.ts and collapsed for a disconnected Space by lib/pricing/network-world.ts. */
 export type OrderSource = 'self' | 'network'
 
-/** The three SPACE rungs a plan can stand on. `paid` is every paid plan (Business, and the Collective +
- *  Independent labels that fold into it); `nonprofit` is the verified 501(c)(3) zero; `free` is the
- *  reference rate and the default-deny rung. */
-type TakeRateRung = 'free' | 'paid' | 'nonprofit'
+/** The four SPACE rungs a plan can stand on (ADR-1709, LIVE-754). `paid` is Business and Independent (5%);
+ *  `collective` is Collective (3%); `nonprofit` is Non Profit and Non Profit Collective (0); `free` is the
+ *  default-deny rung only, since a free Space no longer sells (LIVE-753). */
+type TakeRateRung = 'free' | 'paid' | 'collective' | 'nonprofit'
 
 /** The rungs in ladder order, top rate first. The enumeration the console and the display readers walk. */
-export const TAKE_RATE_RUNGS: readonly TakeRateRung[] = ['free', 'paid', 'nonprofit']
+export const TAKE_RATE_RUNGS: readonly TakeRateRung[] = ['free', 'paid', 'collective', 'nonprofit']
 
 /** The 0% a seller pays on a sale to their OWN audience, at every rung. A RULE, never a stored rate: it
  *  is declared here so the ladder reads as four outcomes (free / paid / nonprofit / own audience) and it
@@ -204,8 +204,10 @@ export const OWN_AUDIENCE_BPS = 0
 export interface NetworkTakeRate {
   /** A free Space, and the default-deny rung for any plan the resolver cannot place. */
   free: number
-  /** Every paid Space plan: Business, and the Collective + Independent labels that resolve into it. */
+  /** Business and Independent. */
   paid: number
+  /** Collective, its own rung since ADR-1709 (LIVE-754). */
+  collective: number
   /** A verified Non Profit. */
   nonprofit: number
   /** Individual (profile) seller on the FREE Member tier — the reference rate (ADR-914). */
@@ -214,24 +216,27 @@ export interface NetworkTakeRate {
   member: number
 }
 
-/** The seeded default network take-rate: free 1000 (10%) · paid 300 (3%) · Non Profit 0. The individual
- *  rungs are 1000 (10%) on the free Member tier and 800 (8%) on Crew. Launch low; earn the right to raise.
+/** The seeded default network take-rate (ADR-1709, LIVE-754): Business and Independent 500 (5%),
+ *  Collective 300 (3%), Non Profit and Non Profit Collective 0, charged once per customer the network
+ *  introduces and 0 on a Space's own audience and on tips, always.
  *
- *  The free Member rung deliberately EQUALS the free Space rung: a free Space is held to the free
- *  Member standard (owner ruling), so moving a free sale into a free Space changes nothing. Only paying
- *  changes the rate, which is the entire point of the ladder. */
+ *  🔴 THE FREE AND PERSONAL RUNGS ARE DEFAULT-DENY VALUES ONLY. A free Space and every personal seller
+ *  are REFUSED at the payments gate (LIVE-753, lib/pricing/payments-gate.ts), so `free` (1000),
+ *  `memberFree` (1000) and `member` (800) price nothing in practice. They stay so that an unknown plan,
+ *  or a sale that ever slipped past the gate, prices at the HIGHER rate rather than at 0. */
 export const NETWORK_TAKE_RATE_DEFAULT: NetworkTakeRate = {
   free: 1000,
-  paid: 300,
+  paid: 500,
+  collective: 300,
   nonprofit: 0,
   memberFree: 1000,
   member: 800,
 }
 
-/** THE plan-to-rung map: the one place a Space plan name meets the take-rate ladder. Business,
- *  Collective and Independent stand on the paid rung (Collective gets its own rung in LIVE-754; Independent
- *  is kept but is a paid plan like any other, and a disconnected one collapses to `self` upstream, in
- *  effectiveOrderSource, so its rung is never reached on a network sale). Non Profit is its own zero. A
+/** THE plan-to-rung map: the one place a Space plan name meets the take-rate ladder (ADR-1709, LIVE-754).
+ *  Business and Independent stand on `paid` (Independent is a paid plan like any other, and a
+ *  disconnected one collapses to `self` upstream, in effectiveOrderSource, so its rung is never reached
+ *  on a network sale). Collective has its own rung. Non Profit and Non Profit Collective are zero. A
  *  legacy label narrows through asSpacePlan first; anything it cannot place is `free`, the HIGHER rate,
  *  so an unknown plan can never buy the paid rate by being misspelled (never under-collect). PURE. */
 export function takeRateRungForPlan(plan: SpacePlan | string | null | undefined): TakeRateRung {
@@ -239,10 +244,10 @@ export function takeRateRungForPlan(plan: SpacePlan | string | null | undefined)
     case 'nonprofit':
     case 'nonprofit_collective':
       return 'nonprofit'
+    case 'collective':
+      return 'collective'
     case 'business':
     case 'independent':
-    // Collective stands on the paid rung until LIVE-754 gives it its own 3% rung (ADR-1709).
-    case 'collective':
       return 'paid'
     default:
       return 'free'
@@ -272,6 +277,15 @@ export function takeRateBps(
   return networkTakeRateBpsForPlan(plan, rate)
 }
 
+/** THE FOUNDING BUSINESS BUY-DOWN (ADR-1709 owner default: kept for Spaces already in it). A Space with an
+ *  active `founding_members` business row carries a lifetime `locked_take_bps` (3%). It can only LOWER a
+ *  network rate, never raise one: a Collective (3%) or Non Profit (0) Space keeps its own rung, and a
+ *  missing or garbage lock changes nothing. PURE. */
+export function foundingBuyDownBps(rungBps: number, lockedTakeBps: number | null | undefined): number {
+  if (typeof lockedTakeBps !== 'number' || !Number.isFinite(lockedTakeBps) || lockedTakeBps < 0) return rungBps
+  return Math.min(rungBps, lockedTakeBps)
+}
+
 /** The stored `pricing_settings.take_rate` fields the vector is assembled from. Declared structurally,
  *  and LOOSELY on purpose: a row written before LIVE-230 carries `network_bps` keyed by PLAN NAME
  *  (`free / business / collective / nonprofit / independent`), and a row written after it carries the
@@ -284,10 +298,10 @@ export interface StoredTakeRateFields {
 
 /** Assemble the operator-resolved vector from a stored `take_rate` blob of EITHER historical shape.
  *  Per-rung: a finite number stored under the rung's key wins, anything else is the seeded rung. The
- *  retired plan-named keys (`business`, `collective`, `independent`) are NOT read: they were five
- *  rates for what is now one rung, none of which had ever been applied to a transaction, and the
- *  ruling that collapsed them (PROG-R4) set the paid rung's number. A row that still carries them
- *  resolves to the ruling until the next operator save rewrites it in the rung shape. PURE. */
+ *  retired plan-named keys `business` and `independent` are NOT read (they are not rung names). The
+ *  `collective` key IS a rung name again (ADR-1709), so a pre-LIVE-230 row's `collective: 300` reads as
+ *  the Collective rung, which is the ruled number anyway; migration 20270346005300 rewrites the stored
+ *  row in the rung shape so the question does not arise in production. PURE. */
 export function networkTakeRateFromStored(stored: StoredTakeRateFields | null | undefined): NetworkTakeRate {
   const bps = (v: unknown, fallback: number): number =>
     typeof v === 'number' && Number.isFinite(v) ? v : fallback
@@ -295,6 +309,7 @@ export function networkTakeRateFromStored(stored: StoredTakeRateFields | null | 
   return {
     free: bps(vec.free, NETWORK_TAKE_RATE_DEFAULT.free),
     paid: bps(vec.paid, NETWORK_TAKE_RATE_DEFAULT.paid),
+    collective: bps(vec.collective, NETWORK_TAKE_RATE_DEFAULT.collective),
     nonprofit: bps(vec.nonprofit, NETWORK_TAKE_RATE_DEFAULT.nonprofit),
     memberFree: bps(stored?.member_free_bps, NETWORK_TAKE_RATE_DEFAULT.memberFree),
     member: bps(stored?.member_bps, NETWORK_TAKE_RATE_DEFAULT.member),

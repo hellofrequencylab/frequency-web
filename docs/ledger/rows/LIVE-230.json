@@ -1,0 +1,12 @@
+{
+  "id": "LIVE-230",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/billing/pricing-keys.ts\",\"utf8\");const m=s.match(/NETWORK_TAKE_RATE_DEFAULT[^=]*=\\s*\\{([\\s\\S]*?)\\n\\}/);if(!m){console.error(\"NETWORK_TAKE_RATE_DEFAULT not found\");process.exit(1)}if(/\\b(business|independent|nonprofit_collective):/.test(m[1])){console.error(\"a plan-named key is back in the rung-keyed take-rate ladder\");process.exit(1)}process.exit(0)'"
+    }
+  },
+  "append": {
+    "detail": "Probe narrowed 2026-10-06 (LIVE-754, ADR-1709 §4): the owner reinstated a Collective rung at 300, so the probe no longer bans `collective:`; it still holds the ladder rung-keyed, with no plan-named key (business, independent, nonprofit_collective) in NETWORK_TAKE_RATE_DEFAULT."
+  }
+}

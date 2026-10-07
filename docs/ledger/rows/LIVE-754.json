@@ -1,7 +1,7 @@
 {
   "id": "LIVE-754",
   "title": "The network fee ladder reads 5% Business, 3% Collective, 0% Non Profit, and the stored take_rate row speaks rungs",
-  "status": "open",
+  "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "S",
@@ -9,10 +9,11 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 3 of the five-tier ladder (ADR-1709). NETWORK_TAKE_RATE_DEFAULT paid 500, a new collective rung 300, nonprofit 0; takeRateRungForPlan maps collective (and Non Profit Collective to nonprofit). Free 1000 and the personal rungs stay as default-deny values only. A migration rewrites pricing_settings.take_rate in the rung shape (production still carries plan-named keys). take-rate-ladder.test.ts asserts 500/300/0 and 0 on own audience.",
+  "detail": "PHASE 3 of the five-tier ladder (ADR-1709). NETWORK_TAKE_RATE_DEFAULT paid 500, a new collective rung 300, nonprofit 0; takeRateRungForPlan maps collective (and Non Profit Collective to nonprofit). Free 1000 and the personal rungs stay as default-deny values only. A migration rewrites pricing_settings.take_rate in the rung shape (production still carries plan-named keys). take-rate-ladder.test.ts asserts 500/300/0 and 0 on own audience. Shipped 2026-10-06: NETWORK_TAKE_RATE_DEFAULT is paid 500, collective 300, nonprofit 0; takeRateRungForPlan places collective on its own rung and Non Profit Collective on nonprofit; a Founding Business lock buys the rung down (min of rung and locked_take_bps) through spaceNetworkBps; migration 20270346005300 upserts the stored row in the rung shape; the admin console gains a Collective field; LIVE-230's probe is narrowed to allow the reinstated collective rung.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const k=r(\"lib/billing/pricing-keys.ts\");const d=(k.split(\"NETWORK_TAKE_RATE_DEFAULT: NetworkTakeRate = {\")[1]||\"\").split(\"}\")[0];if(!/paid:\\s*500/.test(d))fail(\"paid rung is not 500\");if(!/collective:\\s*300/.test(d))fail(\"no collective rung at 300\");if(!/case \\x27collective\\x27/.test((k.split(\"export function takeRateRungForPlan\")[1]||\"\").split(\"\\n}\")[0]))fail(\"takeRateRungForPlan does not place collective\");const mig=fs.readdirSync(\"supabase/migrations\").filter((f)=>f>\"20270346002700\").map((f)=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/take_rate[\\s\\S]{0,400}\"paid\":\\s*500/.test(mig))fail(\"no migration rewrites the stored take_rate in the rung shape\");console.log(\"ok: the fee ladder is 500/300/0\")'"
   },
+  "closed": "2026-10-06",
   "wave": "WR"
 }

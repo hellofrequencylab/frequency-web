@@ -68,6 +68,7 @@ vi.mock('./fees', () => ({
       member: 800,
     }),
   spaceTakeRateCents: (grossCents: number) => Promise.resolve(Math.floor((grossCents * 500) / 10_000)),
+  spaceNetworkBps: async () => 500,
 }))
 
 vi.mock('@/lib/commerce/order-source', () => ({

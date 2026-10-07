@@ -114,7 +114,7 @@ function normaliseTakeRate(stored: unknown): PricingDefaults['take_rate'] {
     ...row,
     member_free_bps: vec.memberFree,
     member_bps: vec.member,
-    network_bps: { free: vec.free, paid: vec.paid, nonprofit: vec.nonprofit },
+    network_bps: { free: vec.free, paid: vec.paid, collective: vec.collective, nonprofit: vec.nonprofit },
   }
 }
 

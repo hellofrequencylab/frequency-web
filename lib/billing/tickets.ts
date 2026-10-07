@@ -59,8 +59,15 @@ import { stripe, appUrl } from './stripe'
 import { checkoutReturnFields, resolveCheckoutSession, type CheckoutUi } from './checkout-ui'
 import { savedCardParamsFor, createAllowingSavedCard } from './saved-card'
 import { getConnectStatus, payoutsLive } from './connect'
-import { platformFeeCents, platformFeePct, spaceTakeRateCents, memberTakeRateCents, resolvedNetworkRate } from './fees'
-import { networkTakeRateBpsForPlan, memberNetworkTakeRateBps } from './pricing-keys'
+import {
+  platformFeeCents,
+  platformFeePct,
+  spaceTakeRateCents,
+  spaceNetworkBps,
+  memberTakeRateCents,
+  resolvedNetworkRate,
+} from './fees'
+import { memberNetworkTakeRateBps } from './pricing-keys'
 import { classifyOrderSource } from '@/lib/commerce/order-source'
 import { TICKETS_NOT_READY } from '@/lib/events/ticket-eligibility'
 import { effectiveOrderSource } from '@/lib/pricing/network-world'
@@ -855,12 +862,12 @@ export async function createTicketCheckout(opts: {
       // A standalone (disconnected) Space has left the graph → no network-sourced revenue, source collapses
       // to self (ADR-811 §3), so it pays 0% even here (independent price is billed on the subscription).
       effectiveSource = effectiveOrderSource(source, spRow?.network_connected)
-      fee = await spaceTakeRateCents(gross, plan, effectiveSource) // self → 0, network → tier bps
+      fee = await spaceTakeRateCents(gross, plan, effectiveSource, feeSpaceId) // self → 0, network → tier bps
       // 🔴 The receipt must record the rate that was CHARGED, which means the OPERATOR-resolved vector,
       // not the code default. Recomputing from the default agreed only because production has never
       // had a network_bps row; the first save at /admin/pricing would have charged the new rate and
       // stamped the old one. A receipt that disagrees with the charge is worse than no receipt.
-      rateBps = effectiveSource === 'self' ? 0 : networkTakeRateBpsForPlan(plan, await resolvedNetworkRate())
+      rateBps = effectiveSource === 'self' ? 0 : await spaceNetworkBps(plan, feeSpaceId, await resolvedNetworkRate())
     }
   } else {
     // ⚠️ UNREACHABLE FOR A SALE since LIVE-753: the payments gate above refuses every personal event,

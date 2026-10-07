@@ -249,9 +249,9 @@ describe('the copy rules', () => {
 describe('meterRateBps', () => {
   it('reads the per-plan vector on the plan axis', () => {
     expect(meterRateBps('plan', 'free', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.free)
-    // Every paid plan label lands on the paid rung (LIVE-230), through the resolver, never by name.
+    // Every plan label lands on its rung through the resolver, never by name (LIVE-754).
     expect(meterRateBps('plan', 'business', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.paid)
-    expect(meterRateBps('plan', 'collective', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.paid)
+    expect(meterRateBps('plan', 'collective', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.collective)
     expect(meterRateBps('plan', 'nonprofit', rates)).toBe(PRICING_DEFAULTS.take_rate.network_bps.nonprofit)
   })
 

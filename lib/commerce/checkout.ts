@@ -167,7 +167,7 @@ async function resolveCharge(seller: ProductRow, grossCents: number, source: Ord
   return {
     // A space store's take-rate is 0% on its OWN booking (the hard promise) and the tier's network rate
     // on a sale the collective sourced (ADR-811), keyed on the space plan (Business 5% → Collective 3% → …).
-    platformFeeCents: await spaceTakeRateCents(grossCents, owner.plan ?? 'free', effective),
+    platformFeeCents: await spaceTakeRateCents(grossCents, owner.plan ?? 'free', effective, seller.owner_space_id),
     sellerStripeAccountId: status.accountId,
     source: effective,
   }
