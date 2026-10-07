@@ -237,6 +237,18 @@
       "reason": "/sitemap.xml on a Space website's domain (Next treats a sitemap.xml folder as a metadata route, so proxy.ts rewrites here). Re-exports the GET of app/hosted/[host]/sitemap.xml/route.ts unchanged: the published site's own page URLs, 404 otherwise. No caller identity, no private data.",
       "checked": "2026-10-07",
       "digest": "6550d2cc6b5fe42c"
+    },
+    "app/api/spotlight/click/route.ts": {
+      "verdict": "public",
+      "reason": "A Spotlight Link card press beacon (LIVE-856, on frequencylocal.com). Anonymous by design: a visitor on a public Spotlight has no session. Calls handleSpotlightClick (lib/spaces/spotlight-clicks.ts), which rate limits by IP, accepts only a valid Space id and a Link cards target id, counts only a Space whose Spotlight is published, and writes one row (Space, target, time) with no visitor data. Returns 204 with no body, so it discloses nothing.",
+      "checked": "2026-10-07",
+      "digest": "0f18d0346ffeac7b"
+    },
+    "app/hosted/[host]/spotlight-click/route.ts": {
+      "verdict": "public",
+      "reason": "A Spotlight Link card press beacon (LIVE-856, on a Space website host, rewritten here by proxy.ts so the beacon stays on the site's origin). Anonymous by design: a visitor on a public Spotlight has no session. Calls handleSpotlightClick (lib/spaces/spotlight-clicks.ts), which rate limits by IP, accepts only a valid Space id and a Link cards target id, counts only a Space whose Spotlight is published, and writes one row (Space, target, time) with no visitor data. Returns 204 with no body, so it discloses nothing.",
+      "checked": "2026-10-07",
+      "digest": "0f18d0346ffeac7b"
     }
   }
 }

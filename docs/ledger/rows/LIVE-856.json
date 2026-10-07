@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-856",
+  "title": "A Space owner sees how many times each Spotlight Link card was pressed in the last 30 days",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/spaces/spotlight-clicks.ts",
+    "ref": "Space Spotlight plan, PR 7 of 7 (owner chose 'Build all 6', later 7, on the Spotlight audit thread, 2026-10-07)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. PR 7 of the Space Spotlight build (plan: /mnt/project-files/spotlight/space-spotlight-plan.md). Migration 20270346006000 adds space_spotlight_clicks (Space, Link cards target id, time; no visitor data), internal: RLS on with no policy and revoked from anon and authenticated. A Link card on a published Spotlight (markSpotlightRender, so the Space page, website and console preview count nothing) sends navigator.sendBeacon as the visitor leaves: to /api/spotlight/click on Frequency, or to /spotlight-click on a website host, which proxy.ts rewrites to app/hosted/[host]/spotlight-click so a stand-alone site's beacon stays on its own origin and inside its connect-src. handleSpotlightClick rate limits by IP and records only a valid target on a published Spotlight. The console editor lists presses per card for the last 30 days. lib/database.types.ts carries the table in the generated shape.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const m=fs.readdirSync('supabase/migrations').filter((f)=>/_space_spotlight_clicks\\\\.sql$/.test(f)).map((f)=>r('supabase/migrations/'+f)).join('');if(!/create table if not exists public\\\\.space_spotlight_clicks/.test(m)||!/revoke all on table public\\\\.space_spotlight_clicks from anon, authenticated/.test(m))miss.push('no service-role-only click table');const c=r('lib/spaces/spotlight-clicks.ts');if(!/readSpaceSpotlight\\\\(.*\\\\)\\\\.published/.test(c))miss.push('a click counts on an unpublished Spotlight');if(/profile_id|user_agent|ip_address/.test(m))miss.push('the click table stores visitor data');if(!/sendBeacon/.test(r('components/spotlight/counted-card-link.tsx'))||!/CountedCardLink/.test(r('components/widgets/space-profile/link-cards.tsx')))miss.push('Link cards do not count presses');if(!/handleSpotlightClick/.test(r('app/hosted/[host]/spotlight-click/route.ts')))miss.push('a website host has no same-origin beacon');if(!/Clicks in the last 30 days/.test(r('components/spotlight/space-spotlight-editor.tsx')))miss.push('the owner cannot see the counts');if(miss.length){console.error('LIVE-856: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

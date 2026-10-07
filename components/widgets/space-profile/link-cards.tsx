@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { resolvePickedIds } from '@/lib/entity-blocks/block-content'
@@ -10,7 +9,9 @@ import {
   type BlockDataItem,
 } from '@/lib/entity-blocks/block-data-sources'
 import { isSellingLinkCard } from '@/lib/spaces/spotlight'
-import { siteCardHref, spotlightSiteLinks } from '@/lib/spaces/spotlight-site'
+import { inSpotlightRender, siteCardHref, spotlightSiteLinks } from '@/lib/spaces/spotlight-site'
+import { SPOTLIGHT_CLICK_PATH } from '@/lib/sites/host'
+import { CountedCardLink } from '@/components/spotlight/counted-card-link'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
 import { Eyebrow } from '@/components/page-editor/blocks/kit'
 import { ModuleSection } from './section'
@@ -54,6 +55,8 @@ export async function LinkCardsBlock({
     .filter((it): it is BlockDataItem => Boolean(it))
   if (cards.length === 0) return null
   const site = spotlightSiteLinks()
+  // Presses count only on a published Spotlight (LIVE-856); on a website host the beacon stays on the site's origin.
+  const beacon = inSpotlightRender() ? (site ? SPOTLIGHT_CLICK_PATH : '/api/spotlight/click') : null
 
   return (
     <ModuleSection anchor="links">
@@ -69,8 +72,9 @@ export async function LinkCardsBlock({
           const to = siteCardHref(item.id, item.href!, site)
           return (
             <li key={item.id}>
-              <Link
+              <CountedCardLink
                 href={to.href}
+                beacon={beacon ? { url: beacon, space: space.id, target: item.id } : null}
                 className="flex items-center gap-3 rounded-card border border-border bg-surface p-3 transition-colors hover:border-primary hover:bg-primary-bg/30"
               >
                 {item.image && (
@@ -89,7 +93,7 @@ export async function LinkCardsBlock({
                 </span>
                 {item.price && <span className="shrink-0 text-body-sm font-semibold text-muted">{item.price}</span>}
                 <ArrowRight className="h-4 w-4 shrink-0 text-muted" aria-hidden />
-              </Link>
+              </CountedCardLink>
             </li>
           )
         })}
