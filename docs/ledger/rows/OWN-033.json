@@ -1,0 +1,13 @@
+{
+  "id": "OWN-033",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/seats.ts',M='lib/pricing/meter-limits.ts';if(!fs.existsSync(S)||!fs.existsSync(M))process.exit(79);const s=fs.readFileSync(S,'utf8'),m=fs.readFileSync(M,'utf8');const bad=[];if(!/COLLECTIVE IS SETTLED/.test(s))bad.push('seats.ts no longer records the OWN-033 decision');if(/profile_id\\\\s*<>\\\\s*owner_profile_id|neq\\\\(.profile_id.,/.test(s))bad.push('usedSeats now excludes the owner, contradicting the owner decision (owner + 2, total 3)');if(!/space_team:\\\\s*{\\\\s*free:\\\\s*1,\\\\s*business:\\\\s*2,\\\\s*collective:\\\\s*3\\\\s*}/.test(m))bad.push('the space_team ladder moved off free 1 / business 2 / collective 3 without a new decision');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+    }
+  },
+  "append": {
+    "detail": "\n\nOwner ruling 2026-10-06 22:04 (decision card, ADR-1709 ladder): Collective is a plan again and includes 3 team seats. The probe now pins free 1 / business 2 / collective 3; the owner-counts-as-a-seat rule it guards is unchanged."
+  },
+  "wave": "WR"
+}

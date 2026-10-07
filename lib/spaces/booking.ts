@@ -33,6 +33,7 @@ import { payoutsLive } from '@/lib/billing/connect'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { checkSpaceBookingMeter, checkSpaceServicesMeter } from '@/lib/spaces/counted-meters'
 import { blockingRange, type EntryRow } from '@/lib/calendar/entries'
 import { expandPencilSeries, seriesRule } from '@/lib/calendar/pencil-series'
 import { eventInstant } from '@/lib/time/zone'
@@ -1281,6 +1282,10 @@ export async function setSpaceServiceTypes(
       return c ? [c] : []
     })
 
+  // Bookable services (space_services, LIVE-750). Only a set that grows asks.
+  const servicesMeter = await checkSpaceServicesMeter(spaceId, clean.length)
+  if (!servicesMeter.ok) return fail(servicesMeter.error)
+
   try {
     // Existing rows for this Space (to know which to update vs delete). FAIL-SOFT to [] if the table
     // is absent pre-migration (the write below then no-ops with a friendly message rather than crash).
@@ -1580,6 +1585,13 @@ async function validateAndPlaceBooking(params: {
   if (rescheduledFrom) optional.rescheduled_from = rescheduledFrom
   if (serviceTypeId) optional.service_type_id = serviceTypeId
   const hasOptional = Object.keys(optional).length > 0
+
+  // The bookings-a-month meter (space_bookings, LIVE-749). A reschedule moves a booking the Space
+  // already counted, so it never asks.
+  if (!rescheduledFrom) {
+    const meter = await checkSpaceBookingMeter(spaceId)
+    if (!meter.ok) return { ok: false, error: meter.error }
+  }
 
   try {
     let res = await bookingsTable()
@@ -2018,6 +2030,8 @@ export async function holdSlotForBooking(
   const slotMinutes = slotLengthAt(windows, startsAt.getTime(), now)
   if (slotMinutes == null) return null
   const endsAt = new Date(startsAt.getTime() + slotMinutes * 60000)
+  // A deposit hold is a booking for the month meter too (it holds the slot and counts as pending).
+  if (!(await checkSpaceBookingMeter(spaceId)).ok) return null
   try {
     const { data, error } = await bookingsTable()
       .insert([

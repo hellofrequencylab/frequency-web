@@ -497,6 +497,14 @@ export async function setMembershipTiers(
   // Normalize + drop anything invalid. An empty result is a valid "no tiers" state.
   const clean = normalizeTierSet(tiers)
 
+  // The tier COUNT meter (space_membership_tiers, LIVE-749). Only a set that GROWS asks; editing or
+  // removing tiers always saves, and a Space already over the number keeps every tier it has.
+  {
+    const { checkMembershipTierMeter } = await import('@/lib/spaces/counted-meters')
+    const meter = await checkMembershipTierMeter(spaceId, clean.length)
+    if (!meter.ok) return fail(meter.error)
+  }
+
   // annual_price_cents is newer than the generated DB types (ADR-246 seam), so the payload is built
   // loose and the typed chain takes it through one narrow cast at each call site below.
   const toRow = (t: MembershipTier): Record<string, unknown> => ({

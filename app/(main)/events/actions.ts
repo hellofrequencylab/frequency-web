@@ -70,6 +70,7 @@ import { saveSteer } from '@/lib/studio/steer-store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
+import { checkEventGuestMeter, checkSpaceEventMeter } from '@/lib/spaces/counted-meters'
 
 // Gallery images ride as a JSON array of storage paths (the form has no native array
 // shape). Parse defensively: a missing/garbage value, a non-array, or any non-string
@@ -511,6 +512,11 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // hand-rolled the host-then-space fallback and every one of them read root as a real host).
   // Personal event -> null -> no Plan link, which is the honest answer: a Plan lives on a Space.
   const hostSpaceIdForEvent = scopeChoice === 'space' && spaceIdForPlacement ? spaceIdForPlacement : null
+  // Upcoming events per Space (space_events, LIVE-750). Personal events keep event_create above.
+  if (hostSpaceIdForEvent) {
+    const meter = await checkSpaceEventMeter(hostSpaceIdForEvent)
+    if (!meter.ok) return fail(meter.error)
+  }
   const planSpaceId = await resolveHostingSpaceId({ spaceId, hostSpaceId: hostSpaceIdForEvent })
 
   const planLink = await resolvePlanLink(formData.get('planId'), planSpaceId)
@@ -1400,7 +1406,9 @@ export async function toggleRSVP(eventId: string) {
     // A first RSVP is a join, so the booking window applies.
     if (!gate.windowOpen) return
     const { isFull } = await getCapacityInfo(eventId)
-    const next = isFull ? 'waitlist' : 'going'
+    // Guests per event on the host's plan (LIVE-750): past it, a new yes joins the waitlist, the
+    // same way a full room does. Nobody already going is moved.
+    const next = isFull || !(await checkEventGuestMeter(eventId)).ok ? 'waitlist' : 'going'
     // The host's approval gate (20270303000000). A pending seat is a REQUEST, not an admission,
     // so it is written the same way a guest's is (capture_guest_rsvp keys on the same column) and
     // the side-effects below are held back until the host says yes.
@@ -1525,7 +1533,7 @@ export async function setRsvpStatus(
     // No-op if already confirmed (going/waitlist) — avoids a redundant email.
     if (prevStatus !== 'going' && prevStatus !== 'waitlist') {
       const { isFull } = await getCapacityInfo(eventId)
-      const next = isFull ? 'waitlist' : 'going'
+      const next = isFull || !(await checkEventGuestMeter(eventId)).ok ? 'waitlist' : 'going'
       // The gate applies to every transition INTO going, not just a new row. "An existing row
       // already cleared the gate" only holds for a row the host approved: any row reaching this
       // branch is currently maybe/not_going (see the prevStatus guard above), so a 'pending'

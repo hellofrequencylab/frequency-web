@@ -23,6 +23,7 @@ import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
+import { checkSpaceShopMeter } from '@/lib/spaces/counted-meters'
 import type {
   ProductStatus,
   ProductKind,
@@ -171,6 +172,9 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
   const title = String(formData.get('title') ?? '').trim()
   const priceDollars = Number(formData.get('price'))
   if (!title || !Number.isFinite(priceDollars) || priceDollars < 0) return
+  // Shop listings per Space (space_shop_listings, LIVE-750). This action reports nothing back, so a
+  // full shop simply does not add; the plan hub shows the count.
+  if (!(await checkSpaceShopMeter(gate.spaceId)).ok) return
 
   const kind = String(formData.get('kind') ?? 'product')
   const { productKind, vertical } = kindToCommerce(kind)
