@@ -27,6 +27,13 @@ import { computeLegTargets } from '@/lib/journeys/leg-targets'
 import type { JourneyMeeting } from '@/lib/journeys/meeting'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { log } from '@/lib/log'
+import {
+  coHostSpacesFromRows,
+  mergeOwnedAndSharedPlans,
+  type CoHostSpaceRow,
+  type JourneyCoHostSpace,
+  type JourneyShareRow,
+} from '@/lib/journeys/space-shares'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -432,31 +439,104 @@ export async function createPlan(input: {
  * Journeys (journey_plans) that BELONG TO a space (tenancy axis, Phase 0 / ENTITY-SPACES §4.3),
  * newest first. Defaults to the root space (so a caller that passes no spaceId reads the root's
  * journeys, the canary). Filtered by space_id so a journey in space A can never resolve for
- * space B — the by-space read the Phase 1 profile's `entity-journeys` module uses. FAIL-SAFE:
+ * space B — the by-space read the Phase 1 profile's `entity-journeys` module uses. Journeys another
+ * Space ACCEPTED-shared to this one (journey_plan_space_shares, co-hosting) are merged in unless the
+ * caller passes includeShared: false; their own visibility is re-gated, so a private one never shows.
+ * FAIL-SAFE:
  * [] on any error / missing tenant. space_id is reached with an untyped handle (ADR-246).
  */
 export async function listJourneyPlansForSpace(
   spaceId?: string | null,
   limit = 50,
-  opts?: { publishedOnly?: boolean },
+  opts?: { publishedOnly?: boolean; includeShared?: boolean },
 ): Promise<JourneyPlan[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
+  type Chain = {
+    select: (cols: string) => Chain
+    eq: (col: string, val: string) => Chain
+    neq: (col: string, val: string) => Chain
+    in: (col: string, vals: string[]) => Chain
+    order: (col: string, o: { ascending: boolean }) => Chain
+    limit: (n: number) => Promise<{ data: unknown; error: unknown }>
+  }
+  let owned: JourneyPlan[]
   try {
-    type Chain = {
-      select: (cols: string) => Chain
-      eq: (col: string, val: string) => Chain
-      neq: (col: string, val: string) => Chain
-      order: (col: string, o: { ascending: boolean }) => Chain
-      limit: (n: number) => Promise<{ data: unknown; error: unknown }>
-    }
     let q = (db().from('journey_plans') as unknown as Chain).select(PLAN_COLS).eq('space_id', sid)
     // The PUBLIC profile block passes publishedOnly so private drafts stay in the owner's manager only.
     // Published = visibility past 'private' (unlisted = live to the space; public = library).
     if (opts?.publishedOnly) q = q.neq('visibility', 'private')
     const { data, error } = await q.order('created_at', { ascending: false }).limit(limit)
     if (error) return []
-    return (data as JourneyPlan[] | null) ?? []
+    owned = (data as JourneyPlan[] | null) ?? []
+  } catch {
+    return []
+  }
+
+  // Co-hosted Journeys (journey_plan_space_shares, accepted only). The owner's manager opts out with
+  // includeShared: false, because it lists Journeys this Space builds and edits. A share is necessary,
+  // never sufficient: the shared Journey's OWN visibility is re-applied here, and a private Journey
+  // never surfaces through a share even for a caller that did not ask for publishedOnly.
+  // FAIL-SAFE: a failed share read returns only this Space's own Journeys.
+  if (opts?.includeShared === false) return owned
+  const sharedIds = (await acceptedSharePlanIds(sid)).filter((id) => !owned.some((p) => p.id === id))
+  if (sharedIds.length === 0) return owned
+  try {
+    const { data, error } = await (db().from('journey_plans') as unknown as Chain)
+      .select(PLAN_COLS)
+      .in('id', sharedIds)
+      .neq('visibility', 'private')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) return owned
+    return mergeOwnedAndSharedPlans(owned, (data as JourneyPlan[] | null) ?? [], limit)
+  } catch {
+    return owned
+  }
+}
+
+/** Ids of the Journeys ACCEPTED-shared to a co-host Space (journey_plan_space_shares). The table is
+ *  newer than the generated DB types, so it rides the untyped handle (ADR-246). FAIL-SAFE: []. */
+async function acceptedSharePlanIds(spaceId: string): Promise<string[]> {
+  try {
+    const { data, error } = await db()
+      .from('journey_plan_space_shares')
+      .select('plan_id')
+      .eq('space_id', spaceId)
+      .eq('status', 'accepted')
+    if (error) return []
+    return [...new Set(((data ?? []) as Array<{ plan_id: string }>).map((r) => r.plan_id))]
+  } catch {
+    return []
+  }
+}
+
+/**
+ * The Spaces co-hosting a Journey, for the "Co-hosted with" credit on the public Journey page.
+ * ACCEPTED shares only, active non-private Spaces only, oldest acceptance first (coHostSpacesFromRows).
+ * A credit, never a capability: nothing here enters getJourneyCapabilities. FAIL-SAFE: [].
+ */
+export async function listJourneyCoHostSpaces(
+  planId: string,
+  homeSpaceId: string | null,
+): Promise<JourneyCoHostSpace[]> {
+  if (!planId) return []
+  try {
+    const client = db()
+    const { data, error } = await client
+      .from('journey_plan_space_shares')
+      .select('space_id, status')
+      .eq('plan_id', planId)
+      .eq('status', 'accepted')
+      .order('created_at', { ascending: true })
+    if (error) return []
+    const shares = (data ?? []) as JourneyShareRow[]
+    if (shares.length === 0) return []
+    const { data: spaces } = await client
+      .from('spaces')
+      .select('id, slug, name, brand_name, status, visibility')
+      .in('id', [...new Set(shares.map((s) => s.space_id))])
+    return coHostSpacesFromRows(shares, (spaces ?? []) as CoHostSpaceRow[], homeSpaceId)
   } catch {
     return []
   }

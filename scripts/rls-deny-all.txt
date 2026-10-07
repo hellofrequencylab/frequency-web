@@ -49,6 +49,7 @@ invite_links
 journey_drip_sends
 journey_enrollments
 journey_phase_events
+journey_plan_space_shares
 journey_runs
 library_styles
 listing_intake
