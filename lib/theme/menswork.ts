@@ -18,7 +18,7 @@
 // (charcoal on the pressed teal is 4.17:1, so it is never a resting label ground); one seasonal accent at
 // a time, marking "now"; no gradients, no shadows, no glows.
 
-import { HEX_ACCENT, contrastRatio, resolveAccentVars, strongShades, type AccentVars } from '@/lib/spaces/accent'
+import { HEX_ACCENT, contrastRatio, strongShades, type AccentVars } from '@/lib/spaces/accent'
 
 /** The Menswork palette: 7 neutrals, 3 teals. Dark is the theme's only mode. */
 export const MENSWORK_PALETTE = {
@@ -44,6 +44,14 @@ export const MENSWORK_SEASONS: Record<MensworkSeason, string> = {
   fall: '#D4703E',
 }
 
+/** Each season's name and date window, as the season bar on a Menswork website prints them. */
+export const MENSWORK_SEASON_INFO: Record<MensworkSeason, { name: string; range: string }> = {
+  winter: { name: 'Winter', range: 'Dec 21 to Mar 19' },
+  spring: { name: 'Spring', range: 'Mar 20 to Jun 20' },
+  summer: { name: 'Summer', range: 'Jun 21 to Sep 21' },
+  fall: { name: 'Fall', range: 'Sep 22 to Dec 20' },
+}
+
 /** The season a date falls in, on the program's solstice and equinox lines (HANDOFF 2026-10-07): winter
  *  Dec 21 to Mar 19, spring Mar 20 to Jun 20, summer Jun 21 to Sep 21, fall Sep 22 to Dec 20. */
 export function mensworkSeason(date: Date): MensworkSeason {
@@ -62,12 +70,14 @@ const LATTICE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 /** Grain, 4% monochrome noise, over the large charcoal fields. */
 const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
 
-/** The Space's `--color-primary*` family on a Menswork website. No accent set: the theme's teal. A hex the
- *  owner picked: that hex, with a measured light text shade and a label color that reads on it (charcoal
- *  when it clears AA, else white). A DAWN token accent: the house builder, unchanged. */
+/** The Space's `--color-primary*` family on a Menswork website. No accent set, or a DAWN token accent (the
+ *  type default, or a swatch picked for the Frequency palette): the theme's teal. A token cannot carry over
+ *  because it resolves against Frequency's palette above the site root, before the theme re-points it. A
+ *  hex the owner picked: that hex, with a measured light text shade and a label color that reads on it
+ *  (charcoal when it clears AA, else white). */
 export function mensworkAccentVars(brandAccent: string | null | undefined): AccentVars | null {
   const accent = brandAccent?.trim() || null
-  if (!accent) {
+  if (!accent || !HEX_ACCENT.test(accent)) {
     return {
       '--color-primary': P.teal,
       '--color-primary-hover': P.teal,
@@ -76,7 +86,6 @@ export function mensworkAccentVars(brandAccent: string | null | undefined): Acce
       '--color-text-on-primary': P.charcoal,
     }
   }
-  if (!HEX_ACCENT.test(accent)) return resolveAccentVars(accent, null)
   return {
     '--color-primary': accent,
     '--color-primary-hover': accent,
@@ -95,7 +104,7 @@ export const MENSWORK_TOKENS_CSS = `
 --mw-charcoal:${P.charcoal};--mw-surface:${P.surface};--mw-raised:${P.raised};--mw-hairline:${P.hairline};
 --mw-muted:${P.muted};--mw-secondary:${P.secondary};--mw-text:${P.primary};
 --mw-pressed:color-mix(in srgb,var(--color-primary) 79%,black);
---mw-accent:${MENSWORK_SEASONS.fall};
+--mw-accent:${MENSWORK_SEASONS.fall};--mw-winter:${MENSWORK_SEASONS.winter};--mw-spring:${MENSWORK_SEASONS.spring};--mw-summer:${MENSWORK_SEASONS.summer};--mw-fall:${MENSWORK_SEASONS.fall};
 --mw-lattice:${LATTICE};--mw-grain:${GRAIN};
 --mw-display:var(--font-sofia-xc),'Arial Narrow',sans-serif;--mw-body:var(--font-barlow),system-ui,sans-serif;--mw-mono:var(--font-plex-mono),ui-monospace,monospace;
 --color-canvas:${P.charcoal};--color-marketing-canvas:${P.surface};--color-surface:${P.surface};--color-surface-elevated:${P.raised};--color-surface-post:${P.surface};
