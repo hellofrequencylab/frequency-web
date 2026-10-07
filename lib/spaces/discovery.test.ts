@@ -73,6 +73,8 @@ const store: {
   membershipTiers: PresenceRow[]
   /** `space_donation_asks` rows for the Book tab gate of a donations-Focus Space (SCAN-787). */
   donationAsks: PresenceRow[]
+  /** `crew_boosts` rows (LIVE-756): a Space Boost is a mark, never a lift in the directory order. */
+  boosts: PresenceRow[]
 } = {
   spaces: [],
   counts: {},
@@ -86,6 +88,7 @@ const store: {
   collaborations: [],
   membershipTiers: [],
   donationAsks: [],
+  boosts: [],
 }
 
 /** The stored SUBJECT for a row (preferences.profileData.subject), or null when unset — mirrors the
@@ -283,6 +286,7 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table === 'space_collaborations') return presenceBuilder(store.collaborations)
       if (table === 'space_membership_tiers') return presenceBuilder(store.membershipTiers)
       if (table === 'space_donation_asks') return presenceBuilder(store.donationAsks)
+      if (table === 'crew_boosts') return presenceBuilder(store.boosts)
       return spacesBuilder()
     },
   }),
@@ -318,6 +322,7 @@ beforeEach(() => {
   store.collaborations = []
   store.membershipTiers = []
   store.donationAsks = []
+  store.boosts = []
   store.spaces = [
     // s1 is a PRE-MIGRATION row: kind stored on the LEGACY `category` key, plus a subject. s2 stores
     // the CANONICAL `kind` key + a subject. s3 has NEITHER (kind reads as 'business', no subject).
@@ -395,6 +400,18 @@ describe('the sort param', () => {
     expect(spaces.map((s) => s.id)).toEqual(['s1', 's2', 's3'])
     expect(spaces[0].standing).toBeCloseTo(spaces[1].standing, 12)
     expect(spaces[2].standing).toBeLessThan(spaces[0].standing)
+  })
+
+  it('🔴 a Crew Boost marks a Space but never moves it: the default order stays earned (LIVE-756, LIVE-262)', async () => {
+    // Owner ruling 2026-10-06 ("Circles only"): a Boost lifts Circles, and a Space only shows the mark.
+    // Forest Org (s3) has the lowest standing; a fresh Boost on it must not move it off the bottom.
+    const before = (await listNetworkedSpaces({ sort: 'standing' })).map((s) => s.id)
+    store.boosts = [{ space_id: 's3', given_at: new Date().toISOString() }]
+    const after = await listNetworkedSpaces({ sort: 'standing' })
+    expect(after.map((s) => s.id)).toEqual(before)
+    expect(after.map((s) => s.id)).toEqual(['s1', 's2', 's3'])
+    expect(after.find((s) => s.id === 's3')?.boosted).toBe(true)
+    expect(after.filter((s) => s.boosted).map((s) => s.id)).toEqual(['s3'])
   })
 
   it('every row carries its standing and the detail behind it', async () => {

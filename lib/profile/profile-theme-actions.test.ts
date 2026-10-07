@@ -5,10 +5,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // A free skin never reads the inventory; an earned skin reads it under the owner's session and is
 // refused, with no write, unless the item is held.
 
-const { getUser, update, memberHeldItems } = vi.hoisted(() => ({
+const { getUser, update, memberHeldItems, crewTier } = vi.hoisted(() => ({
   getUser: vi.fn(),
   update: vi.fn(),
   memberHeldItems: vi.fn(),
+  crewTier: { value: 'free' as 'free' | 'crew' },
+}))
+
+// The Crew gate (LIVE-757). No shipped skin is a Crew theme yet, so the fixture carries one.
+vi.mock('@/lib/billing/crew-grants', () => ({
+  effectiveTierFor: async () => ({ stripeTier: crewTier.value, granted: false, tier: crewTier.value }),
 }))
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
@@ -17,8 +23,9 @@ vi.mock('@/lib/theme/profile-skins', () => ({
   PROFILE_SKINS: [
     { id: 'default', label: 'Default', description: '' },
     { id: 'aurora', label: 'Aurora', description: '', requiredItem: 'full-spectrum-banner' },
+    { id: 'tide', label: 'Tide', description: '', crewOnly: true },
   ],
-  isSelectableProfileSkin: (id: string) => id === 'default' || id === 'aurora',
+  isSelectableProfileSkin: (id: string) => id === 'default' || id === 'aurora' || id === 'tide',
 }))
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({ auth: { getUser }, from: () => ({}) }),
@@ -45,6 +52,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   getUser.mockResolvedValue({ data: { user: { id: 'auth-1' } } })
   memberHeldItems.mockResolvedValue(new Set<string>())
+  crewTier.value = 'free'
 })
 
 describe('updateProfileTheme — earned skins', () => {
@@ -70,5 +78,18 @@ describe('updateProfileTheme — earned skins', () => {
   it('still refuses a skin outside the allowlist before any read', async () => {
     await expect(updateProfileTheme('midnight')).rejects.toThrow('That theme is not available.')
     expect(getUser).not.toHaveBeenCalled()
+  })
+})
+
+describe('updateProfileTheme — Crew themes (LIVE-757)', () => {
+  it('refuses a Crew theme to a member who is not on Crew, and writes nothing', async () => {
+    await expect(updateProfileTheme('tide')).rejects.toThrow('That theme comes with Crew.')
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('writes the Crew theme for a member on Crew', async () => {
+    crewTier.value = 'crew'
+    await expect(updateProfileTheme('tide')).resolves.toBeUndefined()
+    expect(update).toHaveBeenCalledWith({ profile_theme: 'tide' })
   })
 })

@@ -231,11 +231,11 @@ describe('nobody could lose access, because the column cannot carry the label', 
 // ── 4. The BADGE is a different axis and is untouched ────────────────────────────────────────────
 
 describe('the Supporter BADGE survives the rung (ADR-458 § the whole point)', () => {
-  it('a contribution at or above the suggested amount still earns the mark', () => {
-    // The pay-what-you-want contribution channel is how a member backs the Foundation on top of Crew.
-    // It writes profiles.is_supporter, which is NOT membership_tier and was never a rung.
+  it('any valid Crew contribution still earns the mark (ADR-1709 dropped the suggested-amount threshold)', () => {
+    // The mark is how a member is thanked for backing the community on Crew. It writes
+    // profiles.is_supporter, which is NOT membership_tier and was never a rung.
     const pwyw = PWYW_CONFIG_DEFAULT
-    expect(earnsSupporterMark(pwyw.suggestedCents, pwyw)).toBe(true)
-    expect(earnsSupporterMark(pwyw.suggestedCents - 1, pwyw)).toBe(false)
+    expect(earnsSupporterMark(pwyw.minCents, pwyw)).toBe(true)
+    expect(earnsSupporterMark(pwyw.minCents - 1, pwyw)).toBe(false)
   })
 })

@@ -68,12 +68,12 @@ export interface SeatConfig {
  *  contribution (lib/billing/supporter.ts) and the RECURRING Crew membership, which is PWYW as of the
  *  membership rework — a member picks any amount at or above `minCents` and every amount buys IDENTICAL
  *  access. `presetCents` is the anchored choice architecture (a bare open field anchors people at the
- *  floor); `suggestedCents` is the pre-selected default and the Supporter-mark threshold. */
+ *  floor); `suggestedCents` is the pre-selected default. */
 export interface PwywConfig {
   /** The pay-what-you-want minimum, in cents. The floor, and the only hard rule. */
   minCents: number
-  /** The suggested contribution, in cents. Pre-selected on the picker; at or above it a member carries
-   *  the Supporter mark (profiles.is_supporter). Always clamped to at least `minCents`. */
+  /** The suggested contribution, in cents. Pre-selected on the picker. Always clamped to at least
+   *  `minCents`. It no longer decides the Supporter mark: any active Crew carries it (LIVE-755). */
   suggestedCents: number
   /** The soft ceiling for a RECURRING pick, in cents. Not a limit on generosity: above it the surface
    *  asks for a confirmation, because a very large recurring amount is more often a slip than a gift,
@@ -99,21 +99,23 @@ export interface CatalogConfig {
 /** The default seat config: a 3-seat bundled floor (the owner-locked nonprofit floor). */
 export const SEAT_CONFIG_DEFAULT: SeatConfig = { bundledFloor: 3 }
 
-/** The default PWYW config for Crew: a **$4.99 floor**, **$24.99 suggested** (pre-selected), a $100
- *  soft ceiling on a recurring pick, and five preset anchors spanning the range. Every preset grants
- *  IDENTICAL access; they exist only to anchor the choice.
+/** The default PWYW config for Crew (ADR-1709, LIVE-755): a **$4.99 floor**, **$10 suggested**
+ *  (pre-selected), a $100 soft ceiling on a recurring pick, and three preset anchors, $5, $10 and
+ *  $25 (owner ruling 2026-10-06: the first preset is a round $5; the floor stays $4.99, reachable
+ *  through "another amount"). Every preset grants IDENTICAL access; they exist only to anchor the choice.
  *
- *  🔴 `suggestedCents` was 1200 here while production carried 2499 — the owner's decision was
- *  configured in `pricing_settings` and never mirrored into the code default, so any surface reading
- *  the default (a static render, a test, a cold path before the settings read) anchored people at $12
- *  instead of $24.99. The stored row won at runtime, which is why nothing looked broken. Code and
- *  config agree now. */
+ *  🔴 The stored `catalog.pwyw` row must agree with this default. It carried suggested 2499 over a
+ *  1200 code default once, and every surface that read the default anchored people at the wrong
+ *  number. Migration 20270346005600_crew_presets_five_dollars.sql moves the stored row with this change. */
 export const PWYW_CONFIG_DEFAULT: PwywConfig = {
   minCents: 499,
-  suggestedCents: 2499,
+  suggestedCents: 1000,
   maxCents: 10000,
-  presetCents: [499, 900, 1499, 2499, 4900],
+  presetCents: [500, 1000, 2500],
 }
+
+/** How long the Supporter mark stays after Crew support stops, in days (ADR-1709). */
+const SUPPORTER_MARK_FADE_DAYS = 45
 
 /** The `pricing_settings` key for one catalog item's amount override. */
 export function catalogConfigKey(item: CatalogItemKey): string {
@@ -223,12 +225,32 @@ export function isValidPwywAmount(amountCents: number, config: PwywConfig): bool
   return Math.round(amountCents) >= config.minCents
 }
 
-/** Does this amount earn the Supporter mark (profiles.is_supporter)? At or above the suggested amount.
- *  PURE. The mark is RECOGNITION ONLY: it never changes what a member can do, because every Crew amount
- *  buys identical access. */
+/** Does this Crew amount earn the Supporter mark (profiles.is_supporter)? Any valid Crew amount does
+ *  (ADR-1709, LIVE-755): the mark thanks a member for backing the community, so it follows being on
+ *  Crew, never how much was picked. PURE. The mark is RECOGNITION ONLY: it never changes what a member
+ *  can do, because every Crew amount buys identical access. */
 export function earnsSupporterMark(amountCents: number, config: PwywConfig): boolean {
-  if (!Number.isFinite(amountCents)) return false
-  return Math.round(amountCents) >= config.suggestedCents
+  return isValidPwywAmount(amountCents, config)
+}
+
+/** Does the Supporter mark show on a profile right now? PURE. It shows while paid Crew is active, and
+ *  fades SUPPORTER_MARK_FADE_DAYS (45) days after support stops. "Stopped" is the canceled member
+ *  billing event: apply_membership_event_atomic writes membership_payment_status 'canceled' and stamps
+ *  last_stripe_event_at with that event's time, and no later member event arrives until Crew restarts.
+ *  A past-due Crew still shows it (the member has not stopped; the card has). */
+export function supporterMarkShows(
+  profile: {
+    membership_tier: string | null
+    membership_payment_status: string | null
+    last_stripe_event_at: string | null
+  },
+  now: Date = new Date(),
+): boolean {
+  if (profile.membership_tier === 'crew' && profile.membership_payment_status !== 'canceled') return true
+  if (profile.membership_payment_status !== 'canceled' || !profile.last_stripe_event_at) return false
+  const stoppedAt = Date.parse(profile.last_stripe_event_at)
+  if (!Number.isFinite(stoppedAt)) return false
+  return now.getTime() - stoppedAt < SUPPORTER_MARK_FADE_DAYS * 24 * 60 * 60 * 1000
 }
 
 /** Narrow a raw jsonb value to the per-add-on enable map, FAIL-SAFE to ALL ENABLED (the add-ons ship

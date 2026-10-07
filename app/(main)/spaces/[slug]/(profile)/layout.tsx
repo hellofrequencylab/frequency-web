@@ -22,6 +22,9 @@ import { heroOverlayForScrim } from '@/lib/layout/cover-scrim'
 import { readTagline } from '@/lib/spaces/tagline'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
+import { BoostButton } from '@/components/crew/boost-button'
+import { BoostedBadge } from '@/components/crew/boosted-badge'
+import { activeBoostIds } from '@/lib/crew/boost'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
@@ -163,14 +166,17 @@ export default async function SpaceProfileChromeLayout({
   // The FOUNDING BUSINESS mark rides the same round-trip (one bounded read, no extra waterfall). It is
   // PUBLIC by design: a Founding Business shows its badge to every visitor, signed in or not. Only the
   // boolean crosses into the header; the row's locked rate is a private commercial term and stays here.
-  const [caller, tagline, visibility, viewerFollows, foundingBadge] = await Promise.all([
+  // The Boosted mark (LIVE-756) is public too, read in the same batch (fail-safe to unboosted).
+  const [caller, tagline, visibility, viewerFollows, foundingBadge, boostedIds] = await Promise.all([
     getCallerProfile(),
     readTagline(space.id),
     getSpaceVisibility(slug),
     viewerProfileId ? isFollowing(space.id, viewerProfileId) : Promise.resolve(false),
     foundingBadgeForSpace(space.id),
+    activeBoostIds('space', [space.id]),
   ])
   const isFoundingBusiness = foundingBadge?.isFounding === true
+  const isBoosted = boostedIds.has(space.id)
   const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
   const canSeeAsOwner = manage.canManage || manage.staffViewing
   const isNetwork = visibility !== 'private'
@@ -297,18 +303,33 @@ export default async function SpaceProfileChromeLayout({
   // A COMPACT Follow chip (owner ask): smaller than a standard sm button so it reads as the quiet social
   // action sitting above the name, not competing with the primary CTA. tailwind-merge lets the tighter
   // padding/size win over the base secondary tokens.
+  // The Crew Boost (LIVE-756) rides beside Follow for a visitor who does not run this Space. The
+  // server checks Crew, the one-a-month rule and the not-your-own rule.
   const followButton = (onInk = false) =>
     viewerProfileId ? (
-      <FollowSpaceButton
-        spaceId={space.id}
-        spaceName={brandName}
-        initialFollowing={viewerFollows}
-        className={
-          onInk
-            ? cn(onInkSecondaryClasses, 'gap-1 px-2.5 py-1 text-2xs')
-            : buttonClasses('secondary', 'sm', 'gap-1 px-2.5 py-1 text-2xs')
-        }
-      />
+      <span className="inline-flex flex-wrap items-start gap-2">
+        <FollowSpaceButton
+          spaceId={space.id}
+          spaceName={brandName}
+          initialFollowing={viewerFollows}
+          className={
+            onInk
+              ? cn(onInkSecondaryClasses, 'gap-1 px-2.5 py-1 text-2xs')
+              : buttonClasses('secondary', 'sm', 'gap-1 px-2.5 py-1 text-2xs')
+          }
+        />
+        {!canSeeAsOwner && (
+          <BoostButton
+            kind="space"
+            targetId={space.id}
+            className={
+              onInk
+                ? cn(onInkSecondaryClasses, 'gap-1 px-2.5 py-1 text-2xs')
+                : buttonClasses('secondary', 'sm', 'gap-1 px-2.5 py-1 text-2xs')
+            }
+          />
+        )}
+      </span>
     ) : null
 
   // The dominant primary CTA + the Connect (QR) affordance, factored out so both the desktop action row and
@@ -497,9 +518,12 @@ export default async function SpaceProfileChromeLayout({
           wears on their profile (lib/community-roles), so the two read as one system. It carries a status
           only: the locked rate never reaches this component. Renders for every visitor; nothing here is
           owner-gated. */}
-      {isFoundingBusiness && (
-        <div className="mt-1.5">
-          <FoundingBusinessBadge founding className="text-3xs leading-tight" />
+      {/* The BOOSTED mark (LIVE-756) sits in the same row: a Space wears it for the week a Crew member
+          backs it, and nothing about its directory order changes (owner ruling 2026-10-06). */}
+      {(isFoundingBusiness || isBoosted) && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {isFoundingBusiness && <FoundingBusinessBadge founding className="text-3xs leading-tight" />}
+          <BoostedBadge boosted={isBoosted} className="text-3xs leading-tight" />
         </div>
       )}
       {/* The tagline reads as part of the identity, not fine print. On the Hero cover it stays inline

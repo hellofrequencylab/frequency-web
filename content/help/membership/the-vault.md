@@ -36,4 +36,4 @@ Everything you earn keeps building: your Gems, your season trophies, and your **
 
 ## What Crew costs
 
-Everything you have earned stays yours. Crew is the paid personal tier, and the only one. It is contribute what you want: pick any monthly amount at or above the floor, and every amount buys exactly the same Crew. Pay the suggested amount or more and you wear the Supporter badge. The floor and the suggested amount are on the [upgrade page](/upgrade). The card fields open on that page.
+Everything you have earned stays yours. Crew is the paid personal tier, and the only one. It is contribute what you want: pick any monthly amount at or above the floor, and every amount buys exactly the same Crew. Every Crew member wears the Supporter badge while Crew is active, and it fades 45 days after you stop. The floor and the suggested amount are on the [upgrade page](/upgrade). The card fields open on that page.

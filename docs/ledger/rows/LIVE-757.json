@@ -1,7 +1,7 @@
 {
   "id": "LIVE-757",
   "title": "Crew themes, flair and early access",
-  "status": "open",
+  "status": "done",
   "priority": "P3",
   "lane": "live",
   "size": "M",
@@ -9,10 +9,11 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 4 of the five-tier ladder (ADR-1709), the later row. Crew perks beyond hosting: profile themes, flair, early access to new features.",
+  "detail": "PHASE 4 of the five-tier ladder (ADR-1709), the later row. Crew perks beyond hosting: profile themes, flair, early access to new features. Shipped: lib/crew/perks.ts, the one registry for themes, flair and early_access with a live flag, wired into the profile theme writer (a Crew theme is refused to a non-Crew member on the real effective tier), the appearance rail (crewPerks hides Crew themes), and /upgrade (lists only live perks). Nothing is live yet: no Crew theme is authored (Midnight stays owner-held), and Crew flair and early access need a render value and a feature first, so no member-facing copy changed.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const s=r(\"lib/crew/perks.ts\");if(!/early_access/.test(s)||!/theme/.test(s))fail(\"no Crew perks module with themes and early access\");console.log(\"ok: Crew perks exist\")'"
   },
+  "closed": "2026-10-06",
   "wave": "WR"
 }
