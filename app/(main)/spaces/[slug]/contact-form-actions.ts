@@ -110,30 +110,29 @@ export async function submitContactForm(input: ContactFormInput): Promise<Contac
     metadata: message ? { message } : null,
   }).catch(() => null)
 
-  // 🔴 A NULL HERE IS SILENT AND DELIBERATE, and it is the one sharp edge in this path. `captureLead`
-  // returns null when the Space's contact allowance (ADR-917) denies a NEW contact, and the house
-  // anti-enumeration rule forbids telling the sender anything different. The metering gate fails safe
-  // to allowed and is not live, so today this cannot fire; if it is ever switched on, a message can
-  // be dropped without anyone being told. That is a product decision, not something to paper over.
-  if (!captured) return done
-
-  // Best-effort from here: the lead is sealed, and neither the deal nor the notification may undo it.
-  await createDealForCapturedLead({
-    spaceId: space.id,
-    contactId: captured.contactId,
-    spaceType: space.type,
-    modeVariant: space.modeVariant ?? null,
-    displayName: name || null,
-    email,
-    source: 'lead_contact_form',
-  })
+  // A NULL HERE means the Space's contact allowance (ADR-917) denied a NEW contact, or the write
+  // failed. The sender still sees success (the house anti-enumeration rule), and the owner is still
+  // emailed the message with the reason, so no message is dropped once the meters go live on
+  // 2026-12-01 (beta_grace). Only the CRM rows (the deal and the bell) need the contact.
+  if (captured) {
+    // Best-effort from here: the lead is sealed, and neither the deal nor the notification may undo it.
+    await createDealForCapturedLead({
+      spaceId: space.id,
+      contactId: captured.contactId,
+      spaceType: space.type,
+      modeVariant: space.modeVariant ?? null,
+      displayName: name || null,
+      email,
+      source: 'lead_contact_form',
+    })
+  }
 
   await notifyOwnerOfContactLead({
     spaceId: space.id,
     spaceSlug: space.slug,
     spaceName: space.brandName?.trim() || space.name,
     ownerProfileId: space.ownerProfileId,
-    contactId: captured.contactId,
+    contactId: captured?.contactId ?? null,
     fromName: name || null,
     fromEmail: email,
     message: message || null,

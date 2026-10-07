@@ -42,7 +42,9 @@ interface LeadNotifyInput {
   spaceName: string
   /** The Space's owner. Null means nobody to tell, and this becomes a no-op. */
   ownerProfileId: string | null
-  contactId: string
+  /** The sealed CRM contact, or null when the Space's contact allowance refused a new one. The email
+   *  still goes (the person is waiting for a reply); only the bell, which opens the contact, needs it. */
+  contactId: string | null
   fromName?: string | null
   fromEmail?: string | null
   /** The free-text message, if the form collected one. */
@@ -94,25 +96,28 @@ export async function notifyOwnerOfContactLead(
   const crmUrl = `${APP_URL}/spaces/${input.spaceSlug}/crm`
 
   let belled = false
-  try {
-    // Mirrors the crm_inbound_reply bell (lib/crm/inbox.ts): the reference points at the CONTACT, so
-    // the notification opens the person rather than a page they then have to search.
-    await (
-      admin as unknown as {
-        from: (t: string) => { insert: (row: Record<string, unknown>) => Promise<{ error: unknown }> }
-      }
-    )
-      .from('notifications')
-      .insert({
-        recipient_id: owner,
-        type: 'crm_contact_form',
-        reference_type: 'contact',
-        reference_id: input.contactId,
-        body: `${who} sent a message through your contact form`,
-      })
-    belled = true
-  } catch {
-    /* best-effort: the lead is recorded regardless of the alert */
+  // The bell opens the contact, so a message the allowance kept out of the CRM rings no bell.
+  if (input.contactId) {
+    try {
+      // Mirrors the crm_inbound_reply bell (lib/crm/inbox.ts): the reference points at the CONTACT, so
+      // the notification opens the person rather than a page they then have to search.
+      await (
+        admin as unknown as {
+          from: (t: string) => { insert: (row: Record<string, unknown>) => Promise<{ error: unknown }> }
+        }
+      )
+        .from('notifications')
+        .insert({
+          recipient_id: owner,
+          type: 'crm_contact_form',
+          reference_type: 'contact',
+          reference_id: input.contactId,
+          body: `${who} sent a message through your contact form`,
+        })
+      belled = true
+    } catch {
+      /* best-effort: the lead is recorded regardless of the alert */
+    }
   }
 
   let emailed = false
@@ -128,6 +133,10 @@ export async function notifyOwnerOfContactLead(
       const bodyHtml = preview
         ? `<p style="white-space:pre-wrap">${escapeHtml(preview)}</p>`
         : '<p>They did not leave a message.</p>'
+      // A message the contact allowance kept out of the CRM still reaches the owner, with the reason.
+      const limitLine = input.contactId
+        ? null
+        : 'Your CRM is at its contact limit, so they were not added to it. Reply to this email to answer them.'
 
       await enqueueEmail({
         to: to.email,
@@ -140,6 +149,7 @@ export async function notifyOwnerOfContactLead(
           `<p><strong>${safeWho}</strong> just sent a message through the contact form on ${safeSpace}.</p>`,
           bodyHtml,
           `<p>${escapeHtml(consentLine)}</p>`,
+          ...(limitLine ? [`<p>${escapeHtml(limitLine)}</p>`] : []),
           `<p><a href="${crmUrl}">Open your CRM</a></p>`,
         ].join('\n'),
         text: [
@@ -151,6 +161,7 @@ export async function notifyOwnerOfContactLead(
           '',
           consentLine,
           '',
+          ...(limitLine ? [limitLine, ''] : []),
           `Open your CRM: ${crmUrl}`,
         ].join('\n'),
       })

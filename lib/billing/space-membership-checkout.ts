@@ -92,8 +92,9 @@ export async function createSpaceMembershipCheckout(
     if (!space?.id || !space.owner_profile_id) return { reason: 'tier_not_found' }
 
     // THE PAYMENTS GATE (space_payments, ADR-1709, LIVE-753): a paid membership sells from Business up. Asked before
-    // Connect, outside the grace window, with the plan already read (lib/pricing/payments-gate.ts).
-    if (!(await spacePaymentsVerdict(space.id, { plan: space.plan ?? null })).ok) return { reason: 'payments_plan' }
+    // Connect, outside the grace window, with the plan already read (lib/pricing/payments-gate.ts),
+    // with the same space_memberships floor the tier write checks, so an override above Business stops a sale too.
+    if (!(await spacePaymentsVerdict(space.id, { plan: space.plan ?? null, also: 'space_memberships' })).ok) return { reason: 'payments_plan' }
 
     // The owner must be able to receive money (Connect ready), like tips/tickets.
     const ownerStatus = await getConnectStatus(space.owner_profile_id)

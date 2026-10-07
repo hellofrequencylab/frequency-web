@@ -7,8 +7,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
-import { resolvedNetworkRate } from '@/lib/billing/fees'
-import { networkTakeRateBpsForPlan } from '@/lib/billing/pricing-keys'
+import { resolvedNetworkRate, spaceNetworkBps } from '@/lib/billing/fees'
 import { isNetworkConnected } from '@/lib/pricing/network-world'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
 import { PAYOUT_CHANNEL_WORDS, type PayoutChannel } from '@/lib/billing/payout-prompt'
@@ -184,7 +183,8 @@ async function PathsBand({
  *  and touches no take rate (lib/billing/space-beta-grant.ts says so at length). */
 async function RateBand({ space }: { space: Space }) {
   const rate = await resolvedNetworkRate()
-  const bps = networkTakeRateBpsForPlan(space.plan, rate)
+  // The rate the Space is actually charged: the plan's rung, bought down for a Founding Business.
+  const bps = await spaceNetworkBps(space.plan, space.id, rate)
   const connected = isNetworkConnected(space.networkConnected)
   const pct = (bps / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })
   // A Space below Business takes tips only (ADR-1709): selling starts at Business, so it has no fee to
