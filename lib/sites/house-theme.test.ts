@@ -9,6 +9,7 @@ import {
   planHouseSections,
   plainText,
   siteHasContactPage,
+  siteLocalHref,
   splitWhoBody,
   stepNumber,
   withoutAccentMarks,
@@ -162,5 +163,49 @@ describe('prices and links', () => {
     expect(appHref('/spaces/x/book', 'https://frequencylocal.com')).toBe('https://frequencylocal.com/spaces/x/book')
     expect(appHref('javascript:alert(1)', 'https://frequencylocal.com')).toBeNull()
     expect(appHref('//evil.com', 'https://frequencylocal.com')).toBeNull()
+  })
+
+  // Owner ruling 2026-10-07: the website stands alone, so no link it draws sends a visitor to Frequency.
+  describe('siteLocalHref', () => {
+    const m = {
+      origin: 'https://frequencylocal.com',
+      slug: 'danieltyack',
+      siteBase: '',
+      pages: ['retreats'],
+      contactHref: '/contact',
+      email: 'hi@example.com',
+    }
+
+    it('turns Book and Contact into the website Contact form', () => {
+      expect(siteLocalHref('/spaces/danieltyack/book', m)).toEqual({ href: '/contact', external: false })
+      expect(siteLocalHref('https://frequencylocal.com/spaces/danieltyack/book', m)).toEqual({ href: '/contact', external: false })
+      expect(siteLocalHref('/spaces/danieltyack/contact', m)).toEqual({ href: '/contact', external: false })
+    })
+
+    it('falls back to a mail link, else nothing, without a Contact page', () => {
+      expect(siteLocalHref('/spaces/danieltyack/book', { ...m, contactHref: null })).toEqual({ href: 'mailto:hi@example.com', external: false })
+      expect(siteLocalHref('/spaces/danieltyack/book', { ...m, contactHref: null, email: null })).toBeNull()
+    })
+
+    it('maps the Space root and its pages onto the site', () => {
+      expect(siteLocalHref('/spaces/danieltyack', m)).toEqual({ href: '/', external: false })
+      expect(siteLocalHref('/spaces/danieltyack/retreats', m)).toEqual({ href: '/retreats', external: false })
+      expect(siteLocalHref('/spaces/danieltyack/retreats', { ...m, siteBase: '/sites/danieltyack' })).toEqual({ href: '/sites/danieltyack/retreats', external: false })
+    })
+
+    it('drops every other Frequency link', () => {
+      expect(siteLocalHref('/spaces/danieltyack/memberships', m)).toBeNull()
+      expect(siteLocalHref('/spaces/someone-else/book', m)).toBeNull()
+      expect(siteLocalHref('/events/x', m)).toBeNull()
+      expect(siteLocalHref('https://frequencylocal.com/feed', m)).toBeNull()
+    })
+
+    it('keeps another site, mail, phone and anchors, and refuses unsafe links', () => {
+      expect(siteLocalHref('https://calendly.com/daniel', m)).toEqual({ href: 'https://calendly.com/daniel', external: true })
+      expect(siteLocalHref('mailto:a@b.co', m)).toEqual({ href: 'mailto:a@b.co', external: false })
+      expect(siteLocalHref('#message', m)).toEqual({ href: '#message', external: false })
+      expect(siteLocalHref('javascript:alert(1)', m)).toBeNull()
+      expect(siteLocalHref('//evil.com', m)).toBeNull()
+    })
   })
 })

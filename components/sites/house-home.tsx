@@ -21,9 +21,11 @@ import {
   paragraphs,
   plainText,
   planHouseSections,
+  siteLocalHref,
   splitWhoBody,
   stepNumber,
   type HouseSection,
+  type SiteLinkMap,
 } from '@/lib/sites/house-theme'
 import { siteHeroLede } from './site-hero-copy'
 import { HouseBlock, HouseHero, type HouseBlockModel, type HouseHeroModel, type HouseLink } from './house-sections'
@@ -52,19 +54,24 @@ export interface HouseHomeInput {
   brandName: string
   tagline: string | null
   origin: string
+  /** Where the site's own links go: a Space link the owner set becomes a website link (siteLocalHref). */
+  links: SiteLinkMap
   /** The Space's resolved header button (its label and target are the owner's). */
   cta: HouseLink | null
   /** Render one row of blocks the theme does not style, the way the Space page renders it. */
   renderRow: (grid: EntityLayout) => ReactNode
 }
 
-export async function buildHouseHome({ space, grid, brandName, tagline, origin, cta, renderRow }: HouseHomeInput) {
+export async function buildHouseHome({ space, grid, brandName, tagline, origin, links, cta, renderRow }: HouseHomeInput) {
   const prefs = space.preferences
   const content: Record<string, Bag> = (grid.content ?? {}) as Record<string, Bag>
   const bag = (id: string | null): Bag => (id ? (content[id] ?? {}) : {})
   const rows = resolveRows(grid, 'space')
   const plan = planHouseSections(rows, (id) => isFeatureDataSource(content[id]))
+  // The Space on Frequency: only the clearly labelled On Frequency section links here.
   const spaceBase = `${origin}/spaces/${space.slug}`
+  // Every session card books on the website (its Contact form until it takes bookings itself).
+  const book = siteLocalHref(`/spaces/${space.slug}/book`, links)
   const profile = readProfileData(prefs)
 
   const needsFaq = plan.some((s) => s.kind === 'faq')
@@ -153,7 +160,7 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
           price: formatOfferingPrice(o),
           title: o.title,
           body: o.blurb?.trim() || null,
-          cta: label ? { label, href: `${spaceBase}/book` } : null,
+          cta: label && book ? { label, href: book.href } : null,
         })),
       }
       addNav(anchor, m.eyebrow, m.title)
@@ -197,9 +204,9 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
       // Not a menu entry: the header's Contact link opens the full Contact page instead.
       const anchor = anchors.has('message') ? null : 'message'
       if (anchor) anchors.add(anchor)
-      blocks.push(inquiryOf(bag(s.id), key, anchor, space.slug, cta))
+      blocks.push(inquiryOf(bag(s.id), key, anchor, space.slug, cta, links))
     } else if (s.kind === 'closing') {
-      const m = closingOf(bag(s.ctaId), key, contactOf(profile, s.contactRowTitle), origin, space)
+      const m = closingOf(bag(s.ctaId), key, contactOf(profile, s.contactRowTitle), links, space)
       if (m) blocks.push(m)
     } else {
       // An unthemed block keeps the Space page's own render, in a plain band.
@@ -260,8 +267,8 @@ function factsOf(b: Bag): { eyebrow: string | null; title: string | null; items:
 
 /** The Contact form section: the block's own heading and intro, and its settings for the CRM-wired form
  *  (app/(main)/spaces/[slug]/contact-form-actions.ts writes the lead and emails the owner). After sending,
- *  the thank-you offers the Space's header button (its booking page, when that is what the owner set). */
-function inquiryOf(b: Bag, key: string, anchor: string | null, slug: string, cta: HouseLink | null): HouseBlockModel {
+ *  the thank-you offers the Space's header button, unless that button is this same form. */
+function inquiryOf(b: Bag, key: string, anchor: string | null, slug: string, cta: HouseLink | null, links: SiteLinkMap): HouseBlockModel {
   const opt = (v: unknown) => text(v) ?? undefined
   return {
     kind: 'inquiry',
@@ -278,15 +285,15 @@ function inquiryOf(b: Bag, key: string, anchor: string | null, slug: string, cta
       optInLabel: opt(b.optInLabel),
       submitLabel: opt(b.submitLabel),
       successMessage: opt(b.successMessage),
-      next: cta ? { label: cta.label, href: cta.href } : null,
+      next: cta && cta.href !== links.contactHref ? { label: cta.label, href: cta.href } : null,
     },
   }
 }
 
 /** The closing ink band: the Accent beat's headline and button beside the contact details. Null when empty. */
-function closingOf(b: Bag, key: string, contact: ReturnType<typeof contactOf>, origin: string, space: Space): HouseBlockModel | null {
+function closingOf(b: Bag, key: string, contact: ReturnType<typeof contactOf>, links: SiteLinkMap, space: Space): HouseBlockModel | null {
   const buttonLabel = b.buttonOn === false ? null : text(b.buttonLabel)
-  const buttonHref = appHref(b.buttonUrl, origin)
+  const button = siteLocalHref(b.buttonUrl, links)
   const m = {
     kind: 'closing' as const,
     key,
@@ -294,7 +301,7 @@ function closingOf(b: Bag, key: string, contact: ReturnType<typeof contactOf>, o
     eyebrow: null,
     title: text(b.title),
     body: text(b.body),
-    button: buttonLabel && buttonHref ? { label: buttonLabel, href: buttonHref, external: !buttonHref.startsWith(origin) } : null,
+    button: buttonLabel && button ? { label: buttonLabel, ...button } : null,
     photo: (typeof b.image === 'string' ? safeImageSrc(b.image) : null) ?? safeImageSrc(space.coverImageUrl) ?? null,
     contact,
   }
@@ -306,7 +313,7 @@ function closingOf(b: Bag, key: string, contact: ReturnType<typeof contactOf>, o
  * Space's own fields: a profile (the About block's heading and text, the Zigzag photo, the facts), the
  * Contact form, then the closing band with the contact details. A section with nothing to show is dropped.
  */
-export function buildHouseContact({ space, grid, origin, cta }: Pick<HouseHomeInput, 'space' | 'grid' | 'origin' | 'cta'>) {
+export function buildHouseContact({ space, grid, links, cta }: Pick<HouseHomeInput, 'space' | 'grid' | 'links' | 'cta'>) {
   const content: Record<string, Bag> = (grid.content ?? {}) as Record<string, Bag>
   const bag = (id: string): Bag => content[id] ?? {}
   const imageOf = (b: Bag) => (typeof b.image === 'string' ? safeImageSrc(b.image) : null)
@@ -329,8 +336,8 @@ export function buildHouseContact({ space, grid, origin, cta }: Pick<HouseHomeIn
       facts: facts && facts.items.length ? facts : null,
     })
   }
-  blocks.push(inquiryOf(bag('contactForm'), 'form', 'message', space.slug, cta))
-  const close = closingOf(bag('accentBeat'), 'close', contactOf(readProfileData(space.preferences), null), origin, space)
+  blocks.push(inquiryOf(bag('contactForm'), 'form', 'message', space.slug, cta, links))
+  const close = closingOf(bag('accentBeat'), 'close', contactOf(readProfileData(space.preferences), null), links, space)
   if (close) blocks.push(close)
   return { blocks }
 }
