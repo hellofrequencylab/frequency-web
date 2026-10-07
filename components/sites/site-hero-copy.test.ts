@@ -1,15 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SITE_HERO_LEDE_MAX, siteHeroEyebrow, siteHeroLede } from './site-hero-copy'
-
-describe('siteHeroEyebrow', () => {
-  it('joins the tagline and the town', () => {
-    expect(siteHeroEyebrow('Emotional Alchemy', 'Encinitas')).toBe('Emotional Alchemy · Encinitas')
-  })
-  it('keeps whichever exists, or null', () => {
-    expect(siteHeroEyebrow(null, ' Encinitas ')).toBe('Encinitas')
-    expect(siteHeroEyebrow('  ', undefined)).toBeNull()
-  })
-})
+import { SITE_HERO_LEDE_MAX, siteHeroLede } from './site-hero-copy'
 
 describe('siteHeroLede', () => {
   it('keeps a short description whole', () => {

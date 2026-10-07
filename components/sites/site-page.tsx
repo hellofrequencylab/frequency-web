@@ -1,9 +1,11 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { safeImageSrc } from '@/lib/safe-image-src'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
+import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
+import { appHref } from '@/lib/sites/house-theme'
+import { buildHouseHome, HouseHome } from '@/components/sites/house-home'
 import { getSiteSpace } from '@/lib/sites/site-cache'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
@@ -13,19 +15,14 @@ import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
-import { SiteChrome, SITE_CONTAINER } from '@/components/sites/site-chrome'
-import { SITE_BOOK_ANCHOR, siteHasBooking, siteSectionLinks } from '@/components/sites/site-nav'
-import { buttonClasses, buttonGeometry } from '@/components/ui/button'
-import { siteHeroEyebrow, siteHeroLede } from '@/components/sites/site-hero-copy'
-import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
+import { SiteChrome, SITE_CONTAINER, siteHref } from '@/components/sites/site-chrome'
+import { buttonClasses } from '@/components/ui/button'
 import { markAnonymousRender } from '@/lib/core/anonymous-render'
 import { setActiveSpace } from '@/lib/spaces/active-space'
-import { readTagline } from '@/lib/spaces/tagline'
-import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
-import { readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
-import { parseEntityLayout, resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
-import { readProfileData } from '@/lib/spaces/profile-data'
+import { readTagline } from '@/lib/spaces/tagline'
+import { parseEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
 import type { Space } from '@/lib/spaces/types'
 import { appOrigin } from '@/lib/sites/host'
 import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
@@ -35,15 +32,16 @@ import { boundSiteDomain } from '@/lib/sites/site-domain'
 // free subdomain (`<slug>.frequencylocal.com`, LIVE-782), on its own domain once connected, and at
 // /sites/<slug> inside a slim site chrome with no Frequency app shell.
 //
-// BUILT ON THE PUBLIC SPACE PAGE (owner ask 2026-10-06: the Puck-doc render "looks like hot garbage", the
-// signed-out public page is the good one). The body is the same render app/(public)/spaces/[slug]/page.tsx
-// performs: the Space's cover (now a full-width hero, SiteHero below) and focal point,
-// the brand name and tagline on it, and on Home the same <SpaceProfileModules> grid off the operator's
-// own `preferences.profileLayout`, parsed by the same pure parseEntityLayout. A custom page renders the
-// way the profile renders it, its own page doc through SpaceLanding (app/(main)/spaces/[slug]/(profile)/
-// [page]/page.tsx), here with an anonymous viewer. Left out on purpose, because they are Frequency's and
-// not the owner's: the app shell and Frequency menu, the sign-in and BETA cards, Follow and Share, and
-// owner tools. With no viewer (markAnonymousRender), every member and owner check resolves false.
+// THE HOUSE THEME (owner ask 2026-10-07: the "Daniel Tyack Site v4" design is the default look of every
+// Space website). Home is the Space's own Home blocks, in the owner's order, each drawn as a themed section
+// (components/sites/house-home.tsx); a block the theme does not style keeps the Space page's own render in a
+// plain band. Every word, photo and link comes from the Space: its block fields, Hero settings, header
+// button, offerings, memberships, FAQ and contact details. The Space's brand accent and page theme carry
+// through (AccentScope), so the site wears the owner's color and, once chosen, their faces. A custom page
+// renders its own page doc through SpaceLanding, here with an anonymous viewer. Left out on purpose,
+// because they are Frequency's and not the owner's: the app shell and Frequency menu, the sign-in and BETA
+// cards, Follow and Share, and owner tools. With no viewer (markAnonymousRender), every member and owner
+// check resolves false.
 //
 // FAIL-CLOSED twice: the Space is resolved with an ANONYMOUS viewer, so a Private Space 404s and this
 // route never confirms one exists; and the site only renders once the owner has published it
@@ -124,189 +122,78 @@ export async function SitePage({
 
   if (!hasPage(space.preferences, pageSlug)) notFound()
 
-  // Home's placed block ids, in page order: the header menu and the Book button are built from them.
-  const grid = profileGrid(space.preferences)
-  const blockIds = resolveRows(grid, 'space').flatMap((row) => row.cells.flat())
+  // Stamp the tenant so any block that resolves its rows from the active Space reads THIS one, the same
+  // line the public page carries.
+  setActiveSpace(space)
+  const origin = appOrigin()
+  const home = pageSlug === HOME_SLUG
+  const homeHref = siteHref(siteBase, HOME_SLUG)
   const pages = readProfilePages(space.preferences)
   const tagline = await readTagline(space.id)
+  const cta = siteCta(space, origin)
+  const pageLinks = pages
+    .filter((p) => p.slug !== HOME_SLUG)
+    .map((p) => ({ href: siteHref(siteBase, p.slug), label: p.label }))
+
+  // Home is the house theme (components/sites/house-home.tsx) over the operator's own Home blocks; a
+  // custom page renders its own page doc the way the profile renders it, inside the same chrome.
+  const model = home
+    ? await buildHouseHome({
+        space,
+        grid: profileGrid(space.preferences),
+        brandName,
+        tagline,
+        origin,
+        cta,
+        // A block the theme does not style keeps the Space page's own render (same component, same grid).
+        renderRow: (row) => <SpaceProfileModules space={toProfileContext(space)} grid={row} />,
+      })
+    : null
+  const links = [...(model?.nav ?? []), ...pageLinks]
 
   return (
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the
-    // owner's pick rather than the default Frequency look.
+    // owner's accent and faces rather than the default Frequency look.
     <AccentScope vars={accentVars} theme={theme}>
       <SiteChrome
         brandName={brandName}
-        logoUrl={space.brandLogoUrl}
-        tagline={tagline}
-        pages={pages}
-        activePageSlug={pageSlug}
-        base={siteBase}
-        sections={siteSectionLinks(blockIds)}
-        bookLabel={defaultPrimaryCtaLabel(space.type)}
-        hasBooking={siteHasBooking(blockIds)}
-        profile={readProfileData(space.preferences)}
+        homeHref={homeHref}
+        links={links}
+        cta={cta}
+        themeFonts={hasChosenTheme(space.preferences)}
       >
-        <SiteBody
-          space={space}
-          brandName={brandName}
-          tagline={tagline}
-          pageSlug={pageSlug}
-          pageLabel={pages.find((p) => p.slug === pageSlug)?.label ?? brandName}
-          grid={grid}
-          hasBooking={siteHasBooking(blockIds)}
-          bookLabel={defaultPrimaryCtaLabel(space.type)}
-          hasContact={blockIds.includes('contact')}
-        />
+        {model ? (
+          <HouseHome model={model} />
+        ) : (
+          <div className={`${SITE_CONTAINER} pb-16 pt-28 sm:pb-24`}>
+            <h1 className="hs-h2">{pages.find((p) => p.slug === pageSlug)?.label ?? brandName}</h1>
+            <div className="mt-10">
+              <Suspense fallback={<ProfileBodySkeleton />}>
+                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous />
+              </Suspense>
+            </div>
+          </div>
+        )}
       </SiteChrome>
     </AccentScope>
   )
 }
 
-/** The website body (redesigned 2026-10-06): a full-width cover hero, then Home's blocks as full-width
- *  section bands on the shared site column, or a custom page's doc on the same column. The blocks are the
- *  public Space page's own (same SpaceProfileModules, same stored layout), so everything the owner built
- *  carries over; only the frame around them is a website's. */
-async function SiteBody({
-  space,
-  brandName,
-  tagline,
-  pageSlug,
-  pageLabel,
-  grid,
-  hasBooking,
-  bookLabel,
-  hasContact,
-}: {
-  space: Space
-  brandName: string
-  tagline: string | null
-  pageSlug: string
-  pageLabel: string
-  grid: EntityLayout
-  hasBooking: boolean
-  bookLabel: string
-  hasContact: boolean
-}) {
-  // Stamp the tenant so any block that resolves its rows from the active Space reads THIS one, the same
-  // line the public page carries.
-  setActiveSpace(space)
-  const home = pageSlug === HOME_SLUG
-
-  return (
-    <>
-      <SiteHero
-        image={safeImageSrc(space.coverImageUrl) ?? coverPlaceholderFor(space.id)}
-        focus={readCoverFocus(space.preferences)}
-        eyebrow={home ? siteHeroEyebrow(tagline, space.city) : brandName}
-        title={home ? brandName : pageLabel}
-        lede={home ? siteHeroLede(space.about) : null}
-        tall={home}
-        bookHref={home && hasBooking ? `#${SITE_BOOK_ANCHOR}` : null}
-        bookLabel={bookLabel}
-        contactHref={home && hasContact ? '#contact' : null}
-      />
-      {home ? (
-        <div className="py-6 sm:py-10">
-          <SpaceProfileModules
-            space={toProfileContext(space)}
-            grid={grid}
-            wrapRow={(rowId, node) => (
-              <div key={rowId} className="site-band py-8 sm:py-12">
-                <div className={`${SITE_CONTAINER} space-y-8`}>{node}</div>
-              </div>
-            )}
-          />
-        </div>
-      ) : (
-        <div className={`${SITE_CONTAINER} py-12 sm:py-16`}>
-          <Suspense fallback={<ProfileBodySkeleton />}>
-            <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous />
-          </Suspense>
-        </div>
-      )}
-    </>
+/** The Space's own header button (preferences.headerCta, else its type's default), with its target made
+ *  absolute on Frequency: a website on its own domain only serves its pages. */
+function siteCta(space: Space, origin: string): { label: string; href: string; external: boolean } | null {
+  const resolved = resolveHeaderCta(
+    readHeaderCtaPreference(space.preferences),
+    `/spaces/${space.slug}`,
+    defaultPrimaryCtaLabel(space.type),
   )
+  const href = appHref(resolved.href, origin)
+  return href ? { label: resolved.label, href, external: resolved.external } : null
 }
 
-/** The hero headline's poster size (larger than the display scale tops out at) and a slow settle on the
- *  cover photo, still for anyone who asked for reduced motion. Static, so safe to inline. */
-const SITE_HERO_CSS = [
-  '.site-hero-title{font-size:clamp(3.25rem,10vw,8.5rem);line-height:.9;letter-spacing:.005em;text-wrap:balance}',
-  '[data-site-hero="short"] .site-hero-title{font-size:clamp(2.75rem,7vw,5.5rem)}',
-  '@keyframes site-hero-settle{from{transform:scale(1.08)}to{transform:scale(1.01)}}',
-  '.site-hero-photo{transform:scale(1.01)}',
-  '@media (prefers-reduced-motion:no-preference){.site-hero-photo{animation:site-hero-settle 14s ease-out both}}',
-].join('\n')
-
-/** The full-width cover (second pass 2026-10-06, owner: "redo the hero with something that vibed"): the
- *  Space's cover photo edge to edge at its saved focal point, with the town and tagline as an eyebrow, the name set huge in the display face, the
- *  opening of the Space's own description, and Book plus Get in touch. A dark wash from the text side and
- *  an accent glow from the bottom keep the words readable on any photo. Home gets the tall version. */
-function SiteHero({
-  image,
-  focus,
-  eyebrow,
-  title,
-  lede,
-  tall,
-  bookHref,
-  bookLabel,
-  contactHref,
-}: {
-  image: string
-  focus: string
-  eyebrow: string | null
-  title: string
-  lede: string | null
-  tall: boolean
-  bookHref: string | null
-  bookLabel: string
-  contactHref: string | null
-}) {
-  return (
-    <section
-      data-site-hero={tall ? 'tall' : 'short'}
-      className={`relative isolate flex w-full items-end overflow-hidden bg-ink ${
-        tall ? 'min-h-[36rem] sm:min-h-[42rem] lg:min-h-[48rem]' : 'min-h-[20rem] sm:min-h-[24rem]'
-      }`}
-    >
-      <style>{SITE_HERO_CSS}</style>
-      {/* eslint-disable-next-line @next/next/no-img-element -- operator cover on an arbitrary host, next/image can't allowlist it */}
-      <img
-        src={image}
-        alt=""
-        fetchPriority="high"
-        className="site-hero-photo absolute inset-0 -z-10 h-full w-full object-cover"
-        style={{ objectPosition: focus }}
-      />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-ink/85 via-ink/45 to-ink/10" aria-hidden />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-primary/35 via-transparent to-ink/40" aria-hidden />
-      <div className={`${SITE_CONTAINER} pb-12 pt-28 sm:pb-16`}>
-        {eyebrow && <p className="eyebrow text-on-ink/85">{eyebrow}</p>}
-        <h1 className="site-hero-title mt-3 max-w-4xl font-display uppercase text-on-ink">{title}</h1>
-        {lede && <p className="mt-5 max-w-xl text-body-lg leading-relaxed text-on-ink/90">{lede}</p>}
-        {(bookHref || contactHref) && (
-          <div className="mt-8 flex flex-wrap gap-3">
-            {bookHref && (
-              <a href={bookHref} data-site-link={SITE_BOOK_ANCHOR} className={buttonClasses('primary', 'md')}>
-                {bookLabel}
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </a>
-            )}
-            {contactHref && (
-              <a
-                href={contactHref}
-                data-site-link="contact"
-                className={buttonGeometry('md', 'border border-on-ink/70 text-on-ink hover:bg-on-ink/10')}
-              >
-                Get in touch
-              </a>
-            )}
-          </div>
-        )}
-      </div>
-    </section>
-  )
+/** Whether the owner picked a page theme (preferences.theme). Unset, the site wears the house faces. */
+function hasChosenTheme(prefs: unknown): boolean {
+  return !!prefs && typeof prefs === 'object' && typeof (prefs as Record<string, unknown>).theme === 'string'
 }
 
 /** The operator's saved Home arrangement, read exactly as the public page reads it. FAIL-SAFE: a
