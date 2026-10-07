@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-838",
+  "title": "A Space website's Contact page hero sits on the washed photo stage, the pull line sits under a taller photo, and the stats get their own panel",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/sites/house-sections.tsx",
+    "ref": "Owner ask 2026-10-07 15:33: 'Make the Hero more of a hero... Move the If you're carrying something heavy line under the image and crop the image to be a little taller vertically. Get the stats spaced out and presented better.' LIVE-837 follow-up."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: after LIVE-837 the Contact page hero was a thin heading beside a form on the plain canvas, the pull line closed a long text column, and the six stats ran in a cramped row. THE FIX: the form hero reuses the home hero's stage (hs-hero: the Contact form block's image or the Space cover, ink wash, h1 on ink) with the form as the floating card. The story photo is 2:3 with the pull line under it, and the photo column is sticky on wide screens. The stats sit in the house panel (hs-panel) as a 3-column grid (2 on a phone) with large serif values.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/sites/house-sections.tsx','utf8');const c=fs.readFileSync('components/sites/house-css.ts','utf8');if(!/hs-hero hs-hero-form/.test(s)||!/hs-panel hs-stats/.test(s)||!/hs-photo-tall\\{aspect-ratio:2\\/3\\}/.test(c)){console.error('LIVE-838: the Contact page hero, pull line and stats panel are not in place');process.exit(1)}\"",
+    "note": "Fails on main (thin form hero, stats in a row); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
