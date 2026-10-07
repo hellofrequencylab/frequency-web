@@ -491,7 +491,13 @@ export default async function PricingPage() {
             title="We charge once for the introduction."
             kicker={PLAN_STORY.rate}
           />
-          <div className="overflow-x-auto rounded-card border border-border bg-surface">
+          {/* Focusable and named, so a keyboard user can scroll the table on a narrow screen. */}
+          <div
+            className="overflow-x-auto rounded-card border border-border bg-surface"
+            tabIndex={0}
+            role="region"
+            aria-label="The network fee on each plan"
+          >
             <table className="w-full min-w-[36rem] text-left text-body-sm">
               <caption className="sr-only">The network fee on each plan</caption>
               <thead className="border-b border-border text-3xs font-black uppercase tracking-eyebrow text-muted">
