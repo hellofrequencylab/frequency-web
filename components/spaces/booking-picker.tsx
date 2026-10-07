@@ -4,9 +4,15 @@ import { useMemo, useState, useSyncExternalStore, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarCheck, Check, Clock, Loader2 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
-import { Input, Textarea } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Field, Input, Textarea, labelClasses } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
-import { createBooking, rescheduleBooking, startServiceDeposit } from '@/lib/spaces/booking-actions'
+import {
+  createBooking,
+  createGuestBookingAction,
+  rescheduleBooking,
+  startServiceDeposit,
+} from '@/lib/spaces/booking-actions'
 import type { OpenSlot, BookingQuestion } from '@/lib/spaces/booking'
 import { groupSlotsByDay, sessionLengthLabel, timezoneLabel } from '@/lib/spaces/booking-format'
 import { cn } from '@/lib/utils'
@@ -20,6 +26,11 @@ import { cn } from '@/lib/utils'
 // timezone still labeled ("shown in your time"). The stored instant is absolute UTC, unchanged. To
 // avoid a hydration mismatch, the server + first client render use the Space timezone (useViewerTimezone's
 // server snapshot), then the browser timezone takes over. No narrated feelings, no em/en dashes.
+//
+// GUEST MODE (LIVE-835). On a Space website's Book page the picker takes `guest` (the Space slug): the visitor
+// has no account, so it asks for a name and an email, offers a "Keep me posted" box and carries a hidden
+// honeypot, then books through createGuestBookingAction. No reschedule, no deposit, no "your bookings": the
+// confirmation email is the visitor's record. Without `guest` the member flow is unchanged.
 
 const NO_OP_SUBSCRIBE = () => () => {}
 
@@ -48,6 +59,7 @@ export function BookingPicker({
   questions = [],
   rescheduleBookingId = null,
   depositProductId = null,
+  guest = null,
 }: {
   spaceId: string
   /** The open slots (absolute UTC instants), grouped by day in the viewer's timezone at render. */
@@ -63,6 +75,8 @@ export function BookingPicker({
   /** P4 (dark): when set (deposits live + a paid service), confirming opens deposit checkout instead of
    *  the free confirm. Null keeps the free P0 path. Always null until payments are turned on. */
   depositProductId?: string | null
+  /** LIVE-835: book as a guest on the Space's website (name + email, no account). Null keeps the member flow. */
+  guest?: { slug: string } | null
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<OpenSlot | null>(null)
@@ -71,7 +85,13 @@ export function BookingPicker({
   const [error, setError] = useState<string | null>(null)
   const [booked, setBooked] = useState<string | null>(null)
   const [pending, startBooking] = useTransition()
-  const isReschedule = !!rescheduleBookingId
+  // Guest mode only: who is booking, their opt-in, and the honeypot.
+  const [guestName, setGuestName] = useState('')
+  const [guestEmail, setGuestEmail] = useState('')
+  const [optIn, setOptIn] = useState(false)
+  const [company, setCompany] = useState('')
+  const isGuest = !!guest
+  const isReschedule = !isGuest && !!rescheduleBookingId
 
   // The viewer's own timezone (falls back to the Space tz on the server + first client render).
   const viewerTz = useViewerTimezone(spaceTimezone)
@@ -103,9 +123,36 @@ export function BookingPicker({
         return
       }
     }
+    if (isGuest && (!guestName.trim() || !guestEmail.trim())) {
+      setError('Add your name and email so we can send your confirmation.')
+      return
+    }
     setError(null)
     const target = selected
     startBooking(async () => {
+      if (guest) {
+        const result = await createGuestBookingAction({
+          slug: guest.slug,
+          startsAtISO: target.startsAt,
+          name: guestName,
+          email: guestEmail,
+          note: note.trim() || null,
+          serviceTypeId,
+          answers,
+          optIn,
+          company,
+        })
+        if (isError(result)) {
+          setError(result.error)
+          return
+        }
+        // No refresh: the website page is cached, and the server re-checks the slot on every booking.
+        setBooked(target.startsAt)
+        setSelected(null)
+        setNote('')
+        setAnswers({})
+        return
+      }
       // P4 (dark): a paid service with deposits live opens deposit checkout (redirect on success);
       // otherwise the free confirm-only / reschedule path. depositProductId is null until payments are on.
       if (depositProductId && !isReschedule) {
@@ -148,7 +195,9 @@ export function BookingPicker({
           {isReschedule ? 'You are rescheduled.' : 'You are booked.'}
         </p>
         <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">
-          {when} ({viewerTzLabel}). You can manage this from your bookings.
+          {isGuest
+            ? `${when} (${viewerTzLabel}). Your confirmation email is on its way.`
+            : `${when} (${viewerTzLabel}). You can manage this from your bookings.`}
         </p>
         <button
           type="button"
@@ -216,6 +265,43 @@ export function BookingPicker({
           </p>
           {!isReschedule && (
             <>
+              {isGuest && (
+                <>
+                  <Field label="Your name">
+                    <Input
+                      className="w-full"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      maxLength={120}
+                      autoComplete="name"
+                      required
+                    />
+                  </Field>
+                  <Field label="Email" hint="Your confirmation goes here.">
+                    <Input
+                      className="w-full"
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      maxLength={254}
+                      autoComplete="email"
+                      required
+                    />
+                  </Field>
+                  {/* Honeypot. Hidden from sight and from assistive tech, so only a bot ever fills it. */}
+                  <div aria-hidden className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+                    <Field label="Company" labelClassName={labelClasses}>
+                      <Input
+                        type="text"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={company}
+                        onChange={(e) => setCompany(e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                </>
+              )}
               {questions.map((q) => (
                 <div key={q.id}>
                   <label htmlFor={`bq-${q.id}`} className="text-meta font-medium text-muted">
@@ -256,6 +342,13 @@ export function BookingPicker({
                   className="mt-1"
                 />
               </div>
+              {isGuest && (
+                <Checkbox
+                  checked={optIn}
+                  onChange={(e) => setOptIn(e.target.checked)}
+                  label="Keep me posted about news and new times."
+                />
+              )}
             </>
           )}
           {error && (

@@ -48,7 +48,16 @@ import type { Json } from '@/lib/database.types'
 // ── Doors ─────────────────────────────────────────────────────────────────────────────────────────
 
 /** The lead-grab door taxonomy. Kept in lock-step with lead_entry_points.kind in the migration. */
-export const LEAD_DOORS = ['space_qr', 'warm_intro', 'event', 'lead_magnet', 'share_back', 'contact_form'] as const
+export const LEAD_DOORS = [
+  'space_qr',
+  'warm_intro',
+  'event',
+  'lead_magnet',
+  'share_back',
+  'contact_form',
+  // LIVE-835: a guest booked a time on the Space's own website.
+  'website_booking',
+] as const
 export type LeadDoor = (typeof LEAD_DOORS)[number]
 
 export function isLeadDoor(v: unknown): v is LeadDoor {
@@ -70,6 +79,8 @@ export function doorLabel(door: LeadDoor): string {
       return 'Share back'
     case 'contact_form':
       return 'Contact form'
+    case 'website_booking':
+      return 'Website booking'
   }
 }
 
@@ -98,6 +109,8 @@ export function isMailableDoor(door: LeadDoor, opts: DoorConsentOpts = {}): bool
   // A contact form carries its OWN opt-in checkbox: writing to someone is not asking to hear from
   // them, so the tick is the only thing that makes the lead mailable.
   if (door === 'contact_form') return !!opts.optedIn
+  // A website booking (LIVE-835) carries a "Keep me posted" box: booking a time is not asking for mail.
+  if (door === 'website_booking') return !!opts.optedIn
   // event + share_back are never mailable on capture alone.
   return false
 }

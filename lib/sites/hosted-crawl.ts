@@ -1,6 +1,6 @@
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { readProfilePages } from '@/lib/spaces/profile-pages'
-import { SITE_CONTACT_SLUG, siteHasContactPage } from '@/lib/sites/house-theme'
+import { SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteHasContactPage } from '@/lib/sites/house-theme'
 import { appOrigin, normalizeHost } from '@/lib/sites/host'
 import { resolveHostedSpace } from '@/lib/sites/hosted'
 import { getSiteSpace } from '@/lib/sites/site-cache'
@@ -37,13 +37,19 @@ export async function resolveHostedCrawlTarget(hostParam: string): Promise<Hoste
 }
 
 /** The pages a published site serves (home first, then the Space's own pages, then Contact when the
- *  form is placed), with their nav labels. */
-export function hostedSitePages(space: Pick<Space, 'preferences'>): { slug: string; label: string }[] {
+ *  form is placed, then Book when the Space takes bookings, LIVE-835), with their nav labels. The caller
+ *  reads `takesBookings` (lib/sites/site-booking.ts readSiteBooking), the same rule that serves `/book`. */
+export function hostedSitePages(
+  space: Pick<Space, 'preferences'>,
+  takesBookings = false,
+): { slug: string; label: string }[] {
   const pages = readProfilePages(space.preferences).map((p) => ({ slug: p.slug, label: p.label }))
-  return siteHasContactPage(space.preferences) ? [...pages, { slug: SITE_CONTACT_SLUG, label: 'Contact' }] : pages
+  if (siteHasContactPage(space.preferences)) pages.push({ slug: SITE_CONTACT_SLUG, label: 'Contact' })
+  if (takesBookings) pages.push({ slug: SITE_BOOK_SLUG, label: 'Book' })
+  return pages
 }
 
 /** The page slugs a published site's sitemap lists (home first, then the Space's own pages). */
-export function hostedSitemapSlugs(space: Pick<Space, 'preferences'>): string[] {
-  return hostedSitePages(space).map((p) => p.slug)
+export function hostedSitemapSlugs(space: Pick<Space, 'preferences'>, takesBookings = false): string[] {
+  return hostedSitePages(space, takesBookings).map((p) => p.slug)
 }

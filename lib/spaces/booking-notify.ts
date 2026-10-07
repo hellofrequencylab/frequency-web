@@ -8,6 +8,10 @@
 // the booking at fire time. If the booking is no longer 'confirmed' (cancelled, or replaced by a
 // reschedule), the reminder simply no-ops. So a cancel / reschedule needs no job surgery: cancelling
 // the booking cancels its reminder, and a reschedule enqueues a fresh reminder for the new booking.
+//
+// GUEST BOOKERS (LIVE-835). A booking from a Space website may have no member profile: the guest's own
+// name and email stand in for it. Their mail goes to that address, and its link opens the website's Book
+// page, never Frequency (owner ask 2026-10-07: "The website is stand alone"). The owner's copy is unchanged.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueue } from '@/lib/queue/outbox'
@@ -16,6 +20,7 @@ import {
   sendBookingConfirmationEmail,
   buildBookingReminderEmail,
   sendBookingCancelledEmail,
+  enqueueEmail,
 } from '@/lib/email'
 import { madeWithUrl } from '@/lib/marketing/made-with'
 
@@ -44,11 +49,22 @@ interface BookingNotifyContext {
   spaceSlug: string
   spaceName: string
   ownerProfileId: string | null
-  memberProfileId: string
+  /** Null for a guest booking (LIVE-835); `guest` then names who to mail. */
+  memberProfileId: string | null
   memberName: string | null
+  /** LIVE-835: a guest booker from the Space's website, mailed at the address they gave with a link to
+   *  the website's Book page. Null for a member booking. */
+  guest?: GuestRecipient | null
   startsAt: string
   endsAt: string
   serviceName: string | null
+}
+
+/** A guest booker (LIVE-835): where their mail goes and the website link it carries. */
+interface GuestRecipient {
+  name: string
+  email: string
+  manageUrl: string
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────────────────────────
@@ -76,6 +92,15 @@ async function resolveRecipient(
   } catch {
     return null
   }
+}
+
+/** The booker's mail address: the guest's own (LIVE-835), else the member profile's. Null when neither. */
+async function bookerRecipient(
+  admin: Admin,
+  ctx: { memberProfileId: string | null; guest?: GuestRecipient | null },
+): Promise<{ email: string; name: string } | null> {
+  if (ctx.guest) return { email: ctx.guest.email, name: ctx.guest.name }
+  return ctx.memberProfileId ? resolveRecipient(admin, ctx.memberProfileId) : null
 }
 
 function durationMinutes(startsAt: string, endsAt: string): number {
@@ -194,7 +219,7 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
       url: manageUrl,
     })
 
-    const member = await resolveRecipient(admin, ctx.memberProfileId)
+    const member = await bookerRecipient(admin, ctx)
     if (member) {
       await sendBookingConfirmationEmail({
         to: member.email,
@@ -205,8 +230,17 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
         whenAbsolute,
         durationMinutes: mins,
         otherPartyName: ctx.spaceName,
-        manageUrl,
-        icsBase64,
+        manageUrl: ctx.guest?.manageUrl ?? manageUrl,
+        // A guest's calendar entry links back to the website, like their email.
+        icsBase64: ctx.guest
+          ? buildBookingIcsBase64({
+              uid: ctx.bookingId,
+              startsAt: ctx.startsAt,
+              endsAt: ctx.endsAt,
+              summary: ctx.serviceName ?? `Session with ${ctx.spaceName}`,
+              url: ctx.guest.manageUrl,
+            })
+          : icsBase64,
         // The customer's copy carries the mark (LIVE-804); the owner's is a work notice and does not.
         madeWith: { label: 'Made with Frequency', url: madeWithUrl('booking-email', APP_URL) },
       })
@@ -222,7 +256,10 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
           serviceName: ctx.serviceName,
           whenAbsolute,
           durationMinutes: mins,
-          otherPartyName: ctx.memberName ?? member?.name ?? 'A member',
+          // A guest is named with the address they gave, so the owner can write back.
+          otherPartyName: ctx.guest
+            ? `${ctx.guest.name} (${ctx.guest.email})`
+            : (ctx.memberName ?? member?.name ?? 'A member'),
           manageUrl,
           icsBase64,
         })
@@ -245,11 +282,19 @@ export async function scheduleBookingReminder(bookingId: string, startsAt: strin
   }
 }
 
-/** Send a cancellation notice to the member (and the owner). Best-effort; never throws. */
+/** Send a cancellation notice to the member or guest (and the owner). Best-effort; never throws. */
 export async function notifyBookingCancelled(
   ctx: Pick<
     BookingNotifyContext,
-    'spaceId' | 'spaceSlug' | 'spaceName' | 'ownerProfileId' | 'memberProfileId' | 'memberName' | 'startsAt' | 'serviceName'
+    | 'spaceId'
+    | 'spaceSlug'
+    | 'spaceName'
+    | 'ownerProfileId'
+    | 'memberProfileId'
+    | 'memberName'
+    | 'guest'
+    | 'startsAt'
+    | 'serviceName'
   >,
   reason: string | null,
 ): Promise<void> {
@@ -259,7 +304,7 @@ export async function notifyBookingCancelled(
     const whenAbsolute = formatWhen(ctx.startsAt, tz)
     const bookUrl = `${APP_URL}/spaces/${ctx.spaceSlug}/book`
 
-    const member = await resolveRecipient(admin, ctx.memberProfileId)
+    const member = await bookerRecipient(admin, ctx)
     if (member) {
       await sendBookingCancelledEmail({
         to: member.email,
@@ -269,7 +314,7 @@ export async function notifyBookingCancelled(
         serviceName: ctx.serviceName,
         whenAbsolute,
         reason,
-        bookUrl,
+        bookUrl: ctx.guest?.manageUrl ?? bookUrl,
       })
     }
     if (ctx.ownerProfileId && ctx.ownerProfileId !== ctx.memberProfileId) {
@@ -301,14 +346,19 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
   if (!bookingId) return
   const admin = createAdminClient()
 
-  const { data: bookingRow } = await looseFrom(admin, 'space_bookings')
-    .select('id, space_id, member_profile_id, starts_at, ends_at, status')
+  // LIVE-835: read the guest columns too; a database without them falls back to the member-only read.
+  const baseCols = 'id, space_id, member_profile_id, starts_at, ends_at, status'
+  let read = await looseFrom(admin, 'space_bookings')
+    .select(`${baseCols}, guest_name, guest_email`)
     .eq('id', bookingId)
     .maybeSingle()
-  const booking = bookingRow as {
+  if (read.error) read = await looseFrom(admin, 'space_bookings').select(baseCols).eq('id', bookingId).maybeSingle()
+  const booking = read.data as {
     id: string
     space_id: string
-    member_profile_id: string
+    member_profile_id: string | null
+    guest_name?: string | null
+    guest_email?: string | null
     starts_at: string
     ends_at: string
     status: string
@@ -318,17 +368,37 @@ export async function runBookingReminder(payload: Record<string, unknown>): Prom
 
   const { data: spaceRow } = await admin
     .from('spaces')
-    .select('name, brand_name, slug')
+    .select('name, brand_name, slug, domain')
     .eq('id', booking.space_id)
     .maybeSingle()
-  const space = spaceRow as { name: string; brand_name: string | null; slug: string } | null
+  const space = spaceRow as { name: string; brand_name: string | null; slug: string; domain: string | null } | null
   if (!space) return
   const spaceName = space.brand_name?.trim() || space.name
+
+  const tz = await bookingTimezone(admin, booking.space_id)
+
+  // A guest booker (LIVE-835) has no profile for the notification router's gate: the reminder is the
+  // same transactional email, enqueued straight onto the outbox (sendRawEmail still honours global
+  // suppression), and its link opens the Space website's Book page.
+  if (!booking.member_profile_id) {
+    if (!booking.guest_name || !booking.guest_email) return
+    const { siteBookUrl } = await import('@/lib/sites/site-booking')
+    await enqueueEmail(
+      buildBookingReminderEmail({
+        to: booking.guest_email,
+        recipientName: booking.guest_name,
+        spaceName,
+        serviceName: null,
+        whenAbsolute: formatWhen(booking.starts_at, tz),
+        manageUrl: await siteBookUrl({ id: booking.space_id, slug: space.slug, domain: space.domain }),
+      }),
+    )
+    return
+  }
 
   const member = await resolveRecipient(admin, booking.member_profile_id)
   if (!member) return
 
-  const tz = await bookingTimezone(admin, booking.space_id)
   // Route through the notification registry (ADR-627): the 'booking.reminder' type is
   // transactional email, so the gate only weighs global suppression (no consent/pref) — the
   // same guard sendRawEmail applied before, now uniform + declarative. The email is rendered

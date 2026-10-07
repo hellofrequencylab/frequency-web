@@ -13020,8 +13020,10 @@ export type Database = {
           cancelled_at: string | null
           created_at: string
           ends_at: string
+          guest_email: string | null
+          guest_name: string | null
           id: string
-          member_profile_id: string
+          member_profile_id: string | null
           note: string | null
           order_id: string | null
           product_id: string | null
@@ -13037,8 +13039,10 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string
           ends_at: string
+          guest_email?: string | null
+          guest_name?: string | null
           id?: string
-          member_profile_id: string
+          member_profile_id?: string | null
           note?: string | null
           order_id?: string | null
           product_id?: string | null
@@ -13054,8 +13058,10 @@ export type Database = {
           cancelled_at?: string | null
           created_at?: string
           ends_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
           id?: string
-          member_profile_id?: string
+          member_profile_id?: string | null
           note?: string | null
           order_id?: string | null
           product_id?: string | null

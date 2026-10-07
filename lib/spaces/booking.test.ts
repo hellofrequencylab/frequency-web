@@ -60,7 +60,10 @@ type AvailRow = {
 type BookRow = {
   id: string
   space_id: string
-  member_profile_id: string
+  // Null for a guest booking from a Space website (LIVE-835).
+  member_profile_id: string | null
+  guest_name?: string | null
+  guest_email?: string | null
   starts_at: string
   ends_at: string
   status: string
@@ -364,6 +367,11 @@ import {
   parseAnswers,
   bookingDepositsLive,
   startServiceDeposit,
+  listPublicOpenSlots,
+  createGuestBooking,
+  cleanGuestBooker,
+  bookerColumns,
+  bookerFromRow,
   type AvailabilityWindow,
 } from './booking'
 
@@ -839,6 +847,121 @@ describe('createBooking (action)', () => {
   })
 })
 
+// ── LIVE-835: a guest books on the Space's website (name + email, no account) ───────────────────
+describe('guest booker (LIVE-835, pure)', () => {
+  it('cleanGuestBooker trims and collapses the name, lowercases the email', () => {
+    expect(cleanGuestBooker('  Ada   Lovelace ', '  Ada@Example.COM ')).toEqual({
+      ok: true,
+      guestName: 'Ada Lovelace',
+      guestEmail: 'ada@example.com',
+    })
+  })
+
+  it('cleanGuestBooker refuses a blank or overlong name', () => {
+    expect(cleanGuestBooker('   ', 'a@b.co').ok).toBe(false)
+    expect(cleanGuestBooker(null, 'a@b.co').ok).toBe(false)
+    expect(cleanGuestBooker('x'.repeat(120), 'a@b.co').ok).toBe(true)
+    expect(cleanGuestBooker('x'.repeat(121), 'a@b.co').ok).toBe(false)
+  })
+
+  it('cleanGuestBooker refuses a malformed or overlong email', () => {
+    for (const bad of ['', 'nope', 'a@b', 'a b@c.co', '@b.co', undefined]) {
+      expect(cleanGuestBooker('Ada', bad).ok).toBe(false)
+    }
+    expect(cleanGuestBooker('Ada', `${'a'.repeat(245)}@b.co`).ok).toBe(true) // 250 chars
+    expect(cleanGuestBooker('Ada', `${'a'.repeat(250)}@b.co`).ok).toBe(false) // 255 chars
+  })
+
+  it('bookerColumns sets exactly one side (the space_bookings_booker_check constraint)', () => {
+    expect(bookerColumns({ profileId: 'm1' })).toEqual({ member_profile_id: 'm1', guest_name: null, guest_email: null })
+    expect(bookerColumns({ guestName: 'Ada', guestEmail: 'ada@example.com' })).toEqual({
+      member_profile_id: null,
+      guest_name: 'Ada',
+      guest_email: 'ada@example.com',
+    })
+  })
+
+  it('bookerFromRow reads a member, a guest, or nothing', () => {
+    expect(bookerFromRow({ member_profile_id: 'm1', guest_name: 'x', guest_email: 'y' })).toEqual({ profileId: 'm1' })
+    expect(bookerFromRow({ member_profile_id: null, guest_name: 'Ada', guest_email: 'ada@example.com' })).toEqual({
+      guestName: 'Ada',
+      guestEmail: 'ada@example.com',
+    })
+    expect(bookerFromRow({ member_profile_id: null, guest_name: 'Ada' })).toBeNull()
+  })
+})
+
+describe('createGuestBooking (LIVE-835)', () => {
+  // Same frozen clock and window as the createBooking suite.
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-29T08:00:00.000Z'))
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+    currentProfileId = null // a website visitor has no account
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('the member read stays signed-in only; the public read lists the same open slots', async () => {
+    expect(await listOpenSlots('space-1')).toEqual([])
+    const open = await listPublicOpenSlots('space-1')
+    expect(open.length).toBeGreaterThan(0)
+  })
+
+  it('books an open slot for a guest with no member profile', async () => {
+    const target = (await listPublicOpenSlots('space-1'))[0]!.startsAt
+    const r = await createGuestBooking({
+      spaceId: 'space-1',
+      startsAtISO: target,
+      name: ' Ada Lovelace ',
+      email: 'Ada@Example.com',
+      note: '  First time.  ',
+    })
+    expect('error' in r).toBe(false)
+    expect(db.bookings).toHaveLength(1)
+    expect(db.bookings[0]!.status).toBe('confirmed')
+    expect(db.bookings[0]!.member_profile_id).toBeNull()
+    expect(db.bookings[0]!.guest_name).toBe('Ada Lovelace')
+    expect(db.bookings[0]!.guest_email).toBe('ada@example.com')
+    expect(db.bookings[0]!.note).toBe('First time.')
+  })
+
+  it('refuses a bad email before touching the slot', async () => {
+    const target = (await listPublicOpenSlots('space-1'))[0]!.startsAt
+    const r = await createGuestBooking({ spaceId: 'space-1', startsAtISO: target, name: 'Ada', email: 'nope' })
+    expect('error' in r).toBe(true)
+    expect(db.bookings).toHaveLength(0)
+  })
+
+  it('runs the same slot validation as a member booking (off-boundary, taken)', async () => {
+    const off = await createGuestBooking({
+      spaceId: 'space-1',
+      startsAtISO: new Date('2026-06-30T10:15:00Z').toISOString(),
+      name: 'Ada',
+      email: 'ada@example.com',
+    })
+    if ('error' in off) expect(off.error).toMatch(/no longer available/i)
+    else throw new Error('expected an error')
+
+    const target = (await listPublicOpenSlots('space-1'))[0]!.startsAt
+    db.bookings.push({
+      id: 'b0',
+      space_id: 'space-1',
+      member_profile_id: 'someone-else',
+      starts_at: target,
+      ends_at: target,
+      status: 'confirmed',
+      note: null,
+    })
+    const taken = await createGuestBooking({ spaceId: 'space-1', startsAtISO: target, name: 'Ada', email: 'ada@example.com' })
+    if ('error' in taken) expect(taken.error).toMatch(/just taken/i)
+    else throw new Error('expected an error')
+    expect(db.bookings).toHaveLength(1)
+  })
+})
+
 describe('cancelBooking (action) — permission', () => {
   beforeEach(() => {
     db.bookings.push({
@@ -921,6 +1044,26 @@ describe('listSpaceBookings (action) — owner only', () => {
     db.profiles = []
     const list = await listSpaceBookings('space-1')
     expect(list[0]!.memberName).toBe('A member')
+  })
+
+  it('shows a guest booking (LIVE-835) by the name and email the guest gave', async () => {
+    db.bookings.push({
+      id: 'b2',
+      space_id: 'space-1',
+      member_profile_id: null,
+      guest_name: 'Grace Hopper',
+      guest_email: 'grace@example.com',
+      starts_at: '2099-07-01T10:00:00.000Z',
+      ends_at: '2099-07-01T10:30:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+    const list = await listSpaceBookings('space-1')
+    const guest = list.find((b) => b.id === 'b2')!
+    expect(guest.memberProfileId).toBeNull()
+    expect(guest.memberName).toBe('Grace Hopper')
+    expect(guest.guestEmail).toBe('grace@example.com')
+    expect(list.find((b) => b.id === 'b1')!.guestEmail).toBeNull()
   })
 })
 

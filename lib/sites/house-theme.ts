@@ -115,6 +115,17 @@ export function siteHasContactPage(preferences: unknown): boolean {
   return rows.some((r) => Array.isArray(r.cells) && r.cells.some((c) => Array.isArray(c) && c.includes('contactForm')))
 }
 
+/** The Book page's path on a website (LIVE-835). `book` is a reserved page slug (lib/spaces/profile-pages), so
+ *  no custom page can take it. Owner ask 2026-10-07: "If someone clicks book, that happens through the site." */
+export const SITE_BOOK_SLUG = 'book'
+
+/** The website's Book page (`/book`) is offered once the Space takes bookings: at least one weekly
+ *  availability window (a service with no hours has no times to pick, and booking refuses it). Without one
+ *  the page 404s and Book opens the Contact form instead. Pure; the counts come from lib/sites/site-booking.ts. */
+export function siteTakesBookings(setup: { serviceCount: number; windowCount: number }): boolean {
+  return setup.windowCount > 0
+}
+
 // ── Text from the authored bags ─────────────────────────────────────────────────────────────────────────
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
@@ -260,12 +271,15 @@ export interface SiteLinkMap {
   siteBase: string
   pages: readonly string[]
   contactHref: string | null
+  /** The site's Book page when the Space takes bookings (siteTakesBookings), else null. */
+  bookHref: string | null
   email: string | null
 }
 
 /** A link the owner set, made a link on the website. The Space's own Frequency paths turn into the site's
- *  pages: its root is Home, a page is that page, and Book or Contact is the site's Contact form (the
- *  website takes the request itself; it never hands a visitor to Frequency's sign-in), else a mail link.
+ *  pages: its root is Home, a page is that page, Book is the site's Book page (LIVE-835) when the Space
+ *  takes bookings, and otherwise Book or Contact is the site's Contact form (the website takes the request
+ *  itself; it never hands a visitor to Frequency's sign-in), else a mail link.
  *  Any other Frequency path is dropped. Another site's http(s) URL, a mail or phone link, and an in-page
  *  anchor pass. Frequency links a visitor may follow are only the clearly labelled ones the theme draws
  *  itself (the On Frequency section and the footer mark), never a link this returns. */
@@ -291,7 +305,8 @@ export function siteLocalHref(url: unknown, m: SiteLinkMap): { href: string; ext
   const seg = match[2] ? decodeURIComponent(match[2]) : null
   const page = (p: string) => ({ href: m.siteBase ? `${m.siteBase}/${p}` : `/${p}`, external: false })
   if (!seg) return { href: m.siteBase || '/', external: false }
-  if (seg === 'book' || seg === SITE_CONTACT_SLUG) {
+  if (seg === SITE_BOOK_SLUG && m.bookHref) return { href: m.bookHref, external: false }
+  if (seg === SITE_BOOK_SLUG || seg === SITE_CONTACT_SLUG) {
     if (m.contactHref) return { href: m.contactHref, external: false }
     return m.email ? { href: `mailto:${m.email}`, external: false } : null
   }

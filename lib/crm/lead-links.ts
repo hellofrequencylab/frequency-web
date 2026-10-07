@@ -24,8 +24,9 @@ const LEAD_LINK_TTL_DAYS = 120
 /** The doors that use a public capture LINK. Two doors are excluded and for different reasons:
  *  `space_qr` uses the cookie path instead, and `contact_form` is rendered INTO a Space's own public
  *  page, so its Space comes from the page's own server-side resolve and it never needs a mintable,
- *  shareable URL of its own. A door with no path here simply cannot be link-signed. */
-export type LinkDoor = Exclude<LeadDoor, 'space_qr' | 'contact_form'>
+ *  shareable URL of its own. `website_booking` (LIVE-835) is the same as the contact form: its door is
+ *  the Space website's Book page. A door with no path here simply cannot be link-signed. */
+export type LinkDoor = Exclude<LeadDoor, 'space_qr' | 'contact_form' | 'website_booking'>
 
 /** The public path each link-door lands on (a top-level, noindex capture surface). */
 export const DOOR_PATHS: Record<LinkDoor, string> = {
