@@ -94,10 +94,22 @@ html:has([data-house-site]),body:has([data-house-site]){background:var(--color-c
 .hs-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 20px;padding-top:16px}
 .hs-fact-v{font-family:var(--hs-serif),Georgia,serif;font-size:clamp(1.6rem,2.6vw,2.1rem);line-height:1.1}
 .hs-fact-l{color:var(--color-text-muted);font-size:14px;line-height:1.4}
-.hs-facts-row{display:flex;flex-direction:column;gap:20px;margin-top:clamp(56px,7vw,96px);padding-top:clamp(32px,4vw,48px);border-top:1px solid var(--color-border)}
-.hs-facts-wide{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:32px 28px;padding-top:0}
-.hs-inquiry-hero{padding-top:clamp(128px,14vw,184px)}
-.hs-display{font-size:clamp(2.8rem,6.4vw,5rem);line-height:1}
+.hs-photo-tall{aspect-ratio:2/3}
+.hs-photo-col{display:flex;flex-direction:column;gap:28px}
+@media (min-width:880px){.hs-photo-col{position:sticky;top:112px}}
+.hs-photo-col .hs-pull{margin:0;padding:0 8px;font-size:1.6rem}
+.hs-stats{margin-top:clamp(72px,9vw,128px)}
+.hs-stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(36px,5vw,56px) clamp(20px,4vw,48px)}
+@media (min-width:760px){.hs-stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.hs-stat{display:flex;flex-direction:column;gap:10px;padding-top:20px;border-top:1px solid ${a('text', 14)}}
+.hs-stat-v{font-family:var(--hs-serif),Georgia,serif;font-size:clamp(2.2rem,4.4vw,3.4rem);line-height:1;letter-spacing:-.02em;color:var(--color-primary-strong)}
+.hs-stat-l{color:var(--color-text-muted);font-size:15px;line-height:1.45;max-width:16em}
+.hs-hero-form{min-height:max(92svh,720px);align-items:center}
+.hs-hero-form .hs-hero-grid{align-items:center;padding-top:clamp(140px,14vw,180px)}
+.hs-hero-form .hs-hero-pill{text-transform:uppercase;letter-spacing:.2em;font-size:12px;font-weight:600;padding:9px 16px}
+.hs-hero-form .hs-h1{font-size:clamp(3.2rem,7.4vw,6.2rem)}
+.hs-hero-form + .hs-section{padding-top:clamp(96px,11vw,150px)}
+.hs-hero-card{justify-self:end;width:100%;max-width:480px;filter:drop-shadow(0 40px 60px ${a('ink', 45)})}
 
 .hs-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:clamp(16px,2.5vw,28px)}
 .hs-card{display:flex;flex-direction:column;gap:16px;padding:clamp(32px,4vw,44px);border-radius:32px;background:var(--color-surface);box-shadow:${WARM(30, 70, 40, 45)}}
