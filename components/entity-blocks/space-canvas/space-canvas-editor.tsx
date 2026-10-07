@@ -3,7 +3,7 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
 import { entityBlockById, profilePaletteForKind } from '@/lib/entity-blocks/registry'
-import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
+import { blockEditsAllFieldsInRail, fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import {
   addRow,
   removeRow,
@@ -396,7 +396,10 @@ function BlockTile({
   onField: (key: string, value: unknown) => void
   onRemove: () => void
 }) {
-  const fields = fieldsForBlock(id).filter(isRailField)
+  // A RAIL-ONLY block (RAIL_ONLY_BLOCK_IDS: the Contact form, Links, Embed, Recording) renders a read-only
+  // preview on the canvas with no text or photo slots, so every one of its fields is edited here.
+  const railOnly = blockEditsAllFieldsInRail(id)
+  const fields = railOnly ? fieldsForBlock(id) : fieldsForBlock(id).filter(isRailField)
   return (
     <li
       ref={tileRef}
@@ -446,7 +449,7 @@ function BlockTile({
                 field={f}
                 value={content[f.key]}
                 loomScope={loomScope}
-                textOnCanvas
+                textOnCanvas={!railOnly}
                 onChange={(v) => onField(f.key, v)}
               />
             ))
