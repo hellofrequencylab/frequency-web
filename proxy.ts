@@ -469,7 +469,7 @@ export const config = {
     // first-touch cookie on them were pure noise.
     '/((?!_next/static|_next/image|favicon.ico|api/v1(?:/|$)|\\.well-known/|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|sw\\.js$|offline\\.html$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     // A SPACE WEBSITE'S OWN CRAWLER FILES (PROG-E10 phase 4, LIVE-783). The entry above skips
-    // robots.txt and sitemap.xml on every host, so a Space's domain would serve Frequency's. This arm
+    // robots.txt, sitemap.xml and llms.txt on every host, so a Space's domain would serve Frequency's. This arm
     // runs the proxy for exactly those two files on any host that is NOT one of Frequency's own, and
     // the proxy rewrites them to the site's /hosted/<host>/robots.txt|sitemap.xml. On Frequency's own
     // hosts nothing changes: the files still skip the proxy (HYG-048). The host regex is
@@ -477,7 +477,7 @@ export const config = {
     // leaves one-label subdomains of frequencylocal.com out, so a Space's free website subdomain
     // (LIVE-782) gets its own crawler files too.
     {
-      source: '/(robots\\.txt|sitemap\\.xml)',
+      source: '/(robots\\.txt|sitemap\\.xml|llms\\.txt)',
       missing: [{ type: 'host', value: '(?:(?:www\\.|(?:[^.]+\\.){2,})?frequencylocal\\.com|(?:.+\\.)?vercel\\.app|localhost|[\\d.]+)' }],
     },
   ],

@@ -55,3 +55,23 @@ export function siteSitemapXml(base: string, pageSlugs: readonly string[]): stri
   const urls = slugs.map((s) => `  <url>\n    <loc>${escapeXml(sitePageUrl(base, s))}</loc>\n  </url>`)
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`
 }
+
+/** llms.txt for a published site (llmstxt.org shape): the brand as the H1, its one-line summary as the
+ *  blockquote, then a link per page. A site host answers this itself, so an answer engine reading
+ *  `https://<domain>/llms.txt` learns about the site and not about Frequency. */
+export function siteLlmsTxt(
+  base: string,
+  site: { name: string; summary?: string | null; pages: readonly { slug: string; label: string }[] },
+): string {
+  const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim()
+  const lines = [`# ${oneLine(site.name)}`, '']
+  const summary = site.summary ? oneLine(site.summary) : ''
+  if (summary) lines.push(`> ${summary}`, '')
+  lines.push('## Pages', '')
+  const pages = [
+    ...site.pages.filter((p) => p.slug === SITE_HOME_SLUG),
+    ...site.pages.filter((p) => p.slug !== SITE_HOME_SLUG),
+  ]
+  for (const p of pages) lines.push(`- [${oneLine(p.label)}](${sitePageUrl(base, p.slug)})`)
+  return `${lines.join('\n')}\n`
+}

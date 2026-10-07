@@ -13,7 +13,7 @@
 //   • `/` and `/<page>` rewrite to /hosted/<host>[/<page>], the site route, which re-resolves the Space
 //     by domain (getSpaceByDomain, behind the custom_domain gate). /hosted asked for directly on
 //     Frequency's own host is a 404 here, so a site is never served twice (LIVE-784).
-//   • `/robots.txt` and `/sitemap.xml` rewrite to /hosted/<host>/robots.txt|sitemap.xml, so a site
+//   • `/robots.txt`, `/sitemap.xml` and `/llms.txt` rewrite to /hosted/<host>/robots.txt|site-sitemap|site-llms, so a site
 //     host describes the SITE to a crawler, not Frequency (PROG-E10 phase 4). proxy.ts's matcher skips
 //     both files on Frequency's own hosts (HYG-048) and lets them through on any other host, using
 //     APP_HOST_PATTERN below.
@@ -75,8 +75,18 @@ export function siteSubdomainHost(slug: string, baseDomain: string = SITE_BASE_D
 /** Frequency's own apex domains. Every subdomain of these is the app too. */
 const APP_APEXES = ['frequencylocal.com', 'vercel.app', 'localhost']
 
-/** The crawler files a site host answers for itself (PROG-E10 phase 4). */
-export const SITE_CRAWLER_FILES: ReadonlySet<string> = new Set(['/robots.txt', '/sitemap.xml'])
+/** The crawler files a site host answers for itself (PROG-E10 phase 4), each with the /hosted/<host>
+ *  route that answers it. The sitemap's route is NOT a folder named `sitemap.xml`: Next treats any
+ *  `/sitemap.xml` segment as a metadata route (its sitemap regex is unanchored, the robots one is
+ *  anchored to the app root), so a rewrite to /hosted/<host>/sitemap.xml fell through to the [page]
+ *  route and 404'd on every site domain. `llms.txt` describes the site to AI crawlers instead of
+ *  answering with Frequency's own file. */
+const SITE_CRAWLER_ROUTES: ReadonlyMap<string, string> = new Map([
+  ['/robots.txt', '/robots.txt'],
+  ['/sitemap.xml', '/site-sitemap'],
+  ['/llms.txt', '/site-llms'],
+])
+export const SITE_CRAWLER_FILES: ReadonlySet<string> = new Set(SITE_CRAWLER_ROUTES.keys())
 
 /** APP_APEXES (plus `localhost` and bare IPs) as the anchored host regex proxy.ts's matcher uses in
  *  its `missing: [{ type: 'host' }]` arm. The matcher must be a literal, so proxy.ts repeats this
@@ -165,7 +175,7 @@ export function routeSiteHost(
     return { kind: 'redirect', location: `https://${h.slice(4)}${pathname}${search}`, permanent: true }
   }
 
-  if (SITE_CRAWLER_FILES.has(pathname)) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}${pathname}` }
+  if (SITE_CRAWLER_FILES.has(pathname)) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}${SITE_CRAWLER_ROUTES.get(pathname)}` }
 
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}` }

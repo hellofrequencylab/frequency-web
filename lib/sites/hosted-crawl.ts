@@ -9,8 +9,8 @@ import { boundSiteDomain } from '@/lib/sites/site-domain'
 import type { Space } from '@/lib/spaces/types'
 
 // THE CRAWLER FILES OF A SPACE WEBSITE ON ITS OWN DOMAIN (PROG-E10 phase 4, LIVE-783). proxy.ts
-// rewrites `https://<domain>/robots.txt` and `/sitemap.xml` to /hosted/<host>/robots.txt|sitemap.xml
-// (lib/sites/host.ts). Both answer for the site only when it would render: the domain resolves to a
+// rewrites `https://<domain>/robots.txt`, `/sitemap.xml` and `/llms.txt` to
+// /hosted/<host>/robots.txt|site-sitemap|site-llms (lib/sites/host.ts). Both answer for the site only when it would render: the domain resolves to a
 // Space (custom_domain gate), the Space is visible to an anonymous viewer, and its website is
 // published. Anything else is a site a crawler should leave alone.
 //
@@ -36,8 +36,14 @@ export async function resolveHostedCrawlTarget(hostParam: string): Promise<Hoste
   return { origin: siteBaseUrl(space.slug, await boundSiteDomain(space), appOrigin()), space }
 }
 
+/** The pages a published site serves (home first, then the Space's own pages, then Contact when the
+ *  form is placed), with their nav labels. */
+export function hostedSitePages(space: Pick<Space, 'preferences'>): { slug: string; label: string }[] {
+  const pages = readProfilePages(space.preferences).map((p) => ({ slug: p.slug, label: p.label }))
+  return siteHasContactPage(space.preferences) ? [...pages, { slug: SITE_CONTACT_SLUG, label: 'Contact' }] : pages
+}
+
 /** The page slugs a published site's sitemap lists (home first, then the Space's own pages). */
 export function hostedSitemapSlugs(space: Pick<Space, 'preferences'>): string[] {
-  const slugs = readProfilePages(space.preferences).map((p) => p.slug)
-  return siteHasContactPage(space.preferences) ? [...slugs, SITE_CONTACT_SLUG] : slugs
+  return hostedSitePages(space).map((p) => p.slug)
 }

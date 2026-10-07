@@ -225,6 +225,18 @@
       "reason": "sitemap.xml for a Space website on its own domain (LIVE-783). Lists only the published site's own page slugs, the pages the domain already serves anonymously; a host with no published site 404s. No caller identity, no private data.",
       "checked": "2026-10-06",
       "digest": "d6be016876878ece"
+    },
+    "app/hosted/[host]/site-llms/route.ts": {
+      "verdict": "public",
+      "reason": "llms.txt for a Space website on its own domain or subdomain. proxy.ts rewrites <domain>/llms.txt here. resolveHostedCrawlTarget resolves the host to a PUBLISHED site; it lists only the brand, its public intro and the page links the domain already serves anonymously, and 404s otherwise. No caller identity, no private data.",
+      "checked": "2026-10-07",
+      "digest": "60975e505093922e"
+    },
+    "app/hosted/[host]/site-sitemap/route.ts": {
+      "verdict": "public",
+      "reason": "/sitemap.xml on a Space website's domain (Next treats a sitemap.xml folder as a metadata route, so proxy.ts rewrites here). Re-exports the GET of app/hosted/[host]/sitemap.xml/route.ts unchanged: the published site's own page URLs, 404 otherwise. No caller identity, no private data.",
+      "checked": "2026-10-07",
+      "digest": "6550d2cc6b5fe42c"
     }
   }
 }

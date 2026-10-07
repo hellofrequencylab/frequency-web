@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { HOME_SLUG } from '@/lib/spaces/profile-pages'
-import { SITE_HOME_SLUG, siteBaseUrl, sitePageUrl, siteRobotsTxt, siteSitemapXml } from './seo'
+import { SITE_HOME_SLUG, siteBaseUrl, sitePageUrl, siteRobotsTxt, siteSitemapXml, siteLlmsTxt } from './seo'
 
 describe('site URLs (LIVE-783)', () => {
   it('keeps its home slug equal to the profile pages one', () => {
@@ -57,5 +57,22 @@ describe('siteSitemapXml', () => {
 
   it('escapes XML in a URL', () => {
     expect(siteSitemapXml('https://a.com', ['x&y'])).toContain('https://a.com/x&amp;y')
+  })
+})
+
+describe('siteLlmsTxt', () => {
+  it('names the brand, its summary and each page on the site origin, home first', () => {
+    const txt = siteLlmsTxt('https://danieltyack.com', {
+      name: 'Daniel Tyack',
+      summary: 'Coaching for people who\n feel stuck.',
+      pages: [
+        { slug: 'contact', label: 'Contact' },
+        { slug: 'home', label: 'Home' },
+      ],
+    })
+    expect(txt).toBe(
+      '# Daniel Tyack\n\n> Coaching for people who feel stuck.\n\n## Pages\n\n- [Home](https://danieltyack.com/)\n- [Contact](https://danieltyack.com/contact)\n',
+    )
+    expect(txt).not.toContain('frequencylocal')
   })
 })

@@ -295,7 +295,7 @@ function FeaturesBlock({ props }: { props: Record<string, unknown> }): ReactNode
                 </div>
               ) : null}
               <div className="flex flex-1 flex-col gap-1 p-5">
-                {it.title && <InlineRichText as="h4" value={it.title} className="text-body font-bold text-text" />}
+                {it.title && <InlineRichText as="h3" value={it.title} className="text-body font-bold text-text" />}
                 {it.text && (
                   <InlineRichText value={it.text} className="whitespace-pre-wrap text-body-sm leading-relaxed text-muted" />
                 )}

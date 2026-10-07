@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { getSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { readTagline } from '@/lib/spaces/tagline'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
-import { SITE_NAME } from '@/lib/site'
+import { OG_SITE, SITE_NAME } from '@/lib/site'
 import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { sitePageUrl } from '@/lib/sites/seo'
@@ -113,8 +113,14 @@ export async function spaceProfileMetadata(
   // site twin (calendar, reviews, shop...) keep their own. Private Spaces have no site at all.
   const siteCanonical = isPrivate ? null : await siteTwinCanonical(space, tab?.segment ?? HOME_SLUG)
   const canonical = siteCanonical ?? ownCanonical
+  // With a site twin the share card IS the site's: it names the brand, not Frequency, and the root's
+  // description is the tagline on its own, so "on Frequency." no longer eats the snippet's length.
+  const twinDescription = siteCanonical && !tab?.describe && tagline ? snippet(tagline) : null
+  const pageDescription = twinDescription ?? description
 
-  const openGraph = { title: ogTitle, description, url: canonical, type: 'profile' as const }
+  const openGraph = siteCanonical
+    ? { ...OG_SITE, siteName: brandName, title, description: pageDescription, url: canonical, type: 'profile' as const }
+    : { ...OG_SITE, title: ogTitle, description, url: canonical, type: 'profile' as const }
 
   // PRIVATE: never index or follow, and no OG card (unchanged contract, no leak). The canonical
   // now rides along because it names the URL the crawler already asked for, and because leaving it
@@ -137,9 +143,9 @@ export async function spaceProfileMetadata(
 
   return {
     title,
-    description,
+    description: pageDescription,
     alternates: { canonical },
     openGraph,
-    twitter: { card: 'summary_large_image', title: ogTitle, description },
+    twitter: { card: 'summary_large_image', title: openGraph.title, description: pageDescription },
   }
 }

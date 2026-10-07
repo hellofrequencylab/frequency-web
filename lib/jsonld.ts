@@ -617,6 +617,32 @@ function spaceSchemaType(type: string): 'LocalBusiness' | 'Organization' {
   return 'Organization'
 }
 
+/** The entity node a published Space WEBSITE carries on its own origin (danieltyack.com), so the site
+ *  describes the Space and not only Frequency, whose Organization node every page inherits from the
+ *  root layout. Its @id is the site origin, the one URL the profile's canonical and sitemap also name. */
+export function siteEntitySchema(site: {
+  type: string
+  name: string
+  url: string
+  description?: string | null
+  images?: readonly (string | null | undefined)[]
+  sameAs?: readonly (string | null | undefined)[]
+}) {
+  const url = site.url.replace(/\/$/, '')
+  const image = cleanStrings(site.images)
+  const sameAs = cleanStrings(site.sameAs)
+  return {
+    '@context': 'https://schema.org',
+    '@type': spaceSchemaType(site.type),
+    '@id': `${url}/#business`,
+    name: site.name,
+    url: `${url}/`,
+    ...(site.description ? { description: site.description } : {}),
+    ...(image.length ? { image } : {}),
+    ...(sameAs.length ? { sameAs } : {}),
+  }
+}
+
 /** The optional, backward-compatible superset input for spaceSchema. Every field beyond the base
  *  four is OPTIONAL and emitted only when present, so existing callers are unchanged. This is the
  *  single place the LocalBusiness/Organization node is shaped; callers PASS values (reviews ->

@@ -293,7 +293,7 @@ function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNod
               <>
                 {media}
                 <div className="flex flex-1 flex-col gap-1 p-5">
-                  {c.title && <InlineRichText as="h4" value={c.title} className="text-body font-bold text-text" />}
+                  {c.title && <InlineRichText as="h3" value={c.title} className="text-body font-bold text-text" />}
                   {c.text && (
                     <InlineRichText value={c.text} className="whitespace-pre-wrap text-body-sm leading-relaxed text-muted" />
                   )}
