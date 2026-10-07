@@ -1,5 +1,5 @@
 import { getSpaceByDomain } from '@/lib/spaces/store'
-import { normalizeHost, siteSlugFromSubdomain } from '@/lib/sites/host'
+import { normalizeHost, siteSlugFromSubdomain, spotlightHostDomain } from '@/lib/sites/host'
 import { getSiteSpace } from '@/lib/sites/site-cache'
 import type { Space } from '@/lib/spaces/types'
 
@@ -21,5 +21,6 @@ export async function resolveHostedSpace(hostParam: string): Promise<Space | nul
   if (!host) return null
   const slug = siteSlugFromSubdomain(host)
   if (slug) return getSiteSpace(slug)
-  return getSpaceByDomain(host)
+  // `spotlight.<domain>` (LIVE-855) is the Space that holds <domain>, behind the same custom_domain gate.
+  return getSpaceByDomain(spotlightHostDomain(host) ?? host)
 }

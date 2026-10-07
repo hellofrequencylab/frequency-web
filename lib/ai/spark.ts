@@ -40,6 +40,7 @@ import { recordAiUsage, featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import type { SeedMood } from '@/lib/studio/kernel/moods'
+import { fidelityDirective, keepsAuthorWords, KEEP_MAX_TOKENS, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import { studioManifest } from '@/lib/studio/registry'
 
 /**
@@ -72,6 +73,11 @@ export interface SparkSpec<T, C = undefined> {
   system: string | (() => string)
   /** Re-coerce every field. Never trust the raw shape. Return null when it is unusable. */
   coerce: (raw: unknown, context: C) => T | null
+  /**
+   * The tool field the author's main description lands in when they keep their own words (Exact
+   * or Edit, lib/studio/kernel/fidelity.ts). Named so the directive can give the whole text a home.
+   */
+  proseField?: string
 }
 
 /** One invocation of a declared spark. */
@@ -85,6 +91,13 @@ interface SparkRun<C = undefined> {
    * and only when the entity's manifest declares the dial.
    */
   mood?: SeedMood | null
+  /**
+   * The FIDELITY choice (kernel/fidelity.ts): keep the author's words as written, lightly edit them,
+   * or rewrite. Exact and Edit append a directive that outranks the spec's length guides, lift the
+   * output ceiling so the full text fits, and drop the mood (a mood re-voices, which is the thing
+   * the author just asked Vera not to do). Absent or 'rewrite' leaves the call exactly as it was.
+   */
+  fidelity?: SeedFidelity | null
   profileId?: string | null
   /**
    * Raise the spec's ceiling for one call. For the case where the SAME draft has a longer
@@ -126,15 +139,19 @@ export async function runSpark<T, C>(spec: SparkSpec<T, C>, run: SparkRun<C>): P
 
   // The mood dial is a kernel capability an entity opts into. Absent, withVoice is called with
   // no mood and the prompt is byte for byte what it was before moods existed.
-  const mood = manifest.steer?.mood ? (run.mood ?? undefined) : undefined
+  const keep = keepsAuthorWords(run.fidelity)
+  const mood = manifest.steer?.mood && !keep ? (run.mood ?? undefined) : undefined
+  const ceiling = run.maxTokens ?? spec.maxTokens
+  const directive = fidelityDirective(run.fidelity, spec.proseField)
 
   try {
     const system = typeof spec.system === 'function' ? spec.system() : spec.system
+    const voiced = withVoice(system, mood)
     const res = await completeRaw({
       tier: spec.tier,
-      maxTokens: run.maxTokens ?? spec.maxTokens,
+      maxTokens: keep ? Math.max(ceiling, KEEP_MAX_TOKENS) : ceiling,
       thinking: { type: 'disabled' },
-      system: withVoice(system, mood),
+      system: directive ? `${voiced}\n\n---\n\n${directive}` : voiced,
       tools: [spec.tool],
       toolChoice: { type: 'tool', name: spec.tool.name },
       messages: [{ role: 'user', content: run.content }],

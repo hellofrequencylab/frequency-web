@@ -10,6 +10,7 @@ import {
   routeSiteHost,
   siteSlugFromSubdomain,
   siteSubdomainHost,
+  spotlightHostDomain,
 } from './host'
 
 describe('normalizeHost', () => {
@@ -217,5 +218,54 @@ describe('the free website subdomain (LIVE-782)', () => {
       expect(re.test(h), h).toBe(true)
       expect(routeSiteHost(h, '/robots.txt', ''), h).toEqual({ kind: 'none' })
     }
+  })
+})
+
+describe('the Collective Spotlight host (LIVE-855)', () => {
+  it('reads the domain off spotlight.<domain>', () => {
+    expect(spotlightHostDomain('Spotlight.DanielTyack.com:443')).toBe('danieltyack.com')
+    expect(spotlightHostDomain('danieltyack.com')).toBeNull()
+  })
+
+  it("never takes Frequency's own hosts", () => {
+    expect(spotlightHostDomain('spotlight.frequencylocal.com')).toBeNull()
+    expect(spotlightHostDomain('spotlight.x.vercel.app')).toBeNull()
+    expect(spotlightHostDomain('spotlight.localhost')).toBeNull()
+    expect(spotlightHostDomain('spotlight.danieltyack.com', parseAppHosts('spotlight.danieltyack.com'))).toBeNull()
+  })
+
+  it('serves the Spotlight at the root and sends every other path to the website', () => {
+    expect(routeSiteHost('spotlight.danieltyack.com', '/', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/spotlight.danieltyack.com/spotlight',
+    })
+    expect(routeSiteHost('spotlight.danieltyack.com', '/book', '?a=1')).toEqual({
+      kind: 'redirect',
+      location: 'https://danieltyack.com/book?a=1',
+      permanent: false,
+    })
+    expect(routeSiteHost('spotlight.danieltyack.com', '/robots.txt', '')).toEqual({
+      kind: 'redirect',
+      location: 'https://danieltyack.com/robots.txt',
+      permanent: false,
+    })
+  })
+
+  it('takes the press beacon on the spotlight host itself (LIVE-856)', () => {
+    expect(routeSiteHost('spotlight.danieltyack.com', '/spotlight-click', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/spotlight.danieltyack.com/spotlight-click',
+    })
+    expect(routeSiteHost('danieltyack.frequencylocal.com', '/spotlight-click', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/danieltyack.frequencylocal.com/spotlight-click',
+    })
+  })
+
+  it('leaves the slug subdomain named spotlight to the slug rules', () => {
+    expect(routeSiteHost('spotlight.frequencylocal.com', '/', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/spotlight.frequencylocal.com',
+    })
   })
 })

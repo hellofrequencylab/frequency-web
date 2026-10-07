@@ -47,6 +47,12 @@ way only, and `pnpm check:studio` fails the build if it ever reverses.
   mood): change the **kernel**, and add a `FIELD_KIND` if it is a new control.
 - **Never** hand-roll a per-entity wizard, review screen, or field style. If you think
   you need to, you need a field kind instead.
+- **Fidelity (LIVE-860).** Before a Spark drafts from the author's words it asks Exact,
+  Edit or Rewrite (`lib/studio/kernel/fidelity.ts`, rendered by `SparkFidelity`). Exact
+  keeps the text verbatim, Edit only fixes spelling, grammar and punctuation, Rewrite is
+  the house-voice redraft. `runSpark` takes `fidelity` and a spec names its `proseField`,
+  so a new Spark gets the choice by passing it through, not by writing its own prompt.
+  Circle, Journey and Event ask it today.
 - **The kernel stays pure and entity-blind.** No React, no Next, no Supabase, and never
   an import from `lib/studio/entities/`. `pnpm check:studio` enforces all three, plus
   the drift guards in `lib/studio/registry.test.ts`.

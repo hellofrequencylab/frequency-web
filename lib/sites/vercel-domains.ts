@@ -162,11 +162,12 @@ export async function addSiteSubdomain(host: string): Promise<{ ok: true } | { o
   }
 }
 
-/** Remove `domain` and its www twin from the project. Missing domains are fine. */
+/** Remove `domain`, its www twin and its Spotlight host (`spotlight.<domain>`, LIVE-855) from the project.
+ *  Missing domains are fine. */
 export async function removeSiteDomain(domain: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const cfg = config()
   if (!cfg) return { ok: false, error: 'not-configured' }
-  for (const name of [`www.${domain}`, domain]) {
+  for (const name of [`spotlight.${domain}`, `www.${domain}`, domain]) {
     const res = await call(cfg, 'DELETE', `/v9/projects/${encodeURIComponent(cfg.projectId)}/domains/${encodeURIComponent(name)}`)
     if (!res.ok && res.status !== 404) return { ok: false, error: errorCode(res.json) || `vercel-${res.status}` }
   }

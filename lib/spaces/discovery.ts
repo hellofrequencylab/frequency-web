@@ -37,6 +37,7 @@ import { SERIES_COLUMNS, countSeriesBy, type SeriesRow } from '@/lib/events/seri
 // The profile-tab reader below re-uses the SAME pure gates the tab pages and the profile nav read,
 // so the sitemap can never disagree with what a visitor is actually offered.
 import { isConsoleSpaceType } from './types'
+import { readSpaceSpotlight } from '@/lib/spaces/spotlight'
 import { readStorefrontConfig } from './storefront'
 import { canSeeSpaceContactTab, readContactFormContent } from './contact-tab'
 import { isReservedSlug } from './profile-pages'
@@ -994,6 +995,9 @@ export const listNetworkedSpaceProfileTabs = cache(async (): Promise<SpaceProfil
       if (readStorefrontConfig(r.preferences).published && isConsoleSpaceType(type) && enabled(shopDef)) {
         push('shop')
       }
+      // SPOTLIGHT (LIVE-853). The Space's link page, advertised only once its owner has published it:
+      // the page 404s until then (app/spaces/[slug]/spotlight). Read from preferences, no extra trip.
+      if (readSpaceSpotlight(r.preferences).published) push('spotlight')
       for (const pageSlug of declaredPageSlugs(r.preferences)) push(pageSlug)
     }
     return out

@@ -26,6 +26,7 @@ import { checkCreateDraft } from '@/lib/ai/vera/create-tools'
 import { downloadImageBase64, removeObject } from '@/lib/connections/store'
 import { mergePosterLinks } from '@/lib/events/seed/draft'
 import { stageScannedEvent } from '@/lib/events/seed/from-scan'
+import { normalizeSeedFidelity, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import { coerceEventDetails, coerceDomain, coerceIsoDate, clampImageBox } from '@/lib/events/normalize'
 import {
   coerceDetailsMedia,
@@ -70,6 +71,7 @@ async function readPoster(
   paths: string[],
   who: { profileId: string; userId: string },
   text?: string,
+  fidelity?: SeedFidelity,
 ): Promise<ScanPosterResult> {
   const clean = (paths ?? []).slice(0, 6)
   if (!clean.length) return { ok: false, reason: 'no_read' }
@@ -98,7 +100,7 @@ async function readPoster(
     return { ok: false, reason: 'no_read' }
   }
 
-  const extraction = await scanEventPoster({ images, text, profileId: who.profileId })
+  const extraction = await scanEventPoster({ images, text, fidelity, profileId: who.profileId })
   cleanupExtras() // best-effort; the poster image itself is kept
 
   if (!extraction) {
@@ -110,8 +112,9 @@ async function readPoster(
 
 /** Scan a poster for the MEMBER flow: the read comes back to the browser, which cuts the
  *  crops and calls saveDraft. Unchanged behaviour, now over the shared pass above. */
-export async function scanPoster(paths: string[], text?: string): Promise<ScanPosterResult> {
-  return readPoster(paths, await requireCaller(), text)
+export async function scanPoster(paths: string[], text?: string, fidelity?: string): Promise<ScanPosterResult> {
+  // The Spark's Exact / Edit / Rewrite choice. Absent (the scan creator) is Rewrite, as before.
+  return readPoster(paths, await requireCaller(), text, normalizeSeedFidelity(fidelity))
 }
 
 // ── The operator's batch door: scan straight onto the review board (ADR-997) ───

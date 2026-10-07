@@ -309,6 +309,10 @@
 # editor's save and publish. The same posture as manage/layout/actions.ts beside it: the caller is re-gated
 # with resolveSpaceManageAccess(...).canManage, and the write touches only spaces.preferences.spotlight of
 # that one Space (the preferences column has no member write policy).
+# lib/spaces/spotlight-clicks.ts (added 2026-10-07, LIVE-856): Spotlight Link card press counts.
+# space_spotlight_clicks is internal (RLS on, no policy, revoked from anon and authenticated), so only the
+# service role reaches it: the anonymous beacon writes one identity-free row after checking the Space's
+# Spotlight is published, and the console reads counts only after resolveSpaceManageAccess(...).canManage.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -1074,6 +1078,7 @@ lib/spaces/resonance-roster.ts
 lib/spaces/seats.ts
 lib/spaces/segments.ts
 lib/spaces/space-discussion.ts
+lib/spaces/spotlight-clicks.ts
 lib/spaces/standing-rollup.ts
 lib/spaces/store.ts
 lib/spaces/tagline.ts

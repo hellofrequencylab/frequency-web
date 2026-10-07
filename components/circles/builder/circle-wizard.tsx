@@ -31,6 +31,7 @@ import {
   FieldControl,
   SparkDoors,
   SparkDropzone,
+  SparkFidelity,
   SparkOffers,
   SparkShell,
   SparkSteer,
@@ -40,6 +41,7 @@ import {
 import { CIRCLE_MANIFEST } from '@/lib/studio/entities/circle'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
 import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
+import { defaultSeedFidelity, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import type { PillarSlug } from '@/lib/pillars'
 import type { CircleSparkDraft } from '@/lib/ai/circle-spark'
@@ -138,6 +140,12 @@ export function CircleWizard() {
   // Source material from the shared drop zone (an uploaded outline, a paste, or both).
   const [sourceText, setSourceText] = useState('')
 
+  // Exact, Edit or Rewrite, asked on the brief right before Vera drafts. Null until the Host
+  // picks, so the default follows what they brought: an outline keeps its words, answers get a
+  // fresh draft.
+  const [fidelityPick, setFidelityPick] = useState<SeedFidelity | null>(null)
+  const fidelity = fidelityPick ?? defaultSeedFidelity(sourceText.trim().length > 0)
+
   // Vera's drafted frame (the review step, editable).
   const [spark, setSpark] = useState<CircleSparkDraft | null>(null)
 
@@ -172,6 +180,7 @@ export function CircleWizard() {
           primaryPillar,
           cadence: cadence.trim() || undefined,
           sourceText: sourceText.trim() || undefined,
+          fidelity,
         })
         if (!res) {
           setError('Vera is offline right now. Start from scratch and write it yourself.')
@@ -312,6 +321,7 @@ export function CircleWizard() {
               placeholder="e.g. Wednesdays evening, Saturday mornings"
             />
           </StudioField>
+          <SparkFidelity value={fidelity} onChange={setFidelityPick} />
         </div>
       </SparkShell>
     )
