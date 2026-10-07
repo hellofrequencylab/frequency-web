@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-840",
+  "title": "The Space layout editor shows every Contact form field, including the website Contact page photo",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/entity-blocks/space-canvas/space-canvas-editor.tsx",
+    "ref": "Owner report 2026-10-07 16:17 ('I'm not seeing all that'): the Contact form tile on /spaces/<slug>/manage/layout showed only the two toggles. LIVE-839 follow-up."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: on the Space layout editor the Contact form block's tile showed only 'Ask for a phone number' and 'Ask for a message'. Its heading, intro, labels, thank-you message and the new 'Website Contact page photo' could not be edited, because the tile dropped every text and photo field on the assumption the canvas offers slots, and a rail-only block's canvas is a read-only preview. block-edit-panel already honoured RAIL_ONLY_BLOCK_IDS; the canvas editor's tile did not. THE FIX: the tile keeps every field of a rail-only block (blockEditsAllFieldsInRail) and draws its text fields.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/entity-blocks/space-canvas/space-canvas-editor.tsx','utf8');if(!/railOnly \\? fieldsForBlock\\(id\\)/.test(s)){console.error('LIVE-840: the layout editor tile still hides a rail-only block s fields');process.exit(1)}\"",
+    "note": "Fails on main (the tile filters every block through isRailField); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
