@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { getSpaceCapabilities, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities, spaceCanUseFullWebsite, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { isValidAccent } from '@/lib/spaces/accent'
 import {
   hasPage,
@@ -82,6 +82,8 @@ async function authorizeEditor(slug: string): Promise<{
   /** The Space's plan and its bound domain (spaces.domain), for the Domain section. */
   plan: string | null
   domain: string | null
+  /** The Space's raw entitlements, so the Domain section can tell whether the add-on is active. */
+  entitlements: unknown
 } | null> {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -97,6 +99,7 @@ async function authorizeEditor(slug: string): Promise<{
     canUseFullWebsite: spaceCanUseFullWebsite(space),
     plan: space.plan ?? null,
     domain: space.domain ?? null,
+    entitlements: space.entitlements,
   }
 }
 
@@ -485,13 +488,23 @@ async function writeSpaceDomain(spaceId: string, domain: string | null): Promise
   return error.code === '23505' ? 'taken' : 'error'
 }
 
-async function customDomainAllowed(plan: string | null): Promise<boolean> {
-  const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan }] = await Promise.all([
+async function customDomainAllowed(spaceId: string, plan: string | null, entitlements: unknown): Promise<boolean> {
+  const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan, addonsHeldBy, spaceHasCustomDomain }] = await Promise.all([
     import('@/lib/pricing/gates'),
     import('@/lib/pricing/settings'),
     import('@/lib/pricing/plans'),
   ])
-  return featureAllowed('custom_domain', { plan: asSpacePlan(plan) }, { gatesLive: await featureGatesLive() })
+  const gatesLive = await featureGatesLive()
+  if (
+    (await featureAllowed('custom_domain', { plan: asSpacePlan(plan) }, { gatesLive })) &&
+    // LIVE-821: Business needs the custom domain add-on; Collective and Independent include it.
+    (!gatesLive || spaceHasCustomDomain(plan, addonsHeldBy((k) => spaceHasEntitlement({ entitlements }, k))))
+  ) {
+    return true
+  }
+  // LIVE-822: a staff comp Space connects a domain at the Collective level. Read only on a refusal.
+  const { spaceLimitsWaived } = await import('@/lib/pricing/space-allowance')
+  return spaceLimitsWaived(spaceId)
 }
 
 /** Connect `input` as the Space's website domain: store it, attach it to hosting, return its status. */
@@ -500,7 +513,9 @@ export async function connectSiteDomain(slug: string, input: string): Promise<Ac
   if (!parsed.ok) return fail(parsed.error)
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
-  if (!(await customDomainAllowed(auth.plan))) return fail('Your own domain comes with the Business plan.')
+  if (!(await customDomainAllowed(auth.spaceId, auth.plan, auth.entitlements))) {
+    return fail('Your own domain is an add-on on Business, and it comes with Collective.')
+  }
 
   const domain = parsed.domain
   if (auth.domain && auth.domain !== domain) return fail('Remove your current domain first, then connect the new one.')
@@ -564,7 +579,9 @@ export async function removeSiteDomain(slug: string): Promise<ActionResult> {
 export async function domainConnectLink(slug: string): Promise<ActionResult<OneClickConnect>> {
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
-  if (!(await customDomainAllowed(auth.plan))) return fail('Your own domain comes with the Business plan.')
+  if (!(await customDomainAllowed(auth.spaceId, auth.plan, auth.entitlements))) {
+    return fail('Your own domain is an add-on on Business, and it comes with Collective.')
+  }
   if (!auth.domain) return fail('Connect a domain first.')
 
   const state = signDomainConnectState(slug)

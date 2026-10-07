@@ -456,6 +456,7 @@ export const CATALOG_ITEM_KEYS = [
   'nonprofit_collective',
   'independent_base',
   'addon_ai',
+  'addon_custom_domain',
   'nonprofit_seat',
   'operator_seat',
 ] as const
@@ -602,6 +603,15 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     perSeat: false,
     ...amountsFromMonthly(2000, 2000), // +$20, the sole cross-tier optional add-on (ADR-552/590)
   },
+  addon_custom_domain: {
+    // CUSTOM DOMAIN (owner ruling 2026-10-06 21:44, LIVE-821): your Space site on your own domain is a
+    // flat monthly add-on on Business ($49 + $19 = $68) and included with Collective, the upsell. The
+    // entitlement side is spaceHasCustomDomain (lib/pricing/plans.ts).
+    key: 'addon_custom_domain',
+    label: 'Frequency Custom Domain (add-on)',
+    perSeat: false,
+    ...amountsFromMonthly(1900, 1900), // +$19/mo on Business, included with Collective (LIVE-821)
+  },
   independent_base: {
     // Independent (ADR-811): everything in Collective plus your own brand + custom domain, standalone and
     // OFF the network (standard SaaS pricing, no network take-rate). No founding discount (founding == list).
@@ -681,11 +691,13 @@ export function allCatalogPriceKeys(): string[] {
 // resolver consumes (lib/pricing/plans.ts AddonKey). Base/seat/org are TIER-level (no add-on key); the
 // sole metered add-on item (addon_ai) maps to the only AddonKey, 'ai'.
 
-/** The entitlement add-on key ('ai') a catalog item maps to, or null for tier-level items (pro_base,
+/** The entitlement add-on key ('ai' | 'custom_domain') a catalog item maps to, or null for tier-level items (pro_base,
  *  business_base, nonprofit_seat, organization). PURE. The string is an AddonKey from
  *  lib/pricing/plans.ts (kept loose here to avoid a circular import; callers narrow with asAddonKey). */
-export function addonKeyForCatalogItem(key: CatalogItemKey): 'ai' | null {
-  return key === 'addon_ai' ? 'ai' : null
+export function addonKeyForCatalogItem(key: CatalogItemKey): 'ai' | 'custom_domain' | null {
+  if (key === 'addon_ai') return 'ai'
+  if (key === 'addon_custom_domain') return 'custom_domain'
+  return null
 }
 
 // ── RETIRED legacy catalog keys (kept resolvable for legacy rows · ADR-460/472; collapsed ADR-552) ─

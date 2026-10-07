@@ -39,6 +39,7 @@ export const ITEM_KEYS = [
   'nonprofit_collective', // NON PROFIT COLLECTIVE base (ADR-1709)
   'independent', // INDEPENDENT base (ADR-811): the standalone white-label tier (independent_base -> 'independent')
   'ai',
+  'custom_domain', // the custom domain add-on (LIVE-821): addon_custom_domain -> 'custom_domain'
   'nonprofit_seat',
   'operator_seat', // OPERATOR SEATS (ADR-799): a real per-seat add-on, quantity = extra operators
   'organization',
@@ -136,7 +137,7 @@ export function planForItemKeys(itemKeys: readonly ItemKey[]): SpacePlan {
 export function addonsForItemKeys(itemKeys: readonly ItemKey[]): AddonKey[] {
   const out = new Set<AddonKey>()
   for (const key of itemKeys) {
-    const addon = asAddonKey(key) // only 'ai' narrows to AddonKey; everything else -> null
+    const addon = asAddonKey(key) // only 'ai' and 'custom_domain' narrow to AddonKey; everything else -> null
     if (addon) out.add(addon)
   }
   return [...out]

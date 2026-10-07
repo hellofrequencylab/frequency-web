@@ -274,6 +274,7 @@ async function validateSpaceAccess(
     .maybeSingle()
   const { allowed, wall } = await resolveMembershipTicketGate(
     (sp as { plan: string | null } | null)?.plan,
+    spaceId,
   )
   if (!allowed) {
     throw new Error(membershipTicketWallSentence(wall))

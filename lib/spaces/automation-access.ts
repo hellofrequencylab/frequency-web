@@ -35,13 +35,14 @@ export async function resolveAutomationWall(): Promise<string> {
 
 /** May this Space use automation? True on every plan by code default; false only when an operator
  *  override raises the gate and the grace window has closed. FAIL-SAFE to allowed. */
-export async function spaceAutomationAllowed(space: { plan?: string | null }): Promise<boolean> {
+export async function spaceAutomationAllowed(space: { id?: string | null; plan?: string | null }): Promise<boolean> {
   try {
-    return await featureAllowed(
-      AUTOMATION_FEATURE,
-      { plan: asSpacePlan(space.plan ?? null) },
-      { gatesLive: await featureGatesLive() },
-    )
+    const gatesLive = await featureGatesLive()
+    const plan = asSpacePlan(space.plan ?? null)
+    if (await featureAllowed(AUTOMATION_FEATURE, { plan }, { gatesLive })) return true
+    // LIVE-822: a staff comp Space clears the gate at Collective. Read only on a refusal.
+    const { spaceLimitsWaived } = await import('@/lib/pricing/space-allowance')
+    return await featureAllowed(AUTOMATION_FEATURE, { plan, limitsWaived: await spaceLimitsWaived(space.id) }, { gatesLive })
   } catch {
     return true
   }

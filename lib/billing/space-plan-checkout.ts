@@ -139,9 +139,9 @@ interface SpaceLoadout {
   /** The base tier the loadout is for. 'business' = where selling starts; 'collective' = groups of
    *  groups (five member Spaces and Vera AI included); 'nonprofit_collective' = Collective, verified;
    *  'independent' = the standalone white-label base (off-network); 'nonprofit' = the flat per-mission
-   *  item. The AI add-on layers on Business and Non Profit. 'free' is not a checkout. */
+   *  item. The add-ons (Vera AI, custom domain) layer on Business and Non Profit. 'free' is not a checkout. */
   plan: string
-  /** The active metered add-ons (only AI now, ADR-552). Ignored for nonprofit framing. */
+  /** The active add-ons (Vera AI, custom domain). Sold on Business and Non Profit; ignored elsewhere. */
   addons?: readonly (AddonKey | string)[]
   /** Licensed seat count for seat items (Nonprofit seat quantity; tier-level Team seats, Phase D). Min 1. */
   seatQuantity?: number
@@ -187,7 +187,8 @@ async function resolveLoadoutPriceId(
 }
 
 /** The catalog item keys + their seat-ness a loadout maps to. PURE (ADR-552). Business -> business_base
- *  plus one item per active metered add-on (only AI now); Nonprofit -> the single flat nonprofit item.
+ *  plus one item per active add-on (Vera AI, custom domain); Nonprofit -> the flat nonprofit item plus
+ *  the same add-ons (owner ruling 2026-10-06 22:37).
  *  The Business base is the full depth; the AI add-on layers on top. NOTHING here is per-seat: Nonprofit
  *  is a FLAT plan (ADR-811), not a per-seat charge, so it bills quantity 1 like the Business base. The
  *  `nonprofit_seat` catalog key is a legacy name (the item is flat); see pricing-catalog.test.ts. */
@@ -199,20 +200,21 @@ function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; pe
   const operatorSeat: { key: CatalogItemKey; perSeat: boolean }[] = wantsSeats
     ? [{ key: 'operator_seat', perSeat: true }]
     : []
-  if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: false }, ...operatorSeat]
   // Collective (ADR-1709) bills its own base; Vera AI is included, so no add-on line rides on it.
   if (loadout.plan === 'collective') return [{ key: 'collective_base', perSeat: false }, ...operatorSeat]
   if (loadout.plan === 'nonprofit_collective') return [{ key: 'nonprofit_collective', perSeat: false }, ...operatorSeat]
   // Independent is a flat standalone white-label base, OFF the network — no metered add-ons layer on it.
   if (loadout.plan === 'independent') return [{ key: 'independent_base', perSeat: false }, ...operatorSeat]
-  // Business: a flat base plus the optional AI add-on (and seats).
-  const base: CatalogItemKey = 'business_base'
+  // Business and Non Profit: a flat base plus the optional add-ons, Vera AI and the custom domain
+  // (LIVE-821; Non Profit buys them too by owner ruling 2026-10-06 22:37), and seats. Collective never
+  // reaches here, so it is never billed for an add-on it includes.
+  const base: CatalogItemKey = loadout.plan === 'nonprofit' ? 'nonprofit_seat' : 'business_base'
   const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: base, perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
   for (const addon of addons) {
     const catalogKey = asCatalogItemKey(`addon_${addon}`)
     if (!catalogKey) continue
-    out.push({ key: catalogKey, perSeat: false }) // the AI add-on is not per-seat
+    out.push({ key: catalogKey, perSeat: false }) // neither add-on is per-seat
   }
   return [...out, ...operatorSeat]
 }

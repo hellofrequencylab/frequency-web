@@ -249,7 +249,7 @@ export async function setSpaceEventAccess(
     .eq('id', spaceId)
     .maybeSingle()
   const spRow = sp as { plan: string | null; name: string | null; brand_name: string | null } | null
-  const { allowed, wall } = await resolveMembershipTicketGate(spRow?.plan)
+  const { allowed, wall } = await resolveMembershipTicketGate(spRow?.plan, spaceId)
   if (!allowed) return fail(membershipTicketWallSentence(wall))
 
   const tierId = audience === 'members' ? null : audience
