@@ -44,12 +44,13 @@ export const MENSWORK_SEASONS: Record<MensworkSeason, string> = {
   fall: '#D4703E',
 }
 
-/** The season a date falls in: Dec to Feb winter, Mar to May spring, Jun to Aug summer, Sep to Nov fall. */
+/** The season a date falls in, on the program's solstice and equinox lines (HANDOFF 2026-10-07): winter
+ *  Dec 21 to Mar 19, spring Mar 20 to Jun 20, summer Jun 21 to Sep 21, fall Sep 22 to Dec 20. */
 export function mensworkSeason(date: Date): MensworkSeason {
-  const m = date.getUTCMonth()
-  if (m === 11 || m <= 1) return 'winter'
-  if (m <= 4) return 'spring'
-  if (m <= 7) return 'summer'
+  const md = (date.getUTCMonth() + 1) * 100 + date.getUTCDate()
+  if (md >= 1221 || md < 320) return 'winter'
+  if (md < 621) return 'spring'
+  if (md < 922) return 'summer'
   return 'fall'
 }
 

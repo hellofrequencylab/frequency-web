@@ -36,7 +36,8 @@ describe('the Menswork website skin', () => {
       .replace(/\{[^}]*\}/g, '\n')
       .split('\n')
       .map((s) => s.trim())
-      .filter(Boolean)
+      // A media query wraps scoped rules; its own head and closing brace are not selectors.
+      .filter((sel) => sel && sel !== '}' && !sel.startsWith('@media'))
     for (const sel of selectors) expect(sel, sel).toContain('[data-house-theme="menswork"]')
   })
 
