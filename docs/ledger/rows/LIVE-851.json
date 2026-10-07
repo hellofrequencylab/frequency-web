@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-851",
+  "title": "A Space owner builds and publishes their Spotlight in the Space console with the same block builder",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/manage/spotlight/page.tsx",
+    "ref": "Owner ask 2026-10-07 (Spotlight audit thread): 'use the exact same Spotlight app / editor for both personal and space', with lead, scheduling, contact and buy elements managed through the main console; PR 2 of 7."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. PR 2 of the Space Spotlight build (plan: /mnt/project-files/spotlight/space-spotlight-plan.md). /spaces/<slug>/manage/spotlight, reached from a Spotlight link in the Space Page panel (the console Page rail and /manage/layout; not a new menu row, which LIVE-246's 32-row probe pins), mounts the SAME EntityPageBuilder and EntityLayoutProvider the member Spotlight, the Space page and the email studio use, with the space kind, the Spotlight palette (SPACE_SPOTLIGHT_BLOCK_IDS) and one column. Two optional builder props carry that: paletteBlockIds and maxColumns; with maxColumns set the builder does not turn on the Space page's live edit mode, so block text is edited in the rail. The save and publish actions re-gate on resolveSpaceManageAccess(...).canManage and write only preferences.spotlight through nextSpotlightPreferences, then revalidate the public page. Beside the builder, a live preview renders the same server block nodes through LiveProfileGrid in the Space's accent, under the shared Spotlight header. The Spotlight has no draft: its publish switch is what keeps it off the network. NEXT: link cards for one product, Journey, event, membership or booking (PR 3).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const act=r('app/(main)/spaces/[slug]/manage/spotlight/actions.ts');if(!/if \\(!canManage\\) return/.test(act)||!/nextSpotlightPreferences\\(current, change\\)/.test(act))miss.push('no manager-gated Spotlight save that writes only the spotlight node');const ed=r('components/spotlight/space-spotlight-editor.tsx');if(!/paletteBlockIds=\\{SPACE_SPOTLIGHT_BLOCK_IDS\\}/.test(ed)||!/maxColumns=\\{1\\}/.test(ed)||!/setSpaceSpotlightPublished\\(slug, next\\)/.test(ed))miss.push('the Spotlight editor is not the shared builder with the Spotlight palette, one column and a publish switch');if(!/paletteBlockIds\\s*\\?/.test(r('components/entity-blocks/profile-page-builder.tsx')))miss.push('the shared builder ignores a Spotlight palette');if(!/\\/manage\\/spotlight/.test(r('components/spaces/space-page-panel.tsx')))miss.push('the Space Page panel does not link to the Spotlight editor');if(miss.length){console.error('LIVE-851: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

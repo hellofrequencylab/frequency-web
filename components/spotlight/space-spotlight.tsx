@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Space } from '@/lib/spaces/types'
@@ -16,35 +17,51 @@ import { SpaceProfileModules } from '@/components/widgets/space-profile/space-pr
 // layout. Every booking, purchase, lead and membership a block starts runs through the Space's existing
 // flows, so the console stays the one place they are managed. Server Component, no viewer reads.
 
-export async function SpaceSpotlight({ space, tagline }: { space: Space; tagline: string | null }) {
-  const brandName = space.brandName?.trim() || space.name
-  const logo = space.brandLogoUrl ?? null
-  const grid = spaceSpotlightGrid(readSpaceSpotlight(space.preferences))
-
+/** The Space's accent and page theme, the frame every Spotlight render (public page, console preview) wears. */
+export function SpotlightAccent({ space, children }: { space: Space; children: ReactNode }) {
   return (
     <AccentScope
       vars={resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))}
       theme={parseSpaceTheme(space.preferences)}
     >
+      {children}
+    </AccentScope>
+  )
+}
+
+/** The identity header: logo (or initials), name and tagline, centered. Shared with the console preview. */
+export function SpotlightHeader({ space, tagline }: { space: Space; tagline: string | null }) {
+  const brandName = space.brandName?.trim() || space.name
+  const logo = space.brandLogoUrl ?? null
+  return (
+    <header className="flex flex-col items-center pt-10 text-center">
+      {logo ? (
+        <Image
+          src={logo}
+          alt={brandName}
+          width={112}
+          height={112}
+          className="h-28 w-28 rounded-pill object-cover ring-4 ring-canvas lift-1"
+        />
+      ) : (
+        <div className="flex h-28 w-28 items-center justify-center rounded-pill bg-primary-bg text-display-h3 font-bold text-primary-strong ring-4 ring-canvas lift-1">
+          {getInitials(brandName)}
+        </div>
+      )}
+      <h1 className="mt-4 text-page-title font-bold text-text">{brandName}</h1>
+      {tagline && <p className="mt-1 max-w-md text-pretty text-body-sm text-muted">{tagline}</p>}
+    </header>
+  )
+}
+
+export async function SpaceSpotlight({ space, tagline }: { space: Space; tagline: string | null }) {
+  const grid = spaceSpotlightGrid(readSpaceSpotlight(space.preferences))
+
+  return (
+    <SpotlightAccent space={space}>
       <div className="min-h-screen bg-canvas">
         <main className="mx-auto max-w-xl px-4 pb-16">
-          <header className="flex flex-col items-center pt-10 text-center">
-            {logo ? (
-              <Image
-                src={logo}
-                alt={brandName}
-                width={112}
-                height={112}
-                className="h-28 w-28 rounded-pill object-cover ring-4 ring-canvas lift-1"
-              />
-            ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-pill bg-primary-bg text-display-h3 font-bold text-primary-strong ring-4 ring-canvas lift-1">
-                {getInitials(brandName)}
-              </div>
-            )}
-            <h1 className="mt-4 text-page-title font-bold text-text">{brandName}</h1>
-            {tagline && <p className="mt-1 max-w-md text-pretty text-body-sm text-muted">{tagline}</p>}
-          </header>
+          <SpotlightHeader space={space} tagline={tagline} />
 
           <div className="mt-8">
             <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
@@ -57,6 +74,6 @@ export async function SpaceSpotlight({ space, tagline }: { space: Space; tagline
           </footer>
         </main>
       </div>
-    </AccentScope>
+    </SpotlightAccent>
   )
 }

@@ -517,6 +517,14 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
     area: 'Focus surfaces',
     match: /^\/spaces\/[^/]+\/manage\/layout$/,
   },
+  // The Space Spotlight editor (LIVE-851): a wide Focus surface in the console, the builder beside a live
+  // preview of the link page. Falls through to 'global' in railFor like /manage/layout.
+  {
+    route: '/spaces/_/manage/spotlight',
+    label: 'Space Spotlight',
+    area: 'Focus surfaces',
+    match: /^\/spaces\/[^/]+\/manage\/spotlight$/,
+  },
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },

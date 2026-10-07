@@ -13,6 +13,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Sparkles,
   Trash2,
 } from 'lucide-react'
 import { Button, buttonClasses } from '@/components/ui/button'
@@ -183,6 +184,18 @@ export function SpacePagePanel({
             >
               <Globe className="h-4 w-4" aria-hidden />
               {websitePublished ? 'Your website is live. Manage it in Profile & Settings' : 'Publish your website from Profile & Settings'}
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          )}
+          {/* THE SPOTLIGHT (LIVE-851): the Space's one-link page for a bio or a card, built with the same
+              blocks in its own editor, so the Page rail points there the way it points at the website. */}
+          {!readOnly && (
+            <Link
+              href={`/spaces/${slug}/manage/spotlight`}
+              className="flex items-center gap-2 text-body-sm font-semibold text-primary-strong hover:underline"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden />
+              Build your Spotlight, one link to share
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           )}

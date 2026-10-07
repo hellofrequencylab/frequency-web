@@ -305,6 +305,10 @@
 # CROSS-MEMBER BY DESIGN: a guest saying yes to an event cannot read the other RSVPs under RLS, so a session-client
 # count reads low and the cap never refuses. It reads head counts, a plan's space_id and a host's membership_tier
 # only, returns an allow/deny verdict, and discloses no row to the caller.
+# app/(main)/spaces/[slug]/manage/spotlight/actions.ts (added 2026-10-07, LIVE-851): the Space Spotlight
+# editor's save and publish. The same posture as manage/layout/actions.ts beside it: the caller is re-gated
+# with resolveSpaceManageAccess(...).canManage, and the write touches only spaces.preferences.spotlight of
+# that one Space (the preferences column has no member write policy).
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -501,6 +505,7 @@ app/(main)/spaces/[slug]/manage/layout/actions.ts
 app/(main)/spaces/[slug]/manage/mode/actions.ts
 app/(main)/spaces/[slug]/manage/modules/actions.ts
 app/(main)/spaces/[slug]/manage/rail-getters.ts
+app/(main)/spaces/[slug]/manage/spotlight/actions.ts
 app/(main)/spaces/[slug]/practices/actions.ts
 app/(main)/spaces/[slug]/settings/billing/billing-body.tsx
 app/(main)/spaces/[slug]/settings/members/members-body.tsx
