@@ -25,7 +25,7 @@ import {
   stepNumber,
   type HouseSection,
 } from '@/lib/sites/house-theme'
-import { siteHeroCopy } from './site-hero-copy'
+import { siteHeroLede } from './site-hero-copy'
 import { HouseBlock, HouseHero, type HouseBlockModel, type HouseHeroModel, type HouseLink } from './house-sections'
 
 // THE HOUSE THEME'S HOME PAGE (owner ask 2026-10-07). Resolves the Space's own Home blocks into the themed
@@ -220,14 +220,14 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
   // website headline + intro (preferences.siteHero) win over the Hero settings, so the website can lead
   // with a marketing line while the Space page header keeps the Space's name.
   const hero = readHeroConfig(prefs)
-  const copy = siteHeroCopy({ siteHero: readSiteHero(prefs), hero, brandName, tagline, about: space.about })
+  const siteHero = readSiteHero(prefs)
   const steps = blocks.find((b) => b.kind === 'steps')
   const first = offerings[0]
   const heroModel: HouseHeroModel = {
     photo: safeImageSrc(space.coverImageUrl) ?? coverPlaceholderFor(space.id),
     focus: readCoverFocus(prefs),
-    title: copy.title,
-    lede: copy.lede,
+    title: siteHero.heading || hero.heading || brandName,
+    lede: siteHero.tagline || hero.tagline || tagline || siteHeroLede(space.about),
     cta,
     secondary:
       steps && steps.kind === 'steps' && steps.anchor ? { label: (steps.eyebrow ?? steps.title ?? '').replace(/\*/g, ''), href: `#${steps.anchor}` } : null,
