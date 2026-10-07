@@ -222,6 +222,13 @@ const nextConfig: NextConfig = {
     // full RSC payload, re-running the (main) layout's fetch wave. 30s lets the
     // router reuse a just-visited dynamic segment; static keeps the 5-min default.
     staleTimes: { dynamic: 30, static: 300 },
+    // NO TURBOPACK BUILD CACHE (HYG-171, ADR-1721). With the build cache on, Turbopack runs with
+    // dependency tracking (next/dist/build/turbopack-build/impl.js: `dependencyTracking:
+    // persistentCaching || ...`) and holds the whole invalidation graph in memory, and the compile
+    // peaked at about 7.8 GB on the 8 GB Standard build machine. Off, a build is a one-shot compile
+    // with no graph to keep. The cost is a cold compile on every build; ADR-1656 rejected this for
+    // cache size, and memory now outranks it. scripts/check-build-memory.mjs gates the result.
+    turbopackFileSystemCacheForBuild: false,
   },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
