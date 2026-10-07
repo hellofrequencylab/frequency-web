@@ -302,6 +302,10 @@ export default async function PricingPage() {
   const crew = members[1]!
   const spaceMain = spaces.filter((o) => o.id !== 'nonprofit')
   const nonprofit = spaces.find((o) => o.id === 'nonprofit')
+  // The fee ladder table's rows (every cell read off the offering model). The zero is formatted like
+  // every other rate, never typed: own audience and tips are 0 on every plan.
+  const feeZero = formatBps(0)
+  const feeRows = feeLadderRows(spaces, members)
 
   // 🔴 THE PRICE SCHEMA IS EMITTED ON BOTH BRANCHES, and hoisting it here is the whole point.
   //
@@ -446,7 +450,20 @@ export default async function PricingPage() {
                   <PlanCard key={offering.id} offering={offering} />
                 ))}
               </div>
-              {nonprofit && <SiblingPlan offering={nonprofit} />}
+              {/* Non Profit, the sibling plan, as one wide row under the main cards. */}
+              {nonprofit && (
+                <div className="mt-6 flex flex-col gap-4 rounded-card border border-border bg-surface p-6 lift-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="max-w-2xl">
+                    <h3 className="font-display uppercase text-text text-page-title">{nonprofit.label}</h3>
+                    <p className="mt-1 text-body-sm font-semibold text-muted">{nonprofit.tagline}</p>
+                    <p className="mt-2 text-body-sm leading-relaxed text-muted">{nonprofit.forWho}</p>
+                  </div>
+                  <div className="shrink-0 sm:text-right">
+                    <PlanPrice offering={nonprofit} />
+                    <PlanCta offering={nonprofit} ink={false} featured={false} />
+                  </div>
+                </div>
+              )}
               <p className="mx-auto mt-8 max-w-2xl text-center text-body leading-relaxed text-muted">
                 {PLAN_STORY.selling} {PLAN_STORY.meters}
               </p>
@@ -474,7 +491,31 @@ export default async function PricingPage() {
             title="We charge once for the introduction."
             kicker={PLAN_STORY.rate}
           />
-          <FeeLadder spaces={spaces} personal={members} />
+          <div className="overflow-x-auto rounded-card border border-border bg-surface">
+            <table className="w-full min-w-[36rem] text-left text-body-sm">
+              <caption className="sr-only">The network fee on each plan</caption>
+              <thead className="border-b border-border text-3xs font-black uppercase tracking-eyebrow text-muted">
+                <tr>
+                  <th scope="col" className="px-4 py-3">Plan</th>
+                  <th scope="col" className="px-4 py-3">Takes payments</th>
+                  <th scope="col" className="px-4 py-3">Your own people</th>
+                  <th scope="col" className="px-4 py-3">A customer the network introduces</th>
+                  <th scope="col" className="px-4 py-3">Tips</th>
+                </tr>
+              </thead>
+              <tbody>
+                {feeRows.map((r) => (
+                  <tr key={r.id} className="border-b border-border last:border-0">
+                    <th scope="row" className="px-4 py-3 font-semibold text-text">{r.label}</th>
+                    <td className="px-4 py-3 text-muted">{r.sells ? 'Yes' : 'Tips only'}</td>
+                    <td className="px-4 py-3 text-muted">{r.sells ? feeZero : 'Not applicable'}</td>
+                    <td className="px-4 py-3 font-semibold text-text">{r.fee ? `${r.fee}, once` : 'Not applicable'}</td>
+                    <td className="px-4 py-3 text-muted">{feeZero}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Section>
 
         {/* THE COMPARISON, following the same toggle as the cards. Every cell is derived from the
@@ -657,12 +698,10 @@ const WHO_ITS_FOR: readonly { title: string; body: string; href: string }[] = [
   { title: 'Nonprofits', body: 'Donations, supporters and programs, with no network fee.', href: '/for/nonprofits' },
 ]
 
-/** The fee ladder table: one row per Space plan and one for the personal tiers, every cell read off
- *  the offering model. */
-function FeeLadder({ spaces, personal }: { spaces: Offering[]; personal: Offering[] }) {
-  // The zero is formatted like every other rate, never typed: own audience and tips are 0 on every plan.
-  const zero = formatBps(0)
-  const rows = [
+/** The fee ladder rows: one per Space plan and one for the personal tiers, every cell read off the
+ *  offering model. */
+function feeLadderRows(spaces: Offering[], personal: Offering[]) {
+  return [
     ...spaces.map((o) => ({
       id: o.id,
       label: offeringRowLabel(o),
@@ -676,55 +715,11 @@ function FeeLadder({ spaces, personal }: { spaces: Offering[]; personal: Offerin
       fee: null,
     },
   ]
-  return (
-    <div className="overflow-x-auto rounded-card border border-border bg-surface">
-      <table className="w-full min-w-[36rem] text-left text-body-sm">
-        <caption className="sr-only">The network fee on each plan</caption>
-        <thead className="border-b border-border text-3xs font-black uppercase tracking-eyebrow text-muted">
-          <tr>
-            <th scope="col" className="px-4 py-3">Plan</th>
-            <th scope="col" className="px-4 py-3">Takes payments</th>
-            <th scope="col" className="px-4 py-3">Your own people</th>
-            <th scope="col" className="px-4 py-3">A customer the network introduces</th>
-            <th scope="col" className="px-4 py-3">Tips</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} className="border-b border-border last:border-0">
-              <th scope="row" className="px-4 py-3 font-semibold text-text">{r.label}</th>
-              <td className="px-4 py-3 text-muted">{r.sells ? 'Yes' : 'Tips only'}</td>
-              <td className="px-4 py-3 text-muted">{r.sells ? zero : 'Not applicable'}</td>
-              <td className="px-4 py-3 font-semibold text-text">{r.fee ? `${r.fee}, once` : 'Not applicable'}</td>
-              <td className="px-4 py-3 text-muted">{zero}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
 }
 
 /** A Space offering's label in a flat list: the free Space reads "Free Space" beside the other plans. */
 function offeringRowLabel(o: Offering): string {
   return o.axis === 'plan' && o.tier === 'free' ? 'Free Space' : o.label
-}
-
-/** A sibling plan (Non Profit) shown as one wide row under the main cards. */
-function SiblingPlan({ offering }: { offering: Offering }) {
-  return (
-    <div className="mt-6 flex flex-col gap-4 rounded-card border border-border bg-surface p-6 lift-1 sm:flex-row sm:items-center sm:justify-between">
-      <div className="max-w-2xl">
-        <h3 className="font-display uppercase text-text text-page-title">{offering.label}</h3>
-        <p className="mt-1 text-body-sm font-semibold text-muted">{offering.tagline}</p>
-        <p className="mt-2 text-body-sm leading-relaxed text-muted">{offering.forWho}</p>
-      </div>
-      <div className="shrink-0 sm:text-right">
-        <PlanPrice offering={offering} />
-        <PlanCta offering={offering} ink={false} featured={false} />
-      </div>
-    </div>
-  )
 }
 
 // ── The plan cards (DAWN 2) ──────────────────────────────────────────────────
