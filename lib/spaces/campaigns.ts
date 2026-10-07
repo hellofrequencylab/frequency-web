@@ -32,6 +32,8 @@ import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER } from 
 import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
 import type { NotificationTopic } from '@/lib/notification-preferences'
 import { postalFooterHtml } from '@/lib/email-studio/postal'
+import { frequencyFooterHtml } from '@/lib/spaces/campaign-footer'
+import { checkCampaignMonthMeter } from '@/lib/spaces/counted-meters'
 
 // Render a plain-text campaign body to a minimal HTML email with a Space-appropriate footer. Inline
 // styles + hex are correct here (an email renders in mail clients, OUTSIDE the DAWN shell, where CSS
@@ -44,7 +46,7 @@ function escapeCampaignHtml(s: string): string {
 }
 /** Exported for the event broadcast action (the event hub's Email channel rides this same
  *  campaign render + send seam, so a campaign body looks identical whichever surface sent it). */
-export function renderCampaignHtml(body: string): string {
+export function renderCampaignHtml(body: string, footerHtml: string = ''): string {
   const paras = body
     .split(/\n{2,}/)
     .map(
@@ -52,7 +54,7 @@ export function renderCampaignHtml(body: string): string {
         `<p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 16px;">${escapeCampaignHtml(p).replace(/\n/g, '<br/>')}</p>`,
     )
     .join('')
-  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
+  return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">${paras}<hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/>${footerHtml}<p style="font-size:12px;color:#999;line-height:1.6;">You're receiving this because you are a contact of this space. <a href="${SPACE_UNSUBSCRIBE_PLACEHOLDER}" style="color:#999;">Unsubscribe</a>.</p>${postalFooterHtml()}</div>`
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -214,8 +216,9 @@ async function readCampaign(id: string, spaceId: string): Promise<CampaignRow | 
  *  actions is directly callable. Putting it at the single chokepoint every mutation already passes
  *  through means a new campaign action cannot forget it.
  *
- *  The line the wall encodes: MESSAGING YOUR OWN PEOPLE is free, metered by the `space_email` send
- *  allowance. RUNNING AN ACQUISITION MACHINE is what a Business plan buys. Reading it is deliberately
+ *  ADR-1709 (LIVE-751): the gate's code floor is free; campaigns are metered instead (2 a month with a
+ *  Frequency footer on the free Space, counted at schedule and send by checkCampaignMonthMeter). The
+ *  gate stays so an operator override that raises it still binds. Reading it is deliberately
  *  NOT gated (listSpaceCampaigns is untouched), so a free Space sees the surface and what it does
  *  rather than a locked door: a used feature with a ceiling converts, a locked preview does not.
  *
@@ -379,6 +382,12 @@ export async function scheduleSpaceCampaign(
   const iso = parseScheduleTime(when)
   if (!iso) return fail('Pick a send time in the future.')
 
+  // Campaigns a month (space_campaigns_month, LIVE-751). Rescheduling one already scheduled holds its place.
+  const meter = await checkCampaignMonthMeter(spaceId, {
+    alreadyCounted: toCampaignStatus(existing.status) === 'scheduled',
+  })
+  if (!meter.ok) return fail(meter.error)
+
   try {
     const { error } = await campaignsTable()
       .update({ scheduled_for: iso, status: 'scheduled', audience_filter: filter as Json })
@@ -416,6 +425,12 @@ export async function sendSpaceCampaign(
   if (!normalizeSubject(existing.subject)) return fail('Give your campaign a subject before sending.')
   if (!normalizeBody(existing.body).trim()) return fail('Write your campaign before sending.')
 
+  // Campaigns a month (space_campaigns_month, LIVE-751). Sending one already scheduled holds its place.
+  const meter = await checkCampaignMonthMeter(spaceId, {
+    alreadyCounted: toCampaignStatus(existing.status) === 'scheduled',
+  })
+  if (!meter.ok) return fail(meter.error)
+
   // Resolve the recipients over THIS Space's contacts (the exact shape the send seam consumes), AND
   // the topic that audience forces. One call, because the two must never drift apart: a MEMBER-SEGMENT
   // audience (a tier, a circle, an event's RSVPs — LIVE-293) always rides `marketing`, the strictest
@@ -432,7 +447,7 @@ export async function sendSpaceCampaign(
   const res = await sendViaSeam(spaceId, {
     campaignId: id,
     subject: existing.subject,
-    html: renderCampaignHtml(existing.body ?? ''),
+    html: renderCampaignHtml(existing.body ?? '', frequencyFooterHtml((await getSpaceById(spaceId))?.plan)),
     topic,
     recipients,
   })

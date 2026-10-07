@@ -185,8 +185,9 @@ describe('the walls are the ones the strategy names, and nothing has crept in', 
     expect(PLACEHOLDER_METER_LIMITS.space_member_benefits?.business).toBeNull()
   })
 
-  it('campaigns are a wall at Business, and sends stay metered', () => {
-    expect(FEATURE_GATES.space_campaigns?.minEntitlement).toBe('business')
+  it('campaigns are metered, not walled (ADR-1709), and sends stay metered', () => {
+    expect(FEATURE_GATES.space_campaigns?.minEntitlement).toBe('free')
+    expect(PLACEHOLDER_METER_LIMITS.space_campaigns_month?.free).toBe(2)
     // The distinction the wall encodes: messaging your own people is free (metered by sends), running
     // an acquisition machine is paid. If the send meter vanished, the wall would silently become
     // "a free Space cannot email anyone", which is not the deal.

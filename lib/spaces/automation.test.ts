@@ -132,9 +132,11 @@ vi.mock('./entitlements', () => ({
     canManageMembers: canEdit,
     canInvite: canEdit,
   }),
-  // requireAutomationEditor (the RUNNER lever's gate) reads this: the Space's plan must grant automation.
-  spaceHasEntitlement: (_space: unknown, key: string) => (key === 'automation' ? hasAutomation : false),
 }))
+// requireAutomationEditor (the RUNNER lever's gate) asks spaceAutomationAllowed: open on every plan
+// since ADR-1709, false only under an operator override that raises the gate.
+vi.mock('./automation-access', () => ({ spaceAutomationAllowed: async () => hasAutomation }))
+vi.mock('./counted-meters', () => ({ checkActiveAutomationMeter: async () => ({ ok: true }) }))
 
 // startSequenceForAudience resolves the sequence's audience + enrolls each contact. Mock both deps so the
 // gating + enroll-count behavior is exercised network-free.
@@ -296,7 +298,7 @@ describe('startSequenceForAudience gating + enroll', () => {
     expect(enrollCalls.length).toBe(0)
   })
 
-  it('a Space without the automation entitlement cannot start a sequence (nothing enrolled)', async () => {
+  it('a Space an operator override walls off cannot start a sequence (nothing enrolled)', async () => {
     hasAutomation = false
     const res = await startSequenceForAudience('space-A', 'seq1')
     expect('error' in res).toBe(true)

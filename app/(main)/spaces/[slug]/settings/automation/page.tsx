@@ -5,9 +5,9 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import {
   resolveSpaceManageAccess,
   getSpaceCapabilities,
-  spaceHasEntitlement,
 } from '@/lib/spaces/entitlements'
 import { AutomationBody } from './automation-body'
+import { spaceAutomationAllowed } from '@/lib/spaces/automation-access'
 
 // OWNER AUTOMATION SURFACE (R5, business-accounts Automation). A centered, no-rail-less Focus surface at
 // /spaces/<slug>/settings/automation, registered like the other owner settings sub-pages (it matches the
@@ -15,8 +15,8 @@ import { AutomationBody } from './automation-body'
 // Space, gates RENDER on canManage || staffViewing (404s otherwise so a non-editor / non-staff viewer
 // cannot tell the surface exists), then wraps the chrome-free <AutomationBody> in the FocusTemplate.
 //
-// GATE: automation is a CRM amplifier, gated on the `crm.space.automation` capability
-// (spaceHasEntitlement 'automation'). When a Space's plan lacks it, the body renders a plain upgrade
+// GATE: spaceAutomationAllowed, open on every plan since ADR-1709 (a free Space runs 1 automation and
+// 100 runs a month, metered). When an operator override raises it, the body renders a plain upgrade
 // notice (never a dead 404) so an owner sees "here's what this is + how to get it". Every WRITE action
 // stays gated on canEditProfile server-side (in lib/spaces/automation.ts), so staff preview is read-only.
 //
@@ -51,7 +51,7 @@ export default async function SpaceAutomationPage({
   // locked branch); the full editor gets the wide framing. AutomationBody re-derives this same condition
   // so the two never diverge.
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const featureLocked = !staffViewing && !spaceHasEntitlement(space, 'automation')
+  const featureLocked = !staffViewing && !(await spaceAutomationAllowed(space))
 
   if (featureLocked) {
     return (

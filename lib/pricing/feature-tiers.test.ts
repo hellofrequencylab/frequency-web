@@ -217,9 +217,9 @@ describe('read helpers', () => {
 
   it('isFeatureUnlockedAt: below the min tier is locked, at/above is unlocked', () => {
     // Was `space_crm` until ADR-917 made it a meter, then `space_memberships` until LIVE-410 moved
-    // that gate to the free floor (no unlock ladder). The shape under test is a plan-axis gate at
-    // the Business floor, which `space_campaigns` still is.
-    const wall = featureTierLadder('space_campaigns')!
+    // that gate to the free floor (no unlock ladder), then `space_campaigns` until ADR-1709 metered
+    // it. The shape under test is a plan-axis gate at the Business floor, which `custom_domain` is.
+    const wall = featureTierLadder('custom_domain')!
     expect(isFeatureUnlockedAt(wall, 'free')).toBe(false)
     expect(isFeatureUnlockedAt(wall, 'business')).toBe(true)
     // Nonprofit ranks above business, so it clears the business floor.
@@ -230,7 +230,7 @@ describe('read helpers', () => {
   })
 
   it('currentStepIndex maps a viewer tier to the highest rung at/below it', () => {
-    const wall = featureTierLadder('space_campaigns')! // steps: free, business
+    const wall = featureTierLadder('custom_domain')! // steps: free, business
     expect(currentStepIndex(wall, 'free')).toBe(0)
     expect(currentStepIndex(wall, 'business')).toBe(1)
     // Nonprofit ranks above business (the top rung) → maps to the business rung.
@@ -247,8 +247,8 @@ describe('featureWallLabel', () => {
   it('names the plan each gate sits on, off the code gate map', () => {
     expect(featureWallLabel('space_memberships')).toBe(SPACE_PLAN_LABEL.free)
     expect(featureWallLabel('space_membership_tickets')).toBe(SPACE_PLAN_LABEL.free)
-    expect(featureWallLabel('space_campaigns')).toBe(SPACE_PLAN_LABEL.business)
-    expect(featureWallLabel('space_automation')).toBe(SPACE_PLAN_LABEL.business)
+    expect(featureWallLabel('space_campaigns')).toBe(SPACE_PLAN_LABEL.free)
+    expect(featureWallLabel('space_automation')).toBe(SPACE_PLAN_LABEL.free)
     expect(featureWallLabel('space_collaborators')).toBe(SPACE_PLAN_LABEL.business)
   })
 

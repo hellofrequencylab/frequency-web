@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-432",
+  "patch": {
+    "verify": {
+      "kind": "manual",
+      "evidence": "SUPERSEDED 2026-10-06 by ADR-1709 (the five-tier pricing ladder, owner ruling): the probe pinned the space_automation gate at the Business floor, and LIVE-751 deliberately opened automation to the free Space (gate floor free, metered instead). The lock screen still names its wall through featureWallLabel and never says Collective. The row stays done as history. Its original cmd probe is preserved verbatim in the detail.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\n── SUPERSEDED 2026-10-06 by ADR-1709 (LIVE-751). Automation opened to the free Space, so the Business-floor half of this probe fails by design. Original probe, kept verbatim: node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const files=[\"app/(main)/spaces/[slug]/settings/automation/automation-body.tsx\",\"lib/spaces/automation-access.ts\",\"components/spaces/feature-locked-notice.tsx\"];for (const f of files){const s=fs.readFileSync(f,\"utf8\");if(/Collective plan/.test(s))fail(f+\" still names the Collective plan\")}const body=fs.readFileSync(\"app/(main)/spaces/[slug]/settings/automation/automation-body.tsx\",\"utf8\");if(!body.includes(\"resolveAutomationWall\"))fail(\"automation-body no longer names the wall through resolveAutomationWall\");if(!body.includes(\"automationWallSentence\"))fail(\"automation-body no longer interpolates automationWallSentence\");const g=fs.readFileSync(\"lib/spaces/automation-access.ts\",\"utf8\");if(!g.includes(\"featureWallLabel\"))fail(\"automation-access no longer names the wall through featureWallLabel\");if(!g.includes(\"export function automationWallSentence\"))fail(\"automationWallSentence is gone\");if(!g.includes(\"export async function resolveAutomationWall\"))fail(\"resolveAutomationWall is gone\");const gates=fs.readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const m=gates.match(/space_automation:\\s*\\{[^}]+\\}/);if(!m)fail(\"space_automation gate missing\");if(/minEntitlement:\\s*.collective./.test(m[0]))fail(\"space_automation moved back to Collective\");if(!/minEntitlement:\\s*.business./.test(m[0]))fail(\"space_automation left the Business floor\");const mods=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");const row=mods.match(/id: .space\\.automation.[^}]+}/);if(!row)fail(\"space.automation row missing\");if(/Collective/.test(row[0]))fail(\"space.automation still names Collective\");console.log(\"LIVE-432 ok\")'"
+  }
+}

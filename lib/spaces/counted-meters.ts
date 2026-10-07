@@ -50,11 +50,11 @@ async function gatesLive(): Promise<boolean> {
 /** The narrow query shape a head count needs. Several of these tables are not in the generated types,
  *  so this reads them loosely, the way booking.ts and memberships.ts already do. */
 interface CountFilter extends PromiseLike<{ count: number | null; error: unknown }> {
-  eq: (column: string, value: string) => CountFilter
+  eq: (column: string, value: string | boolean) => CountFilter
   in: (column: string, values: string[]) => CountFilter
   gte: (column: string, value: string) => CountFilter
   is: (column: string, value: null) => CountFilter
-  neq: (column: string, value: string) => CountFilter
+  not: (column: string, operator: 'is', value: null) => CountFilter
   or: (filters: string) => CountFilter
 }
 interface CountTable {
@@ -154,25 +154,48 @@ export async function checkHostedCollaboratorMeter(
   }
 }
 
-// ── People per Journey, Space-owned Journeys (space_journey) ───────────────────────────────────
+// ── People per Journey (space_journey for a Space's Journey, journey_enrollees for a member's) ──
+
+const JOURNEY_PERSONAL_FULL_MESSAGE =
+  'This Journey\'s author has every active place their membership includes. Everyone already on it keeps their place.'
 
 /**
- * May one more person enrol in this Journey, by its Space's plan? Only a Space-owned Journey meters
- * here; a personal Journey (no Space, or the platform root) is the member's own meter
- * (journey_enrollees) and passes. The count is people active on this one Journey.
+ * May one more person enrol in this Journey? A Space-owned Journey asks its Space's plan
+ * (space_journey: people active on this one Journey). A personal Journey (no Space, or the platform
+ * root) asks its AUTHOR's tier (journey_enrollees, LIVE-752: people active across every Journey they
+ * authored, the same count member-meter-usage.ts shows them).
  */
-export async function checkSpaceJourneyMeter(planId: string, rootSpaceId: string | null): Promise<MeterCheck> {
+export async function checkJourneyPeopleMeter(planId: string, rootSpaceId: string | null): Promise<MeterCheck> {
   try {
     if (!(await gatesLive())) return OK
-    const { data } = await createAdminClient().from('journey_plans').select('space_id').eq('id', planId).maybeSingle()
-    const spaceId = (data as { space_id: string | null } | null)?.space_id ?? null
-    if (!spaceId || spaceId === rootSpaceId) return OK
-    const used = await headCount('journey_enrollments', (q) => q.eq('plan_id', planId).is('completed_at', null))
-    const verdict = await spaceAllowanceVerdict(spaceId, 'space_journey', used)
-    return verdict.allowed ? OK : { ok: false, error: JOURNEY_SPACE_FULL_MESSAGE }
+    const admin = createAdminClient()
+    const { data } = await admin.from('journey_plans').select('space_id, author_id').eq('id', planId).maybeSingle()
+    const plan = data as { space_id: string | null; author_id: string | null } | null
+    if (!plan) return OK
+    const spaceId = plan.space_id ?? null
+    if (spaceId && spaceId !== rootSpaceId) {
+      const used = await headCount('journey_enrollments', (q) => q.eq('plan_id', planId).is('completed_at', null))
+      const verdict = await spaceAllowanceVerdict(spaceId, 'space_journey', used)
+      return verdict.allowed ? OK : { ok: false, error: JOURNEY_SPACE_FULL_MESSAGE }
+    }
+    if (!plan.author_id) return OK
+    const { data: authored } = await admin.from('journey_plans').select('id').eq('author_id', plan.author_id)
+    const planIds = ((authored ?? []) as { id: string }[]).map((p) => p.id)
+    if (planIds.length === 0) return OK
+    const used = await headCount('journey_enrollments', (q) => q.in('plan_id', planIds).is('completed_at', null))
+    const tier = await profileTier(plan.author_id)
+    return (await memberWithinLeadershipAllowance('journey_enrollees', tier, used))
+      ? OK
+      : { ok: false, error: JOURNEY_PERSONAL_FULL_MESSAGE }
   } catch {
     return OK
   }
+}
+
+/** A member's REAL billed tier (profiles.membership_tier, ADR-414), 'free' when it cannot be read. */
+async function profileTier(profileId: string): Promise<EntitlementTier> {
+  const { data } = await createAdminClient().from('profiles').select('membership_tier').eq('id', profileId).maybeSingle()
+  return ((data as { membership_tier: string | null } | null)?.membership_tier ?? 'free') as EntitlementTier
 }
 
 // ── The new Space meters (LIVE-750) ────────────────────────────────────────────────────────────
@@ -289,11 +312,94 @@ export async function checkEventGuestMeter(eventId: string): Promise<MeterCheck>
       return verdict.allowed ? OK : { ok: false, error: EVENT_GUESTS_FULL_MESSAGE }
     }
     if (!row.host_id) return OK
-    const { data: host } = await admin.from('profiles').select('membership_tier').eq('id', row.host_id).maybeSingle()
-    const tier = ((host as { membership_tier: string | null } | null)?.membership_tier ?? 'free') as EntitlementTier
+    const tier = await profileTier(row.host_id)
     return (await memberWithinLeadershipAllowance('event_guests', tier, going))
       ? OK
       : { ok: false, error: EVENT_GUESTS_FULL_MESSAGE }
+  } catch {
+    return OK
+  }
+}
+
+// ── Marketing meters (LIVE-751) ────────────────────────────────────────────────────────────────
+
+const CAMPAIGNS_FULL_MESSAGE =
+  'Your plan includes this many campaigns a month. You can still email your people directly, and see plans for more.'
+const FUNNELS_FULL_MESSAGE = 'Live splash pages come with Business. Your code still sends people to its link.'
+const AUTOMATIONS_FULL_MESSAGE =
+  'Your plan includes this many active automations. Turn one off to switch this on, or see plans for more.'
+
+/**
+ * May this Space commit one more campaign this month (schedule or send)? Scheduled, sending and sent
+ * campaigns count, by the month they go out. `alreadyCounted` is for sending a campaign that is
+ * already scheduled this month: it holds its place.
+ */
+export async function checkCampaignMonthMeter(
+  spaceId: string,
+  opts: { alreadyCounted?: boolean } = {},
+): Promise<MeterCheck> {
+  return oneMore(
+    spaceId,
+    'space_campaigns_month',
+    async () => {
+      const start = monthStartIso()
+      const used = await headCount('campaigns', (q) =>
+        q
+          .eq('space_id', spaceId)
+          .in('status', ['scheduled', 'sending', 'sent'])
+          .or(`sent_at.gte.${start},scheduled_for.gte.${start}`),
+      )
+      return opts.alreadyCounted ? Math.max(0, used - 1) : used
+    },
+    CAMPAIGNS_FULL_MESSAGE,
+  )
+}
+
+/** May this Space put one more splash page live on its codes? */
+export async function checkSpaceFunnelMeter(spaceId: string): Promise<MeterCheck> {
+  return oneMore(
+    spaceId,
+    'space_funnels',
+    () => headCount('qr_codes', (q) => q.eq('space_id', spaceId).eq('active', true).not('splash', 'is', null)),
+    FUNNELS_FULL_MESSAGE,
+  )
+}
+
+/** May this Space switch one more automation (an enabled sequence) on? */
+export async function checkActiveAutomationMeter(spaceId: string): Promise<MeterCheck> {
+  return oneMore(
+    spaceId,
+    'space_automations_active',
+    () => headCount('space_drip_sequences', (q) => q.eq('space_id', spaceId).eq('enabled', true)),
+    AUTOMATIONS_FULL_MESSAGE,
+  )
+}
+
+// ── Published personal Practices (practice_publish, LIVE-752) ──────────────────────────────────
+
+const PRACTICE_PUBLISH_CAP_MESSAGE =
+  'You have published the Practices your free membership includes. Every one stays live. Join Crew to publish more.'
+
+/**
+ * May this member put one more personal Practice in front of the library? A Practice counts once it is
+ * live (is_public) or waiting for review (status 'pending'), because a submission is the act of
+ * publishing. Personal means stamped to the platform root (createPractice's default) or to no Space;
+ * a Space's Practices are space_practice_publish. `tier` is the caller's REAL tier (ADR-414).
+ */
+export async function checkPersonalPracticeMeter(
+  profileId: string,
+  tier: EntitlementTier | null | undefined,
+  rootSpaceId: string | null,
+): Promise<MeterCheck> {
+  try {
+    if (!(await gatesLive())) return OK
+    const used = await headCount('practices', (q) => {
+      const mine = q.eq('created_by', profileId).or('is_public.eq.true,status.eq.pending')
+      return rootSpaceId ? mine.eq('space_id', rootSpaceId) : mine.is('space_id', null)
+    })
+    return (await memberWithinLeadershipAllowance('practice_publish', tier, used))
+      ? OK
+      : { ok: false, error: PRACTICE_PUBLISH_CAP_MESSAGE }
   } catch {
     return OK
   }

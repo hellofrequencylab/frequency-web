@@ -103,9 +103,9 @@ describe('REMAINING-WORK #4 — space_* feature gates resolve consistently via f
     // the entitlement-key union (spaceHasEntitlement), not this ladder.
     expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(true)
     expect(await featureAllowed('space_memberships', { plan: 'business' }, { gatesLive: true })).toBe(true)
-    expect(await featureAllowed('space_campaigns', { plan: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('space_collaborators', { plan: 'free' }, { gatesLive: true })).toBe(false)
     // A legacy label narrows to business through asSpacePlan inside the gate, so it still clears.
-    expect(await featureAllowed('space_campaigns', { plan: 'pro' as never }, { gatesLive: true })).toBe(true)
+    expect(await featureAllowed('space_collaborators', { plan: 'pro' as never }, { gatesLive: true })).toBe(true)
   })
 })
 
