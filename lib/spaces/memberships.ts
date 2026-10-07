@@ -458,40 +458,24 @@ export async function setMembershipTiers(
   if (!spaceFunctionAccess(space, 'memberships', caps.role))
     return fail('Memberships is not turned on for this space, or your role cannot use it.')
 
-  // 🔴 THE PLAN CHECK (ADR-914, amended by ADR-1403 Q3 / LIVE-410). The write still asks
-  // featureAllowed('space_memberships') so an operator override that raises the floor still binds
-  // here, not only on the settings surface. The CODE default is the free floor: host free until you
-  // charge. Checkout still refuses when Connect is not payout-ready (LIVE-233).
+  // 🔴 THE PLAN CHECK (ADR-1709, LIVE-753, superseding ADR-1415 / LIVE-410). A PAID tier is money,
+  // and only a Space on Business or above takes money: the write asks the payments gate
+  // (space_payments plus the space_memberships floor, both at Business) through
+  // lib/pricing/payments-gate.ts, which reads operator overrides and does NOT wait for the grace
+  // window. A FREE-TO-JOIN tier is never asked: the free Space keeps its one free tier (metered by
+  // space_membership_tiers). The refusal is the upgrade moment's sentence, so the settings form turns
+  // it into the panel (LIVE-758) with the host's draft intact.
   //
   // Active members stay unmetered: telling a Space its eleventh supporter cannot join punishes the
-  // customer for succeeding at the one thing we asked them to do, and the take rate already scales
-  // with volume. The tier COUNT is space_membership_tiers (free: 1).
+  // customer for succeeding at the one thing we asked them to do.
   //
-  // SETTING NO TIERS IS ALWAYS ALLOWED. A Space that an operator later walls off must be able to
-  // clear its tiers, and refusing that would trap it with a live membership program it cannot turn
-  // off. Checked before the gate for exactly that reason.
-  if (tiers.length > 0) {
-    const [{ featureAllowed }, { featureGatesLive }, { asSpacePlan }] = await Promise.all([
-      import('@/lib/pricing/gates'),
-      import('@/lib/pricing/settings'),
-      import('@/lib/pricing/plans'),
-    ])
-    const allowed = await featureAllowed(
-      'space_memberships',
-      { plan: asSpacePlan(space.plan) },
-      { gatesLive: await featureGatesLive() },
-    )
-    if (!allowed) {
-      // The wall's plan is NAMED off the merged gate, never typed, so this sentence and the settings
-      // section's notice (memberships/section.tsx, LIVE-231) can only ever say the same word.
-      const [{ loadFeatureGateOverrides }, { featureWallLabel }, { SPACE_PLAN_LABEL }] = await Promise.all([
-        import('@/lib/pricing/gates'),
-        import('@/lib/pricing/feature-tiers'),
-        import('@/lib/pricing/plans'),
-      ])
-      const wall = featureWallLabel('space_memberships', await loadFeatureGateOverrides()) ?? SPACE_PLAN_LABEL.free
-      return fail(`Selling memberships comes with ${wall}. Tickets, donations, and your shop stay open on every plan.`)
-    }
+  // SETTING NO TIERS, OR ONLY FREE ONES, IS ALWAYS ALLOWED. A Space whose plan lapses must be able to
+  // make its tiers free or clear them, and refusing that would trap it with a paid program it cannot
+  // turn off.
+  if (tiers.some((t) => (t.priceCents ?? 0) > 0 || (t.annualPriceCents ?? 0) > 0)) {
+    const { spacePaymentsVerdict } = await import('@/lib/pricing/payments-gate')
+    const payments = await spacePaymentsVerdict(spaceId, { plan: space.plan ?? null, also: 'space_memberships' })
+    if (!payments.ok) return fail(payments.refusal.message)
   }
 
   // Normalize + drop anything invalid. An empty result is a valid "no tiers" state.

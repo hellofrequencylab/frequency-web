@@ -3,22 +3,20 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// THE MARKET IS OPEN ON THE FREE TIER (ADR-914, owner ruling 2026-08-24).
+// A FREE MEMBER LISTS, AND NEVER TAKES MONEY (ADR-1709, LIVE-753, superseding ADR-914).
 //
-// ADR-914 reversed ADR-913 the same day: a free Member sells on day one, no upgrade, and the paid
-// rungs buy the RATE down instead of buying the permission. The Market kept two hand-rolled
-// `isPaid(profile.realMembershipTier)` walls anyway — a "Selling is a paid feature" page and a
-// `redirect('/upgrade')` in the create action — plus a third on the Spark's Vera door. All three are
-// gone, and this file is what makes their return fail.
+// ADR-914 opened selling on every tier. ADR-1709 closed it again on the other axis: listing stays
+// open to any signed-in member (an INQUIRY, the buyer messages the maker), but taking payment is
+// what a Business Space is for. Personal selling is off on every personal tier, and a free Space
+// below Business is refused at the payments gate. Tips stay open at 0%.
 //
-// It exercises the GATE DECISION, not the absence of a line: the real page function and the real
-// server action run, with a genuinely free-tier profile, and the assertion is what they DID (rendered
-// the Spark / called createProduct / drafted copy). A grep-shaped guard rides along at the bottom as a
-// second, weaker net, because it names the exact idiom that must not reappear.
+// What must NOT come back is the old wall: no `isPaid` page, no `redirect('/upgrade')` in the create
+// action. A member never loses their listing behind a paywall; the upgrade moment sits beside the
+// price instead (LIVE-758). The real page and action run with a genuinely free profile, and the
+// assertions are what they DID; a grep-shaped guard rides along at the bottom.
 //
-// The other half of the ruling is asserted too: the five Crew feature gates are untouched, and a free
-// seller's network-sourced sale settles at the `memberFree` rung (1000bps, 10%) rather than 0% or the
-// Crew rung. A wall removed while the rate quietly resolved to 0% would give the product away.
+// The rate half is now default-deny: the personal rungs (memberFree 1000, Crew 800) stay in code
+// only so a mis-routed sale could never price at 0%, and the refusal is what the tests assert.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 
 const { getCallerProfile, createProduct, setProductStatus, draftListingCopy, redirect } = vi.hoisted(() => ({
@@ -71,6 +69,8 @@ import {
   NETWORK_TAKE_RATE_DEFAULT,
 } from '@/lib/billing/pricing-keys'
 import { FEATURE_GATES } from '@/lib/pricing/gates'
+import { canTakePayments } from '@/lib/commerce/selling'
+import { planTakesPayments, personalPaymentsRefusal } from '@/lib/pricing/payments-gate'
 
 /** A genuinely free member: `membership_tier = 'free'` on the REAL (never beta-overridden) field. */
 const freeMember = { id: 'profile-free', membershipTier: 'free', realMembershipTier: 'free' }
@@ -105,14 +105,14 @@ beforeEach(() => {
   draftListingCopy.mockResolvedValue({ title: 'Ceramic mug', description: 'A mug.' })
 })
 
-describe('the list-a-product page lets a free member in (ADR-914)', () => {
+describe('the list-a-product page lets a free member in (listing stays open, ADR-1709)', () => {
   it('renders the Spark for a free member, not an upgrade wall', async () => {
     const el = await MarketSellPage()
     expect(el).toEqual(expect.objectContaining({ type: ProductSpark }))
     expect(redirect).not.toHaveBeenCalled()
   })
 
-  it('renders the same Spark for a Crew member (paying changes the rate, not the door)', async () => {
+  it('renders the same Spark for a Crew member (Crew changes neither the door nor the money)', async () => {
     getCallerProfile.mockResolvedValue({ ...crewMember })
     const el = await MarketSellPage()
     expect(el).toEqual(expect.objectContaining({ type: ProductSpark }))
@@ -125,7 +125,7 @@ describe('the list-a-product page lets a free member in (ADR-914)', () => {
   })
 })
 
-describe('createMakerProductAction lets a free member list (ADR-914)', () => {
+describe('createMakerProductAction lets a free member list an inquiry (ADR-1709)', () => {
   it('creates the listing for a free member and never redirects to /upgrade', async () => {
     const to = await redirectedTo(() => createMakerProductAction(listingForm()))
     expect(to).toBe('/market/prod-1') // the success redirect, not the paywall
@@ -151,7 +151,7 @@ describe('createMakerProductAction lets a free member list (ADR-914)', () => {
   })
 })
 
-describe('the Spark Vera door answers a free member (ADR-914)', () => {
+describe('the Spark Vera door answers a free member', () => {
   it('drafts copy for a free member', async () => {
     const copy = await draftMakerProductCopyAction({ productKind: 'physical', seed: 'mug' })
     expect(copy).toEqual({ title: 'Ceramic mug', description: 'A mug.' })
@@ -165,27 +165,31 @@ describe('the Spark Vera door answers a free member (ADR-914)', () => {
   })
 })
 
-describe('the rate is the ladder: a free seller settles at the memberFree rung', () => {
-  it('prices a free Member network sale at 1000bps (10%), not 0% and not the Crew rung', () => {
+describe('a free Member and a free Space are REFUSED, not priced (LIVE-753)', () => {
+  it('refuses every personal seller at the owner-kind gate', () => {
+    expect(canTakePayments('profile')).toBe(false)
+    expect(canTakePayments('space')).toBe(true) // the Space still has to clear its plan
+    const verdict = personalPaymentsRefusal()
+    expect(verdict.ok).toBe(false)
+    if (!verdict.ok) expect(verdict.refusal).toMatchObject({ code: 'payments_plan', scope: 'personal', spaceId: null })
+  })
+
+  it('refuses a free Space at the payments gate and admits Business and up', () => {
+    expect(planTakesPayments('free')).toBe(false)
+    expect(planTakesPayments(null)).toBe(false)
+    for (const plan of ['business', 'collective', 'nonprofit', 'nonprofit_collective', 'independent']) {
+      expect(planTakesPayments(plan), plan).toBe(true)
+    }
+  })
+
+  it('keeps the personal rungs only as default-deny values, never 0%', () => {
+    // Unreachable for a sale now; if anything ever routed one here it must not price at 0%.
     expect(NETWORK_TAKE_RATE_DEFAULT.memberFree).toBe(1000)
     expect(memberNetworkTakeRateBps('free')).toBe(1000)
-    expect(memberNetworkTakeRateBps(null)).toBe(1000)
-    expect(memberNetworkTakeRateBps('crew')).toBe(800)
-    // $28 mug sourced by the network: $2.80 to the platform, floored, never 0.
-    expect(sourceAwareMemberTakeRateCents(2800, 'network', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(280)
-    expect(sourceAwareMemberTakeRateCents(2800, 'network', NETWORK_TAKE_RATE_DEFAULT, 'crew')).toBe(224)
-  })
-
-  it('fails toward the HIGHER rung on an unreadable tier (ADR-914), and 0% on the seller own audience', () => {
-    // `isPaid` is an allow-list, so a typo prices at free rather than handing out the discount.
     expect(memberNetworkTakeRateBps('crewe')).toBe(1000)
-    expect(memberNetworkTakeRateBps(undefined)).toBe(1000)
-    // The hard promise: a sale to the seller's own audience is 0% on every tier.
+    expect(sourceAwareMemberTakeRateCents(2800, 'network', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(280)
+    // The hard promise survives: a sale to the seller's own audience is 0% on every tier.
     expect(sourceAwareMemberTakeRateCents(2800, 'self', NETWORK_TAKE_RATE_DEFAULT, 'free')).toBe(0)
-  })
-
-  it('holds the free Member rung equal to the free Space rung (a free Space changes nothing)', () => {
-    expect(NETWORK_TAKE_RATE_DEFAULT.memberFree).toBe(NETWORK_TAKE_RATE_DEFAULT.free)
   })
 })
 
@@ -206,16 +210,18 @@ describe('the Crew feature gates that remain are untouched (the repeat stays gat
     }
   })
 
-  it('does not re-add a Market selling gate to FEATURE_GATES', () => {
+  it('does not re-add a personal selling gate to FEATURE_GATES (personal selling is off by owner kind)', () => {
     for (const key of Object.keys(FEATURE_GATES)) {
       expect(key).not.toMatch(/market_sell|maker_sell|event_paid_tickets|personal_payouts/)
     }
+    // The one money gate is on the PLAN axis, at Business.
+    expect(FEATURE_GATES.space_payments).toEqual({ axis: 'plan', minEntitlement: 'business', enabled: true })
   })
 })
 
 // The weaker, second net: the exact idiom must not reappear in either file. On its own this proves
 // nothing (a wall could be spelled differently), which is why the behavioural tests above come first.
-describe('source shape: neither Market selling surface reads a paid tier', () => {
+describe('source shape: neither Market listing surface walls a member behind a paid tier', () => {
   const root = join(__dirname, '..', '..', '..')
   const files = ['app/(main)/market/sell/page.tsx', 'app/(main)/marketplace/commerce-actions.ts']
 

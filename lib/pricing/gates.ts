@@ -177,7 +177,13 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // default is therefore the free floor, the same shape as the storefront. Checkout still refuses
   // when Connect is not payout-ready (LIVE-233 / LIVE-339). An operator can still raise this gate
   // from /admin/pricing; the write seam and the settings notice both read the merged map.
-  space_memberships: { axis: 'plan', minEntitlement: 'free', enabled: true },
+  //
+  // ADR-1709 (LIVE-753) SUPERSEDES ADR-1415: only Business and Collective take money. A PAID
+  // membership tier sits at the Business floor; a free-to-join tier stays open on every plan (the
+  // free Space's one tier, metered by space_membership_tiers). setMembershipTiers asks this gate and
+  // `space_payments` only when a tier carries a price, through lib/pricing/payments-gate.ts, which
+  // does NOT wait for the grace window.
+  space_memberships: { axis: 'plan', minEntitlement: 'business', enabled: true },
   // CAMPAIGNS AND FUNNELS. The line is between MESSAGING YOUR PEOPLE, which every Space can do inside
   // its send allowance, and RUNNING AN ACQUISITION MACHINE, which is what someone is paying for. A
   // ADR-1709 (LIVE-751) replaced the Business wall with meters: a free Space sends 2 campaigns a month
@@ -190,10 +196,20 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // gating the membership open and then its own tickets a tier higher would sell half a feature
   // again. Enforced where the gate is WRITTEN (lib/events/ticket-tiers validateSpaceAccess); the
   // checkout enforces the stored gate unconditionally.
-  space_membership_tickets: { axis: 'plan', minEntitlement: 'free', enabled: true },
-  // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
-  // only buys the rake down + features). A per-Space toggle decides ON/OFF.
-  space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },
+  // ADR-1709 (LIVE-753) moves it with the membership it sells, to the Business floor.
+  space_membership_tickets: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // Storefront CHECKOUT (ADR-1709, LIVE-753). A free Space still lists up to its space_shop_listings
+  // meter, inquiries only, so the Shop FUNCTION is no longer plan-gated (lib/spaces/function-access.ts).
+  // What sits at Business is taking money for a listing: lib/commerce/checkout.ts asks this gate with
+  // `space_payments` on every Space seller, outside the grace window, with no grandfather clause.
+  space_storefront: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // TAKE PAYMENTS (ADR-1709, LIVE-753). Selling is what Business is for. Checked on paid tickets
+  // (lib/billing/tickets.ts), paid memberships (lib/billing/space-membership-checkout.ts),
+  // donations (lib/billing/space-donation-checkout.ts), shop checkout (lib/commerce/checkout.ts) and
+  // booking deposits (lib/spaces/booking.ts), all through lib/pricing/payments-gate.ts, which reads
+  // this floor and NEVER the grace window (like the paid-Journey gate). Personal selling is off on
+  // every personal tier, and tips stay open at 0% everywhere (lib/billing/tips.ts never asks).
+  space_payments: { axis: 'plan', minEntitlement: 'business', enabled: true },
   // 🔴 `space_full_website` USED TO SIT HERE and is deliberately gone (HYG-079). It was the one row on
   // this map that was correct rather than owed, and that is exactly why it did not belong: it carried
   // `enabled: false` so it could never bind, because the LOCK is the pure `space_full_website`

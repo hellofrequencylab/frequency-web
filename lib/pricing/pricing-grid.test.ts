@@ -562,7 +562,9 @@ describe('derivation guard: changing a depth key set changes the grid', () => {
 
 describe('operator gate overrides move the comparison cell', () => {
   it('raising space_storefront to collective drops the Business and Non Profit cells to Not included', () => {
-    expect(cellsByColumn(spaceFeatureGrid(input), 'space_storefront').free).toBe('Included')
+    // Shop checkout sits at Business since ADR-1709 (LIVE-753).
+    expect(cellsByColumn(spaceFeatureGrid(input), 'space_storefront').free).toBe('Not included')
+    expect(cellsByColumn(spaceFeatureGrid(input), 'space_storefront').nonprofit).toBe('Included')
     // Non Profit sits beside Business on the capability ladder (ADR-1709), so the override that splits
     // them now is a Collective floor.
     const raised = spaceFeatureGrid({

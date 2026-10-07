@@ -51,12 +51,13 @@ describe('resolveMembershipTicketGate (LIVE-428)', () => {
     vi.mocked(loadFeatureGateOverrides).mockReset()
   })
 
-  it('on the code default a free Space is allowed and the wall word is Free', async () => {
+  it('on the code default the wall word is Business (ADR-1709, LIVE-753 moved it off the free floor)', async () => {
     vi.mocked(featureAllowed).mockResolvedValue(true)
     vi.mocked(loadFeatureGateOverrides).mockResolvedValue({})
     const gate = await resolveMembershipTicketGate('free')
+    // featureAllowed is mocked here; the allowance itself is the grace-gated resolver's answer.
     expect(gate.allowed).toBe(true)
-    expect(gate.wall).toBe(SPACE_PLAN_LABEL.free)
+    expect(gate.wall).toBe(SPACE_PLAN_LABEL.business)
   })
 
   it('an override that raises the wall names that plan', async () => {

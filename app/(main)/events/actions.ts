@@ -70,6 +70,7 @@ import { saveSteer } from '@/lib/studio/steer-store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
+import { spacePaymentsVerdict, personalPaymentsRefusal } from '@/lib/pricing/payments-gate'
 import { checkEventGuestMeter, checkSpaceEventMeter } from '@/lib/spaces/counted-meters'
 
 // Gallery images ride as a JSON array of storage paths (the form has no native array
@@ -256,17 +257,22 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
 // guard used to be a silent `return`, which left the editor open with no message
 // and nothing saved — indistinguishable from success. Navigation moved client-side
 // (the form redirects to the returned slug on ok).
-// ── SETTING A PRICE IS NOT GATED (ADR-914, reversing ADR-913) ──────────────────────────────────
+// ── SETTING A PRICE ASKS THE PAYMENTS GATE (ADR-1709, LIVE-753, superseding ADR-914) ──────────
 //
-// A `priceRefusal` helper used to sit here and block a free Member from writing a price at all. It is
-// gone: selling is free on every tier, and the ladder is the RATE, not the permission
-// (docs/VALUE-LADDER.md §1). Writing a price is now always allowed.
+// Only a Space on Business or above takes money. A PERSONAL event (a Member or Crew host, no hosting
+// Space) never carries a ticket price, and a Space event carries one only when its Space clears
+// `space_payments` (lib/pricing/payments-gate.ts), outside the grace window. The buy path
+// (lib/billing/tickets.ts) asks again, because it is the only place that sees every sale.
 //
-// What replaced it is not a check on this path at all. The one remaining condition — the payee has a
-// Stripe account that can actually receive money — is surfaced as a SETUP STEP next to the price
-// control, and enforced once, at the buy path (lib/billing/tickets.ts), which is the only place that
-// sees every sale. Refusing the WRITE would have been actively wrong here: someone should be able to
+// A refusal is never a dead end: its sentence is the upgrade moment's (isPaymentsRefusal), so the
+// event form opens the panel with the host's draft intact, where they can start the Business trial
+// or keep the event free and receive tips. Payout readiness is still NOT checked here: someone can
 // price their event and connect their bank in either order.
+async function priceRefusal(priceCents: number | null, hostingSpaceId: string | null): Promise<string | null> {
+  if (!priceCents || priceCents <= 0) return null
+  const payments = hostingSpaceId ? await spacePaymentsVerdict(hostingSpaceId) : personalPaymentsRefusal()
+  return payments.ok ? null : payments.refusal.message
+}
 
 /**
  * The personal `event_create` allowance check (ADR-908, ADR-1444). Counts the member's
@@ -525,6 +531,10 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   const planLink = await resolvePlanLink(formData.get('planId'), planSpaceId)
   if (!planLink.ok) return fail(planLink.message)
 
+  // Paid tickets come with Business (LIVE-753). Against the HOSTING Space, root excluded.
+  const createPriceRefusal = await priceRefusal(priceCents, planSpaceId)
+  if (createPriceRefusal) return fail(createPriceRefusal)
+
   // The Pencil this Production was opened from, if any. Authorized by the same rule: the read is
   // space-scoped and on the caller's session, so an entry id belonging to another Space simply
   // comes back null and the create carries on without a back-link rather than touching a row the
@@ -763,7 +773,7 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const admin = createAdminClient()
   const { data: ev } = await admin
     .from('events')
-    // host_id + the two Space axes come along for the ADR-913 price gate below: the tier that matters
+    // host_id + the two Space axes come along for the payments gate below (LIVE-753): the tier that matters
     // is the PAYEE's, not the editor's (a cohost may edit an event they are not paid for).
     .select('slug, parent_event_id, details, scope_type, host_id, space_id, host_space_id')
     .eq('id', eventId)
@@ -801,6 +811,13 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
     await resolveHostingSpaceIdFromRow(evRow),
   )
   if (!planLink.ok) return fail(planLink.message)
+
+  // Paid tickets come with Business (LIVE-753), asked of the Space that HOSTS this event (the payee's
+  // side, not the editor's). Clearing a price is always allowed.
+  if (priceFieldSent) {
+    const editPriceRefusal = await priceRefusal(priceCents, await resolveHostingSpaceIdFromRow(evRow))
+    if (editPriceRefusal) return fail(editPriceRefusal)
+  }
 
   const { error } = await admin
     .from('events')

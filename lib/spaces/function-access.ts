@@ -37,7 +37,10 @@ const FUNCTION_FEATURE_KEY: Record<string, string> = {
   // be measured (lib/crm/contact-allowance.ts, and the monthly send allowance in lib/spaces/email.ts).
   // Mapping them here would re-create the contradiction Phase 3b removed: a plan-ladder check that
   // takes the whole feature away instead of capping how much of it you use.
-  storefront: 'space_storefront',
+  // 🔴 `storefront` mapped to `space_storefront` until ADR-1709 (LIVE-753). That gate now guards CHECKOUT
+  // on a Space shop at the Business floor (lib/commerce/checkout.ts); a free Space still lists up to its
+  // space_shop_listings meter, inquiries only. Mapping it here would hide the whole Shop from a free
+  // Space once the gates go live, which takes away the listings the ladder promises it.
 }
 
 /** The pricing feature-gate key for a Space function, or null when the function is universal (no

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { PAYMENTS_BUYER_REFUSAL } from '@/lib/pricing/payments-copy'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Check, ChevronUp, Ticket } from 'lucide-react'
@@ -202,6 +203,12 @@ export function MembershipJoinCard({
         // FOR FREE, silently, with the operator never learning their tier was being given away.
         if (isError(checkout) && checkout.error === 'no_owner_payouts') {
           setError('This space cannot take payment yet. Follow it to hear when joining opens.')
+          return
+        }
+        // 🔴 NOR IS THE PAYMENTS GATE (LIVE-753). The Space's plan cannot take money, so falling
+        // through would hand the member a paid tier for free. The buyer is never told about the plan.
+        if (isError(checkout) && checkout.error === 'payments_plan') {
+          setError(PAYMENTS_BUYER_REFUSAL)
           return
         }
         // 🔴 NOR IS A MISSING YEARLY PRICE (ADR-1374). Falling through would record a membership for

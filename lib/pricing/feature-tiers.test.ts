@@ -210,8 +210,7 @@ describe('ladder unlock copy cannot drift from the meter it describes', () => {
 
 describe('read helpers', () => {
   it('featureTierLadder returns null for an ungated / unknown feature', () => {
-    expect(featureTierLadder('space_storefront')).toBeNull() // free floor, not gated
-    expect(featureTierLadder('space_memberships')).toBeNull() // LIVE-410: free floor, same shape
+    expect(featureTierLadder('space_campaigns')).toBeNull() // free floor since ADR-1709, metered
     expect(featureTierLadder('made-up')).toBeNull()
   })
 
@@ -245,8 +244,10 @@ describe('read helpers', () => {
 // wall moves the sentence with it, and a typo in a copy string can never disagree with the gate.
 describe('featureWallLabel', () => {
   it('names the plan each gate sits on, off the code gate map', () => {
-    expect(featureWallLabel('space_memberships')).toBe(SPACE_PLAN_LABEL.free)
-    expect(featureWallLabel('space_membership_tickets')).toBe(SPACE_PLAN_LABEL.free)
+    // Taking money sits at Business since ADR-1709 (LIVE-753).
+    expect(featureWallLabel('space_memberships')).toBe(SPACE_PLAN_LABEL.business)
+    expect(featureWallLabel('space_membership_tickets')).toBe(SPACE_PLAN_LABEL.business)
+    expect(featureWallLabel('space_payments')).toBe(SPACE_PLAN_LABEL.business)
     expect(featureWallLabel('space_campaigns')).toBe(SPACE_PLAN_LABEL.free)
     expect(featureWallLabel('space_automation')).toBe(SPACE_PLAN_LABEL.free)
     expect(featureWallLabel('space_collaborators')).toBe(SPACE_PLAN_LABEL.business)
@@ -258,7 +259,7 @@ describe('featureWallLabel', () => {
     )
     // A label off the gate's ladder must not widen or rename the wall (mergeGate keeps the code default).
     expect(featureWallLabel('space_memberships', { space_memberships: { minEntitlement: 'crew' } })).toBe(
-      SPACE_PLAN_LABEL.free,
+      SPACE_PLAN_LABEL.business,
     )
   })
 

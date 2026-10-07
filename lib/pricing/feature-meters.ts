@@ -471,11 +471,15 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // sell a recurring promise at all), never in the middle of a growing member list, and above the wall
   // there is no ceiling: the take rate already scales with volume, so capping members would charge
   // twice for the same success.
-  space_memberships: 'On/off capability (sell recurring memberships). Open on the free floor (LIVE-410); deliberately UNMETERED for active members: capping them would punish a Space for growing, and the take rate already scales with volume. The tier COUNT is space_membership_tiers.',
+  space_memberships: 'On/off capability (sell PAID recurring memberships). Business floor since ADR-1709 (LIVE-753); a free-to-join tier stays open on every plan. Deliberately UNMETERED for active members: capping them would punish a Space for growing, and the take rate already scales with volume. The tier COUNT is space_membership_tiers.',
   // Campaigns are the same shape. "One free campaign" is not enough to learn anything from, so it
   // converts badly and teaches nothing; the honest line is between messaging your own people (metered
   // by space_email sends, available free) and running an acquisition machine (paid).
   space_campaigns: 'Operator switch only since ADR-1709: campaigns are metered on space_campaigns_month and funnels on space_funnels, with send volume on space_email.',
+  // ADR-1709 (LIVE-753): taking money is a wall at Business, not a dial. Sales volume is the Space's own
+  // business and the network fee already scales with it, so there is nothing to count.
+  space_payments: 'On/off capability (take payments: tickets, memberships, donations, shop checkout, booking deposits). Business floor, outside the grace window. Tips are never gated.',
+  space_storefront: 'On/off capability (checkout on Space shop listings). The listing COUNT is space_shop_listings; a free Space lists inquiries only.',
   custom_domain: 'On/off capability (LIVE-310): a Space holds one domain in spaces.domain, so the quantity is structural and needs no meter.',
   // 🔴 `space_revenue_splits` and `space_sms` were listed here until HYG-079 and are gone with their
   // gates. Neither feature is built or live (revenue splitting is unwritten; group SMS waits on the

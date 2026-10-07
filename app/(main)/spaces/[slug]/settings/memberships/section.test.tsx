@@ -3,13 +3,12 @@ import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { Space } from '@/lib/spaces/types'
 
-// LIVE-410 moved the memberships gate to the free floor (ADR-1403 Q3). A free Space with the
-// role now sees the tier editor, the same way a Business Space always did. The GateNotice from
-// LIVE-231 stays in source for an operator override that raises the wall; it is not what a free
-// Space reads on the code default. Three branches:
-//   * a FREE Space with the gates live gets the editor (the new product truth);
-//   * a Space ABOVE any remaining wall gets the editor (unchanged);
-//   * a free Space while the gates are NOT live gets the editor (the beta grace window, unchanged).
+// ADR-1709 (LIVE-753) put CHARGING members at Business (the payments gate), outside the grace
+// window. A free Space still gets the tier editor, because a free-to-join tier is open on every
+// plan, under the LIVE-231 GateNotice that names what a price needs. Branches:
+//   * a FREE Space gets the editor AND the notice, whether or not the gates are live;
+//   * a Space at or above Business gets the editor and no notice;
+//   * a staff preview gets the editor whatever the plan.
 // Then two source-shape facts the LIVE-231 probe still measures: no Lock glyph is imported
 // anywhere on the tier-creation path, and the wall's name reaches the sentence through
 // featureWallLabel, not a literal.
@@ -47,6 +46,8 @@ vi.mock('@/lib/pricing/settings', () => ({
 }))
 // One chainable stub stands in for every admin read on this surface: the gate-override table
 // (loadFeatureGateOverrides, so the CODE gate map stands) and the tier/circle link read.
+// The payments gate's root lookup (lib/pricing/payments-gate.ts).
+vi.mock('@/lib/spaces/store', () => ({ loadRootSpaceId: async () => 'root-space' }))
 vi.mock('@/lib/supabase/admin', () => {
   const chain: Record<string, unknown> = {}
   for (const m of ['from', 'select', 'eq', 'order']) chain[m] = () => chain
@@ -90,21 +91,21 @@ async function render(plan: Space['plan'], staffViewing = false): Promise<string
 
 const SENTENCE = `Charging your members is part of ${SPACE_PLAN_LABEL.business}`
 
-describe('a free Space at the point of tier creation (LIVE-410)', () => {
-  it('gets the editor on the code default, with no Business wall and no padlock', async () => {
+describe('a free Space at the point of tier creation (ADR-1709, LIVE-753)', () => {
+  it('gets the editor for a free tier, under the notice that names what a price needs, and no padlock', async () => {
     state.gatesLive = true
     state.tiers = []
     state.canManageMembers = true
     const html = await render('free')
     expect(html).toContain('data-tier-editor')
-    expect(html).not.toContain(SENTENCE)
-    expect(html).not.toContain('data-kind="gated"')
+    expect(html).toContain(SENTENCE)
+    expect(html).toContain('data-kind="gated"')
     expect(html).not.toMatch(/lucide-lock/)
     expect(html).not.toContain('—')
   })
 })
 
-describe('above the wall, and while the gates are not live, nothing changed', () => {
+describe('above the wall nothing changed, and the grace window does not open the wall', () => {
   it('a Business Space gets the editor and never sees the sentence', async () => {
     state.gatesLive = true
     state.tiers = []
@@ -121,11 +122,11 @@ describe('above the wall, and while the gates are not live, nothing changed', ()
     expect(html).not.toContain(SENTENCE)
   })
 
-  it('a free Space in the grace window (gates not live) keeps the editor', async () => {
+  it('a free Space in the grace window (gates not live) still reads the notice: the payments gate does not wait', async () => {
     state.gatesLive = false
     const html = await render('free')
     expect(html).toContain('data-tier-editor')
-    expect(html).not.toContain(SENTENCE)
+    expect(html).toContain(SENTENCE)
     state.gatesLive = true
   })
 
@@ -175,9 +176,12 @@ describe('the tier-creation path carries no lock, and names the wall through the
     expect(src).not.toMatch(/part of Business/)
   })
 
-  it('the write refuses with the same derived name (memberships.ts), so the two sentences cannot part', () => {
+  it('the write refuses through the payments gate (memberships.ts), never with a typed plan name', () => {
+    // ADR-1709 (LIVE-753): the write's refusal is the upgrade moment's sentence, so the form can open
+    // the panel; it asks the same gate this section asks.
     const src = readFileSync('lib/spaces/memberships.ts', 'utf8')
-    expect(src).toContain("featureWallLabel('space_memberships'")
+    expect(src).toContain("also: 'space_memberships'")
+    expect(src).toContain('payments.refusal.message')
     expect(src).not.toMatch(/comes with Business\./)
   })
 })
