@@ -78,6 +78,16 @@ describe('routeSiteHost', () => {
     expect(routeSiteHost('danieltyack.com', '/events/abc', '')).toEqual({ kind: 'not-found' })
     expect(routeSiteHost('danieltyack.com', '/spaces/danieltyack/book/extra', '')).toEqual({ kind: 'not-found' })
   })
+
+  it('serves the admin pages on the site itself (LIVE-864)', () => {
+    const at = (p: string) => routeSiteHost('theheartonfire.com', p, '')
+    expect(at('/admin')).toEqual({ kind: 'rewrite', pathname: '/hosted/theheartonfire.com/admin/overview' })
+    expect(at('/admin/calendar')).toEqual({ kind: 'rewrite', pathname: '/hosted/theheartonfire.com/admin/calendar' })
+    expect(at('/admin/enter')).toEqual({ kind: 'rewrite', pathname: '/hosted/theheartonfire.com/admin/enter' })
+    expect(at('/admin/other')).toEqual({ kind: 'not-found' })
+    expect(at('/admin/calendar/x')).toEqual({ kind: 'not-found' })
+    expect(routeSiteHost('frequencylocal.com', '/admin', '')).toEqual({ kind: 'none' })
+  })
 })
 
 describe('the internal /hosted route on Frequency (LIVE-784)', () => {
