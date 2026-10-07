@@ -2,7 +2,7 @@ import { JsonLd } from '@/components/json-ld'
 import type { ReactNode } from 'react'
 import { faqSchema } from '@/lib/jsonld'
 import { safeImageSrc } from '@/lib/safe-image-src'
-import { isFeatureDataSource, pickerSelection, resolvePickedIds } from '@/lib/entity-blocks/block-content'
+import { isFeatureDataSource, pickerSelection, resolvePickedIds, safeImageUrl } from '@/lib/entity-blocks/block-content'
 import { resolveRows, type EntityLayout, type RowColumns, type RowDef } from '@/lib/entity-blocks/layout'
 import { getSpaceFaqs } from '@/lib/spaces/content-data'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
@@ -28,6 +28,9 @@ import {
   type SiteLinkMap,
 } from '@/lib/sites/house-theme'
 import { siteHeroLede } from './site-hero-copy'
+
+/** A block photo field's renderable URL: a stored URL string or a Loom AssetRef (ADR-1245), else null. */
+const blockImage = (v: unknown) => safeImageSrc(safeImageUrl(v) || null)
 import { HouseBlock, HouseHero, type HouseBlockModel, type HouseHeroModel, type HouseLink } from './house-sections'
 
 // THE HOUSE THEME'S HOME PAGE (owner ask 2026-10-07). Resolves the Space's own Home blocks into the themed
@@ -124,7 +127,7 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
       const b = bag(s.id)
       const ps = paragraphs(b.body)
       const facts = s.factsId ? factsOf(bag(s.factsId)) : null
-      const image = typeof b.image === 'string' ? safeImageSrc(b.image) : null
+      const image = blockImage(b.image)
       if (!ps.length && !text(b.title) && !image) continue
       const anchor = anchorFor(s.kind)
       const m = {
@@ -303,7 +306,7 @@ function closingOf(b: Bag, key: string, contact: ReturnType<typeof contactOf>, l
     title: text(b.title),
     body: text(b.body),
     button: buttonLabel && button ? { label: buttonLabel, ...button } : null,
-    photo: (typeof b.image === 'string' ? safeImageSrc(b.image) : null) ?? safeImageSrc(space.coverImageUrl) ?? null,
+    photo: blockImage(b.image) ?? safeImageSrc(space.coverImageUrl) ?? null,
     contact,
   }
   return m.title || m.body || m.button || contact ? m : null
@@ -318,7 +321,7 @@ function closingOf(b: Bag, key: string, contact: ReturnType<typeof contactOf>, l
 export function buildHouseContact({ space, grid, links, cta }: Pick<HouseHomeInput, 'space' | 'grid' | 'links' | 'cta'>) {
   const content: Record<string, Bag> = (grid.content ?? {}) as Record<string, Bag>
   const bag = (id: string): Bag => content[id] ?? {}
-  const imageOf = (b: Bag) => (typeof b.image === 'string' ? safeImageSrc(b.image) : null)
+  const imageOf = (b: Bag) => blockImage(b.image)
   // The form is the page's hero: a visitor came here to write, so the form leads and the story follows.
   const blocks: HouseBlockModel[] = [inquiryOf(bag('contactForm'), 'form', 'message', space.slug, cta, links, true)]
   // The hero's backdrop: the Contact form block's own image, else the Space cover (as on the home hero).

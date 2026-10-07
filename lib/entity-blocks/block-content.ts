@@ -624,6 +624,9 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
     { key: 'title', label: 'Heading', type: 'text', placeholder: 'Get in touch' },
     { key: 'body', label: 'Intro', type: 'textarea', placeholder: 'A line about what to write, or when you reply' },
+    // The backdrop of the website Contact page's form hero (components/sites/house-sections.tsx); empty
+    // falls back to the Space cover. The Space page's own form does not draw it.
+    { key: 'image', label: 'Website Contact page photo', type: 'url', placeholder: 'https://', upload: true },
     { key: 'showPhone', label: 'Ask for a phone number', type: 'toggle', default: false },
     { key: 'showMessage', label: 'Ask for a message', type: 'toggle', default: true },
     { key: 'messageLabel', label: 'Message label', type: 'text', placeholder: 'Your message' },

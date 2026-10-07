@@ -43,6 +43,7 @@ describe('contactForm block — the operator schema', () => {
       'eyebrow',
       'title',
       'body',
+      'image',
       'showPhone',
       'showMessage',
       'messageLabel',
