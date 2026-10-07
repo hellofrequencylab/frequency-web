@@ -2825,6 +2825,58 @@ export type Database = {
           },
         ]
       }
+      crew_boosts: {
+        Row: {
+          boost_month: string
+          circle_id: string | null
+          giver_profile_id: string
+          given_at: string
+          id: string
+          space_id: string | null
+          target_kind: string
+        }
+        Insert: {
+          boost_month: string
+          circle_id?: string | null
+          giver_profile_id: string
+          given_at?: string
+          id?: string
+          space_id?: string | null
+          target_kind: string
+        }
+        Update: {
+          boost_month?: string
+          circle_id?: string | null
+          giver_profile_id?: string
+          given_at?: string
+          id?: string
+          space_id?: string | null
+          target_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crew_boosts_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_boosts_giver_profile_id_fkey"
+            columns: ["giver_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crew_boosts_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crew_completions: {
         Row: {
           completed_at: string | null

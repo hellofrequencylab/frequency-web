@@ -19,6 +19,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
+import { effectiveTierFor } from '@/lib/billing/crew-grants'
 import {
   readSpotlightEnabled,
   readSpotlightPublished,
@@ -309,6 +310,8 @@ export interface AppearanceRailData {
   /** The store item slugs the member holds (ADR-1279): the picker offers an earned skin or sticker
    *  only when its requiredItem is in here. The writers re-check, so this is the honest list, not the gate. */
   heldItems: string[]
+  /** True when the member is on Crew (real effective tier), so Crew themes are offered (LIVE-757). */
+  crewPerks: boolean
   /** The member's current ordered Top Friends (resolved to public identity fields). */
   topFriends: TopFriend[]
   /** Every accepted friend, as the picker's source list (only the caller's own friends). */
@@ -326,7 +329,7 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, handle, meta, profile_theme')
+    .select('id, handle, meta, profile_theme, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile) return null
@@ -335,10 +338,12 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
   const profileId = profile.id as string
   const canEnableSpotlight = (await getProfileCapabilities(profileId)).has('spotlight.enable')
 
-  const [topFriends, friendOptions, held] = await Promise.all([
+  const [topFriends, friendOptions, held, effective] = await Promise.all([
     getTopFriendsForOwner(profileId),
     getAcceptedFriendsForPicker(profileId),
     memberHeldItems(supabase, profileId),
+    // Crew perks (LIVE-757) read the REAL effective tier, never the Beta grant.
+    effectiveTierFor(profileId, (profile as { membership_tier?: string | null }).membership_tier ?? null),
   ])
 
   return {
@@ -351,6 +356,7 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
     background: validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id),
     stickers: validateSpotlightStickers(readSpotlightStickersRaw(meta)),
     heldItems: [...held],
+    crewPerks: effective.tier === 'crew',
     topFriends,
     friendOptions,
   }

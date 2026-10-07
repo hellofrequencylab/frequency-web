@@ -4,6 +4,7 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import type { NetworkedSpace } from '@/lib/spaces/discovery'
 import { FoundingBusinessBadge } from '@/lib/community-roles'
+import { BoostedBadge } from '@/components/crew/boosted-badge'
 
 // The directory card for one networked entity Space — a COVER-LED composition of the shared EntityCard
 // (ENTITY-SPACES-BUILD §A.2 D2: compose, never author). The cover leads the card and now carries three
@@ -104,8 +105,14 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
       title={space.name}
       /* The founding mark rides EntityCard's existing badge slot beside the title (no new layout). It is
          already resolved for the whole grid by ONE batched read in listNetworkedSpaces, so the badge costs
-         this card nothing. Status only: the founder's locked rate never reaches a public card. */
-      badge={<FoundingBusinessBadge founding={space.isFoundingBusiness} />}
+         this card nothing. Status only: the founder's locked rate never reaches a public card. The
+         Boosted mark (LIVE-756) rides the same slot: a mark only, the directory order ignores it. */
+      badge={
+        <>
+          <FoundingBusinessBadge founding={space.isFoundingBusiness} />
+          <BoostedBadge boosted={space.boosted} />
+        </>
+      }
       description={space.tagline ?? undefined}
       meta={
         <>

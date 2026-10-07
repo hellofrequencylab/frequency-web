@@ -214,7 +214,7 @@ export async function confirmCheckout(sessionId: string, profileId: string): Pro
   // Stripe session metadata is an external string the union cannot constrain — unlike the profile
   // column, whose retired read-time fold is gone precisely because the column can no longer hold it.
   //
-  // PWYW: a member who chose at or above the suggested amount also earns the Supporter mark. The mark is
+  // PWYW: any valid Crew amount also earns the Supporter mark (LIVE-755). The mark is
   // RECOGNITION ONLY — every Crew amount buys identical access — so a failure to resolve it must never
   // block the upgrade, hence the best-effort try/catch that degrades to "no mark".
   let isSupporter = session.metadata?.tier === 'supporter'

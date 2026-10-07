@@ -1,7 +1,7 @@
 {
   "id": "LIVE-756",
   "title": "Crew gives one Boost a month to a Circle or Space, lifting it in discovery for a week",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,10 +9,11 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 4 of the five-tier ladder (ADR-1709). A crew_boosts table (one per Crew per calendar month), a give action, and a discovery ranking lift for 7 days.",
+  "detail": "PHASE 4 of the five-tier ladder (ADR-1709). A crew_boosts table (one per Crew per calendar month), a give action, and a discovery ranking lift for 7 days. Shipped: migration 20270346005500_crew_boosts.sql (one row per Crew per calendar month by a unique key, RLS on, select-own policy, internal grant), lib/crew/boost.ts (giveBoost: real effective Crew, not your own Circle or Space; activeBoostIds: 7-day window), the giveCrewBoost action behind a Boost button on Circle and Space pages, and the lift in the default Circle index order (after featured), never inside the standing score. Owner ruling 2026-10-06 (\"Circles only\"): a Space gets a Boosted mark on its directory card and page, not a lift; the Space directory's default order stays earned (LIVE-262), and lib/spaces/discovery.test.ts proves it ignores Boosts.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const mig=fs.readdirSync(\"supabase/migrations\").map((f)=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/create table[^;]*crew_boosts/i.test(mig))fail(\"no crew_boosts table\");if(!fs.existsSync(\"lib/crew/boost.ts\"))fail(\"no boost module\");console.log(\"ok: the monthly Boost exists\")'"
   },
+  "closed": "2026-10-06",
   "wave": "WR"
 }

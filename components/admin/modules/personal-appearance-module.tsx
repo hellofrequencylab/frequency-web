@@ -61,7 +61,8 @@ export function PersonalAppearanceModule() {
   // The earned gate's picker half (ADR-1279): an earned skin or sticker is offered only when the
   // member holds its item. The writers re-check server-side, so hiding here is honesty, not security.
   const held = new Set(data?.heldItems ?? [])
-  const skinOptions = unlockedCosmetics(PROFILE_SKINS, held)
+  // A Crew theme (LIVE-757) is offered only to a member on Crew; the writer re-checks it.
+  const skinOptions = unlockedCosmetics(PROFILE_SKINS, held).filter((s) => !s.crewOnly || data?.crewPerks === true)
   const stickerOptions = unlockedCosmetics(SPOTLIGHT_STICKERS, held)
 
   useEffect(() => {

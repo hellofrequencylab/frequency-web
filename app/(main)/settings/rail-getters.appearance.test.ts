@@ -24,6 +24,9 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('@/lib/core/load-capabilities', () => ({
   getProfileCapabilities: async () => ({ has: capsHas }),
 }))
+vi.mock('@/lib/billing/crew-grants', () => ({
+  effectiveTierFor: async () => ({ stripeTier: 'free', granted: true, tier: 'crew' }),
+}))
 vi.mock('@/lib/spotlight/top-friends', () => ({
   getTopFriendsForOwner,
   getAcceptedFriendsForPicker,
@@ -64,6 +67,8 @@ describe('getAppearanceRailData', () => {
     expect(data!.profileTheme).toBe('midnight')
     expect(data!.spotlightEnabled).toBe(true)
     expect(data!.canEnableSpotlight).toBe(true)
+    // Crew perks read the real effective tier, so a granted Crew holds them (LIVE-757).
+    expect(data!.crewPerks).toBe(true)
     // Validated on read: the tampered height is clamped, the pinned asset path survives.
     expect(data!.theme.header.height).toBe(360)
     expect(data!.background.assetPath).toBe('auth-1/spotlight/x.png')

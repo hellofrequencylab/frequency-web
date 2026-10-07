@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 
 // Pricing ladder Phase C (ADR-463), the PURE surfaces math (no IO / no Stripe / no React): the
 // catalog-config overlay (operator overrides over the Phase B code catalog, fail-safe per field) and
@@ -15,6 +16,7 @@ import {
   asSeatConfig,
   asPwywConfig,
   earnsSupporterMark,
+  supporterMarkShows,
   isValidPwywAmount,
   asAddonEnabled,
   amountsFromConfig,
@@ -104,15 +106,19 @@ describe('seat / pwyw / add-on-enable config', () => {
     expect(c.minCents).toBe(1000)
     expect(c.suggestedCents).toBe(1000) // suggested raised to the floor
   })
-  it('ships the $4.99 floor and $24.99 suggested, with presets spanning the range', () => {
-    // The owner's decision: Crew is pay-what-you-want, $4.99 floor, $24.99 suggested. This default
-    // carried 1200 while production carried 2499, so any surface reading the code default anchored
-    // people at $12 instead of the real suggestion.
+  it('ships the $4.99 floor and $10 suggested, with presets of $5, $10 and $25 (ADR-1709)', () => {
+    // The five-tier ladder's Crew ask (LIVE-755). The stored catalog.pwyw row moves with it
+    // (20270346005600_crew_presets_five_dollars.sql), so code default and production agree.
     expect(PWYW_CONFIG_DEFAULT.minCents).toBe(499)
-    expect(PWYW_CONFIG_DEFAULT.suggestedCents).toBe(2499)
-    expect(PWYW_CONFIG_DEFAULT.presetCents).toEqual([499, 900, 1499, 2499, 4900])
+    expect(PWYW_CONFIG_DEFAULT.suggestedCents).toBe(1000)
+    expect(PWYW_CONFIG_DEFAULT.presetCents).toEqual([500, 1000, 2500])
     // The pre-selected suggestion must itself be a preset, or the picker opens on nothing.
     expect(PWYW_CONFIG_DEFAULT.presetCents).toContain(PWYW_CONFIG_DEFAULT.suggestedCents)
+  })
+  it('the crew_presets migration writes the same presets and suggestion as the code default', () => {
+    const sql = readFileSync('supabase/migrations/20270346005600_crew_presets_five_dollars.sql', 'utf8')
+    expect(sql).toContain('"suggestedCents": 1000')
+    expect(sql).toContain('"presetCents": [500, 1000, 2500]')
   })
   it('drops out-of-range presets and sorts + dedupes the rest (never offers a rejectable amount)', () => {
     const c = asPwywConfig({ minCents: 500, suggestedCents: 1200, maxCents: 2000, presetCents: [1800, 100, 500, 1800, 5000] })
@@ -135,13 +141,28 @@ describe('seat / pwyw / add-on-enable config', () => {
     expect(isValidPwywAmount(733, c)).toBe(true)
     expect(isValidPwywAmount(50_000, c)).toBe(true)
   })
-  it('earnsSupporterMark trips at the suggested amount, and is recognition only', () => {
+  it('earnsSupporterMark follows any valid Crew amount, not the suggested amount (LIVE-755)', () => {
     const c = PWYW_CONFIG_DEFAULT
-    // Derived from the config, not typed: the threshold IS the suggested amount, so moving the
-    // suggestion moves the badge with it and this test cannot drift from the rule it guards.
-    expect(earnsSupporterMark(c.suggestedCents - 1, c)).toBe(false)
-    expect(earnsSupporterMark(c.suggestedCents, c)).toBe(true)
-    expect(earnsSupporterMark(c.suggestedCents * 2, c)).toBe(true)
+    expect(earnsSupporterMark(c.minCents, c)).toBe(true)
+    expect(earnsSupporterMark(c.suggestedCents - 1, c)).toBe(true)
+    expect(earnsSupporterMark(c.minCents - 1, c)).toBe(false)
+    expect(earnsSupporterMark(NaN, c)).toBe(false)
+  })
+  it('the Supporter mark shows while Crew is active and fades 45 days after support stops', () => {
+    const now = new Date('2026-10-06T12:00:00Z')
+    const daysAgo = (d: number) => new Date(now.getTime() - d * 86_400_000).toISOString()
+    // Active Crew, including a card that is past due.
+    expect(supporterMarkShows({ membership_tier: 'crew', membership_payment_status: 'active', last_stripe_event_at: daysAgo(400) }, now)).toBe(true)
+    expect(supporterMarkShows({ membership_tier: 'crew', membership_payment_status: 'past_due', last_stripe_event_at: daysAgo(10) }, now)).toBe(true)
+    expect(supporterMarkShows({ membership_tier: 'crew', membership_payment_status: null, last_stripe_event_at: null }, now)).toBe(true)
+    // Support stopped: still shows inside 45 days, gone at 45.
+    expect(supporterMarkShows({ membership_tier: 'free', membership_payment_status: 'canceled', last_stripe_event_at: daysAgo(1) }, now)).toBe(true)
+    expect(supporterMarkShows({ membership_tier: 'free', membership_payment_status: 'canceled', last_stripe_event_at: daysAgo(44.9) }, now)).toBe(true)
+    expect(supporterMarkShows({ membership_tier: 'free', membership_payment_status: 'canceled', last_stripe_event_at: daysAgo(45) }, now)).toBe(false)
+    expect(supporterMarkShows({ membership_tier: 'free', membership_payment_status: 'canceled', last_stripe_event_at: daysAgo(90) }, now)).toBe(false)
+    // Never on Crew: no mark. A canceled stamp with no time cannot be dated, so no mark.
+    expect(supporterMarkShows({ membership_tier: 'free', membership_payment_status: null, last_stripe_event_at: null }, now)).toBe(false)
+    expect(supporterMarkShows({ membership_tier: 'free', membership_payment_status: 'canceled', last_stripe_event_at: null }, now)).toBe(false)
   })
   it('add-ons default to all-enabled; only an explicit false disables one (only AI now, ADR-472)', () => {
     expect(asAddonEnabled(undefined)).toEqual({ ai: true })

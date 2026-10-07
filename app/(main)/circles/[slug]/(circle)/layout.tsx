@@ -19,6 +19,7 @@ import { DetailTemplate, PageHero } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
+import { BoostButton } from '@/components/crew/boost-button'
 import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { loadCircleShell } from '@/lib/circles/store'
 import { LISTABLE_CIRCLE_STATUS } from '@/lib/circles/visibility'
@@ -538,6 +539,9 @@ export default async function CircleDetailLayout({
             )}
             <div className="flex shrink-0 items-center gap-1 pb-2">
               <QrShareDropdown manager={canManage} />
+              {/* The Crew Boost (LIVE-756): a member vouches for a Circle they do not host. The
+                  server checks Crew and the one-a-month rule; a Host never sees it. */}
+              {myProfileId && !isHost && <BoostButton kind="circle" targetId={circle.id} />}
               {/* The quiet home Leave moved to (owner ruling, 2026-09-17). A Host never gets it:
                   they hand the Circle over (ADR-845) rather than walking out of it. */}
               {isMember && !isHost && (

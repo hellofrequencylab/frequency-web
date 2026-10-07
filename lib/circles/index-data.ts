@@ -5,6 +5,7 @@
 // extracted verbatim from app/(main)/circles/page.tsx so behavior is unchanged.
 
 import { createClient } from '@/lib/supabase/server'
+import { activeBoostIds } from '@/lib/crew/boost'
 import { resolvePageContent } from '@/lib/page-content'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
@@ -296,8 +297,14 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
   else if (sort === 'new') filtered = [...filtered].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
   else if (sort === 'open')
     filtered = [...filtered].sort((a, b) => b.member_cap - b.member_count - (a.member_cap - a.member_count))
-  // "nearest" -> featured first, then name; the map does real proximity.
-  else filtered = [...filtered].sort((a, b) => byFeatured(a, b) || a.name.localeCompare(b.name))
+  // "nearest" -> featured first, then Boosted, then name; the map does real proximity. A Crew Boost
+  // (LIVE-756, lib/crew/boost.ts) lifts a Circle for a week, in this DEFAULT order only, the same
+  // way a feature does: an explicit sort is the member saying what they want ordered by.
+  else {
+    const boosted = await activeBoostIds('circle', filtered.map((c) => c.id))
+    const byBoost = (a: CircleRow, b: CircleRow) => Number(boosted.has(b.id)) - Number(boosted.has(a.id))
+    filtered = [...filtered].sort((a, b) => byFeatured(a, b) || byBoost(a, b) || a.name.localeCompare(b.name))
+  }
 
   const myCircles = filtered.filter((c) => myCircleIds.includes(c.id))
   const discover = filtered.filter((c) => !myCircleIds.includes(c.id))
