@@ -195,9 +195,9 @@ describe('every tool files under its box (the Automation class, by construction)
     const parented = SPACE_MODULES.filter((m) => m.parent)
     expect(parented.length).toBeGreaterThanOrEqual(18)
     const underExcludedBox = parented.filter((m) => spaceModuleById(m.parent!)!.hub === 'none')
-    // Gather (content) owns 8 tools; Money (offerings) owns 5. Page is hub:none under Your page (settings),
-    // so it is not in this set.
-    expect(underExcludedBox.length).toBe(13)
+    // Gather (content) owns 9 tools (Leadership joined it, LIVE-862); Money (offerings) owns 5. Page is
+    // hub:none under Your page (settings), so it is not in this set.
+    expect(underExcludedBox.length).toBe(14)
     for (const m of underExcludedBox) {
       expect(EXCLUDED_BOX_TAB[m.parent!], `${m.parent} must stand for a tab`).toBeTruthy()
     }

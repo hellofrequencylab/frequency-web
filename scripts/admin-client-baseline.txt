@@ -315,6 +315,10 @@
 # editor's save and publish. The same posture as manage/layout/actions.ts beside it: the caller is re-gated
 # with resolveSpaceManageAccess(...).canManage, and the write touches only spaces.preferences.spotlight of
 # that one Space (the preferences column has no member write policy).
+# app/(main)/spaces/[slug]/manage/leadership/actions.ts (added 2026-10-07, LIVE-862): the Leadership page's
+# executive overview save. The same posture as manage/spotlight/actions.ts: the caller is re-gated with
+# resolveSpaceManageAccess(...).canManage, and the write touches only spaces.preferences.programOverview of
+# that one Space (the preferences column has no member write policy).
 # lib/spaces/spotlight-clicks.ts (added 2026-10-07, LIVE-856): Spotlight Link card press counts.
 # space_spotlight_clicks is internal (RLS on, no policy, revoked from anon and authenticated), so only the
 # service role reaches it: the anonymous beacon writes one identity-free row after checking the Space's
@@ -512,6 +516,7 @@ app/(main)/spaces/[slug]/crm/conversations-actions.ts
 app/(main)/spaces/[slug]/edit-page/actions.ts
 app/(main)/spaces/[slug]/manage/identity-editor.tsx
 app/(main)/spaces/[slug]/manage/layout/actions.ts
+app/(main)/spaces/[slug]/manage/leadership/actions.ts
 app/(main)/spaces/[slug]/manage/mode/actions.ts
 app/(main)/spaces/[slug]/manage/modules/actions.ts
 app/(main)/spaces/[slug]/manage/rail-getters.ts

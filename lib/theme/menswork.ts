@@ -126,3 +126,39 @@ ${(Object.keys(MENSWORK_SEASONS) as MensworkSeason[])
   .map((s) => `[data-house-theme="menswork"][data-season="${s}"]{--mw-accent:${MENSWORK_SEASONS[s]}}`)
   .join('\n')}
 `
+
+/** The twelve signs on the program's calendar, each with its start day (month 1 to 12, day) and its glyph in
+ *  TEXT presentation (U+FE0E), so no platform swaps in a color emoji. The start days are the program's fixed
+ *  lines (the yearly calendar handoff); the true ingress moves by a day in some years. */
+export const MENSWORK_SIGNS = [
+  { name: 'Capricorn', glyph: '♑︎', month: 12, day: 21 },
+  { name: 'Aquarius', glyph: '♒︎', month: 1, day: 19 },
+  { name: 'Pisces', glyph: '♓︎', month: 2, day: 18 },
+  { name: 'Aries', glyph: '♈︎', month: 3, day: 20 },
+  { name: 'Taurus', glyph: '♉︎', month: 4, day: 20 },
+  { name: 'Gemini', glyph: '♊︎', month: 5, day: 20 },
+  { name: 'Cancer', glyph: '♋︎', month: 6, day: 21 },
+  { name: 'Leo', glyph: '♌︎', month: 7, day: 22 },
+  { name: 'Virgo', glyph: '♍︎', month: 8, day: 23 },
+  { name: 'Libra', glyph: '♎︎', month: 9, day: 22 },
+  { name: 'Scorpio', glyph: '♏︎', month: 10, day: 23 },
+  { name: 'Sagittarius', glyph: '♐︎', month: 11, day: 22 },
+] as const
+
+export type MensworkSign = (typeof MENSWORK_SIGNS)[number]
+
+/** The sign a date falls in, read on UTC parts like mensworkSeason. PURE. */
+export function mensworkSign(date: Date): MensworkSign {
+  const md = (date.getUTCMonth() + 1) * 100 + date.getUTCDate()
+  if (md >= 1221) return MENSWORK_SIGNS[0]
+  let current: MensworkSign = MENSWORK_SIGNS[0]
+  for (const s of MENSWORK_SIGNS) if (s.month !== 12 && md >= s.month * 100 + s.day) current = s
+  return current
+}
+
+/** The sign that STARTS on a date, or null. PURE. */
+export function mensworkSignStarting(date: Date): MensworkSign | null {
+  const m = date.getUTCMonth() + 1
+  const d = date.getUTCDate()
+  return MENSWORK_SIGNS.find((s) => s.month === m && s.day === d) ?? null
+}

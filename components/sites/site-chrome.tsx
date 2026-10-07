@@ -23,6 +23,10 @@ import { HouseMenu } from './house-menu'
 //     as a one-colour mark in the theme's text color (a black line logo reads white on charcoal), a season
 //     bar under the header (the season now and the year's four, as the design system's site strip), and a
 //     fuller footer: the name, the Space's tagline and the page links.
+//   · ADMIN (LIVE-862): a skinned website ends its menu with an "Admin" link to the Space's Leadership page
+//     in the Frequency console, an absolute app URL. It is a clearly labelled Frequency management link (the
+//     stand-alone rule allows those); the site is cached and anonymous, so it shows to every visitor and the
+//     console page does the role gating.
 //   · FOOTER: the copyright line and the "Frequency Partner" badge, the ONLY mention of Frequency on the
 //     site (owner ask 2026-10-06).
 //
@@ -58,6 +62,7 @@ export function SiteChrome({
   logoUrl = null,
   tagline = null,
   seasonNow = null,
+  adminHref = null,
   children,
 }: {
   brandName: string
@@ -78,8 +83,11 @@ export function SiteChrome({
   /** A skinned site's season bar detail: the sign module now, its theme as the Space's year page names it,
    *  and the next Circle Night from the Space's own events. */
   seasonNow?: { module: string; theme: string | null; next: string | null } | null
+  /** The absolute URL of the Space's Leadership page in the Frequency console. Shown only with a skin. */
+  adminHref?: string | null
   children: ReactNode
 }) {
+  const admin = skin && adminHref ? { href: adminHref, label: 'Admin' } : null
   return (
     <div
       data-site-root=""
@@ -99,13 +107,18 @@ export function SiteChrome({
             )}
             {brandName}
           </a>
-          {links.length > 0 && (
+          {(links.length > 0 || admin) && (
             <nav aria-label={`${brandName} menu`} className="hs-nav">
               {links.map((l) => (
                 <a key={l.href} href={l.href}>
                   {l.label}
                 </a>
               ))}
+              {admin && (
+                <a href={admin.href} className="hs-nav-admin" title="Manage this site on Frequency">
+                  {admin.label}
+                </a>
+              )}
             </nav>
           )}
           <div className="hs-header-actions">
@@ -118,7 +131,7 @@ export function SiteChrome({
                 {cta.label}
               </a>
             )}
-            <HouseMenu label={`${brandName} menu`} links={links} />
+            <HouseMenu label={`${brandName} menu`} links={links} admin={admin} />
           </div>
         </div>
       </header>

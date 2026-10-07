@@ -32,6 +32,7 @@ import {
   Network,
   TrendingUp,
   Wallet,
+  Compass,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { peopleCatalogNote } from '@/lib/spaces/people-catalog-note'
@@ -262,6 +263,11 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Plan and billing — it is the growth play, not another content library. Business-plan feature: the
   // premium badge + freeNote mark the plan story (presentation only; the surface gates server-side).
   { id: 'space.program', label: 'Program', desc: 'Run your model as a Program: your flagship circle becomes the blueprint, and members start Chapters anywhere.', Icon: Network, family: 'growth', hub: 'programs', slot: 'engage', gate: { kind: 'feature', fn: 'program' }, featureKey: 'program', render: 'link', deepLink: (s) => `${base(s)}/settings/program`, order: 57.7, tier: 'primary', priority: 33.8, access: 'premium', freeNote: programCatalogNote(), parent: 'space.content' },
+  // Leadership (LIVE-862): the yearly calendar over the program's seasons and signs, and the executive
+  // overview the Space's leaders work from (preferences.programOverview, never public). A TOOL inside the
+  // Gather box beside Program. Ungated by a function: it is a page of the console, so the console's own
+  // manager gate is its gate, and the Space website's Admin link opens it.
+  { id: 'space.leadership', label: 'Leadership', desc: 'Your yearly calendar and the executive overview, for the people who run your space.', Icon: Compass, family: 'offerings', hub: 'programs', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/manage/leadership`, order: 57.8, tier: 'primary', priority: 33.85, access: 'included', parent: 'space.content' },
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.

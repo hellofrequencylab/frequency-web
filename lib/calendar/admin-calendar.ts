@@ -169,6 +169,23 @@ export async function loadAdminCalendar(
   return { events, ownedRows, dayNotes, plans }
 }
 
+/** THE SPACE'S EVENTS FOR ONE PROGRAM YEAR (LIVE-862), for the Leadership page's yearly calendar
+ *  (app/(main)/spaces/[slug]/manage/leadership). Past and future alike over [fromDay, toDay), drafts
+ *  included and badged there, soonest first. It lives HERE for the same reason as the picker below: this
+ *  module is the one the publication gate test names as allowed to opt out. Same manager-only contract:
+ *  the caller gates on managing the Space before calling. */
+export async function listProgramYearEventRows(
+  spaceId: string,
+  window: { fromDay: string; toDay: string },
+): Promise<OwnedRow[]> {
+  return listEventsForSpace(spaceId, {
+    limit: 400,
+    includeUnpublished: true,
+    fromDay: window.fromDay,
+    toDay: window.toDay,
+  })
+}
+
 /** THE SPACE'S EVENTS FOR THE PLAN PICKER (PROG-CAL3): id, title, when, and the Plan each already
  *  belongs to. The repair door in the Plan drawer lists these so a broken `events.plan_id` can be
  *  fixed in the app rather than in SQL.
