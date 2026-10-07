@@ -6,6 +6,7 @@ import { ExternalLink } from 'lucide-react'
 import { EntityLayoutProvider, type SaveLayout } from '@/components/entity-blocks/profile-layout-context'
 import { EntityPageBuilder, type BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { Switch } from '@/components/ui/switch'
+import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { SPACE_SPOTLIGHT_BLOCK_IDS } from '@/lib/spaces/spotlight'
 import {
   saveSpaceSpotlightLayout,
@@ -28,6 +29,7 @@ export function SpaceSpotlightEditor({
   preview,
   initialPublished,
   readOnly,
+  upgrade,
 }: {
   slug: string
   /** The builder seed: the Spotlight layout plus the Space's locked blocks and picker data. Null when the
@@ -37,12 +39,16 @@ export function SpaceSpotlightEditor({
   preview: ReactNode
   initialPublished: boolean
   readOnly: boolean
+  /** Present when the Space's plan cannot take payments: product, Journey, event and membership cards are
+   *  then held back (LIVE-854), and this note offers the upgrade where the owner is choosing cards. */
+  upgrade?: UpgradeMomentSetup
 }) {
   const save = useCallback<SaveLayout>((payload) => saveSpaceSpotlightLayout(slug, payload), [slug])
   const loadRailData = useCallback(async () => seed, [seed])
   const [published, setPublished] = useState(initialPublished)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [showUpgrade, setShowUpgrade] = useState(false)
 
   const onPublish = (next: boolean) => {
     setPublished(next)
@@ -95,6 +101,30 @@ export function SpaceSpotlightEditor({
               </p>
             )}
           </section>
+
+          {upgrade && !readOnly && (
+            <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Selling cards">
+              <p className="text-body-sm text-text">
+                Product, Journey, event and membership cards come with Business. Book, Contact and Links are free.
+              </p>
+              {showUpgrade ? (
+                <UpgradeMoment
+                  surface="product"
+                  target={upgrade.target}
+                  offer={upgrade.offer}
+                  onKeepFree={() => setShowUpgrade(false)}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowUpgrade(true)}
+                  className="text-meta font-medium text-primary-strong hover:underline"
+                >
+                  See what Business adds
+                </button>
+              )}
+            </section>
+          )}
 
           {seed && (
             <EntityPageBuilder
