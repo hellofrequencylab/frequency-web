@@ -23,7 +23,7 @@ describe('Space Spotlight', () => {
   it('is unpublished with the starter when nothing is saved, or the node is malformed', () => {
     for (const prefs of [null, undefined, {}, { spotlight: 'x' }, { spotlight: [] }, { spotlight: { published: 'true' } }]) {
       expect(readSpaceSpotlight(prefs).published).toBe(false)
-      expect(placed(prefs)).toEqual(['about', 'booking', 'offerings', 'journeys', 'events', 'memberships', 'links'])
+      expect(placed(prefs)).toEqual(['about', 'linkCards', 'links'])
     }
   })
 

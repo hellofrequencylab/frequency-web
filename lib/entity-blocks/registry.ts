@@ -56,6 +56,9 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'events', label: 'Events', description: 'Upcoming events to show up to.', category: 'data', kinds: ['space'], order: 50 },
   { id: 'practices', label: 'Practices and journeys', description: 'Practices and journeys to start here.', category: 'data', kinds: ['space'], order: 60 },
   { id: 'journeys', label: 'Journeys', description: 'The journeys you host here.', category: 'data', kinds: ['space'], order: 66 },
+  // Link cards (the Space Spotlight, LIVE-852): link-in-bio buttons, each to ONE thing the Space offers.
+  // Offered on the Spotlight's own palette only (lib/spaces/spotlight.ts), not the Space page's core set.
+  { id: 'linkCards', label: 'Link cards', description: 'Big buttons, each to one product, Journey, event, membership or booking.', category: 'data', kinds: ['space'], order: 67 },
   { id: 'circles', label: 'Circles', description: 'The community circles inside this space.', category: 'data', kinds: ['space'], order: 70 },
   { id: 'team', label: 'Team', description: 'The people who run this space.', category: 'data', kinds: ['space'], requiresFunction: 'members', order: 80 },
   { id: 'reviews', label: 'Reviews', description: 'What members say.', category: 'data', kinds: ['space'], order: 90 },

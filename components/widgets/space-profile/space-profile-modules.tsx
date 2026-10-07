@@ -38,6 +38,7 @@ import { FaqBlock } from './faq'
 import { ContactBlock } from './contact'
 import { BusinessBlock } from './business'
 import { JourneysBlock } from './journeys'
+import { LinkCardsBlock } from './link-cards'
 import { SPACE_CONTENT_BLOCKS, type SpaceContentBlockComponent } from './authored-content'
 
 // THE MODULE-ENGINE SPACE PROFILE RENDERER (Epic 1.7, S2 staff-preview). A non-Puck, block-style
@@ -96,6 +97,7 @@ export const SPACE_PROFILE_BLOCKS: Record<ProfileBlockId, BlockComponent> = {
  *  never reaches the prototype chain. */
 const EXTRA_DATA_BLOCKS: Record<string, BlockComponent> = {
   journeys: JourneysBlock,
+  linkCards: LinkCardsBlock,
 }
 
 /** The unified grid vocabulary keys blocks by registry id; this S1 renderer keys by ProfileBlockId. The

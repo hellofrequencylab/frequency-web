@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-852",
+  "title": "A Space Spotlight shows Link cards: one big button each for a product, Journey, event, membership, booking or contact",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/widgets/space-profile/link-cards.tsx",
+    "ref": "Owner ask 2026-10-07 (Spotlight audit thread): 'super easy for a business to share a link to a product, journey, scheduling etc.', with lead, scheduling, contact and buy elements managed through the main console; PR 3 of 7."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. PR 3 of the Space Spotlight build (plan: /mnt/project-files/spotlight/space-spotlight-plan.md). A new space data block, Link cards (registry id linkCards, not in the Space page's core palette, offered on the Spotlight palette), draws link-in-bio buttons. Its data source listLinkCards (lib/entity-blocks/block-data-sources.ts) lists every single thing the Space can send someone to, each with a link into the flow that already handles it: Book (when booking is on) to the Space's Book page, each active Shop product to its Market page, each hosted Journey and upcoming event to its own page, each membership tier to the Space's plans, and Contact to the Contact page. The owner picks which cards show, in order, through the existing data-source picker; nothing picked shows the first six. Bookings, sales and messages therefore still land in the console. The Spotlight starter is now About, Link cards, Links. NEXT: plan gating with the upgrade moment (PR 4).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/block: 'linkCards'[^\\n]*list: listLinkCards/.test(r('lib/entity-blocks/block-data-sources.ts')))miss.push('no data source lists every single thing a Space can link to');if(!/linkCards: LinkCardsBlock/.test(r('components/widgets/space-profile/space-profile-modules.tsx')))miss.push('the Space renderer does not draw Link cards');const sp=r('lib/spaces/spotlight.ts');if(!/'about',\\n  'linkCards',/.test(sp)||!/STARTER_IDS = \\['about', 'linkCards', 'links'\\]/.test(sp))miss.push('the Spotlight palette and starter do not lead with Link cards');if(miss.length){console.error('LIVE-852: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
