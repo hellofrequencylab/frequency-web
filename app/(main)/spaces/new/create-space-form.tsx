@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Loader2, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { isError } from '@/lib/action-result'
 import { isSafeSlug } from '@/lib/theme/validate'
 import { cn, slugify as slugifyShared } from '@/lib/utils'
@@ -44,8 +45,11 @@ function slugify(name: string): string {
 export function CreateSpaceForm({
   choices,
   initialChoiceId,
+  heardAboutOptions = [],
 }: {
   choices: SpaceModeChoice[]
+  /** "How did you hear about us?" picks (the operator's list, LIVE-808). Empty hides the question. */
+  heardAboutOptions?: readonly string[]
   /** The Mode a niche funnel pre-selected (`${type}:${variant}`), already validated against `choices`
    *  by the page. Undefined when the visitor arrived without one, which is the common case. */
   initialChoiceId?: string
@@ -55,6 +59,7 @@ export function CreateSpaceForm({
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
   const [visibility, setVisibility] = useState<'network' | 'private'>('network')
+  const [heardAbout, setHeardAbout] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
@@ -79,6 +84,7 @@ export function CreateSpaceForm({
         name: name.trim(),
         slug: slug.trim().toLowerCase(),
         visibility,
+        heardAbout: heardAbout || null,
       })
       // createSpace redirects on success, so we only reach here on a returned error.
       if (result && isError(result)) setError(result.error)
@@ -156,6 +162,18 @@ export function CreateSpaceForm({
       </div>
 
       <VisibilityField value={visibility} onChange={setVisibility} />
+
+      {heardAboutOptions.length > 0 && (
+        <Field id="space-heard-about" label="How did you hear about us?" hint="Optional. It helps us find more people like you.">
+          <Select
+            id="space-heard-about"
+            value={heardAbout}
+            onChange={(e) => setHeardAbout(e.target.value)}
+            emptyLabel="Skip"
+            options={heardAboutOptions}
+          />
+        </Field>
+      )}
 
       {error && <FormError message={error} />}
 

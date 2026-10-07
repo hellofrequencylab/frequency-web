@@ -13,7 +13,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
-import { VERA as DEFAULT_VERA, INDUCTION_BEAT_COUNT, type VeraCopy } from '@/lib/onboarding/funnel-script'
+import { VERA as DEFAULT_VERA, HEARD_ABOUT, INDUCTION_BEAT_COUNT, type VeraCopy } from '@/lib/onboarding/funnel-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
 import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/funnels/definitions'
 import { funnelIcon } from '@/lib/funnels/icons'
@@ -39,6 +39,7 @@ import { TicketsRender } from '@/components/onboarding/renders/tickets-render'
 import { CrmRender } from '@/components/onboarding/renders/crm-render'
 import { WizardProgress, wizardPrimaryClass } from '@/components/templates'
 import { Dialog } from '@/components/ui/dialog'
+import { Select } from '@/components/ui/select'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 
 type HandleStatus = 'idle' | 'checking' | 'available' | 'taken'
@@ -80,6 +81,8 @@ type Props = {
   initialLocation?: string
   initialLat?: number | null
   initialLng?: number | null
+  /** RESUME: the "How did you hear about us?" answer already given, or empty. */
+  initialHeardAbout?: string
   /** RESUME: the handle they had already settled on. Distinct from `initialHandle`, which is a
    *  signed-in member's CURRENT handle; this one also suppresses re-deriving it from the name. */
   parkedHandle?: string
@@ -146,7 +149,7 @@ function accent(text: string): React.ReactNode {
   )
 }
 
-export default function FunnelInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, initialDisplayName = '', initialLocation = '', initialLat = null, initialLng = null, parkedHandle = '', inviter = null, slide2Features, slide3Core, destination }: Props) {
+export default function FunnelInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, initialDisplayName = '', initialLocation = '', initialLat = null, initialLng = null, initialHeardAbout = '', parkedHandle = '', inviter = null, slide2Features, slide3Core, destination }: Props) {
   // NICHE-funnel forks (ADR-funnels). A non-empty set flips one beat over to the niche
   // layout; both absent keeps the whole flow identical to the General funnel.
   const hasNicheFeatures = (slide2Features?.length ?? 0) > 0 // Beat 0: cards vs persona fork
@@ -275,6 +278,10 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
   // (`term === location`) then keeps the restored pair from re-running a place search on mount.
   const [locQuery, setLocQuery] = useState(initialLocation)
   const [location, setLocation] = useState(initialLocation)
+  // "How did you hear about us?" (LIVE-808). Optional, one pick from the operator's list; saved to
+  // meta.beta.heard_about beside first-touch acquisition, and never sent to a pixel.
+  const [heardAbout, setHeardAbout] = useState(initialHeardAbout)
+  const heardAboutOptions = copy?.heardAbout?.length ? copy.heardAbout : HEARD_ABOUT
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     typeof initialLat === 'number' && typeof initialLng === 'number'
       ? { lat: initialLat, lng: initialLng }
@@ -322,7 +329,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
       lng: coords?.lng ?? null,
       intent: '',
       interests: '',
-      heardAbout: '',
+      heardAbout: heardAbout.trim(),
       beat,
     }).catch(() => {
       // Best-effort, exactly like the lead writes: losing a resume point must never
@@ -344,7 +351,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
       lng: coords?.lng ?? null,
       intent: '',
       interests: '',
-      heardAbout: '',
+      heardAbout: heardAbout.trim(),
       // The beat rides along or this write would park a 0 over the beat they actually reached,
       // and a magic link opened in another browser would resume them at the start.
       beat,
@@ -617,7 +624,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
           lng: coords?.lng ?? null,
           intent: '',
           interests: '',
-          heardAbout: '',
+          heardAbout: heardAbout.trim(),
         },
         // NICHE funnels admit to a niche section; the action re-validates it server-side and
         // falls closed to the default Vera welcome. Absent = the General funnel's default.
@@ -1134,6 +1141,18 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
                           </ul>
                         )}
                       </div>
+                    </div>
+                    <div>
+                      <label htmlFor="induction-heard-about" className={fieldLabel}>
+                        How did you hear about us? <span className="font-normal text-subtle">(optional)</span>
+                      </label>
+                      <Select
+                        id="induction-heard-about"
+                        value={heardAbout}
+                        onChange={(e) => setHeardAbout(e.target.value)}
+                        emptyLabel="Skip"
+                        options={heardAboutOptions}
+                      />
                     </div>
                   </div>
 

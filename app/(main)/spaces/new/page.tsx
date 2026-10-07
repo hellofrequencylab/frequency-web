@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
 import { listModeChoices } from '@/lib/spaces/modes'
+import { getVeraConfig } from '@/lib/ai/vera/config'
 import { CreateSpaceForm } from './create-space-form'
 
 // CREATE A SPACE — the Focus compose surface (ENTITY-SPACES-BUILD Wave B, Epic 1.6; Space Modes M3,
@@ -45,6 +46,9 @@ export default async function NewSpacePage({
   const raw = (await searchParams).mode
   const requested = Array.isArray(raw) ? raw[0] : raw
   const initialChoiceId = choices.find((c) => c.id === requested)?.id
+  // The same operator-edited "How did you hear about us?" list signup asks (LIVE-808). Fail-safe to
+  // the code defaults inside getVeraConfig.
+  const heardAboutOptions = (await getVeraConfig()).induction.heardAbout
 
   return (
     <FocusTemplate
@@ -53,7 +57,7 @@ export default async function NewSpacePage({
       description="Set up a home for your practice, business, or organization. You can change everything later."
       back={{ href: '/spaces/directory', label: 'Spaces' }}
     >
-      <CreateSpaceForm choices={choices} initialChoiceId={initialChoiceId} />
+      <CreateSpaceForm choices={choices} initialChoiceId={initialChoiceId} heardAboutOptions={heardAboutOptions} />
     </FocusTemplate>
   )
 }
