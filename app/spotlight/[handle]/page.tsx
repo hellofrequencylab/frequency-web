@@ -7,6 +7,7 @@ import { JsonLd } from '@/components/json-ld'
 import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { avatarSrc } from '@/lib/images/avatar-focus'
 import { OG_SITE } from '@/lib/site'
+import { publicSpotlightGrid } from '@/lib/spotlight/public-grid'
 
 // PUBLIC, top-level route (outside the auth-gated (main) group) so a signed-out
 // visitor or non-member can open a shared link. Fail-closed: a page that is not
@@ -79,7 +80,9 @@ export default async function SpotlightRoute({
   // body is the module engine. FAIL-SAFE: a null saved grid yields the fresh default (resolveRows), and
   // the content blocks source from the retained validated data.layout, so no published page goes blank.
   // The publish gate stays in getPublishedSpotlight (this route is opt-in). `showBio={false}`: the
-  // `about` block renders the bio, so the header must not repeat it.
+  // `about` block renders the bio, so the header must not repeat it. With no saved grid, the body is the
+  // PUBLIC starter (publicSpotlightGrid: About + the member's authored blocks), not the in-app one, which
+  // has no About and dropped every authored block.
   return (
     <>
       <JsonLd
@@ -89,7 +92,7 @@ export default async function SpotlightRoute({
         ]}
       />
       <SpotlightShell data={data} showJoinCta showBio={false}>
-        <MemberProfileModules member={data} grid={data.grid} />
+        <MemberProfileModules member={data} grid={publicSpotlightGrid(data.grid, data.layout.blocks)} />
       </SpotlightShell>
     </>
   )
