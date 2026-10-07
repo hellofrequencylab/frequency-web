@@ -27,7 +27,7 @@ export const MW_SEASON_ORDER: readonly MwSeason[] = ['winter', 'spring', 'summer
 
 /** The twelve signs on the program's lines (HANDOFF 2026-10-07), in program-year order, each with the
  *  month-day it begins and its text glyph. */
-export const MW_SIGNS = [
+const MW_SIGNS = [
   { id: 'capricorn', name: 'Capricorn', glyph: '♑', start: 1221, season: 'winter' },
   { id: 'aquarius', name: 'Aquarius', glyph: '♒', start: 119, season: 'winter' },
   { id: 'pisces', name: 'Pisces', glyph: '♓', start: 218, season: 'winter' },
@@ -42,7 +42,7 @@ export const MW_SIGNS = [
   { id: 'sagittarius', name: 'Sagittarius', glyph: '♐', start: 1122, season: 'fall' },
 ] as const satisfies readonly { id: string; name: string; glyph: string; start: number; season: MwSeason }[]
 
-export type MwSign = (typeof MW_SIGNS)[number]
+type MwSign = (typeof MW_SIGNS)[number]
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -72,13 +72,6 @@ export function signOn(date: Date): MwSign {
   return signAt((date.getUTCMonth() + 1) * 100 + date.getUTCDate())
 }
 
-/** The month-day a sign ends on (the day before the next one begins). */
-export function signEnd(sign: MwSign): number {
-  const next = MW_SIGNS[(MW_SIGNS.indexOf(sign) + 1) % MW_SIGNS.length]
-  const d = new Date(Date.UTC(2027, Math.floor(next.start / 100) - 1, next.start % 100 - 1))
-  return (d.getUTCMonth() + 1) * 100 + d.getUTCDate()
-}
-
 /** The season a month-day falls in, on the solstice and equinox lines. */
 export function seasonAt(md: number): MwSeason {
   if (md >= 1221 || md < 320) return 'winter'
@@ -100,11 +93,6 @@ export function moduleLine(text: unknown): { sign: MwSign; theme: string } | nul
   if (!m) return null
   const sign = MW_SIGNS.find((s) => s.name.toLowerCase() === m[1].toLowerCase())
   return sign ? { sign, theme: m[2].trim() } : null
-}
-
-/** Whether a month-day falls in a sign's window. */
-export function inSign(md: number, sign: MwSign): boolean {
-  return signAt(md).id === sign.id
 }
 
 /** A photo URL with an optional crop focus carried as a `pos` query (`?pos=58-64` = 58% 64%): the URL without
