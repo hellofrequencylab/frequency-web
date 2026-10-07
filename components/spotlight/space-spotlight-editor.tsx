@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { SPACE_SPOTLIGHT_BLOCK_IDS } from '@/lib/spaces/spotlight'
 import {
+  connectSpotlightDomain,
   saveSpaceSpotlightLayout,
   setSpaceSpotlightPublished,
 } from '@/app/(main)/spaces/[slug]/manage/spotlight/actions'
@@ -30,6 +31,7 @@ export function SpaceSpotlightEditor({
   initialPublished,
   readOnly,
   upgrade,
+  ownLinks,
 }: {
   slug: string
   /** The builder seed: the Spotlight layout plus the Space's locked blocks and picker data. Null when the
@@ -42,6 +44,10 @@ export function SpaceSpotlightEditor({
   /** Present when the Space's plan cannot take payments: product, Journey, event and membership cards are
    *  then held back (LIVE-854), and this note offers the upgrade where the owner is choosing cards. */
   upgrade?: UpgradeMomentSetup
+  /** The Spotlight's own addresses (LIVE-855): `paid` is `https://<slug>.frequencylocal.com/spotlight` on a plan
+   *  that takes payments; `domain` is the Space's served domain, which can carry `spotlight.<domain>` once its
+   *  CNAME (`cname`) is set. */
+  ownLinks?: { paid: string | null; domain: string | null; cname: string }
 }) {
   const save = useCallback<SaveLayout>((payload) => saveSpaceSpotlightLayout(slug, payload), [slug])
   const loadRailData = useCallback(async () => seed, [seed])
@@ -49,6 +55,15 @@ export function SpaceSpotlightEditor({
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [showUpgrade, setShowUpgrade] = useState(false)
+  const [domainState, setDomainState] = useState<'idle' | 'connected' | string>('idle')
+  const [connecting, startConnect] = useTransition()
+
+  const onConnectDomain = () => {
+    startConnect(async () => {
+      const res = await connectSpotlightDomain(slug)
+      setDomainState(res.error ?? 'connected')
+    })
+  }
 
   const onPublish = (next: boolean) => {
     setPublished(next)
@@ -110,6 +125,55 @@ export function SpaceSpotlightEditor({
               </p>
             )}
           </section>
+
+          {published && ownLinks && (ownLinks.paid || ownLinks.domain) && (
+            <section className="space-y-3 rounded-card border border-border bg-surface p-4" aria-label="Your own links">
+              <p className="text-body-sm font-bold text-text">Your own links</p>
+              {ownLinks.paid && (
+                <a
+                  href={ownLinks.paid}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
+                >
+                  {ownLinks.paid.replace(/^https:\/\//, '')} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                </a>
+              )}
+              {ownLinks.domain && (
+                <div className="space-y-2">
+                  <p className="text-meta text-muted">
+                    Put your Spotlight on spotlight.{ownLinks.domain}. At the company that runs your domain, add a
+                    CNAME record named <span className="font-semibold text-text">spotlight</span> that points to{' '}
+                    <span className="font-semibold text-text">{ownLinks.cname}</span>, then press Connect.
+                  </p>
+                  {domainState === 'connected' ? (
+                    <a
+                      href={`https://spotlight.${ownLinks.domain}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
+                    >
+                      spotlight.{ownLinks.domain} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={onConnectDomain}
+                      disabled={readOnly || connecting}
+                      className="text-meta font-medium text-primary-strong hover:underline disabled:opacity-60"
+                    >
+                      {connecting ? 'Connecting' : `Connect spotlight.${ownLinks.domain}`}
+                    </button>
+                  )}
+                  {domainState !== 'idle' && domainState !== 'connected' && (
+                    <p className="text-meta font-medium text-danger" role="alert">
+                      {domainState}
+                    </p>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
 
           {upgrade && !readOnly && (
             <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Selling cards">

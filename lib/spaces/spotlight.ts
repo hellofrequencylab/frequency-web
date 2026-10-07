@@ -112,6 +112,19 @@ export function spaceSpotlightGrid(spotlight: SpaceSpotlight): EntityLayout {
   return { rows: STARTER_IDS.map((id, i) => ({ id: `r${i}`, columns: 1, cells: [[id]] })) }
 }
 
+/** The blocks a Spotlight shows on a website host (LIVE-855). A website stands alone, so the blocks that link
+ *  into Frequency's own pages (booking, offerings, Journeys, events, memberships) are left out there; Link
+ *  cards carries those things instead, each labeled when it leaves the site. */
+const SITE_SAFE: ReadonlySet<string> = new Set([
+  'about', 'linkCards', 'links', 'button', 'contactForm', 'heading', 'text', 'image', 'embed', 'divider',
+])
+
+/** A Spotlight grid narrowed to the blocks a website host shows. PURE. */
+export function spotlightSiteGrid(grid: EntityLayout): EntityLayout {
+  const rows = (grid.rows ?? []).filter((r) => r.cells.every((cell) => cell.every((id) => SITE_SAFE.has(id))))
+  return { ...grid, rows }
+}
+
 /** The next preferences blob for a Spotlight change. Only the `spotlight` node is written. A layout is run
  *  through the Space write guard (sanitizeEntityLayout) and then narrowed to Spotlight blocks, so nothing
  *  the wire sends is stored unchecked; `layout: null` clears it back to the starter. PURE. */

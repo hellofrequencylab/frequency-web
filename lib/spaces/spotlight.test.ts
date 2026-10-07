@@ -7,6 +7,7 @@ import {
   spaceSpotlightGrid,
   nextSpotlightPreferences,
   isSellingLinkCard,
+  spotlightSiteGrid,
 } from './spotlight'
 
 const placed = (prefs: unknown) =>
@@ -76,5 +77,17 @@ describe('Space Spotlight', () => {
   it('locks only the cards that sell or sign someone up', () => {
     for (const id of ['product:p1', 'journey:j1', 'event:e1', 'membership:m1']) expect(isSellingLinkCard(id), id).toBe(true)
     for (const id of ['book', 'contact', 'links', 'producty:x']) expect(isSellingLinkCard(id), id).toBe(false)
+  })
+
+  it('shows only stand-alone blocks on a website host', () => {
+    const grid = spaceSpotlightGrid(
+      readSpaceSpotlight({
+        spotlight: {
+          published: true,
+          layout: { rows: ['about', 'events', 'linkCards', 'booking', 'links'].map((id, i) => ({ id: `r${i}`, columns: 1, cells: [[id]] })) },
+        },
+      }),
+    )
+    expect((spotlightSiteGrid(grid).rows ?? []).map((r) => r.cells[0][0])).toEqual(['about', 'linkCards', 'links'])
   })
 })

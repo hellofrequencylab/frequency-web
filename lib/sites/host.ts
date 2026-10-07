@@ -150,6 +150,21 @@ export type SiteRoute =
   | { kind: 'rewrite'; pathname: string }
   | { kind: 'not-found' }
 
+/** THE COLLECTIVE SPOTLIGHT HOST (LIVE-855, owner ask 2026-10-07: "Collective users have
+ *  spotlight.theirwebsite.com"). `spotlight.<domain>` serves the Space's Spotlight for a Space that holds
+ *  `<domain>` as its own. Returns `<domain>`, or null when `host` is not one: the remainder must be a real
+ *  domain that is not one of Frequency's own (so `spotlight.frequencylocal.com` stays a slug subdomain). */
+export function spotlightHostDomain(host: string | null | undefined, appHosts: Set<string> = new Set()): string | null {
+  const h = normalizeHost(host)
+  if (!h.startsWith('spotlight.')) return null
+  const rest = h.slice('spotlight.'.length)
+  if (!rest.includes('.') || isAppHost(rest, appHosts) || appHosts.has(h)) return null
+  return rest
+}
+
+/** The Spotlight page segment on a site host (`/spotlight`), and the root a spotlight host rewrites to. */
+export const SPOTLIGHT_PAGE = 'spotlight'
+
 /** Is `pathname` the internal site route (/hosted or below)? */
 export function isHostedPath(pathname: string): boolean {
   return pathname === HOSTED_PREFIX || pathname.startsWith(`${HOSTED_PREFIX}/`)
@@ -166,6 +181,13 @@ export function routeSiteHost(
   appHosts: Set<string> = new Set(),
 ): SiteRoute {
   const h = normalizeHost(host)
+  // `spotlight.<domain>` (LIVE-855) is the Spotlight alone: its root is the Spotlight, and every other path
+  // belongs to the Space's website on `<domain>`, so it goes there.
+  const spotlightOf = spotlightHostDomain(h, appHosts)
+  if (spotlightOf) {
+    if (pathname === '/' || pathname === '') return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}/${SPOTLIGHT_PAGE}` }
+    return { kind: 'redirect', location: `https://${spotlightOf}${pathname}${search}`, permanent: false }
+  }
   // A Space's free website subdomain (LIVE-782) is a site host even though it sits under Frequency's
   // own apex, unless APP_HOSTS names it as the app on purpose.
   const subdomainSite = !appHosts.has(h) && siteSlugFromSubdomain(h) !== null

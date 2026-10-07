@@ -21,6 +21,9 @@ import { getSpaceLayoutRailData } from '../rail-getters'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
 import { loadUpgradeOffer } from '@/lib/pricing/business-offer'
 import type { UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
+import { siteSubdomainHost } from '@/lib/sites/host'
+import { boundSiteDomain } from '@/lib/sites/site-domain'
+import { DEFAULT_WWW_CNAME } from '@/lib/sites/vercel-domains'
 
 // THE SPACE SPOTLIGHT EDITOR PAGE (LIVE-851), in the Space console. Gated like every console page: the
 // Space must be visible and the caller a manager (a staff previewer sees it read-only, and every write
@@ -48,7 +51,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
   const rows = resolveRows(grid, 'space')
   const context = toProfileContext(space)
 
-  const [data, authored, tagline, pageRail, canSell] = await Promise.all([
+  const [data, authored, tagline, pageRail, canSell, domain] = await Promise.all([
     getSpaceContentData(context.id, {
       name: context.brandName,
       type: context.type,
@@ -65,7 +68,12 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
     // used here, so a Spotlight offers exactly the function-backed blocks the Space page does.
     canManage ? getSpaceLayoutRailData(slug) : Promise.resolve(null),
     spaceCanTakePayments(space.id, { plan: space.plan ?? null }),
+    boundSiteDomain(space),
   ])
+
+  // The Spotlight's own addresses (LIVE-855): the paid subdomain link, and spotlight.<domain> on a served domain.
+  const subdomain = canSell ? siteSubdomainHost(space.slug) : null
+  const ownLinks = { paid: subdomain ? `https://${subdomain}/spotlight` : null, domain, cname: DEFAULT_WWW_CNAME }
 
   // Selling Link cards need a plan that takes payments (LIVE-854); a free Space sees the upgrade here.
   const upgrade: UpgradeMomentSetup | undefined = canSell
@@ -124,6 +132,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
         initialPublished={spotlight.published}
         readOnly={!canManage}
         upgrade={upgrade}
+        ownLinks={ownLinks}
       />
     </FocusTemplate>
   )

@@ -10,6 +10,7 @@ import {
   type BlockDataItem,
 } from '@/lib/entity-blocks/block-data-sources'
 import { isSellingLinkCard } from '@/lib/spaces/spotlight'
+import { siteCardHref, spotlightSiteLinks } from '@/lib/spaces/spotlight-site'
 import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
 import { Eyebrow } from '@/components/page-editor/blocks/kit'
 import { ModuleSection } from './section'
@@ -18,8 +19,9 @@ import { ModuleSection } from './section'
 // offers (a product, a Journey, an event, a membership, the Book or Contact door), resolved from the Space's
 // live data by listLinkCards and linking into the flow that already handles it, so a booking, a sale or a
 // message still lands in the console. The picker chooses which cards show, in the owner's order; nothing
-// chosen shows the first few. On a free Space only Book and Contact show (LIVE-854). FAIL-SAFE: no linkable
-// item, no section.
+// chosen shows the first few. On a free Space only Book and Contact show (LIVE-854). On a website host
+// (LIVE-855) Book and Contact open the site's own pages and any other card is a Frequency link that says so
+// (lib/spaces/spotlight-site.ts). FAIL-SAFE: no linkable item, no section.
 
 /** How many cards show when the owner has not picked any. */
 const DEFAULT_CARD_COUNT = 6
@@ -51,6 +53,7 @@ export async function LinkCardsBlock({
     .map((id) => byId.get(id))
     .filter((it): it is BlockDataItem => Boolean(it))
   if (cards.length === 0) return null
+  const site = spotlightSiteLinks()
 
   return (
     <ModuleSection anchor="links">
@@ -63,10 +66,11 @@ export async function LinkCardsBlock({
       <ul className="space-y-3">
         {cards.map((item) => {
           const kind = linkCardKind(item.id)
+          const to = siteCardHref(item.id, item.href!, site)
           return (
             <li key={item.id}>
               <Link
-                href={item.href!}
+                href={to.href}
                 className="flex items-center gap-3 rounded-card border border-border bg-surface p-3 transition-colors hover:border-primary hover:bg-primary-bg/30"
               >
                 {item.image && (
@@ -81,6 +85,7 @@ export async function LinkCardsBlock({
                 <span className="min-w-0 flex-1">
                   {kind && <span className="eyebrow block text-primary-strong">{LINK_CARD_KIND_LABEL[kind]}</span>}
                   <span className="block truncate text-body font-semibold text-text">{cardTitle(item)}</span>
+                  {to.onFrequency && <span className="block text-meta text-muted">on Frequency</span>}
                 </span>
                 {item.price && <span className="shrink-0 text-body-sm font-semibold text-muted">{item.price}</span>}
                 <ArrowRight className="h-4 w-4 shrink-0 text-muted" aria-hidden />
