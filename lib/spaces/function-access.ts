@@ -25,6 +25,7 @@ import { spaceFunctionAccess, spaceFunctionDef, type SpaceFunctionKey } from './
 import { featureAllowed } from '@/lib/pricing/gates'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { featureGatesLive } from '@/lib/pricing/settings'
+import { spaceLimitsWaived } from '@/lib/pricing/space-allowance'
 
 /** The plan-gated Space function entitlement key → the pricing feature-gate key. Only functions that
  *  carry an entitlement (CRM, email, shop's 'storefront') map here; a universal function
@@ -81,7 +82,10 @@ export async function spaceFunctionAccessLive(
     const gatesLive = await featureGatesLive()
     // While the gates are not live this short-circuits to true; the spaceHasEntitlement read above
     // already governed the result, so not-live is byte-for-byte today's behavior.
-    return await featureAllowed(featureKey, { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { gatesLive })
+    const resolved = asSpacePlan(plan ?? space?.plan ?? null)
+    if (await featureAllowed(featureKey, { plan: resolved }, { gatesLive })) return true
+    // LIVE-822: a staff comp Space clears every plan gate at Collective. Read only on a refusal.
+    return await featureAllowed(featureKey, { plan: resolved, limitsWaived: await spaceLimitsWaived(space?.id) }, { gatesLive })
   } catch {
     // FAIL-SAFE: degrade to the pure result (which already passed) rather than lock out.
     return true
@@ -110,7 +114,14 @@ export async function spaceCanHostCollaborators(
 ): Promise<boolean> {
   try {
     const gatesLive = await featureGatesLive()
-    return await featureAllowed('space_collaborators', { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { gatesLive })
+    const resolved = asSpacePlan(plan ?? space?.plan ?? null)
+    if (await featureAllowed('space_collaborators', { plan: resolved }, { gatesLive })) return true
+    // LIVE-822: a staff comp Space clears the gate at Collective. Read only on a refusal.
+    return await featureAllowed(
+      'space_collaborators',
+      { plan: resolved, limitsWaived: await spaceLimitsWaived(space?.id) },
+      { gatesLive },
+    )
   } catch {
     // FAIL-SAFE: degrade to granted (grace-preserving), never a lockout on a read error.
     return true

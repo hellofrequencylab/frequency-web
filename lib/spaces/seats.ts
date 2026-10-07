@@ -34,6 +34,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { allowanceAt } from '@/lib/pricing/feature-meters'
 import { asSpacePlan } from '@/lib/pricing/plans'
+import { spaceLimitsWaived } from '@/lib/pricing/space-allowance'
 import { atLeastSpaceRole, type SpaceRole } from './membership'
 
 // ── PURE: the seat arithmetic (no IO, fully testable) ───────────────────────────────────────────
@@ -248,6 +249,8 @@ export async function checkSeatForOperatorInvite(
   // that grew during the beta. The wall arrives when the beta grace window ends.
   if (!(await featureGatesLive())) return { allowed: true, usage }
   if (seatLimitReached(usage.used, usage.licensed)) {
+    // LIVE-822: a staff comp Space has no seat cap.
+    if (await spaceLimitsWaived(spaceId)) return { allowed: true, usage }
     return {
       allowed: false,
       usage,

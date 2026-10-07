@@ -17,6 +17,8 @@ import {
   ADDON_ENTITLEMENT_KEYS,
   ADDON_KEYS,
   BILLING_MANAGED_KEYS,
+  spaceHasCustomDomain,
+  limitsWaivedPlan,
 } from './plans'
 import {
   deriveGamificationAccess,
@@ -31,7 +33,7 @@ import {
   type FeatureGate,
 } from './gates'
 import { PRICING_DEFAULTS } from './settings'
-import { PLACEHOLDER_METER_LIMITS } from './feature-meters'
+import { PLACEHOLDER_METER_LIMITS, allowanceVerdict } from './feature-meters'
 import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 
@@ -87,11 +89,11 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
     ]
     expect([...planEntitlementKeys('business')].sort()).toEqual([...businessDepth].sort())
     expect([...planEntitlementKeys('nonprofit')].sort()).toEqual([...businessDepth].sort())
-    expect([...planEntitlementKeys('independent')].sort()).toEqual([...businessDepth, 'whitelabel'].sort())
+    expect([...planEntitlementKeys('independent')].sort()).toEqual([...businessDepth, 'whitelabel', 'custom_domain'].sort())
     expect(planEntitlements('business').whitelabel).toBeUndefined()
     expect(planEntitlements('business').team).toBe(true)
     expect(planEntitlements('independent').whitelabel).toBe(true)
-    const collectiveDepth = [...businessDepth, 'crm.resonance', 'crm.resonance_ai'].sort()
+    const collectiveDepth = [...businessDepth, 'crm.resonance', 'crm.resonance_ai', 'custom_domain'].sort()
     expect([...planEntitlementKeys('collective')].sort()).toEqual(collectiveDepth)
     expect([...planEntitlementKeys('nonprofit_collective')].sort()).toEqual(collectiveDepth)
     for (const plan of ['free', 'business', 'nonprofit', 'independent'] as const) {
@@ -100,14 +102,31 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
     }
   })
 
-  it('AI is the SOLE metered add-on; only the Collective rungs include it in their base (ADR-1709)', () => {
-    expect([...ADDON_KEYS]).toEqual(['ai'])
+  it('the add-ons are Vera AI and the custom domain; only the Collective rungs include AI in their base (ADR-1709, LIVE-821)', () => {
+    expect([...ADDON_KEYS]).toEqual(['ai', 'custom_domain'])
+    expect(ADDON_ENTITLEMENT_KEYS.custom_domain).toEqual(['custom_domain'])
     expect(ADDON_ENTITLEMENT_KEYS.ai).toEqual(['crm.resonance', 'crm.resonance_ai'])
     // No Business-depth base contains the AI keys; Collective includes Vera AI.
     for (const plan of ['free', 'business', 'nonprofit', 'independent'] as const) {
       expect(planEntitlementKeys(plan)).not.toContain('crm.resonance')
       expect(planEntitlementKeys(plan)).not.toContain('crm.resonance_ai')
     }
+  })
+
+  it('spaceHasCustomDomain: Collective rungs and Independent include it, Business needs the add-on (LIVE-821)', () => {
+    expect(spaceHasCustomDomain('collective', [])).toBe(true)
+    expect(spaceHasCustomDomain('nonprofit_collective', [])).toBe(true)
+    expect(spaceHasCustomDomain('independent', [])).toBe(true)
+    expect(spaceHasCustomDomain('business', [])).toBe(false)
+    expect(spaceHasCustomDomain('business', ['ai'])).toBe(false)
+    expect(spaceHasCustomDomain('business', ['custom_domain'])).toBe(true)
+    // Non Profit buys it like Business (owner ruling 2026-10-06 22:37).
+    expect(spaceHasCustomDomain('nonprofit', [])).toBe(false)
+    expect(spaceHasCustomDomain('nonprofit', ['custom_domain'])).toBe(true)
+    expect(spaceHasCustomDomain('free', [])).toBe(false)
+    expect(spaceHasCustomDomain('free', ['custom_domain'])).toBe(false) // no add-on on the free plan
+    expect(spaceHasCustomDomain(null, [])).toBe(false)
+    expect(spaceHasCustomDomain('pro', ['custom_domain'])).toBe(true) // legacy label narrows to business
   })
 
   it('planKeysWithAddons layers the AI add-on keys onto a tier base (the set-to-target source)', () => {
@@ -441,5 +460,31 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     // NON-VACUITY: the tier the row set omits is still fully priced in the config it derives from, so
     // this is a display decision and not a quietly deleted plan.
     expect(PRICING_DEFAULTS.plan.independent.monthly_cents).toBe(24900)
+  })
+})
+
+describe('LIVE-822: a staff-waived Space clears every plan gate at Collective', () => {
+  it('limitsWaivedPlan lifts a lower plan to Collective and keeps a Collective-rank plan', () => {
+    expect(limitsWaivedPlan('free')).toBe('collective')
+    expect(limitsWaivedPlan('business')).toBe('collective')
+    expect(limitsWaivedPlan(null)).toBe('collective')
+    expect(limitsWaivedPlan('nonprofit_collective')).toBe('nonprofit_collective')
+  })
+
+  it('meetsGate opens every enabled plan gate for a waived free Space, and only for a waived one', () => {
+    const planGates = Object.values(FEATURE_GATES).filter((g) => g.axis === 'plan')
+    expect(planGates.length).toBeGreaterThan(0)
+    for (const gate of planGates) {
+      expect(meetsGate(gate, { plan: 'free', limitsWaived: true })).toBe(true)
+    }
+    expect(planGates.some((g) => !meetsGate(g, { plan: 'free' }))).toBe(true)
+    expect(planGates.some((g) => !meetsGate(g, { plan: 'free', limitsWaived: false }))).toBe(true)
+  })
+
+  it('allowanceVerdict resolves a waived Space to unlimited and leaves an unwaived one capped', () => {
+    const waived = allowanceVerdict('space_qr', 'collective', 5, { gatesLive: true, floor: 5, limitsWaived: true })
+    expect(waived).toMatchObject({ allowed: true, allowance: null, enforced: false })
+    const capped = allowanceVerdict('space_qr', 'collective', 5, { gatesLive: true, floor: 5 })
+    expect(capped).toMatchObject({ allowed: false, allowance: 5, enforced: true })
   })
 })

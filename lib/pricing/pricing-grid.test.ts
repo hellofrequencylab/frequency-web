@@ -368,8 +368,11 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     expect(missing, 'every key an advertised tier grants needs a grid row').toEqual([])
     expect(rowKeys.has('multi_pipeline')).toBe(false)
     expect(rowKeys.has('space_multi_pipeline')).toBe(false)
-    // NON-VACUITY: the set is real and is exactly Collective depth (Business plus the AI keys).
-    expect([...advertisedKeys].sort()).toEqual([...new Set([...BUSINESS_DEPTH_ENTITLEMENT_KEYS, ...ADDON_ENTITLEMENT_KEYS.ai])].sort())
+    // NON-VACUITY: the set is real and is exactly Collective depth (Business plus the AI keys and the
+    // custom domain, LIVE-821).
+    expect([...advertisedKeys].sort()).toEqual(
+      [...new Set([...BUSINESS_DEPTH_ENTITLEMENT_KEYS, ...ADDON_ENTITLEMENT_KEYS.ai, ...ADDON_ENTITLEMENT_KEYS.custom_domain])].sort(),
+    )
     // And the one key the advertised ladder does NOT grant is the one that lost its row.
     expect(advertisedKeys.has('whitelabel')).toBe(false)
     expect(INDEPENDENT_DEPTH_ENTITLEMENT_KEYS).toContain('whitelabel')
@@ -444,6 +447,24 @@ describe('seats and the AI add-on', () => {
       // Collective includes Vera AI (its depth carries the add-on keys, ADR-1709).
       expect(cells[plan]).toBe(plan === 'collective' ? 'Included' : `Add-on, ${price}/mo`)
     }
+  })
+
+  it('prices the custom domain add-on from the catalog on Business and reads Included on Collective (LIVE-821)', () => {
+    const cells = cellsByColumn(grid, 'custom_domain')
+    const price = formatCents(input.catalog.addon_custom_domain.month.foundingCents)
+    expect(cells.free).toBe('Not sold on the free plan')
+    expect(cells.business).toBe(`Add-on, ${price}/mo`)
+    expect(cells.collective).toBe('Included')
+    const domain = planExtras(input).find((e) => e.key === 'custom_domain')!
+    expect(domain.price).toContain(price)
+    expect(domain.availability).toContain('Optional on Business')
+    expect(domain.availability).toContain('Included with Collective')
+    expect(domain.availability).not.toMatch(/\u2014/)
+    // Non Profit buys both add-ons like Business (owner ruling 2026-10-06 22:37).
+    expect(domain.availability).toBe('Optional on Business and Non Profit. Included with Collective.')
+    expect(planExtras(input).find((e) => e.key === 'ai')!.availability).toBe(
+      'Optional on Business and Non Profit. Included with Collective.',
+    )
   })
 
   it('keeps the AI add-on keys out of every Business-depth base (only Collective includes it, ADR-1709)', () => {

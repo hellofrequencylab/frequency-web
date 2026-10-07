@@ -241,7 +241,9 @@ async function requireSpaceEditor(spaceId: string): Promise<{ ok: true } | Actio
     { plan: asSpacePlan(space.plan) },
     { gatesLive: await featureGatesLive() },
   )
-  if (!allowed) {
+  // LIVE-822: a staff comp Space clears the gate at Collective. Read only on a refusal.
+  const waived = allowed ? false : await (await import('@/lib/pricing/space-allowance')).spaceLimitsWaived(spaceId)
+  if (!allowed && !waived) {
     return fail('Campaigns come with Business. You can still email your people directly from this Space.')
   }
   return { ok: true }

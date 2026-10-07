@@ -70,6 +70,29 @@ async function readSpacePlanRow(spaceId: string): Promise<SpacePlanRow | null> {
   }
 }
 
+/**
+ * Has staff waived every limit on this Space (`spaces.limits_waived`, LIVE-822)? THE one reader of the
+ * comp override, asked by every enforcement seam only once it is about to apply a cap or refuse a
+ * gate, so a normal Space never pays for the read. Its own request, not a column on a shared select:
+ * the column ships in a migration applied by hand, and selecting it before then would fail the whole
+ * read (42703). FAIL-CLOSED to false: an unreadable flag enforces the plan as usual, never waives.
+ */
+export async function spaceLimitsWaived(spaceId: string | null | undefined): Promise<boolean> {
+  const id = (spaceId ?? '').trim()
+  if (!id) return false
+  try {
+    const { data, error } = (await createAdminClient()
+      .from('spaces')
+      .select('limits_waived')
+      .eq('id', id)
+      .maybeSingle()) as { data: { limits_waived?: boolean | null } | null; error: unknown }
+    if (error) return false
+    return data?.limits_waived === true
+  } catch {
+    return false
+  }
+}
+
 /** The granted (never-blocking) verdict, used for every fail-safe and exempt path. */
 function granted(featureKey: string, plan: SpacePlan, used: number, exempt: boolean): SpaceAllowanceVerdict {
   return {
@@ -138,6 +161,10 @@ export async function spaceAllowanceVerdict(
 
   // RULE 3: pass the live count as the grandfather floor, so the cap governs growth from today only.
   const verdict = allowanceVerdict(featureKey, plan, used, { gatesLive, floor: used })
+  // LIVE-822: a staff comp Space has no caps. Read only when a cap would actually apply.
+  if (verdict.enforced && (await spaceLimitsWaived(id))) {
+    return { ...allowanceVerdict(featureKey, plan, used, { gatesLive, floor: used, limitsWaived: true }), featureKey, plan, exempt: false }
+  }
   return { ...verdict, featureKey, plan, exempt: false }
 }
 

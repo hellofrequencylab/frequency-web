@@ -466,9 +466,9 @@ function isPaidColumn(column: GridColumn): boolean {
   return column.tier !== 'free'
 }
 
-/** Resolve the metered ADD-ON cell from ADDON_ENTITLEMENT_KEYS. The add-on keys sit in no tier base, so
- *  every paid tier reads the metered price and Free reads "not available". If those keys are ever folded
- *  into a tier's depth set, that tier's cell flips to Included with no edit here. */
+/** Resolve an ADD-ON cell from ADDON_ENTITLEMENT_KEYS. A tier whose depth set carries the add-on's keys
+ *  reads Included (Collective for Vera AI and the custom domain); every other paid tier reads the
+ *  catalog price, and Free reads "not available". */
 function addonCell(addon: AddonKey, column: GridColumn, input: PricingGridInput): GridCell {
   const keys = ADDON_ENTITLEMENT_KEYS[addon]
   if (column.axis === 'plan') {
@@ -733,6 +733,14 @@ const SPACE_GROUPS: GroupDef[] = [
         label: 'Multi-page website',
         detail: 'More than one page: your own site, run from your Space.',
         source: { from: 'entitlement', key: 'space_full_website' },
+      },
+      {
+        // LIVE-821 (owner ruling 2026-10-06): a paid add-on on Business, included with Collective. The
+        // cell reads the add-on keys against each tier's depth and the price off the catalog.
+        key: 'custom_domain',
+        label: 'Custom domain',
+        detail: 'Your Space site on your own domain.',
+        source: { from: 'addon', addon: 'custom_domain' },
       },
       // A `whitelabel` row sat here, and it went with the tier (owner ruling 2026-09-08, LIVE-227).
       // `whitelabel` is granted by the Independent depth set alone, so with Independent off the
@@ -1013,6 +1021,7 @@ export interface PlanExtra {
  *  add-on on every paid tier. Seats derive from which tiers carry the `team` depth key. */
 export function planExtras(input: PricingGridInput): PlanExtra[] {
   const ai = input.catalog.addon_ai
+  const domain = input.catalog.addon_custom_domain
   const seat = input.catalog.operator_seat
   const seatPlaceholder = catalogItem('operator_seat').placeholder === true
   // 🔴 NAMED OVER THE ADVERTISED LADDER, NOT SPACE_PLANS. These two sentences print plan names to a
@@ -1022,9 +1031,7 @@ export function planExtras(input: PricingGridInput): PlanExtra[] {
   const teamTiers = ADVERTISED_SPACE_PLANS.filter((p) => planEntitlementKeys(p).includes('team')).map(
     (p) => SPACE_PLAN_LABEL[p],
   )
-  const paidTiers = ADVERTISED_SPACE_PLANS.filter((p) => planEntitlementKeys(p).length > 0).map(
-    (p) => SPACE_PLAN_LABEL[p],
-  )
+  const paidTiers = ADVERTISED_SPACE_PLANS.filter((p) => planEntitlementKeys(p).length > 0)
 
   return [
     {
@@ -1033,9 +1040,18 @@ export function planExtras(input: PricingGridInput): PlanExtra[] {
       price: ai
         ? `${formatCents(ai.month.foundingCents)}/mo, or ${formatCents(ai.year.foundingCents)}/yr`
         : 'Not sold yet',
-      availability: `Optional on every paid Space plan: ${listPhrase(paidTiers)}.`,
+      availability: addonAvailability('ai', paidTiers),
       detail:
         "Metered AI that turns your community's signals into live matches and next-best actions. Turn it on or off any time.",
+    },
+    {
+      key: 'custom_domain',
+      label: 'Custom domain',
+      price: domain
+        ? `${formatCents(domain.month.foundingCents)}/mo, or ${formatCents(domain.year.foundingCents)}/yr`
+        : 'Not sold yet',
+      availability: addonAvailability('custom_domain', paidTiers),
+      detail: 'Your Space site on your own domain. We show you the records to set, and it connects from your Space.',
     },
     {
       key: 'seats',
@@ -1049,9 +1065,24 @@ export function planExtras(input: PricingGridInput): PlanExtra[] {
   ]
 }
 
+/** Who can buy an add-on, derived from the tier depth key sets over the ADVERTISED paid plans: a plan
+ *  whose depth already carries the add-on's keys includes it, every other paid plan can add it.
+ *  PURE. "Optional on Business and Non Profit. Included with Collective." */
+export function addonAvailability(addon: AddonKey, paidPlans: readonly SpacePlan[] = ADVERTISED_SPACE_PLANS): string {
+  const keys = ADDON_ENTITLEMENT_KEYS[addon]
+  const includes = (p: SpacePlan) => keys.every((k) => planEntitlementKeys(p).includes(k))
+  const optional = paidPlans.filter((p) => !includes(p)).map((p) => SPACE_PLAN_LABEL[p])
+  const included = paidPlans.filter(includes).map((p) => SPACE_PLAN_LABEL[p])
+  const parts: string[] = []
+  if (optional.length > 0) parts.push(`Optional on ${listPhrase(optional)}.`)
+  if (included.length > 0) parts.push(`Included with ${listPhrase(included)}.`)
+  return parts.join(' ') || 'Not sold yet.'
+}
+
 /** Join labels into a plain English list ("Business, Collective, and Non Profit"). PURE. */
 function listPhrase(items: readonly string[]): string {
   if (items.length === 0) return 'none yet'
   if (items.length === 1) return items[0]!
+  if (items.length === 2) return `${items[0]} and ${items[1]}`
   return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`
 }

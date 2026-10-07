@@ -230,3 +230,12 @@ describe('seatQuantityFromItems (operator seats · ADR-799)', () => {
     expect(seatQuantityFromItems([item('operator_seat', 2.9)])).toBe(2)
   })
 })
+
+describe('a Non Profit subscription carrying the add-ons reconciles them (LIVE-821, owner ruling 2026-10-06 22:37)', () => {
+  it('maps the custom domain item and keeps the plan Non Profit', () => {
+    expect(itemKeyForCatalogKey('addon_custom_domain')).toBe('custom_domain')
+    const keys = [itemKeyForCatalogKey('nonprofit_seat')!, itemKeyForCatalogKey('addon_ai')!, itemKeyForCatalogKey('addon_custom_domain')!]
+    expect(planForItemKeys(keys)).toBe('nonprofit')
+    expect(addonsForItemKeys(keys).sort()).toEqual(['ai', 'custom_domain'])
+  })
+})

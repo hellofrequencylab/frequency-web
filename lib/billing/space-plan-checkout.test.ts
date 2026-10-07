@@ -210,6 +210,19 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     expect(prices()).toEqual(['price_collective_base_month'])
   })
 
+  it('sells Vera AI and the custom domain add-on to Business and Non Profit, never to Collective (LIVE-821)', async () => {
+    grant.granted = true
+    const addons = ['ai', 'custom_domain']
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month', addons })
+    expect(prices()).toEqual(['price_business_base_month', 'price_addon_ai_month', 'price_addon_custom_domain_month'])
+    await createSpaceLoadoutCheckout('space-1', { plan: 'nonprofit', interval: 'month', addons })
+    expect(prices()).toEqual(['price_nonprofit_seat_month', 'price_addon_ai_month', 'price_addon_custom_domain_month'])
+    await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month', addons })
+    expect(prices()).toEqual(['price_collective_base_month'])
+    await createSpaceLoadoutCheckout('space-1', { plan: 'nonprofit_collective', interval: 'month', addons })
+    expect(prices()).toEqual(['price_nonprofit_collective_month'])
+  })
+
   it('the grant reaches the YEARLY key too, not only the monthly one', async () => {
     grant.granted = true
     await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })

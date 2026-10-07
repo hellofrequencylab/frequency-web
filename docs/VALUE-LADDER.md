@@ -149,10 +149,15 @@ crowd into a list.*
 
 #### Crew is CONTRIBUTE WHAT YOU WANT (owner decision, 2026-07-30; renamed from "pay what you want" by ADR-1084)
 
-Crew has no price. The operator sets a **floor** ($4.99/mo), a **suggested** amount ($24.99/mo), and a
-row of presets; the member picks any monthly amount from the floor up, and **every amount buys
-identical access**. Annual is ten months of whatever they picked. Paying at or above the suggested
-amount earns the **Supporter badge** (`profiles.is_supporter`) — recognition only, never access.
+Crew has no price. The operator sets a **floor** ($4.99/mo), a **suggested** amount ($10/mo), and a
+row of presets ($5, $10, $25: ADR-1709, LIVE-755, owner ruling 2026-10-06); the member picks any monthly amount from the floor up, and **every amount buys
+identical access**. Annual is ten months of whatever they picked. Any active Crew
+carries the **Supporter badge**, which fades 45 days after support stops (`supporterMarkShows`,
+LIVE-755). Recognition only, never access. Crew also gives **one Boost a calendar month** to a Circle or a Space
+(`crew_boosts`, `lib/crew/boost.ts`, LIVE-756), for 7 days: a boosted Circle leads the default Circle
+index order after featured, and a boosted Space gets a **Boosted mark, not a lift**. The Space directory's
+default order stays earned (owner ruling 2026-10-06, LIVE-262: exposure is earned, never sold), and no
+Boost enters the standing score.
 
 | Concern | Where it lives |
 |---|---|
