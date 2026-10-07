@@ -79,12 +79,14 @@ describe('accentVars — hex accent (ADR-516 D2, the owner brand color picker)',
     expect(vars['--color-primary-strong']).toBe('light-dark(#97611f, #e2912f)')
     // The -bg is a translucent tint, so it sits legibly on any surface (light or dark).
     expect(vars['--color-primary-bg']).toBe('color-mix(in srgb, #E2912F 14%, transparent)')
-    // Amber is a light accent → dark ink reads on it (WCAG crossover).
-    expect(vars['--color-text-on-primary']).toBe('#141414')
+    // White label on the brand fill (owner palette rule, ADR-1031, extended to Space accents 2026-10-07).
+    expect(vars['--color-text-on-primary']).toBe('#ffffff')
   })
 
-  it('picks white text on a dark accent and dark ink on a light one', () => {
+  it('labels every accent in white, and only a near-white fill in dark ink', () => {
     expect(accentVars('#0A0A0A')!['--color-text-on-primary']).toBe('#ffffff')
+    // A mid-blue like Daniel Tyack's accent: white, by the owner's rule (2.4:1, knowingly under AA).
+    expect(accentVars('#1FB6C5')!['--color-text-on-primary']).toBe('#ffffff')
     expect(accentVars('#F5F5F5')!['--color-text-on-primary']).toBe('#141414')
   })
 

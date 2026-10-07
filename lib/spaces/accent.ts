@@ -87,13 +87,15 @@ function mixToward(hex: string, toward: Rgb, pct: number): string {
   return toHex([0, 1, 2].map((i) => Math.round(from[i]! * (1 - t) + toward[i]! * t)) as unknown as Rgb)
 }
 
-/** Readable text color to sit ON a hex accent: white on a dark accent, near-black ink on a light one,
- *  by sRGB relative luminance. Returns a hex (accent DATA, applied via inline style — not a
- *  component-styling token). */
+/** Text color to sit ON a hex accent (button labels, badges). WHITE, by the owner's palette rule: the
+ *  primary button label is white on the brand fill, accepted below AA with the measurement in hand
+ *  (ADR-1031, frozen in scripts/check-contrast.mjs), and extended to a Space's own picked accent by owner
+ *  ruling 2026-10-07 ("The button is supposed to be white text on blue... white looks just fine on the
+ *  buttons"). The one exception is a near-white fill, where white would vanish outright (under 1.5:1):
+ *  there the label is near-black ink. Returns a hex (accent DATA, applied via inline style). */
+const WHITE_LABEL_MIN = 1.5
 function readableTextOn(hex: string): string {
-  // 0.179 is the WCAG crossover where black and white text carry EQUAL contrast against the accent
-  // ((L+0.05)/0.05 = 1.05/(L+0.05)); above it dark ink wins, below it white wins.
-  return luminanceOf(parseHex(hex)) > 0.179 ? '#141414' : '#ffffff'
+  return contrastRatio('#ffffff', hex) >= WHITE_LABEL_MIN ? '#ffffff' : '#141414'
 }
 
 /** WCAG AA for normal text. `-strong` is a TEXT slot (the eyebrow, the active tab, the badge), so
