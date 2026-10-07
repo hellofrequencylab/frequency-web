@@ -4,7 +4,7 @@ description: What's free, what membership includes, and how the Vault works.
 category: membership
 order: 1
 published: 2026-06-03
-updated: 2026-09-21
+updated: 2026-10-06
 audience: member
 featureKeys: [vault]
 status: published
@@ -32,7 +32,7 @@ Everything you earn keeps building: your Gems, your season trophies, and your **
 
 ## Where membership comes in
 
-**Crew** is the paid personal tier, and it is about backing the community rather than unlocking the game. It carries a lower fee on the business the network sends you, Vera without the daily cap, the Crew badge, and listing what you author in the public library. You pick what you pay for it.
+**Crew** is the paid personal tier, and it is about backing the community rather than unlocking the game. It carries a host kit with room for more Circles, Events, and Journeys, Vera without the daily cap, the Crew badge, and listing what you author in the public library. See [Crew](/help/membership/crew). You pick what you pay for it.
 
 ## What Crew costs
 

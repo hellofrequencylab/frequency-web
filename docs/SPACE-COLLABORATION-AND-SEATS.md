@@ -1,5 +1,10 @@
 # Operator seats + collaborator spaces (plan of record)
 
+> 🔴 **Amended by [ADR-1709](DECISIONS.md) (2026-10-06).** Business includes **2** operator seats and
+> Collective **5** (`space_team` in `lib/pricing/meter-limits.ts`); more stay the per-seat add-on.
+> Collaborator hosting is a meter, not a wall: `space_collaborators` (none on the free Space, a few on
+> Business, unlimited on Collective). Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+
 Two DIFFERENT capabilities an operator asked for. They are not the same system and must not be
 conflated. Owner decisions captured 2026-07-21; ADR-799.
 

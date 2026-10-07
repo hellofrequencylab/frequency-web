@@ -7,6 +7,14 @@
 > memberships. This file does not replace them. Decision record:
 > [ADR-1293](DECISIONS.md).
 >
+> 🔴 **AMENDED by [ADR-1709](DECISIONS.md) (2026-10-06).** The tier table and the rate sentence in §5
+> (one paid Business tier, "the 10% becomes 3%") are superseded by the five-tier ladder: Member, Crew,
+> Space, Business, Collective, with selling at Business, tips at 0% everywhere, and a network fee of
+> 5% (Business), 3% (Collective) and 0% (Non Profit) once per introduced customer. Prices are catalog
+> data ([PRICING.md](PRICING.md) top banner); figures typed below are the record of the 2026-09-08
+> proposal, not a source.
+>
+
 > **This document explains an offer. It does not track whether the offer is built.**
 
 ---
