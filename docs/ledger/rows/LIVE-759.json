@@ -1,7 +1,7 @@
 {
   "id": "LIVE-759",
   "title": "The pricing page and the plan story tell five tiers, selling at Business, read from the catalog",
-  "status": "open",
+  "status": "done",
   "priority": "P1",
   "lane": "live",
   "size": "M",
@@ -9,10 +9,11 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 6 of the five-tier ladder (ADR-1709). PLAN_STORY rewritten (zero imports, ADR-1368); ADVERTISED_SPACE_PLANS adds Collective; the pricing page grid, plan cards, comparison table and FAQ follow best-practice structure (personal and Space toggles, one recommended card, the selling line at Business, fee ladder, FAQ). No typed price. Published /pricing documents in the pages table are re-published.",
+  "detail": "PHASE 6 of the five-tier ladder (ADR-1709). PLAN_STORY rewritten (zero imports, ADR-1368); ADVERTISED_SPACE_PLANS adds Collective; the pricing page grid, plan cards, comparison table and FAQ follow best-practice structure (personal and Space toggles, one recommended card, the selling line at Business, fee ladder, FAQ). No typed price. Published /pricing documents in the pages table are re-published. Shipped 2026-10-06: PLAN_STORY rewritten as a zero-import leaf with ladder, selling, crew and collective lines; Collective advertised; /pricing rebuilt with a For your Space / For you toggle, one recommended card (Business), a selling line read off Offering.sells, a fee ladder table, the comparison (multi-pipeline rows off by owner ruling, QR row reads editable codes), a who-it's-for band linking /for/teachers, and the FAQ; the pricing CMS template follows. Published /pricing documents in the pages table still carry the old words until the owner re-publishes them.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const ps=r(\"lib/pricing/plan-story.ts\");if(/^import /m.test(ps))fail(\"plan-story.ts imports something\");if(/free Space sells|sells tickets, takes donations/i.test(ps))fail(\"PLAN_STORY still says a free Space sells\");if(!/Collective/.test(ps))fail(\"PLAN_STORY never names Collective\");if(!/collective/.test((r(\"lib/pricing/display.ts\").split(\"ADVERTISED_SPACE_PLANS\")[1]||\"\").split(\"\\n\\n\")[0]))fail(\"Collective is not advertised\");if(/Every rung on both sells/i.test(r(\"app/(marketing)/pricing/page.tsx\")))fail(\"the pricing page still says every rung sells\");console.log(\"ok: the pricing page tells the ladder\")'"
   },
+  "closed": "2026-10-06",
   "wave": "WR"
 }

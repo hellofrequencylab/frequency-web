@@ -705,6 +705,25 @@ describe('productSchema', () => {
     expect(r['@type']).toBe('Product')
     expect(r).not.toHaveProperty('offers')
   })
+
+  it('carries a Collective plan Offer for /pricing, priced from the catalog (ADR-1709, LIVE-760)', async () => {
+    const { allOfferings } = await import('./pricing/pricing-grid')
+    const { defaultPricingInput } = await import('./pricing/pricing-page')
+    const input = defaultPricingInput()
+    const offers = allOfferings(input)
+      // The public page quotes the list price; the $99 Founding Collective rate is charged only to granted
+      // Spaces (#3208), so the Offer is the list price.
+      .filter((o) => o.monthlyCents > 0)
+      .map((o) =>
+        productSchema({ title: `Frequency ${o.label}`, priceCents: o.monthlyCents, billingPeriodCode: 'MON', path: '/pricing' }),
+      ) as Record<string, unknown>[]
+    const collective = offers.find((n) => n.name === 'Frequency Collective')
+    expect(collective).toBeTruthy()
+    expect(collective!.offers).toMatchObject({
+      '@type': 'Offer',
+      price: (input.catalog.collective_base.month.listCents / 100).toFixed(2),
+    })
+  })
 })
 
 // ── spaceOfferingsSchema (ItemList of Products) ─────────────────────────────────

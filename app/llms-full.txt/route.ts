@@ -114,19 +114,19 @@ export async function GET() {
     // LIVE-253: "a paid plan buys a lower rate, not permission" got the second half right and the
     // first half backwards, and the paragraph then closed on "that rate drops as your plan rises",
     // so the corpus argued the fee ladder twice. Both halves are PLAN_STORY now.
-    `People join free. Businesses host free. You pay when you start charging. Selling is free on every tier: a free Member and a free Space can sell tickets and take payments and donations from day one. ${PLAN_STORY.paid} ${PLAN_STORY.rate} You keep 100% of your own bookings, always, and tips carry no fee on any rung. We earn only a small take-rate on the business the network sends you, never on what you bring in yourself. Where each rung settles:`,
+    `People join free. Businesses host free. You pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} ${PLAN_STORY.rate} You keep 100% of your own bookings, always, and tips carry no fee on any rung. We earn only a small fee on a customer the network introduces, once, never on what you bring in yourself. Where each rung lands:`,
     ...takeRateLines(offerings),
     '',
     // The walls and the plan each opens at are READ off the gate map (paidWallsPhrase), the same
     // merge /pricing and /llms.txt do, so this line cannot name a plan for a wall the product does
     // not enforce. It used to type "revenue splits (Collective)" for a gate HYG-079 had deleted.
-    `What needs a paid plan, and nothing else does: ${paidWallsPhrase(input.gateOverrides)}. Everything else is a meter with a real free allowance, and a full meter stops new writes without ever hiding, deleting, or locking what is already there.`,
+    `${paidWallsPhrase(input.gateOverrides) === 'nothing' ? PLAN_STORY.selling : `What needs a paid plan: ${paidWallsPhrase(input.gateOverrides)}.`} ${PLAN_STORY.meters}`,
     '',
     'Physical Spaces (Outposts and Frequency Labs) are funded by a separate community-owned vehicle, never out of platform margin.',
     '',
     '### The four promises',
     '',
-    '1. We never take a cut of your own bookings, and we never gate the transaction.',
+    '1. We never take a cut of your own bookings or your tips.',
     '2. One honest price, no surprise invoices.',
     '3. Month to month. Take your data and leave anytime.',
     '4. See exactly what the network earned you.',

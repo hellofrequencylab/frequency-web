@@ -22,13 +22,15 @@
 // Business, so every paid checkout on a free Space or by a personal seller is refused alike.
 //
 // The copy lives in ./payments-copy.ts, a zero-import leaf a client form can read. The plan check is
-// pure; the two async resolvers reach the database through dynamic imports, as gates.ts does.
+// in ./payments-plan.ts (pure, client-safe); the two async resolvers here reach the database through
+// dynamic imports, as gates.ts does.
 
-import { FEATURE_GATES, mergeGate, meetsGate, loadFeatureGateOverrides, type FeatureGateOverrides } from './gates'
+import { loadFeatureGateOverrides } from './gates'
+import { planTakesPayments, type PaymentsChannelGate } from './payments-plan'
 import { PAYMENTS_REFUSAL_PERSONAL, PAYMENTS_REFUSAL_SPACE } from './payments-copy'
 
-/** The gate key, declared in FEATURE_GATES at the Business floor. */
-const PAYMENTS_FEATURE = 'space_payments'
+export { planTakesPayments }
+
 
 /** Who was refused: a personal account (Member or Crew), or a Space below the Business floor. */
 type PaymentsRefusalScope = 'personal' | 'free_space'
@@ -47,25 +49,6 @@ type PaymentsVerdict = { ok: true } | { ok: false; refusal: PaymentsRefusal }
 /** The refusal for a personal seller. Personal selling is off on every personal tier. */
 export function personalPaymentsRefusal(): PaymentsVerdict {
   return { ok: false, refusal: { code: 'payments_plan', scope: 'personal', spaceId: null, message: PAYMENTS_REFUSAL_PERSONAL } }
-}
-
-/** The money surfaces that carry a second, channel-specific floor beside space_payments: a paid
- *  membership tier (space_memberships) and Space shop checkout (space_storefront). */
-type PaymentsChannelGate = 'space_memberships' | 'space_storefront'
-
-/** Does this Space plan clear the payments gate (and the channel's own floor, when named)? Reads the
- *  merged gate (code map plus any operator override), never the grace window. Unknown labels rank
- *  free (default-deny). PURE. */
-export function planTakesPayments(
-  plan: string | null | undefined,
-  overrides: FeatureGateOverrides = {},
-  also?: PaymentsChannelGate,
-): boolean {
-  const gate = mergeGate(PAYMENTS_FEATURE, overrides) ?? FEATURE_GATES[PAYMENTS_FEATURE]!
-  if (!meetsGate(gate, { plan })) return false
-  if (!also) return true
-  const channel = mergeGate(also, overrides)
-  return channel ? meetsGate(channel, { plan }) : true
 }
 
 /**

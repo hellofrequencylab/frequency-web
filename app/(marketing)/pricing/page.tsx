@@ -23,6 +23,8 @@ import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
 import { Reveal } from '@/components/marketing/motion'
 import { PricingComparison } from '@/components/marketing/pricing-comparison'
 import {
+  PricingAudienceScope,
+  PricingAudienceToggle,
   PricingBillingToggle,
   PricingIntervalScope,
 } from '@/components/marketing/pricing-billing-toggle'
@@ -30,7 +32,7 @@ import { getPricingValues } from '@/lib/pricing/settings'
 import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { isBetaPricingActive } from '@/lib/pricing/beta'
 import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
-import { annualDiscountNote, trialNote } from '@/lib/pricing/display'
+import { annualDiscountNote, formatBps, formatCents, trialNote } from '@/lib/pricing/display'
 import {
   memberFeatureGrid,
   memberOfferings,
@@ -91,29 +93,20 @@ async function pricingInput(): Promise<PricingGridInput> {
   }
 }
 
-/** The NETWORK half of an offering's rate line ("5% on network-sourced sales"). The 0%-on-your-own half
- *  is the promise every rung shares, so a sentence that already states it once reads the network half
- *  alone rather than repeating the promise per rung. Read off the offering, never typed. */
-function networkRate(offering: Offering): string {
-  return offering.takeRate.split(', ')[1] ?? offering.takeRate
+/** The network fee on an offering that sells, as a bare figure ("5%"), read off the offering's own
+ *  number. Never typed. */
+function feeFigure(offering: Offering): string {
+  return formatBps(offering.networkRateBps)
 }
 
 /** The COMPACT ladder for a meta description, where length is the constraint: label + price, no beta
- *  prose, no free rung (the sentence before it already says selling is free on every plan). Separate
+ *  prose, no free rung (the sentence before it already says hosting is free). Separate
  *  from `ladderSentence` on purpose — the page has room to explain the beta anchor and a `<meta>` tag
  *  does not, and sharing one string forced the page's fuller phrasing past the SERP cut. */
 function ladderCompact(offerings: Offering[]): string {
   return offerings
     .filter((o) => o.monthlyCents > 0)
     .map((o) => `${o.label} ${o.monthly}`)
-    .join(', ')
-}
-
-/** The plain "<plan> is X, <plan> is Y" ladder sentence, built from the offerings. */
-function ladderSentence(offerings: Offering[]): string {
-  return offerings
-    .filter((o) => o.monthlyCents > 0)
-    .map((o) => `${o.label} is ${o.monthly}${o.listAnchor ? ` at the beta rate, under ${o.listAnchor}` : ''}`)
     .join(', ')
 }
 
@@ -156,7 +149,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** The answer-first FAQ, built from the live model so no answer can quote a stale price. Mirrored into
- *  the FAQPage schema, so the structured data matches the page. */
+ *  the FAQPage schema, so the structured data matches the page. The five-tier ladder (ADR-1709): every
+ *  plan name and figure reads off the offerings and the catalog, every argument off PLAN_STORY. */
 function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
   const spaces = spaceOfferings(input)
   const [member, crew] = memberOfferings(input)
@@ -167,7 +161,11 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     .map((s) => `${s.label} is ${s.monthly}${s.listAnchor ? ` at the beta rate, under ${s.listAnchor}` : ''}: ${s.tagline.toLowerCase()} ${s.forWho}`)
     .join(' ')
   const trial = trialNote(input.values)
-  const rates = spaces.map((s) => `${s.label} ${s.takeRate.split(', ')[1]}`).join(', ')
+  const sellers = spaces.filter((s) => s.sells)
+  const fees = sellers.map((s) => `${s.label} ${feeFigure(s)}`).join(', ')
+  const collective = spaces.find((s) => s.id === 'collective')
+  const extraSpace = input.catalog.collective_space
+  const npCollective = input.catalog.nonprofit_collective
   // The walls are READ off the gate map through the operator's overrides (the same merge the grid
   // does), so the plan each one names is the plan the product enforces, never a typed tier name.
   const walls = paidWalls(input.gateOverrides)
@@ -181,40 +179,56 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
       ? [
           {
             q: 'What is the beta rate, and do I keep it?',
-            a: `Two plans are sold at a beta rate below their list price: ${betaPlans
+            a: `Some plans are sold at a beta rate below their list price: ${betaPlans
               .map((s) => `${s.label} at ${s.monthly} under ${s.listAnchor}`)
               .join(' and ')}. If you subscribe on that rate you keep it for as long as you keep the plan. The other plans have one price, and we do not cross out a number we never charged.`,
           },
         ]
       : []
 
+  const collectiveFaq = collective
+    ? [
+        {
+          q: 'What is Collective?',
+          a: `${PLAN_STORY.collective} It is ${collective.monthly}${extraSpace ? `, and a member Space past the ones included is ${formatCents(extraSpace.month.foundingCents)} a month each` : ''}. Its network fee is ${feeFigure(collective)}, charged the same way as Business: once, on a customer the network introduced.${npCollective ? ` A network of verified nonprofits can take Non Profit Collective at ${formatCents(npCollective.month.foundingCents)} a month, with no network fee.` : ''}`,
+        },
+      ]
+    : []
+
   return [
     {
       q: 'How does Frequency pricing work?',
-      // LIVE-253: this answer used to argue "a plan buys a lower rate plus the tools that build the
-      // list", and described Crew as the same rung "with the caps off". Both are the inverse of the
-      // model. The reason is PLAN_STORY.paid, read from the spine, and the capabilities it names are
-      // read off the gate map; the rate and the ladder follow as the facts they are.
-      a: `People join free. Businesses host free. You pay when you start charging. Nothing about being here costs anything: joining, Circles, events, a Space, a page, a roster. ${PLAN_STORY.paid}${walls.length > 0 ? ` On a Space, that is ${walls.map((w) => w.what).join(', ')}.` : ''} There are two ladders. Membership: ${member!.label} is free forever and already hosts events, takes RSVPs, sells tickets, and takes donations at ${networkRate(member!)}; ${crew!.label} is ${crew!.monthly}, and it is the personal rung for someone selling their own events without running a Space. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
+      a: `${PLAN_STORY.lines} ${PLAN_STORY.ladder} ${PLAN_STORY.paid} There are two lines. For you: ${member!.label} is free forever, and ${crew!.label} is ${crew!.monthly}, contribute what you want. For your Space: ${ladder} ${annualDiscountNote(input.values)}`,
     },
     {
       q: 'Can I run a Space for free?',
-      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your storefront, your page, events, posts, members, a shop, and a place for your people to gather. It sells tickets, takes donations, and sells memberships from day one once payouts are ready, at ${networkRate(spaces[0]!)}. You do not need Crew to run one. No card, no clock.`,
+      a: `Yes, and anyone can. A free Space is a real Space, not a trial: your page, Circles, Events, posts, members, contacts, email, bookings and Journeys, with limits sized for a launch. People can tip you, and we take nothing from tips. When you want to charge for something, that is Business. You do not need Crew to run a Space. No card, no clock.`,
+    },
+    {
+      q: 'Why does selling start at Business?',
+      a: `Because free hosting is the point. Opening a Space, gathering your people and running your Circles and Events should never cost anything. ${PLAN_STORY.selling} When you set a price on a free Space, you see what Business adds and can start its trial right there, or keep the thing free. Nothing you built is lost either way.`,
     },
     {
       q: 'What actually needs a paid plan?',
-      a: `A short list, and we name it plainly. ${walls
-        .map((w) => `${w.what.charAt(0).toUpperCase()}${w.what.slice(1)}: ${w.plan}, because ${w.why}.`)
-        .join(' ')} Everything else is a meter with a real free allowance, and a full meter stops new writes without ever hiding, deleting, or locking what is already there.`,
+      a: walls.length > 0
+        ? `A short list, and we name it plainly. ${walls
+            .map((w) => `${w.what.charAt(0).toUpperCase()}${w.what.slice(1)}: ${w.plan}, because ${w.why}.`)
+            .join(' ')} ${PLAN_STORY.meters}`
+        : `${PLAN_STORY.selling} ${PLAN_STORY.meters}`,
     },
     {
       q: 'What stays free forever?',
-      a: 'The people part, and the transaction. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Taking money never sits behind a plan either: every rung sells tickets and takes donations, and tips carry no fee on any rung. A business never pays for access to people.',
+      a: 'The people part, hosting, and tips. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Opening a Space and running it is free. Tips carry no fee on any tier. A business never pays for access to people.',
     },
     ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
-      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. We earn a share only of a sale the network introduced, a referral or a discovery inside the collective. ${PLAN_STORY.rate} Where each rung settles: ${rates}. Selling as a person rather than a Space needs no plan at all: ${member!.label} sells at ${networkRate(member!)} and ${crew!.label} at ${networkRate(crew!)}. Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again: we charge once for the introduction, and after that they are your people, free.`,
+      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. ${PLAN_STORY.rate}${fees ? ` Where each selling plan lands: ${fees}.` : ''} Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again. We charge once for the introduction.`,
+    },
+    ...collectiveFaq,
+    {
+      q: 'What does Crew get me?',
+      a: `${PLAN_STORY.crew} ${crew!.label} is ${crew!.monthly}, and it lives on your personal upgrade page. Crew does not take payments: selling runs through a Space on Business, which any member can open.`,
     },
     {
       q: 'How do team seats work?',
@@ -222,7 +236,7 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     },
     {
       q: 'What is the Vera AI add-on?',
-      a: `${ai.detail} ${ai.availability} It is ${ai.price}${trial ? `, with a ${trial.toLowerCase().replace(/\.$/, '')}` : ''}.`,
+      a: `${ai.detail} ${ai.availability} It is ${ai.price}${trial ? `, with a ${trial.toLowerCase().replace(/\.$/, '')}` : ''}.${collective ? ' Collective includes it.' : ''}`,
     },
     {
       q: 'Is there a free trial?',
@@ -236,10 +250,7 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     },
     {
       q: 'What happens if I downgrade?',
-      // LIVE-253: "you cannot add past the caps until you upgrade again" turned the downgrade answer
-      // into a second sales pitch for the caps. What a reader needs here is what happens to their
-      // stuff, which is nothing, plus the honest consequence: the parts that charge on a repeat stop.
-      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours, and you go back to the free allowances. What stops is the repeat: an open membership stops billing and no new tier can be sold. You can export your contacts and your data before, during, or after, anytime.',
+      a: 'Nothing disappears. Your contacts, posts, events, and history stay visible and stay yours, and you go back to the free limits. What stops is selling: new paid tickets, memberships and orders need Business again, and tips keep working. You can export your contacts and your data before, during, or after, anytime.',
     },
     {
       q: 'Can I leave and take my people with me?',
@@ -283,16 +294,18 @@ export default async function PricingPage() {
   const members = memberOfferings(input)
   const spaces = spaceOfferings(input)
 
-  // The offerings the DAWN 2 card rows place. Row one is the free trio: the two member rungs (a fixed
-  // pair, ADR-878) and the free Space, which is always the ladder's first rung. Row two is EVERY paid
-  // Space plan in ladder order, read off the model rather than looked up by name, so a plan the owner
-  // takes off the advertised ladder (lib/pricing/display.ts) leaves this page with no edit here, and
-  // a plan added there appears without one.
+  // The offerings the two plan lines place (ADR-1709). The personal line is the fixed pair Member and
+  // Crew (ADR-878). The Space line is the free Space, then every paid plan the advertised ladder names
+  // (lib/pricing/display.ts), read off the model rather than looked up by name. Non Profit sits under
+  // the three main cards as a sibling, not a fourth column: it is Business for verified nonprofits.
   const member = members[0]!
   const crew = members[1]!
-  const spaceFree = spaces[0]!
-  const paidSpaces = spaces.filter((o) => o.monthlyCents > 0)
-  const walls = paidWalls(input.gateOverrides)
+  const spaceMain = spaces.filter((o) => o.id !== 'nonprofit')
+  const nonprofit = spaces.find((o) => o.id === 'nonprofit')
+  // The fee ladder table's rows (every cell read off the offering model). The zero is formatted like
+  // every other rate, never typed: own audience and tips are 0 on every plan.
+  const feeZero = formatBps(0)
+  const feeRows = feeLadderRows(spaces, members)
 
   // 🔴 THE PRICE SCHEMA IS EMITTED ON BOTH BRANCHES, and hoisting it here is the whole point.
   //
@@ -345,7 +358,9 @@ export default async function PricingPage() {
 
   const extras = planExtras(input)
   const faq = pricingFaq(input)
-  const ladder = ladderSentence(spaces)
+  // Where the selling line falls on the Space line: the first card that takes payments. Read off the
+  // payments gate through the offering model, so the line moves if the gate does.
+  const firstSeller = spaceMain.findIndex((o) => o.sells)
 
   return (
     <>
@@ -361,17 +376,17 @@ export default async function PricingPage() {
         image="/images/site/lab-lounge.jpg"
         alt="The connection bar inside The Lab, warm and low-lit"
         focal="object-center"
-        eyebrow="Every plan, side by side"
+        eyebrow="Pricing"
         title={
           <>
-            Your own people are
-            <br className="hidden sm:block" /> <span className="text-primary">always free.</span>
+            Host free.
+            <br className="hidden sm:block" /> <span className="text-primary">Pay when you start charging.</span>
           </>
         }
-        subtitle={`People join free. Businesses host free. You pay when you start charging, and never on your own people: not a follower, not a member, not a contact, not anyone who bought from you before. ${PLAN_STORY.rate} ${ladder}. The grid below is the proof.`}
+        subtitle={`${PLAN_STORY.ladder} Your own people are always free, and so are your tips.`}
       >
         <Button href="/spaces">
-          Start a Space <ArrowRight className="h-5 w-5" />
+          Start a free Space <ArrowRight className="h-5 w-5" />
         </Button>
       </PhotoHero>
 
@@ -383,90 +398,167 @@ export default async function PricingPage() {
         <p className="text-center text-body-lg leading-relaxed text-muted sm:text-lead">{MISSION_FRAMING}</p>
       </Section>
 
-      {/* The CSS that drives the monthly/yearly toggle island: hide the interval the wrapper is not on.
-          The scope wrapper carries data-interval; each price span carries data-interval-show. No client
-          JS in the page itself; the toggle (a client island) only flips the wrapper attribute. */}
+      {/* The CSS behind the two toggle islands: hide the interval and the audience the wrappers are not
+          on. Each wrapper carries a data attribute; each span or panel carries the matching -show
+          attribute. No client JS in the page itself. */}
       <style>{`
         [data-interval='month'] [data-interval-show='year'] { display: none; }
         [data-interval='year'] [data-interval-show='month'] { display: none; }
+        [data-audience='space'] [data-audience-show='personal'] { display: none; }
+        [data-audience='personal'] [data-audience-show='space'] { display: none; }
       `}</style>
 
-      {/* THE PLANS (DAWN 2 structure, design_handoff/dawn/ui_kits/marketing/pricing.html). Two bands
-          instead of two side-by-side ladders. Row one, cream: everything a person starts free, Member ·
-          Crew · Space, with Crew the wide, floating middle card. Row two, ink: the paid Space plans
-          in ladder order, the featured one floating. Every figure AND every plan name reads off the
-          offering model (operator config), never this file; the float reads Offering.featured, so the
-          emphasized card and the model's emphasis cannot disagree. One billing toggle governs both
-          bands, so a reader compares monthly against monthly.
-          The ladder is exactly what lib/pricing/display.ts advertises, so a tier the owner takes off
-          the public ladder leaves this page with no edit here. */}
-      <PricingIntervalScope>
+      {/* THE PLANS (LIVE-759). Best-practice structure: one line at a time behind a "For your Space /
+          For you" toggle (Space first, because that is who reads a pricing page), one recommended card
+          (Business, read off Offering.featured), and the selling line drawn where selling opens (read
+          off Offering.sells, so it follows the payments gate). Every figure and every plan name reads
+          off the offering model; the billing toggle governs both lines. */}
+      <PricingAudienceScope>
+        <PricingIntervalScope>
+          <Section tone="canvas" width="wide">
+            <SectionHeading
+              align="center"
+              eyebrow="The plans"
+              title="Pick the plan that fits."
+              kicker="Two lines. One for the Space you run, one for you as a member. Every line starts free, you can be on both, and a free tier is the real thing rather than a sample of the one above."
+            />
+            <PricingAudienceToggle />
+            <PricingBillingToggle yearlyNote={annualDiscountNote(input.values)} />
+
+            <div data-audience-show="space">
+              {firstSeller > 0 && (
+                <div
+                  aria-hidden
+                  className="mb-3 hidden gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]"
+                >
+                  <p
+                    className="border-b-2 border-border pb-2 text-center text-3xs font-black uppercase tracking-eyebrow text-muted"
+                    style={{ gridColumn: `1 / span ${firstSeller}` }}
+                  >
+                    Host free, tips only
+                  </p>
+                  <p
+                    className="border-b-2 border-primary pb-2 text-center text-3xs font-black uppercase tracking-eyebrow text-primary-strong"
+                    style={{ gridColumn: `${firstSeller + 1} / span ${spaceMain.length - firstSeller}` }}
+                  >
+                    Selling starts here
+                  </p>
+                </div>
+              )}
+              <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+                {spaceMain.map((offering) => (
+                  <PlanCard key={offering.id} offering={offering} />
+                ))}
+              </div>
+              {/* Non Profit, the sibling plan, as one wide row under the main cards. */}
+              {nonprofit && (
+                <div className="mt-6 flex flex-col gap-4 rounded-card border border-border bg-surface p-6 lift-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="max-w-2xl">
+                    <h3 className="font-display uppercase text-text text-page-title">{nonprofit.label}</h3>
+                    <p className="mt-1 text-body-sm font-semibold text-muted">{nonprofit.tagline}</p>
+                    <p className="mt-2 text-body-sm leading-relaxed text-muted">{nonprofit.forWho}</p>
+                  </div>
+                  <div className="shrink-0 sm:text-right">
+                    <PlanPrice offering={nonprofit} />
+                    <PlanCta offering={nonprofit} ink={false} featured={false} />
+                  </div>
+                </div>
+              )}
+              <p className="mx-auto mt-8 max-w-2xl text-center text-body leading-relaxed text-muted">
+                {PLAN_STORY.selling} {PLAN_STORY.meters}
+              </p>
+            </div>
+
+            <div data-audience-show="personal">
+              <div className="stagger mx-auto grid max-w-3xl items-center gap-5 sm:grid-cols-2">
+                <PlanCard offering={member} />
+                <PlanCard offering={crew} />
+              </div>
+              <p className="mx-auto mt-8 max-w-2xl text-center text-body leading-relaxed text-muted">
+                {PLAN_STORY.crew} Neither personal tier takes payments: selling runs through a Space on
+                Business, which any member can open. Tips work on both, with no fee.
+              </p>
+            </div>
+          </Section>
+        </PricingIntervalScope>
+
+        {/* THE FEE LADDER. One table, every row read off the offering model: who takes payments, and
+            what the network fee is on the plans that do. The free and personal rungs stay in the rate
+            vector as default-deny values only, so no row quotes them. */}
+        <Section tone="surface" width="wide">
+          <SectionHeading
+            eyebrow="The network fee"
+            title="We charge once for the introduction."
+            kicker={PLAN_STORY.rate}
+          />
+          {/* Focusable and named, so a keyboard user can scroll the table on a narrow screen. */}
+          <div
+            className="overflow-x-auto rounded-card border border-border bg-surface"
+            tabIndex={0}
+            role="region"
+            aria-label="The network fee on each plan"
+          >
+            <table className="w-full min-w-[36rem] text-left text-body-sm">
+              <caption className="sr-only">The network fee on each plan</caption>
+              <thead className="border-b border-border text-3xs font-black uppercase tracking-eyebrow text-muted">
+                <tr>
+                  <th scope="col" className="px-4 py-3">Plan</th>
+                  <th scope="col" className="px-4 py-3">Takes payments</th>
+                  <th scope="col" className="px-4 py-3">Your own people</th>
+                  <th scope="col" className="px-4 py-3">A customer the network introduces</th>
+                  <th scope="col" className="px-4 py-3">Tips</th>
+                </tr>
+              </thead>
+              <tbody>
+                {feeRows.map((r) => (
+                  <tr key={r.id} className="border-b border-border last:border-0">
+                    <th scope="row" className="px-4 py-3 font-semibold text-text">{r.label}</th>
+                    <td className="px-4 py-3 text-muted">{r.sells ? 'Yes' : 'Tips only'}</td>
+                    <td className="px-4 py-3 text-muted">{r.sells ? feeZero : 'Not applicable'}</td>
+                    <td className="px-4 py-3 font-semibold text-text">{r.fee ? `${r.fee}, once` : 'Not applicable'}</td>
+                    <td className="px-4 py-3 text-muted">{feeZero}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Section>
+
+        {/* THE COMPARISON, following the same toggle as the cards. Every cell is derived from the
+            entitlement key sets, the gates, and the meters, so it cannot drift from the product. */}
         <Section tone="canvas" width="wide">
           <SectionHeading
-            align="center"
-            eyebrow="The plans"
-            title="Pick the plan that fits."
-            kicker="Two ladders. One for you as a member, one for the Space you run. Every rung on both sells, and every rung on both is a real rung rather than a sample of the one above. You can be on both, and you can start on the free rung of either."
+            eyebrow="The full comparison"
+            title="What each plan gets."
+            kicker="Every row below is read from the same rules the product runs on, so this table says what your account will actually do."
           />
-          <PricingBillingToggle yearlyNote={annualDiscountNote(input.values)} />
-          <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
-            <PlanCard offering={member} />
-            <PlanCard offering={crew} />
-            <PlanCard offering={spaceFree} />
-          </div>
-        </Section>
-
-        <Section tone="ink" width="wide" className="spot relative overflow-hidden">
-          <div className="relative z-10">
-            {/* 🔴 THE PAID ARGUMENT IS MONEY, NOT LIMITS (LIVE-253, ADR-1350). This kicker read
-                "The paid plans buy the rate down and lift the caps", which argues that free is the
-                small version of paid. It is not: a free Space is the whole thing, and a plan is
-                what you take when money starts moving through it. The FAQ below has argued it
-                correctly since ADR-916 ("Selling memberships needs Business, because a membership
-                is a recurring promise to another person"); the band a reader meets FIRST says the
-                same thing.
-                The rate tail that used to close this kicker ("every rung down the ladder shrinks
-                what we take") is gone too: it put the fee ladder back in the first sentence a
-                reader of this band meets. The reason is PLAN_STORY.paid, the capabilities are read
-                off the gate map, and the rate has its own line in the paragraph below. */}
-            <SectionHeading
-              tone="ink"
-              align="center"
-              title="For your Space"
-              kicker={`A Space is free for anyone to start. ${PLAN_STORY.paid}${walls.length > 0 ? ` On a Space, that is ${walls.map((w) => w.what).join(', ')}.` : ''}`}
+          <div data-audience-show="space">
+            <ComparisonBlock
+              title="Spaces"
+              kicker="What a Space gets on each plan, from the free Space up."
+              grid={spaceFeatureGrid(input)}
+              offerings={spaces}
+              openId={spaces.find((o) => o.featured)?.id ?? spaces[0]!.id}
             />
-            <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
-              {paidSpaces.map((offering) => (
-                <PlanCard key={offering.id} offering={offering} tone="ink" />
-              ))}
-            </div>
-            {/* ✅ Every sentence in this paragraph is INTERPOLATED from the spine rather than
-                retyped, which is the same rule ADR-916 set for figures and ADR-1350 extends to the
-                argument. `PLAN_STORY.meters` used to read "Paid plans raise the limits" and this
-                comment used to say so; the spine was corrected in #2513 and the note outlived it,
-                which is exactly why the sentences live in one module and not in fourteen.
-                The clause that closed the rate sentence ("and it drops as your plan rises") is now
-                PLAN_STORY.rate, which states the same fact and says plainly that it is not the
-                reason to take a plan. */}
-            <p className="mx-auto mt-10 max-w-2xl text-center text-body leading-relaxed text-on-ink-muted">
-              You pay when you start charging, never to be here.{' '}
-              {annualDiscountNote(input.values)} Never a wall in front of the transaction.{' '}
-              {PLAN_STORY.meters} You keep 100% of your own bookings on every rung.{' '}
-              {PLAN_STORY.rate} Once someone is yours, a follower, one of your members, a contact,
-              or a past buyer, we take nothing on them again. We charge once for the introduction.
-              After that they are your people, free.
-            </p>
+          </div>
+          <div data-audience-show="personal">
+            <ComparisonBlock
+              title="Membership"
+              kicker="What you get as a person, on the free tier and on Crew."
+              grid={memberFeatureGrid(input)}
+              offerings={members}
+              openId={members.find((o) => o.id === 'crew')?.id ?? members[0]!.id}
+            />
           </div>
         </Section>
-      </PricingIntervalScope>
+      </PricingAudienceScope>
 
-      {/* Seats + the AI add-on: the two things you can add to a plan, priced from the same config, and
-          both also rows in the comparison below so the difference between tiers stays visible. */}
-      <Section tone="canvas">
+      {/* Seats + the AI add-on: the two things you can add to a plan, priced from the same config. */}
+      <Section tone="surface">
         <SectionHeading
-          eyebrow="Add to any plan"
+          eyebrow="Add to a plan"
           title="Seats and AI, priced in the open."
-          kicker="Two things ride on top of a plan instead of being one. Neither is a surprise line item, and both show up in the comparison below."
+          kicker="Two things ride on top of a plan instead of being one. Neither is a surprise line item, and both show up in the comparison above."
         />
         <div className="grid gap-4 sm:grid-cols-2">
           {extras.map((extra) => (
@@ -475,50 +567,42 @@ export default async function PricingPage() {
         </div>
       </Section>
 
-      {/* THE COMPARISON. The centerpiece: what every tier actually gets, derived from the entitlement
-          key sets, the feature gates, and the usage ladders, so it cannot drift from the product. */}
-      <Section tone="surface" width="wide">
+      {/* WHO IT'S FOR: the doors, each to its /for page. Teachers and families matches the /for/teachers
+          door (PR #3227). Plan names only, no figures: each door prices itself from the catalog. */}
+      <Section tone="canvas" width="wide">
         <SectionHeading
-          eyebrow="The full comparison"
-          title="What each plan gets."
-          kicker="Every row below is read from the same rules the product runs on, so this table says what your account will actually do."
+          eyebrow="Who it's for"
+          title="Find your door."
+          kicker="The same plans, explained for the people who use them."
         />
-
-        {/* The default-open mobile column is the FEATURED offering (the same flag the cards float and
-            the table emphasizes), so no surface on this page crowns a different plan. */}
-        <ComparisonBlock
-          title="Membership"
-          kicker="What you get as a person, on the free tier and on Crew."
-          grid={memberFeatureGrid(input)}
-          offerings={members}
-          openId={members.find((o) => o.featured)?.id ?? members[0]!.id}
-        />
-
-        <div className="mt-14">
-          <ComparisonBlock
-            title="Spaces"
-            kicker="What a Space gets on each plan, from the free Space up."
-            grid={spaceFeatureGrid(input)}
-            offerings={spaces}
-            openId={spaces.find((o) => o.featured)?.id ?? spaces[0]!.id}
-          />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {WHO_ITS_FOR.map((door) => (
+            <Link
+              key={door.href}
+              href={door.href}
+              className="group rounded-card border border-border bg-surface p-6 lift-1 transition-colors hover:border-primary"
+            >
+              <h3 className="font-display uppercase text-text text-lead">{door.title}</h3>
+              <p className="mt-2 text-body-sm leading-relaxed text-muted">{door.body}</p>
+              <span className="mt-3 inline-flex items-center gap-1 text-body-sm font-semibold text-primary-strong group-hover:underline">
+                See how it works <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+          ))}
         </div>
       </Section>
 
       {/* The value comparison: every Business feature vs the separate tool it replaces, totaled against the
           one flat price. Reads the pure lib/pricing/comparison catalog. */}
-      <Section tone="canvas" width="wide">
+      <Section tone="surface" width="wide">
         <SectionHeading
           eyebrow="What it replaces"
           title="One price. The whole toolbox."
           kicker="Every tool a growing business stitches together, and what each one costs on its own. On Frequency it is one login, one bill, one flat price."
         />
         <PricingComparison />
-        {/* 🔴 THE ORPHAN FIX (LIVE-256). /vs and its five comparison pages are in the sitemap and in
-            llms.txt, and nothing on the site linked to them, so they earned no internal link equity
-            from the one page whose readers are already comparing tools. This is the sensible seat:
-            the reader has just been shown what one plan replaces, and the next honest question is
-            how we differ from the thing they use today. */}
+        {/* 🔴 THE ORPHAN FIX (LIVE-256): the one internal link into /vs from a page whose readers are
+            already comparing tools. */}
         <p className="mt-10 text-center text-body text-muted">
           Already using one of them?{' '}
           <Link href="/vs" className="font-semibold text-primary-strong hover:underline">
@@ -528,10 +612,8 @@ export default async function PricingPage() {
         </p>
       </Section>
 
-      {/* The four brand promises that make it a collective, not a SaaS (ADR-811 §1a). Surface, not
-          canvas: the value comparison above and the Statement below are both canvas, and three canvas
-          bands in a row read as one undifferentiated block. */}
-      <Section tone="surface">
+      {/* The four brand promises that make it a collective, not a SaaS (ADR-811 §1a). */}
+      <Section tone="canvas">
         <SectionHeading
           eyebrow="Four promises"
           title="Why people stay."
@@ -543,8 +625,8 @@ export default async function PricingPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {[
             {
-              title: 'We never take a cut of your bookings.',
-              body: 'You keep 100% of the business you bring in yourself. We earn only on the business the network brings you.',
+              title: 'We never take a cut of your own people.',
+              body: 'You keep 100% of the business you bring in yourself, and every tip. We earn only on a customer the network introduces, once.',
             },
             {
               title: 'One honest price, no surprise invoices.',
@@ -567,17 +649,14 @@ export default async function PricingPage() {
         </div>
       </Section>
 
-      {/* The page's one-line thesis, and now the model's own sentence (LIVE-253). It used to read
-          "You pay for the parts of the business you actually run", which is a usage argument: it
-          invites the reader to work out which parts they use and how much that costs. The line
-          that is actually true is simpler and answers the question in four words. */}
-      <Statement tone="canvas">
+      {/* The page's one-line thesis, and the model's own sentence (LIVE-253). */}
+      <Statement tone="surface">
         You pay when you{' '}
         <span className="text-primary-strong">start charging.</span>
       </Statement>
 
       {/* Earned, not bought: roles never come from a checkout. */}
-      <Section tone="surface">
+      <Section tone="canvas">
         <SectionHeading
           eyebrow="A note on status"
           title="Host, Guide, and Mentor are earned, not bought."
@@ -590,17 +669,63 @@ export default async function PricingPage() {
         </p>
       </Section>
 
-      <Section tone="canvas">
+      <Section tone="surface">
         <SectionHeading eyebrow="Straight answers" title="Questions, answered plainly." />
         <FaqList items={faq} />
       </Section>
 
       <BetaCTA
-        heading="Run your Space on Frequency."
-        body="Keep 100% of your own bookings, and let the collective bring you more. Month to month, your people always yours to export."
+        heading="Open your Space for free."
+        body="Host free for as long as you like. When you are ready to charge, Business is one step away, and your own people stay yours."
       />
     </>
   )
+}
+
+/** The "who it's for" doors. Copy and routes only; each door prices itself from the catalog. */
+const WHO_ITS_FOR: readonly { title: string; body: string; href: string }[] = [
+  {
+    title: 'Coaches and healers',
+    body: 'Sessions, packages and a client list that remembers who to follow up with.',
+    href: '/for/coaches-and-healers',
+  },
+  { title: 'Studios', body: 'Classes, memberships and check-in at the door.', href: '/for/studios' },
+  { title: 'Event hosts', body: 'Events, tickets and a way to reach everyone who came.', href: '/for/event-hosts' },
+  {
+    title: 'Community builders',
+    body: 'Circles, gatherings and the people who keep showing up.',
+    href: '/for/community-builders',
+  },
+  {
+    title: 'Teachers and families',
+    body: 'Classes, homeschool groups and family circles. A free Space holds the calendar, the people and the updates.',
+    href: '/for/teachers',
+  },
+  { title: 'Nonprofits', body: 'Donations, supporters and programs, with no network fee.', href: '/for/nonprofits' },
+]
+
+/** The fee ladder rows: one per Space plan and one for the personal tiers, every cell read off the
+ *  offering model. */
+function feeLadderRows(spaces: Offering[], personal: Offering[]) {
+  return [
+    ...spaces.map((o) => ({
+      id: o.id,
+      label: offeringRowLabel(o),
+      sells: o.sells,
+      fee: o.sells ? feeFigure(o) : null,
+    })),
+    {
+      id: 'personal',
+      label: personal.map((o) => o.label).join(' and '),
+      sells: false,
+      fee: null,
+    },
+  ]
+}
+
+/** A Space offering's label in a flat list: the free Space reads "Free Space" beside the other plans. */
+function offeringRowLabel(o: Offering): string {
+  return o.axis === 'plan' && o.tier === 'free' ? 'Free Space' : o.label
 }
 
 // ── The plan cards (DAWN 2) ──────────────────────────────────────────────────
@@ -637,7 +762,7 @@ function PlanCard({
     <Reveal as="article" className={`relative flex flex-col rounded-card ${shell}`}>
       {featured && (
         <span className="absolute -top-3 left-6 rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
-          Most chosen
+          Recommended
         </span>
       )}
       <h3

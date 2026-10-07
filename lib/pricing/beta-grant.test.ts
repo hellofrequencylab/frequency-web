@@ -229,6 +229,10 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
   it('every Space-plan price a visitor is quoted is the LIST price, exactly and only', () => {
     const { labels, cents } = spacePlanQuotes(WINDOW_SHUT)
     expect(labels).toEqual([
+      '$1,490',
+      '$1,490/yr',
+      '$149', // Collective (ADR-1709), flat
+      '$149/mo',
       '$39', // Non Profit, flat, never had a beta rate
       '$39/mo',
       '$390',
@@ -239,7 +243,7 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
       '$490/yr',
       'Free',
     ])
-    expect(cents).toEqual([0, 3900, 4900, 39000, 49000])
+    expect(cents).toEqual([0, 3900, 4900, 14900, 39000, 49000, 149000])
     // The founding amounts a GRANTED Space might be charged, absent from both sets when flat.
     for (const amount of ['$29/mo', '$290/yr', '$79/mo', '$790/yr', '$29', '$79']) {
       expect(labels, `${amount} is quoted on a public surface`).not.toContain(amount)
@@ -259,7 +263,10 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     expect(labels).toContain('$49/mo')
     expect(labels).toContain('$490/yr')
     expect(cents).toContain(4900)
-    expect(readableTexts(true).some((t) => t.includes('Beta rate'))).toBe(false)
+    // The only beta caption is the Founding Collective rate (owner 2026-10-06), never a Business or
+    // Non Profit one.
+    const captioned = spaceOfferings({ values: PRICING_DEFAULTS, catalog, betaActive: true }).filter((o) => o.betaNote)
+    expect(captioned.map((o) => o.id)).toEqual(['collective'])
   })
 
   it('the surface is byte-identical across a granted and an ungranted world', () => {

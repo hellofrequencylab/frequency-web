@@ -163,12 +163,10 @@ describe('offerings: every sellable tier is on the page', () => {
     }
   })
 
-  it('crowns exactly Crew and Collective (the adopted DAWN 2 reference; no ADR overrides it)', () => {
-    // One featured column per ladder: Crew on the member band, Collective on the Space band, the
-    // "Best choice" pair in design_handoff/dawn/ui_kits/marketing/pricing.html. The page float, the
-    // comparison emphasis, and the default-open mobile column all read THIS flag, so this is the one
-    // place the crown is decided.
-    expect(memberOfferings(input).filter((o) => o.featured).map((o) => o.id)).toEqual(['crew'])
+  it('crowns exactly one card on the page, Business, where selling opens (LIVE-759)', () => {
+    // One recommended card, not a pair: a pricing page that recommends two plans recommends neither.
+    // The page float, the comparison emphasis, and the default-open mobile column all read THIS flag.
+    expect(memberOfferings(input).filter((o) => o.featured).map((o) => o.id)).toEqual([])
     expect(spaceOfferings(input).filter((o) => o.featured).map((o) => o.id)).toEqual(['business'])
   })
 
@@ -211,6 +209,12 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
     const byId = Object.fromEntries(spaceOfferings(open).map((o) => [o.id, o]))
     expect(anchored).toEqual([])
     for (const plan of ADVERTISED_SPACE_PLANS) {
+      // The one exception is the Founding Collective rate (owner 2026-10-06): with the window open,
+      // Collective shows its founding price against the list price it charges once the window shuts.
+      if (plan === 'collective') {
+        expect(byId[plan]!.listAnchor, plan).toBe(formatCents(PRICING_DEFAULTS.plan.collective.list_cents!))
+        continue
+      }
       expect(byId[plan]!.listAnchor, plan).toBeNull()
       expect(byId[plan]!.betaNote, plan).toBeNull()
     }
@@ -299,11 +303,13 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     expect(cellsByColumn(grid, 'crm')).toEqual({
       free: 'Not included',
       business: 'Included',
+      collective: 'Included',
       nonprofit: 'Included',
     })
     expect(cellsByColumn(grid, 'team')).toEqual({
       free: 'Not included',
       business: 'Included',
+      collective: 'Included',
       nonprofit: 'Included',
     })
     // The third separator used to be `whitelabel`, the key that split Independent from Collective.
@@ -312,6 +318,7 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     expect(cellsByColumn(grid, 'space_full_website')).toEqual({
       free: 'Not included',
       business: 'Included',
+      collective: 'Included',
       nonprofit: 'Included',
     })
     expect(grid.groups.flatMap((g) => g.rows).map((r) => r.key)).not.toContain('whitelabel')
@@ -322,11 +329,8 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     const entitlementRows: [string, string][] = [
       ['crm', 'crm'],
       ['crm.playbooks', 'crm.playbooks'],
-      ['email', 'email'],
       ['reporting', 'reporting'],
       ['space_full_website', 'space_full_website'],
-      ['automation', 'automation'],
-      ['multi_pipeline', 'multi_pipeline'],
       ['team', 'team'],
       ['program', 'program'],
     ]
@@ -347,17 +351,32 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     // the columns themselves rather than a hand-listed set, so restoring a tier restores its keys here.
     const rowKeys = new Set(grid.groups.flatMap((g) => g.rows).map((r) => r.key))
     const advertisedKeys = new Set(grid.columns.flatMap((c) => planEntitlementKeys(c.tier as SpacePlan)))
-    const missing = [...advertisedKeys].filter((k) => !rowKeys.has(k))
+    // A key may be shown by the METER row that measures it (the five-tier ladder opened campaigns and
+    // automation to the free Space, so the honest row is the allowance, not a yes/no), and the AI keys
+    // Collective includes are the add-on row. Multiple pipelines are off the page by owner ruling
+    // (2026-10-06) until the feature is built, so that one key is exempt by name.
+    const shownBy: Record<string, string> = {
+      email: 'space_campaigns_month',
+      automation: 'space_automations_active',
+      'crm.resonance': 'addon_ai',
+      'crm.resonance_ai': 'addon_ai',
+    }
+    const offPageByRuling = new Set(['multi_pipeline'])
+    const missing = [...advertisedKeys].filter(
+      (k) => !rowKeys.has(k) && !rowKeys.has(shownBy[k] ?? '') && !offPageByRuling.has(k),
+    )
     expect(missing, 'every key an advertised tier grants needs a grid row').toEqual([])
-    // NON-VACUITY: the set is real and is exactly Business depth (LIVE-228 merged Collective in).
-    expect([...advertisedKeys].sort()).toEqual([...new Set([...BUSINESS_DEPTH_ENTITLEMENT_KEYS])].sort())
+    expect(rowKeys.has('multi_pipeline')).toBe(false)
+    expect(rowKeys.has('space_multi_pipeline')).toBe(false)
+    // NON-VACUITY: the set is real and is exactly Collective depth (Business plus the AI keys).
+    expect([...advertisedKeys].sort()).toEqual([...new Set([...BUSINESS_DEPTH_ENTITLEMENT_KEYS, ...ADDON_ENTITLEMENT_KEYS.ai])].sort())
     // And the one key the advertised ladder does NOT grant is the one that lost its row.
     expect(advertisedKeys.has('whitelabel')).toBe(false)
     expect(INDEPENDENT_DEPTH_ENTITLEMENT_KEYS).toContain('whitelabel')
   })
 
   it('a gate row agrees with the real FEATURE_GATES minimum', () => {
-    for (const feature of ['space_storefront', 'space_collaborators', 'space_membership_tickets']) {
+    for (const feature of ['space_collaborators', 'space_membership_tickets']) {
       const cells = cellsByColumn(grid, feature)
       for (const plan of SHOWN_SPACE_PLANS) {
         const allowed = meetsGate(FEATURE_GATES[feature]!, { plan })
@@ -370,11 +389,17 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     // Pinning the numbers here is how the retired ladder ("Free Space 10%, Collective 3%") survived a
     // rate change: the test restated the very literals it was meant to guard. The row must equal what the
     // config carries, so an owner rate change moves the page and this test together (ADR-913).
+    // Only a plan that takes payments has a fee (ADR-1709); the free Space takes tips only.
     const ladder = networkTakeRateFromStored(PRICING_DEFAULTS.take_rate)
     const cells = cellsByColumn(grid, 'take_rate')
+    const offerings = spaceOfferings(input)
     for (const plan of SHOWN_SPACE_PLANS) {
-      expect(cells[plan], `take_rate @ ${plan}`).toBe(`${networkTakeRateBpsForPlan(plan, ladder) / 100}%`)
+      const sells = offerings.find((o) => o.id === plan)!.sells
+      expect(cells[plan], `take_rate @ ${plan}`).toBe(
+        sells ? `${networkTakeRateBpsForPlan(plan, ladder) / 100}%` : 'Tips only, at 0%',
+      )
     }
+    expect(cells.free).toBe('Tips only, at 0%')
   })
 
   it('holds the model invariants: 5%, 3%, 0%, and the rate only falls as the plan rises', () => {
@@ -416,7 +441,8 @@ describe('seats and the AI add-on', () => {
     const price = formatCents(input.catalog.addon_ai.month.foundingCents)
     expect(cells.free).toBe('Not sold on the free plan')
     for (const plan of ADVERTISED_SPACE_PLANS) {
-      expect(cells[plan]).toBe(`Add-on, ${price}/mo`)
+      // Collective includes Vera AI (its depth carries the add-on keys, ADR-1709).
+      expect(cells[plan]).toBe(plan === 'collective' ? 'Included' : `Add-on, ${price}/mo`)
     }
   })
 
@@ -474,32 +500,22 @@ describe('member grid: Member and Crew on the personal ladder', () => {
     expect(cellsByColumn(grid, 'space')).toEqual({ member: 'Included', crew: 'Included' })
   })
 
-  it('quotes a rate on BOTH member columns, from config, with Crew lower (ADR-914)', () => {
-    // 🔴 WHAT THIS TEST HAS NOW ASSERTED THREE WAYS, and why the history matters. It originally checked
-    // member === crew, which printed the Crew rate under the free header. ADR-913 flipped it to assert
-    // the free column says "Selling is not included". ADR-914 reversed the rule itself: selling is free
-    // on every tier and the ladder IS the rate. So both columns must name a number, and the paid one
-    // must be lower — that is the entire upgrade argument, rendered.
-    const cells = cellsByColumn(grid, 'take_rate')
-    expect(cells.crew).toBe(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
-    expect(cells.member).toBe(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)
-    expect(cells.member).toMatch(/\d%/)
-    expect(PRICING_DEFAULTS.take_rate.member_bps).toBeLessThan(PRICING_DEFAULTS.take_rate.member_free_bps)
+  it('quotes no rate on either member column: personal selling is off, tips are 0% (ADR-1709)', () => {
+    // 🔴 THE FOURTH TURN OF THIS TEST. ADR-913 had the free column say selling was not included,
+    // ADR-914 had both columns sell at a rate, and ADR-1709 turns personal selling off on every
+    // personal tier. The personal rungs stay in the vector as default-deny values, so neither column
+    // may quote them: what a member gets is tips, at 0%.
+    expect(grid.groups.flatMap((g) => g.rows).map((r) => r.key)).not.toContain('take_rate')
+    expect(cellsByColumn(grid, 'tips')).toEqual({ member: 'Included, 0%', crew: 'Included, 0%' })
   })
 
-  it('does not gate selling at all: every member column can sell and take payments', () => {
-    // The two gates that used to drive these cells (`event_paid_tickets`, `personal_payouts`) are
-    // deleted. Asserted on the OUTPUT rather than on the gate map so the page's claim is what is
-    // locked: a reader of /pricing must never be told a tier cannot sell.
-    const cells = cellsByColumn(grid, 'sell_anything')
-    expect(cells.member).toBe('Included')
-    expect(cells.crew).toBe('Included')
+  it('takes no payments on a member column: selling runs through a Space on Business', () => {
+    expect(cellsByColumn(grid, 'payments')).toEqual({ member: 'Tips only', crew: 'Tips only' })
+    expect(grid.groups.flatMap((g) => g.rows).map((r) => r.key)).not.toContain('sell_anything')
   })
 
-  it('🔴 no member column anywhere on the grid says selling is unavailable', () => {
-    // A belt-and-braces sweep over EVERY row, because the old claim lived in three places and was
-    // removed from three places. Any resurrection of a "selling is not included" cell fails here even if
-    // it comes back under a new row key.
+  it('🔴 no member column anywhere on the grid says selling is unavailable in the old words', () => {
+    // The ladder says "tips only", which names what a member DOES get; the bare old refusal stays out.
     for (const r of grid.groups.flatMap((g) => g.rows)) {
       for (const cell of r.cells) {
         expect(cell.text, `row ${r.key}`).not.toMatch(/selling is not included/i)
@@ -507,13 +523,14 @@ describe('member grid: Member and Crew on the personal ladder', () => {
     }
   })
 
-  it('states the rate in both offering lines, and leads with the 0% promise on each', () => {
-    const [member, crew] = memberOfferings(input)
-    expect(member!.takeRate).toContain(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)
-    expect(crew!.takeRate).toContain(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
-    // The promise is identical on every rung, so it must LEAD on every rung. If it read as a paid
-    // feature the model would be misrepresented on the page that sells it.
-    for (const o of memberOfferings(input)) expect(o.takeRate).toMatch(/^0% on your own people/)
+  it('states tips only on both offering lines, with no personal rung quoted', () => {
+    for (const o of memberOfferings(input)) {
+      expect(o.takeRate).toBe('Tips only, at 0%')
+      expect(o.sells).toBe(false)
+      expect(o.networkRateBps).toBe(0)
+      expect(o.takeRate).not.toContain(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)
+      expect(o.takeRate).not.toContain(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
+    }
   })
 })
 

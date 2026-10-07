@@ -12,6 +12,8 @@ import { setMembershipTiers } from '@/lib/spaces/memberships-actions'
 import type { MembershipInterval, MembershipTier } from '@/lib/spaces/memberships'
 import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/icon-button'
+import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
+import { isPaymentsRefusal } from '@/lib/pricing/payments-copy'
 
 // OWNER TIER EDITOR (client). The Business owner defines one or more membership tiers (name, price,
 // interval, description, benefits, active), saved through the canEditProfile-gated setMembershipTiers
@@ -96,10 +98,14 @@ export function MembershipTierForm({
   spaceId,
   slug,
   initialTiers,
+  upgrade,
 }: {
   spaceId: string
   slug: string
   initialTiers: MembershipTier[]
+  /** Present when this Space cannot take payments (LIVE-753): a price on any tier opens the upgrade
+   *  moment (LIVE-758). A free-to-join tier saves either way. */
+  upgrade?: UpgradeMomentSetup
 }) {
   const router = useRouter()
   const [rows, setRows] = useState<TierDraft[]>(() =>
@@ -108,6 +114,16 @@ export function MembershipTierForm({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, startSave] = useTransition()
+  // A price typed on any tier, or a save the payments gate just refused, opens the upgrade moment.
+  const priced = rows.some((r) => (dollarsToCents(r.price) ?? 0) > 0 || (dollarsToCents(r.annualPrice) ?? 0) > 0)
+  const showUpgrade = !!upgrade && (priced || isPaymentsRefusal(error))
+
+  /** "Keep it free": clear every price, keep every name, description, benefit and setting. */
+  function keepFree() {
+    setRows((prev) => prev.map((r) => ({ ...r, price: '', annualPrice: '' })))
+    setError(null)
+    setSaved(false)
+  }
 
   function update(index: number, patch: Partial<TierDraft>) {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)))
@@ -396,7 +412,17 @@ export function MembershipTierForm({
         that same tier. Leave it blank and the tier stays monthly only.
       </p>
 
-      {error && (
+      {showUpgrade && upgrade && (
+        <UpgradeMoment
+          surface="membership"
+          target={upgrade.target}
+          offer={upgrade.offer}
+          onKeepFree={keepFree}
+          onUpgraded={() => setError(null)}
+        />
+      )}
+
+      {error && !(showUpgrade && isPaymentsRefusal(error)) && (
         <p className="rounded-card bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>

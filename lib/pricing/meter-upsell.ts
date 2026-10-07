@@ -31,7 +31,6 @@ import {
   type FeatureMeterStep,
   type MeterPeriod,
 } from './feature-meters'
-import { formatBps } from './display'
 import type { GateAxis } from './gates'
 import { isSpacePlanLabel } from './plans'
 import {
@@ -121,25 +120,14 @@ function haveSentence(used: number, cap: number, unit: string, period: MeterPeri
   return `${verb} ${n} ${countedUnit(used, unit)}${periodPhrase(period)}. ${currentLabel} carries ${c}${perPeriod(period)}.`
 }
 
-/** The sentence naming WHAT CHANGES: the cap lift, then the rate improvement (§2, the rate is the
- *  ladder now). The rate clause is dropped when the two rungs pay the same rate or either is unknown,
- *  so the copy never claims a saving that is not real. PURE. */
-function changeSentence(
-  next: FeatureMeterStep,
-  unit: string,
-  period: MeterPeriod,
-  currentBps: number | null,
-  nextBps: number | null,
-): string {
-  const lift =
-    next.allowance == null
-      ? `${next.label} makes that unlimited`
-      : `${next.label} raises that to ${next.allowance.toLocaleString('en-US')} ${countedUnit(next.allowance, unit)}${perPeriod(period)}`
-  const rateMoves =
-    typeof currentBps === 'number' && typeof nextBps === 'number' && nextBps < currentBps
-  return rateMoves
-    ? `${lift}, and takes your rate on network-sourced sales from ${formatBps(currentBps!)} to ${formatBps(nextBps!)}.`
-    : `${lift}.`
+/** The sentence naming WHAT CHANGES: the room the next rung carries, and nothing else. It used to add
+ *  "and takes your rate from X to Y", which is the buy-down argument ADR-1350 retired; on the five-tier
+ *  ladder (ADR-1709) the free and personal rungs do not sell at all, so a rate "drop" would quote a
+ *  number nobody is charged. PURE. */
+function changeSentence(next: FeatureMeterStep, unit: string, period: MeterPeriod): string {
+  return next.allowance == null
+    ? `${next.label} makes that unlimited.`
+    : `${next.label} raises that to ${next.allowance.toLocaleString('en-US')} ${countedUnit(next.allowance, unit)}${perPeriod(period)}.`
 }
 
 /** The standing promise. Stated in the AFFIRMATIVE on purpose: a meter never deletes, hides, or locks
@@ -200,9 +188,6 @@ export function buildMeterUpsell(input: MeterUpsellInput): MeterUpsellCopy | nul
     .find((step) => step.allowance == null || step.allowance > current.allowance!)
   if (!next) return null
 
-  const currentBps = meterRateBps(ladder.axis, current.tier, input.rates)
-  const nextBps = meterRateBps(ladder.axis, next.tier, input.rates)
-
   return {
     featureKey: input.featureKey,
     dimension: ladder.dimension,
@@ -213,7 +198,7 @@ export function buildMeterUpsell(input: MeterUpsellInput): MeterUpsellCopy | nul
       ladder.period,
       current.label,
     ),
-    change: changeSentence(next, ladder.unit, ladder.period, currentBps, nextBps),
+    change: changeSentence(next, ladder.unit, ladder.period),
     promise: METER_UPSELL_PROMISE,
     nextLabel: next.label,
   }

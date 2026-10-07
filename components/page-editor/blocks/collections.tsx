@@ -1034,21 +1034,22 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           ctaLabel: 'Start free', ctaHref: '/sign-in', ctaStyle: 'secondary',
         },
         {
-          name: 'Crew', price: 'Free', strikePrice: '', cadence: 'during beta',
-          priceNote: 'Contribute what you want, from $4.99/mo, when paid memberships launch',
-          tagline: 'Full access. The whole room is yours.', highlight: 'featured', badge: 'founder',
-          features: [{ text: 'Full community feed access' }, { text: 'Join and participate in circles' }, { text: 'Create and RSVP to events' }],
-          ctaLabel: 'Join the Beta', ctaHref: '/beta', ctaStyle: 'primary',
+          // Crew is contribute what you want (ADR-1084, ADR-1709). No figure is typed here: a block
+          // default is outside the catalog, so the amount lives on /upgrade, which reads it.
+          name: 'Crew', price: 'Your pick', strikePrice: '', cadence: '/mo',
+          priceNote: 'Contribute what you want. Every amount buys the same Crew.',
+          tagline: 'Back the community, host a little more.', highlight: 'featured', badge: 'none',
+          features: [{ text: 'More Circles, Events and Journeys of your own' }, { text: 'A monthly Boost for a Circle or Space' }, { text: 'Vera, unlimited' }],
+          ctaLabel: 'Join Crew', ctaHref: '/upgrade', ctaStyle: 'primary',
         },
         {
-          // ADR-811 retired the "pay-it-forward" money model (a tier that funds someone else's
-          // membership). The sanctioned opt-in mission tier is the Founding Steward, and the
-          // sanctioned register is "back the build" (CONTENT-VOICE §1a).
-          name: 'Founding Steward', price: '$25+', strikePrice: '', cadence: '/mo',
-          priceNote: 'When paid memberships launch',
-          tagline: 'Back the build.', highlight: 'normal', badge: 'none',
-          features: [{ text: 'Everything in Crew, full access' }, { text: 'Back the build of what comes next' }],
-          ctaLabel: 'Join the Beta', ctaHref: '/beta', ctaStyle: 'secondary',
+          // The third way in is the free Space: hosting is free, and selling starts at Business
+          // (ADR-1709). It replaced a "Founding Steward" card that typed its own price.
+          name: 'Space', price: 'Free', strikePrice: '', cadence: 'forever',
+          priceNote: 'Selling starts at Business, when you are ready to charge.',
+          tagline: 'Host free. The whole thing.', highlight: 'normal', badge: 'none',
+          features: [{ text: 'Your page, Circles, Events and contacts' }, { text: 'Tips, with no fee' }],
+          ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
         },
       ],
       footnote: '',

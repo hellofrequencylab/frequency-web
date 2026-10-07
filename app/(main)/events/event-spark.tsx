@@ -21,6 +21,7 @@
 // Duplicate-event prefill (`initial` + `startInManual`). Degrades cleanly when Vera is off.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { UpgradeOffer, UpgradeTarget } from '@/lib/pricing/business-offer'
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
@@ -207,6 +208,8 @@ export function EventSpark({
   home,
   payoutsReadyByScope,
   payoutSelfByScope,
+  paymentsRefusedByScope,
+  upgradeOffer,
 }: {
   groups: Group[]
   journeys?: JourneyOption[]
@@ -222,6 +225,10 @@ export function EventSpark({
   /** Pass-through to EventForm's price control (PROG-R5): is the CALLER the payee for each scope.
    *  This component never reads it. */
   payoutSelfByScope?: Record<string, boolean>
+  /** Pass-through to EventForm's upgrade moment (LIVE-758). This component never reads it. */
+  paymentsRefusedByScope?: Record<string, UpgradeTarget>
+  /** Pass-through to EventForm's upgrade moment (LIVE-758). */
+  upgradeOffer?: UpgradeOffer
 }) {
   const router = useRouter()
   const [mode, setMode] = useState<'wizard' | 'manual'>(startInManual ? 'manual' : 'wizard')
@@ -285,6 +292,8 @@ export function EventSpark({
         home={home}
         payoutsReadyByScope={payoutsReadyByScope}
         payoutSelfByScope={payoutSelfByScope}
+        paymentsRefusedByScope={paymentsRefusedByScope}
+        upgradeOffer={upgradeOffer}
       />
     )
 

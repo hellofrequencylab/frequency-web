@@ -16,3 +16,15 @@ export const PAYMENTS_BUYER_REFUSAL = 'This isn’t on sale right now. Ask the h
 export function isPaymentsRefusal(message: string | null | undefined): boolean {
   return message === PAYMENTS_REFUSAL_SPACE || message === PAYMENTS_REFUSAL_PERSONAL
 }
+
+/** What Business adds, as the upgrade moment lists it (LIVE-758). Capabilities only: the price is
+ *  read from the catalog by the panel's server loader (lib/pricing/business-offer.ts), never typed. */
+export const BUSINESS_ADDS: readonly string[] = [
+  'Paid tickets, paid memberships, and donations',
+  'Shop checkout and booking deposits',
+  'Higher limits on the tools you already use',
+  'Nothing taken on your own audience, and a small fee only when the network brings you a customer',
+]
+
+/** The equal choice beside the trial. Tips stay open on every plan, with no fee. */
+export const KEEP_IT_FREE_LINE = 'Guests can still send you tips, and nothing is taken from them.'

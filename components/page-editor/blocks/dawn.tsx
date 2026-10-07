@@ -1646,7 +1646,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
       // because `.paid` is the sentence that was being retyped: the band's plan cards already carry
       // the live rate, and ending a plan band on the rate is the framing ADR-1350 decision 2 retired.
       kicker:
-        'Two ladders. One for you as a member, one for the Space you run. Every rung on both sells. ' +
+        'Two lines. One for you as a member, one for the Space you run. ' +
         PLAN_STORY.paid,
       plans: [
         {
@@ -1667,30 +1667,30 @@ export const dawnComponents: Record<string, ComponentConfig> = {
         {
           livePriceKey: 'crew',
           name: 'Crew',
-          tagline: 'The whole member experience, at a price you pick.',
+          tagline: 'Back the community, host a little more.',
           price: '',
           strikePrice: '',
           yearly: '',
           billing: 'Monthly or yearly.',
           trial: '',
-          forWho: 'Members who want unlimited Vera, Gems and Vault cash-in, and the tools that build a list.',
+          forWho: 'Members who want to back Frequency and host more on their own: more Circles, Events and Journeys, and a monthly Boost. Contribute what you want.',
           rate: '',
-          featured: 'featured',
+          featured: 'normal',
           ctaLabel: 'Join Crew',
           ctaHref: '/upgrade',
         },
         {
           livePriceKey: 'free',
           name: 'Space',
-          tagline: 'Put your business on the map.',
+          tagline: 'Host free. The whole thing.',
           price: 'Free',
           strikePrice: '',
           yearly: '',
           billing: 'Free forever. No card.',
           trial: '',
-          forWho: 'Anyone standing something up, for as long as they want. No card, no clock.',
+          forWho: 'Anyone opening a Space: every business tool with launch-sized limits, and tips with no fee. Selling starts at Business.',
           rate: '',
-          featured: 'normal',
+          featured: 'featured',
           ctaLabel: 'Start a Space',
           ctaHref: '/spaces',
         },
