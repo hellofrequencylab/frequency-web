@@ -58,10 +58,24 @@ describe('routeSiteHost', () => {
     })
   })
 
-  it('sends deeper paths to the same path on Frequency', () => {
-    const route = routeSiteHost('danieltyack.com', '/spaces/danieltyack/book', '')
-    expect(route.kind).toBe('redirect')
-    expect(route.kind === 'redirect' && route.location.endsWith('/spaces/danieltyack/book')).toBe(true)
+  // Owner ruling 2026-10-07 (ADR-1723): "When a user is on the website, they should never be re directed
+  // back to the main site for anything." A deeper path stays on the site or is not found there.
+  it('lands a Space path on the site page it stands for, never on Frequency', () => {
+    expect(routeSiteHost('danieltyack.com', '/spaces/danieltyack/book', '?a=1')).toEqual({
+      kind: 'redirect',
+      location: 'https://danieltyack.com/book?a=1',
+      permanent: false,
+    })
+    expect(routeSiteHost('danieltyack.com', '/spaces/danieltyack', '')).toEqual({
+      kind: 'redirect',
+      location: 'https://danieltyack.com/',
+      permanent: false,
+    })
+  })
+
+  it('answers any other deeper path with not found on the site', () => {
+    expect(routeSiteHost('danieltyack.com', '/events/abc', '')).toEqual({ kind: 'not-found' })
+    expect(routeSiteHost('danieltyack.com', '/spaces/danieltyack/book/extra', '')).toEqual({ kind: 'not-found' })
   })
 })
 
@@ -72,8 +86,8 @@ describe('the internal /hosted route on Frequency (LIVE-784)', () => {
     expect(routeSiteHost('frequencylocal.com', '/hostedx', '')).toEqual({ kind: 'none' })
   })
 
-  it('sends /hosted on a site host off to Frequency, where it 404s', () => {
-    expect(routeSiteHost('danieltyack.com', '/hosted/other.com', '').kind).toBe('redirect')
+  it('404s /hosted on a site host, on the site itself', () => {
+    expect(routeSiteHost('danieltyack.com', '/hosted/other.com', '')).toEqual({ kind: 'not-found' })
   })
 })
 
@@ -179,11 +193,11 @@ describe('the free website subdomain (LIVE-782)', () => {
     expect(routeSiteHost(h, '/sitemap.xml', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}/site-sitemap` })
   })
 
-  it('sends deeper paths and /hosted on the subdomain to Frequency', () => {
+  it('keeps deeper paths and /hosted on the subdomain on the site', () => {
     const h = 'danieltyack.frequencylocal.com'
     const deep = routeSiteHost(h, '/spaces/danieltyack/book', '?x=1')
-    expect(deep).toEqual({ kind: 'redirect', location: 'https://frequencylocal.com/spaces/danieltyack/book?x=1', permanent: false })
-    expect(routeSiteHost(h, '/hosted/other.com', '').kind).toBe('redirect')
+    expect(deep).toEqual({ kind: 'redirect', location: `https://${h}/book?x=1`, permanent: false })
+    expect(routeSiteHost(h, '/hosted/other.com', '')).toEqual({ kind: 'not-found' })
   })
 
   it('leaves reserved subdomains and an APP_HOSTS override as the app', () => {

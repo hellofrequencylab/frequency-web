@@ -71,11 +71,13 @@ export async function proxy(request: NextRequest) {
 
   // A SPACE WEBSITE ON ITS OWN DOMAIN (customDomain, PROG-E10 phase 2). Any host that is not one of
   // Frequency's own never reaches the app below: no session read, no attribution cookie, no tenancy.
-  // Its pages rewrite to the /hosted site route and anything deeper goes to the same path on
-  // Frequency. A few string compares, no database call (lib/sites/host.ts).
+  // Its pages rewrite to the /hosted site route; a deeper Space path lands on the site's own page and
+  // anything else deeper 404s there, never sending a visitor to Frequency (ADR-1723). A few string
+  // compares, no database call (lib/sites/host.ts).
   const site = routeSiteHost(request.headers.get('host'), pathname, request.nextUrl.search, APP_HOSTS)
   if (site.kind === 'redirect') return NextResponse.redirect(site.location, site.permanent ? 308 : 307)
-  // The internal site route asked for directly on Frequency's host: never a second copy of a site.
+  // The internal site route asked for directly on Frequency's host (never a second copy of a site), or a
+  // path a website does not have.
   if (site.kind === 'not-found') return new NextResponse('Not found', { status: 404 })
   if (site.kind === 'rewrite') {
     const url = request.nextUrl.clone()
