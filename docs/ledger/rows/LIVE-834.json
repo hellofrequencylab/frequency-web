@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-834",
+  "title": "A Space website's Book and other owner links stay on the website, never Frequency",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/sites/house-theme.ts",
+    "ref": "Owner ruling 2026-10-07: 'When a user is on the website, they should never be re directed back to the main site for anything. The website is stand alone.' ADR-1723."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: on a Space website every Book button (header, hero, start card, session cards, closing band, the Contact form's thank-you) opened frequencylocal.com/spaces/<slug>/book, which asks the visitor to sign in to Frequency. THE FIX: siteLocalHref maps the Space's own Frequency paths onto the site (root to Home, a page to that page, Book and Contact to the site's Contact form, else a mail link) and drops any other Frequency path. FOLLOW-UPS: on-site booking for guests; unthemed blocks on custom pages; the host router's deep-path redirect.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const h=fs.readFileSync('components/sites/house-home.tsx','utf8');const p=fs.readFileSync('components/sites/site-page.tsx','utf8');if(/spaceBase\\}\\/book/.test(h)||/appHref\\(b\\.buttonUrl/.test(h)||/appHref\\(resolved\\.href/.test(p)||!/siteLocalHref\\(resolved\\.href, links\\)/.test(p)){console.error('LIVE-834: a website Book or owner link still points at Frequency');process.exit(1)}\"",
+    "note": "Fails on main (Book links to Frequency); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
