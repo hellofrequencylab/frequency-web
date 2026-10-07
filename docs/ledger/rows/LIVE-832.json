@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-832",
+  "title": "A Space website carries its Contact form as a themed message section and a Contact page with the owner's profile, every message landing in the CRM",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/sites/house-home.tsx",
+    "ref": "Owner ask 2026-10-07: 'Make sure I have a contact form on the main page all tied in, as well as a contact page with more info about me. Do a profile over there', and 'The contact functions need to be fully integrated with the CRM. we built a block for this.' Follows LIVE-830."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: the house website theme (LIVE-830) had no place for the Contact form block, so a form placed on Home fell into an unthemed band, and a website had no Contact page at all (contact is a reserved slug, so the owner could not make one). The Space Contact tab showed the form and hours but nothing about the person. THE FIX: the planner gives `contactForm` its own message section, drawn with the same CRM-wired form (submitContactForm writes the lead and emails the owner); the thank-you offers the Space's header button. Once the form is on Home, the website serves /contact: a profile from the About block (its heading and text, the Zigzag photo, the facts), the form, and the closing band with the contact details; the header gains a Contact link and the sitemap lists it. The Space Contact tab gains the same profile. Every word is the Space's own field. The `*accent*` marks drop on the Space page (withoutAccentMarks), since Daniel's live headings now carry them.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const t=r('lib/sites/house-theme.ts');const h=r('components/sites/house-home.tsx');const p=r('components/sites/site-page.tsx');const c=r('app/(main)/spaces/[slug]/(profile)/contact/page.tsx');if(!/id === 'contactForm'\\) section = \\{ kind: 'inquiry'/.test(t))miss.push('the website drops the Contact form into an unthemed band');if(!/ContactFormBlock \\{\\.\\.\\.block\\.form\\} variant=.house./.test(r('components/sites/house-sections.tsx')))miss.push('the website message section does not use the CRM-wired form');if(!/export function buildHouseContact\\(/.test(h)||!/contactPage \\? buildHouseContact\\(/.test(p))miss.push('the website has no Contact page');if(!/SITE_CONTACT_SLUG/.test(r('lib/sites/hosted-crawl.ts')))miss.push('the Contact page is missing from the sitemap');if(!/aboutBody\\.map/.test(c))miss.push('the Space Contact tab has no profile');if(!/withoutAccentMarks/.test(r('lib/spaces/hero-config.ts')))miss.push('the Space page shows the accent asterisks');if(miss.length){console.error('LIVE-832: '+miss.join('; '));process.exit(1)}\"",
+    "note": "Fails on main (no message section, no website Contact page); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

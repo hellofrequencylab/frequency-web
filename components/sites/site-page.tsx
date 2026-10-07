@@ -4,8 +4,9 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
 import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
-import { appHref } from '@/lib/sites/house-theme'
-import { buildHouseHome, HouseHome } from '@/components/sites/house-home'
+import { appHref, SITE_CONTACT_SLUG, siteHasContactPage } from '@/lib/sites/house-theme'
+import { buildHouseContact, buildHouseHome, HouseHome } from '@/components/sites/house-home'
+import { HouseBlock } from '@/components/sites/house-sections'
 import { getSiteSpace } from '@/lib/sites/site-cache'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
@@ -66,7 +67,9 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
   if (!readWebsitePublished(space.preferences)) {
     return { title: `${brandName} website coming soon`, robots: { index: false } }
   }
-  const page = readProfilePages(space.preferences).find((p) => p.slug === pageSlug)
+  const page =
+    readProfilePages(space.preferences).find((p) => p.slug === pageSlug) ??
+    (pageSlug === SITE_CONTACT_SLUG && siteHasContactPage(space.preferences) ? { slug: SITE_CONTACT_SLUG, label: 'Contact' } : null)
   if (!page) return { title: { absolute: brandName }, robots: { index: false } }
   const title = page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`
   const description = space.tagline?.trim() || undefined
@@ -120,7 +123,9 @@ export async function SitePage({
     )
   }
 
-  if (!hasPage(space.preferences, pageSlug)) notFound()
+  const hasContact = siteHasContactPage(space.preferences)
+  const contactPage = pageSlug === SITE_CONTACT_SLUG && hasContact
+  if (!contactPage && !hasPage(space.preferences, pageSlug)) notFound()
 
   // Stamp the tenant so any block that resolves its rows from the active Space reads THIS one, the same
   // line the public page carries.
@@ -134,6 +139,7 @@ export async function SitePage({
   const pageLinks = pages
     .filter((p) => p.slug !== HOME_SLUG)
     .map((p) => ({ href: siteHref(siteBase, p.slug), label: p.label }))
+  if (hasContact) pageLinks.push({ href: siteHref(siteBase, SITE_CONTACT_SLUG), label: 'Contact' })
 
   // Home is the house theme (components/sites/house-home.tsx) over the operator's own Home blocks; a
   // custom page renders its own page doc the way the profile renders it, inside the same chrome.
@@ -149,6 +155,7 @@ export async function SitePage({
         renderRow: (row) => <SpaceProfileModules space={toProfileContext(space)} grid={row} />,
       })
     : null
+  const contactModel = contactPage ? buildHouseContact({ space, grid: profileGrid(space.preferences), origin, cta }) : null
   const links = [...(model?.nav ?? []), ...pageLinks]
 
   return (
@@ -164,6 +171,13 @@ export async function SitePage({
       >
         {model ? (
           <HouseHome model={model} />
+        ) : contactModel ? (
+          <>
+            <h1 className="sr-only">Contact {brandName}</h1>
+            {contactModel.blocks.map((b, i) => (
+              <HouseBlock key={b.key} block={b} first={i === 0} />
+            ))}
+          </>
         ) : (
           <div className={`${SITE_CONTAINER} pb-16 pt-28 sm:pb-24`}>
             <h1 className="hs-h2">{pages.find((p) => p.slug === pageSlug)?.label ?? brandName}</h1>

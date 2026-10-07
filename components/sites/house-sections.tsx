@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { accentSegments } from '@/lib/sites/house-theme'
+import { ContactFormBlock, type ContactFormBlockProps } from '@/components/spaces/contact-form-block'
 
 // THE HOUSE WEBSITE THEME'S SECTIONS (components/sites, owner ask 2026-10-07). PRESENTATIONAL: every word,
 // image and link arrives in the model, resolved from the Space's own blocks and data by house-home.tsx. This
@@ -100,6 +101,16 @@ export type HouseBlockModel =
         email: string | null
         links: HouseLink[]
       } | null
+    }
+  | {
+      kind: 'inquiry'
+      key: string
+      anchor: string | null
+      eyebrow: string | null
+      title: string | null
+      body: string[]
+      /** The Contact form block's own settings, passed through to the CRM-wired form. */
+      form: Omit<ContactFormBlockProps, 'eyebrow' | 'title' | 'body' | 'variant'>
     }
   | { kind: 'other'; key: string; node: ReactNode }
 
@@ -468,6 +479,22 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
                 </div>
               )}
             </div>
+          </div>
+        </section>
+      )
+    case 'inquiry':
+      return (
+        <section id={block.anchor ?? undefined} className={`hs-section${top}`}>
+          <div className="hs-split" style={{ alignItems: 'start' }}>
+            <div className="hs-stack">
+              <Heading eyebrow={block.eyebrow} title={block.title} />
+              {block.body.map((p, i) => (
+                <p key={i} className="hs-lead">
+                  {p}
+                </p>
+              ))}
+            </div>
+            <ContactFormBlock {...block.form} variant="house" />
           </div>
         </section>
       )
