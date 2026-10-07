@@ -1,19 +1,19 @@
-import { Check, ShieldCheck, Globe } from 'lucide-react'
+import { Check, ShieldCheck, Globe, Users } from 'lucide-react'
 import { SPACE_PLAN_LABEL, type SpacePlan } from '@/lib/pricing/plans'
 import { spacePlanPriceCents, SPACE_PLAN_PRICE_CENTS } from '@/lib/pricing/feature-tiers'
 import { formatCents } from '@/lib/pricing/display'
 import { isBetaPricingActive } from '@/lib/pricing/beta'
 import { ChoosePlanButton } from './choose-plan'
 
-// THE COMMUNITY COLLECTIVE plan ladder (Phase 4, ADR-811) — the tier map on the Space billing surface.
-// It shows where a Space sits in the collective and what each rung is for, leading with the promise that
-// matters most: you keep 100% of what you bring in; we earn only on the business the network sends you, at
-// a rate that drops as the tier rises (buying down your rate, never a wall).
+// THE COMMUNITY COLLECTIVE plan ladder — the tier map on the Space billing surface, on the five-tier
+// ladder (ADR-1709). It shows where a Space sits and what each rung is for, leading with the promise
+// that matters most: hosting is free, selling starts at Business, and you keep 100% of what you bring
+// in. The network fee is an introduction fee on the plans that sell, never a reason to take a plan.
 //
-// GO-LIVE (ADR-811): Collective, the one higher flat rung the checkout sells self-serve (gated on
-// billingLive + its per-plan switch), carries an inline Choose action for a FREE Space; Business keeps its
-// richer CTA below (GoBusinessCta, with the seat picker). A rung whose switch is still OFF reads "Coming
-// soon", truthful, not a dark pattern. Prices come from the ONE placeholder map (feature-tiers), never
+// Business carries the inline Choose action for a FREE Space (gated on billingLive + its per-plan
+// switch) and keeps its richer CTA below (GoBusinessCta, with the seat picker). Collective is the rung
+// above it for groups of groups: "Available" once its per-plan switch is on, else "Coming soon",
+// truthful, not a dark pattern. Prices come from the ONE placeholder map (feature-tiers), never
 // hardcoded here. Non Profit points at the existing verify flow. No em dashes (CONTENT-VOICE §10); plain,
 // no hype, no guilt. Beta anchors resolve through SPACE_PLAN_PRICE_CENTS (feature-tiers), the ONE source
 // shared with the marketing pricing page, so they never drift between the two surfaces. (This note used
@@ -34,12 +34,17 @@ const RUNGS: Rung[] = [
   {
     plan: 'business',
     icon: Check,
-    blurb: 'Run the practice: contacts, campaigns, CRM, tickets, memberships, automations, two seats, and Collaborator hosting.',
+    blurb: 'Selling starts here: paid tickets, memberships, donations, your shop and booking deposits. Higher limits, your own website, two seats, and Collaborator hosting.',
+  },
+  {
+    plan: 'collective',
+    icon: Users,
+    blurb: 'For groups of groups: member Spaces under one account, each with the Business tools, more seats, and Vera AI included.',
   },
   {
     plan: 'nonprofit',
     icon: ShieldCheck,
-    blurb: 'The full Business toolkit for verified 501(c)(3) organizations.',
+    blurb: 'Everything Business does, for verified 501(c)(3) organizations, with no network fee.',
   },
 ]
 
@@ -70,9 +75,14 @@ const STATE_CHIP: Record<RungState, { label: string; className: string }> = {
  *  Business's live CTA lives below (always "available"); Collective is "available" once its per-plan
  *  switch is on (else "Coming soon"); Non Profit is by verification. Independent is never "available":
  *  it is sold by hand (LIVE-227), and it only ever reaches this function as the Space's current plan. */
-function rungState(plan: SpacePlan, currentPlan: SpacePlan): RungState {
+function rungState(
+  plan: SpacePlan,
+  currentPlan: SpacePlan,
+  sellable: Partial<Record<SpacePlan, boolean>>,
+): RungState {
   if (plan === currentPlan) return 'current'
   if (plan === 'business') return 'available'
+  if (plan === 'collective') return sellable.collective ? 'available' : 'soon'
   if (plan === 'nonprofit') return 'verify'
   return 'soon'
 }
@@ -128,14 +138,14 @@ export function PlanLadder({
       </h2>
       {/* The promise, stated plainly (CONTENT-VOICE §1a, brand promise #1 + #4). No guilt, no hype. */}
       <p className="mt-1 text-body-sm leading-relaxed text-muted">
-        Everything is included. Paid plans raise the limits, and you keep 100% of what you bring in. We
-        earn only on the business the network sends you, at a rate that drops as your plan rises. A paid
-        plan buys down that rate.
+        Hosting is free, with every tool on launch-sized limits and tips at no fee. Selling starts at
+        Business. You keep 100% of what you bring in, and we earn only on a customer the network
+        introduces, once.
       </p>
 
       <ul className="mt-4 space-y-2.5">
         {rungs.map((rung) => {
-          const state = rungState(rung.plan, currentPlan)
+          const state = rungState(rung.plan, currentPlan, sellable)
           const chip = STATE_CHIP[state]
           const Icon = rung.icon
           // A FREE Space gets a one-click Choose on the one sellable higher flat rung (Collective).

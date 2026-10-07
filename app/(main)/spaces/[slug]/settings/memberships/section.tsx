@@ -24,6 +24,8 @@ import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { GateNotice } from '@/components/ui/gate-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 import type { Space } from '@/lib/spaces/types'
+import type { UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
+import { loadUpgradeOffer } from '@/lib/pricing/business-offer'
 
 // MEMBERSHIPS section BODY (extracted from memberships/page.tsx so the unified Offerings surface can
 // compose it as one stacked section). The route + auth gate stays on the caller (the Offerings page).
@@ -87,6 +89,12 @@ export async function MembershipsSection({
   if (!canCharge) {
     const wall =
       featureWallLabel('space_memberships', await loadFeatureGateOverrides()) ?? SPACE_PLAN_LABEL.business
+    // THE UPGRADE MOMENT (LIVE-758): a price typed on any tier opens it inside the editor, with the
+    // Business trial in place for the owner and "Keep it free" beside it. The tiers stay as typed.
+    const upgrade: UpgradeMomentSetup = {
+      target: { spaceSlug: space.slug, canUpgrade: !!viewerProfileId && space.ownerProfileId === viewerProfileId },
+      offer: await loadUpgradeOffer(),
+    }
     return (
       <div className="space-y-8">
         <MembershipWallNotice wall={wall} slug={space.slug} canManageMembers={caps.canManageMembers} />
@@ -96,7 +104,7 @@ export async function MembershipsSection({
           usage={tiers.length}
           upgradeHref={`/spaces/${space.slug}/settings/billing`}
         />
-        <MembershipTierForm spaceId={space.id} slug={space.slug} initialTiers={tiers} />
+        <MembershipTierForm spaceId={space.id} slug={space.slug} initialTiers={tiers} upgrade={upgrade} />
         <section>
           <SectionHeader title="Members" />
           <Suspense fallback={<MembersSkeleton />}>
@@ -210,7 +218,7 @@ function MembershipWallNotice({
         here. That is why it comes with {wall} and not with a free Space.
       </p>
       <p>
-        A free-to-join tier stays open on every plan, and so do tips.
+        A free membership tier and tips are open on every plan.
         {canManageMembers ? '' : ' Ask an admin about the plan for this space.'}
       </p>
     </GateNotice>

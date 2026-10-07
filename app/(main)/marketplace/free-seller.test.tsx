@@ -46,6 +46,9 @@ vi.mock('@/lib/ai/listing-copy', () => ({ draftListingCopy }))
 vi.mock('./../market/sell/product-spark', () => ({ ProductSpark: () => null }))
 // The page resolves the maker's Connect prompt (LIVE-537); that is two admin reads and not this file's
 // subject. lib/billing/connect-prompt.test.tsx pins the seam.
+vi.mock('@/lib/pricing/business-offer', () => ({
+  loadUpgradeOffer: vi.fn().mockResolvedValue({ sellable: false, trialDays: 14, monthlyCents: null }),
+}))
 vi.mock('@/lib/billing/payout-prompt-resolve', () => ({ resolveProfilePayoutPrompt: vi.fn().mockResolvedValue(null) }))
 // The governed create layer (ADR-988, ADR-1249) has its own test; here the commit passes straight
 // through so the assertion stays "createProduct was called for a free member". The layer's real

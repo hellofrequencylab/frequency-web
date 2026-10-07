@@ -11,6 +11,8 @@ import { listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { getConnectReadyMap } from '@/lib/billing/connect'
 import { PAYOUT_SCOPE_SELF } from '@/lib/events/ticket-eligibility'
+import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
+import { loadUpgradeOffer, type UpgradeTarget } from '@/lib/pricing/business-offer'
 import { defaultEventHostSpaceId } from '@/lib/events/default-host-space'
 import { getSpacePlan } from '@/lib/calendar/plans-store'
 import { getCalendarEntryRow } from '@/lib/calendar/entries-store'
@@ -317,6 +319,45 @@ export default async function NewEventPage({
     if (payeeId === profile.id) payoutSelfByScope[scopeKey] = true
   }
 
+  // WHO MAY TAKE PAYMENTS, PER SCOPE (LIVE-753, LIVE-758). A personal event never may; a Space or a
+  // Circle inside one may when that Space is on Business or above. Each refused scope carries who the
+  // upgrade moment speaks to: the Space's slug, and whether the caller owns it (only the owner can
+  // start the trial). One read over the distinct Spaces; the gate reads its own overrides.
+  const paymentsRefusedByScope: Record<string, UpgradeTarget> = {
+    [PAYOUT_SCOPE_SELF]: { spaceSlug: null, canUpgrade: false },
+  }
+  const scopeSpace = new Map<string, string>()
+  for (const sp of spaces) scopeSpace.set(sp.id, sp.id)
+  for (const c of circles) {
+    if (c.space_id && c.space_id !== root) scopeSpace.set(c.id, c.space_id)
+    else paymentsRefusedByScope[c.id] = { spaceSlug: null, canUpgrade: false }
+  }
+  const scopeSpaceIds = [...new Set(scopeSpace.values())]
+  const { data: scopeSpaceRows } = scopeSpaceIds.length
+    ? await admin.from('spaces').select('id, slug, plan, owner_profile_id').in('id', scopeSpaceIds)
+    : { data: [] }
+  const spaceRowById = new Map(
+    ((scopeSpaceRows ?? []) as { id: string; slug: string; plan: string | null; owner_profile_id: string | null }[]).map(
+      (r) => [r.id, r],
+    ),
+  )
+  const takesPayments = new Map(
+    await Promise.all(
+      scopeSpaceIds.map(
+        async (id) => [id, await spaceCanTakePayments(id, { plan: spaceRowById.get(id)?.plan ?? null })] as const,
+      ),
+    ),
+  )
+  for (const [scopeKey, spaceId] of scopeSpace) {
+    if (takesPayments.get(spaceId)) continue
+    const row = spaceRowById.get(spaceId)
+    paymentsRefusedByScope[scopeKey] = {
+      spaceSlug: row?.slug ?? null,
+      canUpgrade: !!row && row.owner_profile_id === profile.id,
+    }
+  }
+  const upgradeOffer = await loadUpgradeOffer()
+
   // Duplicate flow (`?duplicate=<id>`): clone a source event into a prefilled manual form,
   // skipping Vera's wizard. The prefill is null when the source is missing or the viewer
   // lacks edit rights on it (same gate as editing), in which case we fall back to a fresh
@@ -469,6 +510,8 @@ export default async function NewEventPage({
         home={viewerHome}
         payoutsReadyByScope={payoutsReadyByScope}
         payoutSelfByScope={payoutSelfByScope}
+        paymentsRefusedByScope={paymentsRefusedByScope}
+        upgradeOffer={upgradeOffer}
       />
     </>
   )

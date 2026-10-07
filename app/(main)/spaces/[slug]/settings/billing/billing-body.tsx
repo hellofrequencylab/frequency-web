@@ -101,6 +101,7 @@ export async function BillingBody({ slug }: { slug: string }) {
     earnings,
     contactCount,
     manualAgreement,
+    collectiveSellable,
   ] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
@@ -122,6 +123,8 @@ export async function BillingBody({ slug }: { slug: string }) {
     // one is active, the surface shows its receipt card and hides the Stripe portal button (there
     // is no Stripe subscription behind a cash deal). Fail-safe null: no agreement, nothing shown.
     activeAgreementForSpace(space.id),
+    // Collective reads its own sell switch (plan_collective_enabled), for the ladder chip only.
+    spaceLoadoutSellable('collective'),
   ])
 
   const isPaid = currentPlan !== 'free'
@@ -139,8 +142,8 @@ export async function BillingBody({ slug }: { slug: string }) {
   // The old "you'd have saved $X on Business" nudge is RETIRED (ADR-811): it applied the take-rate delta
   // to a Space's WHOLE processed volume, which now misstates the promise (we take 0% on a Space's own
   // bookings; the rate applies only to network-sourced business). The honest, per-dollar "the network
-  // earned you $X" readout is the Phase 5 receipt; here the PlanLadder carries the buy-down-your-rate
-  // framing instead. No stale total-volume dollar claim.
+  // earned you $X" readout is the Phase 5 receipt; here the PlanLadder carries the ladder's promise
+  // (hosting is free, selling starts at Business, ADR-1709). No stale total-volume dollar claim.
 
   return (
     <>
@@ -190,15 +193,15 @@ export async function BillingBody({ slug }: { slug: string }) {
           </div>
         )}
 
-        {/* The Community Collective ladder (ADR-811): where this Space sits + the buy-down-your-rate
-            promise. A free Space gets a one-click Choose on the sellable higher flat rung (Collective);
-            Business keeps its richer CTA below. Each action is gated server-side. Independent is sold by
-            hand and is not offered here, so no sellable flag is resolved for it (LIVE-227). */}
+        {/* The Community Collective ladder (ADR-1709): where this Space sits + the promise (hosting is
+            free, selling starts at Business). A free Space gets a one-click Choose on Business; Business
+            keeps its richer CTA below. Collective reads its sell switch. Each action is gated
+            server-side. Independent is sold by hand and is not offered here (LIVE-227). */}
         <PlanLadder
           currentPlan={currentPlan}
           slug={space.slug}
           isFree={!isPaid && !staffViewing}
-          sellable={{ business: businessSellable }}
+          sellable={{ business: businessSellable, collective: collectiveSellable }}
         />
 
         {/* The honest receipt (Phase 5, ADR-811 §A): the real dollars the network sourced, proving promise
@@ -282,8 +285,8 @@ export async function BillingBody({ slug }: { slug: string }) {
           />
         )}
 
-        {/* Non Profit is the verified-501(c)(3) sibling plan (ADR-811): the full Collective toolkit at a
-            flat monthly price, never per seat. The self-serve verification flow (ADR-552, AUDIT #6) lives
+        {/* Non Profit is the verified-501(c)(3) sibling plan (ADR-811): everything Business does, with
+            no network fee, at a flat monthly price, never per seat. The self-serve verification flow (ADR-552, AUDIT #6) lives
             at settings/billing/verify: the owner submits their EIN + legal name, an operator reviews it,
             and approval grants the Non Profit plan. We show the current request status if one exists,
             otherwise the "get verified" invite. */}
@@ -291,8 +294,8 @@ export async function BillingBody({ slug }: { slug: string }) {
           <p className="text-body-sm font-semibold text-text">Non Profit</p>
           {verification?.status === 'verified' ? (
             <p className="mt-0.5 text-meta leading-relaxed text-muted">
-              Verified 501(c)(3). This space is eligible for the Non Profit plan: the full Collective
-              toolkit at one flat monthly price, never per seat.
+              Verified 501(c)(3). This space is eligible for the Non Profit plan: everything Business
+              does, with no network fee, at one flat monthly price, never per seat.
             </p>
           ) : verification?.status === 'pending' ? (
             <p className="mt-0.5 text-meta leading-relaxed text-muted">
@@ -304,8 +307,8 @@ export async function BillingBody({ slug }: { slug: string }) {
             </p>
           ) : (
             <p className="mt-0.5 text-meta leading-relaxed text-muted">
-              Verified 501(c)(3) organizations get the full Collective toolkit at one flat monthly price,
-              never per seat.{' '}
+              Verified 501(c)(3) organizations get everything Business does, with no network fee, at one
+              flat monthly price, never per seat.{' '}
               <a href={`/spaces/${space.slug}/settings/billing/verify`} className="font-semibold text-primary-strong underline">
                 {verification?.status === 'rejected' ? 'Submit a new request' : 'Get verified'}
               </a>

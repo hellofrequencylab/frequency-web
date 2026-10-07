@@ -154,30 +154,20 @@ describe('the copy rules', () => {
     }
   })
 
-  it('names the RATE improvement as well as the cap lift', () => {
+  it('names the cap lift and never a rate (ADR-1350 retired the buy-down, ADR-1709 the free rungs)', () => {
     // The cap lift (free 250 -> Business 5,000, ADR-1709).
     expect(crm.change).toContain('5,000 contacts')
-    // The rate, both rungs, read from config (free 10% -> Business 5%).
-    expect(crm.change).toContain('network-sourced')
-    expect(crm.change).toContain(`${PRICING_DEFAULTS.take_rate.network_bps.free / 100}%`)
-    expect(crm.change).toContain(`${PRICING_DEFAULTS.take_rate.network_bps.paid / 100}%`)
+    // No rate at all: the free Space and the personal tiers take tips only, so "your rate drops" would
+    // quote a number nobody is charged.
+    expect(crm.change).not.toContain('network-sourced')
+    expect(crm.change).not.toMatch(/\d%/)
   })
 
-  it('names the rate on the PERSONAL axis too (free Member 10% -> Crew 8%)', () => {
+  it('names no rate on the PERSONAL axis either', () => {
     const circles = buildMeterUpsell({ featureKey: 'circle_host', currentTier: 'free', usage: 1, rates })!
-    expect(circles.change).toContain(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)
-    expect(circles.change).toContain(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
-  })
-
-  it('drops the rate clause rather than inventing one when the rate does not move', () => {
-    const flat: MeterRateLadder = {
-      network_bps: { ...rates.network_bps, paid: rates.network_bps.free },
-      member_free_bps: rates.member_free_bps,
-      member_bps: rates.member_bps,
-    }
-    const copy = buildMeterUpsell({ featureKey: 'space_crm', currentTier: 'free', usage: 212, rates: flat })!
-    expect(copy.change).not.toContain('network-sourced')
-    expect(copy.change).toContain('5,000 contacts')
+    expect(circles.change).not.toContain(`${PRICING_DEFAULTS.take_rate.member_free_bps / 100}%`)
+    expect(circles.change).not.toContain(`${PRICING_DEFAULTS.take_rate.member_bps / 100}%`)
+    expect(circles.change).toContain('Crew')
   })
 
   it('promises 0% on your own people and never hints at deletion', () => {

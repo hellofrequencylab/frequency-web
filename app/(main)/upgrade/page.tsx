@@ -4,10 +4,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Zap, Check, MessageSquare, Users, Star, Radio, BarChart3, ArrowRight } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
-import { getPricingValues, billingLive } from '@/lib/pricing/settings'
+import { billingLive } from '@/lib/pricing/settings'
 import { memberTierSellable } from '@/lib/pricing/settings'
 import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
-import { formatBps, formatCents } from '@/lib/pricing/display'
+import { formatCents } from '@/lib/pricing/display'
+import { PLACEHOLDER_METER_LIMITS } from '@/lib/pricing/meter-limits'
 import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
 import { memberMeterUsage } from '@/lib/pricing/member-meter-usage'
 import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
@@ -76,8 +77,7 @@ export default async function UpgradePage({
   //
   // crewSellable is billingLive() AND the tier switch: false while billing is OFF, so the page degrades
   // to the beta toggle. The catalog config carries the PWYW amounts.
-  const [values, catalog, crewSellable, chargingLive] = await Promise.all([
-    getPricingValues(),
+  const [catalog, crewSellable, chargingLive] = await Promise.all([
     loadCatalogConfig(),
     memberTierSellable('crew'),
     billingLive(),
@@ -106,17 +106,16 @@ export default async function UpgradePage({
   // member earns, spends and competes. The Crew pitch must stop naming what everyone now gets, or it
   // is selling something the buyer already has.
   //
-  // 🔴 THE RATE LEADS, AND IT IS DERIVED (ADR-914). This page is the member-facing half of /pricing and
-  // used not to mention the rate at all, which left the two surfaces selling different products: the
-  // marketing page said the ladder IS the rate, and the actual upgrade screen listed a badge and some
-  // Gems. Selling is free on every tier now, so the single most concrete reason a member upgrades is
-  // that their fee on network-sourced sales drops. It is read from the same config /pricing renders, so
-  // an operator edit moves both, and the phrasing matches that page word for word.
-  const rateLine =
-    `Your fee on network-sourced sales drops from ${formatBps(values.take_rate.member_free_bps)} ` +
-    `to ${formatBps(values.take_rate.member_bps)}. Your own people stay 0%, as they are on every tier.`
+  // 🔴 THE HOST KIT LEADS, AND IT IS DERIVED (ADR-1709). Personal selling is off on every personal
+  // tier now, so a fee line here would sell something Crew does not do. What Crew adds is room to host:
+  // more Circles, more upcoming Events, bigger guest lists and more Journeys. The numbers are read from
+  // the meter map, so a limit change moves this line with no copy edit.
+  const L = PLACEHOLDER_METER_LIMITS
+  const hostLine =
+    `Host more: ${L.circle_host.crew} Circles, ${L.event_create.crew} upcoming Events with up to ` +
+    `${L.event_guests.crew} guests, and ${L.journey_publish.crew} Journeys`
   const benefits = [
-    { icon: BarChart3, label: rateLine },
+    { icon: BarChart3, label: hostLine },
     { icon: Radio, label: 'Branded QR codes, short links, and print-ready flyers for what you run' },
     { icon: MessageSquare, label: 'Vera without the daily cap' },
     { icon: Star, label: 'The Crew badge on your profile' },
@@ -127,7 +126,7 @@ export default async function UpgradePage({
     <FocusTemplate
       width="narrow"
       title="Membership"
-      description="Belonging is free, and stays free. Crew is the personal tier: a lower fee on network sales, the badge, and a way to back the community."
+      description="Belonging is free, and stays free. Crew is the personal tier: contribute what you want, back the community, and get room to host more."
     >
       {/* Beta banner, shown while billing is off, which is exactly when the beta toggle works. */}
       {betaOpen && (
@@ -158,7 +157,7 @@ export default async function UpgradePage({
             <Zap className="w-7 h-7 text-on-primary" />
           </div>
           <p className="text-page-title font-bold text-on-primary mb-1">Join the Crew</p>
-          <p className="text-primary-bg/80 text-body-sm">The personal tier: a lower fee, your badge, and backing the community so it stays free for everyone</p>
+          <p className="text-primary-bg/80 text-body-sm">The personal tier: back the community and host more</p>
           {/* PWYW (ADR-908): Crew has no single price to headline, so the hero states the FLOOR and
               the picker below carries the choice. Never render a struck-through anchor here: there is
               no list price to discount against when the member sets the amount. */}

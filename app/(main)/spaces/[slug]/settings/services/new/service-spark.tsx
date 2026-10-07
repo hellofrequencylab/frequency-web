@@ -23,6 +23,7 @@ import { CommerceSpark, type SparkDraft } from '@/components/studio/commerce/com
 import { SERVICE_MANIFEST } from '@/lib/studio/entities/service'
 import { createSpaceProductAction, draftListingCopyAction } from '../../shop/shop-actions'
 import type { ServicePriceModel } from '@/lib/commerce/types'
+import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 
 /** Read a dotted path off the draft as text. */
 function text(draft: SparkDraft, path: string): string {
@@ -51,11 +52,15 @@ export function ServiceSpark({
   spaceId,
   spaceName,
   payoutPrompt,
+  upgrade,
 }: {
   slug: string
   spaceId: string
   spaceName: string
   payoutPrompt: PayoutPrompt | null
+  /** Present when this Space cannot take payments (LIVE-753). A fixed or "from" price opens the
+   *  upgrade moment under the fields (LIVE-758); the service still saves as an enquiry listing. */
+  upgrade?: UpgradeMomentSetup
 }) {
   const router = useRouter()
 
@@ -136,6 +141,23 @@ export function ServiceSpark({
         return null
       }}
       cancel={{ label: 'Back to the Shop', href: `/spaces/${slug}/settings/shop?tab=catalog` }}
+      draftAside={(draft, set) => {
+        const model = asPriceModel(text(draft, 'metadata.service.priceModel'))
+        const priced = (model === 'fixed' || model === 'from') && (num(draft, 'priceCents') ?? 0) > 0
+        if (!upgrade || !priced) return null
+        return (
+          <UpgradeMoment
+            surface="booking"
+            target={upgrade.target}
+            offer={upgrade.offer}
+            // Keep it free: the service books at no charge. Name, photos, details and duration stay.
+            onKeepFree={() => {
+              set('metadata.service.priceModel', 'free')
+              set('priceCents', null)
+            }}
+          />
+        )
+      }}
     />
   )
 }
