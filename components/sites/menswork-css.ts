@@ -33,7 +33,7 @@ ${M}{--hs-serif:var(--mw-display);--hs-sans:var(--mw-body);--mw-edge:var(--color
 html:has(${M}),body:has(${M}){background:var(--mw-charcoal)}
 ${M} ::selection{background:var(--color-primary);color:var(--color-text-on-primary)}
 ${M} :focus-visible{outline:2px solid var(--color-focus-ring);outline-offset:2px}
-${M} main [class*="rounded"]:not([class*="rounded-f"]){border-radius:2px}
+${M} main [class*="rounded"]:not([class*="ded-full"]){border-radius:2px}
 ${M} main [class*="shadow"]{box-shadow:none}
 
 ${M} .hs-serif,${M} .hs-h1,${M} .hs-h2,${M} .hs-brand{${DISPLAY}}
