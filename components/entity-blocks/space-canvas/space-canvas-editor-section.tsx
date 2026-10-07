@@ -2,6 +2,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
+import { layoutRendersSame } from '@/lib/entity-blocks/layout-equal'
 import { SpaceCanvasEditorMount } from './space-canvas-editor-mount'
 
 // THE SERVER SECTION that gates + seeds the on-canvas WYSIWYG Space editor. Mirrors OwnerSpaceLayoutPreview's
@@ -37,9 +38,23 @@ export async function SpaceCanvasEditorSection({ slug }: { slug: string }) {
 
   const rows = resolveRows(saved, 'space')
 
+  // PUBLISH FROM HERE (LIVE-842). This editor autosaves to the draft node, so without the publish bar an
+  // owner could set a photo here and never see it on the page or the website. Same gate as
+  // OwnerSpaceLayoutPreview (only a manager can publish); the draft counts as unpublished only when it
+  // renders differently from the live node.
+  const hasUnpublishedChanges =
+    canManage &&
+    !!prefsObj &&
+    Object.prototype.hasOwnProperty.call(prefsObj, 'profileLayoutDraft') &&
+    !layoutRendersSame(prefsObj.profileLayoutDraft ?? null, prefsObj.profileLayout ?? null, 'space')
+  const profilePublished = !prefsObj || prefsObj.profilePublished !== false
+
   return (
     <SpaceCanvasEditorMount
       slug={slug}
+      canPublish={canManage}
+      hasUnpublishedChanges={hasUnpublishedChanges}
+      profilePublished={profilePublished}
       rows={rows}
       hidden={saved?.hidden ?? []}
       content={saved?.content ?? {}}

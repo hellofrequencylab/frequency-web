@@ -23,6 +23,7 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { profileBlockById, type ProfileBlockId } from '@/lib/spaces/profile-blocks'
 import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { layoutRendersSame } from '@/lib/entity-blocks/layout-equal'
+import { refreshSite } from '@/lib/sites/site-cache'
 import { sanitizeBlockContent } from '@/lib/entity-blocks/block-content'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { getIntakeBySpaceId } from '@/lib/importer/store'
@@ -206,6 +207,8 @@ export async function publishSpaceProfileLayout(slug: string): Promise<{ error?:
 
   revalidatePath(`/spaces/${space.slug}`)
   revalidatePath(`/spaces/${space.slug}/profile-preview`)
+  // The website renders the published layout too (LIVE-842): without this it kept the old page for up to an hour.
+  refreshSite(space.slug)
   return {}
 }
 
