@@ -12,6 +12,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+
+- **"Did you make it?" the day after a gathering.** Everyone who said yes gets one note: tap yes and the Host knows you came. It shows when the group meets next, with a link to bring a friend. Guests without an account also get a button to join free and keep their RSVP.
+- **Finishing something shows one next step.** The end of a Mindless session, an RSVP made with just an email, and a Circle you just published each show one link, picked by how you found Frequency, toward the next gathering.
+- **Booking pages and receipts carry a small Made with Frequency line.** It sits at the foot of a Space's booking page, the customer's booking confirmation, and a shop order receipt, and links home.
+- **A 5-minute breathing timer anyone can use without an account.** It lives at /mindless, saves nothing, and ends by asking "Same time tomorrow?", which leads to a free account.
+- **Signup and Space creation ask "How did you hear about us?"** It is one optional pick, skippable, kept with your account or Space and never sent to ad or analytics tools.
 - **Five new help guides.** Start with something to do, Just the timer, What Crew keeps free, Hosting with kids, and Teaching across studios. Each one is in the help center and linked from the guides around it.
 - **Joining asks one optional follow-up.** After you say who you are, you can pick the line that sounds most like you, like "I'm new around here" or "I teach at a few studios." It only changes what we show you first, it never appears on your profile, and it's never sent to advertisers. Skip it if you like.
 - **Vera's first hello fits why you came.** If you host, she starts you on one Circle. If you practice, she points you to a free Space. Everyone else gets the usual tour.
