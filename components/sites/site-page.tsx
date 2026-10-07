@@ -4,14 +4,14 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
 import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
-import { appHref, SITE_CONTACT_SLUG, siteHasContactPage } from '@/lib/sites/house-theme'
+import { appHref, SITE_CONTACT_SLUG, siteHasContactPage, withoutAccentMarks } from '@/lib/sites/house-theme'
 import { buildHouseContact, buildHouseHome, HouseHome } from '@/components/sites/house-home'
 import { HouseBlock } from '@/components/sites/house-sections'
 import { getSiteSpace } from '@/lib/sites/site-cache'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { hasPage, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
-import { readWebsitePublished } from '@/lib/spaces/website'
+import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceLanding } from '@/components/spaces/space-landing'
@@ -28,6 +28,8 @@ import type { Space } from '@/lib/spaces/types'
 import { appOrigin } from '@/lib/sites/host'
 import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
+import { JsonLd } from '@/components/json-ld'
+import { siteEntitySchema } from '@/lib/jsonld'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). The Space's own website, served on its
 // free subdomain (`<slug>.frequencylocal.com`, LIVE-782), on its own domain once connected, and at
@@ -72,7 +74,7 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
     (pageSlug === SITE_CONTACT_SLUG && siteHasContactPage(space.preferences) ? { slug: SITE_CONTACT_SLUG, label: 'Contact' } : null)
   if (!page) return { title: { absolute: brandName }, robots: { index: false } }
   const title = page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`
-  const description = space.tagline?.trim() || undefined
+  const description = siteDescription(space, brandName, page.slug)
   const canonical = sitePageUrl(siteBaseUrl(space.slug, await boundSiteDomain(space), appOrigin()), page.slug)
   const shareImage = space.coverImageUrl || space.brandLogoUrl || null
   const images = shareImage ? [{ url: shareImage, alt: brandName }] : undefined
@@ -157,11 +159,20 @@ export async function SitePage({
     : null
   const contactModel = contactPage ? buildHouseContact({ space, grid: profileGrid(space.preferences), origin, cta }) : null
   const links = [...(model?.nav ?? []), ...pageLinks]
+  // The site's own entity, on its own origin: the root layout only carries Frequency's Organization.
+  const entity = siteEntitySchema({
+    type: space.type,
+    name: brandName,
+    url: siteBaseUrl(space.slug, await boundSiteDomain(space), origin),
+    description: siteDescription(space, brandName, HOME_SLUG) ?? null,
+    images: [space.coverImageUrl, space.brandLogoUrl],
+  })
 
   return (
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the
     // owner's accent and faces rather than the default Frequency look.
     <AccentScope vars={accentVars} theme={theme}>
+      <JsonLd data={entity} />
       <SiteChrome
         brandName={brandName}
         homeHref={homeHref}
@@ -191,6 +202,15 @@ export async function SitePage({
       </SiteChrome>
     </AccentScope>
   )
+}
+
+/** A site page's meta description: the website intro (the line the hero leads with), else the Space
+ *  tagline. The Contact page says it is the way to reach the brand, so it never repeats Home's. */
+function siteDescription(space: Space, brandName: string, pageSlug: string): string | undefined {
+  const intro = readSiteHero(space.preferences).tagline ?? space.tagline?.trim() ?? ''
+  const line = intro ? withoutAccentMarks(intro) : ''
+  if (pageSlug === SITE_CONTACT_SLUG) return line ? `Contact ${brandName}. ${line}` : `Contact ${brandName}.`
+  return line || undefined
 }
 
 /** The Space's own header button (preferences.headerCta, else its type's default), with its target made

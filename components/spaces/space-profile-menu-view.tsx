@@ -87,7 +87,7 @@ export function SpaceProfileMenuView({
       // Padding stays as the resting size; min-block-size only ever raises.
       //
       'shrink-0 whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors tap-target',
-      active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text',
+      active ? 'bg-primary-bg text-text' : 'text-muted hover:bg-surface-elevated hover:text-text',
     )
 
   return (

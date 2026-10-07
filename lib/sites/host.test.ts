@@ -78,14 +78,18 @@ describe('the internal /hosted route on Frequency (LIVE-784)', () => {
 })
 
 describe("a site host's crawler files (LIVE-783)", () => {
-  it('rewrites robots.txt and sitemap.xml to the hosted crawler routes', () => {
+  it('rewrites robots.txt, sitemap.xml and llms.txt to the hosted crawler routes', () => {
     expect(routeSiteHost('danieltyack.com', '/robots.txt', '')).toEqual({
       kind: 'rewrite',
       pathname: '/hosted/danieltyack.com/robots.txt',
     })
     expect(routeSiteHost('danieltyack.com', '/sitemap.xml', '')).toEqual({
       kind: 'rewrite',
-      pathname: '/hosted/danieltyack.com/sitemap.xml',
+      pathname: '/hosted/danieltyack.com/site-sitemap',
+    })
+    expect(routeSiteHost('danieltyack.com', '/llms.txt', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/danieltyack.com/site-llms',
     })
   })
 
@@ -111,7 +115,7 @@ describe("a site host's crawler files (LIVE-783)", () => {
     // The source spells each backslash twice (a TS string literal); the runtime value has one.
     const asSource = APP_HOST_PATTERN.split('\\').join('\\\\')
     expect(config).toContain(`value: '${asSource}'`)
-    expect(config).toContain(`source: '/(robots\\\\.txt|sitemap\\\\.xml)'`)
+    expect(config).toContain(`source: '/(robots\\\\.txt|sitemap\\\\.xml|llms\\\\.txt)'`)
   })
 })
 
@@ -172,7 +176,7 @@ describe('the free website subdomain (LIVE-782)', () => {
     expect(routeSiteHost(h, '/', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}` })
     expect(routeSiteHost(h, '/about', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}/about` })
     expect(routeSiteHost(h, '/robots.txt', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}/robots.txt` })
-    expect(routeSiteHost(h, '/sitemap.xml', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}/sitemap.xml` })
+    expect(routeSiteHost(h, '/sitemap.xml', '')).toEqual({ kind: 'rewrite', pathname: `/hosted/${h}/site-sitemap` })
   })
 
   it('sends deeper paths and /hosted on the subdomain to Frequency', () => {
