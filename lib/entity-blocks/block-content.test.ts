@@ -118,7 +118,10 @@ describe('fieldsForBlock', () => {
     // Every data block edits its REAL eyebrow + title (item 3); About/Story add a body (ADR-542); a
     // function-backed block adds a data-source picker (ADR-573 item 5).
     expect(fieldsForBlock('contact').map((f) => f.key)).toEqual(['eyebrow', 'title'])
-    expect(fieldsForBlock('offerings').map((f) => f.key)).toEqual(['eyebrow', 'title', 'items'])
+    // Offerings also names its booking button, and Memberships carries its own words (the house website
+    // theme draws them, owner ask 2026-10-07: every word on the site is a field).
+    expect(fieldsForBlock('offerings').map((f) => f.key)).toEqual(['eyebrow', 'title', 'items', 'ctaLabel'])
+    expect(fieldsForBlock('memberships').map((f) => f.key)).toEqual(['eyebrow', 'title', 'body', 'ctaLabel', 'quote', 'note'])
     expect(fieldsForBlock('about').map((f) => f.key)).toEqual(['eyebrow', 'title', 'body'])
     expect(fieldsForBlock('nope')).toEqual([])
   })
@@ -131,8 +134,9 @@ describe('fieldsForBlock', () => {
     const layout = features.find((f) => f.key === 'layout')
     expect(layout?.options?.map((o) => o.value)).toEqual(['list', 'columns', 'stats', 'cards', 'spotlight'])
   })
-  it('Card grid (ADR-585) is the simple block: heading + subheading + cards + shape controls only', () => {
+  it('Card grid (ADR-585) is the simple block: eyebrow + heading + subheading + cards + shape controls only', () => {
     expect(fieldsForBlock('cardGrid').map((f) => f.key)).toEqual([
+      'eyebrow',
       'title',
       'subtitle',
       'cards',

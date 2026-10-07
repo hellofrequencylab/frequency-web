@@ -533,6 +533,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // two blocks read + behave clearly apart. Backward compatible: an existing Card grid keeps its `title` +
   // `cards`; its legacy eyebrow / browse-link keys are simply ignored by the simple renderer.
   cardGrid: [
+    { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
     { key: 'title', label: 'Heading', type: 'textarea', placeholder: 'What you offer' },
     { key: 'subtitle', label: 'Subheading', type: 'textarea', placeholder: 'A line under the heading' },
     { key: 'cards', label: 'Cards', type: 'cards' },
@@ -660,7 +661,21 @@ const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // blockDataList); an empty pick shows every item (item 7). The `pickerBlock` names the block whose data
   // source feeds this picker (its own id here). When the Space has none of that function's items, the editor
   // shows a "Create ..." link instead (blockCreateHref).
-  offerings: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Offerings to feature', type: 'picker', pickerBlock: 'offerings' }],
+  offerings: [
+    ...DATA_HEADER_FIELDS,
+    { key: 'items', label: 'Offerings to feature', type: 'picker', pickerBlock: 'offerings' },
+    // The website's session cards each carry a booking button (the house theme, components/sites).
+    { key: 'ctaLabel', label: 'Button label', type: 'text', placeholder: 'Book this session' },
+  ],
+  // MEMBERSHIPS: the header, the intro under it, the join button's label, and (on the website's community
+  // band) a pull quote above the plans and a line of small print under them. Every word is the owner's.
+  memberships: [
+    ...DATA_HEADER_FIELDS,
+    { key: 'body', label: 'Intro text', type: 'textarea', placeholder: 'Why people join' },
+    { key: 'ctaLabel', label: 'Button label', type: 'text', placeholder: 'See memberships' },
+    { key: 'quote', label: 'Quote', type: 'textarea', placeholder: 'A line that sums up your community' },
+    { key: 'note', label: 'Small print', type: 'text', placeholder: 'A note under the plans' },
+  ],
   // EVENTS (block upgrade): the header + picker, PLUS a three-way Layout (List = today's rows, the
   // default so saved pages never shift; Cards = the events index card treatment; Calendar = a month
   // grid) and a Columns count for the Cards layout. Both are declared enum primitives, so the editor

@@ -244,6 +244,7 @@ function cardColsClass(n: 2 | 3 | 4): string {
  *  SHAPE (image on top or to the left), and rounded / shadow toggles are read from the bag. FAIL-SAFE:
  *  nothing to show renders null. Semantic DAWN tokens only, voice canon (no em dashes). */
 function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNode {
+  const eyebrow = s(props, 'eyebrow')
   const title = s(props, 'title')
   const subtitle = s(props, 'subtitle')
   const cards = readSimpleCards(props.cards)
@@ -259,8 +260,9 @@ function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNod
 
   return (
     <div className="space-y-6">
-      {(title || subtitle) && (
+      {(eyebrow || title || subtitle) && (
         <div className="space-y-1">
+          {eyebrow && <p className="eyebrow text-primary-strong">{eyebrow}</p>}
           {/* font-section: the Space page theme's heading face (ADR-578); a computed no-op for `bold`. */}
           {title && <InlineRichText as="h3" value={title} className="font-section text-page-title font-bold text-text" />}
           {subtitle && (
