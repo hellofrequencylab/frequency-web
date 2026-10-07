@@ -8,7 +8,7 @@ import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
-import { readSpaceSpotlight, spaceSpotlightGrid } from '@/lib/spaces/spotlight'
+import { readSpaceSpotlight, spaceSpotlightGrid, spotlightSiteGrid } from '@/lib/spaces/spotlight'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 
 // THE SPACE SPOTLIGHT PAGE: a Space's one-column link page (lib/spaces/spotlight.ts). The identity header
@@ -54,8 +54,19 @@ export function SpotlightHeader({ space, tagline }: { space: Space; tagline: str
   )
 }
 
-export async function SpaceSpotlight({ space, tagline }: { space: Space; tagline: string | null }) {
-  const grid = spaceSpotlightGrid(readSpaceSpotlight(space.preferences))
+/** `appOrigin` is set on a website host (LIVE-855): the grid keeps only the blocks a stand-alone site shows,
+ *  and the one Frequency link, the footer, is absolute and labeled as Frequency's. */
+export async function SpaceSpotlight({
+  space,
+  tagline,
+  appOrigin,
+}: {
+  space: Space
+  tagline: string | null
+  appOrigin?: string
+}) {
+  const saved = spaceSpotlightGrid(readSpaceSpotlight(space.preferences))
+  const grid = appOrigin ? spotlightSiteGrid(saved) : saved
 
   return (
     <SpotlightAccent space={space}>
@@ -68,7 +79,7 @@ export async function SpaceSpotlight({ space, tagline }: { space: Space; tagline
           </div>
 
           <footer className="mt-12 text-center">
-            <Link href="/" className="text-meta text-subtle transition-colors hover:text-muted">
+            <Link href={appOrigin ? `${appOrigin}/` : '/'} className="text-meta text-subtle transition-colors hover:text-muted">
               Made on Frequency
             </Link>
           </footer>

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-855",
+  "title": "A paid Space's Spotlight has its own link at <slug>.frequencylocal.com/spotlight, and a Space with its own domain can use spotlight.<domain>",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "components/spotlight/hosted-spotlight.tsx",
+    "ref": "Owner ask 2026-10-07 (Spotlight audit thread): 'It would be cool if paid users got their own link like <slug>.frequencylocal.com/spotlight. Even better if Collective users have spotlight.theirwebsite.com'; PR 6 of 7 in the Space Spotlight plan."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. PR 6 of the Space Spotlight build (plan: /mnt/project-files/spotlight/space-spotlight-plan.md). The hosted site route serves its `spotlight` page as the Space's Spotlight (components/spotlight/hosted-spotlight.tsx): on `<slug>.frequencylocal.com` only for a plan that takes payments (spaceCanTakePayments), on the Space's own domain behind the custom_domain gate already in resolveHostedSpace. `spotlight.<domain>` (lib/sites/host.ts spotlightHostDomain) rewrites its root to that page and sends every other path to the website on <domain>. A website stands alone (ADR-1723), so on these hosts Book and Contact cards open the site's own /book and /contact, any other card is an absolute Frequency link labeled 'on Frequency' (lib/spaces/spotlight-site.ts), blocks that link into the app are left out (spotlightSiteGrid), and the footer is the labeled Frequency link. Publishing on a paid plan attaches the subdomain to hosting; the editor shows the paid link and a Connect button for spotlight.<domain> with its one CNAME record; removing a domain also detaches spotlight.<domain>. Saves call refreshSite so the cached site pages follow. NEXT: click counts (PR 7).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const h=r('lib/sites/host.ts');if(!/export function spotlightHostDomain/.test(h)||!/spotlightHostDomain\\\\(h, appHosts\\\\)/.test(h))miss.push('spotlight.<domain> is not routed');if(!/spotlightHostDomain\\\\(host\\\\)/.test(r('lib/sites/hosted.ts')))miss.push('spotlight.<domain> does not resolve to its Space');const pg=r('app/hosted/[host]/[page]/page.tsx');if(!/HostedSpotlightPage/.test(pg))miss.push('the site route does not serve the Spotlight');const hs=r('components/spotlight/hosted-spotlight.tsx');if(!/siteSlugFromSubdomain\\\\(host\\\\) && !\\\\(await spaceCanTakePayments/.test(hs))miss.push('a free Space gets the subdomain Spotlight link');if(!/siteCardHref\\\\(/.test(r('components/widgets/space-profile/link-cards.tsx')))miss.push('Link cards on a website still point into Frequency unlabeled');if(!/spotlight\\\\.\\\\$\\\\{domain\\\\}/.test(r('lib/sites/vercel-domains.ts')))miss.push('removing a domain leaves spotlight.<domain> on hosting');if(!/connectSpotlightDomain/.test(r('components/spotlight/space-spotlight-editor.tsx')))miss.push('the editor cannot connect spotlight.<domain>');if(miss.length){console.error('LIVE-855: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
