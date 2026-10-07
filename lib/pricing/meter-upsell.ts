@@ -331,6 +331,36 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
     kind: 'ladder',
     note: 'Free allowance is zero, so the 80% prompt never applies below the Business wall; the plan hub carries the ladder, and a Business Space near 6 benefits is prompted there. Move this row to in-context once the benefits editor renders the count it already loads.',
   },
+  space_circles: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Circles are created from several surfaces; the plan hub carries the ladder (LIVE-750).',
+  },
+  space_events: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Upcoming events are created from the events flow; the plan hub carries the ladder (LIVE-750).',
+  },
+  space_event_guests: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Guests are counted per event at RSVP; the plan hub carries the ladder (LIVE-750).',
+  },
+  space_practice_publish: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Space Practices publish from the editor; the plan hub carries the ladder (LIVE-750).',
+  },
+  space_services: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Bookable services are added on the booking settings; the plan hub carries the ladder (LIVE-750).',
+  },
+  space_shop_listings: {
+    mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
+    kind: 'ladder',
+    note: 'Shop listings are created in the shop flow; the plan hub carries the ladder (LIVE-750).',
+  },
   // ── Personal tier axis. All six were total gaps: the plan hub filters to axis === 'plan' and the
   // member upgrade page mounted no meter at all. /upgrade is now the tier-axis ladder, and the two
   // authoring surfaces that already hold a real count carry the 80% prompt as well.
@@ -363,6 +393,11 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
     mount: 'app/(main)/upgrade/page.tsx',
     kind: 'ladder',
     note: 'Active events span circles and Spaces; the upgrade page carries the ladder.',
+  },
+  event_guests: {
+    mount: 'app/(main)/upgrade/page.tsx',
+    kind: 'ladder',
+    note: 'Guests are counted per personal event at RSVP; the upgrade page carries the ladder (LIVE-750).',
   },
 }
 

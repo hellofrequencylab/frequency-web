@@ -1015,51 +1015,82 @@ ${footerText}
 }
 
 
-// ── Guest follow-up after a gathering (LIVE-802, ADR-1720) ─────────────────────────────────
+// ── "Did you make it?" after a gathering (LIVE-802, LIVE-803, ADR-1720) ──────────────────
 //
-// The invite loop's first half: a guest who RSVPd or bought a ticket without an account hears
-// from us once, the day after the gathering, with one button that turns their seat into a
-// Member account. ADR-854 lets an unproven address receive a delivery about the thing it said
-// yes to and nothing else; this note is about that one event and its one account offer, and it
-// is sent once per address per event (the caller's dedupe key). The suppression list is the
-// gate, checked by the caller and again inside sendRawEmail at drain.
-export async function sendGuestFollowUpEmail(params: {
-  to:         string
-  guestName:  string | null
-  eventTitle: string
-  eventUrl:   string
-  /** A /sign-in link carrying the address, so the tap is what proves it. */
-  joinUrl:    string
-  dedupeKey:  string
+// The invite loop. The day after a gathering, everyone who said yes hears from us once: did you
+// make it? Yes records attendance (app/api/events/made-it). The note carries the group's next
+// date and a bring-a-friend link, so the answer points at the next room with people in it.
+//
+// A GUEST (no account) also gets one Join free button, a /sign-in link carrying the address,
+// which moves the RSVP into an account. ADR-854 lets an unproven address receive a delivery about
+// the thing it said yes to and nothing else; this note is about that event, once (the caller's
+// dedupe key). The suppression list is the gate, checked by the caller and again at drain.
+// A MEMBER gets the events-category unsubscribe, like every other event email.
+export async function sendMadeItEmail(params: {
+  to:            string
+  name:          string | null
+  eventTitle:    string
+  eventUrl:      string
+  /** The signed Yes link (lib/events/made-it.ts madeItUrl). */
+  madeItUrl:     string
+  /** The group's next gathering, when there is one. */
+  next:          { title: string; whenAbsolute: string; url: string; shareUrl: string } | null
+  /** Guests only: the /sign-in link carrying the address. */
+  joinUrl?:      string | null
+  /** Members only: the events-category one-click unsubscribe. */
+  unsubscribeUrl?: string | null
+  dedupeKey:     string
 }) {
-  const { to, guestName, eventTitle, eventUrl, joinUrl, dedupeKey } = params
-  const greeting = guestGreeting(guestName)
-  const intro = `thanks for saying yes to ${eventTitle}.`
-  const offer = 'Join Frequency, free, and this RSVP moves into your account. You will see when the group meets next, and the people you met will be easier to find again.'
-  const footer = `You are getting this once because this address was used to RSVP to ${eventTitle}. We will not email it again unless you join.`
+  const { to, name, eventTitle, eventUrl, madeItUrl, next, dedupeKey } = params
+  const joinUrl = params.joinUrl ?? null
+  const unsubscribeUrl = params.unsubscribeUrl ?? null
+  const greeting = guestGreeting(name)
+  const intro = `did you make it to ${eventTitle}? Tap yes and the Host knows you came.`
+  const nextLine = next ? `It meets next on ${next.whenAbsolute}: ${next.title}.` : null
+  const friendLine = next ? 'Know someone who would like it? Send them this link and come together.' : null
+  const offer = joinUrl
+    ? 'Join Frequency, free, and this RSVP moves into your account, with the next date on your calendar.'
+    : null
+  const footer = joinUrl
+    ? `You are getting this once because this address was used to RSVP to ${eventTitle}. We will not email it again unless you join.`
+    : `You are getting this because you said yes to ${eventTitle}.`
 
   await enqueueEmail({
     to,
-    subject: `Thanks for coming to ${eventTitle}`,
+    subject: `Did you make it to ${eventTitle}?`,
+    ...(unsubscribeUrl ? { headers: listUnsubscribeHeaders(unsubscribeUrl) } : {}),
     html: emailShell(`
       <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
       <p style="${pStyle}">${escapeHtml(greeting)}${escapeHtml(intro)}</p>
-      <p style="${pStyle}">${escapeHtml(offer)}</p>
-      <a href="${joinUrl}" style="${btnStyle}">Join free &rarr;</a>
-      <p style="${pStyle}margin-top:20px;"><a href="${eventUrl}" style="color:#9A5E12;">See the event page</a></p>
+      <a href="${madeItUrl}" style="${btnStyle}">Yes, I made it</a>
+      <p style="${pStyle}margin-top:16px;"><a href="${eventUrl}" style="color:#9A5E12;">Not this time</a></p>${next ? `
       <hr style="${dividerStyle}">
-      <p style="font-size:13px;color:#8F8675;">${escapeHtml(footer)}</p>
+      <p style="${pStyle}">${escapeHtml(nextLine ?? '')}</p>
+      <p style="${pStyle}"><a href="${next.url}" style="color:#9A5E12;font-weight:700;">See the next one</a></p>
+      <p style="${pStyle}">${escapeHtml(friendLine ?? '')}<br><a href="${next.shareUrl}" style="color:#9A5E12;">${escapeHtml(next.shareUrl)}</a></p>` : ''}${offer ? `
+      <hr style="${dividerStyle}">
+      <p style="${pStyle}">${escapeHtml(offer)}</p>
+      <a href="${joinUrl}" style="${btnStyle}">Join free &rarr;</a>` : ''}
+      <hr style="${dividerStyle}">
+      <p style="font-size:13px;color:#8F8675;">${escapeHtml(footer)}${unsubscribeUrl ? ` <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe from event emails</a>` : ''}</p>
     `),
-    text: `Thanks for coming to ${eventTitle}
+    text: `Did you make it to ${eventTitle}?
 
 ${greeting}${intro}
 
+Yes, I made it: ${madeItUrl}
+Not this time: ${eventUrl}
+${next ? `
+${nextLine}
+See the next one: ${next.url}
+${friendLine}
+${next.shareUrl}
+` : ''}${offer ? `
 ${offer}
-
 Join free: ${joinUrl}
-See the event page: ${eventUrl}
-
-${footer}
+` : ''}
+${footer}${unsubscribeUrl ? `
+Unsubscribe from event emails: ${unsubscribeUrl}` : ''}
 `,
   }, { dedupeKey })
 }

@@ -154,11 +154,17 @@ you bring can RSVP without an account. Bringing people who RSVP, show up, or joi
 also earns you **Zaps** as a Connector. See
 [Events & RSVPs](/help/groups/events) for how the invite loop works.
 
+### Why did I get "Did you make it?" after a gathering?
+
+The day after a gathering, everyone who said yes gets one short note asking
+whether they made it. Tap **Yes, I made it** and the Host knows you came. The
+note also shows when the group meets next, with a link you can send a friend.
+Members can turn these off with event emails in their settings.
+
 ### I RSVPd without an account. Will you email me again?
 
-Once. The day after the gathering we send one short note thanking you for coming,
-with a button to join free. Joining moves your RSVP into your account, so you can
-see when the group meets next. If you do not join, we do not email that address
-again about it.
+Once: the same "Did you make it?" note, with a button to join free. Joining moves
+your RSVP into your account, so the next date lands on your calendar. If you do
+not join, we do not email that address again about it.
 
 Next: [what happens at a gathering](/help/getting-started/what-happens-at-a-gathering).

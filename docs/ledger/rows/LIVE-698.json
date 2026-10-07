@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-698",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Retired by owner ruling 2026-10-05: per-Nexus subdomains were scrapped along with Hook federation and Hook.coach white label. Tenant domains belong to the in-house white-label suite (PROG-E10, PROG-W6). Nothing to measure.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\nRETIRED 2026-10-06 on the owner ruling of 2026-10-05 (project thread): Hook federation / Hook.coach white label is scrapped together with the Nexus subdomain and business-domain rows, and Frequency builds its own white-label suite instead. Tenant subdomains and custom domains stay in scope only as PROG-E10 (Sites, absorbing W1-W5) and PROG-W6. Confirmed again by the owner on 2026-10-06 (\"finish up every little hanging task\")."
+  }
+}

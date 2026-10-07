@@ -1,4 +1,4 @@
-// The post-gathering follow-up cron (LIVE-802, ADR-1720). Hourly via Vercel Cron.
+// The post-gathering follow-up cron (LIVE-802, LIVE-803, ADR-1720). Hourly via Vercel Cron.
 // Budget: 200 events per run, and the clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts.
 //
 // THE INVITE LOOP, FIRST HALF. A guest who RSVPd or bought a ticket without an account is the
@@ -6,6 +6,11 @@
 // because signup recovery excludes event_rsvp leads (lib/crm/lead-sources.ts). This cron emails
 // each guest once, the day after the gathering, with one button that turns the seat into a
 // Member account.
+//
+// THE CHECK-IN (LIVE-803). The same note asks everyone who said yes, members and guests,
+// "Did you make it?". Yes records a self-reported attendance (app/api/events/made-it), and the
+// note carries the group's next date with a bring-a-friend link. Members are gated by their
+// events-category preference and suppression through the one send gate (ADR-169).
 //
 // THE WINDOW. An event is due when its end (ends_at, else starts_at plus two hours) fell between
 // 2 and 26 hours ago, read through the event's own zone (eventInstant). Hourly runs re-enter the
@@ -15,8 +20,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { eventInstant } from '@/lib/time/zone'
-import { sendGuestFollowUpEmail } from '@/lib/email'
+import { sendMadeItEmail } from '@/lib/email'
 import { isSuppressed } from '@/lib/suppression'
+import { resolveSendGate } from '@/lib/comms/send-gate'
+import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import { formatAbsolute } from '@/lib/events/follower-reminders'
+import { bringAFriendUrl, madeItUrl, type SeatKind } from '@/lib/events/made-it'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
@@ -39,6 +48,16 @@ type EventRow = {
   ends_at: string | null
   time_zone: string | null
   is_cancelled: boolean
+  scope_circle_id: string | null
+  parent_event_id: string | null
+  host_space_id: string | null
+}
+
+type NextGathering = { title: string; whenAbsolute: string; url: string; shareUrl: string }
+
+/** The member-side dedupe key: one "Did you make it?" per member per event. */
+export function memberMadeItKey(eventId: string, profileId: string): string {
+  return `made-it:${eventId}:${profileId}`
 }
 
 /** Pure: is this event's end inside the follow-up window at `now`? */
@@ -74,7 +93,7 @@ async function handler(req: NextRequest) {
   const to = new Date(now.getTime() + 14 * HOUR).toISOString()
   const { data: evRaw } = await admin
     .from('events')
-    .select('id, title, slug, starts_at, ends_at, time_zone, is_cancelled')
+    .select('id, title, slug, starts_at, ends_at, time_zone, is_cancelled, scope_circle_id, parent_event_id, host_space_id')
     .eq('is_cancelled', false)
     .gte('starts_at', from)
     .lte('starts_at', to)
@@ -91,41 +110,43 @@ async function handler(req: NextRequest) {
       break
     }
     processed += 1
-    const guests = new Map<string, string | null>()
+    const next = await nextGathering(admin, ev, now, appUrl)
+    const eventUrl = `${appUrl}/events/${ev.slug}`
 
+    // ── Guests: one note per address, with the Yes link and the Join free offer.
+    const guests = new Map<string, { name: string | null; kind: SeatKind; seatId: string }>()
     const { data: rsvps } = await admin
       .from('event_rsvps')
-      .select('guest_email, guest_name, approval_status')
+      .select('id, guest_email, guest_name, approval_status')
       .eq('event_id', ev.id)
       .eq('status', 'going')
       .is('profile_id', null)
       .not('guest_email', 'is', null)
-    for (const r of (rsvps ?? []) as { guest_email: string | null; guest_name: string | null; approval_status: string | null }[]) {
+    for (const r of (rsvps ?? []) as { id: string; guest_email: string | null; guest_name: string | null; approval_status: string | null }[]) {
       if (!r.guest_email || r.approval_status === 'pending') continue
-      guests.set(r.guest_email.trim().toLowerCase(), r.guest_name)
+      guests.set(r.guest_email.trim().toLowerCase(), { name: r.guest_name, kind: 'rsvp', seatId: r.id })
     }
-
     const { data: tickets } = await admin
       .from('event_tickets')
-      .select('guest_email')
+      .select('id, guest_email')
       .eq('event_id', ev.id)
       .eq('status', 'succeeded')
       .is('buyer_profile_id', null)
       .not('guest_email', 'is', null)
-    for (const t of (tickets ?? []) as { guest_email: string | null }[]) {
+    for (const t of (tickets ?? []) as { id: string; guest_email: string | null }[]) {
       const email = t.guest_email?.trim().toLowerCase()
-      if (email && !guests.has(email)) guests.set(email, null)
+      if (email && !guests.has(email)) guests.set(email, { name: null, kind: 'ticket', seatId: t.id })
     }
-
-    const eventUrl = `${appUrl}/events/${ev.slug}`
-    for (const [email, guestName] of guests) {
+    for (const [email, guest] of guests) {
       if (await isSuppressed(email)) continue
       try {
-        await sendGuestFollowUpEmail({
+        await sendMadeItEmail({
           to: email,
-          guestName,
+          name: guest.name,
           eventTitle: ev.title,
           eventUrl,
+          madeItUrl: madeItUrl(appUrl, guest.kind, guest.seatId),
+          next,
           joinUrl: `${appUrl}/sign-in?next=${encodeURIComponent(`/events/${ev.slug}`)}&email=${encodeURIComponent(email)}`,
           dedupeKey: guestFollowUpKey(ev.id, email),
         })
@@ -134,11 +155,86 @@ async function handler(req: NextRequest) {
         log.error('cron.event_followups.send_failed', { eventId: ev.id, err: String(err) })
       }
     }
+
+    // ── Members: the same question, through the events-category send gate.
+    const { data: memberRsvps } = await admin
+      .from('event_rsvps')
+      .select('id, profile_id, approval_status')
+      .eq('event_id', ev.id)
+      .eq('status', 'going')
+      .not('profile_id', 'is', null)
+      .limit(budget.items)
+    for (const r of (memberRsvps ?? []) as { id: string; profile_id: string; approval_status: string | null }[]) {
+      if (r.approval_status === 'pending' || budget.exhausted()) continue
+      try {
+        const { data: profile } = await admin
+          .from('profiles')
+          .select('id, display_name, auth_user_id')
+          .eq('id', r.profile_id)
+          .maybeSingle()
+        if (!profile?.auth_user_id) continue
+        const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+        if (!user?.email) continue
+        if (!(await resolveSendGate(profile.id, 'email', 'events', { email: user.email })).allowed) continue
+        await sendMadeItEmail({
+          to: user.email,
+          name: profile.display_name,
+          eventTitle: ev.title,
+          eventUrl,
+          madeItUrl: madeItUrl(appUrl, 'rsvp', r.id),
+          next,
+          unsubscribeUrl: buildUnsubscribeUrl({ baseUrl: appUrl, profileId: profile.id, category: 'events' }),
+          dedupeKey: memberMadeItKey(ev.id, profile.id),
+        })
+        sent += 1
+      } catch (err) {
+        log.error('cron.event_followups.member_send_failed', { eventId: ev.id, err: String(err) })
+      }
+    }
   }
 
   const summary = budget.summary(processed, events.length - processed)
   log.info('cron.event_followups', { events: events.length, sent, stoppedOnBudget, ...summary })
   return NextResponse.json({ ok: true, events: processed, sent, budget: summary })
+}
+
+/**
+ * The group's next gathering: the same Circle's, else the same series', else the same Space's,
+ * whichever is soonest after now. Null when there is none.
+ */
+async function nextGathering(
+  admin: ReturnType<typeof createAdminClient>,
+  ev: EventRow,
+  now: Date,
+  appUrl: string,
+): Promise<NextGathering | null> {
+  const scopes: [string, string | null][] = [
+    ['scope_circle_id', ev.scope_circle_id],
+    ['parent_event_id', ev.parent_event_id],
+    ['host_space_id', ev.host_space_id],
+  ]
+  for (const [column, value] of scopes) {
+    if (!value) continue
+    const { data } = await admin
+      .from('events')
+      .select('title, slug, starts_at, time_zone')
+      .eq(column as 'scope_circle_id', value)
+      .eq('is_cancelled', false)
+      .neq('id', ev.id)
+      .gte('starts_at', now.toISOString())
+      .order('starts_at', { ascending: true })
+      .limit(1)
+    const row = (data ?? [])[0] as unknown as { title: string; slug: string; starts_at: string; time_zone: string | null } | undefined
+    if (row) {
+      return {
+        title: row.title,
+        whenAbsolute: formatAbsolute(row.starts_at, row.time_zone),
+        url: `${appUrl}/events/${row.slug}`,
+        shareUrl: bringAFriendUrl(appUrl, row.slug),
+      }
+    }
+  }
+  return null
 }
 
 export const GET = withCronHeartbeat('event-followups', handler)
