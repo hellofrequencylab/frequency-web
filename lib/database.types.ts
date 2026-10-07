@@ -14909,6 +14909,35 @@ export type Database = {
           },
         ]
       }
+      space_spotlight_clicks: {
+        Row: {
+          clicked_at: string
+          id: number
+          space_id: string
+          target: string
+        }
+        Insert: {
+          clicked_at?: string
+          id?: never
+          space_id: string
+          target: string
+        }
+        Update: {
+          clicked_at?: string
+          id?: never
+          space_id?: string
+          target?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_spotlight_clicks_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_standing: {
         Row: {
           attendance: number
