@@ -297,8 +297,7 @@ export default async function SpaceProfileChromeLayout({
       />
     ) : null
 
-  // The quiet social FOLLOW chip, factored out so it can sit ABOVE the name on desktop (in the lockup) and
-  // move into the mobile action card below the cover (where every button lives on a phone). Null for a
+  // The quiet social FOLLOW chip, sitting ABOVE the name in the lockup at every width. Null for a
   // signed-out visitor. `onInk` paints it for legibility over a Hero cover photo.
   // A COMPACT Follow chip (owner ask): smaller than a standard sm button so it reads as the quiet social
   // action sitting above the name, not competing with the primary CTA. tailwind-merge lets the tighter
@@ -395,7 +394,7 @@ export default async function SpaceProfileChromeLayout({
   // MOBILE action band (<sm): the dominant primary CTA (Book / Join) fills the row, with QR (Connect) and
   // Edit as compact ICON-ONLY buttons beside it — no white chip or card behind them, so the actions
   // read as a clean toolbar and the primary CTA gets the width (owner ask). Follow is NOT here: it sits
-  // above the identity on the cover. `sm:hidden` — desktop keeps the overlaid row.
+  // above the name in the lockup. `sm:hidden` — desktop keeps the overlaid row.
   const mobileActionBand = (
     <div className="mt-4 flex items-center gap-2 sm:hidden">
       {/* `min-w-0` is the half that makes `flex-1` mean anything. A flex item's default
@@ -477,10 +476,11 @@ export default async function SpaceProfileChromeLayout({
   const nameLockup = (onInk = false, taglineHiddenOnMobile = false) => (
     <div className="min-w-0">
       {viewerProfileId && (
-        // Desktop only: Follow sits above the name. On mobile it moves to the white action card under the
-        // cover (mobileActionBand), so the phone hero reads as a clean identity band. Tight `mb-1` so the
-        // Follow -> name -> tagline stack reads as one balanced block against the (bigger) avatar.
-        <div className="mb-1 hidden sm:block">{followButton(onInk)}</div>
+        // Follow sits above the name at EVERY width (owner ruling 2026-10-07: the header card reads
+        // "image, Follow, Title, tagline, action button, QR and edit"). It used to float in its own row
+        // above the avatar on a phone, which split it from the name it belongs to. Tight `mb-1` so the
+        // Follow -> name stack reads as one balanced block against the avatar.
+        <div className="mb-1">{followButton(onInk)}</div>
       )}
       {/* The operator's optional EYEBROW: a small pre-text kicker above the name (editable in the pinned hero
           editor). Absent by default, so the lockup reads exactly as before for a Space with none. */}
@@ -559,9 +559,6 @@ export default async function SpaceProfileChromeLayout({
       frame={{ className: cn('rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH) }}
       lockup={
         <>
-          {/* Mobile only: the Follow chip sits ABOVE the profile pic + title (the operator's ask). On desktop
-              Follow lives inside the name lockup, so this is suppressed there. */}
-          {viewerProfileId && <div className="mb-3 sm:hidden">{followButton(heroOnInk)}</div>}
           {/* ONE bottom row (owner ask): the identity (logo + Follow + title + tagline) anchors to the
               bottom-LEFT and the action buttons to the bottom-RIGHT, both aligned to the SAME bottom line
               (items-end). The name column (min-w-0) gives way and wraps for a long name; the action cluster
@@ -625,22 +622,20 @@ export default async function SpaceProfileChromeLayout({
         // below (mobileActionBand).
         <div className="flex flex-col gap-4 pt-14 sm:flex-row sm:items-end sm:justify-between sm:gap-x-6 sm:pt-16">
           <div className="min-w-0">
-            {/* Mobile only: Follow above the identity (matches the Hero size). Desktop shows it inside the
-                lockup instead. */}
-            {viewerProfileId && <div className="mb-2 sm:hidden">{followButton(false)}</div>}
             {nameLockup(false)}
           </div>
           <div className="hidden shrink-0 sm:block">{identityActions(false)}</div>
         </div>
       )}
-      {/* Mobile-only white action card under the cover (both Hero and Header sizes). */}
-      {mobileActionBand}
       {/* The tagline's relocated home below `lg`, off the cover and on the page background (so
           `onInk` is false here). `empty:hidden` collapses the row entirely for a Space with no
           tagline and a visitor who gets no "add one" prompt, so nothing reserves space for it.
           Hidden from `lg` up, where the lockup renders it inline under the name instead — the two
-          are exact complements, so the tagline is shown exactly once at every width. */}
+          are exact complements, so the tagline is shown exactly once at every width. It comes BEFORE
+          the action buttons, in the owner's order (title, tagline, then the action button, QR and Edit). */}
       {isHero && <div className="mt-3 empty:hidden lg:hidden">{taglineNode(false)}</div>}
+      {/* Mobile-only action row under the cover and the tagline (both Hero and Header sizes). */}
+      {mobileActionBand}
     </div>
   )
 
