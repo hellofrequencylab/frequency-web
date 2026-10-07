@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-815",
+  "title": "Published Spotlight pages show the member's bio and every block they authored, not just Links and Top Friends",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/spotlight/[handle]/page.tsx",
+    "ref": "Spotlight audit 2026-10-07 (owner ask: 'Do a little audit of the Spotlight system. Is that all up and running?')."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: the public /spotlight/<handle> body renders through the member block grid, and with no saved grid (true for all 4 members with a Spotlight in production) resolveRows fell back to the IN-APP starter, links then topfriends. That starter leaves out About because the in-app chrome shows the bio, but the public page passes showBio={false} because About is meant to own it, so no public Spotlight showed a bio. Every block members authored in meta.spotlight.layout (headings, galleries, images, quotes, embeds) was kept but never placed: danieltyack showed only a header and the join card. THE FIX: lib/spotlight/public-grid.ts publicSpotlightGrid builds the public default from what the member wrote (About, each authored block type in first-seen order, then Links and Top Friends) and the page passes it as the grid; a saved grid still wins. LEFT: the Guestbook block is still not placed on the public page, because it reads the session and the page is ISR with no cookies(); placing it is its own decision.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/grid=\\{publicSpotlightGrid\\(data\\.grid, data\\.layout\\.blocks\\)\\}/.test(r('app/spotlight/[handle]/page.tsx')))miss.push('the public Spotlight renders the in-app starter, so it has no bio and drops authored blocks');const g=r('lib/spotlight/public-grid.ts');if(!/const ids: string\\[\\] = \\['about'\\]/.test(g)||!/for \\(const block of authored\\)/.test(g))miss.push('the public starter does not lead with About and place authored blocks');if(miss.length){console.error('SCAN-815: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
