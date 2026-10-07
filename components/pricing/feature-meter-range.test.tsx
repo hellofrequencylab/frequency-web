@@ -71,7 +71,7 @@ describe('FeatureMeterRange — renders the allowance ladder per tier', () => {
     )
     expect(under).not.toContain('Nearly full.')
     const unlimited = html(
-      <FeatureMeterRange ladder={CRM} currentTier="business" upgradeHref="/spaces/x/settings/billing" usage={99999} />,
+      <FeatureMeterRange ladder={featureMeter('space_bookings')!} currentTier="business" upgradeHref="/spaces/x/settings/billing" usage={99999} />,
     )
     expect(unlimited).not.toContain('Nearly full.')
   })

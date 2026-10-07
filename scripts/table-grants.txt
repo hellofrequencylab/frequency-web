@@ -76,6 +76,7 @@ content_ratings                      internal
 conversation_participants            authenticated
 conversations                        authenticated
 creator_tips                         internal
+crew_boosts                          internal
 crew_completions                     authenticated
 crew_tasks                           public
 crm_activities                       authenticated

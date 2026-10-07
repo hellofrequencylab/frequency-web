@@ -127,6 +127,11 @@
 # guest RSVPs and ticket buyers of EVERY host's events, which RLS limits to that host. READ-ONLY: it
 # reads fixed event, RSVP and ticket columns for events that ended 2 to 26 hours ago and writes
 # nothing; the one email per guest goes through the queue, gated by suppression.
+# app/api/events/made-it/route.ts (added 2026-10-06, LIVE-803, ADR-1720): the Yes button on "Did
+# you make it?". It is opened from an email, often by a guest with no account, so there is no
+# session. The HMAC token over the one seat (an RSVP or a guest ticket) is the credential and is
+# verified before anything is read; it then reads that seat's event and owner and the event slug,
+# and records one self-reported attendance. It reads nothing else and writes no table directly.
 # app/(main)/events/[slug]/manage/attendance-actions.ts (added 2026-09-14, PROG-GD4): the host's
 # attendance mark on a seat row (event_rsvps / event_tickets attended_at + attended_by). Same
 # posture as manage/actions.ts directly beside it: the caller is re-gated as host, cohost or staff
@@ -295,6 +300,11 @@
 # written by the capture path or this action after its own checks), so the claim insert runs as the
 # service role: the offer must be a live loyalty card at an active partner and the caller must hold
 # the visits for it. It writes one row for the caller and reads only the caller's own taps.
+# Added 2026-10-06 (LIVE-749, ADR-1709, owner approved on the pricing thread decision card): lib/spaces/counted-meters.ts.
+# Count caps are enforced where a booking, tier, collaborator, Journey seat or RSVP is written, and the counts are
+# CROSS-MEMBER BY DESIGN: a guest saying yes to an event cannot read the other RSVPs under RLS, so a session-client
+# count reads low and the cap never refuses. It reads head counts, a plan's space_id and a host's membership_tier
+# only, returns an allow/deny verdict, and discloses no row to the caller.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -518,6 +528,7 @@ app/api/cron/onboarding-throughput/route.ts
 app/api/cron/publish-scheduled/route.ts
 app/api/cron/storage-backup/route.ts
 app/api/cron/weekly-digest/route.ts
+app/api/events/made-it/route.ts
 app/api/observe/route.ts
 app/api/qr/route.ts
 app/api/search-handles/route.ts
@@ -1025,6 +1036,7 @@ lib/spaces/collaborations.ts
 lib/spaces/completion-analytics.ts
 lib/spaces/content-actions.ts
 lib/spaces/content-data.ts
+lib/spaces/counted-meters.ts
 lib/spaces/crm-funnel.ts
 lib/spaces/discovery.ts
 lib/spaces/dispatch.ts

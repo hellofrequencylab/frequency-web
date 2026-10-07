@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-440",
+  "patch": {
+    "verify": {
+      "kind": "manual",
+      "evidence": "SUPERSEDED 2026-10-06 by ADR-1709 (the five-tier pricing ladder, owner ruling): the probe pinned the 3 / unlimited space_qr ladder, and LIVE-748 deliberately moved that meter to the ladder numbers and gave it a Collective rung again. The row stays done as history. Its original cmd probe is preserved verbatim in the detail.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\n── SUPERSEDED 2026-10-06 by ADR-1709 (LIVE-748). The meter numbers this probe pinned were changed by the owner's five-tier ladder, so it now fails by design. Original probe, kept verbatim: node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const note=fs.readFileSync(\"lib/spaces/reach-catalog-note.ts\",\"utf8\");if(!note.includes(\"export function reachCatalogNote\"))fail(\"reachCatalogNote is gone\");if(!note.includes(\"PLACEHOLDER_METER_LIMITS.space_qr\"))fail(\"reach catalog note does not read the QR meter\");if(!note.includes(\"SPACE_PLAN_LABEL.business\"))fail(\"reach catalog note does not name Business from the plan label\");if(/Collective/.test(note))fail(\"reach-catalog-note still types Collective\");const cat=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");if(!cat.includes(\"reachCatalogNote()\"))fail(\"space.reach no longer reads reachCatalogNote\");if(/unlimited on Collective/.test(cat))fail(\"space.reach still names a Collective QR rung\");if(/500 on Business/.test(cat))fail(\"space.reach still names the leftover 500 Business rung\");const meters=fs.readFileSync(\"lib/pricing/meter-limits.ts\",\"utf8\");if(!/space_qr:\\s*\\{\\s*free:\\s*3,\\s*business:\\s*null\\s*\\}/.test(meters))fail(\"space_qr left the 3 / unlimited ladder\");console.log(\"LIVE-440 ok\")'"
+  }
+}

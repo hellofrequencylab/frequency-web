@@ -4,7 +4,7 @@ description: Wired and tired at the same time? Here is a 60-second way to calm d
 category: find-your-people
 order: 2
 published: 2026-06-20
-updated: 2026-10-05
+updated: 2026-10-06
 audience: member
 featureKeys: [practices, on-air]
 status: published
@@ -58,6 +58,10 @@ or a mood.
 When you want the timer to hold the space for you, [open Mindless](/on-air),
 set a couple of minutes, and let it count you down. The point is small and repeated,
 not long and perfect.
+
+No account yet? [The 5-minute timer](/mindless) works signed out: follow the rings
+for five minutes and you are done. It saves nothing. When it ends it asks "Same time
+tomorrow?", and saying yes makes a free account that opens on Mindless.
 
 ## Questions people ask
 

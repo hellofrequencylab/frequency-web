@@ -1,7 +1,7 @@
 {
   "id": "LIVE-805",
   "title": "Anyone can run a 5-minute Mindless session signed out, and is offered \"same time tomorrow?\" after it",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,11 +9,12 @@
     "file": "docs/ledger/adr/ADR-1720.md",
     "ref": "Frequency Launch Build Brief, owner, 2026-10-06; gap report /mnt/project-files/launch/2026-10-06-launch-sweep.md"
   },
-  "detail": "WORKSTREAM 8 of the launch brief (ADR-1720), \"and 8 if there's room\" before 1 December. TODAY: the timer is /on-air, a protected path (proxy.ts:61; LIVE-136 made it protected), so the Calm down fast funnel, whose first win is a 5-minute Mindless session, hits a sign-in wall. \"Same time tomorrow\" copy exists for members only (lib/on-air.ts:680). THE FIX: a public no-account browser timer and breathing pacer (client only, no writes, nothing sent to analytics beyond a generic page view) with the 5-minute practice preset, and after a session a \"same time tomorrow?\" offer that leads to signup with the time kept. LIVE-800's Calm down fast door lands here once it ships. Member-facing: help line and changelog entry.",
+  "detail": "WORKSTREAM 8 of the launch brief (ADR-1720), \"and 8 if there's room\" before 1 December. TODAY: the timer is /on-air, a protected path (proxy.ts:61; LIVE-136 made it protected), so the Calm down fast funnel, whose first win is a 5-minute Mindless session, hits a sign-in wall. \"Same time tomorrow\" copy exists for members only (lib/on-air.ts:680). THE FIX: a public no-account browser timer and breathing pacer (client only, no writes, nothing sent to analytics beyond a generic page view) with the 5-minute practice preset, and after a session a \"same time tomorrow?\" offer that leads to signup with the time kept. LIVE-800's Calm down fast door lands here once it ships. Member-facing: help line and changelog entry. CLOSED 2026-10-06: app/(marketing)/mindless (page + public-timer.tsx): the Coherence pacer (BreathVisualizer, five in, five out) with one 5-minute clock, client only, no writes, no analytics event. At the end it asks \"Same time tomorrow?\" and links to /join?next=/on-air; the daily practice nudge then learns the hour from the member's own sessions (habitualHour, lib/practices/lifecycle.ts). Not in proxy PROTECTED_PATHS; in the sitemap. Help (how-to-calm-down-fast) and changelog updated. LIVE-800 points the Calm down fast door here.",
   "verify": {
     "kind": "cmd",
     "cmd": "node -e 'const fs=require(\"fs\"),p=require(\"path\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const walk=(d,o=[])=>{if(!fs.existsSync(d))return o;for(const e of fs.readdirSync(d,{withFileTypes:true})){const q=p.join(d,e.name);if(e.isDirectory()){if(e.name!==\"node_modules\")walk(q,o)}else if(/\\.(tsx?|mjs|md)$/.test(e.name))o.push(q)}return o};const fail=m=>{console.error(m);process.exit(1)};const ID=\"LIVE-805\";const dirs=[\"app/(marketing)/mindless\",\"app/(marketing)/timer\",\"app/mindless\",\"app/timer\"].filter(d=>fs.existsSync(d+\"/page.tsx\"));if(!dirs.length)fail(ID+\": no public timer page (app/(marketing)/mindless or /timer)\");const px=r(\"proxy.ts\");if(dirs.some(d=>px.includes(\"\\\"/\"+p.basename(d)+\"\\\"\")))fail(ID+\": the timer route is listed as protected in proxy.ts\");const tree=dirs.flatMap(d=>walk(d)).map(r).join(\"\\n\")+walk(\"components\").filter(f=>/public-timer|mindless-public/.test(f)).map(r).join(\"\\n\");if(!/same time tomorrow/i.test(tree))fail(ID+\": the public timer does not offer same time tomorrow\");if(!/(5|five).?min/i.test(tree)&&!/300/.test(tree))fail(ID+\": no 5-minute practice on the public timer\")'",
     "note": "Fails while no unprotected timer page exists with a 5-minute practice and a same-time-tomorrow offer."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-06"
 }

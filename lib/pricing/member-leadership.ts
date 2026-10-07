@@ -53,7 +53,7 @@ import { featureGatesLive } from './settings'
  *  `practice_publish` is deliberately NOT here: `practice.create` (lib/core/capabilities.ts) already
  *  enforces it live as a paid-tier door, so its meter row exists only to DISPLAY that on /pricing.
  *  Adding a second enforcement path would either duplicate the rule or, worse, loosen it. */
-type MemberLeadershipMeter = 'circle_host' | 'event_create'
+type MemberLeadershipMeter = 'circle_host' | 'event_create' | 'event_guests'
 
 /**
  * Is a member still within their allowance for a metered leadership quantity? FAIL-SAFE to allowed.

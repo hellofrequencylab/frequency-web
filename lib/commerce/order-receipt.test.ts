@@ -503,7 +503,9 @@ describe('sendOrderReceipts — a single-seller order is byte-identical to befor
 
       Blue Door can see the order now and will send it on.
 
-      My orders keeps every purchase you make on Frequency, with the seller and the total.",
+      My orders keeps every purchase you make on Frequency, with the seller and the total.
+
+      Made with Frequency: https://freq.test/?utm_source=made-with&utm_medium=order-receipt&utm_campaign=made-with-frequency",
       }
     `)
     expect({ subject: seller.subject, text: seller.text }).toMatchInlineSnapshot(`
