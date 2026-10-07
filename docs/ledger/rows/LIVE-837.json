@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-837",
+  "title": "A Space website's Contact page opens with the contact form, then the story and photo, then the stats",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/sites/house-home.tsx",
+    "ref": "Owner ask 2026-10-07: 'I want the contact form as the Hero presentation. Re work the content below so the stats are below the content and picture.'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: the website Contact page opened with the About story, its stats squeezed into the text column, and the contact form sat halfway down the page. THE FIX: buildHouseContact puts the Contact form first as the page hero (its heading is the page's h1), the About story and photo follow, and the facts run as a full-width row under both. The closing band with the contact details still ends the page.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('components/sites/house-home.tsx','utf8');if(!/blocks: HouseBlockModel\\[\\] = \\[inquiryOf\\(bag\\('contactForm'\\)[^\\n]*true\\)\\]/.test(s)||!/factsBelow: true/.test(s)){console.error('LIVE-837: the website Contact page does not open with the form hero and stats below');process.exit(1)}\"",
+    "note": "Fails on main (the form is the second section); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
