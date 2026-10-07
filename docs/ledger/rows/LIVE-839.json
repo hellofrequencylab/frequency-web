@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-839",
+  "title": "The Contact form block takes a photo for the website Contact page hero, and website photos picked from the Loom render",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/entity-blocks/block-content.ts",
+    "ref": "Owner ask 2026-10-07 15:52: 'Use this for the contact page hero image.' LIVE-838 follow-up."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: the website Contact page hero (LIVE-838) reads the Contact form block's image, but the block had no photo field, so an owner could not set one; and the house theme read block photos only as plain URL strings, so a photo picked from the Loom (stored as an AssetRef, ADR-1245) vanished from the website. THE FIX: the contactForm schema gains an upload field 'Website Contact page photo' (key image), and components/sites/house-home.tsx reads every block photo through safeImageUrl.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('lib/entity-blocks/block-content.ts','utf8');const h=fs.readFileSync('components/sites/house-home.tsx','utf8');if(!/label: 'Website Contact page photo'/.test(b)||/typeof b.image === 'string'/.test(h)){console.error('LIVE-839: the Contact form block has no photo field, or website photos still drop Loom picks');process.exit(1)}\"",
+    "note": "Fails on main (no field; string-only image reads); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
