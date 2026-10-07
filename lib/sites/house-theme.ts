@@ -249,3 +249,51 @@ export function appHref(url: unknown, origin: string): string | null {
     return null
   }
 }
+
+/** Where a website's links may go. The website stands alone (owner ruling 2026-10-07: "When a user is on
+ *  the website, they should never be re directed back to the main site for anything... If someone clicks
+ *  book, that happens through the site."). `siteBase` is the path the site's pages hang off (`` on its own
+ *  host); `pages` are its page slugs; `contactHref` is its Contact page when it has one. */
+export interface SiteLinkMap {
+  origin: string
+  slug: string
+  siteBase: string
+  pages: readonly string[]
+  contactHref: string | null
+  email: string | null
+}
+
+/** A link the owner set, made a link on the website. The Space's own Frequency paths turn into the site's
+ *  pages: its root is Home, a page is that page, and Book or Contact is the site's Contact form (the
+ *  website takes the request itself; it never hands a visitor to Frequency's sign-in), else a mail link.
+ *  Any other Frequency path is dropped. Another site's http(s) URL, a mail or phone link, and an in-page
+ *  anchor pass. Frequency links a visitor may follow are only the clearly labelled ones the theme draws
+ *  itself (the On Frequency section and the footer mark), never a link this returns. */
+export function siteLocalHref(url: unknown, m: SiteLinkMap): { href: string; external: boolean } | null {
+  if (typeof url !== 'string' || !url.trim()) return null
+  const u = url.trim()
+  if (u.startsWith('#')) return { href: u, external: false }
+  if (/^(mailto|tel):/i.test(u)) return { href: u, external: false }
+  let path: string | null = null
+  if (u.startsWith('/') && !u.startsWith('//')) path = u
+  else {
+    try {
+      const parsed = new URL(u)
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null
+      if (parsed.origin !== m.origin) return { href: parsed.toString(), external: true }
+      path = `${parsed.pathname}${parsed.search}${parsed.hash}`
+    } catch {
+      return null
+    }
+  }
+  const match = /^\/spaces\/([^/?#]+)(?:\/([^/?#]+))?\/?(?:[?#].*)?$/.exec(path)
+  if (!match || decodeURIComponent(match[1]) !== m.slug) return null
+  const seg = match[2] ? decodeURIComponent(match[2]) : null
+  const page = (p: string) => ({ href: m.siteBase ? `${m.siteBase}/${p}` : `/${p}`, external: false })
+  if (!seg) return { href: m.siteBase || '/', external: false }
+  if (seg === 'book' || seg === SITE_CONTACT_SLUG) {
+    if (m.contactHref) return { href: m.contactHref, external: false }
+    return m.email ? { href: `mailto:${m.email}`, external: false } : null
+  }
+  return m.pages.includes(seg) ? page(seg) : null
+}

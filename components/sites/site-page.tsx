@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
 import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
-import { appHref, SITE_CONTACT_SLUG, siteHasContactPage, withoutAccentMarks } from '@/lib/sites/house-theme'
+import { SITE_CONTACT_SLUG, siteHasContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
+import { readProfileData } from '@/lib/spaces/profile-data'
 import { buildHouseContact, buildHouseHome, HouseHome } from '@/components/sites/house-home'
 import { HouseBlock } from '@/components/sites/house-sections'
 import { getSiteSpace } from '@/lib/sites/site-cache'
@@ -112,7 +113,9 @@ export async function SitePage({
   const brandName = space.brandName?.trim() || space.name
   const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
   const theme = parseSpaceTheme(space.preferences)
-  const profileHref = `/spaces/${space.slug}`
+  // The Coming soon notice's one way on: a clearly labelled Frequency link, absolute (on the Space's own
+  // host a `/spaces/...` path is not a site page).
+  const profileHref = `${appOrigin()}/spaces/${space.slug}`
   const siteBase = base ?? `/sites/${space.slug}`
 
   if (!readWebsitePublished(space.preferences)) {
@@ -137,7 +140,15 @@ export async function SitePage({
   const homeHref = siteHref(siteBase, HOME_SLUG)
   const pages = readProfilePages(space.preferences)
   const tagline = await readTagline(space.id)
-  const cta = siteCta(space, origin)
+  const siteLinks: SiteLinkMap = {
+    origin,
+    slug: space.slug,
+    siteBase,
+    pages: pages.map((p) => p.slug),
+    contactHref: hasContact ? siteHref(siteBase, SITE_CONTACT_SLUG) : null,
+    email: readProfileData(space.preferences).email?.trim() || null,
+  }
+  const cta = siteCta(space, siteLinks)
   const pageLinks = pages
     .filter((p) => p.slug !== HOME_SLUG)
     .map((p) => ({ href: siteHref(siteBase, p.slug), label: p.label }))
@@ -152,12 +163,13 @@ export async function SitePage({
         brandName,
         tagline,
         origin,
+        links: siteLinks,
         cta,
         // A block the theme does not style keeps the Space page's own render (same component, same grid).
         renderRow: (row) => <SpaceProfileModules space={toProfileContext(space)} grid={row} />,
       })
     : null
-  const contactModel = contactPage ? buildHouseContact({ space, grid: profileGrid(space.preferences), origin, cta }) : null
+  const contactModel = contactPage ? buildHouseContact({ space, grid: profileGrid(space.preferences), links: siteLinks, cta }) : null
   const links = [...(model?.nav ?? []), ...pageLinks]
   // The site's own entity, on its own origin: the root layout only carries Frequency's Organization.
   const entity = siteEntitySchema({
@@ -213,16 +225,17 @@ function siteDescription(space: Space, brandName: string, pageSlug: string): str
   return line || undefined
 }
 
-/** The Space's own header button (preferences.headerCta, else its type's default), with its target made
- *  absolute on Frequency: a website on its own domain only serves its pages. */
-function siteCta(space: Space, origin: string): { label: string; href: string; external: boolean } | null {
+/** The Space's own header button (preferences.headerCta, else its type's default), pointed at the website:
+ *  Book opens the site's Contact form, never Frequency (siteLocalHref). An owner's link to another site
+ *  stays as they set it. */
+function siteCta(space: Space, links: SiteLinkMap): { label: string; href: string; external: boolean } | null {
   const resolved = resolveHeaderCta(
     readHeaderCtaPreference(space.preferences),
     `/spaces/${space.slug}`,
     defaultPrimaryCtaLabel(space.type),
   )
-  const href = appHref(resolved.href, origin)
-  return href ? { label: resolved.label, href, external: resolved.external } : null
+  const to = siteLocalHref(resolved.href, links)
+  return to ? { label: resolved.label, ...to } : null
 }
 
 /** Whether the owner picked a page theme (preferences.theme). Unset, the site wears the house faces. */
