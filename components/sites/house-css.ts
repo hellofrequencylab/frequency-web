@@ -94,6 +94,10 @@ html:has([data-house-site]),body:has([data-house-site]){background:var(--color-c
 .hs-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 20px;padding-top:16px}
 .hs-fact-v{font-family:var(--hs-serif),Georgia,serif;font-size:clamp(1.6rem,2.6vw,2.1rem);line-height:1.1}
 .hs-fact-l{color:var(--color-text-muted);font-size:14px;line-height:1.4}
+.hs-facts-row{display:flex;flex-direction:column;gap:20px;margin-top:clamp(56px,7vw,96px);padding-top:clamp(32px,4vw,48px);border-top:1px solid var(--color-border)}
+.hs-facts-wide{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:32px 28px;padding-top:0}
+.hs-inquiry-hero{padding-top:clamp(128px,14vw,184px)}
+.hs-display{font-size:clamp(2.8rem,6.4vw,5rem);line-height:1}
 
 .hs-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:clamp(16px,2.5vw,28px)}
 .hs-card{display:flex;flex-direction:column;gap:16px;padding:clamp(32px,4vw,44px);border-radius:32px;background:var(--color-surface);box-shadow:${WARM(30, 70, 40, 45)}}

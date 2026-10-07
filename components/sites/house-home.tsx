@@ -268,12 +268,13 @@ function factsOf(b: Bag): { eyebrow: string | null; title: string | null; items:
 /** The Contact form section: the block's own heading and intro, and its settings for the CRM-wired form
  *  (app/(main)/spaces/[slug]/contact-form-actions.ts writes the lead and emails the owner). After sending,
  *  the thank-you offers the Space's header button, unless that button is this same form. */
-function inquiryOf(b: Bag, key: string, anchor: string | null, slug: string, cta: HouseLink | null, links: SiteLinkMap): HouseBlockModel {
+function inquiryOf(b: Bag, key: string, anchor: string | null, slug: string, cta: HouseLink | null, links: SiteLinkMap, hero = false): HouseBlockModel {
   const opt = (v: unknown) => text(v) ?? undefined
   return {
     kind: 'inquiry',
     key,
     anchor,
+    hero,
     eyebrow: text(b.eyebrow),
     title: text(b.title),
     body: paragraphs(b.body),
@@ -310,14 +311,16 @@ function closingOf(b: Bag, key: string, contact: ReturnType<typeof contactOf>, l
 
 /**
  * THE WEBSITE'S CONTACT PAGE (`/contact`, offered by siteHasContactPage). Three sections, every word from the
- * Space's own fields: a profile (the About block's heading and text, the Zigzag photo, the facts), the
- * Contact form, then the closing band with the contact details. A section with nothing to show is dropped.
+ * Space's own fields: the Contact form as the hero (its heading is the page's h1), a profile (the About
+ * block's heading and text beside the Zigzag photo, the facts in a row beneath both), then the closing band
+ * with the contact details. A section with nothing to show is dropped.
  */
 export function buildHouseContact({ space, grid, links, cta }: Pick<HouseHomeInput, 'space' | 'grid' | 'links' | 'cta'>) {
   const content: Record<string, Bag> = (grid.content ?? {}) as Record<string, Bag>
   const bag = (id: string): Bag => content[id] ?? {}
   const imageOf = (b: Bag) => (typeof b.image === 'string' ? safeImageSrc(b.image) : null)
-  const blocks: HouseBlockModel[] = []
+  // The form is the page's hero: a visitor came here to write, so the form leads and the story follows.
+  const blocks: HouseBlockModel[] = [inquiryOf(bag('contactForm'), 'form', 'message', space.slug, cta, links, true)]
 
   const about = bag('about')
   const ps = paragraphs(about.body)
@@ -334,9 +337,9 @@ export function buildHouseContact({ space, grid, links, cta }: Pick<HouseHomeInp
       body: ps.length > 1 ? ps.slice(0, -1) : ps,
       pull: ps.length > 1 ? ps[ps.length - 1] : null,
       facts: facts && facts.items.length ? facts : null,
+      factsBelow: true,
     })
   }
-  blocks.push(inquiryOf(bag('contactForm'), 'form', 'message', space.slug, cta, links))
   const close = closingOf(bag('accentBeat'), 'close', contactOf(readProfileData(space.preferences), null), links, space)
   if (close) blocks.push(close)
   return { blocks }
