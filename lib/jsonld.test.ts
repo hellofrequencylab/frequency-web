@@ -711,6 +711,8 @@ describe('productSchema', () => {
     const { defaultPricingInput } = await import('./pricing/pricing-page')
     const input = defaultPricingInput()
     const offers = allOfferings(input)
+      // The public page quotes the list price; the $99 Founding Collective rate is charged only to granted
+      // Spaces (#3208), so the Offer is the list price.
       .filter((o) => o.monthlyCents > 0)
       .map((o) =>
         productSchema({ title: `Frequency ${o.label}`, priceCents: o.monthlyCents, billingPeriodCode: 'MON', path: '/pricing' }),
@@ -719,7 +721,7 @@ describe('productSchema', () => {
     expect(collective).toBeTruthy()
     expect(collective!.offers).toMatchObject({
       '@type': 'Offer',
-      price: (input.catalog.collective_base.month.foundingCents / 100).toFixed(2),
+      price: (input.catalog.collective_base.month.listCents / 100).toFixed(2),
     })
   })
 })
