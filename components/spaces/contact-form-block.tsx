@@ -78,11 +78,17 @@ export function ContactFormBlock({
     if (preview || status === 'loading') return
     setError(null)
     setStatus('loading')
-    const res = await submitContactForm({ slug, name, email, phone, message, optIn, company })
-    if (res.ok) {
-      setStatus('done')
-    } else {
-      setError(res.error)
+    try {
+      const res = await submitContactForm({ slug, name, email, phone, message, optIn, company })
+      if (res.ok) {
+        setStatus('done')
+      } else {
+        setError(res.error)
+        setStatus('idle')
+      }
+    } catch {
+      // A dropped connection or a server error must not leave the button stuck on Sending.
+      setError('That did not send. Check your connection and try again.')
       setStatus('idle')
     }
   }

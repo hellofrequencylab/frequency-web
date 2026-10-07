@@ -2,9 +2,10 @@
 // refusal copy without pulling lib/pricing/payments-gate.ts (and its server reads) into the browser.
 // CONTENT-VOICE: plain, no em dashes, and no typed prices.
 
-/** Host-facing copy (CONTENT-VOICE: plain, no em dashes, no typed prices). */
+/** Host-facing copy (CONTENT-VOICE: plain, no em dashes, no typed prices). No trial length either: the
+ *  upgrade moment reads it from pricing_settings.trial, and a number typed here drifts from it. */
 export const PAYMENTS_REFUSAL_SPACE =
-  'Taking payments comes with Business. Start its 14-day trial, or keep it free and receive tips.'
+  'Taking payments comes with Business. Start its free trial, or keep it free and receive tips.'
 export const PAYMENTS_REFUSAL_PERSONAL =
   'Taking payments comes with a Business Space. Keep it free and receive tips, or run it from a Space on Business.'
 

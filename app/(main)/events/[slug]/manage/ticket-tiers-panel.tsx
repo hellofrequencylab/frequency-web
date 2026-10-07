@@ -23,6 +23,8 @@ import {
   hostSetTicketTierActive,
 } from '../ticket-tier-actions'
 import { Button } from '@/components/ui/button'
+import { UpgradeMoment, type UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
+import { isPaymentsRefusal } from '@/lib/pricing/payments-copy'
 
 // Host-facing ticket-tier manager (audit finding #9). Create / edit / retire named
 // tiers with the full range of pricing modes right from the Manage dashboard, so a
@@ -71,12 +73,16 @@ export function TicketTiersPanel({
   slug,
   tiers,
   spaceAccess,
+  upgrade,
 }: {
   eventId: string
   slug: string
   tiers: TicketTierRow[]
   /** Hosting-space membership context (ADR-823); null = no hosting space, control hidden. */
   spaceAccess?: SpaceAccessContext | null
+  /** Present when the event's host cannot take payments (LIVE-753): a priced tier the gate refuses
+   *  opens the upgrade moment instead of a bare error line (LIVE-758). */
+  upgrade?: UpgradeMomentSetup
 }) {
   const router = useRouter()
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -118,7 +124,17 @@ export function TicketTiersPanel({
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>}
+      {upgrade && isPaymentsRefusal(error) ? (
+        <UpgradeMoment
+          surface="event"
+          target={upgrade.target}
+          offer={upgrade.offer}
+          onKeepFree={() => setError(null)}
+          onUpgraded={() => setError(null)}
+        />
+      ) : (
+        error && <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">{error}</p>
+      )}
 
       {tiers.length > 0 && (
         <div className="space-y-2">

@@ -17,6 +17,8 @@ import { featureWallLabel } from '@/lib/pricing/feature-tiers'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { resolveHostingSpaceIdFromRow } from './host-space'
+import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
+import { loadUpgradeOffer, type UpgradeOffer, type UpgradeTarget } from '@/lib/pricing/business-offer'
 
 export const MEMBERSHIP_TICKET_FEATURE = 'space_membership_tickets' as const
 
@@ -96,5 +98,37 @@ export async function loadSpaceAccessContext(eventId: string): Promise<SpaceAcce
     membershipTiers: membershipTiers
       .filter((t) => t.id)
       .map((t) => ({ id: t.id!, name: t.name })),
+  }
+}
+
+/** What the ticket tier editor needs to open the upgrade moment when the payments gate refuses a
+ *  priced tier (LIVE-758): who it speaks to (the hosting Space, or the person for a personal event)
+ *  and the Business offer. Null when the event's host can already take payments, so the panel
+ *  never shows for a host that sells. */
+export async function loadTicketTierUpgrade(
+  eventId: string,
+  viewerProfileId: string | null,
+): Promise<{ target: UpgradeTarget; offer: UpgradeOffer } | null> {
+  const admin = createAdminClient()
+  const { data: ev } = await admin
+    .from('events')
+    .select('space_id, host_space_id')
+    .eq('id', eventId)
+    .maybeSingle()
+  const spaceId = await resolveHostingSpaceIdFromRow(ev as { space_id: string | null; host_space_id: string | null } | null)
+  if (!spaceId) {
+    // A personal event: a person sells only through a Space on Business, so the moment says so.
+    return { target: { spaceSlug: null, canUpgrade: false }, offer: await loadUpgradeOffer() }
+  }
+  const { data: sp } = await admin
+    .from('spaces')
+    .select('slug, plan, owner_profile_id')
+    .eq('id', spaceId)
+    .maybeSingle()
+  const space = sp as { slug: string; plan: string | null; owner_profile_id: string | null } | null
+  if (!space || (await spaceCanTakePayments(spaceId, { plan: space.plan }))) return null
+  return {
+    target: { spaceSlug: space.slug, canUpgrade: !!viewerProfileId && viewerProfileId === space.owner_profile_id },
+    offer: await loadUpgradeOffer(),
   }
 }

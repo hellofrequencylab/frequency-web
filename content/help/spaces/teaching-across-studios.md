@@ -17,7 +17,7 @@ A free Space is one page for what you teach: who you are, your own Events, and w
 
 ## Can I sell my own workshops?
 
-Yes. Put a workshop on your Space as an Event and sell tickets. See [Get paid](/help/spaces/get-paid) for where the money lands and what the network takes.
+Yes, once your Space is on Business. Put a workshop on your Space as an Event and sell tickets. See [Get paid](/help/spaces/get-paid) for where the money lands and what the network takes.
 
 ## Do I get a student list?
 

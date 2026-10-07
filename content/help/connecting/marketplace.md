@@ -54,8 +54,8 @@ reach the person and arrange the rest offline.
 
 ## Market and Frequency Store
 
-- The **Market** is where members and businesses sell. Open a storefront to list your first
-  product, then manage it and set up payouts from **My storefront**.
+- The **Market** is where businesses sell. Selling takes a Space on Business: open a storefront to
+  list your first product, then manage it and set up payouts from **My storefront**.
 - The **Frequency Store** is Frequency's own store for merch, event passes, and retreats.
 - Anything you buy shows up under **My orders** in your account menu.
 - A cart can hold things from more than one Market seller, and you pay once. Your receipt email

@@ -43,7 +43,8 @@ import { QuestionEditor } from './question-editor'
 import { FollowUpButton } from './follow-up-button'
 import { TicketTiersPanel } from './ticket-tiers-panel'
 import { listEventTicketTiers } from '@/lib/events/ticket-tiers'
-import { loadSpaceAccessContext } from '@/lib/events/ticket-space-access'
+import { loadSpaceAccessContext, loadTicketTierUpgrade } from '@/lib/events/ticket-space-access'
+import { getCallerProfile } from '@/lib/auth'
 import { listEventGuests, type EventGuestListItem, type GuestRsvpStatus } from '@/lib/events/guests'
 
 // The Manage Dashboard's body sections (EVENTS-REWORK A2). Each is an async Server
@@ -520,11 +521,21 @@ export async function InvitedGuestsSection({ eventId }: { eventId: string }) {
 // host actions re-check that same capability on every write.
 
 export async function TicketTiersSection({ eventId, slug }: { eventId: string; slug: string }) {
-  const [tiers, spaceAccess] = await Promise.all([
+  const [tiers, spaceAccess, upgrade] = await Promise.all([
     listEventTicketTiers(eventId),
     loadSpaceAccessContext(eventId),
+    // A host that cannot take payments yet gets the upgrade moment on a refused priced tier (LIVE-758).
+    getCallerProfile().then((viewer) => loadTicketTierUpgrade(eventId, viewer?.id ?? null)),
   ])
-  return <TicketTiersPanel eventId={eventId} slug={slug} tiers={tiers} spaceAccess={spaceAccess} />
+  return (
+    <TicketTiersPanel
+      eventId={eventId}
+      slug={slug}
+      tiers={tiers}
+      spaceAccess={spaceAccess}
+      upgrade={upgrade ?? undefined}
+    />
+  )
 }
 
 // ── Sent Event Dispatches ─────────────────────────────────────────────────────
