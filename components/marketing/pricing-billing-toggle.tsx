@@ -136,7 +136,7 @@ export function PricingAudienceToggle() {
     <div
       role="radiogroup"
       aria-label="Who the plans are for"
-      className="mx-auto mb-4 flex w-fit items-center gap-1 rounded-2xl border border-border bg-surface p-1"
+      className="mx-auto mb-4 flex w-fit items-center gap-1 rounded-control border border-border bg-surface p-1"
     >
       <IntervalButton active={audience === 'space'} onClick={() => setAudience('space')} label="For your Space" />
       <IntervalButton active={audience === 'personal'} onClick={() => setAudience('personal')} label="For you" />
