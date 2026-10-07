@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-843",
+  "title": "The website's Contact page is listed in the Space Pages list and opens its Contact form for editing",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/spaces/space-page-panel.tsx",
+    "ref": "Owner ask 2026-10-07 18:12 ('Contact should be a page in my pages list.'). LIVE-839 / LIVE-840 follow-up."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: a Space website serves a Contact page (/contact, built from the Contact form block, LIVE-837 to 839), but the Pages list on /spaces/<slug>/manage/layout showed only Home and custom pages, so the owner could not find where that page is edited. THE FIX: when the layout has a Contact form block, the Pages list shows a fixed Contact row (no rename, move or delete) with a View link to the live website page. Picking it (?page=contact) opens the layout editor with the Contact form block selected and scrolled into view.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const f=require('fs');const p=f.readFileSync('components/spaces/space-page-panel.tsx','utf8');const l=f.readFileSync('app/(main)/spaces/[slug]/manage/layout/page.tsx','utf8');if(!/<ContactPageRow/.test(p)){console.error('LIVE-843: the Pages list has no Contact row');process.exit(1)}if(!/contactPage=\\{contactPage\\}/.test(l)||!/focusBlockId=/.test(l)){console.error('LIVE-843: the layout page does not list Contact or open its form');process.exit(1)}\"",
+    "note": "Fails on main (no Contact row in the Pages list); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

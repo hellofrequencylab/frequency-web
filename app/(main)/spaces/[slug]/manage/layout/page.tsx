@@ -11,6 +11,10 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { readWebsitePublished } from '@/lib/spaces/website'
+import { SITE_CONTACT_SLUG, siteHasContactPage } from '@/lib/sites/house-theme'
+import { boundSiteDomain } from '@/lib/sites/site-domain'
+import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
+import { appOrigin } from '@/lib/sites/host'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
@@ -61,8 +65,23 @@ export default async function SpacePageSettingsPage({
   // unknown slug (e.g. a just-deleted page) clamps to Home rather than erroring.
   const pages = readProfilePages(space.preferences)
   const requested = (page ?? HOME_SLUG).trim().toLowerCase()
-  const activePageSlug = hasPage(space.preferences, requested) ? requested : HOME_SLUG
   const websitePublished = readWebsitePublished(space.preferences)
+  // The website's Contact page is built from the Contact form block, so it is listed (and picked) whenever
+  // that block is on the page (LIVE-843). Picking it opens the Contact form in the editor.
+  const hasContactPage = siteHasContactPage(space.preferences)
+  const activePageSlug =
+    hasContactPage && requested === SITE_CONTACT_SLUG
+      ? SITE_CONTACT_SLUG
+      : hasPage(space.preferences, requested)
+        ? requested
+        : HOME_SLUG
+  const contactPage = hasContactPage
+    ? {
+        url: websitePublished
+          ? sitePageUrl(siteBaseUrl(space.slug, await boundSiteDomain(space), appOrigin()), SITE_CONTACT_SLUG)
+          : null,
+      }
+    : null
   const readOnly = staffViewing && !canManage
   return (
     <FocusTemplate
@@ -81,7 +100,10 @@ export default async function SpacePageSettingsPage({
           place. Reads + writes the SAME persisted layout the settings panel below and the in-rail arranger use,
           so the older rail arranger stays available as a fallback and nothing about persistence changes. */}
       <section className="mb-10" aria-label="Page editor">
-        <SpaceCanvasEditorSection slug={slug} />
+        <SpaceCanvasEditorSection
+          slug={slug}
+          focusBlockId={activePageSlug === SITE_CONTACT_SLUG ? 'contactForm' : undefined}
+        />
       </section>
       {/* Page settings (secondary): the pages list, cover, publish state, and block show / hide. */}
       <SpacePagePanel
@@ -92,6 +114,7 @@ export default async function SpacePageSettingsPage({
         websitePublished={websitePublished}
         canManagePages={spaceCanUseFullWebsite(space)}
         readOnly={readOnly}
+        contactPage={contactPage}
       />
     </FocusTemplate>
   )

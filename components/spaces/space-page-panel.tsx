@@ -8,6 +8,7 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  ExternalLink,
   Globe,
   Loader2,
   Pencil,
@@ -45,6 +46,7 @@ export function SpacePagePanel({
   websitePublished = false,
   canManagePages = false,
   readOnly = false,
+  contactPage = null,
 }: {
   slug: string
   /** The operator's ordered nav pages (Home first), for the switcher + manager. */
@@ -61,6 +63,9 @@ export function SpacePagePanel({
   canManagePages?: boolean
   /** A staff previewer (read-only): the controls render disabled. */
   readOnly?: boolean
+  /** The website's Contact page, listed when the layout has a Contact form block (LIVE-843). It is built
+   *  from that block, so it has no rename / move / delete; `url` opens it on the live website. */
+  contactPage?: { url: string | null } | null
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -146,6 +151,13 @@ export function SpacePagePanel({
                   }
                 />
               ))}
+              {contactPage && (
+                <ContactPageRow
+                  active={activePageSlug === CONTACT_SLUG}
+                  url={contactPage.url}
+                  onSelect={() => switchTo(CONTACT_SLUG)}
+                />
+              )}
             </ul>
             {!readOnly &&
               (canManagePages ? (
@@ -176,6 +188,46 @@ export function SpacePagePanel({
           )}
       </div>
     </div>
+  )
+}
+
+/** The Contact page's slug: reserved for it in lib/spaces/profile-pages, served by the website. */
+const CONTACT_SLUG = 'contact'
+
+/** The website's Contact page in the Pages manager. Picking it opens the Contact form block in the editor
+ *  above, which is where its photo, heading and text live. Fixed: no rename, move or delete. */
+function ContactPageRow({ active, url, onSelect }: { active: boolean; url: string | null; onSelect: () => void }) {
+  return (
+    <li
+      className={cn(
+        'flex items-center gap-3 rounded-card border bg-surface p-3 lift-1 transition-colors',
+        active ? 'border-primary ring-1 ring-primary' : 'border-border',
+      )}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-pressed={active}
+        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        title={active ? 'You are editing this page' : 'Edit Contact'}
+      >
+        <span className="block truncate text-body-sm font-semibold text-text">Contact</span>
+        <span className="shrink-0 rounded-pill bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+          Contact form
+        </span>
+        {active && <Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />}
+      </button>
+      {url && (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex shrink-0 items-center gap-1 text-body-sm font-semibold text-primary-strong hover:underline"
+        >
+          View <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+        </a>
+      )}
+    </li>
   )
 }
 
