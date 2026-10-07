@@ -43,7 +43,7 @@ describe('mensworkAccentVars', () => {
     expect(dark['--color-text-on-primary']).toBe('#FFFFFF')
   })
 
-  it("passes a DAWN token accent through the house builder", () => {
-    expect(mensworkAccentVars('--color-signal')?.['--color-primary']).toMatch(/var\(--color-signal/)
+  it('wears the theme teal for a DAWN token accent, which would resolve against the Frequency palette', () => {
+    expect(mensworkAccentVars('--color-broadcast')?.['--color-primary']).toBe(P.teal)
   })
 })

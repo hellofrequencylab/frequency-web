@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { appOrigin } from '@/lib/sites/host'
-import type { MensworkSeason } from '@/lib/theme/menswork'
+import { MENSWORK_SEASON_INFO, type MensworkSeason } from '@/lib/theme/menswork'
 import { HOUSE_CSS } from './house-css'
 import { MENSWORK_CSS } from './menswork-css'
 import { HouseMenu } from './house-menu'
@@ -18,7 +18,9 @@ import { HouseMenu } from './house-menu'
 //   · SKIN: a Space on the Menswork page theme gets the Menswork website skin layered over the house CSS
 //     (components/sites/menswork-css.ts): the same sections and words in that theme's palette and shapes,
 //     with the current season's accent. A skinned site also sets the Space's logo beside its name, drawn
-//     as a one-colour mark in the theme's text color (a black line logo reads white on charcoal).
+//     as a one-colour mark in the theme's text color (a black line logo reads white on charcoal), a season
+//     bar under the header (the season now and the year's four, as the design system's site strip), and a
+//     fuller footer: the name, the Space's tagline and the page links.
 //   · FOOTER: the copyright line and the "Frequency Partner" badge, the ONLY mention of Frequency on the
 //     site (owner ask 2026-10-06).
 //
@@ -52,6 +54,7 @@ export function SiteChrome({
   themeFonts,
   skin = null,
   logoUrl = null,
+  tagline = null,
   children,
 }: {
   brandName: string
@@ -67,6 +70,8 @@ export function SiteChrome({
   /** The Space's logo, set beside the name. Only a skinned site passes one; the house look keeps the
    *  name in type. */
   logoUrl?: string | null
+  /** The Space's tagline, printed in a skinned site's footer. */
+  tagline?: string | null
   children: ReactNode
 }) {
   return (
@@ -111,15 +116,56 @@ export function SiteChrome({
           </div>
         </div>
       </header>
+      {skin && <SeasonBar season={skin.season} />}
 
       <main id="top">{children}</main>
 
+      {skin && (
+        <div className="hs-footer-top">
+          <div className="hs-footer-brand">
+            <a href={homeHref} className="hs-brand">
+              {brandName}
+            </a>
+            {tagline && <p>{tagline}</p>}
+          </div>
+          {links.length > 0 && (
+            <nav aria-label={`${brandName} pages`} className="hs-footer-links">
+              {links.map((l) => (
+                <a key={l.href} href={l.href}>
+                  {l.label}
+                </a>
+              ))}
+            </nav>
+          )}
+        </div>
+      )}
       <footer className="hs-footer">
         <span>
           © {new Date().getFullYear()} {brandName}
         </span>
         <a href={appOrigin()}>Frequency Partner</a>
       </footer>
+    </div>
+  )
+}
+
+const SEASON_ORDER: MensworkSeason[] = ['winter', 'spring', 'summer', 'fall']
+
+/** The Menswork season bar: the season now, in its accent, and the year's four as a chevron track. */
+function SeasonBar({ season }: { season: MensworkSeason }) {
+  const now = MENSWORK_SEASON_INFO[season]
+  return (
+    <div className="hs-season">
+      <p className="hs-season-now">
+        <span>{now.name}</span> {now.range}
+      </p>
+      <ol className="hs-season-track" aria-label="The year's seasons">
+        {SEASON_ORDER.map((s) => (
+          <li key={s} data-season-mark={s} aria-current={s === season ? 'true' : undefined}>
+            {MENSWORK_SEASON_INFO[s].name}
+          </li>
+        ))}
+      </ol>
     </div>
   )
 }
