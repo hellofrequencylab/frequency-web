@@ -10,6 +10,7 @@
 import { getMyProfileId } from '@/lib/auth'
 import { draftEventSpark } from '@/lib/ai/events-ai'
 import type { EventSparkAnswers, ExtractedEvent } from '@/lib/events/types'
+import { normalizeSeedFidelity } from '@/lib/studio/kernel/fidelity'
 
 export type SparkEventResult =
   | { ok: true; draft: ExtractedEvent }
@@ -24,11 +25,13 @@ export type SparkEventResult =
 export async function sparkEventAction(
   answers: EventSparkAnswers,
   sourceText?: string,
+  /** Exact, Edit or Rewrite. Normalized here: a client value is never trusted as-is. */
+  fidelity?: string,
 ): Promise<SparkEventResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return { ok: false, reason: 'unauthorized' }
 
-  const draft = await draftEventSpark({ answers, sourceText, profileId })
+  const draft = await draftEventSpark({ answers, sourceText, fidelity: normalizeSeedFidelity(fidelity), profileId })
   if (!draft) return { ok: false, reason: 'ai_unavailable' }
 
   return { ok: true, draft }

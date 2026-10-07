@@ -10,6 +10,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import type { SeedMood } from '@/lib/studio/kernel/moods'
+import { fidelitySourceCap, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import { defineSpark, runSpark, sparkStr, sparkStrArray, sparkStrOrNull, sparkInt, sparkEnum } from './spark'
 import { withJourneyShape } from './journey-shape'
 
@@ -156,12 +157,18 @@ export const JOURNEY_SPARK = defineSpark<JourneySpark, number>({
   tool: TOOL,
   system: withJourneyShape(SYSTEM),
   coerce,
+  proseField: 'overview',
 })
 
 export async function draftJourneySpark(
-  input: SparkAnswers & { profileId?: string | null; sourceText?: string },
+  input: SparkAnswers & {
+    profileId?: string | null
+    sourceText?: string
+    /** Exact, Edit or Rewrite (lib/studio/kernel/fidelity.ts). Absent means Rewrite. */
+    fidelity?: SeedFidelity
+  },
 ): Promise<JourneySpark | null> {
-  const src = input.sourceText?.trim().slice(0, 8000)
+  const src = input.sourceText?.trim().slice(0, fidelitySourceCap(input.fidelity, 8000))
   const userText = [
     src
       ? `The author pasted their own course write-up. Read it closely and draft the Journey (title, promise, overview, weekly arc) FROM it, staying faithful to their intent and wording where it helps:\n"""\n${src}\n"""\n`
@@ -181,17 +188,19 @@ export async function draftJourneySpark(
     content: userText,
     context: input.weeks,
     mood: input.mood,
+    fidelity: input.fidelity,
     profileId: input.profileId,
   })
 }
 
-/** Re-coerce every field. Never trust the raw model shape. */
+/** Re-coerce every field. Never trust the raw model shape. The overview bound matches what
+ *  createJourneyFromSparkAction stores (8000), so an outline kept word for word survives. */
 export function coerce(raw: unknown, weeks: number): JourneySpark | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   const title = sparkStr(r.title, 80)
-  const promise = sparkStr(r.promise, 200)
-  const overview = sparkStr(r.overview, 1200)
+  const promise = sparkStr(r.promise, 280)
+  const overview = sparkStr(r.overview, 8000)
   if (!title) return null
 
   // The weekly arc — one entry per week, clamped to the requested length.
@@ -203,7 +212,7 @@ export function coerce(raw: unknown, weeks: number): JourneySpark | null {
       if (!w || typeof w !== 'object') continue
       const ww = w as Record<string, unknown>
       const wt = sparkStr(ww.title, 80)
-      const wf = sparkStr(ww.focus, 300)
+      const wf = sparkStr(ww.focus, 1000)
       if (wt) arc.push({ title: wt, focus: wf })
     }
   }

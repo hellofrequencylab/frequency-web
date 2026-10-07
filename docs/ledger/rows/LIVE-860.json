@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-860",
+  "title": "The Circle, Journey and Event Sparks ask Exact, Edit or Rewrite before Vera drafts, so a pasted write-up keeps its content",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/studio/kernel/fidelity.ts",
+    "ref": "Owner ask 2026-10-07: 'Take a look at the Circle, Journey and Event seeder. It strips out a LOT of content. Modify it so it has a three button what would you like me to do option. Use Exact | Edit | Re Write.'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. Why content was lost: every Spark rewrote by default. The prompts asked for short fixed-length fields (an event description of '1 to 2 sentences', a Circle About of 'about 25 words', a Journey overview of 'two to four short sentences'), the pasted source was cut before Vera read it (Event 4,000 characters, Circle and Journey 8,000), the output ceiling was small (Journey 600 tokens, Circle 900, Event 1,024), and the coercers clamped prose on the way back (event description 600, Circle About 280, Journey overview 1,200). The fix: a kernel choice (lib/studio/kernel/fidelity.ts) shown as three buttons (components/studio/spark/spark-fidelity.tsx) on the step that drafts. Exact keeps the author's words verbatim and only sorts them into fields; Edit fixes spelling, grammar and punctuation and keeps every detail; Rewrite is the old behaviour, byte for byte. runSpark appends the choice last so it outranks the length guides, lifts the ceiling to 6,000 tokens and drops the mood for Exact and Edit; each draft reads up to 20,000 characters of source; the prose clamps now match what the create paths store (event description and Journey overview 8,000). Default: Edit when the author pasted or uploaded something, Rewrite when they only answered questions.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/fidelityDirective\\(run\\.fidelity/.test(r('lib/ai/spark.ts')))miss.push('runSpark does not apply the Exact / Edit / Rewrite choice');for(const p of ['app/(main)/events/event-spark.tsx','components/circles/builder/circle-wizard.tsx','components/journey/v2/journey-spark.tsx'])if(!/<SparkFidelity /.test(r(p)))miss.push(p+' does not ask Exact, Edit or Rewrite');if(!/description: str\\(r\\.description, 8000\\)/.test(r('lib/events/normalize.ts')))miss.push('an event description is still clamped short');if(miss.length){console.error('LIVE-860: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

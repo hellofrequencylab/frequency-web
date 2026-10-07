@@ -31,6 +31,7 @@ import {
   FieldControl,
   SparkDoors,
   SparkDropzone,
+  SparkFidelity,
   SparkOffers,
   SparkShell,
   SparkSteer,
@@ -40,6 +41,7 @@ import {
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
 import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
+import { defaultSeedFidelity, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import { createClient } from '@/lib/supabase/client'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
@@ -260,6 +262,11 @@ export function EventSpark({
   const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
   const [directions, setDirections] = useState('')
 
+  // Exact, Edit or Rewrite, asked right before Vera drafts. Null until the author picks, so the
+  // default can follow what they brought (their own write-up keeps its words; four short answers
+  // get a fresh draft).
+  const [fidelityPick, setFidelityPick] = useState<SeedFidelity | null>(null)
+
   // ── The pre-publish read (ADR-993 / ADR-995) ──
   //
   // ADVICE, never a gate: nothing is stored and "Create event" never waits on it.
@@ -299,6 +306,8 @@ export function EventSpark({
 
   /** Whether there is material to draft FROM, which is what picks the import path. */
   const hasSource = flyer.trim().length > 0 || staged !== null
+  const fidelity = fidelityPick ?? defaultSeedFidelity(hasSource)
+  const fidelityChoice = <SparkFidelity value={fidelity} onChange={setFidelityPick} />
 
   const applyDraft = (d: ExtractedEvent) => {
     setDraft(d)
@@ -330,7 +339,7 @@ export function EventSpark({
             setError('Could not upload that photo. Try again.')
             return
           }
-          const res = await scanPoster([path], flyer.trim() || undefined)
+          const res = await scanPoster([path], flyer.trim() || undefined, fidelity)
           if (!res.ok) {
             setError(aiOffMessage(res.reason, 'Could not read that. Try a clearer photo, or paste the text too.'))
             return
@@ -344,7 +353,7 @@ export function EventSpark({
       }
 
       // Text-only: the import path with just pasted text, or the questions path.
-      const res = await sparkEventAction(answers, flyer.trim() || undefined)
+      const res = await sparkEventAction(answers, flyer.trim() || undefined, fidelity)
       if (!res.ok) {
         setError(aiOffMessage(res.reason, 'Sign in to draft an event.'))
         return
@@ -506,6 +515,7 @@ export function EventSpark({
               </span>
             </div>
           )}
+          {hasSource && <div className="mt-3">{fidelityChoice}</div>}
         </SparkDoors>
       </SparkShell>
     )
@@ -553,6 +563,7 @@ export function EventSpark({
             placeholder={question.placeholder}
           />
         )}
+        {last && <div className="mt-4">{fidelityChoice}</div>}
       </SparkShell>
     )
   }

@@ -47,6 +47,7 @@ import { wizardSecondaryClass } from '@/components/templates'
 import {
   SparkDoors,
   SparkDropzone,
+  SparkFidelity,
   SparkOffers,
   SparkShell,
   SparkSteer,
@@ -62,6 +63,7 @@ import { isError } from '@/lib/action-result'
 import { JOURNEY_MANIFEST } from '@/lib/studio/entities/journey'
 import { sparkFields } from '@/lib/studio/kernel/review-kernel'
 import { DEFAULT_SEED_MOOD, type SeedMood } from '@/lib/studio/kernel/moods'
+import { defaultSeedFidelity, type SeedFidelity } from '@/lib/studio/kernel/fidelity'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import {
   sparkJourneyAction,
@@ -205,6 +207,9 @@ export function JourneySpark({
   const patchMeeting = (patch: Partial<SparkMeeting>) => setMeeting((m) => ({ ...m, ...patch }))
   // The mood dial (kernel/moods.ts), shown on review so it costs no extra step.
   const [mood, setMood] = useState<SeedMood>(DEFAULT_SEED_MOOD)
+  // Exact, Edit or Rewrite, asked right before Vera drafts. Null until the author picks, so the
+  // default follows what they brought: a write-up keeps its words, answers get a fresh draft.
+  const [fidelityPick, setFidelityPick] = useState<SeedFidelity | null>(null)
   // A cover Vera drew, once the author has kept it. Held here rather than on a draft object because
   // this Spark has no draft object: the review step IS the state, and creation is deferred.
   const [cover, setCover] = useState<GeneratedCover | null>(null)
@@ -253,6 +258,8 @@ export function JourneySpark({
 
   const weeks = clampWeeks(weeksText)
   const source = sourceText.trim()
+  const fidelity = fidelityPick ?? defaultSeedFidelity(source.length > 0)
+  const fidelityChoice = <SparkFidelity value={fidelity} onChange={setFidelityPick} />
 
   // One binding per asked field. The control comes from the manifest; the value stays in the
   // exact shape createJourneyFromSparkAction already takes.
@@ -303,7 +310,7 @@ export function JourneySpark({
   const generate = () => {
     setError(null)
     start(async () => {
-      const res = await sparkJourneyAction({ who, topic, outcome, weeks, pace }, source || undefined)
+      const res = await sparkJourneyAction({ who, topic, outcome, weeks, pace }, source || undefined, fidelity)
       if (isError(res)) {
         setError(res.error)
       } else {
@@ -610,6 +617,7 @@ export function JourneySpark({
           {/* Weeks, and only weeks: the same one question this path has always asked. The daily
               ask comes from what Vera reads in the write-up. */}
           {askField('answers.weeks')}
+          {fidelityChoice}
         </div>
       </SparkShell>
     )
@@ -650,7 +658,10 @@ export function JourneySpark({
         error={error}
         exits={[{ label: 'Build it yourself', onSelect: () => setStage('manual') }]}
       >
-        <div className="space-y-5">{q.paths.map((path) => askField(path))}</div>
+        <div className="space-y-5">
+          {q.paths.map((path) => askField(path))}
+          {last && fidelityChoice}
+        </div>
       </SparkShell>
     )
   }

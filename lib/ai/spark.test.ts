@@ -190,6 +190,28 @@ describe('runSpark: the mood dial still threads', () => {
   })
 })
 
+describe('runSpark: the Exact / Edit / Rewrite choice', () => {
+  it('leaves Rewrite (and no choice) byte for byte the old call', async () => {
+    state.toolInput = { title: 'A steadier week' }
+    await runSpark(TEST_SPARK, { content: 'hi', context: 80, mood: 'calm' })
+    const before = state.lastCall
+    await runSpark(TEST_SPARK, { content: 'hi', context: 80, mood: 'calm', fidelity: 'rewrite' })
+    expect(state.lastCall?.system).toBe(before?.system)
+    expect(state.lastCall?.maxTokens).toBe(100)
+  })
+
+  it.each(['exact', 'edit'] as const)('%s outranks the length guides, lifts the ceiling, and drops the mood', async (fidelity) => {
+    state.toolInput = { title: 'A steadier week' }
+    await runSpark({ ...TEST_SPARK, proseField: 'overview' }, { content: 'hi', context: 80, mood: 'calm', fidelity })
+    const system = String(state.lastCall?.system)
+    // The directive sits AFTER the task rules, so it wins where they disagree on length.
+    expect(system.indexOf(`CHOICE: ${fidelity.toUpperCase()}`)).toBeGreaterThan(system.indexOf('TASK RULES'))
+    expect(system).toContain('"overview"')
+    expect(system).not.toContain('Calm and trustworthy')
+    expect(Number(state.lastCall?.maxTokens)).toBeGreaterThan(100)
+  })
+})
+
 describe('runSpark: the call it makes', () => {
   it('forces the declared tool, disables thinking, and records the ledger row', async () => {
     state.toolInput = { title: 'A steadier week' }

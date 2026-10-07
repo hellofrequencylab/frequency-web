@@ -29,6 +29,7 @@ import {
 } from '@/lib/ai/circle-compose'
 import { planCircleEdit, type CircleForEdit, type CircleEditPatch } from '@/lib/ai/circle-edit'
 import { extractOverviewText } from '@/lib/journeys/extract-text'
+import { normalizeSeedFidelity } from '@/lib/studio/kernel/fidelity'
 
 /** The signed-in REAL member's profile id. Demo profiles cannot build a Circle
  *  (mirrors the remix/claim guard). */
@@ -62,6 +63,8 @@ export async function sparkPreviewAction(input: {
   primaryPillar: PillarSlug | null
   cadence?: string
   sourceText?: string
+  /** Exact, Edit or Rewrite. Normalized here: a client value is never trusted as-is. */
+  fidelity?: string
 }): Promise<CircleSparkDraft | null> {
   const profileId = await callerProfileId()
   return draftCircleSpark({
@@ -70,6 +73,7 @@ export async function sparkPreviewAction(input: {
     primaryPillar: input.primaryPillar,
     cadence: input.cadence,
     sourceText: input.sourceText,
+    fidelity: normalizeSeedFidelity(input.fidelity),
     profileId,
   })
 }
