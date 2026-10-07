@@ -7,6 +7,7 @@
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { SITE_URL } from '@/lib/site'
 
+// token-ok: email HTML renders in mail clients, outside the DAWN shell
 const FREQUENCY_FOOTER_HTML = `<p style="font-size:12px;color:#999;line-height:1.6;margin:0 0 8px;">Sent with <a href="${SITE_URL}" style="color:#999;">Frequency</a>.</p>`
 
 /** True when a Space on this plan label sends with the Frequency footer (the free Space). PURE. */

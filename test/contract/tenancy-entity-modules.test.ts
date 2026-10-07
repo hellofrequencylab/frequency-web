@@ -56,7 +56,7 @@ vi.mock('@/lib/spaces/entitlements', async (orig) => {
     },
   }
 })
-vi.mock('@/lib/core/roles', () => ({ isJanitor: () => false }))
+vi.mock('@/lib/core/roles', async (importOriginal) => ({ ...(await importOriginal<typeof import('@/lib/core/roles')>()), isJanitor: () => false }))
 // next/cache is pulled by the write modules (follows/campaigns); make it a no-op under vitest.
 vi.mock('next/cache', () => ({ revalidatePath: () => {}, revalidateTag: () => {} }))
 
