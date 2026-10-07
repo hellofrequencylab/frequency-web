@@ -662,6 +662,7 @@ lib/analytics/insights-read.ts
 lib/analytics/marketing-intel.ts
 lib/analytics/outcomes.ts
 lib/analytics/practice.ts
+lib/analytics/showing-up.ts
 lib/apps/overrides.ts
 lib/attribution/acquisition.ts
 lib/attribution/backfill.ts
