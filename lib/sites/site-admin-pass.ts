@@ -26,14 +26,14 @@ const HOST = /^[a-z0-9.-]{1,253}$/
 export const SITE_ADMIN_COOKIE = '__Host-site-admin'
 
 /** The admin pages a website serves. */
-export const SITE_ADMIN_VIEWS = ['overview', 'calendar'] as const
-export type SiteAdminView = (typeof SITE_ADMIN_VIEWS)[number]
+const SITE_ADMIN_VIEWS = ['overview', 'calendar'] as const
+type SiteAdminView = (typeof SITE_ADMIN_VIEWS)[number]
 
 export function siteAdminView(raw: string | null | undefined): SiteAdminView | null {
   return (SITE_ADMIN_VIEWS as readonly string[]).includes(raw ?? '') ? (raw as SiteAdminView) : null
 }
 
-export interface SiteAdminPass {
+interface SiteAdminPass {
   spaceId: string
   host: string
   profileId: string

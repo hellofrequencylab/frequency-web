@@ -70,7 +70,7 @@ export default async function SpaceLeadershipPage({
         )}
         {canManage && (
           <section className="space-y-3">
-            <h2 className="text-heading-sm text-text">The overview</h2>
+            <h2 className="text-card-title font-semibold text-text">The overview</h2>
             <OverviewEditor slug={space.slug} initial={markdown} startOpen={query.edit === '1' || !markdown} />
           </section>
         )}

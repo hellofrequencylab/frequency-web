@@ -24,7 +24,7 @@
 // The text before the first heading may open with an italic line, `_Label, Date. Name._`, which becomes the
 // meta row under the title.
 
-export type OverviewTableVariant = 'beats' | 'seasons' | 'levels' | 'decisions' | 'cards' | 'plain'
+type OverviewTableVariant = 'beats' | 'seasons' | 'levels' | 'decisions' | 'cards' | 'plain'
 
 export type OverviewBlock =
   | { kind: 'lede'; text: string }
@@ -42,7 +42,7 @@ export type OverviewBlock =
   | { kind: 'aside'; label: string; text: string }
   | { kind: 'table'; variant: OverviewTableVariant; head: string[]; rows: string[][] }
 
-export interface OverviewSection {
+interface OverviewSection {
   id: string
   title: string
   blocks: OverviewBlock[]
