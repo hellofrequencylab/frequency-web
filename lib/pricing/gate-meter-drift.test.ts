@@ -201,7 +201,7 @@ describe('the walls are the ones the strategy names, and nothing has crept in', 
   })
 
   it('the free CRM allowance is the number the strategy publishes', () => {
-    expect(PLACEHOLDER_METER_LIMITS.space_crm?.free).toBe(200)
+    expect(PLACEHOLDER_METER_LIMITS.space_crm?.free).toBe(250) // ADR-1709 ladder
   })
 
   it('🔴 selling is not gated anywhere on the map', () => {

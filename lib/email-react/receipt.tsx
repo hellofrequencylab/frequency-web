@@ -17,6 +17,8 @@ export interface ReceiptEmailProps {
   lines: ReceiptEmailLine[]
   closing: string[]
   action: { label: string; url: string } | null
+  /** The "Made with Frequency" mark (LIVE-804), or nothing. */
+  madeWith?: { label: string; url: string } | null
 }
 
 const P_INK = css(`${EMAIL_P}color:${EMAIL_INK};`)
@@ -25,11 +27,12 @@ const RULE = '#E9E1D4' // token-ok: email HTML
 const DETAIL = css(`margin:0 0 24px;border-top:1px solid ${RULE};border-bottom:1px solid ${RULE};width:100%;`)
 const LABEL = css(`padding:6px 16px 6px 0;font-size:14px;color:${EMAIL_MUTED};`)
 const VALUE = css(`padding:6px 0;font-size:14px;color:${EMAIL_INK};font-weight:600;`)
+const MADE_WITH = css(`margin:24px 0 0;font-size:12px;color:${EMAIL_MUTED};`)
 const BUTTON = css(
   `display:inline-block;background:${EMAIL_ACTION};color:${EMAIL_ACTION_INK};font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;`,
 )
 
-export function ReceiptEmail({ greeting, lead, lines, closing, action }: ReceiptEmailProps) {
+export function ReceiptEmail({ greeting, lead, lines, closing, action, madeWith }: ReceiptEmailProps) {
   // RECEIPT_FOOTER, not the member default: two receipt loops serve people with no account, so
   // "you joined Frequency" would be false there, and a receipt carries no unsubscribe (LIVE-365).
   return (
@@ -60,6 +63,13 @@ export function ReceiptEmail({ greeting, lead, lines, closing, action }: Receipt
           {p}
         </p>
       ))}
+      {madeWith && (
+        <p style={MADE_WITH}>
+          <a href={madeWith.url} style={MADE_WITH}>
+            {madeWith.label}
+          </a>
+        </p>
+      )}
     </EmailShell>
   )
 }

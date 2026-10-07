@@ -118,23 +118,23 @@ describe('the enforced case, with the grandfather rule applied', () => {
 
   it('a paid plan on an unlimited rung is never enforced', async () => {
     spaceMaybeSingle.mockResolvedValue({ data: { type: 'business', plan: 'collective' } })
-    const v = await spaceAllowanceVerdict('s1', 'space_crm', 10_000_000)
+    const v = await spaceAllowanceVerdict('s1', 'space_bookings', 10_000_000)
     expect(v.allowed).toBe(true)
     expect(v.enforced).toBe(false)
   })
 
   it('a retired plan label narrows forward rather than falling to free', async () => {
     spaceMaybeSingle.mockResolvedValue({ data: { type: 'business', plan: 'pro' } })
-    const v = await spaceAllowanceVerdict('s1', 'space_crm', 10_000)
+    const v = await spaceAllowanceVerdict('s1', 'space_crm', 1_000)
     expect(v.plan).toBe('business')
     expect(v.allowed).toBe(true)
   })
 })
 
 describe('the always-on QR cap keeps biting (a refactor must not switch a live limit off)', () => {
-  it('refuses a free Space its 4th code even though the gates are not live', async () => {
+  it('refuses a free Space past its codes even though the gates are not live', async () => {
     mockGatesLive.mockResolvedValue(false)
-    const v = await spaceAllowanceVerdict('s1', 'space_qr', 3, { alwaysOn: true })
+    const v = await spaceAllowanceVerdict('s1', 'space_qr', 5, { alwaysOn: true })
     expect(v.allowed).toBe(false)
     expect(mockGatesLive).not.toHaveBeenCalled() // alwaysOn does not consult the flag at all
   })

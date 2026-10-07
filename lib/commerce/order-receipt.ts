@@ -45,6 +45,7 @@ import { sellerKey } from './funds-flow'
 import { listOrderTransfers, type OrderTransfer } from './transfers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { appUrl } from '@/lib/billing/stripe'
+import { madeWithUrl } from '@/lib/marketing/made-with'
 import { journeyWelcomeDoor } from '@/lib/journeys/sales-path'
 import { journeySlugsForOrder } from './journey-fulfilment'
 import {
@@ -58,6 +59,13 @@ import {
 } from '@/lib/billing/receipt-email'
 
 const LOG = '[commerce receipt]'
+
+/** The "Made with Frequency" mark on a buyer's receipt (LIVE-804). A first-party Frequency Store
+ *  order is already ours, so only an order from a Space or a member seller carries it. */
+function buyerMadeWith(order: SettledOrder): { label: string; url: string } | null {
+  if (order.ownerKind === 'platform') return null
+  return { label: 'Made with Frequency', url: madeWithUrl('order-receipt', appUrl()) }
+}
 
 /** The `notifications.type` a seller's sale notice carries. */
 export const ORDER_SOLD_NOTIFICATION_TYPE = 'commerce_order_sold'
@@ -191,6 +199,7 @@ export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
         actionUrl: journeySlug
           ? `${appUrl()}${journeyWelcomeDoor(journeySlug, { email: order.buyerProfileId ? null : order.buyerEmail })}`
           : `${appUrl()}/orders`,
+        madeWith: buyerMadeWith(order),
       },
       logTag: LOG,
       context: { orderId: order.id, side: 'buyer' },
@@ -441,6 +450,7 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
           actionUrl: journeySlug
             ? `${appUrl()}${journeyWelcomeDoor(journeySlug, { email: order.buyerProfileId ? null : order.buyerEmail })}`
             : `${appUrl()}/orders`,
+          madeWith: buyerMadeWith(order),
         },
         logTag: LOG,
         context: { orderId: order.id, side: 'buyer', split: true },

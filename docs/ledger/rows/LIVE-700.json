@@ -1,0 +1,15 @@
+{
+  "id": "LIVE-700",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-06",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Retired by owner ruling 2026-10-05: Hook federation and Hook.coach white label are scrapped. The Business website builder half is carried by the in-house white-label suite (PROG-E10, PROG-W6); the loyalty and listing halves were already split out (OWN-086, LIVE-710). Nothing to measure.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\nRETIRED 2026-10-06 on the owner ruling of 2026-10-05 (project thread): Hook federation / Hook.coach white label (sub-communities, Hook membership rollover, points rollup, community federation, isolated tenant admin) is scrapped, and Frequency builds its own white-label suite instead. The Business website builder (3.4) is not dropped: it lives in PROG-E10 and PROG-W6, so it is not lost when this row closes."
+  }
+}

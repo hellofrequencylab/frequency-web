@@ -162,8 +162,8 @@ describe('one source of quantities — PLACEHOLDER_METER_LIMITS is the map every
   })
 
   it('mirrors the LIVE caps the codebase already enforces (never invents a conflict)', () => {
-    // QR codes: lib/qr/space-codes.ts PLAN_CODE_CAPS enforces free 3 / business 500 today.
-    expect(PLACEHOLDER_METER_LIMITS.space_qr).toMatchObject({ free: 3, business: null })
+    // QR codes: lib/qr/space-codes.ts reads this row as its live cap (owner ruling 2026-10-06).
+    expect(PLACEHOLDER_METER_LIMITS.space_qr).toMatchObject({ free: 0, business: 3, collective: 5, nonprofit: 5 })
     // Team seats: lib/spaces/seats.ts BASE_SEAT_ALLOWANCE = 1 (the owner's free seat, ADR-799).
     expect(PLACEHOLDER_METER_LIMITS.space_team!.free).toBe(1)
     // Vera: mirrors PRICING_DEFAULTS.vera_free_daily_cap (~10/day, §2).
@@ -186,15 +186,17 @@ describe('label + readout formatting', () => {
 
   it('the seats ladder says INCLUDED seats and the per-seat add-on, never a wall (ADR-799)', () => {
     const seats = featureMeter('space_team')!
+    const business = seats.steps.find((s) => s.tier === 'business')!
+    expect(business.allowanceText).toBe('2 seats included, add more per seat')
     const top = seats.steps[seats.steps.length - 1]!
-    expect(top.allowanceText).toBe('2 seats included, add more per seat')
+    expect(top.allowanceText).toBe('3 seats included, plus 2 per member Space')
   })
 
   it('allowanceReadout renders "X of N used" or the unlimited form; null for a non-metered feature', () => {
     // CRM free allowance is a finite placeholder → "X of N used".
     expect(allowanceReadout('space_crm', 'free', 12)).toMatch(/^12 of [\d,]+ contacts used$/)
     // A tier whose allowance is unlimited → the unlimited form.
-    expect(allowanceReadout('space_crm', 'business', 12)).toBe('12 contacts used (unlimited)')
+    expect(allowanceReadout('space_bookings', 'business', 12)).toBe('12 bookings used (unlimited)')
     // A non-metered feature has no readout.
     expect(allowanceReadout('space_memberships', 'free', 3)).toBeNull()
   })
@@ -219,8 +221,11 @@ describe('read helpers', () => {
 
   it('allowanceAt returns the tier allowance, or null for unlimited / non-metered', () => {
     expect(allowanceAt('space_crm', 'free')).toBe(FREE_CRM) // the free CRM allowance (ADR-552 Phase 3)
-    expect(allowanceAt('space_crm', 'business')).toBeNull() // unlimited
-    expect(allowanceAt('space_crm', 'nonprofit')).toBeNull() // maps to business rung (unlimited)
+    expect(allowanceAt('space_crm', 'business')).toBe(5_000)
+    expect(allowanceAt('space_crm', 'nonprofit')).toBe(5_000) // maps to the business rung
+    expect(allowanceAt('space_crm', 'collective')).toBe(25_000)
+    expect(allowanceAt('space_crm', 'nonprofit_collective')).toBe(25_000) // maps to the collective rung
+    expect(allowanceAt('space_bookings', 'business')).toBeNull() // unlimited
     expect(allowanceAt('space_memberships', 'free')).toBeNull() // not metered
   })
 })
@@ -238,7 +243,7 @@ describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line
   })
 
   it('never trips on an unlimited tier, a zero allowance, or a non-metered feature', () => {
-    expect(nearAllowanceLimit('space_crm', 'business', 1_000_000)).toBe(false) // unlimited
+    expect(nearAllowanceLimit('space_bookings', 'business', 1_000_000)).toBe(false) // unlimited
     expect(nearAllowanceLimit('space_membership_tiers', 'free', 5)).toBe(true) // free: 1, usage 5 is over
     expect(nearAllowanceLimit('space_memberships', 'free', 999)).toBe(false) // not metered
     expect(nearAllowanceLimit('made-up', 'free', 999)).toBe(false)
@@ -266,7 +271,7 @@ describe('allowanceVerdict — the metered WRITE question, and the grandfather r
   })
 
   it('an unlimited tier and a non-metered key are never enforced', () => {
-    expect(allowanceVerdict('space_crm', 'business', 10_000_000, { gatesLive: true }).allowed).toBe(true)
+    expect(allowanceVerdict('space_bookings', 'business', 10_000_000, { gatesLive: true }).allowed).toBe(true)
     expect(allowanceVerdict('space_memberships', 'free', 999, { gatesLive: true }).allowed).toBe(true)
     expect(allowanceVerdict('made-up', 'free', 999, { gatesLive: true }).allowed).toBe(true)
   })
@@ -311,7 +316,7 @@ describe('allowanceVerdict — the metered WRITE question, and the grandfather r
 
   it('allowanceHeadroom is the bulk form: a number, or null when nothing is enforced', () => {
     expect(allowanceHeadroom('space_crm', 'free', 10, { gatesLive: false })).toBeNull()
-    expect(allowanceHeadroom('space_crm', 'business', 10, { gatesLive: true })).toBeNull()
+    expect(allowanceHeadroom('space_bookings', 'business', 10, { gatesLive: true })).toBeNull()
     expect(allowanceHeadroom('space_crm', 'free', FREE_CRM - 5, { gatesLive: true })).toBe(5)
   })
 })
@@ -335,7 +340,7 @@ describe('the enforcement seam — nothing charges / nothing hard-blocks while b
     // At/under the free cap passes; over it fails; an unlimited tier always passes.
     expect(withinAllowance('space_crm', 'free', FREE_CRM, { gatesLive: true })).toBe(true)
     expect(withinAllowance('space_crm', 'free', FREE_CRM + 1, { gatesLive: true })).toBe(false)
-    expect(withinAllowance('space_crm', 'business', Number.MAX_SAFE_INTEGER, { gatesLive: true })).toBe(true)
+    expect(withinAllowance('space_bookings', 'business', Number.MAX_SAFE_INTEGER, { gatesLive: true })).toBe(true)
   })
 
   it('nothing charges: the module exposes no price mutation or charge path (allowances are data only)', () => {

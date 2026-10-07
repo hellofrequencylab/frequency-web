@@ -248,10 +248,10 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     axis: 'plan',
     minTier: 'business',
     title: 'Automations',
-    // @placeholder 1,000 runs/mo mirrors PLACEHOLDER_METER_LIMITS.space_automation (ADR-837).
+    // 2,000 runs/mo mirrors PLACEHOLDER_METER_LIMITS.space_automation.business (ADR-837, ADR-1709).
     rungs: spaceRungs(
       'One pipeline, no automations.',
-      'Governed playbooks and multi-step sequences that run the safe, reversible moves for you, with 1,000 runs included each month.',
+      'Governed playbooks and multi-step sequences that run the safe, reversible moves for you, with 2,000 runs included each month.',
       'business',
     ),
   },
@@ -259,8 +259,8 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     axis: 'plan',
     minTier: 'business',
     title: 'Collaborator hosting',
-    // LIVE-439 / LIVE-228. The meter is free 1 / Business unlimited. Collective is not a
-    // plan label. Revenue splits are PROG-D8, not this ladder.
+    // LIVE-439 / ADR-1709. The meter is free 0 / Business 3 / Collective unlimited. Revenue splits
+    // are PROG-D8, not this ladder.
     rungs: spaceRungs(
       'Be a Collaborator on other Spaces and events, and preview the hosting surface.',
       'Host other businesses inside your space, and co-host events with Collaborator Spaces. They keep their own page and pay for their own space.',

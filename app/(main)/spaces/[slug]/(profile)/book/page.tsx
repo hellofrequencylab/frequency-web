@@ -7,6 +7,7 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { EntityCta } from '@/components/widgets/entity/entity-cta'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
+import { madeWithUrl } from '@/lib/marketing/made-with'
 
 // THE RESERVED ACTION PAGE. In the feature-block profile, content pages are operator-composed Puck
 // docs, but the TRANSACTIONAL surface (booking slot picker / membership join / donate / enroll /
@@ -34,8 +35,16 @@ export default async function SpaceActionPage({ params }: { params: Promise<{ sl
   setActiveSpace(space)
 
   return (
-    <Suspense fallback={<ProfileBodySkeleton />}>
-      <EntityCta />
-    </Suspense>
+    <>
+      <Suspense fallback={<ProfileBodySkeleton />}>
+        <EntityCta />
+      </Suspense>
+      {/* The quiet mark that lets a customer find Frequency (LIVE-804). */}
+      <p className="mt-8 text-center text-2xs text-muted">
+        <a href={madeWithUrl('booking-page')} className="hover:text-text hover:underline">
+          Made with Frequency
+        </a>
+      </p>
+    </>
   )
 }

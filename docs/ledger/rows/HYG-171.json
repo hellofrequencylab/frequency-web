@@ -1,0 +1,20 @@
+{
+  "id": "HYG-171",
+  "title": "The production compile peaks near the 8 GB Standard build machine, so a small PR runs Vercel out of memory",
+  "status": "done",
+  "priority": "P1",
+  "lane": "hygiene",
+  "size": "M",
+  "source": {
+    "file": "docs/DEPLOY-SAFETY.md",
+    "ref": "Pricing thread 2026-10-06: #3216 and #3270 OOM on Vercel; owner chose Enhanced Builds now plus this row"
+  },
+  "detail": "Measured 2026-10-06 on a 4-core box from a cold `next build` (summed VmHWM of the next processes until 'Compiled successfully'): main 46644f9 peaks at about 7.8 GB, and the meters PR (#3270, LIVE-748 to LIVE-750) at about 8.0 GB. The Vercel Standard machine has 8 GB. #3216 and #3270 failed four times with 'Out of Memory' during compile ('routes-manifest.json couldn't be found'), on stale and fresh build caches alike, while main and other previews built. So any PR that adds a few server modules can tip the compile, and production deploys from main sit at the same edge. The owner switched the build machine to Enhanced (16 GB) to unblock merges and wants a path back to Standard (Enhanced drove about $250 of the September bill).\n\nThe work: find what makes the compile this heavy (the module graph reachable from root layouts and shared server modules, per DEPLOY-SAFETY's fan-out rule), bring the peak under 7 GB, and add a postbuild gate, scripts/check-build-memory.mjs, that measures the compile peak and fails the build above a 7168 MB budget, so the next creep is caught before the machine is.\n\nTurbopack build cache off (no dependency-tracking graph in memory) and a postbuild gate measuring the compile's summed high-water mark against 7168 MB.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(p)=>{try{return fs.readFileSync(p,\"utf8\")}catch{return \"\"}};const fail=(m)=>{console.error(m);process.exit(1)};const g=r(\"scripts/check-build-memory.mjs\");if(!g)fail(\"no scripts/check-build-memory.mjs gate measuring the compile peak\");const pkg=JSON.parse(r(\"package.json\")||\"{}\");const pb=(pkg.scripts&&pkg.scripts.postbuild)||\"\";if(!/check-build-memory|check:build-memory/.test(pb))fail(\"the build-memory gate is not wired into postbuild\");const m=g.match(/BUDGET_MB\\s*=\\s*(\\d+)/);if(!m)fail(\"no BUDGET_MB in the gate\");if(Number(m[1])>7168)fail(\"budget \"+m[1]+\" MB leaves no headroom under the 8 GB Standard machine\")'",
+    "note": "Fails until a postbuild gate measures the compile peak against a budget of at most 7168 MB, which is only green once the compile actually fits."
+  },
+  "closed": "2026-10-06",
+  "wave": "W7"
+}

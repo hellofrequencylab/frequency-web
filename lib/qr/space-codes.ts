@@ -285,6 +285,9 @@ export async function createSpaceCode(
   const existing = await readSpaceCodes(spaceId)
   const verdict = await spaceAllowanceVerdict(spaceId, QR_METER_KEY, existing.length, { alwaysOn: true })
   if (!verdict.allowed) {
+    if ((verdict.effective ?? 0) === 0) {
+      return fail('Editable QR codes come with Business.')
+    }
     return fail(`Your plan allows ${(verdict.effective ?? existing.length).toLocaleString('en-US')} codes. Remove one or upgrade to add more.`)
   }
 

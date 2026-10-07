@@ -76,6 +76,7 @@ export default async function FunnelInductionPage({
         initialLocation: parked.location,
         initialLat: parked.lat,
         initialLng: parked.lng,
+        initialHeardAbout: parked.heardAbout ?? '',
         // A parked handle is one they already accepted, so it must not be re-derived from the name.
         parkedHandle: parked.handle,
       }

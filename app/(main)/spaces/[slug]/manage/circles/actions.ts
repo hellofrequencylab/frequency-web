@@ -21,6 +21,7 @@ import { offerCircleToPerson, cancelCircleOffer } from '@/lib/circles/handoff'
 import { listManagedSpaces } from '@/lib/spaces/managed'
 import type { RunEndState } from '@/lib/journeys/runs'
 import { startJourneyRunAction, endJourneyRunAction } from '@/app/(main)/journeys/run-actions'
+import { checkSpaceCircleMeter } from '@/lib/spaces/counted-meters'
 
 /** Every surface a change here shows up on. The console is the one being edited; the PUBLIC Circles
  *  tab lists the same circles to visitors AND, since LIVE-523, leads with the Space Circle's feed,
@@ -66,6 +67,10 @@ export async function createSpaceCircleAction(
   const clean = name.trim()
   if (!clean) return fail('Give the circle a name first.')
   if (clean.length > 120) return fail('That name is too long. Keep it under 120 characters.')
+
+  // Circles per Space (space_circles, LIVE-750). The Space Circle is one of them.
+  const meter = await checkSpaceCircleMeter(gate.spaceId)
+  if (!meter.ok) return fail(meter.error)
 
   // THE GOVERNED WRITE (ADR-988, ADR-1249). The team named the Circle and tapped Create, so one
   // call proposes, claims and commits, and the audit row is written. The writer and its input are

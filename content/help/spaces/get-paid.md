@@ -4,7 +4,7 @@ description: Where your Space's money lands, how the owner connects the payout a
 category: spaces
 order: 4
 published: 2026-09-10
-updated: 2026-09-20
+updated: 2026-10-06
 audience: member
 featureKeys: [payouts]
 status: published
@@ -120,3 +120,8 @@ ticket that is still a draft stops that path on its own, whatever your payout ac
 **A member shows Payment failed. Did they leave?** No. Their renewal did not go through, and they
 are still a member while Stripe retries the card. They see the same notice on the Space and in
 Settings. You can cancel them from the member list if you need the seat.
+
+**Why do my booking page and receipts say Made with Frequency?** It is one small line at the foot of
+your booking page, the booking confirmation your customer gets, and the receipt for a shop order. It
+links to Frequency's home page, so a customer who likes how it went can find their way to hosting
+too. Your own copy of a booking notice does not carry it.

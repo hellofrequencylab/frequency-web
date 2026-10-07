@@ -61,7 +61,7 @@ export const ALLOWANCE_NUDGE = 'Nearly full. Move up a plan for a higher allowan
 // The quantities map and its `Allowance` type now live in ./meter-limits, so a caller that only needs
 // a number does not drag this file's copy into its chunk (check:shell-weight). Re-exported here so
 // `@/lib/pricing/feature-meters` stays the one import site for everything else (ADR-837).
-import { PLACEHOLDER_METER_LIMITS, type Allowance } from './meter-limits'
+import { PLACEHOLDER_METER_LIMITS, SIBLING_PLAN_TIERS, type Allowance } from './meter-limits'
 
 export { PLACEHOLDER_METER_LIMITS }
 export type { Allowance }
@@ -109,7 +109,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Contacts',
     unit: 'contacts',
     period: null,
-    // Free: 200 contacts (ADR-914, docs/VALUE-LADDER.md §3). Business and Collective: unlimited.
+    // Free 250, Business 5,000, Collective 25,000 shared across its Spaces (ADR-1709).
     allowances: PLACEHOLDER_METER_LIMITS.space_crm!,
   },
   space_email: {
@@ -118,8 +118,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Email sends',
     unit: 'sends',
     period: 'month',
-    // Free: 300 sends / mo (§2). Business 5,000 / Collective 25,000: the §2 "5k → 25k steps" (email is
-    // a real cost dial, never unlimited). The live 500/day throttle (email.ts) is separate.
+    // Free 1,000 / mo, Business 25,000, Collective 100,000 shared (ADR-1709). Email is a real cost dial,
+    // never unlimited. The per-day throttle (email.ts) is separate.
     allowances: PLACEHOLDER_METER_LIMITS.space_email!,
   },
   space_bookings: {
@@ -128,7 +128,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Bookings',
     unit: 'bookings',
     period: 'month',
-    // Free: 15 bookings / mo (activation lever, §2). Business: unlimited.
+    // Free 20 bookings / mo. Business and Collective: unlimited (ADR-1709).
     allowances: PLACEHOLDER_METER_LIMITS.space_bookings!,
   },
   space_journey: {
@@ -137,7 +137,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Active enrollees',
     unit: 'enrollees',
     period: null,
-    // Free: 10 active enrollees (activation lever, §2). Business: unlimited.
+    // Free 25 people per Journey. Business and Collective: unlimited (ADR-1709).
     allowances: PLACEHOLDER_METER_LIMITS.space_journey!,
   },
   space_journey_publish: {
@@ -146,8 +146,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Published Journeys',
     unit: 'journeys',
     period: null,
-    // Free: 1 published Journey (the LIVE free-space cap, owner decision 2026-07-18). Business:
-    // unlimited (mirrors the live paid behavior). resolveJourneyAccess reads this row (ADR-838).
+    // Free 1 published Journey, Business 10, Collective unlimited (ADR-1709). resolveJourneyAccess
+    // reads this row (ADR-838).
     allowances: PLACEHOLDER_METER_LIMITS.space_journey_publish!,
   },
   space_tickets: {
@@ -162,12 +162,16 @@ const RAW_METERS: Record<string, RawMeter> = {
   space_qr: {
     axis: 'plan',
     title: 'QR codes',
-    dimension: 'QR codes',
+    dimension: 'Editable QR codes',
     unit: 'codes',
     period: null,
-    // Free 3 / Business 500 MIRROR the live cap (lib/qr/space-codes.ts PLAN_CODE_CAPS). Collective:
-    // unlimited (placeholder; the live cap map has no collective row yet).
+    // Managed (dynamic, editable) codes. Free 0 with the stock Space code to download, Business 3,
+    // Collective and Non Profit 5 per Space (owner ruling 2026-10-06). lib/qr/space-codes.ts enforces
+    // THIS row as its live cap, so the number a Space hits and the number the ladder shows are one value.
     allowances: PLACEHOLDER_METER_LIMITS.space_qr!,
+    allowanceTextByTier: {
+      free: 'Your Space QR code to download, not editable',
+    },
   },
   space_automation: {
     axis: 'plan',
@@ -175,12 +179,12 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Automation runs',
     unit: 'runs',
     period: 'month',
-    // Free: 50 runs / mo (LIVE-225), enough to automate one real habit and watch it work. Business:
-    // 1,000 included runs / mo (placeholder, ADR-811 / LIVE-228).
+    // Free 100 runs / mo, enough to automate one real habit and watch it work. Business 2,000,
+    // Collective 10,000 (ADR-1709).
     // ⚠️ KNOWN CONTRADICTION, deliberately left: FEATURE_GATES.space_automation floors this at
-    // 'business', so the gate says "not on your plan" while this meter grants 50 a month. It is an
+    // 'business', so the gate says "not on your plan" while this meter grants 100 a month. It is an
     // exempted entry in KNOWN_GATE_METER_COLLISIONS (gate-meter-drift.test.ts) and Phase 4's plan merge
-    // owns resolving it. Do not fix it by lowering this number back to zero.
+    // owns resolving it (LIVE-751 opens the gate to free). Do not fix it by lowering this number.
     allowances: PLACEHOLDER_METER_LIMITS.space_automation!,
   },
   space_team: {
@@ -189,8 +193,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Team seats',
     unit: 'seats',
     period: null,
-    // Free: 1 seat, the owner's. Business: 2 included (LIVE-228 / LIVE-229). Extra seats are the
-    // ADR-799 per-seat add-on. Collective is not a published rung after LIVE-228.
+    // Free: 1 seat, the owner's. Business: 2 included. Collective: 3 (owner 2026-10-06), plus 2 per member Space
+    // (ADR-1709). Extra seats are the ADR-799 per-seat add-on.
     //
     // Extra seats are the ADR-799 per-seat add-on at the catalog amount (LIVE-229, $12/seat/mo).
     // The catalog sync mints that price; `catalog_operator_seat_active` still gates checkout.
@@ -198,6 +202,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     allowanceTextByTier: {
       free: '1 seat included (the owner)',
       business: '2 seats included, add more per seat',
+      collective: '3 seats included, plus 2 per member Space',
     },
   },
   space_multi_pipeline: {
@@ -206,8 +211,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Pipelines',
     unit: 'pipelines',
     period: null,
-    // Free: 1 pipeline (§2). Collective floor (ADR-811, mirrors FEATURE_GATES.space_multi_pipeline):
-    // unlimited.
+    // Free: 1 pipeline. Business: 5. Collective: unlimited (ADR-1709).
     allowances: PLACEHOLDER_METER_LIMITS.space_multi_pipeline!,
   },
   space_collaborators: {
@@ -216,13 +220,13 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Hosted collaborators',
     unit: 'collaborators',
     period: null,
-    // Free: host 1 collaborator (LIVE-225). Business: a few. Collective: unlimited, the collaboration
-    // engine. Being a collaborator stays free for any active Business / Non Profit Space; only HOSTING
+    // Free: hosts none. Business: hosts 3. Collective: unlimited, the collaboration engine (ADR-1709). Being a collaborator stays free for any active Business / Non Profit Space; only HOSTING
     // meters.
     allowances: PLACEHOLDER_METER_LIMITS.space_collaborators!,
     allowanceTextByTier: {
-      free: 'Host 1 collaborator, and be a Collaborator on other Spaces for free',
-      business: 'Host unlimited collaborators',
+      free: 'Be a Collaborator on other Spaces for free',
+      business: 'Host up to 3 collaborators',
+      collective: 'Host unlimited collaborators',
     },
   },
   space_membership_tiers: {
@@ -243,8 +247,63 @@ const RAW_METERS: Record<string, RawMeter> = {
     period: null,
     // Free: one, assigned to the one free-Space tier (LIVE-410). Deliberately not zero: see
     // the allowance map above and LIVE-225.
-    // Business: 6, two per tier against the 3 tiers that plan carries. Collective: unlimited.
+    // Business: unlimited. Collective: unlimited.
     allowances: PLACEHOLDER_METER_LIMITS.space_member_benefits!,
+  },
+  space_circles: {
+    axis: 'plan',
+    title: 'Circles',
+    dimension: 'Circles',
+    unit: 'circles',
+    period: null,
+    // Free 3 (the Space Circle counts), Business 10, Collective unlimited (ADR-1709).
+    allowances: PLACEHOLDER_METER_LIMITS.space_circles!,
+  },
+  space_events: {
+    axis: 'plan',
+    title: 'Upcoming events',
+    dimension: 'Upcoming events',
+    unit: 'events',
+    period: null,
+    // Free 5 upcoming at a time; past events never count. Business and Collective unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_events!,
+  },
+  space_event_guests: {
+    axis: 'plan',
+    title: 'Guests per event',
+    dimension: 'Guests per event',
+    unit: 'guests',
+    period: null,
+    // Free 100 per event. Business and Collective unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_event_guests!,
+  },
+  space_practice_publish: {
+    axis: 'plan',
+    title: 'Published Practices',
+    dimension: 'Published Practices',
+    unit: 'practices',
+    period: null,
+    // Free 5. Business and Collective unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_practice_publish!,
+  },
+  space_services: {
+    axis: 'plan',
+    title: 'Bookable services',
+    dimension: 'Bookable services',
+    unit: 'services',
+    period: null,
+    // Free 1. Business and Collective unlimited.
+    allowances: PLACEHOLDER_METER_LIMITS.space_services!,
+  },
+  space_shop_listings: {
+    axis: 'plan',
+    title: 'Shop listings',
+    dimension: 'Shop listings',
+    unit: 'listings',
+    period: null,
+    // Free 5, taking inquiries. Business and Collective unlimited, with checkout (LIVE-753).
+    allowances: PLACEHOLDER_METER_LIMITS.space_shop_listings!,
+    allowanceTextByTier: { free: 'Up to 5 listings, taking inquiries' },
   },
   // ── Space AI depth (plan axis; the Resonance Engine metered usage · ADR-387) ─────────────────────
   space_vera: {
@@ -253,7 +312,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Vera messages',
     unit: 'messages',
     period: 'day',
-    // Free: ~10 Vera messages / day (§2; mirrors PRICING_DEFAULTS.vera_free_daily_cap). Business: more.
+    // Free 10 Vera messages / day, Business 200, Collective unlimited with fair use (ADR-1709).
     allowances: PLACEHOLDER_METER_LIMITS.space_vera!,
   },
   space_crm_playbooks: {
@@ -292,9 +351,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Published Journeys',
     unit: 'journeys',
     period: null,
-    // Free: 1 published Journey — the LIVE personal cap (publish-limits.ts FREE_PUBLISHED_JOURNEY_LIMIT
-    // now reads THIS row, ADR-838). Crew: unlimited (the leadership tier does not ration publishing;
-    // LISTING one publicly is the separate journey_library_list gate).
+    // Free 1 published Journey, the LIVE personal cap (publish-limits.ts FREE_PUBLISHED_JOURNEY_LIMIT
+    // reads THIS row, ADR-838). Crew: 5, the host kit (ADR-1709).
     allowances: PLACEHOLDER_METER_LIMITS.journey_publish!,
   },
   journey_enrollees: {
@@ -303,8 +361,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Active enrollees',
     unit: 'enrollees',
     period: null,
-    // Free: 10 active enrollees across a personal Journey (mirrors space_journey's free 10). Crew:
-    // unlimited. resolveJourneyAccess reads this row for the personal enroll allotment (ADR-838).
+    // Free 10 people per personal Journey, Crew 50 (ADR-1709). resolveJourneyAccess reads this row
+    // for the personal enroll allotment (ADR-838).
     allowances: PLACEHOLDER_METER_LIMITS.journey_enrollees!,
   },
   // FIRST ONE FREE — the three leadership quantities that split Member from Crew. A free Member really
@@ -317,7 +375,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'circles',
     period: null,
     // Free: host 1 real Circle (and become a Host by doing it — role stays earned, ADR-207).
-    // Crew: unlimited.
+    // Crew: 5, the host kit (ADR-1709).
     allowances: PLACEHOLDER_METER_LIMITS.circle_host!,
     allowanceTextByTier: { free: 'Host 1 Circle' },
   },
@@ -338,11 +396,20 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Active events',
     unit: 'events',
     period: null,
-    // Free: 2 active events at a time. Crew: unlimited, including recurring series. Note this meters
+    // Free: 2 active events at a time. Crew: 10, the host kit (ADR-1709). Note this meters
     // how many events run AT ONCE, never whether they may charge — selling is free on every tier
     // (ADR-914), so a free Member's two events can both sell tickets.
     allowances: PLACEHOLDER_METER_LIMITS.event_create!,
     allowanceTextByTier: { free: 'Up to 2 active events, free or RSVP' },
+  },
+  event_guests: {
+    axis: 'tier',
+    title: 'Guests per event',
+    dimension: 'Guests per event',
+    unit: 'guests',
+    period: null,
+    // Member 30 per personal event, Crew 100 (ADR-1709).
+    allowances: PLACEHOLDER_METER_LIMITS.event_guests!,
   },
 }
 
@@ -454,7 +521,9 @@ export interface FeatureMeterLadder {
 
 /** The tier order for a meter, ascending by rank on its axis (from the allowance keys). PURE. */
 function orderedTiers(raw: RawMeter): string[] {
-  return Object.keys(raw.allowances).sort((a, b) => tierRankOnAxis(raw.axis, a) - tierRankOnAxis(raw.axis, b))
+  return Object.keys(raw.allowances)
+    .filter((tier) => !SIBLING_PLAN_TIERS.includes(tier)) // a sibling's own number is not a rung
+    .sort((a, b) => tierRankOnAxis(raw.axis, a) - tierRankOnAxis(raw.axis, b))
 }
 
 /** Build the display meter ladder for a raw config entry: fill each rung's label + placeholder price +
@@ -513,11 +582,16 @@ export function currentMeterStepIndex(ladder: FeatureMeterLadder, tier: string):
 }
 
 /** The allowance a tier gets on a feature's meter (a cap, or null = unlimited). Null when the feature is
- *  not metered. Maps the tier to its rung via currentMeterStepIndex (default-deny to the free floor).
+ *  not metered. On the plan axis a row carries a `collective` rung (ADR-1709): Collective and Non Profit
+ *  Collective read it, Business, Non Profit and Independent read `business`, by PLAN_CAPABILITY_RANK. Maps the tier to its rung via currentMeterStepIndex (default-deny to the free floor).
  *  PURE. */
 export function allowanceAt(featureKey: string, tier: string): Allowance {
   const ladder = featureMeter(featureKey)
   if (!ladder) return null // not metered → no cap
+  // A sibling plan the row names gets its own number (space_qr: Non Profit 5 beside Business 3).
+  const own = RAW_METERS[featureKey]?.allowances
+  if (own && SIBLING_PLAN_TIERS.includes(tier) && tier in own) return own[tier] ?? null
+  // Otherwise rank, not name: nonprofit_collective lands on the collective rung, nonprofit on business.
   const idx = currentMeterStepIndex(ladder, tier)
   return ladder.steps[idx]?.allowance ?? null
 }
