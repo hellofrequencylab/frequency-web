@@ -6724,6 +6724,78 @@ export type Database = {
           },
         ]
       }
+      journey_plan_space_shares: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by_space_id: string | null
+          plan_id: string
+          requested_by: string | null
+          responded_at: string | null
+          responded_by: string | null
+          space_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by_space_id?: string | null
+          plan_id: string
+          requested_by?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          space_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by_space_id?: string | null
+          plan_id?: string
+          requested_by?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          space_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_plan_space_shares_invited_by_space_id_fkey"
+            columns: ["invited_by_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_space_shares_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_space_shares_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_space_shares_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_plan_space_shares_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_plans: {
         Row: {
           accent: string | null
