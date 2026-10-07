@@ -11,6 +11,7 @@ import {
 } from '@/components/entity-blocks/profile-layout-context'
 import { saveSpaceGridLayout } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
 import { SpaceCanvasEditor } from './space-canvas-editor'
+import { SpacePublishFab } from '@/components/entity-blocks/space-publish-fab'
 
 // THE MOUNT for the on-canvas WYSIWYG Space editor (the space analogue of the email EditorPane). It mounts
 // the SHARED entity-layout provider with kind 'space' and the SAME owner-gated save the rail arranger uses
@@ -45,12 +46,21 @@ function Seeder({
 
 export function SpaceCanvasEditorMount({
   slug,
+  canPublish = false,
+  hasUnpublishedChanges = false,
+  profilePublished = true,
   rows,
   hidden = [],
   content = {},
   style = {},
 }: {
   slug: string
+  /** A manager (the publish action fails closed on the same gate). Shows the publish bar. */
+  canPublish?: boolean
+  /** The saved draft renders differently from what visitors see. */
+  hasUnpublishedChanges?: boolean
+  /** preferences.profilePublished, seeding the bar's "Visible on network" toggle. */
+  profilePublished?: boolean
   rows: RowDef[]
   hidden?: string[]
   content?: Record<string, Record<string, unknown>>
@@ -63,6 +73,10 @@ export function SpaceCanvasEditorMount({
       {/* Every image field + photo slot on this canvas opens the ONE Loom picker, locked to THIS Space's
           library. The slug is UX plumbing: the Loom re-resolves + re-gates the scope server-side. */}
       <SpaceCanvasEditor loomScope={slug} />
+      {/* This editor autosaves to the draft, so it carries the same publish bar as the live page (LIVE-842). */}
+      {canPublish && (
+        <SpacePublishFab slug={slug} initialPublished={profilePublished} hasUnpublishedChanges={hasUnpublishedChanges} />
+      )}
     </EntityLayoutProvider>
   )
 }

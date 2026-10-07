@@ -147,6 +147,8 @@ export function SpacePublishFab({
     }
     setPublished(true)
     setOpen(false)
+    // Re-read hasUnpublishedChanges so the pill stops saying there are changes nobody can see.
+    router.refresh()
   }
 
   // Throw the draft away and go back to what visitors see. DESTRUCTIVE and irreversible (the draft is

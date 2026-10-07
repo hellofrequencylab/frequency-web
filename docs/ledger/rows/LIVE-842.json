@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-842",
+  "title": "The Space layout editor can publish, and publishing updates the website at once",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/entity-blocks/space-canvas/space-canvas-editor-mount.tsx",
+    "ref": "Owner report 2026-10-07 16:53 ('I added the photo but it doesn't show') and 17:02 ('There is no publish function'). LIVE-840 follow-up."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: an owner set the website Contact page photo on /spaces/<slug>/manage/layout and it never appeared. That editor autosaves to preferences.profileLayoutDraft and had no Publish control; Publish existed only on the live Space page. Separately, publishSpaceProfileLayout revalidated the Space page but not the website, so a publish could take up to an hour (revalidate = 3600) to reach <slug>.frequencylocal.com or the custom domain. THE FIX: the layout editor mounts the same SpacePublishFab (managers only, unpublished state from layoutRendersSame), publishing calls refreshSite, and the bar refreshes after a publish so it stops reporting unpublished changes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const f=require('fs');const m=f.readFileSync('components/entity-blocks/space-canvas/space-canvas-editor-mount.tsx','utf8');const a=f.readFileSync('app/(main)/spaces/[slug]/settings/profile/actions.ts','utf8');const i=a.indexOf('export async function publishSpaceProfileLayout(');const b=a.slice(i,a.indexOf('\\n}',i));if(!/<SpacePublishFab/.test(m)){console.error('LIVE-842: the layout editor has no publish bar');process.exit(1)}if(!/refreshSite\\(space\\.slug\\)/.test(b)){console.error('LIVE-842: publishing does not refresh the website');process.exit(1)}\"",
+    "note": "Fails on main (no publish bar in the layout editor, publish never refreshes the site); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
