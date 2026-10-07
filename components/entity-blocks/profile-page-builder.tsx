@@ -19,8 +19,10 @@ import {
 } from 'lucide-react'
 import {
   entityBlockById,
+  blockSupportsKind,
   profilePaletteForKind,
   MEMBER_CHROME_BLOCK_IDS,
+  type EntityBlockDef,
   type EntityKind,
 } from '@/lib/entity-blocks/registry'
 import {
@@ -109,6 +111,8 @@ export function EntityPageBuilder({
   loadRailData,
   seed,
   editHrefFor,
+  paletteBlockIds,
+  maxColumns: maxColumnsOverride,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
@@ -122,8 +126,17 @@ export function EntityPageBuilder({
   seed?: BuilderRailData | null
   /** For a DATA block, the href of that feature's own manager (the edit panel's "Manage" link). */
   editHrefFor?: (blockId: string) => string | null
+  /** A narrower palette than the kind's own, in this order (the Space Spotlight: a one-column link page of
+   *  `space` blocks, lib/spaces/spotlight.ts). Absent keeps the kind's curated palette. */
+  paletteBlockIds?: readonly string[]
+  /** A lower column cap than the kind's own (the Space Spotlight is one column on the 2-column `space`
+   *  kind). Setting it also turns off the live-page edit mode: this builder is not editing the Space page,
+   *  so its rail edits block text itself instead of handing it to the page canvas. */
+  maxColumns?: number
 }) {
   const store = useProfileLayout()
+  // The live Space page canvas is the editing surface only for the Space page builder itself.
+  const liveCanvas = kind === 'space' && maxColumnsOverride === undefined
   const router = useRouter()
 
   const [loading, setLoading] = useState(true)
@@ -214,12 +227,12 @@ export function EntityPageBuilder({
   // editable in place. Mounting past the guard turns the page's inline editors on; the rail closing (this
   // unmounts) or the guard failing turns them off. Space only; the member rail never touches the signal.
   const builderActive =
-    kind === 'space' && !loading && !!store && store.kind === 'space' && matchId != null && matchId === pageId
+    liveCanvas && !loading && !!store && store.kind === 'space' && matchId != null && matchId === pageId
   useEffect(() => {
-    if (kind !== 'space') return
+    if (!liveCanvas) return
     setSpaceEditMode(builderActive)
     return () => setSpaceEditMode(false)
-  }, [kind, builderActive])
+  }, [liveCanvas, builderActive])
 
   // CTRL/CMD+Z UNDO (SPACE live-page edit mode): a window keydown that pops the shared store's history stack
   // (the store owns the stack — this only calls `undo`). Active only while the builder is live-editing the
@@ -286,12 +299,18 @@ export function EntityPageBuilder({
   // mirrored into state, so there is no effect to churn. The member rail keeps its own local editingId.
   const activeEditId = kind === 'space' ? store.selectedId : editingId
 
-  const maxColumns = maxColumnsForKind(kind)
+  const maxColumns = Math.min(maxColumnsOverride ?? maxColumnsForKind(kind), maxColumnsForKind(kind))
   const lockedSet = new Set(lockedIds)
   // The curated best-practice palette (ADR-529 → ADR-542): only the per-kind palette blocks are offered.
   // A SPACE never sees Heading/Text/Links/Image (KIND_PALETTE_EXCLUSIONS) — the connected sections + the
   // free-form Callout / Image gallery / Features cover those.
-  const palette = profilePaletteForKind(kind).filter((b) => !lockedSet.has(b.id))
+  const palette = (
+    paletteBlockIds
+      ? paletteBlockIds
+          .map((id) => entityBlockById(id))
+          .filter((b): b is EntityBlockDef => !!b && blockSupportsKind(b, kind))
+      : profilePaletteForKind(kind)
+  ).filter((b) => !lockedSet.has(b.id))
   const paletteIds = new Set(palette.map((b) => b.id))
   const layout: BuilderLayout = {
     rows: store.rows,
@@ -605,7 +624,7 @@ export function EntityPageBuilder({
         reseedSlug={kind === 'space' ? pageId : undefined}
         // A Space's page is the live editing canvas, so its rail is SETTINGS-ONLY: the block's text + single
         // photos are edited on the page, not here (the isCoreField split). The member rail keeps text inline.
-        contentOnCanvas={kind === 'space'}
+        contentOnCanvas={liveCanvas}
         onContent={(props) => onEditContent(id, props)}
         onStyle={(s) => onEditStyle(id, s)}
         onToggleHide={() => onToggleHide(id)}
