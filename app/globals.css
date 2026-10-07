@@ -1310,6 +1310,14 @@
   --font-body: var(--font-nunito);
 }
 
+/* menswork — tall Sofia Sans Extra Condensed caps over a plain Barlow body. On the Space's website it
+   also brings its own palette and shapes (lib/theme/menswork.ts, components/sites/menswork-css.ts). */
+[data-space-theme="menswork"] {
+  --font-display: var(--font-sofia-xc);
+  --font-heading: var(--font-sofia-xc);
+  --font-body: var(--font-barlow);
+}
+
 /* ── Per-theme TYPE TREATMENT (the "Playful renders as Bold" fix) ─────────────
    The base `.font-display` rule below (~"Display face") is tuned for ANTON: caps
    markup, 400 weight, tight 1.0 leading. Swapping only the family leaves that
@@ -1412,6 +1420,24 @@
   font-family: var(--font-lexend), system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: 0.2em;
+}
+
+/* menswork — heavy condensed caps, tight leading; the eyebrow is a mono label. */
+[data-space-theme="menswork"] .font-display {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  line-height: 0.92;
+}
+[data-space-theme="menswork"] .font-section {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+[data-space-theme="menswork"] .font-eyebrow {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-weight: 500;
+  letter-spacing: 0.12em;
 }
 
 /* ── Tailwind wiring ────────────────────────────────────────────────────────

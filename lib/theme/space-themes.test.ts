@@ -111,6 +111,8 @@ const FACE_VAR: Record<string, string> = {
   Lexend: '--font-lexend',
   'Atkinson Hyperlegible': '--font-atkinson',
   Nunito: '--font-nunito',
+  'Sofia Sans Extra Condensed': '--font-sofia-xc',
+  Barlow: '--font-barlow',
 }
 
 describe('space-theme block contents (fonts match the registry)', () => {

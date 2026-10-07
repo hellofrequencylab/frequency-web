@@ -16,10 +16,12 @@ import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profi
 import { hasPage, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
+import { mensworkAccentVars, mensworkSeason } from '@/lib/theme/menswork'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SiteChrome, SITE_CONTAINER, siteHref } from '@/components/sites/site-chrome'
+import { MENSWORK_CSS } from '@/components/sites/menswork-css'
 import { buttonClasses } from '@/components/ui/button'
 import { markAnonymousRender } from '@/lib/core/anonymous-render'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -119,8 +121,14 @@ export async function SitePage({
   if (!space) notFound()
 
   const brandName = space.brandName?.trim() || space.name
-  const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
   const theme = parseSpaceTheme(space.preferences)
+  // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
+  // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
+  // still wins.
+  const skin = theme === 'menswork' ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) } : null
+  const accentVars = skin
+    ? mensworkAccentVars(space.brandAccent)
+    : resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
   // The Coming soon notice's one way on: a clearly labelled Frequency link, absolute (on the Space's own
   // host a `/spaces/...` path is not a site page).
   const profileHref = `${appOrigin()}/spaces/${space.slug}`
@@ -131,7 +139,14 @@ export async function SitePage({
     if (pageSlug !== HOME_SLUG) notFound()
     return (
       <AccentScope vars={accentVars} theme={theme}>
-        <SiteComingSoon brandName={brandName} profileHref={profileHref} />
+        {skin ? (
+          <div data-house-theme={skin.theme} data-season={skin.season}>
+            <style>{MENSWORK_CSS}</style>
+            <SiteComingSoon brandName={brandName} profileHref={profileHref} />
+          </div>
+        ) : (
+          <SiteComingSoon brandName={brandName} profileHref={profileHref} />
+        )}
       </AccentScope>
     )
   }
@@ -204,6 +219,7 @@ export async function SitePage({
         links={links}
         cta={cta}
         themeFonts={hasChosenTheme(space.preferences)}
+        skin={skin}
       >
         {model ? (
           <HouseHome model={model} />

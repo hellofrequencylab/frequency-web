@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import { HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { appOrigin } from '@/lib/sites/host'
+import type { MensworkSeason } from '@/lib/theme/menswork'
 import { HOUSE_CSS } from './house-css'
+import { MENSWORK_CSS } from './menswork-css'
 import { HouseMenu } from './house-menu'
 
 // THE WEBSITE CHROME, house theme (owner ask 2026-10-07: the "Daniel Tyack Site v4" design is the default
@@ -13,6 +15,9 @@ import { HouseMenu } from './house-menu'
 //     Space's own header button (its label and target are the owner's, preferences.headerCta). Under 940px
 //     the menu folds into a round button (house-menu.tsx). The pill firms up once the page scrolls, with a
 //     CSS scroll timeline, so the header itself needs no script.
+//   · SKIN: a Space on the Menswork page theme gets the Menswork website skin layered over the house CSS
+//     (components/sites/menswork-css.ts): the same sections and words in that theme's palette and shapes,
+//     with the current season's accent.
 //   · FOOTER: the copyright line and the "Frequency Partner" badge, the ONLY mention of Frequency on the
 //     site (owner ask 2026-10-06).
 //
@@ -33,12 +38,18 @@ export interface SiteLink {
   label: string
 }
 
+interface SiteSkin {
+  theme: 'menswork'
+  season: MensworkSeason
+}
+
 export function SiteChrome({
   brandName,
   homeHref,
   links,
   cta,
   themeFonts,
+  skin = null,
   children,
 }: {
   brandName: string
@@ -49,11 +60,20 @@ export function SiteChrome({
   cta: (SiteLink & { external: boolean }) | null
   /** True when the Space picked a page theme, so its faces replace the house serif and sans. */
   themeFonts: boolean
+  /** A full website skin from the Space's page theme (only Menswork has one), with its season. */
+  skin?: SiteSkin | null
   children: ReactNode
 }) {
   return (
-    <div data-site-root="" data-house-site="" data-house-fonts={themeFonts ? 'theme' : 'house'} className="hs-root">
-      <style>{HOUSE_CSS}</style>
+    <div
+      data-site-root=""
+      data-house-site=""
+      data-house-fonts={themeFonts ? 'theme' : 'house'}
+      data-house-theme={skin?.theme}
+      data-season={skin?.season}
+      className="hs-root"
+    >
+      <style>{skin ? HOUSE_CSS + MENSWORK_CSS : HOUSE_CSS}</style>
       <header className="hs-header">
         <div className="hs-pill">
           <a href={homeHref} className="hs-brand">
