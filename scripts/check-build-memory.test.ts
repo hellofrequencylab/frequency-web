@@ -10,6 +10,7 @@ describe('check-build-memory (HYG-171)', () => {
     expect(isNextProcess('node /vercel/path0/node_modules/.bin/../next/dist/bin/next build')).toBe(true)
     expect(isNextProcess('node /vercel/path0/node_modules/next/dist/compiled/jest-worker/processChild.js')).toBe(true)
     expect(isNextProcess('node scripts/check-build-budget.mjs')).toBe(false)
+    expect(isNextProcess('/bin/sh -c node node_modules/next/dist/bin/next build')).toBe(false)
   })
 
   it('fails a reading over budget and passes one under it', () => {

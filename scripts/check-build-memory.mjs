@@ -36,9 +36,10 @@ export const STATE_FILE = path.join(os.tmpdir(), 'frequency-build-memory.json')
 const TICK_MS = 250
 const MAX_SAMPLE_MS = 60 * 60 * 1000
 
-/** True for a process that belongs to the Next build. */
+/** True for a process that belongs to the Next build. A shell whose command text merely mentions
+ *  the path (`sh -c "... next/dist ..."`) is a wrapper, not the build, and is not counted. */
 export function isNextProcess(cmdline) {
-  return cmdline.includes('next/dist')
+  return cmdline.includes('next/dist') && !/^(\S*\/)?(sh|bash|dash) /.test(cmdline)
 }
 
 /** Pass or fail on a reading. `reading` is null when the sampler never reported. */
