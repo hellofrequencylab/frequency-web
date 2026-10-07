@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { readTagline } from '@/lib/spaces/tagline'
 import { readSpaceSpotlight } from '@/lib/spaces/spotlight'
+import { OG_SITE } from '@/lib/site'
 import { SpaceSpotlight } from '@/components/spotlight/space-spotlight'
 
 // A SPACE'S SPOTLIGHT, its shareable link page at /spaces/<slug>/spotlight (lib/spaces/spotlight.ts). Public
@@ -33,10 +34,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!space) return { title: 'Spotlight', robots: { index: false } }
   const name = space.brandName?.trim() || space.name
   const description = (await readTagline(space.id)) ?? `${name} on Frequency`
+  const url = `/spaces/${space.slug}/spotlight`
+  // The share card itself is this segment's opengraph-image (the Space's own card, LIVE-853).
   return {
     title: name,
     description,
-    alternates: { canonical: `/spaces/${space.slug}/spotlight` },
+    alternates: { canonical: url },
+    openGraph: { ...OG_SITE, type: 'website', title: name, description, url },
+    twitter: { card: 'summary_large_image', title: name, description },
   }
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Check, Loader2, Plus, QrCode, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input, Label, Textarea, Field, labelClasses } from '@/components/ui/field'
@@ -100,8 +100,15 @@ export function QrSplashForm({
 
 function CreateCodeForm({ spaceId }: { spaceId: string }) {
   const router = useRouter()
-  const [title, setTitle] = useState('')
-  const [targetUrl, setTargetUrl] = useState('')
+  // A page can send the owner here with the form filled in (`?title=` and a site-relative `?target=`), as
+  // the Spotlight editor's "Make a QR code" link does. Only a path on this site is taken; the server still
+  // validates whatever is submitted.
+  const params = useSearchParams()
+  const presetTarget = params?.get('target') ?? ''
+  const [title, setTitle] = useState(() => (params?.get('title') ?? '').slice(0, 80))
+  const [targetUrl, setTargetUrl] = useState(() =>
+    presetTarget.startsWith('/') && !presetTarget.startsWith('//') ? presetTarget : '',
+  )
   const [customSlug, setCustomSlug] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()

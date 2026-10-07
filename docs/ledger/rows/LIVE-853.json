@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-853",
+  "title": "A Space Spotlight shares with the Space's card, has a one-click QR code, and is in the sitemap once published",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/spaces/[slug]/spotlight/opengraph-image.tsx",
+    "ref": "Owner ask 2026-10-07 (Spotlight audit thread), 'super easy for a business to share a link'; PR 5 of 7 in the Space Spotlight plan."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. PR 5 of the Space Spotlight build (plan: /mnt/project-files/spotlight/space-spotlight-plan.md). (1) SHARE CARD: app/spaces/[slug]/spotlight/opengraph-image.tsx renders the Space profile's own card (cover, logo, name, tagline; the identity-free card for a private Space), because the Spotlight route sits outside the (public) group and does not inherit it. The page metadata carries openGraph (with OG_SITE, SCAN-659) and a large-image Twitter card. One new card route, a single page beneath it, so check:og-trace moves by about one. (2) QR: the editor's published state links to the Space QR studio with the form filled in (?title=Spotlight&target=/spaces/<slug>/spotlight); the create form reads those params, taking only a site-relative path, and the server still validates the submit. (3) SITEMAP: listNetworkedSpaceProfileTabs advertises a networked Space's spotlight segment only once it is published, the same honest-empty rule as every other tab.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/SpaceCard\\(\\{ params \\}\\)/.test(r('app/spaces/[slug]/spotlight/opengraph-image.tsx')))miss.push('a shared Spotlight link has no share card');if(!/readSpaceSpotlight\\(r\\.preferences\\)\\.published\\) push\\('spotlight'\\)/.test(r('lib/spaces/discovery.ts')))miss.push('published Spotlights are not in the sitemap');if(!/settings\\/qr\\?title=Spotlight&target=/.test(r('components/spotlight/space-spotlight-editor.tsx'))||!/params\\?\\.get\\('target'\\)/.test(r('components/spaces/qr-splash-form.tsx')))miss.push('the Spotlight editor cannot start a QR code for the page');if(miss.length){console.error('LIVE-853: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
