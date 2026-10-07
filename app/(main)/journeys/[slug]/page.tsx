@@ -9,7 +9,7 @@ import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
-import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
+import { getJourneyView, getPlan, getPlanAuthor, listJourneyCoHostSpaces } from '@/lib/journey-plans'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
 import { JourneyGuaranteeBlock } from '@/components/journey/guarantee-block'
@@ -115,7 +115,12 @@ export default async function JourneyPlanPage({
     redirect(`/journeys/${plan.slug}/edit`)
   }
 
-  const [pillars, author] = await Promise.all([getPillars(), getPlanAuthor(plan.author_id)])
+  // Co-host Spaces (journey_plan_space_shares, accepted only): a credit line, never edit access.
+  const [pillars, author, coHosts] = await Promise.all([
+    getPillars(),
+    getPlanAuthor(plan.author_id),
+    listJourneyCoHostSpaces(plan.id, plan.space_id),
+  ])
   const byId = indexPillars(pillars)
   const vis = VISIBILITY[plan.visibility]
   const accent = plan.accent
@@ -274,11 +279,18 @@ export default async function JourneyPlanPage({
       identity={{
         promise: plan.summary ? <p className="leading-relaxed text-text">{plan.summary}</p> : undefined,
         shape: <JourneyStatChips facts={facts} plan={plan} enrolledCount={plan.adopt_count} />,
-        guide: author ? (
+        guide: author || coHosts.length > 0 ? (
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
-            <Link href={`/people/${author.handle}`} className="text-muted transition-colors hover:text-text">
-              By <span className="font-semibold text-text">{author.displayName}</span>
-            </Link>
+            {author && (
+              <Link href={`/people/${author.handle}`} className="text-muted transition-colors hover:text-text">
+                By <span className="font-semibold text-text">{author.displayName}</span>
+              </Link>
+            )}
+            {coHosts.map((s) => (
+              <Link key={s.id} href={`/spaces/${s.slug}`} className="text-muted transition-colors hover:text-text">
+                Co-hosted with <span className="font-semibold text-text">{s.name}</span>
+              </Link>
+            ))}
             <Link href="/crew" className="inline-flex items-center gap-1 text-muted transition-colors hover:text-text">
               <Flame className="h-3.5 w-3.5" /> Keep your streak in the Quest
             </Link>

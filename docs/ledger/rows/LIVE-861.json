@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-861",
+  "title": "A Journey can be co-hosted by a second Space: it lists on that Space and its page says Co-hosted with",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/journey-plans.ts",
+    "ref": "Owner ask 2026-10-07: 'The Journey is the 8 week intro Journey. Make it Co Hosted with Daniel Tyack space.'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. A Journey belonged to exactly one Space (journey_plans.space_id) with no co-host concept. Migration 20270346006100 adds journey_plan_space_shares, copying event_space_shares: plan, co-host Space, inviting Space, requester, status pending/accepted/declined/revoked, one active share per pair; internal (RLS on, no policy, revoked from anon and authenticated). listJourneyPlansForSpace merges Journeys accepted-shared to the Space (de-duplicated, newest first) and re-applies the Journey's own visibility, so a share is necessary and never sufficient; a failed share read returns only the Space's own Journeys; the owner's builder list opts out with includeShared: false. The public Journey page credits each accepted co-host Space (Co-hosted with <Space>, linking to /spaces/<slug>) through listJourneyCoHostSpaces and the pure coHostSpacesFromRows. FOLLOW-UP: there is no owner UI to invite or accept a co-host yet; the first share (the 8 week intro Journey to the Daniel Tyack Space) is written by SQL the owner runs after the migration applies. A share is a credit and a listing only and never enters getJourneyCapabilities.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const m=fs.readdirSync('supabase/migrations').filter((f)=>/_journey_plan_space_shares\\\\.sql$/.test(f)).map((f)=>r('supabase/migrations/'+f)).join('');if(!/create table if not exists public\\\\.journey_plan_space_shares/.test(m)||!/revoke all on table public\\\\.journey_plan_space_shares from anon, authenticated/.test(m))miss.push('no service-role-only share table');if(!/^journey_plan_space_shares$/m.test(r('scripts/rls-deny-all.txt')))miss.push('share table not declared deny-all');const l=r('lib/journey-plans.ts');if(!/from\\\\('journey_plan_space_shares'\\\\)/.test(l)||!/includeShared/.test(l))miss.push('listJourneyPlansForSpace does not read accepted shares');if(!/coHostSpacesFromRows/.test(r('lib/journeys/space-shares.ts')))miss.push('no co-host Space helper');if(!/Co-hosted with/.test(r('app/(main)/journeys/[slug]/page.tsx')))miss.push('the Journey page does not credit its co-host');if(miss.length){console.error('LIVE-861: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

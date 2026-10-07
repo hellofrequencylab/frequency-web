@@ -62,7 +62,8 @@ export default async function SpaceJourneysManagerPage({ params }: { params: Pro
   const caps = await getSpaceCapabilities(space, viewerProfileId)
   if (!caps.canEditProfile) notFound()
 
-  const plans = await listJourneyPlansForSpace(space.id, 50)
+  // includeShared: false keeps co-hosted Journeys off this builder list: this Space can credit them, not edit them.
+  const plans = await listJourneyPlansForSpace(space.id, 50, { includeShared: false })
   const drafts = plans.filter((p) => p.visibility === 'private')
   const published = plans.filter((p) => p.visibility !== 'private')
   const inLibrary = plans.filter((p) => p.visibility === 'public')
