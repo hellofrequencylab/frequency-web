@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-437",
+  "patch": {
+    "verify": {
+      "kind": "manual",
+      "evidence": "SUPERSEDED 2026-10-06 by ADR-1709 (the five-tier pricing ladder, owner ruling): the probe pinned the 300 / 25,000 space_email ladder, and LIVE-748 deliberately moved that meter to the ladder numbers and gave it a Collective rung again. The row stays done as history. Its original cmd probe is preserved verbatim in the detail.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\n── SUPERSEDED 2026-10-06 by ADR-1709 (LIVE-748). The meter numbers this probe pinned were changed by the owner's five-tier ladder, so it now fails by design. Original probe, kept verbatim: node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const note=fs.readFileSync(\"lib/spaces/email-catalog-note.ts\",\"utf8\");if(!note.includes(\"export function emailCatalogNote\"))fail(\"emailCatalogNote is gone\");if(!note.includes(\"PLACEHOLDER_METER_LIMITS.space_email\"))fail(\"email catalog note does not read the email meter\");if(!note.includes(\"SPACE_PLAN_LABEL.business\"))fail(\"email catalog note does not name Business from the plan label\");if(/Collective/.test(note))fail(\"email-catalog-note still types Collective\");const cat=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");if(!cat.includes(\"emailCatalogNote()\"))fail(\"space.comms no longer reads emailCatalogNote\");if(/25,000\\/mo on Collective/.test(cat))fail(\"space.comms still names a Collective send rung\");if(/5,000\\/mo on Business/.test(cat))fail(\"space.comms still names the leftover 5,000 Business rung\");const meters=fs.readFileSync(\"lib/pricing/meter-limits.ts\",\"utf8\");if(!meters.includes(\"space_email: { free: 300, business: 25_000 }\"))fail(\"space_email left the 300 / 25,000 ladder\");console.log(\"LIVE-437 ok\")'"
+  }
+}
