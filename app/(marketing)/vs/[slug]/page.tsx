@@ -167,7 +167,7 @@ export default async function ComparisonPage({
           part it does not do, the small group that keeps meeting, look at the Circles
           already gathering near you, then join one or start your own.
           {comparison.moneyBeat
-            ? ' And when you host, selling is open on a free account, with 0% on your own bookings. That is the whole deal.'
+            ? ' And hosting is free. When you start charging, that is Business, with 0% on your own bookings. That is the whole deal.'
             : ''}
         </Body>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

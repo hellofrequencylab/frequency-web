@@ -108,16 +108,16 @@ export function whatIsFrequencySpec(input: PricingGridInput): ArticleSpec {
 const P = priceStringsFrom(input.catalog)
 
 // Every RATE interpolates from the take-rate config the fee code charges, so no answer here can quote a
-// rung the owner has retired. The free Member rung LEADS, because selling is free on every tier and the
-// reference rate is the one a reader starts on. The rate is what a plan settles at, never the reason to
-// take one (PLAN_STORY.rate, ADR-1350). Verified Non Profit is zero.
+// rung the owner has retired. Only the plans that take payments have a fee (ADR-1709): Business,
+// Collective and Non Profit (zero). The personal tiers and the free Space take tips only, at 0%, so no
+// row quotes the free or personal rungs. The fee is never the reason to take a plan (PLAN_STORY.rate).
 const TAKE = input.values.take_rate
 /** A Space plan's rate, through the one plan-to-rung resolver (LIVE-230): free / paid / nonprofit. */
 const SPACE_RATE = (plan: string) => formatBps(networkTakeRateBpsForPlan(plan, networkTakeRateFromStored(TAKE)))
-const MEMBER_RATE = formatBps(TAKE.member_free_bps)
-const CREW_RATE = formatBps(TAKE.member_bps)
 const BUSINESS_RATE = SPACE_RATE('business')
-const NETWORK_RATES = `Member ${MEMBER_RATE}, Crew ${CREW_RATE}, Business ${BUSINESS_RATE}, Non Profit ${SPACE_RATE('nonprofit')}`
+const NETWORK_RATES = `Business ${BUSINESS_RATE}, Collective ${SPACE_RATE('collective')}, Non Profit ${SPACE_RATE('nonprofit')}`
+/** What a tier that takes no payments carries instead of a rate. */
+const TIPS_NOTE = 'Tips only, 0%'
 /** The 0%-forever half of the model, stated the same way everywhere it appears. */
 const OWN_AUDIENCE_LINE =
   'It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.'
@@ -132,13 +132,19 @@ const SPACE_TIER_ROWS: Partial<Record<(typeof ADVERTISED_SPACE_PLANS)[number], A
     name: SPACE_PLAN_LABEL.business,
     price: `${P.businessList}/mo`,
     note: `${BUSINESS_RATE} network only`,
-    who: 'Own your audience: unlimited contacts, campaigns, team seats, automations, and Collaborator hosting.',
+    who: 'Selling starts here: paid tickets, memberships, donations, bookings and your shop, with the limits lifted.',
+  },
+  collective: {
+    name: SPACE_PLAN_LABEL.collective,
+    price: `${P.collective}/mo`,
+    note: `${SPACE_RATE('collective')} network only`,
+    who: 'Groups of groups: several member Spaces under one account, each with the Business tools, and Vera AI included.',
   },
   nonprofit: {
     name: SPACE_PLAN_LABEL.nonprofit,
     price: `${P.nonprofit}/mo`,
     note: `${SPACE_RATE('nonprofit')} network only`,
-    who: 'The full Business toolkit, verified 501(c)(3).',
+    who: 'Everything Business does, for a verified 501(c)(3), with no network fee.',
   },
 }
 const SPACE_TIERS: ArticleTier[] = ADVERTISED_SPACE_PLANS.flatMap((plan) => {
@@ -250,13 +256,13 @@ return {
       // The bullet form of the same answer is lib/marketing/who-its-for.ts (llms.txt reads it).
       answer:
         'People who want to calm down fast with a few minutes on the breathing timer. People who just moved and want friends nearby, or would rather start with a run club or a supper club than small talk. The ones who already bring others together and want to host one Circle, and members who pay for Crew so it stays free for everyone. And the teachers, practitioners, studio owners and organizers who run the rooms.',
-      body: 'This is what makes Frequency a Community Collective. Hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings. We earn only on what the network sends them. People join free. Businesses host free. You pay when you start charging: a free Space sells tickets on day one, and a plan is what you take once money starts moving, never a bill for access to people. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
+      body: 'This is what makes Frequency a Community Collective. Hosts grow together instead of alone, share a Space and Events, and keep 100% of their own bookings. We earn only on what the network sends them. People join free. Businesses host free. You pay when you start charging: hosting is free, Business is what you take when you start selling, and a plan is never a bill for access to people. Four promises hold it honest: we never take a cut of your bookings, one honest price with no surprise invoices, month to month so you can leave anytime with your data, and a live readout of exactly what the network earned you.',
       links: [{ label: 'See the plans and take-rates', href: '/pricing', variant: 'secondary' }],
     },
     {
       question: 'How much does Frequency cost?',
       answer:
-        `Joining is free, forever, and so is hosting. Every plan below can sell tickets and take donations from day one, and every plan keeps 100% of the bookings you bring in yourself. ${PLAN_STORY.rate}`,
+        `Joining is free, forever, and so is hosting. ${PLAN_STORY.ladder} Tips are open on every plan with no fee, selling starts at Business, and every plan keeps 100% of the bookings you bring in yourself. ${PLAN_STORY.rate}`,
       // The tier ladder, lifted for AIO so an answer engine can quote the whole shape
       // in one place. Take-rate shown is network-introduced only: anyone already yours
       // is 0% on every tier, for good. Prices and rates mirror /pricing and the FAQ, and
@@ -265,14 +271,14 @@ return {
         {
           name: 'Member',
           price: 'Free',
-          note: `${MEMBER_RATE} network only`,
-          who: 'Belong to everything, host events, take RSVPs, and sell tickets. The full community, free forever.',
+          note: TIPS_NOTE,
+          who: 'Belong to everything, host a Circle and free Events, take RSVPs and tips. The full community, free forever.',
         },
         {
           name: 'Crew',
           price: `${CREW_NOTE.fromLabel}/mo`,
-          note: `${CREW_RATE} network only`,
-          who: 'Your own Circles and Journeys, and the entry points that build your list.',
+          note: TIPS_NOTE,
+          who: 'Back the community and host more: more Circles, Events and Journeys, and a monthly Boost. Contribute what you want.',
         },
         ...SPACE_TIERS,
       ],
@@ -351,7 +357,7 @@ return {
     },
     {
       q: 'How much does Frequency cost?',
-      a: `${PLAN_STORY.lines} Joining, Circles, and Events never cost anything, a business never pays for access to people, and every plan can sell tickets and take donations from day one. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} ${PLAN_STORY.paid} Member is free, Crew is ${CREW_NOTE.fromLabel} a month and you pick the amount, and a Space plan is ${SPACE_LADDER}. See the full ladder at /pricing.`,
+      a: `${PLAN_STORY.lines} Joining, Circles, and Events never cost anything, a business never pays for access to people, and hosting a Space is free. Selling starts at Business. Frequency keeps 0% of your own bookings, always; we make our money only on a sale the network introduced, at ${NETWORK_RATES}. ${OWN_AUDIENCE_LINE} ${PLAN_STORY.paid} Member is free, Crew is ${CREW_NOTE.fromLabel} a month and you pick the amount, and a Space plan is ${SPACE_LADDER}. See the full ladder at /pricing.`,
     },
     {
       q: 'How does Frequency make money?',

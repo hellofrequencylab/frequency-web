@@ -44,9 +44,10 @@ That is the kit. Everything below is how to use it.
 
 You are now a **Host**. The role is earned by doing this, never bought.
 
-Your free membership includes hosting one Circle. To host more, join **Crew**:
-choosing "Start a Circle" offers a one-tap upgrade when you are at your first one,
-and you keep everything you have. Any member can **join** as many as they like.
+Your free membership includes hosting a Circle of your own. To host more, join
+**Crew**, which carries a host kit with room for several: choosing "Start a Circle"
+offers a one-tap upgrade when you are at your limit, and you keep everything you
+have. Any member can **join** as many as they like.
 
 ## Set a standing time and do not move it
 
@@ -181,8 +182,9 @@ all three, but anyone you send the link to can still open it.
 - **By invite only** means a link or a QR code is the only way in.
 - Circles a Space owns get three more: **Space team only** for the people who help
   run the Space, **Space members only** for anyone with an active membership in it,
-  and **Included with a membership** if that Space sells one. Every plan can sell
-  a membership. A payout account is what starts the money.
+  and **Included with a membership** if that Space has one. A free Space can run a
+  membership tier that is free to join; charging for one starts at **Business**,
+  with a payout account.
 
 The useful pairing most Hosts miss: leave the Circle **listed** and set who can
 join to **Members only**. Strangers find it by name, read what it is about, and ask

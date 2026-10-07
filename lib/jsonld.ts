@@ -1067,9 +1067,11 @@ export function productReviewNodes(
   return out
 }
 
-// ── Product / Offer (maker, shop, Space storefront) ─────────────────────────────
+// ── Product / Offer (maker, shop, Space storefront, the /pricing plans) ─────────
 // One crawlable Product per sellable item — the AEO node an answer engine cites for
 // "where can I buy X". Price in major units, 2dp, currency upper-cased (mirrors Event).
+// /pricing emits one per paid offering on the five-tier ladder (ADR-1709): Crew, Business,
+// Collective and Non Profit, each a monthly subscription read off the catalog.
 
 export function productSchema(p: {
   title: string

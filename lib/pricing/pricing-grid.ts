@@ -1,5 +1,7 @@
 // THE PRICING GRID — the pure model behind the public /pricing page: every ADVERTISED offering (the two
-// MEMBER tiers and the four SPACE tiers) and the detailed feature comparison beneath them.
+// MEMBER tiers and the four SPACE tiers: Free, Business, Collective, Non Profit) and the detailed feature
+// comparison beneath them. The five-tier ladder (ADR-1709): Members join, Crew hosts, a Space runs,
+// Business sells, Collective connects.
 //
 // ADVERTISED, not "every tier that exists": the Space columns come from spacePlanRows, which maps
 // lib/pricing/display.ts ADVERTISED_SPACE_PLANS. Independent is a real, sellable tier that is NOT on
@@ -16,9 +18,13 @@
 //     entitlement each feature is gated on.
 //   * a METER row reads the tier's rung on the feature's usage ladder — lib/pricing/feature-meters.ts,
 //     the one map of per-tier allowances.
-//   * the TAKE-RATE row reads take_rate.network_bps, the ACTUAL per-tier rate lib/billing/fees.ts charges.
-//     EVERY column quotes a rate now, including free Member: selling is free on every tier (ADR-914), so
-//     the only thing that moves up the ladder is the number.
+//   * the NETWORK FEE row reads take_rate.network_bps, the ACTUAL per-plan rate lib/billing/fees.ts
+//     charges, but ONLY on a column that takes payments. Selling starts at Business (ADR-1709), so the
+//     personal columns and the free Space read "tips only" instead of a rate: the free and personal
+//     rungs survive in the vector as default-deny values, never as a price anyone is quoted.
+//   * the SELLING row reads the `space_payments` gate through planTakesPayments
+//     (lib/pricing/payments-gate.ts), the same plan check every money path asks, with the operator's
+//     overrides merged in.
 //   * the AI ADD-ON row reads ADDON_ENTITLEMENT_KEYS: the add-on keys are in no tier base, so the row
 //     resolves to the metered price on every paid tier and to "not available" on Free. Fold those keys
 //     into a tier base and the row flips to "Included" on its own.
@@ -42,7 +48,7 @@ import {
   networkTakeRateFromStored,
   type CatalogItemKey,
 } from '@/lib/billing/pricing-keys'
-import { ENTITLEMENT_LABEL, deriveTier, isPaid, type EntitlementTier } from '@/lib/core/entitlement'
+import { ENTITLEMENT_LABEL, type EntitlementTier } from '@/lib/core/entitlement'
 import type { ResolvedCatalogItem } from './catalog-config'
 import {
   ADVERTISED_SPACE_PLANS,
@@ -57,6 +63,7 @@ import {
 import { allowanceLabel, currentMeterStepIndex, featureMeter } from './feature-meters'
 import { isBetaPricingActive } from './beta'
 import { meetsGate, mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
+import { planTakesPayments } from './payments-plan'
 import {
   ADDON_ENTITLEMENT_KEYS,
   SPACE_PLAN_LABEL,
@@ -135,41 +142,54 @@ export interface Offering {
    *  Carried alongside the sentence so a caller that needs the bare rate (an answer-engine line, a
    *  comparison, a JSON-LD field) reads it instead of parsing the prose back apart. */
   networkRateBps: number
-  /** True for the column its band highlights: Crew on the member ladder, Collective on the Space
-   *  ladder. That is the DAWN 2 pricing reference's "Best choice" pair
-   *  (design_handoff/dawn/ui_kits/marketing/pricing.html), whose structure the owner adopted for
-   *  /pricing wholesale; no ADR names a different featured plan (ADR-1052/878/914 shape the ladder,
-   *  not the crown), so the adopted reference is the canon and the page float reads THIS flag. */
+  /** Can this offering take payments (paid tickets, memberships, donations, shop checkout, booking
+   *  deposits)? False on Member, Crew and the free Space, which take tips only (ADR-1709). Read off the
+   *  payments gate, so the page's selling line and the gate the checkout asks cannot disagree. */
+  sells: boolean
+  /** True for the ONE recommended card on the page: Business, where selling opens. One crown, not a
+   *  pair: a pricing page that recommends two plans recommends neither (LIVE-759). The page float and
+   *  the comparison emphasis both read THIS flag. */
   featured: boolean
   cta: { label: string; href: string }
 }
+
+/** The member Spaces a Collective includes before the extra-Space add-on (ADR-1709, the
+ *  `collective_space` catalog item). A quantity, not a price, and the one place the copy reads it. */
+const COLLECTIVE_INCLUDED_SPACES = 5
 
 /** The plain who-it-is-for + tagline copy per offering. Copy only, never a number: every figure on an
  *  offering is read from the config below. */
 const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   member: {
-    tagline: 'Belong to everything.',
-    forWho: 'Anyone who wants to find their people, go to things, and join Circles.',
+    tagline: 'Join everything, free.',
+    forWho:
+      'Anyone who wants to find their people, go to things, and join Circles. You can host a Circle and a couple of free Events of your own, and take tips.',
   },
   crew: {
-    // Crew is pay-what-you-want, and that has to be SAID, not implied by a "from" in front of a number.
-    // An answer engine lifting this line otherwise reports the floor as the price.
-    tagline: 'The whole member experience, at a price you pick.',
+    // Crew is contribute what you want (ADR-1084), and that has to be SAID, not implied by a "from" in
+    // front of a number. An answer engine lifting this line otherwise reports the floor as the price.
+    tagline: 'Back the community, host a little more.',
     forWho:
-      'Members who want full access to member programs, people who want to back the community so it stays free for everyone, and anyone selling tickets to their own events without running a Space. Pick any monthly amount at or above the floor; every amount buys the same Crew.',
+      'Members who want to support Frequency and host more on their own: more Circles, Events and Journeys, and a monthly Boost. You contribute what you want, and every amount buys the same Crew.',
   },
   free: {
-    tagline: 'Put your business on the map.',
-    forWho: 'Anyone standing something up, for as long as they want. No card, no clock.',
+    tagline: 'Host free. The whole thing.',
+    forWho:
+      'Anyone opening a Space, for as long as they want. Every business tool, with limits sized for a launch, and tips with no fee. No card, no clock.',
   },
   business: {
-    tagline: 'Own your audience.',
+    tagline: 'Selling starts here.',
     forWho:
-      'Practitioners, teachers who work across studios, studio owners, and community leaders running a book of work, a team, and the events they host.',
+      'Practitioners, teachers who work across studios, studio owners, and community leaders ready to charge: paid tickets, memberships, donations, a shop and booking deposits, with the limits lifted.',
+  },
+  collective: {
+    tagline: 'Groups of groups.',
+    forWho: `Networks, federations, and anyone running several Spaces together: ${COLLECTIVE_INCLUDED_SPACES} member Spaces under one account, each with the Business tools, and Vera AI included.`,
   },
   nonprofit: {
-    tagline: 'The full toolkit, verified.',
-    forWho: 'Verified 501(c)(3) organizations, with donations built in and no take-rate.',
+    tagline: 'Business tools, verified.',
+    forWho:
+      'Verified 501(c)(3) organizations: everything Business does, with donations built in and no network fee. A Non Profit Collective is there for a network of them.',
   },
 }
 
@@ -191,18 +211,14 @@ function pricedOffering(
   }
 }
 
-/** Is a PERSONAL column a paid rung? The one predicate the whole repo uses (`isPaid(deriveTier(...))`),
- *  so the tier normalises here exactly as it does on the charging path and a
- *  column can never quote a rate the fee math would not apply. PURE. */
-function isPaidTierLabel(tier: string): boolean {
-  return isPaid(deriveTier(tier as EntitlementTier))
-}
+/** The fee line on a column that takes tips only. "0%" is the honest number: a tip carries no fee on
+ *  any tier. */
+const TIPS_ONLY_LINE = 'Tips only, at 0%'
 
-// `personalSellingAllowed` and its NO_SELLING_LINE used to sit here, reading the `event_paid_tickets`
-// gate so the free Member column printed "Selling is not included" instead of a rate. Both are gone
-// with that gate (ADR-914): EVERY column on this page can sell, so every column quotes a rate. That is
-// the page's central claim now, and a column that refused to name a number was the old model's most
-// visible artefact.
+/** The fee line on a column that sells: the promise first, then the introduction fee. */
+function sellingRateLine(bps: number): string {
+  return `0% on your own people, ${formatBps(bps)} once per customer the network introduces`
+}
 
 /** The two MEMBER offerings, in ladder order: Member (free) and Crew. PURE.
  *
@@ -215,14 +231,9 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
   // priceRow() here is how this column came to quote "$4.99/mo" as though it were the price while the
   // tables beside it read "from $4.99" — one offer, two figures. One builder, one figure.
   const crew = memberTierRows(values)[0]!
-  // THE TWO MEMBER COLUMNS BOTH SELL, AT DIFFERENT RATES (ADR-914). Both quote the same shape, so the
-  // ladder reads as one number moving rather than as a feature appearing: a free Member pays
-  // `member_free_bps` on network-sourced sales, Crew pays `member_bps`, and BOTH pay 0% on their own
-  // people. The 0% clause leads in both strings on purpose — it is the promise, and it is identical on
-  // every rung, so the only thing that visibly differs is the number Crew buys down.
-  const rateLine = (bps: number) => `0% on your own people, ${formatBps(bps)} on network-sourced sales`
-  const crewBps = values.take_rate.member_bps
-  const memberBps = values.take_rate.member_free_bps
+  // NEITHER MEMBER COLUMN SELLS (ADR-1709). Personal selling is off on every personal tier; tips stay
+  // open at 0%. The personal rungs (`member_free_bps`, `member_bps`) stay in the vector as default-deny
+  // values only, so no column quotes them: the number a reader sees is the 0% a tip carries.
   return [
     {
       id: 'member',
@@ -237,8 +248,9 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       betaNote: null,
       trial: null,
       billing: 'Free forever. No card.',
-      takeRate: rateLine(memberBps),
-      networkRateBps: memberBps,
+      takeRate: TIPS_ONLY_LINE,
+      networkRateBps: 0,
+      sells: false,
       featured: false,
       // BETA_CTA_HREF is the one front door (now /join, the Funnels induction, ADR-1090).
       // History: this CTA once hardcoded '/join' when that was NOT a route and 404'd for
@@ -254,11 +266,11 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
       ...pricedOffering(crew),
       trial: null,
       billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
-      takeRate: rateLine(crewBps),
-      networkRateBps: crewBps,
-      // The member ladder's crown (see the `featured` doc above): the DAWN 2 reference marks Crew,
-      // and the page's floating middle card reads this flag rather than restating the choice.
-      featured: true,
+      takeRate: TIPS_ONLY_LINE,
+      networkRateBps: 0,
+      sells: false,
+      // One recommended card on the page, and it is Business (see the `featured` doc above).
+      featured: false,
       cta: { label: 'Join Crew', href: '/upgrade' },
     },
   ]
@@ -281,8 +293,8 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
   // The plan finds its RUNG through the one resolver (LIVE-230); nothing here indexes the vector by name.
   const ladder = networkTakeRateFromStored(values.take_rate)
   const rateBps = (plan: SpacePlan): number => networkTakeRateBpsForPlan(plan, ladder)
-  const rate = (plan: SpacePlan): string =>
-    `0% on your own bookings, ${formatBps(rateBps(plan))} on network-sourced sales`
+  const sells = (plan: SpacePlan): boolean => planTakesPayments(plan, input.gateOverrides)
+  const rate = (plan: SpacePlan): string => (sells(plan) ? sellingRateLine(rateBps(plan)) : TIPS_ONLY_LINE)
 
   const free: Offering = {
     id: 'free',
@@ -298,9 +310,10 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
     trial: null,
     billing: 'Free forever. No card.',
     takeRate: rate('free'),
-    networkRateBps: rateBps('free'),
+    networkRateBps: sells('free') ? rateBps('free') : 0,
+    sells: sells('free'),
     featured: false,
-    cta: { label: 'Start a Space', href: '/spaces' },
+    cta: { label: 'Start a free Space', href: '/spaces' },
   }
 
   return [
@@ -317,12 +330,14 @@ export function spaceOfferings(input: PricingGridInput): Offering[] {
         trial,
         billing: `Monthly or yearly. ${annualDiscountNote(values)}`,
         takeRate: rate(plan),
-        networkRateBps: rateBps(plan),
-        // The Space ladder's crown (see the `featured` doc above). This was `business` while the DAWN 2
-        // reference the owner adopted crowns COLLECTIVE ("Best choice"), which had the page float and
-        // the model emphasis disagreeing; the model now matches the adopted reference.
+        networkRateBps: sells(plan) ? rateBps(plan) : 0,
+        sells: sells(plan),
+        // The page's one recommended card (see the `featured` doc above): Business, where selling opens.
         featured: plan === 'business',
-        cta: { label: plan === 'nonprofit' ? 'Get verified' : 'Start a Space', href: '/spaces' },
+        cta: {
+          label: plan === 'nonprofit' ? 'Get verified' : plan === 'collective' ? 'Start a Collective' : 'Start with Business',
+          href: '/spaces',
+        },
       }
     }),
   ]
@@ -385,6 +400,8 @@ type RowSource =
   | { from: 'meter'; feature: string }
   /** Reads take_rate.network_bps: the rate charged on business the network sources. */
   | { from: 'takeRate' }
+  /** Reads the payments gate: can this column take payments at all? */
+  | { from: 'payments' }
   /** Reads ADDON_ENTITLEMENT_KEYS + the catalog amount: the metered add-on's availability and price. */
   | { from: 'addon'; addon: AddonKey }
   /** Reads the operator-seat catalog item: extra team seats, on the tiers whose depth includes `team`. */
@@ -489,19 +506,21 @@ function resolveCell(source: RowSource, column: GridColumn, input: PricingGridIn
     case 'meter':
       return meterCell(source.feature, column)
     case 'takeRate': {
-      if (column.axis !== 'plan') {
-        // Every personal column can sell (ADR-914), so every one names a rate. Crew reads `member_bps`;
-        // the free Member column reads `member_free_bps`, the reference rate the ladder descends from.
-        const t = input.values.take_rate
-        return {
-          kind: 'value',
-          text: formatBps(isPaidTierLabel(column.tier) ? t.member_bps : t.member_free_bps),
-        }
+      // Only a column that takes payments has a network fee. Personal columns and the free Space take
+      // tips only, which carry no fee on any tier (ADR-1709).
+      if (column.axis !== 'plan' || !planTakesPayments(column.tier as SpacePlan, input.gateOverrides)) {
+        return { kind: 'value', text: TIPS_ONLY_LINE }
       }
       return {
         kind: 'value',
         text: formatBps(networkTakeRateBpsForPlan(column.tier, networkTakeRateFromStored(input.values.take_rate))),
       }
+    }
+    case 'payments': {
+      if (column.axis !== 'plan') return { kind: 'no', text: 'Tips only' }
+      return planTakesPayments(column.tier as SpacePlan, input.gateOverrides)
+        ? YES
+        : { kind: 'no', text: 'Tips only' }
     }
     case 'addon':
       return addonCell(source.addon, column, input)
@@ -537,9 +556,23 @@ const SPACE_GROUPS: GroupDef[] = [
         source: { from: 'always' },
       },
       {
+        key: 'space_circles',
+        label: 'Circles',
+        detail: 'Circles your Space runs, the Space Circle included.',
+        source: { from: 'meter', feature: 'space_circles' },
+      },
+      {
+        key: 'space_events',
+        label: 'Upcoming Events',
+        detail: 'Events on your calendar that have not happened yet.',
+        source: { from: 'meter', feature: 'space_events' },
+      },
+      {
         key: 'space_qr',
-        label: 'QR codes',
-        detail: 'Printable codes that open straight to a page in your Space.',
+        label: 'Editable QR codes',
+        // Owner ruling 2026-10-06: every Space gets its stock QR code to download; editable codes
+        // (change where they point after printing) are the metered part.
+        detail: 'Every Space gets its own QR code to download. Editable codes can change where they point after you print them.',
         source: { from: 'meter', feature: 'space_qr' },
       },
       {
@@ -572,18 +605,8 @@ const SPACE_GROUPS: GroupDef[] = [
         detail: 'Repeatable follow-up sequences with a human in the loop.',
         source: { from: 'entitlement', key: 'crm.playbooks' },
       },
-      {
-        key: 'multi_pipeline',
-        label: 'Multiple pipelines',
-        detail: 'Run more than one pipeline side by side.',
-        source: { from: 'entitlement', key: 'multi_pipeline' },
-      },
-      {
-        key: 'space_multi_pipeline',
-        label: 'Pipelines included',
-        detail: 'How many pipelines you can run at once.',
-        source: { from: 'meter', feature: 'space_multi_pipeline' },
-      },
+      // Multiple pipelines sat here and are off the page by owner ruling (2026-10-06): they come back
+      // when the feature is built. The meter stays in feature-meters for the product itself.
       {
         key: 'reporting',
         label: 'Reporting and exports',
@@ -597,10 +620,10 @@ const SPACE_GROUPS: GroupDef[] = [
     label: 'Comms',
     rows: [
       {
-        key: 'email',
+        key: 'space_campaigns_month',
         label: 'Email campaigns',
-        detail: 'Write a campaign, pick who gets it, and send or schedule it.',
-        source: { from: 'entitlement', key: 'email' },
+        detail: 'Write a campaign, pick who gets it, and send or schedule it. Free campaigns carry a Frequency footer.',
+        source: { from: 'meter', feature: 'space_campaigns_month' },
       },
       {
         key: 'space_email',
@@ -609,10 +632,10 @@ const SPACE_GROUPS: GroupDef[] = [
         source: { from: 'meter', feature: 'space_email' },
       },
       {
-        key: 'automation',
-        label: 'Marketing automation',
+        key: 'space_automations_active',
+        label: 'Active automations',
         detail: 'Follow-up that runs on its own once you set it.',
-        source: { from: 'entitlement', key: 'automation' },
+        source: { from: 'meter', feature: 'space_automations_active' },
       },
       {
         key: 'space_automation',
@@ -627,35 +650,64 @@ const SPACE_GROUPS: GroupDef[] = [
     label: 'Money and commerce',
     rows: [
       {
+        key: 'payments',
+        label: 'Take payments',
+        // THE SELLING LINE (ADR-1709): paid tickets, paid memberships, donations, shop checkout and
+        // booking deposits all ask one gate (`space_payments`, lib/pricing/payments-gate.ts). Read off
+        // it, so the table and the checkout agree.
+        detail: 'Paid tickets, paid memberships, donations, shop checkout and booking deposits. Tips are open on every plan.',
+        source: { from: 'payments' },
+      },
+      {
+        key: 'tips',
+        label: 'Tips',
+        detail: 'Anyone can leave a tip, on every plan, and we take nothing from it.',
+        source: { from: 'always', text: 'Included, 0%' },
+      },
+      {
+        key: 'space_shop_listings',
+        label: 'Shop listings',
+        detail: 'Products on your page. On a free Space they take inquiries; checkout opens with selling.',
+        source: { from: 'meter', feature: 'space_shop_listings' },
+      },
+      {
         key: 'space_storefront',
-        // ADR-1709 (LIVE-753): the gate is shop CHECKOUT at Business. A free Space still lists, inquiries
-        // only (the shop listings meter).
+        // ADR-1709 (LIVE-753): the gate is shop CHECKOUT at Business, a channel floor checked beside
+        // space_payments. Its own row so an operator who raises it sees the cell move. A free Space still
+        // lists, inquiries only (the shop listings row above).
         label: 'Shop checkout',
         detail: 'Take orders and payment for your listings from your page.',
         source: { from: 'gate', feature: 'space_storefront' },
       },
       {
+        key: 'space_services',
+        label: 'Bookable services',
+        detail: 'The services people can book with you.',
+        source: { from: 'meter', feature: 'space_services' },
+      },
+      {
         key: 'space_bookings',
         label: 'Bookings',
-        detail: 'Set your weekly times and let members book them.',
+        detail: 'Bookings people make with you each month.',
         source: { from: 'meter', feature: 'space_bookings' },
+      },
+      {
+        key: 'space_membership_tiers',
+        label: 'Membership tiers',
+        // The tier COUNT. Charging for a tier is the paid memberships row below; a free Space's tier is
+        // free to join.
+        detail: 'Your own membership tiers. On a free Space a tier is free to join.',
+        source: { from: 'meter', feature: 'space_membership_tiers' },
       },
       {
         key: 'space_memberships',
         label: 'Paid memberships',
         detail: 'Membership tiers people pay for, and the members on them.',
-        // A GATE, not a meter. ADR-1709 (LIVE-753) put PAID memberships at Business; a free Space keeps
-        // one free-to-join tier (the space_membership_tiers row). The `space_memberships` METER that used to back this row was deleted
-        // because capping active members punishes a Space for growing. The tier COUNT is a
-        // separate row's job (space_membership_tiers). Checkout still refuses when Connect is
-        // not payout-ready.
+        // A GATE, not a meter. ADR-1709 (LIVE-753) put PAID memberships at Business, a channel floor
+        // checked beside space_payments; a free Space keeps one free-to-join tier (the row above). The
+        // `space_memberships` METER that used to back this row was deleted because capping active members
+        // punishes a Space for growing. Checkout still refuses when Connect is not payout-ready.
         source: { from: 'gate', feature: 'space_memberships' },
-      },
-      {
-        key: 'space_tickets',
-        label: 'Tickets',
-        detail: 'Ticket tiers for your events, and check-in at the door.',
-        source: { from: 'meter', feature: 'space_tickets' },
       },
       {
         key: 'space_membership_tickets',
@@ -665,9 +717,9 @@ const SPACE_GROUPS: GroupDef[] = [
       },
       {
         key: 'take_rate',
-        label: 'Take-rate on network-sourced sales',
+        label: 'Network fee',
         detail:
-          'You keep 100% of the business you bring in yourself, and 0% applies for good to anyone already in your world: a follower, one of your members, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free.',
+          'Charged once, on a customer the network introduced, at their first purchase. You keep 100% of the business you bring in yourself, and 0% applies for good to anyone already in your world: a follower, one of your members, a contact, or someone who bought before.',
         source: { from: 'takeRate' },
       },
     ],
@@ -816,9 +868,39 @@ const MEMBER_GROUPS: GroupDef[] = [
     ],
   },
   {
+    key: 'hosting',
+    label: 'Hosting on your own',
+    rows: [
+      {
+        key: 'circle_host',
+        label: 'Circles you host',
+        detail: 'Circles you start and look after as a person, without a Space.',
+        source: { from: 'meter', feature: 'circle_host' },
+      },
+      {
+        key: 'event_create',
+        label: 'Upcoming Events',
+        detail: 'Free Events you host on your own, while they are upcoming.',
+        source: { from: 'meter', feature: 'event_create' },
+      },
+      {
+        key: 'event_guests',
+        label: 'Guests per Event',
+        detail: 'How many people can RSVP to one of your Events.',
+        source: { from: 'meter', feature: 'event_guests' },
+      },
+    ],
+  },
+  {
     key: 'programs',
     label: 'Practices and Journeys',
     rows: [
+      {
+        key: 'practice_publish',
+        label: 'Published Practices',
+        detail: 'Practices you write and share with the community.',
+        source: { from: 'meter', feature: 'practice_publish' },
+      },
       {
         key: 'journey_publish',
         label: 'Published Journeys',
@@ -853,24 +935,21 @@ const MEMBER_GROUPS: GroupDef[] = [
   },
   {
     key: 'money',
-    label: 'Selling',
+    label: 'Money',
     rows: [
       {
-        key: 'sell_anything',
-        label: 'Sell tickets and take payments',
-        detail: 'Charge for what you run and get paid out, on any account. Add a payout account once and you are selling.',
-        source: { from: 'always' },
+        key: 'tips',
+        label: 'Tips',
+        detail: 'People can tip you for what you host, and we take nothing from it. Add a payout account once.',
+        source: { from: 'always', text: 'Included, 0%' },
       },
       {
-        key: 'take_rate',
-        label: 'Take-rate on network-sourced sales',
-        // LIVE-253: the last clause read "Every paid rung buys the rate on new introductions down
-        // further", which made this row the page's argument for paying. It is not: it is a fee
-        // schedule. The rate line now says what the rate IS, and the reason to take a plan is
-        // PLAN_STORY.paid, one sentence, read by every pricing surface.
-        detail:
-          'You keep 100% from anyone already yours: a follower, a contact, or someone who bought before. Frequency charges once for the introduction. After that they are your people, free. Where a rung lands is set by the plan, and it is never the reason to take one.',
-        source: { from: 'takeRate' },
+        key: 'payments',
+        label: 'Take payments',
+        // Personal selling is off on every personal tier (ADR-1709). Selling runs through a Space on
+        // Business, which any member can open.
+        detail: 'Paid tickets and sales run through a Space on Business. Any member can open a Space.',
+        source: { from: 'payments' },
       },
     ],
   },
