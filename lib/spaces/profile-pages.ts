@@ -61,6 +61,9 @@ export const RESERVED_PAGE_SLUGS: ReadonlySet<string> = new Set([
   // would hit the forward instead. Reserved in the SAME change that added the route, because a
   // reservation that lands a release later is a release of shadowed pages.
   'events',
+  // The Space Spotlight link page (app/spaces/[slug]/spotlight, lib/spaces/spotlight.ts), reserved in the
+  // same change that added the route for the reason `events` gives above.
+  'spotlight',
 ])
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/

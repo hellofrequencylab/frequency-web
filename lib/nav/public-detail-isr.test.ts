@@ -15,6 +15,7 @@ const PAGES = [
   'app/(public)/spaces/[slug]/page.tsx',
   'app/(public)/spaces/[slug]/podcasts/[showSlug]/page.tsx',
   'app/spotlight/[handle]/page.tsx',
+  'app/spaces/[slug]/spotlight/page.tsx',
 ] as const
 
 const DYNAMIC_APIS = [

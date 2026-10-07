@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-850",
+  "title": "Every Space has a Spotlight link page at /spaces/<slug>/spotlight, built from the same block grid as the member Spotlight",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/spaces/[slug]/spotlight/page.tsx",
+    "ref": "Owner ask 2026-10-07 (Spotlight audit thread): 'use the exact same Spotlight app / editor for both personal and space ... it should act as a linktree'; chose 'Build all 6', then the URL frequencylocal.com/spaces/<slug>/spotlight."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. PR 1 of the Space Spotlight build (plan: /mnt/project-files/spotlight/space-spotlight-plan.md). A Space's Spotlight is a one-column link page kept in its own node, spaces.preferences.spotlight = { published, layout }, so it never moves the Space page or the website. lib/spaces/spotlight.ts reads it (fail-closed on published, fail-safe on shape), narrows any saved layout to the Spotlight blocks (about, links, button, booking, offerings, journeys, events, memberships, contactForm, heading, text, image, embed, divider) stacked into one column, and writes it through the Space write guard. With no saved layout the page renders a starter: About, then each thing the Space offers, then Links. app/spaces/[slug]/spotlight renders it with the Space's accent and theme through the same SpaceProfileModules renderer, ISR with no viewer, and 404s until the Space publishes it. 'spotlight' is a reserved Space page slug so no owner page can shadow the route; not under /spotlight because 2 Space slugs already equal member handles. NEXT: the editor and publish switch in the Space console (PR 2).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const page=r('app/spaces/[slug]/spotlight/page.tsx');if(!/readSpaceSpotlight\\(space\\.preferences\\)\\.published/.test(page)||!/markAnonymousRender\\(\\)/.test(page))miss.push('no Space Spotlight page that 404s until published and renders with no viewer');if(!/<SpaceProfileModules space=\\{toProfileContext\\(space\\)\\} grid=\\{grid\\}/.test(r('components/spotlight/space-spotlight.tsx')))miss.push('the Space Spotlight does not render through the shared Space block renderer');if(!/'spotlight',\\n\\]\\)/.test(r('lib/spaces/profile-pages.ts')))miss.push('an owner page called spotlight can shadow the Spotlight route');if(miss.length){console.error('LIVE-850: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
