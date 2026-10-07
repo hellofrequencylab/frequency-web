@@ -295,6 +295,11 @@
 # written by the capture path or this action after its own checks), so the claim insert runs as the
 # service role: the offer must be a live loyalty card at an active partner and the caller must hold
 # the visits for it. It writes one row for the caller and reads only the caller's own taps.
+# Added 2026-10-06 (LIVE-749, ADR-1709, owner approved on the pricing thread decision card): lib/spaces/counted-meters.ts.
+# Count caps are enforced where a booking, tier, collaborator, Journey seat or RSVP is written, and the counts are
+# CROSS-MEMBER BY DESIGN: a guest saying yes to an event cannot read the other RSVPs under RLS, so a session-client
+# count reads low and the cap never refuses. It reads head counts, a plan's space_id and a host's membership_tier
+# only, returns an allow/deny verdict, and discloses no row to the caller.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -1024,6 +1029,7 @@ lib/spaces/collaborations.ts
 lib/spaces/completion-analytics.ts
 lib/spaces/content-actions.ts
 lib/spaces/content-data.ts
+lib/spaces/counted-meters.ts
 lib/spaces/crm-funnel.ts
 lib/spaces/discovery.ts
 lib/spaces/dispatch.ts

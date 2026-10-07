@@ -21,6 +21,7 @@ import {
 import { cancelOpenHoldsBetween } from '@/lib/spaces/venue-holds'
 import { spaceCanHostCollaborators } from '@/lib/spaces/function-access'
 import { collaboratorHostRefusal } from '@/lib/spaces/collaborator-host-gate'
+import { checkHostedCollaboratorMeter } from '@/lib/spaces/counted-meters'
 
 // The upgrade line shown when a lower-plan space tries to host collaborators (ADR-810).
 // The wall word comes from featureWallLabel (LIVE-430). Collective is not a plan
@@ -90,6 +91,10 @@ async function requestCollaboration(
   // even if the actions are driven directly. While billing is OFF this grants (today's free behavior).
   const hostSpace = hostSide === 'initiator' ? initiating : partner
   if (!(await spaceCanHostCollaborators(hostSpace))) return fail(await collaboratorHostRefusal('space'))
+  // THE COUNT (space_collaborators, LIVE-749): Business hosts 3, Collective unlimited. A pending
+  // request holds its place.
+  const meter = await checkHostedCollaboratorMeter(hostSpaceId)
+  if (!meter.ok) return fail(meter.error)
   // One operator owning both sides can skip the approval round-trip.
   const autoAccept = await viewerApprovesSpace(partnerSpaceId)
 
@@ -153,6 +158,9 @@ async function respondToRequest(collaborationId: string, next: 'accepted' | 'dec
   if (next === 'accepted') {
     const hostSpace = await getSpaceById(row.host_space_id)
     if (!(await spaceCanHostCollaborators(hostSpace))) return fail(await collaboratorHostRefusal('space'))
+    // The pending row being accepted already holds its place in the count.
+    const meter = await checkHostedCollaboratorMeter(row.host_space_id, { alreadyCounted: true })
+    if (!meter.ok) return fail(meter.error)
   }
 
   // Guard the status in the WHERE too: the row updates only if it is STILL pending, so a concurrent

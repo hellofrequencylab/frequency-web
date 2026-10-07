@@ -95,20 +95,20 @@ describe('every metered feature has a registered upsell surface', () => {
 
 describe('the 80% goal-gradient threshold', () => {
   it('says nothing below the threshold', () => {
-    // 199 of 200 would be a wall prompt; 100 of 200 is 50%, well under the gradient.
+    // 249 of 250 would be a wall prompt; 100 of 250 is 40%, well under the gradient.
     const copy = buildMeterUpsell({ featureKey: 'space_crm', currentTier: 'free', usage: 100, rates })
     expect(copy).toBeNull()
   })
 
   it('speaks exactly at the threshold, not only at the cap', () => {
-    const at = Math.ceil(200 * USAGE_UPGRADE_THRESHOLD)
+    const at = Math.ceil(PLACEHOLDER_METER_LIMITS.space_crm!.free! * USAGE_UPGRADE_THRESHOLD)
     expect(buildMeterUpsell({ featureKey: 'space_crm', currentTier: 'free', usage: at, rates })).not.toBeNull()
     expect(buildMeterUpsell({ featureKey: 'space_crm', currentTier: 'free', usage: at - 1, rates })).toBeNull()
   })
 
   it('says nothing on an unlimited rung (there is nothing to fill)', () => {
     expect(
-      buildMeterUpsell({ featureKey: 'space_crm', currentTier: 'business', usage: 500_000, rates }),
+      buildMeterUpsell({ featureKey: 'space_bookings', currentTier: 'business', usage: 500_000, rates }),
     ).toBeNull()
   })
 
@@ -121,12 +121,16 @@ describe('the 80% goal-gradient threshold', () => {
     ).not.toBeNull()
   })
 
-  it('DOES speak on the collaborator ladder now that its free rung is a real allowance', () => {
-    // The other half of LIVE-225: the same input that must stay silent on a wall must speak on a
-    // meter, or "we turned the wall into an allowance" is a claim nothing checks.
+  it('speaks on the collaborator ladder where a rung is a real allowance (Business hosts 3)', () => {
+    // ADR-1709: a free Space hosts no collaborators (it can still BE one), Business hosts 3 and
+    // Collective is unlimited. A Business Space at its 3 must hear about Collective; a free Space's
+    // zero is a wall, so it stays silent rather than pretending to be a meter.
+    expect(
+      buildMeterUpsell({ featureKey: 'space_collaborators', currentTier: 'business', usage: 3, rates }),
+    ).not.toBeNull()
     expect(
       buildMeterUpsell({ featureKey: 'space_collaborators', currentTier: 'free', usage: 5, rates }),
-    ).not.toBeNull()
+    ).toBeNull()
   })
 
   it('says nothing for a key with no meter', () => {
@@ -136,11 +140,11 @@ describe('the 80% goal-gradient threshold', () => {
 })
 
 describe('the copy rules', () => {
-  const crm = buildMeterUpsell({ featureKey: 'space_crm', currentTier: 'free', usage: 187, rates })!
+  const crm = buildMeterUpsell({ featureKey: 'space_crm', currentTier: 'free', usage: 212, rates })!
 
   it('names what the member ALREADY HAS, with their real number', () => {
-    expect(crm.have).toContain('187')
-    expect(crm.have).toMatch(/^You have 187 contacts\./)
+    expect(crm.have).toContain('212')
+    expect(crm.have).toMatch(/^You have 212 contacts\./)
   })
 
   it('never names what the member lacks', () => {
@@ -151,8 +155,8 @@ describe('the copy rules', () => {
   })
 
   it('names the RATE improvement as well as the cap lift', () => {
-    // The cap lift.
-    expect(crm.change).toContain('unlimited')
+    // The cap lift (free 250 -> Business 5,000, ADR-1709).
+    expect(crm.change).toContain('5,000 contacts')
     // The rate, both rungs, read from config (free 10% -> Business 5%).
     expect(crm.change).toContain('network-sourced')
     expect(crm.change).toContain(`${PRICING_DEFAULTS.take_rate.network_bps.free / 100}%`)
@@ -171,9 +175,9 @@ describe('the copy rules', () => {
       member_free_bps: rates.member_free_bps,
       member_bps: rates.member_bps,
     }
-    const copy = buildMeterUpsell({ featureKey: 'space_crm', currentTier: 'free', usage: 187, rates: flat })!
+    const copy = buildMeterUpsell({ featureKey: 'space_crm', currentTier: 'free', usage: 212, rates: flat })!
     expect(copy.change).not.toContain('network-sourced')
-    expect(copy.change).toContain('unlimited')
+    expect(copy.change).toContain('5,000 contacts')
   })
 
   it('promises 0% on your own people and never hints at deletion', () => {
@@ -231,12 +235,12 @@ describe('the copy rules', () => {
   })
 
   it('still says nothing when every remaining rung repeats what they have', () => {
-    const top = buildMeterUpsell({ featureKey: 'space_team', currentTier: 'business', usage: 2, rates })
+    const top = buildMeterUpsell({ featureKey: 'space_team', currentTier: 'collective', usage: 5, rates })
     expect(top).toBeNull()
   })
 
   it('states a metered flow with its period, not as a standing count', () => {
-    const email = buildMeterUpsell({ featureKey: 'space_email', currentTier: 'free', usage: 280, rates })!
+    const email = buildMeterUpsell({ featureKey: 'space_email', currentTier: 'free', usage: 850, rates })!
     expect(email.have).toContain('this month')
     expect(email.change).toContain('a month')
   })
