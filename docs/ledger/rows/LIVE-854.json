@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-854",
+  "title": "On a free Space, Spotlight product, Journey, event and membership cards wait for Business; Book, Contact and Links stay free",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/spaces/spotlight.ts",
+    "ref": "Owner ruling 2026-10-07 (Spotlight audit thread decision card): 'Lock selling cards'; PR 4 of 7 in the Space Spotlight plan."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. PR 4 of the Space Spotlight build (plan: /mnt/project-files/spotlight/space-spotlight-plan.md). Owner ruling: free Spaces get About, Links, Book and Contact cards; product, Journey, event and membership cards need a paid plan. isSellingLinkCard (lib/spaces/spotlight.ts) names the selling kinds by Link cards target id. LinkCardsBlock reads spaceCanTakePayments (the same fail-closed gate every price surface uses, including the LIVE-822 limits-waived comp) and drops selling cards on a Space that cannot take payments, so the public page and the editor preview agree. The console editor shows a short note on a free Space with the shared UpgradeMoment (Business trial or keep it free) behind 'See what Business adds'. Every other block stays free. NEXT: the paid and Collective links (PR 6).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/SELLING_CARD = \\/\\^\\(product\\|journey\\|event\\|membership\\):\\//.test(r('lib/spaces/spotlight.ts')))miss.push('no rule naming the selling Link cards');const lc=r('components/widgets/space-profile/link-cards.tsx');if(!/spaceCanTakePayments\\(space\\.id\\)/.test(lc)||!/canSell \\|\\| !isSellingLinkCard\\(it\\.id\\)/.test(lc))miss.push('a free Space still shows selling Link cards');if(!/<UpgradeMoment/.test(r('components/spotlight/space-spotlight-editor.tsx')))miss.push('the Spotlight editor offers no upgrade where selling cards are held back');if(miss.length){console.error('LIVE-854: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

@@ -18,6 +18,9 @@ import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
 import { SpotlightAccent, SpotlightHeader } from '@/components/spotlight/space-spotlight'
 import { SpaceSpotlightEditor } from '@/components/spotlight/space-spotlight-editor'
 import { getSpaceLayoutRailData } from '../rail-getters'
+import { spaceCanTakePayments } from '@/lib/pricing/payments-gate'
+import { loadUpgradeOffer } from '@/lib/pricing/business-offer'
+import type { UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 
 // THE SPACE SPOTLIGHT EDITOR PAGE (LIVE-851), in the Space console. Gated like every console page: the
 // Space must be visible and the caller a manager (a staff previewer sees it read-only, and every write
@@ -45,7 +48,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
   const rows = resolveRows(grid, 'space')
   const context = toProfileContext(space)
 
-  const [data, authored, tagline, pageRail] = await Promise.all([
+  const [data, authored, tagline, pageRail, canSell] = await Promise.all([
     getSpaceContentData(context.id, {
       name: context.brandName,
       type: context.type,
@@ -61,7 +64,16 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
     // The Space page builder's own seed (null for a non-manager): only its locked blocks and picker data are
     // used here, so a Spotlight offers exactly the function-backed blocks the Space page does.
     canManage ? getSpaceLayoutRailData(slug) : Promise.resolve(null),
+    spaceCanTakePayments(space.id, { plan: space.plan ?? null }),
   ])
+
+  // Selling Link cards need a plan that takes payments (LIVE-854); a free Space sees the upgrade here.
+  const upgrade: UpgradeMomentSetup | undefined = canSell
+    ? undefined
+    : {
+        target: { spaceSlug: space.slug, canUpgrade: !!caller?.id && space.ownerProfileId === caller.id },
+        offer: await loadUpgradeOffer(),
+      }
 
   const seed: BuilderRailData | null = pageRail
     ? {
@@ -111,6 +123,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
         preview={preview}
         initialPublished={spotlight.published}
         readOnly={!canManage}
+        upgrade={upgrade}
       />
     </FocusTemplate>
   )
