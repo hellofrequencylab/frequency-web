@@ -26,6 +26,7 @@ import {
   mdOf,
   moduleLine,
   monthDay,
+  plainText,
   MW_SEASON_ORDER,
   seasonAt,
   seasonNamed,
@@ -188,7 +189,7 @@ function Kicker({ children }: { children: ReactNode }) {
 function Paras({ text, className = 'mw-body' }: { text: unknown; className?: string }) {
   const ps = str(text)
     .split(/\n\s*\n|<\/p>\s*<p[^>]*>/i)
-    .map((t) => t.replace(/<[^>]*>/g, '').trim())
+    .map(plainText)
     .filter(Boolean)
   if (ps.length === 0) return null
   return (

@@ -249,11 +249,17 @@ export function headlineSegments(title: string, accentWord: string): { text: str
   ].filter((s) => s.text)
 }
 
+/** Stored rich text as plain text: tags dropped, then any stray angle bracket, trimmed. React escapes the
+ *  result anyway; this keeps markup out of the words. */
+export function plainText(raw: string): string {
+  return raw.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim()
+}
+
 /** Text lines from a stored body: one per line, blanks dropped. */
 export function lines(raw: unknown): string[] {
   return str(raw)
     .split(/\r?\n|<br\s*\/?>/i)
-    .map((l) => l.replace(/<[^>]*>/g, '').trim())
+    .map(plainText)
     .filter(Boolean)
 }
 
