@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-830",
+  "title": "Every Space website wears the house theme (the Site v4 design): a floating header, a photo hero with a start-here card, then the Space's own blocks as themed sections, every word from the Space's fields",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "components/sites/site-page.tsx",
+    "ref": "Owner ask 2026-10-07 with the 'Daniel Tyack Site v4' design handoff: 'Inspect EVERY ELEMENT of this design from header to footer', then 'This should be viewed as the structure for the home Frequency theme... Every space that launches a website will have this as the default theme', 'I don't want any of this content baked into code. It should all be dynamic with fields to modify', and 'a space's overall styles they set in spaces should reflect in their launch of the website'. White label sites build ADR-1708"
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: the website looked like the Space page in a frame, not like the designed house site, and some of its words (Get in touch, the section menu labels) were written in code. THE FIX: lib/sites/house-theme.ts plans the Home page from the Space's own placed blocks, in the owner's order: Editorial becomes the who-this-is-for section (lead, statement rows, closing line), Card grid the numbered steps panel, Zigzag (with a Features block right after it) the story with its facts, Features the facts grid, Offerings the session cards, Memberships and Circles the community band with the live tiers, FAQ the exclusive accordion (FAQPage data kept), Accent beat plus Contact the closing ink band with the contact card. Any other block keeps the Space page's own render in a plain band. components/sites/house-sections.tsx is presentational and holds no copy; components/sites/house-home.tsx fills every section from the Space: block fields, Hero settings (headline with *accent* marks, the line under it, the role line), the header button, offerings, tiers, FAQ rows and contact details. A blank field is not drawn. New owner fields: Card grid eyebrow, Offerings button label, Memberships intro, button label, quote and small print. Colors are DAWN tokens under the Space's brand accent; faces are the house serif and sans until the owner picks a page theme, then the theme's. Verified against the design screenshots at desktop and phone width.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const p=r('components/sites/site-page.tsx');const h=r('components/sites/house-home.tsx');const t=r('lib/sites/house-theme.ts');const c=r('components/sites/site-chrome.tsx');const b=r('lib/entity-blocks/block-content.ts');if(!/<HouseHome\\\\b/.test(p)||!/buildHouseHome\\\\(/.test(p))miss.push('the website Home is not the house theme');if(!/export function planHouseSections\\\\(/.test(t)||!/kind: 'closing'/.test(t))miss.push('the house theme does not plan sections from the Space blocks');if(!/getSpaceFaqs\\\\(/.test(h)||!/listMembershipTiers\\\\(/.test(h)||!/readHeroConfig\\\\(/.test(h))miss.push('the house sections are not filled from the Space data');if(!/key: 'quote'/.test(b)||!/key: 'note'/.test(b))miss.push('the memberships band words are not owner fields');if(!/data-house-fonts/.test(c)||!/Frequency Partner/.test(c))miss.push('the house chrome does not follow the Space theme or lost the partner badge');if(miss.length){console.error('LIVE-830: '+miss.join('; '));process.exit(1)}\"",
+    "note": "Fails on main (the site is the framed Space page); passes once the house theme lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
