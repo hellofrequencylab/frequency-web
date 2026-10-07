@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { decodeLegacyEntities, gridColumns, safeImageUrl, safeUrl } from '@/lib/entity-blocks/block-content'
 import { DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
+import { withoutAccentMarks } from '@/lib/sites/house-theme'
 import { BlockIcon } from './block-icon'
 import { InlineRichText } from './content-block-view'
 import {
@@ -107,7 +108,10 @@ function s(props: Record<string, unknown>, key: string): string | undefined {
   // rich editor stored with escaped entities (`What&#39;s here`) would show the entity VERBATIM. Decode it back
   // to real characters first (safe: decodeLegacyEntities leaves genuine <b>/<a> markup alone, and the rich
   // fields that go through InlineRich re-sanitize anyway), so the live page shows the apostrophe, not `&#39;`.
-  return typeof v === 'string' && v.trim() ? decodeLegacyEntities(v) : undefined
+  if (typeof v !== 'string' || !v.trim()) return undefined
+  // A heading's `*accent*` marks set words in the website's accent italic (lib/sites/house-theme); the Space
+  // page sets the heading in one face, so the marks drop and the words stay.
+  return key === 'title' ? withoutAccentMarks(decodeLegacyEntities(v)) : decodeLegacyEntities(v)
 }
 
 /** Return `v` when it is one of `allowed`, else the `fallback`. Keeps an enum primitive (height / display /

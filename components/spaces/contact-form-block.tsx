@@ -34,6 +34,11 @@ export interface ContactFormBlockProps {
   optInLabel?: string
   submitLabel?: string
   successMessage?: string
+  /** `house`: drawn inside a house website section (components/sites/house-sections.tsx), which sets the
+   *  heading and intro itself, so the form drops its own and wears the theme's card and button. */
+  variant?: 'card' | 'house'
+  /** A next step offered beside the thank-you (the Space's header button on its website). */
+  next?: { label: string; href: string } | null
 }
 
 export function ContactFormBlock({
@@ -47,7 +52,11 @@ export function ContactFormBlock({
   optInLabel,
   submitLabel,
   successMessage,
+  variant = 'card',
+  next = null,
 }: ContactFormBlockProps) {
+  const house = variant === 'house'
+  const frame = house ? 'hs-card' : 'rounded-2xl border border-border bg-surface p-6 sm:p-8'
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -80,27 +89,38 @@ export function ContactFormBlock({
 
   if (status === 'done') {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-6 text-center sm:p-8" role="status">
+      <div className={`${frame} text-center`} role="status">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-pill bg-success-bg text-success">
           <Check className="h-6 w-6" strokeWidth={2.5} aria-hidden />
         </div>
         <p className="text-body text-text">{thanks}</p>
+        {next && (
+          <a
+            href={next.href}
+            className={house ? 'hs-btn hs-btn-primary' : 'mt-4 inline-block text-body-sm font-semibold text-primary underline'}
+            style={house ? { alignSelf: 'center' } : undefined}
+          >
+            {next.label}
+          </a>
+        )}
       </div>
     )
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+    <div className={frame}>
       {/* The shared Eyebrow atom, not a hand-rolled copy of its look: it carries the `eyebrow` text
           role, so the Space's theme and brand accent reach it exactly as they reach every sibling
           block. Locked by lib/theme/eyebrow-role.test.ts. */}
-      {eyebrow?.trim() && <Eyebrow>{eyebrow}</Eyebrow>}
-      <h2 className="font-display text-page-title uppercase tracking-tight text-balance text-text sm:text-display-h3">
-        {heading}
-      </h2>
-      {body?.trim() && <p className="mt-3 text-body-sm leading-relaxed text-muted">{body}</p>}
+      {!house && eyebrow?.trim() && <Eyebrow>{eyebrow}</Eyebrow>}
+      {!house && (
+        <h2 className="font-display text-page-title uppercase tracking-tight text-balance text-text sm:text-display-h3">
+          {heading}
+        </h2>
+      )}
+      {!house && body?.trim() && <p className="mt-3 text-body-sm leading-relaxed text-muted">{body}</p>}
 
-      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <form onSubmit={onSubmit} className={house ? 'space-y-4' : 'mt-6 space-y-4'}>
         {/* Field wraps exactly one control each (ADR-966 / `pnpm check:labels`), so every input is
             named by its own label rather than by a heading that happens to sit above it. */}
         <Field label="Your name">
@@ -180,7 +200,11 @@ export function ContactFormBlock({
         <button
           type="submit"
           disabled={preview || status === 'loading'}
-          className="tap-target inline-flex items-center justify-center rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          className={
+            house
+              ? 'hs-btn hs-btn-primary disabled:opacity-60'
+              : 'tap-target inline-flex items-center justify-center rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60'
+          }
         >
           {status === 'loading' ? 'Sending…' : sendLabel}
         </button>

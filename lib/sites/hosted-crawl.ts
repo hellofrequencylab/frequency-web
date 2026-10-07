@@ -1,5 +1,6 @@
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { readProfilePages } from '@/lib/spaces/profile-pages'
+import { SITE_CONTACT_SLUG, siteHasContactPage } from '@/lib/sites/house-theme'
 import { appOrigin, normalizeHost } from '@/lib/sites/host'
 import { resolveHostedSpace } from '@/lib/sites/hosted'
 import { getSiteSpace } from '@/lib/sites/site-cache'
@@ -37,5 +38,6 @@ export async function resolveHostedCrawlTarget(hostParam: string): Promise<Hoste
 
 /** The page slugs a published site's sitemap lists (home first, then the Space's own pages). */
 export function hostedSitemapSlugs(space: Pick<Space, 'preferences'>): string[] {
-  return readProfilePages(space.preferences).map((p) => p.slug)
+  const slugs = readProfilePages(space.preferences).map((p) => p.slug)
+  return siteHasContactPage(space.preferences) ? [...slugs, SITE_CONTACT_SLUG] : slugs
 }

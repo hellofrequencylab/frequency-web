@@ -6,7 +6,8 @@
 // Space page renders, in the same order) and gives each block it knows a themed section: Editorial ->
 // "who this is for", Card grid -> numbered steps, Zigzag (+ a Features block right after it) -> the story
 // with its facts, Offerings -> session cards, Memberships / Circles -> the community band, FAQ -> the
-// accordion, Accent beat + Contact -> the closing ink band. Any other block still renders, through the
+// accordion, Contact form -> the message section (it writes a CRM lead and emails the owner), Accent beat +
+// Contact -> the closing ink band. Any other block still renders, through the
 // Space page's own block render, in a plain band, so nothing an owner placed ever disappears.
 
 /** One themed section, in page order. `ids` are the block ids it renders from (and so absorbs). */
@@ -18,6 +19,7 @@ export type HouseSection =
   | { kind: 'sessions'; id: string }
   | { kind: 'community'; membershipsId: string | null }
   | { kind: 'faq'; id: string }
+  | { kind: 'inquiry'; id: string }
   | { kind: 'closing'; ctaId: string | null; contactRowTitle: string | null }
   | { kind: 'other'; rowId: string; ids: string[] }
 
@@ -62,6 +64,7 @@ export function planHouseSections(rows: readonly HouseRow[], isSourced: (id: str
       done.add('memberships').add('circles')
       section = { kind: 'community', membershipsId: ids.has('memberships') ? 'memberships' : null }
     } else if (id === 'faq') section = { kind: 'faq', id }
+    else if (id === 'contactForm') section = { kind: 'inquiry', id }
     else if (id === 'accentBeat' || CONTACT_IDS.has(id)) {
       done.add('accentBeat').add('contact').add('business')
       const contactRow = items.find((it) => CONTACT_IDS.has(it.id))?.row
@@ -95,6 +98,21 @@ export const HOUSE_NAV: Partial<Record<HouseSection['kind'], { anchor: string; l
   sessions: { anchor: 'sessions', label: 'Sessions' },
   community: { anchor: 'community', label: 'Community' },
   faq: { anchor: 'faq', label: 'Questions' },
+}
+
+/** The Contact page's path on a website. `contact` is a reserved page slug (lib/spaces/profile-pages), so no
+ *  custom page can take it. */
+export const SITE_CONTACT_SLUG = 'contact'
+
+/** The website's Contact page (`/contact`) is offered once the Space has placed a Contact form on its Home
+ *  page, the same block whose copy the page reads. Without the form there is nothing to send, and the
+ *  closing band on Home already shows the contact details. */
+export function siteHasContactPage(preferences: unknown): boolean {
+  const prefs = preferences && typeof preferences === 'object' ? (preferences as Record<string, unknown>) : null
+  const layout = prefs?.profileLayout as { rows?: { cells?: unknown }[]; hidden?: unknown } | undefined
+  const rows = Array.isArray(layout?.rows) ? layout.rows : []
+  if (Array.isArray(layout?.hidden) && layout.hidden.includes('contactForm')) return false
+  return rows.some((r) => Array.isArray(r.cells) && r.cells.some((c) => Array.isArray(c) && c.includes('contactForm')))
 }
 
 // ── Text from the authored bags ─────────────────────────────────────────────────────────────────────────
@@ -163,6 +181,14 @@ export function accentSegments(text: string): { text: string; accent: boolean }[
   }
   if (last < text.length) out.push({ text: text.slice(last), accent: false })
   return out.filter((s) => s.text.length > 0)
+}
+
+/** A headline with its `*accent*` marks dropped, for the surfaces that set it in one face (the Space page,
+ *  its share image). The words stay; only the asterisks go. */
+export function withoutAccentMarks(text: string): string {
+  return accentSegments(text)
+    .map((s) => s.text)
+    .join('')
 }
 
 /** The big step number: the card's own number when it is one, else its position. Two digits. */

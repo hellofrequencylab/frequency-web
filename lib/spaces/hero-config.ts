@@ -1,3 +1,4 @@
+import { withoutAccentMarks } from '@/lib/sites/house-theme'
 import {
   primitiveValues,
   safeUrl,
@@ -267,7 +268,7 @@ export function resolveHero(input: {
     height: config.height ?? COVER_HEIGHT_DEFAULT,
     buttonOrientation: config.buttonOrientation ?? 'row',
     eyebrow: config.eyebrow ?? null,
-    heading: config.heading ?? brandName,
+    heading: config.heading === undefined ? brandName : withoutAccentMarks(config.heading),
     tagline: config.tagline ?? tagline,
     cta: { ...cta, show: !!cta.label },
   }

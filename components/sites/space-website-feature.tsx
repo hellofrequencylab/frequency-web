@@ -6,11 +6,12 @@ import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { appOrigin, siteSubdomainHost } from '@/lib/sites/host'
-import { readWebsitePublished } from '@/lib/spaces/website'
+import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
 import { siteDomainStatus } from '@/lib/sites/vercel-domains'
 import { domainPurchaseOpen } from '@/lib/sites/domain-purchase'
 import { SiteDomainPanel } from './site-domain-panel'
 import { WebsitePublishControls } from './website-publish-controls'
+import { WebsiteHeadlineForm } from './website-headline-form'
 
 // THE WEBSITE FEATURE on a Space's Profile & Settings tab (owner ask 2026-10-06: "a prominent feature in
 // profile and settings with a little CTA to upgrade"). One card: what the website is, its live state,
@@ -26,6 +27,7 @@ export async function SpaceWebsiteFeature({
   space: { slug: string; plan?: string | null; domain: string | null; preferences?: unknown }
 }) {
   const published = readWebsitePublished(space.preferences)
+  const siteHero = readSiteHero(space.preferences)
   const plan = asSpacePlan(space.plan)
   // `entitled` is the plan itself (gates live); `canConnect` is what the connect action allows today.
   // `buyOpen`: domain sales are switched on (LIVE-781); off, Buy a new domain reads Coming soon.
@@ -60,6 +62,14 @@ export async function SpaceWebsiteFeature({
             <WebsitePublishControls slug={space.slug} published={published} siteUrl={siteUrl} />
           </div>
         </div>
+      </div>
+
+      <div className="mt-6 border-t border-border pt-5">
+        <h3 className="text-body font-semibold text-text">Website headline</h3>
+        <p className="mt-1 mb-3 text-body-sm text-muted">
+          What your website leads with. Your Space page keeps its own header from your Hero settings.
+        </p>
+        <WebsiteHeadlineForm slug={space.slug} heading={siteHero.heading ?? ''} tagline={siteHero.tagline ?? ''} />
       </div>
 
       <div className="mt-6 border-t border-border pt-5">

@@ -11,6 +11,10 @@ import { decodeLegacyEntities } from '@/lib/entity-blocks/block-content'
 import { readContactFormContent } from '@/lib/spaces/contact-tab'
 import { SpaceContactBlock } from '@/components/page-editor/blocks/profile'
 import { ContactFormBlock } from '@/components/spaces/contact-form-block'
+import { Eyebrow } from '@/components/page-editor/blocks/kit'
+import { parseEntityLayout } from '@/lib/entity-blocks/layout'
+import { paragraphs, plainText, withoutAccentMarks } from '@/lib/sites/house-theme'
+import { safeImageSrc } from '@/lib/safe-image-src'
 
 // THE CONTACT TAB — the Space's own door for someone who wants to reach it.
 //
@@ -87,11 +91,46 @@ export default async function SpaceContactPage({ params }: { params: Promise<{ s
   // prints the entity verbatim. A no-op on a value carrying real markup.
   const str = (v: unknown) => (typeof v === 'string' && v.trim() ? decodeLegacyEntities(v) : undefined)
 
+  // The profile: the Space's own About block (heading and text) beside its Zigzag photo, the same fields the
+  // website's Contact page reads (components/sites/house-home buildHouseContact). Nothing written, nothing drawn.
+  const prefs = space.preferences as Record<string, unknown> | null
+  const blocks = (parseEntityLayout(prefs?.profileLayout)?.content ?? {}) as Record<string, Record<string, unknown>>
+  const about = blocks.about ?? {}
+  const aboutBody = paragraphs(about.body)
+  const aboutTitle = withoutAccentMarks(plainText(about.title))
+  const aboutEyebrow = plainText(about.eyebrow)
+  // The form's title without the website's `*accent*` marks (the Space page sets it in one face).
+  const rawFormTitle = str(form.title)
+  const formTitle = rawFormTitle && withoutAccentMarks(rawFormTitle)
+  const photoOf = (b: Record<string, unknown> | undefined) => (typeof b?.image === 'string' ? safeImageSrc(b.image) : null)
+  const aboutPhoto = photoOf(about) ?? photoOf(blocks.zigzag)
+
   const p = data.profile
   const hasFacts = !!(p && (p.address || p.phone || p.email || p.hours || p.website))
 
   return (
     <div className="space-y-10">
+      {(aboutTitle || aboutBody.length > 0) && (
+        <section className="flex flex-col gap-6 rounded-card border border-border bg-surface p-6 sm:flex-row sm:p-8">
+          {aboutPhoto && (
+            // eslint-disable-next-line @next/next/no-img-element -- operator photo on an arbitrary host
+            <img
+              src={aboutPhoto}
+              alt={plainText(about.alt) || brandName}
+              className="h-56 w-full shrink-0 rounded-card object-cover sm:h-auto sm:w-48"
+            />
+          )}
+          <div className="min-w-0 space-y-3">
+            {aboutEyebrow && <Eyebrow>{aboutEyebrow}</Eyebrow>}
+            {aboutTitle && <h2 className="font-display text-page-title tracking-tight text-text">{aboutTitle}</h2>}
+            {aboutBody.map((para, i) => (
+              <p key={i} className="text-body leading-relaxed text-muted">
+                {para}
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
       <p className="text-body-sm leading-relaxed text-muted">
         Send {brandName} a message, and it lands with the people who run this Space.
       </p>
@@ -99,7 +138,7 @@ export default async function SpaceContactPage({ params }: { params: Promise<{ s
       <ContactFormBlock
         slug={space.slug}
         eyebrow={str(form.eyebrow)}
-        title={str(form.title)}
+        title={formTitle}
         body={str(form.body)}
         showPhone={form.showPhone === true}
         showMessage={form.showMessage !== false}

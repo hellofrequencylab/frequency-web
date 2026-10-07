@@ -8,8 +8,10 @@ import {
   paragraphs,
   planHouseSections,
   plainText,
+  siteHasContactPage,
   splitWhoBody,
   stepNumber,
+  withoutAccentMarks,
 } from './house-theme'
 
 describe('planHouseSections', () => {
@@ -64,6 +66,36 @@ describe('planHouseSections', () => {
     expect(planHouseSections([{ id: 'a', cells: [['contact']] }])).toEqual([
       { kind: 'closing', ctaId: null, contactRowTitle: null },
     ])
+  })
+
+  it('gives the Contact form its own message section, before the closing band', () => {
+    expect(planHouseSections([{ id: 'a', cells: [['contactForm']] }, { id: 'b', cells: [['accentBeat']] }])).toEqual([
+      { kind: 'inquiry', id: 'contactForm' },
+      { kind: 'closing', ctaId: 'accentBeat', contactRowTitle: null },
+    ])
+  })
+})
+
+describe('siteHasContactPage', () => {
+  const withForm = (extra: Record<string, unknown> = {}) => ({
+    profileLayout: { rows: [{ id: 'r0', columns: 1, cells: [['about'], ['contactForm']] }], ...extra },
+  })
+
+  it('offers the Contact page once the Contact form is on the Home page', () => {
+    expect(siteHasContactPage(withForm())).toBe(true)
+  })
+
+  it('offers none without the form, or with the form hidden', () => {
+    expect(siteHasContactPage({ profileLayout: { rows: [{ id: 'r0', columns: 1, cells: [['contact']] }] } })).toBe(false)
+    expect(siteHasContactPage(withForm({ hidden: ['contactForm'] }))).toBe(false)
+    expect(siteHasContactPage(null)).toBe(false)
+  })
+})
+
+describe('withoutAccentMarks', () => {
+  it('drops the asterisks and keeps the words', () => {
+    expect(withoutAccentMarks('Fine, but *not okay.*')).toBe('Fine, but not okay.')
+    expect(withoutAccentMarks('Plain heading')).toBe('Plain heading')
   })
 })
 
