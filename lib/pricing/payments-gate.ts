@@ -42,7 +42,7 @@ export interface PaymentsRefusal {
   message: string
 }
 
-export type PaymentsVerdict = { ok: true } | { ok: false; refusal: PaymentsRefusal }
+type PaymentsVerdict = { ok: true } | { ok: false; refusal: PaymentsRefusal }
 
 /** The refusal for a personal seller. Personal selling is off on every personal tier. */
 export function personalPaymentsRefusal(): PaymentsVerdict {

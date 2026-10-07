@@ -1208,7 +1208,7 @@ describe('rescheduleBooking (action) — atomic new-then-cancel', () => {
 // ── P4 (ADR-605): deposits are DARK (double-gated off) ───────────────────────────────────────────
 describe('deposits stay dark (P4)', () => {
   it('bookingDepositsLive is false with payments off', async () => {
-    expect(await bookingDepositsLive()).toBe(false)
+    expect(await bookingDepositsLive('space-1')).toBe(false)
   })
   it('startServiceDeposit no-ops with a "payments not on" message and writes no booking', async () => {
     const r = await startServiceDeposit('space-1', 'svc-1', new Date('2099-06-30T10:00:00Z').toISOString())

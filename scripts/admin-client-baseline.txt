@@ -980,6 +980,7 @@ lib/pricing/dunning.ts
 lib/pricing/gamification-access.ts
 lib/pricing/gates.ts
 lib/pricing/member-meter-usage.ts
+lib/pricing/payments-gate.ts
 lib/pricing/settings.ts
 lib/pricing/space-allowance.ts
 lib/pricing/space-bundle.ts
