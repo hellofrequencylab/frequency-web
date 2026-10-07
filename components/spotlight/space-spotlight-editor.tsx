@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useTransition, type ReactNode } from 'react'
 import Link from 'next/link'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, QrCode } from 'lucide-react'
 import { EntityLayoutProvider, type SaveLayout } from '@/components/entity-blocks/profile-layout-context'
 import { EntityPageBuilder, type BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { Switch } from '@/components/ui/switch'
@@ -87,13 +87,22 @@ export function SpaceSpotlightEditor({
               />
             </div>
             {published && (
-              <Link
-                href={href}
-                target="_blank"
-                className="inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
-              >
-                frequencylocal.com{href} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-              </Link>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <Link
+                  href={href}
+                  target="_blank"
+                  className="inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
+                >
+                  frequencylocal.com{href} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                </Link>
+                {/* QR & Share (LIVE-853): the Space's QR studio with a code for this page filled in. */}
+                <Link
+                  href={`/spaces/${slug}/settings/qr?title=Spotlight&target=${encodeURIComponent(href)}`}
+                  className="inline-flex items-center gap-1 text-meta font-medium text-primary-strong hover:underline"
+                >
+                  <QrCode className="h-3.5 w-3.5" aria-hidden /> Make a QR code
+                </Link>
+              </div>
             )}
             {error && (
               <p className="text-meta font-medium text-danger" role="alert">

@@ -87,6 +87,7 @@ space_donations
 space_follower_event_reminders_sent
 space_function_type_defaults
 space_member_benefits
+space_spotlight_clicks
 space_standing
 space_tier_benefits
 space_venue_holds
