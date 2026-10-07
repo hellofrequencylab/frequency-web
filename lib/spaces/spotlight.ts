@@ -36,6 +36,15 @@ const ALLOWED: ReadonlySet<string> = new Set(SPACE_SPOTLIGHT_BLOCK_IDS)
  *  (Link cards picks the first few until the owner chooses), then its own links. */
 const STARTER_IDS = ['about', 'linkCards', 'links'] as const
 
+/** PLAN GATING (owner ruling 2026-10-07, "Lock selling cards"): a Link card that sells or signs someone up
+ *  (a product, a Journey, an event, a membership) needs a plan that takes payments. Book, Contact and every
+ *  other block stay free. Keyed on the Link cards target id (`<kind>:<id>`, block-data-sources). PURE. */
+const SELLING_CARD = /^(product|journey|event|membership):/
+
+export function isSellingLinkCard(id: string): boolean {
+  return SELLING_CARD.test(id)
+}
+
 export interface SpaceSpotlight {
   published: boolean
   /** The saved one-column layout, or null when the owner has not arranged one (the starter renders). */

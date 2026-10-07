@@ -6,6 +6,7 @@ import {
   readSpaceSpotlight,
   spaceSpotlightGrid,
   nextSpotlightPreferences,
+  isSellingLinkCard,
 } from './spotlight'
 
 const placed = (prefs: unknown) =>
@@ -70,5 +71,10 @@ describe('Space Spotlight', () => {
     const cleared = nextSpotlightPreferences(published, { layout: null })
     expect(readSpaceSpotlight(cleared).layout).toBeNull()
     expect(readSpaceSpotlight(cleared).published).toBe(true)
+  })
+
+  it('locks only the cards that sell or sign someone up', () => {
+    for (const id of ['product:p1', 'journey:j1', 'event:e1', 'membership:m1']) expect(isSellingLinkCard(id), id).toBe(true)
+    for (const id of ['book', 'contact', 'links', 'producty:x']) expect(isSellingLinkCard(id), id).toBe(false)
   })
 })
