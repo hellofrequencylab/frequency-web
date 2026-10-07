@@ -10,7 +10,9 @@ import { MENSWORK_TOKENS_CSS } from '@/lib/theme/menswork'
 // The rules, from the design system: one 60 degree chamfer, top-right (8px buttons and tags, 12px cards
 // and inputs, 20px frames and bands); hairlines, never shadows or glows; no gradients, no blur; condensed
 // caps headlines, Barlow body, mono labels and numerals; left-aligned; one seasonal accent marking "now";
-// circles only for people; linear 150ms transitions.
+// circles only for people; linear 150ms transitions, none under reduced motion. Photography (HANDOFF
+// 2026-10-07): type sits ABOVE the image, never over the men, so the hero stacks its copy over a full-width
+// photo instead of washing one behind it, and photos keep their own light (no filters).
 
 const M = '[data-house-theme="menswork"]'
 
@@ -76,12 +78,11 @@ ${M} .hs-menu-panel a{${LABEL};font-size:13px;padding:16px 4px;border-radius:0;b
 ${M} .hs-menu-panel a:last-child{border-bottom:0}
 ${M} .hs-menu-panel a:hover{color:var(--color-primary-strong)}
 
-${M} .hs-hero{margin-top:0;min-height:max(88svh,640px);background:var(--mw-charcoal);color:var(--color-on-ink)}
+${M} .hs-hero{margin-top:0;min-height:0;flex-direction:column;align-items:stretch;background:var(--mw-charcoal);color:var(--color-on-ink)}
 ${M} .hs-hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:12px;background:${CHEVRON};pointer-events:none}
-${M} .hs-hero-photo{filter:saturate(.75) contrast(1.05)}
-${M} .hs-hero-wash{background:color-mix(in srgb,var(--mw-charcoal) 64%,transparent)}
-${M} .hs-hero-side{display:none}
-${M} .hs-hero-grid{max-width:1248px;padding:96px clamp(20px,4vw,48px) clamp(56px,7vw,96px)}
+${M} .hs-hero-photo{position:relative;inset:auto;order:2;height:clamp(280px,40vw,480px);filter:none}
+${M} .hs-hero-wash,${M} .hs-hero-side{display:none}
+${M} .hs-hero-grid{order:1;max-width:1248px;padding:clamp(64px,8vw,96px) clamp(20px,4vw,48px) clamp(48px,6vw,72px)}
 ${M} .hs-hero-copy{gap:28px;max-width:760px}
 ${M} .hs-hero-pill{${LABEL};position:relative;gap:10px;padding:10px 16px 10px 12px;border-radius:0;clip-path:${CLIP.sm};background:transparent;border:1px solid var(--mw-edge);--mw-edge:var(--color-border-strong);-webkit-backdrop-filter:none;backdrop-filter:none;color:var(--color-on-ink)}
 ${M} .hs-hero-pill::after{${diag(8)}}
@@ -111,7 +112,7 @@ ${M} .hs-step h3{margin-top:16px;${DISPLAY};font-weight:700;font-size:1.65rem;li
 ${M} .hs-step p{margin-top:12px;font-size:1rem;line-height:1.55;color:var(--color-text-muted)}
 
 ${M} .hs-photo{position:relative;border-radius:0;clip-path:${CLIP.lg};box-shadow:none;background:var(--mw-raised)}
-${M} .hs-photo img{filter:saturate(.75) contrast(1.05)}
+${M} .hs-photo img{filter:none}
 ${M} .hs-photo::after{content:"";position:absolute;right:0;bottom:0;width:40px;height:34.64px;background:var(--color-primary);clip-path:polygon(0 100%,100% 100%,50% 0);pointer-events:none}
 ${M} .hs-quote{padding-left:16px;border-left:2px solid var(--color-primary);font-family:var(--mw-body);font-style:normal;font-weight:500;font-size:1.3rem;line-height:1.45}
 ${M} .hs-facts{gap:24px 20px;padding-top:20px;border-top:1px solid var(--mw-hairline)}
@@ -125,6 +126,7 @@ ${M} .hs-stat-l{font-size:15px;line-height:1.5;color:var(--color-text-muted)}
 ${M} .hs-hero-form .hs-hero-pill{${LABEL};padding:10px 16px}
 ${M} .hs-hero-form .hs-h1{font-size:clamp(3.2rem,8vw,6.5rem)}
 ${M} .hs-hero-card{filter:none}
+${M} .hs-hero-form .hs-hero-grid{padding-top:clamp(64px,8vw,96px)}
 
 ${M} .hs-cards{gap:clamp(16px,2vw,24px)}
 ${M} .hs-card{position:relative;gap:14px;padding:clamp(24px,3vw,36px);border-radius:0;clip-path:${CLIP.md};background:var(--mw-surface);border:1px solid var(--mw-edge);box-shadow:none;transition:background 150ms linear}
@@ -159,8 +161,7 @@ ${M} .hs-faq-a{padding:0 64px 20px 20px;font-size:1rem;line-height:1.55;color:va
 
 ${M} .hs-band{border-radius:0;clip-path:${CLIP.lg};background-color:var(--mw-surface);background-image:var(--mw-lattice);border:1px solid var(--mw-edge)}
 ${M} .hs-band::after{${diag(20)}}
-${M} .hs-band-photo{opacity:.22;filter:saturate(.6)}
-${M} .hs-band-wash{background:color-mix(in srgb,var(--mw-surface) 72%,transparent)}
+${M} .hs-band-photo,${M} .hs-band-wash{display:none}
 ${M} .hs-band-grid{padding:clamp(48px,7vw,104px) clamp(24px,5vw,80px)}
 ${M} .hs-band h2{${DISPLAY};font-size:clamp(3rem,7vw,5.5rem);line-height:.9;letter-spacing:.005em}
 ${M} .hs-band-body{font-size:1.125rem;line-height:1.55;color:var(--color-on-ink-muted)}
@@ -178,4 +179,5 @@ ${M} .hs-plain{max-width:1200px}
 ${M} .hs-footer{max-width:1248px;padding:24px clamp(20px,4vw,48px) 40px;border-top:1px solid var(--mw-hairline);${LABEL};font-size:11px;color:var(--color-text-muted)}
 ${M} .hs-footer a{color:var(--color-text-muted);font-weight:500}
 ${M} .hs-footer a:hover{color:var(--color-primary-strong)}
+@media (prefers-reduced-motion:reduce){${M} *{transition:none!important;animation:none!important}}
 `

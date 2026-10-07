@@ -3,10 +3,10 @@ import { contrastRatio } from '@/lib/spaces/accent'
 import { MENSWORK_PALETTE as P, MENSWORK_SEASONS, MENSWORK_TOKENS_CSS, mensworkAccentVars, mensworkSeason } from './menswork'
 
 describe('mensworkSeason', () => {
-  it('follows the program year: Dec to Feb winter, then spring, summer, fall', () => {
-    const at = (m: number) => mensworkSeason(new Date(Date.UTC(2026, m, 15)))
-    expect([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(at)).toEqual([
-      'winter', 'winter', 'spring', 'spring', 'spring', 'summer', 'summer', 'summer', 'fall', 'fall', 'fall', 'winter',
+  it('turns on the solstice and equinox lines of the program year', () => {
+    const at = (m: number, d: number) => mensworkSeason(new Date(Date.UTC(2027, m - 1, d)))
+    expect([at(1, 15), at(3, 19), at(3, 20), at(6, 20), at(6, 21), at(9, 21), at(9, 22), at(12, 20), at(12, 21)]).toEqual([
+      'winter', 'winter', 'spring', 'spring', 'summer', 'summer', 'fall', 'fall', 'winter',
     ])
   })
 })
