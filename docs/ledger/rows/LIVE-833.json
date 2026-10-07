@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-833",
+  "title": "A Space's own accent carries white button labels, like the house amber",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/spaces/accent.ts",
+    "ref": "Owner ask 2026-10-07: 'The button is supposed to be white text on blue. We changed the rules about contrast because white looks just fine on the buttons.' ADR-1722, extends ADR-1031."
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: a Space with a mid-tone picked accent (Daniel Tyack's #1FB6C5) showed its Book button, on the Space page and its website, with near-black ink instead of the white label the house buttons carry. THE FIX: hexAccentVars labels every accent in white (ADR-1031's owner rule, extended by ADR-1722); only a near-white fill, under 1.5:1 against white, keeps near-black ink.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/spaces/accent.ts','utf8');if(!/contrastRatio\\('#ffffff', hex\\) >= WHITE_LABEL_MIN \\? '#ffffff' : '#141414'/.test(s)){console.error('LIVE-833: a Space accent button label is still chosen by the luminance crossover, so mid-tone accents get dark ink');process.exit(1)}\"",
+    "note": "Fails on main (luminance crossover picks dark ink); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}
