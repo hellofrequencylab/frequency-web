@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
 import { entityBlockById, profilePaletteForKind } from '@/lib/entity-blocks/registry'
 import { blockEditsAllFieldsInRail, fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
@@ -63,12 +63,14 @@ function columnsClass(columns: number, ratio: string | undefined): string {
   return ''
 }
 
-export function SpaceCanvasEditor({ loomScope }: {
+export function SpaceCanvasEditor({ loomScope, focusBlockId }: {
   /** The Loom library every image field / photo slot on this canvas opens into (the Space slug). */
   loomScope?: string
+  /** A block to open selected and scroll to (the Pages list's Contact row opens the Contact form). */
+  focusBlockId?: string
 }) {
   const store = useProfileLayout()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(focusBlockId ?? null)
   const [addingAt, setAddingAt] = useState<{ rowId: string; col: number } | null>(null)
 
   // Vertical rail alignment (railOffset): when a block is selected (usually by clicking it on the canvas),
@@ -90,6 +92,11 @@ export function SpaceCanvasEditor({ loomScope }: {
     setSelectedId(id)
     setAlignTick((t) => t + 1)
   }, [])
+  // Opened for one block (the Pages list's Contact row): bring its tile into view once it has mounted.
+  useEffect(() => {
+    if (!focusBlockId) return
+    tileRefs.current[focusBlockId]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [focusBlockId])
   const toggleTile = useCallback((id: string) => {
     setSelectedId((cur) => (cur === id ? null : id))
     setAlignTick((t) => t + 1)

@@ -49,6 +49,7 @@ export function SpaceCanvasEditorMount({
   canPublish = false,
   hasUnpublishedChanges = false,
   profilePublished = true,
+  focusBlockId,
   rows,
   hidden = [],
   content = {},
@@ -61,6 +62,8 @@ export function SpaceCanvasEditorMount({
   hasUnpublishedChanges?: boolean
   /** preferences.profilePublished, seeding the bar's "Visible on network" toggle. */
   profilePublished?: boolean
+  /** A block to open selected (the Pages list's Contact row opens the Contact form). */
+  focusBlockId?: string
   rows: RowDef[]
   hidden?: string[]
   content?: Record<string, Record<string, unknown>>
@@ -72,7 +75,8 @@ export function SpaceCanvasEditorMount({
       <Seeder rows={rows} hidden={hidden} content={content} style={style} />
       {/* Every image field + photo slot on this canvas opens the ONE Loom picker, locked to THIS Space's
           library. The slug is UX plumbing: the Loom re-resolves + re-gates the scope server-side. */}
-      <SpaceCanvasEditor loomScope={slug} />
+      {/* Keyed by the focus so picking Contact in the Pages list re-opens on the Contact form. */}
+      <SpaceCanvasEditor key={focusBlockId ?? ''} loomScope={slug} focusBlockId={focusBlockId} />
       {/* This editor autosaves to the draft, so it carries the same publish bar as the live page (LIVE-842). */}
       {canPublish && (
         <SpacePublishFab slug={slug} initialPublished={profilePublished} hasUnpublishedChanges={hasUnpublishedChanges} />

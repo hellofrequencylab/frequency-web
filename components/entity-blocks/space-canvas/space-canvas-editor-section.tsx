@@ -12,7 +12,11 @@ import { SpaceCanvasEditorMount } from './space-canvas-editor-mount'
 // store. Additive + reversible: it reads the SAME persisted blob the rail arranger writes, so both editors
 // stay in lockstep and nothing about persistence changes.
 
-export async function SpaceCanvasEditorSection({ slug }: { slug: string }) {
+export async function SpaceCanvasEditorSection({ slug, focusBlockId }: {
+  slug: string
+  /** A block to open selected (the Pages list's Contact row opens the Contact form). */
+  focusBlockId?: string
+}) {
   const caller = await getCallerProfile()
   const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
   if (!space) return null
@@ -55,6 +59,7 @@ export async function SpaceCanvasEditorSection({ slug }: { slug: string }) {
       canPublish={canManage}
       hasUnpublishedChanges={hasUnpublishedChanges}
       profilePublished={profilePublished}
+      focusBlockId={focusBlockId}
       rows={rows}
       hidden={saved?.hidden ?? []}
       content={saved?.content ?? {}}
