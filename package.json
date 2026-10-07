@@ -4,8 +4,8 @@
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "prebuild": "node scripts/copy-maplibre-worker.mjs && node scripts/snapshot-turbopack-cache.mjs",
-    "postbuild": "node scripts/check-build-budget.mjs && node scripts/check-og-trace.mjs && node scripts/check-cache-budget.mjs && node scripts/check-shell-weight.mjs && node scripts/check-build-fanout.mjs && node scripts/check-notfound-routes.mjs",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs && node scripts/snapshot-turbopack-cache.mjs && node scripts/check-build-memory.mjs --start",
+    "postbuild": "node scripts/check-build-memory.mjs && node scripts/check-build-budget.mjs && node scripts/check-og-trace.mjs && node scripts/check-cache-budget.mjs && node scripts/check-shell-weight.mjs && node scripts/check-build-fanout.mjs && node scripts/check-notfound-routes.mjs",
     "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
     "build": "next build",

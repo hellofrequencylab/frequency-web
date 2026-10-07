@@ -133,10 +133,11 @@ describe('IO reads (FAIL-SAFE)', () => {
 
 describe('the seat base reads the ONE quantity map (ADR-917, no second ladder)', () => {
   it('baseSeatAllowance is the space_team meter allowance for the plan', () => {
-    // LIVE-228: Business includes two seats; legacy `collective` remaps to business at read time.
+    // Business includes two seats; Collective five (ADR-1709).
     expect(baseSeatAllowance('free')).toBe(PLACEHOLDER_METER_LIMITS.space_team!.free)
     expect(baseSeatAllowance('business')).toBe(PLACEHOLDER_METER_LIMITS.space_team!.business)
-    expect(baseSeatAllowance('collective')).toBe(baseSeatAllowance('business'))
+    expect(baseSeatAllowance('collective')).toBe(PLACEHOLDER_METER_LIMITS.space_team!.collective)
+    expect(baseSeatAllowance('nonprofit_collective')).toBe(baseSeatAllowance('collective'))
     // Non Profit and Independent rank at/above Business, so they read the Business rung.
     expect(baseSeatAllowance('nonprofit')).toBe(baseSeatAllowance('business'))
     expect(baseSeatAllowance('independent')).toBe(baseSeatAllowance('business'))
