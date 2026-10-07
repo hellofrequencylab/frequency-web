@@ -115,6 +115,8 @@ export type HouseBlockModel =
       form: Omit<ContactFormBlockProps, 'eyebrow' | 'title' | 'body' | 'variant'>
       /** The page's hero (the Contact page): the heading is the page's h1 and the form leads the page. */
       hero?: boolean
+      /** The hero's backdrop photo, washed like the home hero. Null keeps the plain ink backdrop. */
+      photo?: string | null
     }
   | { kind: 'other'; key: string; node: ReactNode }
 
@@ -225,9 +227,9 @@ export function HouseHero({ hero }: { hero: HouseHeroModel }) {
   )
 }
 
-function FactsGrid({ items, wide }: { items: HouseFacts['items']; wide?: boolean }) {
+function FactsGrid({ items }: { items: HouseFacts['items'] }) {
   return (
-    <div className={wide ? 'hs-facts hs-facts-wide' : 'hs-facts'}>
+    <div className="hs-facts">
       {items.map((f, i) => (
         <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span className="hs-fact-v">{f.value}</span>
@@ -284,14 +286,21 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
           </div>
         </section>
       )
-    case 'story':
+    case 'story': {
+      // With the facts set below (the Contact page), the pull line sits under the photo and the facts get
+      // their own panel; otherwise the pull and facts close the text column.
+      const below = block.factsBelow === true
+      const pull = block.pull && <p className={below ? 'hs-pull' : 'hs-quote'}>{block.pull}</p>
       return (
         <section id={block.anchor ?? undefined} className={`hs-section${top}`}>
-          <div className="hs-split" style={{ alignItems: 'center' }}>
+          <div className="hs-split" style={{ alignItems: below ? 'start' : 'center' }}>
             {block.image && (
-              <div className="hs-photo">
-                {/* eslint-disable-next-line @next/next/no-img-element -- operator photo on an arbitrary host */}
-                <img src={block.image} alt={block.alt} loading="lazy" />
+              <div className={below ? 'hs-photo-col' : undefined}>
+                <div className={below ? 'hs-photo hs-photo-tall' : 'hs-photo'}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- operator photo on an arbitrary host */}
+                  <img src={block.image} alt={block.alt} loading="lazy" />
+                </div>
+                {below && pull}
               </div>
             )}
             <div className="hs-stack" style={{ gap: 22 }}>
@@ -301,8 +310,8 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
                   {p}
                 </p>
               ))}
-              {block.pull && <p className="hs-quote">{block.pull}</p>}
-              {block.facts && !block.factsBelow && (
+              {(!below || !block.image) && pull}
+              {block.facts && !below && (
                 <div>
                   {(block.facts.eyebrow || block.facts.title) && (
                     <p className="hs-fact-l" style={{ margin: '16px 0 0' }}>
@@ -314,18 +323,24 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
               )}
             </div>
           </div>
-          {block.facts && block.factsBelow && (
-            <div className="hs-facts-row">
+          {block.facts && below && (
+            <div className="hs-panel hs-stats">
               {(block.facts.eyebrow || block.facts.title) && (
-                <p className="hs-eyebrow" style={{ margin: 0 }}>
-                  {[block.facts.eyebrow, block.facts.title].filter(Boolean).join(' · ')}
-                </p>
+                <Heading center eyebrow={block.facts.eyebrow} title={block.facts.title} />
               )}
-              <FactsGrid items={block.facts.items} wide />
+              <div className="hs-stats-grid">
+                {block.facts.items.map((f, i) => (
+                  <div key={i} className="hs-stat">
+                    <span className="hs-stat-v">{f.value}</span>
+                    <span className="hs-stat-l">{f.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </section>
       )
+    }
     case 'facts':
       return (
         <section className={`hs-section${top}`}>
@@ -498,23 +513,32 @@ export function HouseBlock({ block, first }: { block: HouseBlockModel; first: bo
       )
     case 'inquiry':
       if (block.hero)
+        // The same washed-photo stage as the home hero (hs-hero), with the form as the floating card.
         return (
-          <section id={block.anchor ?? undefined} className="hs-section hs-inquiry-hero">
-            <div className="hs-split" style={{ alignItems: 'center' }}>
-              <div className="hs-stack">
-                {block.eyebrow && <span className="hs-eyebrow">{block.eyebrow}</span>}
+          <section id={block.anchor ?? undefined} className="hs-hero hs-hero-form">
+            {block.photo && (
+              // eslint-disable-next-line @next/next/no-img-element -- operator photo on an arbitrary host
+              <img src={block.photo} alt="" fetchPriority="high" className="hs-hero-photo" />
+            )}
+            <div className="hs-hero-wash" aria-hidden />
+            <div className="hs-hero-side" aria-hidden />
+            <div className="hs-hero-grid">
+              <div className="hs-hero-copy">
+                {block.eyebrow && <span className="hs-hero-pill">{block.eyebrow}</span>}
                 {block.title && (
-                  <h1 className="hs-h2 hs-display">
+                  <h1 className="hs-h1">
                     <Accent text={block.title} />
                   </h1>
                 )}
                 {block.body.map((p, i) => (
-                  <p key={i} className="hs-lead" style={{ fontSize: '1.15rem', lineHeight: 1.7 }}>
+                  <p key={i} className="hs-hero-lede">
                     {p}
                   </p>
                 ))}
               </div>
-              <ContactFormBlock {...block.form} variant="house" />
+              <div className="hs-hero-card">
+                <ContactFormBlock {...block.form} variant="house" />
+              </div>
             </div>
           </section>
         )

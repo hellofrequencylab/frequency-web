@@ -312,8 +312,8 @@ function closingOf(b: Bag, key: string, contact: ReturnType<typeof contactOf>, l
 /**
  * THE WEBSITE'S CONTACT PAGE (`/contact`, offered by siteHasContactPage). Three sections, every word from the
  * Space's own fields: the Contact form as the hero (its heading is the page's h1), a profile (the About
- * block's heading and text beside the Zigzag photo, the facts in a row beneath both), then the closing band
- * with the contact details. A section with nothing to show is dropped.
+ * block's heading and text beside the Zigzag photo with the pull line under it, the facts in a panel beneath),
+ * then the closing band with the contact details. A section with nothing to show is dropped.
  */
 export function buildHouseContact({ space, grid, links, cta }: Pick<HouseHomeInput, 'space' | 'grid' | 'links' | 'cta'>) {
   const content: Record<string, Bag> = (grid.content ?? {}) as Record<string, Bag>
@@ -321,6 +321,9 @@ export function buildHouseContact({ space, grid, links, cta }: Pick<HouseHomeInp
   const imageOf = (b: Bag) => (typeof b.image === 'string' ? safeImageSrc(b.image) : null)
   // The form is the page's hero: a visitor came here to write, so the form leads and the story follows.
   const blocks: HouseBlockModel[] = [inquiryOf(bag('contactForm'), 'form', 'message', space.slug, cta, links, true)]
+  // The hero's backdrop: the Contact form block's own image, else the Space cover (as on the home hero).
+  const heroBlock = blocks[0]
+  if (heroBlock.kind === 'inquiry') heroBlock.photo = imageOf(bag('contactForm')) ?? safeImageSrc(space.coverImageUrl) ?? null
 
   const about = bag('about')
   const ps = paragraphs(about.body)
