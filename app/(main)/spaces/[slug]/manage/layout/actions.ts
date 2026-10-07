@@ -57,6 +57,7 @@ import {
   type HeroHeight,
   type HeroButtonOrientation,
 } from '@/lib/spaces/hero-config'
+import { nextSiteHeroPreferences } from '@/lib/spaces/website'
 
 // SPACE PAGE / LAYOUT actions (the operator-composed multi-page profile). An owner / admin / editor
 // manages their Space's public pages (cover size, brand accent, and the nav's pages) from
@@ -360,6 +361,33 @@ export async function setSpaceHeroLook(
   const next = nextHeroPreferences(auth.preferences, cleanHero)
   if (!(await writePreferences(auth.spaceId, next))) {
     return fail('Could not save. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  refreshSite(slug)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set (or clear) the WEBSITE HEADLINE + INTRO (preferences.siteHero, LIVE-832): the website hero's own
+ * words, so the website can lead with a marketing line while the Space page header keeps the Space's name
+ * (preferences.hero). Blank fields fall back to the Hero settings; both blank removes the node. Sanitized
+ * to plain bounded strings (readSiteHero); only the siteHero node is touched. Owner/admin/editor-gated.
+ */
+export async function setSiteHero(
+  slug: string,
+  input: { heading?: string; tagline?: string },
+): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const next = nextSiteHeroPreferences(auth.preferences, {
+    heading: typeof input?.heading === 'string' ? input.heading : undefined,
+    tagline: typeof input?.tagline === 'string' ? input.tagline : undefined,
+  })
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not save your headline. Try again.')
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')

@@ -21,6 +21,7 @@ import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
 import { ContentBlockView, BlockStyleFrame, hasContent } from '@/components/entity-blocks/content-block-view'
 import { DesignBlockView, isDesignBlock } from '@/components/entity-blocks/design-block-view'
 import { ContactFormBlock } from '@/components/spaces/contact-form-block'
+import { withoutAccentMarks } from '@/lib/sites/house-theme'
 
 import { AboutBlock } from './about'
 import { StoryBlock } from './story'
@@ -107,6 +108,18 @@ function toProfileBlockId(id: string): ProfileBlockId | null {
   return normalized in SPACE_PROFILE_BLOCKS ? (normalized as ProfileBlockId) : null
 }
 
+/** A block title as the Space page shows it: the website's `*accent*` marks stripped (the Space page has
+ *  no accent italic, so the asterisks would show literally). Titles only; the website keeps the marks. */
+function titleOf(title: string | undefined): string | undefined {
+  return title === undefined ? undefined : withoutAccentMarks(title) || undefined
+}
+
+/** The owner's header override for a DATA block (resolveDataHeader), its title without accent marks. */
+function spaceDataHeader(id: string, props: Record<string, unknown> | undefined): { eyebrow?: string; heading?: string } {
+  const header = resolveDataHeader(id, props)
+  return { ...header, heading: titleOf(header.heading) }
+}
+
 type SpaceAuthored = ReturnType<typeof resolveSpaceAuthoredContent>
 
 /** The Features block sourced from a Space DATA source (ADR-585): await the resolved items (offerings /
@@ -171,7 +184,7 @@ function renderSpaceBlock(
         <ContactFormBlock
           slug={space.slug}
           eyebrow={str(p.eyebrow)}
-          title={str(p.title)}
+          title={titleOf(str(p.title))}
           body={str(p.body)}
           showPhone={p.showPhone === true}
           showMessage={p.showMessage !== false}
@@ -201,7 +214,7 @@ function renderSpaceBlock(
       <Block
         space={space}
         data={data}
-        header={resolveDataHeader(id, contentProps)}
+        header={spaceDataHeader(id, contentProps)}
         featuredIds={pickerSelection(contentProps)}
         content={contentProps}
       />
@@ -221,7 +234,7 @@ function renderSpaceBlock(
       <Block
         space={space}
         data={data}
-        header={resolveDataHeader(id, contentProps)}
+        header={spaceDataHeader(id, contentProps)}
         authoredBody={authoredBody}
         featuredIds={pickerSelection(contentProps)}
         content={contentProps}

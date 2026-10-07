@@ -8,6 +8,7 @@ import { getSpaceFaqs } from '@/lib/spaces/content-data'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { isServiceListed, readProfileData, SPACE_SOCIAL_PLATFORMS } from '@/lib/spaces/profile-data'
 import { readHeroConfig } from '@/lib/spaces/hero-config'
+import { readSiteHero } from '@/lib/spaces/website'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import type { Space } from '@/lib/spaces/types'
@@ -24,7 +25,7 @@ import {
   stepNumber,
   type HouseSection,
 } from '@/lib/sites/house-theme'
-import { siteHeroLede } from './site-hero-copy'
+import { siteHeroCopy } from './site-hero-copy'
 import { HouseBlock, HouseHero, type HouseBlockModel, type HouseHeroModel, type HouseLink } from './house-sections'
 
 // THE HOUSE THEME'S HOME PAGE (owner ask 2026-10-07). Resolves the Space's own Home blocks into the themed
@@ -215,15 +216,18 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
   }
 
   // The hero: the Space's cover at its focal point, its Hero settings (headline, line under it, the name
-  // card's role line), its header button, and the first listed offering as the "start here" card.
+  // card's role line), its header button, and the first listed offering as the "start here" card. The
+  // website headline + intro (preferences.siteHero) win over the Hero settings, so the website can lead
+  // with a marketing line while the Space page header keeps the Space's name.
   const hero = readHeroConfig(prefs)
+  const copy = siteHeroCopy({ siteHero: readSiteHero(prefs), hero, brandName, tagline, about: space.about })
   const steps = blocks.find((b) => b.kind === 'steps')
   const first = offerings[0]
   const heroModel: HouseHeroModel = {
     photo: safeImageSrc(space.coverImageUrl) ?? coverPlaceholderFor(space.id),
     focus: readCoverFocus(prefs),
-    title: hero.heading || brandName,
-    lede: hero.tagline || tagline || siteHeroLede(space.about),
+    title: copy.title,
+    lede: copy.lede,
     cta,
     secondary:
       steps && steps.kind === 'steps' && steps.anchor ? { label: (steps.eyebrow ?? steps.title ?? '').replace(/\*/g, ''), href: `#${steps.anchor}` } : null,

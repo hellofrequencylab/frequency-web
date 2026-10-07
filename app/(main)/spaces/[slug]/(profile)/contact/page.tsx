@@ -99,6 +99,9 @@ export default async function SpaceContactPage({ params }: { params: Promise<{ s
   const aboutBody = paragraphs(about.body)
   const aboutTitle = withoutAccentMarks(plainText(about.title))
   const aboutEyebrow = plainText(about.eyebrow)
+  // The form's title without the website's `*accent*` marks (the Space page sets it in one face).
+  const rawFormTitle = str(form.title)
+  const formTitle = rawFormTitle && withoutAccentMarks(rawFormTitle)
   const photoOf = (b: Record<string, unknown> | undefined) => (typeof b?.image === 'string' ? safeImageSrc(b.image) : null)
   const aboutPhoto = photoOf(about) ?? photoOf(blocks.zigzag)
 
@@ -135,7 +138,7 @@ export default async function SpaceContactPage({ params }: { params: Promise<{ s
       <ContactFormBlock
         slug={space.slug}
         eyebrow={str(form.eyebrow)}
-        title={str(form.title)}
+        title={formTitle}
         body={str(form.body)}
         showPhone={form.showPhone === true}
         showMessage={form.showMessage !== false}
