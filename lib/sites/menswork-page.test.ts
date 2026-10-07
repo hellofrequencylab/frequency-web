@@ -4,6 +4,7 @@ import {
   headlineSegments,
   imageFocus,
   isBeatStrip,
+  plainText,
   lines,
   mdOf,
   moduleLine,
@@ -52,6 +53,8 @@ describe('text helpers', () => {
   })
   it('reads lines and wall-clock dates', () => {
     expect(lines('a\n\n<b>b</b><br/>c')).toEqual(['a', 'b', 'c'])
+    expect(plainText(' <p>Hi <b>there</b></p> ')).toBe('Hi there')
+    expect(plainText('a > b <<script>c')).toBe('a  b c')
     expect(dateLabel('2027-03-09T18:00:00+00:00')).toEqual({ day: 'Tue Mar 9', time: '6:00 PM' })
     expect(dateLabel('2027-03-09').time).toBeNull()
   })

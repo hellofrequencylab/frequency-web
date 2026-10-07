@@ -213,5 +213,7 @@ ${M} .hs-footer-links a:hover{color:var(--color-primary-strong)}
 ${M} .hs-footer{max-width:1248px;padding:24px clamp(20px,4vw,48px) 40px;border-top:1px solid var(--mw-hairline);${LABEL};font-size:11px;color:var(--color-text-muted)}
 ${M} .hs-footer a{color:var(--color-text-muted);font-weight:500}
 ${M} .hs-footer a:hover{color:var(--color-primary-strong)}
+${M} .hs-nav a.hs-nav-admin,${M} .hs-menu-panel a.hs-nav-admin{align-self:center;padding:6px 10px;border:1px solid var(--color-primary);color:var(--color-primary-strong)}
+${M} a.hs-nav-admin:hover{background:var(--color-primary);color:var(--color-text-on-primary)}
 @media (prefers-reduced-motion:reduce){${M} *{transition:none!important;animation:none!important}}
 `

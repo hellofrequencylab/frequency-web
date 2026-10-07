@@ -17,6 +17,7 @@ import {
   type SpaceFunctionKey,
 } from './functions'
 import { defaultProfileLayout, type ProfileBlockId } from './profile-blocks'
+import { withoutLeadershipPreferences } from './leadership'
 
 /** The subset of a Space the module-engine renderer + its section blocks read. Kept small + React-free
  *  so every block imports the SAME shape and the pure layout resolver + its test share it. Built from a
@@ -83,7 +84,9 @@ export function toProfileContext(space: Space): SpaceProfileContext {
     tagline: space.tagline ?? null,
     entitlements: space.entitlements,
     featureRoles: space.featureRoles,
-    preferences: space.preferences,
+    // The leadership-only keys (the executive overview, lib/spaces/leadership.ts) never ride the public
+    // profile context: it reaches the Space page, the website and every block they render.
+    preferences: withoutLeadershipPreferences(space.preferences),
     profile: readProfileData(space.preferences),
   }
 }

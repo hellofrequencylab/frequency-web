@@ -255,6 +255,7 @@ export async function SitePage({
         logoUrl={skin ? space.brandLogoUrl : null}
         tagline={skin ? tagline : null}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
+        adminHref={`${origin}/spaces/${space.slug}/manage/leadership`}
       >
         {model ? (
           <HouseHome model={model} />

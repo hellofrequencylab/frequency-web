@@ -252,7 +252,15 @@ export function headlineSegments(title: string, accentWord: string): { text: str
 /** Stored rich text as plain text: tags dropped, then any stray angle bracket, trimmed. React escapes the
  *  result anyway; this keeps markup out of the words. */
 export function plainText(raw: string): string {
-  return raw.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim()
+  // A character walk, not a regex strip: every angle bracket and everything between a pair is dropped.
+  let out = ''
+  let inTag = false
+  for (const ch of raw) {
+    if (ch === '<') inTag = true
+    else if (ch === '>') inTag = false
+    else if (!inTag) out += ch
+  }
+  return out.trim()
 }
 
 /** Text lines from a stored body: one per line, blanks dropped. */

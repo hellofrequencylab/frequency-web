@@ -349,6 +349,7 @@ describe('the five boxes (ADR-1432)', () => {
       'space.journeys',
       'space.circles',
       'space.program',
+      'space.leadership',
       'space.airwaves',
       'space.loom',
       'space.reachreceipt',
