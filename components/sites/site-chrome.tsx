@@ -2,8 +2,10 @@ import type { ReactNode } from 'react'
 import { HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { appOrigin } from '@/lib/sites/host'
 import { MENSWORK_SEASON_INFO, type MensworkSeason } from '@/lib/theme/menswork'
+import { dateLabel } from '@/lib/sites/menswork-page'
 import { HOUSE_CSS } from './house-css'
 import { MENSWORK_CSS } from './menswork-css'
+import { MENSWORK_PAGE_CSS } from './menswork-page-css'
 import { HouseMenu } from './house-menu'
 
 // THE WEBSITE CHROME, house theme (owner ask 2026-10-07: the "Daniel Tyack Site v4" design is the default
@@ -55,6 +57,7 @@ export function SiteChrome({
   skin = null,
   logoUrl = null,
   tagline = null,
+  seasonNow = null,
   children,
 }: {
   brandName: string
@@ -72,6 +75,9 @@ export function SiteChrome({
   logoUrl?: string | null
   /** The Space's tagline, printed in a skinned site's footer. */
   tagline?: string | null
+  /** A skinned site's season bar detail: the sign module now, its theme as the Space's year page names it,
+   *  and the next Circle Night from the Space's own events. */
+  seasonNow?: { module: string; theme: string | null; next: string | null } | null
   children: ReactNode
 }) {
   return (
@@ -83,7 +89,7 @@ export function SiteChrome({
       data-season={skin?.season}
       className="hs-root"
     >
-      <style>{skin ? HOUSE_CSS + MENSWORK_CSS : HOUSE_CSS}</style>
+      <style>{skin ? HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS : HOUSE_CSS}</style>
       <header className="hs-header">
         <div className="hs-pill">
           <a href={homeHref} className="hs-brand">
@@ -116,7 +122,7 @@ export function SiteChrome({
           </div>
         </div>
       </header>
-      {skin && <SeasonBar season={skin.season} />}
+      {skin && <SeasonBar season={skin.season} now={seasonNow} />}
 
       <main id="top">{children}</main>
 
@@ -151,13 +157,19 @@ export function SiteChrome({
 
 const SEASON_ORDER: MensworkSeason[] = ['winter', 'spring', 'summer', 'fall']
 
-/** The Menswork season bar: the season now, in its accent, and the year's four as a chevron track. */
-function SeasonBar({ season }: { season: MensworkSeason }) {
+/** The Menswork season bar: the season and sign module now, in its accent, the year's four as a chevron
+ *  track, and the next Circle Night. */
+function SeasonBar({ season, now: detail }: { season: MensworkSeason; now: { module: string; theme: string | null; next: string | null } | null }) {
   const now = MENSWORK_SEASON_INFO[season]
+  const next = detail?.next ? dateLabel(detail.next) : null
   return (
     <div className="hs-season">
       <p className="hs-season-now">
-        <span>{now.name}</span> {now.range}
+        <span>
+          {now.name}
+          {detail ? ` \u00b7 ${detail.module}` : ''}
+        </span>{' '}
+        {detail?.theme ?? now.range}
       </p>
       <ol className="hs-season-track" aria-label="The year's seasons">
         {SEASON_ORDER.map((s) => (
@@ -166,6 +178,12 @@ function SeasonBar({ season }: { season: MensworkSeason }) {
           </li>
         ))}
       </ol>
+      {next && (
+        <p className="hs-season-next">
+          <span>Next Circle Night</span> {next.day}
+          {next.time ? ` \u00b7 ${next.time}` : ''}
+        </p>
+      )}
     </div>
   )
 }

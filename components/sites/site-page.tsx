@@ -22,6 +22,11 @@ import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { SiteChrome, SITE_CONTAINER, siteHref } from '@/components/sites/site-chrome'
 import { MENSWORK_CSS } from '@/components/sites/menswork-css'
+import { MensworkPage, mensworkNowLine } from '@/components/sites/menswork-page'
+import { planMensworkPage, type MwBlock } from '@/lib/sites/menswork-page'
+import { loadMensworkLive } from '@/lib/sites/menswork-data'
+import { loadSpacePageDoc } from '@/lib/spaces/page-doc'
+import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { buttonClasses } from '@/components/ui/button'
 import { markAnonymousRender } from '@/lib/core/anonymous-render'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -198,7 +203,34 @@ export async function SitePage({
       })
     : null
   const contactModel = contactPage ? buildHouseContact({ space, grid: profileGrid(space.preferences), links: siteLinks, cta }) : null
-  const links = [...(model?.nav ?? []), ...pageLinks]
+  // A Menswork site's menu is its pages, the same on every page (the design system's site nav); the house
+  // look's Home section anchors stay on Home.
+  const links = skin && pageLinks.length > 0 ? [{ href: homeHref, label: pages[0]?.label ?? 'Home' }, ...pageLinks] : [...(model?.nav ?? []), ...pageLinks]
+
+  // A MENSWORK custom page draws its blocks as the design system's sections (components/sites/menswork-page.tsx),
+  // with the Space's own events, circles and journeys; the season bar names the module now and the next
+  // Circle Night. Other sites keep the Space page's render.
+  const customPage = !home && !contactPage && !bookPage
+  const mwBlocks: MwBlock[] | null =
+    skin && customPage
+      ? ((withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug)).content ?? []) as MwBlock[])
+          .filter((b) => b && typeof b.type === 'string' && b.type !== 'SpaceIdentityHeader')
+          .map((b) => ({ type: b.type, props: (b.props ?? {}) as Record<string, unknown> }))
+      : null
+  const mwPlan = mwBlocks ? planMensworkPage(mwBlocks) : null
+  const mwLive = skin
+    ? await loadMensworkLive(space.id, {
+        events: true,
+        circles: !!mwPlan?.some((p) => p.kind === 'circles'),
+        journeys: !!mwPlan?.some((p) => p.kind === 'journeys'),
+      })
+    : null
+  const seasonNow = skin
+    ? {
+        ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()),
+        next: mwLive?.events.find((e) => /circle night/i.test(e.title)) ?? null,
+      }
+    : null
   // The site's own entity, on its own origin: the root layout only carries Frequency's Organization.
   const entity = siteEntitySchema({
     type: space.type,
@@ -222,6 +254,7 @@ export async function SitePage({
         skin={skin}
         logoUrl={skin ? space.brandLogoUrl : null}
         tagline={skin ? tagline : null}
+        seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
       >
         {model ? (
           <HouseHome model={model} />
@@ -245,6 +278,20 @@ export async function SitePage({
               />
             </div>
           </div>
+        ) : mwBlocks && mwPlan && mwLive ? (
+          <MensworkPage
+            blocks={mwBlocks}
+            plan={mwPlan}
+            live={mwLive}
+            links={siteLinks}
+            origin={origin}
+            pageTitle={pages.find((p) => p.slug === pageSlug)?.label ?? brandName}
+            renderOther={(b) => (
+              <Suspense fallback={<ProfileBodySkeleton />}>
+                <SpaceLanding slug={space.slug} pageSlug={pageSlug} anonymous onlyIndexes={[mwBlocks.indexOf(b)]} />
+              </Suspense>
+            )}
+          />
         ) : (
           <div className={`${SITE_CONTAINER} pb-16 pt-28 sm:pb-24`}>
             <h1 className="hs-h2">{pages.find((p) => p.slug === pageSlug)?.label ?? brandName}</h1>
