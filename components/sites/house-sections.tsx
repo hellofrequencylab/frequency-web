@@ -17,6 +17,8 @@ export interface HouseLink {
 export interface HouseHeroModel {
   photo: string
   focus: string
+  /** The small line above the headline (the website hero's own eyebrow, LIVE-865). */
+  eyebrow: string | null
   title: string
   lede: string | null
   cta: HouseLink | null
@@ -172,6 +174,7 @@ export function HouseHero({ hero }: { hero: HouseHeroModel }) {
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </a>
           )}
+          {hero.eyebrow && <span className="hs-eyebrow hs-hero-eyebrow">{hero.eyebrow}</span>}
           <h1 className="hs-h1">
             <Accent text={hero.title} />
           </h1>

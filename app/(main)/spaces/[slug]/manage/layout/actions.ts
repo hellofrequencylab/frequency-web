@@ -373,21 +373,34 @@ export async function setSpaceHeroLook(
 }
 
 /**
- * Set (or clear) the WEBSITE HEADLINE + INTRO (preferences.siteHero, LIVE-832): the website hero's own
- * words, so the website can lead with a marketing line while the Space page header keeps the Space's name
- * (preferences.hero). Blank fields fall back to the Hero settings; both blank removes the node. Sanitized
- * to plain bounded strings (readSiteHero); only the siteHero node is touched. Owner/admin/editor-gated.
+ * Set (or clear) the WEBSITE HERO (preferences.siteHero, LIVE-832, LIVE-865): the website hero's own
+ * eyebrow, headline, intro and two buttons, so the website can lead with a marketing line while the Space
+ * page header keeps the Space's name (preferences.hero). Blank fields fall back to the Hero settings; all
+ * blank removes the node. Sanitized to plain bounded strings and safe links (readSiteHero); only the
+ * siteHero node is touched. Owner/admin/editor-gated.
  */
 export async function setSiteHero(
   slug: string,
-  input: { heading?: string; tagline?: string },
+  input: {
+    eyebrow?: string
+    heading?: string
+    tagline?: string
+    action?: { label?: string; href?: string }
+    secondary?: { label?: string; href?: string }
+  },
 ): Promise<ActionResult> {
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
 
+  const str = (v: unknown) => (typeof v === 'string' ? v : undefined)
+  const button = (v: unknown) =>
+    v && typeof v === 'object' ? { label: str((v as Record<string, unknown>).label), href: str((v as Record<string, unknown>).href) } : undefined
   const next = nextSiteHeroPreferences(auth.preferences, {
-    heading: typeof input?.heading === 'string' ? input.heading : undefined,
-    tagline: typeof input?.tagline === 'string' ? input.tagline : undefined,
+    eyebrow: str(input?.eyebrow),
+    heading: str(input?.heading),
+    tagline: str(input?.tagline),
+    action: button(input?.action),
+    secondary: button(input?.secondary),
   })
   if (!(await writePreferences(auth.spaceId, next))) {
     return fail('Could not save your headline. Try again.')
