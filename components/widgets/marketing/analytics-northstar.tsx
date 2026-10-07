@@ -3,7 +3,8 @@ import { AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { FreshnessNote } from '@/components/admin/freshness-note'
 
-// Marketing analytics layout module (ADR-270/294): the North Star band — the verified-practice
+// Marketing analytics layout module (ADR-270/294): the verified-practice band (the north star until
+// ADR-1720 moved it to showing-up Members, components/admin/showing-up-band.tsx) — the verified-practice
 // read-model off the one event backbone (weekly active members, practices this week, activation,
 // new members). Self-fetching RSC. A stat band always renders (the counts are the signal even at
 // zero), so it doesn't null out; it's isolated in its own <Suspense> by the renderer so a slow
@@ -12,7 +13,7 @@ export async function MarketingAnalyticsNorthStar() {
   const practice = await getPracticeMetrics()
 
   return (
-    <AdminSection title="North Star · Verified practice" actions={<FreshnessNote at={new Date()} />}>
+    <AdminSection title="Verified practice" actions={<FreshnessNote at={new Date()} />}>
       <div className="grid grid-cols-2 gap-3.5 @2xl:grid-cols-4">
         <StatCard label="Weekly Active Members" value={practice.wam.toLocaleString()} />
         <StatCard label="Practices this week" value={practice.verifiedThisWeek.toLocaleString()} />

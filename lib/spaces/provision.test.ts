@@ -232,6 +232,15 @@ describe('createSpace — directory KIND seed (ADR-887)', () => {
     expect(store.inserts[1]!.preferences).toEqual({ profileData: { kind: 'studio' } })
   })
 
+  it('stores the "How did you hear about us?" answer beside the kind seed (LIVE-808)', async () => {
+    await run({ ...VALID, modeVariant: 'appointments', heardAbout: '  A friend or member  ' })
+    await run({ ...VALID, slug: 'bare-heard', heardAbout: 'Instagram' })
+    await run({ ...VALID, slug: 'skipped-heard', heardAbout: '   ' })
+    expect(store.inserts[0]!.preferences).toEqual({ profileData: { kind: 'practitioner' }, heardAbout: 'A friend or member' })
+    expect(store.inserts[1]!.preferences).toEqual({ heardAbout: 'Instagram' })
+    expect('preferences' in store.inserts[2]!).toBe(false)
+  })
+
   it('seeds nothing with no chosen Focus (the row stays bare, kind reads as the default)', async () => {
     const out = await run(VALID)
     expect(out.kind).toBe('redirect')
