@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-821",
+  "title": "A custom domain is a $19 add-on for Business and included with Collective",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/adr/ADR-1709.md",
+    "ref": "owner ruling 2026-10-06 21:44 custom domain add-on"
+  },
+  "detail": "Owner ruling (Daniel, 2026-10-06 21:44): \"Let's make adding a custom domain an $19 add on monthly for Business. $68 a month. Include it free with Collective accounts to make for a good upsell.\" Before this, the custom_domain gate let every plan at Business and up serve its own domain.\n\nShipped: catalog item addon_custom_domain (label 'Frequency Custom Domain (add-on)', flat, amountsFromMonthly(1900, 1900), so $190/yr), mapped to the add-on key custom_domain and the DB item_key custom_domain (the same way addon_ai persists as ai). ADDON_ENTITLEMENT_KEYS gains custom_domain; the Collective depth (and Non Profit Collective) carries the key, the way Collective includes Vera AI, and Independent keeps it because it has always sold its own domain (ADR-811). One pure helper, spaceHasCustomDomain(plan, addons) in lib/pricing/plans.ts, decides it; getSpaceByDomain and the Domain section's connect action call it past the Business floor once the gates are live (soft until then, like every gate). The Business loadout checkout sells the add-on through the existing addon path; Collective, Non Profit Collective and Independent bill no add-on lines, so Collective is never charged for it. Migration 20270346005700 widens space_subscription_items_item_key_check to admit custom_domain (no price seed: add-on amounts live in the code catalog). /pricing shows a Custom domain row (Add-on, $19/mo on Business, Included on Collective), a Custom domain extra card, the ladder summary line, and the page-editor pricing template card, all reading the catalog.\n\nOpen: the live Stripe prices for addon_custom_domain are minted with OWN-094 (owner yes still needed); until then the add-on price does not resolve and checkout drops the line.\n\nOwner ruling 2026-10-06 22:37 (decision card \"Sell it to Non Profit\"): Non Profit Spaces buy the add-ons like Business. The loadout checkout now sells addon_ai and addon_custom_domain on the Non Profit base, the reconciler keeps the plan Non Profit with both add-ons, spaceHasCustomDomain is true for Non Profit with the add-on, and the copy reads \"Optional on Business and Non Profit. Included with Collective.\"",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};const k=r(\"lib/billing/pricing-keys.ts\");const keys=(k.match(/CATALOG_ITEM_KEYS = \\[([\\s\\S]*?)\\]/)||[])[1]||\"\";if(!/addon_custom_domain/.test(keys))fail(\"addon_custom_domain is not a catalog item key\");if(!/addon_custom_domain:\\s*\\{[\\s\\S]*?amountsFromMonthly\\(1900, 1900\\)/.test(k))fail(\"the custom domain add-on is not $19/mo in the catalog\");const p=r(\"lib/pricing/plans.ts\");if(!/export function spaceHasCustomDomain/.test(p))fail(\"no spaceHasCustomDomain entitlement helper\");if(!/custom_domain/.test(r(\"supabase/migrations/20270346005700_custom_domain_addon.sql\")))fail(\"no migration admitting the custom domain item\");console.log(\"ok: the custom domain add-on is catalogued, entitled and admitted\")'"
+  },
+  "closed": "2026-10-06",
+  "wave": "WR"
+}
