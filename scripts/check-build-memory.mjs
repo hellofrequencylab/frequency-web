@@ -13,7 +13,7 @@
 // peak itself. `prebuild` starts a detached sampler (`--start`), which polls /proc every 250 ms for
 // every process whose command line runs `next/dist` (the build, Turbopack inside it, and its
 // workers), keeps each one's VmHWM (the kernel's own high-water mark) and the largest concurrent
-// VmRSS sum it saw, and writes them to a file in the temp directory. `postbuild` (no flag) stops the
+// VmRSS sum it saw, and writes them to node_modules/.cache/check-build-memory.json. `postbuild` (no flag) stops the
 // sampler and judges the reading. The budget is on the SUM OF HIGH-WATER MARKS, the same number the
 // row was measured with: it never under-counts a spike between polls, and it over-counts when the
 // processes peak at different moments, which is the safe direction for a gate.
@@ -23,8 +23,7 @@
 // (AGENTS.md, "every fail-safe needs a gate that notices it fired").
 // ─────────────────────────────────────────────────────────────────────────────
 import { spawn } from 'node:child_process'
-import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
-import os from 'node:os'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
@@ -32,7 +31,9 @@ import { invokedDirectly } from './lib/invoked-directly.mjs'
 /** 7 GB: a 1 GB reserve under the 8 GB Standard machine for the OS, pnpm and the build runner. */
 export const BUDGET_MB = 7168
 
-export const STATE_FILE = path.join(os.tmpdir(), 'frequency-build-memory.json')
+// Inside the repo, not the shared temp directory (CodeQL: insecure temporary file). Not under .next/,
+// which `next build` empties after prebuild has started the sampler. start() removes any stale copy.
+export const STATE_FILE = path.join(process.cwd(), 'node_modules', '.cache', 'check-build-memory.json')
 const TICK_MS = 250
 const MAX_SAMPLE_MS = 60 * 60 * 1000
 
@@ -99,6 +100,7 @@ function start() {
     console.log('check-build-memory: no /proc on this platform; the build is not measured here.')
     return
   }
+  mkdirSync(path.dirname(STATE_FILE), { recursive: true })
   rmSync(STATE_FILE, { force: true })
   const child = spawn(process.execPath, [fileURLToPath(import.meta.url), '--sample'], { detached: true, stdio: 'ignore' })
   child.unref()
