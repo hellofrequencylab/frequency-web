@@ -19,7 +19,18 @@ export interface SpotlightSiteLinks {
   contact: string | null
 }
 
-const holder = cache((): { links: SpotlightSiteLinks | null } => ({ links: null }))
+const holder = cache((): { links: SpotlightSiteLinks | null; spotlight: boolean } => ({ links: null, spotlight: false }))
+
+/** Mark this request as a published Spotlight render (SpaceSpotlight), so its Link cards count presses
+ *  (LIVE-856). The Space page, the website and the console preview never set it, so they count nothing. */
+export function markSpotlightRender(): void {
+  holder().spotlight = true
+}
+
+/** Is this request a published Spotlight render? */
+export function inSpotlightRender(): boolean {
+  return holder().spotlight
+}
 
 /** Stamp this request's website links (the hosted Spotlight route, once). */
 export function setSpotlightSiteLinks(links: SpotlightSiteLinks | null): void {

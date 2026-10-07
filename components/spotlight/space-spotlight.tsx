@@ -9,6 +9,7 @@ import { defaultAccentForType } from '@/lib/spaces/profile-config'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { readSpaceSpotlight, spaceSpotlightGrid, spotlightSiteGrid } from '@/lib/spaces/spotlight'
+import { markSpotlightRender } from '@/lib/spaces/spotlight-site'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 
 // THE SPACE SPOTLIGHT PAGE: a Space's one-column link page (lib/spaces/spotlight.ts). The identity header
@@ -65,6 +66,7 @@ export async function SpaceSpotlight({
   tagline: string | null
   appOrigin?: string
 }) {
+  markSpotlightRender()
   const saved = spaceSpotlightGrid(readSpaceSpotlight(space.preferences))
   const grid = appOrigin ? spotlightSiteGrid(saved) : saved
 

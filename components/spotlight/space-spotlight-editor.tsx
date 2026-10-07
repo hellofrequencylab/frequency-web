@@ -32,6 +32,7 @@ export function SpaceSpotlightEditor({
   readOnly,
   upgrade,
   ownLinks,
+  clicks,
 }: {
   slug: string
   /** The builder seed: the Spotlight layout plus the Space's locked blocks and picker data. Null when the
@@ -48,6 +49,8 @@ export function SpaceSpotlightEditor({
    *  that takes payments; `domain` is the Space's served domain, which can carry `spotlight.<domain>` once its
    *  CNAME (`cname`) is set. */
   ownLinks?: { paid: string | null; domain: string | null; cname: string }
+  /** Link card presses over the last 30 days, most pressed first (LIVE-856). Absent for a staff previewer. */
+  clicks?: { label: string; count: number }[]
 }) {
   const save = useCallback<SaveLayout>((payload) => saveSpaceSpotlightLayout(slug, payload), [slug])
   const loadRailData = useCallback(async () => seed, [seed])
@@ -171,6 +174,24 @@ export function SpaceSpotlightEditor({
                     </p>
                   )}
                 </div>
+              )}
+            </section>
+          )}
+
+          {published && clicks && (
+            <section className="space-y-2 rounded-card border border-border bg-surface p-4" aria-label="Clicks">
+              <p className="text-body-sm font-bold text-text">Clicks in the last 30 days</p>
+              {clicks.length === 0 ? (
+                <p className="text-meta text-muted">No one has pressed a Link card yet. Share your link to get started.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {clicks.map((c) => (
+                    <li key={c.label} className="flex items-center justify-between gap-3 text-meta">
+                      <span className="min-w-0 truncate text-text">{c.label}</span>
+                      <span className="shrink-0 font-semibold text-text">{c.count}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
             </section>
           )}

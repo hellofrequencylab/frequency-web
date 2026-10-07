@@ -165,6 +165,10 @@ export function spotlightHostDomain(host: string | null | undefined, appHosts: S
 /** The Spotlight page segment on a site host (`/spotlight`), and the root a spotlight host rewrites to. */
 export const SPOTLIGHT_PAGE = 'spotlight'
 
+/** Where a Spotlight on a website host sends its Link card press beacon (LIVE-856): the site's own origin, so
+ *  the page's connect-src ('self') allows it, rewritten to /hosted/<host>/spotlight-click. */
+export const SPOTLIGHT_CLICK_PATH = '/spotlight-click'
+
 /** Is `pathname` the internal site route (/hosted or below)? */
 export function isHostedPath(pathname: string): boolean {
   return pathname === HOSTED_PREFIX || pathname.startsWith(`${HOSTED_PREFIX}/`)
@@ -185,6 +189,7 @@ export function routeSiteHost(
   // belongs to the Space's website on `<domain>`, so it goes there.
   const spotlightOf = spotlightHostDomain(h, appHosts)
   if (spotlightOf) {
+    if (pathname === SPOTLIGHT_CLICK_PATH) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}${SPOTLIGHT_CLICK_PATH}` }
     if (pathname === '/' || pathname === '') return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}/${SPOTLIGHT_PAGE}` }
     return { kind: 'redirect', location: `https://${spotlightOf}${pathname}${search}`, permanent: false }
   }

@@ -251,6 +251,17 @@ describe('the Collective Spotlight host (LIVE-855)', () => {
     })
   })
 
+  it('takes the press beacon on the spotlight host itself (LIVE-856)', () => {
+    expect(routeSiteHost('spotlight.danieltyack.com', '/spotlight-click', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/spotlight.danieltyack.com/spotlight-click',
+    })
+    expect(routeSiteHost('danieltyack.frequencylocal.com', '/spotlight-click', '')).toEqual({
+      kind: 'rewrite',
+      pathname: '/hosted/danieltyack.frequencylocal.com/spotlight-click',
+    })
+  })
+
   it('leaves the slug subdomain named spotlight to the slug rules', () => {
     expect(routeSiteHost('spotlight.frequencylocal.com', '/', '')).toEqual({
       kind: 'rewrite',

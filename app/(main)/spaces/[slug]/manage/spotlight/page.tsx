@@ -24,6 +24,8 @@ import type { UpgradeMomentSetup } from '@/components/pricing/upgrade-moment'
 import { siteSubdomainHost } from '@/lib/sites/host'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { DEFAULT_WWW_CNAME } from '@/lib/sites/vercel-domains'
+import { readSpotlightClicks } from '@/lib/spaces/spotlight-clicks'
+import { blockDataList } from '@/lib/entity-blocks/block-data-sources'
 
 // THE SPACE SPOTLIGHT EDITOR PAGE (LIVE-851), in the Space console. Gated like every console page: the
 // Space must be visible and the caller a manager (a staff previewer sees it read-only, and every write
@@ -51,7 +53,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
   const rows = resolveRows(grid, 'space')
   const context = toProfileContext(space)
 
-  const [data, authored, tagline, pageRail, canSell, domain] = await Promise.all([
+  const [data, authored, tagline, pageRail, canSell, domain, counts, cards] = await Promise.all([
     getSpaceContentData(context.id, {
       name: context.brandName,
       type: context.type,
@@ -69,7 +71,16 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
     canManage ? getSpaceLayoutRailData(slug) : Promise.resolve(null),
     spaceCanTakePayments(space.id, { plan: space.plan ?? null }),
     boundSiteDomain(space),
+    canManage ? readSpotlightClicks(space.id) : Promise.resolve(new Map<string, number>()),
+    canManage ? blockDataList('linkCards', space.id) : Promise.resolve([]),
   ])
+
+  // Link card presses over the last 30 days (LIVE-856), by the card's current label, most pressed first.
+  const labels = new Map(cards.map((c) => [c.id, c.label]))
+  const clicks = [...counts]
+    .filter(([target]) => labels.has(target))
+    .sort((a, b) => b[1] - a[1])
+    .map(([target, count]) => ({ label: labels.get(target)!, count }))
 
   // The Spotlight's own addresses (LIVE-855): the paid subdomain link, and spotlight.<domain> on a served domain.
   const subdomain = canSell ? siteSubdomainHost(space.slug) : null
@@ -133,6 +144,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
         readOnly={!canManage}
         upgrade={upgrade}
         ownLinks={ownLinks}
+        clicks={canManage ? clicks : undefined}
       />
     </FocusTemplate>
   )
