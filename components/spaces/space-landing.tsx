@@ -52,9 +52,13 @@ export async function SpaceLanding({
   slug,
   pageSlug = HOME_SLUG,
   anonymous = false,
+  onlyIndexes,
 }: {
   slug: string
   pageSlug?: string
+  /** Render only these top-level blocks of the page (by position): the Menswork website draws the rest
+   *  itself and hands back the blocks it does not know (components/sites/menswork-page.tsx). */
+  onlyIndexes?: readonly number[]
   /** Render as a signed-out visitor (the external website, /sites/<slug>): the page never varies by
    *  who is looking, so a Private Space stays walled off and the site reads the same for everyone. */
   anonymous?: boolean
@@ -75,9 +79,12 @@ export async function SpaceLanding({
   // operator re-saving it. Ref-free docs cost no query; an unreachable database leaves the caches standing.
   // CONTENT (neutral, flat, editor-tied): the stored-or-default doc with hidden blocks stripped and the
   // legacy identity header removed.
-  const content = stripIdentityHeader(
+  const visible = stripIdentityHeader(
     withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug)),
   )
+  const content = onlyIndexes
+    ? { ...visible, content: (visible.content ?? []).filter((_, i) => onlyIndexes.includes(i)) }
+    : visible
   // DISPLAY: arrange that same content for the page's chosen layout preset (pure transform; the stored
   // content is never mutated, so an external site could render the same content with a different
   // preset). stack/sections stay flat; main-rail wraps into a two-column region.

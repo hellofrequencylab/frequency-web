@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-863",
+  "title": "Menswork website pages follow the design system: How it works, The year, Circles, Desert Retreat and About, wired to the Space's events, circles and Journeys",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "components/sites/menswork-page.tsx",
+    "ref": "Owner ask 2026-10-07 21:53-22:05: 'look deep into the design system pages... get the nuance and all the pages dialed in... tie as many things in with Frequency features as possible... note what's not connected yet.'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. THE CONSEQUENCE: a Menswork-skinned Space website drew its custom pages with the generic block renderer, so the design system's page layouts (chevron member path, five-beat strip, season wheel, circle finder, key dates) existed only on Home, and nothing on those pages showed the Space's live events, circles or Journey. THE FIX: lib/sites/menswork-page.ts plans a page's Puck blocks into design sections (a run of season-titled Zigzags becomes the year with a sticky season wheel; module lines 'Libra: theme' sit under their sign with that sign's Circle Nights and course weeks); components/sites/menswork-page.tsx draws them, and lib/sites/menswork-data.ts loads the live ties: upcoming events (RSVP on Frequency), the Space's public circles (finder with capacity, host and meeting time; Ask to visit goes to the site's Contact page), and its published Journeys (week list dated by matching events). The season bar names the current module and the next Circle Night. Content stays the owner's Puck docs, editable at /spaces/<slug>/edit-page; unknown blocks fall back to the Space block renderer. Websites stay stand-alone: only labelled Frequency links leave the site.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('components/sites/site-page.tsx','utf8');if(!/MensworkPage/.test(p)||!/loadMensworkLive/.test(p)||!fs.existsSync('lib/sites/menswork-page.ts')){console.error('LIVE-863: Menswork custom pages still draw with the generic renderer, with no live events, circles or Journeys');process.exit(1)}\"",
+    "note": "Fails on main (custom pages use the generic renderer); passes once this lands."
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

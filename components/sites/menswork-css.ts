@@ -204,7 +204,7 @@ ${M} .hs-season-track li::before{content:"";position:absolute;top:0;left:0;right
 ${M} .hs-season-track li[aria-current]{color:var(--mw-accent)}
 ${M} .hs-season-track li[aria-current]::before{background:var(--mw-accent)}
 
-${M} .hs-footer-top{max-width:1248px;margin:clamp(48px,6vw,80px) auto 0;padding:clamp(40px,5vw,56px) clamp(20px,4vw,48px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:32px clamp(32px,6vw,96px);border-top:1px solid var(--mw-hairline)}
+${M} .hs-footer-top{width:100%;box-sizing:border-box;max-width:1248px;margin:clamp(48px,6vw,80px) auto 0;padding:clamp(40px,5vw,56px) clamp(20px,4vw,48px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:32px clamp(32px,6vw,96px);border-top:1px solid var(--mw-hairline)}
 ${M} .hs-footer-brand{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
 ${M} .hs-footer-brand p{margin:0;max-width:42ch;font-size:.95rem;line-height:1.55;color:var(--color-text-muted)}
 ${M} .hs-footer-links{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px 24px;align-content:start}
