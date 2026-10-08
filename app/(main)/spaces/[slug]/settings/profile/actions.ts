@@ -22,6 +22,7 @@ import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { profileBlockById, type ProfileBlockId } from '@/lib/spaces/profile-blocks'
 import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
 import { layoutRendersSame } from '@/lib/entity-blocks/layout-equal'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { sanitizeBlockContent } from '@/lib/entity-blocks/block-content'
@@ -90,6 +91,9 @@ async function saveSpaceProfileLayout(
   // preview) is deliberately NOT accepted, so the preview never confers a save.
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return fail('You do not have permission to edit this space.')
+
+  const compatibilityError = legacySpaceLayoutWriteError(layout, space.preferences)
+  if (compatibilityError) return fail(compatibilityError)
 
   // Never trust the wire. A grid write (freeform ROWS from the in-rail builder, ADR-516 Phase D, or the
   // legacy template / slots) sanitizes to unified space ids; a flat S3 write sanitizes to ProfileBlockIds.
@@ -185,6 +189,9 @@ export async function publishSpaceProfileLayout(slug: string): Promise<{ error?:
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return { error: 'You do not have permission to edit this space.' }
 
+  const compatibilityError = legacySpaceLayoutWriteError(undefined, space.preferences)
+  if (compatibilityError) return { error: compatibilityError }
+
   // Merge into the existing preferences blob, preserving every other key (non-destructive, ADR-246).
   const current =
     space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
@@ -232,6 +239,9 @@ export async function discardSpaceProfileDraft(slug: string): Promise<{ error?: 
 
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return { error: 'You do not have permission to edit this space.' }
+
+  const compatibilityError = legacySpaceLayoutWriteError(undefined, space.preferences)
+  if (compatibilityError) return { error: compatibilityError }
 
   const current =
     space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)

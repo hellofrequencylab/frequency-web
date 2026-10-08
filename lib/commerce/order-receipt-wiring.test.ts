@@ -37,7 +37,13 @@ vi.mock('@/lib/supabase/admin', () => {
     return b
   }
   return {
-    createAdminClient: () => ({ from: () => build(), rpc: async () => ({ data: null, error: null }) }),
+    createAdminClient: () => ({
+      from: () => build(),
+      rpc: async (name: string) => ({
+        data: name === 'claim_commerce_settlement' ? { state: 'claimed', steps: {} } : true,
+        error: null,
+      }),
+    }),
   }
 })
 
@@ -49,6 +55,12 @@ vi.mock('./transfers', () => ({
   settleSplitOrderTransfers: vi.fn(async (id: string) => {
     ledger.calls.push(`transfers:${id}`)
   }),
+}))
+
+// Access recovery has its own behavioral tests; it must not consume this receipt flip queue.
+vi.mock('./journey-fulfilment', () => ({
+  enrolByOrder: vi.fn(async () => {}),
+  revokeJourneyByOrder: vi.fn(async () => {}),
 }))
 
 vi.mock('@/lib/finance/record', () => ({ recordFinancialTransaction: vi.fn(async () => ({ recorded: true })) }))
@@ -82,6 +94,8 @@ function session(): Stripe.Checkout.Session {
     id: 'cs_1',
     payment_status: 'paid',
     payment_intent: 'pi_1',
+    amount_total: 2400,
+    currency: 'usd',
     metadata: { kind: 'commerce_order' },
     customer_details: { email: 'buyer@example.test' },
   } as unknown as Stripe.Checkout.Session

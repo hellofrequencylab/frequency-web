@@ -138,6 +138,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Fixed
 
+- Space page edits keep saved work safe when the editor cannot read a newer page format.
 - **Changing a repeating event to one date no longer leaves the extra dates on the calendar.** Future dates nobody has joined are taken down. Dates people already RSVP'd to or bought a ticket for stay.
 
 - **An order from more than one Market seller now tells everyone the right thing.** Your receipt lists what each seller is sending, under their name. Each seller gets a sale notice for their own items and what they receive, and no one else's.

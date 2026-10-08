@@ -152,6 +152,8 @@ export function receiptText(c: ReceiptContent): string {
 // ── The payer's half ───────────────────────────────────────────────────────────────────────────
 
 interface MoneyReceiptOptions {
+  strict?: boolean
+  dedupeKey?: string
   /** The address to send to, when the caller already holds one (a signed-out donor's Stripe
    *  address). Leave null and `profileId` resolves the proven account address instead. */
   to?: string | null
@@ -178,6 +180,7 @@ export async function sendMoneyReceipt(opts: MoneyReceiptOptions): Promise<boole
       // The single most likely miss, and the one worth naming loudly: somebody paid and there is no
       // address to send the record to.
       console.error(`${opts.logTag} no address for the payer; the receipt was NOT emailed`, ctx)
+      if (opts.strict) throw new Error('Receipt has no verified recipient')
       return false
     }
 
@@ -188,6 +191,7 @@ export async function sendMoneyReceipt(opts: MoneyReceiptOptions): Promise<boole
       const gate = await resolveSendGate(opts.profileId, 'email', 'transactional', { email: to })
       if (!gate.allowed) {
         console.warn(`${opts.logTag} send gate refused the receipt`, { ...ctx, reason: gate.reason })
+        if (opts.strict) throw new Error(`Receipt send gate refused: ${gate.reason}`)
         return false
       }
     }
@@ -197,9 +201,10 @@ export async function sendMoneyReceipt(opts: MoneyReceiptOptions): Promise<boole
       subject: opts.subject,
       html: await receiptHtml(opts.content),
       text: receiptText(opts.content),
-    })
+    }, opts.dedupeKey ? { dedupeKey: opts.dedupeKey } : undefined)
     return true
   } catch (err) {
+    if (opts.strict) throw err
     console.error(`${opts.logTag} receipt failed`, { ...ctx, err })
     return false
   }
@@ -208,6 +213,8 @@ export async function sendMoneyReceipt(opts: MoneyReceiptOptions): Promise<boole
 // ── The receiver's half ────────────────────────────────────────────────────────────────────────
 
 interface EarnerNoticeOptions {
+  strict?: boolean
+  dedupeKey?: string
   /** The person who received the money. A Space's notice goes to its owner. */
   recipientProfileId: string
   /** The payer, when they have an account: the bell renders their name in front of `bellBody`. */
@@ -240,6 +247,7 @@ export async function notifyEarner(opts: EarnerNoticeOptions): Promise<void> {
   // 1. The bell. Written even when the email cannot be, because it is the in-product record.
   try {
     const { error } = await admin.from('notifications').insert({
+      ...(opts.dedupeKey ? { dedupe_key: `${opts.dedupeKey}:bell` } : {}),
       recipient_id: opts.recipientProfileId,
       actor_id: opts.actorProfileId ?? null,
       type: opts.type,
@@ -247,14 +255,19 @@ export async function notifyEarner(opts: EarnerNoticeOptions): Promise<void> {
       reference_id: opts.referenceId,
       body: opts.actorProfileId ? opts.bellBody : opts.bellBodyNoActor ?? opts.bellBody,
     })
-    if (error) console.error(`${opts.logTag} notification insert failed`, { ...ctx, error: error.message })
+    const duplicate = !!opts.dedupeKey && error?.code === '23505'
+    if (error && opts.strict && !duplicate) throw error
+    if (error && !duplicate) console.error(`${opts.logTag} notification insert failed`, { ...ctx, error: error.message })
   } catch (err) {
+    if (opts.strict) throw err
     console.error(`${opts.logTag} notification insert threw`, { ...ctx, err })
   }
 
   // 2. The email, through the same transactional seam as the payer's receipt. Money that landed in
   //    your account is transactional mail.
   await sendMoneyReceipt({
+    strict: opts.strict,
+    dedupeKey: opts.dedupeKey ? `${opts.dedupeKey}:email` : undefined,
     profileId: opts.recipientProfileId,
     subject: opts.subject,
     content: opts.content,

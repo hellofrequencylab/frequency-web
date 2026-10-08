@@ -340,6 +340,9 @@
 # LIVE-763: owner-authenticated billing reservation/reconciliation against the service-only
 # subscription ledger; verifies live subscription ownership before any Stripe mutation.
 
+# LIVE-764: public Collective directory projection over same-owner children; filters active,
+# public, network-connected Spaces before reusing existing public event access readers.
+
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -1162,3 +1165,4 @@ lib/sites/editor/authorization.ts
 # Frequency picker and host-bound website media actions resolve permission before
 # calling it; Storage upload, library insertion and failure cleanup share one path.
 lib/loom/authorized-image-upload.ts
+lib/collective/network-store.ts

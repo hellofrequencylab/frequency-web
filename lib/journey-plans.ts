@@ -986,14 +986,15 @@ async function listPlanPracticeIds(planId: string): Promise<string[]> {
 /** A member's existing SOLO enrollment start for a plan, or null (fresh enroll). Local twin of
  *  lib/journeys/runs.getSoloEnrollmentStart — inlined because runs.ts imports THIS module, so
  *  importing it back would cycle. */
-async function getSoloAnchorStart(profileId: string, planId: string): Promise<Date | null> {
-  const { data } = await db()
+async function getSoloAnchorStart(profileId: string, planId: string, strict = false): Promise<Date | null> {
+  const { data, error } = await db()
     .from('journey_enrollments')
     .select('started_at')
     .eq('profile_id', profileId)
     .eq('plan_id', planId)
     .is('run_id', null)
     .maybeSingle()
+  if (error && strict) throw error
   const started = (data as { started_at: string | null } | null)?.started_at
   return started ? new Date(started) : null
 }
@@ -1002,12 +1003,13 @@ async function getSoloAnchorStart(profileId: string, planId: string): Promise<Da
  *  Anchor(s), never the whole journey. `anchorStart` = the Run's start for cohort enrollment,
  *  or "now" for a fresh solo enroll (week 1). Falls back to every practice when the plan has
  *  no phases (a flat legacy plan). */
-async function planEnrollTargetIds(planId: string, anchorStart: Date | null): Promise<string[]> {
+async function planEnrollTargetIds(planId: string, anchorStart: Date | null, strict = false): Promise<string[]> {
   try {
-    const { data: items } = await db()
+    const { data: items, error: itemsError } = await db()
       .from('journey_plan_items')
       .select('id, parent_id, block_type, sort_order, title, required, est_minutes, practice_id, settings')
       .eq('plan_id', planId)
+    if (itemsError && strict) throw itemsError
     const blocks = ((items ?? []) as Record<string, unknown>[]).map((r) => ({
       id: String(r.id),
       parent_id: (r.parent_id as string) ?? null,
@@ -1019,16 +1021,20 @@ async function planEnrollTargetIds(planId: string, anchorStart: Date | null): Pr
       practice_id: (r.practice_id as string) || null,
       settings: (r.settings as { anchor?: boolean } | null) ?? null,
     }))
-    const { data: planRow } = await db()
+    const { data: planRow, error: planError } = await db()
       .from('journey_plans')
       .select('drip_interval_days')
       .eq('id', planId)
       .maybeSingle()
+    if (planError && strict) throw planError
+    if (!planRow && strict) throw new Error('Journey no longer exists')
     const drip = Number((planRow as { drip_interval_days: number | null } | null)?.drip_interval_days ?? 7)
     const targets = computeLegTargets(blocks, anchorStart, drip)
     if (targets.weeks > 0) return targets.targetIds
+    if (strict) return [...new Set(blocks.map((block) => block.practice_id).filter((id): id is string => !!id))]
     return listPlanPracticeIds(planId)
-  } catch {
+  } catch (error) {
+    if (strict) throw error
     return listPlanPracticeIds(planId)
   }
 }
@@ -1095,15 +1101,27 @@ export async function leavePlan(profileId: string, planId: string): Promise<void
 /** Adopt a community journey: its practices flow into the member's own
  *  member_practices (the free loop, via adoptPractice), and we record the
  *  adoption (incrementing adopt_count on first adoption only). */
-export async function adoptPlan(profileId: string, planId: string): Promise<void> {
+export async function adoptPlan(profileId: string, planId: string, opts?: { strict?: boolean; paidOrderId?: string }): Promise<void> {
+  if (opts?.paidOrderId) opts = { ...opts, strict: true }
   const client = db()
   // Phase-scoped, journey-sourced adoption (ADR-920 Phase 2): the current leg union the
   // Anchor(s), never the whole journey (a fresh solo enroll anchors at now = week 1; a
   // re-adopt mid-drip gets the week the member is actually on via their enrollment start).
   // Bulk, labeled source='journey', never clobbering an active self-adoption's term.
-  const soloStart = await getSoloAnchorStart(profileId, planId)
-  const practiceIds = await planEnrollTargetIds(planId, soloStart ?? new Date())
-  await adoptPracticesForJourney([profileId], practiceIds, planId)
+  const soloStart = await getSoloAnchorStart(profileId, planId, opts?.strict)
+  const practiceIds = await planEnrollTargetIds(planId, soloStart ?? new Date(), opts?.strict)
+  await adoptPracticesForJourney([profileId], practiceIds, planId, opts)
+
+  if (opts?.paidOrderId) {
+    const paidClient = client as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: { state: string; new_adoption?: boolean } | null; error: { message: string } | null }> }
+    const { data, error } = await paidClient.rpc('grant_paid_commerce_journey', {
+      _order: opts.paidOrderId, _plan: planId, _profile: profileId,
+    })
+    if (error) throw error
+    if (data?.state !== 'granted') throw new Error('Paid Journey grant was refused')
+    if (data.new_adoption) await noticeFreshPlanAdoption(client, profileId, planId)
+    return
+  }
 
   // Ensure a SOLO enrollment (journey_enrollments, run_id null) exists for this adoption. journey_plan_adoptions
   // (written below) is kept for the surfaces that still read it (content-signals, coop-pulse, the prompt cron,
@@ -1113,49 +1131,60 @@ export async function adoptPlan(profileId: string, planId: string): Promise<void
   // never locks (ADR-252 backfilled existing adoptions once, but the live adopt path never wrote it). Idempotent
   // via the solo unique index (profile_id, plan_id where run_id is null); best-effort so it never blocks adopt.
   try {
-    const { data: existingEnroll } = await client
+    const { data: existingEnroll, error: enrollmentReadError } = await client
       .from('journey_enrollments')
       .select('id')
       .eq('profile_id', profileId)
       .eq('plan_id', planId)
       .is('run_id', null)
       .maybeSingle()
+    if (enrollmentReadError && opts?.strict) throw enrollmentReadError
     if (!existingEnroll) {
-      await client.from('journey_enrollments').insert({ profile_id: profileId, plan_id: planId })
+      const { error } = await client.from('journey_enrollments').insert({ profile_id: profileId, plan_id: planId })
+      if (error && opts?.strict && error.code !== '23505') throw error
     }
-  } catch {
+  } catch (error) {
+    if (opts?.strict) throw error
     // a solo-enrollment write must never block adopting the Journey
   }
 
-  const { data: existingRow } = await client
+  const { data: existingRow, error: adoptionReadError } = await client
     .from('journey_plan_adoptions')
     .select('id, active')
     .eq('plan_id', planId)
     .eq('profile_id', profileId)
     .maybeSingle()
+  if (adoptionReadError && opts?.strict) throw adoptionReadError
   const existing = existingRow as { id: string; active: boolean } | null
 
   if (!existing) {
-    await client.from('journey_plan_adoptions').insert({ plan_id: planId, profile_id: profileId, active: true })
-    const { data: planRow } = await client.from('journey_plans').select('adopt_count, author_id').eq('id', planId).maybeSingle()
-    const planMeta = planRow as { adopt_count: number; author_id: string | null } | null
-    const count = planMeta?.adopt_count ?? 0
-    await client.from('journey_plans').update({ adopt_count: count + 1 }).eq('id', planId)
-
-    // Validated creation (Rewards Economy v3, ADR-305): adopting a Journey is the "use"
-    // that validates it. The CREATOR (author_id, the beneficiary) is paid off the adopter's
-    // (the actor's) FIRST adoption when the adopter is an established member. Idempotent
-    // per asset + best-effort: never blocks the adopt. Only on a genuinely fresh adoption.
-    if (planMeta?.author_id) {
-      try {
-        const { awardValidatedCreation } = await import('@/lib/rewards/creation')
-        await awardValidatedCreation(planMeta.author_id, 'journey', planId, profileId)
-      } catch {
-        // a reward failure must never block adopting
-      }
-    }
+    const { error } = await client.from('journey_plan_adoptions').insert({ plan_id: planId, profile_id: profileId, active: true })
+    if (error && opts?.strict) throw error
+    await noticeFreshPlanAdoption(client, profileId, planId)
   } else if (!existing.active) {
-    await client.from('journey_plan_adoptions').update({ active: true }).eq('id', existing.id)
+    const { error } = await client.from('journey_plan_adoptions').update({ active: true }).eq('id', existing.id)
+    if (error && opts?.strict) throw error
+  }
+}
+
+// Count/reward remain the existing best-effort first-adoption side effects.
+async function noticeFreshPlanAdoption(client: SupabaseClient, profileId: string, planId: string): Promise<void> {
+  const { data: planRow } = await client.from('journey_plans').select('adopt_count, author_id').eq('id', planId).maybeSingle()
+  const planMeta = planRow as { adopt_count: number; author_id: string | null } | null
+  const count = planMeta?.adopt_count ?? 0
+  await client.from('journey_plans').update({ adopt_count: count + 1 }).eq('id', planId)
+
+  // Validated creation (Rewards Economy v3, ADR-305): adopting a Journey is the "use"
+  // that validates it. The CREATOR (author_id, the beneficiary) is paid off the adopter's
+  // (the actor's) FIRST adoption when the adopter is an established member. Idempotent
+  // per asset + best-effort: never blocks the adopt. Only on a genuinely fresh adoption.
+  if (planMeta?.author_id) {
+    try {
+      const { awardValidatedCreation } = await import('@/lib/rewards/creation')
+      await awardValidatedCreation(planMeta.author_id, 'journey', planId, profileId)
+    } catch {
+      // a reward failure must never block adopting
+    }
   }
 }
 

@@ -2296,24 +2296,39 @@ export async function linkBookingToOrder(bookingId: string, orderId: string): Pr
   }
 }
 
-/** Confirm the held booking behind a settled order (deposit paid). Idempotent (flips only a still
- *  'pending' hold). FAIL-SOFT + a no-op pre-migration, so a normal product-order settle is never
- *  blocked by a missing column. */
-export async function confirmBookingByOrder(orderId: string): Promise<void> {
+/** Confirm a pending paid hold. Strict recovery uses the order-locked authority RPC;
+ * default/noncommerce callers retain their existing fail-soft behavior. */
+export async function confirmBookingByOrder(orderId: string, opts?: { strict?: boolean }): Promise<void> {
   if (!orderId) return
   try {
+    if (opts?.strict) {
+      // Narrow local adapter until approved073 is applied and public schema types are regenerated.
+      const db = createAdminClient() as unknown as {
+        rpc(name: 'confirm_paid_commerce_booking', args: { _order: string }): Promise<{ data: boolean | null; error: unknown }>
+      }
+      const { data, error } = await db.rpc('confirm_paid_commerce_booking', { _order: orderId })
+      if (error) throw error
+      if (data !== true) throw new Error('[booking] paid order refused confirmation')
+      return
+    }
     await bookingsTable().update({ status: 'confirmed' }).eq('order_id', orderId).eq('status', 'pending')
-  } catch {
+  } catch (error) {
+    if (opts?.strict) throw error
     /* pre-migration / no linked booking: no-op */
   }
 }
 
-/** Release (cancel) the booking behind a refunded / cancelled order, freeing the slot. FAIL-SOFT. */
-export async function cancelBookingByOrder(orderId: string): Promise<void> {
+/** Release the refunded/cancelled order slot; strict recovery callers propagate database failures. */
+export async function cancelBookingByOrder(orderId: string, opts?: { strict?: boolean }): Promise<void> {
   if (!orderId) return
   try {
-    await bookingsTable().update({ status: 'cancelled' }).eq('order_id', orderId)
-  } catch {
+    const { error } = await bookingsTable().update({ status: 'cancelled' }).eq('order_id', orderId)
+    if (error && opts?.strict) {
+      const message = typeof error === 'object' && 'message' in error ? String(error.message) : String(error)
+      throw new Error(`[booking] cancel failed: ${message}`)
+    }
+  } catch (error) {
+    if (opts?.strict) throw error
     /* fail-soft */
   }
 }

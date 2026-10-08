@@ -498,3 +498,8 @@ describe('the prefix key, and the dynamic-route slice (LIVE-117, ADR-1261)', () 
     }
   })
 })
+
+it("keeps each public Collective network hero on its tenant key without the house photo", () => {
+  expect(indexHeroDefaultsFor("/spaces/my-collective/network")).toMatchObject({size:"large",inheritHero:false,image:null})
+  expect(indexHeroKeyFor("/spaces/my-collective/network")).toBe("/spaces/my-collective/network")
+})

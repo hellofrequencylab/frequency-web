@@ -153,6 +153,8 @@ export const INDEX_HERO_DEFAULTS: readonly IndexHeroDefault[] = [
   // The one PUBLIC surface of the five: a Space's Shows catalog, anonymous-reachable and
   // sitemap-advertised, so it is a destination and takes the discovery band.
   { prefix: '/spaces/_/podcasts', image: null, size: 'large', inheritHero: false },
+  // Public network discovery uses its own tenant Settings key, never the house Spaces photo.
+  { prefix: '/spaces/_/network', image: null, size: 'large', inheritHero: false },
 ] as const
 
 /** The fallback for a route no row covers: gradient band at the shipped directory height. */

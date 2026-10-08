@@ -141,6 +141,8 @@ export function EntityLayoutProvider({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // The latest layout to persist, so a flush on unmount always writes the most recent edit.
   const pending = useRef<BuilderLayout | null>(null)
+  const subjectGeneration = useRef(0)
+  const inFlight = useRef(new Set<number>())
   // A ref guard so the FIRST seed wins (the builder + the live preview both try; whoever mounts first).
   const seededRef = useRef(false)
   // A MIRROR of the current working layout, always the freshest value (state is async). The merge-safe
@@ -193,6 +195,7 @@ export function EntityLayoutProvider({
     setSelectedItemIndex(null)
     setCanUndo(false)
     setDirty(false)
+    setSaving(false)
     setError(null)
   }
 
@@ -215,6 +218,7 @@ export function EntityLayoutProvider({
   const syncSubject = useCallback(() => {
     if (subject.current === identity) return
     subject.current = identity
+    subjectGeneration.current++
     if (timer.current) {
       clearTimeout(timer.current)
       timer.current = null
@@ -227,23 +231,42 @@ export function EntityLayoutProvider({
     lastPushAt.current = 0
   }, [identity])
 
-  const flush = useCallback(async () => {
+  const flush = useCallback(async function flushAttempt(): Promise<void> {
     syncSubject()
+    const generation = subjectGeneration.current
+    if (inFlight.current.has(generation)) return
     const next = pending.current
     if (!next) return
     pending.current = null
+    inFlight.current.add(generation)
     setSaving(true)
     setError(null)
+    let failed = false
     try {
       const res = await save({ rows: next.rows, hidden: next.hidden, content: next.content, style: next.style })
-      if (res?.error) setError(res.error)
+      if (res?.error) {
+        failed = true
+        if (subjectGeneration.current === generation) setError(res.error)
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save your layout.')
+      failed = true
+      if (subjectGeneration.current === generation) setError(e instanceof Error ? e.message : 'Could not save your layout.')
     } finally {
-      setSaving(false)
-      // Only clear if nothing landed WHILE this save was in flight. `flush` nulls `pending` before it
-      // awaits, so a mid-flight edit repopulates it and must keep the page marked dirty.
-      setDirty(pending.current !== null)
+      inFlight.current.delete(generation)
+      // Never attach an outgoing Space's failed draft or error to the next subject.
+      if (subjectGeneration.current === generation) {
+        // New edits are full snapshots built from latest, including earlier field changes.
+        // Keep that newer snapshot; otherwise retain the failed attempt for an explicit retry.
+        if (failed && pending.current === null) pending.current = next
+        setSaving(false)
+        setDirty(pending.current !== null)
+        // A newer edit that arrived during this save still gets its own attempt. The failed
+        // snapshot itself does not arm a timer, so a persistent refusal cannot spin retries.
+        if (pending.current !== null && pending.current !== next) {
+          if (timer.current) clearTimeout(timer.current)
+          timer.current = setTimeout(() => void flushAttempt(), SAVE_DEBOUNCE_MS)
+        }
+      }
     }
   }, [save, syncSubject])
 
