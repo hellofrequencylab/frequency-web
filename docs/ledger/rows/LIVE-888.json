@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-888",
+  "title": "Central completion attribution represents actual usage without duplicate ledger rows",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/AI-CONTROLS.md",
+    "ref": "LIVE-883 bounded compatibility prerequisite"
+  },
+  "detail": "Optional completion context lets each caller migrate atomically from its own legacy ledger write to the same best-effort central recordAiUsage path. Omitted context leaves existing caller-owned accounting unchanged. completeText forwards context without double recording; successful tool loops retain one aggregate legacy row per turn, with real model, cache-inclusive usage and profile/Space attribution. Provider failures do not invent successful usage. This is compatibility preparation only: no budget reservation, SQL migration, admission guarantee, per-attempt settlement or LIVE-883 closure. Caller migration batches LIVE-889/LIVE-890 and final LIVE-883 remain separate serial releases. Optional context is a transitional compatibility API; final LIVE-883 makes attribution mandatory and records individual attempts. The permanent probe verifies attributed completion and loop usage totals through either ledger transport without asserting that optional context persists forever.",
+  "closed": "2026-10-08",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/check-ai-accounting-preparation.mjs",
+    "note": "Executes shipped completion wrapper with synthetic provider and ledger seams; no paid calls or nested test runner."
+  },
+  "wave": "W4"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-883",
+  "title": "Paid AI attempts reserve concurrent budget and reconcile actual usage before returning",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/AI-CONTROLS.md",
+    "ref": "owner reliability audit: failed accounting reads/writes and concurrent paid admission"
+  },
+  "detail": "Owner audit finding remains open. Central attribution preparation LIVE-888 and caller migration batches LIVE-889/LIVE-890 are separate compatibility releases; atomic reservation/settlement implementation and SQL072 are not on main until the final LIVE-883 release. The original implementation consequence probe is retained and must pass before this parent closes.\n\nCentral Anthropic wrappers require attribution, obtain token quotes after the kill/configuration gate, reserve estimated input/cache-write plus bounded output allowance, disable hidden SDK retries and durably settle each tool round before callbacks. Migration072 serializes admission and settlement on the originating UTC day, enforcing global, feature aggregate and optional Space caps together. Provider/stream/callback/settlement failures retain observable uncertain reservations without expiry; actual overages are recorded truthfully and stop subsequent admission. Recraft generates and utility operations use the same boundary with documented tariff estimates. All shipped completion callers carry attribution; only zero-cost embedding writes remain in the legacy ledger helper and now await/check writes. Operator surfaces recorded, reserved, uncertain, pending IDs and unavailable accounting. Member quota reads retain their existing permissive failure policy, independently from fail-closed paid admission. Estimated concurrent admission is not a mathematical invoice cap. Requires migration072 before code rollout; no production SQL, live provider calls or outbound sends performed. Actual migration SQL passed23 PGlite assertions; committed pgTAP18 test has not been executed against Supabase here.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/check-ai-budget-reservations.mjs",
+    "note": "Actual shipped completion/accounting/Space caller/Recraft paths, thirty failure/concurrency/attribution consequences; no provider request or nested test runner."
+  }
+}
