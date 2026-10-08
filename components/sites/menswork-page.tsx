@@ -82,9 +82,10 @@ export interface MensworkPageInput {
   pageTitle: string
   renderOther: (block: MwBlock) => ReactNode
   now?: Date
+  wrapSection?: (node: ReactNode, indexes: number[]) => ReactNode
 }
 
-export function MensworkPage({ blocks, plan, live, links, origin, pageTitle, renderOther, now = new Date() }: MensworkPageInput) {
+export function MensworkPage({ blocks, plan, live, links, origin, pageTitle, renderOther, now = new Date(), wrapSection }: MensworkPageInput) {
   // One h1 per page: a leading hero owns it, else the first heading-type text block, else a hidden page title.
   const leadsWithHero = plan[0]?.kind === 'hero'
   const headAt = plan.find((p) => p.kind === 'text' && HEADING_TYPES.has(blocks[p.at].type))
@@ -95,6 +96,7 @@ export function MensworkPage({ blocks, plan, live, links, origin, pageTitle, ren
       {plan.map((p, i) => {
         const at = Array.isArray(p.at) ? p.at[0] : p.at
         const key = `${p.kind}-${at}`
+        const section = (() => {
         if (p.kind === 'year') return <Year key={key} blocks={p.at.map((n) => blocks[n].props)} ctx={ctx} />
         const props = blocks[p.at].props
         const first = i === 0
@@ -146,6 +148,8 @@ export function MensworkPage({ blocks, plan, live, links, origin, pageTitle, ren
               </div>
             )
         }
+        })()
+        return wrapSection ? wrapSection(section, Array.isArray(p.at) ? p.at : [p.at]) : section
       })}
     </div>
   )

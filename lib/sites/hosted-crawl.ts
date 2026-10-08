@@ -1,5 +1,6 @@
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { readProfilePages } from '@/lib/spaces/profile-pages'
+import { publishedWebsiteSnapshot } from '@/lib/sites/editor/state'
 import { SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteHasContactPage } from '@/lib/sites/house-theme'
 import { appOrigin, normalizeHost } from '@/lib/sites/host'
 import { resolveHostedSpace } from '@/lib/sites/hosted'
@@ -43,7 +44,7 @@ export function hostedSitePages(
   space: Pick<Space, 'preferences'>,
   takesBookings = false,
 ): { slug: string; label: string }[] {
-  const pages = readProfilePages(space.preferences).map((p) => ({ slug: p.slug, label: p.label }))
+  const pages = (publishedWebsiteSnapshot(space.preferences)?.pages ?? readProfilePages(space.preferences)).map((p) => ({ slug: p.slug, label: p.label }))
   if (siteHasContactPage(space.preferences)) pages.push({ slug: SITE_CONTACT_SLUG, label: 'Contact' })
   if (takesBookings) pages.push({ slug: SITE_BOOK_SLUG, label: 'Book' })
   return pages

@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-EDITOR-SHELL",
+  "title": "Website builder shell follows the Claude theme handoff on website admin routes",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "docs/EDITOR-ARCHITECTURE.md",
+    "ref": "Website shell slice under E4, E5 and E6; owner Claude Design handoff 2026-10-08"
+  },
+  "detail": "Owner-authorized website-only slice of PROG-E4, PROG-E5 and PROG-E6. Match the supplied standalone v4 handoff: 56px toolbar, 232px left rail and 320px inspector (both fold to 56px), theme-derived lighter rails, Menswork/DAWN/Midnight, selection, inline text, reorder, spacing, device overrides, page SEO, comments, versions and explicit publish. Website state remains separate from Frequency Space profile editing; existing block registry remains the renderer. This slice does not close the collaborative E4 canvas, E5 schema contract or full E6 touch authoring program. Snapshot/history and responsive inheritance consequences are covered in lib/sites/editor/state.test.ts; handoff tokens are covered in lib/sites/editor/theme.test.ts.",
+  "verify": {
+    "kind": "manual",
+    "evidence": "Compare the authenticated website /admin/editor route at desktop and phone widths against the supplied standalone handoff for all three themes. Exercise selection, inline text, reorder, device override/reset, draft-save versus publish, SEO, comments and version restore. Confirm Space profile editing is unchanged and public pages cannot read draft review threads. Pure state and theme consequences pass focused regression tests; exact visual and authenticated browser parity remain the acceptance gate.",
+    "checked": "2026-10-08"
+  }
+}
