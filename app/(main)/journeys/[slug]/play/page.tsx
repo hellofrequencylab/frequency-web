@@ -7,6 +7,8 @@ import { getPartialMapToday, type PartialToday } from '@/lib/practices'
 import { LearnPlayer } from '@/components/journey/v2/learn/learn-player'
 import { PracticeDetail } from '@/components/journey/v2/learn/practice-detail'
 import { JourneyDock } from '@/components/journey/nav/journey-dock'
+import { upNext } from '@/components/journey/v2/learn/course-home'
+import { phaseLockStates } from '@/lib/journeys/schedule'
 
 // THE FOCUS PLAYER (/journeys/<slug>/play) — one lesson at a time with nothing else on screen. The
 // shell drops its header, rails and tab bar here (page-chrome's full-viewport list); the player's
@@ -36,6 +38,12 @@ export default async function JourneyPlayPage({
     getPartialMapToday(r.profileId),
   ])
   const partialByPractice: Record<string, PartialToday> = Object.fromEntries(partialMap)
+
+  // With no ?lesson, an ONGOING Journey opens on this month's next step (the calendar's phase),
+  // not the first gap in the backlog. A Journey that ends leaves the choice to the player.
+  const openAt = r.cycle
+    ? upNext(tree, phaseLockStates(tree.phases.length, r.anchorStart, r.dripIntervalDays), r.cycle)?.lesson.id ?? null
+    : null
 
   // Pre-render the rich practice detail ONCE per practice step (server markdown, no client cost),
   // handed to the client player as a node map keyed by lesson id (the RSC interleaving pattern).
@@ -79,7 +87,7 @@ export default async function JourneyPlayPage({
         certificateEnabled={plan.certificate_enabled}
         anchorStart={r.anchorStart}
         dripIntervalDays={r.dripIntervalDays}
-        initialLessonId={lesson ?? null}
+        initialLessonId={lesson ?? openAt}
       />
       <JourneyDock slug={slug} active="focus" percent={tree.percent} aboutHref={isAuthor ? `/journeys/${slug}` : undefined} focus />
     </FocusTemplate>

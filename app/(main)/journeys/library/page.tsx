@@ -33,8 +33,9 @@ const FILTERS = [
 ] as const
 type FilterKey = (typeof FILTERS)[number]['key']
 
+// An ongoing Journey repeats each year, so it is never "Finished": it stays In progress.
 const stateOf = (j: MemberJourneyProgress): Exclude<FilterKey, 'all'> =>
-  j.complete ? 'done' : j.percent > 0 ? 'active' : 'new'
+  j.complete && !j.ongoing ? 'done' : j.percent > 0 ? 'active' : 'new'
 
 function JourneyMark({ j }: { j: MemberJourneyProgress }) {
   const Icon = JOURNEY_ICON_MAP[j.emoji ?? ''] ?? DefaultJourneyIcon
@@ -57,7 +58,7 @@ export default async function JourneyLibraryPage({ searchParams }: { searchParam
 
   // Newest enrolment first (getMemberJourneyProgress orders by started_at), finished ones included.
   const all = await getMemberJourneyProgress(profileId, { activeOnly: false })
-  const resume = all.find((j) => !j.complete) ?? null
+  const resume = all.find((j) => stateOf(j) !== 'done') ?? null
   const shown = filter === 'all' ? all : all.filter((j) => stateOf(j) === filter)
   const countFor = (k: FilterKey) => (k === 'all' ? all.length : all.filter((j) => stateOf(j) === k).length)
   const hero = await resolveIndexHero('/journeys/library')
@@ -178,7 +179,13 @@ export default async function JourneyLibraryPage({ searchParams }: { searchParam
                           : `Phase ${Math.min(j.phasesComplete + 1, j.phasesTotal)} of ${j.phasesTotal}${j.inCohort ? ' · with your Circle' : ''}`
                       }
                       description={
-                        j.nextLesson ? `Up next: ${j.nextLesson.title}` : state === 'done' ? 'Every lesson is done. Revisit any of them.' : undefined
+                        j.nextLesson
+                          ? `Up next: ${j.nextLesson.title}`
+                          : state === 'done'
+                            ? 'Every lesson is done. Revisit any of them.'
+                            : j.ongoing && j.complete
+                              ? 'Every phase is done. It repeats each year.'
+                              : undefined
                       }
                       meta={
                         <span className="flex w-full items-center gap-2">

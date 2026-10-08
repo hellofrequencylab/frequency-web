@@ -34,6 +34,8 @@ export interface MemberJourneyProgress {
   inCohort: boolean
   /** The Journey's cover, for the Library card. */
   coverImage: string | null
+  /** Repeats each year (journey_plans.ongoing): never shown as finished. */
+  ongoing: boolean
 }
 
 const BLOCK_COLS = 'id, parent_id, block_type, sort_order, title, required, est_minutes, practice_id'
@@ -58,6 +60,7 @@ interface PlanLite {
   emoji: string | null
   accent: string | null
   cover_image: string | null
+  ongoing: boolean | null
 }
 
 /** Distinct member ids with at least one active (not-yet-completed) Journey enrollment — the
@@ -85,7 +88,7 @@ export async function getMemberJourneyProgress(
 
   let enrollQuery = admin
     .from('journey_enrollments')
-    .select('plan_id, run_id, completed_at, started_at, plan:journey_plans(id, slug, title, emoji, accent, cover_image)')
+    .select('plan_id, run_id, completed_at, started_at, plan:journey_plans(id, slug, title, emoji, accent, cover_image, ongoing)')
     .eq('profile_id', profileId)
     .order('started_at', { ascending: false })
   if (activeOnly) enrollQuery = enrollQuery.is('completed_at', null)
@@ -151,6 +154,7 @@ export async function getMemberJourneyProgress(
         : null,
       inCohort: !!e.run_id,
       coverImage: plan.cover_image ?? null,
+      ongoing: plan.ongoing === true,
     })
   }
   return out

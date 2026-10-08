@@ -621,7 +621,7 @@ export async function setJourneyRewards(
 /** Delivery section (ADR-252): the completion certificate + the Run phase-drip interval. */
 export async function setJourneyDelivery(
   planId: string,
-  patch: { certificateEnabled?: boolean; dripIntervalDays?: number },
+  patch: { certificateEnabled?: boolean; dripIntervalDays?: number; ongoing?: boolean },
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
   const saved = await updatePlan(planId, patch)

@@ -7,9 +7,9 @@ import { HostSchedule } from '@/components/journey/v2/learn/host-schedule'
 import { getPlanAuthor, countActiveAdopters } from '@/lib/journey-plans'
 import { getLinkedEvent, pillarsById } from '@/lib/journeys/learn'
 import { loadJourneyLearnRoute } from '@/lib/journeys/learn-route'
-import { phaseLockStates } from '@/lib/journeys/schedule'
+import { phaseLockStates, phaseUnlockAt } from '@/lib/journeys/schedule'
 import { MeetingBlock, AuthorBlock } from '@/components/journey/v2/learn/journey-overview'
-import { CourseProgress, CoursePath, resumePoint, playHref } from '@/components/journey/v2/learn/course-home'
+import { CourseProgress, CoursePath, upNext, playHref } from '@/components/journey/v2/learn/course-home'
 import { LeaveJourneyButton } from '@/components/journey/v2/learn/leave-journey-button'
 import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { JourneyDock } from '@/components/journey/nav/journey-dock'
@@ -31,7 +31,7 @@ export const dynamic = 'force-dynamic'
 export default async function JourneyLearnPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const r = await loadJourneyLearnRoute(slug, 'learn')
-  const { plan, tree, extras, entry, isAuthor, cohort, kickoff, anchorStart, dripIntervalDays, runId, isRunHost, phaseEventsById } = r
+  const { plan, tree, extras, entry, isAuthor, cohort, kickoff, anchorStart, dripIntervalDays, unit, cycle, runId, isRunHost, phaseEventsById } = r
   const canManageJourney = entry.canManage
   const journeyCaps = entry.caps
 
@@ -67,7 +67,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   }
   const phaseFocusById = Object.fromEntries(extras.phaseFocus)
   const locks = phaseLockStates(tree.phases.length, anchorStart, dripIntervalDays)
-  const next = resumePoint(tree, locks)
+  const next = upNext(tree, locks, cycle)
 
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
   const oStyle = plan.header_overlay_style
@@ -148,7 +148,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
         }
       >
         <div className="space-y-8">
-          <CourseProgress slug={slug} tree={tree} locks={locks} anchorLessonId={extras.anchorItemId} />
+          <CourseProgress slug={slug} tree={tree} locks={locks} anchorLessonId={extras.anchorItemId} unit={unit} cycle={cycle} />
 
           {(kickoff || cohort || (isRunHost && runId)) && (
             <div className="space-y-3">
@@ -168,12 +168,21 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
               {cohort && anchorStart && (
                 <p className="flex items-center gap-2 text-meta text-muted">
                   <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  Your Run runs {new Date(anchorStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} through{' '}
-                  {new Date(new Date(anchorStart).getTime() + tree.phases.length * dripIntervalDays * 86_400_000).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                  .
+                  {cycle ? (
+                    <>
+                      Your Run started {new Date(anchorStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} and repeats each
+                      year.
+                    </>
+                  ) : (
+                    <>
+                      Your Run runs {new Date(anchorStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} through{' '}
+                      {phaseUnlockAt(new Date(anchorStart), tree.phases.length, dripIntervalDays).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                      .
+                    </>
+                  )}
                 </p>
               )}
               {isRunHost && runId && (
@@ -181,7 +190,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
                   slug={slug}
                   runId={runId}
                   phases={tree.phases
-                    .map((p, i) => ({ id: p.id, label: p.title?.trim() || `Week ${i + 1}` }))
+                    .map((p, i) => ({ id: p.id, label: p.title?.trim() || `${unit === 'month' ? 'Month' : 'Week'} ${i + 1}` }))
                     .filter((p) => p.id !== 'implicit-phase')}
                   scheduled={phaseEventsById}
                 />
@@ -196,6 +205,8 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
             phaseFocusById={phaseFocusById}
             pillarByLesson={pillarByLesson}
             anchorLessonId={extras.anchorItemId}
+            unit={unit}
+            cycle={cycle}
           />
 
           <MeetingBlock meeting={extras.meeting} meetupEvent={meetupEvent} gatheringEvent={gatheringEvent} />

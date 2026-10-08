@@ -8,7 +8,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Video, MapPin, Users, Clock } from 'lucide-react'
+import { Globe, Lock, Link2, Award, CalendarClock, Gem, PartyPopper, Trophy, Sparkles, RefreshCw, Repeat, Video, MapPin, Users, Clock } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { isError } from '@/lib/action-result'
@@ -56,6 +56,8 @@ export interface JourneySettingsProps {
   initialCompletionGems: number
   initialCertificateEnabled: boolean
   initialDripIntervalDays: number
+  /** Repeats each year (journey_plans.ongoing). Absent = a Journey that ends. */
+  initialOngoing?: boolean
   initialCoverImage: string | null
   /** The saved cover HEADER focal point (CSS object-position "x% y%"). Null/absent = centered. */
   initialCoverFocus?: string | null
@@ -144,6 +146,7 @@ export function JourneySettings(props: JourneySettingsProps) {
   }
   const [certificate, setCertificate] = useState(props.initialCertificateEnabled)
   const [drip, setDrip] = useState(props.initialDripIntervalDays)
+  const [ongoing, setOngoing] = useState(props.initialOngoing ?? false)
 
   // The publish flow is shared with the Inspector rail (ADR-1246), so it lives in one hook below.
   const { visibility, status, review, reviewing, celebrate, changeVisibility, resubmitForReview } =
@@ -301,7 +304,25 @@ export function JourneySettings(props: JourneySettingsProps) {
             onBlur={() => save(() => setJourneyDelivery(props.planId, { dripIntervalDays: drip }))}
             className="px-2.5 py-1.5"
           />
+          <span className="text-2xs text-muted">30 opens one phase on the same date each month.</span>
         </label>
+        </div>
+        {/* Ongoing (owner, 2026-10-07): the cycle starts again at phase 1 instead of ending. */}
+        <div className="flex items-center justify-between gap-3 rounded-control border border-border bg-canvas px-3 py-2.5">
+          <span className="flex min-w-0 flex-col">
+            <span className="inline-flex items-center gap-1.5 text-body-sm font-medium text-text">
+              <Repeat className="h-4 w-4 text-primary-strong" aria-hidden /> Repeats each year
+            </span>
+            <span className="text-2xs text-muted">After the last phase it starts again at phase 1, so people can join any time.</span>
+          </span>
+          <Toggle
+            checked={ongoing}
+            ariaLabel="Repeats each year"
+            onChange={(next) => {
+              setOngoing(next)
+              save(() => setJourneyDelivery(props.planId, { ongoing: next }))
+            }}
+          />
         </div>
         {/* Certificate — a proper on/off switch (the shared settings Toggle), in its own clear row
             so the control isn't cramped beside the number inputs. */}

@@ -15,7 +15,7 @@ import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Aw
 import { useMindless } from '@/components/on-air/mindless'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
-import { phaseLockStates, unlockLine } from '@/lib/journeys/schedule'
+import { cadenceUnit, phaseLockStates, unlockLine } from '@/lib/journeys/schedule'
 import { completeJourneyLessonAction, uncompleteJourneyLessonAction } from '@/app/(main)/journeys/[slug]/learn/actions'
 import { TrophyCelebration, type TrophyMilestone } from '@/components/journey/v2/trophy-celebration'
 import { PracticeActions } from '@/components/journey/v2/learn/practice-actions'
@@ -165,6 +165,9 @@ export function LearnPlayer({
 }: Props) {
   const router = useRouter()
   const [pending, start] = useTransition()
+  // "Week" or "Month": the unit the cadence counts phases in, for the outline and the focus line.
+  const unit = cadenceUnit(dripIntervalDays)
+  const Unit = unit === 'month' ? 'Month' : 'Week'
   const mindless = useMindless()
 
   // A module's timed practices, in order, as a launchable sequence (ADR-592, P6). Returns the
@@ -361,8 +364,10 @@ export function LearnPlayer({
                       <span className="min-w-0 flex-1">
                         {/* The "Week N" eyebrow only when the phase is a real, titled phase (a flat/
                             legacy journey has one untitled implicit phase — no week label there). */}
-                        {p.title && p.title.trim().toLowerCase() !== `week ${pi + 1}` && (
-                          <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">Week {pi + 1}</span>
+                        {p.title && p.title.trim().toLowerCase() !== `${unit} ${pi + 1}` && (
+                          <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">
+                            {Unit} {pi + 1}
+                          </span>
                         )}
                         <span className="block truncate text-body-sm font-semibold text-text">{p.title || `Phase ${pi + 1}`}</span>
                         {locked && <span className="block text-2xs font-medium text-muted">{unlockLabel(lock?.unlockAt ?? null)}</span>}
@@ -491,7 +496,7 @@ export function LearnPlayer({
                   <div className="mb-4 flex items-start gap-2 rounded-card border border-border bg-surface-elevated/40 p-3">
                     <Compass className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
                     <p className="text-body-sm leading-relaxed text-muted">
-                      <span className="font-semibold text-text">This week:</span> {phaseFocus}
+                      <span className="font-semibold text-text">This {unit}:</span> {phaseFocus}
                     </p>
                   </div>
                 )}
