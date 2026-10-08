@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const scopedCalls: { method: string; key: string; value: unknown }[] = []
 const inCalls: { table: string; ids: string[] }[] = []
-let result: { data: { id: string; url: string | null }[] | null; error: unknown } = { data: [], error: null }
+let result: { data: { id: string; url: string | null; space_id?: string; is_protected?: boolean | null; expires_at?: string | null }[] | null; error: unknown } = { data: [], error: null }
 let throwOnQuery = false
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -71,13 +71,13 @@ describe('refreshAssetRefUrls', () => {
 
   it('bounds website refreshes to own unprotected unexpired assets without changing saved copies', async () => {
     const doc = { image: { assetId: ID_A, url: 'https://cdn/cached.jpg' }, other: { assetId: ID_B, url: 'https://cdn/other-cache.jpg' } }
-    result = { data: [{ id: ID_A, url: 'https://cdn/new.jpg', space_id: 'own', is_protected: false }, { id: ID_B, url: 'https://cdn/foreign-master.jpg', space_id: 'foreign' }] as typeof result.data, error: null }
+    result = { data: [{ id: ID_A, url: 'https://cdn/new.jpg', space_id: 'own', is_protected: false }, { id: ID_B, url: 'https://cdn/foreign-master.jpg', space_id: 'foreign' }], error: null }
     const refreshed = await refreshAssetRefUrls(doc, { websiteSpaceId: 'own' })
     expect(scopedCalls).toContainEqual({ method: 'eq', key: 'space_id', value: 'own' })
     expect(refreshed.image.url).toBe('https://cdn/new.jpg')
     expect(refreshed.other.url).toBe('https://cdn/other-cache.jpg')
     expect(doc.image.url).toBe('https://cdn/cached.jpg')
-    result = { data: [{ id: ID_A, url: 'https://cdn/master.jpg', space_id: 'own', is_protected: true }] as typeof result.data, error: null }
+    result = { data: [{ id: ID_A, url: 'https://cdn/master.jpg', space_id: 'own', is_protected: true }], error: null }
     expect(await refreshAssetRefUrls(doc, { websiteSpaceId: 'own' })).toBe(doc)
   })
   it('ignores an asset whose url is empty — an empty cache overwrite would blank the page', async () => {

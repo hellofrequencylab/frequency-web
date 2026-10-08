@@ -4,24 +4,24 @@ import type { Data } from '@/lib/page-editor/types'
 // consume only published. Bounded snapshots until E0's shared document store lands.
 export type WebsiteTheme = 'Menswork' | 'DAWN' | 'Midnight'
 export type Device = 'desktop' | 'tablet' | 'phone'
-export interface SiteCommentReply { id: string; body: string; author: string; createdAt: string }
+interface SiteCommentReply { id: string; body: string; author: string; createdAt: string }
 export interface SiteComment { id: string; blockId: string; text: string; author: string; createdAt: string; resolved: boolean; x?: number; y?: number; replies?: SiteCommentReply[] }
-export interface WebsitePage {
+interface WebsitePage {
   slug: string; label: string; doc: Data
   seo: { title: string; description: string }
   comments: SiteComment[]
 }
-export interface WebsiteBrand { logo?: string | null; accent?: string | null }
+interface WebsiteBrand { logo?: string | null; accent?: string | null }
 export interface WebsiteSnapshot { theme: WebsiteTheme; brand?: WebsiteBrand; pages: WebsitePage[] }
-export interface WebsiteVersion { id: string; createdAt: string; author: string; snapshot: WebsiteSnapshot }
+interface WebsiteVersion { id: string; createdAt: string; author: string; snapshot: WebsiteSnapshot }
 export interface WebsiteEditorState {
   v: 1; revision: number; draft: WebsiteSnapshot
   published: WebsiteSnapshot | null; scheduled?: { at: string; author: string; snapshot: WebsiteSnapshot } | null; versions: WebsiteVersion[]
 }
 export const RESERVED_WEBSITE_SLUGS = new Set(['admin', 'book', 'contact', 'spotlight', 'api', 'opengraph-image', 'robots', 'sitemap'])
 export const WEBSITE_THEMES: WebsiteTheme[] = ['Menswork', 'DAWN', 'Midnight']
-export const MAX_WEBSITE_BYTES = 700_000
-export const MAX_VERSIONS = 8
+const MAX_WEBSITE_BYTES = 700_000
+const MAX_VERSIONS = 8
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 const text = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max
 

@@ -3,7 +3,7 @@ import { inlineHtmlToText } from '@/lib/entity-blocks/block-content'
 export function inlineTextValue(value: string): string {
   return inlineHtmlToText(value).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_]/g, '').replace(/\s+/g, ' ').trim()
 }
-export interface InlineTextMatch { field: string; start: number; end: number }
+interface InlineTextMatch { field: string; start: number; end: number }
 
 /** Identify the clicked paragraph without flattening its sibling paragraphs. */
 export function findInlineTextMatch(props: Record<string, unknown>, fields: Record<string, { type?: string }>, target: string, occurrence = 0): InlineTextMatch | null {

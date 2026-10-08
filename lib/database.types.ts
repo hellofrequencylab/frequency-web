@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      website_editor_presence: {
+        Row: {
+          space_id: string
+          profile_id: string
+          name: string
+          cursor: Json | null
+          seen_at: string
+        }
+        Insert: {
+          space_id: string
+          profile_id: string
+          name: string
+          cursor?: Json | null
+          seen_at?: string
+        }
+        Update: {
+          space_id?: string
+          profile_id?: string
+          name?: string
+          cursor?: Json | null
+          seen_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_editor_presence_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "website_editor_presence_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       achievements: {
         Row: {
           category: Database["public"]["Enums"]["achievement_category"]
@@ -17186,6 +17225,19 @@ export type Database = {
       }
     }
     Functions: {
+      save_website_editor: {
+        Args: {
+          p_space_id: string
+          p_expected_revision: number
+          p_state: Json
+          p_publish?: boolean
+        }
+        Returns: boolean
+      }
+      publish_due_websites: {
+        Args: { p_now?: string }
+        Returns: { slug: string }[]
+      }
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string }
         Returns: undefined

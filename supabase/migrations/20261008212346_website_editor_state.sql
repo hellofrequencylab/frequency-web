@@ -72,3 +72,7 @@ create table public.website_editor_presence (
 alter table public.website_editor_presence enable row level security;
 revoke all on table public.website_editor_presence from public, anon, authenticated;
 grant select, insert, update, delete on table public.website_editor_presence to service_role;
+
+-- The primary key leads with space_id; profile deletion needs its own FK index.
+create index website_editor_presence_profile_id_idx
+  on public.website_editor_presence (profile_id);
