@@ -34,6 +34,13 @@ const actions=load('lib/collective/cross-listing-actions.ts')
 assert.equal('error' in await actions.requestCollectiveCrossListing('journey','journey','target'),false)
 assert.equal(state.writes[0].status,'pending');state.caller=null;state.writes=[]
 assert.equal('error' in await actions.requestCollectiveCrossListing('journey','journey','target'),true);assert.equal(state.writes.length,0)
+state.caller='stranger';state.writes=[]
+assert.equal('error' in await actions.requestCollectiveCrossListing('journey','journey','target'),true);assert.equal(state.writes.length,0)
+state.caller='owner';state.tables.spaces[1].owner_profile_id='receiver'
+state.tables.collective_cross_listings=[{id:'listing',kind:'journey',subject_id:'journey',source_space_id:'source',space_id:'target',requested_by:'owner',status:'pending'}]
+assert.equal('error' in await actions.respondCollectiveCrossListing('listing','accepted'),true);assert.equal(state.writes.length,0)
+state.caller='receiver';assert.equal('error' in await actions.respondCollectiveCrossListing('listing','accepted'),false)
+assert.equal(state.writes[0].status,'accepted');state.writes=[]
 state.caller='owner';state.writeFailure=true
 assert.equal('error' in await actions.requestCollectiveCrossListing('journey','journey','target'),true)
 console.log('ok: LIVE765 shipped listing stores/readers/actions exhaust1201, retain source/access, withdraw safely and surface atomic write refusals')
