@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- website assets retain their original host and crop */
 
+import { slugify } from '@/lib/utils'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type KeyboardEvent } from 'react'
 import { ArrowUp, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Globe, Layers, MessageSquare, Monitor, Palette, Plus, Radio, Redo2, Search, Settings2, Smartphone, Sparkles, Tablet, Undo2, X } from 'lucide-react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
@@ -211,7 +212,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   function newPage(template: string) {
     const label = pageName.trim()
     if (!label) return
-    const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64)
+    const slug = slugify(label).slice(0, 64).replace(/-+$/, '')
     if (!slug || draft.pages.some((p) => p.slug === slug) || RESERVED_WEBSITE_SLUGS.has(slug)) { setError('Choose a page name that is not already used.'); return }
     const sections = websiteTemplateSections(draft.theme, template)
     let doc: Data = { root: {}, content: [] }

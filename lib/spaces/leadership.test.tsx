@@ -167,10 +167,11 @@ describe('the website admin links', () => {
     expect(html.indexOf('class="hs-admin"')).toBeLessThan(html.indexOf('class="hs-footer"'))
   })
 
-  it('a house-look site shows none of it', () => {
+  it('a house-look site keeps the management handoff without leadership pages', () => {
     const html = chrome(false)
-    expect(html).not.toContain('hs-nav-admin')
-    expect(html).not.toContain('class="hs-admin"')
+    expect(html).not.toContain('href="/admin/overview"')
+    expect(html).not.toContain('href="/admin/calendar"')
+    expect(html).toContain('href="https://frequencylocal.com/spaces/heart-on-fire/manage/leadership"')
   })
 })
 

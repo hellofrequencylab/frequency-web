@@ -1,4 +1,5 @@
 import 'server-only'
+import { slugify } from '@/lib/utils'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { insertSpaceLibraryImage, findLibraryAssetBySha256 } from '@/lib/library/store'
 import { ingestImageBytes } from '@/lib/library/ingest'
@@ -52,7 +53,7 @@ export async function uploadAuthorizedLoomImage(spaceId: string, profileId: stri
 
   const { data: pub } = admin.storage.from(target.bucket).getPublicUrl(path)
   const base = (file.name.replace(/\.[^.]+$/, '') || 'image').slice(0, 120)
-  const slug = `${base}-${stamp}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  const slug = slugify(`${base}-${stamp}`)
 
   // The browser's half of ingest (blurhash + palette + pre-downscale dimensions), validated here
   // because it arrived from a client. Absent on any uploader that has not adopted it yet.
