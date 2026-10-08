@@ -47,3 +47,19 @@ copy-records steps, so nothing breaks while waiting.
 
 - Cloudflare: email domain-connect@cloudflare.com with a link to the merged template.
 - GoDaddy, IONOS, Vercel and others: contact their Domain Connect or partner teams with the same link.
+
+## Reviewed outbound destinations
+
+Discovery accepts exact GoDaddy bases `https://domainconnect.godaddy.com` and
+`https://domainconnect.api.godaddy.com`, paired with API `https://domainconnect.api.godaddy.com`
+and browser flow `https://dcc.godaddy.com/manage`. Cloudflare uses API/discovery
+`https://api.cloudflare.com/client/v4/dns/domainconnect` paired with browser flow
+`https://dash.cloudflare.com/domainconnect`. Returned settings must belong to the discovered
+provider, and each server HTTP request revalidates the reviewed destination with redirects disabled.
+
+These mappings follow the [Domain Connect client examples](https://github.com/Domain-Connect/domainconnect_python)
+and the [Cloudflare provider settings example](https://mailarchive.ietf.org/arch/msg/dnsop/NOI3OZcEsq25AUBiC7XS1_0rMK8/).
+This is an explicit provider trust boundary, not a claim that arbitrary hostname resolution is safe.
+IONOS, Squarespace, Vercel and other unreviewed endpoints use the existing copy-records fallback.
+Adding a provider requires reviewing its exact discovery, API and browser bases together and extending
+the destination behavior tests; template onboarding alone does not expand the outbound allowlist.

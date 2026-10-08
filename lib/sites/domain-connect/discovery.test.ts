@@ -1,3 +1,4 @@
+import { verifyDomainConnectDestinations } from '../../../scripts/check-domain-connect-destinations.mjs'
 import { generateKeyPairSync } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -184,4 +185,47 @@ describe('findOneClickConnect', () => {
     const query = r.applyUrl.slice(r.applyUrl.indexOf('?') + 1, r.applyUrl.indexOf('&sig='))
     expect(verifyQuery(query, new URL(r.applyUrl).searchParams.get('sig')!, publicKey)).toBe(true)
   })
+})
+
+
+describe('reviewed provider network boundary (LIVE-885)', () => {
+  const cloudflare = { providerName: 'Cloudflare', urlAPI: 'https://api.cloudflare.com/client/v4/dns/domainconnect', urlSyncUX: 'https://dash.cloudflare.com/domainconnect' }
+  it.each([
+    'private-resolving.attacker.example', 'domainconnect.godaddy.com.attacker.example',
+    'domainconnect.godaddy.com:443', 'http://domainconnect.godaddy.com',
+    'domainconnect.godaddy.com?', 'domainconnect.godaddy.com#', 'domainconnect.godaddy.com?url=private',
+    'api.cloudflare.com/client/v4/dns/domainconnect/../private',
+    'api.cloudflare.com/client/v4/dns/domainconnect%2fprivate',
+    'api.cloudflare.com/client/v4/dns/domainconnect#private',
+    'dcc.godaddy.com/manage', 'domainconnect.ionos.com',
+  ])('rejects unreviewed discovery %s before any HTTP request', async destination => {
+    resolveTxt.mockResolvedValue([[destination]])
+    await expect(readDomainConnectSettings('owner.example')).resolves.toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+  it('accepts the reviewed Cloudflare pair with redirects disabled', async () => {
+    resolveTxt.mockResolvedValue([['api.cloudflare.com/client/v4/dns/domainconnect']])
+    fetchMock.mockResolvedValue(json(cloudflare))
+    await expect(readDomainConnectSettings('owner.example')).resolves.toEqual(cloudflare)
+    expect(fetchMock.mock.calls[0][1].redirect).toBe('error')
+  })
+  it.each([
+    { ...SETTINGS, urlAPI: 'https://private-resolving.attacker.example' },
+    { ...SETTINGS, urlSyncUX: 'https://private-resolving.attacker.example' },
+    { ...SETTINGS, urlAPI: cloudflare.urlAPI, urlSyncUX: cloudflare.urlSyncUX },
+    { ...SETTINGS, urlSyncUX: cloudflare.urlSyncUX },
+  ])('rejects malicious or cross-provider returned settings', async settings => {
+    resolveTxt.mockResolvedValue([['domainconnect.godaddy.com']])
+    fetchMock.mockResolvedValue(json(settings))
+    await expect(readDomainConnectSettings('owner.example')).resolves.toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+  it.each(['https://private-resolving.attacker.example', 'https://domainconnect.godaddy.com', 'https://domainconnect.api.godaddy.com:443', 'https://domainconnect.api.godaddy.com/private', 'https://domainconnect.api.godaddy.com?x=1', 'https://domainconnect.api.godaddy.com/#x'])('rejects direct template API bypass %s', async destination => {
+    await expect(templateSupported(destination)).resolves.toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+it('runs the standalone destination consequence proof', async () => {
+  await expect(verifyDomainConnectDestinations()).resolves.toContain('direct API bypass denied before HTTP')
 })
