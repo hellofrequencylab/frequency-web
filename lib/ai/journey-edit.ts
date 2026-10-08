@@ -7,9 +7,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
 import { aiEnabled } from './client'
-import { MODELS } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage, featureOverBudget } from './usage'
+
+import { featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { COMPOSE_PILLARS, type ComposePillar } from './journey-composition'
@@ -108,6 +107,7 @@ export async function planJourneyEdits(input: {
 
   try {
     const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId: input.profileId ?? null },
       tier: 'opus',
       maxTokens: 1500,
       thinking: { type: 'disabled' },
@@ -116,7 +116,7 @@ export async function planJourneyEdits(input: {
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    void recordAiUsage({ feature: FEATURE, model: MODELS.opus, usage: res.usage, costUsd: estimateCostUsd('opus', res.usage), profileId: input.profileId ?? null })
+
     const block = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME)
     return block ? coerce(block.input) : null
   } catch {

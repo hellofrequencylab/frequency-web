@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-889",
+  "title": "Migrate first AI callers to central usage attribution without duplicate writes",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/AI-CONTROLS.md",
+    "ref": "LIVE-883 first atomic caller migration after LIVE-888"
+  },
+  "detail": "First 25 paid completion caller modules atomically supply feature/profile/Space context and remove their redundant local paid ledger writes. Existing deterministic fallbacks, budget and access gates are preserved. Actual campaign coaching calls shipped completion transport with synthetic provider/data seams and proves one attributed usage row, disabled/budget/throttle refusals without dispatch, and provider failure fallback. AST inventory checks every completion call in this batch carries context and no caller duplicates paid recording. Existing focused behavior tests cover curation, Spark, calendar and copilot outputs. This is a compatibility migration using the existing best-effort legacy ledger, not atomic budget admission or LIVE-883 completion. Final reservation and settlement remain LIVE-883.",
+  "closed": "2026-10-08",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/check-ai-caller-attribution-one.mjs",
+    "note": "Actual campaign behavior plus every migrated call inventory and shared wrapper consequences; synthetic seams, no paid calls/nested runner."
+  },
+  "wave": "W4"
+}

@@ -1,13 +1,11 @@
 'use server'
 
-import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { completeText, completeRaw, AiUnavailableError } from '@/lib/ai/complete'
-import type { ModelTier } from '@/lib/ai/models'
 import { withVoice } from '@/lib/ai/voice'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { categoryFacets, getLibraryTagTarget, getRootSpaceId } from '@/lib/library/store'
 import { describeLibraryImage, isTaggableImage } from '@/lib/ai/library-tag'
 import { VERA_TAG } from '@/lib/library/types'
@@ -97,15 +95,13 @@ export async function generateLoomCard(
 
   try {
     const res = await completeText({
+      accounting: { feature: FEATURE, profileId: ctx.profileId },
       system: mode === 'icon' ? ICON_SYSTEM : GRAPHIC_SYSTEM,
       messages: [{ role: 'user', content: mode === 'icon' ? `Draw an icon: ${clean}` : `Draw: ${clean}` }],
       tier: 'sonnet',
       maxTokens: 1600,
       cacheSystem: true,
     })
-    after(() =>
-      recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: ctx.profileId }),
-    )
 
     const checked = sanitizeSvg(res.text)
     if (!checked.ok) {
@@ -219,14 +215,12 @@ export async function editLoomSvg(
 
   const image = (imageBase64 || '').trim()
   const hasImage = !!image && image.length < 8_000_000
-  const usage = { inputTokens: 0, outputTokens: 0 }
-  let costUsd = 0
-  let tier: ModelTier = 'sonnet'
 
   try {
     if (mode === 'tweak') {
       // Surgical: one call, keep it near-identical. Show the render so she doesn't break it.
       const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId: ctx.profileId },
         system: TWEAK_SYSTEM,
         tier: 'sonnet',
         maxTokens: 2200,
@@ -243,11 +237,7 @@ export async function editLoomSvg(
           },
         ],
       })
-      usage.inputTokens += res.usage.inputTokens
-      usage.outputTokens += res.usage.outputTokens
-      costUsd += res.costUsd
-      tier = res.tier
-      after(() => recordAiUsage({ feature: FEATURE, model: tier, usage, costUsd, profileId: ctx.profileId }))
+
       const checked = sanitizeSvg(res.text)
       if (!checked.ok) return { error: `Vera's tweak didn't pass the safety check (${checked.error}). Try rewording it.` }
       return { svg: checked.svg }
@@ -257,6 +247,7 @@ export async function editLoomSvg(
     let plan = ''
     if (hasImage) {
       const p = await completeRaw({
+      accounting: { feature: FEATURE, profileId: ctx.profileId },
         system: REDRAW_PLAN_SYSTEM,
         tier: 'sonnet',
         maxTokens: 500,
@@ -271,12 +262,9 @@ export async function editLoomSvg(
         ],
       })
       plan = p.text.trim().slice(0, 800)
-      usage.inputTokens += p.usage.inputTokens
-      usage.outputTokens += p.usage.outputTokens
-      costUsd += p.costUsd
-      tier = p.tier
     }
     const draw = await completeRaw({
+      accounting: { feature: FEATURE, profileId: ctx.profileId },
       system: REDRAW_SYSTEM,
       tier: 'sonnet',
       maxTokens: 2200,
@@ -290,11 +278,7 @@ export async function editLoomSvg(
         },
       ],
     })
-    usage.inputTokens += draw.usage.inputTokens
-    usage.outputTokens += draw.usage.outputTokens
-    costUsd += draw.costUsd
-    tier = draw.tier
-    after(() => recordAiUsage({ feature: FEATURE, model: tier, usage, costUsd, profileId: ctx.profileId }))
+
     const checked = sanitizeSvg(draw.text)
     if (!checked.ok) return { error: `Vera's edit didn't pass the safety check (${checked.error}). Try rewording it.` }
     return { svg: checked.svg }
@@ -367,6 +351,7 @@ export async function reviewLoomSvg(input: {
 
   try {
     const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId: ctx.profileId },
       system: REVIEW_SYSTEM,
       tier: 'sonnet',
       maxTokens: 2000,
@@ -381,9 +366,6 @@ export async function reviewLoomSvg(input: {
         },
       ],
     })
-    after(() =>
-      recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: ctx.profileId }),
-    )
 
     const maybeSvg = extractSvg(res.text)
     if (maybeSvg) {

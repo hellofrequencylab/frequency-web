@@ -21,8 +21,8 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
-import { MODELS } from './models'
-import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+
+import { aiAvailable, featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { voiceLine, withVoice } from './voice'
 import { isLoomPublicImageUrl, isVectorFile } from '@/lib/loom/urls'
@@ -187,6 +187,7 @@ export async function describeLibraryImage(
 
   try {
     const res = await completeRaw({
+      accounting: { feature: LIBRARY_TAG_FEATURE, profileId: opts.actorId ?? null },
       tier: 'haiku',
       maxTokens: 400,
       thinking: { type: 'disabled' },
@@ -203,13 +204,7 @@ export async function describeLibraryImage(
         },
       ],
     })
-    void recordAiUsage({
-      feature: LIBRARY_TAG_FEATURE,
-      model: MODELS.haiku,
-      usage: res.usage,
-      costUsd: res.costUsd,
-      profileId: opts.actorId ?? null,
-    })
+
     const call = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
     )

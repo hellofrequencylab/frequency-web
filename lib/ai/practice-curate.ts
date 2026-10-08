@@ -29,7 +29,7 @@ import {
 } from '@/lib/practices'
 import { PRACTICE_TAG_FLOOR } from '@/lib/practices/clean'
 import { slugify } from '@/lib/utils'
-import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+import { aiAvailable, featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { completeText, AiUnavailableError } from './complete'
 import { voiceLine, withVoice } from './voice'
@@ -202,6 +202,7 @@ export async function draftPracticeCuration(
   const room = asked.tags ? Math.min(MAX_CURATE_TAGS, CURATE_TAG_FLOOR - existing.length) : 0
   try {
     const res = await completeText({
+      accounting: { feature: FEATURE },
       system: withVoice(withPracticeShape(CURATE_SYSTEM)),
       messages: [
         {
@@ -219,7 +220,7 @@ export async function draftPracticeCuration(
       tier: 'haiku',
       maxTokens: 300,
     })
-    await recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd })
+
     const reply = parseCurateJson(res.text)
     return {
       hook: asked.hook ? cleanHook(reply.hook) : null,

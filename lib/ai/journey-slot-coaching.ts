@@ -9,9 +9,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
 import { aiEnabled } from './client'
-import { MODELS } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage, featureOverBudget } from './usage'
+
+import { featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 
@@ -75,6 +74,7 @@ export async function draftSlotCoaching(input: {
 
   try {
     const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId: input.profileId ?? null },
       tier: 'haiku',
       maxTokens: 300,
       thinking: { type: 'disabled' },
@@ -83,13 +83,7 @@ export async function draftSlotCoaching(input: {
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    void recordAiUsage({
-      feature: FEATURE,
-      model: MODELS.haiku,
-      usage: res.usage,
-      costUsd: estimateCostUsd('haiku', res.usage),
-      profileId: input.profileId ?? null,
-    })
+
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === TOOL_NAME,
     )

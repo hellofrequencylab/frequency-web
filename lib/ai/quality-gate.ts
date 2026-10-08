@@ -27,9 +27,9 @@ import { join } from 'node:path'
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
 import { aiEnabled } from './client'
-import { MODELS, type ModelTier } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage, aiAvailable, featureOverBudget } from './usage'
+import { type ModelTier } from './models'
+
+import { aiAvailable, featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 
@@ -272,6 +272,7 @@ export async function runQualityGate(
   const system = withVoice(systemFor(standard, await loadRubric(standard)))
   try {
     const res = await completeRaw({
+      accounting: { feature: standard.feature },
       tier: standard.tier,
       maxTokens: standard.maxTokens ?? 1200,
       thinking: { type: 'disabled' },
@@ -287,12 +288,6 @@ export async function runQualityGate(
           content: `Review this ${standard.label} and call ${TOOL_NAME}:\n\n<submission>\n${body.replace(/<\/?submission>/gi, '')}\n</submission>`,
         },
       ],
-    })
-    void recordAiUsage({
-      feature: standard.feature,
-      model: MODELS[standard.tier],
-      usage: res.usage,
-      costUsd: estimateCostUsd(standard.tier, res.usage),
     })
 
     const block = res.content.find(

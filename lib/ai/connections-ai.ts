@@ -11,9 +11,8 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
-import { MODELS, type ModelTier } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage } from './usage'
+import { type ModelTier } from './models'
+
 import { withVoice } from './voice'
 import { coerceExtraction } from '@/lib/connections/normalize'
 import type { ExtractedContact } from '@/lib/connections/types'
@@ -227,6 +226,7 @@ async function runExtraction(opts: {
 }): Promise<ExtractedContact | null> {
   try {
     const res = await completeRaw({
+      accounting: { feature: opts.feature, profileId: opts.profileId ?? null },
       tier: opts.tier,
       // The full-card harvest (details + corners + boxes) runs longer than the
       // old flat shape; give the tool call room so dense cards do not truncate.
@@ -236,14 +236,6 @@ async function runExtraction(opts: {
       tools: [EXTRACTION_TOOL],
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: opts.content }],
-    })
-
-    void recordAiUsage({
-      feature: opts.feature,
-      model: MODELS[opts.tier],
-      usage: res.usage,
-      costUsd: estimateCostUsd(opts.tier, res.usage),
-      profileId: opts.profileId ?? null,
     })
 
     const block = res.content.find(

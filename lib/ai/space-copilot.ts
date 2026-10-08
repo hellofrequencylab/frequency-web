@@ -8,7 +8,7 @@
 //   • voice-compliant system prompt (obeys docs/NAMING.md + docs/CONTENT-VOICE.md),
 //   • the owner's Space type/brand handed in as grounded context (invent nothing else),
 //   • parses to a plain string, re-coerced (never trust the raw shape),
-//   • records AI usage via recordAiUsage, best-effort,
+//   • attributes AI usage through the central completion wrapper,
 //   • NEVER throws: AI off / over budget / a transient failure all fall back to a
 //     deterministic, still-useful draft the owner can edit.
 //
@@ -23,7 +23,7 @@
 
 import { completeText, AiUnavailableError } from './complete'
 import { aiEnabled } from './client'
-import { recordAiUsage, featureOverBudget } from './usage'
+import { featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import type { SpaceType } from '@/lib/spaces/types'
@@ -118,7 +118,7 @@ Task: write a short ABOUT / bio for this Space. Two or three plain sentences (ma
 
 /**
  * Draft a short bio/about for a Space, grounded in its context. Runs on Haiku via the
- * consolidated chokepoint; records usage best-effort. NEVER throws — returns a deterministic
+ * consolidated chokepoint; attributes usage through the central wrapper. NEVER throws — returns a deterministic
  * fallback when AI is off, over budget, or the call fails, so the "Draft with Vera" affordance
  * always returns something the owner can edit.
  */
@@ -208,7 +208,7 @@ export function fallbackTagline(ctx: SpaceContext): string {
 
 /**
  * The one Haiku call every drafter shares: voice-injected system prompt, single user turn,
- * usage ledgered best-effort, em dashes stripped. Returns the cleaned string, or null when
+ * centrally attributed usage, em dashes stripped. Returns the cleaned string, or null when
  * AI is off / the call fails / the model returned nothing — the caller substitutes its
  * deterministic fallback. NEVER throws.
  */
@@ -230,20 +230,14 @@ async function draft(p: {
   if (await aiRateLimited(FEATURE, p.profileId)) return null
   try {
     const res = await completeText({
+      accounting: { feature: FEATURE, profileId: p.profileId ?? null, spaceId: p.spaceId ?? null },
       system: withVoice(p.system),
       tier: 'haiku',
       maxTokens: p.maxTokens,
       cacheSystem: true,
       messages: [{ role: 'user', content: p.user }],
     })
-    void recordAiUsage({
-      feature: FEATURE,
-      model: res.tier,
-      usage: res.usage,
-      costUsd: res.costUsd,
-      profileId: p.profileId ?? null,
-      spaceId: p.spaceId ?? null,
-    })
+
     const text = stripEmDashes(res.text)
     return text || null
   } catch (e) {
