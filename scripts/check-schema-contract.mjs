@@ -108,6 +108,14 @@ export const ALLOWLIST = [
     owner: 'SCAN-759',
   },
   {
+    file: 'lib/sites/domain-renewals.ts',
+    table: 'space_domain_purchases',
+    added: '2026-10-08',
+    reason:
+      'LIVE-786: migration 20270346003100_space_domain_purchases.sql creates the service-role-only purchase ledger; 20270346006600_domain_renewal_attempts.sql adds period-bound renewal claims and provider attempt identifiers. lib/database.types.ts still predates the table. This file/table-only entry retires on the next public schema regeneration after both migrations are applied; notification and Space references remain checked.',
+    owner: 'LIVE-786',
+  },
+  {
     file: 'lib/sites/domain-purchase.ts',
     table: 'space_domain_purchases',
     added: '2026-10-06',
