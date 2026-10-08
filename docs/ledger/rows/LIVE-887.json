@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-887",
+  "title": "Space page lifecycle refuses incompatible native node storage before legacy downgrade can erase authored work",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "task10/11 bounded Space writer compatibility child after LIVE-871"
+  },
+  "detail": "Owner-authorized E0 decomposition after LIVE-871. Scope is Space page autosave/publish/discard only: reject incompatible incoming inline nodes or stored bench, and stale legacy mutations over native published/draft storage before sanitization or any database write. Preserve parsed legacy nodes projection compatibility, ordinary legacy saves and authorization ordering. Behavioral plain-Node probe runs shipped actions with auth/database boundaries stubbed against pinned historical authored fixtures and an adversarial full document. Does not close task10, task11 or PROG-E0: all legacy type dedupe, stored-bench mutation, inline renderer and other writer conversion remain open; no native persistence, backfill, migration or Yjs work.\n\nSpace autosave/publish/discard now refuse incompatible incoming inline node cells/stored bench and stale legacy writes over native published or draft documents before sanitizing or touching preferences. Authorization refusal remains first; legacy parsed nodes projections and ordinary saves/publish/discard remain compatible. Behavioral plain-Node probe executes shipped actions and proves345 no-write, exact authored-byte preservation cases over the SHA-pinned37-document census reconstruction plus adversarial nested authored fixture, including unknown types, duplicate placements, stored bench and hidden content. Targeted tests and lint pass. Bounded Space lifecycle guard only; all six legacy dedupe sites, inline renderer, other writers, native persistence/backfill and deferred Yjs remain open under E0.",
+  "closed": "2026-10-08",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/check-space-node-write-safety.mjs",
+    "note": "Actual Space lifecycle actions, framework/auth/data boundaries stubbed; pinned authored corpus, no nested test runner."
+  },
+  "wave": "W4"
+}

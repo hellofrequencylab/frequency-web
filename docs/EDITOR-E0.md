@@ -172,6 +172,22 @@ because today a benched node has no identity off the row.
 9. Backfill. **Keep `upgradeLayout` in the read path forever** — it costs nothing on an upgraded
    document and it is the only defence against a stale row in a preview branch.
 
+### Space writer compatibility boundary (LIVE-873)
+
+The current Space page editor still writes the legacy type-keyed document. Its autosave,
+publish and draft-discard actions refuse incoming native object cells or stored `bench`, and
+refuse stale legacy mutations when either stored published or draft layout is native. Rejection
+happens after authorization and before sanitization or a preferences write, preserving authored
+node identities, nested bags and bench work. A legacy read's sibling `nodes` projection remains
+compatible and is still omitted from storage.
+
+This is a bounded safety prerequisite, not task 10 or 11 completion. All six type-dedupe sites,
+node mutations, inline rendering and the other member/email/importer writer conversions remain
+open. Native documents cannot be edited through the legacy Space lifecycle; no backfill or new
+node persistence is enabled. `check-space-node-write-safety.mjs` runs the real actions with framework,
+auth and data imports stubbed, over the pinned historical authored corpus and adversarial
+full document, checking zero writes and byte-identical preserved preferences.
+
 ### 1.6 Data migration
 
 **No SQL migration.** All five stores are opaque JSONB. Recommended: **lazy upgrade-on-read plus a
