@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_budget_reservations: {
+        Row: {
+          id: string
+          operation_id: string
+          feature: string
+          model: string
+          profile_id: string | null
+          space_id: string | null
+          created_at: string
+          budget_day: string
+          estimated_usd: number
+          actual_usd: number | null
+          state: string
+          reason: string | null
+          settled_at: string | null
+        }
+        Insert: {
+          id: string
+          operation_id: string
+          feature: string
+          model: string
+          profile_id?: string | null
+          space_id?: string | null
+          created_at?: string
+          budget_day: string
+          estimated_usd: number
+          actual_usd?: number | null
+          state?: string
+          reason?: string | null
+          settled_at?: string | null
+        }
+        Update: {
+          id?: string
+          operation_id?: string
+          feature?: string
+          model?: string
+          profile_id?: string | null
+          space_id?: string | null
+          created_at?: string
+          budget_day?: string
+          estimated_usd?: number
+          actual_usd?: number | null
+          state?: string
+          reason?: string | null
+          settled_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_budget_reservations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_budget_reservations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       website_editor_presence: {
         Row: {
           space_id: string
@@ -272,6 +335,7 @@ export type Database = {
           model: string
           output_tokens: number
           profile_id: string | null
+          reservation_id: string | null
           space_id: string | null
         }
         Insert: {
@@ -283,6 +347,7 @@ export type Database = {
           model: string
           output_tokens?: number
           profile_id?: string | null
+          reservation_id?: string | null
           space_id?: string | null
         }
         Update: {
@@ -294,9 +359,17 @@ export type Database = {
           model?: string
           output_tokens?: number
           profile_id?: string | null
+          reservation_id?: string | null
           space_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_usage_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: true
+            referencedRelation: "ai_budget_reservations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_usage_profile_id_fkey"
             columns: ["profile_id"]
@@ -17225,6 +17298,26 @@ export type Database = {
       }
     }
     Functions: {
+      ai_reserve_attempt: {
+        Args: { p_id: string; p_operation: string; p_feature: string; p_model: string; p_estimate: number; p_profile: string; p_space: string; p_global_cap: number; p_feature_cap: number; p_space_cap: number }
+        Returns: boolean
+      }
+      ai_settle_attempt: {
+        Args: { p_id: string; p_input_tokens: number; p_output_tokens: number; p_actual: number }
+        Returns: boolean
+      }
+      ai_hold_attempt: {
+        Args: { p_id: string; p_reason: string }
+        Returns: boolean
+      }
+      ai_budget_status_today: {
+        Args: never
+        Returns: { feature: string; spent: number; reserved: number; uncertain: number; pending_ids: string[] }[]
+      }
+      ai_member_turns_today: {
+        Args: { p_profile: string }
+        Returns: number
+      }
       save_website_editor: {
         Args: {
           p_space_id: string
