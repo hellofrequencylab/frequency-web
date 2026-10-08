@@ -5,8 +5,6 @@ import { loadPublicSpaceWindow, loadSpaceUpcomingFeed } from '@/lib/calendar/pub
 import { guestFeedState } from '@/lib/calendar/guest-live'
 import { memberLayerChoices } from '@/lib/calendar/member-calendar'
 import { monthGridWindow } from '@/lib/calendar/month-window'
-import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
-import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
 import { dayInZone } from '@/lib/time/zone'
 import { SpaceUpcomingFeed } from '@/components/spaces/space-upcoming-feed'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
@@ -18,7 +16,8 @@ import { retreatShort } from '@/components/sites/admin/site-calendar'
 // on Fire Frequency calendar on the main home page, not the admin version"). The Space's own Frequency
 // calendar, exactly as a visitor sees it on the Space's Calendar tab (app/(main)/spaces/[slug]/(profile)/
 // calendar/page.tsx, its guest half): the Up next band, the month grid and the subscribe menu, over the
-// same gated public reads. A Menswork website draws it as its `calendar` page and as a section at the end
+// same gated public reads, without the sky overlay (astronomy-engine stays on the Space page's route; see
+// lib/astrology/chart.test.ts). A Menswork website draws it as its `calendar` page and as a section at the end
 // of Home. The admin Yearly Calendar stays behind the admin links.
 
 /** The website page that is the public calendar, when the Space lists it among its pages. */
@@ -49,7 +48,6 @@ export async function SitePublicCalendar({
     loadPublicSpaceWindow(space.id, grid.fromDay, grid.toDay),
     loadSpaceUpcomingFeed(space.id, dayInZone(now, space.timeZone)),
   ])
-  const skyWindow = widenDayRange(grid.fromDay, grid.toDay, 13)
   const httpsUrl = `${SITE_URL}/spaces/${space.slug}/calendar.ics`
   return (
     <CalendarWorkspace
@@ -78,7 +76,7 @@ export async function SitePublicCalendar({
       }
       upcoming={<SpaceUpcomingFeed rows={upcomingRows} />}
       memberLayers={memberLayerChoices(guestEvents)}
-      skyMarkers={readSkyMarkersEnabled(space.preferences) ? astroMarkersInRange(skyWindow[0], skyWindow[1], space.timeZone) : []}
+      skyMarkers={[]}
       loadGuestMonth={loadSpaceCalendarMonth.bind(null, space.slug)}
     />
   )
