@@ -23,6 +23,9 @@ import { GoBusinessCta } from './go-business'
 import { PlanLadder } from './plan-ladder'
 import { NetworkReceipt } from './network-receipt'
 import { ManageSubscriptionButton } from './manage-subscription'
+import { loadExtraSpaceQuote } from '@/lib/collective/extra-space-billing'
+import { loadMemberSpaceManagement } from '@/lib/collective/member-spaces-store'
+import { MemberSpaceEditor } from './member-space-editor'
 import { SeatEditor } from './seat-editor'
 
 // BILLING BODY — the chrome-free plan-and-usage hub, lifted out of the standalone /settings/billing page
@@ -87,6 +90,8 @@ export async function BillingBody({ slug }: { slug: string }) {
     .eq('id', space.id)
     .maybeSingle()) as { data: { plan?: string | null } | null }
   const currentPlan = asSpacePlan(planRow?.plan)
+  const effectivePlan = asSpacePlan(space.plan)
+  const hasInheritedBusiness = currentPlan === 'free' && effectivePlan === 'business'
 
   // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
   // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
@@ -127,6 +132,8 @@ export async function BillingBody({ slug }: { slug: string }) {
     spaceLoadoutSellable('collective'),
   ])
 
+  const memberSpaces = !staffViewing && viewerProfileId ? await loadMemberSpaceManagement(space.id, viewerProfileId) : null
+  const extraSpaceQuote = memberSpaces?.active ? await loadExtraSpaceQuote(space.id) : null
   const isPaid = currentPlan !== 'free'
 
   // The resolved (operator-set) per-seat monthly price, so the seat pickers can show what a chosen
@@ -153,7 +160,10 @@ export async function BillingBody({ slug }: { slug: string }) {
         <div className="rounded-card border border-border bg-surface px-5 py-4 lift-1">
           <p className="eyebrow text-subtle">Current plan</p>
           <p className="mt-1 text-body-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
+          {hasInheritedBusiness && <p className="mt-2 text-body-sm text-muted">Business tools are included through your Collective. This Space keeps its own free plan.</p>}
         </div>
+
+        {memberSpaces && <MemberSpaceEditor parentId={space.id} management={memberSpaces} quote={extraSpaceQuote} />}
 
         {/* MANUAL BILLING AGREEMENT (ADR-872): the read-only receipt for an off-Stripe deal the crew
             recorded. Shows the plan, the locked rate, how far the space is paid, and how it settles.
@@ -197,12 +207,12 @@ export async function BillingBody({ slug }: { slug: string }) {
             free, selling starts at Business). A free Space gets a one-click Choose on Business; Business
             keeps its richer CTA below. Collective reads its sell switch. Each action is gated
             server-side. Independent is sold by hand and is not offered here (LIVE-227). */}
-        <PlanLadder
+        {!hasInheritedBusiness && <PlanLadder
           currentPlan={currentPlan}
           slug={space.slug}
           isFree={!isPaid && !staffViewing}
           sellable={{ business: businessSellable, collective: collectiveSellable }}
-        />
+        />}
 
         {/* The honest receipt (Phase 5, ADR-811 §A): the real dollars the network sourced, proving promise
             #4. Renders nothing until there is network-sourced business, so it never brags about zero. */}
@@ -220,7 +230,7 @@ export async function BillingBody({ slug }: { slug: string }) {
               <FeatureMeterRange
                 key={ladder.featureKey}
                 ladder={ladder}
-                currentTier={currentPlan}
+                currentTier={effectivePlan}
                 upgradeHref={`/spaces/${space.slug}/settings/billing`}
                 live={billingIsLive}
                 usage={
@@ -246,7 +256,7 @@ export async function BillingBody({ slug }: { slug: string }) {
 
         {/* The single upgrade CTA. A free Space goes Business (the one paid tier). Staff preview is
             read-only (the fieldset disables it). Already-paid Business spaces do not see the CTA. */}
-        {!isPaid && (
+        {!isPaid && !hasInheritedBusiness && (
           <fieldset disabled={staffViewing} className="contents">
             <GoBusinessCta
               slug={space.slug}

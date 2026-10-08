@@ -77,6 +77,29 @@ A Space is a *partition and a skin*, not a separate system.
 
 ---
 
+## Collective member Spaces
+
+Collective membership uses `spaces.parent_id`, with server-authenticated attach/detach in
+`lib/collective/member-spaces-actions.ts`. The service-only `set_collective_member_space` RPC checks
+ownership of both Spaces and locks both rows in ID order. Its locked capacity is five plus live
+`collective_space` item quantity. Existing attachments survive capacity reductions; only new growth
+is refused. Root Spaces, nesting, and moving an attached Space without first detaching are refused.
+`lib/collective/extra-space-billing.ts` verifies the owning caller, billing function gate, live
+Collective base, subscription metadata, exact locked/synced price and matching interval before
+mutating only the `collective_space` item. Its quantity floor covers attached Spaces beyond five.
+A private, service-only parent reservation constrains attachments during a reduction and serializes
+Stripe changes. The writer re-reads Stripe after reserving, uses a reservation-keyed idempotency key,
+reconciles the returned subscription, and releases only after the local item quantity matches.
+Uncertain Stripe/reconciliation outcomes retain the restrictive five-minute reservation. No private
+reservation column receives a browser grant.
+
+Inheritance never rewrites `spaces.plan` or stored entitlements. Space reads add Business depth only
+while the parent is an active Collective (including Non Profit Collective), preserving independently
+paid child plans and top-level manual entitlement revocations. Payment and meter write seams resolve
+the same live parent. A directory batches all parent reads into one request. Non-Collective Hub/Nexus
+containment grants no paid depth. Cancellation, suspension and detach immediately restore each child’s
+own plan; content and existing attachments stay intact. Detach remains permitted after cancellation.
+
 ## 1. What a Space is
 
 A **Space** is the tenant unit: a brandable, optionally-standalone surface that belongs to

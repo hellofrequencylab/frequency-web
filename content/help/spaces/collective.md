@@ -4,7 +4,7 @@ description: What the Collective plan is for, what it includes beyond Business, 
 category: spaces
 order: 5
 published: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-08
 audience: member
 featureKeys: [billing]
 status: published
@@ -30,12 +30,29 @@ Everything Business does, plus:
 The price, the yearly price, and the extra-Space price are all on the [pricing page](/pricing). Paying
 yearly gives you two months free, the same as every plan.
 
+## Manage your member Spaces
+
+Open **Plan and usage** on your Collective, then find **Member Spaces**. Choose a Space you own
+and select **Attach Space**. You must own both Spaces. A Space already attached elsewhere or
+containing other Spaces cannot be attached as a member.
+
+Five member Spaces are included. In **Member Spaces**, set **Extra Spaces beyond the five included**
+and select **Save extra Spaces**. You see the exact monthly or yearly price before saving, on the
+same billing interval as your Collective. The change is prorated on your next invoice. Detach
+member Spaces first if you want to pay for fewer extras.
+
+Active extra-Space purchases add room for more. If an extra-Space purchase ends, existing member Spaces stay attached and new attachments wait until
+there is room.
+
+Select **Detach** beside a member Space to restore its own plan. Nothing it has built is deleted
+or moved. If the Collective is cancelled or suspended, member Spaces immediately use their own
+plans. A member Space that already has a paid plan keeps that plan.
+
 ## What is still being built
 
 We would rather tell you straight than sell you a promise. Collective checkout is open now, and the
 network features arrive in stages:
 
-- A Collective owning its member Spaces, with the five included and more on request.
 - A network home: one shared calendar and a directory of your member Spaces.
 - Listing one Journey or Circle across member Spaces.
 - Reporting that rolls up members, Events, and revenue across the Collective.

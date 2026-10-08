@@ -33,6 +33,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { allowanceAt } from '@/lib/pricing/feature-meters'
+import { inheritedSpacePlan } from '@/lib/collective/member-spaces-store'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { spaceLimitsWaived } from '@/lib/pricing/space-allowance'
 import { atLeastSpaceRole, type SpaceRole } from './membership'
@@ -119,7 +120,7 @@ export async function getSpaceSeatRow(spaceId: string): Promise<{ seatQuantity: 
     const n = data?.seat_quantity
     return {
       seatQuantity: typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0,
-      plan: data?.plan ?? null,
+      plan: await inheritedSpacePlan(spaceId, data?.plan ?? null),
     }
   } catch {
     return { seatQuantity: 0, plan: null }

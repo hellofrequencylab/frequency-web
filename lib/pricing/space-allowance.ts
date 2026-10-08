@@ -29,9 +29,10 @@
 // metered write costs one cached flag lookup and nothing else. Callers that must COUNT (contacts, the
 // month's sends) check the same switch before counting, for the same reason.
 
+import { inheritedSpacePlan } from '@/lib/collective/member-spaces-store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { featureGatesLive } from '@/lib/pricing/settings'
-import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
+import { type SpacePlan } from '@/lib/pricing/plans'
 import {
   allowanceVerdict,
   featureMeter,
@@ -155,7 +156,7 @@ export async function spaceAllowanceVerdict(
   }
   // Unknown Space: we cannot prove which plan's allowance applies, so we do not enforce one.
   if (!row) return granted(featureKey, 'free', used, true)
-  const plan = asSpacePlan(row.plan ?? null)
+  const plan = await inheritedSpacePlan(id, row.plan ?? null)
   // RULE 2: the platform root hub is never a metered tenant.
   if ((row.type ?? '') === 'root') return granted(featureKey, plan, used, true)
 

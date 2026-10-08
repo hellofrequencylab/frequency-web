@@ -90,6 +90,10 @@ export async function spaceNetworkBps(
   rate?: import('./pricing-keys').NetworkTakeRate,
 ): Promise<number> {
   const { networkTakeRateBpsForPlan, foundingBuyDownBps } = await import('./pricing-keys')
+  if (spaceId) {
+    const { inheritedSpacePlan } = await import('@/lib/collective/member-spaces-store')
+    plan = await inheritedSpacePlan(spaceId, plan)
+  }
   const rung = networkTakeRateBpsForPlan(plan, rate ?? (await resolvedNetworkRate()))
   return spaceId ? foundingBuyDownBps(rung, await foundingLockedTakeBps(spaceId)) : rung
 }
