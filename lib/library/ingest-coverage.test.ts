@@ -88,7 +88,7 @@ const WRITERS = census()
 describe('every Loom writer goes through ingest (ADR-1562 §3, LIVE-579)', () => {
   it('the census finds the writers we know about (a broken walker cannot pass by finding nothing)', () => {
     const known = [
-      'lib/loom/picker-actions.ts',
+      'lib/loom/authorized-image-upload.ts',
       'lib/loom/cover-actions.ts',
       'lib/page-editor/loom-field-actions.ts',
       'lib/email-studio/loom-actions.ts',
@@ -99,6 +99,12 @@ describe('every Loom writer goes through ingest (ADR-1562 §3, LIVE-579)', () =>
       'app/(main)/admin/business-seeder/actions.ts',
     ]
     for (const f of known) expect([...WRITERS.keys()], `${f} dropped out of the census`).toContain(f)
+  })
+
+  it('the picker delegates to the canonical checked writer', () => {
+    const picker = stripComments(readFileSync('lib/loom/picker-actions.ts', 'utf8'))
+    expect(picker).toMatch(/return uploadAuthorizedLoomImage\(spaceId, caller\.id, formData\)/)
+    expect(picker).not.toMatch(/\.upload\(/)
   })
 
   it('no writer stores a photo as it arrived', () => {

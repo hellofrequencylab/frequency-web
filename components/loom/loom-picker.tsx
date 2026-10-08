@@ -11,6 +11,7 @@
 // trap). Drop it in anywhere: it resolves the caller's scopes itself, so the host needs no config.
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useLoomPickerActions } from './picker-actions-context'
 import { renditionUrl } from '@/lib/library/rendition-url'
 import { Dialog } from '@/components/ui/dialog'
 import {
@@ -87,6 +88,11 @@ export function LoomPicker({
    *  view is only offered when the purpose includes its family, so a popup shows only relevant assets. */
   kinds?: string[]
 }) {
+  const scopedActions = useLoomPickerActions()
+  const scopeAction = scopedActions?.scope ?? loomScopeAction
+  const scopesAction = scopedActions?.scopes ?? loomScopes
+  const imagesAction = scopedActions?.images ?? loomImages
+  const uploadAction = scopedActions?.upload ?? uploadLoomImage
   const [scopes, setScopes] = useState<LoomScope[]>([])
   const [config, setConfig] = useState<LoomPickerConfig>(FALLBACK_CONFIG)
   const [scope, setScope] = useState(scopeKey ?? 'mine')
@@ -115,7 +121,7 @@ export function LoomPicker({
     if (!open) return
     let live = true
     if (scopeKey) {
-      loomScopeAction(scopeKey)
+      scopeAction(scopeKey)
         .then((r) => {
           if (!live) return
           setScope(scopeKey)
@@ -124,7 +130,7 @@ export function LoomPicker({
         })
         .catch(() => {})
     } else {
-      loomScopes()
+      scopesAction()
         .then((r) => {
           if (!live) return
           setScopes(r.scopes)
@@ -138,7 +144,7 @@ export function LoomPicker({
         .catch(() => {})
     }
     return () => { live = false }
-  }, [open, scopeKey])
+  }, [open, scopeKey, scopeAction, scopesAction])
 
   const refresh = useCallback(
     (opts: { scope: string; view: View; tag: string | null; q: string }) => {
@@ -150,7 +156,7 @@ export function LoomPicker({
         // The Icons view unions the scope's UPLOADED icons with the house SITE icons (Lucide/Phosphor/
         // Tabler), each resolved to a self-contained SVG data URL server-side.
         const [res, site] = await Promise.all([
-          loomImages(opts.scope, {
+          imagesAction(opts.scope, {
             q: opts.q || undefined,
             tag: opts.tag || undefined,
             kinds: viewKinds,
@@ -166,7 +172,7 @@ export function LoomPicker({
         setSiteIcons(site)
       })
     },
-    [],
+    [imagesAction],
   )
 
   // Which browse views this popup offers = the role-gated config INTERSECTED with the caller's purpose
@@ -255,7 +261,7 @@ export function LoomPicker({
           // an inline message and let the loop continue — never escape and hang the "Uploading…" spinner.
           let res: Awaited<ReturnType<typeof uploadLoomImage>>
           try {
-            res = await uploadLoomImage(scope, fd)
+            res = await uploadAction(scope, fd)
           } catch {
             threw = true
             continue
@@ -277,7 +283,7 @@ export function LoomPicker({
         setError('That upload did not go through. Try again in a moment.')
       }
     },
-    [scope],
+    [scope, uploadAction],
   )
 
   if (!open) return null

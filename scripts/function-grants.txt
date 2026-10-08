@@ -281,6 +281,10 @@ split_calendar_series        authenticated
 begin_collective_space_change internal
 finish_collective_space_change internal
 set_collective_member_space internal
+
+# Website admin editing: service-role only; browser roles are explicitly revoked.
+publish_due_websites                  internal
+save_website_editor                   internal
 claim_commerce_settlement             internal
 advance_commerce_settlement           internal
 release_commerce_settlement           internal

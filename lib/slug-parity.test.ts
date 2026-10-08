@@ -210,7 +210,6 @@ describe('4. the remaining private copies are a frozen list (fails on a new one 
     'lib/importer/materialize.ts',
     'lib/journey-plans.ts',
     'lib/loom/cover-actions.ts',
-    'lib/loom/picker-actions.ts',
     'lib/page-editor/loom-field-actions.ts',
     'lib/utils.ts',
   ].sort()

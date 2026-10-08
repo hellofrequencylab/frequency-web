@@ -220,8 +220,10 @@ describe('the meter and the words', () => {
 describe('the wiring', () => {
   const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ')
   it('the Space upload door reads the budget after the dedupe and before storage', () => {
-    const src = strip(readFileSync('lib/loom/picker-actions.ts', 'utf8'))
-    const start = src.indexOf('export async function uploadLoomImage(')
+    const picker = strip(readFileSync('lib/loom/picker-actions.ts', 'utf8'))
+    expect(picker).toMatch(/return uploadAuthorizedLoomImage\(spaceId, caller\.id, formData\)/)
+    const src = strip(readFileSync('lib/loom/authorized-image-upload.ts', 'utf8'))
+    const start = src.indexOf('export async function uploadAuthorizedLoomImage(')
     const body = src.slice(start, src.indexOf('\n}', start))
     const dedupe = body.indexOf('findLibraryAssetBySha256(')
     const gate = body.indexOf('loomAdmits(')
@@ -234,7 +236,7 @@ describe('the wiring', () => {
   })
   it('every Space write door asks the same gate before storage, and none re-assembles it (LIVE-629)', () => {
     const doors: [string, string][] = [
-      ['lib/loom/picker-actions.ts', 'export async function uploadLoomImage('],
+      ['lib/loom/authorized-image-upload.ts', 'export async function uploadAuthorizedLoomImage('],
       ['lib/page-editor/loom-field-actions.ts', 'export async function uploadToLoom('],
       ['lib/loom/cover-actions.ts', 'export async function generateEntityCoverAction('],
     ]
