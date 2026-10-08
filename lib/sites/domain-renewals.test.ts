@@ -103,6 +103,13 @@ describe('refund retries after the provider idempotency window', () => {
     await expect(ensureDomainRefund(client, 'intent', 'domain-renewal-refund:purchase:period')).rejects.toThrow('not succeeded')
     expect(client.refunds.create).not.toHaveBeenCalled()
   })
+  it('treats a refund with null or missing metadata as unrelated and never refunds again', async () => {
+    for (const prior of [{ id: 'manual', status: 'succeeded', metadata: null }, { id: 'manual', status: 'succeeded' }]) {
+      const client = { refunds: { list: vi.fn(async () => ({ has_more: false, data: [prior] })), create: vi.fn() } }
+      await expect(ensureDomainRefund(client, 'intent', 'domain-renewal-refund:purchase:period')).rejects.toThrow('unrelated refund')
+      expect(client.refunds.create).not.toHaveBeenCalled()
+    }
+  })
   it('writes a stable metadata key and refuses to report pending as refunded', async () => {
     const client = { refunds: { list: vi.fn(async () => ({ has_more: false, data: [] })), create: vi.fn(async () => ({ id: 'refund', status: 'pending', metadata: {} })) } }
     await expect(ensureDomainRefund(client, 'intent', 'domain-renewal-refund:purchase:period')).rejects.toThrow('not succeeded')

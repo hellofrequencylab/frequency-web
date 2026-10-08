@@ -206,7 +206,7 @@ export async function chargeDomainRenewals(opts: { limit: number; exhausted(): b
 }
 
 
-type RefundRecord = { id: string; status?: string | null; metadata: Record<string, string> }
+type RefundRecord = { id: string; status?: string | null; metadata?: Record<string, string> | null }
 interface RefundClient {
   refunds: {
     list(params: { payment_intent: string; limit: number }): Promise<{ data: RefundRecord[]; has_more: boolean }>
@@ -218,8 +218,8 @@ export async function ensureDomainRefund(client: RefundClient, intent: string, k
   const refunds = await client.refunds.list({ payment_intent: intent, limit: 100 })
   if (refunds.has_more) throw new Error('Refund history needs operator review')
   const purchaseId = key.split(':')[1]
-  const prior = refunds.data.find(refund => refund.metadata.domain_refund_key === key ||
-    (key.startsWith('domain-purchase-refund:') && refund.metadata.domain_purchase_id === purchaseId))
+  const prior = refunds.data.find(refund => refund.metadata?.domain_refund_key === key ||
+    (key.startsWith('domain-purchase-refund:') && refund.metadata?.domain_purchase_id === purchaseId))
   if (prior) {
     if (prior.status !== 'succeeded') throw new Error('Existing domain refund has not succeeded')
     return
