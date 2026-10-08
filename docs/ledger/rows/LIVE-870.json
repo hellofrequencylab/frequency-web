@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-870",
+  "title": "A Menswork website shares a designed card with its logo, name and headline over its cover photo",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "app/hosted/[host]/opengraph-image/route.tsx",
+    "ref": "Owner ask 2026-10-08: 'Make sure the site has a really well designed social share card with the logo on it.'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-08. `/opengraph-image` on a Menswork website's own host (rewritten by the proxy's one-segment rule to app/hosted/[host]/opengraph-image/route.tsx) draws a 1200x630 card (lib/og/menswork-site-card.tsx): the charcoal ground, the Space's cover photo fading in from the right, the Space's logo beside its name in Sofia Sans Extra Condensed, the website hero's headline with its accent word in the season's colour, the four season bars and the site's domain. No Frequency mark (ADR-1723). The faces are committed TTFs read by literal paths (lib/og/load-menswork-fonts.ts), so only this route ships them. It is a plain route, not a metadata file, so the rasteriser stays in one function; its folder name keeps it on check:og-trace's card list. siteMetadata names it as og:image and twitter image for a Menswork site on its own host; any other site keeps its cover photo.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const route=r('app/hosted/[host]/opengraph-image/route.tsx');if(!/cardResponse\\(/.test(route)||!/<MensworkSiteCard/.test(route))miss.push('no share card route on the website host');if(!/brandLogoUrl/.test(route))miss.push('the card does not carry the logo');if(!r('components/sites/site-page.tsx').includes('}/opengraph-image'))miss.push('the website pages do not name the card as their share image');if(!fs.existsSync('public/fonts/SofiaSansExtraCondensed-ExtraBold.ttf'))miss.push('the theme display face is not bundled');if(miss.length){console.error('LIVE-870: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-08",
+  "wave": "W7"
+}

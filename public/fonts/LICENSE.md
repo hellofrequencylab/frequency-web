@@ -32,3 +32,16 @@ which waits longer, showed the full image. See `lib/og/load-nunito.ts`.
 browser User-Agent and `truetype` only when the request sends **no** User-Agent at all —
 Satori cannot parse woff, so re-downloading these with a browser UA silently breaks every
 share card. `lib/og/og-fonts.test.ts` checks the magic bytes for exactly that reason.
+
+---
+
+# Sofia Sans Extra Condensed and Barlow
+
+`SofiaSansExtraCondensed-ExtraBold.ttf` (800) and `Barlow-Medium.ttf` (500) are the Menswork
+theme's display and body faces, both licensed under the **SIL Open Font License, Version 1.1**.
+
+- Sofia Sans: Copyright © The Sofia Sans Project Authors (https://github.com/lettersoup/Sofia-Sans).
+- Barlow: Copyright © The Barlow Project Authors (https://github.com/jpt/barlow).
+- License: https://scripts.sil.org/OFL
+
+`lib/og/load-menswork-fonts.ts` opens them for the Menswork website share card (LIVE-870) only.
