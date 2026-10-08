@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-881",
+  "title": "Space contact enrichment never reads another owner’s private captures by matching email",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/crm/space-contact-detail.ts",
+    "ref": "owner repository audit 2026-10-08: contact privacy boundary"
+  },
+  "detail": "The actual Space contact request preserves its editor gate and contact-belongs-to-Space check, then enriches only from the authenticated viewer’s own capture or a card explicitly shared with this exact Space after current isSpaceTeamMember authorization (ADR-778). Email identity matching grants no source permission. Filtering precedes the 20-row cap; newest authorized non-null fields remain available. Other-owner private captures, other-Space shares, generic network visibility and platform-staff edit capability do not grant enrichment. Only phone/company/city are projected; private capture notes/tags/media and Vera memory are excluded. The runner-free behavioral probe executes the actual request module with two owners/two Spaces and a literal same email, including 25 newer forbidden captures, deliberate authorized sharing, wrong-Space/anonymous/non-editor callers and authorization/read failures. No production records or schema changes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/check-contact-capture-privacy.mjs",
+    "note": "Executes the actual contact-detail request against synthetic permission-sensitive captures; no database connection or test runner."
+  },
+  "closed": "2026-10-08",
+  "wave": "WR"
+}
