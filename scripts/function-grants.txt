@@ -289,3 +289,4 @@ protect_commerce_settlement_columns   internal
 grant_paid_commerce_journey            internal
 revoke_refunded_commerce_journeys      internal
 protect_paid_journey_provenance        internal
+confirm_paid_commerce_booking         internal

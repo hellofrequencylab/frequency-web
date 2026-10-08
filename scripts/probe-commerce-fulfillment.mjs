@@ -7,10 +7,14 @@ import { webcrypto } from 'node:crypto'
 import ts from 'typescript'
 const source = fs.readFileSync('lib/commerce/checkout.ts','utf8')
 const migration = fs.readFileSync('supabase/migrations/20270346007300_commerce_fulfillment_continuity.sql','utf8')
-for (const name of ['claim_commerce_settlement','grant_paid_commerce_journey','revoke_refunded_commerce_journeys']) {
+for (const name of ['claim_commerce_settlement','grant_paid_commerce_journey','revoke_refunded_commerce_journeys','confirm_paid_commerce_booking']) {
   const body = migration.split(`function public.${name}(`)[1]?.split('end $$;')[0]
   assert.ok(body && /for update/i.test(body), `${name} must retain the order lock`)
 }
+assert.match(fs.readFileSync('lib/spaces/booking.ts','utf8'),/rpc\('confirm_paid_commerce_booking'/)
+const bookingBody=migration.split('function public.confirm_paid_commerce_booking(')[1]
+assert.match(bookingBody,/v_status not in \('paid','fulfilled'\).*return false/)
+assert.match(bookingBody,/where order_id=_order and status='pending'/)
 const stockBody=migration.split('function public.decrement_commerce_stock_atomic(')[1]
 assert.ok(stockBody && /for update/i.test(stockBody), 'paid inventory must lock the original order')
 assert.match(stockBody,/if v_status not in \('paid','fulfilled'\) then[\s\S]*?order_not_paid[\s\S]*?if v_already then/)

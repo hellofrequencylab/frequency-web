@@ -43,7 +43,9 @@ Each successful step is checkpointed independently. Refunds and cancellations re
 
 Stock keeps its existing atomic inventory marker and accounting keeps its unique order key.
 The decrement itself checks paid/fulfilled status while holding the order lock: a delayed stock
-operation cannot subtract inventory after a refund already restored or skipped it.
+operation cannot subtract inventory after a refund already restored or skipped it. Strict paid booking
+confirmation uses the same locked paid-order check, so failed refund cleanup cannot permit a delayed
+confirmation after refund status committed.
 Paid Journey access uses the canonical adoption path with checked practice preparation. The
 actual lesson permission (legacy active adoption) and solo enrollment/provenance commit in one
 order-locked RPC. A full refund uses the same order lock to revoke only unfinished order-owned

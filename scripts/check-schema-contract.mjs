@@ -72,6 +72,7 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
+  { file: 'lib/spaces/booking.ts', table: 'confirm_paid_commerce_booking', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration20270346007300 fences paid booking confirmation under the refunded order lock. Retire after approved073 application and public schema regeneration.' },
   {
     file: 'lib/collective/extra-space-billing.ts',
     table: 'begin_collective_space_change',

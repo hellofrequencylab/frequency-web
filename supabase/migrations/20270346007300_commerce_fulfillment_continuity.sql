@@ -253,3 +253,16 @@ $$;
 
 revoke execute on function public.decrement_commerce_stock_atomic(uuid) from public, anon, authenticated;
 grant execute on function public.decrement_commerce_stock_atomic(uuid) to service_role;
+
+-- A delayed paid confirmation must not create a new booking grant after refund committed.
+create or replace function public.confirm_paid_commerce_booking(_order uuid)
+returns boolean language plpgsql security invoker set search_path = public as $$
+declare v_status text;
+begin
+  select status into v_status from public.commerce_orders where id=_order for update;
+  if not found or v_status not in ('paid','fulfilled') then return false; end if;
+  update public.space_bookings set status='confirmed' where order_id=_order and status='pending';
+  return true; -- Ordinary goods have no linked booking; that is an intentional successful no-op.
+end $$;
+revoke all on function public.confirm_paid_commerce_booking(uuid) from public, anon, authenticated;
+grant execute on function public.confirm_paid_commerce_booking(uuid) to service_role;
