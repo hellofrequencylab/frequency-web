@@ -7,7 +7,7 @@
 // Then, with a signing key configured, it builds the signed apply URL.
 //
 // Server-only. NEVER throws, uses short timeouts and refuses anything but plain https to a named
-// host, so a slow or hostile TXT record can only ever produce { supported: false }, and the Domain
+// reviewed provider host, so an unreviewed TXT destination produces { supported: false }, and the Domain
 // section shows the copy-records steps instead.
 
 import type { KeyObject } from 'node:crypto'
@@ -25,30 +25,44 @@ export interface DomainConnectSettings {
 
 export type OneClickConnect = { supported: false } | { supported: true; providerName: string; applyUrl: string }
 
-/** A safe https base URL (no trailing slash), or null. Rejects other schemes, credentials, IP
- *  literals, localhost and single-label hosts, so discovery never calls into a private network. */
+// Exact reviewed provider bases. Discovery TXT is domain-owner controlled; accepting arbitrary
+// HTTPS names would let it steer server requests into DNS-controlled private destinations.
+const PROVIDERS = [
+  { discovery: ['https://domainconnect.godaddy.com', 'https://domainconnect.api.godaddy.com'], api: 'https://domainconnect.api.godaddy.com', ux: 'https://dcc.godaddy.com/manage' },
+  { discovery: ['https://api.cloudflare.com/client/v4/dns/domainconnect'], api: 'https://api.cloudflare.com/client/v4/dns/domainconnect', ux: 'https://dash.cloudflare.com/domainconnect' },
+] as const
+
+/** Canonical reviewed HTTPS base, or null. No suffix/wildcard hosts or arbitrary paths. */
 export function safeHttpsBase(raw: unknown): string | null {
-  if (typeof raw !== 'string' || raw.length > 512) return null
+  if (typeof raw !== 'string' || raw.length > 512 || /[\\%?#]/.test(raw)) return null
   let url: URL
   try {
     url = new URL(raw.trim())
   } catch {
     return null
   }
-  const host = url.hostname.toLowerCase()
-  if (url.protocol !== 'https:' || url.username || url.password || url.port) return null
-  if (!host.includes('.') || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local')) return null
-  if (/^[\d.]+$/.test(host) || host.startsWith('[')) return null
-  return `${url.origin}${url.pathname}`.replace(/\/+$/, '')
+  if (/^https:\/\/[^/]*:/i.test(raw.trim())) return null
+  if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search || url.hash) return null
+  // Reject dot-segment normalization rather than silently changing the requested path.
+  if (/\/(?:\.\.?)(?:\/|$)/.test(raw)) return null
+  const base = `${url.origin}${url.pathname}`.replace(/\/+$/, '')
+  return PROVIDERS.some(p => [...p.discovery, p.api, p.ux].some(value => value === base)) ? base : null
+}
+
+function apiProvider(raw: unknown) {
+  const base = safeHttpsBase(raw)
+  return PROVIDERS.find(p => p.discovery.some(d => d === base) || p.api === base)
 }
 
 /** The Domain Connect API base named by a `_domainconnect` TXT record's strings, or null. */
 export function apiBaseFromTxt(records: string[][]): string | null {
   for (const chunks of records) {
-    const value = chunks.join('').trim().replace(/^https?:\/\//i, '')
+    const raw = chunks.join('').trim()
+    if (/^http:\/\//i.test(raw)) continue
+    const value = raw.replace(/^https:\/\//i, '')
     if (!value) continue
     const base = safeHttpsBase(`https://${value}`)
-    if (base) return base
+    if (base && apiProvider(base)) return base
   }
   return null
 }
@@ -61,11 +75,19 @@ export function parseSettings(json: unknown): DomainConnectSettings | null {
   const urlAPI = safeHttpsBase(o.urlAPI)
   const rawName = typeof o.providerDisplayName === 'string' && o.providerDisplayName.trim() ? o.providerDisplayName : o.providerName
   const providerName = typeof rawName === 'string' ? rawName.replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 60) : ''
-  if (!urlSyncUX || !urlAPI || !providerName) return null
+  if (!urlSyncUX || !urlAPI || !providerName || !PROVIDERS.some(p => p.api === urlAPI && p.ux === urlSyncUX)) return null
   return { providerName, urlSyncUX, urlAPI }
 }
 
 async function getJson(url: string): Promise<{ ok: boolean; json: unknown }> {
+  // Revalidate at the actual network boundary, including direct templateSupported callers.
+  const parsed = new URL(url)
+  const allowed = PROVIDERS.some(p => [...p.discovery, p.api].some(base => {
+    if (!url.startsWith(`${base}/v2/`)) return false
+    const suffix = url.slice(base.length)
+    return /^\/v2\/[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\/settings$/i.test(suffix) || suffix === `/v2/domainTemplates/providers/${encodeURIComponent(DC_PROVIDER_ID)}/services/${encodeURIComponent(DC_SERVICE_ID)}`
+  }))
+  if (!allowed || parsed.search || parsed.hash || parsed.username || parsed.password || parsed.port) return { ok: false, json: null }
   const res = await fetch(url, {
     headers: { Accept: 'application/json' },
     redirect: 'error',
@@ -83,6 +105,7 @@ async function getJson(url: string): Promise<{ ok: boolean; json: unknown }> {
 
 /** Steps 1 and 2: the provider's Domain Connect settings for `domain`, or null. Never throws. */
 export async function readDomainConnectSettings(domain: string): Promise<DomainConnectSettings | null> {
+  if (!/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/i.test(domain) || domain.includes('..')) return null
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     const { resolveTxt } = await import('node:dns/promises')
@@ -96,7 +119,9 @@ export async function readDomainConnectSettings(domain: string): Promise<DomainC
     const api = apiBaseFromTxt(txt)
     if (!api) return null
     const res = await getJson(`${api}/v2/${encodeURIComponent(domain)}/settings`)
-    return res.ok ? parseSettings(res.json) : null
+    const settings = res.ok ? parseSettings(res.json) : null
+    const provider = apiProvider(api)
+    return settings && provider && settings.urlAPI === provider.api && settings.urlSyncUX === provider.ux ? settings : null
   } catch {
     clearTimeout(timer)
     return null
@@ -106,8 +131,10 @@ export async function readDomainConnectSettings(domain: string): Promise<DomainC
 /** Step 3: has the provider onboarded Frequency's template? Never throws. */
 export async function templateSupported(urlAPI: string): Promise<boolean> {
   try {
+    const base = safeHttpsBase(urlAPI)
+    if (!base || !PROVIDERS.some(p => p.api === base)) return false
     const res = await getJson(
-      `${urlAPI}/v2/domainTemplates/providers/${encodeURIComponent(DC_PROVIDER_ID)}/services/${encodeURIComponent(DC_SERVICE_ID)}`,
+      `${base}/v2/domainTemplates/providers/${encodeURIComponent(DC_PROVIDER_ID)}/services/${encodeURIComponent(DC_SERVICE_ID)}`,
     )
     return res.ok
   } catch {
