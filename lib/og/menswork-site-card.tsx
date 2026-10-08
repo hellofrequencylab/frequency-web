@@ -13,7 +13,7 @@ export const MENSWORK_CARD_SIZE = { width: 1200, height: 630 }
 const P = MENSWORK_PALETTE
 const ORDER: MensworkSeason[] = ['winter', 'spring', 'summer', 'fall']
 
-export interface MensworkCardInput {
+interface MensworkCardInput {
   brandName: string
   /** The hero headline, `*word*` marking the accent word. */
   headline: string | null
