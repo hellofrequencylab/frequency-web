@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { mensworkSign, mensworkSignStarting, MENSWORK_SIGNS } from '@/lib/theme/menswork'
 import { SiteChrome } from '@/components/sites/site-chrome'
+import { siteAdminNavLinks } from '@/components/sites/site-admin-bar'
 import { toProfileContext } from './profile-modules'
 import type { Space } from './types'
 import {
@@ -125,31 +126,52 @@ describe('the executive overview', () => {
   })
 })
 
-describe('the website Admin link', () => {
-  const chrome = (skin: boolean) =>
+// Owner ask 2026-10-08: "Let's keep the same header / menu through the site. Instead of an admin button,
+// make it a double menu with admin settings in blue. Leave a note about admin view only."
+describe('the website admin row', () => {
+  const links = siteAdminNavLinks('https://frequencylocal.com/spaces/heart-on-fire/manage/leadership', 'calendar')
+  const chrome = (skin: boolean, gated = false) =>
     renderToStaticMarkup(
       <SiteChrome
         brandName="Heart on Fire"
         homeHref="/"
-        links={[{ href: '/#about', label: 'About' }]}
+        links={[{ href: '/about', label: 'About' }]}
         cta={null}
         themeFonts
         skin={skin ? { theme: 'menswork', season: 'fall' } : null}
         adminHref="/admin"
+        adminNav={{ links, gated }}
       >
         <p>Body</p>
       </SiteChrome>,
     )
 
-  it('a skinned site ends its menu with a labelled Admin link to its own admin pages', () => {
-    const html = chrome(true)
-    expect(html).toContain('class="hs-nav-admin"')
+  it('the visitor menu has no Admin item; the footer keeps a quiet way in', () => {
+    const html = chrome(true, true)
+    const nav = html.slice(html.indexOf('class="hs-nav"'), html.indexOf('</nav>', html.indexOf('class="hs-nav"')))
+    expect(nav).toContain('About')
+    expect(nav).not.toContain('Admin')
+    expect(html).toContain('class="hs-footer-admin"')
     expect(html).toContain('href="/admin"')
-    expect(html).toMatch(/>Admin<\/a>/)
   })
 
-  it('a house-look site shows none', () => {
-    expect(chrome(false)).not.toContain('hs-nav-admin')
+  it('the admin pages draw the blue row, marked admin view only, with the page they are on', () => {
+    const html = chrome(true)
+    expect(html).toContain('class="hs-admin"')
+    expect(html).toContain('Admin view only')
+    expect(html).toContain('Visitors never see this menu.')
+    expect(html).toMatch(/href="\/admin\/calendar" class="hs-nav-admin" aria-current="page"/)
+    expect(html).toContain('href="https://frequencylocal.com/spaces/heart-on-fire/manage/leadership"')
+  })
+
+  it('a cached public page never renders the row on the server', () => {
+    expect(chrome(true, true)).not.toContain('class="hs-admin"')
+  })
+
+  it('a house-look site shows none of it', () => {
+    const html = chrome(false)
+    expect(html).not.toContain('class="hs-admin"')
+    expect(html).not.toContain('class="hs-footer-admin"')
   })
 })
 

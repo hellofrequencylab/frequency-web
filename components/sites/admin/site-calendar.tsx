@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { MENSWORK_SIGNS, type MensworkSeason, type MensworkSign } from '@/lib/theme/menswork'
 import {
@@ -38,7 +37,6 @@ export interface SiteCalendarProps {
   /** Gathering notes by event slug ("Imbolc · mid-Aquarius"). */
   notes: Map<string, string>
   retreat: { title: string; dates: string; monthId: string; photo: string | null } | null
-  overviewHref: string
 }
 
 export function SiteCalendar(p: SiteCalendarProps) {
@@ -57,23 +55,9 @@ export function SiteCalendar(p: SiteCalendarProps) {
   return (
     <div className="hfa">
       <style>{SITE_ADMIN_CSS}</style>
-      <header className="hfa-head">
-        <div className="hfa-head-in cal">
-          <Link className="hfa-brand" href="/">
-            <span className="hfa-word">{p.brandName}</span>
-            <span className="hfa-divider" />
-            <span className="hfa-title">Yearly Calendar</span>
-          </Link>
-          <nav className="hfa-nav" aria-label="Admin">
-            <a className="mono-link" href={p.overviewHref}>
-              Executive Overview
-            </a>
-            <Link className="mono-link" href="/">
-              ← Website
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <h1 className="sr-only">
+        {p.brandName} Yearly Calendar
+      </h1>
       <nav className="cal-strip" aria-label="Seasons">
         {ORDER.map((s) => (
           <a key={s} href={`#${seasonStart(s) ?? ''}`} className={s === p.currentSeason ? 'on' : undefined} style={sc(s)}>

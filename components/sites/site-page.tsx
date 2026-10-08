@@ -39,6 +39,7 @@ import { appOrigin } from '@/lib/sites/host'
 import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
+import { siteAdminNavLinks } from '@/components/sites/site-admin-bar'
 import { JsonLd } from '@/components/json-ld'
 import { siteEntitySchema } from '@/lib/jsonld'
 
@@ -157,36 +158,15 @@ export async function SitePage({
     )
   }
 
-  const hasContact = siteHasContactPage(space.preferences)
+  const { origin, hasContact, booking, pages, homeHref, siteLinks, cta, pageLinks, tagline } = await siteChromeBasics(space, siteBase)
   const contactPage = pageSlug === SITE_CONTACT_SLUG && hasContact
-  // LIVE-835: the Book page reads the Space's services and windows; a Space that takes no bookings 404s.
-  // Every page reads it: Book links on Home and in the header open /book only when it is served.
-  const booking = await readSiteBooking(space.id)
   const bookPage = pageSlug === SITE_BOOK_SLUG && booking.takesBookings
   if (!contactPage && !bookPage && !hasPage(space.preferences, pageSlug)) notFound()
 
   // Stamp the tenant so any block that resolves its rows from the active Space reads THIS one, the same
   // line the public page carries.
   setActiveSpace(space)
-  const origin = appOrigin()
   const home = pageSlug === HOME_SLUG
-  const homeHref = siteHref(siteBase, HOME_SLUG)
-  const pages = readProfilePages(space.preferences)
-  const tagline = await readTagline(space.id)
-  const siteLinks: SiteLinkMap = {
-    origin,
-    slug: space.slug,
-    siteBase,
-    pages: pages.map((p) => p.slug),
-    contactHref: hasContact ? siteHref(siteBase, SITE_CONTACT_SLUG) : null,
-    bookHref: booking.takesBookings ? siteHref(siteBase, SITE_BOOK_SLUG) : null,
-    email: readProfileData(space.preferences).email?.trim() || null,
-  }
-  const cta = siteCta(space, siteLinks)
-  const pageLinks = pages
-    .filter((p) => p.slug !== HOME_SLUG)
-    .map((p) => ({ href: siteHref(siteBase, p.slug), label: p.label }))
-  if (hasContact) pageLinks.push({ href: siteHref(siteBase, SITE_CONTACT_SLUG), label: 'Contact' })
 
   // Home is the house theme (components/sites/house-home.tsx) over the operator's own Home blocks; a
   // custom page renders its own page doc the way the profile renders it, inside the same chrome.
@@ -206,7 +186,7 @@ export async function SitePage({
   const contactModel = contactPage ? buildHouseContact({ space, grid: profileGrid(space.preferences), links: siteLinks, cta }) : null
   // A Menswork site's menu is its pages, the same on every page (the design system's site nav); the house
   // look's Home section anchors stay on Home.
-  const links = skin && pageLinks.length > 0 ? [{ href: homeHref, label: pages[0]?.label ?? 'Home' }, ...pageLinks] : [...(model?.nav ?? []), ...pageLinks]
+  const links = skin && pageLinks.length > 0 ? mensworkSiteMenu(homeHref, pages, pageLinks) : [...(model?.nav ?? []), ...pageLinks]
 
   // A MENSWORK custom page draws its blocks as the design system's sections (components/sites/menswork-page.tsx),
   // with the Space's own events, circles and journeys; the season bar names the module now and the next
@@ -257,6 +237,8 @@ export async function SitePage({
         tagline={skin ? tagline : null}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
         adminHref={siteBase === '' ? '/admin' : `${origin}${siteAdminHandoffPath(space.slug, 'overview')}`}
+        // The blue admin row needs the website's own host (its /admin pages and the handoff's hint live there).
+        adminNav={siteBase === '' ? { links: siteAdminNavLinks(siteConsoleHref(origin, space.slug)), gated: true } : null}
       >
         {model ? (
           <HouseHome model={model} />
@@ -322,6 +304,52 @@ function siteDescription(space: Space, brandName: string, pageSlug: string): str
 /** The Space's own header button (preferences.headerCta, else its type's default), pointed at the website:
  *  Book opens the site's Contact form, never Frequency (siteLocalHref). An owner's link to another site
  *  stays as they set it. */
+/** What every website page's chrome reads: the Space's pages, its Contact and Book pages when served, the
+ *  link map the sections resolve through, the header button and the tagline. Shared by the website's pages
+ *  and its /admin pages, so the admin pages wear the same header and menu. */
+export async function siteChromeBasics(space: Space, siteBase: string) {
+  const origin = appOrigin()
+  const hasContact = siteHasContactPage(space.preferences)
+  // LIVE-835: the Book page reads the Space's services and windows; a Space that takes no bookings 404s.
+  // Every page reads it: Book links on Home and in the header open /book only when it is served.
+  const booking = await readSiteBooking(space.id)
+  const pages = readProfilePages(space.preferences)
+  const siteLinks: SiteLinkMap = {
+    origin,
+    slug: space.slug,
+    siteBase,
+    pages: pages.map((p) => p.slug),
+    contactHref: hasContact ? siteHref(siteBase, SITE_CONTACT_SLUG) : null,
+    bookHref: booking.takesBookings ? siteHref(siteBase, SITE_BOOK_SLUG) : null,
+    email: readProfileData(space.preferences).email?.trim() || null,
+  }
+  const pageLinks = pages
+    .filter((p) => p.slug !== HOME_SLUG)
+    .map((p) => ({ href: siteHref(siteBase, p.slug), label: p.label }))
+  if (hasContact) pageLinks.push({ href: siteHref(siteBase, SITE_CONTACT_SLUG), label: 'Contact' })
+  return {
+    origin,
+    hasContact,
+    booking,
+    pages,
+    homeHref: siteHref(siteBase, HOME_SLUG),
+    siteLinks,
+    cta: siteCta(space, siteLinks),
+    pageLinks,
+    tagline: await readTagline(space.id),
+  }
+}
+
+/** A Menswork site's menu: its pages, the same on every page (the design system's site nav). */
+export function mensworkSiteMenu(homeHref: string, pages: { label: string }[], pageLinks: { href: string; label: string }[]) {
+  return [{ href: homeHref, label: pages[0]?.label ?? 'Home' }, ...pageLinks]
+}
+
+/** The Space's Leadership page in the Frequency console, the admin row's labelled Frequency link. */
+export function siteConsoleHref(origin: string, slug: string): string {
+  return `${origin}/spaces/${slug}/manage/leadership`
+}
+
 function siteCta(space: Space, links: SiteLinkMap): { label: string; href: string; external: boolean } | null {
   const resolved = resolveHeaderCta(
     readHeaderCtaPreference(space.preferences),

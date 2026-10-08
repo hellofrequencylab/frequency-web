@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
 import { imageFocus } from '@/lib/sites/menswork-page'
 import { MENSWORK_SEASONS, type MensworkSeason } from '@/lib/theme/menswork'
@@ -22,27 +21,14 @@ export interface SiteOverviewProps {
   author: { name: string; avatar: string | null } | null
   /** The program's retreat, for the rail card. */
   retreat: { title: string; dates: string; href: string } | null
-  calendarHref: string
 }
 
-export function SiteOverview({ brandName, doc, photo, author, retreat, calendarHref }: SiteOverviewProps) {
+export function SiteOverview({ brandName, doc, photo, author, retreat }: SiteOverviewProps) {
   const total = String(doc.sections.length).padStart(2, '0')
   const hero = photo ? imageFocus(photo) : null
   return (
     <div className="hfa">
       <style>{SITE_ADMIN_CSS}</style>
-      <header className="hfa-head">
-        <div className="hfa-head-in eo">
-          <Link className="hfa-brand" href="/">
-            <span className="hfa-word">{brandName}</span>
-          </Link>
-          <nav className="hfa-nav" aria-label="Admin">
-            <a className="mono-link" href={calendarHref}>
-              Yearly Calendar →
-            </a>
-          </nav>
-        </div>
-      </header>
       <div className="eo-body">
         <aside className="eo-rail" data-rail="1">
           <span className="lbl">Contents</span>
