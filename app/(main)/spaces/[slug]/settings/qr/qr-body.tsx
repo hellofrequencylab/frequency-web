@@ -12,6 +12,9 @@ import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
+import { SpaceStockQr } from '@/components/qr/space-stock-qr'
+import { stockSpaceUrl } from '@/lib/qr/stock-space'
+import { SITE_URL } from '@/lib/site'
 
 // QR BODY — the chrome-free QR studio, lifted out of the standalone /settings/qr page (Stage D2) so it
 // renders in TWO places from one source: (1) that page, wrapped in its FocusTemplate chrome, and (2)
@@ -80,6 +83,10 @@ export async function QrBody({ slug }: { slug: string }) {
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       <div className="space-y-10">
+        <section>
+          <SectionHeader title="Your Space QR code" />
+          <SpaceStockQr url={stockSpaceUrl(SITE_URL, space.slug)} slug={space.slug} name={brandName} />
+        </section>
         <section id="scans" className="scroll-mt-20">
           <SectionHeader title="Scans" />
           <Suspense fallback={<StatsSkeleton />}>

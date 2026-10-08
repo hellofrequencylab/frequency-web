@@ -4,7 +4,7 @@ description: What each Space plan is for, what it turns on, and how to pick the 
 category: spaces
 order: 2
 published: 2026-07-27
-updated: 2026-10-06
+updated: 2026-10-08
 audience: member
 featureKeys: [billing]
 status: published
@@ -51,6 +51,9 @@ A free Space is a real plan, not a countdown, and it does not expire. It has eve
 your page, Circles, Events, Practices, Journeys, Space Contacts, email campaigns, a funnel, one
 automation, and a stock QR code you can download. Each one comes with room to start, and the pricing
 page shows exactly how much.
+
+Open your Space's QR codes settings to download its stock code as PNG or SVG. It opens your public
+Space page and stays fixed. It does not use your editable QR code allowance.
 
 **Tips are open on every tier, with no fee.** They are the money a free Space takes.
 

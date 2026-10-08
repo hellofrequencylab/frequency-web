@@ -142,6 +142,11 @@ are running a business toward this path.
 
 ### 2.2 Functions & access (per-Space tools gated by member role · ADR-366)
 
+The QR settings body shows a fixed public-page code before managed-code analytics and editing.
+`SpaceStockQr` generates PNG and SVG downloads locally; its target goes through `publicShareUrl`.
+It inserts no `qr_codes` row and consumes no `space_qr` allowance. The existing management and
+function-role gates still govern access to the settings body.
+
 Every Space tool (CRM, email, members, QR codes, the per-type surfaces, plan/billing, profile/brand) is
 gated on **two axes**, resolved by one pure function: `spaceFunctionAccess(space, fn, viewerSpaceRole)`
 in `lib/spaces/functions.ts`. The registry `SPACE_FUNCTIONS` is the catalog; adding a tool is **one row**
