@@ -873,6 +873,32 @@ service-only `website_editor_presence` table. The shell polls every five seconds
 peers last seen within fifteen seconds supply actual display names and section-relative
 cursor coordinates. Presence does not authorize document writes or imply CRDT merging.
 
+The website's Loom picker uses an action context scoped to the host-authorized
+website pass rather than Frequency session cookies. Every browse and upload
+re-checks the current owner/team role and binds the Space and creator server-side.
+It offers the site's image library; protected masters and other-site scopes are
+excluded. Uploads reuse the canonical Loom ingestion pipeline, including EXIF
+stripping, checksum deduplication, storage quota, metadata capture and cleanup on
+failed row insertion. The default Frequency picker retains its existing session
+authorization and scope behavior.
+
+The handoff's visitor audience choice (Everyone / Members) remains an unimplemented
+E10 capability. Current section visibility is a device override only. Public website
+renders are anonymous and cached, and the host-only admin pass authorizes the editor,
+not ordinary member visitors. A member audience requires an authenticated website
+visitor handoff and a server-side omission/data boundary before its control can be
+represented as functional. CSS hiding alone cannot protect section bytes. Exact
+handoff acceptance remains open for this capability and the separate E0 CRDT program.
+
 Mock account names, unpublished history, teammates and review comments are not
 production records. Website copy and image sources come from the Space's existing
 content and original media URLs; the screenshot crops in the handoff are references.
+
+Website snapshots may also carry `brand.logo` and `brand.accent`. Missing fields
+inherit existing site settings; explicit null clears the field. These overrides
+follow the same draft, scheduled snapshot and published boundary as pages, without
+mutating Space profile branding. Custom DAWN/Midnight accents apply only when the
+website snapshot explicitly supplies them, preserving each theme's default contract.
+Changing a FeatureGrid live source resolves current rows through an own-host
+authorized server action and updates render metadata only. Source-aware metadata
+keys prevent rows from the previously selected source appearing during loading.

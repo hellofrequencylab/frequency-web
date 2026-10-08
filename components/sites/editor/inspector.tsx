@@ -1,28 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { FieldForm, type FieldsSchema, type PushRequest } from '@/components/page-editor/mobile/field-form'
 import type { Config, ContentItem, Data } from '@/lib/page-editor/types'
-import { sectionDisplay, type Device, type SectionDisplay } from '@/lib/sites/editor/state'
+import { normalizeWebsiteFields } from '@/lib/sites/website-fields'
+import { useWebsiteFeatureSource } from './feature-source-context'
+import { sectionDeviceLayout, sectionLayoutPreset, SECTION_SPACING_STEPS, snapSectionSpacing } from '@/lib/sites/editor/layout'
+import { type Device, type SectionDisplay } from '@/lib/sites/editor/state'
 
 export function WebsiteInspector({ config, block, doc, device, onChange, onDisplay }: {
   config: Config; block: ContentItem; doc: Data; device: Device
   onChange: (props: Record<string, unknown>) => void; onDisplay: (value: SectionDisplay | null) => void
 }) {
   const [screens, setScreens] = useState<PushRequest[]>([])
+  const editableProps = normalizeWebsiteFields(block).props
+  const { load, error: sourceError } = useWebsiteFeatureSource()
   const schema = config.components[block.type]?.fields ?? {}
-  const fields = Object.fromEntries(Object.entries(schema).filter(([, f]) => f.type !== 'slot')) as FieldsSchema
+  const liveFeatures = block.type === 'FeatureGrid' && ['offerings', 'events', 'memberships', 'tickets'].includes(String(block.props.source))
+  useEffect(() => {
+    if (liveFeatures && typeof block.props.id === 'string') void load(block.props.id, String(block.props.source))
+  }, [liveFeatures, block.props.id, block.props.source, load])
+  const fields = Object.fromEntries(Object.entries(schema).filter(([key, f]) => f.type !== 'slot' && !(liveFeatures && key === 'items'))) as FieldsSchema
   const sub = screens.at(-1)
-  const display = sectionDisplay(doc, block.props.id!, device)
-  const live = /^(SpaceEvents|LiveEvents|SpaceCommunity|CirclesGrid|SpacePractices)$/.test(block.type)
+  const display = sectionDeviceLayout(doc, block.props.id!, device)
+  const live = /^(SpaceEvents|LiveEvents|SpaceCommunity|CirclesGrid|SpacePractices|SpaceFAQ)$/.test(block.type) || liveFeatures
   return <>
+    {block.type === 'FeatureGrid' && <label className="we-field">Content source<select value={liveFeatures ? String(block.props.source) : 'custom'} onChange={(e) => onChange({ ...block.props, source: e.target.value })}><option value="custom">Authored cards</option><option value="offerings">Space offerings</option><option value="events">Space events</option><option value="memberships">Space memberships</option><option value="tickets">Space tickets</option></select></label>}
+    {liveFeatures && sourceError && <p className="we-note" role="alert">{sourceError}</p>}
     {live && <div className="we-proposal"><strong>Live from your Space</strong><p>Published dates and listings update automatically. These fields control how they appear here.</p></div>}
     {sub && <button type="button" className="we-row" onClick={() => setScreens((s) => s.slice(0, -1))}><ChevronLeft size={16} />{sub.title}</button>}
-    <FieldForm fields={sub?.fields ?? fields} value={sub?.value ?? block.props} onChange={sub?.onChange ?? onChange} onPushScreen={(s) => setScreens((stack) => [...stack, s])} />
+    <FieldForm fields={sub?.fields ?? fields} value={sub?.value ?? editableProps} onChange={sub?.onChange ?? onChange} onPushScreen={(s) => setScreens((stack) => [...stack, s])} />
+    {block.type === 'Zigzag' && <div className="we-field"><span>Layout</span><div className="we-actions">{(['left', 'right', 'stacked'] as const).map((preset) => <button type="button" className="we-action secondary" key={preset} aria-pressed={preset === 'stacked' ? display.columns === 1 : display.columns !== 1 && (editableProps.mediaSide ?? 'left') === preset} onClick={() => { const next = sectionLayoutPreset(editableProps, display, preset); onChange(next.props); onDisplay(next.display) }}>{preset === 'left' ? 'Photo left' : preset === 'right' ? 'Photo right' : 'Stacked'}</button>)}</div></div>}
     <details className="we-drawer" open><summary>Spacing</summary>
       <label className="we-field">Column gap <span>{display.gap ?? 24}px</span><input aria-label="Column gap" type="range" min={0} max={96} step={4} value={display.gap ?? 24} onChange={(e) => onDisplay({ ...display, gap: Number(e.target.value) })} /></label>
-      <label className="we-field">Space above and below <span>{display.padding ?? 0}px</span><input aria-label="Section spacing" type="range" min={0} max={160} step={8} value={display.padding ?? 0} onChange={(e) => onDisplay({ ...display, padding: Number(e.target.value) })} /></label>
+      <label className="we-field">Space above and below <span>{display.padding ?? 0}px</span><input aria-label="Section spacing" type="range" min={0} max={SECTION_SPACING_STEPS.length - 1} step={1} value={Math.max(0, SECTION_SPACING_STEPS.findIndex((step) => step === snapSectionSpacing(display.padding ?? 0)))} onChange={(e) => onDisplay({ ...display, padding: SECTION_SPACING_STEPS[Number(e.target.value)] })} /></label>
     </details>
     <details className="we-drawer"><summary>Breakpoints</summary><div className="we-note">{device === 'desktop' ? 'Desktop is the base layout. Tablet and phone inherit it.' : `You are editing ${device} only. Unchanged values inherit the desktop layout.`}</div>
       <label className="we-field">Columns<select value={display.columns ?? (device === 'phone' ? 1 : 2)} onChange={(e) => onDisplay({ ...display, columns: Number(e.target.value) })}>{[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}</select></label>

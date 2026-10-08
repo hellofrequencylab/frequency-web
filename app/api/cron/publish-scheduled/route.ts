@@ -24,10 +24,11 @@ async function handler(request: Request) {
   const now = new Date().toISOString()
   const budget = cronBudget(200)
   const websiteRpc = admin as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: { slug: string }[] | null; error: unknown }> }
-  const websites = await websiteRpc.rpc('publish_due_websites', { p_now: now })
+  let websites: { data: { slug: string }[] | null; error: unknown }
+  try { websites = await websiteRpc.rpc('publish_due_websites', { p_now: now }) }
+  catch (error) { websites = { data: null, error } }
   if (websites.error) {
     log.error('cron.publish_scheduled.websites_failed', { error: briefError(websites.error) })
-    return NextResponse.json({ error: 'Could not activate scheduled websites' }, { status: 500 })
   }
   for (const site of websites.data ?? []) refreshSite(site.slug)
   const { data: due, error } = await admin
@@ -44,7 +45,7 @@ async function handler(request: Request) {
   }
 
   if (!due || due.length === 0) {
-    return NextResponse.json({ published: 0, websites: websites.data?.length ?? 0 })
+    return NextResponse.json({ published: 0, websites: websites.data?.length ?? 0, websiteError: !!websites.error }, { status: websites.error ? 500 : 200 })
   }
 
   const dueIds = due.map((d: { id: string }) => d.id)
@@ -84,7 +85,7 @@ async function handler(request: Request) {
 
   const summary = budget.summary(ids.length)
   log.info('cron.publish_scheduled', { published: ids.length, notified, reached, ...summary })
-  return NextResponse.json({ published: ids.length, ids, notified, reached, budget: summary })
+  return NextResponse.json({ published: ids.length, ids, notified, reached, budget: summary, websites: websites.data?.length ?? 0, websiteError: !!websites.error }, { status: websites.error ? 500 : 200 })
 }
 
 export const GET = withCronHeartbeat('publish-scheduled', handler)

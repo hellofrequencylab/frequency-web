@@ -1,0 +1,35 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+const mocks = vi.hoisted(() => ({ denied: null as Response | null, rpc: vi.fn(), refresh: vi.fn(), notify: vi.fn(), claim: vi.fn() }))
+vi.mock('@/lib/cron-auth', () => ({ rejectUnauthorizedCron: () => mocks.denied }))
+vi.mock('@/lib/observability/cron-heartbeat', () => ({ withCronHeartbeat: (_name: string, handler: unknown) => handler }))
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('@/lib/sites/site-cache', () => ({ refreshSite: mocks.refresh }))
+vi.mock('@/lib/dispatches/fan-out', () => ({ notifyDispatchAudience: mocks.notify }))
+vi.mock('@/lib/log', () => ({ log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() }, briefError: (e: unknown) => String(e) }))
+vi.mock('@/lib/cron/budget', () => ({ cronBudget: () => ({ items: 200, exhausted: () => false, summary: () => ({}) }) }))
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ rpc: mocks.rpc, from: () => ({ select: () => ({ eq: () => ({ not: () => ({ lte: () => ({ order: () => ({ limit: async () => ({ data: [{ id: 'dispatch' }], error: null }) }) }) }) }) }), update: () => ({ in: () => ({ eq: () => ({ select: mocks.claim }) }) }) }) }) }))
+import { GET } from './route'
+describe('scheduled website activation beside existing dispatch scheduling', () => {
+  beforeEach(() => { mocks.denied = null; mocks.rpc.mockReset().mockResolvedValue({ data: [{ slug: 'real-site' }], error: null }); mocks.refresh.mockReset(); mocks.notify.mockReset().mockResolvedValue(2); mocks.claim.mockReset().mockResolvedValue({ data: [{ id: 'dispatch' }], error: null }) })
+  it('activates scheduled sites and expires their public cache', async () => {
+    const result = await GET(new Request('https://example.test/api/cron/publish-scheduled'))
+    expect(result.status).toBe(200)
+    expect(mocks.rpc).toHaveBeenCalledWith('publish_due_websites', { p_now: expect.any(String) })
+    expect(mocks.refresh).toHaveBeenCalledWith('real-site')
+    expect(mocks.notify).toHaveBeenCalledWith(expect.anything(), 'dispatch')
+  })
+  it.each(['rpc error', 'rpc throw'])('keeps dispatch publishing working on website %s and reports failure', async (kind) => {
+    if (kind === 'rpc error') mocks.rpc.mockResolvedValue({ data: null, error: 'migration missing' })
+    else mocks.rpc.mockRejectedValue(new Error('offline'))
+    const result = await GET(new Request('https://example.test/api/cron/publish-scheduled'))
+    expect(result.status).toBe(500)
+    expect(mocks.notify).toHaveBeenCalledExactlyOnceWith(expect.anything(), 'dispatch')
+    expect(mocks.refresh).not.toHaveBeenCalled()
+    expect(await result.json()).toMatchObject({ published: 1, websiteError: true })
+  })
+  it('rejects unauthenticated cron callers before touching data', async () => {
+    mocks.denied = new Response('Unauthorized', { status: 401 })
+    expect((await GET(new Request('https://example.test/api/cron/publish-scheduled'))).status).toBe(401)
+    expect(mocks.rpc).not.toHaveBeenCalled()
+  })
+})

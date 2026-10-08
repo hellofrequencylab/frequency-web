@@ -25,7 +25,7 @@ $$;
 revoke all on function public.save_website_editor(uuid, integer, jsonb, boolean) from public, anon, authenticated;
 grant execute on function public.save_website_editor(uuid, integer, jsonb, boolean) to service_role;
 
--- The existing minute-level publish-scheduled cron activates a captured snapshot,
+-- The existing five-minute publish-scheduled cron activates a captured snapshot,
 -- never whatever draft happens to exist when the timer fires. Row locking prevents
 -- duplicate activation, and increments revision so open editors cannot overwrite it.
 create or replace function public.publish_due_websites(p_now timestamptz default now())

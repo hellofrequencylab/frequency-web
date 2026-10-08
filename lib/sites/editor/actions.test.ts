@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const mocks = vi.hoisted(() => ({ host: 'hearts.example', staff: false, allowed: true, opens: true, preferences: {} as unknown, rpc: vi.fn(), refresh: vi.fn(), presenceWrite: vi.fn(), presenceRead: vi.fn() }))
+const mocks = vi.hoisted(() => ({ host: 'hearts.example', staff: false, allowed: true, opens: true, preferences: {} as unknown, rpc: vi.fn(), refresh: vi.fn(), presenceWrite: vi.fn(), presenceRead: vi.fn(), features: vi.fn() }))
 vi.mock('next/headers', () => ({ headers: async () => ({ get: () => mocks.host }), cookies: async () => ({ get: () => ({ value: 'token' }) }) }))
 vi.mock('@/lib/sites/hosted', () => ({ resolveHostedSpace: async () => ({ id: 'space', slug: 'hearts' }) }))
 vi.mock('@/lib/sites/site-admin-pass', () => ({ SITE_ADMIN_COOKIE: 'admin', readSiteAdminPass: () => ({ staff: mocks.staff, profileId: 'owner' }), passOpensSite: () => mocks.opens }))
 vi.mock('@/lib/sites/site-admin', () => ({ siteAdminAllowed: async () => mocks.allowed, readSiteAdminAuthor: async () => ({ name: 'Owner' }) }))
 vi.mock('@/lib/sites/site-cache', () => ({ refreshSite: mocks.refresh }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ rpc: mocks.rpc, from: (table: string) => table === 'website_editor_presence' ? { upsert: mocks.presenceWrite, select: () => ({ eq: () => ({ gte: () => ({ limit: mocks.presenceRead }) }) }) } : ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { preferences: mocks.preferences, owner_profile_id: 'owner' }, error: null }) }) }) }) }) }))
-import { saveWebsiteDraft, syncWebsitePresence } from './actions'
+vi.mock('./live-data', () => ({ resolveWebsiteFeatureItems: mocks.features }))
+import { saveWebsiteDraft, syncWebsitePresence, loadWebsiteFeatureSource } from './actions'
 import { nextWebsiteState, type WebsiteEditorState, type WebsiteSnapshot } from './state'
 const draft: WebsiteSnapshot = { theme: 'DAWN', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [] }, seo: { title: '', description: '' }, comments: [] }] }
 describe('website editor authorization and concurrency', () => {
@@ -18,6 +19,18 @@ describe('website editor authorization and concurrency', () => {
     if (kind === 'foreign pass') mocks.opens = false
     expect((await saveWebsiteDraft('hearts.example', 0, draft)).ok).toBe(false)
     expect(mocks.rpc).not.toHaveBeenCalled()
+  })
+  it('loads a newly selected source only for the authenticated own site', async () => {
+    mocks.features.mockReset().mockResolvedValue([{ title: 'Actual event', body: '', text: '', price: '', href: '/events/event' }])
+    expect(await loadWebsiteFeatureSource('hearts.example', 'events')).toMatchObject({ ok: true, items: [{ title: 'Actual event' }] })
+    expect(mocks.features).toHaveBeenCalledWith('space', 'events')
+    for (const denial of ['staff', 'foreign', 'revoked']) {
+      mocks.staff = denial === 'staff'; mocks.host = denial === 'foreign' ? 'other.example' : 'hearts.example'; mocks.allowed = denial !== 'revoked'
+      mocks.features.mockClear()
+      expect(await loadWebsiteFeatureSource('hearts.example', 'memberships')).toMatchObject({ ok: false })
+      expect(mocks.features).not.toHaveBeenCalled()
+    }
+    expect(await loadWebsiteFeatureSource('hearts.example', 'private-library')).toMatchObject({ ok: false })
   })
   it('validates cursor coordinates and returns actual other editors only', async () => {
     expect(await syncWebsitePresence('hearts.example', { pageSlug: 'home', blockId: 'hero', x: 2, y: 0 })).toMatchObject({ ok: false })
@@ -37,6 +50,32 @@ describe('website editor authorization and concurrency', () => {
     expect(await saveWebsiteDraft('hearts.example', 0, draft)).toMatchObject({ ok: false, conflict: true })
     mocks.preferences = {}; mocks.rpc.mockResolvedValue({ data: false, error: null })
     expect(await saveWebsiteDraft('hearts.example', 0, draft)).toMatchObject({ ok: false, conflict: true })
+  })
+  it('stamps first-save review comments from authenticated identity rather than client claims', async () => {
+    const commented = structuredClone(draft)
+    commented.pages[0].doc.content = [{ type: 'Text', props: { id: 'text', body: 'Original copy' } }]
+    commented.pages[0].comments = [{ id: 'new-comment', blockId: 'text', text: 'Review', author: 'Someone else', createdAt: '2000-01-01T00:00:00Z', resolved: false }]
+    const result = await saveWebsiteDraft('hearts.example', 0, commented)
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.state.draft.pages[0].comments[0].author).toBe('Owner')
+      expect(result.state.draft.pages[0].comments[0].createdAt).not.toBe('2000-01-01T00:00:00Z')
+    }
+  })
+  it('stamps new reply authors and preserves existing reply attribution on subsequent saves', async () => {
+    const commented = structuredClone(draft)
+    commented.pages[0].doc.content = [{ type: 'Text', props: { id: 'text', body: 'Copy' } }]
+    commented.pages[0].comments = [{ id: 'comment', blockId: 'text', text: 'Review', author: 'Forgery', createdAt: '2000-01-01T00:00:00Z', resolved: false, x: 0.2, y: 0.8, replies: [{ id: 'reply', body: 'Reply', author: 'Forgery', createdAt: '2000-01-01T00:00:00Z' }] }]
+    const first = await saveWebsiteDraft('hearts.example', 0, commented)
+    expect(first.ok).toBe(true)
+    if (!first.ok) return
+    const reply = first.state.draft.pages[0].comments[0].replies![0]
+    expect(reply.author).toBe('Owner'); expect(reply.createdAt).not.toBe('2000-01-01T00:00:00Z')
+    mocks.preferences = { websiteEditor: first.state }
+    commented.pages[0].comments[0].replies![0].author = 'Another forgery'
+    const second = await saveWebsiteDraft('hearts.example', 1, commented)
+    if (!second.ok) throw new Error(second.error)
+    expect(second.state.draft.pages[0].comments[0].replies![0]).toEqual(reply)
   })
   it('publishes only after a successful atomic write', async () => {
     mocks.rpc.mockResolvedValueOnce({ data: null, error: 'offline' })

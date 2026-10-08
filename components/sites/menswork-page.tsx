@@ -20,13 +20,11 @@ import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { MENSWORK_SEASON_INFO } from '@/lib/theme/menswork'
 import {
   dateLabel,
-  headlineSegments,
   imageFocus,
   lines,
   mdOf,
   moduleLine,
   monthDay,
-  plainText,
   MW_SEASON_ORDER,
   seasonAt,
   seasonNamed,
@@ -37,6 +35,7 @@ import {
   type MwSeason,
 } from '@/lib/sites/menswork-page'
 import type { MwCircle, MwEvent, MwJourney, MwLive } from '@/lib/sites/menswork-data'
+import { InlineText } from './inline-text'
 import { MwBeats, MwCircleFinder, MwYearWheel, type MwCircleCard } from './menswork-live'
 
 // A MENSWORK WEBSITE PAGE, drawn (owner ask 2026-10-07: "all the pages dialed in... all the elements from the
@@ -172,15 +171,7 @@ function Title({ text, accent, as: El = 'h2', size = 'm' }: { text: string; acce
   if (!text) return null
   return (
     <El className={`mw-display mw-${size}`}>
-      {headlineSegments(text, accent ?? '').map((s, i) =>
-        s.accent ? (
-          <span key={i} className="mw-accent">
-            {s.text}
-          </span>
-        ) : (
-          s.text
-        ),
-      )}
+      <InlineText text={text} accentStars accentWord={accent ?? ''} />
     </El>
   )
 }
@@ -193,14 +184,14 @@ function Kicker({ children }: { children: ReactNode }) {
 function Paras({ text, className = 'mw-body' }: { text: unknown; className?: string }) {
   const ps = str(text)
     .split(/\n\s*\n|<\/p>\s*<p[^>]*>/i)
-    .map(plainText)
+    .map((p) => p.trim())
     .filter(Boolean)
   if (ps.length === 0) return null
   return (
     <>
       {ps.map((t, i) => (
         <p key={i} className={className}>
-          {t}
+          <InlineText text={t} />
         </p>
       ))}
     </>

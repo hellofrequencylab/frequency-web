@@ -1,8 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { nextWebsiteState, publishedWebsiteSnapshot, readWebsiteEditor, sectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot } from './state'
+import { nextWebsiteState, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, sectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot } from './state'
 const snapshot = (): WebsiteSnapshot => ({ theme: 'Menswork', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [{ type: 'Text', props: { id: 'text', text: 'Original' } }] }, seo: { title: '', description: '' }, comments: [{ id: 'c1', blockId: 'text', text: 'Private review', author: 'owner', createdAt: '2026-10-08T12:00:00Z', resolved: false }] }] })
 const state = (): WebsiteEditorState => ({ v: 1, revision: 0, draft: snapshot(), published: null, versions: [] })
 describe('website draft boundary', () => {
+  it('validates website-only branding and captures it independently when publishing', () => {
+    const draft = snapshot(); draft.brand = { logo: 'https://assets.example/logo.png', accent: '#2b8050' }
+    expect(validWebsiteSnapshot(draft)).toBe(true)
+    expect(resolveWebsiteBrand(draft, { logo: '/original.png', accent: '#123456' })).toEqual(draft.brand)
+    const live = nextWebsiteState(state(), draft, true, 'owner')
+    draft.brand.logo = '/later.png'
+    expect(live.published?.brand?.logo).toBe('https://assets.example/logo.png')
+    expect(resolveWebsiteBrand({ ...snapshot(), brand: { logo: null } }, { logo: '/old.png', accent: '#123456' })).toEqual({ logo: null, accent: '#123456' })
+    for (const logo of ['javascript:alert(1)', '//foreign.example/logo', 'https://']) expect(validWebsiteSnapshot({ ...snapshot(), brand: { logo } })).toBe(false)
+    expect(validWebsiteSnapshot({ ...snapshot(), brand: { accent: 'red' } })).toBe(false)
+  })
+  it('bounds positioned comment threads and strips every reply from public snapshots', () => {
+    const draft = snapshot(); draft.pages[0].comments[0] = { ...draft.pages[0].comments[0], x: 0.3, y: 0.7, replies: [{ id: 'reply', body: 'Thread reply', author: 'Editor', createdAt: '2026-10-08T12:00:00Z' }] }
+    expect(validWebsiteSnapshot(draft)).toBe(true)
+    expect(nextWebsiteState(state(), draft, true, 'Owner').published?.pages[0].comments).toEqual([])
+    draft.pages[0].comments[0].x = 1.1
+    expect(validWebsiteSnapshot(draft)).toBe(false)
+    draft.pages[0].comments[0].x = 0.3
+    draft.pages[0].comments[0].replies!.push({ ...draft.pages[0].comments[0].replies![0] })
+    expect(validWebsiteSnapshot(draft)).toBe(false)
+  })
   it('keeps draft saves off the live site and strips review comments when published', () => {
     const saved = nextWebsiteState(state(), snapshot(), false, 'owner')
     expect(publishedWebsiteSnapshot({ websiteEditor: saved })).toBeNull()

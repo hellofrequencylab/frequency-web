@@ -1150,3 +1150,15 @@ test/authz/check-authz-lib.test.ts
 lib/collective/member-spaces-actions.ts
 lib/collective/member-spaces-store.ts
 lib/collective/extra-space-billing.ts
+
+# Website editing uses the host-bound admin-pass cookie rather than a Frequency session.
+# editor-page rechecks the current owner/member capability before reading private drafts.
+# authorization rechecks the host/pass/current membership before every CAS save or site-scoped
+# presence operation; both RPCs and the presence table deny browser-role access in SQL.
+components/sites/editor/editor-page.tsx
+lib/sites/editor/authorization.ts
+
+# Shared Loom image upload pipeline accepts already-authorized owner/Space identity.
+# Frequency picker and host-bound website media actions resolve permission before
+# calling it; Storage upload, library insertion and failure cleanup share one path.
+lib/loom/authorized-image-upload.ts

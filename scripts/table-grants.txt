@@ -329,3 +329,6 @@ walkthrough                          authenticated
 welcomes                             authenticated
 zap_config                           public
 zap_transactions                     authenticated
+
+# Website admin editing: service-role only; browser roles are explicitly revoked.
+website_editor_presence              internal

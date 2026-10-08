@@ -43,7 +43,9 @@ import { siteAdminNavLinks } from '@/components/sites/site-admin-bar'
 import { SITE_CALENDAR_SLUG, SitePublicCalendar } from '@/components/sites/site-public-calendar'
 import { JsonLd } from '@/components/json-ld'
 import { config } from '@/lib/page-editor/config'
-import { publishedWebsitePage, publishedWebsiteSnapshot } from '@/lib/sites/editor/state'
+import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteBrand } from '@/lib/sites/editor/state'
+import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
+import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { WebsiteDocument } from '@/components/sites/website-document'
@@ -140,15 +142,17 @@ export async function SitePage({
 
   const brandName = space.brandName?.trim() || space.name
   const website = publishedWebsiteSnapshot(space.preferences)
-  const websitePage = website?.pages.find((p) => p.slug === pageSlug) ?? null
+  const websiteBrand = resolveWebsiteBrand(website, { logo: space.brandLogoUrl, accent: space.brandAccent })
+  const savedWebsitePage = website?.pages.find((p) => p.slug === pageSlug) ?? null
+  const websitePage = savedWebsitePage ? { ...savedWebsitePage, doc: await refreshAssetRefUrls(savedWebsitePage.doc, { websiteSpaceId: space.id }) } : null
   const theme = website ? (website.theme === 'Menswork' ? 'menswork' : 'bold') : parseSpaceTheme(space.preferences)
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
   // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
   // still wins.
   const skin = theme === 'menswork' ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) } : null
   const accentVars = skin
-    ? mensworkAccentVars(space.brandAccent)
-    : resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
+    ? mensworkAccentVars(websiteBrand.accent)
+    : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))
   // The Coming soon notice's one way on: a clearly labelled Frequency link, absolute (on the Space's own
   // host a `/spaces/...` path is not a site page).
   const profileHref = `${appOrigin()}/spaces/${space.slug}`
@@ -236,14 +240,16 @@ export async function SitePage({
     description: siteDescription(space, brandName, HOME_SLUG) ?? null,
     images: [space.coverImageUrl, space.brandLogoUrl],
   })
-  const websiteContent = websitePage ? await getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: space.brandLogoUrl, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }) : null
+  const websiteContent = websitePage ? await getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: websiteBrand.logo, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }) : null
+
+  const websiteFeatures = websitePage ? await loadWebsiteFeatures(space.id, [websitePage.doc]) : {}
 
   return (
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the
     // owner's accent and faces rather than the default Frequency look.
     <AccentScope vars={accentVars} theme={theme}>
       <JsonLd data={entity} />
-      <div data-website-theme={website?.theme} style={website ? websiteThemeVars(website.theme, space.brandAccent) : undefined}>
+      <div data-website-theme={website?.theme} style={website ? websiteThemeVars(website.theme, website.theme === 'Menswork' ? websiteBrand.accent : website.brand?.accent) : undefined}>
       {website && <style>{WEBSITE_TOKEN_CSS}</style>}
       <SiteChrome
         brandName={brandName}
@@ -252,13 +258,13 @@ export async function SitePage({
         cta={cta}
         themeFonts={hasChosenTheme(space.preferences)}
         skin={skin}
-        logoUrl={skin ? space.brandLogoUrl : null}
+        logoUrl={website ? websiteBrand.logo : skin ? space.brandLogoUrl : null}
         tagline={skin ? tagline : null}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
         admin={siteAdminLinks(origin, space.slug, siteBase)}
       >
         {website && websitePage && mwLive ? (
-          <WebsiteDocument doc={websitePage.doc} theme={website.theme} config={config} metadata={{ space: websiteContent }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
+          <WebsiteDocument doc={websitePage.doc} theme={website.theme} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
         ) : model ? (
           <>
             <HouseHome model={model} />

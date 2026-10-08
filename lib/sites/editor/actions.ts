@@ -1,47 +1,37 @@
 'use server'
 
-import { cookies, headers } from 'next/headers'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { resolveHostedSpace } from '@/lib/sites/hosted'
-import { normalizeHost } from '@/lib/sites/host'
-import { SITE_ADMIN_COOKIE, readSiteAdminPass, passOpensSite } from '@/lib/sites/site-admin-pass'
-import { readSiteAdminAuthor, siteAdminAllowed } from '@/lib/sites/site-admin'
+import { readSiteAdminAuthor } from '@/lib/sites/site-admin'
+import { authorizeWebsiteEditor } from './authorization'
 import { refreshSite } from '@/lib/sites/site-cache'
 import { readWebsiteEditor, nextWebsiteState, validWebsiteSnapshot, type WebsiteSnapshot, type WebsiteEditorState } from './state'
 
-async function authorizeWebsiteEditor(host: string) {
-  const requestHost = normalizeHost((await headers()).get('host'))
-  if (requestHost !== normalizeHost(host)) return null
-  const token = (await cookies()).get(SITE_ADMIN_COOKIE)?.value
-  const pass = readSiteAdminPass(token)
-  const space = await resolveHostedSpace(host)
-  if (!space || !passOpensSite(pass, host, space.id) || pass.staff) return null
-  // Read the current owner and preferences, not the hosted site's cached row.
-  const db = createAdminClient()
-  const { data, error } = await db.from('spaces').select('preferences, owner_profile_id').eq('id', space.id).maybeSingle()
-  if (error || !data || !(await siteAdminAllowed(token, host, { id: space.id, ownerProfileId: data.owner_profile_id }))) return null
-  return { space, preferences: data.preferences, profileId: pass.profileId, db }
-}
 
 export async function saveWebsiteDraft(host: string, expectedRevision: number, draft: WebsiteSnapshot, publish = false, scheduledAt?: string): Promise<{ ok: true; state: WebsiteEditorState } | { ok: false; error: string; conflict?: boolean }> {
   if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || !validWebsiteSnapshot(draft)) return { ok: false, error: 'This draft could not be saved. Check its pages and try again.' }
   const auth = await authorizeWebsiteEditor(host)
   if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to sign in.' }
   if (typeof publish !== 'boolean' || (scheduledAt !== undefined && (typeof scheduledAt !== 'string' || !Number.isFinite(Date.parse(scheduledAt)) || Date.parse(scheduledAt) <= Date.now() || publish))) return { ok: false, error: 'Choose a future date and time for publishing.' }
-  const current = readWebsiteEditor(auth.preferences) ?? { v: 1 as const, revision: 0, draft, published: null, versions: [] }
+  const existing = readWebsiteEditor(auth.preferences)
+  const current = existing ?? { v: 1 as const, revision: 0, draft, published: null, versions: [] }
   if (current.revision !== expectedRevision) return { ok: false, conflict: true, error: 'Someone saved a newer draft. Reload before continuing; your changes have not been overwritten.' }
   const person = await readSiteAdminAuthor(auth.profileId)
+  const authorName = person?.name.slice(0, 100) || 'You'
   const privateDraft = { ...draft, pages: draft.pages.map((page) => {
-    const previous = current.draft.pages.find((p) => p.slug === page.slug)?.comments ?? []
+    const previous = existing?.draft.pages.find((p) => p.slug === page.slug)?.comments ?? []
     return { ...page, comments: page.comments.map((c) => {
       const original = previous.find((p) => p.id === c.id)
-      return { ...c, author: original?.author ?? person?.name ?? 'You', createdAt: original?.createdAt ?? new Date().toISOString() }
+      return { ...c, author: original?.author ?? authorName, createdAt: original?.createdAt ?? new Date().toISOString(),
+        ...(c.replies ? { replies: c.replies.map((reply) => {
+          const previousReply = original?.replies?.find((saved) => saved.id === reply.id)
+          return { ...reply, author: previousReply?.author ?? authorName, createdAt: previousReply?.createdAt ?? new Date().toISOString() }
+        }) } : {}),
+      }
     }) }
   }) }
-  const next = nextWebsiteState(current, privateDraft, publish, person?.name ?? 'You', new Date().toISOString(), scheduledAt ? new Date(scheduledAt).toISOString() : undefined)
+  const next = nextWebsiteState(current, privateDraft, publish, authorName, new Date().toISOString(), scheduledAt ? new Date(scheduledAt).toISOString() : undefined)
   // Bound the complete retained history, not only the incoming document.
-  while (JSON.stringify(next).length > 1_500_000 && next.versions.length > 1) next.versions.pop()
-  if (JSON.stringify(next).length > 1_500_000) return { ok: false, error: 'This website is too large to save. Reduce its section count and try again.' }
+  while (new TextEncoder().encode(JSON.stringify(next)).length > 1_500_000 && next.versions.length > 1) next.versions.pop()
+  if (new TextEncoder().encode(JSON.stringify(next)).length > 1_500_000) return { ok: false, error: 'This website is too large to save. Reduce its section count and try again.' }
   // RPC is deliberately service-only and atomically replaces just websiteEditor.
   const rpc = auth.db as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: boolean | null; error: unknown }> }
   const result = await rpc.rpc('save_website_editor', { p_space_id: auth.space.id, p_expected_revision: expectedRevision, p_state: next, p_publish: publish })
@@ -84,9 +74,20 @@ export async function syncWebsitePresence(host: string, cursor: import('./state'
     select: (fields: string) => { eq: (field: string, value: string) => { gte: (field: string, value: string) => { limit: (count: number) => Promise<{ data: { profile_id: string; name: string; cursor: import('./state').WebsitePresence['cursor'] }[] | null; error: unknown }> } } }
   } }
   const now = Date.now()
-  const result = await db.from('website_editor_presence').upsert({ space_id: auth.space.id, profile_id: auth.profileId, name: person?.name ?? 'Editor', cursor, seen_at: new Date(now).toISOString() }, { onConflict: 'space_id,profile_id' })
+  const result = await db.from('website_editor_presence').upsert({ space_id: auth.space.id, profile_id: auth.profileId, name: person?.name.slice(0, 100) || 'Editor', cursor, seen_at: new Date(now).toISOString() }, { onConflict: 'space_id,profile_id' })
   if (result.error) return { ok: false, error: 'Presence is temporarily unavailable.' }
   const people = await db.from('website_editor_presence').select('profile_id,name,cursor').eq('space_id', auth.space.id).gte('seen_at', new Date(now - 15_000).toISOString()).limit(30)
   if (people.error) return { ok: false, error: 'Presence is temporarily unavailable.' }
   return { ok: true, people: (people.data ?? []).filter((p) => p.profile_id !== auth.profileId).map((p) => ({ profileId: p.profile_id, name: p.name, cursor: p.cursor })) }
+}
+
+/** Resolve the selected source with fresh own-site authorization on every request. */
+export async function loadWebsiteFeatureSource(host: string, source: string): Promise<{ ok: true; items: import('./live-data').WebsiteFeatureItem[] } | { ok: false; error: string }> {
+  if (!['offerings', 'events', 'memberships', 'tickets'].includes(source)) return { ok: false, error: 'Choose a website content source.' }
+  const auth = await authorizeWebsiteEditor(host)
+  if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to sign in.' }
+  try {
+    const { resolveWebsiteFeatureItems } = await import('./live-data')
+    return { ok: true, items: await resolveWebsiteFeatureItems(auth.space.id, source) }
+  } catch { return { ok: false, error: 'Could not load this content. Try selecting its source again.' } }
 }
