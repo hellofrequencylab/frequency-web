@@ -1593,8 +1593,9 @@ function Badges({ ev, audience = 'member' }: { ev: CalendarEvent; audience?: Cal
   )
 }
 
-/** One calendar item in full: the popup body AND the list's preview pane, so the two never drift. */
-function CalendarPreview({
+/** One calendar item in full: the popup body AND the list's preview pane, so the two never drift. A Space
+ *  website's event list (components/sites/site-calendar-agenda.tsx) opens the same body. */
+export function CalendarPreview({
   item,
   eventOrigin = '',
   inViewerTz,
