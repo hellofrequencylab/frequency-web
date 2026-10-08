@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { nextWebsiteState, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, sectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot } from './state'
-const snapshot = (): WebsiteSnapshot => ({ theme: 'Menswork', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [{ type: 'Text', props: { id: 'text', text: 'Original' } }] }, seo: { title: '', description: '' }, comments: [{ id: 'c1', blockId: 'text', text: 'Private review', author: 'owner', createdAt: '2026-10-08T12:00:00Z', resolved: false }] }] })
+import { nextWebsiteState, publishedWebsitePage, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, RESERVED_WEBSITE_SLUGS, WEBSITE_THEMES, sectionDisplay, updateSectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot, type SiteComment, type SectionDisplay } from './state'
+const comment = (): SiteComment => ({ id: 'c1', blockId: 'text', text: 'Private review', author: 'owner', createdAt: '2026-10-08T12:00:00Z', resolved: false })
+const snapshot = (): WebsiteSnapshot => ({ theme: 'Menswork', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [{ type: 'Text', props: { id: 'text', text: 'Original' } }] }, seo: { title: '', description: '' }, comments: [comment()] }] })
 const state = (): WebsiteEditorState => ({ v: 1, revision: 0, draft: snapshot(), published: null, versions: [] })
 describe('website draft boundary', () => {
+  it('accepts every supported theme and rejects routing collisions', () => {
+    for (const theme of WEBSITE_THEMES) expect(validWebsiteSnapshot({ ...snapshot(), theme })).toBe(true)
+    expect(validWebsiteSnapshot({ ...snapshot(), theme: 'Unknown' })).toBe(false)
+    for (const slug of RESERVED_WEBSITE_SLUGS) {
+      const draft = snapshot()
+      draft.pages.push({ ...draft.pages[0], slug })
+      expect(validWebsiteSnapshot(draft), slug).toBe(false)
+    }
+  })
   it('validates website-only branding and captures it independently when publishing', () => {
     const draft = snapshot(); draft.brand = { logo: 'https://assets.example/logo.png', accent: '#2b8050' }
     expect(validWebsiteSnapshot(draft)).toBe(true)
@@ -23,6 +33,16 @@ describe('website draft boundary', () => {
     draft.pages[0].comments[0].x = 0.3
     draft.pages[0].comments[0].replies!.push({ ...draft.pages[0].comments[0].replies![0] })
     expect(validWebsiteSnapshot(draft)).toBe(false)
+  })
+  it('isolates returned draft, published, scheduled and version documents from later mutation', () => {
+    const live = nextWebsiteState(state(), snapshot(), true, 'Owner')
+    live.draft.pages[0].doc.content[0].props.text = 'Changed draft'
+    expect(live.published?.pages[0].doc.content[0].props.text).toBe('Original')
+    live.published!.pages[0].doc.content[0].props.text = 'Changed live reference'
+    expect(live.versions[0].snapshot.pages[0].doc.content[0].props.text).toBe('Original')
+    const scheduled = nextWebsiteState(state(), snapshot(), false, 'Owner', '2026-10-08T12:00:00Z', '2026-10-09T12:00:00Z')
+    scheduled.draft.pages[0].doc.content[0].props.text = 'Changed after scheduling'
+    expect(scheduled.scheduled?.snapshot.pages[0].doc.content[0].props.text).toBe('Original')
   })
   it('keeps draft saves off the live site and strips review comments when published', () => {
     const saved = nextWebsiteState(state(), snapshot(), false, 'owner')
@@ -56,6 +76,24 @@ describe('website draft boundary', () => {
     expect(readWebsiteEditor({ websiteEditor: current })).toEqual(current)
     expect(readWebsiteEditor({ websiteEditor: { ...current, versions: [{ snapshot: 'bad' }] } })).toBeNull()
     expect(validWebsiteSnapshot({ ...snapshot(), pages: [...snapshot().pages, ...snapshot().pages] })).toBe(false)
+  })
+  it('reads public pages only from the published snapshot, excluding subsequent draft edits', () => {
+    const live = nextWebsiteState(state(), snapshot(), true, 'owner')
+    live.draft.pages[0].doc.content[0].props.text = 'Private later draft'
+    expect(publishedWebsitePage({ websiteEditor: live }, 'home')?.doc.content[0].props.text).toBe('Original')
+    expect(publishedWebsitePage({ websiteEditor: live }, 'missing')).toBeNull()
+    expect(publishedWebsitePage({ websiteEditor: state() }, 'home')).toBeNull()
+  })
+  it('resets phone overrides to inherited desktop settings without mutating the saved document', () => {
+    const original = snapshot().pages[0].doc
+    const settings: SectionDisplay = { padding: 32, textSize: 48 }
+    const desktop = updateSectionDisplay(original, 'text', 'desktop', settings)
+    const phone = updateSectionDisplay(desktop, 'text', 'phone', { padding: 8, textSize: 48 })
+    expect(sectionDisplay(phone, 'text', 'phone')).toEqual({ padding: 8, textSize: 48 })
+    const reset = updateSectionDisplay(phone, 'text', 'phone', null)
+    expect(sectionDisplay(reset, 'text', 'phone')).toEqual({ padding: 32, textSize: 48 })
+    expect(sectionDisplay(phone, 'text', 'phone').padding).toBe(8)
+    expect(sectionDisplay(original, 'text', 'desktop')).toEqual({})
   })
   it('inherits desktop display settings while clamping invalid numeric controls', () => {
     const doc = { root: { props: { websiteLayout: { text: { desktop: { padding: 32, gap: 16, animation: 'rise' }, phone: { padding: 8, hidden: true, columns: 90, textSize: Infinity } } } } }, content: [] }

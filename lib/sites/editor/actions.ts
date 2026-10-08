@@ -58,7 +58,7 @@ export async function proposeWebsiteText(host: string, request: string, value: s
       messages: [{ role: 'user', content: JSON.stringify({ request, passage: value }) }],
     })
     await recordAiUsage({ feature, model: result.tier, usage: result.usage, costUsd: result.costUsd, profileId: auth.profileId, spaceId: auth.space.id })
-    const text = result.text.replace(/<[^>]*>/g, '').trim().slice(0, 8000)
+    const text = result.text.replace(/[<>]/g, '').trim().slice(0, 8000)
     return text ? { ok: true, text } : { ok: false, error: 'Vera returned no text. Try another request.' }
   } catch { return { ok: false, error: 'Vera could not prepare that change. Try again in a moment.' } }
 }

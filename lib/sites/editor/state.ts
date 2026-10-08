@@ -119,12 +119,13 @@ export function nextWebsiteState(current: WebsiteEditorState, draft: WebsiteSnap
   const snapshot = structuredClone(draft)
   // Comments stay in the private draft; even a direct public row projection cannot
   // carry a private review thread in its published document.
-  const publicSnapshot = { ...snapshot, pages: snapshot.pages.map((p) => ({ ...p, comments: [] })) }
+  const publicSnapshot = structuredClone(snapshot)
+  publicSnapshot.pages.forEach((page) => { page.comments = [] })
   return {
     v: 1, revision: current.revision + 1, draft: snapshot,
-    published: publish ? publicSnapshot : current.published,
-    scheduled: publish ? null : scheduledAt ? { at: scheduledAt, author, snapshot: publicSnapshot } : current.scheduled ?? null,
-    versions: publish ? [{ id: String(current.revision + 1), createdAt: now, author, snapshot: publicSnapshot }, ...current.versions].slice(0, MAX_VERSIONS) : current.versions,
+    published: publish ? publicSnapshot : structuredClone(current.published),
+    scheduled: publish ? null : scheduledAt ? { at: scheduledAt, author, snapshot: publicSnapshot } : structuredClone(current.scheduled ?? null),
+    versions: publish ? [{ id: String(current.revision + 1), createdAt: now, author, snapshot: structuredClone(publicSnapshot) }, ...structuredClone(current.versions)].slice(0, MAX_VERSIONS) : structuredClone(current.versions),
   }
 }
 

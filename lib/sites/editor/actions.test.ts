@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const mocks = vi.hoisted(() => ({ host: 'hearts.example', staff: false, allowed: true, opens: true, preferences: {} as unknown, rpc: vi.fn(), refresh: vi.fn(), presenceWrite: vi.fn(), presenceRead: vi.fn(), features: vi.fn() }))
+const mocks = vi.hoisted(() => ({ host: 'hearts.example', staff: false, allowed: true, opens: true, preferences: {} as unknown, rpc: vi.fn(), refresh: vi.fn(), presenceWrite: vi.fn(), presenceRead: vi.fn(), features: vi.fn(), complete: vi.fn() }))
 vi.mock('next/headers', () => ({ headers: async () => ({ get: () => mocks.host }), cookies: async () => ({ get: () => ({ value: 'token' }) }) }))
 vi.mock('@/lib/sites/hosted', () => ({ resolveHostedSpace: async () => ({ id: 'space', slug: 'hearts' }) }))
 vi.mock('@/lib/sites/site-admin-pass', () => ({ SITE_ADMIN_COOKIE: 'admin', readSiteAdminPass: () => ({ staff: mocks.staff, profileId: 'owner' }), passOpensSite: () => mocks.opens }))
@@ -7,7 +7,12 @@ vi.mock('@/lib/sites/site-admin', () => ({ siteAdminAllowed: async () => mocks.a
 vi.mock('@/lib/sites/site-cache', () => ({ refreshSite: mocks.refresh }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ rpc: mocks.rpc, from: (table: string) => table === 'website_editor_presence' ? { upsert: mocks.presenceWrite, select: () => ({ eq: () => ({ gte: () => ({ limit: mocks.presenceRead }) }) }) } : ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { preferences: mocks.preferences, owner_profile_id: 'owner' }, error: null }) }) }) }) }) }))
 vi.mock('./live-data', () => ({ resolveWebsiteFeatureItems: mocks.features }))
-import { saveWebsiteDraft, syncWebsitePresence, loadWebsiteFeatureSource } from './actions'
+vi.mock('@/lib/ai/complete', () => ({ completeText: mocks.complete }))
+vi.mock('@/lib/ai/client', () => ({ aiEnabled: () => true }))
+vi.mock('@/lib/ai/rate-limit', () => ({ aiRateLimited: async () => false }))
+vi.mock('@/lib/ai/usage', () => ({ featureOverBudget: async () => false, recordAiUsage: async () => {} }))
+vi.mock('@/lib/ai/voice', () => ({ withVoice: (text: string) => text }))
+import { saveWebsiteDraft, syncWebsitePresence, loadWebsiteFeatureSource, proposeWebsiteText } from './actions'
 import { nextWebsiteState, type WebsiteEditorState, type WebsiteSnapshot } from './state'
 const draft: WebsiteSnapshot = { theme: 'DAWN', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [] }, seo: { title: '', description: '' }, comments: [] }] }
 describe('website editor authorization and concurrency', () => {
@@ -31,6 +36,16 @@ describe('website editor authorization and concurrency', () => {
       expect(mocks.features).not.toHaveBeenCalled()
     }
     expect(await loadWebsiteFeatureSource('hearts.example', 'private-library')).toMatchObject({ ok: false })
+  })
+  it('returns AI proposals as plain text even with malformed nested tags', async () => {
+    mocks.complete.mockResolvedValue({ text: 'Safe **copy** <scr<script>ipt>alert(1)</scr</script>ipt> <script', tier: 'haiku', usage: {} })
+    const result = await proposeWebsiteText('hearts.example', 'Shorten this copy', 'Original passage')
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.text).not.toMatch(/[<>]/)
+      expect(result.text).toContain('**copy**')
+      expect(result.text).not.toContain('<script')
+    }
   })
   it('validates cursor coordinates and returns actual other editors only', async () => {
     expect(await syncWebsitePresence('hearts.example', { pageSlug: 'home', blockId: 'hero', x: 2, y: 0 })).toMatchObject({ ok: false })
