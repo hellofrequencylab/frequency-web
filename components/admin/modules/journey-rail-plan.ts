@@ -67,7 +67,7 @@ export { JOURNEY_FAQ_CAP }
 export const JOURNEY_HEADER_WRITES = ['cover_image', 'logo_image', 'header_overlay_style', 'header_overlay_color'] as const
 
 /** The columns `setJourneyRewards` (the first) and `setJourneyDelivery` (the other two) write. */
-export const JOURNEY_DELIVERY_WRITES = ['completion_gems', 'drip_interval_days', 'certificate_enabled'] as const
+export const JOURNEY_DELIVERY_WRITES = ['completion_gems', 'drip_interval_days', 'ongoing', 'certificate_enabled'] as const
 
 /** The column `setJourneyVisibility` writes. (`status` is set by that action, never by the author.) */
 export const JOURNEY_VISIBILITY_WRITES = ['visibility'] as const
@@ -191,9 +191,10 @@ export function journeyRewards(values: JourneyRailValues): number {
 }
 
 /** `setJourneyDelivery`'s patch. An emptied drip is 0; updatePlan clamps to 1-30. */
-export function journeyDeliveryPatch(values: JourneyRailValues): { certificateEnabled: boolean; dripIntervalDays: number } {
+export function journeyDeliveryPatch(values: JourneyRailValues): { certificateEnabled: boolean; dripIntervalDays: number; ongoing: boolean } {
   return {
     certificateEnabled: values.certificate_enabled === 'true',
+    ongoing: values.ongoing === 'true',
     dripIntervalDays: Number(values.drip_interval_days) || 0,
   }
 }

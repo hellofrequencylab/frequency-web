@@ -37,6 +37,12 @@ Once you start a Journey, a bar at the bottom of the screen takes you between fo
 - **Library** lists every Journey you are on. The one you were last working on is first,
   with **Continue** one tap away.
 
+## Journeys that repeat each year
+
+Some Journeys run all year, one month at a time, and start again at month 1 when the year
+ends. You can join any month. Your Course shows which month you are in and which year, and
+every lesson you finished stays finished.
+
 ## How you finish
 
 A Journey is finished when two things are true inside its four-week window:

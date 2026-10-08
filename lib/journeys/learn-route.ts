@@ -7,6 +7,7 @@ import { canEnterJourney } from '@/lib/journeys/entry-gate'
 import { getJourneyLearnExtras } from '@/lib/journeys/learn'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, getPhaseEvents, type KickoffEvent } from '@/lib/journeys/runs'
 import type { CohortProgress } from '@/lib/journeys/cohort'
+import { cadenceUnit, ongoingCycle } from '@/lib/journeys/schedule'
 
 // The ONE loader behind the enrolled side of a Journey: the course home (/journeys/<slug>/learn)
 // and the focus player (/journeys/<slug>/play). Both pages used to be one page, so the door, the
@@ -84,6 +85,13 @@ export async function loadJourneyLearnRoute(slug: string, from: 'learn' | 'play'
     /* Runs not enabled yet */
   }
 
+  // An ONGOING Journey (journey_plans.ongoing) repeats each year: once every phase has opened it
+  // names the calendar's phase as current ("Month 5 of Year 2") instead of reading as finished.
+  const cycle =
+    (plan as { ongoing?: boolean }).ongoing && anchorStart
+      ? ongoingCycle(anchorStart, dripIntervalDays, view.tree.phases.length)
+      : null
+
   return {
     profileId,
     plan,
@@ -96,6 +104,8 @@ export async function loadJourneyLearnRoute(slug: string, from: 'learn' | 'play'
     kickoff,
     anchorStart,
     dripIntervalDays,
+    unit: cadenceUnit(dripIntervalDays),
+    cycle,
     runId,
     isRunHost,
     phaseEventsById,

@@ -61,6 +61,7 @@ describe('the Journey rail plan', () => {
     expect(JOURNEY_RAIL.delivery.fields.map((f) => f.path)).toEqual([
       'completion_gems',
       'drip_interval_days',
+      'ongoing',
       'certificate_enabled',
     ])
     expect(JOURNEY_RAIL.visibility.fields.map((f) => f.path)).toEqual(['visibility'])
@@ -196,7 +197,7 @@ describe('the rail reads the row by manifest path, and writes each action its ow
   it('journeyRewards and journeyDeliveryPatch read numbers and the toggle', () => {
     const v = journeyRailValues(row)
     expect(journeyRewards(v)).toBe(40)
-    expect(journeyDeliveryPatch(v)).toEqual({ certificateEnabled: true, dripIntervalDays: 7 })
+    expect(journeyDeliveryPatch(v)).toEqual({ certificateEnabled: true, dripIntervalDays: 7, ongoing: false })
     expect(journeyRewards({ completion_gems: '' })).toBe(0)
   })
 

@@ -12,6 +12,7 @@ import {
   NotebookPen,
   Paperclip,
   Play,
+  Repeat,
   Sparkles,
   Trophy,
   Video,
@@ -49,16 +50,36 @@ const LEAF_ICON: Record<LeafType, LucideIcon> = {
 export const playHref = (slug: string, lessonId?: string | null) =>
   lessonId ? `/journeys/${slug}/play?lesson=${encodeURIComponent(lessonId)}` : `/journeys/${slug}/play`
 
-const weekLabel = (p: Phase, i: number) => (p.title ? `Week ${i + 1}` : `Phase ${i + 1}`)
+/** The unit the cadence counts in (schedule.cadenceUnit): a monthly Journey reads "Month 3". */
+type Unit = 'week' | 'month'
+const unitWord = (u: Unit) => (u === 'month' ? 'Month' : 'Week')
+
+const weekLabel = (p: Phase, i: number, u: Unit) => (p.title ? `${unitWord(u)} ${i + 1}` : `Phase ${i + 1}`)
 
 /** The phase's own title, or null when it only repeats the label ("Week 4" titled "Week 4"). */
-const ownTitle = (p: Phase, i: number) => {
+const ownTitle = (p: Phase, i: number, u: Unit) => {
   const t = p.title?.trim()
-  return t && t.toLowerCase() !== weekLabel(p, i).toLowerCase() ? t : null
+  return t && t.toLowerCase() !== weekLabel(p, i, u).toLowerCase() ? t : null
+}
+
+/** An ongoing Journey's place in its year (schedule.ongoingCycle), or null for one that ends. */
+export type OngoingCycle = { year: number; phaseIndex: number; nextAt: Date | null } | null
+
+/** The first not-done lesson in one phase, when that phase is open. */
+function firstOpenIn(tree: JourneyTree, locks: PhaseLockState[], pi: number) {
+  if (locks[pi]?.locked || !tree.phases[pi]) return null
+  for (const m of tree.phases[pi].modules) for (const l of m.lessons) if (!l.done) return { lesson: l, phaseIndex: pi }
+  return null
+}
+
+/** Up next. An ongoing Journey points at THIS month first (the calendar, not the backlog), then
+ *  falls back to catching up; one that ends walks the path in order. */
+export function upNext(tree: JourneyTree, locks: PhaseLockState[], cycle: OngoingCycle) {
+  return (cycle ? firstOpenIn(tree, locks, cycle.phaseIndex) : null) ?? resumePoint(tree, locks)
 }
 
 /** Where the member is: the first not-done lesson in an OPEN week, never a locked one. */
-export function resumePoint(tree: JourneyTree, locks: PhaseLockState[]) {
+function resumePoint(tree: JourneyTree, locks: PhaseLockState[]) {
   for (let pi = 0; pi < tree.phases.length; pi++) {
     if (locks[pi]?.locked) continue
     for (const m of tree.phases[pi].modules)
@@ -74,18 +95,25 @@ export function CourseProgress({
   tree,
   locks,
   anchorLessonId,
+  unit = 'week',
+  cycle = null,
 }: {
   slug: string
   tree: JourneyTree
   locks: PhaseLockState[]
   anchorLessonId: string | null
+  unit?: Unit
+  cycle?: OngoingCycle
 }) {
-  const next = resumePoint(tree, locks)
+  const next = upNext(tree, locks, cycle)
   const openCount = locks.filter((l) => !l.locked).length
-  const currentIndex = next?.phaseIndex ?? Math.max(0, openCount - 1)
+  const currentIndex = cycle?.phaseIndex ?? next?.phaseIndex ?? Math.max(0, openCount - 1)
   const current = tree.phases[currentIndex]
   const nextLock = locks.find((l) => l.locked) ?? null
   const waiting = !next && !tree.complete && !!nextLock
+  // The next turn of the calendar: the next locked phase, or for an ongoing Journey whose phases
+  // are all open, the day the next month (or week) of the cycle begins.
+  const nextAt = nextLock?.unlockAt ?? (cycle ? cycle.nextAt : null)
 
   return (
     <section aria-label="Your progress" className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
@@ -108,21 +136,22 @@ export function CourseProgress({
             <div>
               <dt className="flex items-center justify-between text-meta text-muted">
                 <span>
-                  {weekLabel(current, currentIndex)} of {tree.phases.length}
+                  {weekLabel(current, currentIndex, unit)} of {tree.phases.length}
+                  {cycle ? ` · Year ${cycle.year}` : ''}
                 </span>
                 <span className="tabular-nums">
                   {current.doneRequired}/{current.totalRequired}
                 </span>
               </dt>
               <dd className="mt-1">
-                <ProgressTrack value={current.percent} minVisible={2} label={`${current.percent}% of this week done`} size="sm" />
+                <ProgressTrack value={current.percent} minVisible={2} label={`${current.percent}% of this ${unit} done`} size="sm" />
               </dd>
             </div>
           )}
           <div>
-            <dt className="text-meta text-muted">Next week</dt>
+            <dt className="text-meta text-muted">Next {unit}</dt>
             <dd className="text-body-sm font-semibold text-text">
-              {nextLock ? unlockLine(nextLock.unlockAt) : 'Every week is open'}
+              {nextAt ? unlockLine(nextAt) : `Every ${unit} is open`}
             </dd>
           </div>
         </dl>
@@ -130,7 +159,17 @@ export function CourseProgress({
 
       {/* Up next: the one primary action. */}
       <div className="flex flex-col justify-between gap-4 rounded-card border border-primary/30 bg-primary-bg/40 p-5">
-        {tree.complete ? (
+        {tree.complete && cycle ? (
+          <div className="flex items-start gap-3">
+            <Repeat className="mt-0.5 h-6 w-6 shrink-0 text-success" aria-hidden />
+            <div>
+              <p className="text-lead font-bold text-text">Every {unit} is done.</p>
+              <p className="mt-1 text-body-sm text-muted">
+                This Journey repeats each year. You are in {weekLabel(current, currentIndex, unit)} of Year {cycle.year}; come back to it any time.
+              </p>
+            </div>
+          </div>
+        ) : tree.complete ? (
           <div className="flex items-start gap-3">
             <Trophy className="mt-0.5 h-6 w-6 shrink-0 text-success" aria-hidden />
             <div>
@@ -151,8 +190,8 @@ export function CourseProgress({
             <p className="eyebrow text-primary-strong">Up next</p>
             <p className="mt-1 text-lead font-bold text-text">{next.lesson.title}</p>
             <p className="mt-1 text-body-sm text-muted">
-              {weekLabel(tree.phases[next.phaseIndex], next.phaseIndex)}
-              {ownTitle(tree.phases[next.phaseIndex], next.phaseIndex) ? ` · ${ownTitle(tree.phases[next.phaseIndex], next.phaseIndex)}` : ''}
+              {weekLabel(tree.phases[next.phaseIndex], next.phaseIndex, unit)}
+              {ownTitle(tree.phases[next.phaseIndex], next.phaseIndex, unit) ? ` · ${ownTitle(tree.phases[next.phaseIndex], next.phaseIndex, unit)}` : ''}
               {next.lesson.estMinutes ? ` · ${next.lesson.estMinutes} min` : ''}
               {next.lesson.id === anchorLessonId ? ' · Daily anchor' : ''}
             </p>
@@ -174,6 +213,8 @@ export function CoursePath({
   phaseFocusById,
   pillarByLesson,
   anchorLessonId,
+  unit = 'week',
+  cycle = null,
 }: {
   slug: string
   tree: JourneyTree
@@ -181,15 +222,17 @@ export function CoursePath({
   phaseFocusById: Record<string, string>
   pillarByLesson: Record<string, string>
   anchorLessonId: string | null
+  unit?: Unit
+  cycle?: OngoingCycle
 }) {
-  const next = resumePoint(tree, locks)
+  const next = upNext(tree, locks, cycle)
   return (
     <section id="the-path" aria-label="The path">
       <SectionHeader title="Your path" count={tree.phases.length} />
       <ol className="relative space-y-3 before:absolute before:bottom-6 before:left-[1.1875rem] before:top-6 before:w-px before:bg-border">
         {tree.phases.map((p, i) => {
           const lock = locks[i] ?? { locked: false, unlockAt: null }
-          const isCurrent = next?.phaseIndex === i
+          const isCurrent = cycle ? cycle.phaseIndex === i : next?.phaseIndex === i
           const lessons = p.modules.flatMap((m) => m.lessons)
           const minutes = lessons.reduce((n, l) => n + (l.estMinutes ?? 0), 0)
           const state = lock.locked ? 'locked' : p.complete ? 'done' : isCurrent ? 'current' : 'open'
@@ -218,23 +261,23 @@ export function CoursePath({
                 <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
                   <span className="min-w-0 flex-1">
                     <span className={`block truncate text-body font-semibold ${state === 'locked' ? 'text-muted' : 'text-text'}`}>
-                      {ownTitle(p, i) ?? weekLabel(p, i)}
+                      {ownTitle(p, i, unit) ?? weekLabel(p, i, unit)}
                     </span>
                     <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta text-muted">
-                      {ownTitle(p, i) && <span className="font-semibold">{weekLabel(p, i)}</span>}
+                      {ownTitle(p, i, unit) && <span className="font-semibold">{weekLabel(p, i, unit)}</span>}
                       <span>
                         {lessons.length} lesson{lessons.length === 1 ? '' : 's'}
                         {minutes > 0 ? ` · ${minutes} min` : ''}
                       </span>
                       {state === 'current' && (
-                        <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-3xs font-semibold text-primary-strong">This week</span>
+                        <span className="rounded-pill bg-primary-bg px-2 py-0.5 text-3xs font-semibold text-primary-strong">This {unit}</span>
                       )}
                       {state === 'locked' && <span className="font-medium">{unlockLine(lock.unlockAt)}</span>}
                     </span>
                     {!lock.locked && (
                       <span className="mt-2 flex items-center gap-2">
                         <span className="min-w-0 flex-1">
-                          <ProgressTrack value={p.percent} minVisible={2} label={`${p.percent}% of ${weekLabel(p, i)} done`} size="sm" tone={p.complete ? 'success' : 'primary'} />
+                          <ProgressTrack value={p.percent} minVisible={2} label={`${p.percent}% of ${weekLabel(p, i, unit)} done`} size="sm" tone={p.complete ? 'success' : 'primary'} />
                         </span>
                         <span className="shrink-0 text-3xs tabular-nums text-muted">
                           {p.doneRequired}/{p.totalRequired}

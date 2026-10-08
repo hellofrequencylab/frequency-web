@@ -15,6 +15,7 @@ import {
   Lock,
   Sparkles,
   UsersRound,
+  Repeat,
 } from 'lucide-react'
 import type { JourneyPlanItem, JourneyPlan } from '@/lib/journey-plans'
 import { enabledWidgets } from '@/lib/journey-page-config'
@@ -29,6 +30,7 @@ import type { Pillar } from '@/lib/pillars'
 import { buildJourneyTree, type BlockRow, type Phase } from '@/lib/journeys/tree'
 import { readJourneyFaq, type JourneyFaqItem } from '@/lib/journeys/faq'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { MONTHLY_DRIP_DAYS } from '@/lib/journeys/schedule'
 
 // Discovery-mode content blocks (docs/JOURNEYS.md §10) — the visitor / not-enrolled face.
 // Each is a small Server Component the page composes. Token colors only; no hand-rolled
@@ -114,6 +116,7 @@ export function cadenceLabel(dripIntervalDays: number): string {
   if (d === 7) return '1 phase / week'
   if (d === 1) return '1 phase / day'
   if (d === 14) return '1 phase / 2 weeks'
+  if (d === MONTHLY_DRIP_DAYS) return '1 phase / month'
   return `1 phase / ${d} days`
 }
 
@@ -128,6 +131,7 @@ export function phaseOpenLabel(index: number, dripIntervalDays: number): string 
   const d = dripIntervalDays || 7
   if (d === 1) return `Day ${index + 1}`
   if (d === 7) return `Week ${index + 1}`
+  if (d === MONTHLY_DRIP_DAYS) return `Month ${index + 1}`
   if (d % 7 === 0) return `Week ${(index * d) / 7 + 1}`
   return `Day ${index * d + 1}`
 }
@@ -179,6 +183,7 @@ export function JourneyStatChips({
       </StatChip>
       {time && <StatChip icon={Clock}>{time}</StatChip>}
       <StatChip icon={CalendarDays}>{cadenceLabel(plan.drip_interval_days)}</StatChip>
+      {plan.ongoing && <StatChip icon={Repeat}>Repeats each year</StatChip>}
       <StatChip icon={Gem} tone="reward">
         {plan.completion_gems} Gems
       </StatChip>
@@ -732,6 +737,7 @@ export function AtAGlanceCard({
     { icon: Layers, text: `${facts.phaseCount} ${facts.phaseCount === 1 ? 'phase' : 'phases'} · ${facts.lessonCount} ${facts.lessonCount === 1 ? 'lesson' : 'lessons'}` },
     ...(time ? [{ icon: Clock, text: time }] : []),
     { icon: CalendarDays, text: cadenceLabel(plan.drip_interval_days) },
+    ...(plan.ongoing ? [{ icon: Repeat, text: 'Repeats each year, join any month' }] : []),
     { icon: Gem, text: `${plan.completion_gems} Gems on completion` },
     ...(plan.certificate_enabled ? [{ icon: Award, text: 'Printable certificate' }] : []),
     { icon: UsersRound, text: 'Run with your Circle or solo' },

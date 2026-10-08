@@ -6823,6 +6823,7 @@ export type Database = {
           logo_image: string | null
           meeting: Json
           official: boolean
+          ongoing: boolean
           page_config: Json | null
           published_at: string | null
           quest_id: string | null
@@ -6871,6 +6872,7 @@ export type Database = {
           logo_image?: string | null
           meeting?: Json
           official?: boolean
+          ongoing?: boolean
           page_config?: Json | null
           published_at?: string | null
           quest_id?: string | null
@@ -6919,6 +6921,7 @@ export type Database = {
           logo_image?: string | null
           meeting?: Json
           official?: boolean
+          ongoing?: boolean
           page_config?: Json | null
           published_at?: string | null
           quest_id?: string | null
