@@ -1,0 +1,11 @@
+{
+  "rows": [{"id":"r0","columns":2,"cells":[["unknown-retired-type","text","text"],["future-widget"]],"title":"Synthetic test","headerOn":true}],
+  "content": {
+    "unknown-retired-type": {"text":"  exact whitespace\nline two 🪷  ","extension":{"ordered":[null,false,0,{"html":"<b>unchanged</b>","type":"future-nested"}]}},
+    "text": {"text":"First duplicate owns this bag"},
+    "future-widget": {"payload":[{"type":"never-registered","value":"untouched"}]},
+    "unknown-benched-type": {"title":"Saved on the bench","nested":{"items":[1,2,3]}}
+  },
+  "style": {"unknown-retired-type":{"custom":{"value":"opaque"}},"unknown-benched-style":{"mt":"lg"}},
+  "hidden": ["unknown-hidden-type"]
+}
