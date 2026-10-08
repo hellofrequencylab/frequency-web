@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-884",
+  "title": "Public Market details use shared ISR while service availability remains current and authenticated",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/(public)/market/[id]/page.tsx",
+    "ref": "Owner October 8 reliability audit: anonymous detail remains MISS/private-no-store"
+  },
+  "detail": "Implementation prepared: runtime ISR without force-static or server session reads; fresh opt-in authenticated service availability rechecks product publication and independent booking Space visibility/function gates. Metadata uses the same public eligibility gate. Canonical UUID redirects preserve query strings before cookie stamping and shared-cache lookup. Product, variant, Journey offer, Space privacy/status/storefront and review/comment mutations invalidate affected detail HTML, including ambiguous committed-write/lost-reply outcomes. Existing checkout current-price/stock checks, signed Market attribution and member booking defaults remain. Local behavioral probe, 234 focused tests, full typecheck and source guards passed before clean rebase to main including LIVE-882. OPEN until actual Vercel build artifact and anonymous first/repeat retained-cookie HIT, canonical/malformed URL and private/unpublished gates, plus controlled cache-withdrawal consequences are captured with the exact meaningful-source digest. No production changes or runtime caching success claimed.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/check-public-market-detail.mjs --require-runtime",
+    "note": "Executes actual shipped public gate, availability, proxy, strict read failures and mutation consequences; exits79 honestly while sanitized runtime evidence is absent. Evidence validation binds source digest, deployment/build ISR, repeat anonymous HIT, aliases, privacy gates and cache withdrawal."
+  },
+  "wave": "WR"
+}

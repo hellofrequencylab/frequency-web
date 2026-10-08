@@ -99,7 +99,11 @@ if (!/lunarPhaseDates/.test(moon) || !/2451550\.09766/.test(moon)) fail(`${MOON}
 if (!/'vera-calendar':/.test(budget)) fail(`${BUDGET} has no 'vera-calendar' cap, so this door inherits the loose fallback`)
 if (!/aiRateLimited\(/.test(ai)) fail(`${AI} does not rate-limit per actor`)
 if (!/featureOverBudget\(/.test(ai)) fail(`${AI} does not gate on the daily budget`)
-if (!/recordAiUsage\(/.test(ai)) fail(`${AI} never records usage, so the spend is invisible to the ledger`)
+const gateway = read('lib/ai/complete.ts') ?? ''
+const centrallyMetered = /completeRaw\(\{\s*accounting:\s*\{\s*feature:\s*VERA_CALENDAR_FEATURE/.test(ai)
+  && ((/await reserveAiAttempt\(/.test(gateway) && /await settleAiAttempt\(/.test(gateway))
+    || (/await recordCompletion\(p\.accounting/.test(gateway) && /await recordAiUsage\(\{\s*feature:\s*context\.feature/.test(gateway)))
+if (!/recordAiUsage\(/.test(ai) && !centrallyMetered) fail(`${AI} never records usage, so the spend is invisible to the ledger`)
 
 // 6. Nothing publishes.
 const vocab = read(VOCAB)
