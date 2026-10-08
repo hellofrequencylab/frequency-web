@@ -125,7 +125,11 @@ export function isSpacePlanLabel(raw: string | null | undefined): boolean {
  *  NOT the billing-latent featureAllowed seam, so it stays locked for free Spaces regardless of
  *  billingLive; being in the plan depth is the ONLY way a Business/Nonprofit Space ever unlocks it.
  *  Kept in lock-step with SPACE_FULL_WEBSITE_KEY (lib/spaces/entitlements.ts). */
+// Email identity is independent of the website custom-domain add-on.
+export const SPACE_EMAIL_CUSTOM_IDENTITY_KEY = 'space_email_custom_identity' as const
+
 export const BUSINESS_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
+  SPACE_EMAIL_CUSTOM_IDENTITY_KEY,
   'crm',
   'crm.playbooks',
   'email',
