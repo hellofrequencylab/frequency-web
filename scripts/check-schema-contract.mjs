@@ -103,6 +103,20 @@ export const ALLOWLIST = [
   { file: 'lib/commerce/checkout.ts', table: 'claim_commerce_settlement', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 creates this service-only recovery RPC. Retire on public schema regeneration after the approved migration is applied.' },
   { file: 'lib/commerce/checkout.ts', table: 'advance_commerce_settlement', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 creates this service-only recovery RPC. Retire on public schema regeneration after the approved migration is applied.' },
   { file: 'lib/commerce/checkout.ts', table: 'release_commerce_settlement', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 creates this service-only recovery RPC. Retire on public schema regeneration after the approved migration is applied.' },
+  {
+    file: 'lib/collective/cross-listing-actions.ts',
+    table: 'collective_cross_listings',
+    added: '2026-10-08',
+    reason: 'LIVE-765: additive migration 20270346006800_collective_cross_listings.sql creates the service-only consent relation. Foreign keys, constraints and browser denials are proven by actual SQL and pgTAP checks. Retires when lib/database.types.ts is regenerated after production applies migration 068.',
+    owner: 'LIVE-765',
+  },
+  {
+    file: 'lib/collective/cross-listing-store.ts',
+    table: 'collective_cross_listings',
+    added: '2026-10-08',
+    reason: 'LIVE-765: additive migration 20270346006800_collective_cross_listings.sql creates the service-only consent relation. Foreign keys, constraints and browser denials are proven by actual SQL and pgTAP checks. Retires when lib/database.types.ts is regenerated after production applies migration 068.',
+    owner: 'LIVE-765',
+  },
   // EMPTY as of 2026-09-28, and empty is the resting state. Migration 20270345008600 (the
   // calendar-entry tombstone, LIVE-536) was applied to the live project and lib/database.types.ts
   // was regenerated from it with --schema public. That one regeneration retired all seven entries
