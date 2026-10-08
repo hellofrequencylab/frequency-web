@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-864",
+  "title": "A Space website shows its Executive Overview and Yearly Calendar on the site itself at /admin, gated by a pass the Frequency console mints for the Space's managers, in the Hearts on Fire design",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "app/hosted/[host]/admin/[view]/page.tsx",
+    "ref": "Owner ask 2026-10-07 23:10: 'you weren't supposed to put the executive overview and calendar on Frequency. Those are Admin display pages on the site.' and 'Make them look exactly like the design system.'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. routeSiteHost rewrites /admin and /admin/<view> on a site host to app/hosted/[host]/admin/[view] (force-dynamic, noindex, 404 unless the site is published on the Menswork skin). The website cannot see a Frequency session, so the site's Admin link goes to /admin; with no valid cookie the page sends the person to the console route /spaces/<slug>/manage/leadership/open, which checks they manage the Space (or are staff), mints an HMAC pass bound to the Space and host (lib/sites/site-admin-pass.ts, 12 hours) and returns them to /admin/enter, which keeps it in a host-only __Host- cookie. siteAdminAllowed re-checks the pass and the person's owner or editor-or-above role on every view. The overview is parsed from preferences.programOverview into design blocks (lib/spaces/leadership-overview.ts) and the calendar is the program year grid with seasons, sign starts, US holidays and chips, both rendered to the design system templates (components/sites/admin). The console calendar tab is removed; the console page keeps the overview editor and two buttons.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const host=r('lib/sites/host.ts');if(!/SITE_ADMIN_SEGMENT/.test(host))miss.push('the website does not route /admin');const view=r('app/hosted/[host]/admin/[view]/page.tsx');if(!/siteAdminAllowed\\\\(/.test(view)||!/SiteOverview/.test(view)||!/SiteCalendar/.test(view))miss.push('the website admin page is not gated or does not render the overview and calendar');if(!/SITE_ADMIN_COOKIE/.test(r('app/hosted/[host]/admin/enter/route.ts')))miss.push('the website has no pass entry route');if(!/signSiteAdminPass\\\\(/.test(r('app/(main)/spaces/[slug]/manage/leadership/open/route.ts')))miss.push('the console does not mint the pass');if(fs.existsSync('app/(main)/spaces/[slug]/manage/leadership/year-calendar.tsx'))miss.push('the calendar still renders in the console');if(!/getSpaceMembership\\\\(/.test(r('lib/sites/site-admin.ts')))miss.push('the gate does not re-check the role');if(miss.length){console.error('LIVE-864: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { execSync } from 'node:child_process'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { mensworkSign, mensworkSignStarting, MENSWORK_SIGNS } from '@/lib/theme/menswork'
-import { HelpMarkdown } from '@/components/help/help-markdown'
 import { SiteChrome } from '@/components/sites/site-chrome'
 import { toProfileContext } from './profile-modules'
 import type { Space } from './types'
@@ -10,10 +9,12 @@ import {
   PROGRAM_OVERVIEW_KEY,
   PROGRAM_OVERVIEW_MAX,
   buildProgramYear,
+  courseChipTitle,
+  gatheringNote,
   nextProgramOverviewPreferences,
-  overviewSections,
   pickProgramYear,
   programEventKind,
+  programHolidays,
   readProgramOverview,
   withoutLeadershipPreferences,
   type ProgramEvent,
@@ -91,6 +92,26 @@ describe('the program year', () => {
   })
 })
 
+describe('the calendar marks (LIVE-864)', () => {
+  it('computes the US holidays for the lead-in and the year', () => {
+    const h = programHolidays(2027)
+    expect(h.get('2026-12-25')).toBe('Christmas')
+    expect(h.get('2027-01-18')).toBe('MLK Day')
+    expect(h.get('2027-03-28')).toBe('Easter')
+    expect(h.get('2027-05-31')).toBe('Memorial Day')
+    expect(h.get('2027-11-25')).toBe('Thanksgiving')
+    expect(programHolidays(2026).get('2026-04-05')).toBe('Easter')
+  })
+
+  it('names a course chip and a gathering note', () => {
+    expect(courseChipTitle('Opening course, week 3')).toBe('Week 3')
+    expect(courseChipTitle('Circle Night')).toBe('Circle Night')
+    expect(gatheringNote('Imbolc. All circles together.', 'Aquarius')).toBe('Imbolc · mid-Aquarius')
+    expect(gatheringNote('All circles together.', 'Aquarius')).toBeNull()
+    expect(gatheringNote(null, 'Leo')).toBeNull()
+  })
+})
+
 describe('the executive overview', () => {
   it('reads, writes only its own key, and an empty save removes it', () => {
     const current = { theme: 'menswork', websitePublished: true }
@@ -101,14 +122,6 @@ describe('the executive overview', () => {
     expect(nextProgramOverviewPreferences(saved.preferences, '   ')).toEqual({ preferences: current })
     expect(nextProgramOverviewPreferences(current, 'x'.repeat(PROGRAM_OVERVIEW_MAX + 1))).toHaveProperty('error')
     expect(readProgramOverview(null)).toBe('')
-  })
-
-  it('its contents anchors are the ids the Markdown renderer gives the headings', () => {
-    const md = "## What Hearts on Fire is\n\nText.\n\n## The member's **path**\n\n```\n## not a heading\n```\n\n### A subsection\n"
-    const sections = overviewSections(md)
-    expect(sections.map((s) => s.title)).toEqual(['What Hearts on Fire is', "The member's path"])
-    const html = renderToStaticMarkup(<HelpMarkdown>{md}</HelpMarkdown>)
-    for (const s of sections) expect(html).toContain(`id="${s.id}"`)
   })
 })
 
@@ -122,16 +135,16 @@ describe('the website Admin link', () => {
         cta={null}
         themeFonts
         skin={skin ? { theme: 'menswork', season: 'fall' } : null}
-        adminHref="https://frequencylocal.com/spaces/heart-on-fire/manage/leadership"
+        adminHref="/admin"
       >
         <p>Body</p>
       </SiteChrome>,
     )
 
-  it('a skinned site ends its menu with a labelled Admin link to the console page', () => {
+  it('a skinned site ends its menu with a labelled Admin link to its own admin pages', () => {
     const html = chrome(true)
     expect(html).toContain('class="hs-nav-admin"')
-    expect(html).toContain('href="https://frequencylocal.com/spaces/heart-on-fire/manage/leadership"')
+    expect(html).toContain('href="/admin"')
     expect(html).toMatch(/>Admin<\/a>/)
   })
 
@@ -163,7 +176,7 @@ describe('🔴 the overview never reaches a public surface', () => {
     expect(withoutLeadershipPreferences(null)).toBeNull()
   })
 
-  it('only the leadership module names the key, and only the console page reads the overview', () => {
+  it('only the leadership module names the key, and only the console page and the website admin page read the overview', () => {
     // The key as a string literal: the one way code can name it besides PROGRAM_OVERVIEW_KEY.
     const names = execSync(`git grep -l -E "['\\"]programOverview['\\"]" -- app lib components`, { encoding: 'utf8' })
       .split('\n')
@@ -173,6 +186,10 @@ describe('🔴 the overview never reaches a public surface', () => {
       .split('\n')
       .filter((f) => f && !/\.test\.tsx?$/.test(f))
       .sort()
-    expect(readers).toEqual(['app/(main)/spaces/[slug]/manage/leadership/page.tsx', 'lib/spaces/leadership.ts'])
+    expect(readers).toEqual([
+      'app/(main)/spaces/[slug]/manage/leadership/page.tsx',
+      'app/hosted/[host]/admin/[view]/page.tsx',
+      'lib/spaces/leadership.ts',
+    ])
   })
 })

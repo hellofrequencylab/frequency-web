@@ -54,42 +54,6 @@ export function withoutLeadershipPreferences<T>(preferences: T): T {
   return rest as T
 }
 
-/** The anchor id the help Markdown renderer gives a heading (components/help/help-markdown.tsx
- *  headingId), from the heading's plain text. The test renders both and checks they agree. */
-function overviewHeadingId(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-}
-
-/** Inline Markdown to the plain text a heading renders as: links to their words, emphasis and code marks off. */
-function plainHeading(text: string): string {
-  return text
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[*_`~]/g, '')
-    .replace(/\s+#+\s*$/, '')
-    .trim()
-}
-
-/** The overview's sections for its table of contents: every level 1 and 2 heading outside a code fence. */
-export function overviewSections(markdown: string): { id: string; title: string }[] {
-  const out: { id: string; title: string }[] = []
-  let fenced = false
-  for (const line of markdown.split('\n')) {
-    if (/^\s*(```|~~~)/.test(line)) fenced = !fenced
-    if (fenced) continue
-    const m = /^#{1,2}\s+(.+)$/.exec(line)
-    if (!m) continue
-    const title = plainHeading(m[1])
-    const id = overviewHeadingId(title)
-    if (title && id) out.push({ id, title })
-  }
-  return out
-}
-
 // ── THE YEARLY CALENDAR ──────────────────────────────────────────────────────────────────────────────
 
 /** The season names and their fixed date lines, as the program states them. */
@@ -246,4 +210,66 @@ export function buildProgramYear(year: number, events: readonly ProgramEvent[], 
     months.push({ id: `m-${y}-${pad(month0 + 1)}`, year: y, month0, leadIn: i === 0, weeks, seasons, eventDays })
   }
   return months
+}
+
+// ── THE CALENDAR'S SMALL MARKS (LIVE-864) ────────────────────────────────────────────────────────────
+
+/** US holidays the yearly calendar prints at the foot of a day, for the program year's thirteen months
+ *  (the December lead-in, then January to December). Computed, never a list to keep up. */
+export function programHolidays(year: number): Map<string, string> {
+  const out = new Map<string, string>()
+  const put = (y: number, m0: number, d: number, name: string) => out.set(dayKeyOf(utc(y, m0, d)), name)
+  /** The nth weekday (0 = Sunday) of a month; n = -1 is the last. */
+  const nth = (y: number, m0: number, weekday: number, n: number) => {
+    if (n < 0) {
+      const last = utc(y, m0 + 1, 0)
+      return last.getUTCDate() - ((last.getUTCDay() - weekday + 7) % 7)
+    }
+    return 1 + ((weekday - utc(y, m0, 1).getUTCDay() + 7) % 7) + (n - 1) * 7
+  }
+  const y = year
+  put(y - 1, 11, 24, 'Christmas Eve')
+  put(y - 1, 11, 25, 'Christmas')
+  put(y - 1, 11, 31, "New Year's Eve")
+  put(y, 0, 1, "New Year's Day")
+  put(y, 0, nth(y, 0, 1, 3), 'MLK Day')
+  put(y, 1, 14, "Valentine's Day")
+  put(y, 1, nth(y, 1, 1, 3), "Presidents' Day")
+  // Easter Sunday (anonymous Gregorian computus).
+  const a = y % 19
+  const b = Math.floor(y / 100)
+  const c = y % 100
+  const h = (19 * a + b - Math.floor(b / 4) - Math.floor((b - Math.floor((8 * b + 13) / 25)) / 3) + 15) % 30
+  const l = (32 + 2 * (b % 4) + 2 * Math.floor(c / 4) - h - (c % 4)) % 7
+  const mm = Math.floor((a + 11 * h + 22 * l) / 451)
+  const easterMonth = Math.floor((h + l - 7 * mm + 114) / 31)
+  put(y, easterMonth - 1, ((h + l - 7 * mm + 114) % 31) + 1, 'Easter')
+  put(y, 4, nth(y, 4, 0, 2), "Mother's Day")
+  put(y, 4, nth(y, 4, 1, -1), 'Memorial Day')
+  put(y, 5, 19, 'Juneteenth')
+  put(y, 5, nth(y, 5, 0, 3), "Father's Day")
+  put(y, 6, 4, 'Independence Day')
+  put(y, 8, nth(y, 8, 1, 1), 'Labor Day')
+  put(y, 9, nth(y, 9, 1, 2), "Indigenous Peoples' Day")
+  put(y, 9, 31, 'Halloween')
+  put(y, 10, 11, 'Veterans Day')
+  put(y, 10, nth(y, 10, 4, 4), 'Thanksgiving')
+  put(y, 11, 24, 'Christmas Eve')
+  put(y, 11, 25, 'Christmas')
+  put(y, 11, 31, "New Year's Eve")
+  return out
+}
+
+/** A course session's chip title: "Week 3" from "Opening course, week 3", else the event's own title. */
+export function courseChipTitle(title: string): string {
+  const m = /\bweek\s+(\d+)\b/i.exec(title)
+  return m ? `Week ${m[1]}` : title
+}
+
+/** The small line under a pencilled-in gathering: the description's one-word opener (the seasonal feast
+ *  it falls on) and where it sits in its sign, as "Imbolc · mid-Aquarius". Null when the description does
+ *  not open with one word. */
+export function gatheringNote(description: string | null | undefined, signName: string): string | null {
+  const first = /^\s*([A-Z][\w'-]*)\./.exec(description ?? '')
+  return first ? `${first[1]} · mid-${signName}` : null
 }
