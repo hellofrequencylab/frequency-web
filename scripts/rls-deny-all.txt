@@ -103,3 +103,6 @@ vera_config
 
 # Website admin editing: service-role only; browser roles are explicitly revoked.
 website_editor_presence
+
+# LIVE-883: recover the exact already-applied service-only schema; runtime remains open.
+ai_budget_reservations
