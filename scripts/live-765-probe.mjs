@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict'
+import {readFileSync} from 'node:fs'
+import {canRespondToCrossListing,crossListingVisible} from '../lib/collective/cross-listing.ts'
+assert.equal(canRespondToCrossListing('pending','source','accepted'),false)
+assert.equal(canRespondToCrossListing('pending','target','accepted'),true)
+for(const side of ['source','target'])assert.equal(canRespondToCrossListing('accepted',side,'revoked'),true)
+assert.equal(canRespondToCrossListing('revoked','target','accepted'),false)
+assert.equal(crossListingVisible('journey',{visibility:'private'}),false)
+assert.equal(crossListingVisible('circle',{unlisted:true,status:'active'}),false)
+assert.equal(crossListingVisible('circle',{unlisted:false,status:'forming'}),true)
+const r=p=>readFileSync(p,'utf8')
+assert.match(r('lib/collective/cross-listing-actions.ts'),/ownerProfileId===callerId/)
+assert.match(r('lib/collective/cross-listing-actions.ts'),/status:'pending'/)
+assert.match(r('lib/collective/cross-listing-actions.ts'),/subject.space_id!==row.source_space_id/)
+assert.match(r('lib/collective/cross-listing-store.ts'),/subject\?\.space_id===r.source_space_id/)
+assert.match(r('lib/journey-plans.ts'),/acceptedCrossListingIds\('journey',sid\)/)
+assert.match(r('lib/circles/store.ts'),/acceptedCrossListingIds\('circle', spaceId\)/)
+assert.match(r('supabase/migrations/20270346006800_collective_cross_listings.sql'),/enable row level security/)
+assert.match(r('app/(main)/spaces/[slug]/settings/cross-listing/editor.tsx'),/Approve listing/)
+console.log('ok: consent-based Collective cross-listings retain original ownership and access')

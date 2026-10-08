@@ -1,3 +1,4 @@
+import { acceptedCrossListingIds } from '@/lib/collective/cross-listing-store'
 // The "Journeys" library (backlog §Q1, ADR-087): members curate combos of
 // practices — organized by the 4 Pillars — with per-item cadence + notes (ADR-096),
 // and share/fork them. Building + using a PERSONAL journey is free (it rides the
@@ -483,7 +484,7 @@ export async function listJourneyPlansForSpace(
   // never surfaces through a share even for a caller that did not ask for publishedOnly.
   // FAIL-SAFE: a failed share read returns only this Space's own Journeys.
   if (opts?.includeShared === false) return owned
-  const sharedIds = (await acceptedSharePlanIds(sid)).filter((id) => !owned.some((p) => p.id === id))
+  const sharedIds = [...new Set([...await acceptedSharePlanIds(sid), ...await acceptedCrossListingIds('journey',sid)])].filter((id) => !owned.some((p) => p.id === id))
   if (sharedIds.length === 0) return owned
   try {
     const { data, error } = await (db().from('journey_plans') as unknown as Chain)

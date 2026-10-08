@@ -329,3 +329,16 @@ model exists to prevent.
   Hook is the federated prototype: one Space among many, not a separate category.
 - **Sub-brands are configuration, not new code:** a `spaces` row selecting existing
   vertical modules, *once the registry is load-bearing.*
+
+## Collective cross-listings
+
+An owner can open **Collective listings** from the Space's Circles manager to request a
+published Journey or listed Circle on another active Collective or member Space. The receiving
+Space's owner approves or declines it there; either owner can remove it. Requests never approve
+a partner automatically, including when both Spaces have the same owner.
+
+`collective_cross_listings` is service-role only. Its Journey and Circle foreign keys retain the
+original object; the listing grants no edit, membership, enrolment or entry permission. Destination
+Space readers merge accepted listings, rechecking the object's current source Space and visibility,
+both Spaces' active Collective membership and walling. Transfers, unlisting, privacy, suspension
+and parent cancellation remove listings from public reads. Existing listings can still be revoked.

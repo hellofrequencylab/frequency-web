@@ -1,3 +1,4 @@
+import { acceptedCrossListingIds } from '@/lib/collective/cross-listing-store'
 // Circles tenancy data layer (Phase 0, ENTITY-SPACES-BUILD Epic 0.3 / ENTITY-SPACES-SYSTEM
 // §4.3). Two seams the per-space profile work (Phase 1) needs:
 //   - stampCircleSpaceId(): the DEFAULT space_id for a new circle — the root space (via
@@ -532,7 +533,18 @@ export async function listPublicSpaceCircles(
     // Merge the viewer's own (possibly unlisted) circles and the Space Circle in, deduped, newest
     // first, back under the cap. Sorting here rather than trusting any query's order: they are
     // separate reads.
+    // Accepted Collective listings admit only listed, live Circles. Entry/access stays with
+    // the original Circle; a share never contributes to Circle membership or management.
+    const sharedIds = await acceptedCrossListingIds('circle', spaceId)
+    let shared: SpaceCircle[] = []
+    if (sharedIds.length) {
+      const result = await admin.from('circles').select(COLS).in('id', sharedIds)
+        .in('status', [...LISTABLE_CIRCLE_STATUS]).or('unlisted.is.null,unlisted.eq.false')
+        .eq('is_space_primary', false).limit(limit)
+      if (!result.error) shared = (result.data as SpaceCircle[] | null) ?? []
+    }
     const byId = new Map(rows.map((c) => [c.id, c]))
+    for (const c of shared) if (!byId.has(c.id)) byId.set(c.id,c)
     for (const c of mine) byId.set(c.id, c)
     if (primary) byId.set(primary.id, primary)
 

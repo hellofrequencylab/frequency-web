@@ -1,7 +1,7 @@
 {
   "id": "LIVE-765",
   "title": "One Journey or Circle can be listed across member Spaces and partner Collectives",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,10 +9,11 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on event sharing. Dated after Founding Collective launch.",
+  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on event sharing. Dated after Founding Collective launch.\n\nOwners request Journey or Circle listings with active member Spaces or partner Collectives; only receiving owners approve, and either side can revoke. Destination readers merge accepted listings without changing original ownership, price, entry, enrolment or edit access. Visibility, lifecycle, source transfers and owner changes invalidate stale consent. Owner UI previews original subjects and remains able to remove listings after cancellation. CLI-generated migration068 is service-only with real subject foreign keys, uniqueness and cascades. Full typecheck, focused consent/store/UI/reader tests, actual SQL behavior and committed authorization assertions pass. Production migration remains a staged rollout prerequisite.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"lib/collective/cross-listing.ts\"))fail(\"no cross-listing module\");console.log(\"ok: cross-listing exists\")'"
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/live-765-probe.mjs"
   },
+  "closed": "2026-10-08",
   "wave": "WR"
 }
