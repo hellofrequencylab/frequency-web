@@ -8,7 +8,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveMemberDay } from '@/lib/member-day'
-import { getPlan, normalizeJourneyMeeting, planPillarMap, type JourneyPlan, type JourneyMeeting, type JourneyPlanItem } from '@/lib/journey-plans'
+import { getPlan, normalizeJourneyMeeting, type JourneyMeeting } from '@/lib/journey-plans'
 import { getRankedPractice, type RankedPractice } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 
@@ -16,15 +16,9 @@ import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
  *  the player reads as a chapter, not a bare heading. */
 type PhaseFocusMap = Map<string, string>
 
-/** The per-Pillar coverage of a Journey (always all four, zero-filled), for the balance read. */
-export interface PillarBalanceSlice {
-  pillar: Pillar
-  count: number
-}
-
 /** Everything the learn page needs ON TOP of the player view: the resolved library practice for
  *  every `practice` block (keyed by ITEM id, so the player can look up the selected lesson), each
- *  phase's focus copy, the normalized meeting, and the four-Pillar balance. One extra read per
+ *  phase's focus copy and the normalized meeting. One extra read per
  *  distinct practice (batched + de-duped), plus the pillars taxonomy. */
 interface JourneyLearnExtras {
   /** The library practice behind each `practice` block, keyed by the block's ITEM id. */
@@ -33,8 +27,6 @@ interface JourneyLearnExtras {
   phaseFocus: PhaseFocusMap
   /** How the Circle gathers around the Journey (all-null when unset). */
   meeting: JourneyMeeting
-  /** Four-Pillar coverage, in display order, zero-filled. */
-  pillarBalance: PillarBalanceSlice[]
   /** The pillars taxonomy, for mapping a practice's domain_id → its Pillar on a step. */
   pillars: Pillar[]
   /** The ITEM id of the Anchor practice (ADR-307: `settings.anchor`), the Journey's daily
@@ -86,43 +78,8 @@ export async function getJourneyLearnExtras(slug: string): Promise<JourneyLearnE
     practiceByItem,
     phaseFocus,
     meeting: normalizeJourneyMeeting(loaded?.plan.meeting),
-    pillarBalance: buildPillarBalance(items, pillars),
     pillars,
     anchorItemId,
-  }
-}
-
-/** The Journey's four-Pillar coverage, zero-filled and in display order (mirrors the discovery
- *  PillarBalanceBlock, but returns the full Pillar so a step can render its name + badge). */
-function buildPillarBalance(items: JourneyPlanItem[], pillars: Pillar[]): PillarBalanceSlice[] {
-  const coverage = new Map(planPillarMap(items).map((s) => [s.domainId, s.count]))
-  return pillars.map((pillar) => ({ pillar, count: coverage.get(pillar.id) ?? 0 }))
-}
-
-/** The untyped discovery/delivery attributes the plan row carries (read untyped in
- *  lib/journey-plans.ts — difficulty/category/tags/daily_minutes are not on the JourneyPlan type
- *  yet). One coercion point so the page reads them safely without a cast at every use. */
-export interface JourneyAttributes {
-  difficulty: string | null
-  category: string | null
-  tags: string[]
-  dailyMinutes: number | null
-}
-
-/** Coerce a plan's untyped discovery/delivery attributes into a clean, bounded shape. */
-export function journeyAttributes(plan: JourneyPlan): JourneyAttributes {
-  const p = plan as unknown as {
-    difficulty?: unknown
-    category?: unknown
-    tags?: unknown
-    daily_minutes?: unknown
-  }
-  const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
-  return {
-    difficulty: str(p.difficulty),
-    category: str(p.category),
-    tags: Array.isArray(p.tags) ? p.tags.filter((t): t is string => typeof t === 'string' && !!t.trim()) : [],
-    dailyMinutes: typeof p.daily_minutes === 'number' && p.daily_minutes > 0 ? Math.round(p.daily_minutes) : null,
   }
 }
 

@@ -32,6 +32,8 @@ export interface MemberJourneyProgress {
   nextLesson: { id: string; title: string; href: string } | null
   /** Enrolled in a Circle Run (cohort) vs solo (run_id null). */
   inCohort: boolean
+  /** The Journey's cover, for the Library card. */
+  coverImage: string | null
 }
 
 const BLOCK_COLS = 'id, parent_id, block_type, sort_order, title, required, est_minutes, practice_id'
@@ -55,6 +57,7 @@ interface PlanLite {
   title: string
   emoji: string | null
   accent: string | null
+  cover_image: string | null
 }
 
 /** Distinct member ids with at least one active (not-yet-completed) Journey enrollment — the
@@ -82,7 +85,7 @@ export async function getMemberJourneyProgress(
 
   let enrollQuery = admin
     .from('journey_enrollments')
-    .select('plan_id, run_id, completed_at, started_at, plan:journey_plans(id, slug, title, emoji, accent)')
+    .select('plan_id, run_id, completed_at, started_at, plan:journey_plans(id, slug, title, emoji, accent, cover_image)')
     .eq('profile_id', profileId)
     .order('started_at', { ascending: false })
   if (activeOnly) enrollQuery = enrollQuery.is('completed_at', null)
@@ -144,9 +147,10 @@ export async function getMemberJourneyProgress(
       phasesTotal: tree.phases.length,
       complete: tree.complete,
       nextLesson: next
-        ? { id: next.id, title: leafTitle(next.title, next.block_type), href: `/journeys/${plan.slug}/learn` }
+        ? { id: next.id, title: leafTitle(next.title, next.block_type), href: `/journeys/${plan.slug}/play?lesson=${encodeURIComponent(next.id)}` }
         : null,
       inCohort: !!e.run_id,
+      coverImage: plan.cover_image ?? null,
     })
   }
   return out

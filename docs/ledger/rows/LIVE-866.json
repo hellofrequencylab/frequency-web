@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-866",
+  "title": "A Journey has four linked views: About, Course, Focus and Library",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/ledger/rows/LIVE-866.json",
+    "ref": "Owner request 2026-10-07 (project thread \"Journey overhaul\"): Journey sales page, main page with index, progress gauges, previews and drip unlocks, a focus-mode player, and a Library of adopted Journeys, linked by tabs at the bottom on web and mobile."
+  },
+  "detail": "TODAY (before): /journeys/<slug>/learn was one long page: an About hero, meeting and author blocks, then a progress bar and a two-column syllabus + lesson player inside the full app chrome. There was no list of the Journeys a member is on (/journeys/mine is the ones they BUILT), and nothing linked the sales page, the course and the player. The sales page path was one card per phase, twelve stacked boxes on a twelve-week Journey. THE FIX: (1) components/journey/nav/journey-dock.tsx, a floating four-tab pill (About, Course with a progress ring, Focus, Library) that sits above the mobile tab-bar lane (--tab-bar-clearance) and at the foot of the column on desktop; rendered on all four views. (2) /journeys/<slug>/learn is the course home: a progress ring and gauges (lessons, this week, next unlock), one Up next action, and the path as a timeline with lesson previews, done, current and locked weeks with their opening date (components/journey/v2/learn/course-home.tsx). (3) /journeys/<slug>/play is the focus player: a full-viewport takeover (page-chrome FULL_VIEWPORT_EDITOR_PATTERNS), a sticky strip with Contents (a bottom sheet), Back/Next and progress, ?lesson= deep links kept in the address. (4) /journeys/library lists every enrolled Journey with Continue first and In progress / Not started / Finished filters. The door, drip anchor and Run reads moved into lib/journeys/learn-route.ts so the two enrolled routes share one gate. The sales page path is one card with a timeline and a Show all fold. The rail's next-lesson link now opens the player at that lesson.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=m=>{console.error(\"LIVE-866: \"+m);process.exit(1)};const pages={sales:\"app/(main)/journeys/[slug]/page.tsx\",course:\"app/(main)/journeys/[slug]/learn/page.tsx\",focus:\"app/(main)/journeys/[slug]/play/page.tsx\",library:\"app/(main)/journeys/library/page.tsx\"};for(const [k,f] of Object.entries(pages)){if(!/<JourneyDock\\b/.test(r(f)))fail(k+\" view (\"+f+\") does not render the Journey dock\")}if(!/journeys\\\\\\/\\[\\^\\/\\]\\+\\\\\\/play/.test(r(\"lib/layout/page-chrome.ts\")))fail(\"the focus player is not a full-viewport takeover in lib/layout/page-chrome.ts\");if(!/loadJourneyLearnRoute/.test(r(pages.course))||!/loadJourneyLearnRoute/.test(r(pages.focus)))fail(\"course and focus do not share lib/journeys/learn-route.ts\")'",
+    "note": "Fails while any of the four Journey views lacks the dock, the player is not a chrome-free takeover, or the course and player stop sharing one door."
+  },
+  "wave": "W7",
+  "closed": "2026-10-07"
+}
