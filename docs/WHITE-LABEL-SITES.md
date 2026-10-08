@@ -340,3 +340,36 @@ claims from a direct repo recon.
 - OWASP — [Subdomain Takeover Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Subdomain_Takeover_Prevention_Cheat_Sheet.html), [CSP cheat sheet](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html)
 - [Microsoft — prevent dangling DNS / subdomain takeover](https://learn.microsoft.com/en-us/azure/security/fundamentals/subdomain-takeover) · [MDN — CSP](https://developer.mozilla.org/en-US/docs/Web/Security/Practical_implementation_guides/CSP)
 - Puck — [repo](https://github.com/puckeditor/puck), [docs](https://puckeditor.com/docs/getting-started) · [Let's Encrypt rate limits](https://letsencrypt.org/docs/rate-limits/)
+
+### Domain renewal and registration reconciliation
+
+`/api/cron/billing-renewals` runs a bounded daily domain sweep over the service-role-only
+`space_domain_purchases` table. About thirty days before expiration it disables
+registrar auto-renew, verifies registry expiration and the current renewal price against the Space's agreed
+price, claims the period, charges the saved card off-session, and submits one explicit
+registrar renewal. Expiration advances from the existing expiration date only when
+the matching domain in the recorded provider order completes.
+
+The persisted `renewal_state`, `renewal_due_at`, payment intent and registrar order
+separate payment from delivery. A crash during `charging` or `renewing` is ambiguous
+and goes to operator attention rather than blindly charging or renewing again. Price
+drift, expired registrations, card problems and failed orders also alert the Space
+owner. A failed async registration refunds with `domain-purchase-refund:<purchase-id>`;
+a failed renewal order uses a purchase-and-period-specific refund key. Pending orders
+are read again on the next sweep. Database, provider and notice failures produce a
+500 so the heartbeat wrapper records a failed run.
+
+New charges remain behind the existing billing/domain-purchase operator gate. Apply
+the additive renewal-state migration before deploying the combined handler. Existing
+paid attempts still deliver or reconcile while new sales are paused. Both billing and
+domain work run inside the same monitored handler: either failure produces a 500, so
+one healthy schedule cannot conceal a dead schedule. Billing runs first and domains
+use at most fifty remaining items inside the same two-hundred-item batch and clock.
+A batch with no remaining capacity for domains reports deferred work as a failure.
+Refund retries read provider history first, including the original purchase metadata;
+a pending, failed or unrelated refund requires review rather than another refund.
+
+If the registry expiration has already advanced beyond the recorded period (for example,
+an existing automatic renewal completed), the loop requests operator review before
+charging or buying another year. The registry timestamp may differ by one calendar day;
+a larger disagreement is never treated as a new renewal opportunity.

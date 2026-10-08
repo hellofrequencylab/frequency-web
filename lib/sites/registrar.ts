@@ -72,7 +72,7 @@ export function registrarConfigured(): boolean {
 type Fetcher = typeof fetch
 
 async function call(
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PATCH',
   path: string,
   body?: unknown,
   fetcher: Fetcher = fetch,
@@ -178,10 +178,16 @@ export async function buyDomain(
 }
 
 /** Where an order stands. Registration is asynchronous: `purchasing` becomes `completed` or `failed`. */
-export async function getDomainOrder(orderId: string, fetcher?: Fetcher): Promise<RegistrarResult<{ status: DomainOrderStatus }>> {
+export async function getDomainOrder(orderId: string, fetcher?: Fetcher, domain?: string): Promise<RegistrarResult<{ status: DomainOrderStatus }>> {
   const res = await call('GET', `/v1/registrar/orders/${enc(orderId)}`, undefined, fetcher)
   if (!res || 'network' in res || !res.ok) return failed(res, 'order')
-  const s = res.json.status
+  let s = res.json.status
+  if (domain) {
+    const domains = Array.isArray(res.json.domains) ? res.json.domains as { domainName?: string; status?: string }[] : []
+    const entry = domains.find(item => item.domainName === domain)
+    if (!entry) return { ok: false, error: 'upstream' }
+    s = entry.status === 'refunded' || entry.status === 'refund-failed' ? 'failed' : entry.status === 'pending' ? 'purchasing' : entry.status
+  }
   const status: DomainOrderStatus =
     s === 'draft' || s === 'purchasing' || s === 'completed' || s === 'failed' ? s : 'unknown'
   return { ok: true, data: { status } }
@@ -229,4 +235,31 @@ export function parseRegistrantContact(input: unknown): { ok: true; contact: Reg
   if (!contact.address1 || !contact.city || !contact.state || !contact.zip) return { ok: false, error: 'Add the full mailing address.' }
   if (!/^[A-Z]{2}$/.test(contact.country)) return { ok: false, error: 'Add the two letter country code, like US.' }
   return { ok: true, contact: cleanContact(contact) }
+}
+
+/** Explicit renewal, after the Space payment and a durable provider-submission claim. */
+export async function renewDomain(domain: string, expectedPriceCents: number, fetcher?: Fetcher): Promise<RegistrarResult<{ orderId: string }>> {
+  if (!Number.isSafeInteger(expectedPriceCents) || expectedPriceCents < 1) return { ok: false, error: 'price-changed' }
+  const res = await call('POST', `/v1/registrar/domains/${enc(domain)}/renew`, { years: 1, expectedPrice: expectedPriceCents / 100 }, fetcher)
+  if (!res || 'network' in res || !res.ok) return failed(res, 'renew')
+  return typeof res.json.orderId === 'string' && res.json.orderId
+    ? { ok: true, data: { orderId: res.json.orderId } }
+    : { ok: false, error: 'upstream' }
+}
+
+/** Prevent the platform paying an automatic renewal before the Space has paid. */
+export async function setDomainAutoRenew(domain: string, autoRenew: boolean, fetcher?: Fetcher): Promise<RegistrarResult<{ autoRenew: boolean }>> {
+  const res = await call('PATCH', `/v1/registrar/domains/${enc(domain)}/auto-renew`, { autoRenew }, fetcher)
+  if (!res || 'network' in res || !res.ok) return failed(res, 'auto-renew')
+  return { ok: true, data: { autoRenew } }
+}
+
+/** Read registry expiration before charging, so a completed automatic renewal is not bought again.
+ * GET domain metadata remains supported; registrar mutations use /v1/registrar exclusively. */
+export async function getDomainExpiration(domain: string, fetcher?: Fetcher): Promise<RegistrarResult<{ expiresAt: number }>> {
+  const res = await call('GET', `/v5/domains/${enc(domain)}`, undefined, fetcher)
+  if (!res || 'network' in res || !res.ok) return failed(res, 'expiration')
+  const info = res.json.domain as { name?: unknown; expiresAt?: unknown } | undefined
+  if (info?.name !== domain || typeof info.expiresAt !== 'number' || !Number.isFinite(info.expiresAt) || info.expiresAt <= 0) return { ok: false, error: 'upstream' }
+  return { ok: true, data: { expiresAt: info.expiresAt } }
 }

@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   buyDomain,
+  renewDomain,
+  setDomainAutoRenew,
   classifyFailure,
   getDomainAvailability,
   getDomainOrder,
+  getDomainExpiration,
   getDomainPrice,
   parseRegistrantContact,
   registrarConfigured,
@@ -185,4 +188,36 @@ describe('parseRegistrantContact', () => {
     expect(parseRegistrantContact({ ...CONTACT, country: 'USA' })).toMatchObject({ ok: false })
     expect(parseRegistrantContact(null)).toMatchObject({ ok: false })
   })
+})
+
+
+describe('renewal provider requests', () => {
+  it('submits one year at the exact quoted renewal price', async () => {
+    const fetcher = fakeFetch(200, { orderId: 'renewal-order' })
+    expect(await renewDomain('example.com', 1200, fetcher)).toEqual({ ok: true, data: { orderId: 'renewal-order' } })
+    expect(fetcher.mock.calls[0][1]?.method).toBe('POST')
+    expect(JSON.parse(fetcher.mock.calls[0][1]?.body as string)).toEqual({ years: 1, expectedPrice: 12 })
+  })
+  it('accepts the documented empty 204 auto-renew response', async () => {
+    const fetcher = fakeFetch(204, undefined)
+    expect(await setDomainAutoRenew('example.com', false, fetcher)).toEqual({ ok: true, data: { autoRenew: false } })
+    expect(fetcher.mock.calls[0][1]?.method).toBe('PATCH')
+    expect(JSON.parse(fetcher.mock.calls[0][1]?.body as string)).toEqual({ autoRenew: false })
+  })
+  it('does not infer delivery from a top-level completed order with a failed domain', async () => {
+    const fetcher = fakeFetch(200, { status: 'completed', domains: [{ domainName: 'example.com', status: 'failed' }] })
+    expect(await getDomainOrder('order', fetcher, 'example.com')).toEqual({ ok: true, data: { status: 'failed' } })
+  })
+  it('refuses an order that does not name the domain being reconciled', async () => {
+    const fetcher = fakeFetch(200, { status: 'completed', domains: [{ domainName: 'someone-else.com', status: 'completed' }] })
+    expect(await getDomainOrder('order', fetcher, 'example.com')).toEqual({ ok: false, error: 'upstream' })
+  })
+})
+
+
+it('reads only the matching Vercel domain registry expiration', async () => {
+  const date = Date.parse('2027-11-01T00:00:00Z')
+  expect(await getDomainExpiration('example.com', fakeFetch(200, { domain: { name: 'example.com', expiresAt: date } }))).toEqual({ ok: true, data: { expiresAt: date } })
+  expect(await getDomainExpiration('example.com', fakeFetch(200, { domain: { name: 'wrong.com', expiresAt: date } }))).toEqual({ ok: false, error: 'upstream' })
+  expect(await getDomainExpiration('example.com', fakeFetch(200, { domain: { name: 'example.com', expiresAt: null } }))).toEqual({ ok: false, error: 'upstream' })
 })

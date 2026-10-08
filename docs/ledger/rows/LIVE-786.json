@@ -1,7 +1,7 @@
 {
   "id": "LIVE-786",
   "title": "A domain a Space bought in Frequency renews on time, charged to the Space, and a stuck order is reconciled",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,11 +9,12 @@
     "file": "lib/sites/domain-purchase.ts",
     "ref": "LIVE-781 follow-up: the renewal charge loop and the order reconcile over space_domain_purchases (owner ruling 2026-10-06: the Space pays renewals)"
   },
-  "detail": "FILED 2026-10-06 as the scoped-out half of LIVE-781. THE CONSEQUENCE: a domain a Space bought inside Frequency is recorded with renews_at and renewal_price_cents (Vercel renewal plus the operator markup), but nothing charges the Space for the renewal. Where the Space had a saved card at purchase, Vercel auto-renew is on and Frequency's Vercel team pays the renewal without recovering it from the Space; where it had none, auto-renew is off and the domain lapses at renews_at. Separately, a purchase left in 'purchasing' (a crash between the claim and the Vercel order) or 'ordered' (Vercel registration still pending) is never re-read, so a failed async order after payment is never refunded. THE FIX: a cron (app/api/cron/domain-renewals) over space_domain_purchases that (1) about 30 days before renews_at charges the Space off-session for renewal_price_cents on its saved card (stripe_customer_id), then either leaves Vercel auto-renew on or calls POST /v1/registrar/domains/{domain}/renew, and advances renews_at; on a failed charge it turns Vercel auto-renew off (PATCH /v1/registrar/domains/{domain}/auto-renew) and tells the Space owner; (2) re-reads every 'ordered' row with GET /v1/registrar/orders/{orderId}, moving it to 'registered' or, on 'failed', refunding under the existing key domain-purchase-refund:<id>; (3) surfaces 'purchasing' rows older than an hour to the operator rather than retrying blind (a blind retry is the one way to buy twice). Lives in lib/sites/domain-renewals.ts beside lib/sites/domain-purchase.ts. Probe flips when the renewal loop exists.",
+  "detail": "A registered domain is renewed only after its Space payment succeeds. The existing monitored billing-renewals handler runs billing first, then a bounded domain sweep within the shared 200-item/time budget; payment failure, unresolved order, attention state or deferred work returns a failing heartbeat. Vercel auto-renew is disabled before any new charge, and registry expiration is checked against the stored renewal period. Conditional period-bound database claims and persisted payment/order IDs prevent duplicate submissions. Ambiguous payments or provider submissions require operator review; no blind retry. Ordered purchases are reconciled to registered or refunded after provider refund history confirms no prior successful refund. Purchasing rows older than an hour surface for operator review. The domain purchase switch prevents new charges while reconciliation of already paid orders continues. Migration 066 is additive and preserves existing RLS/client restrictions; PGlite verifies replay, constraints and conditional claims. 121 focused tests pass, covering recovery, expiration drift, refund history, shared budget and heartbeat failure propagation. No additional schedule or monitor is created.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e \"const fs=require('fs');const f='lib/sites/domain-renewals.ts';if(!fs.existsSync(f)){console.error('LIVE-786: no renewal charge loop yet ('+f+' is missing)');process.exit(1)}const s=fs.readFileSync(f,'utf8');if(!/export async function chargeDomainRenewals\\(/.test(s)){console.error('LIVE-786: '+f+' does not export chargeDomainRenewals');process.exit(1)}if(!fs.existsSync('app/api/cron/domain-renewals/route.ts')){console.error('LIVE-786: no cron route runs the renewal loop');process.exit(1)}\"",
-    "note": "Fails today: there is no renewal loop and no cron route. Passes when lib/sites/domain-renewals.ts exports chargeDomainRenewals and a cron route runs it."
+    "cmd": "node scripts/probes/domain-renewals.mjs",
+    "note": "Plain Node checks bounded sweep, payment/provider claims, refund history and failure propagation through the existing monitored handler; no test runner or live provider calls."
   },
-  "wave": "W7"
+  "wave": "W7",
+  "closed": "2026-10-08"
 }
