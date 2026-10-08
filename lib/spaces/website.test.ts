@@ -52,3 +52,37 @@ describe('nextSiteHeroPreferences', () => {
     })
   })
 })
+
+describe('the website hero eyebrow and buttons (LIVE-865)', () => {
+  it('reads an eyebrow and two buttons, trimmed', () => {
+    const out = readSiteHero({
+      siteHero: {
+        eyebrow: ' Men’s work · Year-round ',
+        action: { label: ' Visit a Circle Night ', href: '/spaces/heart-on-fire/circles' },
+        secondary: { label: 'How it works', href: 'https://example.com/how' },
+      },
+    })
+    expect(out).toEqual({
+      eyebrow: 'Men’s work · Year-round',
+      action: { label: 'Visit a Circle Night', href: '/spaces/heart-on-fire/circles' },
+      secondary: { label: 'How it works', href: 'https://example.com/how' },
+    })
+  })
+  it('drops a button with no label, no link or an unsafe link', () => {
+    for (const b of [
+      { label: 'Go', href: '' },
+      { label: '', href: '/spaces/x' },
+      { label: 'Go', href: 'javascript:alert(1)' },
+      { label: 'Go', href: '//evil.example' },
+      { label: 'Go', href: '/a b' },
+      'Go',
+    ]) {
+      expect(readSiteHero({ siteHero: { action: b } })).toEqual({})
+    }
+  })
+  it('keeps a node that only has buttons, and removes an all-blank one', () => {
+    const next = nextSiteHeroPreferences({}, { heading: '', action: { label: 'Go', href: '#join' } })
+    expect(next).toEqual({ siteHero: { action: { label: 'Go', href: '#join' } } })
+    expect(nextSiteHeroPreferences({ siteHero: { eyebrow: 'x' } }, { eyebrow: ' ', action: { label: '', href: '' } })).toEqual({})
+  })
+})
