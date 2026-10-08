@@ -26,7 +26,7 @@ const HOST = /^[a-z0-9.-]{1,253}$/
 export const SITE_ADMIN_COOKIE = '__Host-site-admin'
 
 /** The admin pages a website serves. */
-const SITE_ADMIN_VIEWS = ['overview', 'calendar', 'editor'] as const
+const SITE_ADMIN_VIEWS = ['overview', 'calendar'] as const
 type SiteAdminView = (typeof SITE_ADMIN_VIEWS)[number]
 
 export function siteAdminView(raw: string | null | undefined): SiteAdminView | null {
