@@ -333,6 +333,13 @@
 # space_spotlight_clicks is internal (RLS on, no policy, revoked from anon and authenticated), so only the
 # service role reaches it: the anonymous beacon writes one identity-free row after checking the Space's
 # Spotlight is published, and the console reads counts only after resolveSpaceManageAccess(...).canManage.
+# LIVE-763: owner-authenticated cross-Space attachment and service-only locking RPCs;
+# both owners are checked in the transaction, and no browser gains table writes.
+# LIVE-763: read-time member-plan resolution and owner-gated management projection;
+# only same-owner attached children inherit, without exposing private siblings publicly.
+# LIVE-763: owner-authenticated billing reservation/reconciliation against the service-only
+# subscription ledger; verifies live subscription ownership before any Stripe mutation.
+
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -1139,3 +1146,7 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
+
+lib/collective/member-spaces-actions.ts
+lib/collective/member-spaces-store.ts
+lib/collective/extra-space-billing.ts

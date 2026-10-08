@@ -85,6 +85,8 @@ export async function spacePaymentsVerdict(
       if (error || !data) return refuse
       plan = (data as { plan: string | null }).plan
     }
+    const { inheritedSpacePlan } = await import('@/lib/collective/member-spaces-store')
+    plan = await inheritedSpacePlan(spaceId, plan)
     const overrides = await loadFeatureGateOverrides()
     if (planTakesPayments(plan, overrides, opts.also)) return { ok: true }
     // LIVE-822: a staff comp Space takes payments at the Collective level. Read only on a refusal.

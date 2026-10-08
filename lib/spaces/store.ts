@@ -11,6 +11,8 @@ import { columnImageUrl } from '@/lib/library/column-image'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { resolvePrecision } from './location'
 import { log } from '@/lib/log'
+import { memberSpacePlan } from '@/lib/collective/member-spaces'
+import { planEntitlements, asSpacePlan } from '@/lib/pricing/plans'
 import { normalizeSpaceType } from './types'
 import type { Space, SpaceStatus } from './types'
 
@@ -41,9 +43,10 @@ const COLS =
 // The location columns (20270301000000_space_location.sql) ride the same read so the public profile's
 // LocalBusiness node can carry addressRegion, postalCode, addressCountry and geo (SCAN-809); before
 // this, setSpaceLocation wrote them and nothing ever selected them back.
-const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, cover_image_asset_id, tagline, city, about, time_zone, street, region, postal_code, country, latitude, longitude, location_precision`
+const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, cover_image_asset_id, tagline, city, about, time_zone, street, region, postal_code, country, latitude, longitude, location_precision, parent_id`
 
 type SpaceRow = {
+  parent_id?: string | null
   about?: string | null
   time_zone?: string | null
   id: string
@@ -143,7 +146,34 @@ async function mapSpaces(rows: SpaceRow[]): Promise<Space[]> {
   const live = await loadLibraryAssetUrls(
     rows.flatMap((r) => [r.brand_logo_asset_id, r.cover_image_asset_id]),
   )
-  return rows.map((r) => mapSpace(r, live))
+  // One parent lookup for the entire batch; directories never pay a query per free Space.
+  const parentIds = [...new Set(rows.filter(r => asSpacePlan(r.plan) === 'free').map(r => r.parent_id).filter((id): id is string => !!id))]
+  const parents = new Map<string, { plan?: string | null; status?: string | null; owner_profile_id: string | null; type: string; parent_id: string | null }>()
+  if (parentIds.length) {
+    try {
+      const { data, error } = await createAdminClient().from('spaces').select('id, plan, status, owner_profile_id, type, parent_id').in('id', parentIds)
+      if (error) log.warn('collective.parent_read_failed', { message: error.message })
+      else for (const parent of data ?? []) parents.set(parent.id, parent)
+    } catch {
+      log.warn('collective.parent_read_threw')
+    }
+  }
+  return rows.map((r) => {
+    const space = mapSpace(r, live)
+    const parent = parents.get(r.parent_id ?? '')
+    const effective = memberSpacePlan(r.plan, parent ?? null, { childOwnerId: r.owner_profile_id,
+      parentOwnerId: parent?.owner_profile_id, childStatus: r.status, childType: r.type,
+      parentType: parent?.type, parentParentId: parent?.parent_id })
+    if (effective !== (r.plan ?? 'free')) {
+      space.plan = effective
+      const raw = space.entitlements && typeof space.entitlements === 'object' && !Array.isArray(space.entitlements)
+        ? space.entitlements as Record<string, unknown> : {}
+      const billing = raw.billing && typeof raw.billing === 'object' && !Array.isArray(raw.billing)
+        ? raw.billing as Record<string, unknown> : {}
+      space.entitlements = { ...raw, billing: { ...billing, ...planEntitlements(effective) } }
+    }
+    return space
+  })
 }
 
 async function mapOneSpace(row: SpaceRow | null): Promise<Space | null> {

@@ -72,6 +72,30 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
+  {
+    file: 'lib/collective/extra-space-billing.ts',
+    table: 'begin_collective_space_change',
+    kind: 'rpc',
+    added: '2026-10-08',
+    reason: 'LIVE-763: migration 20270346006700_collective_member_spaces.sql adds this service-only ownership/capacity transaction. Actual SQL permissions and behavior are tested. Retires when lib/database.types.ts is regenerated after production applies migration 067.',
+    owner: 'LIVE-763',
+  },
+  {
+    file: 'lib/collective/extra-space-billing.ts',
+    table: 'finish_collective_space_change',
+    kind: 'rpc',
+    added: '2026-10-08',
+    reason: 'LIVE-763: migration 20270346006700_collective_member_spaces.sql adds this service-only ownership/capacity transaction. Actual SQL permissions and behavior are tested. Retires when lib/database.types.ts is regenerated after production applies migration 067.',
+    owner: 'LIVE-763',
+  },
+  {
+    file: 'lib/collective/member-spaces-actions.ts',
+    table: 'set_collective_member_space',
+    kind: 'rpc',
+    added: '2026-10-08',
+    reason: 'LIVE-763: migration 20270346006700_collective_member_spaces.sql adds this service-only ownership/capacity transaction. Actual SQL permissions and behavior are tested. Retires when lib/database.types.ts is regenerated after production applies migration 067.',
+    owner: 'LIVE-763',
+  },
   // EMPTY as of 2026-09-28, and empty is the resting state. Migration 20270345008600 (the
   // calendar-entry tombstone, LIVE-536) was applied to the live project and lib/database.types.ts
   // was regenerated from it with --schema public. That one regeneration retired all seven entries
