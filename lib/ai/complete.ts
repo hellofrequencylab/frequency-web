@@ -53,7 +53,23 @@ export type CompleteMessage = {
  */
 export type SystemPrompt = string | { stable: string; volatile?: string }
 
+/** Transitional attribution: callers migrate atomically from their own legacy ledger write.
+ * Omitted context retains the existing caller-owned accounting path. Reservations land later. */
+interface CompletionAccountingContext {
+  feature: string
+  profileId?: string | null
+  spaceId?: string | null
+  operationId?: string
+}
+
+async function recordCompletion(context: CompletionAccountingContext | undefined, model: string, usage: TokenUsage, costUsd: number): Promise<void> {
+  if (!context) return
+  const { recordAiUsage } = await import('./usage')
+  await recordAiUsage({ feature: context.feature, profileId: context.profileId, spaceId: context.spaceId, model, usage, costUsd })
+}
+
 export interface CompleteParams {
+  accounting?: CompletionAccountingContext
   system: string
   messages: { role: 'user' | 'assistant'; content: string }[]
   tier?: ModelTier
@@ -65,6 +81,7 @@ export interface CompleteParams {
 /** The widened, low-level params. Carries everything a raw messages.create call
  *  needs: tools, tool_choice, vision/tool_result content, and `thinking`. */
 export interface CompleteRawParams {
+  accounting?: CompletionAccountingContext
   system: SystemPrompt
   /** Rich messages (string OR content blocks for vision / tool_result). */
   messages: CompleteMessage[]
@@ -163,6 +180,7 @@ export async function completeRaw(p: CompleteRawParams): Promise<CompleteRawResu
   })
 
   const usage = usageOf(res.usage)
+  await recordCompletion(p.accounting, model, usage, estimateCostUsd(tier, usage))
   return {
     tier,
     model,
@@ -176,6 +194,7 @@ export async function completeRaw(p: CompleteRawParams): Promise<CompleteRawResu
 /** Text-only convenience on top of completeRaw (the original API, unchanged). */
 export async function completeText(p: CompleteParams): Promise<CompleteResult> {
   const res = await completeRaw({
+    accounting: p.accounting,
     system: p.system,
     messages: p.messages,
     tier: p.tier,
@@ -186,6 +205,7 @@ export async function completeText(p: CompleteParams): Promise<CompleteResult> {
 }
 
 export interface RunToolLoopParams {
+  accounting?: CompletionAccountingContext
   system: SystemPrompt
   messages: CompleteMessage[]
   tools: Anthropic.Tool[]
@@ -283,5 +303,7 @@ export async function runToolLoop(p: RunToolLoopParams): Promise<ToolLoopResult>
     messages.push({ role: 'user', content: results })
   }
 
+  // Preserve the legacy one-row-per-turn policy until atomic per-round accounting lands.
+  await recordCompletion(p.accounting, model, usage, estimateCostUsd(tier, usage))
   return { content: lastContent, text: lastText, usage, tier, model }
 }
