@@ -34,9 +34,9 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
 import { aiEnabled } from './client'
-import { MODELS, type ModelTier } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage, featureOverBudget } from './usage'
+import { type ModelTier } from './models'
+
+import { featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import type { SeedMood } from '@/lib/studio/kernel/moods'
@@ -148,6 +148,7 @@ export async function runSpark<T, C>(spec: SparkSpec<T, C>, run: SparkRun<C>): P
     const system = typeof spec.system === 'function' ? spec.system() : spec.system
     const voiced = withVoice(system, mood)
     const res = await completeRaw({
+      accounting: { feature: spec.feature, profileId: run.profileId ?? null },
       tier: spec.tier,
       maxTokens: keep ? Math.max(ceiling, KEEP_MAX_TOKENS) : ceiling,
       thinking: { type: 'disabled' },
@@ -156,13 +157,7 @@ export async function runSpark<T, C>(spec: SparkSpec<T, C>, run: SparkRun<C>): P
       toolChoice: { type: 'tool', name: spec.tool.name },
       messages: [{ role: 'user', content: run.content }],
     })
-    void recordAiUsage({
-      feature: spec.feature,
-      model: MODELS[spec.tier],
-      usage: res.usage,
-      costUsd: estimateCostUsd(spec.tier, res.usage),
-      profileId: run.profileId ?? null,
-    })
+
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === spec.tool.name,
     )

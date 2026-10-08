@@ -221,16 +221,15 @@ describe('runSpark: the call it makes', () => {
     expect(state.lastCall?.maxTokens).toBe(100)
     expect(state.lastCall?.thinking).toEqual({ type: 'disabled' })
     expect(state.lastCall?.toolChoice).toEqual({ type: 'tool', name: 'test_tool' })
-    expect(state.ledger).toEqual([
-      expect.objectContaining({ feature: 'journey-spark', profileId: 'p1' }),
-    ])
+    expect(state.lastCall?.accounting).toEqual({ feature: 'journey-spark', profileId: 'p1' })
+    expect(state.ledger).toEqual([])
   })
 
   it('lets one call raise the ceiling without changing the budget key', async () => {
     state.toolInput = { title: 'A steadier week' }
     await runSpark(TEST_SPARK, { content: 'hi', context: 80, maxTokens: 1200 })
     expect(state.lastCall?.maxTokens).toBe(1200)
-    expect(state.ledger[0]?.feature).toBe('journey-spark')
+    expect(state.lastCall?.accounting).toMatchObject({ feature: 'journey-spark' })
   })
 
   it('evaluates a lazy system prompt per call', async () => {

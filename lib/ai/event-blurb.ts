@@ -13,8 +13,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { completeText } from './complete'
-import { MODELS } from './models'
-import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+
+import { aiAvailable, featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { stripEmDashes } from './space-copilot'
@@ -163,6 +163,7 @@ export async function eventBlurb(profileId: string, eventId: string): Promise<st
       blurb = null
     } else {
       const res = await completeText({
+      accounting: { feature: FEATURE, profileId },
         system: withVoice(SYSTEM),
         tier: 'haiku',
         maxTokens: 80,
@@ -174,7 +175,7 @@ export async function eventBlurb(profileId: string, eventId: string): Promise<st
           },
         ],
       })
-      void recordAiUsage({ feature: FEATURE, model: MODELS.haiku, usage: res.usage, costUsd: res.costUsd, profileId })
+
       // Belt-and-braces with the system prompt: strip any em/en dash the model slipped in before we
       // cache it (the voice canon forbids the long dash; matches lib/ai/space-copilot.ts).
       const cleaned = stripEmDashes(res.text)

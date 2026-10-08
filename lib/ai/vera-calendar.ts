@@ -46,9 +46,9 @@ import 'server-only'
 import type Anthropic from '@anthropic-ai/sdk'
 import { aiEnabled } from './client'
 import { completeRaw, type CompleteMessage } from './complete'
-import { MODELS } from './models'
-import { addUsage, estimateCostUsd, type TokenUsage } from './budget'
-import { featureOverBudget, recordAiUsage } from './usage'
+
+
+import { featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { lunarPhaseDates, type LunarPhase } from '@/lib/calendar/moon'
@@ -456,7 +456,6 @@ export async function proposeCalendarChanges(input: {
   const propose = proposeTool()
   const tools: Anthropic.Tool[] = [LUNAR_TOOL, ...(readAttendance ? [ATTENDANCE_TOOL] : []), ...(mayAsk ? [CLARIFY_TOOL] : []), propose]
 
-  let usage: TokenUsage = { inputTokens: 0, outputTokens: 0 }
   let outcome: ProposeCalendarChangesResult = mayAsk
     ? { error: 'Vera could not turn that into a proposal. Try naming the dates or the Plan.' }
     : { error: 'Vera could not narrow this down. Try naming the Plan or the date, and ask again.' }
@@ -464,6 +463,7 @@ export async function proposeCalendarChanges(input: {
   try {
     for (let round = 0; round < MAX_ROUNDS; round++) {
       const res = await completeRaw({
+      accounting: { feature: VERA_CALENDAR_FEATURE, profileId: ctx.profileId ?? null, spaceId: ctx.spaceId },
         tier: 'sonnet',
         maxTokens: 4000,
         system: withVoice(SYSTEM_STABLE),
@@ -472,7 +472,6 @@ export async function proposeCalendarChanges(input: {
         toolChoice: { type: 'any' },
         messages,
       })
-      usage = addUsage(usage, res.usage)
       const toolUses = res.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use')
       const proposal = toolUses.find((b) => b.name === PROPOSE_TOOL_NAME)
       if (proposal) {
@@ -520,15 +519,5 @@ export async function proposeCalendarChanges(input: {
     outcome = { error: 'Vera could not reach the model just now. Try again in a moment.' }
   }
 
-  if (usage.inputTokens + usage.outputTokens > 0) {
-    void recordAiUsage({
-      feature: VERA_CALENDAR_FEATURE,
-      model: MODELS.sonnet,
-      usage,
-      costUsd: estimateCostUsd('sonnet', usage),
-      profileId: ctx.profileId ?? null,
-      spaceId: ctx.spaceId,
-    })
-  }
   return outcome
 }

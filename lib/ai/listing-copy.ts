@@ -9,13 +9,13 @@
 //     + docs/NAMING.md (no em dashes, no hype, "Listing"/"Market"/"Shop" used correctly),
 //   • the author's facts handed in as grounded context (invent nothing else: no price, no result),
 //   • Haiku default tier through the consolidated completeText chokepoint (lib/ai/complete.ts),
-//   • usage ledgered best-effort via recordAiUsage,
+//   • attributes usage through the central completion wrapper,
 //   • NEVER throws: AI off / over budget / a transient failure / a bad JSON shape all fall back to a
 //     deterministic, still-useful draft the author can edit.
 
 import { completeText, AiUnavailableError } from './complete'
 import { aiEnabled } from './client'
-import { recordAiUsage, featureOverBudget } from './usage'
+import { featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { stripEmDashes } from './space-copilot'
@@ -120,7 +120,7 @@ export function parseCopy(raw: string): { title: string; description: string } |
 
 /**
  * Draft listing copy (title + description) for a commerce listing, grounded in the author's facts.
- * Runs on Haiku via the consolidated chokepoint; records usage best-effort. NEVER throws — returns a
+ * Runs on Haiku via the consolidated chokepoint; attributes usage through the central wrapper. NEVER throws — returns a
  * deterministic, em-dash-free fallback when AI is off, over budget, fails, or returns an unusable
  * shape, so the "Draft with Vera" affordance always yields something editable.
  */
@@ -136,6 +136,7 @@ export async function draftListingCopy(input: ListingCopyInput): Promise<Listing
 
   try {
     const res = await completeText({
+      accounting: { feature: FEATURE, profileId: input.profileId ?? null, spaceId: input.spaceId ?? null },
       system: withVoice(SYSTEM),
       tier: 'haiku',
       maxTokens: 220,
@@ -147,14 +148,7 @@ export async function draftListingCopy(input: ListingCopyInput): Promise<Listing
         },
       ],
     })
-    void recordAiUsage({
-      feature: FEATURE,
-      model: res.tier,
-      usage: res.usage,
-      costUsd: res.costUsd,
-      profileId: input.profileId ?? null,
-      spaceId: input.spaceId ?? null,
-    })
+
     const parsed = parseCopy(res.text)
     if (!parsed) return fallback
     // Clean each field: em dashes stripped, title to one line without a trailing period, both clamped.

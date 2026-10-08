@@ -11,7 +11,7 @@ let replyText = '{"hook":null,"tags":[]}'
 
 const updatePractice = vi.fn(async (_id: string, _patch: Record<string, unknown>) => null)
 const setPracticeTags = vi.fn(async (_id: string, _labels: string[], _opts: Record<string, unknown>) => {})
-const completeText = vi.fn(async (_p: { system: string }) => ({
+const completeText = vi.fn(async (_p: { system: string; accounting: { feature: string } }) => ({
   text: replyText,
   usage: { inputTokens: 10, outputTokens: 10 },
   costUsd: 0.0001,
@@ -43,7 +43,7 @@ vi.mock('./rate-limit', () => ({
 }))
 
 vi.mock('./complete', () => ({
-  completeText: (p: { system: string }) => completeText(p),
+  completeText: (p: { system: string; accounting: { feature: string } }) => completeText(p),
   AiUnavailableError: class AiUnavailableError extends Error {},
 }))
 
@@ -135,7 +135,8 @@ describe('draftPracticeCuration', () => {
     expect(d?.hook).toBe('Two minutes, before the day gets loud.')
     expect(d?.tags).toEqual(['Breathwork', 'calm'])
     expect(completeText.mock.calls[0]?.[0].system).toContain(VOICE_PRIMER)
-    expect(recordAiUsage).toHaveBeenCalledTimes(1)
+    expect(completeText.mock.calls[0]?.[0].accounting).toEqual({ feature: 'practice-curate' })
+    expect(recordAiUsage).not.toHaveBeenCalled()
   })
 
   it('never offers a hook when the summary was written, even if Vera returns one', async () => {

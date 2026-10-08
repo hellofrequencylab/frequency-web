@@ -20,9 +20,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
 import { aiEnabled } from './client'
-import { MODELS } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage, featureOverBudget } from './usage'
+
+import { featureOverBudget } from './usage'
 import { withVoice } from './voice'
 import { stripEmDashes } from './space-copilot'
 import {
@@ -313,6 +312,7 @@ export async function generateCampaignDraft(input: GenerateMessagingInput): Prom
 
   try {
     const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId: input.profileId ?? null },
       tier: TIER,
       maxTokens: 900,
       thinking: { type: 'disabled' },
@@ -321,13 +321,7 @@ export async function generateCampaignDraft(input: GenerateMessagingInput): Prom
       toolChoice: { type: 'tool', name: CAMPAIGN_TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    void recordAiUsage({
-      feature: FEATURE,
-      model: MODELS[TIER],
-      usage: res.usage,
-      costUsd: estimateCostUsd(TIER, res.usage),
-      profileId: input.profileId ?? null,
-    })
+
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === CAMPAIGN_TOOL_NAME,
     )
@@ -362,6 +356,7 @@ export async function generateSequenceDraft(input: GenerateMessagingInput): Prom
 
   try {
     const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId: input.profileId ?? null },
       tier: TIER,
       maxTokens: 2400,
       thinking: { type: 'disabled' },
@@ -370,13 +365,7 @@ export async function generateSequenceDraft(input: GenerateMessagingInput): Prom
       toolChoice: { type: 'tool', name: SEQUENCE_TOOL_NAME },
       messages: [{ role: 'user', content: userText }],
     })
-    void recordAiUsage({
-      feature: FEATURE,
-      model: MODELS[TIER],
-      usage: res.usage,
-      costUsd: estimateCostUsd(TIER, res.usage),
-      profileId: input.profileId ?? null,
-    })
+
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === SEQUENCE_TOOL_NAME,
     )

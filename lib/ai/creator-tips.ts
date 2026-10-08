@@ -11,7 +11,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+import { aiAvailable, featureOverBudget } from './usage'
 import { completeText, AiUnavailableError } from './complete'
 import { withVoice } from './voice'
 import { rankedJourneys, rankedPractices } from '@/lib/admin/content-signals'
@@ -144,6 +144,7 @@ export async function generateCreatorTips(actorId: string): Promise<{ created: n
   for (const c of candidates) {
     try {
       const res = await completeText({
+      accounting: { feature: FEATURE, profileId: actorId },
         system: withVoice(TIP_SYSTEM),
         messages: [
           {
@@ -154,7 +155,7 @@ export async function generateCreatorTips(actorId: string): Promise<{ created: n
         tier: 'haiku',
         maxTokens: 300,
       })
-      await recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: actorId })
+
       const text = res.text.trim()
       if (!text) {
         skipped += 1

@@ -13,7 +13,7 @@
 
 import { getPractice, getPracticeTagLabels } from '@/lib/practices'
 import { computeQualityScore } from '@/lib/practices/quality'
-import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+import { aiAvailable, featureOverBudget } from './usage'
 import { completeText, AiUnavailableError } from './complete'
 import { withVoice } from './voice'
 import { noteList, parseModelJson, z } from './schema'
@@ -114,6 +114,7 @@ export async function screenPracticeForPublish(practiceId: string): Promise<Prac
   try {
     const tagLine = tags.length ? tags.join(', ') : '(none)'
     const res = await completeText({
+      accounting: { feature: FEATURE },
       system: withVoice(SCREEN_SYSTEM),
       messages: [
         {
@@ -130,7 +131,7 @@ export async function screenPracticeForPublish(practiceId: string): Promise<Prac
       tier: 'haiku',
       maxTokens: 400,
     })
-    await recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd })
+
     const notes = parseScreenJson(res.text)
     // Merge the AI's completeness notes with the deterministic ones (dedup), so the screen is
     // never WEAKER than the field check even if Vera misses a gap.

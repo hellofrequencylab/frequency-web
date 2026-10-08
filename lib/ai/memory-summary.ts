@@ -14,9 +14,9 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from './complete'
 import { aiEnabled } from './client'
-import { MODELS, type ModelTier } from './models'
-import { estimateCostUsd } from './budget'
-import { recordAiUsage, aiAvailable, featureOverBudget } from './usage'
+import { type ModelTier } from './models'
+
+import { aiAvailable, featureOverBudget } from './usage'
 import { claimMembersDueForSummary, writeDigest, type MemberContext, type MemberFacts } from './memory'
 
 // ── Thresholds: only compress memory that's actually grown or gone stale ───────
@@ -267,6 +267,7 @@ export async function compressMemberMemory(
 
   try {
     const res = await completeRaw({
+      accounting: { feature: SUMMARY_FEATURE, profileId: ctx.profileId ?? null },
       tier: SUMMARY_TIER,
       maxTokens: 800,
       thinking: { type: 'disabled' },
@@ -274,14 +275,6 @@ export async function compressMemberMemory(
       tools: [TOOL],
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: `Compress this member's memory and call ${TOOL_NAME}:\n\n${factsToPrompt(ctx)}` }],
-    })
-
-    void recordAiUsage({
-      feature: SUMMARY_FEATURE,
-      model: MODELS[SUMMARY_TIER],
-      usage: res.usage,
-      costUsd: estimateCostUsd(SUMMARY_TIER, res.usage),
-      profileId: ctx.profileId ?? null,
     })
 
     const block = res.content.find(
