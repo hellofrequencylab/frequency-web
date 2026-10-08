@@ -1,5 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { formatEventWhen, eventInstant, dayInZone } from '@/lib/time/zone'
 import { log } from '@/lib/log'
 import type { CalendarEvent } from './item'
@@ -157,7 +158,9 @@ export async function listStaffCalendarItems(
 /** The public "Unavailable" spans for [fromDay, toDay): times only. */
 export async function listPublicUnavailableItems(spaceId: string, fromDay: string, toDay: string): Promise<CalendarEvent[]> {
   try {
-    const { data, error } = await (await db()).rpc('space_public_unavailable', {
+    // The cookie-free anon client (lib/supabase/public.ts): the RPC is granted to anon and answers the same
+    // for every caller, and a cached, viewer-free render (a Space website, LIVE-872) may not read cookies.
+    const { data, error } = await (createPublicClient() as unknown as Untyped).rpc('space_public_unavailable', {
       p_space_id: spaceId,
       p_from_day: fromDay,
       p_to_day: toDay,
