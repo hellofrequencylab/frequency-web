@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-872",
+  "title": "A Menswork website's Home and Calendar page show the Space's Frequency calendar, and the menu's admin links are plain blue text",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/sites/site-public-calendar.tsx",
+    "ref": "Owner ask 2026-10-08: 'I wanted the Hearts on Fire Frequency calendar on the main home page, not the admin version. Instad of a blue banner in the menu for admin. Just make those links blue  Admin: Exectutive Overview | Yearly Calendar', clarified as 'the Space's own Frequency calendar, the events attached to the Hearts on Fire Space'."
+  },
+  "detail": "FILED AND CLOSED 2026-10-08. SitePublicCalendar renders the Space's Calendar tab as a visitor sees it (the guest half of app/(main)/spaces/[slug]/(profile)/calendar/page.tsx): CalendarWorkspace with adminAllowed false over loadPublicSpaceWindow and loadSpaceUpcomingFeed, with the Up next band, the month grid and the subscribe menu, browsing months through loadSpaceCalendarMonth. Home ends with it in the site container; the calendar page gives it an h1 from the page label. readSitePublicYear (the admin calendar's look over public events) is removed. The header's admin links lose the signal-colour banner: 'Admin:' and the two links are blue text with a '|' between them. The footer admin section is unchanged.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const cal=r('components/sites/site-public-calendar.tsx');if(!/<CalendarWorkspace/.test(cal)||!/adminAllowed=\\{false\\}/.test(cal))miss.push('the website calendar is not the Frequency calendar');if(/readSitePublicYear/.test(cal+r('lib/sites/site-admin.ts')))miss.push('the admin-look public year is still there');const css=r('components/sites/menswork-css.ts');const rule=(css.match(/\\.hs-nav \\.hs-nav-admin\\{[^}]*\\}/)||[''])[0];if(!rule||/background/.test(rule))miss.push('the menu admin links still sit on a banner');if(!/hs-nav-admin-sep/.test(r('components/sites/site-chrome.tsx')))miss.push('no separator between the admin links');if(miss.length){console.error('LIVE-872: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-08",
+  "wave": "W7"
+}

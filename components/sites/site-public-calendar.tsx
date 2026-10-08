@@ -1,14 +1,25 @@
-import { buildProgramYear, programHolidays, type ProgramEvent, type ProgramMonth } from '@/lib/spaces/leadership'
+import { type ProgramEvent, type ProgramMonth } from '@/lib/spaces/leadership'
 import { loadSpacePageDoc } from '@/lib/spaces/page-doc'
-import { mensworkSeason, mensworkSign } from '@/lib/theme/menswork'
-import { readSitePublicYear } from '@/lib/sites/site-admin'
-import { SiteCalendar, retreatShort } from '@/components/sites/admin/site-calendar'
+import { SITE_URL } from '@/lib/site'
+import { loadPublicSpaceWindow, loadSpaceUpcomingFeed } from '@/lib/calendar/public-month'
+import { guestFeedState } from '@/lib/calendar/guest-live'
+import { memberLayerChoices } from '@/lib/calendar/member-calendar'
+import { monthGridWindow } from '@/lib/calendar/month-window'
+import { astroMarkersInRange, widenDayRange } from '@/lib/calendar/astro-markers'
+import { readSkyMarkersEnabled } from '@/lib/spaces/sky-markers'
+import { dayInZone } from '@/lib/time/zone'
+import { SpaceUpcomingFeed } from '@/components/spaces/space-upcoming-feed'
+import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
+import { CalendarWorkspace } from '@/components/spaces/calendar-workspace'
+import { loadSpaceCalendarMonth } from '@/app/(main)/spaces/[slug]/(profile)/calendar/actions'
+import { retreatShort } from '@/components/sites/admin/site-calendar'
 
-// THE PUBLIC YEARLY CALENDAR (LIVE-869, owner rulings 2026-10-08: a "Calendar" menu item that is a public
-// yearly calendar for visitors, and "Add the calendar to the home page without an anchor link"). The admin
-// calendar's look (components/sites/admin/site-calendar.tsx) over the Space's published, public events only
-// (readSitePublicYear): no drafts and no gathering notes. A Menswork website draws it as its `calendar`
-// page and as a section at the end of Home.
+// THE WEBSITE'S CALENDAR (LIVE-869, reworked by LIVE-872 on the owner's ask 2026-10-08: "I wanted the Hearts
+// on Fire Frequency calendar on the main home page, not the admin version"). The Space's own Frequency
+// calendar, exactly as a visitor sees it on the Space's Calendar tab (app/(main)/spaces/[slug]/(profile)/
+// calendar/page.tsx, its guest half): the Up next band, the month grid and the subscribe menu, over the
+// same gated public reads. A Menswork website draws it as its `calendar` page and as a section at the end
+// of Home. The admin Yearly Calendar stays behind the admin links.
 
 /** The website page that is the public calendar, when the Space lists it among its pages. */
 export const SITE_CALENDAR_SLUG = 'calendar'
@@ -26,36 +37,49 @@ export function findRetreat(events: ProgramEvent[], months: ProgramMonth[]) {
 export async function SitePublicCalendar({
   space,
   brandName,
-  headingLevel,
 }: {
-  space: { id: string; preferences?: unknown }
+  space: { id: string; slug: string; timeZone: string | null; preferences?: unknown }
   brandName: string
-  headingLevel: 1 | 2
 }) {
   const now = new Date()
-  const { year, events } = await readSitePublicYear(space.id, now)
-  const months = buildProgramYear(year, events, now)
-  const retreat = findRetreat(events, months)
+  const initialYear = now.getUTCFullYear()
+  const initialMonth1 = now.getUTCMonth() + 1
+  const grid = monthGridWindow(initialYear, initialMonth1)
+  const [guestEvents, upcomingRows] = await Promise.all([
+    loadPublicSpaceWindow(space.id, grid.fromDay, grid.toDay),
+    loadSpaceUpcomingFeed(space.id, dayInZone(now, space.timeZone)),
+  ])
+  const skyWindow = widenDayRange(grid.fromDay, grid.toDay, 13)
+  const httpsUrl = `${SITE_URL}/spaces/${space.slug}/calendar.ics`
   return (
-    <SiteCalendar
+    <CalendarWorkspace
+      slug={space.slug}
+      spaceId={space.id}
       brandName={brandName}
-      year={year}
-      months={months}
-      currentSeason={mensworkSeason(now)}
-      currentSign={mensworkSign(now)}
-      holidays={programHolidays(year)}
-      notes={new Map()}
-      headingLevel={headingLevel}
-      retreat={
-        retreat
-          ? {
-              title: retreat.event.title,
-              dates: retreatDates(retreat.event),
-              monthId: retreat.month.id,
-              photo: await pagePhoto(space.preferences, brandName, 'retreat'),
-            }
-          : null
+      adminAllowed={false}
+      canManage={false}
+      initialView="guest"
+      initialListItem={null}
+      initialPlanId={null}
+      initialYear={initialYear}
+      initialMonth1={initialMonth1}
+      guestEvents={guestEvents}
+      guestFirstUse={guestFeedState(guestEvents).isFirstUse}
+      adminEvents={[]}
+      dayNotes={[]}
+      plans={[]}
+      subscribe={
+        <CalendarSubscribeMenu
+          httpsUrl={httpsUrl}
+          webcalUrl={httpsUrl.replace(/^https?:\/\//, 'webcal://')}
+          title={`${brandName} in your calendar`}
+          description={`Subscribe once and ${brandName}'s events show up in Google or Apple Calendar, and stay current on their own.`}
+        />
       }
+      upcoming={<SpaceUpcomingFeed rows={upcomingRows} />}
+      memberLayers={memberLayerChoices(guestEvents)}
+      skyMarkers={readSkyMarkersEnabled(space.preferences) ? astroMarkersInRange(skyWindow[0], skyWindow[1], space.timeZone) : []}
+      loadGuestMonth={loadSpaceCalendarMonth.bind(null, space.slug)}
     />
   )
 }
