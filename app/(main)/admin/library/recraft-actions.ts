@@ -1,10 +1,9 @@
 'use server'
 
-import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { getRootSpaceId } from '@/lib/library/store'
 import { ingestImageBytes } from '@/lib/library/ingest'
 import { recordVersion, rollbackToVersion, listVersions, type LibraryVersion } from '@/lib/library/versions'
@@ -33,11 +32,7 @@ import { isVectorFile } from '@/lib/loom/urls'
 
 const FEATURE = 'recraft'
 const BUCKET = 'library-media'
-// Recraft list price, for the budget ledger.
-const COST: Record<RecraftLane, number> = { raster: 0.04, vector: 0.08 }
-// Crisp upscale's list price (LIVE-589). Far below a raster generation, so the existing recraft cap in
-// lib/ai/budget.ts covers it with no new key.
-const UPSCALE_COST = 0.004
+// Provider tariffs are accounted centrally in lib/loom/recraft.ts under this feature key.
 
 const dbh = () => createAdminClient()
 
@@ -102,11 +97,8 @@ export async function generateWithRecraft(input: {
   const recraftStyleId = input.styleId ? (await resolveStyleId(spaceId, input.styleId)) ?? undefined : undefined
 
   try {
-    const results = await generateImages({ prompt, lane: input.lane, size: input.size, n: input.count ?? 1, styleId: recraftStyleId })
+    const results = await generateImages({ accounting: { feature: FEATURE, profileId: g.ctx!.profileId }, prompt, lane: input.lane, size: input.size, n: input.count ?? 1, styleId: recraftStyleId })
     if (results.length === 0) return { error: 'Recraft returned no images.' }
-
-    const cost = COST[input.lane] * results.length
-    after(() => recordAiUsage({ feature: FEATURE, model: 'recraft-v3', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: cost, profileId: g.ctx!.profileId }))
 
     let n = 0
     const assets: GeneratedAsset[] = []
@@ -188,10 +180,10 @@ export async function recraftEditAsset(input: {
   try {
     const src = await downloadRecraft(asset.url)
     let resultUrl: string
-    if (input.op === 'vectorize') resultUrl = await vectorizeImage(src.bytes)
-    else if (input.op === 'remove-bg') resultUrl = await removeBackground(src.bytes)
-    else if (input.op === 'upscale') resultUrl = await upscaleImage(src.bytes, `image.${extFor(src.contentType)}`, 'crisp')
-    else resultUrl = await imageToImage({ bytes: src.bytes, prompt: (input.prompt || 'a clean variation').slice(0, 1000), strength: 0.35 })
+    if (input.op === 'vectorize') resultUrl = await vectorizeImage(src.bytes, undefined, { feature: FEATURE, profileId: g.ctx!.profileId })
+    else if (input.op === 'remove-bg') resultUrl = await removeBackground(src.bytes, undefined, { feature: FEATURE, profileId: g.ctx!.profileId })
+    else if (input.op === 'upscale') resultUrl = await upscaleImage(src.bytes, `image.${extFor(src.contentType)}`, 'crisp', { feature: FEATURE, profileId: g.ctx!.profileId })
+    else resultUrl = await imageToImage({ accounting: { feature: FEATURE, profileId: g.ctx!.profileId }, bytes: src.bytes, prompt: (input.prompt || 'a clean variation').slice(0, 1000), strength: 0.35 })
 
     const out = await downloadRecraft(resultUrl)
     // INGEST (PROG-D1): checksum and header dimensions of the bytes actually stored. For an upscale the
@@ -201,9 +193,6 @@ export async function recraftEditAsset(input: {
 
     // Snapshot the pre-edit state, then apply the new file.
     await recordVersion(input.assetId, input.op === 'upscale' ? 'Recraft upscale (crisp)' : `Recraft ${input.op}`, g.ctx.profileId)
-
-    const cost = input.op === 'upscale' ? UPSCALE_COST : COST[isVector ? 'vector' : 'raster']
-    after(() => recordAiUsage({ feature: FEATURE, model: 'recraft-v3', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: cost, profileId: g.ctx!.profileId }))
 
     const { error } = await dbh()
       .from('library_assets')
@@ -282,10 +271,7 @@ export async function createBrandStyle(input: {
     if (urls.length === 0) return { error: 'Those references have no image files.' }
 
     const refs = await Promise.all(urls.map(async (u) => (await downloadRecraft(u)).bytes))
-    const recraftStyleId = await createStyle(input.lane, refs)
-
-    const cost = COST[input.lane]
-    after(() => recordAiUsage({ feature: FEATURE, model: 'recraft-style', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: cost, profileId: g.ctx!.profileId }))
+    const recraftStyleId = await createStyle(input.lane, refs, { feature: FEATURE, profileId: g.ctx!.profileId })
 
     const style = await recordStyle({
       spaceId,

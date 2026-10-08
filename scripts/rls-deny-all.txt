@@ -17,6 +17,7 @@
 # which rates `rls_enabled_no_policy` as INFO (safe), not a vulnerability.
 agent_actions
 ai_help_queries
+ai_budget_reservations
 ai_usage
 automation_rules
 beta_audit_log

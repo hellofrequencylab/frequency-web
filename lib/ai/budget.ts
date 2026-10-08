@@ -62,6 +62,20 @@ export function withinBudget(spentUsd: number, projectedUsd: number, capUsd: num
 // (Haiku cheapest, Sonnet mid, Opus priciest) and its expected volume.
 export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'help-search': 5,
+  'demo-palette': 1,
+  'campaign-coach': 1,
+  'circle-compose': 1,
+  'circle-spark': 1,
+  // Previously used the $1 fallback; explicit registration preserves those ceilings.
+  'social_fuel': 1,
+  'crm-brief': 1,
+  'crm-import-extract': 1,
+  'crm-import-mapping': 1,
+  'today': 1,
+  'circle-edit': 1,
+  'listing-copy': 1,
+  'business-import-demographic': 1,
+  'support-draft': 1,
   'feature-posts': 2,
   'connection-scan': 3,        // vision OCR of cards/posters (Sonnet) — the costlier surface
   'connection-assist': 1,      // text-only Vera assist on manual entry (Haiku)

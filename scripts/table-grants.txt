@@ -34,6 +34,7 @@ admin_audit_log                      authenticated
 agent_actions                        internal
 ai_help_queries                      internal
 ai_member_context                    authenticated
+ai_budget_reservations                internal
 ai_usage                             internal
 app_overrides                        authenticated
 area_permissions                     authenticated
