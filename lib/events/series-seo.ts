@@ -1,6 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EVENT_MEDIA_BUCKET } from './hero-url'
+import { eventHasEnded } from './end-time'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import {
   DEFAULT_INDEXED_OCCURRENCES,
@@ -277,7 +278,7 @@ export async function listSitemapEventEntries(opts: {
       // looking finished while the sitemap still carries every date.
       // `cover_image_path` rides along for the image-sitemap entry — the PUBLIC bucket only; see
       // the note on SitemapEventEntry.image for why the other two hero sources must never appear.
-      .select(`id, slug, starts_at, is_cancelled, cover_image_path, ${SERIES_COLUMNS}`)
+      .select(`id, slug, starts_at, ends_at, is_cancelled, cover_image_path, ${SERIES_COLUMNS}`)
       .eq('status', 'published')
       .eq('visibility', 'public')
       .eq('is_cancelled', false)
@@ -291,6 +292,7 @@ export async function listSitemapEventEntries(opts: {
       id: string
       slug: string | null
       starts_at: string | null
+      ends_at: string | null
       is_cancelled: boolean | null
       cover_image_path: string | null
       recurrence_type: string | null
@@ -308,9 +310,16 @@ export async function listSitemapEventEntries(opts: {
     })
 
     const out: SitemapEventEntry[] = []
+    const now = Date.now()
+    const liveSeriesKeys = new Set(rows.filter(row => !eventHasEnded(row, now)).map(seriesKey))
     for (const group of groups) {
       group.representatives.forEach((r, i) => {
         if (!r.slug || typeof r.starts_at !== 'string') return
+        // Keep the day-floor ordinal fold: filtering ended rows before it would promote dates
+        // beyond the page's indexed-occurrence allowance. Apply the shared page end rule AFTER.
+        const liveAnchor = r.parent_event_id == null && isSeriesCadence(r.recurrence_type)
+          && liveSeriesKeys.has(group.key)
+        if (eventHasEnded(r, now) && !liveAnchor) return
         // isSeriesHome is the ELECTED earliest live row, not "the anchor". A long-running series'
         // anchor row is gone from an upcoming-only read the moment its own date passes; electing the
         // anchor would drop established series out of the sitemap entirely.
