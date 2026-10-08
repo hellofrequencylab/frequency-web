@@ -12,11 +12,19 @@ const MEMBER_COLS = 'id, slug, name, brand_name, brand_logo_url, parent_id, owne
  * consumes loadMemberSpaceManagement (which contains private siblings for the owner). */
 export const listPublicCollectiveMembers = cache(async (parent: NetworkParent): Promise<PublicMemberSpace[]> => {
   if (!collectiveNetworkOpen(parent)) return []
-  const { data, error } = await createAdminClient().from('spaces').select(MEMBER_COLS)
-    .eq('parent_id', parent.id).eq('owner_profile_id', parent.ownerProfileId!)
-    .eq('status', 'active').eq('visibility', 'network').eq('network_connected', true).neq('type', 'root').order('name')
-  if (error) throw new Error('The network directory could not be loaded.')
-  return publicMemberSpaces((data ?? []) as MemberSpaceRow[], parent)
+  const rows: MemberSpaceRow[] = []
+  const admin = createAdminClient()
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await admin.from('spaces').select(MEMBER_COLS)
+      .eq('parent_id', parent.id).eq('owner_profile_id', parent.ownerProfileId!)
+      .eq('status', 'active').eq('visibility', 'network').eq('network_connected', true).neq('type', 'root')
+      .order('name').order('id').range(offset, offset + 499)
+    if (error) throw new Error('The network directory could not be loaded.')
+    const page = (data ?? []) as MemberSpaceRow[]
+    rows.push(...page)
+    if (page.length < 500) break
+  }
+  return publicMemberSpaces(rows, parent)
 })
 
 /** Public calendar composition over the existing tenancy/hosting/accepted-share reader. Each
@@ -25,9 +33,13 @@ export async function loadCollectiveNetworkWindow(parent: NetworkParent, ownName
   if (!collectiveNetworkOpen(parent)) return []
   const members = await listPublicCollectiveMembers(parent)
   const sources = [{ id: parent.id, name: ownName }, ...members]
-  const rows = await Promise.all(sources.map(async source => ({ source,
-    events: await listSpaceCalendarEvents(source.id, { fromDay, limit: 300, paintCancelled: true }),
-  })))
+  const rows: { source: typeof sources[number]; events: SpaceCalendarEvent[] }[] = []
+  // Large purchased networks must not open one database request per Space at once.
+  for (let offset = 0; offset < sources.length; offset += 4) {
+    rows.push(...await Promise.all(sources.slice(offset, offset + 4).map(async source => ({ source,
+      events: await listSpaceCalendarEvents(source.id, { fromDay, toDay, exhaustive: true, paintCancelled: true }),
+    }))))
+  }
   const byId = new Map<string, { row: SpaceCalendarEvent; names: Set<string> }>()
   for (const { source, events } of rows) for (const row of events) {
     const day = eventDayKey(row.starts_at)
@@ -39,7 +51,7 @@ export async function loadCollectiveNetworkWindow(parent: NetworkParent, ownName
       if (row.is_cancelled) prior.row = row
     } else byId.set(row.id, { row, names: new Set([source.name]) })
   }
-  const ordered = [...byId.values()].sort((a, b) => a.row.starts_at.localeCompare(b.row.starts_at))
+  const ordered = [...byId.values()].sort((a, b) => a.row.starts_at.localeCompare(b.row.starts_at) || a.row.id.localeCompare(b.row.id))
   const items = await spaceEventRowsToItems(ordered.map(entry => entry.row))
   return items.map((item, i) => ({ ...item, sourceLabel: [...ordered[i].names].join(' · ') }))
 }
