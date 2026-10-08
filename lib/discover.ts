@@ -24,6 +24,7 @@
 // we cast to the explicit row shapes below.
 
 import { createPublicClient } from '@/lib/supabase/public'
+import { eventHasEnded } from '@/lib/events/end-time'
 import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 
@@ -586,5 +587,5 @@ export async function getPublicCityClusters(): Promise<CityCluster[]> {
 export { formatEventDate, formatEventDateTime, eventDateBadge } from '@/lib/utils'
 
 export function hasEventEnded(event: PublicEvent): boolean {
-  return new Date(event.ends_at ?? event.starts_at).getTime() < Date.now()
+  return eventHasEnded(event)
 }

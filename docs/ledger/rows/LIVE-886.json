@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-886",
+  "title": "Sitemap event end eligibility matches page indexing and organizer dates never invent future modifications",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/events/series-seo.ts",
+    "ref": "Owner October 8 audit: expired event URLs and organizer sitemap dates"
+  },
+  "detail": "Page hasEventEnded and the crawl reader share one import-free actual-end instant predicate, including no-end fallback and the exact boundary. Sitemap projects ends_at and applies end exclusion after the existing day-floor series fold so removing ended dates cannot promote later occurrences beyond the page ordinal allowance. A live recurring anchor remains indexable while a future or ongoing materialized date exists; ended children and exhausted anchors are omitted. Organizer public RPC offers next_starts, not a modification date, so lastModified is omitted rather than invented. Runner-free consequence probe executes the actual crawl reader, actual page end wrapper and organizer mapper with synthetic offset/ongoing/ended/boundary/series rows. No schema, public gate widening, per-event query fan-out or production data access.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/check-sitemap-eligibility.mjs",
+    "note": "Actual reader and mapper execute against synthetic rows; no network or test runner."
+  },
+  "closed": "2026-10-08",
+  "wave": "WR"
+}

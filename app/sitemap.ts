@@ -62,7 +62,8 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
     if (!Array.isArray(data)) return [];
     return (data as { handle: string; next_starts: string | null }[]).map((h) => ({
       url: `${SITE_URL}/discover/events/organizer/${h.handle}`,
-      ...((h.next_starts) ? { lastModified: new Date(h.next_starts) } : {}),
+      // The RPC supplies the next event start, not a content modification timestamp.
+      // Omit lastModified until a real organizer update time is available (SCAN-661).
       changeFrequency: "weekly" as const,
       priority: 0.6,
     }));
@@ -568,8 +569,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-    // Only UPCOMING events are listed: listSitemapEventEntries floors on the community's wall-clock
-    // day, so expired events are isolated OUT of the sitemap by construction (they go noindex,follow
+    // Event dates retain the community day-floor series ordinal fold, then exclude actual ended
+    // occurrences using the same end instant as page metadata (they go noindex,follow
     // on the page until pruned). The CANONICAL event URL is /events/<slug> (the discover detail
     // canonicalises here), so the sitemap points at it. A series' own page outranks its individual
     // dates, which is the ranking we want a crawler to infer: land a member on the series, not on
