@@ -7,7 +7,7 @@ const check=(value)=>{assert.ok(value);checks++}
 const refuses=async sql=>{let failed=false;try{await db.exec(sql)}catch{failed=true}check(failed)}
 await db.exec(`create role anon;create role authenticated;create role service_role;
 create table profiles(id uuid primary key);
-create table spaces(id uuid primary key,owner_profile_id uuid ${canonicalOwnerFk?'references profiles(id) on delete set null':''},plan text,status text,visibility text,parent_id uuid,type text default 'business');
+create table spaces(id uuid primary key,owner_profile_id uuid ${canonicalOwnerFk?'references profiles(id) on delete set null':''},plan text,status text check(status in ('active','suspended','archived')),visibility text,parent_id uuid,type text default 'business');
 create table journey_plans(id uuid primary key,space_id uuid,title text,slug text,status text,visibility text,created_at timestamptz);
 create table circles(id uuid primary key,space_id uuid,name text,slug text,status text,unlisted boolean,is_space_primary boolean,created_at timestamptz);`)
 await db.exec(migrationSql)
@@ -28,8 +28,8 @@ check((await read()).length===0);check((await db.query(`select status from colle
 await request();await accept();await db.exec(`update journey_plans set space_id='${other}' where id='${journey}';update journey_plans set space_id='${source}' where id='${journey}'`);check((await read()).length===0)
 await request();await accept();await db.exec(`update spaces set visibility='private' where id='${source}'`);check((await read()).length===0);check((await read('journey',true)).length===0)
 await db.exec(`update spaces set visibility='network' where id='${source}';update journey_plans set status='rejected' where id='${journey}'`);check((await read()).length===0)
-await db.exec(`update journey_plans set status='approved' where id='${journey}';update spaces set status='cancelled' where id='${target}'`);check((await read()).length===0)
-await db.exec(`update collective_cross_listings set status='revoked' where status='accepted';update spaces set status='active' where id='${target}'`)
+await db.exec(`update journey_plans set status='approved' where id='${journey}';update spaces set plan='free' where id='${target}'`);check((await read()).length===0)
+await db.exec(`update collective_cross_listings set status='revoked' where status='accepted';update spaces set status='active',plan='collective' where id='${target}'`)
 await request('circle');await accept();check((await read('circle')).length===1)
 await db.exec(`update circles set unlisted=true where id='${circle}'`);check((await read('circle')).length===0)
 await db.exec(`update circles set unlisted=false,space_id='${other}' where id='${circle}';update circles set space_id='${source}' where id='${circle}'`);check((await read('circle')).length===0)
