@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 // Derive focused email packets from the existing canonical ledger. Never write status here.
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 import { loadBacklog } from './lib/ledger.mjs'
 
 export function derivePackets(spec, entries) {
@@ -44,7 +43,7 @@ export function derivePackets(spec, entries) {
   return result
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+if (invokedDirectly(import.meta.url)) {
   try {
     const spec = JSON.parse(readFileSync('docs/space-email-packets.json', 'utf8'))
     const result = derivePackets(spec, loadBacklog().entries)
