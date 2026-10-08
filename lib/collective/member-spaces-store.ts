@@ -9,17 +9,20 @@ export const inheritedSpacePlan = cache(async (spaceId: string, ownPlan: string 
   if (own !== 'free') return own
   try {
     const db = createAdminClient()
-    const { data, error } = await db.from('spaces').select('parent_id').eq('id', spaceId).maybeSingle()
-    if (error || !data) return own
-    const parentId = (data as unknown as { parent_id?: string | null }).parent_id
+    const { data, error } = await db.from('spaces').select('parent_id, owner_profile_id, status, type').eq('id', spaceId).maybeSingle()
+    if (error || !data || !data.owner_profile_id || data.status !== 'active' || data.type === 'root') return own
+    const parentId = data.parent_id
     if (!parentId) return own
-    const parent = await db.from('spaces').select('plan, status').eq('id', parentId).maybeSingle()
-    if (parent.error) return own
-    return memberSpacePlan(own, parent.data as { plan?: string | null; status?: string | null } | null)
+    const parent = await db.from('spaces').select('plan, status, owner_profile_id, type, parent_id').eq('id', parentId).maybeSingle()
+    if (parent.error || !parent.data || parent.data.owner_profile_id !== data.owner_profile_id
+      || parent.data.type === 'root' || parent.data.parent_id !== null) return own
+    return memberSpacePlan(own, parent.data, { childOwnerId: data.owner_profile_id,
+      parentOwnerId: parent.data.owner_profile_id, childStatus: data.status, childType: data.type,
+      parentType: parent.data.type, parentParentId: parent.data.parent_id })
   } catch { return own }
 })
 
-export interface MemberSpaceOption { id: string; slug: string; name: string; status: string; parent_id: string | null }
+interface MemberSpaceOption { id: string; slug: string; name: string; status: string; parent_id: string | null }
 export interface MemberSpaceManagement {
   capacity: number; active: boolean; members: MemberSpaceOption[]; candidates: MemberSpaceOption[]
 }

@@ -2,18 +2,23 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { memberSpaceCapacity, memberSpacePlan } from '../lib/collective/member-spaces.ts'
 
+const relation = { childOwnerId: 'owner', parentOwnerId: 'owner', childStatus: 'active', childType: 'business', parentType: 'business', parentParentId: null }
 assert.equal(memberSpaceCapacity([]), 5)
 assert.equal(memberSpaceCapacity([
   { item_key: 'collective_space', status: 'active', quantity: 3 },
   { item_key: 'collective_space', status: 'canceled', quantity: 9 },
   { item_key: 'operator_seat', status: 'active', quantity: 30 },
 ]), 8)
-assert.equal(memberSpacePlan('free', { plan: 'collective', status: 'active' }), 'business')
-assert.equal(memberSpacePlan('free', { plan: 'nonprofit_collective', status: 'active' }), 'business')
+assert.equal(memberSpacePlan('free', { plan: 'collective', status: 'active' }, relation), 'business')
+assert.equal(memberSpacePlan('free', { plan: 'nonprofit_collective', status: 'active' }, relation), 'business')
 assert.equal(memberSpacePlan('free', { plan: 'collective', status: 'suspended' }), 'free')
 assert.equal(memberSpacePlan('free', { plan: 'business', status: 'active' }), 'free')
 assert.equal(memberSpacePlan('free', null), 'free')
 assert.equal(memberSpacePlan('nonprofit', { plan: 'collective', status: 'active' }), 'nonprofit')
+assert.equal(memberSpacePlan('free', { plan: 'collective', status: 'active' }), 'free')
+for (const changed of [{ ...relation, parentOwnerId: 'other' }, { ...relation, childOwnerId: null }, { ...relation, childStatus: 'suspended' }, { ...relation, childType: 'root' }, { ...relation, parentType: 'root' }, { ...relation, parentParentId: 'nested' }]) {
+  assert.equal(memberSpacePlan('free', { plan: 'collective', status: 'active' }, changed), 'free')
+}
 const sql = readFileSync('supabase/migrations/20270346006700_collective_member_spaces.sql', 'utf8')
 assert.match(sql, /order by id for update/)
 assert.match(sql, /v_parent.owner_profile_id is distinct from p_owner_id/)

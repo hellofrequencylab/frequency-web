@@ -148,10 +148,10 @@ async function mapSpaces(rows: SpaceRow[]): Promise<Space[]> {
   )
   // One parent lookup for the entire batch; directories never pay a query per free Space.
   const parentIds = [...new Set(rows.filter(r => asSpacePlan(r.plan) === 'free').map(r => r.parent_id).filter((id): id is string => !!id))]
-  const parents = new Map<string, { plan?: string | null; status?: string | null }>()
+  const parents = new Map<string, { plan?: string | null; status?: string | null; owner_profile_id: string | null; type: string; parent_id: string | null }>()
   if (parentIds.length) {
     try {
-      const { data, error } = await createAdminClient().from('spaces').select('id, plan, status').in('id', parentIds)
+      const { data, error } = await createAdminClient().from('spaces').select('id, plan, status, owner_profile_id, type, parent_id').in('id', parentIds)
       if (error) log.warn('collective.parent_read_failed', { message: error.message })
       else for (const parent of data ?? []) parents.set(parent.id, parent)
     } catch {
@@ -160,7 +160,10 @@ async function mapSpaces(rows: SpaceRow[]): Promise<Space[]> {
   }
   return rows.map((r) => {
     const space = mapSpace(r, live)
-    const effective = memberSpacePlan(r.plan, parents.get(r.parent_id ?? '') ?? null)
+    const parent = parents.get(r.parent_id ?? '')
+    const effective = memberSpacePlan(r.plan, parent ?? null, { childOwnerId: r.owner_profile_id,
+      parentOwnerId: parent?.owner_profile_id, childStatus: r.status, childType: r.type,
+      parentType: parent?.type, parentParentId: parent?.parent_id })
     if (effective !== (r.plan ?? 'free')) {
       space.plan = effective
       const raw = space.entitlements && typeof space.entitlements === 'object' && !Array.isArray(space.entitlements)

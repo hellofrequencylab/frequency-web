@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { memberSpaceCapacity, memberSpacePlan } from './member-spaces'
 
+const relation = { childOwnerId: 'owner', parentOwnerId: 'owner', childStatus: 'active', childType: 'business', parentType: 'business', parentParentId: null }
+
 describe('Collective member Space entitlement', () => {
   it('starts at five, adding only live purchased extra Space quantity', () => {
     expect(memberSpaceCapacity([])).toBe(5)
@@ -17,7 +19,14 @@ describe('Collective member Space entitlement', () => {
   })
   it('grants Business to a free child of either active Collective plan', () => {
     for (const plan of ['collective', 'nonprofit_collective']) {
-      expect(memberSpacePlan('free', { plan, status: 'active' })).toBe('business')
+      expect(memberSpacePlan('free', { plan, status: 'active' }, relation)).toBe('business')
+    }
+  })
+  it('requires current same-owner eligibility in every reader', () => {
+    const parent = { plan: 'collective', status: 'active' }
+    expect(memberSpacePlan('free', parent)).toBe('free')
+    for (const changed of [{ ...relation, parentOwnerId: 'other' }, { ...relation, childOwnerId: null }, { ...relation, childStatus: 'suspended' }, { ...relation, childType: 'root' }, { ...relation, parentType: 'root' }, { ...relation, parentParentId: 'nested' }]) {
+      expect(memberSpacePlan('free', parent, changed)).toBe('free')
     }
   })
   it('restores the own plan immediately after detach, cancellation or suspension', () => {
