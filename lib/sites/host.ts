@@ -179,7 +179,7 @@ export function isHostedPath(pathname: string): boolean {
  *  answers through this function's own rewrite of a site host, so the cached site pages need no Host
  *  header check of their own (PROG-E10 phase 5, LIVE-784). */
 const SITE_ADMIN_SEGMENT = 'admin'
-const SITE_ADMIN_PATHS: ReadonlySet<string> = new Set(['overview', 'calendar', 'editor', 'enter'])
+const SITE_ADMIN_PATHS: ReadonlySet<string> = new Set(['overview', 'calendar', 'enter'])
 
 export function routeSiteHost(
   host: string | null | undefined,
