@@ -1,3 +1,5 @@
+# LIVE-763: service-role-only capacity reservation and same-owner attachment mutations.
+# LIVE-882: service-only paid-order recovery RPCs and a client mutation guard.
 transition_space_plan_stage  authenticated
 block_type_usage                     internal
 create_penciled_plan         authenticated
@@ -276,7 +278,15 @@ welcome_targets                      authenticated
 your_impact                          authenticated
 split_calendar_series        authenticated
 
-# LIVE-763: service-role-only capacity reservation and same-owner attachment mutations.
 begin_collective_space_change internal
 finish_collective_space_change internal
 set_collective_member_space internal
+claim_commerce_settlement             internal
+advance_commerce_settlement           internal
+release_commerce_settlement           internal
+protect_commerce_settlement_columns   internal
+
+grant_paid_commerce_journey            internal
+revoke_refunded_commerce_journeys      internal
+protect_paid_journey_provenance        internal
+confirm_paid_commerce_booking         internal

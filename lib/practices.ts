@@ -2172,16 +2172,18 @@ export async function adoptPracticesForJourney(
   profileIds: string[],
   practiceIds: string[],
   journeyPlanId: string,
+  opts?: { strict?: boolean },
 ): Promise<void> {
   if (!profileIds.length || !practiceIds.length) return
   try {
     const client = db()
     // One profiles read for the cohort: each member's local "today" frames starts_on the same
     // way logPractice frames logged_for.
-    const { data: tzRows } = await client
+    const { data: tzRows, error: timezoneError } = await client
       .from('profiles')
       .select('id, home_timezone')
       .in('id', profileIds)
+    if (timezoneError && opts?.strict) throw timezoneError
     const tzById = new Map(
       ((tzRows ?? []) as { id: string; home_timezone: string | null }[]).map((r) => [r.id, r.home_timezone]),
     )
@@ -2202,6 +2204,7 @@ export async function adoptPracticesForJourney(
       // Fail CLOSED on a pair-read error: skip these members entirely rather than risk the
       // unguarded upsert (adoption is repairable; a clobbered term is not).
       if (pairErr) {
+        if (opts?.strict) throw pairErr
         log.error('practices.journey_adopt_pair_read_failed', { error: pairErr.message })
         for (const pid of chunk) for (const prid of practiceIds) activePairs.add(`${pid}:${prid}`)
         continue
@@ -2233,9 +2236,11 @@ export async function adoptPracticesForJourney(
         .upsert(rows as never[], { onConflict: 'profile_id,practice_id' })
       // Visible, never fatal: a silent write failure here (e.g. a deploy racing the
       // migration) would read as "adoption works" while writing nothing.
+      if (upsertErr && opts?.strict) throw upsertErr
       if (upsertErr) log.error('practices.journey_adopt_upsert_failed', { error: upsertErr.message })
     }
-  } catch {
+  } catch (error) {
+    if (opts?.strict) throw error
     // adoption is repairable (re-enroll / adopt by hand); never blocks the caller
   }
 }

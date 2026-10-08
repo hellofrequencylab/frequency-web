@@ -1,10 +1,8 @@
 // GRANTING (AND REVOKING) JOURNEY ACCESS FROM AN ORDER (ADR-1397). Server-only.
 //
-// The sibling of `confirmBookingByOrder` / `cancelBookingByOrder` in ./checkout.ts, and deliberately
-// the same shape: one call per settled order row, idempotent, FAIL-SOFT. The money has already
-// moved by the time either of these runs, so neither may throw — a thrown fulfilment would 500 a
-// settled payment into a Stripe redelivery loop and the buyer would be charged again before anyone
-// noticed.
+// Required paid recovery callers propagate errors so the same verified session can retry.
+// Ordinary claim callers remain fail-soft. The paid adoption RPC grants both the lesson
+// permission and enrollment/provenance atomically under the refunded-order writer's lock.
 //
 // 🔴 SEATS ARE NOT ENFORCED HERE, ON PURPOSE. A seat check at fulfilment can only refuse a buyer who
 // has already paid, which strands them: charged, no access, and a refund they have to ask for. The
@@ -21,16 +19,18 @@ import { journeySlugsByPlanId } from '@/lib/journeys/paid'
 function db() {
   return createAdminClient() as unknown as {
     from: (table: string) => any // eslint-disable-line @typescript-eslint/no-explicit-any
+    rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: boolean | null; error: { message: string } | null }>
   }
 }
 
 /** The Journeys an order bought, with the buyer. Empty for an order that bought no Journey. */
 /** The distinct Journey plan ids an order's lines sell, through the product join. */
-async function planIdsInOrder(orderId: string): Promise<string[]> {
-  const { data: items } = await db()
+async function planIdsInOrder(orderId: string, strict = false): Promise<string[]> {
+  const { data: items, error } = await db()
     .from('commerce_order_items')
     .select('product_id, product:commerce_products!product_id ( journey_plan_id )')
     .eq('order_id', orderId)
+  if (error && strict) throw error
   return [
     ...new Set(
       ((items ?? []) as { product: { journey_plan_id: string | null } | null }[])
@@ -40,15 +40,17 @@ async function planIdsInOrder(orderId: string): Promise<string[]> {
   ]
 }
 
-async function journeysInOrder(orderId: string): Promise<{ buyerId: string; planIds: string[] }> {
-  const { data: order } = await db()
+async function journeysInOrder(orderId: string, strict = false): Promise<{ buyerId: string; planIds: string[] }> {
+  const { data: order, error } = await db()
     .from('commerce_orders')
     .select('buyer_profile_id')
     .eq('id', orderId)
     .maybeSingle()
+  if (error && strict) throw error
+  if (!order && strict) throw new Error('Paid order not found')
   const buyerId = (order as { buyer_profile_id: string | null } | null)?.buyer_profile_id ?? null
   if (!buyerId) return { buyerId: '', planIds: [] }
-  return { buyerId, planIds: await planIdsInOrder(orderId) }
+  return { buyerId, planIds: await planIdsInOrder(orderId, strict) }
 }
 
 /**
@@ -72,33 +74,20 @@ export async function journeySlugsForOrder(orderId: string): Promise<string[]> {
 }
 
 /**
- * Enrol the buyer in every Journey this paid order bought, and stamp the enrolment with the order so
- * a refund can find it again. Idempotent: `adoptPlan` no-ops on an existing enrolment, and the stamp
- * is an update. No-op for an order that bought no Journey.
+ * Enrol the buyer through canonical paid adoption. Access and immutable order provenance
+ * commit atomically; existing unrelated access is preserved. No-op for a non-Journey order.
  */
-export async function enrolByOrder(orderId: string): Promise<void> {
+export async function enrolByOrder(orderId: string, opts?: { strict?: boolean }): Promise<void> {
   try {
-    const { buyerId, planIds } = await journeysInOrder(orderId)
+    const { buyerId, planIds } = await journeysInOrder(orderId, opts?.strict)
     if (!buyerId || planIds.length === 0) return
-    const client = db()
-
     for (const planId of planIds) {
-      // ONE authority for what enrolling means: the same call the free path makes, so a paid learner
-      // gets the practices, the adoption row and the solo enrolment exactly as everyone else does.
-      await adoptPlan(buyerId, planId)
-
-      // Provenance. Without it a refund moves money back and leaves the access standing.
-      const { error } = await client
-        .from('journey_enrollments')
-        .update({ order_id: orderId })
-        .eq('profile_id', buyerId)
-        .eq('plan_id', planId)
-        .is('run_id', null)
-      if (error) {
-        console.error('[commerce] journey enrolment stamp failed', { orderId, planId, error: error.message })
-      }
+      // The canonical paid option atomically grants BOTH the lesson adoption and
+      // enrollment/provenance under the same order lock used by the full refund.
+      await adoptPlan(buyerId, planId, { strict: true, paidOrderId: orderId })
     }
   } catch (error) {
+    if (opts?.strict) throw error
     // The order is already paid and settled. Log and leave it: an operator can re-run fulfilment,
     // and a throw here would redeliver the webhook and re-charge nothing but attention.
     console.error('[commerce] journey enrolment failed', { orderId, error })
@@ -111,17 +100,16 @@ export async function enrolByOrder(orderId: string): Promise<void> {
  * refund, because the completion, its trophy and its rewards already happened and clawing them back
  * would corrupt a member's record to settle a billing question.
  */
-export async function revokeJourneyByOrder(orderId: string): Promise<void> {
+export async function revokeJourneyByOrder(orderId: string, opts?: { strict?: boolean }): Promise<void> {
   try {
-    const { error } = await db()
-      .from('journey_enrollments')
-      .delete()
-      .eq('order_id', orderId)
-      .is('completed_at', null)
+    const { data, error } = await db().rpc('revoke_refunded_commerce_journeys', { _order: orderId })
+    if (error && opts?.strict) throw error
+    if (!error && data !== true && opts?.strict) throw new Error('Refunded Journey revoke was refused')
     if (error) {
       console.error('[commerce] journey revoke failed', { orderId, error: error.message })
     }
   } catch (error) {
+    if (opts?.strict) throw error
     console.error('[commerce] journey revoke failed', { orderId, error })
   }
 }

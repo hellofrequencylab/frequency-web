@@ -38,6 +38,8 @@ const state = vi.hoisted(() => {
     run(call: Call) {
       calls.push(call)
       const out = handler(call)
+      if (out.data === undefined && !out.error && call.table === 'rpc:claim_commerce_settlement') return { data: { state: 'claimed', steps: {} }, error: null }
+      if (out.data === undefined && !out.error && call.table === 'rpc:advance_commerce_settlement') return { data: true, error: null }
       return { data: out.data === undefined ? (call.single ? null : []) : out.data, error: out.error ?? null }
     },
     reset() {
@@ -383,7 +385,7 @@ describe('the webhook side of a split refund (LIVE-623)', () => {
 })
 
 describe('the settle pays the sellers of a split order, and only of a split order (LIVE-622)', () => {
-  const paidSession = { id: 'cs_1', payment_status: 'paid', payment_intent: 'pi_1', metadata: { kind: 'commerce_order' } } as unknown as Stripe.Checkout.Session
+  const paidSession = { id: 'cs_1', payment_status: 'paid', amount_total: 3000, currency: 'usd', payment_intent: 'pi_1', metadata: { kind: 'commerce_order' } } as unknown as Stripe.Checkout.Session
   const settleWith = (row: Record<string, unknown>) =>
     state.setHandler((c) => (c.table === 'commerce_orders' && c.op === 'update' ? { data: [row] } : {}))
   const base = { entity_id: 'ent-1', amount_cents: 3000, platform_fee_cents: 150, buyer_profile_id: 'buyer-1', currency: 'usd' }
