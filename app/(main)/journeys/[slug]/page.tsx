@@ -9,7 +9,9 @@ import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
-import { getJourneyView, getPlan, getPlanAuthor, listJourneyCoHostSpaces } from '@/lib/journey-plans'
+import { getJourneyView, getPlan, getPlanAuthor, listJourneyCoHostSpaces, getCompletedLessonIds } from '@/lib/journey-plans'
+import { buildJourneyTree } from '@/lib/journeys/tree'
+import { JourneyDock } from '@/components/journey/nav/journey-dock'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
 import { readJourneyGuarantee } from '@/lib/journeys/guarantee'
 import { JourneyGuaranteeBlock } from '@/components/journey/guarantee-block'
@@ -27,6 +29,7 @@ import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { ListingQna } from '@/components/marketplace/listing-qna'
 import type { ListingComment } from '@/lib/marketplace/listing-comments'
 import {
+  itemsToBlocks,
   DiscoveryBlocks,
   OutcomesBlock,
   InstructorBlock,
@@ -136,6 +139,12 @@ export default async function JourneyPlanPage({
   const facts = journeyFacts(items)
   const topPillar = primaryPillar(items, byId)
   const canStart = facts.lessonCount > 0
+
+  // The Journey dock (About · Course · Focus · Library) is for someone who is IN this Journey: an
+  // enrolled member reading the pitch again, or its author. A visitor gets the sales page alone.
+  const docked = adopted || isAuthor
+  const dockPercent =
+    docked && profileId ? buildJourneyTree(itemsToBlocks(items), [...(await getCompletedLessonIds(profileId, plan.id))]).percent : 0
 
   // The standardized admin rail trigger, mirroring /learn (:183) so the scoped Journey rail is reachable
   // from the detail/root page too, not only the player. journey.editSettings resolves to the author,
@@ -402,6 +411,9 @@ export default async function JourneyPlanPage({
   return (
     <>
       <ShareImageProvider imageUrl={plan.cover_image ?? null}>{page}</ShareImageProvider>
+      {docked && (
+        <JourneyDock slug={plan.slug} active="about" percent={dockPercent} aboutHref={isAuthor ? `/journeys/${plan.slug}` : undefined} />
+      )}
     </>
   )
 }

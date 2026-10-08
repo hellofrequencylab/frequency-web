@@ -243,76 +243,88 @@ export function PathBlock({
   const f = facts ?? journeyFacts(items)
   const total = f.lessonCount
 
+  // ONE card, one row per phase, on a single timeline (the old shape was a separate card per phase,
+  // which on a twelve-week Journey was twelve stacked boxes and most of the page). The first few
+  // rows show; the rest fold behind one "Show all" so the path reads as a shape, not a wall. Each
+  // row still opens to its lesson titles: the curriculum is the pitch.
+  const VISIBLE = 4
+  const row = (p: (typeof f.phases)[number], i: number) => {
+    const n = f.lessonsPerPhase.get(p.id) ?? 0
+    const time = formatMinutes(f.phaseMinutes.get(p.id) ?? null)
+    const opens = i === 0 ? 'Opens at start' : `Opens ${phaseOpenLabel(i, dripIntervalDays).toLowerCase()}`
+    const lessons = p.modules.flatMap((m) => m.lessons)
+    return (
+      <li key={p.id} className="relative">
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-elevated/60 [&::-webkit-details-marker]:hidden">
+            <span
+              className="relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill text-meta font-bold tabular-nums ring-4 ring-surface"
+              style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
+            >
+              {i + 1}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-body-sm font-semibold text-text">{p.title || `Phase ${i + 1}`}</span>
+              <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-meta text-muted">
+                <span>
+                  {n} {n === 1 ? 'lesson' : 'lessons'}
+                </span>
+                {time && (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3" aria-hidden /> {time}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1">
+                  {i === 0 ? <Sparkles className="h-3 w-3" aria-hidden /> : <Lock className="h-3 w-3" aria-hidden />}
+                  {opens}
+                </span>
+              </span>
+            </span>
+            <ChevronDown
+              className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none"
+              aria-hidden
+            />
+          </summary>
+          <ul className="space-y-1 pb-3 pl-[3.75rem] pr-4">
+            {lessons.map((l) => (
+              <li key={l.id} className="flex items-center gap-2 text-body-sm">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-border-strong" />
+                <span className="min-w-0 truncate text-text">{l.title}</span>
+                {l.estMinutes ? <span className="ml-auto shrink-0 text-meta tabular-nums text-muted">{l.estMinutes} min</span> : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      </li>
+    )
+  }
+  const head = f.phases.slice(0, VISIBLE)
+  const rest = f.phases.slice(VISIBLE)
+
   return (
     <section>
       <SectionHeader title="The path" count={f.phaseCount} />
       {total === 0 ? (
         <EmptyState icon={Target} title="No path yet" description="This Journey hasn't mapped its phases." />
       ) : (
-        <ol className="space-y-3">
-          {f.phases.map((p, i) => {
-            const n = f.lessonsPerPhase.get(p.id) ?? 0
-            const time = formatMinutes(f.phaseMinutes.get(p.id) ?? null)
-            const cadence = i === 0 ? 'Unlocks at start' : phaseOpenLabel(i, dripIntervalDays)
-            const lessons = p.modules.flatMap((m) => m.lessons)
-            return (
-              <li key={p.id} className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
-                <details className="group" {...(i === 0 ? { open: true } : {})}>
-                  <summary className="flex cursor-pointer list-none items-center gap-3 p-4 [&::-webkit-details-marker]:hidden">
-                    <span
-                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-pill text-meta font-bold tabular-nums"
-                      style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
-                    >
-                      {i + 1}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-body-sm font-semibold text-text">
-                        {p.title || `Phase ${i + 1}`}
-                      </span>
-                      <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-muted">
-                        <span>{n} {n === 1 ? 'lesson' : 'lessons'}</span>
-                        {time && (
-                          <>
-                            <span aria-hidden className="text-subtle">·</span>
-                            <span className="inline-flex items-center gap-0.5">
-                              <Clock className="h-3 w-3" aria-hidden /> {time}
-                            </span>
-                          </>
-                        )}
-                        <span aria-hidden className="text-subtle">·</span>
-                        <span className="inline-flex items-center gap-0.5">
-                          {i === 0 ? (
-                            <Sparkles className="h-3 w-3" aria-hidden />
-                          ) : (
-                            <Lock className="h-3 w-3" aria-hidden />
-                          )}
-                          {cadence}
-                        </span>
-                      </span>
-                    </span>
-                    <ChevronDown
-                      className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none"
-                      aria-hidden
-                    />
-                  </summary>
-                  <ul className="space-y-1 border-t border-border px-4 pb-4 pt-3">
-                    {lessons.map((l) => (
-                      <li key={l.id} className="flex items-center gap-2 text-body-sm">
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-border-strong" />
-                        <span className="min-w-0 truncate text-text">{l.title}</span>
-                        {l.estMinutes ? (
-                          <span className="ml-auto shrink-0 text-2xs tabular-nums text-muted">
-                            {l.estMinutes} min
-                          </span>
-                        ) : null}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              </li>
-            )
-          })}
-        </ol>
+        <div className="overflow-hidden rounded-card border border-border bg-surface lift-1">
+          {/* The timeline's spine runs behind the numbered nodes. */}
+          <ol className="relative divide-y divide-border before:absolute before:bottom-6 before:left-8 before:top-6 before:w-px before:bg-border">
+            {head.map((p, i) => row(p, i))}
+          </ol>
+          {rest.length > 0 && (
+            <details className="group/more border-t border-border">
+              <summary className="flex cursor-pointer list-none items-center justify-center gap-1.5 px-4 py-3 text-body-sm font-semibold text-primary-strong transition-colors hover:bg-surface-elevated/60 [&::-webkit-details-marker]:hidden">
+                <span className="group-open/more:hidden">Show all {f.phaseCount} {f.phaseCount === 1 ? 'phase' : 'phases'}</span>
+                <span className="hidden group-open/more:inline">Show fewer</span>
+                <ChevronDown className="h-4 w-4 transition-transform group-open/more:rotate-180 motion-reduce:transition-none" aria-hidden />
+              </summary>
+              <ol className="relative divide-y divide-border border-t border-border before:absolute before:bottom-6 before:left-8 before:top-0 before:w-px before:bg-border">
+                {rest.map((p, i) => row(p, i + VISIBLE))}
+              </ol>
+            </details>
+          )}
+        </div>
       )}
     </section>
   )

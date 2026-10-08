@@ -28,9 +28,19 @@ const entry = (key) => {
   if (!e) { console.error(`PROG-DAWN9 probe: no baseline entry "${key}" — the ratchet was restructured.`); process.exit(INDETERMINATE) }
   return e
 }
-const seed = (source) => [...base.filter((f) => f.path !== 'components/__probe__.tsx'),
-  { path: 'components/__probe__.tsx', text: stripComments(source), source }]
-const current = (key, corpus) => evaluate([entry(key)], corpus)[0].current
+// A seeded corpus is the live tree plus one probe file. countEntry sums per file, so its count is
+// the live count plus the probe file's own count: the live tree is scanned once per class (memo)
+// instead of once per case, which keeps this probe inside the per-probe CPU ceiling as the repo grows.
+const PROBE = 'components/__probe__.tsx'
+const live = new Map()
+const seed = (source) => ({ seeded: { path: PROBE, text: stripComments(source), source } })
+const current = (key, corpus) => {
+  if (corpus === base) {
+    if (!live.has(key)) live.set(key, evaluate([entry(key)], base)[0].current)
+    return live.get(key)
+  }
+  return current(key, base) + countEntry(entry(key), [corpus.seeded]).count
+}
 const check = (label, got, want) => { (got === want ? note : fail).push(`${got === want ? 'ok  ' : 'FAIL'} ${label} — got ${got}, want ${want}`) }
 
 // ── DEFECT 1 — raw-input counted controls no primitive can receive ───────────────────────────
