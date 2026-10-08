@@ -145,5 +145,6 @@ html:has([data-house-site]),body:has([data-house-site]){background:var(--color-c
 .hs-plain{max-width:1160px;margin:0 auto;padding:0 clamp(20px,4vw,48px) clamp(80px,9vw,120px)}
 .hs-footer{width:100%;max-width:1240px;margin:0 auto;padding:0 clamp(20px,4vw,48px) 44px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;font-size:14px;color:var(--color-text-subtle)}
 .hs-footer a{color:var(--color-text-muted);font-weight:500}
+.hs-footer-end{display:flex;align-items:center;gap:20px}
 @media (prefers-reduced-motion:reduce){[data-house-site] *{animation:none!important}html:has([data-house-site]){scroll-behavior:auto}}
 `

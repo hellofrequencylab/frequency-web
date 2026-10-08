@@ -7,18 +7,9 @@ import { Menu, X } from 'lucide-react'
 // a frosted panel of the same links. A client island only so tapping a link closes the panel, which a plain
 // <details> cannot do. The links themselves are the server's, passed in as data.
 
-export function HouseMenu({
-  label,
-  links,
-  admin = null,
-}: {
-  label: string
-  links: { href: string; label: string }[]
-  /** The labelled Frequency management link a skinned website ends its menu with (site-chrome.tsx). */
-  admin?: { href: string; label: string } | null
-}) {
+export function HouseMenu({ label, links }: { label: string; links: { href: string; label: string }[] }) {
   const [open, setOpen] = useState(false)
-  if (links.length === 0 && !admin) return null
+  if (links.length === 0) return null
   return (
     <div className="hs-menu">
       <button
@@ -38,11 +29,6 @@ export function HouseMenu({
               {l.label}
             </a>
           ))}
-          {admin && (
-            <a href={admin.href} className="hs-nav-admin" onClick={() => setOpen(false)}>
-              {admin.label}
-            </a>
-          )}
         </nav>
       )}
     </div>

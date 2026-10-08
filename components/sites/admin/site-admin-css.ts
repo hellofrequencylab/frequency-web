@@ -23,6 +23,9 @@ ${R}{--hof-charcoal:${P.charcoal};--hof-surface:${P.surface};--hof-raised:${P.ra
 --pattern-chevron:repeating-linear-gradient(-60deg,var(--hof-hairline) 0 2px,transparent 2px 12px);
 min-height:100vh;background:var(--bg-page);color:var(--text-primary);font:var(--type-body);color-scheme:dark}
 ${R} *{box-sizing:border-box}
+/* The website's sticky header sits above these pages (64px menu, 40px admin row, 1px rule), so every
+   pinned rail and month heading pins just under it. */
+${R}{--hfa-top:105px}
 ${R} a{color:var(--text-link)}
 ${R} a:focus-visible,${R} button:focus-visible{outline:2px solid var(--hof-teal-text);outline-offset:2px}
 html:has(${R}){scroll-behavior:smooth;background:${P.charcoal}}
@@ -30,22 +33,9 @@ html:has(${R}){scroll-behavior:smooth;background:${P.charcoal}}
 ${R} .lbl{font:var(--type-label-s);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 ${R} .mono-link{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;text-decoration:none}
 
-/* ── header ── */
-${R} .hfa-head{border-bottom:1px solid var(--border-hairline)}
-${R} .hfa-head-in{max-width:1320px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
-${R} .hfa-head-in.eo{padding:20px 40px;min-height:72px}
-${R} .hfa-head-in.cal{padding:28px 40px;min-height:96px}
-${R} .hfa-brand{display:flex;align-items:center;gap:20px;flex-wrap:wrap;color:var(--text-primary);text-decoration:none}
-${R} .hfa-word{font:800 28px/1 var(--font-display);text-transform:uppercase}
-${R} .cal .hfa-word{font-size:36px}
-${R} .hfa-divider{width:1px;align-self:stretch;background:var(--border-strong)}
-${R} .hfa-title{font:var(--type-label-l);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
-${R} .hfa-nav{display:flex;gap:24px;flex-wrap:wrap}
-@media (max-width:759px){${R} .hfa-head-in.eo,${R} .hfa-head-in.cal{padding:20px 16px;min-height:72px}${R} .cal .hfa-word{font-size:28px}${R} .cal .hfa-brand{gap:12px}}
-
 /* ── executive overview ── */
 ${R} .eo-body{max-width:1320px;margin:0 auto;padding:0 40px 120px;display:flex;flex-wrap:wrap;gap:32px 56px;align-items:flex-start}
-${R} .eo-rail{flex:0 0 220px;position:sticky;top:0;padding:48px 0 24px;display:flex;flex-direction:column;gap:20px;max-height:100vh;overflow-y:auto;scrollbar-width:none}
+${R} .eo-rail{flex:0 0 220px;position:sticky;top:var(--hfa-top);padding:48px 0 24px;display:flex;flex-direction:column;gap:20px;max-height:calc(100vh - var(--hfa-top));overflow-y:auto;scrollbar-width:none}
 ${R} .eo-rail .lbl{padding-left:8px}
 ${R} .eo-toc{display:flex;flex-direction:column;gap:2px}
 ${R} .eo-toc a{display:grid;grid-template-columns:14px 22px minmax(0,1fr);gap:8px;align-items:baseline;padding:9px 8px;text-decoration:none;color:color-mix(in oklab,var(--text-primary) calc(var(--w,0)*100%),var(--text-muted));background:color-mix(in oklab,var(--surface-card) calc(var(--w,0)*100%),transparent);font:600 15px/1.25 var(--font-body);transition:color 240ms linear,background-color 240ms linear}
@@ -72,7 +62,7 @@ ${R} .eo-photo{position:relative;height:360px;overflow:hidden;clip-path:var(--cl
 ${R} .eo-photo img{display:block;width:100%;height:100%;object-fit:cover}
 ${R} .band{height:18px;background:repeating-linear-gradient(120deg,var(--hof-teal) 0 3px,transparent 3px 13px);background-size:15.01px 100%;animation:hfa-band 10s linear infinite}
 @keyframes hfa-band{from{background-position:0 0}to{background-position:15.01px 0}}
-${R} .eo-sec{padding:56px 0 64px;border-bottom:1px solid var(--border-hairline);display:flex;flex-direction:column;gap:20px;scroll-margin-top:24px}
+${R} .eo-sec{padding:56px 0 64px;border-bottom:1px solid var(--border-hairline);display:flex;flex-direction:column;gap:20px;scroll-margin-top:calc(var(--hfa-top) + 24px)}
 ${R} .eo-sec:last-child{padding-bottom:0;border-bottom:0}
 ${R} .eo-sec .kicker{display:flex;align-items:center;gap:10px}
 ${R} .eo-sec .kicker i{width:18px;height:12px;background:var(--hof-teal);clip-path:${chev(12)}}
@@ -169,7 +159,7 @@ ${R} .season .row .k em{font-style:normal;color:var(--text-muted)}
 
 /* ── yearly calendar ── */
 ${R} .cal-body{max-width:1320px;margin:0 auto;padding:0 40px 96px;display:grid;grid-template-columns:232px minmax(0,1fr);gap:32px}
-${R} .cal-rail{position:sticky;top:0;height:100vh;overflow-y:auto;padding:28px 24px 24px 0;display:flex;flex-direction:column;gap:28px;scrollbar-width:none}
+${R} .cal-rail{position:sticky;top:var(--hfa-top);height:calc(100vh - var(--hfa-top));overflow-y:auto;padding:28px 24px 24px 0;display:flex;flex-direction:column;gap:28px;scrollbar-width:none}
 ${R} .cal-year{display:flex;flex-direction:column;gap:6px}
 ${R} .cal-year b{font:800 88px/0.85 var(--font-display)}
 ${R} .cal-seasons{display:flex;flex-direction:column;gap:2px}
@@ -189,14 +179,14 @@ ${R} .cal-months a[aria-current]{background:var(--hof-teal);color:var(--text-on-
 ${R} .cal-key{display:flex;flex-direction:column;gap:10px}
 ${R} .key-retreat{height:20px;background:var(--hof-teal);clip-path:var(--clip-chamfer-sm);display:flex;align-items:center;padding:0 8px;font:800 14px/1 var(--font-display);text-transform:uppercase;color:var(--text-on-fill)}
 ${R} .holiday{font:400 12px/1.3 var(--font-body);color:var(--text-muted)}
-${R} .cal-strip{display:none;position:sticky;top:0;z-index:6;background:var(--bg-page);border-bottom:1px solid var(--border-hairline);height:52px;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;align-items:center;padding:0 16px}
+${R} .cal-strip{display:none;position:sticky;top:var(--hfa-top);z-index:6;background:var(--bg-page);border-bottom:1px solid var(--border-hairline);height:52px;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;align-items:center;padding:0 16px}
 ${R} .cal-strip a{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px 0;text-decoration:none}
 ${R} .cal-strip i{height:8px;background:var(--surface-raised);clip-path:${chev(8)}}
 ${R} .cal-strip .lbl{font-size:10px}
 ${R} .cal-strip a.on i{background:var(--sc)}
 ${R} .cal-strip a.on .lbl{color:var(--sc)}
-${R} .month{margin-bottom:48px;scroll-margin-top:0}
-${R} .month-head{position:sticky;top:0;z-index:5;background:var(--bg-page);border-bottom:1px solid var(--border-hairline)}
+${R} .month{margin-bottom:48px;scroll-margin-top:var(--hfa-top)}
+${R} .month-head{position:sticky;top:var(--hfa-top);z-index:5;background:var(--bg-page);border-bottom:1px solid var(--border-hairline)}
 ${R} .month-head .top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:28px 0 14px}
 ${R} .month-head .nm{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
 ${R} .month-head h2{margin:0;font:var(--type-display-m);text-transform:uppercase;letter-spacing:var(--tracking-display)}
@@ -269,6 +259,6 @@ ${R} .mretreat{background:var(--hof-teal);color:var(--text-on-fill);padding:8px 
 ${R} .mretreat b{font:800 20px/1 var(--font-display);text-transform:uppercase}
 ${R} .mretreat span{font:500 11px/1 var(--font-mono);letter-spacing:0.1em}
 ${R} .mnone{padding:16px 0}
-@media (max-width:1179px){${R} .cal-body{grid-template-columns:minmax(0,1fr);gap:0}${R} .cal-rail{display:none}${R} .cal-strip{display:grid}${R} .month-head{top:52px}${R} .month{scroll-margin-top:52px}}
+@media (max-width:1179px){${R} .cal-body{grid-template-columns:minmax(0,1fr);gap:0}${R} .cal-rail{display:none}${R} .cal-strip{display:grid}${R} .month-head{top:calc(var(--hfa-top) + 52px)}${R} .month{scroll-margin-top:calc(var(--hfa-top) + 52px)}}
 @media (max-width:759px){${R} .cal-body{padding:0 16px 64px}${R} .month{margin-bottom:24px}${R} .month-head .top{padding:16px 0 12px}${R} .month-head h2{font-size:40px}${R} .dow,${R} .weeks{display:none}${R} .mlist{display:flex}}
 `

@@ -8,11 +8,12 @@ import {
   readSiteAdminPass,
   siteAdminView,
 } from '@/lib/sites/site-admin-pass'
+import { SITE_ADMIN_HINT_COOKIE } from '@/lib/sites/site-admin-hint'
 
 // THE WEBSITE ADMIN HANDOFF, SITE SIDE (LIVE-864). `/admin/enter?pass=…&to=overview` on the website's own
 // host, rewritten here by the proxy. The Frequency console minted the pass for a Space manager
 // (app/(main)/spaces/[slug]/manage/leadership/open); this keeps it in a host-only cookie and lands on the
-// page asked for, so the pass leaves the address bar at once. A pass for another site or Space, or a bad
+// page asked for, so the pass leaves the address bar at once. It also sets the admin row's readable hint. A pass for another site or Space, or a bad
 // one, sets nothing and lands on the same page, which sends the person to sign in.
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ host: st
       path: '/',
       maxAge: SITE_ADMIN_PASS_MAX_AGE_S,
     })
+    // The readable flag that shows the blue admin row on the public pages (lib/sites/site-admin-hint.ts).
+    // It opens nothing; the pass above stays the only key.
+    res.cookies.set(SITE_ADMIN_HINT_COOKIE, '1', { secure: true, sameSite: 'lax', path: '/', maxAge: SITE_ADMIN_PASS_MAX_AGE_S })
   }
   return res
 }
