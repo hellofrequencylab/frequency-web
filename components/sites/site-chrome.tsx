@@ -7,8 +7,7 @@ import { HOUSE_CSS } from './house-css'
 import { MENSWORK_CSS } from './menswork-css'
 import { MENSWORK_PAGE_CSS } from './menswork-page-css'
 import { HouseMenu } from './house-menu'
-import { SiteAdminBar, type SiteAdminNavLink } from './site-admin-bar'
-import { SiteAdminBarGate } from './site-admin-bar-gate'
+import { SiteFooterAdmin, type SiteAdminNavLink } from './site-admin-bar'
 
 // THE WEBSITE CHROME, house theme (owner ask 2026-10-07: the "Daniel Tyack Site v4" design is the default
 // look of every Space website). A published Space website is the Space's own pages without any Frequency
@@ -25,12 +24,11 @@ import { SiteAdminBarGate } from './site-admin-bar-gate'
 //     as a one-colour mark in the theme's text color (a black line logo reads white on charcoal), a season
 //     bar under the header (the season now and the year's four, as the design system's site strip), and a
 //     fuller footer: the name, the Space's tagline and the page links.
-//   · ADMIN (LIVE-862, reworked by owner ask 2026-10-08: "keep the same header / menu through the site.
-//     Instead of an admin button, make it a double menu with admin settings in blue"). The visitor menu has
-//     no Admin item. A skinned website's admin row (site-admin-bar.tsx) sits under the header as a second,
-//     blue menu, marked "Admin view only": always on the website's /admin pages, and on the public pages
-//     only for a browser that came in through the console's handoff. A quiet "Admin" link in the footer is
-//     the way in; the admin pages and the console do the gating.
+//   · ADMIN (LIVE-862, reworked by owner asks 2026-10-08, LIVE-869: "Menu should read: Home | The Year |
+//     Circles | Calendar | Retreat | About (Blue after this) | ADMIN: Executive Overview"). A skinned
+//     website's one menu ends with its admin links (site-admin-bar.tsx) in the theme's blue, on every page,
+//     the /admin pages included, and a blue admin section sits above the footer line. The admin pages do
+//     the gating.
 //   · FOOTER: the copyright line and the "Frequency Partner" badge, the ONLY mention of Frequency on the
 //     site (owner ask 2026-10-06).
 //
@@ -66,8 +64,7 @@ export function SiteChrome({
   logoUrl = null,
   tagline = null,
   seasonNow = null,
-  adminHref = null,
-  adminNav = null,
+  admin = null,
   children,
 }: {
   brandName: string
@@ -88,15 +85,15 @@ export function SiteChrome({
   /** A skinned site's season bar detail: the sign module now, its theme as the Space's year page names it,
    *  and the next Circle Night from the Space's own events. */
   seasonNow?: { module: string; theme: string | null; next: string | null } | null
-  /** Where the footer's quiet Admin link goes (the site's /admin pages, or the console's handoff). Shown
-   *  only with a skin. */
-  adminHref?: string | null
-  /** The blue admin row under the header. `gated` draws it only for a browser holding the handoff's hint
-   *  (the cached public pages); otherwise it is drawn on the server (the admin pages). Only with a skin. */
-  adminNav?: { links: SiteAdminNavLink[]; gated: boolean } | null
+  /** The blue admin links ending the menu, and the console link the footer's admin section adds. Only
+   *  with a skin. */
+  admin?: { menu: SiteAdminNavLink[]; console: string } | null
   children: ReactNode
 }) {
-  const nav = skin ? adminNav : null
+  const adminLinks = skin ? admin : null
+  const menu = adminLinks
+    ? [...links, ...adminLinks.menu.map((l) => ({ href: l.href, label: `Admin: ${l.label}`, className: 'hs-nav-admin' }))]
+    : links
   return (
     <div
       data-site-root=""
@@ -123,6 +120,16 @@ export function SiteChrome({
                   {l.label}
                 </a>
               ))}
+              {adminLinks && (
+                <span className="hs-nav-admin">
+                  <span className="hs-nav-admin-tag">Admin:</span>
+                  {adminLinks.menu.map((l) => (
+                    <a key={l.href} href={l.href} aria-current={l.current ? 'page' : undefined}>
+                      {l.label}
+                    </a>
+                  ))}
+                </span>
+              )}
             </nav>
           )}
           <div className="hs-header-actions">
@@ -135,10 +142,9 @@ export function SiteChrome({
                 {cta.label}
               </a>
             )}
-            <HouseMenu label={`${brandName} menu`} links={links} />
+            <HouseMenu label={`${brandName} menu`} links={menu} />
           </div>
         </div>
-        {nav && (nav.gated ? <SiteAdminBarGate links={nav.links} /> : <SiteAdminBar links={nav.links} />)}
       </header>
       {skin && <SeasonBar season={skin.season} now={seasonNow} />}
 
@@ -163,18 +169,12 @@ export function SiteChrome({
           )}
         </div>
       )}
+      {adminLinks && <SiteFooterAdmin links={adminLinks.menu} console={adminLinks.console} />}
       <footer className="hs-footer">
         <span>
           © {new Date().getFullYear()} {brandName}
         </span>
-        <span className="hs-footer-end">
-          {skin && adminHref && (
-            <a href={adminHref} className="hs-footer-admin">
-              Admin
-            </a>
-          )}
-          <a href={appOrigin()}>Frequency Partner</a>
-        </span>
+        <a href={appOrigin()}>Frequency Partner</a>
       </footer>
     </div>
   )

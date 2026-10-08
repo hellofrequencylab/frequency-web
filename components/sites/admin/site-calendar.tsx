@@ -37,6 +37,8 @@ export interface SiteCalendarProps {
   /** Gathering notes by event slug ("Imbolc · mid-Aquarius"). */
   notes: Map<string, string>
   retreat: { title: string; dates: string; monthId: string; photo: string | null } | null
+  /** The page's own heading level: the Calendar page's h1, or an h2 when it is a section of Home. */
+  headingLevel?: 1 | 2
 }
 
 export function SiteCalendar(p: SiteCalendarProps) {
@@ -51,13 +53,14 @@ export function SiteCalendar(p: SiteCalendarProps) {
   const circle = sample('circle')
   const gathering = sample('gathering')
   const enroll = sample('enroll')
+  const Heading = p.headingLevel === 2 ? 'h2' : 'h1'
 
   return (
     <div className="hfa">
       <style>{SITE_ADMIN_CSS}</style>
-      <h1 className="sr-only">
+      <Heading className="sr-only">
         {p.brandName} Yearly Calendar
-      </h1>
+      </Heading>
       <nav className="cal-strip" aria-label="Seasons">
         {ORDER.map((s) => (
           <a key={s} href={`#${seasonStart(s) ?? ''}`} className={s === p.currentSeason ? 'on' : undefined} style={sc(s)}>

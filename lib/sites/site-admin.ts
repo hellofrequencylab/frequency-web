@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceMembership } from '@/lib/spaces/membership'
 import { spaceCapabilitiesFor } from '@/lib/spaces/entitlements'
 import { listProgramYearEventRows } from '@/lib/calendar/admin-calendar'
+import { listEventsForSpace } from '@/lib/events/store'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import { formatEventWhen } from '@/lib/time/zone'
 import { mensworkSign } from '@/lib/theme/menswork'
@@ -61,6 +62,26 @@ export async function readSiteAdminYear(spaceId: string, now: Date): Promise<{ y
     fromDay: programYearWindow(thisYear).fromDay,
     toDay: programYearWindow(thisYear + 1).toDay,
   })
+  return programYearFromRows(rows, now)
+}
+
+/** THE PUBLIC YEAR (LIVE-869, owner ruling 2026-10-08: a public Calendar page). The same year from the
+ *  Space's published events only, through listEventsForSpace's publication gate (the same events its public
+ *  page lists): no drafts, no private events, and no gathering notes (those are the admin calendar's). */
+export async function readSitePublicYear(spaceId: string, now: Date): Promise<{ year: number; events: ProgramEvent[] }> {
+  const thisYear = now.getUTCFullYear()
+  const rows = await listEventsForSpace(spaceId, {
+    limit: 400,
+    fromDay: programYearWindow(thisYear).fromDay,
+    toDay: programYearWindow(thisYear + 1).toDay,
+  })
+  const { year, events } = programYearFromRows(rows, now)
+  return { year, events: events.filter((e) => !e.draft) }
+}
+
+type YearRow = Awaited<ReturnType<typeof listProgramYearEventRows>>[number]
+
+function programYearFromRows(rows: YearRow[], now: Date): { year: number; events: ProgramEvent[]; notes: Map<string, string> } {
   const notes = new Map<string, string>()
   const events: ProgramEvent[] = rows.flatMap((ev) => {
     const dayKey = eventDayKey(ev.starts_at)

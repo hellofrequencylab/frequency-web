@@ -40,6 +40,7 @@ import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
 import { siteAdminNavLinks } from '@/components/sites/site-admin-bar'
+import { SITE_CALENDAR_SLUG, SitePublicCalendar } from '@/components/sites/site-public-calendar'
 import { JsonLd } from '@/components/json-ld'
 import { siteEntitySchema } from '@/lib/jsonld'
 
@@ -191,7 +192,10 @@ export async function SitePage({
   // A MENSWORK custom page draws its blocks as the design system's sections (components/sites/menswork-page.tsx),
   // with the Space's own events, circles and journeys; the season bar names the module now and the next
   // Circle Night. Other sites keep the Space page's render.
-  const customPage = !home && !contactPage && !bookPage
+  // LIVE-869: a Menswork site's `calendar` page (listed among its pages, so the owner places it in the
+  // menu) is the public yearly calendar, not a page doc.
+  const calendarPage = !!skin && pageSlug === SITE_CALENDAR_SLUG
+  const customPage = !home && !contactPage && !bookPage && !calendarPage
   const mwBlocks: MwBlock[] | null =
     skin && customPage
       ? ((withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug)).content ?? []) as MwBlock[])
@@ -236,12 +240,16 @@ export async function SitePage({
         logoUrl={skin ? space.brandLogoUrl : null}
         tagline={skin ? tagline : null}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
-        adminHref={siteBase === '' ? '/admin' : `${origin}${siteAdminHandoffPath(space.slug, 'overview')}`}
-        // The blue admin row needs the website's own host (its /admin pages and the handoff's hint live there).
-        adminNav={siteBase === '' ? { links: siteAdminNavLinks(siteConsoleHref(origin, space.slug)), gated: true } : null}
+        admin={siteAdminLinks(origin, space.slug, siteBase)}
       >
         {model ? (
-          <HouseHome model={model} />
+          <>
+            <HouseHome model={model} />
+            {/* LIVE-869: a Menswork Home ends with the public year, a section with no menu anchor. */}
+            {skin && <SitePublicCalendar space={space} brandName={brandName} headingLevel={2} />}
+          </>
+        ) : calendarPage ? (
+          <SitePublicCalendar space={space} brandName={brandName} headingLevel={1} />
         ) : contactModel ? (
           <>
             {/* The form hero carries the page's h1 when the Contact form block has a heading. */}
@@ -345,9 +353,14 @@ export function mensworkSiteMenu(homeHref: string, pages: { label: string }[], p
   return [{ href: homeHref, label: pages[0]?.label ?? 'Home' }, ...pageLinks]
 }
 
-/** The Space's Leadership page in the Frequency console, the admin row's labelled Frequency link. */
-export function siteConsoleHref(origin: string, slug: string): string {
-  return `${origin}/spaces/${slug}/manage/leadership`
+/** A Menswork website's blue admin links: the admin pages on the site's own host (base ``), else through
+ *  the console's handoff, and the console's Leadership page as the labelled Frequency link. */
+export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | null = null) {
+  const page = (view: 'overview' | 'calendar') => (siteBase === '' ? `/admin/${view}` : `${origin}${siteAdminHandoffPath(slug, view)}`)
+  return siteAdminNavLinks(
+    { overview: page('overview'), calendar: page('calendar'), console: `${origin}/spaces/${slug}/manage/leadership` },
+    current,
+  )
 }
 
 function siteCta(space: Space, links: SiteLinkMap): { label: string; href: string; external: boolean } | null {

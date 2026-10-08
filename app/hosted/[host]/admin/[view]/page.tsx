@@ -8,14 +8,13 @@ import { readWebsitePublished } from '@/lib/spaces/website'
 import { mensworkAccentVars, mensworkSeason, mensworkSign } from '@/lib/theme/menswork'
 import { SITE_ADMIN_COOKIE, siteAdminHandoffPath, siteAdminView } from '@/lib/sites/site-admin-pass'
 import { readSiteAdminAuthor, readSiteAdminYear, siteAdminAllowed } from '@/lib/sites/site-admin'
-import { buildProgramYear, programHolidays, readProgramOverview, type ProgramEvent } from '@/lib/spaces/leadership'
+import { buildProgramYear, programHolidays, readProgramOverview } from '@/lib/spaces/leadership'
 import { readOverviewDoc } from '@/lib/spaces/leadership-overview'
-import { loadSpacePageDoc } from '@/lib/spaces/page-doc'
 import { SiteOverview } from '@/components/sites/admin/site-overview'
-import { SiteCalendar, retreatShort } from '@/components/sites/admin/site-calendar'
+import { SiteCalendar } from '@/components/sites/admin/site-calendar'
+import { findRetreat, pagePhoto, retreatDates } from '@/components/sites/site-public-calendar'
 import { SiteChrome } from '@/components/sites/site-chrome'
-import { siteAdminNavLinks } from '@/components/sites/site-admin-bar'
-import { mensworkSiteMenu, siteChromeBasics, siteConsoleHref } from '@/components/sites/site-page'
+import { mensworkSiteMenu, siteAdminLinks, siteChromeBasics } from '@/components/sites/site-page'
 import { mensworkNowLine } from '@/components/sites/menswork-page'
 import { loadMensworkLive } from '@/lib/sites/menswork-data'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -33,13 +32,10 @@ import type { ReactNode } from 'react'
 //
 // THE SITE'S OWN HEADER (owner ask 2026-10-08: "keep the same header / menu through the site... a double
 // menu with admin settings in blue"). Both pages sit inside the website's chrome (site-chrome.tsx): its
-// header and menu, the season bar and the footer, with the blue admin row under the header.
+// header and menu (its blue admin links marking this page), the season bar and the footer.
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
-
-/** "Oct 29 – 31, 2027", the rail card's line. */
-const retreatDates = (e: ProgramEvent) => `${retreatShort(e).replace('–', ' – ')}, ${e.dayKey.slice(0, 4)}`
 
 export default async function SiteAdminPage({ params }: { params: Promise<{ host: string; view: string }> }) {
   const { host: hostParam, view: viewParam } = await params
@@ -55,8 +51,7 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
   const now = new Date()
   const { year, events, notes } = await readSiteAdminYear(space.id, now)
   const months = buildProgramYear(year, events, now)
-  const retreatEvent = events.find((e) => e.endDayKey && /\bretreat\b/i.test(e.title)) ?? events.find((e) => e.endDayKey)
-  const retreatMonth = retreatEvent ? months.find((m) => retreatEvent.dayKey.startsWith(`${m.year}-${String(m.month0 + 1).padStart(2, '0')}`)) : null
+  const retreat = findRetreat(events, months)
 
   // The website's own header and menu, the same on every page of the site (its base is `` on its own host).
   const chrome = await siteChromeBasics(space, '')
@@ -76,8 +71,7 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
         logoUrl={space.brandLogoUrl}
         tagline={chrome.tagline}
         seasonNow={{ ...nowLine, next: live.events.find((e) => /circle night/i.test(e.title))?.startsAt ?? null }}
-        adminHref="/admin"
-        adminNav={{ links: siteAdminNavLinks(siteConsoleHref(chrome.origin, space.slug), view), gated: false }}
+        admin={siteAdminLinks(chrome.origin, space.slug, '', view)}
       >
         {body}
       </SiteChrome>
@@ -93,11 +87,11 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
         photo={space.coverImageUrl ?? null}
         author={await readSiteAdminAuthor(space.ownerProfileId)}
         retreat={
-          retreatEvent && retreatMonth
+          retreat
             ? {
-                title: retreatEvent.title,
-                dates: retreatDates(retreatEvent),
-                href: `/admin/calendar#${retreatMonth.id}`,
+                title: retreat.event.title,
+                dates: retreatDates(retreat.event),
+                href: `/admin/calendar#${retreat.month.id}`,
               }
             : null
         }
@@ -105,7 +99,7 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
     )
   }
 
-  const retreatPhoto = retreatEvent ? await pagePhoto(space.preferences, brandName, 'retreat') : null
+  const retreatPhoto = retreat ? await pagePhoto(space.preferences, brandName, 'retreat') : null
   return inChrome(
     <SiteCalendar
       brandName={brandName}
@@ -116,28 +110,15 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
       holidays={programHolidays(year)}
       notes={notes}
       retreat={
-        retreatEvent && retreatMonth
+        retreat
           ? {
-              title: retreatEvent.title,
-              dates: retreatDates(retreatEvent),
-              monthId: retreatMonth.id,
+              title: retreat.event.title,
+              dates: retreatDates(retreat.event),
+              monthId: retreat.month.id,
               photo: retreatPhoto,
             }
           : null
       }
     />,
   )
-}
-
-/** The first photo on the website page whose slug names `word` (the Desert Retreat page's hero), else null. */
-async function pagePhoto(preferences: unknown, brandName: string, word: string): Promise<string | null> {
-  const pages = (preferences as { pages?: { slug?: unknown }[] } | null)?.pages ?? []
-  const slug = pages.map((p) => (typeof p?.slug === 'string' ? p.slug : '')).find((s) => s.includes(word))
-  if (!slug) return null
-  const doc = await loadSpacePageDoc(preferences, brandName, slug)
-  for (const block of doc.content ?? []) {
-    const image = (block?.props as Record<string, unknown> | undefined)?.image
-    if (typeof image === 'string' && /^https:\/\//.test(image)) return image.split('?')[0]
-  }
-  return null
 }

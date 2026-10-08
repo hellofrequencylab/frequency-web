@@ -214,16 +214,17 @@ ${M} .hs-footer-links a:hover{color:var(--color-primary-strong)}
 ${M} .hs-footer{max-width:1248px;padding:24px clamp(20px,4vw,48px) 40px;border-top:1px solid var(--mw-hairline);${LABEL};font-size:11px;color:var(--color-text-muted)}
 ${M} .hs-footer a{color:var(--color-text-muted);font-weight:500}
 ${M} .hs-footer a:hover{color:var(--color-primary-strong)}
-${M} .hs-footer-end{gap:24px}
-${M} .hs-footer-admin{opacity:.7}
+${M} .hs-nav .hs-nav-admin{display:flex;align-items:center;gap:14px;align-self:center;padding:6px 14px 6px 10px;background:var(--color-signal);clip-path:${CLIP.sm}}
+${M} .hs-nav-admin-tag{${LABEL};font-size:11px;color:var(--color-text-on-signal);opacity:.8}
+${M} .hs-nav .hs-nav-admin a{border-bottom:0;color:var(--color-text-on-signal)}
+${M} .hs-nav .hs-nav-admin a:hover,${M} .hs-nav .hs-nav-admin a[aria-current="page"]{color:var(--color-text-on-signal);text-decoration:underline;text-underline-offset:4px}
+${M} .hs-menu-panel a.hs-nav-admin{color:var(--color-signal-strong)}
 
-${M} .hs-admin{background:var(--color-signal);color:var(--color-text-on-signal)}
-${M} .hs-admin-in{max-width:1248px;height:40px;margin:0 auto;padding:0 clamp(16px,3vw,24px);display:flex;align-items:center;gap:24px;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+${M} .hs-admin{width:100%;box-sizing:border-box;max-width:1248px;margin:0 auto 24px;padding:0 clamp(20px,4vw,48px)}
+${M} .hs-admin-in{padding:14px clamp(16px,3vw,24px);display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;background:var(--color-signal);color:var(--color-text-on-signal)}
 ${M} .hs-admin-tag{${LABEL};font-size:11px;padding:5px 12px 5px 8px;background:var(--mw-charcoal);color:var(--color-signal-strong);clip-path:${CLIP.sm}}
-${M} .hs-admin-nav{display:flex;gap:20px;align-self:stretch}
-${M} .hs-admin-nav a{${LABEL};display:flex;align-items:center;border-bottom:2px solid transparent;color:var(--color-text-on-signal);text-decoration:none;transition:border-color 150ms linear}
+${M} .hs-admin-nav{display:flex;flex-wrap:wrap;gap:12px 24px}
+${M} .hs-admin-nav a{${LABEL};font-size:12px;border-bottom:2px solid transparent;color:var(--color-text-on-signal);text-decoration:none;transition:border-color 150ms linear}
 ${M} .hs-admin-nav a:hover,${M} .hs-admin-nav a[aria-current="page"]{border-bottom-color:var(--color-text-on-signal)}
-${M} .hs-admin-note{margin-left:auto;font-family:var(--mw-body);font-size:13px}
-@media (max-width:759px){${M} .hs-admin-note{display:none}}
 @media (prefers-reduced-motion:reduce){${M} *{transition:none!important;animation:none!important}}
 `
