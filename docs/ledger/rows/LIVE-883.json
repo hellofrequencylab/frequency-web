@@ -13,7 +13,7 @@
   "verify": {
     "kind": "cmd",
     "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/check-ai-budget-reservations.mjs",
-    "note": "Actual shipped completion/accounting/Space caller/Recraft paths, thirty failure/concurrency/attribution consequences; no provider request or nested test runner."
+    "note": "Actual shipped completion/accounting/Space caller/website editor/Recraft paths, thirty-nine failure/concurrency/attribution consequences; no provider request or nested test runner."
   },
   "wave": "WR",
   "closed": "2026-10-08"

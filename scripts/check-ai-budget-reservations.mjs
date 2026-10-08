@@ -59,6 +59,22 @@ check(outcomes.every(r=>r.status==='rejected'));check(state.dispatches===6);chec
 reset();const {draftSpaceBio}=await import('../lib/ai/space-copilot.ts')
 await draftSpaceBio({name:'Synthetic Space',spaceId:'synthetic-space',profileId:'synthetic-owner',type:'business'})
 check([...state.usage.values()][0].p_space==='synthetic-space');check([...state.usage.values()][0].p_profile==='synthetic-owner')
+// The newly merged website editor uses the mandatory wrapper without a duplicate local ledger write.
+const websiteSources=new Map([
+ ['./authorization','export const authorizeWebsiteEditor=async()=>({profileId:"synthetic-owner",space:{id:"synthetic-space"}})'],
+ ['@/lib/sites/site-admin','export const readSiteAdminAuthor=async()=>null'],
+ ['@/lib/sites/site-cache','export const refreshSite=()=>{}'],
+ ['@/lib/ai/client','export const aiEnabled=()=>true'],
+ ['@/lib/ai/rate-limit','export const aiRateLimited=async()=>false'],
+ ['@/lib/ai/usage','export const featureOverBudget=async()=>false;export const recordAiUsage=()=>{throw Error("duplicate local ledger write")}'],
+ ['@/lib/ai/voice','export const withVoice=s=>s'],
+])
+registerHooks({resolve(spec,context,next){if(context.parentURL?.endsWith('/lib/sites/editor/actions.ts')&&websiteSources.has(spec))return {url:`data:text/javascript,${encodeURIComponent(websiteSources.get(spec))}`,shortCircuit:true};return next(spec,context)}})
+const {proposeWebsiteText}=await import('../lib/sites/editor/actions.ts')
+reset();check((await proposeWebsiteText('synthetic.example','Shorten','Synthetic passage')).ok)
+check(state.dispatches===1);check(state.usage.size===1)
+check([...state.usage.values()][0].p_feature==='website-editor');check([...state.usage.values()][0].p_profile==='synthetic-owner');check([...state.usage.values()][0].p_space==='synthetic-space')
+reset();state.dbDown=true;check(!(await proposeWebsiteText('synthetic.example','Shorten','Synthetic passage')).ok);check(state.dispatches===0);check(state.usage.size===0)
 // Exercise the actual Recraft paid seam, with only fetch replaced (never a vendor request).
 reset();const originalFetch=globalThis.fetch,oldKey=process.env.RECRAFT_API_KEY,oldDisabled=process.env.AI_DISABLED
 process.env.AI_DISABLED='0';process.env.RECRAFT_API_KEY='synthetic-test';globalThis.fetch=async()=>({ok:true,json:async()=>({data:[{url:'https://example.test/synthetic.png'}]})})

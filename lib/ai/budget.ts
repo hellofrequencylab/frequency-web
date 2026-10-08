@@ -63,6 +63,7 @@ export function withinBudget(spentUsd: number, projectedUsd: number, capUsd: num
 export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'help-search': 5,
   'demo-palette': 1,
+  'website-editor': 1, // Preserve the editor's former dailyCapFor fallback in mandatory admission.
   'campaign-coach': 1,
   'circle-compose': 1,
   'circle-spark': 1,
