@@ -12,7 +12,7 @@ import { staffCan } from '@/lib/core/staff-roles'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { updateTicketFields, addStaffMessage, getTicketAdmin, type TicketUpdate } from '@/lib/support/store'
 import { TICKET_PRIORITIES, type TicketPriority } from '@/lib/support/types'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import { retrieveHelpChunks } from '@/lib/ai/help-rag'
 import { withVoice } from '@/lib/ai/voice'
@@ -78,12 +78,13 @@ export async function draftReply(id: string): Promise<ActionResult<{ draft: stri
         : 'HELP CONTEXT: (no relevant help article found — don\'t guess platform specifics)'
 
       const res = await completeText({
+      accounting: { feature: 'support-draft', profileId: agent.id },
         system: withVoice(DRAFT_SYSTEM),
         messages: [{ role: 'user', content: `TICKET (${ticket.type}): ${ticket.subject}\n\n${convo}\n\n${helpContext}` }],
         tier: 'haiku',
         maxTokens: 320,
       })
-      await recordAiUsage({ feature: 'support-draft', model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: agent.id })
+
       if (res.text) return ok({ draft: res.text })
     } catch (e) {
       if (!(e instanceof AiUnavailableError)) {
@@ -122,12 +123,13 @@ export async function suggestTriage(id: string): Promise<ActionResult<{ priority
   if ((await aiAvailable()) && !(await featureOverBudget('support-draft'))) {
     try {
       const res = await completeText({
+      accounting: { feature: 'support-draft', profileId: agent.id },
         system: TRIAGE_SYSTEM,
         messages: [{ role: 'user', content: `TYPE: ${ticket.type}\nSUBJECT: ${ticket.subject}\n${firstMsg}` }],
         tier: 'haiku',
         maxTokens: 60,
       })
-      await recordAiUsage({ feature: 'support-draft', model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: agent.id })
+
       if (res.text) triage = parseTriage(res.text)
     } catch (e) {
       if (!(e instanceof AiUnavailableError)) { /* fall through */ }

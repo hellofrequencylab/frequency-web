@@ -23,8 +23,8 @@ import type Anthropic from '@anthropic-ai/sdk'
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages'
 import { aiEnabled } from '@/lib/ai'
 import { runToolLoop, type CompleteMessage, type SystemPrompt } from '@/lib/ai/complete'
-import { estimateCostUsd } from '@/lib/ai/budget'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { aiRateLimited } from '@/lib/ai/rate-limit'
 import type { MemberContext } from '@/lib/ai/memory'
 import { VERA_TOOLS, MEMBER_CHAT_TOOL_KEYS, requiresConfirmation, validateToolCall, type VeraToolDef } from './tools'
@@ -320,6 +320,7 @@ export async function runVeraClaudeTurn(input: {
     // stubbed (never executed here, ADR-028). Identical contract to the prior loop, and
     // the stable half of the prompt carries the cache marker (cacheSystem).
     const result = await runToolLoop({
+      accounting: { feature: FEATURE, profileId: input.profileId ?? null },
       tier: cfg.tier,
       maxTokens: MAX_TOKENS,
       maxRounds: MAX_ROUNDS,
@@ -360,15 +361,6 @@ export async function runVeraClaudeTurn(input: {
 
     // Release any prose the chips filter was still holding when the last round ended.
     filter.flush()
-
-    // Ledger entry (best-effort, never blocks the reply).
-    void recordAiUsage({
-      feature: FEATURE,
-      model: result.model,
-      usage: result.usage,
-      costUsd: estimateCostUsd(cfg.tier, result.usage),
-      profileId: input.profileId ?? null,
-    })
 
     // Peel the quick-reply chips off the prose (ONBOARDING-BUILD-LIST §1.5).
     const { reply: prose, suggestions } = extractSuggestions(result.text)

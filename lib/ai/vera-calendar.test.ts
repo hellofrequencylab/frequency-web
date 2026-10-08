@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // Vera at the calendar (PROG-CAL10), with the Anthropic client mocked at the SDK seam so completeRaw
 // runs for real: the tool loop feeds a lunar_dates call back as a tool_result computed by
 // lib/calendar/moon.ts, the propose_changes call is parsed strictly, the kill switch yields an honest
-// sentence, and the ledger sees one row per ask with the Space attributed. No write path exists here.
+// sentence, and the ledger sees each completed call once with the Space attributed. No write path exists here.
 //
 // Clarify before proposing (PROG-CAL11 slice 1): an ask_clarification call ends the turn with the
 // question and the transcript so far and no changes; the follow-up carries the answer as that
@@ -23,6 +23,7 @@ vi.mock('./client', () => ({
   aiEnabled: () => state.enabled,
   getAnthropic: () => ({
     messages: {
+      countTokens: vi.fn(async () => ({ input_tokens: 100 })),
       create: vi.fn(async (params: Record<string, unknown>) => {
         state.calls.push(params)
         const reply = state.replies.shift()
@@ -43,6 +44,7 @@ vi.mock('./client', () => ({
 }))
 
 vi.mock('./usage', () => ({
+  aiAvailable: vi.fn(async () => state.enabled),
   featureOverBudget: vi.fn(async () => state.overBudget),
   recordAiUsage: vi.fn(async () => {}),
 }))
@@ -173,14 +175,12 @@ describe('proposeCalendarChanges', () => {
     // The December 2026 new moon is 00:52 UTC on the 9th, which is the evening of the 8th in Los Angeles.
     expect(fed.days).toEqual(['2026-12-08', '2027-01-07', '2027-02-06'])
 
-    // One ledger row for the whole ask, usage summed across both rounds, the Space attributed.
-    expect(recordAiUsage).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(recordAiUsage).mock.calls[0][0]).toMatchObject({
-      feature: VERA_CALENDAR_FEATURE,
-      spaceId: 'space-1',
-      profileId: 'profile-1',
-      usage: { inputTokens: 800, outputTokens: 120 },
-    })
+    // Each completed raw call records once centrally; totals and Space attribution remain exact.
+    expect(recordAiUsage).toHaveBeenCalledTimes(2)
+    const rows = vi.mocked(recordAiUsage).mock.calls.map(([row]) => row)
+    for (const row of rows) expect(row).toMatchObject({ feature: VERA_CALENDAR_FEATURE, spaceId: 'space-1', profileId: 'profile-1' })
+    expect(rows.reduce((sum, row) => sum + row.usage.inputTokens, 0)).toBe(800)
+    expect(rows.reduce((sum, row) => sum + row.usage.outputTokens, 0)).toBe(120)
   })
 
   it('answers a bad lunar range with an error tool_result rather than a guess', () => {
@@ -194,7 +194,7 @@ describe('proposeCalendarChanges', () => {
     state.replies = [{ content: [toolUse(PROPOSE_TOOL_NAME, { changes: [{ kind: 'archive', planId: 'plan-1' }], note: 'Done.' })] }]
     const r = await proposeCalendarChanges({ ask: 'archive winter sits', mode: 'pencil', context })
     expect(r).toMatchObject({ error: expect.stringContaining('not one of ours') })
-    expect(recordAiUsage).toHaveBeenCalledTimes(1)
+    expect(recordAiUsage).toHaveBeenCalledTimes(state.calls.length)
   })
 
   it('stops after MAX_ROUNDS when the model never proposes, and says so', async () => {
@@ -309,7 +309,7 @@ describe('clarify before proposing', () => {
       { role: 'assistant', content: [{ type: 'tool_use', id: 'q1', name: CLARIFY_TOOL_NAME, input: expect.objectContaining({ question: 'Which sound bath do you mean?' }) }] },
     ])
     expect(JSON.stringify(r.transcript)).not.toContain('Plans (')
-    expect(recordAiUsage).toHaveBeenCalledTimes(1)
+    expect(recordAiUsage).toHaveBeenCalledTimes(state.calls.length)
   })
 
   it('carries the answer back as the question\'s tool_result, ahead of fresh context, and yields the proposal', async () => {

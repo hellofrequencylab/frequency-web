@@ -8,7 +8,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCampaignMetrics } from '@/lib/email-studio/analytics'
-import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+import { aiAvailable, featureOverBudget } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { completeText, AiUnavailableError } from './complete'
 import { withVoice } from './voice'
@@ -85,6 +85,7 @@ export async function analyzeCampaignOpenRate(campaignId: string, actorId?: stri
 
   try {
     const res = await completeText({
+      accounting: { feature: FEATURE, profileId: actorId },
       system: withVoice(COACH_SYSTEM),
       messages: [
         { role: 'user', content: `CAMPAIGN NUMBERS (the only facts you may use):\n${evidence}\n\nWrite the open-rate analysis.` },
@@ -92,7 +93,7 @@ export async function analyzeCampaignOpenRate(campaignId: string, actorId?: stri
       tier: 'haiku',
       maxTokens: 400,
     })
-    await recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: actorId })
+
     const text = res.text.trim()
     if (!text) return { ok: false, reason: 'Vera could not draft an analysis this time. Try again in a moment.' }
     return { ok: true, analysis: text }

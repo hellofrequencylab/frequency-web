@@ -107,7 +107,8 @@ describe('suggestRemixDirections (the door)', () => {
     expect(system).toContain(VOICE_PRIMER)
     expect(system).toContain(PRACTICE_SHAPE_PRIMER)
     expect(String((state.lastCall?.messages as { content: string }[])[0].content)).toContain('Evening wind-down walk')
-    expect(state.ledger[0]).toMatchObject({ feature: 'practice-remix', profileId: 'p1' })
+    expect(state.lastCall?.accounting).toMatchObject({ feature: 'practice-remix', profileId: 'p1' })
+    expect(state.ledger).toEqual([])
   })
 
   it('answers null (the plain copy) when AI is off or over budget, without a model call', async () => {

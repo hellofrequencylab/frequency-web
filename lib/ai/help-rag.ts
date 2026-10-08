@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { helpHref } from '@/lib/help/content'
 import { completeText } from './complete'
 import { embedText } from './embed'
-import { aiAvailable, featureOverBudget, recordAiUsage, logHelpQuery } from './usage'
+import { aiAvailable, featureOverBudget, logHelpQuery } from './usage'
 import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 
@@ -149,9 +149,10 @@ async function resolveHelpAnswer(q: string, profileId?: string | null): Promise<
   // Answer, grounded.
   try {
     const { system, messages } = buildHelpMessages(q, chunks)
-    const res = await completeText({ system, messages, tier: 'haiku', maxTokens: 400, cacheSystem: true })
+    const res = await completeText({
+      accounting: { feature: FEATURE, profileId }, system, messages, tier: 'haiku', maxTokens: 400, cacheSystem: true })
     if (!res.text) return deflect(chunks, top)
-    after(() => recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId }))
+
     return { answer: res.text, citations: toCitations(chunks), confidence: top, deflected: false }
   } catch {
     return deflect(chunks, top)

@@ -120,16 +120,19 @@ describe('spaceId flows into the cost ledger (no network)', () => {
       const actual = await (orig() as Promise<typeof import('./complete')>)
       return {
         ...actual,
-        completeText: vi.fn(async () => ({
+        completeText: vi.fn(async (p) => {
+          inserts.push(p.accounting)
+          return ({
           text: 'A grounded About for this space.',
           usage: { inputTokens: 10, outputTokens: 20 },
           costUsd: 0.0001,
           tier: 'haiku' as const,
-        })),
+        }) }),
       }
     })
     vi.doMock('@/lib/supabase/admin', () => ({
       createAdminClient: () => ({
+        rpc: async () => ({ data: 0, error: null }),
         from: () => ({
           insert: (row: Record<string, unknown>) => {
             inserts.push(row)
@@ -157,10 +160,10 @@ describe('spaceId flows into the cost ledger (no network)', () => {
     })
 
     expect(out).toBe('A grounded About for this space.')
-    const usageRow = inserts.find((r) => 'space_id' in r && 'feature' in r)
+    const usageRow = inserts.find((r) => 'spaceId' in r && 'feature' in r)
     expect(usageRow).toBeDefined()
-    expect(usageRow?.space_id).toBe('space-123')
+    expect(usageRow?.spaceId).toBe('space-123')
     expect(usageRow?.feature).toBe('space-copilot')
-    expect(usageRow?.profile_id).toBe('profile-9')
+    expect(usageRow?.profileId).toBe('profile-9')
   })
 })
