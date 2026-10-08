@@ -198,6 +198,7 @@ const SCROLL_QUIET_MS = 150
 
 export function EventCalendar({
   events,
+  eventOrigin = '',
   initialYear,
   initialMonth1,
   initialView = 'grid',
@@ -228,6 +229,8 @@ export function EventCalendar({
   audience = 'member',
 }: {
   events: CalendarEvent[]
+  /** Absolute app origin when embedded on a separate website host. */
+  eventOrigin?: string
   initialYear: number
   initialMonth1: number
   /** Which view opens first: the month grid (default) or the list. */
@@ -1356,6 +1359,7 @@ export function EventCalendar({
             {preview ? (
               <div className="sticky top-0">
                 <CalendarPreview
+                  eventOrigin={eventOrigin}
                   item={preview}
                   audience={audience}
                   inViewerTz={inViewerTz}
@@ -1472,6 +1476,7 @@ export function EventCalendar({
         {selected && (
           <div className="overflow-hidden rounded-card border border-border bg-surface lift-3">
             <CalendarPreview
+              eventOrigin={eventOrigin}
               item={selected}
               audience={audience}
               titleId={popupTitleId}
@@ -1591,6 +1596,7 @@ function Badges({ ev, audience = 'member' }: { ev: CalendarEvent; audience?: Cal
 /** One calendar item in full: the popup body AND the list's preview pane, so the two never drift. */
 function CalendarPreview({
   item,
+  eventOrigin = '',
   inViewerTz,
   onToggleTz,
   onClose,
@@ -1601,6 +1607,7 @@ function CalendarPreview({
   audience = 'member',
 }: {
   item: CalendarEvent
+  eventOrigin?: string
   audience?: CalendarAudience
   inViewerTz: boolean
   onToggleTz: () => void
@@ -1691,7 +1698,7 @@ function CalendarPreview({
           {isEvent &&
             (item.editHref ? (
               <>
-                <Link href={`/events/${item.slug}`} className={buttonClasses('secondary', 'sm')}>
+                <Link href={`${eventOrigin}/events/${item.slug}`} className={buttonClasses('secondary', 'sm')}>
                   View
                   <ArrowUpRight className="h-4 w-4" aria-hidden />
                 </Link>
@@ -1704,7 +1711,7 @@ function CalendarPreview({
                 Details
               </button>
             ) : (
-              <Link href={`/events/${item.slug}`} className={buttonClasses('primary', 'sm')}>
+              <Link href={`${eventOrigin}/events/${item.slug}`} className={buttonClasses('primary', 'sm')}>
                 Go to event
                 <ArrowUpRight className="h-4 w-4" aria-hidden />
               </Link>

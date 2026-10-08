@@ -1,6 +1,7 @@
 import { type ProgramEvent, type ProgramMonth } from '@/lib/spaces/leadership'
 import { loadSpacePageDoc } from '@/lib/spaces/page-doc'
 import { SITE_URL } from '@/lib/site'
+import { appOrigin } from '@/lib/sites/host'
 import { loadPublicSpaceWindow, loadSpaceUpcomingFeed } from '@/lib/calendar/public-month'
 import { guestFeedState } from '@/lib/calendar/guest-live'
 import { memberLayerChoices } from '@/lib/calendar/member-calendar'
@@ -51,6 +52,7 @@ export async function SitePublicCalendar({
   const httpsUrl = `${SITE_URL}/spaces/${space.slug}/calendar.ics`
   return (
     <CalendarWorkspace
+      eventOrigin={appOrigin()}
       slug={space.slug}
       spaceId={space.id}
       brandName={brandName}
@@ -74,7 +76,7 @@ export async function SitePublicCalendar({
           description={`Subscribe once and ${brandName}'s events show up in Google or Apple Calendar, and stay current on their own.`}
         />
       }
-      upcoming={<SpaceUpcomingFeed rows={upcomingRows} />}
+      upcoming={<SpaceUpcomingFeed rows={upcomingRows} eventOrigin={appOrigin()} />}
       memberLayers={memberLayerChoices(guestEvents)}
       skyMarkers={[]}
       loadGuestMonth={loadSpaceCalendarMonth.bind(null, space.slug)}

@@ -26,12 +26,12 @@ import type { UpcomingFeedRow } from '@/lib/calendar/member-calendar'
 
 const HEADING_ID = 'space-calendar-up-next'
 
-export function SpaceUpcomingFeed({ rows }: { rows: UpcomingFeedRow[] }) {
+export function SpaceUpcomingFeed({ rows, eventOrigin }: { rows: UpcomingFeedRow[]; eventOrigin?: string }) {
   if (rows.length === 0) return null
   return (
     <section data-space-upcoming-feed aria-labelledby={HEADING_ID}>
       <SectionHeader id={HEADING_ID} title="Up next" count={rows.length} />
-      <UpcomingEventRows events={rows} />
+      <UpcomingEventRows events={rows} eventOrigin={eventOrigin} />
     </section>
   )
 }

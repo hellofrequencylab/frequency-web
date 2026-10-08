@@ -164,7 +164,9 @@ export function CalendarWorkspace({
   memberLayers = [],
   skyMarkers,
   loadGuestMonth,
+  eventOrigin,
 }: {
+  eventOrigin?: string
   slug: string
   spaceId: string
   brandName: string
@@ -536,6 +538,7 @@ export function CalendarWorkspace({
     <div className={consoleOpen ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-4'}>
       <EventCalendar
         events={guestEvents}
+        eventOrigin={eventOrigin}
         /* THE SKY REACHES THE MEMBER GRID (LIVE-526). This mount is the one a member and a
            signed-out visitor actually see, so if the markers only reached the staff grid below the
            feature would be invisible to everyone it was asked for. */
