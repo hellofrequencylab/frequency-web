@@ -32,17 +32,21 @@ import { applyAssetUrls, collectAssetRefIds } from './asset-ref'
  * Refresh every AssetRef cache in a published block document. Returns the same
  * document object when nothing needed refreshing.
  */
-export async function refreshAssetRefUrls<T>(data: T): Promise<T> {
+export async function refreshAssetRefUrls<T>(data: T, options?: { websiteSpaceId: string }): Promise<T> {
   const ids = [...collectAssetRefIds(data)]
   if (ids.length === 0) return data
   try {
-    const { data: rows, error } = await createAdminClient()
+    let query = createAdminClient()
       .from('library_assets')
-      .select('id, url')
+      .select(options ? 'id,url,space_id,is_protected,expires_at' : 'id, url')
       .in('id', ids)
+    // A host pass grants one website's library, not every asset in Frequency.
+    if (options) query = query.eq('space_id', options.websiteSpaceId).neq('status', 'archived').or('is_protected.is.null,is_protected.eq.false')
+    const { data: rows, error } = await query
     if (error || !rows) return data
     const urlById = new Map<string, string>()
-    for (const r of rows as { id: string; url: string | null }[]) {
+    for (const r of rows as unknown as { id: string; url: string | null; space_id?: string; is_protected?: boolean; expires_at?: string | null }[]) {
+      if (options && (r.space_id !== options.websiteSpaceId || r.is_protected === true || (r.expires_at && (!Number.isFinite(Date.parse(r.expires_at)) || Date.parse(r.expires_at) <= Date.now())))) continue
       if (typeof r.url === 'string' && r.url.length > 0) urlById.set(r.id, r.url)
     }
     if (urlById.size === 0) return data

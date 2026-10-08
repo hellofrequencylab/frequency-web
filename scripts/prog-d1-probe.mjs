@@ -33,7 +33,8 @@ const blurhash = read('lib/library/blurhash.ts')
 const rank = read('lib/library/search-rank.ts')
 const store = read('lib/library/store.ts')
 const studioUpload = read('app/(main)/admin/library/actions.ts')
-const picker = read('lib/loom/picker-actions.ts')
+const pickerDoor = read('lib/loom/picker-actions.ts')
+const picker = read('lib/loom/authorized-image-upload.ts')
 const editorUpload = read('lib/page-editor/loom-field-actions.ts')
 const emailUpload = read('lib/email-studio/loom-actions.ts')
 const recraft = read('app/(main)/admin/library/recraft-actions.ts')
@@ -43,6 +44,8 @@ const bad = []
 const need = (cond, message) => {
   if (!cond) bad.push(message)
 }
+
+need(/return uploadAuthorizedLoomImage\(spaceId, caller\.id, formData\)/.test(pickerDoor), 'the picker does not delegate to the canonical ingest writer')
 
 // ── 1. Checksum dedupe ──────────────────────────────────────────────────────────────────────────
 need(/export function sha256Hex/.test(ingest), 'ingest.ts exports no sha256Hex')

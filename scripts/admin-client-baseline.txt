@@ -3,6 +3,13 @@
 # importer fails CI unless added here in the same PR; converge files onto the session
 # client and regenerate with `node scripts/check-admin-client.mjs --update` so this list
 # only shrinks. Do not add entries by hand without a reason the reviewer can see.
+# Website editing uses the host-bound admin-pass cookie rather than a Frequency session.
+# editor-page rechecks the current owner/member capability before reading private drafts.
+# authorization rechecks the host/pass/current membership before every CAS save or site-scoped
+# presence operation; both RPCs and the presence table deny browser-role access in SQL.
+# Shared Loom image upload pipeline accepts already-authorized owner/Space identity.
+# Frequency picker and host-bound website media actions resolve permission before
+# calling it; Storage upload, library insertion and failure cleanup share one path.
 #
 # Added 2026-08-11 (ADR-986..999). Four files, each the ONLY path to a table that is
 # deliberately unreachable any other way:
@@ -1153,4 +1160,8 @@ test/authz/check-authz-lib.test.ts
 lib/collective/member-spaces-actions.ts
 lib/collective/member-spaces-store.ts
 lib/collective/extra-space-billing.ts
+
+lib/sites/editor/authorization.ts
+
+lib/loom/authorized-image-upload.ts
 lib/collective/network-store.ts

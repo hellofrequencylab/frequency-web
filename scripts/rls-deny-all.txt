@@ -100,3 +100,6 @@ trust_scores
 trust_signals
 vera_autonomy_decisions
 vera_config
+
+# Website admin editing: service-role only; browser roles are explicitly revoked.
+website_editor_presence

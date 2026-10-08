@@ -374,15 +374,18 @@ type LibraryDuplicate = { id: string; url: string | null; title: string }
 export async function findLibraryAssetBySha256(
   spaceId: string,
   sha256: string,
+  websiteSafe = false,
 ): Promise<LibraryDuplicate | null> {
   if (!sha256) return null
   try {
-    const { data, error } = await db()
+    let query = db()
       .from('library_assets')
       .select('id, url, title')
       .eq('space_id', spaceId)
       .eq('sha256', sha256)
       .neq('status', 'archived')
+    if (websiteSafe) query = query.or('is_protected.is.null,is_protected.eq.false').or(notExpiredOr())
+    const { data, error } = await query
       .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle()
