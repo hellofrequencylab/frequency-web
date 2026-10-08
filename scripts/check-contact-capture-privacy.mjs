@@ -65,11 +65,11 @@ export async function verifyContactCapturePrivacy() {
     '@/lib/crm/import/store': { listSpaceCustomFields: async () => [] }, '@/lib/crm/segment-fields': { templateFieldsForContact: async () => [] },
     '@/lib/crm/import/custom-fields': { humanizeFieldKey: key => key },
   }
-  const module = load('lib/crm/space-contact-detail.ts', name => {
+  const requestModule = load('lib/crm/space-contact-detail.ts', name => {
     assert.ok(deps[name], `Every request dependency is explicitly synthetic: ${name}`)
     return deps[name]
   })
-  const read = (spaceId = S1, id = 'c1') => module.getSpaceContactDetail(spaceId, id)
+  const read = (spaceId = S1, id = 'c1') => requestModule.getSpaceContactDetail(spaceId, id)
   const capture = (owner, extra = {}) => ({ owner_id: owner, email: EMAIL, visibility: 'private', shared_space_id: null, phone: 'foreign private phone', company: 'foreign private company', city: 'foreign private city', notes: 'must never be selected', created_at: '2026-10-08T00:00:00Z', ...extra })
   const blank = detail => { assert.ok(detail); assert.equal(detail.identity.phone, null); assert.equal(detail.identity.company, null); assert.equal(detail.identity.city, null); assert.equal(detail.insight.facts, null) }
   // Same email across two owners: person stitching conveys no source permission.
