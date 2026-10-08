@@ -220,7 +220,7 @@ ${M} .hs-nav .hs-nav-admin a{border-bottom:0;color:var(--color-text-on-signal)}
 ${M} .hs-nav .hs-nav-admin a:hover,${M} .hs-nav .hs-nav-admin a[aria-current="page"]{color:var(--color-text-on-signal);text-decoration:underline;text-underline-offset:4px}
 ${M} .hs-menu-panel a.hs-nav-admin{color:var(--color-signal-strong)}
 
-${M} .hs-admin{max-width:1248px;margin:0 auto;padding:0 clamp(20px,4vw,48px)}
+${M} .hs-admin{width:100%;box-sizing:border-box;max-width:1248px;margin:0 auto 24px;padding:0 clamp(20px,4vw,48px)}
 ${M} .hs-admin-in{padding:14px clamp(16px,3vw,24px);display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;background:var(--color-signal);color:var(--color-text-on-signal)}
 ${M} .hs-admin-tag{${LABEL};font-size:11px;padding:5px 12px 5px 8px;background:var(--mw-charcoal);color:var(--color-signal-strong);clip-path:${CLIP.sm}}
 ${M} .hs-admin-nav{display:flex;flex-wrap:wrap;gap:12px 24px}
