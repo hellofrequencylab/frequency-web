@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 const state=vi.hoisted(()=>({ids:['shared'],rows:[{id:'own',space_id:'target',status:'active',unlisted:false,is_space_primary:false,created_at:'2026-01-01'},{id:'shared',space_id:'source',status:'active',unlisted:false,is_space_primary:false,access:'space_paid_members',created_at:'2026-02-01'}]}))
-vi.mock('./cross-listing-store',()=>({acceptedCrossListingIds:async()=>state.ids}))
+vi.mock('./cross-listing-store',()=>({acceptedCrossListingSubjects:async()=>state.rows.filter(row=>state.ids.includes(row.id) && !row.unlisted && row.status==='active')}))
 vi.mock('@/lib/auth',()=>({getMyProfileId:async()=>null,isPlatformStaff:async()=>false}))
 vi.mock('@/lib/spaces/store',()=>({loadRootSpaceId:async()=>null}))
 vi.mock('@/lib/supabase/admin',()=>({createAdminClient:()=>({from:()=>{

@@ -341,4 +341,11 @@ a partner automatically, including when both Spaces have the same owner.
 original object; the listing grants no edit, membership, enrolment or entry permission. Destination
 Space readers merge accepted listings, rechecking the object's current source Space and visibility,
 both Spaces' active Collective membership and walling. Transfers, unlisting, privacy, suspension
-and parent cancellation remove listings from public reads. Existing listings can still be revoked.
+and parent cancellation remove listings from public reads. Ownership or source transfers permanently
+revoke existing consent, including a transfer back to the original owner or Space; relisting requires
+a new request and receiving approval. Canonical ownership/source triggers and locked write validation
+live in migration068. The service-only reader returns an authorized subject snapshot rather than an
+ID that a separate fetch could reload after a transfer. Recipient previews use the same current
+visibility and owner checks. Inventories page deterministically beyond the Data API response ceiling;
+public card lists retain their existing limits and source entry rules. Existing listings can still be revoked.
+This is Journey/Circle listing integration; it does not add event/calendar shares.

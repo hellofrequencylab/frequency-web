@@ -28,7 +28,7 @@ export function mergeOwnedAndSharedPlans<T extends MergeablePlan>(owned: T[], sh
     seen.add(p.id)
     out.push(p)
   }
-  out.sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0))
+  out.sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : a.id.localeCompare(b.id)))
   return out.slice(0, limit)
 }
 

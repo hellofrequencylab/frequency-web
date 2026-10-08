@@ -1,4 +1,4 @@
-import { acceptedCrossListingIds } from '@/lib/collective/cross-listing-store'
+import { acceptedCrossListingSubjects } from '@/lib/collective/cross-listing-store'
 // The "Journeys" library (backlog §Q1, ADR-087): members curate combos of
 // practices — organized by the 4 Pillars — with per-item cadence + notes (ADR-096),
 // and share/fork them. Building + using a PERSONAL journey is free (it rides the
@@ -484,17 +484,20 @@ export async function listJourneyPlansForSpace(
   // never surfaces through a share even for a caller that did not ask for publishedOnly.
   // FAIL-SAFE: a failed share read returns only this Space's own Journeys.
   if (opts?.includeShared === false) return owned
-  const sharedIds = [...new Set([...await acceptedSharePlanIds(sid), ...await acceptedCrossListingIds('journey',sid)])].filter((id) => !owned.some((p) => p.id === id))
+  const listings=await acceptedCrossListingSubjects('journey',sid) as unknown as JourneyPlan[]
+  owned=mergeOwnedAndSharedPlans(owned,listings,limit)
+  const sharedIds = (await acceptedSharePlanIds(sid)).filter(id=>!owned.some(p=>p.id===id))
   if (sharedIds.length === 0) return owned
   try {
-    const { data, error } = await (db().from('journey_plans') as unknown as Chain)
-      .select(PLAN_COLS)
-      .in('id', sharedIds)
-      .neq('visibility', 'private')
-      .order('created_at', { ascending: false })
-      .limit(limit)
-    if (error) return owned
-    return mergeOwnedAndSharedPlans(owned, (data as JourneyPlan[] | null) ?? [], limit)
+    const shared:JourneyPlan[]=[]
+    for(let offset=0;offset<sharedIds.length;offset+=200){
+      const {data,error}=await (db().from('journey_plans') as unknown as Chain)
+        .select(PLAN_COLS).in('id',sharedIds.slice(offset,offset+200))
+        .neq('visibility','private').order('created_at',{ascending:false}).order('id',{ascending:true}).limit(limit)
+      if(error)return owned
+      shared.push(...((data as JourneyPlan[]|null) ?? []))
+    }
+    return mergeOwnedAndSharedPlans(owned,shared,limit)
   } catch {
     return owned
   }
@@ -504,13 +507,15 @@ export async function listJourneyPlansForSpace(
  *  newer than the generated DB types, so it rides the untyped handle (ADR-246). FAIL-SAFE: []. */
 async function acceptedSharePlanIds(spaceId: string): Promise<string[]> {
   try {
-    const { data, error } = await db()
-      .from('journey_plan_space_shares')
-      .select('plan_id')
-      .eq('space_id', spaceId)
-      .eq('status', 'accepted')
-    if (error) return []
-    return [...new Set(((data ?? []) as Array<{ plan_id: string }>).map((r) => r.plan_id))]
+    const ids:string[]=[]
+    for(let offset=0;;offset+=500){
+      const {data,error}=await db().from('journey_plan_space_shares').select('plan_id')
+        .eq('space_id',spaceId).eq('status','accepted').order('id',{ascending:true}).range(offset,offset+499)
+      if(error)return []
+      const rows=(data ?? []) as Array<{plan_id:string}>
+      ids.push(...rows.map(row=>row.plan_id))
+      if(rows.length<500)return [...new Set(ids)]
+    }
   } catch {
     return []
   }

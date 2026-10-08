@@ -103,6 +103,7 @@ export const ALLOWLIST = [
   { file: 'lib/commerce/checkout.ts', table: 'claim_commerce_settlement', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 creates this service-only recovery RPC. Retire on public schema regeneration after the approved migration is applied.' },
   { file: 'lib/commerce/checkout.ts', table: 'advance_commerce_settlement', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 creates this service-only recovery RPC. Retire on public schema regeneration after the approved migration is applied.' },
   { file: 'lib/commerce/checkout.ts', table: 'release_commerce_settlement', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 creates this service-only recovery RPC. Retire on public schema regeneration after the approved migration is applied.' },
+  {file:'lib/collective/cross-listing-store.ts',table:'read_collective_cross_listings',kind:'rpc',added:'2026-10-08',reason:'LIVE-765: migration068 service-only authorized subject snapshot. Retires after production migration and actual generated types refresh.',owner:'LIVE-765'},
   {
     file: 'lib/collective/cross-listing-actions.ts',
     table: 'collective_cross_listings',
