@@ -332,3 +332,6 @@ zap_transactions                     authenticated
 
 # Website admin editing: service-role only; browser roles are explicitly revoked.
 website_editor_presence              internal
+
+# LIVE-883: deliberate service-only accounting, production client grants revoked.
+ai_budget_reservations                internal
