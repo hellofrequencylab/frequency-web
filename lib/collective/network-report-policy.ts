@@ -1,9 +1,9 @@
 export interface ReportSpace { id: string; name: string; slug: string; parent_id: string | null; owner_profile_id: string | null; status: string; plan: string | null; type: string }
-export interface ReportEarnings { grossCents: number; feeCents: number; netCents: number; refundedCents: number; orderCount: number; networkGrossCents: number; networkFeeCents: number; networkOrderCount: number }
-export type NetworkReport = { status: 'denied' } | { status: 'unavailable' } | {
+interface ReportEarnings { grossCents: number; feeCents: number; netCents: number; refundedCents: number; orderCount: number; networkGrossCents: number; networkFeeCents: number; networkOrderCount: number }
+type NetworkReport = { status: 'denied' } | { status: 'unavailable' } | {
   status: 'complete'; spaces: { id: string; name: string; slug: string }[]; members: number; events: number; earnings: ReportEarnings
 }
-export function ownerCollective(parent: ReportSpace | null, caller: string | null): parent is ReportSpace {
+function ownerCollective(parent: ReportSpace | null, caller: string | null): parent is ReportSpace {
   return !!parent && !!caller && parent.owner_profile_id === caller && parent.status === 'active'
     && parent.type !== 'root' && ['collective', 'nonprofit_collective'].includes(parent.plan ?? '')
 }
