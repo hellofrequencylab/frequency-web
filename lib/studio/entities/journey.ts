@@ -18,7 +18,7 @@
 //   * `journey_plans` columns (lib/journey-plans.ts `JourneyPlan` + the ADR-302 attribute
 //     migration): title, summary, intro, emoji, accent, cover_image, logo_image,
 //     header_overlay_style, header_overlay_color, difficulty, category, tags, daily_minutes,
-//     enroll_cap, space_tier_id, completion_gems, drip_interval_days, certificate_enabled, visibility, status,
+//     enroll_cap, space_tier_id, completion_gems, drip_interval_days, ongoing, certificate_enabled, visibility, status,
 //     official, source_overview. The three header columns joined on 2026-09-07 (ADR-1246): the
 //     Inspector rail had persisted them for a year while the manifest was silent, which is the
 //     drift ADR-1240 exists to make visible. `cover_focus` is deliberately NOT a field: a focal
@@ -196,6 +196,9 @@ export const JOURNEY_MANIFEST: EntityManifest = {
     // ── Delivery and rewards. Column defaults: 30 Gems, a 7 day drip, no certificate. ──
     { path: 'completion_gems', label: 'Completion Gems', kind: 'number', section: 'delivery', veraDrafts: false, read: (d) => str(d.completion_gems) || '30' },
     { path: 'drip_interval_days', label: 'Days between Phases', kind: 'number', section: 'delivery', veraDrafts: false, read: (d) => str(d.drip_interval_days) || '7' },
+    // Ongoing (owner, 2026-10-07): the cycle repeats each year instead of ending. Pair with 30 days
+    // between Phases for one Phase each calendar month (lib/journeys/schedule.ts).
+    { path: 'ongoing', label: 'Repeats each year', kind: 'toggle', section: 'delivery', veraDrafts: false },
     { path: 'certificate_enabled', label: 'Certificate', kind: 'toggle', section: 'delivery', veraDrafts: false },
     // The play window is two columns (window_starts_at / window_ends_at) read as one range, the
     // way the rating is composed on the Business manifest. Empty on an always-open Journey.

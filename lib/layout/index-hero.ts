@@ -90,6 +90,7 @@ export const INDEX_HERO_DEFAULTS: readonly IndexHeroDefault[] = [
   // section owns no map `image` because the Events cover lives with the events surface it heads.
   { prefix: '/events/calendar', image: null, size: 'short' },
   { prefix: '/journeys/mine', image: null, size: 'short', inheritHero: false },
+  { prefix: '/journeys/library', image: null, size: 'short', inheritHero: false },
   { prefix: '/network/contacts', image: null, size: 'short', inheritHero: false },
   { prefix: '/network/friends', image: null, size: 'short', inheritHero: false },
 

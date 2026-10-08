@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-865",
+  "title": "A Space website's hero carries its own eyebrow and two buttons, and a Menswork website's hero follows the design: eyebrow, headline, intro and buttons over the photo, no side card",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/sites/house-sections.tsx",
+    "ref": "Owner ask 2026-10-07 23:06: 'rework the homepage header to have the eyebrow, title, subtitle or whatever is available for it. Keep the space page title and subtitle the same make the hero section better. Use the exact same design as the design system'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-07. preferences.siteHero (website only; the Space page header keeps preferences.hero) gains eyebrow, action {label, href} and secondary {label, href}, read by readSiteHero (bounded strings; a link must be a site path, anchor, or web or mail address) and made website links by siteLocalHref, so a Space page path becomes the site's page. Unset, the hero keeps the header button and the steps link it had, so other sites render as before. The Website card's hero form edits all five. On the Menswork skin the hero drops the start-here side card and matches the design system's website Home: chevron eyebrow, a 900px headline column, the intro and the two buttons above the full-width photo.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const w=r('lib/spaces/website.ts');if(!/out\\\\.eyebrow = eyebrow/.test(w)||!/siteHeroButton\\\\(n\\\\.action\\\\)/.test(w))miss.push('the website hero does not read its own eyebrow and buttons');const h=r('components/sites/house-home.tsx');if(!/ownButton\\\\(siteHero\\\\.action\\\\)/.test(h)||!/first && !menswork/.test(h))miss.push('the hero model does not use the hero buttons or still draws the side card on a Menswork site');if(!/hs-hero-eyebrow/.test(r('components/sites/house-sections.tsx')))miss.push('the hero does not draw the eyebrow');if(!/Main button/.test(r('components/sites/website-headline-form.tsx')))miss.push('the owner cannot set the hero buttons');if(miss.length){console.error('LIVE-865: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-07",
+  "wave": "W7"
+}

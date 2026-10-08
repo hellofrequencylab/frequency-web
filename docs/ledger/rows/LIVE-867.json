@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-867",
+  "title": "A Journey can repeat each year and open one phase each calendar month",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/ledger/rows/LIVE-867.json",
+    "ref": "Owner request 2026-10-07 (project thread \"Journey overhaul\"): \"The year round course needs to be modified to go 12 months consecutive. Make it an option for Journeys to be ongoing.\" Decision card answer: \"Repeat each year\" (after the last month it starts again at month 1; members join any month)."
+  },
+  "detail": "TODAY (before): a Journey's drip counted days only (30 days drifts five days a year off the calendar) and every Journey ended: the course home said \"You finished this Journey\" and the Library filed it under Finished. THE FIX: journey_plans.ongoing (migration 20270346006500, default false). lib/journeys/schedule.ts reads drip_interval_days 30 as one phase on the same date each calendar month (MONTHLY_DRIP_DAYS, clamped to month end) and ongoingCycle() names the year and the calendar's current phase once every phase has opened. The course home and player label phases Month N on a monthly cadence, point Up next at this month first, show \"Year N\" and never read as finished on an ongoing Journey; the Library keeps it In progress; the sales page shows \"1 phase / month\" and \"Repeats each year\". The toggle is in the Journey studio (Delivery) and the Journey settings. Progress is never reset.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e 'const fs=require(\"fs\");const r=f=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=m=>{console.error(\"LIVE-867: \"+m);process.exit(1)};const mig=fs.readdirSync(\"supabase/migrations\").filter(f=>f.endsWith(\".sql\")).map(f=>r(\"supabase/migrations/\"+f)).join(\"\\n\");if(!/journey_plans[\\s\\S]{0,40}add column if not exists ongoing boolean/.test(mig))fail(\"no migration adds journey_plans.ongoing\");const s=r(\"lib/journeys/schedule.ts\");if(!/export function ongoingCycle/.test(s)||!/MONTHLY_DRIP_DAYS/.test(s))fail(\"schedule has no monthly cadence or ongoing cycle\");if(!/ongoingCycle/.test(r(\"lib/journeys/learn-route.ts\")))fail(\"the course and player do not read the ongoing cycle\");if(!/ongoing/.test(r(\"app/(main)/journeys/library/page.tsx\")))fail(\"the Library still files an ongoing Journey as Finished\");if(!/path: .ongoing./.test(r(\"lib/studio/entities/journey.ts\")))fail(\"no ongoing toggle in the Journey studio\")'",
+    "note": "Fails while no migration adds the column, the schedule lacks the monthly cadence or the cycle, the course or Library ignore it, or the studio has no toggle."
+  },
+  "wave": "W7",
+  "closed": "2026-10-08"
+}

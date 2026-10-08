@@ -4,7 +4,7 @@ description: Each season gives you three Journeys. Do the practices, share what 
 category: the-quest
 order: 4
 published: 2026-06-06
-updated: 2026-06-18
+updated: 2026-10-07
 audience: member
 featureKeys: [journeys, circles]
 status: published
@@ -24,6 +24,24 @@ can actually fit into a day.
 Outside the Quest, a Space can run a Journey of its own as a paid program. A paid one shows
 its price up front wherever you meet it, on the Journey's own page and on its listing in the
 Market, so you will always know which kind you are looking at before you start.
+
+## Find your way around
+
+Once you start a Journey, a bar at the bottom of the screen takes you between four views:
+
+- **About** is the Journey's own page: what it is, the path, and who guides it.
+- **Course** is your home base. It shows how much you have done, what is next, and every
+  week with its lessons. A week that has not opened yet shows the day it opens.
+- **Focus** opens one lesson at a time with nothing else on screen. Tap **Contents** to
+  jump to any open lesson.
+- **Library** lists every Journey you are on. The one you were last working on is first,
+  with **Continue** one tap away.
+
+## Journeys that repeat each year
+
+Some Journeys run all year, one month at a time, and start again at month 1 when the year
+ends. You can join any month. Your Course shows which month you are in and which year, and
+every lesson you finished stays finished.
 
 ## How you finish
 

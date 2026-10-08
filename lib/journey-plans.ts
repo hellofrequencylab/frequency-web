@@ -97,8 +97,12 @@ export interface JourneyPlan {
   page_config: PageWidgetConfig[] | null
   /** Gems granted on completion (default 30). */
   completion_gems: number
-  /** Days between phase unlocks in a Run (default weekly). ADR-252. */
+  /** Days between phase unlocks in a Run (default weekly). ADR-252. 30 = one phase each calendar
+   *  month (lib/journeys/schedule.ts). */
   drip_interval_days: number
+  /** Repeats each year: once every phase has opened the cycle starts again at phase 1, progress
+   *  kept (owner ruling 2026-10-07). Default false. */
+  ongoing: boolean
   /** Show a printable certificate on Journey completion. ADR-252. */
   certificate_enabled: boolean
   /** Optional Space membership tier that may enrol (LIVE-411). Null = anyone who clears the other doors. */
@@ -161,7 +165,7 @@ const PLAN_COLS =
   'id, slug, title, summary, intro, emoji, accent, author_id, space_id, visibility, fork_of, ' +
   'forked_count, adopt_count, cover_image, cover_focus, logo_image, header_overlay_style, header_overlay_color, created_at, updated_at, published_at, ' +
   'quest_id, official, window_starts_at, window_ends_at, status, page_config, completion_gems, ' +
-  'drip_interval_days, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap, space_tier_id, meeting'
+  'drip_interval_days, ongoing, certificate_enabled, difficulty, category, tags, daily_minutes, enroll_cap, space_tier_id, meeting'
 
 const ITEM_COLS =
   'id, plan_id, practice_id, domain_id, sort_order, note, cadence, ' +
@@ -678,6 +682,7 @@ export async function updatePlan(
     pageConfig?: PageWidgetConfig[] | null
     dripIntervalDays?: number
     certificateEnabled?: boolean
+    ongoing?: boolean
   },
 ): Promise<JourneyWriteResult> {
   const update: Record<string, unknown> = {}
@@ -742,6 +747,7 @@ export async function updatePlan(
   if (patch.dripIntervalDays !== undefined)
     update.drip_interval_days = Math.min(30, Math.max(1, Math.round(patch.dripIntervalDays)))
   if (patch.certificateEnabled !== undefined) update.certificate_enabled = patch.certificateEnabled
+  if (patch.ongoing !== undefined) update.ongoing = patch.ongoing
   if (Object.keys(update).length === 0) return WRITE_OK
   const { error } = await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
   if (error) return writeFailed('updatePlan', planId, error)
@@ -1321,6 +1327,7 @@ export async function duplicatePlan(profileId: string, planId: string): Promise<
       status: 'draft',
       completion_gems: src.completion_gems,
       drip_interval_days: src.drip_interval_days,
+      ongoing: src.ongoing,
       certificate_enabled: src.certificate_enabled,
       difficulty: src.difficulty,
       category: src.category,

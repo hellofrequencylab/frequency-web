@@ -2,160 +2,29 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   CalendarDays,
-  Clock,
-  BarChart3,
-  Gem,
-  Layers,
   Video,
   MapPin,
   Link2,
   Users,
-  Tag,
   Globe,
-  Award,
   CalendarClock,
   ArrowUpRight,
 } from 'lucide-react'
-import type { JourneyPlan, JourneyMeeting, JourneyTouchpoint, PlanAuthor } from '@/lib/journey-plans'
+import type { JourneyMeeting, JourneyTouchpoint, PlanAuthor } from '@/lib/journey-plans'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
-import { HelpMarkdown } from '@/components/help/help-markdown'
-import { cadenceLabel } from '@/components/journey/discovery-widgets'
-import { journeyAttributes, type JourneyAttributes, type PillarBalanceSlice, type LinkedEvent } from '@/lib/journeys/learn'
+import type { LinkedEvent } from '@/lib/journeys/learn'
 
-// Journeys v2 — the learn page's "what this is" overview. A two-column "About this Journey" hero
-// (the intro story on the left; the stat band + key details on the right, stacking on mobile), a
-// four-Pillar balance row, the category/tags, a "How it meets" block (format · when · timezone ·
-// where · join · linked Event), and the guide. Server Components (markdown + no interactivity),
-// composed entirely from the kit (StatCard / SectionHeader / HelpMarkdown) with semantic tokens
-// only. Voice is v2 — Run / Phase / enroll, no em dashes (docs/CONTENT-VOICE.md).
-
-const cap = (s: string): string => (s ? s[0].toUpperCase() + s.slice(1) : s)
+// Journeys v2 — the course home's practical blocks: "How it meets" (format · when · timezone ·
+// where · join · linked Event) and the guide. The "About this Journey" hero that used to open the
+// learn page is gone: the pitch lives on the sales page, and the course home opens on progress
+// (components/journey/v2/learn/course-home.tsx). Server Components, kit + semantic tokens only.
+// Voice is v2 — Run / Phase / enroll, no em dashes (docs/CONTENT-VOICE.md).
 
 const MEETING_FORMAT: Record<NonNullable<JourneyMeeting['format']>, { icon: typeof Video; label: string }> = {
   virtual: { icon: Video, label: 'Virtual' },
   in_person: { icon: MapPin, label: 'In person' },
   hybrid: { icon: Users, label: 'Hybrid' },
-}
-
-/** "About this Journey" — the two-column hero. Left: the intro/description (the "why this is"
- *  story). Right: the at-a-glance stat band + the key details (Pillar balance, category, tags).
- *  Stacks on mobile; splits at lg. Always renders (the phases/cadence/reward numbers are never
- *  empty); the intro side falls back to the summary, then a quiet placeholder line. */
-export function AboutThisJourneyHero({
-  plan,
-  phaseCount,
-  pillarBalance,
-}: {
-  plan: JourneyPlan
-  /** Weeks of the course (the phase count). */
-  phaseCount: number
-  pillarBalance: PillarBalanceSlice[]
-}) {
-  const attrs: JourneyAttributes = journeyAttributes(plan)
-  const covered = pillarBalance.filter((s) => s.count > 0).length
-  const body = plan.intro?.trim() || null
-
-  return (
-    <section>
-      <SectionHeader title="About this Journey" />
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        {/* LEFT — the intro story / description (the "why this is"). */}
-        <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
-          {body ? (
-            <HelpMarkdown>{body}</HelpMarkdown>
-          ) : plan.summary?.trim() ? (
-            <p className="text-body-sm leading-relaxed text-text">{plan.summary}</p>
-          ) : (
-            <p className="text-body-sm leading-relaxed text-muted">
-              Follow this Journey one Phase at a time, at your own pace. Each step is below.
-            </p>
-          )}
-        </div>
-
-        {/* RIGHT — the at-a-glance stat band + key details. */}
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              bordered
-              size="sm"
-              icon={Layers}
-              label={phaseCount === 1 ? 'Week' : 'Weeks'}
-              value={String(phaseCount)}
-            />
-            <StatCard
-              bordered
-              size="sm"
-              icon={Clock}
-              label="Daily time"
-              value={attrs.dailyMinutes ? `${attrs.dailyMinutes} min` : 'Flexible'}
-            />
-            <StatCard
-              bordered
-              size="sm"
-              icon={BarChart3}
-              label="Difficulty"
-              value={attrs.difficulty ? cap(attrs.difficulty) : 'Open to all'}
-            />
-            <StatCard bordered size="sm" icon={CalendarDays} label="Cadence" value={cadenceLabel(plan.drip_interval_days)} />
-            <StatCard
-              bordered
-              size="sm"
-              icon={Gem}
-              label="On completion"
-              value={`${plan.completion_gems} gems`}
-              detail={plan.certificate_enabled ? 'Certificate too' : undefined}
-            />
-            <StatCard
-              bordered
-              size="sm"
-              icon={Award}
-              label="Certificate"
-              value={plan.certificate_enabled ? 'Included' : 'Not offered'}
-            />
-          </div>
-
-          {/* Four-Pillar balance — how the practices spread across Mind / Body / Spirit / Expression. */}
-          <div>
-            <p className="mb-2 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
-              <Layers className="h-3 w-3 shrink-0" aria-hidden /> Pillar balance
-              <span className="font-medium normal-case tracking-normal text-subtle">{covered} of 4 Pillars</span>
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {pillarBalance.map(({ pillar, count }) => (
-                <span
-                  key={pillar.slug}
-                  className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-meta font-medium ${
-                    count > 0 ? 'bg-primary-bg text-primary-strong' : 'bg-surface-elevated text-subtle'
-                  }`}
-                >
-                  {pillar.name}
-                  {count > 0 && <span className="tabular-nums opacity-80">{count}</span>}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Category + tags — the topical context, when the author set them. */}
-          {(attrs.category || attrs.tags.length > 0) && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {attrs.category && (
-                <span className="inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-2.5 py-1 text-meta font-medium text-muted">
-                  <Tag className="h-3 w-3 shrink-0 text-subtle" aria-hidden /> {attrs.category}
-                </span>
-              )}
-              {attrs.tags.map((t) => (
-                <span key={t} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta text-subtle">
-                  #{t}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
-  )
 }
 
 /** Does a touchpoint carry anything worth showing? */

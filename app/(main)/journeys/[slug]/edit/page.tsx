@@ -119,6 +119,7 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
             initialCompletionGems={plan.completion_gems}
             initialCertificateEnabled={plan.certificate_enabled}
             initialDripIntervalDays={plan.drip_interval_days}
+            initialOngoing={plan.ongoing}
             initialCoverImage={plan.cover_image}
             initialReview={veraReview}
             initialDifficulty={(plan as unknown as { difficulty?: string | null }).difficulty ?? null}

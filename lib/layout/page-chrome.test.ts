@@ -344,6 +344,15 @@ describe('railArchetypeFor — the rail SHAPE axis (ADR-516 Phase B)', () => {
   })
 })
 
+describe('the Journey focus player is a full-viewport takeover', () => {
+  it('hides the header, rails and tab bar on /journeys/<slug>/play only', () => {
+    expect(isFullViewportEditor('/journeys/hearts-on-fire/play')).toBe(true)
+    for (const p of ['/journeys/hearts-on-fire', '/journeys/hearts-on-fire/learn', '/journeys/library', '/journeys/play']) {
+      expect(isFullViewportEditor(p), p).toBe(false)
+    }
+  })
+})
+
 describe('full-width editors — fullscreen builder, main header KEPT (ADR-508 U4-A)', () => {
   // The marketing page editor (/edit/<slug>) and the Space landing editor (/spaces/<slug>/edit-page)
   // fill the whole content width — both rails drop — but the site header stays (owner directive). So

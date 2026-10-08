@@ -65,11 +65,11 @@ export async function SpaceWebsiteFeature({
       </div>
 
       <div className="mt-6 border-t border-border pt-5">
-        <h3 className="text-body font-semibold text-text">Website headline</h3>
+        <h3 className="text-body font-semibold text-text">Website hero</h3>
         <p className="mt-1 mb-3 text-body-sm text-muted">
           What your website leads with. Your Space page keeps its own header from your Hero settings.
         </p>
-        <WebsiteHeadlineForm slug={space.slug} heading={siteHero.heading ?? ''} tagline={siteHero.tagline ?? ''} />
+        <WebsiteHeadlineForm slug={space.slug} initial={siteHero} />
       </div>
 
       <div className="mt-6 border-t border-border pt-5">
