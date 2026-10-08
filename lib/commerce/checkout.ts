@@ -776,17 +776,19 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
       await runStep('journey', () => enrolByOrder(row.id, { strict: true }))
 
       // Stable recipient keys dedupe the existing notification/outbox writes even if a checkpoint fails.
-      await runStep('receipts', () => sendOrderReceipts({
-        id: row.id,
-        ownerKind: row.owner_kind,
-        ownerProfileId: row.owner_profile_id,
-        ownerSpaceId: row.owner_space_id,
-        buyerProfileId: row.buyer_profile_id,
-        amountCents: row.amount_cents,
-        currency: row.currency,
-        // The address Stripe collected is the only way to reach a buyer with no account.
-        buyerEmail: session.customer_details?.email ?? null,
-      }, { strict: true }))
+      await runStep('receipts', async () => {
+        await sendOrderReceipts({
+          id: row.id,
+          ownerKind: row.owner_kind,
+          ownerProfileId: row.owner_profile_id,
+          ownerSpaceId: row.owner_space_id,
+          buyerProfileId: row.buyer_profile_id,
+          amountCents: row.amount_cents,
+          currency: row.currency,
+          // The address Stripe collected is the only way to reach a buyer with no account.
+          buyerEmail: session.customer_details?.email ?? null,
+        }, { strict: true })
+      })
     } finally {
       await settlementRpc('release_commerce_settlement', { _order: row.id, _token: token })
     }
