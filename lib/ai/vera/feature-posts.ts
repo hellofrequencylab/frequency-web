@@ -10,7 +10,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { completeText } from '../complete'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '../usage'
+import { aiAvailable, featureOverBudget } from '../usage'
 import { parseModelJson, z } from '@/lib/ai/schema'
 
 const FEATURE = 'feature-posts'
@@ -115,13 +115,14 @@ export async function refreshFeaturedPosts(): Promise<RefreshResult> {
   try {
     const validIds = new Set(candidates.map((c) => c.id))
     const res = await completeText({
+      accounting: { feature: FEATURE },
       system: CURATOR_SYSTEM,
       messages: [{ role: 'user', content: buildCandidateList(candidates) }],
       tier: 'haiku',
       maxTokens: 256,
       cacheSystem: true,
     })
-    void recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd })
+
     chosen = parseChosenIds(res.text, validIds)
   } catch {
     return { status: 'skipped', featuredIds: [], reason: 'scoring-failed' }

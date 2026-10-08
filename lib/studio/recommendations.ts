@@ -11,7 +11,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { aiEnabledFlag } from '@/lib/platform-flags'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import type { SiteActionKey } from './site-actions'
 
@@ -260,13 +260,14 @@ export async function getStudioRead(): Promise<StudioRead> {
   if ((await aiAvailable()) && !(await featureOverBudget('studio'))) {
     try {
       const res = await completeText({
+      accounting: { feature: 'studio' },
         system: STUDIO_SYSTEM,
         messages: [{ role: 'user', content: JSON.stringify(recs.map((r) => ({ severity: r.severity, title: r.title, finding: r.finding, recommendation: r.recommendation }))) }],
         tier: 'haiku',
         maxTokens: 220,
         cacheSystem: true,
       })
-      await recordAiUsage({ feature: 'studio', model: res.tier, usage: res.usage, costUsd: res.costUsd })
+
       if (res.text) return { summary: res.text, recs, signal, aiNarrated: true, generatedAt }
     } catch (e) {
       if (!(e instanceof AiUnavailableError)) {

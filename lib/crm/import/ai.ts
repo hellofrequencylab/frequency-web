@@ -14,9 +14,8 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
-import { MODELS, type ModelTier } from '@/lib/ai/models'
-import { estimateCostUsd } from '@/lib/ai/budget'
-import { recordAiUsage } from '@/lib/ai/usage'
+import { type ModelTier } from '@/lib/ai/models'
+
 import { withVoice } from '@/lib/ai/voice'
 import { TARGET_FIELDS, type MappingChoice } from './types'
 
@@ -208,6 +207,7 @@ export async function extractContactsFromText(input: {
   const tier: ModelTier = 'haiku'
   try {
     const res = await completeRaw({
+      accounting: { feature: 'crm-import-extract', profileId: input.profileId ?? null, spaceId: input.spaceId ?? null },
       tier,
       maxTokens: 2048,
       thinking: { type: 'disabled' },
@@ -220,15 +220,6 @@ export async function extractContactsFromText(input: {
           content: `Text:\n"""\n${text}\n"""\n\nExtract every person. Call ${EXTRACT_TOOL_NAME}.`,
         },
       ],
-    })
-
-    void recordAiUsage({
-      feature: 'crm-import-extract',
-      model: MODELS[tier],
-      usage: res.usage,
-      costUsd: estimateCostUsd(tier, res.usage),
-      profileId: input.profileId ?? null,
-      spaceId: input.spaceId ?? null,
     })
 
     const block = res.content.find(
@@ -266,6 +257,7 @@ export async function proposeMapping(input: {
   const tier: ModelTier = 'haiku'
   try {
     const res = await completeRaw({
+      accounting: { feature: 'crm-import-mapping', profileId: input.profileId ?? null, spaceId: input.spaceId ?? null },
       tier,
       maxTokens: 1024,
       thinking: { type: 'disabled' },
@@ -278,15 +270,6 @@ export async function proposeMapping(input: {
           content: `Headers:\n${JSON.stringify(headers)}\n\nSample rows:\n${JSON.stringify(sample)}\n\nMap every header. Call ${TOOL_NAME}.`,
         },
       ],
-    })
-
-    void recordAiUsage({
-      feature: 'crm-import-mapping',
-      model: MODELS[tier],
-      usage: res.usage,
-      costUsd: estimateCostUsd(tier, res.usage),
-      profileId: input.profileId ?? null,
-      spaceId: input.spaceId ?? null,
     })
 
     const block = res.content.find(

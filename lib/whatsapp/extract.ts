@@ -13,9 +13,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
-import { MODELS } from '@/lib/ai/models'
-import { estimateCostUsd } from '@/lib/ai/budget'
-import { recordAiUsage, aiAvailable, featureOverBudget } from '@/lib/ai/usage'
+
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import { coerceEventExtraction } from '@/lib/events/normalize'
 import type { FieldConfidence } from '@/lib/events/types'
@@ -228,6 +227,7 @@ async function runBatch(
 ): Promise<ClassifiedItem[]> {
   try {
     const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId },
       tier: 'sonnet',
       maxTokens: MAX_TOKENS,
       thinking: { type: 'disabled' },
@@ -240,14 +240,6 @@ async function runBatch(
           content: `Here is a batch of community messages. Pull out the real events and housing listings. Call ${TOOL_NAME}.\n\n${renderBatch(messages)}`,
         },
       ],
-    })
-
-    void recordAiUsage({
-      feature: FEATURE,
-      model: MODELS.sonnet,
-      usage: res.usage,
-      costUsd: estimateCostUsd('sonnet', res.usage),
-      profileId,
     })
 
     const block = res.content.find(

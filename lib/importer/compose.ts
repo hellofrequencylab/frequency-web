@@ -46,7 +46,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import { stripEmDashes } from '@/lib/ai/space-copilot'
 import { isReadyMediaUrl, type CommercialPolicy } from './map'
@@ -766,13 +766,13 @@ export async function composeMarketingLayout(
 
   try {
     const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId: opts.profileId ?? null },
       system: withVoice(COMPOSE_SYSTEM),
       messages: [{ role: 'user', content: userText }],
       maxTokens: 4000,
       tools: [TOOL],
       toolChoice: { type: 'tool', name: 'compose_page' },
     })
-    void recordAiUsage({ feature: FEATURE, model: res.model, usage: res.usage, costUsd: res.costUsd, profileId: opts.profileId ?? null })
 
     const call = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'compose_page')
     // `bands` is the current tool shape; `sections` is accepted as a fallback so an older / retried call
@@ -853,13 +853,13 @@ export async function reseedBlockCopy(
 
   try {
     const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId: opts.profileId ?? null },
       system: withVoice(BLOCK_COPY_SYSTEM),
       messages: [{ role: 'user', content: userText }],
       maxTokens: 800,
       tools: [TOOL],
       toolChoice: { type: 'tool', name: 'block_copy' },
     })
-    void recordAiUsage({ feature: FEATURE, model: res.model, usage: res.usage, costUsd: res.costUsd, profileId: opts.profileId ?? null })
 
     const call = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'block_copy')
     const input = (call?.input ?? {}) as Record<string, unknown>

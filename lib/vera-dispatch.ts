@@ -16,7 +16,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { completeText } from '@/lib/ai/complete'
 import { withVoice } from '@/lib/ai/voice'
 import { dispatchDay } from '@/lib/on-air/dispatch-day'
@@ -195,6 +195,7 @@ async function voiceCopy(assignment: Assignment, profileId: string): Promise<str
       'You are Vera writing a Dispatch: the one-line next assignment a member sees after finishing a practice session. Rephrase the FACT below in one or two short sentences, 140 characters max. Keep every name and number exactly as given. Add nothing new, no greeting, no sign-off, no questions, no emojis. Never name a kind of practice (a sit, a walk, a run, yoga, breathing, a journal, a stretch) unless the FACT names it: this line is shown after whatever the member practiced today. Direct, warm, brisk, like a trusted operator on the radio. Output only the sentence(s).',
     )
     const res = await completeText({
+      accounting: { feature: FEATURE, profileId },
       system,
       messages: [
         {
@@ -206,13 +207,7 @@ async function voiceCopy(assignment: Assignment, profileId: string): Promise<str
       maxTokens: 120,
       cacheSystem: true,
     })
-    await recordAiUsage({
-      feature: FEATURE,
-      model: res.tier,
-      usage: res.usage,
-      costUsd: res.costUsd,
-      profileId,
-    })
+
     return cleanDispatchCopy(res.text, assignment.copy)
   } catch {
     return null // the template fallback stands

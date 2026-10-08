@@ -10,7 +10,7 @@ import { getWorkspaceThread } from '@/lib/comms/workspace'
 import { updateConversationFields } from '@/lib/comms/conversations'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import { withVoice } from '@/lib/ai/voice'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { aiRateLimited } from '@/lib/ai/rate-limit'
 import { CONVERSATION_PRIORITIES, PRIORITY_LABELS, type ConversationPriority } from '@/lib/comms/labels'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -70,12 +70,13 @@ export async function veraDraftReply(conversationId: string, profileId: string):
     const thread = await getWorkspaceThread(id)
     if (!thread) return fail('That conversation no longer exists.')
     const res = await completeText({
+      accounting: { feature: 'conversation-draft', profileId },
       system: withVoice(DRAFT_SYSTEM),
       messages: [{ role: 'user', content: `Subject: ${thread.subject}\n\n${transcript(thread.messages)}\n\nDraft the next reply from us.` }],
       tier: 'haiku',
       maxTokens: 320,
     })
-    await recordAiUsage({ feature: 'conversation-draft', model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId })
+
     const draft = res.text.trim()
     if (!draft) return fail('Vera had nothing to add. Write your reply and send it.')
     return ok({ draft })
@@ -101,12 +102,13 @@ export async function veraSummarize(conversationId: string, profileId: string): 
     const thread = await getWorkspaceThread(id)
     if (!thread) return fail('That conversation no longer exists.')
     const res = await completeText({
+      accounting: { feature: 'conversation-summarize', profileId },
       system: withVoice(SUMMARY_SYSTEM),
       messages: [{ role: 'user', content: `Subject: ${thread.subject}\n\n${transcript(thread.messages)}` }],
       tier: 'haiku',
       maxTokens: 120,
     })
-    await recordAiUsage({ feature: 'conversation-summarize', model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId })
+
     const summary = res.text.trim()
     return summary ? ok({ summary }) : fail('Nothing to summarize yet.')
   } catch (err) {
@@ -135,12 +137,13 @@ export async function veraSuggestTriage(
     const thread = await getWorkspaceThread(id)
     if (!thread) return fail('That conversation no longer exists.')
     const res = await completeText({
+      accounting: { feature: 'conversation-triage', profileId },
       system: withVoice(TRIAGE_SYSTEM),
       messages: [{ role: 'user', content: `Subject: ${thread.subject}\n\n${transcript(thread.messages)}` }],
       tier: 'haiku',
       maxTokens: 60,
     })
-    await recordAiUsage({ feature: 'conversation-triage', model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId })
+
     const parsed = parseTriage(res.text)
     await updateConversationFields(id, { priority: parsed.priority })
     return ok(parsed)

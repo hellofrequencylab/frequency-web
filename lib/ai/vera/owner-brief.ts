@@ -22,7 +22,7 @@ import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { withVoice } from '@/lib/ai/voice'
 import { buildTodayCards, type TodayCard } from '@/lib/ai/vera/today'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
@@ -92,13 +92,14 @@ async function draftBriefIntro(cards: TodayCard[], laterCount: number): Promise<
       people: cards.slice(0, 3).map((c) => ({ name: c.name, why: c.whyNow })),
     })
     const res = await completeText({
+      accounting: { feature: 'today' },
       system: BRIEF_SYSTEM,
       messages: [{ role: 'user', content: signal }],
       tier: 'haiku',
       maxTokens: 80,
       cacheSystem: true,
     })
-    await recordAiUsage({ feature: 'today', model: res.tier, usage: res.usage, costUsd: res.costUsd })
+
     const line = (res.text ?? '').split('\n').map((l) => l.trim()).filter(Boolean)[0]
     return line || fallback
   } catch (e) {
