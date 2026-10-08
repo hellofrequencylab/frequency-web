@@ -1,0 +1,337 @@
+{
+  "program": "PROG-EMAIL1",
+  "version": 1,
+  "scope": "Frequency email and account messaging only",
+  "phases": [
+    {
+      "number": 0,
+      "title": "Pilot and delivery contract"
+    },
+    {
+      "number": 1,
+      "title": "Reliable outbound delivery"
+    },
+    {
+      "number": 2,
+      "title": "Recoverable events"
+    },
+    {
+      "number": 3,
+      "title": "Space domains and identities"
+    },
+    {
+      "number": 4,
+      "title": "Branded receiving and replies"
+    },
+    {
+      "number": 5,
+      "title": "Complete campaigns"
+    },
+    {
+      "number": 6,
+      "title": "Brand templates and rendering"
+    },
+    {
+      "number": 7,
+      "title": "Shared inbox"
+    },
+    {
+      "number": 8,
+      "title": "Individual account notifications"
+    },
+    {
+      "number": 9,
+      "title": "Lifecycle automation"
+    },
+    {
+      "number": 10,
+      "title": "Reporting and operations"
+    },
+    {
+      "number": 11,
+      "title": "Existing mailbox coexistence"
+    },
+    {
+      "number": 12,
+      "title": "Prelaunch release proof"
+    }
+  ],
+  "packets": [
+    {
+      "key": "baseline",
+      "phase": 0,
+      "dependsOn": [],
+      "acceptance": "Record current source/schema/provider readiness, pilot audience exclusions and exact missing live observations."
+    },
+    {
+      "key": "delivery-contract",
+      "phase": 0,
+      "dependsOn": [],
+      "acceptance": "Inventory all senders and define versioned intent, purpose, identity, acceptance, delivery and uncertainty contracts."
+    },
+    {
+      "key": "atomic-intents",
+      "phase": 1,
+      "dependsOn": [
+        "delivery-contract"
+      ],
+      "acceptance": "Commit message, delivery intent and outbox together; bridge crashes cannot strand a reply."
+    },
+    {
+      "key": "provider-acceptance",
+      "phase": 1,
+      "dependsOn": [
+        "atomic-intents"
+      ],
+      "acceptance": "Stable Resend key, immutable payload, provider ID, retry classification and hold after unresolved 24-hour uncertainty."
+    },
+    {
+      "key": "dispatch-policy",
+      "phase": 1,
+      "dependsOn": [
+        "atomic-intents"
+      ],
+      "acceptance": "Recheck lifecycle, consent, topic, suppression, kill switch, purpose and identity immediately before sending."
+    },
+    {
+      "key": "conversation-outcomes",
+      "phase": 1,
+      "dependsOn": [
+        "provider-acceptance"
+      ],
+      "acceptance": "Show queued, accepted, failed, suppressed and uncertain; preserve draft and original intent on retry."
+    },
+    {
+      "key": "durable-events",
+      "phase": 2,
+      "dependsOn": [
+        "atomic-intents"
+      ],
+      "acceptance": "Persist verified inbound/delivery events with reclaimable leases and independently retryable projections."
+    },
+    {
+      "key": "event-projections",
+      "phase": 2,
+      "dependsOn": [
+        "durable-events",
+        "provider-acceptance"
+      ],
+      "acceptance": "Handle duplicates, event ordering, unmatched provider IDs, rebuilds and late linkage without resending."
+    },
+    {
+      "key": "email-value-ladder",
+      "phase": 3,
+      "dependsOn": [
+        "delivery-contract"
+      ],
+      "acceptance": "Free Spaces use Space-branded Frequency senders and reply aliases; paid Spaces may configure verified custom email. Enforce entitlement on every entry/worker; downgrade holds queued custom sends and preserves old replies."
+    },
+    {
+      "key": "identity-model",
+      "phase": 3,
+      "dependsOn": [
+        "delivery-contract",
+        "email-value-ladder"
+      ],
+      "acceptance": "Authorized per-Space identities, purpose defaults, grants and dispatch resolution on every Space send path."
+    },
+    {
+      "key": "domain-onboarding",
+      "phase": 3,
+      "dependsOn": [
+        "identity-model",
+        "dispatch-policy"
+      ],
+      "acceptance": "Paid custom identity entitlement plus Resend-issued DNS, supported automatic/manual setup, separate sending/receiving readiness, conflict recovery and preserving apex mailboxes."
+    },
+    {
+      "key": "tenant-inbound",
+      "phase": 4,
+      "dependsOn": [
+        "durable-events",
+        "identity-model"
+      ],
+      "acceptance": "Exact alias/domain tenancy, versioned tokens, legacy routing, revocation and quarantine."
+    },
+    {
+      "key": "campaign-replies",
+      "phase": 4,
+      "dependsOn": [
+        "tenant-inbound",
+        "event-projections"
+      ],
+      "acceptance": "Per-recipient campaign reply provenance creates one correctly scoped existing conversation."
+    },
+    {
+      "key": "threading-bridge",
+      "phase": 4,
+      "dependsOn": [
+        "tenant-inbound",
+        "conversation-outcomes"
+      ],
+      "acceptance": "Proper RFC reply headers, sender-bound house bridge and atomic forwarding intent; Gmail/Outlook threading."
+    },
+    {
+      "key": "audience-eligibility",
+      "phase": 5,
+      "dependsOn": [
+        "dispatch-policy"
+      ],
+      "acceptance": "Exact dedupe/invalid/unknown-consent/muted/suppressed counts and isolated owner-clicked test mail."
+    },
+    {
+      "key": "campaign-accounting",
+      "phase": 5,
+      "dependsOn": [
+        "atomic-intents",
+        "event-projections",
+        "audience-eligibility"
+      ],
+      "acceptance": "Frozen paginated content/audience, recipient lifecycle, deferred remainder, cancellation and truthful aggregate progress."
+    },
+    {
+      "key": "capacity-fairness",
+      "phase": 5,
+      "dependsOn": [
+        "campaign-accounting",
+        "identity-model"
+      ],
+      "acceptance": "Atomic daily/monthly/provider reservations, domain ramps, transactional priority, tenant fairness and quota continuation."
+    },
+    {
+      "key": "campaign-workspace",
+      "phase": 5,
+      "dependsOn": [
+        "campaign-replies",
+        "capacity-fairness",
+        "brand-templates"
+      ],
+      "acceptance": "Complete draft/review/test/schedule/timezone/pause/resume/cancel/history flow with failure-preserving drafts."
+    },
+    {
+      "key": "brand-templates",
+      "phase": 6,
+      "dependsOn": [
+        "identity-model"
+      ],
+      "acceptance": "Reuse shared rendering for campaign, operational and human mail; plain text, personalization fallbacks, preheader, accessibility and versioned previews."
+    },
+    {
+      "key": "inbox-workspace",
+      "phase": 7,
+      "dependsOn": [
+        "threading-bridge",
+        "event-projections"
+      ],
+      "acceptance": "Search, mine/unassigned/all, unread/read, assignments, labels, notes, saved replies, collision warnings, snooze and response visibility."
+    },
+    {
+      "key": "attachments",
+      "phase": 7,
+      "dependsOn": [
+        "tenant-inbound",
+        "inbox-workspace"
+      ],
+      "acceptance": "Authorized inbound/outbound attachments, size/type limits, scanning quarantine, safe download and retention."
+    },
+    {
+      "key": "dm-notifications",
+      "phase": 8,
+      "dependsOn": [
+        "dispatch-policy",
+        "durable-events"
+      ],
+      "acceptance": "Unread DM notifications and digests, preference cadence, read-before-send cancellation, block checks and correct deep links without exposing private transcripts."
+    },
+    {
+      "key": "journey-triggers",
+      "phase": 9,
+      "dependsOn": [
+        "delivery-contract",
+        "campaign-accounting"
+      ],
+      "acceptance": "Versioned signup/RSVP/booking/membership/inactivity triggers with deduplicated enrollment and scoped evidence."
+    },
+    {
+      "key": "journey-runtime",
+      "phase": 9,
+      "dependsOn": [
+        "journey-triggers",
+        "dispatch-policy",
+        "capacity-fairness"
+      ],
+      "acceptance": "Durable delay/condition/exit/cancel/reenrollment, DST and outage recovery; every execution step explainable."
+    },
+    {
+      "key": "journey-workspace",
+      "phase": 9,
+      "dependsOn": [
+        "journey-runtime",
+        "brand-templates"
+      ],
+      "acceptance": "Usable templates, editing, simulation, explicit publish, pause, enrollment inspection and failure recovery."
+    },
+    {
+      "key": "conversion-reporting",
+      "phase": 10,
+      "dependsOn": [
+        "campaign-replies",
+        "journey-runtime"
+      ],
+      "acceptance": "Separate raw engagement, delivery and real bookings/RSVPs/purchases; explicit attribution and privacy-safe export."
+    },
+    {
+      "key": "delivery-operations",
+      "phase": 10,
+      "dependsOn": [
+        "event-projections",
+        "capacity-fairness",
+        "domain-onboarding"
+      ],
+      "acceptance": "Health reconciliation, measured latency, uncertainty/DLQ, quota forecast, scoped replay, alerts, domain loss and outage runbooks."
+    },
+    {
+      "key": "ai-assistance",
+      "phase": 10,
+      "dependsOn": [
+        "inbox-workspace",
+        "campaign-workspace"
+      ],
+      "acceptance": "Space-scoped drafting/summaries/audience checks with human review, normal policy, injection tests and real AI usage accounting."
+    },
+    {
+      "key": "mailbox-forwarding",
+      "phase": 11,
+      "dependsOn": [
+        "tenant-inbound",
+        "threading-bridge"
+      ],
+      "acceptance": "Preserve Workspace/M365 MX; nominated forwarding alias, provenance, loop prevention, test and disconnect."
+    },
+    {
+      "key": "mailbox-sync",
+      "phase": 11,
+      "dependsOn": [
+        "mailbox-forwarding",
+        "attachments"
+      ],
+      "acceptance": "Separate opt-in adapters for a nominated Workspace/M365 shared mailbox; minimal OAuth, bounded backfill, cursor repair, dedupe, truthful sent transport and revoke."
+    },
+    {
+      "key": "launch-proof",
+      "phase": 12,
+      "dependsOn": [
+        "baseline",
+        "campaign-workspace",
+        "attachments",
+        "dm-notifications",
+        "journey-workspace",
+        "conversion-reporting",
+        "delivery-operations",
+        "ai-assistance",
+        "mailbox-forwarding"
+      ],
+      "acceptance": "Two-Space isolation, pilot user-triggered send/reply/authentication, fault/concurrency tests, real mailbox observations, measured objectives and rollback readiness."
+    }
+  ]
+}
