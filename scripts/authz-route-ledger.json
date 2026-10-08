@@ -249,6 +249,12 @@
       "reason": "A Spotlight Link card press beacon (LIVE-856, on a Space website host, rewritten here by proxy.ts so the beacon stays on the site's origin). Anonymous by design: a visitor on a public Spotlight has no session. Calls handleSpotlightClick (lib/spaces/spotlight-clicks.ts), which rate limits by IP, accepts only a valid Space id and a Link cards target id, counts only a Space whose Spotlight is published, and writes one row (Space, target, time) with no visitor data. Returns 204 with no body, so it discloses nothing.",
       "checked": "2026-10-07",
       "digest": "0f18d0346ffeac7b"
+    },
+    "app/hosted/[host]/admin/enter/route.ts": {
+      "verdict": "token-credential",
+      "reason": "The Space website's admin door (LIVE-864). It holds no identity of its own: it stores the HMAC pass the Frequency console minted for a signed-in manager (lib/sites/site-admin-pass.ts, bound to this Space and this host, 12 hours) in a host-only __Host- cookie, after readSiteAdminPass + passOpensSite verify it, and redirects to /admin/<view>. A missing, tampered, foreign or stale pass sets nothing. The admin pages re-check the pass and the person's owner or editor role on every view (siteAdminAllowed).",
+      "checked": "2026-10-07",
+      "digest": "96be04a0962f3abe"
     }
   }
 }

@@ -178,6 +178,9 @@ export function isHostedPath(pathname: string): boolean {
  *  `not-found` is the internal /hosted route asked for directly on Frequency's own host: it only ever
  *  answers through this function's own rewrite of a site host, so the cached site pages need no Host
  *  header check of their own (PROG-E10 phase 5, LIVE-784). */
+const SITE_ADMIN_SEGMENT = 'admin'
+const SITE_ADMIN_PATHS: ReadonlySet<string> = new Set(['overview', 'calendar', 'enter'])
+
 export function routeSiteHost(
   host: string | null | undefined,
   pathname: string,
@@ -206,6 +209,14 @@ export function routeSiteHost(
 
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}` }
+  // The website's admin pages (LIVE-864): /admin is the Executive Overview, /admin/<view> one of them, and
+  // /admin/enter the handoff that lets a Space manager in (lib/sites/site-admin-pass.ts).
+  if (segments[0] === SITE_ADMIN_SEGMENT && segments.length <= 2) {
+    const view = segments[1] ?? 'overview'
+    return SITE_ADMIN_PATHS.has(view)
+      ? { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}/${SITE_ADMIN_SEGMENT}/${view}` }
+      : { kind: 'not-found' }
+  }
   if (segments.length === 1 && /^[a-z0-9][a-z0-9-]*$/.test(segments[0])) {
     return { kind: 'rewrite', pathname: `${HOSTED_PREFIX}/${h}/${segments[0]}` }
   }

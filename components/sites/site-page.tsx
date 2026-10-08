@@ -38,6 +38,7 @@ import type { Space } from '@/lib/spaces/types'
 import { appOrigin } from '@/lib/sites/host'
 import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
+import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
 import { JsonLd } from '@/components/json-ld'
 import { siteEntitySchema } from '@/lib/jsonld'
 
@@ -255,7 +256,7 @@ export async function SitePage({
         logoUrl={skin ? space.brandLogoUrl : null}
         tagline={skin ? tagline : null}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
-        adminHref={`${origin}/spaces/${space.slug}/manage/leadership`}
+        adminHref={siteBase === '' ? '/admin' : `${origin}${siteAdminHandoffPath(space.slug, 'overview')}`}
       >
         {model ? (
           <HouseHome model={model} />
