@@ -332,3 +332,6 @@ zap_transactions                     authenticated
 
 # Website admin editing: service-role only; browser roles are explicitly revoked.
 website_editor_presence              internal
+
+# LIVE-883: recover the exact already-applied service-only schema; runtime remains open.
+ai_budget_reservations                internal
