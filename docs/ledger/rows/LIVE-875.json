@@ -7,9 +7,9 @@
   "size": "S",
   "source": {
     "file": "docs/EDITOR-E0.md",
-    "ref": "task10/11 bounded member writer compatibility child after LIVE-873"
+    "ref": "task10/11 bounded member writer compatibility child after LIVE-887"
   },
-  "detail": "Session-owned member grid action refuses incompatible incoming native object cells/stored bench and stale legacy writes over native entityGrid before sanitization or RPC. Parsed legacy nodes projection remains compatible. Actual-action plain Node probe proves 155 no-write authored-byte preservation cases using pinned historical census reconstruction plus adversarial nested fixture; positive controls execute actual narrow merge/remove profile meta helpers and prove session-derived profile ownership, unrelated metadata preservation and auth ordering. No native persistence, backfill or complete task10/11 closure; six legacy dedupe sites and native mutation/rendering remain open.",
+  "detail": "Session-owned member grid action refuses incompatible incoming native object cells/stored bench and stale legacy writes over native entityGrid before sanitization or RPC. Parsed legacy nodes projection remains compatible. Actual-action plain Node probe proves 164 no-write authored-byte preservation cases using pinned historical storage-shape reconstructions with synthetic authored values, an adversarial synthetic nested fixture, and malformed stored native documents (duplicate IDs, overflow, unknown keys and malformed bench/object stacks) without normalization; positive controls execute actual narrow merge/remove profile meta helpers and prove session-derived profile ownership, unrelated metadata preservation and auth ordering. No native persistence, backfill or complete task10/11 closure; six legacy dedupe sites and native mutation/rendering remain open.",
   "closed": "2026-10-08",
   "verify": {
     "kind": "cmd",

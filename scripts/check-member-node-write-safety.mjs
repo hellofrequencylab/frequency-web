@@ -25,6 +25,15 @@ let checks=0
 async function refuses(payload){const before=JSON.stringify(state.me);state.rpcs=[];assert.deepEqual(await saveMemberGridLayout(payload),{error:NODE_LAYOUT_WRITE_ERROR});assert.deepEqual(state.rpcs,[]);assert.equal(JSON.stringify(state.me),before);checks++}
 for(const document of documents){const native=upgradeLayout(document);state.me={id:'prof-1',handle:'ada',meta:{entityGrid:legacy,practiceStreak:{days:12}}};await refuses(native);state.me.meta.entityGrid=native;for(const payload of [legacy,{},null])await refuses(payload)}
 for(const native of [{rows:[],bench:[]},{rows:[],bench:null},{rows:[{id:'r0',columns:1,cells:[['text',{nid:'nabcdef',type:'text',content:{text:'Second authored placement'}}]]}]}]){state.me.meta.entityGrid=legacy;await refuses(native)}
+// Malformed stored native documents must be refused directly, without upgrading or repairing them.
+for (const entityGrid of [
+  { bench: null, unknown: { authored: ['<p>keep &amp; bytes</p>'] } },
+  { rows: [{ columns: 8, cells: [[{ nid: 'duplicate', type: 'future-type', content: { html: '<b>first</b>' }, unknown: 1 }, { nid: 'duplicate', type: 'future-type', content: { html: '<i>second</i>' }, unknown: 2 }]] }], metadata: { retain: true } },
+  { rows: [{ cells: [{ arbitrary: 'native-looking malformed stack' }] }], foreign: ['a', null, false] },
+]) {
+  state.me = { id: 'prof-1', handle: 'ada', meta: { entityGrid, other: { preserve: true } } }
+  for (const payload of [{}, null, { rows: [] }]) await refuses(payload)
+}
 state.me={id:'prof-1',handle:'ada',meta:{entityGrid:legacy,practiceStreak:{days:12}}};state.rpcs=[];state.queries=[]
 assert.deepEqual(await saveMemberGridLayout({...parseEntityLayout(legacy),profile_id:'foreign',id:'foreign'}),{})
 assert.deepEqual(state.queries,[['auth_user_id','auth-1']]);assert.deepEqual(state.rpcs,[['merge_profile_meta',{p_profile_id:'prof-1',p_patch:{entityGrid:legacy}}]])
