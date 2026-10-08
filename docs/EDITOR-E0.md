@@ -192,6 +192,12 @@ changes remain possible. This is not completion of tasks 10–13 or E0. Native e
 conversion, per-type limits, web rendering, rollout/backfill, fresh production recapture and
 owner-deferred Yjs remain open. No outbound mail or production writes ran for this slice.
 
+Native raw markers also prevent a blank-envelope campaign from being called pristine. Draft
+reuse/reset and empty-draft cleanup preserve placed, benched, hidden, unknown and malformed
+native work without upgrading or sanitizing it. Actual action fixtures and the runner-free
+probe pin zero destructive writes, while ordinary untouched legacy draft reuse and owner-scoped
+cleanup remain unchanged. The final release must integrate after LIVE-887 and LIVE-875.
+
 ### Member writer compatibility boundary (LIVE-875)
 
 The session-owned member grid save refuses incoming native node cells or stored bench, and

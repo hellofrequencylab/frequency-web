@@ -57,3 +57,6 @@ assert(code('lib/email-studio/send.ts').includes('parseEmailRenderLayout(row.blo
 assert(code('lib/email-studio/send.ts').includes('compileEmailDoc(doc, { unsubscribeUrl, manageUrl })'))
 for(const path of ['lib/spaces/email-drafts.ts','app/(main)/admin/email-studio/actions.ts','app/(main)/admin/marketing/nurture/actions.ts'])assert(code(path).includes('return { error: NODE_LAYOUT_WRITE_ERROR }'),`${path} no longer protects incompatible writes`)
 console.log('ok: native-safe parser remains integrated in nurture, Space and campaign compilation reads')
+
+// Draft lifecycle is also a writer boundary: a native bench cannot be treated as empty.
+await import('./check-email-node-draft-preservation.mjs')

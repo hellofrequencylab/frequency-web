@@ -1,6 +1,6 @@
 'use server'
 
-import { hasNativeNodeStorage, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+import { hasNativeNodeStorage, legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 
 // EMAIL STUDIO — Phase 2 server actions (the two-pane Campaign Workspace).
 //
@@ -165,6 +165,9 @@ const PRISTINE_COLS = 'subject, preheader, body, sent_at, test_sent_at, schedule
  *  scaffold has row slots but no `content` map), no send / test / schedule / recipients, and not part of
  *  a sequence. Such a row is safe to reuse or silently discard, and should never clutter a list. */
 function isPristineDraft(row: DraftPristineRow): boolean {
+  // Native placements keep content on each node, not in the legacy sibling map.
+  // Inspect the raw marker before any projection can erase authored bench/hidden work.
+  if (legacySpaceLayoutWriteError(row.block_json, null)) return false
   const empty = !(row.subject ?? '').trim() && !(row.preheader ?? '').trim() && !(row.body ?? '').trim()
   const content =
     row.block_json && typeof row.block_json === 'object'
