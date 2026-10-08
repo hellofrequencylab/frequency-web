@@ -1,8 +1,8 @@
 // PER-SPACE CONTACT DETAIL — the owner-gated read model behind a Space CRM's contact detail surface
 // (CRM-STRATEGY §6). Gathers everything the detail view shows for ONE contact of ONE Space:
 //   • identity + fields (name, email, phone, company, city) — name/email from the Space `contacts`
-//     row; phone/company/city are enriched from any linked `network_contacts` capture (matched by
-//     lowercased email, the person-stitch join, ADR-130), since `contacts` itself holds no such fields.
+//     row; phone/company/city come only from the viewer's own capture or a card explicitly shared
+//     with this Space's team (ADR-778). Email identity stitching never grants source authorization.
 //   • the TIMELINE — contact_interactions for this contact (lib/crm/interactions.ts), folded together
 //     with the Space's private client_notes (lib/crm/client-notes.ts) via buildTimeline.
 //   • the contact's DEALS in this Space (crm_deals filtered by space_id + contact_id).
@@ -19,6 +19,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { escapeLike } from '@/lib/search-sanitize'
+import { isSpaceTeamMember } from '@/lib/spaces/operated'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities, autoExecutionAllowed } from '@/lib/spaces/entitlements'
@@ -151,7 +152,7 @@ export async function getSpaceContactDetail(
   // + types this contact's meta.custom (fail-safe to []). The person-stitch read is STRICTLY scoped to this
   // Space (listInteractionsForPerson(..., spaceId)), so it never surfaces another party's platform touches.
   const [enrichment, interactions, notes, dealsAll, registry, templated] = await Promise.all([
-    enrichFromCapture(contact.email),
+    enrichFromCapture(contact.email, editorId, spaceId),
     listInteractionsForPerson([contactId, profileId], 100, spaceId),
     listClientNotes(spaceId, contactId),
     getDeals(spaceId),
@@ -281,35 +282,38 @@ async function buildInsight(
   return { profileId, scores, hasScores, contextLine, readout, facts, nextBestPlay }
 }
 
-/** Best-effort phone/company/city for a contact from any `network_contacts` capture that shares its
- *  email (the person-stitch join by lowercased email, ADR-130). FAIL-SAFE: all-null on any miss/error.
- *  Picks the most recently captured non-null value for each field across the matching captures. */
+/** Email identifies a person, not who may read a capture. Private rows remain viewer-owned;
+ * shared cards require this exact Space and current team membership (ADR-778). Network visibility
+ * alone does not authorize phone enrichment. Only authorized rows enter the newest-first fold. */
 async function enrichFromCapture(
   email: string,
+  viewerId: string,
+  spaceId: string,
 ): Promise<{ phone: string | null; company: string | null; city: string | null }> {
   const blank = { phone: null, company: null, city: null }
   const needle = (email ?? '').trim().toLowerCase()
-  if (!needle) return blank
+  // IDs enter a PostgREST OR expression: allow only canonical UUID shape, never request grammar.
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!needle || !uuid.test(viewerId) || !uuid.test(spaceId)) return blank
   try {
-    const db = createAdminClient() as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          ilike: (col: string, val: string) => {
-            order: (col: string, opts: { ascending: boolean }) => {
-              limit: (n: number) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }>
-            }
-          }
-        }
-      }
+    const sharedAllowed = await isSpaceTeamMember(viewerId, spaceId).catch(() => false)
+    type CaptureQuery = {
+      select: (columns: string) => CaptureQuery
+      ilike: (column: string, value: string) => CaptureQuery
+      eq: (column: string, value: string) => CaptureQuery
+      or: (expression: string) => CaptureQuery
+      order: (column: string, options: { ascending: boolean }) => CaptureQuery
+      limit: (count: number) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }>
     }
-    const { data, error } = await db
-      .from('network_contacts')
+    const db = createAdminClient() as unknown as { from: (table: string) => CaptureQuery }
+    let query = db.from('network_contacts')
       .select('phone, company, city, created_at')
-      // escapeLike: `_`/`%` in an email are ILIKE wildcards — without escaping, a different person's
-      // captures would populate this contact's detail card.
+      // Literal email matching must not treat _ or % as wildcards.
       .ilike('email', escapeLike(needle))
-      .order('created_at', { ascending: false })
-      .limit(20)
+    query = sharedAllowed
+      ? query.or(`owner_id.eq.${viewerId},and(visibility.eq.shared,shared_space_id.eq.${spaceId})`)
+      : query.eq('owner_id', viewerId)
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(20)
     if (error || !data) return blank
     const out = { ...blank } as { phone: string | null; company: string | null; city: string | null }
     for (const row of data) {
