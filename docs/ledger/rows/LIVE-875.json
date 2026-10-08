@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-875",
+  "title": "Member page grid writer refuses native node downgrade before authored work is lost",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "task10/11 bounded member writer compatibility child after LIVE-873"
+  },
+  "detail": "Session-owned member grid action refuses incompatible incoming native object cells/stored bench and stale legacy writes over native entityGrid before sanitization or RPC. Parsed legacy nodes projection remains compatible. Actual-action plain Node probe proves 155 no-write authored-byte preservation cases using pinned historical census reconstruction plus adversarial nested fixture; positive controls execute actual narrow merge/remove profile meta helpers and prove session-derived profile ownership, unrelated metadata preservation and auth ordering. No native persistence, backfill or complete task10/11 closure; six legacy dedupe sites and native mutation/rendering remain open.",
+  "closed": "2026-10-08",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/check-member-node-write-safety.mjs",
+    "note": "Actual member writer and real profile metadata helpers; framework/auth/data boundaries stubbed, no nested runner."
+  },
+  "wave": "W4"
+}
