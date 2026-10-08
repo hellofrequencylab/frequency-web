@@ -24,7 +24,8 @@ const paths = [
   "lib/studio/recommendations.ts",
   "lib/studio/winback.ts",
   "lib/vera-dispatch.ts",
-  "lib/whatsapp/extract.ts"
+  "lib/whatsapp/extract.ts",
+  "lib/sites/editor/actions.ts"
 ]
 let calls = 0
 for (const path of paths) {
@@ -43,6 +44,8 @@ for (const path of paths) {
   }
   visit(source); assert.ok(localCalls > 0, `${path} has no inventoried completion`)
 }
+assert.equal(paths.length, 21)
+assert.equal(calls, 25)
 const state = globalThis.__legacyCompletionProbe
 state.enabled = true; state.overBudget = false; state.rateLimited = false
 const sources = new Map([

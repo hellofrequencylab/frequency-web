@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const mocks = vi.hoisted(() => ({ host: 'hearts.example', staff: false, allowed: true, opens: true, preferences: {} as unknown, rpc: vi.fn(), refresh: vi.fn(), presenceWrite: vi.fn(), presenceRead: vi.fn(), features: vi.fn(), complete: vi.fn() }))
+const mocks = vi.hoisted(() => ({ host: 'hearts.example', staff: false, allowed: true, opens: true, preferences: {} as unknown, rpc: vi.fn(), refresh: vi.fn(), presenceWrite: vi.fn(), presenceRead: vi.fn(), features: vi.fn(), complete: vi.fn(), enabled: true, limited: false, overBudget: false, ledger: vi.fn() }))
 vi.mock('next/headers', () => ({ headers: async () => ({ get: () => mocks.host }), cookies: async () => ({ get: () => ({ value: 'token' }) }) }))
 vi.mock('@/lib/sites/hosted', () => ({ resolveHostedSpace: async () => ({ id: 'space', slug: 'hearts' }) }))
 vi.mock('@/lib/sites/site-admin-pass', () => ({ SITE_ADMIN_COOKIE: 'admin', readSiteAdminPass: () => ({ staff: mocks.staff, profileId: 'owner' }), passOpensSite: () => mocks.opens }))
@@ -8,15 +8,15 @@ vi.mock('@/lib/sites/site-cache', () => ({ refreshSite: mocks.refresh }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ rpc: mocks.rpc, from: (table: string) => table === 'website_editor_presence' ? { upsert: mocks.presenceWrite, select: () => ({ eq: () => ({ gte: () => ({ limit: mocks.presenceRead }) }) }) } : ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { preferences: mocks.preferences, owner_profile_id: 'owner' }, error: null }) }) }) }) }) }))
 vi.mock('./live-data', () => ({ resolveWebsiteFeatureItems: mocks.features }))
 vi.mock('@/lib/ai/complete', () => ({ completeText: mocks.complete }))
-vi.mock('@/lib/ai/client', () => ({ aiEnabled: () => true }))
-vi.mock('@/lib/ai/rate-limit', () => ({ aiRateLimited: async () => false }))
-vi.mock('@/lib/ai/usage', () => ({ featureOverBudget: async () => false, recordAiUsage: async () => {} }))
+vi.mock('@/lib/ai/client', () => ({ aiEnabled: () => mocks.enabled }))
+vi.mock('@/lib/ai/rate-limit', () => ({ aiRateLimited: async () => mocks.limited }))
+vi.mock('@/lib/ai/usage', () => ({ featureOverBudget: async () => mocks.overBudget, recordAiUsage: mocks.ledger }))
 vi.mock('@/lib/ai/voice', () => ({ withVoice: (text: string) => text }))
 import { saveWebsiteDraft, syncWebsitePresence, loadWebsiteFeatureSource, proposeWebsiteText } from './actions'
 import { nextWebsiteState, type WebsiteEditorState, type WebsiteSnapshot } from './state'
 const draft: WebsiteSnapshot = { theme: 'DAWN', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [] }, seo: { title: '', description: '' }, comments: [] }] }
 describe('website editor authorization and concurrency', () => {
-  beforeEach(() => { mocks.host = 'hearts.example'; mocks.staff = false; mocks.allowed = true; mocks.opens = true; mocks.preferences = {}; mocks.rpc.mockReset().mockResolvedValue({ data: true, error: null }); mocks.refresh.mockReset(); mocks.presenceWrite.mockReset().mockResolvedValue({ error: null }); mocks.presenceRead.mockReset().mockResolvedValue({ data: [{ profile_id: 'other', name: 'Actual editor', cursor: null }, { profile_id: 'owner', name: 'Owner', cursor: null }], error: null }) })
+  beforeEach(() => { mocks.complete.mockReset(); mocks.ledger.mockReset(); mocks.enabled = true; mocks.limited = false; mocks.overBudget = false; mocks.host = 'hearts.example'; mocks.staff = false; mocks.allowed = true; mocks.opens = true; mocks.preferences = {}; mocks.rpc.mockReset().mockResolvedValue({ data: true, error: null }); mocks.refresh.mockReset(); mocks.presenceWrite.mockReset().mockResolvedValue({ error: null }); mocks.presenceRead.mockReset().mockResolvedValue({ data: [{ profile_id: 'other', name: 'Actual editor', cursor: null }, { profile_id: 'owner', name: 'Owner', cursor: null }], error: null }) })
   it.each(['staff', 'foreign host', 'revoked membership', 'foreign pass'])('denies %s before writing', async (kind) => {
     if (kind === 'staff') mocks.staff = true
     if (kind === 'foreign host') mocks.host = 'other.example'
@@ -41,11 +41,29 @@ describe('website editor authorization and concurrency', () => {
     mocks.complete.mockResolvedValue({ text: 'Safe **copy** <scr<script>ipt>alert(1)</scr</script>ipt> <script', tier: 'haiku', usage: {} })
     const result = await proposeWebsiteText('hearts.example', 'Shorten this copy', 'Original passage')
     expect(result.ok).toBe(true)
+    expect(mocks.complete).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ accounting: { feature: 'website-editor', profileId: 'owner', spaceId: 'space' } }))
+    expect(mocks.ledger).not.toHaveBeenCalled()
     if (result.ok) {
       expect(result.text).not.toMatch(/[<>]/)
       expect(result.text).toContain('**copy**')
       expect(result.text).not.toContain('<script')
     }
+  })
+  it.each(['foreign host', 'revoked membership', 'disabled', 'rate limited', 'budget exhausted'])('does not dispatch website AI when %s', async (reason) => {
+    if (reason === 'foreign host') mocks.host = 'other.example'
+    if (reason === 'revoked membership') mocks.allowed = false
+    if (reason === 'disabled') mocks.enabled = false
+    if (reason === 'rate limited') mocks.limited = true
+    if (reason === 'budget exhausted') mocks.overBudget = true
+    expect(await proposeWebsiteText('hearts.example', 'Shorten', 'Original')).toMatchObject({ ok: false })
+    expect(mocks.complete).not.toHaveBeenCalled()
+    expect(mocks.ledger).not.toHaveBeenCalled()
+  })
+  it('preserves the website proposal fallback on central completion failure without a local usage write', async () => {
+    mocks.complete.mockRejectedValue(new Error('accounting unavailable'))
+    expect(await proposeWebsiteText('hearts.example', 'Shorten', 'Original')).toEqual({ ok: false, error: 'Vera could not prepare that change. Try again in a moment.' })
+    expect(mocks.complete).toHaveBeenCalledOnce()
+    expect(mocks.ledger).not.toHaveBeenCalled()
   })
   it('validates cursor coordinates and returns actual other editors only', async () => {
     expect(await syncWebsitePresence('hearts.example', { pageSlug: 'home', blockId: 'hero', x: 2, y: 0 })).toMatchObject({ ok: false })
