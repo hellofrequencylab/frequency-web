@@ -5,6 +5,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EntityCard } from '@/components/cards/entity-card'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -34,11 +35,12 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
     listPublicCollectiveMembers(parent), loadCollectiveNetworkWindow(parent, name, window.fromDay, window.toDay),
   ])
   const upcoming = liveNetworkUpcoming(events, dayInZone(now, parent.timeZone))
+  const hero = await resolveIndexHero(`/spaces/${parent.slug}/network`)
   // Owner management and the public projection are separate doors: never add private members to this page.
   const management = caller?.id === parent.ownerProfileId
     ? <Link href={`/spaces/${slug}/settings/billing`} className={buttonClasses('secondary', 'sm')}>Manage member Spaces</Link> : undefined
   return (
-    <IndexTemplate title={`${name} network`} description="Member Spaces and their events, together." action={management} adminBar={false}>
+    <IndexTemplate {...hero} title={`${name} network`} description="Member Spaces and their events, together." action={management} adminBar={false}>
       <div className="space-y-10">
         <section aria-labelledby="network-members">
           <SectionHeader id="network-members" title="Member Spaces" count={members.length} />
