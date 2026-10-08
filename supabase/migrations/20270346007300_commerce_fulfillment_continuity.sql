@@ -166,3 +166,90 @@ revoke execute on function public.revoke_refunded_commerce_journeys(uuid) from p
 grant execute on function public.protect_paid_journey_provenance() to service_role;
 grant execute on function public.grant_paid_commerce_journey(uuid,uuid,uuid) to service_role;
 grant execute on function public.revoke_refunded_commerce_journeys(uuid) to service_role;
+
+-- Fence the existing atomic stock operation at its own serialization point.
+create or replace function public.decrement_commerce_stock_atomic(
+  _order uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_already boolean;
+  v_status text;
+  v_rec     record;
+begin
+  if _order is null then
+    raise exception 'invalid_order' using errcode = 'P0001';
+  end if;
+
+  select coalesce((metadata->>'inventory_decremented')::boolean, false), status
+    into v_already, v_status
+    from public.commerce_orders
+   where id = _order
+   for update;
+
+  if not found then
+    raise exception 'order_not_found' using errcode = 'P0001';
+  end if;
+  -- A lease refresh outside this transaction cannot authorize inventory after a refund.
+  -- The status check and mutation share the SAME order lock as refund/restore.
+  if v_status not in ('paid','fulfilled') then
+    raise exception 'order_not_paid' using errcode = 'P0001';
+  end if;
+  if v_already then
+    return;  -- already decremented for this order; no-op (idempotent)
+  end if;
+
+  -- Pass 1: variant-tracked items. Lock each tracked variant, decrement or fail.
+  for v_rec in
+    select oi.variant_id as variant_id, sum(oi.qty)::integer as need
+      from public.commerce_order_items oi
+      join public.commerce_variants v on v.id = oi.variant_id
+     where oi.order_id = _order
+       and oi.variant_id is not null
+       and v.stock is not null
+     group by oi.variant_id
+  loop
+    update public.commerce_variants
+       set stock = stock - v_rec.need
+     where id = v_rec.variant_id
+       and stock >= v_rec.need;
+
+    if not found then
+      raise exception 'out_of_stock' using errcode = 'P0001';
+    end if;
+  end loop;
+
+  -- Pass 2: product-tracked items WITHOUT a variant. A variant-selected item is handled
+  -- above and must not also decrement product stock, hence variant_id is null here.
+  for v_rec in
+    select oi.product_id as product_id, sum(oi.qty)::integer as need
+      from public.commerce_order_items oi
+      join public.commerce_products p on p.id = oi.product_id
+     where oi.order_id = _order
+       and oi.variant_id is null
+       and oi.product_id is not null
+       and p.stock is not null
+     group by oi.product_id
+  loop
+    update public.commerce_products
+       set stock = stock - v_rec.need
+     where id = v_rec.product_id
+       and stock >= v_rec.need;
+
+    if not found then
+      raise exception 'out_of_stock' using errcode = 'P0001';
+    end if;
+  end loop;
+
+  update public.commerce_orders
+     set metadata = metadata || jsonb_build_object('inventory_decremented', true)
+   where id = _order;
+end;
+$$;
+
+revoke execute on function public.decrement_commerce_stock_atomic(uuid) from public, anon, authenticated;
+grant execute on function public.decrement_commerce_stock_atomic(uuid) to service_role;

@@ -11,6 +11,9 @@ for (const name of ['claim_commerce_settlement','grant_paid_commerce_journey','r
   const body = migration.split(`function public.${name}(`)[1]?.split('end $$;')[0]
   assert.ok(body && /for update/i.test(body), `${name} must retain the order lock`)
 }
+const stockBody=migration.split('function public.decrement_commerce_stock_atomic(')[1]
+assert.ok(stockBody && /for update/i.test(stockBody), 'paid inventory must lock the original order')
+assert.match(stockBody,/if v_status not in \('paid','fulfilled'\) then[\s\S]*?order_not_paid[\s\S]*?if v_already then/)
 assert.match(migration,/journey_plan_adoptions add column if not exists order_id/)
 assert.match(fs.readFileSync('lib/journey-plans.ts','utf8'),/rpc\('grant_paid_commerce_journey'/)
 assert.match(fs.readFileSync('lib/commerce/journey-fulfilment.ts','utf8'),/rpc\('revoke_refunded_commerce_journeys'/)
