@@ -45,8 +45,12 @@ Stock keeps its existing atomic inventory marker and accounting keeps its unique
 Paid Journey access uses the canonical adoption path with checked practice preparation. The
 actual lesson permission (legacy active adoption) and solo enrollment/provenance commit in one
 order-locked RPC. A full refund uses the same order lock to revoke only unfinished order-owned
-access. Verified refund replay retries a failed revoke even after status became refunded; existing
-free/other-order access and completed Journeys remain intact. Creator rewards and adoption counters retain their existing best-effort
+access. Both verified full-refund replay entrances resume the same strict unwind after status became
+refunded: accounting reversal, booking cancellation, access revoke and atomic stock restoration.
+The reversal keeps its existing unique order key and restoration keeps its existing atomic marker,
+so replay repairs a missing write without duplicating completed effects. Partial refunds retain their
+existing access and stock policy. Free/other-order access and completed Journeys remain intact.
+Creator rewards and adoption counters retain their existing best-effort
 contract; this recovery does not claim exactly-once reward issuance. Split transfers keep their
 existing durable transfer/reversal ledger and reconciliation process, with captured payees.
 

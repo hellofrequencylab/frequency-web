@@ -1069,15 +1069,15 @@ export async function recordCommerceRefund(
   if (opts.refundedCents != null) {
     const { data, error } = await db()
       .from('commerce_orders')
-      .select('id, amount_cents, status')
+      .select(`${REFUND_ROW_COLS}, status`)
       .eq('stripe_payment_intent_id', paymentIntentId)
       .in('status', ['paid', 'fulfilled', 'refunded'])
       .maybeSingle()
     if (error) throw new Error(`[commerce] refund target read failed: ${error.message}`)
-    const target = data as { id: string; amount_cents: number; status?: string } | null
-    if (!target) return // nothing settled behind this charge (not ours, or already fully refunded)
+    const target = data as (RefundedOrderRow & { status?: string }) | null
+    if (!target) return // nothing settled behind this charge (not ours)
     if (target.status === 'refunded') {
-      await revokeJourneyByOrder(target.id, { strict: true })
+      await unwindFullCommerceRefund(target, paymentIntentId)
       return
     }
     if (opts.refundedCents < target.amount_cents) {
@@ -1099,45 +1099,47 @@ async function recordFullCommerceRefund(paymentIntentId: string): Promise<void> 
   if (flipError) throw new Error(`[commerce] refunded flip failed: ${flipError.message}`)
   const rows = (updated ?? []) as RefundedOrderRow[]
   if (rows.length === 0) {
-    // Required access cleanup remains retryable after the refund status committed.
-    const { data, error } = await db().from('commerce_orders').select('id')
+    // All required cleanup remains retryable after the refund status committed.
+    const { data, error } = await db().from('commerce_orders').select(REFUND_ROW_COLS)
       .eq('stripe_payment_intent_id', paymentIntentId).eq('status', 'refunded')
     if (error) throw new Error(`[commerce] refunded replay read failed: ${error.message}`)
-    for (const row of (data ?? []) as { id: string }[]) await revokeJourneyByOrder(row.id, { strict: true })
+    for (const row of (data ?? []) as RefundedOrderRow[]) await unwindFullCommerceRefund(row, paymentIntentId)
     return
   }
-  for (const row of rows) {
-    const revenue = recordedRevenueCents(row)
-    // A partial refund recorded earlier already reversed part of this revenue (L6-08); reverse the rest.
-    const partial = (row.metadata?.refund ?? null) as Partial<PartialRefundRecord> | null
-    const alreadyReversed = partial?.kind === 'partial' ? Math.max(0, Number(partial.revenue_reversed_cents) || 0) : 0
-    await recordFinancialTransaction({
-      entityId: row.entity_id,
-      revenueType: 'refund',
-      amountCents: -Math.max(0, revenue - alreadyReversed),
-      profileId: row.buyer_profile_id,
-      currency: row.currency,
-      stripePaymentIntentId: paymentIntentId,
-      sourceTable: 'commerce_orders',
-      sourceId: row.id,
-      idempotencyKey: `commerce_order-refund:${row.id}`,
-    }).catch(() => {})
+  for (const row of rows) await unwindFullCommerceRefund(row, paymentIntentId)
+}
 
-    // Bookable services (Phase 4, ADR-596): release the slot behind a refunded service order. Fail-soft.
-    await cancelBookingByOrder(row.id)
+/** Replay the same idempotent unwind after the refund status has committed. */
+async function unwindFullCommerceRefund(row: RefundedOrderRow, paymentIntentId: string): Promise<void> {
+  const revenue = recordedRevenueCents(row)
+  // A partial refund recorded earlier already reversed part of this revenue (L6-08); reverse the rest.
+  const partial = (row.metadata?.refund ?? null) as Partial<PartialRefundRecord> | null
+  const alreadyReversed = partial?.kind === 'partial' ? Math.max(0, Number(partial.revenue_reversed_cents) || 0) : 0
+  await recordFinancialTransaction({
+    entityId: row.entity_id,
+    revenueType: 'refund',
+    amountCents: -Math.max(0, revenue - alreadyReversed),
+    profileId: row.buyer_profile_id,
+    currency: row.currency,
+    stripePaymentIntentId: paymentIntentId,
+    sourceTable: 'commerce_orders',
+    sourceId: row.id,
+    idempotencyKey: `commerce_order-refund:${row.id}`,
+  })
 
-    // Journeys (ADR-1397): a FULL refund takes the access back with the money. Deliberately NOT on the
-    // partial-refund path below -- a partial refund is a price adjustment, not a withdrawal, and a
-    // learner who got $50 back should not lose the program. A finished Journey is never un-finished
-    // (revokeJourneyByOrder skips completed enrolments), because a completion and its rewards already
-    // happened and rewriting a member's record to settle a billing question is the worse error.
-    try {
-      await revokeJourneyByOrder(row.id, { strict: true })
-    } finally {
-      // Stock has its own atomic restore marker. Access failure must not skip this unwind.
-      await restoreCommerceStock(row)
-    }
+  // A failed cancellation must release the webhook claim so the next delivery repairs it.
+  await cancelBookingByOrder(row.id, { strict: true })
 
+  // Journeys (ADR-1397): a FULL refund takes the access back with the money. Deliberately NOT on the
+  // partial-refund path below -- a partial refund is a price adjustment, not a withdrawal, and a
+  // learner who got $50 back should not lose the program. A finished Journey is never un-finished
+  // (revokeJourneyByOrder skips completed enrolments), because a completion and its rewards already
+  // happened and rewriting a member's record to settle a billing question is the worse error.
+  try {
+    await revokeJourneyByOrder(row.id, { strict: true })
+  } finally {
+    // Stock has its own atomic restore marker. Access failure must not skip this unwind.
+    await restoreCommerceStock(row, { strict: true })
   }
 }
 
@@ -1218,11 +1220,12 @@ async function recordPartialCommerceRefund(
  *  It also owns both preconditions now (never decremented -> nothing to give back; already
  *  restored -> no-op), which is why the caller passes nothing but the id.
  */
-async function restoreCommerceStock(order: Pick<RefundedOrderRow, 'id'>): Promise<void> {
+async function restoreCommerceStock(order: Pick<RefundedOrderRow, 'id'>, opts?: { strict?: boolean }): Promise<void> {
   const { error } = await db().rpc('restore_commerce_stock_atomic', { _order: order.id })
   if (error) {
+    if (opts?.strict) throw new Error(`[commerce] stock restore failed: ${error.message}`)
     // Nothing partial can be left behind (the RPC is one transaction), so a failure here means the
-    // stock is simply still off the shelf. Loud, because nothing retries it.
+    // stock is simply still off the shelf. Strict recovery callers above throw for redelivery.
     console.error('[commerce] stock restore failed; tracked stock is still held by this order', {
       orderId: order.id,
       error: error.message,

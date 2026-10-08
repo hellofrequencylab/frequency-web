@@ -2310,12 +2310,17 @@ export async function confirmBookingByOrder(orderId: string, opts?: { strict?: b
   }
 }
 
-/** Release (cancel) the booking behind a refunded / cancelled order, freeing the slot. FAIL-SOFT. */
-export async function cancelBookingByOrder(orderId: string): Promise<void> {
+/** Release the refunded/cancelled order slot; strict recovery callers propagate database failures. */
+export async function cancelBookingByOrder(orderId: string, opts?: { strict?: boolean }): Promise<void> {
   if (!orderId) return
   try {
-    await bookingsTable().update({ status: 'cancelled' }).eq('order_id', orderId)
-  } catch {
+    const { error } = await bookingsTable().update({ status: 'cancelled' }).eq('order_id', orderId)
+    if (error && opts?.strict) {
+      const message = typeof error === 'object' && 'message' in error ? String(error.message) : String(error)
+      throw new Error(`[booking] cancel failed: ${message}`)
+    }
+  } catch (error) {
+    if (opts?.strict) throw error
     /* fail-soft */
   }
 }

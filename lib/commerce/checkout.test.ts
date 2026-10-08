@@ -448,7 +448,7 @@ describe('recordCommerceRefund — a full refund puts tracked stock back on the 
     expect(rpc.payload).toEqual({ _order: 'o1' })
     // The ledger reversal and the booking release still happen.
     expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
-    expect(booking.cancelBookingByOrder).toHaveBeenCalledWith('o1')
+    expect(booking.cancelBookingByOrder).toHaveBeenCalledWith('o1', { strict: true })
   })
 
   it('no longer reads or writes stock from the app at all — no item walk, no compare-and-swap, no marker write', async () => {
@@ -463,14 +463,9 @@ describe('recordCommerceRefund — a full refund puts tracked stock back on the 
     ).toBeUndefined()
   })
 
-  it('a failed restore is logged loudly and never throws (the refund itself still stands)', async () => {
+  it('a failed restore rejects so verified redelivery can repair it', async () => {
     handler({ rpcError: { message: 'deadlock detected' } })
-    await expect(recordCommerceRefund('pi_1')).resolves.toBeUndefined()
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining('stock restore failed'),
-      expect.objectContaining({ orderId: 'o1', error: 'deadlock detected' }),
-    )
-    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
+    await expect(recordCommerceRefund('pi_1')).rejects.toThrow('stock restore failed: deadlock detected')
   })
 
   it('a redelivered charge.refunded flips nothing and therefore restores nothing (exactly once)', async () => {
@@ -969,7 +964,7 @@ describe('LIVE-882 retries the ordinary verified-session dispatcher', () => {
 
 
 describe('LIVE-882 full refund access cleanup can recover after status changed', () => {
-  it('retries a failed order-owned revoke on verified refund redelivery and still restores stock once', async () => {
+  it('retries a failed order-owned revoke and delegates repeated restoration to the atomic marker', async () => {
     let refunded = false
     state.setHandler((c) => {
       if (c.table === 'commerce_orders' && c.op === 'update') {
@@ -977,7 +972,7 @@ describe('LIVE-882 full refund access cleanup can recover after status changed',
         refunded = true
         return { data: [REFUND_ROW] }
       }
-      if (c.table === 'commerce_orders' && c.op === 'select' && hasFilter(c, 'eq', 'status', 'refunded')) return { data: [{ id: 'o1' }] }
+      if (c.table === 'commerce_orders' && c.op === 'select' && hasFilter(c, 'eq', 'status', 'refunded')) return { data: [REFUND_ROW] }
       return {}
     })
     vi.mocked(revokeJourneyByOrder).mockRejectedValueOnce(new Error('access deletion unavailable'))
@@ -985,7 +980,42 @@ describe('LIVE-882 full refund access cleanup can recover after status changed',
     await recordCommerceRefund('pi_1')
     expect(revokeJourneyByOrder).toHaveBeenCalledTimes(2)
     expect(revokeJourneyByOrder).toHaveBeenLastCalledWith('o1', { strict: true })
-    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
-    expect(state.calls.filter((c) => c.table === 'rpc:restore_commerce_stock_atomic')).toHaveLength(1)
+    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(2)
+    expect(state.calls.filter((c) => c.table === 'rpc:restore_commerce_stock_atomic')).toHaveLength(2)
+  })
+})
+
+
+describe('LIVE-882 full refund required unwind recovers every boundary', () => {
+  it.each(['finance', 'booking', 'stock'] as const)('repairs a transient %s failure after status committed, through both replay entrances', async (boundary) => {
+    let refunded = false
+    let restored = false
+    let stockEffects = 0
+    let failStock = boundary === 'stock'
+    const financeKeys = new Set<string>()
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') {
+        if (refunded) return { data: [] }
+        refunded = true
+        return { data: [REFUND_ROW] }
+      }
+      if (c.table === 'commerce_orders' && c.op === 'select') return { data: c.single ? { ...REFUND_ROW, status: 'refunded' } : [REFUND_ROW] }
+      if (c.table === 'rpc:restore_commerce_stock_atomic') {
+        if (failStock) { failStock = false; return { error: { message: 'stock outage' } } }
+        if (!restored) { restored = true; stockEffects++ }
+      }
+      return {}
+    })
+    ledger.recordFinancialTransaction.mockImplementation(async (input) => { financeKeys.add(String(input.idempotencyKey)); return undefined })
+    if (boundary === 'finance') ledger.recordFinancialTransaction.mockRejectedValueOnce(new Error('finance outage'))
+    if (boundary === 'booking') booking.cancelBookingByOrder.mockRejectedValueOnce(new Error('booking outage'))
+    await expect(recordCommerceRefund('pi_1')).rejects.toThrow('outage')
+    expect(refunded).toBe(true)
+    await recordCommerceRefund('pi_1', { refundedCents: REFUND_ROW.amount_cents })
+    await recordCommerceRefund('pi_1')
+    expect(financeKeys).toEqual(new Set(['commerce_order-refund:o1']))
+    expect(stockEffects).toBe(1)
+    expect(booking.cancelBookingByOrder).toHaveBeenLastCalledWith('o1', { strict: true })
+    expect(revokeJourneyByOrder).toHaveBeenLastCalledWith('o1', { strict: true })
   })
 })

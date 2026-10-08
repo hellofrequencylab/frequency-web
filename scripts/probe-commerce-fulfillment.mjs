@@ -14,14 +14,17 @@ for (const name of ['claim_commerce_settlement','grant_paid_commerce_journey','r
 assert.match(migration,/journey_plan_adoptions add column if not exists order_id/)
 assert.match(fs.readFileSync('lib/journey-plans.ts','utf8'),/rpc\('grant_paid_commerce_journey'/)
 assert.match(fs.readFileSync('lib/commerce/journey-fulfilment.ts','utf8'),/rpc\('revoke_refunded_commerce_journeys'/)
+let refunded=false, refundBoundary=null, refundedStock=false, restored=0, cancellations=0, revokes=0
+const refundKeys=new Set()
 let paid=false, lease=null, grantAttempts=0, grants=0, stock=0, finance=0, receipts=0
 const steps={}
 const row={id:'order',owner_kind:'platform',owner_profile_id:null,owner_space_id:null,entity_id:'entity',amount_cents:1000,platform_fee_cents:0,buyer_profile_id:'buyer',currency:'usd',funds_flow:'destination'}
 const admin=()=>({from(table) {
-  let update=false
-  const b={update(){update=true;return b},select(){return b},eq(){return b},in(){return b},
+  let update=false, singleton=false
+  const b={update(value){update=value;return b},select(){return b},eq(){return b},in(){return b},maybeSingle(){singleton=true;return b},
     then(resolve,reject) {
-      const data=table==='commerce_orders' ? update ? paid ? [] : (paid=true,[row]) : paid ? [row] : [] : []
+      let data=table==='commerce_orders' ? update ? update.status==='refunded' ? refunded ? [] : (refunded=true,[row]) : paid ? [] : (paid=true,[row]) : paid ? [{...row,status:refunded?'refunded':'paid'}] : [] : []
+      if(singleton)data=data[0]??null
       return Promise.resolve({data,error:null}).then(resolve,reject)
     }}
   return b
@@ -38,14 +41,19 @@ const admin=()=>({from(table) {
   }
   if(name==='release_commerce_settlement') {lease=null;return {data:null,error:null}}
   if(name==='decrement_commerce_stock_atomic') {stock++;return {data:null,error:null}}
+  if(name==='restore_commerce_stock_atomic') {
+    if(refundBoundary==='stock'){refundBoundary=null;return {error:{message:'stock transient'}}}
+    if(!refundedStock){refundedStock=true;restored++}
+    return {error:null}
+  }
   throw new Error(`unexpected RPC ${name}`)
 }})
 const inert=new Proxy({},{get:()=>()=>null})
 const imports={
   '@/lib/supabase/admin':{createAdminClient:admin},
-  '@/lib/finance/record':{recordFinancialTransaction:async(input)=>{assert.equal(input.idempotencyKey,'commerce_order:order');finance++}},
-  '@/lib/spaces/booking':{confirmBookingByOrder:async()=>{},cancelBookingByOrder:async()=>{}},
-  './journey-fulfilment':{enrolByOrder:async()=>{grantAttempts++;if(grantAttempts===1)throw new Error('transient grant failure');grants++},revokeJourneyByOrder:async()=>{}},
+  '@/lib/finance/record':{recordFinancialTransaction:async(input)=>{if(input.revenueType==='refund'){if(refundBoundary==='finance'){refundBoundary=null;throw new Error('finance transient')}refundKeys.add(input.idempotencyKey)}else{assert.equal(input.idempotencyKey,'commerce_order:order');finance++}}},
+  '@/lib/spaces/booking':{confirmBookingByOrder:async()=>{},cancelBookingByOrder:async(_id,opts)=>{assert.equal(opts.strict,true);if(refundBoundary==='booking'){refundBoundary=null;throw new Error('booking transient')}cancellations++}},
+  './journey-fulfilment':{enrolByOrder:async()=>{grantAttempts++;if(grantAttempts===1)throw new Error('transient grant failure');grants++},revokeJourneyByOrder:async()=>{revokes++}},
   './order-receipt':{sendOrderReceipts:async()=>{receipts++}},
   './shipping':{shippingDetailsFromSession:()=>null},
 }
@@ -60,3 +68,16 @@ await exports.recordCommerceOrderFromSession(session)
 assert.deepEqual({stock,finance,grants,receipts},{stock:1,finance:1,grants:1,receipts:1})
 assert.equal(grantAttempts,2)
 console.log('commerce fulfillment: paid replay repairs access once; completed money/stock/receipt work stays once')
+
+for(const boundary of ['finance','booking','stock']) {
+  refunded=false;refundedStock=false;refundBoundary=boundary
+  const before=restored
+  await assert.rejects(exports.recordCommerceRefund('pi'),/transient/)
+  assert.equal(refunded,true)
+  await exports.recordCommerceRefund('pi',{refundedCents:1000})
+  await exports.recordCommerceRefund('pi')
+  assert.equal(restored,before+1)
+}
+assert.deepEqual([...refundKeys],['commerce_order-refund:order'])
+assert.ok(cancellations>0&&revokes>0)
+console.log('commerce refund: both refunded replay entrances repair finance/booking/stock with stable keys and atomic markers')
