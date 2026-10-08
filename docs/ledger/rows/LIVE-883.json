@@ -14,5 +14,6 @@
     "kind": "cmd",
     "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/check-ai-budget-reservations.mjs",
     "note": "Actual shipped completion/accounting/Space caller/Recraft paths, thirty failure/concurrency/attribution consequences; no provider request or nested test runner."
-  }
+  },
+  "wave": "WR"
 }
