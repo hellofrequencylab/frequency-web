@@ -294,3 +294,10 @@ grant_paid_commerce_journey            internal
 revoke_refunded_commerce_journeys      internal
 protect_paid_journey_provenance        internal
 confirm_paid_commerce_booking         internal
+
+# LIVE-883: private accounting functions; verified service-only production grants.
+ai_reserve_attempt                  internal
+ai_settle_attempt                   internal
+ai_hold_attempt                     internal
+ai_budget_status_today              internal
+ai_member_turns_today               internal
