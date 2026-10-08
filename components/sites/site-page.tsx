@@ -94,9 +94,13 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
   if (!page) return { title: { absolute: brandName }, robots: { index: false } }
   const title = page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`
   const description = siteDescription(space, brandName, page.slug)
-  const canonical = sitePageUrl(siteBaseUrl(space.slug, await boundSiteDomain(space), appOrigin()), page.slug)
-  const shareImage = space.coverImageUrl || space.brandLogoUrl || null
-  const images = shareImage ? [{ url: shareImage, alt: brandName }] : undefined
+  const siteBase = siteBaseUrl(space.slug, await boundSiteDomain(space), appOrigin())
+  const canonical = sitePageUrl(siteBase, page.slug)
+  // LIVE-870: a Menswork website on its own host shares its designed card (app/hosted/[host]/opengraph-image),
+  // the logo, name and headline over the cover. Others share the cover photo, else the logo.
+  const card = parseSpaceTheme(space.preferences) === 'menswork' && /^https:\/\/[^/]+$/.test(siteBase) ? `${siteBase}/opengraph-image` : null
+  const shareImage = card ?? (space.coverImageUrl || space.brandLogoUrl || null)
+  const images = shareImage ? [card ? { url: card, width: 1200, height: 630, alt: brandName } : { url: shareImage, alt: brandName }] : undefined
   return {
     // `absolute` so the root layout's "| Frequency" template never brands somebody's own website.
     title: { absolute: title },
