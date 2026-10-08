@@ -104,7 +104,8 @@
     "help:index": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts",
     "help:drift": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-drift.mts",
     "block-usage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/block-usage.mts",
-    "seed:demo-space": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/seed-demo-space.mts"
+    "seed:demo-space": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/seed-demo-space.mts",
+    "check:node-document-safety": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-node-document-safety.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
@@ -130,7 +131,7 @@
     "lucide-react": "^1.48.0",
     "mammoth": "^1.12.3",
     "maplibre-gl": "^6.11.2",
-    "next": "16.3.6",
+    "next": "16.3.8",
     "papaparse": "^5.7.0",
     "pdf-parse": "^2.4.5",
     "qrcode": "^1.5.4",

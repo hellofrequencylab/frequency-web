@@ -10,6 +10,7 @@
 // featureWallLabel (never the retired Collective label from LIVE-228). An operator
 // override that raises the gate still refuses the write and still names the raised plan.
 
+import { inheritedSpacePlan } from '@/lib/collective/member-spaces-store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listMembershipTiers } from '@/lib/spaces/memberships'
 import { featureAllowed, loadFeatureGateOverrides } from '@/lib/pricing/gates'
@@ -43,6 +44,7 @@ export async function resolveMembershipTicketGate(
   plan: string | null | undefined,
   spaceId?: string | null,
 ): Promise<{ allowed: boolean; wall: string }> {
+  if (spaceId) plan = await inheritedSpacePlan(spaceId, plan)
   const [overrides, gatesLive] = await Promise.all([
     loadFeatureGateOverrides(),
     featureGatesLive(),

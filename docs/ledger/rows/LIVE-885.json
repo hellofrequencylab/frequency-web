@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-885",
+  "title": "Domain Connect discovery cannot steer server requests outside reviewed provider endpoints",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-08",
+  "source": {
+    "file": "lib/sites/domain-connect/discovery.ts",
+    "ref": "Owner October 8 source audit: DNS-controlled TXT and returned API destinations"
+  },
+  "detail": "Premise reproduced: syntactically HTTPS multi-label TXT hosts and settings urlAPI could select arbitrary server destinations. Exact reviewed GoDaddy discovery domainconnect.godaddy.com/domainconnect.api.godaddy.com, API domainconnect.api.godaddy.com, browser dcc.godaddy.com/manage; Cloudflare discovery/API api.cloudflare.com/client/v4/dns/domainconnect, browser dash.cloudflare.com/domainconnect. Settings must pair with discovered provider; actual HTTP boundary revalidates exact bases and expected request paths with redirects disabled. Credentials, ports including explicit443, HTTP, queries/fragments, encoded separators, dot-path normalization, host suffix lookalikes and direct template API bypass denied before fetch. Malicious DNS-controlled/private-resolving host has no allowed destination. This explicitly trusts these provider-owned endpoints, not arbitrary DNS public-address checks. IONOS/Squarespace/Vercel and other unreviewed providers retain existing manual DNS fallback until exact mappings reviewed; provider onboarding and signing-key owner steps unchanged. Synthetic behavior probe executes actual discovery with fake DNS/HTTP; no production queries or writes.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/check-domain-connect-destinations.mjs",
+    "note": "Executes discovery and direct template calls; hostile TXT/settings never cause unreviewed HTTP, reviewed provider pair succeeds with no redirect."
+  },
+  "wave": "WR"
+}

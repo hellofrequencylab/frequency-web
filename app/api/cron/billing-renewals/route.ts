@@ -1,4 +1,4 @@
-// LIVE-190 budget (ADR-1252): 200 agreements per touch per invocation; the touch stamp is the claim, so an unstamped tail is tomorrow's head. Oldest paid_through first.
+// LIVE-190 budget (ADR-1252): 200 total items per invocation across billing and domains; the touch stamp is the claim, so an unstamped tail is tomorrow's head. Oldest paid_through first.
 // The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
 // declaration is applied, not merely written down.
 // Manual billing renewal reminders (ADR-872) — daily via Vercel Cron (off-peak, with the other
@@ -31,6 +31,7 @@ import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget, type CronBudget } from '@/lib/cron/budget'
 import { log } from '@/lib/log'
+import { chargeDomainRenewals } from '@/lib/sites/domain-renewals'
 
 export const dynamic = 'force-dynamic'
 
@@ -202,14 +203,16 @@ async function processTouch(
   agreements: ManualAgreement[],
   touch: Touch,
   budget: CronBudget,
+  itemLimit = budget.items,
 ): Promise<{ sent: number; processed: number; remaining: number }> {
   let sent = 0
   let processed = 0
   // Oldest due date first, so the tail a run leaves is the least urgent; the touch stamp is the
   // claim that keeps a processed agreement out of tomorrow's bucket (LIVE-190).
   const ordered = [...agreements].sort((a, b) => a.paidThrough.localeCompare(b.paidThrough))
-  const { batch, remaining } = budget.take(ordered)
-  let left = remaining
+  const taken = budget.take(ordered)
+  const batch = taken.batch.slice(0, Math.max(0, itemLimit))
+  let left = taken.remaining + taken.batch.length - batch.length
   for (const [i, agreement] of batch.entries()) {
     if (budget.exhausted()) {
       left += batch.length - i
@@ -244,11 +247,21 @@ async function handler(req: NextRequest) {
   const budget = cronBudget(200)
   const buckets = await agreementsDue(new Date())
   const t30 = await processTouch(buckets.reminder30, 'reminder_30', budget)
-  const t7 = await processTouch(buckets.reminder7, 'reminder_7', budget)
-  const tOverdue = await processTouch(buckets.overdue, 'overdue', budget)
+  const t7 = await processTouch(buckets.reminder7, 'reminder_7', budget, budget.items - t30.processed)
+  const tOverdue = await processTouch(buckets.overdue, 'overdue', budget, budget.items - t30.processed - t7.processed)
+  const billingProcessed = t30.processed + t7.processed + tOverdue.processed
+  const billingFailed = billingProcessed - t30.sent - t7.sent - tOverdue.sent
+  const domainLimit = Math.min(50, budget.items - billingProcessed)
+  // One monitored handler covers BOTH loops. Sharing a monitor between separate schedules
+  // would let a healthy loop conceal a dead one. Billing runs first; domains use the same clock.
+  const domains = domainLimit > 0 && !budget.exhausted()
+    ? { ...(await chargeDomainRenewals({ limit: domainLimit, exhausted: budget.exhausted })), deferred: false }
+    : { scanned: 0, failed: 0, attention: 0, remaining: 0, deferred: true }
+  const ok = billingFailed === 0 && domains.failed === 0 && domains.attention === 0 && !domains.deferred
+    && !(budget.exhausted() && domains.remaining > 0)
   const summary = budget.summary(
-    t30.processed + t7.processed + tOverdue.processed,
-    t30.remaining + t7.remaining + tOverdue.remaining,
+    billingProcessed + domains.scanned,
+    t30.remaining + t7.remaining + tOverdue.remaining + domains.remaining,
   )
   log.info('cron.billing_renewals', {
     due30: buckets.reminder30.length,
@@ -257,15 +270,18 @@ async function handler(req: NextRequest) {
     sent30: t30.sent,
     sent7: t7.sent,
     sentOverdue: tOverdue.sent,
+    billingFailed,
+    domains,
     ...summary,
   })
   return NextResponse.json({
-    ok: true,
+    ok,
+    domains,
     reminder_30: { due: buckets.reminder30.length, sent: t30.sent },
     reminder_7: { due: buckets.reminder7.length, sent: t7.sent },
     overdue: { due: buckets.overdue.length, sent: tOverdue.sent },
     budget: summary,
-  })
+  }, { status: ok ? 200 : 500 })
 }
 
 export const GET = withCronHeartbeat('billing-renewals', handler)

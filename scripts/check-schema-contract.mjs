@@ -72,6 +72,30 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
+  {
+    file: 'lib/collective/extra-space-billing.ts',
+    table: 'begin_collective_space_change',
+    kind: 'rpc',
+    added: '2026-10-08',
+    reason: 'LIVE-763: migration 20270346006700_collective_member_spaces.sql adds this service-only ownership/capacity transaction. Actual SQL permissions and behavior are tested. Retires when lib/database.types.ts is regenerated after production applies migration 067.',
+    owner: 'LIVE-763',
+  },
+  {
+    file: 'lib/collective/extra-space-billing.ts',
+    table: 'finish_collective_space_change',
+    kind: 'rpc',
+    added: '2026-10-08',
+    reason: 'LIVE-763: migration 20270346006700_collective_member_spaces.sql adds this service-only ownership/capacity transaction. Actual SQL permissions and behavior are tested. Retires when lib/database.types.ts is regenerated after production applies migration 067.',
+    owner: 'LIVE-763',
+  },
+  {
+    file: 'lib/collective/member-spaces-actions.ts',
+    table: 'set_collective_member_space',
+    kind: 'rpc',
+    added: '2026-10-08',
+    reason: 'LIVE-763: migration 20270346006700_collective_member_spaces.sql adds this service-only ownership/capacity transaction. Actual SQL permissions and behavior are tested. Retires when lib/database.types.ts is regenerated after production applies migration 067.',
+    owner: 'LIVE-763',
+  },
   // EMPTY as of 2026-09-28, and empty is the resting state. Migration 20270345008600 (the
   // calendar-entry tombstone, LIVE-536) was applied to the live project and lib/database.types.ts
   // was regenerated from it with --schema public. That one regeneration retired all seven entries
@@ -106,6 +130,14 @@ export const ALLOWLIST = [
     reason:
       'SCAN-759: migration 20270345013100_claim_founder_flags_compare_and_set.sql adds the RPC that stamps the founder reward flags under a row lock, so two tabs cannot pay the member twice. lib/database.types.ts has not been regenerated since; this entry retires on the next regeneration after the migration is applied.',
     owner: 'SCAN-759',
+  },
+  {
+    file: 'lib/sites/domain-renewals.ts',
+    table: 'space_domain_purchases',
+    added: '2026-10-08',
+    reason:
+      'LIVE-786: migration 20270346003100_space_domain_purchases.sql creates the service-role-only purchase ledger; 20270346006600_domain_renewal_attempts.sql adds period-bound renewal claims and provider attempt identifiers. lib/database.types.ts still predates the table. This file/table-only entry retires on the next public schema regeneration after both migrations are applied; notification and Space references remain checked.',
+    owner: 'LIVE-786',
   },
   {
     file: 'lib/sites/domain-purchase.ts',

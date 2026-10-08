@@ -54,13 +54,13 @@ export function DateChip({ iso }: { iso: string }) {
   )
 }
 
-export function UpcomingEventRows({ events }: { events: UpcomingEventRow[] }) {
+export function UpcomingEventRows({ events, eventOrigin = '' }: { events: UpcomingEventRow[]; eventOrigin?: string }) {
   return (
     <div className="space-y-2">
       {events.map((event) => (
         <RowCard
           key={event.id}
-          href={`/events/${event.slug}`}
+          href={`${eventOrigin}/events/${event.slug}`}
           anchor={<DateChip iso={event.starts_at} />}
           title={event.title}
           meta={

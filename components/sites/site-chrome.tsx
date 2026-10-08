@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { appOrigin } from '@/lib/sites/host'
 import { MENSWORK_SEASON_INFO, type MensworkSeason } from '@/lib/theme/menswork'
@@ -123,10 +123,13 @@ export function SiteChrome({
               {adminLinks && (
                 <span className="hs-nav-admin">
                   <span className="hs-nav-admin-tag">Admin:</span>
-                  {adminLinks.menu.map((l) => (
-                    <a key={l.href} href={l.href} aria-current={l.current ? 'page' : undefined}>
-                      {l.label}
-                    </a>
+                  {adminLinks.menu.map((l, i) => (
+                    <Fragment key={l.href}>
+                      {i > 0 && <span className="hs-nav-admin-sep" aria-hidden>|</span>}
+                      <a href={l.href} aria-current={l.current ? 'page' : undefined}>
+                        {l.label}
+                      </a>
+                    </Fragment>
                   ))}
                 </span>
               )}

@@ -262,11 +262,21 @@ export async function SitePage({
         ) : model ? (
           <>
             <HouseHome model={model} />
-            {/* LIVE-869: a Menswork Home ends with the public year, a section with no menu anchor. */}
-            {skin && <SitePublicCalendar space={space} brandName={brandName} headingLevel={2} />}
+            {/* LIVE-869, LIVE-872: a Menswork Home ends with the Space's Frequency calendar, a section with no
+                menu anchor. */}
+            {skin && (
+              <section className={`${SITE_CONTAINER} pb-16 sm:pb-24`}>
+                <SitePublicCalendar space={space} brandName={brandName} />
+              </section>
+            )}
           </>
         ) : calendarPage ? (
-          <SitePublicCalendar space={space} brandName={brandName} headingLevel={1} />
+          <div className={`${SITE_CONTAINER} pb-16 pt-28 sm:pb-24`}>
+            <h1 className="hs-h2">{pages.find((p) => p.slug === pageSlug)?.label ?? 'Calendar'}</h1>
+            <div className="mt-10">
+              <SitePublicCalendar space={space} brandName={brandName} />
+            </div>
+          </div>
         ) : contactModel ? (
           <>
             {/* The form hero carries the page's h1 when the Contact form block has a heading. */}

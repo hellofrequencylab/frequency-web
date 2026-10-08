@@ -23,6 +23,7 @@
 // is resolved from the campaign's stored audience_filter (persisted by scheduleSpaceCampaign) over the
 // Space's OWN contacts (resolveAudience), so tenancy holds end to end.
 
+import { inheritedSpacePlan } from '@/lib/collective/member-spaces-store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { TablesUpdate } from '@/lib/database.types'
 import { resolveAudiencePlan, definitionToFilter } from '@/lib/spaces/audiences'
@@ -91,7 +92,7 @@ async function footerForSpace(spaceId: string | null): Promise<string> {
   if (!spaceId) return ''
   try {
     const { data } = await createAdminClient().from('spaces').select('plan').eq('id', spaceId).maybeSingle()
-    return frequencyFooterHtml((data as { plan: string | null } | null)?.plan ?? null)
+    return frequencyFooterHtml(await inheritedSpacePlan(spaceId, (data as { plan: string | null } | null)?.plan ?? null))
   } catch {
     return ''
   }

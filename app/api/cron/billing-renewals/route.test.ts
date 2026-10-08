@@ -13,6 +13,9 @@ import type { NextRequest } from 'next/server'
 // stamp that never landed counted as sent and the same reminder re-sent every day. Both are the same
 // habit (not reading the error supabase-js returns) pointing in opposite directions.
 
+const domainRun = vi.hoisted(() => vi.fn(async (_opts?: unknown) => ({ scanned: 0, failed: 0, attention: 0, remaining: 0 })))
+vi.mock('@/lib/sites/domain-renewals', () => ({ chargeDomainRenewals: domainRun }))
+
 const { insertResult, stamped, stampResult, enqueued, agreements } = vi.hoisted(() => ({
   insertResult: { error: null as { message: string } | null },
   stamped: [] as { id: string; column: string }[],
@@ -106,6 +109,8 @@ beforeEach(() => {
   stamped.length = 0
   stampResult.ok = true
   enqueued.length = 0
+  domainRun.mockReset()
+  domainRun.mockResolvedValue({ scanned: 0, failed: 0, attention: 0, remaining: 0 })
   agreements.rows = [agreement]
 })
 
@@ -136,5 +141,37 @@ describe('billing-renewals cron', () => {
     const body = await run()
     expect(stamped).toEqual([])
     expect(body.reminder_30).toEqual({ due: 0, sent: 0 })
+  })
+})
+
+
+describe('one heartbeat observes both billing and domain work', () => {
+  it('returns 500 when domain work fails even though billing succeeds', async () => {
+    domainRun.mockResolvedValue({ scanned: 1, failed: 1, attention: 0, remaining: 0 })
+    const res = await GET({} as NextRequest)
+    expect(res.status).toBe(500)
+    expect(stamped).toHaveLength(1)
+    expect((await res.json()).ok).toBe(false)
+  })
+  it('returns 500 when billing fails even though domains succeed', async () => {
+    insertResult.error = { message: 'notice failed' }
+    const res = await GET({} as NextRequest)
+    expect(res.status).toBe(500)
+    expect(domainRun).toHaveBeenCalledTimes(1)
+  })
+  it('runs billing first and gives domains only remaining item capacity', async () => {
+    domainRun.mockImplementationOnce(async (opts) => {
+      expect(stamped).toHaveLength(1)
+      expect(opts).toMatchObject({ limit: 50, exhausted: expect.any(Function) })
+      return { scanned: 1, failed: 0, attention: 0, remaining: 0 }
+    })
+    expect((await GET({} as NextRequest)).status).toBe(200)
+  })
+  it('does not falsely ping success when the billing batch leaves no capacity for domains', async () => {
+    agreements.rows = Array.from({ length: 200 }, (_, i) => ({ ...agreement, id: `agr-${i}` }))
+    const res = await GET({} as NextRequest)
+    expect(res.status).toBe(500)
+    expect(domainRun).not.toHaveBeenCalled()
+    expect((await res.json()).domains.deferred).toBe(true)
   })
 })

@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-871",
+  "title": "Editor E0 foundation: node upgrades preserve authored bags, duplicate placements and stored bench in a pinned corpus",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "docs/EDITOR-GATES.md",
+    "ref": "§2 bounded node-document-safety foundation"
+  },
+  "detail": "Decomposed from PROG-E0 in the owner-authorized systematic build session 2026-10-08. A bounded gate runs the real upgradeLayout implementation against the SHA-256-pinned 37-document historical structural census (synthetic authored field markers, not tenant values) and an adversarial synthetic fixture. It rejects missing input, changed hashes, orphan fixtures and census truncation; checks deterministic unique node identities, duplicate placements in order, serialized-node idempotence, non-mutation, hidden types, and byte-preserving nonempty authored content/style bags in placed and benched nodes. CI checks includes node-document-safety; 27 focused tests include destructive mutation cases. Does not close PROG-E0: legacy writer dedupe, exact raw-legacy roundtrip, Puck, registry up/down and full D0-D7 remain subsequent children. The seven historical email-template skeletons remain in the archive with their existing deletion explanation.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-node-document-safety.mjs",
+    "note": "Behavioral plain-Node probe runs the real upgrade and refuses corpus disappearance; no nested test runner."
+  },
+  "closed": "2026-10-08",
+  "wave": "W4"
+}

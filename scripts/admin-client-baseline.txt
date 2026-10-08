@@ -289,6 +289,11 @@
 # its callers are the refund recorder (already authorized as the order's seller or an operator), the
 # Stripe webhook (charge.refunded, charge.dispute.closed) and the reconcile-transfers cron, none of
 # which has a member session to run under. Nothing leaves it but counts and log lines.
+# lib/sites/domain-renewals.ts (added 2026-10-08, LIVE-786): the authenticated billing-renewals cron
+# reconciles service-role-only space_domain_purchases (RLS enabled, no client policies or grants).
+# No member session exists for this worker. It uses period-bound compare-and-set claims, preserves
+# uncertain payment/order attempts for review, and rechecks Stripe refund history before recovery.
+# The cron authorizes CRON_SECRET before calling it; no registrant contact details leave the worker.
 # lib/sites/domain-purchase.ts (added 2026-10-06, LIVE-781): settles a paid domain purchase. It writes
 # space_domain_purchases, which is RLS on with ZERO policies and both client roles revoked because the row
 # holds the registrant's contact details until the Vercel order is placed. Its callers are the Stripe
@@ -328,6 +333,13 @@
 # space_spotlight_clicks is internal (RLS on, no policy, revoked from anon and authenticated), so only the
 # service role reaches it: the anonymous beacon writes one identity-free row after checking the Space's
 # Spotlight is published, and the console reads counts only after resolveSpaceManageAccess(...).canManage.
+# LIVE-763: owner-authenticated cross-Space attachment and service-only locking RPCs;
+# both owners are checked in the transaction, and no browser gains table writes.
+# LIVE-763: read-time member-plan resolution and owner-gated management projection;
+# only same-owner attached children inherit, without exposing private siblings publicly.
+# LIVE-763: owner-authenticated billing reservation/reconciliation against the service-only
+# subscription ledger; verifies live subscription ownership before any Stripe mutation.
+
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -1047,6 +1059,7 @@ lib/rewards/gifts.ts
 lib/rewards/spark.ts
 lib/seasons.ts
 lib/sites/domain-purchase.ts
+lib/sites/domain-renewals.ts
 lib/sites/menswork-data.ts
 lib/sites/site-admin.ts
 lib/spaces/ai-usage.ts
@@ -1133,3 +1146,7 @@ lib/walkthroughs/progress.ts
 lib/zaps.ts
 scripts/check-authz-guards.test.ts
 test/authz/check-authz-lib.test.ts
+
+lib/collective/member-spaces-actions.ts
+lib/collective/member-spaces-store.ts
+lib/collective/extra-space-billing.ts

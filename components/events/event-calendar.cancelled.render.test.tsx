@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { EventCalendar, type CalendarEvent } from './event-calendar'
+import { SpaceUpcomingFeed } from '@/components/spaces/space-upcoming-feed'
 
 let container: HTMLDivElement | null = null
 let root: Root | null = null
@@ -71,4 +72,28 @@ describe('EventCalendar cancelled + keyboard (calendar polish)', () => {
     expect(chipTitles.some((t) => t.includes('Open sit'))).toBe(true)
     expect(chipTitles.some((t) => t.includes('Called off') && !t.includes('Cancelled'))).toBe(false)
   })
+})
+
+
+describe('event links on a website host', () => {
+  for (const eventOrigin of ['', 'https://frequencylocal.com']) {
+    it(`opens calendar previews at ${eventOrigin || 'the current app host'}`, () => {
+      const el = mount(
+        <EventCalendar events={[item()]} initialYear={2026} initialMonth1={9}
+          initialView="list" eventOrigin={eventOrigin} />,
+      )
+      const eventButton = [...el.querySelectorAll('button')].find((button) => button.textContent?.includes('Open sit'))!
+      expect(eventButton).toBeTruthy()
+      act(() => eventButton.click())
+      const link = [...document.querySelectorAll('a')].find((anchor) => anchor.textContent?.includes('Go to event'))
+      expect(link?.getAttribute('href')).toBe(`${eventOrigin}/events/sit`)
+    })
+
+    it(`opens upcoming events at ${eventOrigin || 'the current app host'}`, () => {
+      const el = mount(<SpaceUpcomingFeed eventOrigin={eventOrigin} rows={[{
+        id: 'sit', slug: 'sit', title: 'Open sit', starts_at: '2026-09-20T19:00:00Z', location: null,
+      }]} />)
+      expect(el.querySelector('a')?.getAttribute('href')).toBe(`${eventOrigin}/events/sit`)
+    })
+  }
 })

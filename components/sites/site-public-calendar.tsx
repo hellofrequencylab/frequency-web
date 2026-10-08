@@ -1,14 +1,26 @@
-import { buildProgramYear, programHolidays, type ProgramEvent, type ProgramMonth } from '@/lib/spaces/leadership'
+import { type ProgramEvent, type ProgramMonth } from '@/lib/spaces/leadership'
 import { loadSpacePageDoc } from '@/lib/spaces/page-doc'
-import { mensworkSeason, mensworkSign } from '@/lib/theme/menswork'
-import { readSitePublicYear } from '@/lib/sites/site-admin'
-import { SiteCalendar, retreatShort } from '@/components/sites/admin/site-calendar'
+import { SITE_URL } from '@/lib/site'
+import { appOrigin } from '@/lib/sites/host'
+import { loadPublicSpaceWindow, spaceEventRowsToItems } from '@/lib/calendar/public-month'
+import { listSpaceCalendarEvents } from '@/lib/events/store'
+import { guestFeedState, guestLiveItems } from '@/lib/calendar/guest-live'
+import { memberLayerChoices } from '@/lib/calendar/member-calendar'
+import { monthGridWindow } from '@/lib/calendar/month-window'
+import { dayInZone } from '@/lib/time/zone'
+import { SiteCalendarAgenda } from '@/components/sites/site-calendar-agenda'
+import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
+import { CalendarWorkspace } from '@/components/spaces/calendar-workspace'
+import { loadSpaceCalendarMonth } from '@/app/(main)/spaces/[slug]/(profile)/calendar/actions'
+import { retreatShort } from '@/components/sites/admin/site-calendar'
 
-// THE PUBLIC YEARLY CALENDAR (LIVE-869, owner rulings 2026-10-08: a "Calendar" menu item that is a public
-// yearly calendar for visitors, and "Add the calendar to the home page without an anchor link"). The admin
-// calendar's look (components/sites/admin/site-calendar.tsx) over the Space's published, public events only
-// (readSitePublicYear): no drafts and no gathering notes. A Menswork website draws it as its `calendar`
-// page and as a section at the end of Home.
+// THE WEBSITE'S CALENDAR (LIVE-869, reworked by LIVE-872 on the owner's ask 2026-10-08: "I wanted the Hearts
+// on Fire Frequency calendar on the main home page, not the admin version"). The Space's own Frequency
+// calendar, exactly as a visitor sees it on the Space's Calendar tab (app/(main)/spaces/[slug]/(profile)/
+// calendar/page.tsx, its guest half): the month grid and the subscribe menu, with the event list beside it (LIVE-873), over the
+// same gated public reads, without the sky overlay (astronomy-engine stays on the Space page's route; see
+// lib/astrology/chart.test.ts). A Menswork website draws it as its `calendar` page and as a section at the end
+// of Home. The admin Yearly Calendar stays behind the admin links.
 
 /** The website page that is the public calendar, when the Space lists it among its pages. */
 export const SITE_CALENDAR_SLUG = 'calendar'
@@ -23,40 +35,64 @@ export function findRetreat(events: ProgramEvent[], months: ProgramMonth[]) {
   return event && month ? { event, month } : null
 }
 
+/** How many upcoming gatherings the list beside the grid shows. */
+const AGENDA_MAX = 12
+
 export async function SitePublicCalendar({
   space,
   brandName,
-  headingLevel,
 }: {
-  space: { id: string; preferences?: unknown }
+  space: { id: string; slug: string; timeZone: string | null; preferences?: unknown }
   brandName: string
-  headingLevel: 1 | 2
 }) {
   const now = new Date()
-  const { year, events } = await readSitePublicYear(space.id, now)
-  const months = buildProgramYear(year, events, now)
-  const retreat = findRetreat(events, months)
+  const initialYear = now.getUTCFullYear()
+  const initialMonth1 = now.getUTCMonth() + 1
+  const grid = monthGridWindow(initialYear, initialMonth1)
+  const [guestEvents, upcomingRows] = await Promise.all([
+    loadPublicSpaceWindow(space.id, grid.fromDay, grid.toDay),
+    // LIVE-873: the event list beside the grid. The same admin-client read the Up next band uses (no
+    // cookies: this render is cached and viewer-free), as full calendar items so a row opens the preview.
+    listSpaceCalendarEvents(space.id, { fromDay: dayInZone(now, space.timeZone), limit: 40 }),
+  ])
+  const upcoming = guestLiveItems(await spaceEventRowsToItems(upcomingRows))
+    .filter((e) => (e.layer ?? 'events') === 'events')
+    .slice(0, AGENDA_MAX)
+  const httpsUrl = `${SITE_URL}/spaces/${space.slug}/calendar.ics`
   return (
-    <SiteCalendar
-      brandName={brandName}
-      year={year}
-      months={months}
-      currentSeason={mensworkSeason(now)}
-      currentSign={mensworkSign(now)}
-      holidays={programHolidays(year)}
-      notes={new Map()}
-      headingLevel={headingLevel}
-      retreat={
-        retreat
-          ? {
-              title: retreat.event.title,
-              dates: retreatDates(retreat.event),
-              monthId: retreat.month.id,
-              photo: await pagePhoto(space.preferences, brandName, 'retreat'),
-            }
-          : null
-      }
-    />
+    <div className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-8">
+      <SiteCalendarAgenda events={upcoming} eventOrigin={appOrigin()} />
+      <CalendarWorkspace
+        eventOrigin={appOrigin()}
+        slug={space.slug}
+        spaceId={space.id}
+        brandName={brandName}
+        adminAllowed={false}
+        canManage={false}
+        initialView="guest"
+        initialListItem={null}
+        initialPlanId={null}
+        initialYear={initialYear}
+        initialMonth1={initialMonth1}
+        guestEvents={guestEvents}
+        guestFirstUse={guestFeedState(guestEvents).isFirstUse}
+        adminEvents={[]}
+        dayNotes={[]}
+        plans={[]}
+        subscribe={
+          <CalendarSubscribeMenu
+            httpsUrl={httpsUrl}
+            webcalUrl={httpsUrl.replace(/^https?:\/\//, 'webcal://')}
+            title={`${brandName} in your calendar`}
+            description={`Subscribe once and ${brandName}'s events show up in Google or Apple Calendar, and stay current on their own.`}
+          />
+        }
+        upcoming={null}
+        memberLayers={memberLayerChoices(guestEvents)}
+        skyMarkers={[]}
+        loadGuestMonth={loadSpaceCalendarMonth.bind(null, space.slug)}
+      />
+    </div>
   )
 }
 

@@ -12,6 +12,9 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Bring your Spaces into a Collective.** Attach the Spaces you own from Plan and usage. Five are included, with room for more through extra-Space purchases. Member Spaces get Business tools while the Collective is active and keep all their content when detached.
+
+- **Every Space can download its QR code.** QR codes settings includes a stock PNG or SVG that opens the public Space page, including on the free plan.
 
 - **A Journey can repeat each year.** Hosts can switch on Repeats each year and set 30 days between phases to open one phase on the same date every month. After the last month it starts again at month 1, so people can join any month, and nothing you finished resets.
 - **Every Journey has four views and one bar to move between them.** About is the Journey's page. Course shows how far you are, what is next, and every week with its lessons and the day it opens. Focus opens one lesson at a time with nothing else on screen. Library lists every Journey you are on, with Continue first. The bar sits at the bottom on your phone and on the web.
