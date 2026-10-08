@@ -339,8 +339,10 @@ Spaces. Public directory visibility is unrelated to the owner's reporting scope.
 transferred, archived and suspended member Spaces are excluded; a downgraded parent has no report.
 Ownership and attachment are read again before member and financial reads.
 
-Active members are distinct `space_memberships.member_profile_id` values whose membership is
-active and whose profile is active, not demo and not system. Events are distinct actual Events
+Active members are distinct `space_members.profile_id` values whose Space membership is
+active and whose profile is active, not demo and not system. Viewer, editor, moderator and admin
+roles count; the current real active owner is included once even without a membership row. Paid-tier
+subscription rows do not stand in for membership. Events are distinct actual Events
 hosted by a source Space, or owned by it when no host Space is set. Shared listings do not count.
 Removed and demo Events are excluded; the count otherwise spans all time.
 
@@ -351,7 +353,9 @@ because memberships do not provide a receipt ledger. Tickets and split shares do
 invented network attribution. USD is required for every money source; mixed or unknown currencies
 make the report unavailable instead of being added as dollars.
 
-A strict read pages each source by stable ID in batches of 500, with a 10,000-row bound. The
+A strict read pages each source by ascending ID keyset in batches of 500, with a 10,000-row bound.
+ID cursors avoid offset skips/repeats when earlier rows are inserted or removed. The report spans
+a read window, not a database transaction snapshot; concurrent activity can change the totals. The
 Collective source set has a 100-child bound; member profile verification reads bounded batches.
 An errored arm, missing result or full bound makes the complete report unavailable. The page
 never shows a partial revenue number as the total or replaces a failed read with zero. Existing

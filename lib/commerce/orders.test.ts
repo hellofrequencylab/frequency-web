@@ -25,6 +25,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => {
     let table = ''
     let range: [number, number] | null = null
+    let after: string | null = null
     const chain: Record<string, unknown> = {
       from: (t: string) => {
         table = t
@@ -34,6 +35,7 @@ vi.mock('@/lib/supabase/admin', () => ({
       eq: () => chain,
       neq: () => chain,
       gte: () => chain,
+      gt: (_column: string, value: string) => { after = value; return chain },
       or: () => chain,
       in: () => chain,
       not: () => chain,
@@ -49,7 +51,8 @@ vi.mock('@/lib/supabase/admin', () => ({
           events: eventRows,
           space_donations: donationRows,
         }
-        const data = byTable[table] ?? rows
+        const raw = byTable[table] ?? rows
+        const data = raw.map((row, index) => ({ id: `${table}-${String(index).padStart(6, '0')}`, ...row })).filter(row => after === null || row.id > after)
         return Promise.resolve(resolve({ data: range ? data.slice(range[0], range[1] + 1) : data, error: table === failTable ? { message: 'offline' } : null }))
       },
     }

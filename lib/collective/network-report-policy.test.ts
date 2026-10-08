@@ -6,7 +6,7 @@ const money = { grossCents: 100, feeCents: 5, netCents: 95, refundedCents: 10, o
 function setup() {
   const rows = new Map([['p', parent], ['c', child]])
   const deps: ReportDeps = { space: vi.fn(async id => rows.get(id) ?? null), children: vi.fn(async () => [child, child, { ...child, id: 'stranger', owner_profile_id: 'other' }]),
-    members: vi.fn(async () => [{ member_profile_id: 'one', status: 'active' }, { member_profile_id: 'one', status: 'active' }, { member_profile_id: 'two', status: 'active' }, { member_profile_id: 'three', status: 'cancelled' }]),
+    members: vi.fn(async () => [{ profile_id: 'one', status: 'active' }, { profile_id: 'one', status: 'active' }, { profile_id: 'two', status: 'active' }, { profile_id: 'three', status: 'cancelled' }]),
     events: vi.fn(async () => [{ id: 'e1', space_id: 'p', host_space_id: 'c' }, { id: 'e1', space_id: 'p', host_space_id: 'c' }, { id: 'listing', space_id: 'p', host_space_id: 'other' }]), earnings: vi.fn(async () => money) }
   return { deps, rows }
 }

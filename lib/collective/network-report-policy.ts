@@ -17,7 +17,7 @@ export function attachedReportSpaces(parent: ReportSpace, rows: readonly ReportS
 export interface ReportDeps {
   space: (id: string) => Promise<ReportSpace | null>;
   children: (parent: string) => Promise<ReportSpace[]>;
-  members: (ids: string[]) => Promise<{ member_profile_id: string; status: string }[]>;
+  members: (ids: string[]) => Promise<{ profile_id: string; status: string }[]>;
   events: (ids: string[]) => Promise<{ id: string; space_id: string | null; host_space_id: string | null }[]>;
   earnings: (id: string) => Promise<ReportEarnings>;
 }
@@ -52,7 +52,7 @@ export async function buildNetworkReport(parentId: string, caller: string | null
       }
     }
     return { status: 'complete', spaces: current.map(({ id, name, slug }) => ({ id, name, slug })),
-      members: new Set(members.filter(row => row.status === 'active' && !!row.member_profile_id).map(row => row.member_profile_id)).size,
+      members: new Set(members.filter(row => row.status === 'active' && !!row.profile_id).map(row => row.profile_id)).size,
       events: new Set(events.filter(row => ids.includes(row.host_space_id ?? row.space_id ?? '')).map(row => row.id)).size, earnings }
   } catch { return { status: 'unavailable' } }
 }

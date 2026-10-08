@@ -189,7 +189,7 @@ interface ShareRow {
   fulfilment?: unknown
 }
 
-const SHARE_COLS = 'order_id, amount_cents, platform_fee_cents, reversed_cents, status, fulfillment_status, fulfilment'
+const SHARE_COLS = 'id, order_id, amount_cents, platform_fee_cents, reversed_cents, status, fulfillment_status, fulfilment'
 
 /** This seller's transfer rows, newest first. Filtered on the seller's own owner column AND kind, so
  *  no other seller's row is ever read here. Throws on a database error; each caller decides. */
@@ -199,7 +199,7 @@ async function sellerShareRows(seller: OrderSellerRef, limit?: number, strict = 
     .select(SHARE_COLS)
     .eq('owner_kind', seller.kind)
     .eq(seller.kind === 'space' ? 'owner_space_id' : 'owner_profile_id', seller.id)
-    .order('created_at', { ascending: false })
+  if (!strict) q = q.order('created_at', { ascending: false })
   if (limit) q = q.limit(limit)
   const { data, error } = strict ? await completeEarningsRead(q) : await q
   if (error) throw new Error(`transfer shares unreadable: ${error.message}`)
@@ -485,7 +485,7 @@ async function ticketEarnings(spaceId: string, sinceDays?: number, strict = fals
 
   let q = db()
     .from('event_tickets')
-    .select('currency, amount_cents, platform_fee_cents, status, refunded_at')
+    .select('id, currency, amount_cents, platform_fee_cents, status, refunded_at')
     .in('event_id', eventIds)
     .not('succeeded_at', 'is', null)
   if (sinceDays && sinceDays > 0) {
@@ -554,7 +554,7 @@ async function donationEarnings(spaceId: string, sinceDays?: number, strict = fa
 
   let q = db()
     .from('space_donations')
-    .select('currency, amount_cents, platform_fee_cents, status, refunded_at, source')
+    .select('id, currency, amount_cents, platform_fee_cents, status, refunded_at, source')
     .eq('space_id', spaceId)
     .not('succeeded_at', 'is', null)
   if (sinceDays && sinceDays > 0) {
@@ -672,7 +672,7 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number, 
       .from('commerce_orders')
       // `metadata` carries the partial-refund record (LIVE-160); without it a half-refunded order that
       // keeps its 'paid' status is counted at full gross.
-      .select('currency, amount_cents, platform_fee_cents, status, source, metadata')
+      .select('id, currency, amount_cents, platform_fee_cents, status, source, metadata')
       .eq('owner_space_id', spaceId)
       .neq('status', 'pending')
     if (sinceDays && sinceDays > 0) {

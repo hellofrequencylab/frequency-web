@@ -28,6 +28,7 @@ vi.mock('@/lib/supabase/admin', () => ({
         eq: (c: string, v: unknown) => (filters.push((r) => r[c] === v), chain),
         neq: (c: string, v: unknown) => (filters.push((r) => r[c] !== v), chain),
         in: (c: string, vs: unknown[]) => (filters.push((r) => vs.includes(r[c])), chain),
+        gt: (c: string, v: string) => (filters.push((r) => String(r[c]) > v), chain),
         gte: (c: string, v: string) => (filters.push((r) => String(r[c]) >= v), chain),
         not: () => chain,
         or: () => chain,
@@ -36,7 +37,7 @@ vi.mock('@/lib/supabase/admin', () => ({
         limit: (n: number) => ((cap = n), chain),
         then: (resolve: (v: { data: Row[] | null; error: { message: string } | null }) => unknown) => {
           if (failTable === table) return Promise.resolve(resolve({ data: null, error: { message: 'boom' } }))
-          const data = (tables[table] ?? []).filter((r) => filters.every((f) => f(r))).slice(0, cap)
+          const data = (tables[table] ?? []).map((row, index) => ({ id: `${table}-${String(index).padStart(6, '0')}`, ...row })).filter((r) => filters.every((f) => f(r))).slice(0, cap)
           return Promise.resolve(resolve({ data: range ? data.slice(range[0], range[1] + 1) : data, error: null }))
         },
       }

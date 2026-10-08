@@ -8,6 +8,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (tabl
   const q = { select: () => q, eq: (key: string, value: unknown) => { predicates.push(row => row[key] === value); return q },
     is: (key: string, value: unknown) => { predicates.push(row => row[key] === value); return q },
     in: (key: string, values: unknown[]) => { predicates.push(row => values.includes(row[key])); return q },
+    gt: (key: string, value: string) => { predicates.push(row => String(row[key]) > value); return q },
     or: () => q, order: () => q, limit: (n: number) => { end = n - 1; return q },
     range: (a: number, b: number) => { start = a; end = b; return q }, maybeSingle: () => { single = true; return q },
     then: (resolve: (result: { data: unknown; error: unknown }) => unknown) => {
@@ -20,15 +21,20 @@ import { readCollectiveNetworkReport } from './network-report'
 const parent = { id: 'p', name: 'Parent', slug: 'parent', owner_profile_id: 'owner', parent_id: null, status: 'active', plan: 'collective', type: 'business' }
 beforeEach(() => {
   state.fail = null; state.reads = []; state.finance.mockReset().mockResolvedValue({ grossCents: 100, feeCents: 5, netCents: 95, refundedCents: 0, orderCount: 1, networkGrossCents: 0, networkFeeCents: 0, networkOrderCount: 0 })
-  state.tables = { spaces: [parent, { ...parent, id: 'c', name: 'Child', slug: 'child', parent_id: 'p', plan: 'free' }, { ...parent, id: 'foreign', parent_id: 'p', owner_profile_id: 'stranger' }],
-    space_memberships: [{ id: 'm1', space_id: 'p', member_profile_id: 'real', status: 'active' }, { id: 'm2', space_id: 'c', member_profile_id: 'real', status: 'active' }, { id: 'm3', space_id: 'c', member_profile_id: 'demo', status: 'active' }, { id: 'm4', space_id: 'c', member_profile_id: 'inactive', status: 'active' }],
-    profiles: [{ id: 'real', is_active: true, is_demo: false, is_system: false }, { id: 'demo', is_active: true, is_demo: true, is_system: false }, { id: 'inactive', is_active: false, is_demo: false, is_system: false }],
+  state.tables = { space_memberships: [{ id: 'pending', space_id: 'p', member_profile_id: 'paid-only', status: 'active', payment_status: 'pending' }], spaces: [parent, { ...parent, id: 'c', name: 'Child', slug: 'child', parent_id: 'p', plan: 'free' }, { ...parent, id: 'foreign', parent_id: 'p', owner_profile_id: 'stranger' }],
+    space_members: [{ id: 'm1', space_id: 'p', profile_id: 'real', status: 'active', role: 'viewer' }, { id: 'm2', space_id: 'c', profile_id: 'real', status: 'active', role: 'viewer' }, { id: 'm3', space_id: 'c', profile_id: 'demo', status: 'active', role: 'viewer' }, { id: 'm4', space_id: 'c', profile_id: 'inactive', status: 'active', role: 'viewer' }],
+    profiles: [{ id: 'owner', is_active: true, is_demo: false, is_system: false }, { id: 'paid-only', is_active: true, is_demo: false, is_system: false }, { id: 'real', is_active: true, is_demo: false, is_system: false }, { id: 'demo', is_active: true, is_demo: true, is_system: false }, { id: 'inactive', is_active: false, is_demo: false, is_system: false }],
     events: [{ id: 'e1', space_id: 'p', host_space_id: 'c', removed_at: null, is_demo: false }, { id: 'shared', space_id: 'p', host_space_id: 'other', removed_at: null, is_demo: false }] }
 })
 describe('owner report adapter', () => {
   it('counts only real active profiles and owned/hosted Events, using strict earnings for each authorized Space', async () => {
-    expect(await readCollectiveNetworkReport('p', 'owner')).toMatchObject({ status: 'complete', members: 1, events: 1, earnings: { netCents: 190 } })
+    expect(await readCollectiveNetworkReport('p', 'owner')).toMatchObject({ status: 'complete', members: 2, events: 1, earnings: { netCents: 190 } })
+    expect(state.reads).not.toContain('space_memberships')
     expect(state.finance.mock.calls).toEqual([['p', undefined, true], ['c', undefined, true]])
+  })
+  it('deduplicates the implicit owner against active role rows and excludes invited roles', async () => {
+    state.tables.space_members.push({ id: 'm5', space_id: 'p', profile_id: 'owner', status: 'active', role: 'admin' }, { id: 'm6', space_id: 'p', profile_id: 'paid-only', status: 'invited', role: 'viewer' })
+    expect(await readCollectiveNetworkReport('p', 'owner')).toMatchObject({ status: 'complete', members: 2 })
   })
   it('denies a staff/manager who is not the owner before member and financial reads', async () => {
     expect(await readCollectiveNetworkReport('p', 'staff')).toEqual({ status: 'denied' })

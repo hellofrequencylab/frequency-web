@@ -9,7 +9,7 @@ export async function CollectiveNetworkReport({ spaceId, callerProfileId }: { sp
   return <section aria-labelledby="collective-report" className="mt-8">
     <SectionHeader id="collective-report" title="Your Collective" />
     {report.status === 'unavailable' ? <p className="text-body-sm text-muted">We couldn’t load the complete report. Try again later.</p> : <>
-      <p className="mb-4 text-body-sm text-muted">All-time totals across your Collective and its current member Spaces. Each member and Event is counted once.</p>
+      <p className="mb-4 text-body-sm text-muted">All-time totals across your Collective and its current member Spaces. Each member and Event is counted once. Activity can change while this report loads.</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Spaces" value={report.spaces.length} />
         <StatCard label="Active members" value={report.members} />

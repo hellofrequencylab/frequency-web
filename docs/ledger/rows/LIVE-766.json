@@ -9,7 +9,7 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on the per-Space Reach report.\n\nPrivate owner-only Collective report on existing Reach page includes the parent and current active same-owner attached Spaces, deduplicates real active member profiles and actual hosted/owned Events, and sums existing commerce/ticket/gift/split-share earnings with refund rules in strict complete mode. All sources are bounded and paginated; any error, unknown/non-USD currency or truncation renders unavailable, never a partial total. Downgrades and ownership changes deny before finance; manager/staff preview cannot read it. No new menu or production writes.",
+  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on the per-Space Reach report.\n\nPrivate owner-only Collective report on existing Reach page includes the parent and current active same-owner attached Spaces, deduplicates real active Space role members plus the implicit owner (not paid-tier subscription rows) and actual hosted/owned Events, and sums existing commerce/ticket/gift/split-share earnings with refund rules in strict complete mode. All sources use bounded ID-keyset pages across a read window, not a transactional snapshot; any error, unknown/non-USD currency or truncation renders unavailable, never a partial total. Downgrades and ownership changes deny before finance; manager/staff preview cannot read it. No new menu or production writes.",
   "verify": {
     "kind": "cmd",
     "cmd": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/check-collective-report.mjs",

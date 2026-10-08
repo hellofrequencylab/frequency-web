@@ -17,9 +17,9 @@ export async function readCollectiveNetworkReport(parentId: string, callerProfil
       return data as ReportSpace[]
     },
     members: async ids => {
-      const { data } = await completeEarningsRead(createAdminClient().from('space_memberships').select('id, member_profile_id, status').in('space_id', ids).eq('status', 'active'))
-      const memberships = data as { member_profile_id: string; status: string }[]
-      const profiles = [...new Set(memberships.map(row => row.member_profile_id))]
+      const { data } = await completeEarningsRead(createAdminClient().from('space_members').select('id, profile_id, status').in('space_id', ids).eq('status', 'active').in('role', ['viewer', 'editor', 'moderator', 'admin']))
+      const memberships = data as { profile_id: string; status: string }[]
+      const profiles = [...new Set([...memberships.map(row => row.profile_id), callerProfileId!])]
       const active = new Set<string>()
       for (let start = 0; start < profiles.length; start += 100) {
         const { data: real, error } = await createAdminClient().from('profiles').select('id')
@@ -27,7 +27,7 @@ export async function readCollectiveNetworkReport(parentId: string, callerProfil
         if (error || !real) throw new Error('report member profiles unreadable')
         for (const profile of real) active.add(profile.id)
       }
-      return memberships.filter(row => active.has(row.member_profile_id))
+      return [...memberships.filter(row => active.has(row.profile_id)), ...(active.has(callerProfileId!) ? [{ profile_id: callerProfileId!, status: 'active' }] : [])]
     },
     events: async ids => {
       const joined = ids.join(',')
