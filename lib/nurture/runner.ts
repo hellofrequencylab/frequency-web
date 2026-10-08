@@ -9,7 +9,7 @@ import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
 import { buildLeadUnsubUrl } from '@/lib/connections/lead-unsub'
 import { nextStepAfter, runAtFrom, type NurtureStep } from '@/lib/nurture/schedule'
-import { parseEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { parseEmailRenderLayout, type EmailRenderLayout } from '@/lib/email-studio/render-layout'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { postalFooterHtml } from '@/lib/email-studio/postal'
 import { applyMergeTags } from '@/lib/email-studio/render'
@@ -65,7 +65,7 @@ function mergeVarsFor(displayName: string | null, email: string): Record<string,
  *  the Phase-4 campaign send does: compileEmailDoc for the themed shell + footer unsubscribe, then per-recipient
  *  merge tags (HTML escaped in the body, raw in text + subject). */
 function renderBlockStep(
-  layout: EntityLayout,
+  layout: EmailRenderLayout,
   subject: string,
   vars: Record<string, string>,
   unsubscribeUrl: string,
@@ -112,12 +112,12 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
   const seqEnabled = new Map((seqRows as { id: string; enabled: boolean }[] | null ?? []).map((s) => [s.id, s.enabled]))
   const stepsBySeq = new Map<string, NurtureStep[]>()
   // Parsed block-editor body per step id (null → the step uses its legacy plain `body`).
-  const blockByStepId = new Map<string, EntityLayout | null>()
+  const blockByStepId = new Map<string, EmailRenderLayout | null>()
   for (const r of (stepRows as StepRow[] | null) ?? []) {
     const list = stepsBySeq.get(r.sequence_id) ?? []
     list.push(toStep(r))
     stepsBySeq.set(r.sequence_id, list)
-    blockByStepId.set(r.id, r.block_json == null ? null : parseEntityLayout(r.block_json))
+    blockByStepId.set(r.id, r.block_json == null ? null : parseEmailRenderLayout(r.block_json))
   }
   const contactById = new Map(
     (contactRows as { id: string; consent_state: string | null; profile_id: string | null; display_name: string | null }[] | null ?? []).map((c) => [c.id, c]),

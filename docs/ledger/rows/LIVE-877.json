@@ -1,0 +1,20 @@
+{
+  "id": "LIVE-877",
+  "title": "Email compilation reads native placements without sharing bags or dropping authored bench",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/EDITOR-E0.md",
+    "ref": "task12/13 bounded read-only email compiler child after LIVE-871, LIVE-873 and LIVE-875"
+  },
+  "detail": "Read-only compilation supports native individual content/style bags and repeated placements through native-safe parser in nurture runner, Space email compilation reads and platform campaign compilation. Keeps bench/hidden/unknown placements unrendered and authored bags intact; explicit stored bench no longer type-dedupes against placed or other bench nodes. Campaign voice floor includes placed native content; each placed Product card independently refreshes catalog snapshot, with existing missing-product fallback. Legacy editor types remain unchanged, and Space/platform/nurture legacy save boundaries refuse incoming/stored native layouts before writes. Golden HTML/text outputs for all19 historical email census documents were committed before renderer change, with deterministic synthetic authored markers and pinned SHA; they are not production copy captures. Actual plain-Node parser/compiler probe proves legacy and upgraded-native equivalence, repeated content/style, unknown nested bench preservation, output exclusions, safe URL handling and input immutability. Does not close task10/11/12/13 or PROG-E0: native editor/writer conversion, per-type limits, web renderer, migration/backfill and deferred Yjs remain open. No outbound sends or production writes.",
+  "closed": "2026-10-08",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/check-email-node-render.mjs",
+    "note": "Actual read parser/render/compiler; pinned pre-conversion19 golden outputs plus adversarial native authored fixture, no nested runner."
+  },
+  "wave": "W4"
+}

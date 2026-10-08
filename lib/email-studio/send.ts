@@ -33,10 +33,13 @@ import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } f
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { assertApproved } from '@/lib/outbound/approvals'
 import { SITE_URL } from '@/lib/site'
+import { parseEmailRenderLayout, type EmailRenderDoc } from './render-layout'
 import { compileEmailDoc } from './shell'
+import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
+import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
 import { applyMergeTags } from './render'
 import { resolveProductRefs, productVarsFromLayout } from './product-block'
-import { MERGE_TAG_DEFAULT_FALLBACKS, type EmailDoc } from './types'
+import { MERGE_TAG_DEFAULT_FALLBACKS } from './types'
 import { lintVoice } from './voice-lint'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
@@ -240,8 +243,11 @@ export function emailSizeWarning(bytes: number): string {
 
 /** A campaign doc's AUTHORED copy as one lintable string: subject + preheader + the per-block content
  *  map — the same assembly the preset suite holds every shipped template to (presets.test.ts). Pure. */
-export function campaignAuthoredCopy(doc: EmailDoc): string {
-  return [doc.subject, doc.preheader, JSON.stringify(doc.layout.content ?? {})].join('\n')
+export function campaignAuthoredCopy(doc: EmailRenderDoc): string {
+  const content = hasNativeNodeStorage(doc.layout)
+    ? upgradeLayout(doc.layout)?.rows.flatMap(row => row.cells.flat()).filter(node => !node.hidden).map(node => node.content ?? {})
+    : (doc.layout as EntityLayout).content ?? {}
+  return [doc.subject, doc.preheader, JSON.stringify(content)].join('\n')
 }
 
 /** The operator-facing refusal for the lint's one hard rule. Plain voice, actionable. */
@@ -255,7 +261,7 @@ export async function lintCampaignVoice(
 ): Promise<ActionResult<{ hasEmDash: boolean; warnings: string[] }>> {
   const row = await loadCampaign(campaignId)
   if (!row) return fail('That campaign no longer exists.')
-  const doc: EmailDoc = { ...docFromRow(row), subject: row.subject }
+  const doc: EmailRenderDoc = { ...docFromRow(row), subject: row.subject }
   const lint = lintVoice(campaignAuthoredCopy(doc))
   return ok({
     hasEmDash: lint.hasEmDash,
@@ -432,8 +438,11 @@ async function loadCampaign(campaignId: string): Promise<CampaignSendRow | null>
 
 /** The EmailDoc a campaign row carries: block_json is the body layout; subject + preheader
  *  live on their own columns. Fail-safe: a null block_json yields an empty layout. */
-function docFromRow(row: CampaignSendRow): EmailDoc {
-  const layout: EntityLayout = row.block_json ?? { rows: [] }
+function docFromRow(row: CampaignSendRow): EmailRenderDoc {
+  // Legacy campaign reads historically compile the stored layout directly; retain that output.
+  const layout = hasNativeNodeStorage(row.block_json)
+    ? parseEmailRenderLayout(row.block_json) ?? { rows: [] }
+    : row.block_json ?? { rows: [] }
   return { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' }
 }
 
@@ -515,7 +524,7 @@ export async function scheduleCampaign(
   if (Number.isNaN(when.getTime())) return fail('Pick a valid date and time to send.')
   if (when.getTime() <= Date.now()) return fail('The send time has to be in the future.')
 
-  const doc: EmailDoc = { ...docFromRow(row), subject: row.subject }
+  const doc: EmailRenderDoc = { ...docFromRow(row), subject: row.subject }
   if (!doc.subject.trim()) return fail('Add a subject line before you schedule.')
   const compiled = compileEmailDoc(doc)
   if (!compiled.html) return fail('This email has no content to send.')
@@ -661,7 +670,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
     }
   }
 
-  const rawDoc: EmailDoc = { ...docFromRow(row), subject: row.subject }
+  const rawDoc: EmailRenderDoc = { ...docFromRow(row), subject: row.subject }
   const subjectTemplate = rawDoc.subject.trim()
   if (!subjectTemplate) return fail('The campaign has no subject to send.')
 
@@ -672,7 +681,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
 
   // Resolve the data-bound Product card ONCE (before the recipient loop) so every recipient's email ships the
   // current catalog data, and expose its `{{product.*}}` tokens as merge fallbacks (Phase 4).
-  const doc: EmailDoc = { ...rawDoc, layout: await resolveProductRefs(rawDoc.layout) }
+  const doc: EmailRenderDoc = { ...rawDoc, layout: await resolveProductRefs(rawDoc.layout) }
   const productVars = productVarsFromLayout(doc.layout)
 
   // The send From: a per-campaign envelope ADDRESS (from_address) if set, else the broadcast default

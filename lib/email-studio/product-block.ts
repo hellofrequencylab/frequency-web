@@ -34,6 +34,9 @@ import { formatPriceCents } from '@/lib/commerce/types'
 import { journeySlugsByPlanId } from '@/lib/journeys/paid'
 import { journeyPublicPath } from '@/lib/journeys/sales-path'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
+import type { EmailRenderLayout } from './render-layout'
+import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
+import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
 
 // ── 1. Product card resolution ─────────────────────────────────────────────────────────────────────────────
 
@@ -55,8 +58,18 @@ export function productUrl(id: string, journeySlug?: string | null): string {
  * stored snapshot untouched (graceful fallback). Pure aside from the single read; returns a NEW layout (never
  * mutates the input) and is fail-safe: any error yields the input unchanged.
  */
-export async function resolveProductRefs(layout: EntityLayout): Promise<EntityLayout> {
-  const src = layout.content
+export async function resolveProductRefs<T extends EmailRenderLayout>(layout: T): Promise<T> {
+  if (hasNativeNodeStorage(layout)) {
+    const native = upgradeLayout(layout)
+    if (!native) return layout
+    const rows = await Promise.all(native.rows.map(async row => ({ ...row, cells: await Promise.all(row.cells.map(async cell => Promise.all(cell.map(async node => {
+      if (node.type !== 'productCard' || node.hidden || !node.content) return node
+      const resolved = await resolveProductRefs({ content: { productCard: node.content } })
+      return { ...node, content: resolved.content?.productCard ?? node.content }
+    })))) })))
+    return { ...native, rows } as unknown as T
+  }
+  const src = (layout as EntityLayout).content
   if (!src || typeof src !== 'object') return layout
   const bag = (src as Record<string, Record<string, unknown>>).productCard
   if (!bag || typeof bag !== 'object') return layout
@@ -92,7 +105,7 @@ export async function resolveProductRefs(layout: EntityLayout): Promise<EntityLa
     image: product.images[0] ?? (typeof bag.image === 'string' ? bag.image : ''),
     url: productUrl(product.id, journeySlug),
   }
-  return { ...layout, content: { ...(src as Record<string, Record<string, unknown>>), productCard: resolved } }
+  return { ...layout, content: { ...(src as Record<string, Record<string, unknown>>), productCard: resolved } } as T
 }
 
 /**
@@ -100,8 +113,13 @@ export async function resolveProductRefs(layout: EntityLayout): Promise<EntityLa
  * resolved) email layout's product card. Pure — call AFTER resolveProductRefs so the tokens carry the live
  * values. Absent tokens fall back to MERGE_TAG_DEFAULT_FALLBACKS at applyMergeTags time.
  */
-export function productVarsFromLayout(layout: EntityLayout): Record<string, string> {
-  const bag = (layout.content as Record<string, Record<string, unknown>> | undefined)?.productCard
+export function productVarsFromLayout(layout: EmailRenderLayout): Record<string, string> {
+  if (hasNativeNodeStorage(layout)) {
+    const native = upgradeLayout(layout)
+    const first = native?.rows.flatMap(row => row.cells.flat()).find(node => node.type === 'productCard' && !node.hidden)
+    return first?.content ? productVarsFromLayout({ content: { productCard: first.content } }) : {}
+  }
+  const bag = ((layout as EntityLayout).content as Record<string, Record<string, unknown>> | undefined)?.productCard
   if (!bag) return {}
   const vars: Record<string, string> = {}
   if (typeof bag.title === 'string' && bag.title.trim()) vars['product.title'] = bag.title

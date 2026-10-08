@@ -1,5 +1,7 @@
 'use server'
 
+import { hasNativeNodeStorage, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+
 // Admin actions for per-persona nurture sequences (ADR-131). Gated to a community
 // admin OR a Studio staff member — same axis as the /marketing layout + funnels.
 // nurture_* tables are untyped until regen, so writes go through an untyped admin
@@ -142,6 +144,11 @@ export async function updateStepBlockJson(
 ): Promise<{ error?: string }> {
   const who = await requireMarketer()
   if (typeof who === 'string') return { error: who }
+
+  if (hasNativeNodeStorage(layout)) return { error: NODE_LAYOUT_WRITE_ERROR }
+  const { data: stored, error: readError } = await db().from('nurture_steps').select('block_json').eq('id', id).maybeSingle()
+  if (readError || !stored) return { error: 'Could not read the saved email design.' }
+  if (hasNativeNodeStorage(stored.block_json)) return { error: NODE_LAYOUT_WRITE_ERROR }
 
   const clean = sanitizeEntityLayout(layout as EntityLayout, 'email') ?? { rows: starterRows('email', 'basic') }
   const { error } = await db()

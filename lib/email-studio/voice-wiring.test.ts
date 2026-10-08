@@ -97,3 +97,17 @@ describe('the operator sees the findings (send panel preflight, existing Banner 
     expect(code).toContain('You can still send.')
   })
 })
+
+describe('native campaign authored-copy voice floor', () => {
+  it('checks each placed bag and excludes hidden or benched copy', () => {
+    const layout = { rows: [{ id: 'r0', columns: 1, cells: [[
+      { nid: 'nfirst01', type: 'text', content: { text: 'Clean first placement' } },
+      { nid: 'nsecond1', type: 'text', content: { text: 'Second — placement' } },
+      { nid: 'nhidden1', type: 'text', hidden: true, content: { text: 'Hidden — work' } },
+    ]] }], bench: [{ nid: 'nbench01', type: 'text', content: { text: 'Benched — work' } }] }
+    const doc = { subject: 'Clean subject', preheader: '', layout } as unknown as EmailDoc
+    expect(lintVoice(campaignAuthoredCopy(doc)).hasEmDash).toBe(true)
+    layout.rows[0].cells[0][1].content.text = 'Clean second placement'
+    expect(lintVoice(campaignAuthoredCopy(doc)).hasEmDash).toBe(false)
+  })
+})

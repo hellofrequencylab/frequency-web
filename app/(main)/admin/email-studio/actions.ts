@@ -1,5 +1,7 @@
 'use server'
 
+import { hasNativeNodeStorage, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+
 // EMAIL STUDIO — Phase 2 server actions (the two-pane Campaign Workspace).
 //
 // These are the read + write seams the client workspace (components/admin/email-studio/*) calls. An email
@@ -363,6 +365,12 @@ export async function saveEmailCampaign(
   if (!gate.ok) return { error: gate.error }
 
   const db = createAdminClient()
+  if (patch.layout) {
+    if (hasNativeNodeStorage(patch.layout)) return { error: NODE_LAYOUT_WRITE_ERROR }
+    const { data: stored, error: readError } = await db.from('campaigns').select('block_json').eq('id', id).maybeSingle()
+    if (readError || !stored) return { error: 'Could not read the saved email design.' }
+    if (hasNativeNodeStorage(stored.block_json)) return { error: NODE_LAYOUT_WRITE_ERROR }
+  }
   const update: Database['public']['Tables']['campaigns']['Update'] = {}
 
   if (typeof patch.subject === 'string') update.subject = patch.subject.slice(0, 300)

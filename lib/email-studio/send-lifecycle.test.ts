@@ -385,3 +385,31 @@ describe('the ledger check fails closed, but only where it can do harm', () => {
   })
 })
 
+
+describe('native campaign read flows through the real compiler before the mocked outbound boundary', () => {
+  it('keeps repeated placements in every compiled recipient message and excludes stored bench', async () => {
+    row = freshRow({ block_json: { rows: [{ id: 'r0', columns: 1, cells: [[
+      { nid: 'nfirst01', type: 'text', content: { text: 'First authored placement' } },
+      { nid: 'nsecond1', type: 'text', content: { text: 'Second authored placement' } },
+    ]] }], bench: [{ nid: 'nbench01', type: 'text', content: { text: 'Saved bench work' } }] } })
+    const before = JSON.stringify(row.block_json)
+    expect(await sendCampaignNow('camp-1')).toEqual({ data: { recipientCount: 3 } })
+    expect(enqueueEmail).toHaveBeenCalledTimes(3)
+    for (const call of enqueueEmail.mock.calls) {
+      const message = call[0]
+      expect(message.html).toContain('First authored placement')
+      expect(message.html).toContain('Second authored placement')
+      expect(message.html).not.toContain('Saved bench work')
+      expect(message.html).toContain('https://x.test/unsubscribe')
+    }
+    expect(JSON.stringify(row.block_json)).toBe(before)
+  })
+  it('refuses native placed voice violations before claims or the mocked outbound call', async () => {
+    row = freshRow({ block_json: { rows: [{ id: 'r0', columns: 1, cells: [[{ nid: 'nfirst01', type: 'text', content: { text: 'Native — copy' } }]] }], bench: [] } })
+    const result = await sendCampaignNow('camp-1')
+    expect('error' in result).toBe(true)
+    expect(row.status).toBe('draft')
+    expect(updates).toEqual([])
+    expect(enqueueEmail).not.toHaveBeenCalled()
+  })
+})
