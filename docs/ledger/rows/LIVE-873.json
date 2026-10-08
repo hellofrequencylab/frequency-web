@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-873",
+  "title": "A Space website's calendar has a tight event list to the left of the month grid, and each event opens a preview popup",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "components/sites/site-calendar-agenda.tsx",
+    "ref": "Owner ask 2026-10-08: 'Put the list of events in a tight column on the left of the calendar. Each item should open a pop up with an event preview, similar to frequency.'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-08. SitePublicCalendar lays the website calendar out as two columns from lg up: SiteCalendarAgenda (a client list of the next 12 published gatherings, one compact row each with a month/day chip, the title and the when line) on the left and the guest CalendarWorkspace on the right, whose Up next band it replaces. A row opens a Dialog holding CalendarPreview, now exported from components/events/event-calendar.tsx, so the list's popup and the grid's popup are one body; its one link out is the event's Frequency page (eventOrigin, from #3331). The list reads listSpaceCalendarEvents (admin client) and spaceEventRowsToItems, never the cookie client, because the site render is cached and viewer-free (the #3329 outage).",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const ag=r('components/sites/site-calendar-agenda.tsx');if(!/<CalendarPreview/.test(ag)||!/<Dialog/.test(ag))miss.push('the event list does not open a preview popup');if(!/export function CalendarPreview/.test(r('components/events/event-calendar.tsx')))miss.push('the list does not share the grid popup body');const cal=r('components/sites/site-public-calendar.tsx');if(!/<SiteCalendarAgenda/.test(cal)||!/grid-cols-\\[17rem/.test(cal))miss.push('the list is not a column beside the grid');if(/supabase\\/server|cookies\\(/.test(cal+ag))miss.push('the cached site render reaches cookies');if(miss.length){console.error('LIVE-873: '+miss.join('; '));process.exit(1)}\""
+  },
+  "closed": "2026-10-08",
+  "wave": "W7"
+}
