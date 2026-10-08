@@ -329,3 +329,31 @@ needs no engineer.
 [ADR-914](DECISIONS.md) · [ADR-1291](DECISIONS.md) · [PRICING.md](PRICING.md) ·
 [VALUE-LADDER.md](VALUE-LADDER.md) · [NAMING.md](NAMING.md) · [CONTENT-VOICE.md](CONTENT-VOICE.md) ·
 [MENU-CONTRACT.md](MENU-CONTRACT.md) · [STUDIO.md](STUDIO.md) · [SPACES.md](SPACES.md)
+
+### Private Collective report (ADR-1709, LIVE-766)
+
+The existing Space Reach page includes a report for the current owner of an active Collective or
+Non Profit Collective. Staff preview and manager seats do not grant this report. It includes the
+parent and its current active, directly attached Spaces with the same owner, including private
+Spaces. Public directory visibility is unrelated to the owner's reporting scope. Removed,
+transferred, archived and suspended member Spaces are excluded; a downgraded parent has no report.
+Ownership and attachment are read again before member and financial reads.
+
+Active members are distinct `space_memberships.member_profile_id` values whose membership is
+active and whose profile is active, not demo and not system. Events are distinct actual Events
+hosted by a source Space, or owned by it when no host Space is set. Shared listings do not count.
+Removed and demo Events are excluded; the count otherwise spans all time.
+
+Revenue reuses `spaceEarningsSummary` in strict mode: settled commerce orders, succeeded tickets,
+gifts and the Space's own split-transfer share, with existing full and partial refund rules. A
+split share counts its share, never the whole cart. Membership invoice revenue remains excluded
+because memberships do not provide a receipt ledger. Tickets and split shares do not acquire an
+invented network attribution. USD is required for every money source; mixed or unknown currencies
+make the report unavailable instead of being added as dollars.
+
+A strict read pages each source by stable ID in batches of 500, with a 10,000-row bound. The
+Collective source set has a 100-child bound; member profile verification reads bounded batches.
+An errored arm, missing result or full bound makes the complete report unavailable. The page
+never shows a partial revenue number as the total or replaces a failed read with zero. Existing
+per-Space dashboard callers retain their prior fallback behavior. The report is read-only and
+adds no menu item, schedule, subscription or production write.

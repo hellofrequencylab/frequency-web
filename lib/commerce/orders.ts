@@ -15,6 +15,7 @@
 // on their transfer row, so a seller's view carries THEIR step, the buyer's read carries each
 // seller's step beside their lines (sellerFulfilments), and the operator reads every share's.
 
+import { completeEarningsRead, assertUsdEarningsRows } from './complete-read'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { OrderStatus, OwnerKind, OrderOwnerKind, FulfillmentStatus, FundsFlow } from './types'
@@ -192,7 +193,7 @@ const SHARE_COLS = 'order_id, amount_cents, platform_fee_cents, reversed_cents, 
 
 /** This seller's transfer rows, newest first. Filtered on the seller's own owner column AND kind, so
  *  no other seller's row is ever read here. Throws on a database error; each caller decides. */
-async function sellerShareRows(seller: OrderSellerRef, limit?: number): Promise<ShareRow[]> {
+async function sellerShareRows(seller: OrderSellerRef, limit?: number, strict = false): Promise<ShareRow[]> {
   let q = db()
     .from('commerce_order_transfers')
     .select(SHARE_COLS)
@@ -200,7 +201,7 @@ async function sellerShareRows(seller: OrderSellerRef, limit?: number): Promise<
     .eq(seller.kind === 'space' ? 'owner_space_id' : 'owner_profile_id', seller.id)
     .order('created_at', { ascending: false })
   if (limit) q = q.limit(limit)
-  const { data, error } = await q
+  const { data, error } = strict ? await completeEarningsRead(q) : await q
   if (error) throw new Error(`transfer shares unreadable: ${error.message}`)
   return (data ?? []) as ShareRow[]
 }
@@ -459,7 +460,7 @@ export interface SpaceEarnings {
  * `created_at`: a ticket row is created when checkout opens, which can be days earlier on a delayed
  * settlement and is not when the Space earned anything.
  */
-async function ticketEarnings(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
+async function ticketEarnings(spaceId: string, sinceDays?: number, strict = false): Promise<SpaceEarnings> {
   const out: SpaceEarnings = {
     grossCents: 0,
     feeCents: 0,
@@ -474,22 +475,24 @@ async function ticketEarnings(spaceId: string, sinceDays?: number): Promise<Spac
   // Two steps rather than an embedded join: the "hosted by us, or ours and hosted by nobody" rule is
   // an OR across two columns of the PARENT row, which an embedded filter cannot express without
   // turning the inner join into a condition the outer query no longer controls.
-  const { data: evRows } = await db()
+  const eventQuery = db()
     .from('events')
     .select('id')
     .or(`host_space_id.eq.${spaceId},and(space_id.eq.${spaceId},host_space_id.is.null)`)
+  const { data: evRows } = strict ? await completeEarningsRead(eventQuery) : await eventQuery
   const eventIds = ((evRows ?? []) as { id: string }[]).map((e) => e.id).filter(Boolean)
   if (eventIds.length === 0) return out
 
   let q = db()
     .from('event_tickets')
-    .select('amount_cents, platform_fee_cents, status, refunded_at')
+    .select('currency, amount_cents, platform_fee_cents, status, refunded_at')
     .in('event_id', eventIds)
     .not('succeeded_at', 'is', null)
   if (sinceDays && sinceDays > 0) {
     q = q.gte('succeeded_at', new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString())
   }
-  const { data } = await q
+  const { data } = strict ? await completeEarningsRead(q) : await q
+  if (strict) assertUsdEarningsRows(data ?? [])
   const rows = (data ?? []) as {
     amount_cents?: number | null
     platform_fee_cents?: number | null
@@ -536,7 +539,7 @@ async function ticketEarnings(spaceId: string, sinceDays?: number): Promise<Spac
  * Memberships stay out of this arm. `space_memberships` has no amount and no invoice ledger, so
  * summing a tier price on `started_at` would invent renewals that never happened.
  */
-async function donationEarnings(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
+async function donationEarnings(spaceId: string, sinceDays?: number, strict = false): Promise<SpaceEarnings> {
   const out: SpaceEarnings = {
     grossCents: 0,
     feeCents: 0,
@@ -551,13 +554,14 @@ async function donationEarnings(spaceId: string, sinceDays?: number): Promise<Sp
 
   let q = db()
     .from('space_donations')
-    .select('amount_cents, platform_fee_cents, status, refunded_at, source')
+    .select('currency, amount_cents, platform_fee_cents, status, refunded_at, source')
     .eq('space_id', spaceId)
     .not('succeeded_at', 'is', null)
   if (sinceDays && sinceDays > 0) {
     q = q.gte('succeeded_at', new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString())
   }
-  const { data } = await q
+  const { data } = strict ? await completeEarningsRead(q) : await q
+  if (strict) assertUsdEarningsRows(data ?? [])
   const rows = (data ?? []) as {
     amount_cents?: number | null
     platform_fee_cents?: number | null
@@ -599,7 +603,7 @@ async function donationEarnings(spaceId: string, sinceDays?: number): Promise<Sp
  * cart, not per share, so the rule beside networkGrossCents (never overstate it) keeps shares out.
  * The window is the order's created_at, matching the arm above.
  */
-async function splitShareEarnings(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
+async function splitShareEarnings(spaceId: string, sinceDays?: number, strict = false): Promise<SpaceEarnings> {
   const out: SpaceEarnings = {
     grossCents: 0,
     feeCents: 0,
@@ -610,19 +614,20 @@ async function splitShareEarnings(spaceId: string, sinceDays?: number): Promise<
     networkFeeCents: 0,
     networkOrderCount: 0,
   }
-  const rows = await sellerShareRows({ kind: 'space', id: spaceId })
+  const rows = await sellerShareRows({ kind: 'space', id: spaceId }, undefined, strict)
   if (!rows.length) return out
   const byOrder = new Map(rows.map((r) => [r.order_id, r]))
   let q = db()
     .from('commerce_orders')
-    .select('id, amount_cents, status, metadata')
+    .select('id, currency, amount_cents, status, metadata')
     .in('id', [...byOrder.keys()])
     .eq('funds_flow', 'separate')
   if (sinceDays && sinceDays > 0) {
     q = q.gte('created_at', new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString())
   }
-  const { data, error } = await q
+  const { data, error } = strict ? await completeEarningsRead(q) : await q
   if (error) throw new Error(`split orders unreadable: ${error.message}`)
+  if (strict) assertUsdEarningsRows(data ?? [])
   for (const o of (data ?? []) as { id: string; amount_cents?: number | null; status?: string; metadata?: unknown }[]) {
     const row = byOrder.get(o.id)
     if (!row) continue
@@ -646,7 +651,8 @@ async function splitShareEarnings(spaceId: string, sinceDays?: number): Promise<
   return out
 }
 
-export async function spaceEarningsSummary(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
+/** strict=true rejects any errored or truncated source; default retains the legacy dashboard fallback. */
+export async function spaceEarningsSummary(spaceId: string, sinceDays?: number, strict = false): Promise<SpaceEarnings> {
   const empty: SpaceEarnings = {
     grossCents: 0,
     feeCents: 0,
@@ -657,20 +663,24 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
     networkFeeCents: 0,
     networkOrderCount: 0,
   }
-  if (!spaceId) return empty
+  if (!spaceId) {
+    if (strict) throw new Error('complete earnings requires a Space')
+    return empty
+  }
   try {
     let query = db()
       .from('commerce_orders')
       // `metadata` carries the partial-refund record (LIVE-160); without it a half-refunded order that
       // keeps its 'paid' status is counted at full gross.
-      .select('amount_cents, platform_fee_cents, status, source, metadata')
+      .select('currency, amount_cents, platform_fee_cents, status, source, metadata')
       .eq('owner_space_id', spaceId)
       .neq('status', 'pending')
     if (sinceDays && sinceDays > 0) {
       const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString()
       query = query.gte('created_at', since)
     }
-    const { data } = await query
+    const { data } = strict ? await completeEarningsRead(query) : await query
+    if (strict) assertUsdEarningsRows(data ?? [])
     const rows = (data ?? []) as {
       amount_cents?: number | null
       platform_fee_cents?: number | null
@@ -716,8 +726,9 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
     // the outer catch takes, applied at the finer grain the second source makes possible.
     let tickets: SpaceEarnings | null = null
     try {
-      tickets = await ticketEarnings(spaceId, sinceDays)
-    } catch {
+      tickets = await ticketEarnings(spaceId, sinceDays, strict)
+    } catch (error) {
+      if (strict) throw error
       tickets = null
     }
     if (tickets) {
@@ -733,8 +744,9 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
     // gifts returns the commerce+ticket number instead of collapsing the header to zeros.
     let donations: SpaceEarnings | null = null
     try {
-      donations = await donationEarnings(spaceId, sinceDays)
-    } catch {
+      donations = await donationEarnings(spaceId, sinceDays, strict)
+    } catch (error) {
+      if (strict) throw error
       donations = null
     }
     if (donations) {
@@ -752,8 +764,9 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
     // other arms' number rather than zeros. Network figures untouched; see splitShareEarnings.
     let shares: SpaceEarnings | null = null
     try {
-      shares = await splitShareEarnings(spaceId, sinceDays)
-    } catch {
+      shares = await splitShareEarnings(spaceId, sinceDays, strict)
+    } catch (error) {
+      if (strict) throw error
       shares = null
     }
     if (shares) {
@@ -764,7 +777,8 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
       out.netCents = out.grossCents - out.feeCents
     }
     return out
-  } catch {
+  } catch (error) {
+    if (strict) throw error
     return empty
   }
 }

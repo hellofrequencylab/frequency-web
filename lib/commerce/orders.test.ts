@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // the receipt can never overstate what we earned on. We mock the admin client's query chain with an
 // in-memory row set.
 
+let failTable: string | null = null
 let rows: Record<string, unknown>[] = []
 /** Ticket rows, and the events they hang off, for the LIVE-375 arm. Empty by default so every test
  *  written before tickets existed reads exactly as it did. */
@@ -23,6 +24,7 @@ let donationRows: Record<string, unknown>[] = []
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => {
     let table = ''
+    let range: [number, number] | null = null
     const chain: Record<string, unknown> = {
       from: (t: string) => {
         table = t
@@ -37,7 +39,8 @@ vi.mock('@/lib/supabase/admin', () => ({
       not: () => chain,
       order: () => chain,
       limit: () => chain,
-      then: (resolve: (v: { data: Record<string, unknown>[]; error: null }) => unknown) => {
+      range: (from: number, to: number) => { range = [from, to]; return chain },
+      then: (resolve: (v: { data: Record<string, unknown>[]; error: { message: string } | null }) => unknown) => {
         // The split-share arm (LIVE-624) reads the transfer ledger; none here, so every figure below
         // reads as it did. lib/commerce/orders-split.test.ts owns that arm.
         const byTable: Record<string, Record<string, unknown>[]> = {
@@ -47,7 +50,7 @@ vi.mock('@/lib/supabase/admin', () => ({
           space_donations: donationRows,
         }
         const data = byTable[table] ?? rows
-        return Promise.resolve(resolve({ data, error: null }))
+        return Promise.resolve(resolve({ data: range ? data.slice(range[0], range[1] + 1) : data, error: table === failTable ? { message: 'offline' } : null }))
       },
     }
     return chain
@@ -57,6 +60,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 import { spaceEarningsSummary } from './orders'
 
 beforeEach(() => {
+  failTable = null
   rows = []
   ticketRows = []
   donationRows = []
@@ -321,5 +325,28 @@ describe('spaceEarningsSummary — Space fund gifts (LIVE-431)', () => {
     expect(e.grossCents).toBe(0)
     expect(e.orderCount).toBe(0)
     expect(e.networkGrossCents).toBe(0)
+  })
+})
+
+// LIVE-766: complete reports reject every unreadable arm rather than disguising a partial sum.
+describe('spaceEarningsSummary strict complete report', () => {
+  it.each(['commerce_orders', 'events', 'event_tickets', 'space_donations', 'commerce_order_transfers'])('rejects an unreadable %s source', async table => {
+    rows = [{ currency: 'usd', amount_cents: 1000, platform_fee_cents: 50, status: 'paid' }]
+    failTable = table
+    await expect(spaceEarningsSummary('space-1', undefined, true)).rejects.toThrow('offline')
+  })
+  it('reads every page of commerce, ticket and gift sources', async () => {
+    rows = Array.from({ length: 501 }, () => ({ currency: 'usd', amount_cents: 100, platform_fee_cents: 5, status: 'paid' }))
+    ticketRows = Array.from({ length: 501 }, () => ({ currency: 'usd', amount_cents: 200, platform_fee_cents: 10, status: 'succeeded' }))
+    donationRows = Array.from({ length: 501 }, () => ({ currency: 'usd', amount_cents: 300, platform_fee_cents: 15, status: 'succeeded' }))
+    expect(await spaceEarningsSummary('space-1', undefined, true)).toMatchObject({ grossCents: 300600, feeCents: 15030, netCents: 285570, orderCount: 1503 })
+  })
+  it('rejects mixed currency instead of adding euros as dollars', async () => {
+    rows = [{ currency: 'eur', amount_cents: 1000, status: 'paid' }]
+    await expect(spaceEarningsSummary('space-1', undefined, true)).rejects.toThrow('currency')
+  })
+  it('preserves partial refund and network attribution rules in strict mode', async () => {
+    rows = [{ currency: 'usd', amount_cents: 1000, platform_fee_cents: 50, status: 'paid', source: 'network', metadata: { refund: { kind: 'partial', refunded_cents: 400 } } }]
+    expect(await spaceEarningsSummary('space-1', undefined, true)).toMatchObject({ grossCents: 600, feeCents: 30, netCents: 570, refundedCents: 400, networkGrossCents: 600 })
   })
 })

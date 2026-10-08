@@ -22,6 +22,7 @@ vi.mock('@/lib/supabase/admin', () => ({
     from: (table: string) => {
       const filters: ((r: Row) => boolean)[] = []
       let cap = Infinity
+      let range: [number, number] | null = null
       const chain: Record<string, unknown> = {
         select: () => chain,
         eq: (c: string, v: unknown) => (filters.push((r) => r[c] === v), chain),
@@ -31,11 +32,12 @@ vi.mock('@/lib/supabase/admin', () => ({
         not: () => chain,
         or: () => chain,
         order: () => chain,
+        range: (from: number, to: number) => { range = [from, to]; return chain },
         limit: (n: number) => ((cap = n), chain),
         then: (resolve: (v: { data: Row[] | null; error: { message: string } | null }) => unknown) => {
           if (failTable === table) return Promise.resolve(resolve({ data: null, error: { message: 'boom' } }))
           const data = (tables[table] ?? []).filter((r) => filters.every((f) => f(r))).slice(0, cap)
-          return Promise.resolve(resolve({ data, error: null }))
+          return Promise.resolve(resolve({ data: range ? data.slice(range[0], range[1] + 1) : data, error: null }))
         },
       }
       return chain
@@ -232,5 +234,20 @@ describe('spaceEarningsSummary sums the share, not the cart (LIVE-624)', () => {
     failTable = 'commerce_order_transfers'
     const e = await spaceEarningsSummary('space-a')
     expect(e.grossCents).toBe(2500)
+  })
+})
+
+describe('complete Collective earnings preserve the split share', () => {
+  it('counts only this Space share and keeps split shares out of network attribution', async () => {
+    expect(await spaceEarningsSummary('space-a', undefined, true)).toMatchObject({ grossCents: 8500, feeCents: 850, netCents: 7650, networkGrossCents: 0 })
+  })
+  it('preserves partial refunds on the share in complete mode', async () => {
+    tables.commerce_orders[0] = splitOrder({ metadata: { refund: { kind: 'partial', refunded_cents: 5000 } } })
+    expect(await spaceEarningsSummary('space-a', undefined, true)).toMatchObject({ refundedCents: 3000, grossCents: 5500, feeCents: 550 })
+  })
+  it('rejects unreadable split order detail rather than hiding that arm', async () => {
+    tables.commerce_orders = [splitOrder()]
+    failTable = 'commerce_orders'
+    await expect(spaceEarningsSummary('space-a', undefined, true)).rejects.toThrow('boom')
   })
 })
