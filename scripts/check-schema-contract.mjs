@@ -96,6 +96,12 @@ export const ALLOWLIST = [
     reason: 'LIVE-763: migration 20270346006700_collective_member_spaces.sql adds this service-only ownership/capacity transaction. Actual SQL permissions and behavior are tested. Retires when lib/database.types.ts is regenerated after production applies migration 067.',
     owner: 'LIVE-763',
   },
+  { file: 'lib/journey-plans.ts', table: 'grant_paid_commerce_journey', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 atomically grants paid Journey adoption/enrollment. Retire on public schema regeneration after the approved migration is applied.' },
+  { file: 'lib/commerce/journey-fulfilment.ts', table: 'revoke_refunded_commerce_journeys', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 atomically revokes refunded order-owned Journey adoption/enrollment. Retire on public schema regeneration after the approved migration is applied.' },
+
+  { file: 'lib/commerce/checkout.ts', table: 'claim_commerce_settlement', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 creates this service-only recovery RPC. Retire on public schema regeneration after the approved migration is applied.' },
+  { file: 'lib/commerce/checkout.ts', table: 'advance_commerce_settlement', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 creates this service-only recovery RPC. Retire on public schema regeneration after the approved migration is applied.' },
+  { file: 'lib/commerce/checkout.ts', table: 'release_commerce_settlement', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-882', reason: 'Migration 20270346007300 creates this service-only recovery RPC. Retire on public schema regeneration after the approved migration is applied.' },
   // EMPTY as of 2026-09-28, and empty is the resting state. Migration 20270345008600 (the
   // calendar-entry tombstone, LIVE-536) was applied to the live project and lib/database.types.ts
   // was regenerated from it with --schema public. That one regeneration retired all seven entries

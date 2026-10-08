@@ -1,0 +1,18 @@
+{
+  "id": "LIVE-882",
+  "title": "A paid commerce order recovers unfinished access and bookkeeping after a partial failure",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/commerce/checkout.ts",
+    "ref": "Owner audit 2026-10-08: payment-to-fulfillment continuity"
+  },
+  "detail": "The pending-to-paid flip previously gated every downstream operation, so a transient stock/finance/booking/Journey/receipt failure could be acknowledged and then skipped forever on paid replay. Required recovery uses the SAME verified-session dispatcher, original session/PI/gross/currency binding, service-only monotonic per-order checkpoints and bounded token fencing. Existing stock atomic markers, finance order keys, split settlement/reversal ledger and notification/email-outbox dedupe identities are reused. The actual Journey lesson door consults active legacy adoption, so paid canonical adoption grants that permission and SOLO enrollment/provenance atomically under an order row lock; full-refund revoke uses the same lock and verified refund replay repairs failed order-owned access cleanup. Existing free/other-order access and completed Journeys are preserved. Creator count/reward remain existing best-effort side effects and are not claimed exactly-once. Historical receipts are explicitly suppressed_legacy/unverified rather than fabricated delivered proof or retrospective messages. Migration20270346007300 adds protected recovery columns and nullable adoption provenance, with service-only invoker RPCs; no new fulfillment dispatcher or receipt ledger. Real DB CI and owner migration approval are required before production application. LIVE-234 customer payout proof remains distinct.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probe-commerce-fulfillment.mjs",
+    "note": "Runs the actual verified-session dispatcher without a test runner/provider, injects failure after payment and verifies replay repairs access while completed inventory/finance/receipts stay once; checks real atomic grant/refund wiring and order locks."
+  }
+}

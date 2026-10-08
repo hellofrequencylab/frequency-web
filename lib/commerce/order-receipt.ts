@@ -11,8 +11,8 @@
 // address, none of which the Stripe webhook otherwise reads. All of it lives here, the settle calls
 // this fire-and-forget, and nothing read here is returned to any caller.
 //
-// IDEMPOTENCY IS THE CALLER'S: the settle only reaches here for a row THIS delivery flipped
-// `pending` -> `paid`, so a redelivered webhook flips nothing and sends nothing.
+// Commerce receipt identities live in the existing notification/outbox dedupe keys.
+// Required recovery callers propagate failures; ordinary callers remain best-effort.
 //
 // A PLATFORM order has no seller to notify. Frequency is the merchant on `owner_kind: 'platform'`
 // (the Frequency Store), so only the buyer half runs; there is no operator waiting on a bell for a
@@ -147,11 +147,11 @@ async function resolveSeller(order: SettledOrder): Promise<{
  * BEST-EFFORT ON EVERY PATH: it runs from the Stripe webhook's settle, after the order is already
  * `paid`. Every failure is logged. Resolves void on every path.
  */
-export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
+export async function sendOrderReceipts(order: SettledOrder, opts?: { strict?: boolean }): Promise<void> {
   // A split order has its own half (LIVE-706). Everything below this line is the single-seller path,
   // unchanged.
   if (order.ownerKind === 'split') {
-    await sendSplitOrderReceipts(order)
+    await sendSplitOrderReceipts(order, undefined, opts)
     return
   }
   try {
@@ -175,6 +175,8 @@ export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
       { label: 'Date', value: when },
     ]
     await sendMoneyReceipt({
+      strict: opts?.strict,
+      dedupeKey: `commerce:${order.id}:buyer:email`,
       to: order.buyerEmail ?? null,
       profileId: order.buyerProfileId,
       subject: first ? `Your order: ${first}` : `Your order from ${sellerName}`,
@@ -209,6 +211,7 @@ export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
     // A first-party Frequency Store order has no operator waiting on it, so there is nobody here.
     if (!seller?.profileId) {
       if (order.ownerKind !== 'platform') {
+        if (opts?.strict) throw new Error('Paid order seller is unreadable')
         console.error(`${LOG} no seller to notify for a paid order`, {
           orderId: order.id,
           ownerKind: order.ownerKind,
@@ -219,6 +222,8 @@ export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
     const buyerName = (await displayNameFor(order.buyerProfileId)) ?? 'Someone'
     const soldLabel = summary ?? 'an item'
     await notifyEarner({
+      strict: opts?.strict,
+      dedupeKey: `commerce:${order.id}:seller:${order.ownerKind}:${order.ownerSpaceId ?? order.ownerProfileId}:recipient:${seller.profileId}`,
       recipientProfileId: seller.profileId,
       actorProfileId: order.buyerProfileId,
       type: ORDER_SOLD_NOTIFICATION_TYPE,
@@ -251,6 +256,7 @@ export async function sendOrderReceipts(order: SettledOrder): Promise<void> {
       context: { orderId: order.id, side: 'seller' },
     })
   } catch (err) {
+    if (opts?.strict) throw err
     console.error(`${LOG} order receipts failed`, { orderId: order.id, err })
   }
 }
@@ -365,7 +371,7 @@ function transferKey(t: OrderTransfer): string {
  * sellers of those transfer rows are notified, and the buyer is not written to again. Returns how many
  * sellers were sent a notice.
  */
-async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlySet<string>): Promise<number> {
+async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlySet<string>, opts?: { strict?: boolean }): Promise<number> {
   let noticed = 0
   try {
     const amount = receiptAmount(order.amountCents, order.currency)
@@ -381,6 +387,7 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
       // A recovered order: only the rows the reconciler's own plan inserted (LIVE-733).
       if (recovered) transfers = transfers.filter((t) => recovered.has(t.id))
     } catch (err) {
+      if (opts?.strict) throw err
       console.error(`${LOG} split order transfers unreadable; no seller was notified`, { orderId: order.id, err })
     }
     // A seller the ledger pays whose lines could not be read is still named on the receipt.
@@ -428,6 +435,8 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
         { label: 'Date', value: when },
       ]
       await sendMoneyReceipt({
+        strict: opts?.strict,
+        dedupeKey: `commerce:${order.id}:buyer:email`,
         to: order.buyerEmail ?? null,
         profileId: order.buyerProfileId,
         subject: first ? `Your order: ${first}` : `Your order from ${from}`,
@@ -476,6 +485,7 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
       const part = parts.find((p) => p.key === transferKey(t))
       const seller = part ? await sellerFor(part) : null
       if (!part || !seller?.profileId) {
+        if (opts?.strict) throw new Error('Paid split seller is unreadable')
         console.error(`${LOG} no seller to notify for a paid split share`, {
           orderId: order.id,
           transferId: t.id,
@@ -487,6 +497,8 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
       const soldLabel = summary ?? 'an item'
       const gross = receiptAmount(t.amountCents + t.platformFeeCents, t.currency)
       await notifyEarner({
+        strict: opts?.strict,
+        dedupeKey: `commerce:${order.id}:seller:${transferKey(t)}:recipient:${seller.profileId}`,
         recipientProfileId: seller.profileId,
         actorProfileId: order.buyerProfileId,
         type: ORDER_SOLD_NOTIFICATION_TYPE,
@@ -520,6 +532,7 @@ async function sendSplitOrderReceipts(order: SettledOrder, recovered?: ReadonlyS
       noticed += 1
     }
   } catch (err) {
+    if (opts?.strict) throw err
     console.error(`${LOG} split order receipts failed`, { orderId: order.id, err })
   }
   return noticed

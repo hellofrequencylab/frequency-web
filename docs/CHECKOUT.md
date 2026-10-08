@@ -32,6 +32,31 @@ must not be eight integrations.
 
 ---
 
+### Recovering a paid commerce order (LIVE-882)
+
+A paid status records the payment. It does not prove that stock, accounting, a held booking,
+Journey access, or receipts finished. The ordinary verified-session recorder resumes unfinished
+steps for both a new paid order and an already-paid replay. Its service-only claim binds the
+original session, payment intent, amount and currency. A bounded per-order lease fences concurrent
+handlers; a failed required write releases the claim and fails the webhook so delivery can retry.
+Each successful step is checkpointed independently. Refunds and cancellations refuse the claim.
+
+Stock keeps its existing atomic inventory marker and accounting keeps its unique order key.
+Paid Journey access uses the canonical adoption path with checked practice preparation. The
+actual lesson permission (legacy active adoption) and solo enrollment/provenance commit in one
+order-locked RPC. A full refund uses the same order lock to revoke only unfinished order-owned
+access. Verified refund replay retries a failed revoke even after status became refunded; existing
+free/other-order access and completed Journeys remain intact. Creator rewards and adoption counters retain their existing best-effort
+contract; this recovery does not claim exactly-once reward issuance. Split transfers keep their
+existing durable transfer/reversal ledger and reconciliation process, with captured payees.
+
+New commerce receipts use stable order/recipient identities in the existing notification and email
+outbox keys. An outbox acceptance is distinct from final email delivery, which remains the queue's
+responsibility. Historical paid/fulfilled orders predate these identities: their receipt state is
+`suppressed_legacy` (delivery unverified), not a delivered/completed claim. They can repair required
+access, stock and accounting, but historical missing receipts require review and are not resent
+automatically. A repeated migration apply never suppresses receipt work introduced afterward.
+
 ## 2. Adding a creator — the whole recipe
 
 **1. Take a `ui` option, default hosted.**

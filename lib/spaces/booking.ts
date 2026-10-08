@@ -2299,11 +2299,13 @@ export async function linkBookingToOrder(bookingId: string, orderId: string): Pr
 /** Confirm the held booking behind a settled order (deposit paid). Idempotent (flips only a still
  *  'pending' hold). FAIL-SOFT + a no-op pre-migration, so a normal product-order settle is never
  *  blocked by a missing column. */
-export async function confirmBookingByOrder(orderId: string): Promise<void> {
+export async function confirmBookingByOrder(orderId: string, opts?: { strict?: boolean }): Promise<void> {
   if (!orderId) return
   try {
-    await bookingsTable().update({ status: 'confirmed' }).eq('order_id', orderId).eq('status', 'pending')
-  } catch {
+    const { error } = await bookingsTable().update({ status: 'confirmed' }).eq('order_id', orderId).eq('status', 'pending')
+    if (error && opts?.strict) throw error
+  } catch (error) {
+    if (opts?.strict) throw error
     /* pre-migration / no linked booking: no-op */
   }
 }

@@ -1,3 +1,4 @@
+# LIVE-882: service-only paid-order recovery RPCs and a client mutation guard.
 transition_space_plan_stage  authenticated
 block_type_usage                     internal
 create_penciled_plan         authenticated
@@ -280,3 +281,11 @@ split_calendar_series        authenticated
 begin_collective_space_change internal
 finish_collective_space_change internal
 set_collective_member_space internal
+claim_commerce_settlement             internal
+advance_commerce_settlement           internal
+release_commerce_settlement           internal
+protect_commerce_settlement_columns   internal
+
+grant_paid_commerce_journey            internal
+revoke_refunded_commerce_journeys      internal
+protect_paid_journey_provenance        internal

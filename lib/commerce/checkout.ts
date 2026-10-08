@@ -49,6 +49,18 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
+// The additive recovery RPCs are service-only until the public generated schema is refreshed.
+async function settlementRpc(name: 'claim_commerce_settlement' | 'advance_commerce_settlement' | 'release_commerce_settlement', args: Record<string, unknown>): Promise<unknown> {
+  const client = db() as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> }
+  const { data, error } = name === 'claim_commerce_settlement'
+    ? await client.rpc('claim_commerce_settlement', args)
+    : name === 'advance_commerce_settlement'
+      ? await client.rpc('advance_commerce_settlement', args)
+      : await client.rpc('release_commerce_settlement', args)
+  if (error) throw new Error(`[commerce] settlement ${name} failed: ${error.message}`)
+  return data
+}
+
 interface ProductRow {
   id: string
   owner_kind: 'platform' | 'profile' | 'space'
@@ -650,6 +662,12 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   const paymentIntentId =
     typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null
 
+  if (!paymentIntentId || !Number.isSafeInteger(session.amount_total) || !session.currency) {
+    throw new Error('[commerce] paid session has incomplete payment authority')
+  }
+  const paidAmount = session.amount_total as number
+  const paidCurrency = session.currency.toLowerCase()
+
   // LIVE-346: the pending row stored `input.shipping ?? {}`, which is empty on every live
   // buy path. Overwrite it with the address Stripe validated, when one arrived. Leave the
   // pending value alone when Stripe collected nothing (an intangible cart, or a miss).
@@ -669,6 +687,8 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
+    .eq('amount_cents', paidAmount)
+    .eq('currency', paidCurrency)
     // owner_profile_id / owner_space_id ride along for the SELLER's notice (LIVE-344): the row already
     // knows who the money went to, and re-reading the product to find out would be a second read of a
     // fact this update is holding.
@@ -678,7 +698,7 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   if (flipError) {
     throw new Error(`[commerce] paid flip failed (session=${session.id}): ${flipError.message}`)
   }
-  const rows = (updated ?? []) as {
+  type SettlementRow = {
     id: string
     owner_kind: OrderOwnerKind
     owner_profile_id: string | null
@@ -689,71 +709,87 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     buyer_profile_id: string | null
     currency: string
     funds_flow: string | null
-  }[]
+  }
+  let rows = (updated ?? []) as SettlementRow[]
+  if (rows.length === 0) {
+    // A redelivery must resume required steps, but only for the original verified payment.
+    const { data, error } = await db().from('commerce_orders')
+      .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency, funds_flow')
+      .eq('stripe_checkout_session_id', session.id).eq('stripe_payment_intent_id', paymentIntentId)
+      .eq('amount_cents', paidAmount).eq('currency', paidCurrency).in('status', ['paid', 'fulfilled'])
+    if (error) throw new Error(`[commerce] settlement replay read failed: ${error.message}`)
+    rows = (data ?? []) as SettlementRow[]
+  }
 
   for (const row of rows) {
-    // PAY THE SELLERS OF A SPLIT ORDER (LIVE-622, ADR-1614). A destination charge paid its one seller
-    // as it landed; a separate order's charge paid nobody, so its transfers are planned (one ledger
-    // row per seller share) and created here, once, by the delivery that flipped the row. Never
-    // throws: a transfer that does not land stays planned or failed for the reconciler, which is
-    // also what finds a plan this call could not write.
-    if (row.funds_flow === 'separate') await settleSplitOrderTransfers(row.id)
-
-    // Enforce inventory for this paid order: decrement_commerce_stock_atomic
-    // (migration 20260819000000) locks each tracked-stock product, subtracts this
-    // order's quantities, and is idempotent per order (a retried/concurrent settle
-    // no-ops). Untracked products (stock null) are skipped and stay unlimited.
-    const { error: stockError } = await db().rpc('decrement_commerce_stock_atomic', { _order: row.id })
-    if (stockError) {
-      // The order is already paid + settled; the RPC raises typed P0001 'out_of_stock' only when
-      // stock raced below the sold quantity. The flip is never blocked (the money moved), but the
-      // buyer is not left holding a paid order with nothing to ship (SCAN-713): an oversell is
-      // refunded in full and the buyer told, the way the ticket settle handles capacity. Anything
-      // else stays a log line for the operator; a webhook retry re-runs the idempotent RPC.
-      console.error('[commerce] stock decrement failed', { orderId: row.id, error: stockError.message })
-      const oversold = stockError.code === 'P0001' || /out_of_stock/i.test(stockError.message ?? '')
-      if (oversold) await refundOversoldOrder(row.id, row.buyer_profile_id)
+    const token = crypto.randomUUID()
+    const claim = await settlementRpc('claim_commerce_settlement', {
+      _order: row.id, _session: session.id, _payment_intent: paymentIntentId,
+      _amount: paidAmount, _currency: paidCurrency, _token: token,
+    }) as { state: string; steps?: Record<string, unknown> }
+    if (claim.state === 'complete' || claim.state === 'refused') continue
+    if (claim.state !== 'claimed') throw new Error('[commerce] settlement already in progress; retry')
+    const steps = claim.steps ?? {}
+    const runStep = async (step: string, work: () => Promise<void>) => {
+      if (steps[step] === true || (step === 'receipts' && steps[step] === 'suppressed_legacy')) return
+      if (await settlementRpc('advance_commerce_settlement', { _order: row.id, _token: token, _step: null }) !== true) {
+        throw new Error('[commerce] settlement authority changed; retry')
+      }
+      await work()
+      if (await settlementRpc('advance_commerce_settlement', { _order: row.id, _token: token, _step: step }) !== true) {
+        throw new Error('[commerce] settlement checkpoint failed; retry')
+      }
     }
+    try {
+      const revenue = row.owner_kind === 'platform' ? row.amount_cents : row.platform_fee_cents
+      await runStep('finance', async () => {
+        await recordFinancialTransaction({
+          entityId: row.entity_id,
+          revenueType: 'commerce',
+          amountCents: revenue,
+          profileId: row.buyer_profile_id,
+          currency: row.currency,
+          stripePaymentIntentId: paymentIntentId,
+          sourceTable: 'commerce_orders',
+          sourceId: row.id,
+          idempotencyKey: `commerce_order:${row.id}`,
+        })
+      })
 
-    const revenue = row.owner_kind === 'platform' ? row.amount_cents : row.platform_fee_cents
-    await recordFinancialTransaction({
-      entityId: row.entity_id,
-      revenueType: 'commerce',
-      amountCents: revenue,
-      profileId: row.buyer_profile_id,
-      currency: row.currency,
-      stripePaymentIntentId: paymentIntentId,
-      sourceTable: 'commerce_orders',
-      sourceId: row.id,
-      idempotencyKey: `commerce_order:${row.id}`,
-    }).catch(() => {})
+      await runStep('inventory', async () => {
+        const { error } = await db().rpc('decrement_commerce_stock_atomic', { _order: row.id })
+        if (!error) return
+        if (/out_of_stock/i.test(error.message ?? '')) {
+          await refundOversoldOrder(row.id, row.buyer_profile_id)
+          // Never grant access or announce a sale after an oversell/refund. Failed refunds retry.
+          throw new Error(`[commerce] oversold order cannot be fulfilled: ${row.id}`)
+        }
+        throw new Error(`[commerce] stock decrement failed: ${error.message}`)
+      })
+      // This ledger has its own durable reconciler; retries always retain its captured payees.
+      if (row.funds_flow === 'separate') await settleSplitOrderTransfers(row.id)
 
-    // Bookable services (Phase 4, ADR-596): if this order paid the deposit on a held booking, confirm
-    // it. No-op / fail-soft for a normal product order (no linked booking) and pre-migration.
-    await confirmBookingByOrder(row.id)
+      // A missing linked booking is a normal product order. Database errors must remain retryable.
+      await runStep('booking', () => confirmBookingByOrder(row.id, { strict: true }))
 
-    // Journeys (ADR-1397): a paid order for a Journey grants the enrolment that now IS the access.
-    // Beside the booking confirm because it is the same kind of thing -- the per-kind grant that
-    // turns a settled payment into the thing bought -- and fail-soft for the same reason: the money
-    // has moved, so a throw here would redeliver the webhook rather than fix anything. No-op for an
-    // order that bought no Journey.
-    await enrolByOrder(row.id)
+      // Required paid access uses the ordinary adoption path with checked writes; a retry repairs it.
+      await runStep('journey', () => enrolByOrder(row.id, { strict: true }))
 
-    // TELL THE TWO PEOPLE IN THE ORDER (LIVE-344). Runs once per row THIS delivery flipped, so a
-    // redelivered webhook flips nothing and sends nothing. Fire-and-forget beside the ledger append,
-    // for the same reason: the money has moved, and a failed message must never 500 a settled payment
-    // into a redelivery loop. The module logs every miss for itself.
-    await sendOrderReceipts({
-      id: row.id,
-      ownerKind: row.owner_kind,
-      ownerProfileId: row.owner_profile_id,
-      ownerSpaceId: row.owner_space_id,
-      buyerProfileId: row.buyer_profile_id,
-      amountCents: row.amount_cents,
-      currency: row.currency,
-      // The address Stripe collected is the only way to reach a buyer with no account.
-      buyerEmail: session.customer_details?.email ?? null,
-    }).catch(() => {})
+      // Stable recipient keys dedupe the existing notification/outbox writes even if a checkpoint fails.
+      await runStep('receipts', () => sendOrderReceipts({
+        id: row.id,
+        ownerKind: row.owner_kind,
+        ownerProfileId: row.owner_profile_id,
+        ownerSpaceId: row.owner_space_id,
+        buyerProfileId: row.buyer_profile_id,
+        amountCents: row.amount_cents,
+        currency: row.currency,
+        // The address Stripe collected is the only way to reach a buyer with no account.
+        buyerEmail: session.customer_details?.email ?? null,
+      }, { strict: true }))
+    } finally {
+      await settlementRpc('release_commerce_settlement', { _order: row.id, _token: token })
+    }
   }
 }
 
@@ -773,8 +809,8 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
  * with an id that is not theirs is settle a purchase that genuinely happened -- which is precisely
  * what the webhook does, unprompted, seconds later.
  *
- * SAFE TO RUN TWICE. `recordCommerceOrderFromSession` updates `where status = 'pending'`, so
- * whichever of settle/webhook arrives second matches no rows, fulfils nothing and sends nothing.
+ * SAFE TO RUN TWICE. A service-only lease fences concurrent deliveries and completed steps remain
+ * durable. A verified replay resumes required work under the original payment and recipient keys.
  */
 export async function recordCommerceOrderFromSessionId(sessionId: string): Promise<boolean> {
   if (!stripe) return false
@@ -1031,14 +1067,19 @@ export async function recordCommerceRefund(
 ): Promise<void> {
   if (!paymentIntentId) return
   if (opts.refundedCents != null) {
-    const { data } = await db()
+    const { data, error } = await db()
       .from('commerce_orders')
-      .select('id, amount_cents')
+      .select('id, amount_cents, status')
       .eq('stripe_payment_intent_id', paymentIntentId)
-      .in('status', ['paid', 'fulfilled'])
+      .in('status', ['paid', 'fulfilled', 'refunded'])
       .maybeSingle()
-    const target = data as { id: string; amount_cents: number } | null
+    if (error) throw new Error(`[commerce] refund target read failed: ${error.message}`)
+    const target = data as { id: string; amount_cents: number; status?: string } | null
     if (!target) return // nothing settled behind this charge (not ours, or already fully refunded)
+    if (target.status === 'refunded') {
+      await revokeJourneyByOrder(target.id, { strict: true })
+      return
+    }
     if (opts.refundedCents < target.amount_cents) {
       await recordPartialCommerceRefund(target.id, paymentIntentId, opts.refundedCents, opts.releaseBooking === true)
       return
@@ -1049,13 +1090,22 @@ export async function recordCommerceRefund(
 
 /** Flip a refunded order + reverse the ledger entry (idempotent; paid → refunded). */
 async function recordFullCommerceRefund(paymentIntentId: string): Promise<void> {
-  const { data: updated } = await db()
+  const { data: updated, error: flipError } = await db()
     .from('commerce_orders')
     .update({ status: 'refunded', refunded_at: new Date().toISOString() })
     .eq('stripe_payment_intent_id', paymentIntentId)
     .in('status', ['paid', 'fulfilled'])
     .select(REFUND_ROW_COLS)
+  if (flipError) throw new Error(`[commerce] refunded flip failed: ${flipError.message}`)
   const rows = (updated ?? []) as RefundedOrderRow[]
+  if (rows.length === 0) {
+    // Required access cleanup remains retryable after the refund status committed.
+    const { data, error } = await db().from('commerce_orders').select('id')
+      .eq('stripe_payment_intent_id', paymentIntentId).eq('status', 'refunded')
+    if (error) throw new Error(`[commerce] refunded replay read failed: ${error.message}`)
+    for (const row of (data ?? []) as { id: string }[]) await revokeJourneyByOrder(row.id, { strict: true })
+    return
+  }
   for (const row of rows) {
     const revenue = recordedRevenueCents(row)
     // A partial refund recorded earlier already reversed part of this revenue (L6-08); reverse the rest.
@@ -1081,12 +1131,13 @@ async function recordFullCommerceRefund(paymentIntentId: string): Promise<void> 
     // learner who got $50 back should not lose the program. A finished Journey is never un-finished
     // (revokeJourneyByOrder skips completed enrolments), because a completion and its rewards already
     // happened and rewriting a member's record to settle a billing question is the worse error.
-    await revokeJourneyByOrder(row.id)
+    try {
+      await revokeJourneyByOrder(row.id, { strict: true })
+    } finally {
+      // Stock has its own atomic restore marker. Access failure must not skip this unwind.
+      await restoreCommerceStock(row)
+    }
 
-    // L6-16 (2026-09-05): give the goods back to the shelf. Tickets free their tier on refund;
-    // commerce never re-incremented stock, so a refunded item stayed sold out. LIVE-161: one RPC,
-    // one transaction -- the idempotency check, the increments and the marker no longer race.
-    await restoreCommerceStock(row)
   }
 }
 

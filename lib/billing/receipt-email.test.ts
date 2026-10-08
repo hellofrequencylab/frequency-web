@@ -14,8 +14,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 //      (docs/CONTENT-VOICE.md hard rule).
 
 const m = vi.hoisted(() => ({
-  enqueueEmail: vi.fn(async (_p: Record<string, unknown>) => {}),
-  notificationsInsert: vi.fn(async (_row: Record<string, unknown>) => ({ error: null as null | { message: string } })),
+  enqueueEmail: vi.fn(async (_p: Record<string, unknown>, _opts?: { dedupeKey?: string }) => {}),
+  notificationsInsert: vi.fn(async (_row: Record<string, unknown>) => ({ error: null as null | { message: string; code?: string } })),
   gateAllowed: true,
   gateCalls: [] as unknown[][],
   accountEmail: null as string | null,
@@ -28,7 +28,7 @@ const m = vi.hoisted(() => ({
 // file asserts about the rendered message is what a mailbox actually receives.
 vi.mock('@/lib/email', async (importActual) => ({
   ...(await importActual<typeof import('@/lib/email')>()),
-  enqueueEmail: (p: Record<string, unknown>) => m.enqueueEmail(p),
+  enqueueEmail: (p: Record<string, unknown>, opts?: { dedupeKey?: string }) => opts ? m.enqueueEmail(p, opts) : m.enqueueEmail(p),
 }))
 vi.mock('@/lib/comms/send-gate', () => ({
   resolveSendGate: (...args: unknown[]) => {
@@ -360,5 +360,33 @@ describe('receiptHtml when the React render fails (LIVE-695)', () => {
     expect(spy).toHaveBeenCalled()
     spy.mockRestore()
     vi.doUnmock('@/lib/email-react/render')
+  })
+})
+
+
+describe('recoverable commerce receipt options', () => {
+  it('uses the existing outbox identity and surfaces an enqueue failure', async () => {
+    m.accountEmail = 'buyer@example.test'
+    m.enqueueEmail.mockRejectedValueOnce(new Error('outbox offline'))
+    await expect(sendMoneyReceipt({ profileId: 'payer-1', subject: 'Receipt', content, logTag: '[t]', strict: true, dedupeKey: 'commerce:o1:buyer:email' })).rejects.toThrow('outbox offline')
+    await sendMoneyReceipt({ profileId: 'payer-1', subject: 'Receipt', content, logTag: '[t]', strict: true, dedupeKey: 'commerce:o1:buyer:email' })
+    expect(m.enqueueEmail.mock.calls.at(-1)?.[1]).toEqual({ dedupeKey: 'commerce:o1:buyer:email' })
+  })
+})
+
+
+describe('recoverable seller notification identity', () => {
+  const notice = { recipientProfileId: 'seller', type: 'commerce_order_sold', referenceType: 'order', referenceId: 'o1', bellBody: 'bought an item', subject: 'Sale', content, logTag: '[t]', strict: true, dedupeKey: 'commerce:o1:seller:space:s1:recipient:seller' }
+  it('accepts a durable duplicate bell and still repairs an email missed on the first delivery', async () => {
+    m.accountEmail = 'seller@example.test'
+    m.notificationsInsert.mockResolvedValueOnce({ error: { message: 'duplicate key', code: '23505' } })
+    await notifyEarner(notice)
+    expect(m.notificationsInsert).toHaveBeenCalledWith(expect.objectContaining({ dedupe_key: `${notice.dedupeKey}:bell` }))
+    expect(m.enqueueEmail.mock.calls.at(-1)?.[1]).toEqual({ dedupeKey: `${notice.dedupeKey}:email` })
+  })
+  it('keeps a failed bell write retryable rather than treating the whole notice as complete', async () => {
+    m.notificationsInsert.mockResolvedValueOnce({ error: { message: 'database offline', code: '08006' } })
+    await expect(notifyEarner(notice)).rejects.toMatchObject({ message: 'database offline' })
+    expect(m.enqueueEmail).not.toHaveBeenCalled()
   })
 })

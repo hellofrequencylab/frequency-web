@@ -35,6 +35,8 @@ const state = vi.hoisted(() => {
       calls.push(call)
       events.push(`${call.op}:${call.table}`)
       const out = handler(call)
+      if (out.data === undefined && !out.error && call.table === 'rpc:claim_commerce_settlement') return { data: { state: 'claimed', steps: {} }, error: null }
+      if (out.data === undefined && !out.error && call.table === 'rpc:advance_commerce_settlement') return { data: true, error: null }
       return { data: out.data === undefined ? (call.single ? null : []) : out.data, error: out.error ?? null }
     },
     reset() {
@@ -628,7 +630,7 @@ describe('recordCommerceOrderFromSession — persists Stripe shipping (LIVE-346)
     await recordCommerceOrderFromSession({
       id: 'cs_1',
       metadata: { kind: 'commerce_order' },
-      payment_status: 'paid',
+      payment_status: 'paid', amount_total: 1000, currency: 'usd',
       payment_intent: 'pi_1',
       shipping_details: shipping,
     } as unknown as Stripe.Checkout.Session)
@@ -666,7 +668,7 @@ describe('recordCommerceOrderFromSession — persists Stripe shipping (LIVE-346)
     await recordCommerceOrderFromSession({
       id: 'cs_1',
       metadata: { kind: 'commerce_order' },
-      payment_status: 'paid',
+      payment_status: 'paid', amount_total: 1000, currency: 'usd',
       payment_intent: 'pi_1',
     } as unknown as Stripe.Checkout.Session)
 
@@ -694,7 +696,7 @@ describe('commerce_orders status flips surface the update error (SCAN-710)', () 
       recordCommerceOrderFromSession({
         id: 'cs_err',
         metadata: { kind: 'commerce_order' },
-        payment_status: 'paid',
+        payment_status: 'paid', amount_total: 1000, currency: 'usd',
         payment_intent: 'pi_1',
       } as unknown as Stripe.Checkout.Session),
     ).rejects.toThrow(/cs_err.*pooler blip/)
@@ -708,7 +710,7 @@ describe('commerce_orders status flips surface the update error (SCAN-710)', () 
       recordCommerceOrderFromSession({
         id: 'cs_err',
         metadata: { kind: 'commerce_order' },
-        payment_status: 'paid',
+        payment_status: 'paid', amount_total: 1000, currency: 'usd',
         payment_intent: 'pi_1',
       } as unknown as Stripe.Checkout.Session),
     ).rejects.toThrow(/settle flip failed|paid flip failed/)
@@ -854,5 +856,136 @@ describe('createCommerceCheckout — the guest door (LIVE-396)', () => {
     const args = stripeFake.checkout.sessions.create.mock.calls[0][0] as Stripe.Checkout.SessionCreateParams
     expect(args.success_url).toMatch(/^https:\/\/app\.test\/sign-in\?next=/)
     expect(args.success_url).toContain('email=sam%40example.com')
+  })
+})
+
+// LIVE-882: a paid flip must not erase the retry boundary for later fulfillment.
+describe('paid-order fulfillment continuity', () => {
+  it('surfaces a transient finance failure after the paid flip', async () => {
+    state.setHandler((c) => c.table === 'commerce_orders' && c.op === 'update'
+      ? { data: [{ id: 'o1', owner_kind: 'platform', entity_id: 'ent-1', amount_cents: 1000, platform_fee_cents: 0, buyer_profile_id: 'buyer-1', currency: 'usd', funds_flow: 'destination' }] }
+      : {})
+    ledger.recordFinancialTransaction.mockRejectedValueOnce(new Error('ledger temporarily unavailable'))
+    await expect(recordCommerceOrderFromSession({ id: 'cs_recovery', metadata: { kind: 'commerce_order' }, payment_status: 'paid', amount_total: 1000, currency: 'usd', payment_intent: 'pi_recovery' } as unknown as Stripe.Checkout.Session)).rejects.toThrow('ledger temporarily unavailable')
+  })
+})
+
+import { enrolByOrder, revokeJourneyByOrder } from './journey-fulfilment'
+import { sendOrderReceipts } from './order-receipt'
+
+describe('LIVE-882 retries the ordinary verified-session dispatcher', () => {
+  const session = { id: 'cs_resume', metadata: { kind: 'commerce_order' }, payment_status: 'paid', payment_intent: 'pi_resume', amount_total: 1000, currency: 'usd' } as unknown as Stripe.Checkout.Session
+  function recoveringOrder(initialSteps: Record<string, unknown> = {}) {
+    let paid = false
+    let lease: string | null = null
+    const steps = { ...initialSteps }
+    const row = { id: 'o_resume', owner_kind: 'platform', owner_profile_id: null, owner_space_id: null, entity_id: 'ent-1', amount_cents: 1000, platform_fee_cents: 0, buyer_profile_id: 'buyer-1', currency: 'usd', funds_flow: 'destination' }
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') {
+        if (paid) return { data: [] }
+        paid = true
+        return { data: [row] }
+      }
+      if (c.table === 'commerce_orders' && c.op === 'select') return { data: [row] }
+      const args = c.payload as Record<string, unknown>
+      if (c.table === 'rpc:claim_commerce_settlement') {
+        if (lease) return { data: { state: 'busy' } }
+        if (['inventory', 'finance', 'booking', 'journey'].every((s) => steps[s] === true) && (steps.receipts === true || steps.receipts === 'suppressed_legacy')) return { data: { state: 'complete' } }
+        lease = String(args._token)
+        return { data: { state: 'claimed', steps: { ...steps } } }
+      }
+      if (c.table === 'rpc:advance_commerce_settlement') {
+        if (lease !== args._token) return { data: false }
+        if (args._step) steps[String(args._step)] = true
+        return { data: true }
+      }
+      if (c.table === 'rpc:release_commerce_settlement') { lease = null; return { data: null } }
+      return {}
+    })
+    return steps
+  }
+
+  it('recovers access after a paid Journey failure, without repeating successful stock or finance steps', async () => {
+    const steps = recoveringOrder()
+    vi.mocked(enrolByOrder).mockRejectedValueOnce(new Error('enrollment write failed'))
+    await expect(recordCommerceOrderFromSession(session)).rejects.toThrow('enrollment write failed')
+    expect(steps).toEqual({ inventory: true, finance: true, booking: true })
+    expect(sendOrderReceipts).not.toHaveBeenCalled()
+    await recordCommerceOrderFromSession(session)
+    await recordCommerceOrderFromSession(session)
+    expect(state.calls.filter((c) => c.table === 'rpc:decrement_commerce_stock_atomic')).toHaveLength(1)
+    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
+    expect(enrolByOrder).toHaveBeenCalledTimes(2)
+    expect(sendOrderReceipts).toHaveBeenCalledTimes(1)
+    expect(steps).toEqual({ inventory: true, finance: true, booking: true, journey: true, receipts: true })
+  })
+
+  it('fences overlapping deliveries and lets the holder finish exactly one grant and receipt', async () => {
+    recoveringOrder()
+    let finish!: () => void
+    let entered!: () => void
+    const started = new Promise<void>((resolve) => { entered = resolve })
+    vi.mocked(enrolByOrder).mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; entered() }))
+    const holder = recordCommerceOrderFromSession(session)
+    await started
+    await expect(recordCommerceOrderFromSession(session)).rejects.toThrow('already in progress')
+    finish()
+    await holder
+    expect(enrolByOrder).toHaveBeenCalledTimes(1)
+    expect(sendOrderReceipts).toHaveBeenCalledTimes(1)
+    expect(state.calls.filter((c) => c.table === 'rpc:decrement_commerce_stock_atomic')).toHaveLength(1)
+  })
+
+  it('retries a receipt failure without re-running completed access or inventory', async () => {
+    const steps = recoveringOrder()
+    vi.mocked(sendOrderReceipts).mockRejectedValueOnce(new Error('email outbox offline'))
+    await expect(recordCommerceOrderFromSession(session)).rejects.toThrow('email outbox offline')
+    expect(steps.receipts).toBeUndefined()
+    await recordCommerceOrderFromSession(session)
+    expect(enrolByOrder).toHaveBeenCalledTimes(1)
+    expect(sendOrderReceipts).toHaveBeenCalledTimes(2)
+    expect(steps.receipts).toBe(true)
+  })
+
+  it('does not turn unknown historical receipts into new email, while repairing required access', async () => {
+    const steps = recoveringOrder({ receipts: 'suppressed_legacy' })
+    await recordCommerceOrderFromSession(session)
+    expect(enrolByOrder).toHaveBeenCalledWith('o_resume', { strict: true })
+    expect(sendOrderReceipts).not.toHaveBeenCalled()
+    expect(steps.receipts).toBe('suppressed_legacy')
+  })
+
+  it('keeps finance incomplete on failure and records it on replay under the same durable key', async () => {
+    const steps = recoveringOrder()
+    ledger.recordFinancialTransaction.mockRejectedValueOnce(new Error('ledger outage'))
+    await expect(recordCommerceOrderFromSession(session)).rejects.toThrow('ledger outage')
+    expect(steps).toEqual({})
+    await recordCommerceOrderFromSession(session)
+    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(2)
+    expect(ledger.recordFinancialTransaction.mock.calls.map(([input]) => input.idempotencyKey)).toEqual(['commerce_order:o_resume', 'commerce_order:o_resume'])
+    expect(state.calls.filter((c) => c.table === 'rpc:decrement_commerce_stock_atomic')).toHaveLength(1)
+  })
+})
+
+
+describe('LIVE-882 full refund access cleanup can recover after status changed', () => {
+  it('retries a failed order-owned revoke on verified refund redelivery and still restores stock once', async () => {
+    let refunded = false
+    state.setHandler((c) => {
+      if (c.table === 'commerce_orders' && c.op === 'update') {
+        if (refunded) return { data: [] }
+        refunded = true
+        return { data: [REFUND_ROW] }
+      }
+      if (c.table === 'commerce_orders' && c.op === 'select' && hasFilter(c, 'eq', 'status', 'refunded')) return { data: [{ id: 'o1' }] }
+      return {}
+    })
+    vi.mocked(revokeJourneyByOrder).mockRejectedValueOnce(new Error('access deletion unavailable'))
+    await expect(recordCommerceRefund('pi_1')).rejects.toThrow('access deletion unavailable')
+    await recordCommerceRefund('pi_1')
+    expect(revokeJourneyByOrder).toHaveBeenCalledTimes(2)
+    expect(revokeJourneyByOrder).toHaveBeenLastCalledWith('o1', { strict: true })
+    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
+    expect(state.calls.filter((c) => c.table === 'rpc:restore_commerce_stock_atomic')).toHaveLength(1)
   })
 })
