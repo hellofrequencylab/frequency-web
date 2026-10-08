@@ -10,7 +10,7 @@ function record(value: unknown): Record<string, unknown> | null {
 /** Stored bench belongs to the inline-node format, even when empty or malformed. Object
  * cells are also incompatible, including mixed legacy/node payloads. A parsed legacy
  * document's sibling `nodes` projection is deliberately ignored (LIVE-119/task 9). */
-export function hasNativeNodeStorage(value: unknown): boolean {
+function hasNativeNodeStorage(value: unknown): boolean {
   const layout = record(value)
   if (!layout) return false
   if (Object.hasOwn(layout, 'bench')) return true
