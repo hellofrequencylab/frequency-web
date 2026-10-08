@@ -256,7 +256,7 @@ export async function SitePage({
         homeHref={homeHref}
         links={links}
         cta={cta}
-        themeFonts={hasChosenTheme(space.preferences)}
+        themeFonts={!!website || hasChosenTheme(space.preferences)}
         skin={skin}
         logoUrl={website ? websiteBrand.logo : skin ? space.brandLogoUrl : null}
         tagline={skin ? tagline : null}

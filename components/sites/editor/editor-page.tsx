@@ -13,7 +13,8 @@ import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
 import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { seedWebsiteHome, withWebsiteIds, initialWebsiteTheme } from '@/lib/sites/editor/seed'
 import type { Space } from '@/lib/spaces/types'
-import { siteChromeBasics } from '../site-page'
+import { siteAdminLinks, siteChromeBasics } from '../site-page'
+import { mensworkNowLine } from '../menswork-page'
 import { ConnectedWebsiteEditor } from './website-editor'
 
 export async function WebsiteEditorPage({ host, space: cached, token }: { host: string; space: Space; token: string }) {
@@ -40,5 +41,10 @@ export async function WebsiteEditorPage({ host, space: cached, token }: { host: 
   }
   initial = { ...initial, draft: { ...initial.draft, pages: await Promise.all(initial.draft.pages.map(async (page) => ({ ...page, doc: await refreshAssetRefUrls(page.doc, { websiteSpaceId: space.id }) }))) } }
   const websiteFeatures = await loadWebsiteFeatures(space.id, initial.draft.pages.map((page) => page.doc))
-  return <ConnectedWebsiteEditor host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} metadata={{ space: content, websiteFeatures }} live={live} links={chrome.siteLinks} origin={chrome.origin} />
+  const websiteChrome = {
+    cta: chrome.cta, tagline: chrome.tagline,
+    seasonNow: { ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()), next: live.events.find((event) => /circle night/i.test(event.title))?.startsAt ?? null },
+    admin: siteAdminLinks(chrome.origin, space.slug, ''),
+  }
+  return <ConnectedWebsiteEditor host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} metadata={{ space: content, websiteFeatures, websiteChrome }} live={live} links={chrome.siteLinks} origin={chrome.origin} />
 }

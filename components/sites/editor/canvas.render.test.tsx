@@ -5,7 +5,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Data } from '@/lib/page-editor/types'
 import { WebsiteCanvas } from './canvas'
 
-vi.mock('../site-chrome', () => ({ SiteChrome: ({ children }: { children: ReactNode }) => <main>{children}</main> }))
+const chromeRender = vi.hoisted(() => vi.fn())
+vi.mock('../site-chrome', async (importOriginal) => ({ ...await importOriginal<typeof import('../site-chrome')>(), SiteChrome: ({ children, ...props }: { children: ReactNode }) => { chromeRender(props); return <main>{children}</main> } }))
 vi.mock('../website-document', () => ({ WebsiteDocument: ({ doc, wrapSection }: { doc: Data; wrapSection?: (node: ReactNode, indexes: number[]) => ReactNode }) => {
   const node = <div className="site-doc-section"><h1>Loaded website content</h1><div className="mw-grid"><div>Photo block</div><div>Text block</div></div></div>
   return doc.content.length && wrapSection ? wrapSection(node, [0]) : node
@@ -52,3 +53,21 @@ describe('website canvas iframe hydration', () => {
   })
 
 })
+
+ it('previews actual public chrome across themes while retaining unpublished draft page links', () => {
+   const container = document.createElement('div')
+   document.body.appendChild(container)
+   const root = createRoot(container)
+   const websiteChrome = { cta: { label: 'Book a night', href: '/book', external: false }, tagline: 'Real website tagline', seasonNow: { module: 'Libra', theme: 'Actual program', next: '2026-10-12T18:00:00Z' }, admin: { menu: [{ label: 'Website builder', href: '/admin/editor' }], console: 'https://frequency.example/spaces/hearts/manage/leadership' }, themeFonts: true }
+   for (const theme of ['Menswork', 'DAWN', 'Midnight'] as const) {
+     act(() => root.render(<WebsiteCanvas {...defaults} theme={theme} metadata={{ websiteChrome }} nav={[{ slug: 'home', label: 'Home' }, { slug: 'new-page', label: 'Unpublished page' }]} links={{ ...defaults.links, contactHref: '/contact' }} />))
+     const props = chromeRender.mock.lastCall![0]
+     expect(props.cta).toEqual(websiteChrome.cta)
+     expect(props.tagline).toBe('Real website tagline')
+     expect(props.admin).toEqual(websiteChrome.admin)
+     expect(props.links).toEqual([{ label: 'Home', href: '/' }, { label: 'Unpublished page', href: '/new-page' }, { label: 'Contact', href: '/contact' }])
+     expect(props.seasonNow).toEqual(theme === 'Menswork' ? websiteChrome.seasonNow : null)
+   }
+   act(() => root.unmount())
+   container.remove()
+ })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, type ReactNode, type MouseEvent } from 'react'
+import { useState, useRef, useEffect, useCallback, type ReactNode, type MouseEvent, type ComponentProps } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowUp, ArrowDown, Copy, MessageSquare, Trash2, GripVertical, Bold, Italic, Link, AlignLeft, Type } from 'lucide-react'
 import { sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
@@ -13,7 +13,7 @@ import { findInlineTextMatch, inlineTextValue, replaceInlineTextSegment } from '
 import { EDITABLE_GRIDS, sectionDeviceLayout, snapSectionSpacing, SECTION_SPACING_STEPS } from '@/lib/sites/editor/layout'
 import type { WebsiteTheme, Device, SiteComment, SectionDisplay, WebsitePresence } from '@/lib/sites/editor/state'
 import { WebsiteDocument } from '../website-document'
-import { SiteChrome } from '../site-chrome'
+import { SiteChrome, siteHref } from '../site-chrome'
 
 const CANVAS_CSS = `
 html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
@@ -60,6 +60,10 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   onReorder?: (sourceIds: string[], targetId: string) => void
   onInsert: (index: number) => void
 }) {
+  // Resolved by the same server reader as the public site; preview links stay inert.
+  const chrome = metadata?.websiteChrome as Partial<Pick<ComponentProps<typeof SiteChrome>, 'cta' | 'tagline' | 'seasonNow' | 'admin' | 'themeFonts'>> | undefined
+  const pageLinks = nav.map((page) => ({ label: page.label, href: siteHref(links.siteBase, page.slug) }))
+  if (links.contactHref && !pageLinks.some((page) => page.href === links.contactHref)) pageLinks.push({ label: 'Contact', href: links.contactHref })
   const [mount, setMount] = useState<HTMLElement | null>(null)
   const frame = useRef<HTMLIFrameElement>(null)
   const editing = useRef<HTMLElement | null>(null)
@@ -275,7 +279,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
   return <iframe ref={frame} className="we-frame" title={`${title}, ${device} website canvas`} srcDoc="<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head><body></body></html>" sandbox="allow-same-origin" onLoad={attach}>
     {mount && createPortal(<div data-website-theme={theme} style={websiteThemeVars(theme, brandAccent)} className="we-canvas-root" onClickCapture={(e) => { if ((e.target as HTMLElement).closest('a')) e.preventDefault() }}>
       <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS}</style>
-      <SiteChrome brandName={brandName} homeHref="/" links={nav.map((p) => ({ label: p.label, href: p.slug === 'home' ? '/' : `/${p.slug}` }))} cta={null} themeFonts logoUrl={logo} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : null}>
+      <SiteChrome brandName={brandName} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={chrome?.cta ?? null} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={chrome?.tagline ?? null} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : null}>
         <WebsiteDocument doc={doc} theme={theme} config={config} metadata={metadata} live={live} links={links} origin={origin} title={title} wrapSection={wrap} />
         {!preview && <button className="we-insert" type="button" onClick={() => onInsert(doc.content.length)}>+ Add section</button>}
       </SiteChrome>
