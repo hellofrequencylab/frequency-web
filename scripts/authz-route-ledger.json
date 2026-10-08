@@ -255,6 +255,12 @@
       "reason": "The Space website's admin door (LIVE-864). It holds no identity of its own: it stores the HMAC pass the Frequency console minted for a signed-in manager (lib/sites/site-admin-pass.ts, bound to this Space and this host, 12 hours) in a host-only __Host- cookie, after readSiteAdminPass + passOpensSite verify it, and redirects to /admin/<view>. A missing, tampered, foreign or stale pass sets nothing. The admin pages re-check the pass and the person's owner or editor role on every view (siteAdminAllowed).",
       "checked": "2026-10-08",
       "digest": "96be04a0962f3abe"
+    },
+    "app/hosted/[host]/opengraph-image/route.tsx": {
+      "verdict": "public",
+      "reason": "A Menswork Space website's share card (LIVE-870, on the website's own host, rewritten here by proxy.ts). Anonymous by design: link previewers have no session. Read-only: it resolves the Space by host, answers 404 unless the website is published on the Menswork theme, and draws only what the public site already shows (the logo, name, hero headline, cover photo and domain). Writes nothing.",
+      "checked": "2026-10-08",
+      "digest": "c580574497e2a7c8"
     }
   }
 }
