@@ -126,11 +126,15 @@ describe('the executive overview', () => {
   })
 })
 
-// Owner ask 2026-10-08: "Let's keep the same header / menu through the site. Instead of an admin button,
-// make it a double menu with admin settings in blue. Leave a note about admin view only."
-describe('the website admin row', () => {
-  const links = siteAdminNavLinks('https://frequencylocal.com/spaces/heart-on-fire/manage/leadership', 'calendar')
-  const chrome = (skin: boolean, gated = false) =>
+// Owner asks 2026-10-08 (LIVE-869): "Menu should read: Home | The Year | Circles | Calendar | Retreat |
+// About (Blue after this) | ADMIN: Executive Overview", "Add blue admin section to the footer as well with a
+// link to Executive Overview", "Make the Year Calendar a blue admin link".
+describe('the website admin links', () => {
+  const admin = siteAdminNavLinks(
+    { overview: '/admin/overview', calendar: '/admin/calendar', console: 'https://frequencylocal.com/spaces/heart-on-fire/manage/leadership' },
+    'calendar',
+  )
+  const chrome = (skin: boolean) =>
     renderToStaticMarkup(
       <SiteChrome
         brandName="Heart on Fire"
@@ -139,39 +143,34 @@ describe('the website admin row', () => {
         cta={null}
         themeFonts
         skin={skin ? { theme: 'menswork', season: 'fall' } : null}
-        adminHref="/admin"
-        adminNav={{ links, gated }}
+        admin={admin}
       >
         <p>Body</p>
       </SiteChrome>,
     )
+  const navOf = (html: string) => html.slice(html.indexOf('class="hs-nav"'), html.indexOf('</nav>', html.indexOf('class="hs-nav"')))
 
-  it('the visitor menu has no Admin item; the footer keeps a quiet way in', () => {
-    const html = chrome(true, true)
-    const nav = html.slice(html.indexOf('class="hs-nav"'), html.indexOf('</nav>', html.indexOf('class="hs-nav"')))
-    expect(nav).toContain('About')
-    expect(nav).not.toContain('Admin')
-    expect(html).toContain('class="hs-footer-admin"')
-    expect(html).toContain('href="/admin"')
+  it('the one menu ends with the blue admin links, after the pages', () => {
+    const nav = navOf(chrome(true))
+    expect(nav.indexOf('About')).toBeLessThan(nav.indexOf('class="hs-nav-admin"'))
+    expect(nav).toContain('Admin:')
+    expect(nav).toContain('href="/admin/overview"')
+    expect(nav).toMatch(/href="\/admin\/calendar" aria-current="page">Yearly Calendar/)
   })
 
-  it('the admin pages draw the blue row, marked admin view only, with the page they are on', () => {
+  it('the footer has a blue admin section with both pages and the console', () => {
     const html = chrome(true)
-    expect(html).toContain('class="hs-admin"')
-    expect(html).toContain('Admin view only')
-    expect(html).toContain('Visitors never see this menu.')
-    expect(html).toMatch(/href="\/admin\/calendar" class="hs-nav-admin" aria-current="page"/)
-    expect(html).toContain('href="https://frequencylocal.com/spaces/heart-on-fire/manage/leadership"')
-  })
-
-  it('a cached public page never renders the row on the server', () => {
-    expect(chrome(true, true)).not.toContain('class="hs-admin"')
+    const foot = html.slice(html.indexOf('class="hs-admin"'))
+    expect(foot).toContain('Executive Overview')
+    expect(foot).toContain('Yearly Calendar')
+    expect(foot).toContain('href="https://frequencylocal.com/spaces/heart-on-fire/manage/leadership"')
+    expect(html.indexOf('class="hs-admin"')).toBeLessThan(html.indexOf('class="hs-footer"'))
   })
 
   it('a house-look site shows none of it', () => {
     const html = chrome(false)
+    expect(html).not.toContain('hs-nav-admin')
     expect(html).not.toContain('class="hs-admin"')
-    expect(html).not.toContain('class="hs-footer-admin"')
   })
 })
 

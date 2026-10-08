@@ -23,9 +23,9 @@ ${R}{--hof-charcoal:${P.charcoal};--hof-surface:${P.surface};--hof-raised:${P.ra
 --pattern-chevron:repeating-linear-gradient(-60deg,var(--hof-hairline) 0 2px,transparent 2px 12px);
 min-height:100vh;background:var(--bg-page);color:var(--text-primary);font:var(--type-body);color-scheme:dark}
 ${R} *{box-sizing:border-box}
-/* The website's sticky header sits above these pages (64px menu, 40px admin row, 1px rule), so every
+/* The website's sticky header sits above these pages (64px menu, 1px rule), so every
    pinned rail and month heading pins just under it. */
-${R}{--hfa-top:105px}
+${R}{--hfa-top:65px}
 ${R} a{color:var(--text-link)}
 ${R} a:focus-visible,${R} button:focus-visible{outline:2px solid var(--hof-teal-text);outline-offset:2px}
 html:has(${R}){scroll-behavior:smooth;background:${P.charcoal}}

@@ -7,7 +7,7 @@ import { Menu, X } from 'lucide-react'
 // a frosted panel of the same links. A client island only so tapping a link closes the panel, which a plain
 // <details> cannot do. The links themselves are the server's, passed in as data.
 
-export function HouseMenu({ label, links }: { label: string; links: { href: string; label: string }[] }) {
+export function HouseMenu({ label, links }: { label: string; links: { href: string; label: string; className?: string }[] }) {
   const [open, setOpen] = useState(false)
   if (links.length === 0) return null
   return (
@@ -25,7 +25,7 @@ export function HouseMenu({ label, links }: { label: string; links: { href: stri
       {open && (
         <nav id="hs-menu-panel" aria-label={label} className="hs-menu-panel">
           {links.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
+            <a key={l.href} href={l.href} className={l.className} onClick={() => setOpen(false)}>
               {l.label}
             </a>
           ))}
