@@ -16,6 +16,22 @@
 > federation (HOOK-FEDERATION) as the escape hatch for already-separate or standalone
 > products. Authority order unchanged: running code + `supabase/migrations/` > this doc.
 
+
+### Collective network home (LIVE-764)
+
+An active connected Collective exposes `/spaces/<slug>/network`: a public directory and shared
+calendar over its member Spaces. The directory only includes same-owner children linked through
+`spaces.parent_id` that are active, network-visible and connected. Private, suspended, detached
+and unrelated children do not contribute their owned event feeds, even when the owner visits.
+The owner manages the complete membership list through Settings → Billing; that list is never
+reused as the public projection.
+
+The calendar composes the existing public event reader (tenancy, hosting and accepted shares),
+so each event retains its publication and home-Space visibility gates. Duplicate shared events
+appear once with their source names. Directory and accepted-share IDs are paginated; month event queries use both date boundaries, stable timestamp/ID ordering and exhaustive pages. Large networks read at most four member Spaces concurrently. A failed page remains an error rather than presenting a partial month. Called-off events remain calendar context and never appear
+in Up next. Month requests resolve the parent for the current caller and re-read child eligibility;
+a parent downgrade or private child cannot persist as a calendar source across requests.
+
 Status legend: ✅ built · ⏳ partial · 🔴 not built yet · 🅿️ parked.
 
 ---

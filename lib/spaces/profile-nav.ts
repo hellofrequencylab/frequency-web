@@ -1,3 +1,4 @@
+import { collectiveNetworkOpen } from '@/lib/collective/network'
 import { getCallerProfile } from '@/lib/auth'
 import type { WebRole } from '@/lib/core/roles'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
@@ -187,6 +188,7 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     // one thing. Shown only when the Space has upcoming PUBLIC events (the exact set the grid
     // renders), so the tab never opens onto an empty calendar.
     ...(hasCalendarEvents ? [{ href: `${base}/calendar`, label: 'Calendar' }] : []),
+    ...(collectiveNetworkOpen(space) ? [{ href: `${base}/network`, label: 'Network' }] : []),
     // Memberships (LIVE-509): the Space's tiers, and the door that joins one. Sits high, right after
     // Calendar, because it is the commercial answer to "what is this place" and it was previously
     // reachable ONLY through the one operator-overridable header button. A visitor gets it once the

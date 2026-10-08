@@ -196,19 +196,21 @@ type AdminClient = ReturnType<typeof createAdminClient>
  *  co-host calendar (the shared branch's home-space gate). Platform events (null home) skip this and are
  *  allowed by `filterSharedByHomeSpace` directly. FAIL-SAFE: empty set on any error (drops every
  *  real-home shared event rather than risk surfacing a walled space's event). */
-async function networkActiveHomeSpaceIds(admin: AdminClient, spaceIds: string[]): Promise<Set<string>> {
+async function networkActiveHomeSpaceIds(admin: AdminClient, spaceIds: string[], strict = false): Promise<Set<string>> {
   const ids = [...new Set(spaceIds)]
   if (ids.length === 0) return new Set()
   try {
-    const { data, error } = await admin
-      .from('spaces')
-      .select('id')
-      .in('id', ids)
-      .eq('visibility', 'network')
-      .eq('status', 'active')
-    if (error) return new Set()
-    return new Set(((data ?? []) as Array<{ id: string }>).map((r) => r.id))
-  } catch {
+    const allowed = new Set<string>()
+    // Bound each IN list below the response ceiling and avoid a huge filter URL.
+    for (let offset = 0; offset < ids.length; offset += 200) {
+      const { data, error } = await admin.from('spaces').select('id')
+        .in('id', ids.slice(offset, offset + 200)).eq('visibility', 'network').eq('status', 'active')
+      if (error) { if (strict) throw error; return new Set() }
+      for (const row of (data ?? []) as Array<{ id: string }>) allowed.add(row.id)
+    }
+    return allowed
+  } catch (error) {
+    if (strict) throw error
     return new Set()
   }
 }
@@ -216,16 +218,21 @@ async function networkActiveHomeSpaceIds(admin: AdminClient, spaceIds: string[])
 /** Event ids ACCEPTED-shared TO this space (EC3). The share is NECESSARY here; the per-event
  *  visibility gate (passesCalendarGate) is re-applied by the caller on each event's OWN row, so a
  *  share never surfaces a private/draft/cancelled event. FAIL-SAFE: [] on any error. */
-async function acceptedShareEventIds(admin: AdminClient, spaceId: string): Promise<string[]> {
+async function acceptedShareEventIds(admin: AdminClient, spaceId: string, exhaustive = false): Promise<string[]> {
   try {
-    const { data, error } = await admin
-      .from('event_space_shares')
-      .select('event_id')
-      .eq('space_id', spaceId)
-      .eq('status', 'accepted')
-    if (error) return []
-    return [...new Set(((data ?? []) as Array<{ event_id: string }>).map((r) => r.event_id))]
-  } catch {
+    const ids: string[] = []
+    for (let offset = 0; ; offset += 500) {
+      let query = admin.from('event_space_shares').select('event_id').eq('space_id', spaceId).eq('status', 'accepted')
+      if (exhaustive) query = query.order('event_id').range(offset, offset + 499)
+      const { data, error } = await query
+      if (error) { if (exhaustive) throw error; return [] }
+      const page = (data ?? []) as Array<{ event_id: string }>
+      ids.push(...page.map(row => row.event_id))
+      if (!exhaustive || page.length < 500) break
+    }
+    return [...new Set(ids)]
+  } catch (error) {
+    if (exhaustive) throw error
     return []
   }
 }
@@ -283,64 +290,47 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  */
 export async function listSpaceCalendarEvents(
   spaceId: string | null | undefined,
-  opts: { fromDay?: string; limit?: number; paintCancelled?: boolean } = {},
+  opts: { fromDay?: string; toDay?: string; exhaustive?: boolean; limit?: number; paintCancelled?: boolean } = {},
 ): Promise<SpaceCalendarEvent[]> {
   const sid = spaceId ?? (await loadRootSpaceId())
   if (!sid) return []
   const limit = opts.limit ?? 300
   const fromDay = opts.fromDay ?? new Date().toISOString().slice(0, 10)
   const fromDayIso = `${fromDay}T00:00:00Z`
+  // Exhaustive reads must name a finite, bounded month window; never sweep all future events.
+  const toDay = opts.toDay
+  const span = toDay ? (Date.parse(toDay) - Date.parse(fromDay)) / 86400000 : NaN
+  if (opts.exhaustive && (!/^\d{4}-\d{2}-\d{2}$/.test(fromDay) || !toDay || !/^\d{4}-\d{2}-\d{2}$/.test(toDay) || !Number.isFinite(span) || span <= 0 || span > 62)) throw new Error('Invalid calendar window')
   try {
     const admin = createAdminClient()
     // Membership (ADR-905): tenancy (space_id) + the hosting axis (host_space_id) + accepted
     // shares. Three DECLARATIONS that the event belongs to this Space. The owner-identity axes
     // ADR-898 added are gone; see the block above for why they can never come back.
-    const awayIds = await acceptedShareEventIds(admin, sid)
+    const awayIds = await acceptedShareEventIds(admin, sid, opts.exhaustive)
 
     // Owned events (tenancy — their home IS this space, which the page already resolved as
     // visible), events that NAME this space as host (their home may be ANY space, so they run
     // through the same home-space re-gate as shares), and accepted-share rows by id. Three reads
     // unioned in-app; the DB feed (space_public_calendar_feed) does the same UNION server-side.
-    const ownedQ = admin
-      .from('events')
-      .select(`${CALENDAR_COLS}, status, visibility, removed_at, is_demo`)
-      .eq('space_id', sid)
-      .eq('status', 'published')
-      .in('visibility', ['public', 'unlisted'])
-      .is('removed_at', null)
-      .eq('is_demo', false)
-      .gte('starts_at', fromDayIso)
-      .order('starts_at', { ascending: true })
-      .limit(limit)
-    // Now a plain `.eq()`, not an interpolated `.or()` string. Dropping `host_id` (ADR-905) left
-    // this axis with a single term, so the filter-string interpolation that made UUID-guarding
-    // necessary is gone with it — the value is parameterised by PostgREST instead.
-    const hostedQ = admin
-      .from('events')
-      .select(`${CALENDAR_COLS}, status, visibility, removed_at, is_demo, space_id`)
-      .eq('host_space_id', sid)
-      .eq('status', 'published')
-      .in('visibility', ['public', 'unlisted'])
-      .is('removed_at', null)
-      .eq('is_demo', false)
-      .gte('starts_at', fromDayIso)
-      .order('starts_at', { ascending: true })
-      .limit(limit)
-    const sharedQ = awayIds.length
-      ? admin
-          .from('events')
-          .select(`${CALENDAR_COLS}, status, visibility, removed_at, is_demo, space_id`)
-          .in('id', awayIds)
-          .eq('status', 'published')
-          .in('visibility', ['public', 'unlisted'])
-          .is('removed_at', null)
-          .eq('is_demo', false)
-          .gte('starts_at', fromDayIso)
-          .order('starts_at', { ascending: true })
-          .limit(limit)
-      : Promise.resolve({ data: [], error: null })
-
-    const [owned, hosted, shared] = await Promise.all([ownedQ, hostedQ, sharedQ])
+    const readBranch = async (axis: 'owned' | 'hosted' | 'shared', ids: string[] = []) => {
+      const rows: SharedCalendarEventRow[] = []
+      const groups = axis === 'shared' ? Array.from({ length: Math.ceil(ids.length / 200) }, (_, i) => ids.slice(i * 200, i * 200 + 200)) : [[]]
+      for (const group of groups) for (let offset = 0; ; offset += 500) {
+        let query = admin.from('events').select(`${CALENDAR_COLS}, status, visibility, removed_at, is_demo, space_id`)
+          .eq('status', 'published').in('visibility', ['public', 'unlisted']).is('removed_at', null)
+          .eq('is_demo', false).gte('starts_at', fromDayIso).order('starts_at', { ascending: true })
+        query = axis === 'owned' ? query.eq('space_id', sid) : axis === 'hosted' ? query.eq('host_space_id', sid) : query.in('id', group)
+        if (opts.exhaustive) query = query.lt('starts_at', `${toDay}T00:00:00Z`).order('id').range(offset, offset + 499)
+        else query = query.limit(limit)
+        const { data, error } = await query
+        if (error) { if (opts.exhaustive) throw error; return { data: rows, error } }
+        const page = (data ?? []) as SharedCalendarEventRow[]
+        rows.push(...page)
+        if (!opts.exhaustive || page.length < 500) break
+      }
+      return { data: rows, error: null }
+    }
+    const [owned, hosted, shared] = await Promise.all([readBranch('owned'), readBranch('hosted'), readBranch('shared', awayIds)])
     if (owned.error) return []
 
     // Re-gate the HOME space of every non-tenancy row (network + active; platform events and rows
@@ -353,6 +343,7 @@ export async function listSpaceCalendarEvents(
     const allowedHomes = await networkActiveHomeSpaceIds(
       admin,
       awayRows.map((e) => e.space_id).filter((id): id is string => !!id && id !== sid),
+      opts.exhaustive,
     )
     allowedHomes.add(sid) // rows homed HERE were already gated by the page's own space resolve
     const gatedAway = filterSharedByHomeSpace(awayRows, allowedHomes)
@@ -362,10 +353,11 @@ export async function listSpaceCalendarEvents(
       (owned.data as SpaceCalendarEventRow[] | null) ?? [],
       gatedAway,
       fromDayIso,
-      limit,
+      opts.exhaustive ? Number.MAX_SAFE_INTEGER : limit,
       { paintCancelled: opts.paintCancelled === true },
     )
-  } catch {
+  } catch (error) {
+    if (opts.exhaustive) throw error
     return []
   }
 }
