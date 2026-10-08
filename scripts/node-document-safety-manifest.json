@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "capturedAt": "2026-10-08",
+  "scope": "Entity node upgrade only; archive structural skeletons, not a fresh production capture. No legacy writer or registry migration guarantee.",
+  "recapture": "Update hashes only alongside reviewed input diff, capture date and whyIncluded reason; preserve archive deletion explanations.",
+  "inputs": [
+    {
+      "path": "scripts/entity-layout-corpus.json",
+      "source": "production structural census, captured 2026-08-25",
+      "whyIncluded": "37 real document skeletons; synthetic field markers, no tenant values",
+      "sha256": "30bc78bc58a8deee85cd727284eb11c2dacc2817bb770252a3a35dbf7e300331"
+    },
+    {
+      "path": "scripts/fixtures/node-document-safety/unknown-nested.json",
+      "source": "synthetic adversarial fixture",
+      "whyIncluded": "Unknown root placements, nested content, duplicate types, stored bench and hidden type",
+      "sha256": "5bfb89d723211784e7e9445182a2f28ae1c1d91a34b9735a0eed5570866654ca"
+    }
+  ]
+}

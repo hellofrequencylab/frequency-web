@@ -66,6 +66,20 @@ passes) · a renderer that exists but throws · a block reached through a runtim
 
 ## 2. `check:doc-safety`
 
+The first bounded foundation is `check:node-document-safety` (LIVE-871). It pins the existing
+37-document structural archive and a synthetic nested/unknown fixture with SHA-256, rejects missing
+inputs and orphan fixtures, and exercises the real `upgradeLayout` implementation in plain Node.
+It protects deterministic unique node identities, duplicate placements, serialized node idempotence,
+and byte-preserving authored content/style bags on placed and benched nodes. The structural archive
+contains synthetic field markers rather than tenant values; its seven dropped email-template shapes
+remain explicitly archived. Recapture requires the manifest hash, date and reason to change together.
+
+This bounded gate does not prove the legacy save path, exact raw legacy document roundtrip, Puck
+documents, registry up/down migrations, or all D0-D7 below. In particular D4 still exposes loss in the
+legacy dedupe writer, and E1 has not supplied D6 migrations. Those remain subsequent program work;
+passing this gate does not close E0.
+
+
 **Invariant:** a document that goes into the registry comes back out identical, including the parts
 the registry does not understand.
 
