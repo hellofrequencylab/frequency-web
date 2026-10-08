@@ -233,16 +233,27 @@ export async function buildHouseHome({ space, grid, brandName, tagline, origin, 
   const siteHero = readSiteHero(prefs)
   const steps = blocks.find((b) => b.kind === 'steps')
   const first = offerings[0]
+  // The website hero's own buttons (LIVE-865) win over the header button and the steps link, made website
+  // links here (a Space page path becomes the site's page); a link the site cannot take drops the button.
+  const ownButton = (b: { label: string; href: string } | undefined): HouseLink | null => {
+    const to = b ? siteLocalHref(b.href, links) : null
+    return b && to ? { label: b.label, ...to } : null
+  }
+  // The Menswork design's hero is the eyebrow, the headline, the intro and two buttons over the photo, with
+  // no side card (design system website/app/Home.jsx).
+  const menswork = (prefs as Record<string, unknown> | null)?.theme === 'menswork'
   const heroModel: HouseHeroModel = {
     photo: safeImageSrc(space.coverImageUrl) ?? coverPlaceholderFor(space.id),
     focus: readCoverFocus(prefs),
+    eyebrow: siteHero.eyebrow ?? null,
     title: siteHero.heading || hero.heading || brandName,
     lede: siteHero.tagline || hero.tagline || tagline || siteHeroLede(space.about),
-    cta,
+    cta: ownButton(siteHero.action) ?? cta,
     secondary:
-      steps && steps.kind === 'steps' && steps.anchor ? { label: (steps.eyebrow ?? steps.title ?? '').replace(/\*/g, ''), href: `#${steps.anchor}` } : null,
+      ownButton(siteHero.secondary) ??
+      (steps && steps.kind === 'steps' && steps.anchor ? { label: (steps.eyebrow ?? steps.title ?? '').replace(/\*/g, ''), href: `#${steps.anchor}` } : null),
     pill: communityButton,
-    start: first
+    start: first && !menswork
       ? {
           eyebrow: text(content.offerings?.eyebrow),
           name: brandName,
