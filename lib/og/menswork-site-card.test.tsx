@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MensworkSiteCard } from './menswork-site-card'
 
@@ -27,8 +27,9 @@ describe('the Menswork website share card', () => {
   it.each(['public/fonts/SofiaSansExtraCondensed-ExtraBold.ttf', 'public/fonts/Barlow-Medium.ttf'])(
     '%s is a full TrueType face, which Satori can read',
     (path) => {
-      expect(statSync(path).size).toBeGreaterThan(50_000)
-      expect(readFileSync(path).subarray(0, 4).toString('hex')).toBe('00010000')
+      const face = readFileSync(path)
+      expect(face.length).toBeGreaterThan(50_000)
+      expect(face.subarray(0, 4).toString('hex')).toBe('00010000')
     },
   )
 })
