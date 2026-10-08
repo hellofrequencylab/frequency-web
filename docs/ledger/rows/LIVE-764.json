@@ -9,10 +9,10 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on the collaborator calendar. Required before Founding Collective sells.",
+  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on the collaborator calendar. Required before Founding Collective sells. Public network home now composes eligible same-owner active network member Spaces and the existing published-event tenancy/hosting/accepted-share reader. Every month re-resolves caller-visible parent and child eligibility; owner management remains a separate billing door. Cancellations stay calendar context and never lead Up next. Targeted visibility/cross-tenant and month access checks pass; integrated CI remains to run after LIVE-763 lands.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"app/(main)/spaces/[slug]/network/page.tsx\"))fail(\"no network home page\");console.log(\"ok: the network home exists\")'"
+    "cmd": "node scripts/probes/collective-network.mjs"
   },
   "wave": "WR"
 }
