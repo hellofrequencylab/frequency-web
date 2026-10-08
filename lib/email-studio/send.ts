@@ -35,7 +35,7 @@ import { assertApproved } from '@/lib/outbound/approvals'
 import { SITE_URL } from '@/lib/site'
 import { parseEmailRenderLayout, type EmailRenderDoc } from './render-layout'
 import { compileEmailDoc } from './shell'
-import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
+import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
 import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
 import { applyMergeTags } from './render'
 import { resolveProductRefs, productVarsFromLayout } from './product-block'
@@ -244,7 +244,7 @@ export function emailSizeWarning(bytes: number): string {
 /** A campaign doc's AUTHORED copy as one lintable string: subject + preheader + the per-block content
  *  map — the same assembly the preset suite holds every shipped template to (presets.test.ts). Pure. */
 export function campaignAuthoredCopy(doc: EmailRenderDoc): string {
-  const content = hasNativeNodeStorage(doc.layout)
+  const content = legacySpaceLayoutWriteError(doc.layout, null)
     ? upgradeLayout(doc.layout)?.rows.flatMap(row => row.cells.flat()).filter(node => !node.hidden).map(node => node.content ?? {})
     : (doc.layout as EntityLayout).content ?? {}
   return [doc.subject, doc.preheader, JSON.stringify(content)].join('\n')
@@ -440,7 +440,7 @@ async function loadCampaign(campaignId: string): Promise<CampaignSendRow | null>
  *  live on their own columns. Fail-safe: a null block_json yields an empty layout. */
 function docFromRow(row: CampaignSendRow): EmailRenderDoc {
   // Legacy campaign reads historically compile the stored layout directly; retain that output.
-  const layout = hasNativeNodeStorage(row.block_json)
+  const layout = legacySpaceLayoutWriteError(row.block_json, null)
     ? parseEmailRenderLayout(row.block_json) ?? { rows: [] }
     : row.block_json ?? { rows: [] }
   return { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' }

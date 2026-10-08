@@ -35,7 +35,7 @@ import { journeySlugsByPlanId } from '@/lib/journeys/paid'
 import { journeyPublicPath } from '@/lib/journeys/sales-path'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import type { EmailRenderLayout } from './render-layout'
-import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
+import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
 import { upgradeLayout } from '@/lib/entity-blocks/node-tree'
 
 // ── 1. Product card resolution ─────────────────────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ export function productUrl(id: string, journeySlug?: string | null): string {
  * mutates the input) and is fail-safe: any error yields the input unchanged.
  */
 export async function resolveProductRefs<T extends EmailRenderLayout>(layout: T): Promise<T> {
-  if (hasNativeNodeStorage(layout)) {
+  if (legacySpaceLayoutWriteError(layout, null)) {
     const native = upgradeLayout(layout)
     if (!native) return layout
     const rows = await Promise.all(native.rows.map(async row => ({ ...row, cells: await Promise.all(row.cells.map(async cell => Promise.all(cell.map(async node => {
@@ -114,7 +114,7 @@ export async function resolveProductRefs<T extends EmailRenderLayout>(layout: T)
  * values. Absent tokens fall back to MERGE_TAG_DEFAULT_FALLBACKS at applyMergeTags time.
  */
 export function productVarsFromLayout(layout: EmailRenderLayout): Record<string, string> {
-  if (hasNativeNodeStorage(layout)) {
+  if (legacySpaceLayoutWriteError(layout, null)) {
     const native = upgradeLayout(layout)
     const first = native?.rows.flatMap(row => row.cells.flat()).find(node => node.type === 'productCard' && !node.hidden)
     return first?.content ? productVarsFromLayout({ content: { productCard: first.content } }) : {}

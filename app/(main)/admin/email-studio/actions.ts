@@ -1,6 +1,6 @@
 'use server'
 
-import { hasNativeNodeStorage, legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+import { legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 
 // EMAIL STUDIO — Phase 2 server actions (the two-pane Campaign Workspace).
 //
@@ -369,10 +369,10 @@ export async function saveEmailCampaign(
 
   const db = createAdminClient()
   if (patch.layout) {
-    if (hasNativeNodeStorage(patch.layout)) return { error: NODE_LAYOUT_WRITE_ERROR }
+    if (legacySpaceLayoutWriteError(patch.layout, null)) return { error: NODE_LAYOUT_WRITE_ERROR }
     const { data: stored, error: readError } = await db.from('campaigns').select('block_json').eq('id', id).maybeSingle()
     if (readError || !stored) return { error: 'Could not read the saved email design.' }
-    if (hasNativeNodeStorage(stored.block_json)) return { error: NODE_LAYOUT_WRITE_ERROR }
+    if (legacySpaceLayoutWriteError(stored.block_json, null)) return { error: NODE_LAYOUT_WRITE_ERROR }
   }
   const update: Database['public']['Tables']['campaigns']['Update'] = {}
 

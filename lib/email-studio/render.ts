@@ -11,7 +11,7 @@
 // FAIL-SAFE (an empty bag renders nothing). Voice canon: no em dashes in any copy this module emits.
 
 import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
-import { hasNativeNodeStorage } from '@/lib/entity-blocks/legacy-write-guard'
+import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
 import { EMAIL_PALETTE_BLOCK_IDS } from '@/lib/entity-blocks/registry'
 import { resolveRows } from '@/lib/entity-blocks/layout'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
@@ -648,7 +648,7 @@ export function renderEmailLayout(layout: EntityLayout | NodeLayout, opts: Rende
     htmlParts.push(frameBlock(rendered.html, { style, colors }))
     if (rendered.text) textParts.push(rendered.text)
   }
-  if (hasNativeNodeStorage(layout)) {
+  if (legacySpaceLayoutWriteError(layout, null)) {
     // Read-only: each placement owns its bags. Bench and hidden nodes remain stored, unrendered.
     // Upgrade normalizes malformed rows without mutating the author's document or type-deduping.
     const nodes = upgradeLayout(layout)

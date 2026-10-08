@@ -1,6 +1,6 @@
 'use server'
 
-import { hasNativeNodeStorage, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+import { legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 
 import { parseEmailRenderLayout } from '@/lib/email-studio/render-layout'
 
@@ -311,7 +311,7 @@ export async function saveSpaceEmailDraft(
   const existing = await readDraft(id, spaceId)
   if (!existing) return { error: 'That email no longer exists.' }
 
-  if (patch.layout && (hasNativeNodeStorage(patch.layout) || hasNativeNodeStorage(existing.block_json))) return { error: NODE_LAYOUT_WRITE_ERROR }
+  if (patch.layout && (legacySpaceLayoutWriteError(patch.layout, null) || legacySpaceLayoutWriteError(existing.block_json, null))) return { error: NODE_LAYOUT_WRITE_ERROR }
 
   const update: TablesUpdate<'campaigns'> = {}
   if (typeof patch.subject === 'string') update.subject = patch.subject.slice(0, 300)
