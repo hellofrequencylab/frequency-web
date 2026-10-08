@@ -68,11 +68,20 @@ create function public.validate_collective_cross_listing()
 returns trigger language plpgsql security definer set search_path='' as $$
 declare source_owner uuid; target_owner uuid; subject_source uuid; subject_visible boolean;
 begin
- if new.status in ('revoked','declined') then return new; end if;
- if tg_op='UPDATE' and (new.source_space_id,new.space_id,new.journey_id,new.circle_id,new.requested_by)
- is distinct from (old.source_space_id,old.space_id,old.journey_id,old.circle_id,old.requested_by) then
+ if tg_op='UPDATE' and (new.source_space_id,new.space_id,new.journey_id,new.circle_id)
+ is distinct from (old.source_space_id,old.space_id,old.journey_id,old.circle_id) then
    raise exception 'listing binding is immutable';
  end if;
+ -- FK ON DELETE SET NULL must not obstruct profile deletion. Lost authority
+ -- permanently revokes consent, regardless of the order of other FK actions.
+ if tg_op='UPDATE' and ((old.requested_by is not null and new.requested_by is null)
+ or (old.responded_by is not null and new.responded_by is null)) then
+   new.status='revoked';new.responded_at=now();return new;
+ end if;
+ if tg_op='UPDATE' and new.requested_by is distinct from old.requested_by then
+   raise exception 'listing binding is immutable';
+ end if;
+ if new.status in ('revoked','declined') then return new; end if;
  if new.journey_id is not null then
    select space_id,visibility in ('public','unlisted') and status is distinct from 'rejected'
    into subject_source,subject_visible from public.journey_plans where id=new.journey_id for share;
