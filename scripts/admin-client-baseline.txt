@@ -1,3 +1,4 @@
+# LIVE-766: private Collective owner report revalidates parent plan and same-owner attachment before bounded member/event/finance reads.
 # check:admin-client baseline — every file allowed to import the RLS-bypassing service-role
 # client (lib/supabase/admin.ts). Frozen by the tenancy-walls ratchet (ADR-923): a new
 # importer fails CI unless added here in the same PR; converge files onto the session
@@ -1181,3 +1182,4 @@ lib/collective/network-store.ts
 
 lib/spaces/audience-readiness.ts
 lib/collective/cross-listing-store.ts
+lib/collective/network-report.ts
