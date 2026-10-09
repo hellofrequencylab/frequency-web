@@ -4,6 +4,7 @@
 import type { JobHandler } from '@/lib/queue/outbox'
 import { sendPushToProfile, type PushPayload } from '@/lib/push'
 import { sendRawEmail } from '@/lib/email'
+import { readEmailDeliveryContext } from '@/lib/comms/email-delivery-contract'
 import { sendRawSms } from '@/lib/comms/sms-send'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import type { SendCategory } from '@/lib/comms/send-gate'
@@ -43,6 +44,7 @@ export const queueHandlers: Record<string, JobHandler> = {
   email: async (p) => {
     if (!p.to || !p.subject) throw new Error('email job missing to or subject')
     await sendRawEmail({
+      deliveryContext: readEmailDeliveryContext(p.deliveryContext),
       to: p.to as string,
       subject: p.subject as string,
       html: (p.html as string) ?? '',
