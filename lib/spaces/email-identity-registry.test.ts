@@ -21,7 +21,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name
     } }
   return query
 } }) }))
-import { createSpaceEmailIdentity, resolveSpaceEmailIdentity, pauseSpaceEmailIdentity } from './email-identity-registry'
+import { createSpaceEmailIdentity, requireSpaceEmailIdentityOwner, resolveSpaceEmailIdentity, pauseSpaceEmailIdentity } from './email-identity-registry'
 beforeEach(() => { state.caller = 'owner'; state.error = false; state.verified = true; state.providerFails = false;
   state.space.plan = 'business'; state.identity.paused_at = null; state.domain.paused_at = null; state.writes = [] })
 describe('live Space identity registry', () => {
@@ -31,6 +31,16 @@ describe('live Space identity registry', () => {
   it('rejects cross-Space and unknown identity IDs', async () => {
     await expect(resolveSpaceEmailIdentity('s1', 'other')).rejects.toThrow('identity is unavailable')
     await expect(createSpaceEmailIdentity('s1', 'other-domain', 'hello', 'Example')).rejects.toThrow('does not belong')
+  })
+  it('authorizes the current owner only for the requested readable Space', async () => {
+    expect(await requireSpaceEmailIdentityOwner('s1')).toMatchObject({ id: 's1', owner_profile_id: 'owner' })
+    state.caller = 'staff'
+    await expect(requireSpaceEmailIdentityOwner('s1')).rejects.toThrow('Only the Space owner')
+    state.caller = 'owner'
+    await expect(requireSpaceEmailIdentityOwner('other-space')).rejects.toThrow('settings are unavailable')
+    state.error = true
+    await expect(requireSpaceEmailIdentityOwner('s1')).rejects.toThrow('settings are unavailable')
+    expect(state.writes).toEqual([])
   })
   it('rejects operator/tenant impersonation at management boundary', async () => {
     state.caller = 'other'
