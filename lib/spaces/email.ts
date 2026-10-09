@@ -1,3 +1,4 @@
+import { readEmailDeliveryContext } from '@/lib/comms/email-delivery-contract'
 // Per-Space EMAIL: the send backbone (ENTITY-SPACES-BUILD §C Phase 3, "Email / marketing / comms").
 // This is the SEAM the email surface agent calls. It sends a Space's email through the EXISTING
 // Resend sender (lib/email.ts), fail-closed and anti-spam-safe, and writes a per-recipient ledger
@@ -810,6 +811,7 @@ export const runSpaceCampaignEmail: JobHandler = async (p) => {
     return
   }
   const { id } = await sendRawEmail({
+    deliveryContext: readEmailDeliveryContext(p.deliveryContext),
     to: p.to as string,
     subject: p.subject as string,
     html: (p.html as string) ?? '',

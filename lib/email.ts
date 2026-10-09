@@ -13,6 +13,7 @@
  */
 
 import { Resend } from 'resend'
+import { readEmailDeliveryContext, type EmailDeliveryContextV1 } from '@/lib/comms/email-delivery-contract'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { envString } from '@/lib/env/string'
 import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
@@ -123,6 +124,8 @@ export async function findReceivedEmailIdByMessageId(messageId: string): Promise
 // ── The spine: queue all email, never send inline (ADR-026) ────────────────────
 
 export interface EmailPayload {
+  /** Internal versioned provenance; never sent to Resend and never grants sender permission. */
+  deliveryContext?: EmailDeliveryContextV1
   to: string
   subject: string
   html: string
@@ -149,9 +152,11 @@ export interface EmailPayload {
 // per-recipient ledger (lib/spaces/email.ts) can record the provider id. The existing
 // callers ignore the return value, so widening void -> { id } is backward-compatible.
 export async function sendRawEmail(payload: EmailPayload): Promise<{ id: string | null }> {
+  readEmailDeliveryContext(payload.deliveryContext)
   const client = getClient()
   if (!client) return { id: null }
-  const { from, replyTo, ...rest } = payload
+  const { from, replyTo, deliveryContext: _deliveryContext, ...rest } = payload
+  void _deliveryContext
   // Deliverability guard: never re-mail a GLOBALLY suppressed address (hard bounce / complaint).
   // Per-Space suppression is enforced upstream in lib/spaces/email.ts before this is called.
   if (await isSuppressed(payload.to)) {
@@ -180,7 +185,9 @@ export async function enqueueEmail(
   payload: EmailPayload,
   opts?: { lane?: JobLane; runAfter?: Date; dedupeKey?: string },
 ): Promise<void> {
-  await enqueue('email', payload as unknown as Record<string, unknown>, {
+  const deliveryContext = readEmailDeliveryContext(payload.deliveryContext)
+  const queuedPayload = { ...payload, ...(deliveryContext ? { deliveryContext } : {}) }
+  await enqueue('email', queuedPayload as unknown as Record<string, unknown>, {
     lane: opts?.lane,
     runAfter: opts?.runAfter,
     dedupeKey: opts?.dedupeKey,
