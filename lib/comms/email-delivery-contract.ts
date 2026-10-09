@@ -10,14 +10,6 @@ export interface EmailDeliveryContextV1 {
   source: { kind: 'platform' | 'campaign' | 'conversation' | 'automation' | 'dm'; id: string | null }
 }
 
-export type EmailAcceptance =
-  | { state: 'not-attempted' }
-  | { state: 'accepted'; providerId: string; acceptedAt: string }
-  | { state: 'uncertain'; attemptedAt: string; reconcileBefore: string }
-  | { state: 'failed' | 'suppressed' | 'cancelled'; reason: string }
-
-export type EmailTransportOutcome = 'pending' | 'delivered' | 'bounced' | 'complained'
-
 function nullableString(value: unknown): boolean {
   return value === null || (typeof value === 'string' && value.trim().length > 0)
 }
