@@ -1,6 +1,6 @@
 import 'server-only'
 import { createHash } from 'node:crypto'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { verifyConversationToken } from '@/lib/comms/reply-address'
 import type { EmailPayload } from '@/lib/email'
 import { envString } from '@/lib/env/string'
 
@@ -16,7 +16,7 @@ export function atomicBridgeMessageId(conversationId: string, externalMessageId:
 }
 
 interface AtomicIntentResult { intentId: string; messageId: string; jobId: string | null; duplicate: boolean }
-interface AtomicIntentRpc {
+export interface AtomicIntentRpc {
   rpc(name: 'enqueue_conversation_email_intent', args: Record<string, unknown>): Promise<{ data: unknown; error: { message?: string } | null }>
 }
 
@@ -24,9 +24,12 @@ interface AtomicIntentRpc {
 export async function enqueueAtomicConversationEmail(input: {
   conversationId: string; actorProfileId: string; externalMessageId: string; observedSender: string;
   body: string; payload: EmailPayload;
-}): Promise<AtomicIntentResult> {
+  replyAuthority: { ref: string; token: string };
+}, db: AtomicIntentRpc): Promise<AtomicIntentResult> {
   if (!input.externalMessageId.trim()) throw new Error('Atomic bridge requires a receipt Message-ID')
-  const db = createAdminClient() as unknown as AtomicIntentRpc
+  if (!verifyConversationToken(input.replyAuthority.ref, input.replyAuthority.token, 'house')) {
+    throw new Error('Atomic bridge requires valid house reply authority')
+  }
   const { data, error } = await db.rpc('enqueue_conversation_email_intent', {
     p_conversation_id: input.conversationId, p_actor_profile_id: input.actorProfileId,
     p_external_message_id: input.externalMessageId, p_observed_sender: input.observedSender,

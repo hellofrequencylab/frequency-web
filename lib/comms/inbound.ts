@@ -538,7 +538,10 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
       return { status: 'error', conversationId: conv.id, ref: conv.ref }
     }
     try {
+      const authority = parseConversationReplyAddress(parsed.recipients)
+      if (!authority || authority.role !== 'house' || authority.ref !== conv.ref) throw new Error('House reply authority missing')
       const result = await enqueueAtomicConversationEmail({
+        replyAuthority: { ref: authority.ref, token: authority.token },
         conversationId: conv.id, actorProfileId: agentId, externalMessageId: parsed.messageId,
         observedSender: parsed.from, body,
         payload: {
@@ -547,7 +550,7 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
           subject: bridgeReplySubject(conv.subject), html: bridgeBodyToHtml(body), text: body,
           headers: { 'Message-ID': atomicBridgeMessageId(conv.id, parsed.messageId) },
         },
-      })
+      }, createAdminClient() as unknown as import('@/lib/comms/atomic-email-intent').AtomicIntentRpc)
       return { status: result.duplicate ? 'duplicate' : 'recorded_outbound', conversationId: conv.id, ref: conv.ref }
     } catch (err) {
       // No acknowledgement as recorded until the whole transaction commits; redelivery can recover.
