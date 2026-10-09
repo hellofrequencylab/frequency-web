@@ -82,6 +82,7 @@ describe('space tiers (Community Collective ladder · ADR-811)', () => {
       'email',
       'reporting',
       'space_full_website',
+      'space_email_custom_identity',
       'automation',
       'multi_pipeline',
       'team',
