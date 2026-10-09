@@ -14,5 +14,6 @@
     "kind": "manual",
     "checked": "2026-10-08",
     "evidence": "Application fixture tests: 26 tests passed across provider/registry/policy; targeted lint/diff checks. Added 11 behavioral pgTAP assertions for two-owner tenant isolation/auth-profile mapping, mutation refusal, composite FK and service-role operations. SQL test NOT RUN. Database acceptance NOT RUN: Supabase status failed Docker socket operation not permitted. Close only after migration replay and owner/nonowner/anon/service-role RLS tests, cross-Space FK rejection, fresh provider failure hold and production worker-boundary integration pass."
-  }
+  },
+  "wave": "W7"
 }
