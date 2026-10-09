@@ -19,7 +19,7 @@ export async function requestCollectiveCrossListing(kind:CrossListingKind, subje
   if(!subject || subject.space_id===targetId || !await ownsListingSpace(subject.space_id,caller.id)) return fail('Not allowed.')
   const [source,target]=await Promise.all([collectiveListingSpace(subject.space_id),collectiveListingSpace(targetId)])
   if(!source || !target || source.visibility==='private' || target.visibility==='private' || !await belongsToLiveCollective(source) || !await belongsToLiveCollective(target)) return fail('Choose an active Collective or member Space.')
-  const {error}=await listingAdmin().from('collective_cross_listings').insert({[kind==='journey'?'journey_id':'circle_id']:subjectId,source_space_id:subject.space_id,space_id:targetId,requested_by:caller.id,status:'pending'})
+  const {error}=await listingAdmin().from('collective_cross_listings').insert({...(kind==='journey'?{journey_id:subjectId}:{circle_id:subjectId}),source_space_id:subject.space_id,space_id:targetId,requested_by:caller.id,status:'pending'})
   if(error) return fail('This listing could not be requested. It may already be pending or accepted.')
   revalidatePath('/spaces','layout')
   return ok()
