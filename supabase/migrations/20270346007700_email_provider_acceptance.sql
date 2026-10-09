@@ -58,13 +58,13 @@ begin
  -- Accepted provider ID resolves even a stale worker/held attempt. Rejections must own the current nonce.
  if p_outcome<>'accepted' and a.attempt_nonce<>p_nonce then return false; end if;
  if p_outcome='accepted' and (p_provider_id is null or length(btrim(p_provider_id))=0) then raise exception 'Acceptance requires provider ID' using errcode='22023'; end if;
- update public.email_provider_attempts set state=p_outcome,
+ update public.email_provider_attempts set state=case when p_outcome='failed' and a.prior_unknown then 'held' else p_outcome end,
   prior_unknown=case when p_outcome='accepted' then false when p_outcome='uncertain' then true else prior_unknown end,
   provider_id=case when p_outcome='accepted' then p_provider_id else null end,
   accepted_at=case when p_outcome='accepted' then now() else null end,
   last_error=left(p_error,300),updated_at=now() where queue_job_id=p_queue_job_id;
  -- These projections happen in the same transaction as acceptance; provider retry cannot strand linkage.
- if p_outcome in ('accepted','failed') then
+ if p_outcome='accepted' or (p_outcome='failed' and not a.prior_unknown) then
   update public.comms_messages m set delivery_status=case when p_outcome='accepted' then 'sent' else 'failed' end
    from public.email_delivery_intents i where i.queue_job_id=p_queue_job_id and i.message_id=m.id and m.delivery_status='queued';
  end if;
