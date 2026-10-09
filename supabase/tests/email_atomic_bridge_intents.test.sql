@@ -1,7 +1,7 @@
 -- EMAIL-002 consequence draft. Isolated local/CI database only; never shared production.
 -- Single-session pgTAP does not establish inter-session races or worker crash recovery.
 begin;
-select plan(16);
+select plan(19);
 insert into auth.users(id,email,email_confirmed_at) values
  ('00000000-0000-4000-a002-000000000001','actor002@example.test',now()),
  ('00000000-0000-4000-a002-000000000002','member002@example.test',now());
@@ -16,6 +16,13 @@ create function pg_temp.atomic_bridge_fixture(receipt text,subject text default 
  '00000000-0000-4000-b002-000000000001',receipt,'actor002@example.test','Body',
  jsonb_build_object('to','injected@example.test','subject',subject,'html','<p>Body</p>'));
 $$;
+select ok((select prosecdef from pg_proc where oid='public.enqueue_conversation_email_intent(uuid,uuid,text,text,text,jsonb)'::regprocedure),'atomic auth lookup is narrowly privileged');
+set local role anon;
+select throws_ok($$select pg_temp.atomic_bridge_fixture('<anon002>')$$,'42501',null,'anonymous cannot invoke privileged transaction');
+reset role;
+set local role authenticated;
+select throws_ok($$select pg_temp.atomic_bridge_fixture('<auth002>')$$,'42501',null,'authenticated browser cannot invoke privileged transaction');
+reset role;
 set local role service_role;
 select lives_ok($$select pg_temp.atomic_bridge_fixture('<atomic002-1>')$$,'service-role transaction creates delivery including auth lookup');
 reset role;
