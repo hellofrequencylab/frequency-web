@@ -87,6 +87,7 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
       }
     >
       <div className="max-w-4xl space-y-6">
+        {space.ownerProfileId === viewerProfileId && <Link href={`/spaces/${space.slug}/settings/cross-listing`} className={buttonClasses('secondary', 'sm')}>Collective listings</Link>}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard bordered size="sm" icon={UsersRound} label="Circles" value={circles.length} />
           <StatCard bordered size="sm" icon={PlayCircle} label="Running" value={running} />
