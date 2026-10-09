@@ -1,3 +1,4 @@
+# EMAIL-013: trusted compose authorizes the conversation; inbound webhook verifies signature then alias HMAC/live Space mapping before service lookup. Quarantine stores fingerprints only.
 # LIVE-766: private Collective owner report revalidates parent plan and same-owner attachment before bounded member/event/finance reads.
 # check:admin-client baseline — every file allowed to import the RLS-bypassing service-role
 # client (lib/supabase/admin.ts). Frozen by the tenancy-walls ratchet (ADR-923): a new
@@ -1183,3 +1184,5 @@ lib/collective/network-store.ts
 lib/spaces/audience-readiness.ts
 lib/collective/cross-listing-store.ts
 lib/collective/network-report.ts
+
+lib/comms/tenant-reply-alias.ts

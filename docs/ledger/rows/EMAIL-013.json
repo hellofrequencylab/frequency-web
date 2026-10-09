@@ -13,7 +13,7 @@
   "verify": {
     "kind": "manual",
     "checked": "2026-10-08",
-    "evidence": "Focused legacy inbound/reply/compose suite passed47tests; expanded tenant boundary suite passed12tests after adding live-mapping read-fault and mixed-address guards (52 unique test cases across5files). Targeted ESLint/diff PASS. Table grants, FK indexes and migration filename checks PASS from source tree; dead-export count150. Eight SQL pgTAP consequences authored but NOT RUN: local Supabase status failed Docker socket permission. Live ledger comparison SKIPPED without credentials. Keep OPEN until local replay/RLS, authenticated provider receipt/replay, controlled configured-domain pilot and full sender-path coverage are proven."
+    "evidence": "OPEN. Existing five-file source suite52/52 PASS after refresh onto main e2ae79d. Targeted ESLint/diff, schema contract (zero phantoms), admin-client ratchet, RLS posture, table grants, FK indexes and one-list PASS. Exact080DDL-backed source schema types and service-only inventories registered, without guard exceptions or production-applied claims. Actual eight-assertion pgTAP fixture passes in strengthened isolated PGlite reduced dependency schema; this is not full historical-schema or independent-connection race proof. Live provider/configured-domain pilot and complete batch/campaign alias coverage remain unverified; issuance flag remains OFF."
   },
   "wave": "W7"
 }
