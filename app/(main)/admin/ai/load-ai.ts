@@ -1,9 +1,11 @@
+import { accountingRpc } from '@/lib/ai/accounting-rpc'
+import { log } from '@/lib/log'
 import { aiEnabledFlag, listFlagEvents } from '@/lib/platform-flags'
 import { aiEnabled as envAiReady } from '@/lib/ai/client'
 import { FEATURE_DAILY_CAP_USD, dailyCapFor } from '@/lib/ai/budget'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export type AiFeatureRow = { feature: string; spent: number; cap: number }
+export type AiFeatureRow = { feature: string; spent: number; reserved: number; uncertain: number; pendingIds: string[]; cap: number }
 export type AiSwitchEvent = { id: string; value: boolean; source: string; createdAt: string | null; who: string }
 
 // "AI controls" data for the /admin/ai page and the in-place Platform·AI module
@@ -15,37 +17,27 @@ export async function getAiControlsData() {
   const envReady = envAiReady()
 
   const admin = createAdminClient()
-  const since = new Date()
-  since.setUTCHours(0, 0, 0, 0)
-
-  // Summed in the database (ai_spend_by_feature_today, migration 20270346000800, SCAN-737): one
-  // unpaged select is capped at 1,000 rows by PostgREST, so the table understated a busy day.
-  // While the migration sits unapplied the RPC errors and the rows are paged with .range().
-  const spend = new Map<string, number>()
-  const { data: byFeature, error: rpcError } = await admin.rpc('ai_spend_by_feature_today')
-  if (!rpcError && byFeature) {
-    for (const r of byFeature as { feature: string; spent: number | string }[]) spend.set(r.feature, Number(r.spent))
-  } else {
-    const PAGE = 500
-    for (let from = 0; ; from += PAGE) {
-      const { data: usageRows } = await admin
-        .from('ai_usage')
-        .select('feature, cost_usd')
-        .gte('created_at', since.toISOString())
-        .order('created_at', { ascending: true })
-        .range(from, from + PAGE - 1)
-      const rows = (usageRows ?? []) as { feature: string; cost_usd: number }[]
-      for (const r of rows) spend.set(r.feature, (spend.get(r.feature) ?? 0) + Number(r.cost_usd))
-      if (rows.length < PAGE) break
+  let accountingAvailable = true
+  const costs = new Map<string, { spent: number; reserved: number; uncertain: number; pendingIds: string[] }>()
+  try {
+    const { data, error } = await accountingRpc(admin, 'ai_budget_status_today', undefined)
+    if (error || !Array.isArray(data)) throw new Error('AI accounting read unavailable')
+    for (const row of data) {
+      if ([row.spent, row.reserved, row.uncertain].some((value) => value === null || value === undefined)) throw new Error('Missing AI accounting totals')
+      const spent = Number(row.spent), reserved = Number(row.reserved), uncertain = Number(row.uncertain)
+      if ([spent, reserved, uncertain].some((value) => !Number.isFinite(value) || value < 0)) throw new Error('Invalid AI accounting totals')
+      costs.set(row.feature, { spent, reserved, uncertain, pendingIds: row.pending_ids ?? [] })
     }
+  } catch {
+    accountingAvailable = false
+    costs.clear()
+    log.error('ai.accounting.operator_read_failed')
   }
-  const features = Array.from(new Set([...Object.keys(FEATURE_DAILY_CAP_USD), ...spend.keys()])).sort()
-  const rows: AiFeatureRow[] = features.map((feature) => ({
-    feature,
-    spent: spend.get(feature) ?? 0,
-    cap: dailyCapFor(feature),
-  }))
-  const totalSpend = Array.from(spend.values()).reduce((a, b) => a + b, 0)
+  const features = Array.from(new Set([...Object.keys(FEATURE_DAILY_CAP_USD), ...costs.keys()])).sort()
+  const rows: AiFeatureRow[] = accountingAvailable ? features.map((feature) => ({
+    feature, ...(costs.get(feature) ?? { spent: 0, reserved: 0, uncertain: 0, pendingIds: [] }), cap: dailyCapFor(feature),
+  })) : []
+  const totalSpend = accountingAvailable ? rows.reduce((sum, row) => sum + row.spent, 0) : null
 
   // "Ask Vera" retrieves from help_chunks; surface the count so an empty index
   // (the reason Vera deflects) is obvious + one-click fixable.
@@ -68,5 +60,5 @@ export async function getAiControlsData() {
     who: e.changedBy ? (names.get(e.changedBy) ?? 'Unknown') : 'System',
   }))
 
-  return { enabled, envReady, rows, totalSpend, helpChunks: helpChunks ?? 0, events: switchEvents }
+  return { enabled, envReady, rows, totalSpend, accountingAvailable, helpChunks: helpChunks ?? 0, events: switchEvents }
 }

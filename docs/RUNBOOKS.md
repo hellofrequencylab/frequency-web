@@ -338,12 +338,13 @@ and the thing to repair is whatever stops them coming back.
   (`lib/ai/help-rag.ts`), a Vera turn streams an error line and the concierge falls back
   (`app/api/vera/turn/route.ts`, `lib/ai/vera/concierge.ts`), the sweep's AI triage step ships the
   deterministic report without it (`scripts/maintenance/sweep.mts`).
-- **The Vera ledger goes quiet.** Every call writes an `ai_usage` row (`lib/ai/usage.ts`
-  `recordAiUsage`). A weekday with no rows, or a feature pinned at its cap, is the reading:
+- **The Vera ledger goes quiet.** Successful paid rounds settle through `lib/ai/accounting.ts`;
+  unknown provider outcomes keep a reservation in `ai_budget_reservations`. A weekday with no rows, or a feature pinned at its cap, is the reading:
   `select feature, count(*), sum(cost_usd) from ai_usage where created_at > now() - interval '24 hours' group by 1 order by 3 desc;`
 - **The AI controls tab** at `/admin/vera-ai` (`components/admin/vera-ai/ai-controls-tab.tsx`,
   data from `app/(main)/admin/ai/load-ai.ts`): master switch state, whether the key is present,
-  today's spend per feature against its daily cap, and the switch history.
+  today's recorded spend, reserved/uncertain amounts, pending request references, and switch history.
+  Unavailable accounting pauses paid requests and displays unavailable totals.
 - **Sentry**, when armed: Anthropic SDK errors on the AI routes. 401 is the key, 429 is a rate limit,
   529 is the provider overloaded, 404 on a model id is a retired model.
 - **A feature at its cap** pauses itself for the UTC day (`lib/ai/budget.ts`,
@@ -369,6 +370,14 @@ and the thing to repair is whatever stops them coming back.
   (`lib/platform-flags.ts`). Flip it back ON when the status page clears. **agent** with janitor
   access, else **owner**.
 - **401.** Rotate `ANTHROPIC_API_KEY` in the Anthropic console and in Vercel, redeploy. **owner**
+- **Accounting failed or a request stayed pending.** Read the `ai.accounting.*` log category and
+  reservation reference, then inspect its state in AI controls. Failed token quotes, switch reads or
+  reservation RPCs prevent dispatch. A provider timeout or partial stream keeps the estimate charged;
+  failed settlement acknowledgement also keeps the hold unless the durable settlement is already
+  present. Verify the provider outcome and reconcile confirmed usage idempotently. Never assume a
+  timeout was free or delete unresolved accounting to reopen the cap. Migration
+  `20270346007200_ai_budget_reservations.sql` must be applied for admission. **agent** for read-only
+  diagnosis; **owner** for provider usage evidence and authorized reconciliation.
 - **A cap tripped.** Expected. Read what spent it. A legitimate day raises the cap in a PR to
   `lib/ai/budget.ts`; a runaway is exactly what the cap is for and stays paused.
 - **Vera autonomous sends stopped.** The circuit breaker (`lib/ai/vera/circuit-breaker.ts`)
