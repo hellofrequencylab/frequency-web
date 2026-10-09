@@ -1,5 +1,6 @@
 import 'server-only'
 import { createHash } from 'node:crypto'
+import { getConversationByRef } from '@/lib/comms/conversations'
 import { verifyConversationToken } from '@/lib/comms/reply-address'
 import type { EmailPayload } from '@/lib/email'
 import { envString } from '@/lib/env/string'
@@ -29,6 +30,10 @@ export async function enqueueAtomicConversationEmail(input: {
   if (!input.externalMessageId.trim()) throw new Error('Atomic bridge requires a receipt Message-ID')
   if (!verifyConversationToken(input.replyAuthority.ref, input.replyAuthority.token, 'house')) {
     throw new Error('Atomic bridge requires valid house reply authority')
+  }
+  const conversation = await getConversationByRef(input.replyAuthority.ref)
+  if (!conversation || conversation.id !== input.conversationId) {
+    throw new Error('Atomic bridge reply authority does not bind this conversation')
   }
   const { data, error } = await db.rpc('enqueue_conversation_email_intent', {
     p_conversation_id: input.conversationId, p_actor_profile_id: input.actorProfileId,
