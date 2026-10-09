@@ -44,7 +44,7 @@ export async function runSpaceEmailDomainProvisioning(spaceId:string,raw:string,
  await verifyEmailDomainOwnership(spaceId,space.owner_profile_id,domain,token,Date.now(),{id:String(op.id),nonce:String(op.nonce)})
  const claimed=await db().rpc('claim_space_email_domain_operation',{p_id:op.id})
  if(claimed.error||!claimed.data) throw new Error('Email setup could not acquire its delivery-safe lease.')
- const persistOperationState=async(values:Record<string,unknown>)=>{const r=await db().from('space_email_domain_operations').update(values).eq('id',op.id).eq('space_id',spaceId).select('id').single();if(r.error||!r.data)throw new Error('Email setup state could not be saved.')}
+ const persistOperationState=async(operationPatch:{provider_domain_id?:string;state:'persisting'|'ready'|'uncertain';lease_until?:null})=>{const r=await db().from('space_email_domain_operations').update(operationPatch).eq('id',op.id).eq('space_id',spaceId).select('id').single();if(r.error||!r.data)throw new Error('Email setup state could not be saved.')}
  return advanceEmailDomainOperation(claimed.data as unknown as EmailDomainOperation,{
   create:createEmailProviderDomain,reconcile:reconcileEmailProviderDomain,
   remember:async id=>persistOperationState({provider_domain_id:id,state:'persisting'}),
