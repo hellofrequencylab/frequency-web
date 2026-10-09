@@ -14,39 +14,22 @@
 // FAIL-SAFE: any error (gate read, count read) degrades to NOT capped (today's behavior), never to a
 // lockout of a member who should have access.
 
+import { accountingRpc } from '../accounting-rpc'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive, getPricingValues } from '@/lib/pricing/settings'
 
-const VERA_FEATURE = 'vera-chat'
 
-/** Count a member's live Vera turns logged today (UTC day), from the ai_usage ledger. FAIL-SAFE:
- *  returns 0 on any error (so the cap never wrongly blocks). The ai_usage table isn't in the
- *  generated types (ADR-246) — reach untyped, the same pattern lib/ai/usage.ts uses. A head+exact
- *  count avoids pulling the rows. */
+/** Count member turns, grouping paid tool rounds by operation identity. Legacy ledger rows
+ * count individually. Member-quota read failures retain the existing permissive policy;
+ * the independent paid-provider admission transaction still fails closed. */
 export async function veraMessagesToday(profileId: string): Promise<number> {
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const admin = createAdminClient()
-    const since = new Date()
-    since.setUTCHours(0, 0, 0, 0)
-    const res = await (admin as unknown as {
-      from: (t: string) => {
-        select: (c: string, opts: { count: 'exact'; head: true }) => {
-          eq: (col: string, v: string) => {
-            eq: (col2: string, v2: string) => {
-              gte: (col3: string, v3: string) => Promise<{ count: number | null }>
-            }
-          }
-        }
-      }
-    })
-      .from('ai_usage')
-      .select('id', { count: 'exact', head: true })
-      .eq('feature', VERA_FEATURE)
-      .eq('profile_id', profileId)
-      .gte('created_at', since.toISOString())
-    return res.count ?? 0
+    const { data, error } = await accountingRpc(admin, 'ai_member_turns_today', { p_profile: profileId })
+    if (error || data === null || !Number.isSafeInteger(Number(data)) || Number(data) < 0) throw new Error('Vera turn count unavailable')
+    return Number(data)
   } catch {
     return 0
   }
