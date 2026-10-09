@@ -77,6 +77,32 @@ describe('website editor authorization and concurrency', () => {
     expect(mocks.rpc).toHaveBeenCalledWith('save_website_editor', expect.objectContaining({ p_expected_revision: 0, p_publish: false, p_state: expect.objectContaining({ published: null }) }))
     expect(mocks.refresh).not.toHaveBeenCalled()
   })
+  it('cancels a scheduled publish atomically without changing the live version', async () => {
+    const published = nextWebsiteState({ v: 1, revision: 0, draft, published: null, versions: [] }, draft, true, 'Owner')
+    const scheduled = nextWebsiteState(published, { ...draft, theme: 'Midnight' }, false, 'Owner', undefined, '2099-01-01T00:00:00Z')
+    mocks.preferences = { websiteEditor: scheduled }
+    const result = await saveWebsiteDraft('hearts.example', scheduled.revision, scheduled.draft, false, null)
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error(result.error)
+    expect(result.state.scheduled).toBeNull()
+    expect(result.state.published).toEqual(published.published)
+    expect(result.state.versions).toEqual(published.versions)
+    expect(mocks.rpc).toHaveBeenCalledWith('save_website_editor', expect.objectContaining({ p_expected_revision: scheduled.revision, p_publish: false, p_state: expect.objectContaining({ scheduled: null }) }))
+    expect(mocks.refresh).not.toHaveBeenCalled()
+  })
+  it.each(['foreign host', 'revoked membership', 'stale revision'])('refuses schedule cancellation for %s', async (reason) => {
+    if (reason === 'foreign host') mocks.host = 'other.example'
+    if (reason === 'revoked membership') mocks.allowed = false
+    if (reason === 'stale revision') mocks.preferences = { websiteEditor: nextWebsiteState({ v: 1, revision: 0, draft, published: null, versions: [] }, draft, false, 'Owner', undefined, '2099-01-01T00:00:00Z') }
+    expect(await saveWebsiteDraft('hearts.example', 0, draft, false, null)).toMatchObject({ ok: false })
+    expect(mocks.rpc).not.toHaveBeenCalled()
+    expect(mocks.refresh).not.toHaveBeenCalled()
+  })
+  it('rejects combining cancellation with publishing', async () => {
+    expect(await saveWebsiteDraft('hearts.example', 0, draft, true, null)).toMatchObject({ ok: false })
+    expect(mocks.rpc).not.toHaveBeenCalled()
+    expect(mocks.refresh).not.toHaveBeenCalled()
+  })
   it('reports both stale reads and races as conflicts', async () => {
     const current: WebsiteEditorState = { v: 1, revision: 0, draft, published: null, versions: [] }
     mocks.preferences = { websiteEditor: nextWebsiteState(current, draft, false, 'owner') }

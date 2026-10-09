@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextWebsiteState, publishedWebsitePage, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, RESERVED_WEBSITE_SLUGS, WEBSITE_THEMES, sectionDisplay, updateSectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot, type SiteComment, type SectionDisplay } from './state'
+import { nextWebsiteState, publishedWebsitePage, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, resolveWebsiteChrome, resolveWebsiteChromeCta, RESERVED_WEBSITE_SLUGS, WEBSITE_THEMES, sectionDisplay, updateSectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot, type SiteComment, type SectionDisplay } from './state'
 const comment = (): SiteComment => ({ id: 'c1', blockId: 'text', text: 'Private review', author: 'owner', createdAt: '2026-10-08T12:00:00Z', resolved: false })
 const snapshot = (): WebsiteSnapshot => ({ theme: 'Menswork', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [{ type: 'Text', props: { id: 'text', text: 'Original' } }] }, seo: { title: '', description: '' }, comments: [comment()] }] })
 const state = (): WebsiteEditorState => ({ v: 1, revision: 0, draft: snapshot(), published: null, versions: [] })
@@ -106,4 +106,34 @@ describe('website draft boundary', () => {
     const doc = { root: { props: { websiteLayout: { text: { desktop: { padding: 32, gap: 16, animation: 'rise' }, phone: { padding: 8, hidden: true, columns: 90, textSize: Infinity } } } } }, content: [] }
     expect(sectionDisplay(doc, 'text', 'phone')).toEqual({ padding: 8, gap: 16, animation: 'rise', hidden: true, columns: 4 })
   })
+})
+
+
+it('keeps chrome website-only, publishes independent overrides, and rejects unsafe destinations', () => {
+  const original = { name: 'Space', tagline: 'Original', cta: { label: 'Book', href: '/sites/space/book', external: false } }
+  const draft = snapshot(); draft.chrome = { name: 'Website', tagline: null, cta: { label: 'Contact', href: '/contact' } }
+  expect(validWebsiteSnapshot(draft)).toBe(true)
+  expect(resolveWebsiteChrome(draft, original)).toEqual(draft.chrome)
+  expect(resolveWebsiteChrome(null, original)).toEqual(original)
+  expect(resolveWebsiteChromeCta(draft.chrome, original.cta, '/sites/space')).toEqual({ label: 'Contact', href: '/sites/space/contact', external: false })
+  expect(resolveWebsiteChromeCta(undefined, original.cta, '/sites/space')).toEqual(original.cta)
+  const live = nextWebsiteState(state(), draft, true, 'Owner'); live.draft.chrome!.name = 'Later'
+  expect(live.published?.chrome?.name).toBe('Website')
+  for (const href of ['javascript:alert(1)', '//evil.example', '/\\evil.example', 'https://user:password@example.org', 'data:text/html,test']) expect(validWebsiteSnapshot({ ...snapshot(), chrome: { cta: { label: 'Click', href } } })).toBe(false)
+  for (const chrome of [{ name: '' }, { tagline: 'x'.repeat(501) }, { cta: { label: '', href: '/' } }, { css: 'unsafe' }]) expect(validWebsiteSnapshot({ ...snapshot(), chrome })).toBe(false)
+  expect(original.name).toBe('Space')
+})
+
+
+it('cancels a scheduled publication while keeping the current public website and version history', () => {
+  const live = nextWebsiteState(state(), snapshot(), true, 'Owner')
+  const scheduled = nextWebsiteState(live, snapshot(), false, 'Owner', '2026-10-08T12:00:00Z', '2026-10-09T12:00:00Z')
+  const nextDraft = snapshot(); nextDraft.chrome = { name: 'Private next name' }
+  const cancelled = nextWebsiteState(scheduled, nextDraft, false, 'Owner', '2026-10-08T13:00:00Z', null)
+  expect(cancelled.scheduled).toBeNull()
+  expect(cancelled.revision).toBe(scheduled.revision + 1)
+  expect(cancelled.published).toEqual(live.published)
+  expect(cancelled.versions).toEqual(live.versions)
+  expect(cancelled.draft.chrome?.name).toBe('Private next name')
+  expect(nextWebsiteState(scheduled, nextDraft, false, 'Owner').scheduled).toEqual(scheduled.scheduled)
 })

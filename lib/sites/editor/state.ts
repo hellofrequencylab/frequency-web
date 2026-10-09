@@ -12,7 +12,8 @@ interface WebsitePage {
   comments: SiteComment[]
 }
 interface WebsiteBrand { logo?: string | null; accent?: string | null }
-export interface WebsiteSnapshot { theme: WebsiteTheme; brand?: WebsiteBrand; pages: WebsitePage[] }
+export interface WebsiteChrome { name?: string; tagline?: string | null; cta?: { label: string; href: string } | null }
+export interface WebsiteSnapshot { theme: WebsiteTheme; brand?: WebsiteBrand; chrome?: WebsiteChrome; pages: WebsitePage[] }
 interface WebsiteVersion { id: string; createdAt: string; author: string; snapshot: WebsiteSnapshot }
 export interface WebsiteEditorState {
   v: 1; revision: number; draft: WebsiteSnapshot
@@ -39,6 +40,37 @@ export function resolveWebsiteBrand(snapshot: WebsiteSnapshot | null, original: 
   }
 }
 
+/** Website overrides inherit Space data until explicitly changed in the website draft. */
+export function resolveWebsiteChrome(snapshot: Pick<WebsiteSnapshot, 'chrome'> | null, original: { name: string; tagline: string | null; cta: { label: string; href: string; external?: boolean } | null }) {
+  const chrome = snapshot?.chrome
+  return {
+    name: chrome?.name ?? original.name,
+    tagline: chrome && Object.prototype.hasOwnProperty.call(chrome, 'tagline') ? chrome.tagline ?? null : original.tagline,
+    cta: chrome && Object.prototype.hasOwnProperty.call(chrome, 'cta') ? chrome.cta ?? null : original.cta,
+  }
+}
+
+/** Only authored local links need the hosted-site prefix; inherited links are already resolved. */
+export function resolveWebsiteChromeCta(chrome: WebsiteChrome | undefined, original: { label: string; href: string; external?: boolean } | null, siteBase: string) {
+  if (!chrome || !Object.prototype.hasOwnProperty.call(chrome, 'cta')) return original ? { ...original, external: original.external ?? /^https:\/\//i.test(original.href) } : null
+  if (!chrome.cta) return null
+  const { label, href } = chrome.cta
+  return { label, href: href.startsWith('/') ? (href === '/' ? siteBase || '/' : `${siteBase}${href}`) : href, external: /^https:\/\//i.test(href) }
+}
+
+function validWebsiteHref(value: string): boolean {
+  if (/^\/(?!\/)[^\\\s]*$/.test(value) || /^#[a-z0-9_-]+$/i.test(value)) return true
+  try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password } catch { return false }
+}
+
+export function validWebsiteChrome(chrome: unknown): chrome is WebsiteChrome {
+    if (!record(chrome) || Object.keys(chrome).some((key) => !['name', 'tagline', 'cta'].includes(key))) return false
+    if (chrome.name !== undefined && (!text(chrome.name, 100) || !chrome.name.trim())) return false
+    if (chrome.tagline != null && !text(chrome.tagline, 500)) return false
+    if (chrome.cta != null && (!record(chrome.cta) || Object.keys(chrome.cta).some((key) => !['label', 'href'].includes(key)) || !text(chrome.cta.label, 80) || !chrome.cta.label.trim() || !text(chrome.cta.href, 2000) || !validWebsiteHref(chrome.cta.href))) return false
+  return true
+}
+
 function validCommentPosition(comment: Record<string, unknown>): boolean {
   if (comment.x === undefined && comment.y === undefined) return true
   return [comment.x, comment.y].every((value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1)
@@ -60,6 +92,7 @@ export function validWebsiteSnapshot(v: unknown): v is WebsiteSnapshot {
     if (v.brand.accent != null && (typeof v.brand.accent !== 'string' || !/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(v.brand.accent))) return false
     if (v.brand.logo != null && (!text(v.brand.logo, 2000) || !validWebsiteLogo(v.brand.logo))) return false
   }
+  if (v.chrome !== undefined && !validWebsiteChrome(v.chrome)) return false
   const slugs = new Set<string>()
   for (const p of v.pages) {
     if (!record(p) || !text(p.slug, 64) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(p.slug) || RESERVED_WEBSITE_SLUGS.has(p.slug) || slugs.has(p.slug)) return false
@@ -115,7 +148,7 @@ export function withoutWebsiteDrafts<T>(preferences: T): T {
   return rest as T
 }
 
-export function nextWebsiteState(current: WebsiteEditorState, draft: WebsiteSnapshot, publish: boolean, author: string, now = new Date().toISOString(), scheduledAt?: string): WebsiteEditorState {
+export function nextWebsiteState(current: WebsiteEditorState, draft: WebsiteSnapshot, publish: boolean, author: string, now = new Date().toISOString(), scheduledAt?: string | null): WebsiteEditorState {
   if (!validWebsiteSnapshot(draft)) throw new Error('Invalid website draft')
   const snapshot = structuredClone(draft)
   // Comments stay in the private draft; even a direct public row projection cannot
@@ -125,7 +158,7 @@ export function nextWebsiteState(current: WebsiteEditorState, draft: WebsiteSnap
   return {
     v: 1, revision: current.revision + 1, draft: snapshot,
     published: publish ? publicSnapshot : structuredClone(current.published),
-    scheduled: publish ? null : scheduledAt ? { at: scheduledAt, author, snapshot: publicSnapshot } : structuredClone(current.scheduled ?? null),
+    scheduled: publish || scheduledAt === null ? null : scheduledAt ? { at: scheduledAt, author, snapshot: publicSnapshot } : structuredClone(current.scheduled ?? null),
     versions: publish ? [{ id: String(current.revision + 1), createdAt: now, author, snapshot: structuredClone(publicSnapshot) }, ...structuredClone(current.versions)].slice(0, MAX_VERSIONS) : structuredClone(current.versions),
   }
 }

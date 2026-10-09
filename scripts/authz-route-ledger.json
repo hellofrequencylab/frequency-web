@@ -258,9 +258,9 @@
     },
     "app/hosted/[host]/opengraph-image/route.tsx": {
       "verdict": "public",
-      "reason": "A published Menswork website's share card (LIVE-870, own registered website host, rewritten by proxy.ts). Anonymous link previewers require this public read. The handler resolves the host, returns 404 unless the website is published and its published editor snapshot selects Menswork (original theme only when no snapshot exists), and renders public branding: published logo override or original logo, original name, hero headline, cover and domain. It never renders private drafts, versions, comments or presence and performs no writes.",
+      "reason": "A published Menswork website's share card (LIVE-870, own registered website host, rewritten by proxy.ts). Anonymous link previewers require this public read. The handler resolves the host, returns 404 unless the website is published and its published editor snapshot selects Menswork (original theme only when no snapshot exists), and renders public branding: published name and logo overrides or their original fallbacks, hero headline, cover and domain. It never renders private drafts, versions, comments or presence and performs no writes.",
       "checked": "2026-10-08",
-      "digest": "2df6b260e8527b7c"
+      "digest": "cebd1e8c49258101"
     }
   }
 }
