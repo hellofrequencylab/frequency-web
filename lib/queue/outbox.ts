@@ -271,10 +271,19 @@ export async function claimedEmailProviderRpc(
     throw new TerminalQueueError('Unknown email provider ledger operation')
   }
   const client = createAdminClient()
-  const { data: job, error } = await client.from('notification_queue').select('id,kind,status')
-    .eq('id', queueJobId).eq('status', 'processing').in('kind', ['email', 'space-campaign-email']).maybeSingle()
-  if (error) throw new Error('Claimed email job lookup unavailable')
-  if (!job) throw new TerminalQueueError('Provider ledger requires a claimed email job')
+  if (name === 'settle_email_provider_attempt') {
+    // Provider acceptance can arrive after a lease/status change or queue cleanup. Never erase
+    // that authoritative result; SQL fences non-acceptance outcomes using the attempt nonce.
+    const { data: attempt, error } = await client.from('email_provider_attempts').select('queue_job_id')
+      .eq('queue_job_id', queueJobId).maybeSingle()
+    if (error) throw new Error('Email attempt lookup unavailable')
+    if (!attempt) throw new TerminalQueueError('Provider settlement requires an existing attempt')
+  } else {
+    const { data: job, error } = await client.from('notification_queue').select('id,kind,status')
+      .eq('id', queueJobId).eq('status', 'processing').in('kind', ['email', 'space-campaign-email']).maybeSingle()
+    if (error) throw new Error('Claimed email job lookup unavailable')
+    if (!job) throw new TerminalQueueError('Provider ledger requires a claimed email job')
+  }
   const rpcClient = client as unknown as { rpc(name: string, args: Record<string, unknown>): Promise<{ data: unknown; error: { code?: string; message?: string } | null }> }
   return rpcClient.rpc(name, { ...args, p_queue_job_id: queueJobId })
 }
