@@ -11,9 +11,12 @@ export async function verifyEmailDeliveryContract() {
   const queued = [], sent = []
   let suppressed = false
   const oldKey = process.env.RESEND_API_KEY
+  const oldFlags = ['EMAIL_PROVIDER_ACCEPTANCE_ENABLED','EMAIL_DISPATCH_POLICY_ENABLED'].map(key => [key, process.env[key]])
+  for (const [key] of oldFlags) process.env[key] = 'false'
   process.env.RESEND_API_KEY = 'fixture-only-no-network'
   const modules = new Map()
   const transports = new Map([
+    ['@/lib/supabase/admin', { createAdminClient: () => { throw Error('Unexpected database transport in contract probe') } }],
     ['resend', { Resend: class { emails = { send: async payload => { sent.push(payload); return { data:{id:'provider-fixture'},error:null } } } } }],
     ['@/lib/queue/outbox', { enqueue: async (kind,payload,options) => { queued.push({kind,payload,options}) } }],
     ['@/lib/suppression', { isSuppressed: async () => suppressed }],
@@ -27,6 +30,8 @@ export async function verifyEmailDeliveryContract() {
     const compiled = ts.transpileModule(readFileSync(resolve(file),'utf8'), { compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022} }).outputText
     const localRequire = name => {
       if (transports.has(name)) return transports.get(name)
+      if (name === '@/lib/comms/email-provider-acceptance') return load('lib/comms/email-provider-acceptance.ts')
+      if (name === '@/lib/queue/terminal-error') return load('lib/queue/terminal-error.ts')
       if (name === '@/lib/comms/email-delivery-contract') return load('lib/comms/email-delivery-contract.ts')
       throw Error(`Unexpected probe dependency: ${name}`)
     }
@@ -62,6 +67,7 @@ export async function verifyEmailDeliveryContract() {
     console.log('ok: real email enqueue preserves valid provenance; provider strips it; invalid context and suppression stop delivery')
     return 0
   } finally {
+    for (const [key,value] of oldFlags) { if (value === undefined) delete process.env[key]; else process.env[key] = value }
     if (oldKey === undefined) delete process.env.RESEND_API_KEY
     else process.env.RESEND_API_KEY = oldKey
   }

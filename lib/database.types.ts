@@ -3938,6 +3938,48 @@ export type Database = {
           },
         ]
       }
+      email_provider_attempts: {
+        Row: {
+          queue_job_id: string
+          idempotency_key: string
+          frozen_payload: Json
+          first_attempt_at: string
+          state: string
+          prior_unknown: boolean
+          provider_id: string | null
+          accepted_at: string | null
+          attempt_nonce: string
+          last_error: string | null
+          updated_at: string
+        }
+        Insert: {
+          queue_job_id: string
+          idempotency_key: string
+          frozen_payload: Json
+          first_attempt_at?: string
+          state: string
+          prior_unknown?: boolean
+          provider_id?: string | null
+          accepted_at?: string | null
+          attempt_nonce: string
+          last_error?: string | null
+          updated_at?: string
+        }
+        Update: {
+          queue_job_id?: string
+          idempotency_key?: string
+          frozen_payload?: Json
+          first_attempt_at?: string
+          state?: string
+          prior_unknown?: boolean
+          provider_id?: string | null
+          accepted_at?: string | null
+          attempt_nonce?: string
+          last_error?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_events: {
         Row: {
           campaign_id: string | null
@@ -17544,6 +17586,29 @@ export type Database = {
       }
     }
     Functions: {
+      read_accepted_email_provider_attempt: {
+        Args: {
+          p_queue_job_id: string
+        }
+        Returns: Json
+      }
+      settle_email_provider_attempt: {
+        Args: {
+          p_queue_job_id: string
+          p_nonce: string
+          p_outcome: string
+          p_provider_id: string
+          p_error: string
+        }
+        Returns: boolean
+      }
+      prepare_email_provider_attempt: {
+        Args: {
+          p_queue_job_id: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
       enqueue_conversation_email_intent: {
         Args: {
           p_conversation_id: string
