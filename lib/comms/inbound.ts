@@ -17,6 +17,7 @@
 // lib + the notifications table. FAIL-SAFE throughout: a write blip returns a status, never throws.
 
 import { createHash } from 'crypto'
+import { atomicBridgeEnabled, atomicBridgeMessageId, enqueueAtomicConversationEmail } from '@/lib/comms/atomic-email-intent'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail, fetchReceivedEmail, findReceivedEmailIdByMessageId, type ReceivedEmail } from '@/lib/email'
 import {
@@ -544,6 +545,32 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
   // outbound is recorded: `error` makes the webhook answer 503, so the provider redelivers once the
   // secret is set, instead of a message being recorded on the thread that was never sent.
   if (!conversationSigningAvailable()) return { status: 'error', conversationId: conv.id, ref: conv.ref }
+
+  if (atomicBridgeEnabled()) {
+    if (!agentId || !agent || !parsed.messageId || parsed.from !== agent.email.toLowerCase()) {
+      return { status: 'error', conversationId: conv.id, ref: conv.ref }
+    }
+    try {
+      const authority = parseConversationReplyAddress(parsed.recipients)
+      if (!authority || authority.role !== 'house' || authority.ref !== conv.ref) throw new Error('House reply authority missing')
+      const result = await enqueueAtomicConversationEmail({
+        replyAuthority: { ref: authority.ref, token: authority.token },
+        conversationId: conv.id, actorProfileId: agentId, externalMessageId: parsed.messageId,
+        observedSender: parsed.from, body,
+        payload: {
+          to: conv.externalEmail, from: conversationFrom(agent.name),
+          replyTo: buildConversationReplyAddress(conv.ref, 'member'),
+          subject: bridgeReplySubject(conv.subject), html: bridgeBodyToHtml(body), text: body,
+          headers: { 'Message-ID': atomicBridgeMessageId(conv.id, parsed.messageId) },
+        },
+      }, createAdminClient() as unknown as import('@/lib/comms/atomic-email-intent').AtomicIntentRpc)
+      return { status: result.duplicate ? 'duplicate' : 'recorded_outbound', conversationId: conv.id, ref: conv.ref }
+    } catch (err) {
+      // No acknowledgement as recorded until the whole transaction commits; redelivery can recover.
+      console.error('[comms] atomic bridge enqueue failed:', err instanceof Error ? err.message : 'database error')
+      return { status: 'error', conversationId: conv.id, ref: conv.ref }
+    }
+  }
 
   // Record the outbound FIRST, keyed on the agent's inbound Message-ID: a redelivery hits the unique index
   // and returns `duplicate`, so we never send the member a second copy.

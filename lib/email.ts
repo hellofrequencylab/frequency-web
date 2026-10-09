@@ -12,7 +12,9 @@
  * so the app never crashes due to a missing mail config.
  */
 
-import { Resend } from 'resend'
+import { Resend, type CreateEmailOptions } from 'resend'
+import { acceptEmailForJob, providerAcceptanceEnabled, readAcceptedEmailForJob } from '@/lib/comms/email-provider-acceptance'
+import { TerminalQueueError } from '@/lib/queue/terminal-error'
 import { readEmailDeliveryContext, type EmailDeliveryContextV1 } from '@/lib/comms/email-delivery-contract'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { envString } from '@/lib/env/string'
@@ -151,10 +153,17 @@ export interface EmailPayload {
 // id on success (or null when sending is disabled / the address was suppressed), so a
 // per-recipient ledger (lib/spaces/email.ts) can record the provider id. The existing
 // callers ignore the return value, so widening void -> { id } is backward-compatible.
-export async function sendRawEmail(payload: EmailPayload): Promise<{ id: string | null }> {
+export async function sendRawEmail(payload: EmailPayload, attempt?: { queueJobId: string; providerAcceptanceRequired?: boolean }): Promise<{ id: string | null }> {
+  if (attempt?.queueJobId && (providerAcceptanceEnabled() || attempt.providerAcceptanceRequired)) {
+    const accepted = await readAcceptedEmailForJob(attempt.queueJobId)
+    if (accepted) return accepted
+  }
   readEmailDeliveryContext(payload.deliveryContext)
   const client = getClient()
-  if (!client) return { id: null }
+  if (!client) {
+    if (providerAcceptanceEnabled() || attempt?.providerAcceptanceRequired) throw new Error('Email provider configuration unavailable; durable job remains pending')
+    return { id: null }
+  }
   const { from, replyTo, deliveryContext: _deliveryContext, ...rest } = payload
   void _deliveryContext
   // Deliverability guard: never re-mail a GLOBALLY suppressed address (hard bounce / complaint).
@@ -163,11 +172,14 @@ export async function sendRawEmail(payload: EmailPayload): Promise<{ id: string 
     console.warn(`[email] skipped suppressed address: ${payload.to}`)
     return { id: null }
   }
-  const { data, error } = await client.emails.send({
-    from: from ?? FROM,
-    ...(replyTo ? { replyTo } : {}),
-    ...rest,
-  })
+  const providerPayload = { from: from ?? FROM, ...(replyTo ? { replyTo } : {}), ...rest }
+  // Both legacy rollout and durable acceptance use the same SDK transport boundary.
+  const sendProvider = (frozen: CreateEmailOptions, options?: { idempotencyKey: string }) => client.emails.send(frozen, options)
+  if (providerAcceptanceEnabled() || attempt?.providerAcceptanceRequired) {
+    if (!attempt?.queueJobId) throw new TerminalQueueError('Email acceptance requires trusted queue job context')
+    return acceptEmailForJob(attempt.queueJobId, providerPayload, sendProvider)
+  }
+  const { data, error } = await sendProvider(providerPayload)
   if (error) {
     throw new Error(`[email] send failed: ${typeof error === 'string' ? error : JSON.stringify(error)}`)
   }

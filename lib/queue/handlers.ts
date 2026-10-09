@@ -41,7 +41,7 @@ export const queueHandlers: Record<string, JobHandler> = {
   // `from`/`replyTo` carry the per-Space sender identity enqueueEmail serialized
   // (lib/email.ts EmailPayload); dropping them here sent Space outreach from the platform
   // default and routed replies to noreply, so pass them straight through.
-  email: async (p) => {
+  email: async (p, context) => {
     if (!p.to || !p.subject) throw new Error('email job missing to or subject')
     await sendRawEmail({
       deliveryContext: readEmailDeliveryContext(p.deliveryContext),
@@ -62,7 +62,7 @@ export const queueHandlers: Record<string, JobHandler> = {
       attachments: Array.isArray(p.attachments)
         ? (p.attachments as { filename: string; content: string }[])
         : undefined,
-    })
+    }, context)
   },
   // Durable SMS (ADR-256). payload: { to, body, profileId? }. sendRawSms is itself
   // fail-closed (no-op + null when SMS is not provisioned), so a job drained before
