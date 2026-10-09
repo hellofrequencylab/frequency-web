@@ -1,7 +1,19 @@
 {
- "id":"EMAIL-003","title":"Persist provider acceptance and hold unresolved retries beyond Resend retention",
- "status":"open","priority":"P1","lane":"live","size":"M","wave":"W7",
- "source":{"file":"docs/SPACE-EMAIL-BUILD-PLAN.md","ref":"PROG-EMAIL1 packet:provider-acceptance"},
- "detail":"DRAFT: actual generic/Space email worker supplies trusted claimed queue ID; sender activates service-only prepare/settle ledger via EMAIL_PROVIDER_ACCEPTANCE_ENABLED, default off. Persist immutable provider payload, stable SDK key, first-attempt time/nonce, accepted ID and honest rejected/uncertain state. Lost local acceptance writes replay same key; accepted ledger skips provider; old unknowns hold at 23h conservatively inside Resend 24h retention. Unknown acceptance survives subsequent refusals; no exactly-once promise. Invalid payload/permanent rejection/uncertainty hold becomes visible DLQ without automatic retry. Atomic bridge messages project queued->sent/failed in settlement transaction. Migration077 CLI-generated then dependency-renumbered; no DB application. SQL/crash/concurrency and all direct caller cutover/campaign projection evidence incomplete. No live send. Root owns grant inventories/generated types. Prepare stamps sticky per-job acceptance requirement; toggling the rollout flag off never bypasses that ledger for previously attempted jobs. Do not remove consumer support or markers while attempts remain unresolved.",
- "verify":{"kind":"manual","checked":"2026-10-08","evidence":"OPEN: source/mocked boundary tests are not SQL proof. Execute isolated migration/projection/race/timeout consequences, classify every direct sender before activation, demonstrate accepted provider IDs linked to every path, fault after acceptance, and >24h uncertainty hold; retain evidence and never reset unresolved attempt age on replay."}
+  "id": "EMAIL-003",
+  "title": "Persist provider acceptance and hold unresolved retries beyond Resend retention",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "docs/SPACE-EMAIL-BUILD-PLAN.md",
+    "ref": "PROG-EMAIL1 packet:provider-acceptance"
+  },
+  "detail": "DRAFT: actual generic/Space email worker supplies trusted claimed queue ID; sender activates service-only prepare/settle ledger via EMAIL_PROVIDER_ACCEPTANCE_ENABLED, default off. Persist immutable provider payload, stable SDK key, first-attempt time/nonce, accepted ID and honest rejected/uncertain state. Lost local acceptance writes replay same key; accepted ledger skips provider; old unknowns hold at 23h conservatively inside Resend 24h retention. Unknown acceptance survives subsequent refusals; no exactly-once promise. Invalid payload/permanent rejection/uncertainty hold becomes visible DLQ without automatic retry. Atomic bridge messages project queued->sent/failed in settlement transaction. Migration077 CLI-generated then dependency-renumbered; no DB application. SQL/crash/concurrency and all direct caller cutover/campaign projection evidence incomplete. No live send. Root owns grant inventories/generated types. Prepare stamps sticky per-job acceptance requirement; toggling the rollout flag off never bypasses that ledger for previously attempted jobs. Do not remove consumer support or markers while attempts remain unresolved. Main-target draft depends on PR3364 migration076 for the atomic intent/message projection inside settlement; this PR intentionally contains no EMAIL-002/004 row or migration076. Source permission catalogs include the provider table and all three service-only RPCs. Known accepted acknowledgements recover before config/suppression checks; missing provider config keeps a durable job pending; prior uncertainty followed by a permanent refusal remains held and does not project definitive failure. Migration077 and RLS/service-role consequences remain unexecuted. No auto-merge or producer activation.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-08",
+    "evidence": "OPEN: source/mocked boundary tests are not SQL proof. Execute isolated migration/projection/race/timeout consequences, classify every direct sender before activation, demonstrate accepted provider IDs linked to every path, fault after acceptance, and >24h uncertainty hold; retain evidence and never reset unresolved attempt age on replay."
+  }
 }
