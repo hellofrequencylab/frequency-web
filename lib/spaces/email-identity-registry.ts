@@ -22,7 +22,7 @@ async function readSpace(id: string) {
   if (error || !data) throw new Error('Space email settings are unavailable.')
   return data as unknown as EmailIdentityPolicySpace & { owner_profile_id: string; domain: string | null }
 }
-async function requireOwner(spaceId: string, requirePaid = true) {
+export async function requireSpaceEmailIdentityOwner(spaceId: string, requirePaid = true) {
   const profileId = await getMyProfileId()
   const space = await readSpace(spaceId)
   if (!profileId || space.owner_profile_id !== profileId) throw new Error('Only the Space owner can manage email identities.')
@@ -32,7 +32,7 @@ async function requireOwner(spaceId: string, requirePaid = true) {
 }
 
 export async function createSpaceEmailIdentity(spaceId: string, domainId: string, localPart: string, displayName: string) {
-  await requireOwner(spaceId)
+  await requireSpaceEmailIdentityOwner(spaceId)
   const { data: domain, error: domainError } = await table('space_email_domains').select('id').eq('id', domainId).eq('space_id', spaceId).maybeSingle()
   if (domainError || !domain) throw new Error('Email domain does not belong to this Space.')
   if (!/^[a-z0-9][a-z0-9._+-]{0,63}$/.test(localPart) || !displayName.trim() || displayName.length > 78 || /[\x00-\x1f\x7f<>]/.test(displayName))
@@ -62,7 +62,7 @@ export async function resolveSpaceEmailIdentity(spaceId: string, identityId: str
 
 /** Revocation is available after downgrade; it never deletes old inbound ownership. */
 export async function pauseSpaceEmailIdentity(spaceId: string, identityId: string) {
-  await requireOwner(spaceId, false)
+  await requireSpaceEmailIdentityOwner(spaceId, false)
   const { data, error } = await table('space_email_identities').update({ paused_at: new Date().toISOString() })
     .eq('id', identityId).eq('space_id', spaceId).select('id').maybeSingle()
   if (error || !data) throw new Error('Could not pause the email identity.')
