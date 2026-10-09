@@ -580,3 +580,11 @@ such record.
 Write on that bucket only; set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and
 `R2_BACKUP_BUCKET` in Vercel Production and redeploy. The first nights copy everything that exists
 (1.5 GiB and 500 files a night at most), then only what changed.
+
+## Space email pilot readiness
+
+Before asking an owner to test a Space email, run `pnpm email:readiness --json`. This command reads local source/schema contracts and configuration **presence** only. It performs no delivery, database query/write, consent conversion or DNS change. A zero exit means those local contracts exist; it never means the provider or real mailbox is ready. The report explicitly lists missing live observations.
+
+To reconcile a prior authorized read-only aggregate query, provide `--observations aggregate.json` containing only `observedAt` (ISO date or timestamp), `provenance` (`read-only-aggregate`), `spaceId`, boolean `active`/`emailEnabled`, integer `contacts`, and `consentCounts` with integer `subscribed`/`unsubscribed`/`unknown`. Counts must sum to contacts. Date-only evidence is marked with date precision; the command never claims it performed a fresh query. Recipient addresses, message bodies and unknown fields are refused. Store redacted resulting evidence in the review/report, not an implementation-status document.
+
+Unknown and denied consent count as marketing exclusions. Granted consent is only an upper bound until address validity, deduplication, topic mutes and global/Space suppression are checked. Do not turn imports into subscribed contacts. The owner selects one isolated test recipient explicitly; the readiness command has no send action. Observe the resulting authenticated headers, provider delivery and correctly scoped inbound/answered reply separately. Production provider domains, quota, webhook subscription and environment overrides require authorized account inspection; missing evidence remains `not-observed`.

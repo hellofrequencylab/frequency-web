@@ -1,0 +1,12 @@
+{
+  "id": "EMAIL-020",
+  "title": "Record read-only Space email readiness and honest pilot exclusions",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "source": { "file": "docs/SPACE-EMAIL-BUILD-PLAN.md", "ref": "PROG-EMAIL1 packet:baseline" },
+  "detail": "Read-only operator command records exact source commit, generated schema contract checks, redacted configuration presence, validated dated aggregate pilot observations and explicit missing live-schema/provider/mailbox evidence. Unknown/denied consent remains excluded; granted is only an upper bound. No sender/database imports, sends, queries/writes or DNS changes. Prior observation never claimed as fresh. Runbook and package entry integrate evidence capture. Baseline closure does not claim provider readiness, eligible campaign audience, preview/production deployment or owner test completion.",
+  "closed": "2026-10-08",
+  "verify": { "kind": "cmd", "cmd": "node --test scripts/space-email-readiness.test.mjs", "note": "Behavior and CLI mutation tests require 520 unknown contacts excluded; refuse recipient PII, bad tenant/counts and future timestamps; secrets redacted; missing source/schema exits nonzero; real CLI records source commit and explicitly unverified live gates." }
+}
