@@ -19,7 +19,7 @@ interface QueueJob {
   created_at?: string | null
 }
 
-export interface EmailJobContext { queueJobId: string; providerAcceptanceRequired?: boolean }
+interface EmailJobContext { queueJobId: string; providerAcceptanceRequired?: boolean }
 export type JobHandler = (payload: Record<string, unknown>, context?: EmailJobContext) => Promise<void>
 
 export interface ProcessResult {
