@@ -106,3 +106,4 @@ website_editor_presence
 
 # LIVE-883: recover the exact already-applied service-only schema; runtime remains open.
 ai_budget_reservations
+collective_cross_listings

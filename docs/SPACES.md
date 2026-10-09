@@ -329,3 +329,23 @@ model exists to prevent.
   Hook is the federated prototype: one Space among many, not a separate category.
 - **Sub-brands are configuration, not new code:** a `spaces` row selecting existing
   vertical modules, *once the registry is load-bearing.*
+
+## Collective cross-listings
+
+An owner can open **Collective listings** from the Space's Circles manager to request a
+published Journey or listed Circle on another active Collective or member Space. The receiving
+Space's owner approves or declines it there; either owner can remove it. Requests never approve
+a partner automatically, including when both Spaces have the same owner.
+
+`collective_cross_listings` is service-role only. Its Journey and Circle foreign keys retain the
+original object; the listing grants no edit, membership, enrolment or entry permission. Destination
+Space readers merge accepted listings, rechecking the object's current source Space and visibility,
+both Spaces' active Collective membership and walling. Transfers, unlisting, privacy, suspension
+and parent cancellation remove listings from public reads. Ownership or source transfers permanently
+revoke existing consent, including a transfer back to the original owner or Space; relisting requires
+a new request and receiving approval. Canonical ownership/source triggers and locked write validation
+live in migration068. The service-only reader returns an authorized subject snapshot rather than an
+ID that a separate fetch could reload after a transfer. Recipient previews use the same current
+visibility and owner checks. Inventories page deterministically beyond the Data API response ceiling;
+public card lists retain their existing limits and source entry rules. Existing listings can still be revoked.
+This is Journey/Circle listing integration; it does not add event/calendar shares.
