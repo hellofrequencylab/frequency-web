@@ -45,7 +45,7 @@ registerHooks({
   return next(url,context)
  },
 })
-const { summarizeAudienceEligibility, unavailableAudienceEligibility } = await import('../../lib/spaces/audience-eligibility.ts')
+const { summarizeAudienceEligibility } = await import('../../lib/spaces/audience-eligibility.ts')
 const unknown = Array.from({length:520},(_,i)=>({email:`synthetic-${i}@example.test`,consentState:'unknown'}))
 for (const topic of ['marketing','events','dispatches']) {
  const report=summarizeAudienceEligibility(unknown,topic,new Set(),new Set())
