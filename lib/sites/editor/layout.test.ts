@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Data } from '@/lib/page-editor/types'
-import { safeDataAttributes, sectionDeviceLayout, snapSectionSpacing, sectionLayoutPreset } from './layout'
+import { safeDataAttributes, sectionDeviceLayout, snapSectionSpacing, sectionLayoutPreset, dragElementPlacement, placeElementWithoutOverlap, resetDocumentPlacements } from './layout'
 
 describe('website layout', () => {
   it('stacks phone blocks until a phone placement is explicitly saved', () => {
@@ -31,3 +31,32 @@ describe('website layout', () => {
    expect(props.mediaSide).toBe('right')
    expect(display.placements['1.0'].column).toBe(7)
  })
+
+it('moves and resizes within safe grid bounds without changing the source placement', () => {
+  const initial = { column: 4, span: 6, row: 2 }
+  expect(dragElementPlacement(initial, 200, 150, 100, 150, false, 200)).toEqual({ column: 6, span: 6, row: 3 })
+  expect(dragElementPlacement(initial, 9999, -9999, 100, 100, false, 200)).toEqual({ column: 7, span: 6, row: 1 })
+  expect(dragElementPlacement(initial, 9999, 9999, 100, 100, true, 200)).toEqual({ column: 4, span: 9, row: 2, height: 1600 })
+  expect(dragElementPlacement(initial, -9999, -9999, 100, 100, true, 200)).toEqual({ column: 4, span: 1, row: 2, height: 40 })
+  expect(dragElementPlacement(initial, 100, 0, 100, 100, true, 200)).toEqual({ column: 4, span: 7, row: 2 })
+  expect(initial).toEqual({ column: 4, span: 6, row: 2 })
+})
+
+it('keeps a no-op three-card drop identical and flows a colliding card without narrowing siblings', () => {
+  const original = { '1.0': { column: 1, span: 6, row: 1 }, '1.1': { column: 7, span: 6, row: 1 }, '1.2': { column: 1, span: 6, row: 2 }, '2.0': { column: 1, span: 12, row: 1 } }
+  expect(placeElementWithoutOverlap(original, '1.2', original['1.2'])).toEqual(original)
+  const moved = placeElementWithoutOverlap(original, '1.2', { column: 1, span: 6, row: 1 })
+  expect(moved['1.0']).toEqual({ column: 1, span: 6, row: 2 })
+  expect(moved['1.1']).toEqual(original['1.1'])
+  expect(moved['2.0']).toEqual(original['2.0'])
+  expect(original['1.0'].row).toBe(1)
+})
+
+it('clears theme-specific DOM positions across every device while retaining content and other style settings', () => {
+  const doc: Data = { root: { props: { websiteLayout: { hero: { desktop: { padding: 32, placements: { '1.0': { column: 1, span: 6, row: 1 } } }, tablet: { textSize: 40, placements: { '1.0': { column: 7, span: 6, row: 1 } } }, phone: { hidden: false, placements: { '1.0': { column: 1, span: 12, row: 1 } } } } } } }, content: [{ type: 'Text', props: { id: 'hero', body: 'Original copy' } }] }
+  const result = resetDocumentPlacements(doc)
+  expect(result.root.props!.websiteLayout.hero).toEqual({ desktop: { padding: 32 }, tablet: { textSize: 40 }, phone: { hidden: false } })
+  expect(result.content).toBe(doc.content)
+  expect(doc.root.props!.websiteLayout.hero.desktop.placements).toHaveProperty('1.0')
+  expect(resetDocumentPlacements(result)).toBe(result)
+})

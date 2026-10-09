@@ -1,3 +1,4 @@
+import { NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // saveEmailCampaign: the Email Studio's debounced field + layout autosave. What is locked here
@@ -30,6 +31,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 // KEY (from_name / reply_mode / subject) can be told to refuse. ──────────────────────────────
 const updates: Array<Record<string, unknown>> = []
 const refuse = new Set<string>()
+let storedBlockJson: unknown = null
 
 function builder() {
   const api: Record<string, unknown> = {}
@@ -41,7 +43,7 @@ function builder() {
   }
   api.select = () => api
   api.eq = () => api
-  api.maybeSingle = async () => ({ data: { subject: 'On file', preheader: '' }, error: null })
+  api.maybeSingle = async () => ({ data: { subject: 'On file', preheader: '', block_json: storedBlockJson }, error: null })
   api.then = (resolve: (r: { error: unknown }) => unknown) => Promise.resolve(resolve({ error }))
   return api
 }
@@ -56,6 +58,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   updates.length = 0
   refuse.clear()
+  storedBlockJson = null
   vi.spyOn(console, 'error').mockImplementation(() => {})
   mocks.writerGate.mockResolvedValue({ ok: true, profileId: 'op-1' })
 })
@@ -94,5 +97,22 @@ describe('saveEmailCampaign', () => {
     mocks.writerGate.mockResolvedValue({ ok: false, error: 'Not allowed.' })
     expect(await saveEmailCampaign('c1', { subject: 'x' })).toEqual({ error: 'Not allowed.' })
     expect(updates).toEqual([])
+  })
+})
+
+const nativeLayout = { rows: [], bench: [{ nid: 'nbench01', type: 'text', content: { text: 'Authored bench' } }] }
+describe('native email writer refusal', () => {
+  it('refuses incoming native layouts before any partial patch writes', async () => {
+    expect(await saveEmailCampaign('c1', { layout: nativeLayout as never, fromName: 'New name', subject: 'New subject' })).toEqual({ error: NODE_LAYOUT_WRITE_ERROR })
+    expect(updates).toEqual([])
+  })
+  it('refuses a stale legacy editor over stored native work, while allowing subject-only edits', async () => {
+    storedBlockJson = nativeLayout
+    const before = JSON.stringify(storedBlockJson)
+    expect(await saveEmailCampaign('c1', { layout: { rows: [] }, fromName: 'New name' })).toEqual({ error: NODE_LAYOUT_WRITE_ERROR })
+    expect(updates).toEqual([])
+    expect(JSON.stringify(storedBlockJson)).toBe(before)
+    expect(await saveEmailCampaign('c1', { subject: 'Revised subject' })).toEqual({})
+    expect(updates).toEqual([{ subject: 'Revised subject' }])
   })
 })

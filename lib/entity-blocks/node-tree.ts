@@ -259,9 +259,11 @@ export function upgradeLayout(raw: unknown): NodeLayout | null {
   // ── THE PARTITION. Every key of content / style / hidden that no placement claimed becomes a
   // bench node, so the sibling maps can be dropped without losing a bag. See the header.
   const bench: BlockNode[] = []
+  // Stored native bench placements own identities and bags, even when their type is also placed.
+  // Only legacy sibling-map orphans below are partitioned by type.
   for (const entry of Array.isArray(doc.bench) ? doc.bench : []) {
     const read = readCell(entry)
-    if (!read || placedTypes.has(read.type) || bench.length >= MAX_BENCH) continue
+    if (!read || bench.length >= MAX_BENCH) continue
     bench.push(build(read.type, read.node, benchSeed(read.type)))
     placedTypes.add(read.type)
   }

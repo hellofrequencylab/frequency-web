@@ -626,6 +626,12 @@ const SPACE_GROUPS: GroupDef[] = [
         source: { from: 'meter', feature: 'space_campaigns_month' },
       },
       {
+        key: 'space_email_custom_identity',
+        label: 'Your own email domain',
+        detail: 'Send with a verified email identity for your Space. Domain setup and verification are required.',
+        source: { from: 'entitlement', key: 'space_email_custom_identity' },
+      },
+      {
         key: 'space_email',
         label: 'Email sends',
         detail: 'How much you can send each month.',

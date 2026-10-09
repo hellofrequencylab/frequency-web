@@ -44,6 +44,13 @@ describe('website draft boundary', () => {
     scheduled.draft.pages[0].doc.content[0].props.text = 'Changed after scheduling'
     expect(scheduled.scheduled?.snapshot.pages[0].doc.content[0].props.text).toBe('Original')
   })
+  it('refuses invalid persisted element heights while retaining valid responsive placements', () => {
+    const draft = snapshot()
+    draft.pages[0].doc.root.props = { websiteLayout: { text: { desktop: { placements: { '1.0': { column: 1, span: 6, row: 1, height: 200 } } } } } }
+    expect(validWebsiteSnapshot(draft)).toBe(true)
+    draft.pages[0].doc.root.props.websiteLayout.text.desktop.placements['1.0'].height = 2000
+    expect(validWebsiteSnapshot(draft)).toBe(false)
+  })
   it('keeps draft saves off the live site and strips review comments when published', () => {
     const saved = nextWebsiteState(state(), snapshot(), false, 'owner')
     expect(publishedWebsiteSnapshot({ websiteEditor: saved })).toBeNull()

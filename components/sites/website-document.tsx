@@ -56,29 +56,30 @@ export function WebsiteDocument({ doc, theme, config, metadata, live, links, ori
       const grid = [typeof v.gap === 'number' ? `gap:${Math.min(96, Math.max(0, v.gap))}px` : '', typeof v.columns === 'number' ? `grid-template-columns:repeat(${Math.min(4, Math.max(1, v.columns))},minmax(0,1fr))` : ''].filter(Boolean).join(';')
       const textFont = ['display', 'body', 'mono'].includes(v.textFont ?? '') ? `.${sectionClass}.${sectionClass} :is(h1,h2,h3,h4,h5,h6){font-family:var(--th-${v.textFont}-render)!important}` : ''
       const bodyType = `${['display', 'body', 'mono'].includes(v.bodyFont ?? '') ? `font-family:var(--th-${v.bodyFont}-render)!important;` : ''}${typeof v.bodySize === 'number' && v.bodySize > 0 ? `font-size:${Math.min(120, v.bodySize)}px!important;` : ''}`
-      const bodyRules = bodyType ? `.${sectionClass}.${sectionClass} :is(p,blockquote){${bodyType}}` : ''
+      const bodyRules = bodyType ? `.${sectionClass}.${sectionClass} :is(p,blockquote,li,a,button,dt,dd,label,summary,figcaption,small,.mw-kicker,.mw-label){${bodyType}}` : ''
       const stacking = v.columns === 1 ? `.${sectionClass}.${sectionClass} :is(.mw-story,.grid)>*{order:initial!important;grid-column:auto;grid-row:auto}` : ''
       const heading = typeof v.textSize === 'number' && v.textSize > 0 ? `.${sectionClass}.${sectionClass} :is(h1,h2,h3,h4,h5,h6){font-size:${Math.min(120, v.textSize)}px!important}` : ''
       const align = ['left', 'center', 'right'].includes(v.align) ? `.${sectionClass}{text-align:${v.align}}` : ''
       const motion = `.${sectionClass}{animation-name:${v.animation === 'fade' ? 'site-fade' : v.animation === 'rise' ? 'site-rise' : 'none'}}`
       let placements = ''
       if (d === 'phone') {
-        for (const path of Object.keys(layout.desktop?.placements ?? {})) {
+        for (const path of new Set([...Object.keys(layout.desktop?.placements ?? {}), ...Object.keys(layout.tablet?.placements ?? {})])) {
           if (!/^\d+(?:\.\d+)*$/.test(path)) continue
           const indexes = path.split('.').map(Number)
           const selector = `.${sectionClass}${indexes.map((n) => `>:nth-child(${n + 1})`).join('')}`
           const parent = `.${sectionClass}${indexes.slice(0, -1).map((n) => `>:nth-child(${n + 1})`).join('')}`
-          placements += `${parent}{grid-template-columns:minmax(0,1fr)}${selector}{grid-column:auto;grid-row:auto}`
+          placements += `${parent}{grid-template-columns:minmax(0,1fr)}${selector}{grid-column:auto;grid-row:auto;height:auto;min-height:0}${selector}:is(p,h1,h2,h3,h4,h5,h6,li,blockquote),${selector}:has(p,h1,h2,h3,h4,h5,h6,li,blockquote),${selector}:not(img,video,picture):not(:has(img,video,picture)){height:auto;min-height:0}${selector}>img,${selector}>picture,${selector}>picture>img{height:auto}`
         }
       }
       for (const [path, raw] of Object.entries((d === 'phone' ? layout.phone?.placements : v.placements) ?? {})) {
         if (!/^\d+(?:\.\d+)*$/.test(path)) continue
-        const placement = raw as { column: number; span: number; row: number }
+        const placement = raw as { column: number; span: number; row: number; height?: number }
         const indexes = path.split('.').map(Number)
         const selector = `.${sectionClass}${indexes.map((n) => `>:nth-child(${n + 1})`).join('')}`
         const parent = `.${sectionClass}${indexes.slice(0, -1).map((n) => `>:nth-child(${n + 1})`).join('')}`
         const column = Math.min(12, Math.max(1, Number(placement.column) || 1)), span = Math.min(13 - column, Math.max(1, Number(placement.span) || 1)), row = Math.min(100, Math.max(1, Number(placement.row) || 1))
-        placements += `${parent}{display:grid;grid-template-columns:repeat(12,minmax(0,1fr))}${selector}{grid-column:${column}/span ${span};grid-row:${row}}`
+        const height = typeof placement.height === 'number' && Number.isFinite(placement.height) ? `height:${Math.min(1600, Math.max(40, placement.height))}px;min-height:0` : ''
+        placements += `${parent}{display:grid;grid-template-columns:repeat(12,minmax(0,1fr))}${selector}{grid-column:${column}/span ${span};grid-row:${row};${height}}${height ? `${selector}:is(p,h1,h2,h3,h4,h5,h6,li,blockquote),${selector}:has(p,h1,h2,h3,h4,h5,h6,li,blockquote),${selector}:not(img,video,picture):not(:has(img,video,picture)){height:auto;min-height:${Math.min(1600, Math.max(40, placement.height!))}px}${selector}>img,${selector}>picture,${selector}>picture>img{height:100%;width:100%;object-fit:cover}` : ''}`
       }
       const rules = `.${sectionClass}.${sectionClass} :is(.mw-story,.mw-hero-inner,.mw-head,.mw-grid,.mw-photos,.mw-lists,.hs-split,.hs-hero-grid,.hs-steps,.hs-facts,.hs-stats-grid,.hs-cards,.hs-band-grid,.grid){${grid}}${heading}${textFont}${bodyRules}${align}${stacking}${placements}${motion}`
       customRules += d === 'desktop' ? rules : `@media(max-width:${d === 'tablet' ? 1024 : 600}px){${rules}}`

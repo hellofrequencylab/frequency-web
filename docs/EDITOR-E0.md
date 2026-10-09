@@ -172,6 +172,32 @@ because today a benched node has no identity off the row.
 9. Backfill. **Keep `upgradeLayout` in the read path forever** — it costs nothing on an upgraded
    document and it is the only defence against a stale row in a preview branch.
 
+### Email read and compilation boundary (LIVE-877)
+
+The read-only email compiler supports native placements with independent content and style,
+including repeated types. Native-safe parsing is used by nurture's compiler, the Space's email
+compilation reads, and platform campaign compilation. Stored bench placements retain their
+identities and bags even when their type is placed or benched elsewhere; bench, hidden nodes
+and unknown types are not rendered. Campaign voice checks see native placed content, and each
+placed Product card refreshes its own catalog snapshot with the existing missing-product fallback.
+
+All 19 historical email census shapes have complete pre-change HTML/text goldens, committed
+before the renderer changed and pinned by SHA. Their authored field markers are synthetic;
+they are not tenant-copy snapshots. The parser/compiler probe compares legacy and upgraded
+native output and exercises full authored repeated/hidden/unknown/nested/benched fixtures.
+
+Editors still use the legacy type-keyed contract. Space, platform campaign and nurture layout
+saves reject incompatible incoming or stored native work before sanitization/writes; subject-only
+changes remain possible. This is not completion of tasks 10–13 or E0. Native editor/writer
+conversion, per-type limits, web rendering, rollout/backfill, fresh production recapture and
+owner-deferred Yjs remain open. No outbound mail or production writes ran for this slice.
+
+Native raw markers also prevent a blank-envelope campaign from being called pristine. Draft
+reuse/reset and empty-draft cleanup preserve placed, benched, hidden, unknown and malformed
+native work without upgrading or sanitizing it. Actual action fixtures and the runner-free
+probe pin zero destructive writes, while ordinary untouched legacy draft reuse and owner-scoped
+cleanup remain unchanged. The final release must integrate after LIVE-887 and LIVE-875.
+
 ### Member writer compatibility boundary (LIVE-875)
 
 The session-owned member grid save refuses incoming native node cells or stored bench, and

@@ -138,6 +138,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Fixed
 
+- **Email layouts keep each placement separate.** Newer layouts compile each block with its own words and styling, while hidden and benched work stays out of the email. Older editors keep incompatible saved layouts intact.
+
 - **Profile layouts keep their saved work.** An older page editor now refuses a newer layout it cannot safely save, including when clearing the page.
 
 - Space page edits keep saved work safe when the editor cannot read a newer page format.

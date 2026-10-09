@@ -100,3 +100,20 @@ describe('theme-independent authored editorial copy', () => {
      expect(html).toContain(':is(h1,h2,h3,h4,h5,h6){font-size:32px!important}')
    }
  })
+
+it('uses the same saved element dimensions publicly and in the editor, with phone stacking reset', () => {
+  const doc: Data = { root: { props: { websiteLayout: { resized: { desktop: { placements: { '0.1': { column: 3, span: 5, row: 2, height: 240 } } } } } } }, content: [{ type: 'Text', props: { id: 'resized', body: 'Authored content' } }] }
+  for (const editing of [false, true]) {
+    const html = render(doc, editing)
+    expect(html).toContain('grid-column:3/span 5;grid-row:2;height:240px;min-height:0')
+    expect(html).toContain('grid-column:auto;grid-row:auto;height:auto')
+  }
+})
+
+it('resets tablet-only element geometry on phone even when desktop has no placements', () => {
+  const doc: Data = { root: { props: { websiteLayout: { tablet: { tablet: { placements: { '0.1': { column: 4, span: 6, row: 2, height: 300 } } } } } } }, content: [{ type: 'Text', props: { id: 'tablet', body: 'Copy' } }] }
+  const html = render(doc)
+  expect(html).toContain('grid-column:4/span 6;grid-row:2;height:300px')
+  expect(html).toContain('@media(max-width:600px)')
+  expect(html).toContain('grid-column:auto;grid-row:auto;height:auto;min-height:0')
+})
