@@ -8,6 +8,9 @@ describe('manual provider DNS setup', () => {
     expect(result.sendingReady).toBe(false)
     expect(result.receivingReady).toBe(false)
   })
+  it('never calls partial authentication records ready to send', () => {
+    expect(emailDomainDnsInstructions('example.com',[{ name:'send',type:'TXT',value:'spf',record:'SPF',status:'verified' }],false).sendingReady).toBe(false)
+  })
   it('requires separate receiving subdomain and separate receiving verification', () => {
     expect(emailDomainDnsInstructions('example.com',[],true).receivingAllowed).toBe(false)
     const result=emailDomainDnsInstructions('reply.example.com',[{name:'@',type:'MX',value:'receive.test',status:'verified',record:'Receiving'}],true)

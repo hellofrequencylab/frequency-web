@@ -11,8 +11,8 @@ export function emailDomainDnsInstructions(domain: string, records: EmailDnsReco
   return { domain: normalized, records: instructions, automaticDnsAvailable: false as const,
     receivingAllowed: !receivingOnApex,
     warning: receivingOnApex ? 'Use a reply subdomain for receiving. Keep existing mailbox MX records.' : null,
-    sendingReady: records.filter((r) => r.record !== 'Receiving').length > 0 &&
-      records.filter((r) => r.record !== 'Receiving').every((r) => r.status === 'verified'),
+    sendingReady: records.some((r) => r.record === 'DKIM') && records.some((r) => r.record === 'SPF') &&
+      records.filter((r) => r.record === 'DKIM' || r.record === 'SPF').every((r) => r.status === 'verified'),
     receivingReady: receiving && !receivingOnApex && records.some((r) => r.record === 'Receiving') &&
       records.filter((r) => r.record === 'Receiving').every((r) => r.status === 'verified'),
   }
