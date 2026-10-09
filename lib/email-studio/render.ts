@@ -10,6 +10,9 @@
 // already sanitized by lib/entity-blocks/block-content (urls made safe, strings bounded); each renderer is
 // FAIL-SAFE (an empty bag renders nothing). Voice canon: no em dashes in any copy this module emits.
 
+import { upgradeLayout, type NodeLayout } from '@/lib/entity-blocks/node-tree'
+import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
+import { EMAIL_PALETTE_BLOCK_IDS } from '@/lib/entity-blocks/registry'
 import { resolveRows } from '@/lib/entity-blocks/layout'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import {
@@ -635,21 +638,33 @@ function renderBlockInner(id: string, props: Record<string, unknown>, style: Blo
  * emits an inline-styled table per block. Blocks outside the email palette (or empty ones) render nothing.
  * Pure + fail-safe: an empty / null layout yields empty strings.
  */
-export function renderEmailLayout(layout: EntityLayout, opts: RenderEmailOptions = {}): { html: string; text: string } {
+export function renderEmailLayout(layout: EntityLayout | NodeLayout, opts: RenderEmailOptions = {}): { html: string; text: string } {
   const colors = opts.colors ?? DEFAULT_EMAIL_COLORS
-  const rows = resolveRows(layout, 'email')
-  const content = layout.content ?? {}
-  const style = layout.style ?? {}
   const htmlParts: string[] = []
   const textParts: string[] = []
-  // Single-column: every row's first cell is the vertical stack of block ids.
-  const ids = rows.flatMap((row) => row.cells[0] ?? [])
-  for (const id of ids) {
-    const props = content[id] ?? {}
-    const rendered = renderBlockInner(id, props, style[id], colors)
-    if (!rendered.html) continue
-    htmlParts.push(frameBlock(rendered.html, { style: style[id], colors }))
+  const append = (type: string, props: Record<string, unknown>, style: BlockStyle | undefined) => {
+    const rendered = renderBlockInner(type, props, style, colors)
+    if (!rendered.html) return
+    htmlParts.push(frameBlock(rendered.html, { style, colors }))
     if (rendered.text) textParts.push(rendered.text)
+  }
+  if (legacySpaceLayoutWriteError(layout, null)) {
+    // Read-only: each placement owns its bags. Bench and hidden nodes remain stored, unrendered.
+    // Upgrade normalizes malformed rows without mutating the author's document or type-deduping.
+    const nodes = upgradeLayout(layout)
+    for (const row of nodes?.rows ?? []) {
+      for (const node of row.cells.flat()) {
+        if (node.hidden || !EMAIL_PALETTE_BLOCK_IDS.has(node.type)) continue
+        append(node.type, node.content ?? {}, node.style)
+      }
+    }
+  } else {
+    // Keep the legacy compiler byte-identical, including template/default row resolution.
+    const legacy = layout as EntityLayout
+    const rows = resolveRows(legacy, 'email')
+    const content = legacy.content ?? {}
+    const style = legacy.style ?? {}
+    for (const id of rows.flatMap((row) => row.cells[0] ?? [])) append(id, content[id] ?? {}, style[id])
   }
   return { html: htmlParts.join('\n'), text: textParts.join('\n\n') }
 }

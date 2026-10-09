@@ -243,3 +243,16 @@ describe('upgradeLayout', () => {
     expect(NODE_ID_RE.test(nid)).toBe(true)
   })
 })
+
+describe('native stored bench placement identity', () => {
+  it('keeps repeated benched types and bags even when the type is also placed', () => {
+    const native = { rows: [{ id: 'r0', columns: 1, cells: [[{ nid: 'nplaced1', type: 'text', content: { text: 'Placed' } }]] }], bench: [
+      { nid: 'nbench01', type: 'text', content: { text: 'Benched one', nested: { no: false, zero: 0 } } },
+      { nid: 'nbench02', type: 'text', content: { text: 'Benched two' } },
+    ] }
+    const before = JSON.stringify(native)
+    expect(upgradeLayout(native)).toEqual(native)
+    expect(upgradeLayout(upgradeLayout(native))).toEqual(native)
+    expect(JSON.stringify(native)).toBe(before)
+  })
+})

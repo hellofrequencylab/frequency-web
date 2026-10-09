@@ -1,3 +1,4 @@
+import { NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // LIVE-727: the Space "Message Member" composer mails through the ticketed conversation system, not
@@ -5,6 +6,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // network-free: a suspended or archived Space opens no conversation and reads no draft; an active one
 // gets past the gate (to the draft read). Every IO seam the gate could reach is mocked.
 
+let draft: Record<string, unknown> | null = null
+const writes: unknown[] = []
 let spaceStatus = 'active'
 vi.mock('@/lib/spaces/store', () => ({
   getSpaceById: async (id: string) => ({
@@ -41,19 +44,22 @@ vi.mock('@/lib/supabase/admin', () => ({
       tablesRead.push(table)
       const api: Record<string, unknown> = {
         select: () => api,
+        update: (value: unknown) => { writes.push(value); return api },
         eq: () => api,
         in: () => Promise.resolve({ data: [], error: null }),
-        maybeSingle: () => Promise.resolve({ data: null, error: null }),
+        maybeSingle: () => Promise.resolve({ data: draft, error: null }),
       }
       return api
     },
   }),
 }))
 
-import { sendSpaceEmailDraftAsConversations } from './email-drafts'
+import { sendSpaceEmailDraftAsConversations, saveSpaceEmailDraft } from './email-drafts'
 import { SPACE_NOT_ACTIVE_EMAIL_ERROR } from './email'
 
 beforeEach(() => {
+  draft = null
+  writes.length = 0
   spaceStatus = 'active'
   conversations.length = 0
   tablesRead.length = 0
@@ -74,5 +80,19 @@ describe('sendSpaceEmailDraftAsConversations: Space status gate (LIVE-727)', () 
     const r = await sendSpaceEmailDraftAsConversations('space-A', 'draft-1', [{ email: 'a@b.com' }])
     expect(r).toEqual({ error: 'That email no longer exists.' })
     expect(tablesRead.length).toBeGreaterThan(0)
+  })
+})
+
+describe('Space native email writer refusal', () => {
+  it('retains stored and incoming native work before any database write', async () => {
+    const native = { rows: [], bench: [{ nid: 'nbench01', type: 'text', content: { text: 'Author work' } }] }
+    draft = { id: 'draft-1', space_id: 'space-A', block_json: native }
+    const before = JSON.stringify(draft)
+    expect(await saveSpaceEmailDraft('space-A', 'draft-1', { layout: { rows: [] }, subject: 'Changed' })).toEqual({ error: NODE_LAYOUT_WRITE_ERROR })
+    expect(writes).toEqual([])
+    expect(JSON.stringify(draft)).toBe(before)
+    draft.block_json = { rows: [] }
+    expect(await saveSpaceEmailDraft('space-A', 'draft-1', { layout: native as never })).toEqual({ error: NODE_LAYOUT_WRITE_ERROR })
+    expect(writes).toEqual([])
   })
 })
