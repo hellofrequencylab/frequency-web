@@ -31,6 +31,8 @@
     "check:dawn-bundle": "node scripts/check-dawn-bundle.mjs",
     "check:headers": "node scripts/check-headers.mjs",
     "check:menu": "node scripts/check-menu.mjs",
+    "email:readiness": "node scripts/space-email-readiness.mjs",
+    "check:email-readiness": "node --test scripts/space-email-readiness.test.mjs",
     "check:mail-dns": "node scripts/check-mail-dns.mjs",
     "check:module-reachability": "node scripts/check-module-reachability.mjs",
     "check:gate-parity": "node scripts/check-gate-parity.mjs",
