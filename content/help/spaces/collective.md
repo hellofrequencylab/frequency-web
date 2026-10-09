@@ -47,6 +47,15 @@ there is room.
 Select **Detach** beside a member Space to restore its own plan. Nothing it has built is deleted
 or moved. If the Collective is cancelled or suspended, member Spaces immediately use their own
 plans. A member Space that already has a paid plan keeps that plan.
+## Listing a Journey or Circle with another Space
+
+Open **Manage circles**, then **Collective listings**. Choose a published Journey or listed Circle
+and an active member Space or partner Collective. Its owner sees the original title and approves or
+declines the request. An approved listing appears on that Space's Journey or Circle page.
+
+The original owner, price and entry rules stay with the Journey or Circle. A listing never gives the
+other Space permission to edit it or adds people to a closed Circle. Either owner can remove it.
+Private Journeys, unlisted Circles and inactive Spaces do not appear through a listing.
 
 ## What is still being built
 
@@ -54,7 +63,6 @@ We would rather tell you straight than sell you a promise. Collective checkout i
 network features arrive in stages:
 
 - A network home: one shared calendar and a directory of your member Spaces.
-- Listing one Journey or Circle across member Spaces.
 - Reporting that rolls up members, Events, and revenue across the Collective.
 - Shared membership across member Spaces, and revenue splits on co-hosted Events and Journeys.
 

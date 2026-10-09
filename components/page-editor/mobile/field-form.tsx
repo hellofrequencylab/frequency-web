@@ -43,6 +43,8 @@ export type FieldsSchema = Record<string, AnyField>
 // pushes it onto the stack; on back it merges the sub-value into the parent value.
 export type PushRequest = {
   title: string
+  /** Relative data path; hosts can resolve fresh values instead of captured callbacks. */
+  path?: (string | number)[]
   fields: FieldsSchema
   value: Record<string, unknown>
   onChange: (value: Record<string, unknown>) => void
@@ -183,6 +185,7 @@ function FieldControl({
           onPress={() =>
             onPushScreen({
               title: label,
+              path: [fieldKey],
               fields: field.objectFields ?? {},
               value: objVal,
               onChange: (v) => onChange(v),
@@ -208,6 +211,7 @@ function FieldControl({
                   onClick={() =>
                     onPushScreen({
                       title: `${label} ${i + 1}`,
+                      path: [fieldKey, i],
                       fields: sub,
                       value: item,
                       onChange: (v) => {

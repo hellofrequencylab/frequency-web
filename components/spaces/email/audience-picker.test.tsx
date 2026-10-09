@@ -13,9 +13,8 @@ import { createRoot, type Root } from 'react-dom/client'
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
 }))
-vi.mock('@/lib/spaces/campaigns-actions', () => ({
-  countSpaceAudience: async () => 3,
-}))
+const previewSpaceAudience = vi.hoisted(() => vi.fn(async () => ({ state: 'available', topic: 'marketing', matched: 3, eligible: 3, excluded: { invalid: 0, duplicate: 0, unknownConsent: 0, unsubscribed: 0, suppressed: 0, muted: 0 } })))
+vi.mock('@/lib/spaces/campaigns-actions', () => ({ previewSpaceAudience }))
 const updateSpaceSegment = vi.fn(async () => ({ ok: true }))
 vi.mock('@/lib/spaces/segments-actions', () => ({
   createSpaceSegment: vi.fn(async () => ({ ok: true, data: { id: 'x' } })),
@@ -33,6 +32,8 @@ afterEach(() => {
   container?.remove()
   container = null
   root = null
+  previewSpaceAudience.mockClear()
+  previewSpaceAudience.mockResolvedValue({ state: 'available', topic: 'marketing', matched: 3, eligible: 3, excluded: { invalid: 0, duplicate: 0, unknownConsent: 0, unsubscribed: 0, suppressed: 0, muted: 0 } })
 })
 
 async function render(node: React.ReactNode) {
@@ -162,5 +163,46 @@ describe('AudiencePicker member segments', () => {
     expect(
       [...container!.querySelectorAll('optgroup')].some((g) => g.label === 'Members, Circles, and events'),
     ).toBe(false)
+  })
+})
+
+describe('AudiencePicker eligibility evidence', () => {
+  it('shows zero eligible and 520 missing opt-ins for the pilot without promising a send', async () => {
+    previewSpaceAudience.mockResolvedValue({ state: 'available', topic: 'marketing', matched: 520, eligible: 0, excluded: { invalid: 0, duplicate: 0, unknownConsent: 520, unsubscribed: 0, suppressed: 0, muted: 0 } })
+    const onCountChange = vi.fn()
+    await render(<AudiencePicker spaceId="space-A" slug="danieltyack" tags={[]} filter={{}} onFilterChange={() => {}} onCountChange={onCountChange} />)
+    expect(container!.textContent).toContain('0 people are currently eligible')
+    expect(container!.textContent).toContain('520 excluded: no marketing opt-in')
+    expect(container!.textContent).not.toContain('will get this')
+    expect(onCountChange).toHaveBeenLastCalledWith(0)
+  })
+  it('fails the send count closed when the server action fails', async () => {
+    previewSpaceAudience.mockRejectedValueOnce(new Error('unavailable'))
+    const onCountChange = vi.fn()
+    await render(<AudiencePicker spaceId="space-A" slug="danieltyack" tags={[]} filter={{}} onFilterChange={() => {}} onCountChange={onCountChange} />)
+    expect(container!.textContent).toContain('could not be checked')
+    expect(onCountChange).toHaveBeenLastCalledWith(0)
+  })
+  it('rechecks topic changes and locks count during the new check', async () => {
+    const onCountChange = vi.fn()
+    const props = { spaceId: 'space-A', slug: 'danieltyack', tags: [], filter: {}, onFilterChange: () => {}, onCountChange }
+    await render(<AudiencePicker {...props} pickedTopic="marketing" />)
+    await act(async () => root!.render(<AudiencePicker {...props} pickedTopic="events" />))
+    expect(previewSpaceAudience).toHaveBeenLastCalledWith('space-A', {}, 'events')
+    expect(onCountChange.mock.calls.some(call => call[0] === 0)).toBe(true)
+  })
+})
+
+describe('AudiencePicker recovery', () => {
+  it('retries an unavailable preview without changing the audience or enabling a stale count', async () => {
+    previewSpaceAudience.mockRejectedValueOnce(new Error('unavailable'))
+    const onCountChange = vi.fn()
+    await render(<AudiencePicker spaceId="space-A" slug="danieltyack" tags={[]} filter={{}} onFilterChange={() => {}} onCountChange={onCountChange} />)
+    expect(onCountChange).toHaveBeenLastCalledWith(0)
+    const retry = [...container!.querySelectorAll('button')].find(button => button.textContent?.includes('Check again'))!
+    expect(retry).toBeTruthy()
+    await act(async () => retry.click())
+    expect(container!.textContent).toContain('3 people are currently eligible')
+    expect(onCountChange).toHaveBeenLastCalledWith(3)
   })
 })

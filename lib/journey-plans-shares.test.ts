@@ -17,6 +17,7 @@ const fromCalls: string[] = []
 function builder(table: string) {
   const preds: Array<(r: Row) => boolean> = []
   let cap = Infinity
+  let offset=0
   let desc: string | null = null
   let asc: string | null = null
   const run = async () => {
@@ -24,7 +25,7 @@ function builder(table: string) {
     let rows = (tables[table] ?? []).filter((r) => preds.every((p) => p(r)))
     if (desc) rows = [...rows].sort((a, b) => String(b[desc!]).localeCompare(String(a[desc!])))
     if (asc) rows = [...rows].sort((a, b) => String(a[asc!]).localeCompare(String(b[asc!])))
-    return { data: rows.slice(0, cap), error: null }
+    return { data: rows.slice(offset, offset+cap), error: null }
   }
   const api: Record<string, unknown> = {
     select: () => api,
@@ -45,6 +46,7 @@ function builder(table: string) {
       else desc = col
       return api
     },
+    range(first:number,last:number) { offset=first;cap=last-first+1;return api },
     limit(n: number) {
       cap = n
       return run()
@@ -156,4 +158,10 @@ describe('listJourneyCoHostSpaces', () => {
     errors.journey_plan_space_shares = { message: 'boom' }
     expect(await listJourneyCoHostSpaces('intro', HOME)).toEqual([])
   })
+})
+
+it('exhausts 1201 co-host consent rows and batches shared subject reads past the REST ceiling',async()=>{
+  tables.journey_plan_space_shares=Array.from({length:1201},(_,i)=>({id:String(i).padStart(4,'0'),plan_id:`shared-${i}`,space_id:COHOST,status:'accepted'}))
+  tables.journey_plans=Array.from({length:1201},(_,i)=>plan(`shared-${i}`,HOME,'2026-05-01'))
+  expect(await listJourneyPlansForSpace(COHOST,1300,{publishedOnly:true})).toHaveLength(1201)
 })

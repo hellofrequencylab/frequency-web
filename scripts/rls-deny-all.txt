@@ -109,3 +109,4 @@ ai_budget_reservations
 
 # EMAIL-002: inactive atomic reply bridge, service-role only.
 email_delivery_intents
+collective_cross_listings
