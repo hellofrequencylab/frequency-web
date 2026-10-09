@@ -107,3 +107,6 @@ website_editor_presence
 # LIVE-883: recover the exact already-applied service-only schema; runtime remains open.
 ai_budget_reservations
 collective_cross_listings
+
+# EMAIL-012: operation leases/ownership nonces are service-only; migration078 explicitly revokes browser roles.
+space_email_domain_operations
