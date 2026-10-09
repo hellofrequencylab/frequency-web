@@ -3,12 +3,14 @@
 begin;
 select plan(16);
 insert into auth.users(id,email,email_confirmed_at) values
- ('00000000-0000-4000-a002-000000000001','actor002@example.test',now());
+ ('00000000-0000-4000-a002-000000000001','actor002@example.test',now()),
+ ('00000000-0000-4000-a002-000000000002','member002@example.test',now());
 insert into public.profiles(id,auth_user_id,display_name,handle,is_active,web_role) values
- ('00000000-0000-4000-b002-000000000001','00000000-0000-4000-a002-000000000001','Actor','actor-email-002',true,'admin');
-insert into public.comms_conversations(id,subject,owner_profile_id,assigned_to,external_email) values
+ ('00000000-0000-4000-b002-000000000001','00000000-0000-4000-a002-000000000001','Actor','actor-email-002',true,'admin'),
+ ('00000000-0000-4000-b002-000000000002','00000000-0000-4000-a002-000000000002','Member','member-email-002',true,'member');
+insert into public.comms_conversations(id,subject,owner_profile_id,assigned_to,external_email,member_profile_id) values
  ('00000000-0000-4000-c002-000000000001','Atomic fixture','00000000-0000-4000-b002-000000000001',
-  '00000000-0000-4000-b002-000000000001','member002@example.test');
+  '00000000-0000-4000-b002-000000000001','member002@example.test','00000000-0000-4000-b002-000000000002');
 create function pg_temp.atomic_bridge_fixture(receipt text,subject text default 'Atomic fixture') returns jsonb language sql as $$
  select public.enqueue_conversation_email_intent('00000000-0000-4000-c002-000000000001',
  '00000000-0000-4000-b002-000000000001',receipt,'actor002@example.test','Body',
