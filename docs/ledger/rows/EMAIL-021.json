@@ -13,7 +13,7 @@
   "closed": "2026-10-08",
   "verify": {
     "kind": "cmd",
-    "cmd": "node node_modules/vitest/vitest.mjs run lib/spaces/audiences.test.ts lib/spaces/audience-eligibility.test.ts lib/spaces/audience-readiness.test.ts lib/spaces/campaign-audience-preview.test.ts components/spaces/email/audience-picker.test.tsx",
-    "note": "Tests require 520 unknown contacts yield zero eligible, exact exclusion totals, real scoped candidate resolver behavior, cross-Space and action permissions, forced effective topic, policy read failure, bounded policy batches and rendered eligibility/failure UI."
+    "cmd": "node scripts/probes/email-audience-eligibility.mjs",
+    "note": "Direct shipped-code probe executes aggregate consent/exclusion accounting, scoped bounded policy reads/failure and real React picker loading/retry/stale-result behavior. DB/action transports and UI primitives substituted; no child runner or live sends. Full58 focused tests remain CI-discovered."
   }
 }
