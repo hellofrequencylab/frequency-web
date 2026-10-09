@@ -1,6 +1,6 @@
 -- EMAIL-003 local/CI only. Single-session consequences; inter-session race/crash still separate.
 begin;
-select plan(13);
+select plan(15);
 insert into public.notification_queue(id,kind,payload,status) values
  ('00000000-0000-4000-a003-000000000001','email','{}','processing'),
  ('00000000-0000-4000-a003-000000000002','email','{}','processing');
@@ -25,7 +25,9 @@ select ok(public.settle_email_provider_attempt('00000000-0000-4000-a003-00000000
  'accepted','provider-fixture-2',null),'acceptance ID committed');
 select is(pg_temp.prepare_email_fixture(2)->>'providerId','provider-fixture-2','accepted recovery skips provider');
 select throws_ok($$select public.prepare_email_provider_attempt('00000000-0000-4000-a003-000000000002','{"subject":"Changed"}')$$,'22023',null,'payload changes refuse retry');
+select is(public.read_accepted_email_provider_attempt('00000000-0000-4000-a003-000000000002')->>'providerId','provider-fixture-2','read-only acceptance replay recovers ID without fresh dispatch');
 set local role authenticated;
+select throws_ok($$select public.read_accepted_email_provider_attempt('00000000-0000-4000-a003-000000000002')$$,'42501',null,'ordinary clients cannot read provider acknowledgement replay');
 select throws_ok($$select public.prepare_email_provider_attempt('00000000-0000-4000-a003-000000000002','{}')$$,'42501',null,'ordinary clients cannot prepare provider attempts');
 reset role;
 select * from finish();

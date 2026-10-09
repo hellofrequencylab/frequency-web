@@ -45,3 +45,9 @@ describe('durable provider acceptance boundary', () => {
     await expect(acceptEmailForJob('job-1', payload, send)).rejects.toBeInstanceOf(TerminalQueueError); expect(send).not.toHaveBeenCalled()
   })
 })
+
+it.each([['concurrent_idempotent_requests','retryable'],['invalid_idempotent_request','failed'],['unknown_conflict','uncertain']])('classifies 409 %s as %s', async (name, outcome) => {
+  mock.rpc.mockResolvedValueOnce({ data: prepared, error: null }).mockResolvedValueOnce({ data: true, error: null })
+  await expect(acceptEmailForJob('job-1', payload, async () => ({ data: null, error: { statusCode: 409, name } }))).rejects.toThrow()
+  expect(mock.rpc.mock.calls[1][1].p_outcome).toBe(outcome)
+})

@@ -19,6 +19,12 @@ async function rpc(name: string, args: Record<string, unknown>): Promise<unknown
   return result.data
 }
 
+/** Trusted claimed job only; acknowledgement replay never invokes the provider. */
+export async function readAcceptedEmailForJob(queueJobId: string): Promise<{ id: string } | null> {
+  const result = await rpc('read_accepted_email_provider_attempt', { p_queue_job_id: queueJobId }) as { providerId?: unknown } | null
+  return typeof result?.providerId === 'string' ? { id: result.providerId } : null
+}
+
 /** Preserve unknown acceptance across timeout/crash; only an explicit provider acceptance resolves it. */
 export async function acceptEmailForJob(queueJobId: string, payload: CreateEmailOptions, send: Sender): Promise<{ id: string }> {
   const prepared = await rpc('prepare_email_provider_attempt', { p_queue_job_id: queueJobId, p_payload: payload }) as Prepared | null
@@ -38,8 +44,10 @@ export async function acceptEmailForJob(queueJobId: string, payload: CreateEmail
   }
   if (result.error) {
     const status = typeof result.error === 'object' && result.error !== null ? (result.error as { statusCode?: number }).statusCode : undefined
-    const permanent = typeof status === 'number' && [400,401,403,404,422].includes(status)
-    const retryable = status === 429 || status === 409
+    const name = typeof result.error === 'object' && result.error !== null ? (result.error as { name?: string }).name : undefined
+    const conflict = status === 409 && name === 'invalid_idempotent_request'
+    const permanent = conflict || typeof status === 'number' && [400,401,403,404,422].includes(status)
+    const retryable = status === 429 || (status === 409 && name === 'concurrent_idempotent_requests')
     await settle(permanent ? 'failed' : retryable ? 'retryable' : 'uncertain', null, `provider refusal ${status ?? 'unknown'}`)
     const message = `[email] send failed: ${JSON.stringify(result.error)}`
     if (permanent) throw new TerminalQueueError(message)

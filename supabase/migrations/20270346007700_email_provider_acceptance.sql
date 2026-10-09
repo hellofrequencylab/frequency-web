@@ -74,3 +74,20 @@ revoke all on function public.prepare_email_provider_attempt(uuid,jsonb) from pu
 revoke all on function public.settle_email_provider_attempt(uuid,uuid,text,text,text) from public,anon,authenticated;
 grant execute on function public.prepare_email_provider_attempt(uuid,jsonb) to service_role;
 grant execute on function public.settle_email_provider_attempt(uuid,uuid,text,text,text) to service_role;
+
+-- A read-only acknowledgement replay must precede fresh dispatch policy/config checks.
+create function public.read_accepted_email_provider_attempt(p_queue_job_id uuid)
+returns jsonb language plpgsql security invoker set search_path='' as $$
+declare provider text;
+begin
+ if not exists(select 1 from public.notification_queue where id=p_queue_job_id
+   and status='processing' and kind in ('email','space-campaign-email')) then
+  raise exception 'Acceptance replay requires claimed email job' using errcode='42501';
+ end if;
+ select provider_id into provider from public.email_provider_attempts
+  where queue_job_id=p_queue_job_id and state='accepted';
+ if provider is null then return null; end if;
+ return jsonb_build_object('providerId',provider);
+end $$;
+revoke all on function public.read_accepted_email_provider_attempt(uuid) from public,anon,authenticated;
+grant execute on function public.read_accepted_email_provider_attempt(uuid) to service_role;

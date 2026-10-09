@@ -13,7 +13,7 @@
  */
 
 import { Resend } from 'resend'
-import { acceptEmailForJob, providerAcceptanceEnabled } from '@/lib/comms/email-provider-acceptance'
+import { acceptEmailForJob, providerAcceptanceEnabled, readAcceptedEmailForJob } from '@/lib/comms/email-provider-acceptance'
 import { TerminalQueueError } from '@/lib/queue/terminal-error'
 import { readEmailDeliveryContext, type EmailDeliveryContextV1 } from '@/lib/comms/email-delivery-contract'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
@@ -154,9 +154,16 @@ export interface EmailPayload {
 // per-recipient ledger (lib/spaces/email.ts) can record the provider id. The existing
 // callers ignore the return value, so widening void -> { id } is backward-compatible.
 export async function sendRawEmail(payload: EmailPayload, attempt?: { queueJobId: string; providerAcceptanceRequired?: boolean }): Promise<{ id: string | null }> {
+  if (attempt?.queueJobId && (providerAcceptanceEnabled() || attempt.providerAcceptanceRequired)) {
+    const accepted = await readAcceptedEmailForJob(attempt.queueJobId)
+    if (accepted) return accepted
+  }
   readEmailDeliveryContext(payload.deliveryContext)
   const client = getClient()
-  if (!client) return { id: null }
+  if (!client) {
+    if (providerAcceptanceEnabled() || attempt?.providerAcceptanceRequired) throw new Error('Email provider configuration unavailable; durable job remains pending')
+    return { id: null }
+  }
   const { from, replyTo, deliveryContext: _deliveryContext, ...rest } = payload
   void _deliveryContext
   // Deliverability guard: never re-mail a GLOBALLY suppressed address (hard bounce / complaint).
