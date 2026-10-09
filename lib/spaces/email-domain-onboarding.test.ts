@@ -9,7 +9,7 @@ vi.mock('@/lib/supabase/admin',()=>({createAdminClient:()=>({from:(name:string)=
  const q={select:()=>q,eq:(k:string,v:unknown)=>{filter[k]=v;return q},insert:(v:Record<string,unknown>)=>{insert=v;return q},update:(v:Record<string,unknown>)=>{update=v;return q},upsert:(v:Record<string,unknown>)=>{state.defaultRow=v;return q},
  single:async()=>{
   if(name==='space_email_domain_operations'){if(insert)state.op={...insert,id:'op1',state:'pending',started_at:'2026-10-08T00:00:00Z'};if(update&&state.op)Object.assign(state.op,update);return{data:state.op,error:null}}
-  if(name==='space_email_domains'){if(state.registryFails)return{data:null,error:{code:'XX000'}};state.registry={...insert,id:'d1'};return{data:state.registry,error:null}}
+  if(name==='space_email_domains'){if(state.registryFails)return{data:null,error:{code:'XX000'}};state.registry={...state.registry,...insert,...update,id:'d1'};return{data:state.registry,error:null}}
   return{data:null,error:null}
  },maybeSingle:async()=>{const row=name==='spaces'?state.space:name==='space_email_identities'?state.identityRow:name==='space_email_identity_defaults'?state.defaultRow:name==='space_email_domain_operations'?state.op:state.registry;return{data:row&&Object.entries(filter).every(([k,v])=>row[k]===v)?row:null,error:null}}};return q},
  rpc:async()=>({data:{...state.op,mode:state.busy?'busy':state.op?.provider_domain_id?'persist':state.op?.state==='pending'?'create':'reconcile'},error:null})})}))
