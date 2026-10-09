@@ -4,6 +4,7 @@
 // them. A cron drains the queue with retries + exponential backoff. Server-only.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { TerminalQueueError } from '@/lib/queue/terminal-error'
 import type { Database, Json } from '@/lib/database.types'
 import { getSlo, meetsSlo } from '@/lib/observability/slos'
 
@@ -18,7 +19,8 @@ interface QueueJob {
   created_at?: string | null
 }
 
-export type JobHandler = (payload: Record<string, unknown>) => Promise<void>
+interface EmailJobContext { queueJobId: string; providerAcceptanceRequired?: boolean }
+export type JobHandler = (payload: Record<string, unknown>, context?: EmailJobContext) => Promise<void>
 
 export interface ProcessResult {
   processed: number
@@ -258,6 +260,34 @@ export function bulkRunAfter(index: number, startedAt: Date = new Date()): Date 
   return new Date(startedAt.getTime() + minute * 60_000)
 }
 
+/** The provider ledger is available only for an actual claimed email job. Never accept a
+ * replacement job ID from argument data; the SQL transaction repeats this check under lock. */
+export async function claimedEmailProviderRpc(
+  queueJobId: string,
+  name: 'read_accepted_email_provider_attempt' | 'prepare_email_provider_attempt' | 'settle_email_provider_attempt',
+  args: Record<string, unknown>,
+): Promise<{ data: unknown; error: { code?: string; message?: string } | null }> {
+  if (!['read_accepted_email_provider_attempt', 'prepare_email_provider_attempt', 'settle_email_provider_attempt'].includes(name)) {
+    throw new TerminalQueueError('Unknown email provider ledger operation')
+  }
+  const client = createAdminClient()
+  if (name === 'settle_email_provider_attempt') {
+    // Provider acceptance can arrive after a lease/status change or queue cleanup. Never erase
+    // that authoritative result; SQL fences non-acceptance outcomes using the attempt nonce.
+    const { data: attempt, error } = await client.from('email_provider_attempts').select('queue_job_id')
+      .eq('queue_job_id', queueJobId).maybeSingle()
+    if (error) throw new Error('Email attempt lookup unavailable')
+    if (!attempt) throw new TerminalQueueError('Provider settlement requires an existing attempt')
+  } else {
+    const { data: job, error } = await client.from('notification_queue').select('id,kind,status')
+      .eq('id', queueJobId).eq('status', 'processing').in('kind', ['email', 'space-campaign-email']).maybeSingle()
+    if (error) throw new Error('Claimed email job lookup unavailable')
+    if (!job) throw new TerminalQueueError('Provider ledger requires a claimed email job')
+  }
+  const rpcClient = client as unknown as { rpc(name: string, args: Record<string, unknown>): Promise<{ data: unknown; error: { code?: string; message?: string } | null }> }
+  return rpcClient.rpc(name, { ...args, p_queue_job_id: queueJobId })
+}
+
 function db() {
   return createAdminClient()
 }
@@ -389,7 +419,9 @@ export async function processQueue(
     try {
       const handler = handlers[job.kind]
       if (!handler) throw new Error(`no handler for kind '${job.kind}'`)
-      await handler(job.payload)
+      if (job.kind === 'email' || job.kind === 'space-campaign-email') {
+        await handler(job.payload, Object.freeze({ queueJobId: job.id, ...(job.payload.__providerAcceptanceRequired === true ? { providerAcceptanceRequired: true } : {}) }))
+      } else await handler(job.payload)
       await client
         .from('notification_queue')
         .update({ status: 'done', attempts, last_error: null, updated_at: new Date().toISOString() })
@@ -398,7 +430,9 @@ export async function processQueue(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       // Ask the ERROR, not just the counter. A closed window is a wait, not a failure.
-      const retry = retryDelayFor(err, { attempts, maxAttempts: job.max_attempts, ageMs })
+      const retry = err instanceof TerminalQueueError
+        ? { status: 'failed' as const, delayMs: 0, countsAsAttempt: true, reason: 'error' as const }
+        : retryDelayFor(err, { attempts, maxAttempts: job.max_attempts, ageMs })
       if (retry.reason === 'daily_quota') quotaClosedForMs = retry.delayMs
 
       if (retry.status === 'failed') {

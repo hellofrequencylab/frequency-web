@@ -1,3 +1,4 @@
+import { providerAcceptanceEnabled, readAcceptedEmailForJob } from '@/lib/comms/email-provider-acceptance'
 import { readEmailDeliveryContext } from '@/lib/comms/email-delivery-contract'
 // Per-Space EMAIL: the send backbone (ENTITY-SPACES-BUILD §C Phase 3, "Email / marketing / comms").
 // This is the SEAM the email surface agent calls. It sends a Space's email through the EXISTING
@@ -793,14 +794,16 @@ async function cancelQueuedSend(outreachSendId: string, note: string): Promise<v
   }
 }
 
-export const runSpaceCampaignEmail: JobHandler = async (p) => {
+export const runSpaceCampaignEmail: JobHandler = async (p, context) => {
   // Malformed jobs surface as dead-letters for inspection (the push handler's posture).
   if (!p.to || !p.subject || typeof p.outreachSendId !== 'string') {
     throw new Error('space-campaign-email job missing to, subject, or outreachSendId')
   }
   // (LIVE-727) The Space must still be active at the moment of sending. See the block comment above.
+  const accepted = context?.queueJobId && (providerAcceptanceEnabled() || context.providerAcceptanceRequired)
+    ? await readAcceptedEmailForJob(context.queueJobId) : null
   const spaceId = await jobSpaceId(p)
-  const hold = spaceEmailHold(spaceId ? await readSpaceStatus(spaceId) : null)
+  const hold = accepted ? null : spaceEmailHold(spaceId ? await readSpaceStatus(spaceId) : null)
   if (hold) {
     log.warn('space_email.drain_skipped_space_not_active', {
       spaceId,
@@ -810,14 +813,14 @@ export const runSpaceCampaignEmail: JobHandler = async (p) => {
     await cancelQueuedSend(p.outreachSendId, SPACE_NOT_ACTIVE_DRAIN_NOTE)
     return
   }
-  const { id } = await sendRawEmail({
+  const { id } = accepted ?? await sendRawEmail({
     deliveryContext: readEmailDeliveryContext(p.deliveryContext),
     to: p.to as string,
     subject: p.subject as string,
     html: (p.html as string) ?? '',
     headers: (p.headers as Record<string, string> | undefined) ?? undefined,
     from: typeof p.from === 'string' ? p.from : undefined,
-  })
+  }, context)
   try {
     const db = createAdminClient() as unknown as {
       from: (t: string) => {

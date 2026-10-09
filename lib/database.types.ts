@@ -3866,6 +3866,120 @@ export type Database = {
           },
         ]
       }
+      email_delivery_intents: {
+        Row: {
+          id: string
+          space_id: string | null
+          conversation_id: string
+          message_id: string
+          actor_profile_id: string | null
+          logical_send_key: string
+          payload: Json
+          queue_job_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          space_id?: string | null
+          conversation_id: string
+          message_id: string
+          actor_profile_id?: string | null
+          logical_send_key: string
+          payload: Json
+          queue_job_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          space_id?: string | null
+          conversation_id?: string
+          message_id?: string
+          actor_profile_id?: string | null
+          logical_send_key?: string
+          payload?: Json
+          queue_job_id?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_delivery_intents_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_delivery_intents_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "comms_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_delivery_intents_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "comms_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_delivery_intents_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_delivery_intents_queue_job_id_fkey"
+            columns: ["queue_job_id"]
+            isOneToOne: false
+            referencedRelation: "notification_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_provider_attempts: {
+        Row: {
+          queue_job_id: string
+          idempotency_key: string
+          frozen_payload: Json
+          first_attempt_at: string
+          state: string
+          prior_unknown: boolean
+          provider_id: string | null
+          accepted_at: string | null
+          attempt_nonce: string
+          last_error: string | null
+          updated_at: string
+        }
+        Insert: {
+          queue_job_id: string
+          idempotency_key: string
+          frozen_payload: Json
+          first_attempt_at?: string
+          state: string
+          prior_unknown?: boolean
+          provider_id?: string | null
+          accepted_at?: string | null
+          attempt_nonce: string
+          last_error?: string | null
+          updated_at?: string
+        }
+        Update: {
+          queue_job_id?: string
+          idempotency_key?: string
+          frozen_payload?: Json
+          first_attempt_at?: string
+          state?: string
+          prior_unknown?: boolean
+          provider_id?: string | null
+          accepted_at?: string | null
+          attempt_nonce?: string
+          last_error?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_events: {
         Row: {
           campaign_id: string | null
@@ -17561,6 +17675,40 @@ export type Database = {
     Functions: {
       claim_space_email_domain_operation: {
         Args: { p_id: string }
+        Returns: Json
+      }
+      read_accepted_email_provider_attempt: {
+        Args: {
+          p_queue_job_id: string
+        }
+        Returns: Json
+      }
+      settle_email_provider_attempt: {
+        Args: {
+          p_queue_job_id: string
+          p_nonce: string
+          p_outcome: string
+          p_provider_id: string
+          p_error: string
+        }
+        Returns: boolean
+      }
+      prepare_email_provider_attempt: {
+        Args: {
+          p_queue_job_id: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      enqueue_conversation_email_intent: {
+        Args: {
+          p_conversation_id: string
+          p_actor_profile_id: string
+          p_external_message_id: string
+          p_observed_sender: string
+          p_body: string
+          p_payload: Json
+        }
         Returns: Json
       }
       ai_reserve_attempt: {
