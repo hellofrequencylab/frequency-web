@@ -1,7 +1,7 @@
 {
   "id": "LIVE-766",
   "title": "Network reporting rolls up members, Events and revenue across a Collective",
-  "status": "open",
+  "status": "done",
   "priority": "P2",
   "lane": "live",
   "size": "M",
@@ -9,10 +9,12 @@
     "file": "docs/ledger/adr/ADR-1709.md",
     "ref": "owner pricing ladder report 2026-10-06"
   },
-  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on the per-Space Reach report.",
+  "detail": "PHASE 8 of the five-tier ladder (ADR-1709), built on the per-Space Reach report.\n\nPrivate owner-only Collective report on existing Reach page includes the parent and current active same-owner attached Spaces, deduplicates real active Space role members plus the implicit owner (not paid-tier subscription rows) and actual hosted/owned Events, and sums existing commerce/ticket/gift/split-share earnings with refund rules in strict complete mode. All sources use bounded ID-keyset pages across a read window, not a transactional snapshot; any error, unknown/non-USD currency or truncation renders unavailable, never a partial total. Downgrades and ownership changes deny before finance; manager/staff preview cannot read it. No new menu or production writes.",
   "verify": {
     "kind": "cmd",
-    "cmd": "node -e 'const fs=require(\"fs\");const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const fail=(m)=>{console.error(m);process.exit(1)};if(!fs.existsSync(\"lib/collective/network-report.ts\"))fail(\"no network report module\");console.log(\"ok: network reporting exists\")'"
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/check-collective-report.mjs",
+    "note": "Runs the actual owner/downgrade gates, membership/Event dedupe, complete/unavailable rollup, paginated completeness bound and currency refusal without a test runner; verifies strict financial adapter and Reach wiring."
   },
+  "closed": "2026-10-08",
   "wave": "WR"
 }

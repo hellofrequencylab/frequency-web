@@ -306,3 +306,8 @@ ai_member_turns_today                  internal
 prepare_email_provider_attempt        internal
 settle_email_provider_attempt         internal
 read_accepted_email_provider_attempt  internal
+# LIVE-765 private consent mutation hooks and snapshot reader (migration068).
+invalidate_collective_cross_listings internal
+validate_collective_cross_listing internal
+collective_listing_space_live internal
+read_collective_cross_listings internal

@@ -77,6 +77,94 @@ export type Database = {
           },
         ]
       }
+      collective_cross_listings: {
+        Row: {
+          circle_id: string | null
+          created_at: string
+          id: string
+          journey_id: string | null
+          kind: string | null
+          requested_by: string | null
+          responded_at: string | null
+          responded_by: string | null
+          source_space_id: string
+          space_id: string
+          status: string
+          subject_id: string | null
+        }
+        Insert: {
+          circle_id?: string | null
+          created_at?: string
+          id?: string
+          journey_id?: string | null
+          kind?: string | null
+          requested_by?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          source_space_id: string
+          space_id: string
+          status?: string
+          subject_id?: string | null
+        }
+        Update: {
+          circle_id?: string | null
+          created_at?: string
+          id?: string
+          journey_id?: string | null
+          kind?: string | null
+          requested_by?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          source_space_id?: string
+          space_id?: string
+          status?: string
+          subject_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collective_cross_listings_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collective_cross_listings_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "journey_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collective_cross_listings_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collective_cross_listings_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collective_cross_listings_source_space_id_fkey"
+            columns: ["source_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collective_cross_listings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       website_editor_presence: {
         Row: {
           space_id: string
@@ -17317,6 +17405,17 @@ export type Database = {
       ai_member_turns_today: {
         Args: { p_profile: string }
         Returns: number
+      }
+      collective_listing_space_live: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
+      read_collective_cross_listings: {
+        Args: { p_kind: string; p_pending?: boolean; p_target: string }
+        Returns: {
+          id: string
+          subject: Json
+        }[]
       }
       save_website_editor: {
         Args: {
