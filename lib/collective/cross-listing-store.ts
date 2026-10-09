@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { crossListingVisible, type CrossListingKind, type CrossListingStatus } from './cross-listing'
 
@@ -19,7 +18,7 @@ async function pages<T>(build:()=>PageQuery<T>, order='id'):Promise<T[]> {
     if(page.length<PAGE)return rows
   }
 }
-async function byIds<T>(table:string,columns:string,ids:string[]):Promise<T[]> {
+async function byIds<T>(table:'spaces'|'journey_plans'|'circles',columns:string,ids:string[]):Promise<T[]> {
   const rows:T[]=[]
   const unique=[...new Set(ids)]
   for(let offset=0;offset<unique.length;offset+=BATCH){
@@ -28,8 +27,8 @@ async function byIds<T>(table:string,columns:string,ids:string[]):Promise<T[]> {
   return rows
 }
 
-// Newly migrated relation; the client is scoped here until database types regenerate.
-export const listingAdmin = (): SupabaseClient => createAdminClient()
+// Preserve the generated database type through the service-only listing boundary.
+export const listingAdmin = () => createAdminClient()
 export interface CrossListingRow { id: string; kind: CrossListingKind; subject_id: string; source_space_id: string; space_id: string; status: CrossListingStatus; requested_by?: string | null; responded_by?: string | null; label?: string; subjectSlug?: string; sourceName?: string; targetName?: string }
 export interface CrossListingSubject { id: string; label: string; kind: CrossListingKind }
 export interface CrossListingSpace { id: string; slug: string; name: string | null; owner_profile_id: string | null; plan: string | null; status: string | null; visibility: string | null; parent_id: string | null; type?:string | null }
