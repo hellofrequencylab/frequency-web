@@ -3,6 +3,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import ts from 'typescript'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 export function emailSenderInventory(root = '.') {
   const results = []
   function walk(dir) {
@@ -39,4 +40,4 @@ export function emailSenderInventory(root = '.') {
   walk('lib'); walk('app')
   return results.sort((a,b) => a.file.localeCompare(b.file) || a.line-b.line)
 }
-if (process.argv[1]?.endsWith('email-sender-inventory.mjs')) console.log(JSON.stringify(emailSenderInventory(), null, 2))
+if (invokedDirectly(import.meta.url)) console.log(JSON.stringify(emailSenderInventory(), null, 2))
