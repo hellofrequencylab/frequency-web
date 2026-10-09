@@ -106,4 +106,7 @@ website_editor_presence
 
 # LIVE-883: recover the exact already-applied service-only schema; runtime remains open.
 ai_budget_reservations
+
+# EMAIL-002: inactive atomic reply bridge, service-role only.
+email_delivery_intents
 collective_cross_listings

@@ -301,6 +301,9 @@ ai_settle_attempt                  internal
 ai_hold_attempt                  internal
 ai_budget_status_today                  internal
 ai_member_turns_today                  internal
+
+# EMAIL-002: inactive atomic reply bridge, service-role only.
+enqueue_conversation_email_intent     internal
 # LIVE-765 private consent mutation hooks and snapshot reader (migration068).
 invalidate_collective_cross_listings internal
 validate_collective_cross_listing internal
