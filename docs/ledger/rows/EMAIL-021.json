@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-021",
+  "title": "Show current marketing audience eligibility and exclusion reasons",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/SPACE-EMAIL-BUILD-PLAN.md",
+    "ref": "PROG-EMAIL1 subpacket:audience-eligibility-preview"
+  },
+  "detail": "Existing campaign picker and compatibility count action use an authorized aggregate preview with matching contacts, eligible recipients and mutually exclusive invalid/duplicate/unknown-consent/unsubscribed/global-or-Space-suppressed/topic-muted exclusions. The existing audience grammar resolves the effective topic, preserving member-segment Marketing. Unknown consent remains excluded for every campaign topic. Count is disabled during changes and on policy read failures; exact contact count detects incomplete candidate reads. Send resolvers continue removing invalid/duplicate addresses. This closes only the integrated read-only preview subpacket. Full audience-eligibility packet remains unclosed until dispatch-policy and owner-only isolated test are implemented; no source.ref packet claim, no test sends or consent edits. Large/filter pagination beyond the existing resolver remains part of full campaign accounting.",
+  "closed": "2026-10-08",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node scripts/probes/email-audience-eligibility.mjs",
+    "note": "Direct shipped-code probe executes aggregate consent/exclusion accounting, scoped bounded policy reads/failure and real initial/member picker rendering. DB/action transports and UI primitives substituted; no child runner or live sends. Full58 focused tests, including async recovery/stale responses, remain CI-discovered."
+  }
+}
