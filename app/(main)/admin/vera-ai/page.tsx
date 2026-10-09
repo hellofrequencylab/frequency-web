@@ -162,7 +162,7 @@ async function AssistantStats() {
         </Tile>
         <Tile label="Today">
           <MiniGrid>
-            <MiniStat value={`$${ai.totalSpend.toFixed(2)}`} label="AI spend" />
+            <MiniStat value={ai.totalSpend === null ? 'Unavailable' : `$${ai.totalSpend.toFixed(2)}`} label="AI spend" />
             <MiniStat value={activeFeatures.toLocaleString()} label="Features used" />
             <MiniStat value={ai.rows.length.toLocaleString()} label="Features capped" />
             <MiniStat value={ai.helpChunks.toLocaleString()} label="Help chunks" />
@@ -258,7 +258,7 @@ async function ManageSections() {
   const cards: ManageCard[] = [
     { label: 'Vera config', desc: 'Voice, live responses, and the founder-induction copy.', stat: '', statLabel: 'Manage', href: '/admin/vera-ai?tab=vera', Icon: Bot },
     { label: 'Help gaps', desc: "Questions Vera deflected, ranked. The to-write list.", stat: `${deflectedCount}`, statLabel: 'deflected · 30d', href: '/admin/vera-ai?tab=help-gaps', Icon: HelpCircle },
-    { label: 'AI controls', desc: 'The master switch, per-feature spend, and the switch trail.', stat: ai.enabled ? 'On' : 'Off', statLabel: `$${ai.totalSpend.toFixed(2)} today`, href: '/admin/vera-ai?tab=ai', Icon: Power },
+    { label: 'AI controls', desc: 'The master switch, per-feature spend, and the switch trail.', stat: ai.enabled ? 'On' : 'Off', statLabel: ai.totalSpend === null ? 'Accounting unavailable' : `$${ai.totalSpend.toFixed(2)} today`, href: '/admin/vera-ai?tab=ai', Icon: Power },
     { label: 'AI Studio', desc: 'Ranked AI recommendations and one-click, reversible changes.', stat: `${read.recs.length}`, statLabel: 'recommendations', href: '/admin/vera-ai?tab=studio', Icon: Lightbulb },
     { label: 'Insights', desc: 'All analytics in one place: the read, engagement, outcomes, and intel.', stat: '', statLabel: 'Open', href: '/admin/insights', Icon: MessageCircleQuestion },
   ]
