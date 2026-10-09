@@ -339,3 +339,5 @@ email_delivery_intents                internal
 space_email_domains authenticated
 space_email_identities authenticated
 collective_cross_listings             internal
+space_email_reply_aliases             internal
+space_email_reply_quarantine          internal

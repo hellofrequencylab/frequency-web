@@ -36,6 +36,7 @@ import {
   type ConversationRow,
 } from '@/lib/comms/conversations'
 import { conversationFrom } from '@/lib/comms/from-address'
+import { resolveTenantReplyAlias, quarantineTenantReplyAlias } from './tenant-reply-alias'
 
 /** The normalized inbound message the router works from — a superset of the legacy {from,subject,text}. */
 export interface ParsedInboundMessage {
@@ -345,6 +346,7 @@ type InboundRouteStatus =
   | 'no_conversation'
   | 'dropped_automated'
   | 'error'
+  | 'quarantined_alias'
 
 interface InboundRouteResult {
   status: InboundRouteStatus
@@ -362,7 +364,14 @@ interface InboundRouteResult {
 export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<InboundRouteResult> {
   try {
     // 1) Is this even one of our reply addresses? If not, hand back to the legacy contact-match fallback.
-    const token = parseConversationReplyAddress(parsed.recipients)
+    const tenantAlias = await resolveTenantReplyAlias(parsed.recipients)
+    if (tenantAlias.kind === 'quarantine') {
+      await quarantineTenantReplyAlias(tenantAlias.reason, parsed.recipients, parsed.messageId)
+      return { status: 'quarantined_alias' }
+    }
+    const token = tenantAlias.kind === 'ready'
+      ? { ref: tenantAlias.ref, role: 'member' as const, token: '' }
+      : parseConversationReplyAddress(parsed.recipients)
     if (!token) return { status: 'no_token' }
 
     // 2) Automated mail never threads (checked after we know it targets a thread, so bounces to a reply
@@ -373,11 +382,15 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
     // 3) VERIFY the token FOR ITS ROLE. A present-but-invalid tag is a forgery or a rotated secret — drop
     //    it, and do NOT fall through to contact-match (the address clearly targeted our reply domain). The
     //    role is authenticated by the address itself: a member token cannot pass as a house token.
-    if (!verifyConversationToken(token.ref, token.token, token.role)) return { status: 'bad_token' }
+    if (tenantAlias.kind !== 'ready' && !verifyConversationToken(token.ref, token.token, token.role)) return { status: 'bad_token' }
 
     // 4) Resolve the thread.
     const conv = await getConversationByRef(token.ref)
-    if (!conv) return { status: 'no_conversation', ref: token.ref }
+    if (!conv) return tenantAlias.kind === 'ready' ? { status: 'error' } : { status: 'no_conversation', ref: token.ref }
+    if (tenantAlias.kind === 'ready' && (conv.id !== tenantAlias.conversationId || conv.spaceId !== tenantAlias.spaceId)) {
+      await quarantineTenantReplyAlias('tenant_mapping_mismatch', parsed.recipients, parsed.messageId)
+      return { status: 'quarantined_alias' }
+    }
 
     // 5) HOUSE role = an operator/leader replying to a FORWARDED copy from their own inbox (email bridge).
     //    Route it OUTBOUND to the member, as the house. Direction is decided by the unforgeable address, so

@@ -14,6 +14,82 @@ export type Database = {
   }
   public: {
     Tables: {
+      space_email_reply_aliases: {
+        Row: {
+          alias_key: string
+          conversation_id: string
+          conversation_ref: string
+          created_at: string
+          local_prefix: string
+          receiving_domain: string
+          revoked_at: string | null
+          space_id: string
+          version: number
+        }
+        Insert: {
+          alias_key: string
+          conversation_id: string
+          conversation_ref: string
+          created_at?: string
+          local_prefix: string
+          receiving_domain: string
+          revoked_at?: string | null
+          space_id: string
+          version?: number
+        }
+        Update: {
+          alias_key?: string
+          conversation_id?: string
+          conversation_ref?: string
+          created_at?: string
+          local_prefix?: string
+          receiving_domain?: string
+          revoked_at?: string | null
+          space_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_email_reply_aliases_conversation_id_space_id_fkey"
+            columns: ["conversation_id", "space_id"]
+            isOneToOne: true
+            referencedRelation: "comms_conversations"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "space_email_reply_aliases_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_email_reply_quarantine: {
+        Row: {
+          created_at: string
+          id: string
+          message_fingerprint: string
+          reason: string
+          recipient_fingerprint: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_fingerprint: string
+          reason: string
+          recipient_fingerprint: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_fingerprint?: string
+          reason?: string
+          recipient_fingerprint?: string
+        }
+        Relationships: [
+        ]
+      }
       ai_budget_reservations: {
         Row: {
           id: string

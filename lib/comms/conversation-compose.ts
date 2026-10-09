@@ -21,7 +21,8 @@ import {
   type AppendMessageInput,
 } from '@/lib/comms/conversations'
 import type { InteractionScopeRef } from '@/lib/crm/interactions'
-import { buildConversationReplyAddress, conversationSigningAvailable } from '@/lib/comms/reply-address'
+import { conversationSigningAvailable } from '@/lib/comms/reply-address'
+import { buildSpaceConversationReplyAddress } from './tenant-reply-alias'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { conversationFrom } from '@/lib/comms/from-address'
@@ -138,7 +139,7 @@ export async function startConversationMessage(
     await enqueueEmail({
       to: email,
       from: input.from,
-      replyTo: buildConversationReplyAddress(conv.ref),
+      replyTo: await buildSpaceConversationReplyAddress(conv.ref, input.spaceId ?? null),
       subject,
       html: rendered.html,
       text: rendered.text,

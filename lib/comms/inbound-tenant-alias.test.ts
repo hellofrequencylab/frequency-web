@@ -1,0 +1,17 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+const state=vi.hoisted(()=>({alias:{kind:'ready',spaceId:'s1',conversationId:'c1',ref:'42'} as Record<string,string>,conv:{id:'c1',ref:'42',spaceId:'s1',externalEmail:'member@test.local',memberProfileId:'m1',ownerProfileId:null,contactId:null,status:'open'},quarantineFails:false,lookupFails:false,appendFails:false,conversationMissing:false}))
+const append=vi.hoisted(()=>vi.fn())
+const quarantine=vi.hoisted(()=>vi.fn())
+vi.mock('./tenant-reply-alias',()=>({resolveTenantReplyAlias:async()=>{if(state.lookupFails)throw new Error('DB offline');return state.alias},quarantineTenantReplyAlias:async(...args:unknown[])=>{quarantine(...args);if(state.quarantineFails)throw new Error('quarantine offline')}}))
+vi.mock('./conversations',()=>({getConversationByRef:async()=>state.conversationMissing?null:state.conv,appendConversationMessage:async(...args:unknown[])=>{append(...args);return state.appendFails?null:{id:'message1'}},reopenConversationIfClosed:async()=>undefined,conversationScopeRef:()=>null}))
+vi.mock('@/lib/email',()=>({enqueueEmail:vi.fn(),fetchReceivedEmail:vi.fn(),findReceivedEmailIdByMessageId:vi.fn()}))
+import {routeInboundReply} from './inbound'
+const message={from:'member@test.local',recipients:['tenant.r2.proof@reply.test'],subject:'reply',text:'body',messageId:'m1',inReplyTo:null,referencesIds:null,autoSubmitted:null,precedence:null}
+beforeEach(()=>{state.alias={kind:'ready',spaceId:'s1',conversationId:'c1',ref:'42'};state.conv.spaceId='s1';state.quarantineFails=false;state.lookupFails=false;state.appendFails=false;state.conversationMissing=false;append.mockClear();quarantine.mockClear();vi.stubEnv('CONVERSATION_EMAIL_BRIDGE','false')})
+describe('authenticated inbound tenant route consequences',()=>{
+ it('appends verified member replies to the existing exact conversation store',async()=>{expect(await routeInboundReply(message)).toMatchObject({status:'recorded',conversationId:'c1'});expect(append).toHaveBeenCalledWith(expect.objectContaining({conversationId:'c1',direction:'inbound',body:'body'}))})
+ it('quarantines invalid routes without appending or enabling legacy fallback',async()=>{state.alias={kind:'quarantine',reason:'invalid_alias_proof'};expect(await routeInboundReply(message)).toEqual({status:'quarantined_alias'});expect(append).not.toHaveBeenCalled();expect(quarantine).toHaveBeenCalled()})
+ it('rechecks tenant mapping before append',async()=>{state.conv.spaceId='s2';expect(await routeInboundReply(message)).toEqual({status:'quarantined_alias'});expect(append).not.toHaveBeenCalled()})
+ it('does not acknowledge a verified alias if the second conversation read is unavailable',async()=>{state.conversationMissing=true;expect(await routeInboundReply(message)).toEqual({status:'error'});expect(append).not.toHaveBeenCalled()})
+ it('requests redelivery on alias lookup, quarantine persistence and append failure',async()=>{state.lookupFails=true;expect(await routeInboundReply(message)).toEqual({status:'error'});state.lookupFails=false;state.alias={kind:'quarantine',reason:'malformed_alias'};state.quarantineFails=true;expect(await routeInboundReply(message)).toEqual({status:'error'});state.quarantineFails=false;state.alias={kind:'ready',spaceId:'s1',conversationId:'c1',ref:'42'};state.appendFails=true;expect(await routeInboundReply(message)).toMatchObject({status:'error'});expect(quarantine).toHaveBeenCalledTimes(1)})
+})
