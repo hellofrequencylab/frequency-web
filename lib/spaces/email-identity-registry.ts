@@ -4,8 +4,10 @@ import { getMyProfileId } from '@/lib/auth'
 import { formatDisplayName } from '@/lib/comms/from-address'
 import { spaceHasEntitlement } from './entitlements'
 import { asSpacePlan, SPACE_EMAIL_CUSTOM_IDENTITY_KEY } from '@/lib/pricing/plans'
-import { spaceEmailIdentityPolicy, type EmailIdentityPolicySpace } from './email-identity-policy'
+import { spaceEmailIdentityPolicy } from './email-identity-policy'
 import { retrieveEmailDomainVerification } from './email-domain-provider'
+
+type EmailIdentityPolicySpace = NonNullable<Parameters<typeof spaceEmailIdentityPolicy>[0]>
 
 // Scoped cast until integration generates the additive registry's database types.
 type Query = {
