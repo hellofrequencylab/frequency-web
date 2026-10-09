@@ -31,23 +31,6 @@ async function requireOwner(spaceId: string, requirePaid = true) {
   return space
 }
 
-/** Attach an existing provider domain only after direct provider confirmation. Provisioning is separate. */
-export async function registerSpaceEmailDomain(spaceId: string, domain: string, providerId: string) {
-  const space = await requireOwner(spaceId)
-  const normalized = domain.toLowerCase().trim()
-  if (!/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/.test(normalized) || normalized.length > 253)
-    throw new Error('Enter a valid email domain.')
-  // Initial registry accepts only the domain already assigned to this Space or its subdomains.
-  const owned = space.domain?.toLowerCase()
-  if (!owned || (normalized !== owned && !normalized.endsWith(`.${owned}`)))
-    throw new Error('Connect this domain to the Space before registering its email identity.')
-  const verified = await retrieveEmailDomainVerification(providerId, normalized)
-  const { data, error } = await table('space_email_domains').insert({ space_id: spaceId, domain: normalized,
-    provider_domain_id: providerId, sending_verified: verified.sendingVerified, last_verified_at: new Date().toISOString() }).select('id').single()
-  if (error || !data) throw new Error('Could not register the email domain.')
-  return String(data.id)
-}
-
 export async function createSpaceEmailIdentity(spaceId: string, domainId: string, localPart: string, displayName: string) {
   await requireOwner(spaceId)
   const { data: domain, error: domainError } = await table('space_email_domains').select('id').eq('id', domainId).eq('space_id', spaceId).maybeSingle()

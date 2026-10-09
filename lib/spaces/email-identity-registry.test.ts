@@ -21,7 +21,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name
     } }
   return query
 } }) }))
-import { createSpaceEmailIdentity, registerSpaceEmailDomain, resolveSpaceEmailIdentity, pauseSpaceEmailIdentity } from './email-identity-registry'
+import { createSpaceEmailIdentity, resolveSpaceEmailIdentity, pauseSpaceEmailIdentity } from './email-identity-registry'
 beforeEach(() => { state.caller = 'owner'; state.error = false; state.verified = true; state.providerFails = false;
   state.space.plan = 'business'; state.identity.paused_at = null; state.domain.paused_at = null; state.writes = [] })
 describe('live Space identity registry', () => {
@@ -46,12 +46,6 @@ describe('live Space identity registry', () => {
     await expect(resolveSpaceEmailIdentity('s1', 'i1')).rejects.toThrow('identity_unavailable')
     state.domain.paused_at = null; state.providerFails = true
     await expect(resolveSpaceEmailIdentity('s1', 'i1')).rejects.toThrow('provider unavailable')
-  })
-  it('cannot register an unrelated domain or self-attest verified state', async () => {
-    await expect(registerSpaceEmailDomain('s1', 'other.com', 'p2')).rejects.toThrow('Connect this domain')
-    state.verified = false
-    await registerSpaceEmailDomain('s1', 'reply.example.com', 'p1')
-    expect(state.writes[0].sending_verified).toBe(false)
   })
   it('lets the owner pause an identity after downgrade without deleting it', async () => {
     state.space.plan = 'free'
