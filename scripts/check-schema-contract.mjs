@@ -129,11 +129,6 @@ export const ALLOWLIST = [
   // `kind` is optional (matches any). For an rpc finding the FUNCTION name goes in `table` and
   // `column` is null (see flattenViolations). An entry that matches nothing FAILS the guard, which
   // is the whole reason this list can only shrink.
-  { file: 'lib/ai/accounting-rpc.ts', table: 'ai_reserve_attempt', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-883', reason: 'Migration20270346007200 adds this private service RPC; the checked local adapter keeps generated types untouched until actual schema regeneration after apply. Retire on the next public schema regeneration.' },
-  { file: 'lib/ai/accounting-rpc.ts', table: 'ai_settle_attempt', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-883', reason: 'Migration20270346007200 adds this private service RPC; the checked local adapter keeps generated types untouched until actual schema regeneration after apply. Retire on the next public schema regeneration.' },
-  { file: 'lib/ai/accounting-rpc.ts', table: 'ai_hold_attempt', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-883', reason: 'Migration20270346007200 adds this private service RPC; the checked local adapter keeps generated types untouched until actual schema regeneration after apply. Retire on the next public schema regeneration.' },
-  { file: 'lib/ai/accounting-rpc.ts', table: 'ai_member_turns_today', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-883', reason: 'Migration20270346007200 adds this private service RPC; the checked local adapter keeps generated types untouched until actual schema regeneration after apply. Retire on the next public schema regeneration.' },
-  { file: 'lib/ai/accounting-rpc.ts', table: 'ai_budget_status_today', kind: 'rpc', added: '2026-10-08', owner: 'LIVE-883', reason: 'Migration20270346007200 adds this private service RPC; the checked local adapter keeps generated types untouched until actual schema regeneration after apply. Retire on the next public schema regeneration.' },
   {
     file: 'app/(main)/founder/founder-actions.ts',
     table: 'claim_founder_flags',

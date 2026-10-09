@@ -1,4 +1,4 @@
-// Migration072 service RPC shapes stay local until Supabase regenerates the schema snapshot.
+// Narrow service RPC call/result contract shared by accounting and operator readers.
 // This adapter receives an already-authorized admin client; it never creates an admin handle.
 import type { SupabaseClient } from '@supabase/supabase-js'
 
