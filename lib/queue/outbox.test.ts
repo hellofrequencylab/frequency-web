@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { TerminalQueueError } from './terminal-error'
 import {
   nextRetry,
   retryDelayFor,
@@ -328,4 +329,23 @@ describe('processQueue (a closed quota is a wait, not a failure)', () => {
       expect(Date.parse(u.run_after as string)).toBeGreaterThan(Date.now() + 30_000)
     }
   })
+})
+
+// Sender identity comes from the actual claimed row, never a lookalike payload field.
+describe('email acceptance queue context', () => {
+  it('passes claimed job identity separately and ignores forged payload identity', async () => {
+    rpcResult = { data: [job({ kind: 'email', payload: { queueJobId: 'forged' } })], error: null }
+    const handler = vi.fn(async () => {})
+    await processQueue({ email: handler })
+    expect(handler).toHaveBeenCalledWith({ queueJobId: 'forged' }, { queueJobId: 'j1' })
+    expect(Object.isFrozen((handler.mock.calls as unknown[][])[0][1])).toBe(true)
+  })
+})
+
+it('uncertain acceptance hold becomes visible dead-letter without spending automatic retries', async () => {
+  rpcResult = { data: [job({ kind: 'email' })], error: null }
+  const result = await processQueue({ email: async () => { throw new TerminalQueueError('reconcile uncertain acceptance') } })
+  expect(result.failed).toBe(1)
+  expect(result.retried).toBe(0)
+  expect(updates[0]).toMatchObject({ status: 'failed', last_error: 'reconcile uncertain acceptance' })
 })

@@ -793,7 +793,7 @@ async function cancelQueuedSend(outreachSendId: string, note: string): Promise<v
   }
 }
 
-export const runSpaceCampaignEmail: JobHandler = async (p) => {
+export const runSpaceCampaignEmail: JobHandler = async (p, context) => {
   // Malformed jobs surface as dead-letters for inspection (the push handler's posture).
   if (!p.to || !p.subject || typeof p.outreachSendId !== 'string') {
     throw new Error('space-campaign-email job missing to, subject, or outreachSendId')
@@ -817,7 +817,7 @@ export const runSpaceCampaignEmail: JobHandler = async (p) => {
     html: (p.html as string) ?? '',
     headers: (p.headers as Record<string, string> | undefined) ?? undefined,
     from: typeof p.from === 'string' ? p.from : undefined,
-  })
+  }, context)
   try {
     const db = createAdminClient() as unknown as {
       from: (t: string) => {

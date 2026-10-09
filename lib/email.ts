@@ -13,6 +13,8 @@
  */
 
 import { Resend } from 'resend'
+import { acceptEmailForJob, providerAcceptanceEnabled } from '@/lib/comms/email-provider-acceptance'
+import { TerminalQueueError } from '@/lib/queue/terminal-error'
 import { readEmailDeliveryContext, type EmailDeliveryContextV1 } from '@/lib/comms/email-delivery-contract'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { envString } from '@/lib/env/string'
@@ -151,7 +153,7 @@ export interface EmailPayload {
 // id on success (or null when sending is disabled / the address was suppressed), so a
 // per-recipient ledger (lib/spaces/email.ts) can record the provider id. The existing
 // callers ignore the return value, so widening void -> { id } is backward-compatible.
-export async function sendRawEmail(payload: EmailPayload): Promise<{ id: string | null }> {
+export async function sendRawEmail(payload: EmailPayload, attempt?: { queueJobId: string; providerAcceptanceRequired?: boolean }): Promise<{ id: string | null }> {
   readEmailDeliveryContext(payload.deliveryContext)
   const client = getClient()
   if (!client) return { id: null }
@@ -163,11 +165,12 @@ export async function sendRawEmail(payload: EmailPayload): Promise<{ id: string 
     console.warn(`[email] skipped suppressed address: ${payload.to}`)
     return { id: null }
   }
-  const { data, error } = await client.emails.send({
-    from: from ?? FROM,
-    ...(replyTo ? { replyTo } : {}),
-    ...rest,
-  })
+  const providerPayload = { from: from ?? FROM, ...(replyTo ? { replyTo } : {}), ...rest }
+  if (providerAcceptanceEnabled() || attempt?.providerAcceptanceRequired) {
+    if (!attempt?.queueJobId) throw new TerminalQueueError('Email acceptance requires trusted queue job context')
+    return acceptEmailForJob(attempt.queueJobId, providerPayload, (frozen, options) => client.emails.send(frozen, options))
+  }
+  const { data, error } = await client.emails.send(providerPayload)
   if (error) {
     throw new Error(`[email] send failed: ${typeof error === 'string' ? error : JSON.stringify(error)}`)
   }

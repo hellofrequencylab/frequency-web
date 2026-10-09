@@ -4,6 +4,7 @@
 // them. A cron drains the queue with retries + exponential backoff. Server-only.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { TerminalQueueError } from '@/lib/queue/terminal-error'
 import type { Database, Json } from '@/lib/database.types'
 import { getSlo, meetsSlo } from '@/lib/observability/slos'
 
@@ -18,7 +19,8 @@ interface QueueJob {
   created_at?: string | null
 }
 
-export type JobHandler = (payload: Record<string, unknown>) => Promise<void>
+export interface EmailJobContext { queueJobId: string; providerAcceptanceRequired?: boolean }
+export type JobHandler = (payload: Record<string, unknown>, context?: EmailJobContext) => Promise<void>
 
 export interface ProcessResult {
   processed: number
@@ -389,7 +391,9 @@ export async function processQueue(
     try {
       const handler = handlers[job.kind]
       if (!handler) throw new Error(`no handler for kind '${job.kind}'`)
-      await handler(job.payload)
+      if (job.kind === 'email' || job.kind === 'space-campaign-email') {
+        await handler(job.payload, Object.freeze({ queueJobId: job.id, ...(job.payload.__providerAcceptanceRequired === true ? { providerAcceptanceRequired: true } : {}) }))
+      } else await handler(job.payload)
       await client
         .from('notification_queue')
         .update({ status: 'done', attempts, last_error: null, updated_at: new Date().toISOString() })
@@ -398,7 +402,9 @@ export async function processQueue(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       // Ask the ERROR, not just the counter. A closed window is a wait, not a failure.
-      const retry = retryDelayFor(err, { attempts, maxAttempts: job.max_attempts, ageMs })
+      const retry = err instanceof TerminalQueueError
+        ? { status: 'failed' as const, delayMs: 0, countsAsAttempt: true, reason: 'error' as const }
+        : retryDelayFor(err, { attempts, maxAttempts: job.max_attempts, ageMs })
       if (retry.reason === 'daily_quota') quotaClosedForMs = retry.delayMs
 
       if (retry.status === 'failed') {
