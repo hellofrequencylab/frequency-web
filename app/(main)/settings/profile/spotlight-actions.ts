@@ -18,6 +18,7 @@ import {
   deleteOneTopFriend,
   getOwnerTopFriendIds,
 } from '@/lib/spotlight/top-friends'
+import { legacySpaceLayoutWriteError } from '@/lib/entity-blocks/legacy-write-guard'
 import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
 import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 
@@ -49,6 +50,13 @@ export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!me) return { error: 'Profile not found' }
+
+  const meta = (me as { meta?: unknown }).meta
+  const storedGrid = meta && typeof meta === 'object' && !Array.isArray(meta)
+    ? (meta as Record<string, unknown>).entityGrid
+    : undefined
+  const compatibilityError = legacySpaceLayoutWriteError(rawLayout, { profileLayout: storedGrid })
+  if (compatibilityError) return { error: compatibilityError }
 
   const safe = sanitizeEntityLayout(rawLayout, 'member')
   // 2026-09-05 (scan2 L6-09): the helper over an EMPTY base says whether `entityGrid` is set or dropped

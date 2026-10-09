@@ -172,6 +172,17 @@ because today a benched node has no identity off the row.
 9. Backfill. **Keep `upgradeLayout` in the read path forever** — it costs nothing on an upgraded
    document and it is the only defence against a stale row in a preview branch.
 
+### Member writer compatibility boundary (LIVE-875)
+
+The session-owned member grid save refuses incoming native node cells or stored bench, and
+stale legacy saves or clears against native `meta.entityGrid`, before sanitization or either
+metadata RPC. Parsed legacy projections and ordinary legacy saves/clears remain supported.
+The actual-action probe checks 164 refusal cases against pinned historical storage-shape
+reconstructions with synthetic authored values, an adversarial synthetic nested fixture, and
+malformed stored native documents, then proves the real metadata helper only
+writes the signed-in member's grid key. This does not enable native storage or rendering,
+remove type dedupe, or close task 10, task 11, or the parent E0 programme.
+
 ### Space writer compatibility boundary (LIVE-887)
 
 The current Space page editor still writes the legacy type-keyed document. Its autosave,

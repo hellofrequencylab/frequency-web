@@ -138,6 +138,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Fixed
 
+- **Profile layouts keep their saved work.** An older page editor now refuses a newer layout it cannot safely save, including when clearing the page.
+
 - Space page edits keep saved work safe when the editor cannot read a newer page format.
 - **Changing a repeating event to one date no longer leaves the extra dates on the calendar.** Future dates nobody has joined are taken down. Dates people already RSVP'd to or bought a ticket for stay.
 
