@@ -44,10 +44,10 @@ export async function runSpaceEmailDomainProvisioning(spaceId:string,raw:string,
  await verifyEmailDomainOwnership(spaceId,space.owner_profile_id,domain,token,Date.now(),{id:String(op.id),nonce:String(op.nonce)})
  const claimed=await db().rpc('claim_space_email_domain_operation',{p_id:op.id})
  if(claimed.error||!claimed.data) throw new Error('Email setup could not acquire its delivery-safe lease.')
- const update=async(values:Record<string,unknown>)=>{const r=await db().from('space_email_domain_operations').update(values).eq('id',op.id).eq('space_id',spaceId).select('id').single();if(r.error||!r.data)throw new Error('Email setup state could not be saved.')}
+ const persistOperationState=async(values:Record<string,unknown>)=>{const r=await db().from('space_email_domain_operations').update(values).eq('id',op.id).eq('space_id',spaceId).select('id').single();if(r.error||!r.data)throw new Error('Email setup state could not be saved.')}
  return advanceEmailDomainOperation(claimed.data as unknown as EmailDomainOperation,{
   create:createEmailProviderDomain,reconcile:reconcileEmailProviderDomain,
-  remember:async id=>update({provider_domain_id:id,state:'persisting'}),
+  remember:async id=>persistOperationState({provider_domain_id:id,state:'persisting'}),
   persist:async id=>{
    const provider=await inspectEmailProviderDomain(id,domain)
    const values={space_id:spaceId,domain,provider_domain_id:id,sending_verified:provider.status==='verified'&&provider.capabilities.sending==='enabled',last_verified_at:new Date().toISOString()}
@@ -56,7 +56,7 @@ export async function runSpaceEmailDomainProvisioning(spaceId:string,raw:string,
    const row=inserted.error?.code==='23505'?await db().from('space_email_domains').select('id').eq('space_id',spaceId).eq('domain',domain).eq('provider_domain_id',id).maybeSingle():inserted
    if(row.error||!row.data) throw new Error('Provider setup is saved. Registry persistence needs recovery; check again.')
    return {domainId:String(row.data.id),dns:emailDomainDnsInstructions(domain,provider.records as EmailDnsRecord[],false)}
-  },complete:()=>update({state:'ready',lease_until:null}),releaseUncertain:()=>update({state:'uncertain',lease_until:null}),
+  },complete:()=>persistOperationState({state:'ready',lease_until:null}),releaseUncertain:()=>persistOperationState({state:'uncertain',lease_until:null}),
  })
 }
 export async function checkEmailDomainSetup(spaceId:string,domainId:string) {
