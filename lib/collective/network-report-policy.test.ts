@@ -17,6 +17,17 @@ describe('private Collective reporting', () => {
     expect(deps.earnings).toHaveBeenCalledTimes(2)
     expect(attachedReportSpaces(parent, [child, child])).toHaveLength(2)
   })
+  it('counts canonical hosts, excludes root and outside hosts, and normalizes legacy hosting IDs', async () => {
+    const { deps } = setup()
+    deps.events = async () => [
+      { id: 'legacy', space_id: 'c', host_space_id: null },
+      { id: 'normalized', space_id: 'other', host_space_id: ' c ' },
+      { id: 'outside', space_id: 'p', host_space_id: 'other' },
+      { id: 'root', space_id: 'root', host_space_id: null },
+      { id: 'blank', space_id: 'p', host_space_id: '' },
+    ]
+    expect(await buildNetworkReport('p', 'owner', deps)).toMatchObject({ status: 'complete', events: 2 })
+  })
   it.each([null, 'stranger'])('denies non-owner %s before any child or finance reads', async caller => {
     const { deps } = setup(); expect(await buildNetworkReport('p', caller, deps)).toEqual({ status: 'denied' })
     expect(deps.children).not.toHaveBeenCalled(); expect(deps.earnings).not.toHaveBeenCalled()

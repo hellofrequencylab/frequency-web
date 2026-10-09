@@ -1,3 +1,4 @@
+import { hostingSpaceId } from '@/lib/events/belonging'
 export interface ReportSpace { id: string; name: string; slug: string; parent_id: string | null; owner_profile_id: string | null; status: string; plan: string | null; type: string }
 interface ReportEarnings { grossCents: number; feeCents: number; netCents: number; refundedCents: number; orderCount: number; networkGrossCents: number; networkFeeCents: number; networkOrderCount: number }
 type NetworkReport = { status: 'denied' } | { status: 'unavailable' } | {
@@ -53,6 +54,6 @@ export async function buildNetworkReport(parentId: string, caller: string | null
     }
     return { status: 'complete', spaces: current.map(({ id, name, slug }) => ({ id, name, slug })),
       members: new Set(members.filter(row => row.status === 'active' && !!row.profile_id).map(row => row.profile_id)).size,
-      events: new Set(events.filter(row => ids.includes(row.host_space_id ?? row.space_id ?? '')).map(row => row.id)).size, earnings }
+      events: new Set(events.filter(row => ids.includes(hostingSpaceId({ hostSpaceId: row.host_space_id, spaceId: row.space_id }, null) ?? '')).map(row => row.id)).size, earnings }
   } catch { return { status: 'unavailable' } }
 }
