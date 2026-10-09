@@ -1,17 +1,17 @@
 import { asSpacePlan, SPACE_EMAIL_CUSTOM_IDENTITY_KEY } from '@/lib/pricing/plans'
 import { spaceHasEntitlement, type SpaceLike } from './entitlements'
 
-export type EmailIdentityPolicySpace = SpaceLike & { id: string; plan?: string | null }
+type EmailIdentityPolicySpace = SpaceLike & { id: string; plan?: string | null }
 
 /** Loaded by the server from its authorized registry, never from an outbox payload. */
-export type VerifiedSpaceEmailIdentity = {
+type VerifiedSpaceEmailIdentity = {
   id: string
   spaceId: string
   sendingVerified: boolean
   paused: boolean
 }
 
-export type EmailIdentityPolicyDecision =
+type EmailIdentityPolicyDecision =
   | { allowed: true }
   | { allowed: false; reason: 'space_unavailable' | 'paid_identity_required' | 'identity_unavailable' }
 
