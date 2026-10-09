@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-002",
+  "title": "Atomically record conversation delivery intents and existing outbox jobs",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/SPACE-EMAIL-BUILD-PLAN.md",
+    "ref": "PROG-EMAIL1 packet:atomic-intents"
+  },
+  "detail": "DRAFT: flag-gated house bridge submits one service-only transactional RPC binding current conversation, recipient, actor, Space membership and observed sender. New message/intent/queue and waiting state commit together; identical receipt replays return the original intent, conflicting replay and uncertain legacy receipts fail closed. Additive migration 20270346007600 generated via CLI then dependency-renumbered; no application or live SQL. SQL fault rollback fixture provided but local database/Docker execution unavailable, concurrency and service-role auth.users access not yet proven; do not activate EMAIL_ATOMIC_BRIDGE_ENABLED. Marketing atomic ledger/quota reservation and all other conversation senders remain necessary before closing this packet. Existing notification_queue claim/recovery remains unchanged; provider acceptance idempotency is a separate packet. Rollback disables producer flag and preserves/drains committed existing queue jobs. Observed From equality does not prove cryptographic sender authenticity; production activation requires authenticated inbound evidence/actor-specific token controls plus dispatch policy and provider acceptance gates. Source grant catalogs declare the intent table and RPC internal-only; all intent foreign keys have leading indexes. Generated database types still lack the unapplied RPC, so the schema-contract guard remains unresolved pending approved migration proof/application and regeneration; no exemption or guard bypass is added. CI repair: counterparty uses actual allowed web_role none; RPC adapter independently verifies signed house token before a caller-injected service transaction, avoiding a new service-client importer. Source-derived076 table/RPC declarations match migration draft without claiming live schema regeneration. Local31 adapter/router tests and authz/admin-client guards pass; actual database CI must rerun.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-08",
+    "evidence": "OPEN. Run isolated migration + supabase/tests/email_atomic_bridge_intents.test.sql, concurrent identical receipts and worker crash recovery; prove service_role privileges and Space/actor revocation. Complete remaining marketing/message producer integrations and atomic reservation requirements. Adapter mocks/source checks cannot establish database atomicity. Main-target source checks: 88 atomic/inbound/permission tests pass; lint and migration filename, FK-index, table-grant and function-grant checks pass. Migration ledger comparison is skipped without credentials. Schema-contract guard reports the missing enqueue_conversation_email_intent RPC; this draft is not ready for activation or fullpacket closure."
+  },
+  "wave": "W7"
+}
