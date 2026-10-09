@@ -1,3 +1,4 @@
+-- CLI generated as 20261009000117; renumbered to reserved ordered migration slot.
 -- Additive registry: caller writes never attest provider verification.
 create table public.space_email_domains (
   id uuid primary key default gen_random_uuid(),
@@ -24,12 +25,15 @@ create table public.space_email_identities (
 );
 alter table public.space_email_domains enable row level security;
 alter table public.space_email_identities enable row level security;
-revoke all on public.space_email_domains, public.space_email_identities from anon, authenticated;
+revoke all on public.space_email_domains, public.space_email_identities from public, anon, authenticated;
 grant select on public.space_email_domains, public.space_email_identities to authenticated;
 grant all on public.space_email_domains, public.space_email_identities to service_role;
 create policy space_email_domains_owner_read on public.space_email_domains for select to authenticated
 using (exists (select 1 from public.spaces s join public.profiles p on p.id = s.owner_profile_id
-  where s.id = space_id and p.auth_user_id = auth.uid()));
+  where s.id = space_email_domains.space_id and p.auth_user_id = auth.uid()));
 create policy space_email_identities_owner_read on public.space_email_identities for select to authenticated
 using (exists (select 1 from public.spaces s join public.profiles p on p.id = s.owner_profile_id
-  where s.id = space_id and p.auth_user_id = auth.uid()));
+  where s.id = space_email_identities.space_id and p.auth_user_id = auth.uid()));
+
+create index space_email_domains_space_id_idx on public.space_email_domains(space_id);
+create index space_email_identities_space_id_idx on public.space_email_identities(space_id);
