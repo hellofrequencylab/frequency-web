@@ -68,6 +68,7 @@ export function validWebsiteSnapshot(v: unknown): v is WebsiteSnapshot {
     if (p.doc.root.props !== undefined && !record(p.doc.root.props)) return false
     const layout = record(p.doc.root.props) ? p.doc.root.props.websiteLayout : undefined
     if (layout !== undefined && (!record(layout) || Object.keys(layout).length > 200)) return false
+    if (record(layout) && Object.values(layout).some((entry) => record(entry) && Object.values(entry).some((device) => record(device) && record(device.placements) && Object.values(device.placements).some((placement) => record(placement) && placement.height !== undefined && (typeof placement.height !== 'number' || !Number.isFinite(placement.height) || placement.height < 40 || placement.height > 1600))))) return false
     const ids = new Set<string>()
     let visited = 0
     function visit(value: unknown, depth = 0): boolean {
@@ -129,7 +130,7 @@ export function nextWebsiteState(current: WebsiteEditorState, draft: WebsiteSnap
   }
 }
 
-export interface SectionDisplay { padding?: number; hidden?: boolean; gap?: number; columns?: number; textSize?: number; bodySize?: number; bodyFont?: 'display' | 'body' | 'mono'; textFont?: 'display' | 'body' | 'mono'; align?: 'left' | 'center' | 'right'; animation?: 'none' | 'fade' | 'rise'; className?: string; attributes?: string; placements?: Record<string, { column: number; span: number; row: number }> }
+export interface SectionDisplay { padding?: number; hidden?: boolean; gap?: number; columns?: number; textSize?: number; bodySize?: number; bodyFont?: 'display' | 'body' | 'mono'; textFont?: 'display' | 'body' | 'mono'; align?: 'left' | 'center' | 'right'; animation?: 'none' | 'fade' | 'rise'; className?: string; attributes?: string; placements?: Record<string, { column: number; span: number; row: number; height?: number }> }
 export function sectionDisplay(doc: Data, id: string, device: Device): SectionDisplay {
   const layout = doc.root.props?.websiteLayout ?? {}
   const entry = layout[id] ?? {}
@@ -146,7 +147,7 @@ export function sectionDisplay(doc: Data, id: string, device: Device): SectionDi
     ...(['none', 'fade', 'rise'].includes(x.animation ?? '') ? { animation: x.animation } : {}),
     ...(typeof x.className === 'string' ? { className: x.className.slice(0, 200) } : {}),
     ...(typeof x.attributes === 'string' ? { attributes: x.attributes.slice(0, 1000) } : {}),
-    ...(record(x.placements) ? { placements: Object.fromEntries(Object.entries(x.placements).slice(0, 100).filter(([key, p]) => /^\d+(?:\.\d+){0,10}$/.test(key) && record(p) && (['column', 'span', 'row'] as const).every((k) => typeof p[k] === 'number' && Number.isFinite(p[k]))).map(([key, p]) => [key, { column: Math.min(12, Math.max(1, Math.round(p.column))), span: Math.min(12, Math.max(1, Math.round(p.span))), row: Math.min(100, Math.max(1, Math.round(p.row))) }])) } : {}),
+    ...(record(x.placements) ? { placements: Object.fromEntries(Object.entries(x.placements).slice(0, 100).filter(([key, p]) => /^\d+(?:\.\d+){0,10}$/.test(key) && record(p) && (['column', 'span', 'row'] as const).every((k) => typeof p[k] === 'number' && Number.isFinite(p[k]))).map(([key, p]) => [key, { column: Math.min(12, Math.max(1, Math.round(p.column))), span: Math.min(12, Math.max(1, Math.round(p.span))), row: Math.min(100, Math.max(1, Math.round(p.row))), ...(typeof p.height === 'number' && Number.isFinite(p.height) ? { height: Math.min(1600, Math.max(40, Math.round(p.height))) } : {}) }])) } : {}),
   })
   return clean({ ...entry.desktop, ...(device !== 'desktop' ? entry[device] : {}) })
 }

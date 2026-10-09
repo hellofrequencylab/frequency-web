@@ -8,7 +8,7 @@ import { WebsiteCanvas } from './canvas'
 const chromeRender = vi.hoisted(() => vi.fn())
 vi.mock('../site-chrome', async (importOriginal) => ({ ...await importOriginal<typeof import('../site-chrome')>(), SiteChrome: ({ children, ...props }: { children: ReactNode }) => { chromeRender(props); return <main>{children}</main> } }))
 vi.mock('../website-document', () => ({ WebsiteDocument: ({ doc, wrapSection }: { doc: Data; wrapSection?: (node: ReactNode, indexes: number[]) => ReactNode }) => {
-  const node = <div className="site-doc-section"><h1>Loaded website content</h1><div className="mw-grid"><div>Photo block</div><div>Text block</div></div></div>
+  const node = <div className="site-doc-section"><h1>Loaded website content</h1><div className="mw-grid"><div>{doc.content[0]?.type === 'FeatureGrid' ? <h3>Loaded website content</h3> : 'Photo block'}</div><div>Text block</div></div></div>
   return doc.content.length && wrapSection ? wrapSection(node, [0]) : node
 } }))
 const defaults: ComponentProps<typeof WebsiteCanvas> = {
@@ -68,6 +68,57 @@ describe('website canvas iframe hydration', () => {
      expect(props.links).toEqual([{ label: 'Home', href: '/' }, { label: 'Unpublished page', href: '/new-page' }, { label: 'Contact', href: '/contact' }])
      expect(props.seasonNow).toEqual(theme === 'Menswork' ? websiteChrome.seasonNow : null)
    }
+   act(() => root.unmount())
+   container.remove()
+ })
+
+ it('selects authored text on one click and saves sanitized inline editing after a double click', () => {
+   const container = document.createElement('div')
+   document.body.appendChild(container)
+   const root = createRoot(container)
+   const onEdit = vi.fn()
+   const onDisplay = vi.fn()
+   const doc: Data = { root: {}, content: [{ type: 'Text', props: { id: 'copy', body: 'Loaded website content' } }] }
+   const props = { ...defaults, doc, config: { components: { Text: { render: () => null, fields: { body: { type: 'textarea' as const } } } } }, selectedId: 'copy', onEdit, onDisplay }
+   act(() => root.render(<WebsiteCanvas {...props} />))
+   const heading = container.querySelector('iframe')!.contentDocument!.querySelector('h1')!
+   act(() => heading.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })))
+   expect(heading.getAttribute('data-site-text-selected')).toBe('true')
+   expect(heading.contentEditable).not.toBe('true')
+   expect(onEdit).not.toHaveBeenCalled()
+   expect(onDisplay).not.toHaveBeenCalled()
+   const bold = container.querySelector('iframe')!.contentDocument!.querySelector('[aria-label="Bold"]')!
+   act(() => bold.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' })))
+   expect(heading.contentEditable).not.toBe('true')
+   act(() => heading.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter' })))
+   expect(heading.contentEditable).toBe('true')
+   act(() => heading.dispatchEvent(new Event('blur')))
+   expect(onEdit).not.toHaveBeenCalled()
+   act(() => heading.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 })))
+   expect(heading.contentEditable).toBe('true')
+   heading.innerHTML = '<strong>Changed copy</strong>'
+   act(() => heading.dispatchEvent(new Event('blur')))
+   expect(onEdit).toHaveBeenCalledWith('copy', 'body', '**Changed copy**')
+   act(() => root.unmount())
+   container.remove()
+ })
+
+ it('keeps live cards read-only even when their title equals the authored section heading', () => {
+   const container = document.createElement('div')
+   document.body.appendChild(container)
+   const root = createRoot(container)
+   const onEdit = vi.fn()
+   const doc: Data = { root: {}, content: [{ type: 'FeatureGrid', props: { id: 'live', source: 'events', title: 'Loaded website content', items: [{ title: 'Stale authored card' }] } }] }
+   act(() => root.render(<WebsiteCanvas {...defaults} doc={doc} selectedId="live" onEdit={onEdit} config={{ components: { FeatureGrid: { render: () => null, fields: { title: { type: 'text' }, items: { type: 'array', arrayFields: { title: { type: 'text' } } } } } } }} />))
+   const frameDocument = container.querySelector('iframe')!.contentDocument!
+   const liveTitle = frameDocument.querySelector('h3')!
+   act(() => liveTitle.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 })))
+   expect(liveTitle.contentEditable).not.toBe('true')
+   expect(liveTitle.getAttribute('data-site-text-selected')).toBeNull()
+   expect(onEdit).not.toHaveBeenCalled()
+   const heading = frameDocument.querySelector('h1')!
+   act(() => heading.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })))
+   expect(heading.getAttribute('data-site-text-selected')).toBe('true')
    act(() => root.unmount())
    container.remove()
  })
