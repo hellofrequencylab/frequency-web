@@ -63,6 +63,7 @@ export function SiteChrome({
   skin = null,
   logoUrl = null,
   tagline = null,
+  showBrandFooter,
   seasonNow = null,
   admin = null,
   children,
@@ -82,6 +83,8 @@ export function SiteChrome({
   logoUrl?: string | null
   /** The Space's tagline, printed in a skinned site's footer. */
   tagline?: string | null
+  /** Website drafts can author a full footer in any theme. Legacy sites keep their skin default. */
+  showBrandFooter?: boolean
   /** A skinned site's season bar detail: the sign module now, its theme as the Space's year page names it,
    *  and the next Circle Night from the Space's own events. */
   seasonNow?: { module: string; theme: string | null; next: string | null } | null
@@ -153,7 +156,7 @@ export function SiteChrome({
 
       <main id="top">{children}</main>
 
-      {skin && (
+      {(showBrandFooter ?? !!skin) && (
         <div className="hs-footer-top">
           <div className="hs-footer-brand">
             <a href={homeHref} className="hs-brand">

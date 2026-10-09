@@ -33,7 +33,7 @@ export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onS
     return request
   }, [host])
   const sources = useMemo(() => ({ load: loadSource, error: sourceError }), [loadSource, sourceError])
-  const save = useCallback((revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string) => saveWebsiteDraft(host, revision, draft, publish, scheduledAt), [host])
+  const save = useCallback((revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => saveWebsiteDraft(host, revision, draft, publish, scheduledAt), [host])
   const propose = useCallback((request: string, value: string) => proposeWebsiteText(host, request, value), [host])
   const presence = useCallback((cursor: Parameters<typeof syncWebsitePresence>[1]) => syncWebsitePresence(host, cursor), [host])
   const media = useMemo(() => ({

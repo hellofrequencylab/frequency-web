@@ -1,3 +1,5 @@
+import { Suspense } from 'react'
+import { CollectiveNetworkReport } from '@/components/spaces/collective-network-report'
 import { notFound } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
@@ -16,7 +18,8 @@ import { ReachReceipt } from '@/components/spaces/reach-receipt'
 // and now orders by an earned standing score (LIVE-262/263). A ranking nobody can see reads as
 // favouritism, so the seven signals that decide the order are printed here in the same words, with
 // the one next move beside each, plus the promise in writing: placement is earned and cannot be
-// bought. Nothing on this page reads a plan, a tier, or a payment, because nothing in the score does.
+// bought. Standing does not read a plan, a tier, or a payment. The separate private Collective
+// report below requires the current owner and an active Collective plan before reading finances.
 //
 // A centered, no-rail-toggling Focus surface, same shape as its sibling /settings/qr. It resolves
 // the Space, gates RENDER on canManage || staffViewing (404s otherwise, so a non-editor cannot tell
@@ -85,6 +88,7 @@ export default async function SpaceReachPage({ params }: { params: Promise<{ slu
         listed={index >= 0}
         computedAt={stored?.computedAt ?? null}
       />
+      {caller?.id === space.ownerProfileId && ['collective', 'nonprofit_collective'].includes(space.plan ?? '') && <Suspense fallback={<p className="mt-8 text-body-sm text-muted">Loading your Collective report…</p>}><CollectiveNetworkReport spaceId={space.id} callerProfileId={caller.id} /></Suspense>}
     </FocusTemplate>
   )
 }
