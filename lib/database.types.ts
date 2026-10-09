@@ -14152,6 +14152,93 @@ export type Database = {
           },
         ]
       }
+      space_email_domain_operations: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          lease_until: string | null
+          nonce: string
+          owner_profile_id: string
+          provider_domain_id: string | null
+          space_id: string
+          started_at: string | null
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          lease_until?: string | null
+          nonce?: string
+          owner_profile_id: string
+          provider_domain_id?: string | null
+          space_id: string
+          started_at?: string | null
+          state?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          lease_until?: string | null
+          nonce?: string
+          owner_profile_id?: string
+          provider_domain_id?: string | null
+          space_id?: string
+          started_at?: string | null
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_email_domain_operations_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_email_domain_operations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_email_identity_defaults: {
+        Row: {
+          identity_id: string
+          purpose: string
+          space_id: string
+        }
+        Insert: {
+          identity_id: string
+          purpose: string
+          space_id: string
+        }
+        Update: {
+          identity_id?: string
+          purpose?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_email_identity_defaults_identity_id_space_id_fkey"
+            columns: ["identity_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "space_email_identities"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "space_email_identity_defaults_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_drip_steps: {
         Row: {
           body: string
@@ -17662,6 +17749,10 @@ export type Database = {
       }
     }
     Functions: {
+      claim_space_email_domain_operation: {
+        Args: { p_id: string }
+        Returns: Json
+      }
       read_accepted_email_provider_attempt: {
         Args: {
           p_queue_job_id: string

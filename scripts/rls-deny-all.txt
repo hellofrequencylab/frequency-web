@@ -116,3 +116,5 @@ collective_cross_listings
 # EMAIL-013: routing secrets and fingerprint quarantine are service-only; authenticated webhook/trusted compose checks tenant proof.
 space_email_reply_aliases
 space_email_reply_quarantine
+# EMAIL-012: operation leases/ownership nonces are service-only; migration078 explicitly revokes browser roles.
+space_email_domain_operations
