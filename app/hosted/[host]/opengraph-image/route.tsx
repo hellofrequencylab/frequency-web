@@ -35,7 +35,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ host: s
   ])
   return cardResponse(
     <MensworkSiteCard
-      brandName={space.brandName?.trim() || space.name}
+      brandName={website?.chrome?.name ?? (space.brandName?.trim() || space.name)}
       headline={readSiteHero(space.preferences).heading ?? space.tagline?.trim() ?? null}
       domain={host.replace(/^www\./, '')}
       season={mensworkSeason(new Date())}

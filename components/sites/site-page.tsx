@@ -43,7 +43,7 @@ import { siteAdminNavLinks } from '@/components/sites/site-admin-bar'
 import { SITE_CALENDAR_SLUG, SitePublicCalendar } from '@/components/sites/site-public-calendar'
 import { JsonLd } from '@/components/json-ld'
 import { config } from '@/lib/page-editor/config'
-import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteBrand } from '@/lib/sites/editor/state'
+import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteBrand, resolveWebsiteChrome, resolveWebsiteChromeCta } from '@/lib/sites/editor/state'
 import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
 import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
@@ -90,7 +90,8 @@ import { siteEntitySchema } from '@/lib/jsonld'
 export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): Promise<Metadata> {
   const space = await getSiteSpace(slug)
   if (!space) return { title: 'Site', robots: { index: false } }
-  const brandName = space.brandName?.trim() || space.name
+  const originalBrandName = space.brandName?.trim() || space.name
+  const brandName = readWebsitePublished(space.preferences) ? publishedWebsiteSnapshot(space.preferences)?.chrome?.name ?? originalBrandName : originalBrandName
   if (!readWebsitePublished(space.preferences)) {
     return { title: `${brandName} website coming soon`, robots: { index: false } }
   }
@@ -176,6 +177,8 @@ export async function SitePage({
   }
 
   const { origin, hasContact, booking, pages, homeHref, siteLinks, cta, pageLinks, tagline } = await siteChromeBasics(space, siteBase)
+  const websiteChrome = resolveWebsiteChrome(website, { name: brandName, tagline, cta })
+  const chromeCta = resolveWebsiteChromeCta(website?.chrome, cta, siteBase)
   const contactPage = pageSlug === SITE_CONTACT_SLUG && hasContact
   const bookPage = pageSlug === SITE_BOOK_SLUG && booking.takesBookings
   if (!contactPage && !bookPage && !websitePage && !hasPage(space.preferences, pageSlug)) notFound()
@@ -252,14 +255,15 @@ export async function SitePage({
       <div data-website-theme={website?.theme} style={website ? websiteThemeVars(website.theme, website.theme === 'Menswork' ? websiteBrand.accent : website.brand?.accent) : undefined}>
       {website && <style>{WEBSITE_TOKEN_CSS}</style>}
       <SiteChrome
-        brandName={brandName}
+        brandName={websiteChrome.name}
         homeHref={homeHref}
         links={links}
-        cta={cta}
+        cta={chromeCta}
         themeFonts={!!website || hasChosenTheme(space.preferences)}
         skin={skin}
         logoUrl={website ? websiteBrand.logo : skin ? space.brandLogoUrl : null}
-        tagline={skin ? tagline : null}
+        tagline={website ? websiteChrome.tagline : skin ? tagline : null}
+        showBrandFooter={!!website || !!skin}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
         admin={siteAdminLinks(origin, space.slug, siteBase)}
       >
