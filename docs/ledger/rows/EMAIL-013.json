@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-013",
+  "title": "Add exact-tenant Frequency reply aliases with versioned proof and inbound quarantine",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/comms/tenant-reply-alias.ts",
+    "ref": "PROG-EMAIL1 packet:tenant-inbound-alias-prerequisite"
+  },
+  "detail": "Source prerequisite only, not full tenant-inbound completion. Immediate Space compose may issue a compact slug-derived r2 member alias only behind an off-by-default operator flag with explicit existing receiving domain and authenticated webhook configuration. Durable service-only mapping and HMAC bind alias/version/Space/conversation/ref/domain; inbound checks live tenant mapping and revocation before using the existing conversation append store. Malformed, ambiguous, wrong-domain, forged, unknown, revoked or cross-tenant aliases persist fingerprint-only quarantine and never enter contact-match fallback. Lookup, quarantine or append faults request provider redelivery. Legacy reply tokens and house routing stay intact; disabled issuance and paid downgrade do not revoke old aliases. No custom receiving provisioning, DNS, apex MX change or activation claim. Full tenant-inbound remains dependent on durable provider events and identity model, both open. Batch/campaign alias coverage, owner revocation controls, retention and integrated pilot still pending. No live SQL/provider/DNS/mail executed.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-08",
+    "evidence": "Focused legacy inbound/reply/compose suite passed47tests; expanded tenant boundary suite passed12tests after adding live-mapping read-fault and mixed-address guards (52 unique test cases across5files). Targeted ESLint/diff PASS. Table grants, FK indexes and migration filename checks PASS from source tree; dead-export count150. Eight SQL pgTAP consequences authored but NOT RUN: local Supabase status failed Docker socket permission. Live ledger comparison SKIPPED without credentials. Keep OPEN until local replay/RLS, authenticated provider receipt/replay, controlled configured-domain pilot and full sender-path coverage are proven."
+  },
+  "wave": "W7"
+}
