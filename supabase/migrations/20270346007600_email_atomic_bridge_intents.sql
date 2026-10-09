@@ -109,3 +109,7 @@ end;
 $$;
 revoke all on function public.enqueue_conversation_email_intent(uuid,uuid,text,text,text,jsonb) from public, anon, authenticated;
 grant execute on function public.enqueue_conversation_email_intent(uuid,uuid,text,text,text,jsonb) to service_role;
+
+create index email_delivery_intents_conversation_idx on public.email_delivery_intents(conversation_id);
+create index email_delivery_intents_actor_idx on public.email_delivery_intents(actor_profile_id) where actor_profile_id is not null;
+create index email_delivery_intents_queue_idx on public.email_delivery_intents(queue_job_id) where queue_job_id is not null;
