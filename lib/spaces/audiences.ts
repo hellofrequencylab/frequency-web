@@ -284,7 +284,7 @@ async function contactIdsWithTag(spaceId: string, tag: string, strict = false): 
 
 /** One of a Space's contacts, in the shape the resolver narrows over: id + email plus the linked
  *  member `profileId` (null for a sealed lead) and the `consentState` (for the consent facet). */
-export interface SpaceContact {
+interface SpaceContact {
   id: string
   email: string
   profileId: string | null

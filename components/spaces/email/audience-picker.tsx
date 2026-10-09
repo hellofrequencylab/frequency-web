@@ -245,7 +245,7 @@ export function AudiencePicker({
       </p>
 
       {preview?.state === 'unavailable' && !pending && (
-        <Button type="button" variant="outline" size="sm" onClick={() => setCheckVersion(version => version + 1)}>
+        <Button type="button" variant="secondary" size="sm" onClick={() => setCheckVersion(version => version + 1)}>
           Check again
         </Button>
       )}

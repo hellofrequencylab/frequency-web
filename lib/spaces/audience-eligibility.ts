@@ -1,5 +1,5 @@
 // Client-safe aggregate vocabulary; no addresses or privileged imports cross the action boundary.
-export interface AudienceEligibilityCandidate { email: string; consentState: string | null }
+interface AudienceEligibilityCandidate { email: string; consentState: string | null }
 export interface AudienceEligibilitySummary {
   state: 'available' | 'unavailable'
   topic: string

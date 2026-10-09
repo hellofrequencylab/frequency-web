@@ -11,6 +11,11 @@
 # Frequency picker and host-bound website media actions resolve permission before
 # calling it; Storage upload, library insertion and failure cleanup share one path.
 #
+# EMAIL-021: audience-readiness.ts receives only an action-authorized Space id; campaign action
+# checks current canEditProfile/staff-read permission before service reads. Queries scope contact
+# candidates, Space/global suppression and Space/topic preference rows; only aggregate counts leave
+# this reader. Private suppression/preferences cannot be exposed through member RLS just for preview.
+#
 # LIVE-883: lib/ai/accounting.ts uses service-role-only atomic reservation/settlement RPCs.
 # Global and feature aggregates must span Spaces; ai_budget_reservations intentionally denies
 # all member access. This boundary reads/writes accounting attribution, never prompts or tenant content.
@@ -1171,3 +1176,5 @@ lib/sites/editor/authorization.ts
 
 lib/loom/authorized-image-upload.ts
 lib/collective/network-store.ts
+
+lib/spaces/audience-readiness.ts
