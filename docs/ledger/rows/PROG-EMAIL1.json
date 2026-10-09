@@ -1,0 +1,19 @@
+{
+  "id": "PROG-EMAIL1",
+  "title": "Complete branded Space email and account messaging before launch",
+  "status": "open",
+  "priority": "P1",
+  "lane": "program",
+  "size": "XL",
+  "source": {
+    "file": "docs/SPACE-EMAIL-BUILD-PLAN.md",
+    "ref": "Owner-directed multi-agent email build 2026-10-08"
+  },
+  "detail": "Owner authorizes focused phased email/messaging development and recurring continuation. Execute static packets in docs/space-email-packets.json; derive dependency readiness using node scripts/space-email-program.mjs --json. Each feature packet becomes one canonical row with source.ref PROG-EMAIL1 packet:<key>, one consequence probe and one feature PR. Reuse/revalidate overlapping completed rows instead of reopening broad foundations. Daniel Tyack Space is owner-triggered pilot; 520 imported unknown-consent contacts remain excluded from marketing. No broadcasts or consent conversion. Website is live/prelaunch. Scope includes all 13 phases and separately gated opt-in mailbox synchronization; core launch does not depend on optional synchronization. Source plan is not shipped status.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-08",
+    "evidence": "Not complete. Close only after all packet rows have passed their real consequence probes, preview/production status is documented, Daniel-triggered authenticated send/reply and a second-Space isolation pilot are observed, complete campaign accounting/failure recovery and measured latency are evidenced, and mailbox integration gates are truthfully resolved. No live test sends or provider changes performed during planning."
+  },
+  "wave": "W7"
+}
