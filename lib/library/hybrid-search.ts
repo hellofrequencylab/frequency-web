@@ -46,7 +46,7 @@ async function queryEmbedding(q: string, profileId: string | null): Promise<stri
   try {
     if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
     const v = await embedText(q)
-    void recordAiUsage({
+    await recordAiUsage({
       feature: FEATURE,
       model: 'gte-small',
       usage: { inputTokens: 0, outputTokens: 0 },

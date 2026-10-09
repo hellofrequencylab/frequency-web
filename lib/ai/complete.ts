@@ -7,8 +7,8 @@
 //
 // Three layers:
 //   • completeRaw — returns the full message (content blocks + token usage), the
-//     low-level seam every structured/vision/tool site uses. It does NOT record usage;
-//     the caller keeps its own ledger entry (feature-tagged), so behavior is identical.
+//     low-level seam every structured/vision/tool site uses. It reserves estimated spend
+//     before dispatch and records actual returned usage before the caller can proceed.
 //   • completeText — the text-only convenience on top of completeRaw (unchanged API).
 //   • runToolLoop — the bounded multi-round tool-use loop (Vera's live turn). Streams when
 //     the caller hands it `onText`; a whole-document generation path leaves that off.
@@ -25,10 +25,14 @@
 // complete.test.ts pins both facts. Usage carries the cache read/write counts so the ledger and
 // the cost estimate see what actually happened rather than the uncached remainder.
 
+import { randomUUID } from 'node:crypto'
+import { log } from '@/lib/log'
 import type Anthropic from '@anthropic-ai/sdk'
 import { getAnthropic } from './client'
+import { aiAvailable } from './usage'
 import { MODELS, DEFAULT_TIER, type ModelTier } from './models'
 import { addUsage, estimateCostUsd, type TokenUsage } from './budget'
+import { reserveAiAttempt, settleAiAttempt, holdAiAttempt, AiAccountingError, type AiAccountingContext } from './accounting'
 
 export class AiUnavailableError extends Error {
   constructor(message = 'AI is not configured') {
@@ -53,23 +57,8 @@ export type CompleteMessage = {
  */
 export type SystemPrompt = string | { stable: string; volatile?: string }
 
-/** Transitional attribution: callers migrate atomically from their own legacy ledger write.
- * Omitted context retains the existing caller-owned accounting path. Reservations land later. */
-interface CompletionAccountingContext {
-  feature: string
-  profileId?: string | null
-  spaceId?: string | null
-  operationId?: string
-}
-
-async function recordCompletion(context: CompletionAccountingContext | undefined, model: string, usage: TokenUsage, costUsd: number): Promise<void> {
-  if (!context) return
-  const { recordAiUsage } = await import('./usage')
-  await recordAiUsage({ feature: context.feature, profileId: context.profileId, spaceId: context.spaceId, model, usage, costUsd })
-}
-
 export interface CompleteParams {
-  accounting?: CompletionAccountingContext
+  accounting: AiAccountingContext
   system: string
   messages: { role: 'user' | 'assistant'; content: string }[]
   tier?: ModelTier
@@ -81,7 +70,7 @@ export interface CompleteParams {
 /** The widened, low-level params. Carries everything a raw messages.create call
  *  needs: tools, tool_choice, vision/tool_result content, and `thinking`. */
 export interface CompleteRawParams {
-  accounting?: CompletionAccountingContext
+  accounting: AiAccountingContext
   system: SystemPrompt
   /** Rich messages (string OR content blocks for vision / tool_result). */
   messages: CompleteMessage[]
@@ -159,10 +148,49 @@ export function usageOf(u: Anthropic.Message['usage']): TokenUsage {
   }
 }
 
+/** Reserve each actual provider attempt, including every tool round. CountTokens is an
+ * estimate; 10% input allowance and full cache-write/output rates avoid optimistic cache hits.
+ * The gateway must supply this quote. No fallback silently dispatches unpriced work. */
+async function accountedMessage(client: Anthropic, params: Anthropic.MessageCreateParamsNonStreaming,
+  tier: ModelTier, context: AiAccountingContext, onText?: (delta: string) => void): Promise<Anthropic.Message> {
+  if (!await aiAvailable()) throw new AiUnavailableError('AI is paused or its configuration is unavailable')
+  if (!context || !Number.isSafeInteger(params.max_tokens) || params.max_tokens < 1 || params.max_tokens > 32000) {
+    throw new AiAccountingError('not-dispatched', 'invalid_request')
+  }
+  const { max_tokens: _maxTokens, ...countParams } = params
+  let count: number
+  try {
+    const quote = await client.messages.countTokens(countParams, { maxRetries: 0 })
+    count = quote.input_tokens
+    if (!Number.isSafeInteger(count) || count < 0 || count > 200000) throw new Error('Invalid quote')
+  } catch {
+    log.error('ai.accounting.quote_failed', { feature: context.feature })
+    throw new AiAccountingError('not-dispatched', 'quote_failed')
+  }
+  const estimate = estimateCostUsd(tier, {
+    inputTokens: 0, cacheCreationInputTokens: Math.ceil(count * 1.1), outputTokens: params.max_tokens,
+  })
+  const id = await reserveAiAttempt(context, params.model, estimate)
+  let res: Anthropic.Message
+  try {
+    if (onText) {
+      const stream = client.messages.stream(params, { maxRetries: 0 })
+      // Callback exceptions abort this paid attempt and retain its conservative hold.
+      stream.on('text', (delta) => onText(delta))
+      res = await stream.finalMessage()
+    } else res = await client.messages.create(params, { maxRetries: 0 })
+  } catch (error) {
+    await holdAiAttempt(id, onText ? 'stream_failed' : 'provider_failed')
+    throw error
+  }
+  await settleAiAttempt(id, usageOf(res.usage), estimateCostUsd(tier, usageOf(res.usage)))
+  return res
+}
+
 /**
  * The low-level chokepoint. One non-streaming completion through the shared client,
  * carrying tools / tool_choice / vision content / thinking. Returns the full content
- * blocks + usage; the caller parses the shape it needs and records its own usage.
+ * blocks + usage after durable accounting; the caller parses the shape it needs.
  */
 export async function completeRaw(p: CompleteRawParams): Promise<CompleteRawResult> {
   const client = getAnthropic()
@@ -170,17 +198,17 @@ export async function completeRaw(p: CompleteRawParams): Promise<CompleteRawResu
 
   const tier = p.tier ?? DEFAULT_TIER
   const model = MODELS[tier]
-  const res = await client.messages.create({
+  const params: Anthropic.MessageCreateParamsNonStreaming = {
     model,
     max_tokens: p.maxTokens ?? 512,
     ...buildRequestPrefix({ system: p.system, cacheSystem: p.cacheSystem, tools: p.tools }),
     messages: p.messages,
     ...(p.toolChoice ? { tool_choice: p.toolChoice } : {}),
     ...(p.thinking ? { thinking: p.thinking } : {}),
-  })
+  }
+  const res = await accountedMessage(client, params, tier, p.accounting)
 
   const usage = usageOf(res.usage)
-  await recordCompletion(p.accounting, model, usage, estimateCostUsd(tier, usage))
   return {
     tier,
     model,
@@ -205,7 +233,7 @@ export async function completeText(p: CompleteParams): Promise<CompleteResult> {
 }
 
 export interface RunToolLoopParams {
-  accounting?: CompletionAccountingContext
+  accounting: AiAccountingContext
   system: SystemPrompt
   messages: CompleteMessage[]
   tools: Anthropic.Tool[]
@@ -250,7 +278,8 @@ export interface ToolLoopResult {
  * `onToolCalls` decides which tool_results to feed back (running reads server-side,
  * stubbing writes). The loop stops when the model makes no tool calls, when
  * onToolCalls returns null/empty, or when maxRounds is hit. Usage is summed across
- * rounds; the caller records ONE ledger entry. Throws AiUnavailableError when off.
+ * rounds; each round settles before tool callbacks. All rounds share one operation identity.
+ * Throws AiUnavailableError when off.
  */
 export async function runToolLoop(p: RunToolLoopParams): Promise<ToolLoopResult> {
   const client = getAnthropic()
@@ -258,6 +287,7 @@ export async function runToolLoop(p: RunToolLoopParams): Promise<ToolLoopResult>
 
   const tier = p.tier ?? DEFAULT_TIER
   const model = MODELS[tier]
+  const accounting = { ...p.accounting, operationId: randomUUID() }
   const messages: CompleteMessage[] = [...p.messages]
   let usage: TokenUsage = { inputTokens: 0, outputTokens: 0 }
   let lastContent: Anthropic.Message['content'] = []
@@ -274,17 +304,8 @@ export async function runToolLoop(p: RunToolLoopParams): Promise<ToolLoopResult>
       ...prefix,
       messages,
     }
-    let res: Anthropic.Message
-    if (p.onText) {
-      const onText = p.onText
-      const stream = client.messages.stream(params)
-      stream.on('text', (delta) => onText(delta, round))
-      // finalMessage() resolves with the whole message once the stream ends (errors reject), so
-      // usage and the tool_use blocks come from the same place they would on a blocking call.
-      res = await stream.finalMessage()
-    } else {
-      res = await client.messages.create(params)
-    }
+    const res = await accountedMessage(client, params, tier, accounting,
+      p.onText ? (delta) => p.onText!(delta, round) : undefined)
     usage = addUsage(usage, usageOf(res.usage))
     lastContent = res.content
 
@@ -303,7 +324,5 @@ export async function runToolLoop(p: RunToolLoopParams): Promise<ToolLoopResult>
     messages.push({ role: 'user', content: results })
   }
 
-  // Preserve the legacy one-row-per-turn policy until atomic per-round accounting lands.
-  await recordCompletion(p.accounting, model, usage, estimateCostUsd(tier, usage))
   return { content: lastContent, text: lastText, usage, tier, model }
 }

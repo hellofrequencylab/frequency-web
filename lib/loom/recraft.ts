@@ -1,4 +1,5 @@
 import 'server-only'
+import { reserveAiAttempt, settleAiAttempt, holdAiAttempt, type AiAccountingContext } from '@/lib/ai/accounting'
 
 // Recraft API client — The Loom's managed image/vector engine (docs/RESEARCH-ASSET-GEN.md). Recraft
 // is the pragmatic managed pick for consistent VECTOR icon sets + brand styles + instruction SVG
@@ -40,7 +41,22 @@ const LANE_STYLE: Record<RecraftLane, string> = {
   raster: 'digital_illustration',
 }
 
-async function postJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
+// Published API prices: https://www.recraft.ai/pricing?tab=api (2026-10-08).
+// The API returns no invoice amount; settlement records the operation's tariff estimate.
+async function paidRequest<T>(context: AiAccountingContext, cost: number, run: () => Promise<T>): Promise<T> {
+  if (process.env.AI_DISABLED === '1') throw new Error('AI is paused')
+  key() // Reject missing configuration before reserving or dispatching.
+  const id = await reserveAiAttempt(context, 'recraft-v3', cost)
+  let result: T
+  try { result = await run() } catch (error) {
+    await holdAiAttempt(id, 'provider_failed')
+    throw error
+  }
+  await settleAiAttempt(id, { inputTokens: 0, outputTokens: 0 }, cost)
+  return result
+}
+async function postJson<T>(path: string, body: Record<string, unknown>, context: AiAccountingContext, cost: number): Promise<T> {
+  return paidRequest(context, cost, async () => {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key()}`, 'Content-Type': 'application/json' },
@@ -48,9 +64,11 @@ async function postJson<T>(path: string, body: Record<string, unknown>): Promise
   })
   if (!res.ok) throw new Error(`Recraft ${path} ${res.status}: ${(await res.text()).slice(0, 300)}`)
   return (await res.json()) as T
+  })
 }
 
-async function postForm<T>(path: string, form: FormData): Promise<T> {
+async function postForm<T>(path: string, form: FormData, context: AiAccountingContext, cost: number): Promise<T> {
+  return paidRequest(context, cost, async () => {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key()}` },
@@ -58,6 +76,7 @@ async function postForm<T>(path: string, form: FormData): Promise<T> {
   })
   if (!res.ok) throw new Error(`Recraft ${path} ${res.status}: ${(await res.text()).slice(0, 300)}`)
   return (await res.json()) as T
+  })
 }
 
 type GenResponse = { data?: Array<{ url?: string; image_id?: string }> }
@@ -73,6 +92,7 @@ export async function downloadRecraft(url: string): Promise<{ bytes: Uint8Array;
 
 /** Generate one or more images. Vector lane returns SVG-capable results; raster returns PNG. */
 export async function generateImages(input: {
+  accounting: AiAccountingContext
   prompt: string
   lane: RecraftLane
   size?: string
@@ -83,12 +103,12 @@ export async function generateImages(input: {
     prompt: input.prompt.slice(0, 1000),
     model: 'recraftv3',
     size: input.size ?? '1024x1024',
-    n: Math.min(Math.max(input.n ?? 1, 1), 6),
+    n: Number.isFinite(input.n ?? 1) ? Math.min(Math.max(Math.trunc(input.n ?? 1), 1), 6) : 1,
   }
   if (input.styleId) body.style_id = input.styleId
   else body.style = LANE_STYLE[input.lane]
 
-  const res = await postJson<GenResponse>('/images/generations', body)
+  const res = await postJson<GenResponse>('/images/generations', body, input.accounting, (input.lane === 'vector' ? 0.08 : 0.04) * Number(body.n))
   return (res.data ?? [])
     .map((d) => d.url)
     .filter((u): u is string => !!u)
@@ -96,16 +116,17 @@ export async function generateImages(input: {
 }
 
 /** Trace a raster image to a clean SVG. Returns the SVG result URL. */
-export async function vectorizeImage(bytes: Uint8Array, filename = 'image.png'): Promise<string> {
+export async function vectorizeImage(bytes: Uint8Array, filename = 'image.png', accounting: AiAccountingContext): Promise<string> {
   const form = new FormData()
   form.append('file', fileBlob(bytes), filename)
-  const res = await postForm<ImageResponse>('/images/vectorize', form)
+  const res = await postForm<ImageResponse>('/images/vectorize', form, accounting, 0.01)
   if (!res.image?.url) throw new Error('Recraft vectorize: no url')
   return res.image.url
 }
 
 /** Instruction-style raster edit (image + prompt → a modified image). */
 export async function imageToImage(input: {
+  accounting: AiAccountingContext
   bytes: Uint8Array
   prompt: string
   strength?: number
@@ -117,17 +138,17 @@ export async function imageToImage(input: {
   form.append('prompt', input.prompt.slice(0, 1000))
   form.append('strength', String(input.strength ?? 0.3))
   form.append('style', LANE_STYLE[input.lane ?? 'raster'])
-  const res = await postForm<GenResponse>('/images/imageToImage', form)
+  const res = await postForm<GenResponse>('/images/imageToImage', form, input.accounting, input.lane === 'vector' ? 0.08 : 0.04)
   const url = res.data?.[0]?.url
   if (!url) throw new Error('Recraft imageToImage: no url')
   return url
 }
 
 /** Remove an image's background. Returns the result URL. */
-export async function removeBackground(bytes: Uint8Array, filename = 'image.png'): Promise<string> {
+export async function removeBackground(bytes: Uint8Array, filename = 'image.png', accounting: AiAccountingContext): Promise<string> {
   const form = new FormData()
   form.append('file', fileBlob(bytes), filename)
-  const res = await postForm<ImageResponse>('/images/removeBackground', form)
+  const res = await postForm<ImageResponse>('/images/removeBackground', form, accounting, 0.01)
   if (!res.image?.url) throw new Error('Recraft removeBackground: no url')
   return res.image.url
 }
@@ -143,20 +164,20 @@ const UPSCALE_PATH: Record<UpscaleMode, string> = {
 }
 
 /** Upscale a raster image (PNG, JPEG or WebP; never an SVG). Returns the result URL. */
-export async function upscaleImage(bytes: Uint8Array, filename = 'image.png', mode: UpscaleMode = 'crisp'): Promise<string> {
+export async function upscaleImage(bytes: Uint8Array, filename = 'image.png', mode: UpscaleMode = 'crisp', accounting: AiAccountingContext): Promise<string> {
   const form = new FormData()
   form.append('file', fileBlob(bytes), filename)
-  const res = await postForm<ImageResponse>(UPSCALE_PATH[mode], form)
+  const res = await postForm<ImageResponse>(UPSCALE_PATH[mode], form, accounting, mode === 'crisp' ? 0.004 : 0.25)
   if (!res.image?.url) throw new Error(`Recraft ${mode} upscale: no url`)
   return res.image.url
 }
 
 /** Create a reusable brand STYLE from reference images (the key to consistent sets). Returns its id. */
-export async function createStyle(base: RecraftLane, refs: Uint8Array[]): Promise<string> {
+export async function createStyle(base: RecraftLane, refs: Uint8Array[], accounting: AiAccountingContext): Promise<string> {
   const form = new FormData()
   form.append('style', LANE_STYLE[base])
   refs.slice(0, 5).forEach((b, i) => form.append('file', fileBlob(b), `ref-${i}.png`))
-  const res = await postForm<{ id?: string }>('/styles', form)
+  const res = await postForm<{ id?: string }>('/styles', form, accounting, 0.04)
   if (!res.id) throw new Error('Recraft createStyle: no id')
   return res.id
 }
