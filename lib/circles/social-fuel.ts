@@ -28,7 +28,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isBlockedBetween } from '@/lib/blocking'
 import { withVoice } from '@/lib/ai/voice'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 
 // ── Pure: the cooperative Circle streak (local-only) ─────────────────────────────
@@ -172,13 +172,14 @@ async function draftCelebration(ctx: CelebrationContext): Promise<string> {
     if (!(await aiAvailable()) || (await featureOverBudget('social_fuel'))) return fallback
     const signal = JSON.stringify({ handle: ctx.handle, kind: ctx.kind, detail: ctx.detail ?? null })
     const res = await completeText({
+      accounting: { feature: 'social_fuel' },
       system: CELEBRATION_SYSTEM,
       messages: [{ role: 'user', content: signal }],
       tier: 'haiku',
       maxTokens: 80,
       cacheSystem: true,
     })
-    await recordAiUsage({ feature: 'social_fuel', model: res.tier, usage: res.usage, costUsd: res.costUsd })
+
     const line = (res.text ?? '').split('\n').map((l) => l.trim()).find(Boolean)
     // Keep the draft only if it preserved the @mention (so the Circle actually sees them).
     if (line && new RegExp(`@${ctx.handle}\\b`, 'i').test(line)) return line

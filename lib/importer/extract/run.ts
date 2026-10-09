@@ -14,9 +14,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
-import { MODELS } from '@/lib/ai/models'
-import { estimateCostUsd } from '@/lib/ai/budget'
-import { recordAiUsage, featureOverBudget } from '@/lib/ai/usage'
+
+import { featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import type { HarvestedSource, IntakeInputs } from '../intake'
 import { coerceExtraction, type ExtractionResult, type RawExtraction } from './coerce'
@@ -186,6 +185,7 @@ export async function extractProfile(input: {
 
   try {
     const res = await completeRaw({
+      accounting: { feature: EXTRACT_FEATURE, profileId: input.profileId ?? null },
       tier: 'sonnet',
       maxTokens: 4096,
       thinking: { type: 'disabled' },
@@ -193,14 +193,6 @@ export async function extractProfile(input: {
       tools: [EXTRACTION_TOOL],
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: buildSourcesPrompt(input.sources, input.hints) }],
-    })
-
-    void recordAiUsage({
-      feature: EXTRACT_FEATURE,
-      model: MODELS.sonnet,
-      usage: res.usage,
-      costUsd: estimateCostUsd('sonnet', res.usage),
-      profileId: input.profileId ?? null,
     })
 
     const block = res.content.find(

@@ -14,9 +14,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
-import { MODELS } from '@/lib/ai/models'
-import { estimateCostUsd } from '@/lib/ai/budget'
-import { recordAiUsage, featureOverBudget } from '@/lib/ai/usage'
+
+import { featureOverBudget } from '@/lib/ai/usage'
 import type { HarvestedSource } from '../intake'
 import type { FieldVerdict, RefuterVerdict } from './gate'
 
@@ -112,6 +111,7 @@ export async function refuteField(input: {
 
   try {
     const res = await completeRaw({
+      accounting: { feature: VERIFY_FEATURE, profileId: input.profileId ?? null },
       tier: 'opus',
       maxTokens: 1024,
       thinking: { type: 'disabled' },
@@ -119,14 +119,6 @@ export async function refuteField(input: {
       tools: [VERIFY_TOOL],
       toolChoice: { type: 'tool', name: TOOL_NAME },
       messages: [{ role: 'user', content: buildRefutePrompt(input.claim, input.path, input.sources) }],
-    })
-
-    void recordAiUsage({
-      feature: VERIFY_FEATURE,
-      model: MODELS.opus,
-      usage: res.usage,
-      costUsd: estimateCostUsd('opus', res.usage),
-      profileId: input.profileId ?? null,
     })
 
     const block = res.content.find(

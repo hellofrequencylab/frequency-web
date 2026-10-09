@@ -9,7 +9,7 @@
 // calls it. No mutation.
 
 import { withVoice } from '@/lib/ai/voice'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import { tierLabel } from '@/lib/dashboard/verdict'
 import type { MemberScores } from '@/lib/dashboard/scores'
@@ -138,13 +138,14 @@ export async function draftContextLine(name: string, scores: MemberScores): Prom
       next_best_action: scores.nextBestAction,
     })
     const res = await completeText({
+      accounting: { feature: 'today' },
       system: SYSTEM,
       messages: [{ role: 'user', content: signal }],
       tier: 'haiku',
       maxTokens: 90,
       cacheSystem: true,
     })
-    await recordAiUsage({ feature: 'today', model: res.tier, usage: res.usage, costUsd: res.costUsd })
+
     const line = (res.text ?? '').trim()
     return line.length > 0 ? line : fallback
   } catch (e) {

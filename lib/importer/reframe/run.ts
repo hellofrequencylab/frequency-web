@@ -15,9 +15,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
-import { MODELS } from '@/lib/ai/models'
-import { estimateCostUsd } from '@/lib/ai/budget'
-import { recordAiUsage, featureOverBudget } from '@/lib/ai/usage'
+
+import { featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import type { BusinessProfile } from '../schema'
 import { moodToneDirective, type SeedMood } from '../moods'
@@ -90,6 +89,7 @@ async function callReframe(
 ): Promise<{ copy: ReframedCopy; costUsd: number } | null> {
   try {
     const res = await completeRaw({
+      accounting: { feature: REFRAME_FEATURE, profileId: profileId ?? null },
       tier: 'sonnet',
       maxTokens: 1500,
       thinking: { type: 'disabled' },
@@ -105,13 +105,7 @@ async function callReframe(
       // on the retry a corrective note this file writes itself.
       messages: [{ role: 'user', content: buildGroundingBlock(verified, sourceExcerpt) + directions }],
     })
-    void recordAiUsage({
-      feature: REFRAME_FEATURE,
-      model: MODELS.sonnet,
-      usage: res.usage,
-      costUsd: estimateCostUsd('sonnet', res.usage),
-      profileId: profileId ?? null,
-    })
+
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === REFRAME_TOOL_NAME,
     )

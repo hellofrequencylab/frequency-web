@@ -14,9 +14,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
-import { MODELS } from '@/lib/ai/models'
-import { estimateCostUsd } from '@/lib/ai/budget'
-import { recordAiUsage } from '@/lib/ai/usage'
+
 import { withVoice } from '@/lib/ai/voice'
 import type { TimelineEntry } from './timeline'
 
@@ -89,19 +87,14 @@ export async function generateContactBrief(input: {
   if (!ctx) return null
   try {
     const res = await completeRaw({
+      accounting: { feature: 'crm-brief', profileId: input.profileId ?? null },
       tier: 'haiku',
       maxTokens: 400,
       thinking: { type: 'disabled' },
       system: withVoice(SYSTEM),
       messages: [{ role: 'user', content: [{ type: 'text', text: `Facts:\n${ctx}\n\nWrite the brief.` }] }],
     })
-    void recordAiUsage({
-      feature: 'crm-brief',
-      model: MODELS.haiku,
-      usage: res.usage,
-      costUsd: estimateCostUsd('haiku', res.usage),
-      profileId: input.profileId ?? null,
-    })
+
     const text = res.content
       .filter((b): b is Anthropic.TextBlock => b.type === 'text')
       .map((b) => b.text)

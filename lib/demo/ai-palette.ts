@@ -68,6 +68,7 @@ export async function getDemographicPalette(input: {
     `Return the JSON palette for this exact place.`
   try {
     const { text } = await completeText({
+      accounting: { feature: 'demo-palette' },
       // The vibe and journey titles show on seeded demo pages, so the voice rules apply.
       system: withVoice(SYSTEM),
       messages: [{ role: 'user', content: user }],

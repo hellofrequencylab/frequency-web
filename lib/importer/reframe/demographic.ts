@@ -19,9 +19,8 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
-import { MODELS } from '@/lib/ai/models'
-import { estimateCostUsd } from '@/lib/ai/budget'
-import { recordAiUsage, featureOverBudget } from '@/lib/ai/usage'
+
+import { featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import type { BusinessProfile } from '../schema'
 import { buildGroundingBlock } from './prompt'
@@ -91,6 +90,7 @@ export async function analyzeDemographic(input: {
   if (await featureOverBudget(DEMOGRAPHIC_FEATURE)) return null
   try {
     const res = await completeRaw({
+      accounting: { feature: DEMOGRAPHIC_FEATURE, profileId: input.profileId ?? null },
       tier: 'sonnet',
       maxTokens: 400,
       thinking: { type: 'disabled' },
@@ -99,13 +99,7 @@ export async function analyzeDemographic(input: {
       toolChoice: { type: 'tool', name: DEMOGRAPHIC_TOOL_NAME },
       messages: [{ role: 'user', content: buildGroundingBlock(input.verified) }],
     })
-    void recordAiUsage({
-      feature: DEMOGRAPHIC_FEATURE,
-      model: MODELS.sonnet,
-      usage: res.usage,
-      costUsd: estimateCostUsd('sonnet', res.usage),
-      profileId: input.profileId ?? null,
-    })
+
     const block = res.content.find(
       (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === DEMOGRAPHIC_TOOL_NAME,
     )
