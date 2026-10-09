@@ -335,3 +335,5 @@ website_editor_presence              internal
 
 # LIVE-883: recover the exact already-applied service-only schema; runtime remains open.
 ai_budget_reservations                internal
+space_email_domains authenticated
+space_email_identities authenticated
