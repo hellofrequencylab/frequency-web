@@ -6,8 +6,9 @@ import { Users, Save, Trash2, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
-import { countSpaceAudience } from '@/lib/spaces/campaigns-actions'
+import { previewSpaceAudience } from '@/lib/spaces/campaigns-actions'
 import { createSpaceSegment, updateSpaceSegment, deleteSpaceSegment } from '@/lib/spaces/segments-actions'
+import type { AudienceEligibilitySummary } from '@/lib/spaces/audience-eligibility'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
 import { isError } from '@/lib/action-result'
 
@@ -44,6 +45,7 @@ export function AudiencePicker({
   onFilterChange,
   onCountChange,
   disabled = false,
+  pickedTopic = 'marketing',
 }: {
   spaceId: string
   /** The Space slug, for revalidating the surface after a segment save / delete. */
@@ -59,9 +61,11 @@ export function AudiencePicker({
   onFilterChange: (filter: AudienceFilter) => void
   onCountChange?: (count: number) => void
   disabled?: boolean
+  pickedTopic?: string
 }) {
   const router = useRouter()
-  const [count, setCount] = useState<number | null>(null)
+  const [preview, setPreview] = useState<AudienceEligibilitySummary | null>(null)
+  const count = preview?.eligible ?? null
   const [pending, start] = useTransition()
 
   // Segment management state (save the current filter / delete a saved one).
@@ -74,21 +78,28 @@ export function AudiencePicker({
 
   // Re-resolve the live count whenever the filter changes (tag OR segment). The server action is the
   // source of truth (and the same resolver the send uses), so the number the owner sees is the number
-  // who get the email.
+  // currently pass the policy preview. Delivery rechecks remain separate.
   useEffect(() => {
     let cancelled = false
+    onCountChange?.(0)
     start(async () => {
-      const n = await countSpaceAudience(spaceId, filter)
-      if (cancelled) return
-      setCount(n)
-      onCountChange?.(n)
+      try {
+        const next = await previewSpaceAudience(spaceId, filter, pickedTopic)
+        if (cancelled) return
+        setPreview(next)
+        onCountChange?.(next.state === 'available' ? next.eligible : 0)
+      } catch {
+        if (cancelled) return
+        setPreview(null)
+        onCountChange?.(0)
+      }
     })
     return () => {
       cancelled = true
     }
     // onFilterChange/onCountChange are stable enough; we re-run on the filter's own facets only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spaceId, filter.tag, filter.segmentId, filter.memberSegment])
+  }, [spaceId, pickedTopic, filter.tag, filter.segmentId, filter.memberSegment, filter.consent, filter.engagementDepth, filter.resonanceTier, filter.churnRisk, filter.place])
 
   // The select's current value: a member segment (member:<key>), a saved segment (segment:<id>), a tag
   // (the tag string), or '' = everyone. The three are mutually exclusive by construction, because each
@@ -215,15 +226,26 @@ export function AudiencePicker({
 
       <p className="inline-flex items-center gap-1.5 text-body-sm text-muted" role="status" aria-live="polite">
         <Users className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        {pending || count == null ? (
-          <span>Counting&hellip;</span>
+        {pending ? (
+          <span>Checking eligibility&hellip;</span>
+        ) : preview?.state !== 'available' || count == null ? (
+          <span>Audience eligibility could not be checked. Try again before sending.</span>
         ) : (
           <span>
             <span className="font-semibold text-text tabular-nums">{count.toLocaleString()}</span>{' '}
-            {count === 1 ? 'person' : 'people'} will get this
+            {count === 1 ? 'person is' : 'people are'} currently eligible
           </span>
         )}
       </p>
+
+      {preview?.state === 'available' && !pending && (
+        <div className="text-meta text-subtle" aria-label="Audience exclusions">
+          <p>{preview.matched.toLocaleString()} matching contacts. Counts can change before delivery.</p>
+          {Object.entries(preview.excluded).filter(([, value]) => value > 0).map(([reason, value]) => (
+            <p key={reason}>{value.toLocaleString()} excluded: {{ invalid: 'invalid email', duplicate: 'duplicate address', unknownConsent: 'no marketing opt-in', unsubscribed: 'unsubscribed', suppressed: 'delivery suppression', muted: 'topic muted' }[reason as keyof AudienceEligibilitySummary['excluded']]}</p>
+          ))}
+        </div>
+      )}
 
       {/* A member audience says out loud what the resolver will do to it (LIVE-293): only the members
           this Space already holds a contact for are emailable, and the send rides Marketing. */}

@@ -1,0 +1,12 @@
+{
+  "id": "EMAIL-021",
+  "title": "Show current marketing audience eligibility and exclusion reasons",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": { "file": "docs/SPACE-EMAIL-BUILD-PLAN.md", "ref": "PROG-EMAIL1 subpacket:audience-eligibility-preview" },
+  "detail": "Existing campaign picker and compatibility count action use an authorized aggregate preview with matching contacts, eligible recipients and mutually exclusive invalid/duplicate/unknown-consent/unsubscribed/global-or-Space-suppressed/topic-muted exclusions. The existing audience grammar resolves the effective topic, preserving member-segment Marketing. Unknown consent remains excluded for every campaign topic. Count is disabled during changes and on policy read failures; exact contact count detects incomplete candidate reads. Send resolvers continue removing invalid/duplicate addresses. This closes only the integrated read-only preview subpacket. Full audience-eligibility packet remains unclosed until dispatch-policy and owner-only isolated test are implemented; no source.ref packet claim, no test sends or consent edits. Large/filter pagination beyond the existing resolver remains part of full campaign accounting.",
+  "closed": "2026-10-08",
+  "verify": { "kind": "cmd", "cmd": "pnpm exec vitest run lib/spaces/audiences.test.ts lib/spaces/audience-eligibility.test.ts lib/spaces/audience-readiness.test.ts lib/spaces/campaign-audience-preview.test.ts components/spaces/email/audience-picker.test.tsx", "note": "Tests require 520 unknown contacts yield zero eligible, exact exclusion totals, real scoped candidate resolver behavior, cross-Space and action permissions, forced effective topic, policy read failure, bounded policy batches and rendered eligibility/failure UI." }
+}

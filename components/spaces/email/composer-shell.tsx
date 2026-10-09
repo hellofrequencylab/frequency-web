@@ -256,6 +256,7 @@ export function ComposerShell({
           filter={filter}
           onFilterChange={setFilter}
           onCountChange={setCount}
+          pickedTopic={topic}
           disabled={disabled}
         />
 

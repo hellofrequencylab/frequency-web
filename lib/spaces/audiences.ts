@@ -233,7 +233,7 @@ export function definitionToFilter(raw: unknown): AudienceFilter {
 /** The contact ids in a Space that carry `tag` (via network_contacts.linked_contact_id). Returns a
  *  Set of contact ids. FAIL-SAFE to an empty set. The tag match is case-insensitive on the stored
  *  tag. */
-async function contactIdsWithTag(spaceId: string, tag: string): Promise<Set<string>> {
+async function contactIdsWithTag(spaceId: string, tag: string, strict = false): Promise<Set<string>> {
   const ids = new Set<string>()
   try {
     const db = createAdminClient() as unknown as {
@@ -267,12 +267,16 @@ async function contactIdsWithTag(spaceId: string, tag: string): Promise<Set<stri
     // empty audience. Say so in the log, per the standing rule that every fail-safe needs something
     // that notices it fired.
     if (error) log.error('spaces.audiences.tag_lookup_failed', { spaceId, tag, error: errText(error) })
-    if (error || !data) return ids
+    if (error || !data) {
+      if (strict) throw new Error('Audience tag unavailable')
+      return ids
+    }
     for (const row of data as unknown as { network_contacts?: { linked_contact_id?: string | null } }[]) {
       const cid = row.network_contacts?.linked_contact_id
       if (cid) ids.add(cid)
     }
-  } catch {
+  } catch (error) {
+    if (strict) throw error
     // fall through to the empty set (fail-safe)
   }
   return ids
@@ -280,7 +284,7 @@ async function contactIdsWithTag(spaceId: string, tag: string): Promise<Set<stri
 
 /** One of a Space's contacts, in the shape the resolver narrows over: id + email plus the linked
  *  member `profileId` (null for a sealed lead) and the `consentState` (for the consent facet). */
-interface SpaceContact {
+export interface SpaceContact {
   id: string
   email: string
   profileId: string | null
@@ -290,7 +294,7 @@ interface SpaceContact {
 /** A Space's contacts, service-role, FAIL-SAFE to []. Filters `space_id = spaceId` so a caller never
  *  reaches another Space's contacts. Drops rows with no usable email. Carries `profile_id` (for the
  *  place-tree + advanced-facet member joins) and `consent_state` (for the consent facet). */
-async function readSpaceContacts(spaceId: string): Promise<SpaceContact[]> {
+async function readSpaceContacts(spaceId: string, strict = false): Promise<SpaceContact[]> {
   try {
     const db = createAdminClient() as unknown as {
       from: (t: string) => {
@@ -308,25 +312,29 @@ async function readSpaceContacts(spaceId: string): Promise<SpaceContact[]> {
         }
       }
     }
-    const { data, error } = await db
-      .from('contacts')
-      .select('id, email, profile_id, consent_state')
-      .eq('space_id', spaceId)
-      .limit(MAX_RECIPIENTS)
-    if (error || !data) return []
+    const result = strict
+      ? await createAdminClient().from('contacts').select('id, email, profile_id, consent_state', { count: 'exact' }).eq('space_id', spaceId).limit(MAX_RECIPIENTS)
+      : await db.from('contacts').select('id, email, profile_id, consent_state').eq('space_id', spaceId).limit(MAX_RECIPIENTS)
+    const { data, error } = result
+    if (error || !data) {
+      if (strict) throw new Error('Audience contacts unavailable')
+      return []
+    }
+    if (strict && (!('count' in result) || result.count !== data.length)) throw new Error('Audience preview incomplete')
     const out: SpaceContact[] = []
     for (const c of data) {
-      if (c.id && looksLikeEmail(c.email)) {
+      if (c.id) {
         out.push({
           id: c.id,
-          email: (c.email as string).trim(),
+          email: typeof c.email === 'string' ? c.email.trim() : '',
           profileId: typeof c.profile_id === 'string' && c.profile_id ? c.profile_id : null,
           consentState: typeof c.consent_state === 'string' ? c.consent_state : null,
         })
       }
     }
     return out
-  } catch {
+  } catch (error) {
+    if (strict) throw error
     return []
   }
 }
@@ -343,6 +351,7 @@ async function readSpaceContacts(spaceId: string): Promise<SpaceContact[]> {
 async function profileIdsMatchingFacets(
   profileIds: string[],
   facets: { engagementDepth?: EngagementDepth | null; resonanceTier?: ResonanceTier | null; churnRisk?: ChurnRiskBand | null },
+  strict = false,
 ): Promise<Set<string>> {
   const wanted: { key: string; band: string }[] = []
   if (facets.engagementDepth) wanted.push({ key: FACET_TRAIT_KEY.engagementDepth, band: facets.engagementDepth })
@@ -375,7 +384,10 @@ async function profileIdsMatchingFacets(
       .select('profile_id, trait_key, value_text')
       .in('profile_id', profileIds)
       .in('trait_key', wanted.map((w) => w.key))
-    if (error || !data) return new Set()
+    if (error || !data) {
+      if (strict) throw new Error('Audience traits unavailable')
+      return new Set()
+    }
 
     // Index the band each profile holds for each requested trait key.
     const held = new Map<string, Map<string, string>>() // profileId -> (traitKey -> band)
@@ -395,7 +407,8 @@ async function profileIdsMatchingFacets(
       if (wanted.every((w) => m.get(w.key) === w.band)) out.add(pid)
     }
     return out
-  } catch {
+  } catch (error) {
+    if (strict) throw error
     return new Set()
   }
 }
@@ -405,7 +418,7 @@ async function profileIdsMatchingFacets(
  *  ADR-246), PINNED to space_id so a cross-space segment id resolves to null -> "everyone" (the
  *  fail-safe). Single-row read filters BOTH id AND space_id so a cross-space id leaks nothing.
  *  FAIL-SAFE to {} (everyone) on any error / missing row. */
-async function readSegmentFilter(spaceId: string, segmentId: string): Promise<AudienceFilter> {
+async function readSegmentFilter(spaceId: string, segmentId: string, strict = false): Promise<AudienceFilter> {
   if (!spaceId || !segmentId) return {}
   try {
     const db = createAdminClient() as unknown as {
@@ -431,9 +444,13 @@ async function readSegmentFilter(spaceId: string, segmentId: string): Promise<Au
       .eq('id', segmentId)
       .eq('space_id', spaceId)
       .maybeSingle()
-    if (error || !data) return {}
+    if (error || !data) {
+      if (strict) throw new Error('Saved audience unavailable')
+      return {}
+    }
     return definitionToFilter(data.definition)
-  } catch {
+  } catch (error) {
+    if (strict) throw error
     return {}
   }
 }
@@ -466,25 +483,26 @@ export async function resolveAudience(
  * the consent rule (`resolveAudiencePlan`). Without that, a member segment stored inside a saved
  * segment would be invisible to a rule that only looked at the filter the caller passed in.
  */
-async function effectiveFilter(spaceId: string, filter: AudienceFilter): Promise<AudienceFilter> {
-  return filter.segmentId ? await readSegmentFilter(spaceId, filter.segmentId) : filter
+async function effectiveFilter(spaceId: string, filter: AudienceFilter, strict = false): Promise<AudienceFilter> {
+  return filter.segmentId ? await readSegmentFilter(spaceId, filter.segmentId, strict) : filter
 }
 
 /** Resolve recipients from an ALREADY-EXPANDED filter (no segmentId indirection left to follow). */
-async function resolveFromEffective(
+async function resolveCandidatesFromEffective(
   spaceId: string,
   effective: AudienceFilter,
-): Promise<AudienceRecipient[]> {
+  strict = false,
+): Promise<SpaceContact[]> {
   const tag = normalizeTag(effective.tag)
 
-  const contacts = await readSpaceContacts(spaceId)
+  const contacts = await readSpaceContacts(spaceId, strict)
   if (contacts.length === 0) return []
 
   // Narrow to the tagged subset when a tag is given. A contact that isn't linked to a tagged
   // network_contact simply doesn't match (it only ever appears under "all contacts").
   let chosen = contacts
   if (tag) {
-    const tagged = await contactIdsWithTag(spaceId, tag)
+    const tagged = await contactIdsWithTag(spaceId, tag, strict)
     chosen = contacts.filter((c) => tagged.has(c.id))
   }
 
@@ -538,14 +556,20 @@ async function resolveFromEffective(
       engagementDepth: effective.engagementDepth,
       resonanceTier: effective.resonanceTier,
       churnRisk: effective.churnRisk,
-    })
+    }, strict)
     chosen = chosen.filter((c) => c.profileId != null && matching.has(c.profileId))
   }
 
+  return chosen
+}
+
+async function resolveFromEffective(spaceId: string, effective: AudienceFilter): Promise<AudienceRecipient[]> {
+  const chosen = await resolveCandidatesFromEffective(spaceId, effective)
   // De-dupe by lowercased email (a Space can hold two contact rows for one address); first wins.
   const seen = new Set<string>()
   const out: AudienceRecipient[] = []
   for (const c of chosen) {
+    if (!looksLikeEmail(c.email)) continue
     const key = c.email.toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)
@@ -598,6 +622,16 @@ export async function resolveAudiencePlan(
     recipients: await resolveFromEffective(spaceId, effective),
     topic: topicForAudience(pickedTopic, effective),
   }
+}
+
+/** Read-only candidate detail for the authorized campaign eligibility preview. Invalid and
+ * duplicate rows remain here so their exclusions can be counted; send resolvers still remove them. */
+export async function resolveAudienceCandidatePlan(
+  spaceId: string, filter: AudienceFilter = {}, pickedTopic?: unknown,
+): Promise<{ contacts: SpaceContact[]; topic: NotificationTopic }> {
+  if (!spaceId) throw new Error('Missing Space')
+  const effective = await effectiveFilter(spaceId, filter, true)
+  return { contacts: await resolveCandidatesFromEffective(spaceId, effective, true), topic: topicForAudience(pickedTopic, effective) }
 }
 
 /** How many recipients an audience resolves to (the composer's live count). FAIL-SAFE to 0. A thin
