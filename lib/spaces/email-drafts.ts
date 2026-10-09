@@ -1,5 +1,9 @@
 'use server'
 
+import { legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+
+import { parseEmailRenderLayout } from '@/lib/email-studio/render-layout'
+
 // PER-SPACE BLOCK-EMAIL DRAFTS (Email in the Business CRM, P1 · deliverable 2 — the Marketing editor's data
 // seam). The space-scoped analog of app/(main)/admin/email-studio/actions.ts: the read + write actions behind
 // the Marketing tab's rich, on-canvas WYSIWYG email editor. A block email REUSES the unified entity-block
@@ -307,6 +311,8 @@ export async function saveSpaceEmailDraft(
   const existing = await readDraft(id, spaceId)
   if (!existing) return { error: 'That email no longer exists.' }
 
+  if (patch.layout && (legacySpaceLayoutWriteError(patch.layout, null) || legacySpaceLayoutWriteError(existing.block_json, null))) return { error: NODE_LAYOUT_WRITE_ERROR }
+
   const update: TablesUpdate<'campaigns'> = {}
   if (typeof patch.subject === 'string') update.subject = patch.subject.slice(0, 300)
   if (typeof patch.preheader === 'string') update.preheader = patch.preheader.slice(0, 300)
@@ -359,7 +365,7 @@ export async function sendSpaceTestEmail(
   if (!row) return fail('That email no longer exists.')
 
   const brand = spaceBrand(space)
-  const layout = layoutFromBlockJson(row.block_json)
+  const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
     { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand },
@@ -450,7 +456,7 @@ export async function sendSpaceEmailDraft(
   if (!(row.subject ?? '').trim()) return fail('Give your email a subject before sending.')
 
   const brand = spaceBrand(space)
-  const layout = layoutFromBlockJson(row.block_json)
+  const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
     { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },
@@ -515,7 +521,7 @@ export async function sendSpaceEmailDraftToRecipients(
   if (!(row.subject ?? '').trim()) return fail('Give your email a subject before sending.')
 
   const brand = spaceBrand(space)
-  const layout = layoutFromBlockJson(row.block_json)
+  const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
     { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },
@@ -578,7 +584,7 @@ export async function sendSpaceEmailDraftAsConversations(
   if (!(row.subject ?? '').trim()) return fail('Give your email a subject before sending.')
 
   const brand = spaceBrand(space)
-  const layout = layoutFromBlockJson(row.block_json)
+  const layout = parseEmailRenderLayout(row.block_json) ?? starterEmailLayout()
   const compiled = compileEmailDoc(
     { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' },
     { colors: brand.colors, brand, unsubscribeUrl: SPACE_UNSUBSCRIBE_PLACEHOLDER },

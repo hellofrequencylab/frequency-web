@@ -1,0 +1,1466 @@
+{
+  "provenance": "Historical structural census; deterministic synthetic authored field markers, not production copy. Captured before LIVE-877 renderer changes.",
+  "sourceSha256": "30bc78bc58a8deee85cd727284eb11c2dacc2817bb770252a3a35dbf7e300331",
+  "documents": [
+    {
+      "id": "campaign-01",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              [
+                "heading"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "prose"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r2",
+            "cells": [
+              [
+                "divider"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r3",
+            "cells": [
+              [
+                "button"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r4",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "button": {
+            "align": "button.align",
+            "label": "button.label",
+            "url": "button.url"
+          },
+          "divider": {},
+          "heading": {
+            "text": "heading.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;color:#4A4234\">heading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">button.label</a></div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "heading.text\n\nprose.text\n\n---\n\nbutton.label: \n\ntext.text"
+      }
+    },
+    {
+      "id": "campaign-02",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              [
+                "displayHeading"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "prose"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r2",
+            "cells": [
+              [
+                "heading"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r3",
+            "cells": [
+              [
+                "features"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r4",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r5",
+            "cells": [
+              [
+                "divider"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r6",
+            "cells": [
+              [
+                "callout"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "callout": {
+            "body": "callout.body",
+            "buttonLabel": "callout.buttonLabel",
+            "buttonUrl": "callout.buttonUrl",
+            "title": "callout.title"
+          },
+          "divider": {},
+          "heading": {
+            "text": "heading.text"
+          },
+          "features": {
+            "items": "features.items"
+          },
+          "displayHeading": {
+            "font": "displayHeading.font",
+            "text": "displayHeading.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:30px;line-height:1.25;font-weight:600;color:#4A4234\">displayHeading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;color:#4A4234\">heading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;\"><tr><td style=\"padding:24px;background:#FFFFFF;border:1px solid #E9E1D4;border-radius:16px\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;line-height:1.25;font-weight:600;color:#4A4234\">callout.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">callout.body</p><div style=\"height:12px;line-height:12px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">callout.buttonLabel</a></div></td></tr></table></td></tr>\n</table>",
+        "text": "displayHeading.text\n\nprose.text\n\nheading.text\n\ntext.text\n\n---\n\ncallout.title\ncallout.body\ncallout.buttonLabel: "
+      }
+    },
+    {
+      "id": "campaign-03",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              []
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "text.text"
+      }
+    },
+    {
+      "id": "campaign-04",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              [
+                "displayHeading"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "prose"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r2",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r3",
+            "cells": [
+              [
+                "divider"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r4",
+            "cells": [
+              [
+                "button"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r5",
+            "cells": [
+              [
+                "quote"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "quote": {
+            "by": "quote.by",
+            "text": "quote.text"
+          },
+          "button": {
+            "align": "button.align",
+            "label": "button.label",
+            "url": "button.url"
+          },
+          "divider": {},
+          "displayHeading": {
+            "font": "displayHeading.font",
+            "text": "displayHeading.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:30px;line-height:1.25;font-weight:600;color:#4A4234\">displayHeading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">button.label</a></div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><blockquote style=\"margin:0;padding:0 0 0 16px;border-left:3px solid #E2912F;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:18px;font-style:italic;color:#3D352A;line-height:1.5\">quote.text</blockquote><p style=\"margin:8px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#6B6253\">quote.by</p></td></tr>\n</table>",
+        "text": "displayHeading.text\n\nprose.text\n\ntext.text\n\n---\n\nbutton.label: \n\n\"quote.text\" - quote.by"
+      }
+    },
+    {
+      "id": "campaign-05",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              [
+                "heading"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "heading": {
+            "text": "heading.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;color:#4A4234\">heading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "heading.text\n\ntext.text"
+      }
+    },
+    {
+      "id": "campaign-06",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              [
+                "heading"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "prose"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r2",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "heading": {
+            "text": "heading.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;color:#4A4234\">heading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "heading.text\n\nprose.text\n\ntext.text"
+      }
+    },
+    {
+      "id": "campaign-07",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              [
+                "heading"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "rv3hrmv",
+            "cells": [
+              [
+                "features"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "rlshb28",
+            "cells": [
+              [
+                "prose"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r2",
+            "cells": [
+              [
+                "button"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "rrnlvep",
+            "cells": [
+              []
+            ],
+            "columns": 1
+          },
+          {
+            "id": "rxd2rgc",
+            "cells": [
+              []
+            ],
+            "columns": 1
+          },
+          {
+            "id": "rrsffro",
+            "cells": [
+              []
+            ],
+            "columns": 1
+          },
+          {
+            "id": "riava7l",
+            "cells": [
+              [
+                "divider"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "rth62dm",
+            "cells": [
+              [
+                "quote"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "quote": {
+            "by": "quote.by",
+            "text": "quote.text"
+          },
+          "button": {
+            "label": "button.label",
+            "url": "button.url"
+          },
+          "heading": {
+            "text": "heading.text"
+          },
+          "features": {
+            "eyebrow": "features.eyebrow",
+            "items": "features.items",
+            "layout": "features.layout",
+            "title": "features.title"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;color:#4A4234\">heading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">features.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;line-height:1.25;font-weight:600;color:#4A4234\">features.title</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">button.label</a></div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><blockquote style=\"margin:0;padding:0 0 0 16px;border-left:3px solid #E2912F;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:18px;font-style:italic;color:#3D352A;line-height:1.5\">quote.text</blockquote><p style=\"margin:8px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#6B6253\">quote.by</p></td></tr>\n</table>",
+        "text": "heading.text\n\ntext.text\n\nfeatures.eyebrow\nfeatures.title\n\nprose.text\n\nbutton.label: \n\n---\n\n\"quote.text\" - quote.by"
+      }
+    },
+    {
+      "id": "campaign-08",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              [
+                "photoHero"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "prose"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r2",
+            "cells": [
+              [
+                "editorial"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r3",
+            "cells": [
+              [
+                "divider"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r4",
+            "cells": [
+              [
+                "callout"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r5",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "callout": {
+            "body": "callout.body",
+            "buttonLabel": "callout.buttonLabel",
+            "buttonUrl": "callout.buttonUrl",
+            "title": "callout.title"
+          },
+          "divider": {},
+          "editorial": {
+            "body": "editorial.body",
+            "eyebrow": "editorial.eyebrow",
+            "title": "editorial.title"
+          },
+          "photoHero": {
+            "alt": "photoHero.alt",
+            "buttonLabel": "photoHero.buttonLabel",
+            "buttonUrl": "photoHero.buttonUrl",
+            "eyebrow": "photoHero.eyebrow",
+            "image": "photoHero.image",
+            "subtitle": "photoHero.subtitle",
+            "title": "photoHero.title"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">photoHero.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:1.25;font-weight:600;color:#4A4234\">photoHero.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;color:#6B6253\">photoHero.subtitle</p><div style=\"height:16px;line-height:16px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">photoHero.buttonLabel</a></div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">editorial.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;line-height:1.25;font-weight:600;color:#4A4234\">editorial.title</h2><div style=\"height:10px;line-height:10px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">editorial.body</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;\"><tr><td style=\"padding:24px;background:#FFFFFF;border:1px solid #E9E1D4;border-radius:16px\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;line-height:1.25;font-weight:600;color:#4A4234\">callout.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">callout.body</p><div style=\"height:12px;line-height:12px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">callout.buttonLabel</a></div></td></tr></table></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "photoHero.eyebrow\nphotoHero.title\nphotoHero.subtitle\nphotoHero.buttonLabel: \n\nprose.text\n\neditorial.eyebrow\neditorial.title\neditorial.body\n\n---\n\ncallout.title\ncallout.body\ncallout.buttonLabel: \n\ntext.text"
+      }
+    },
+    {
+      "id": "campaign-09",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              []
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r2",
+            "cells": [
+              [
+                "button"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "button": {
+            "label": "button.label",
+            "url": "button.url"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">button.label</a></div></td></tr>\n</table>",
+        "text": "text.text\n\nbutton.label: "
+      }
+    },
+    {
+      "id": "campaign-10",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              [
+                "photoHero"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "prose"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r2",
+            "cells": [
+              [
+                "editorial"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r3",
+            "cells": [
+              [
+                "divider"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r4",
+            "cells": [
+              [
+                "callout"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r5",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "callout": {
+            "body": "callout.body",
+            "buttonLabel": "callout.buttonLabel",
+            "buttonUrl": "callout.buttonUrl",
+            "title": "callout.title"
+          },
+          "divider": {},
+          "editorial": {
+            "body": "editorial.body",
+            "eyebrow": "editorial.eyebrow",
+            "title": "editorial.title"
+          },
+          "photoHero": {
+            "alt": "photoHero.alt",
+            "buttonLabel": "photoHero.buttonLabel",
+            "buttonUrl": "photoHero.buttonUrl",
+            "eyebrow": "photoHero.eyebrow",
+            "image": "photoHero.image",
+            "subtitle": "photoHero.subtitle",
+            "title": "photoHero.title"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">photoHero.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:1.25;font-weight:600;color:#4A4234\">photoHero.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;color:#6B6253\">photoHero.subtitle</p><div style=\"height:16px;line-height:16px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">photoHero.buttonLabel</a></div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">editorial.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;line-height:1.25;font-weight:600;color:#4A4234\">editorial.title</h2><div style=\"height:10px;line-height:10px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">editorial.body</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;\"><tr><td style=\"padding:24px;background:#FFFFFF;border:1px solid #E9E1D4;border-radius:16px\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;line-height:1.25;font-weight:600;color:#4A4234\">callout.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">callout.body</p><div style=\"height:12px;line-height:12px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">callout.buttonLabel</a></div></td></tr></table></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "photoHero.eyebrow\nphotoHero.title\nphotoHero.subtitle\nphotoHero.buttonLabel: \n\nprose.text\n\neditorial.eyebrow\neditorial.title\neditorial.body\n\n---\n\ncallout.title\ncallout.body\ncallout.buttonLabel: \n\ntext.text"
+      }
+    },
+    {
+      "id": "campaign-11",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              []
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "text.text"
+      }
+    },
+    {
+      "id": "campaign-12",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "cells": [
+              [
+                "photoHero"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r1",
+            "cells": [
+              [
+                "heading"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r2",
+            "cells": [
+              [
+                "features"
+              ]
+            ],
+            "columns": 1
+          },
+          {
+            "id": "r3",
+            "cells": [
+              [
+                "text"
+              ]
+            ],
+            "columns": 1
+          }
+        ],
+        "content": {
+          "text": {
+            "text": "text.text"
+          },
+          "heading": {
+            "text": "heading.text"
+          },
+          "features": {
+            "items": "features.items"
+          },
+          "photoHero": {
+            "alt": "photoHero.alt",
+            "buttonLabel": "photoHero.buttonLabel",
+            "buttonUrl": "photoHero.buttonUrl",
+            "eyebrow": "photoHero.eyebrow",
+            "image": "photoHero.image",
+            "subtitle": "photoHero.subtitle",
+            "title": "photoHero.title"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">photoHero.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:1.25;font-weight:600;color:#4A4234\">photoHero.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;color:#6B6253\">photoHero.subtitle</p><div style=\"height:16px;line-height:16px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">photoHero.buttonLabel</a></div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;color:#4A4234\">heading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "photoHero.eyebrow\nphotoHero.title\nphotoHero.subtitle\nphotoHero.buttonLabel: \n\nheading.text\n\ntext.text"
+      }
+    },
+    {
+      "id": "template-01",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "columns": 1,
+            "cells": [
+              [
+                "photoHero"
+              ]
+            ]
+          },
+          {
+            "id": "r1",
+            "columns": 1,
+            "cells": [
+              [
+                "editorial"
+              ]
+            ]
+          },
+          {
+            "id": "r2",
+            "columns": 1,
+            "cells": [
+              [
+                "features"
+              ]
+            ]
+          },
+          {
+            "id": "r3",
+            "columns": 1,
+            "cells": [
+              [
+                "quote"
+              ]
+            ]
+          },
+          {
+            "id": "r4",
+            "columns": 1,
+            "cells": [
+              [
+                "button"
+              ]
+            ]
+          }
+        ],
+        "content": {
+          "button": {
+            "align": "button.align",
+            "label": "button.label",
+            "url": "button.url"
+          },
+          "editorial": {
+            "body": "editorial.body",
+            "eyebrow": "editorial.eyebrow",
+            "title": "editorial.title"
+          },
+          "features": {
+            "items": "features.items"
+          },
+          "photoHero": {
+            "alt": "photoHero.alt",
+            "buttonLabel": "photoHero.buttonLabel",
+            "buttonUrl": "photoHero.buttonUrl",
+            "eyebrow": "photoHero.eyebrow",
+            "image": "photoHero.image",
+            "subtitle": "photoHero.subtitle",
+            "title": "photoHero.title"
+          },
+          "quote": {
+            "by": "quote.by",
+            "text": "quote.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">photoHero.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:1.25;font-weight:600;color:#4A4234\">photoHero.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;color:#6B6253\">photoHero.subtitle</p><div style=\"height:16px;line-height:16px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">photoHero.buttonLabel</a></div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">editorial.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;line-height:1.25;font-weight:600;color:#4A4234\">editorial.title</h2><div style=\"height:10px;line-height:10px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">editorial.body</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><blockquote style=\"margin:0;padding:0 0 0 16px;border-left:3px solid #E2912F;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:18px;font-style:italic;color:#3D352A;line-height:1.5\">quote.text</blockquote><p style=\"margin:8px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#6B6253\">quote.by</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">button.label</a></div></td></tr>\n</table>",
+        "text": "photoHero.eyebrow\nphotoHero.title\nphotoHero.subtitle\nphotoHero.buttonLabel: \n\neditorial.eyebrow\neditorial.title\neditorial.body\n\n\"quote.text\" - quote.by\n\nbutton.label: "
+      }
+    },
+    {
+      "id": "template-02",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "columns": 1,
+            "cells": [
+              [
+                "photoHero"
+              ]
+            ]
+          },
+          {
+            "id": "r1",
+            "columns": 1,
+            "cells": [
+              [
+                "editorial"
+              ]
+            ]
+          },
+          {
+            "id": "r2",
+            "columns": 1,
+            "cells": [
+              [
+                "cardGrid"
+              ]
+            ]
+          },
+          {
+            "id": "r3",
+            "columns": 1,
+            "cells": [
+              [
+                "quote"
+              ]
+            ]
+          },
+          {
+            "id": "r4",
+            "columns": 1,
+            "cells": [
+              [
+                "button"
+              ]
+            ]
+          }
+        ],
+        "content": {
+          "button": {
+            "align": "button.align",
+            "label": "button.label",
+            "url": "button.url"
+          },
+          "cardGrid": {
+            "browseLabel": "cardGrid.browseLabel",
+            "browseUrl": "cardGrid.browseUrl",
+            "cards": "cardGrid.cards",
+            "eyebrow": "cardGrid.eyebrow",
+            "title": "cardGrid.title"
+          },
+          "editorial": {
+            "body": "editorial.body",
+            "eyebrow": "editorial.eyebrow",
+            "title": "editorial.title"
+          },
+          "photoHero": {
+            "alt": "photoHero.alt",
+            "buttonLabel": "photoHero.buttonLabel",
+            "buttonUrl": "photoHero.buttonUrl",
+            "eyebrow": "photoHero.eyebrow",
+            "image": "photoHero.image",
+            "subtitle": "photoHero.subtitle",
+            "title": "photoHero.title"
+          },
+          "quote": {
+            "by": "quote.by",
+            "text": "quote.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">photoHero.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:26px;line-height:1.25;font-weight:600;color:#4A4234\">photoHero.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;color:#6B6253\">photoHero.subtitle</p><div style=\"height:16px;line-height:16px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">photoHero.buttonLabel</a></div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">editorial.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;line-height:1.25;font-weight:600;color:#4A4234\">editorial.title</h2><div style=\"height:10px;line-height:10px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">editorial.body</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">cardGrid.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;line-height:1.25;font-weight:600;color:#4A4234\">cardGrid.title</h2><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">cardGrid.browseLabel</a></div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><blockquote style=\"margin:0;padding:0 0 0 16px;border-left:3px solid #E2912F;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:18px;font-style:italic;color:#3D352A;line-height:1.5\">quote.text</blockquote><p style=\"margin:8px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;color:#6B6253\">quote.by</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">button.label</a></div></td></tr>\n</table>",
+        "text": "photoHero.eyebrow\nphotoHero.title\nphotoHero.subtitle\nphotoHero.buttonLabel: \n\neditorial.eyebrow\neditorial.title\neditorial.body\n\ncardGrid.eyebrow\ncardGrid.title\ncardGrid.browseLabel: \n\n\"quote.text\" - quote.by\n\nbutton.label: "
+      }
+    },
+    {
+      "id": "template-03",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "columns": 1,
+            "cells": [
+              [
+                "heading"
+              ]
+            ]
+          },
+          {
+            "id": "r1",
+            "columns": 1,
+            "cells": [
+              [
+                "prose"
+              ]
+            ]
+          },
+          {
+            "id": "r2",
+            "columns": 1,
+            "cells": [
+              [
+                "features"
+              ]
+            ]
+          },
+          {
+            "id": "r3",
+            "columns": 1,
+            "cells": [
+              [
+                "divider"
+              ]
+            ]
+          },
+          {
+            "id": "r4",
+            "columns": 1,
+            "cells": [
+              [
+                "callout"
+              ]
+            ]
+          },
+          {
+            "id": "r5",
+            "columns": 1,
+            "cells": [
+              [
+                "text"
+              ]
+            ]
+          }
+        ],
+        "content": {
+          "callout": {
+            "body": "callout.body",
+            "buttonLabel": "callout.buttonLabel",
+            "buttonUrl": "callout.buttonUrl",
+            "title": "callout.title"
+          },
+          "features": {
+            "items": "features.items"
+          },
+          "heading": {
+            "text": "heading.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "text": {
+            "text": "text.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;color:#4A4234\">heading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;\"><tr><td style=\"padding:24px;background:#FFFFFF;border:1px solid #E9E1D4;border-radius:16px\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;line-height:1.25;font-weight:600;color:#4A4234\">callout.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">callout.body</p><div style=\"height:12px;line-height:12px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">callout.buttonLabel</a></div></td></tr></table></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "heading.text\n\nprose.text\n\n---\n\ncallout.title\ncallout.body\ncallout.buttonLabel: \n\ntext.text"
+      }
+    },
+    {
+      "id": "template-04",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "columns": 1,
+            "cells": [
+              [
+                "heading"
+              ]
+            ]
+          },
+          {
+            "id": "r1",
+            "columns": 1,
+            "cells": [
+              [
+                "text"
+              ]
+            ]
+          },
+          {
+            "id": "r2",
+            "columns": 1,
+            "cells": [
+              [
+                "prose"
+              ]
+            ]
+          },
+          {
+            "id": "r3",
+            "columns": 1,
+            "cells": [
+              [
+                "divider"
+              ]
+            ]
+          },
+          {
+            "id": "r4",
+            "columns": 1,
+            "cells": [
+              [
+                "button"
+              ]
+            ]
+          }
+        ],
+        "content": {
+          "button": {
+            "align": "button.align",
+            "label": "button.label",
+            "url": "button.url"
+          },
+          "heading": {
+            "text": "heading.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "text": {
+            "text": "text.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;color:#4A4234\">heading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">button.label</a></div></td></tr>\n</table>",
+        "text": "heading.text\n\ntext.text\n\nprose.text\n\n---\n\nbutton.label: "
+      }
+    },
+    {
+      "id": "template-05",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "columns": 1,
+            "cells": [
+              [
+                "displayHeading"
+              ]
+            ]
+          },
+          {
+            "id": "r1",
+            "columns": 1,
+            "cells": [
+              [
+                "prose"
+              ]
+            ]
+          },
+          {
+            "id": "r2",
+            "columns": 1,
+            "cells": [
+              [
+                "features"
+              ]
+            ]
+          },
+          {
+            "id": "r3",
+            "columns": 1,
+            "cells": [
+              [
+                "divider"
+              ]
+            ]
+          },
+          {
+            "id": "r4",
+            "columns": 1,
+            "cells": [
+              [
+                "callout"
+              ]
+            ]
+          },
+          {
+            "id": "r5",
+            "columns": 1,
+            "cells": [
+              [
+                "text"
+              ]
+            ]
+          }
+        ],
+        "content": {
+          "callout": {
+            "body": "callout.body",
+            "buttonLabel": "callout.buttonLabel",
+            "buttonUrl": "callout.buttonUrl",
+            "title": "callout.title"
+          },
+          "displayHeading": {
+            "text": "displayHeading.text"
+          },
+          "features": {
+            "items": "features.items"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "text": {
+            "text": "text.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:30px;line-height:1.25;font-weight:600;color:#4A4234\">displayHeading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;\"><tr><td style=\"padding:24px;background:#FFFFFF;border:1px solid #E9E1D4;border-radius:16px\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;line-height:1.25;font-weight:600;color:#4A4234\">callout.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">callout.body</p><div style=\"height:12px;line-height:12px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">callout.buttonLabel</a></div></td></tr></table></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "displayHeading.text\n\nprose.text\n\n---\n\ncallout.title\ncallout.body\ncallout.buttonLabel: \n\ntext.text"
+      }
+    },
+    {
+      "id": "template-06",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "columns": 1,
+            "cells": [
+              [
+                "heading"
+              ]
+            ]
+          },
+          {
+            "id": "r1",
+            "columns": 1,
+            "cells": [
+              [
+                "prose"
+              ]
+            ]
+          },
+          {
+            "id": "r2",
+            "columns": 1,
+            "cells": [
+              [
+                "cardGrid"
+              ]
+            ]
+          },
+          {
+            "id": "r3",
+            "columns": 1,
+            "cells": [
+              [
+                "divider"
+              ]
+            ]
+          },
+          {
+            "id": "r4",
+            "columns": 1,
+            "cells": [
+              [
+                "callout"
+              ]
+            ]
+          },
+          {
+            "id": "r5",
+            "columns": 1,
+            "cells": [
+              [
+                "text"
+              ]
+            ]
+          }
+        ],
+        "content": {
+          "callout": {
+            "body": "callout.body",
+            "buttonLabel": "callout.buttonLabel",
+            "buttonUrl": "callout.buttonUrl",
+            "title": "callout.title"
+          },
+          "cardGrid": {
+            "buttonOn": "cardGrid.buttonOn",
+            "cards": "cardGrid.cards",
+            "eyebrow": "cardGrid.eyebrow",
+            "title": "cardGrid.title"
+          },
+          "heading": {
+            "text": "heading.text"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "text": {
+            "text": "text.text"
+          }
+        },
+        "style": {},
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;color:#4A4234\">heading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0 0 8px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12\">cardGrid.eyebrow</p><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;line-height:1.25;font-weight:600;color:#4A4234\">cardGrid.title</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;\"><tr><td style=\"padding:24px;background:#FFFFFF;border:1px solid #E9E1D4;border-radius:16px\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;line-height:1.25;font-weight:600;color:#4A4234\">callout.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">callout.body</p><div style=\"height:12px;line-height:12px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">callout.buttonLabel</a></div></td></tr></table></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "heading.text\n\nprose.text\n\ncardGrid.eyebrow\ncardGrid.title\n\n---\n\ncallout.title\ncallout.body\ncallout.buttonLabel: \n\ntext.text"
+      }
+    },
+    {
+      "id": "template-07",
+      "layout": {
+        "rows": [
+          {
+            "id": "r0",
+            "columns": 1,
+            "cells": [
+              [
+                "displayHeading"
+              ]
+            ]
+          },
+          {
+            "id": "r1",
+            "columns": 1,
+            "cells": [
+              [
+                "prose"
+              ]
+            ]
+          },
+          {
+            "id": "r2",
+            "columns": 1,
+            "cells": [
+              [
+                "image"
+              ]
+            ]
+          },
+          {
+            "id": "r3",
+            "columns": 1,
+            "cells": [
+              [
+                "callout"
+              ]
+            ]
+          },
+          {
+            "id": "r4",
+            "columns": 1,
+            "cells": [
+              [
+                "divider"
+              ]
+            ]
+          },
+          {
+            "id": "r5",
+            "columns": 1,
+            "cells": [
+              [
+                "text"
+              ]
+            ]
+          }
+        ],
+        "content": {
+          "callout": {
+            "body": "callout.body",
+            "buttonLabel": "callout.buttonLabel",
+            "buttonUrl": "callout.buttonUrl",
+            "title": "callout.title"
+          },
+          "displayHeading": {
+            "text": "displayHeading.text"
+          },
+          "image": {
+            "alt": "image.alt",
+            "aspect": "image.aspect",
+            "src": "image.src"
+          },
+          "prose": {
+            "text": "prose.text"
+          },
+          "text": {
+            "text": "text.text"
+          }
+        },
+        "style": {
+          "displayHeading": {
+            "align": "displayHeading.align"
+          }
+        },
+        "hidden": []
+      },
+      "output": {
+        "html": "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:30px;line-height:1.25;font-weight:600;color:#4A4234\">displayHeading.text</h2></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">prose.text</p></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;\"><tr><td style=\"padding:24px;background:#FFFFFF;border:1px solid #E9E1D4;border-radius:16px\"><h2 style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;line-height:1.25;font-weight:600;color:#4A4234\">callout.title</h2><div style=\"height:8px;line-height:8px;font-size:0;\">&nbsp;</div><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">callout.body</p><div style=\"height:12px;line-height:12px;font-size:0;\">&nbsp;</div><div style=\"text-align:left\"><a href=\"#\" style=\"display:inline-block;background:#E2912F;color:#FFFFFF;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;padding:13px 30px;border-radius:10px\">callout.buttonLabel</a></div></td></tr></table></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><div style=\"border-top:1px solid #E9E1D4;font-size:0;line-height:0;height:1px\">&nbsp;</div></td></tr>\n</table>\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"width:100%;border-collapse:collapse;margin:0px 0 24px 0;\">\n  <tr><td style=\"text-align:left\"><p style=\"margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#6B6253\">text.text</p></td></tr>\n</table>",
+        "text": "displayHeading.text\n\nprose.text\n\ncallout.title\ncallout.body\ncallout.buttonLabel: \n\n---\n\ntext.text"
+      }
+    }
+  ]
+}

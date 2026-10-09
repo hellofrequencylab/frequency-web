@@ -1,5 +1,7 @@
 'use server'
 
+import { legacySpaceLayoutWriteError, NODE_LAYOUT_WRITE_ERROR } from '@/lib/entity-blocks/legacy-write-guard'
+
 // EMAIL STUDIO — Phase 2 server actions (the two-pane Campaign Workspace).
 //
 // These are the read + write seams the client workspace (components/admin/email-studio/*) calls. An email
@@ -163,6 +165,9 @@ const PRISTINE_COLS = 'subject, preheader, body, sent_at, test_sent_at, schedule
  *  scaffold has row slots but no `content` map), no send / test / schedule / recipients, and not part of
  *  a sequence. Such a row is safe to reuse or silently discard, and should never clutter a list. */
 function isPristineDraft(row: DraftPristineRow): boolean {
+  // Native placements keep content on each node, not in the legacy sibling map.
+  // Inspect the raw marker before any projection can erase authored bench/hidden work.
+  if (legacySpaceLayoutWriteError(row.block_json, null)) return false
   const empty = !(row.subject ?? '').trim() && !(row.preheader ?? '').trim() && !(row.body ?? '').trim()
   const content =
     row.block_json && typeof row.block_json === 'object'
@@ -363,6 +368,12 @@ export async function saveEmailCampaign(
   if (!gate.ok) return { error: gate.error }
 
   const db = createAdminClient()
+  if (patch.layout) {
+    if (legacySpaceLayoutWriteError(patch.layout, null)) return { error: NODE_LAYOUT_WRITE_ERROR }
+    const { data: stored, error: readError } = await db.from('campaigns').select('block_json').eq('id', id).maybeSingle()
+    if (readError || !stored) return { error: 'Could not read the saved email design.' }
+    if (legacySpaceLayoutWriteError(stored.block_json, null)) return { error: NODE_LAYOUT_WRITE_ERROR }
+  }
   const update: Database['public']['Tables']['campaigns']['Update'] = {}
 
   if (typeof patch.subject === 'string') update.subject = patch.subject.slice(0, 300)

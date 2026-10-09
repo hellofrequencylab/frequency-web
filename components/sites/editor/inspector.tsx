@@ -5,31 +5,41 @@ import { Select } from '@/components/ui/select'
 import { useEffect, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { FieldForm, type FieldsSchema, type PushRequest } from '@/components/page-editor/mobile/field-form'
-import type { Config, ContentItem, Data } from '@/lib/page-editor/types'
+import type { Config, ContentItem, Data, Metadata } from '@/lib/page-editor/types'
+import { isServiceListed, type SpaceOffering } from '@/lib/spaces/profile-data'
 import { normalizeWebsiteFields } from '@/lib/sites/website-fields'
 import { useWebsiteFeatureSource } from './feature-source-context'
 import { sectionDeviceLayout, sectionLayoutPreset, SECTION_SPACING_STEPS, snapSectionSpacing } from '@/lib/sites/editor/layout'
 import { type Device, type SectionDisplay } from '@/lib/sites/editor/state'
 
-export function WebsiteInspector({ config, block, doc, device, onChange, onDisplay }: {
-  config: Config; block: ContentItem; doc: Data; device: Device
+export function WebsiteInspector({ config, block, doc, device, metadata, sourceSettingsHref, onChange, onDisplay }: {
+  config: Config; block: ContentItem; doc: Data; device: Device; metadata?: Metadata; sourceSettingsHref?: string
   onChange: (props: Record<string, unknown>) => void; onDisplay: (value: SectionDisplay | null) => void
 }) {
   const [screens, setScreens] = useState<PushRequest[]>([])
   const editableProps = normalizeWebsiteFields(block).props
   const { load, error: sourceError } = useWebsiteFeatureSource()
   const schema = config.components[block.type]?.fields ?? {}
+  // Match SpaceOfferings' canonical catalog precedence, including its listed-only public filter.
+  const centralOfferings: SpaceOffering[] = block.type === 'SpaceOfferings' && Array.isArray(metadata?.space?.profile?.offerings) ? metadata.space.profile.offerings : []
+  const catalogOfferings = centralOfferings.length > 0
+  const shownOfferings = centralOfferings.filter((item) => isServiceListed(item) && (item.title || item.blurb))
   const liveFeatures = block.type === 'FeatureGrid' && ['offerings', 'events', 'memberships', 'tickets'].includes(String(block.props.source))
   useEffect(() => {
     if (liveFeatures && typeof block.props.id === 'string') void load(block.props.id, String(block.props.source))
   }, [liveFeatures, block.props.id, block.props.source, load])
-  const fields = Object.fromEntries(Object.entries(schema).filter(([key, f]) => f.type !== 'slot' && !(liveFeatures && key === 'items'))) as FieldsSchema
+  const fields = Object.fromEntries(Object.entries(schema).filter(([key, f]) => f.type !== 'slot' && !((liveFeatures || catalogOfferings) && key === 'items')).map(([key, field]) => [key, field.type === 'array' ? { ...field, getItemSummary: (item: unknown, index: number) => {
+    const row = item && typeof item === 'object' ? item as Record<string, unknown> : {}
+    const title = [row.title, row.name].find((value) => typeof value === 'string' && value.trim())
+    return typeof title === 'string' ? title.trim() : field.getItemSummary?.(item, index) || `Item ${index + 1}`
+  } } : field])) as FieldsSchema
   const sub = screens.at(-1)
   const display = sectionDeviceLayout(doc, block.props.id!, device)
   const live = /^(SpaceEvents|LiveEvents|SpaceCommunity|CirclesGrid|SpacePractices|SpaceFAQ)$/.test(block.type) || liveFeatures
   return <>
     {block.type === 'FeatureGrid' && <label className="we-field">Content source<Select wrapperClassName="!contents [&>svg]:hidden" style={{ appearance: 'auto', minHeight: 0, boxShadow: 'none', transition: 'none' }} value={liveFeatures ? String(block.props.source) : 'custom'} onChange={(e) => onChange({ ...block.props, source: e.target.value })}><option value="custom">Authored cards</option><option value="offerings">Space offerings</option><option value="events">Space events</option><option value="memberships">Space memberships</option><option value="tickets">Space tickets</option></Select></label>}
     {liveFeatures && sourceError && <p className="we-note" role="alert">{sourceError}</p>}
+    {catalogOfferings && <div className="we-proposal"><strong>Live Space offerings</strong><p>These cards come from your Space’s services catalog. Edit titles, details and prices there; this section controls their presentation.</p><ul>{shownOfferings.map((item, index) => <li key={index}>{item.title || item.blurb}</li>)}</ul>{shownOfferings.length === 0 && <p>No listed offerings are visible.</p>}{sourceSettingsHref && <a className="we-row" href={sourceSettingsHref} target="_blank" rel="noreferrer">Edit Space offerings</a>}</div>}
     {live && <div className="we-proposal"><strong>Live from your Space</strong><p>Published dates and listings update automatically. These fields control how they appear here.</p></div>}
     {sub && <button type="button" className="we-row" onClick={() => setScreens((s) => s.slice(0, -1))}><ChevronLeft size={16} />{sub.title}</button>}
     <FieldForm fields={sub?.fields ?? fields} value={sub?.value ?? editableProps} onChange={sub?.onChange ?? onChange} onPushScreen={(s) => setScreens((stack) => [...stack, s])} />

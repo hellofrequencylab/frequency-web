@@ -1,3 +1,4 @@
+import type { EmailRenderLayout } from './render-layout'
 // Email Studio (2026) — the themed EMAIL SHELL. Wraps a rendered block body (lib/email-studio/render.ts) in
 // the outer email document: a warm DAWN canvas, a centered white card, a Frequency brand header (wordmark or
 // logo image), the body, and a CAN-SPAM footer (physical address + one-click unsubscribe link). Mirrors the
@@ -186,7 +187,7 @@ interface CompileEmailOptions extends RenderEmailOptions {
  * per recipient). Pure + fail-safe.
  */
 export function compileEmailDoc(
-  doc: EmailDoc,
+  doc: Omit<EmailDoc, 'layout'> & { layout: EmailRenderLayout },
   opts: CompileEmailOptions = {},
 ): { html: string; text: string; subject: string; preheader: string } {
   const { html: body, text } = renderEmailLayout(doc.layout, opts)
