@@ -302,6 +302,7 @@ ai_hold_attempt                  internal
 ai_budget_status_today                  internal
 ai_member_turns_today                  internal
 
+claim_space_email_domain_operation internal
 # EMAIL-003: inactive durable acceptance ledger, service-role only.
 prepare_email_provider_attempt        internal
 settle_email_provider_attempt         internal

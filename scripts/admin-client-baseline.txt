@@ -26,6 +26,14 @@
 # This declaration permits only this reviewed importer; SQL replay/RLS and worker integration
 # remain OPEN acceptance gates, not waived by the service boundary declaration.
 #
+# EMAIL-012: email-domain-onboarding.ts is a server-only owner-authorized provisioning boundary.
+# Every setup/check/sender action reaches the EMAIL-011 current-owner guard, requiring paid capability
+# except explicit Frequency reset. Domain provisioning verifies a Space/owner/domain/operation/nonce
+# signed TXT proof before the service-only lease RPC or any provider create; recovery reuses saved
+# provider identity and persists only the same tenant/domain. Default sender writes require fresh
+# provider readiness and same-Space identity resolution; worker reads select the scoped future default.
+# Operation secrets deny all browser access; this importer declaration does not waive SQL/pilot proof.
+#
 # LIVE-883: lib/ai/accounting.ts uses service-role-only atomic reservation/settlement RPCs.
 # Global and feature aggregates must span Spaces; ai_budget_reservations intentionally denies
 # all member access. This boundary reads/writes accounting attribution, never prompts or tenant content.
@@ -1193,3 +1201,5 @@ lib/spaces/audience-readiness.ts
 lib/spaces/email-identity-registry.ts
 lib/collective/cross-listing-store.ts
 lib/collective/network-report.ts
+
+lib/spaces/email-domain-onboarding.ts

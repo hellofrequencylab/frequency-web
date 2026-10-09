@@ -18,6 +18,8 @@ import { ComposerShell } from '@/components/spaces/email/composer-shell'
 import { CampaignList } from '@/components/spaces/email/campaign-list'
 import { AnalyticsPanel } from '@/components/spaces/email/analytics-panel'
 import { SuppressionList } from '@/components/spaces/email/suppression-list'
+import { EmailIdentitySetup } from '@/components/spaces/email/email-identity-setup'
+import { asSpacePlan, SPACE_EMAIL_CUSTOM_IDENTITY_KEY } from '@/lib/pricing/plans'
 import { RecentSends } from '@/components/spaces/email/recent-sends'
 
 // EMAIL BODY — the chrome-free campaign-authoring surface, lifted out of the standalone /settings/email
@@ -65,8 +67,13 @@ export async function EmailBody({ slug }: { slug: string }) {
   // entitlement check PLUS the featureAllowed('space_email') plan-ladder check. A staff janitor keeps the
   // read-only preview. The separate per-space email kill-switch (isSpaceEmailEnabled) still governs SENDING.
   const caps = await getSpaceCapabilities(space, viewerProfileId)
+  const identitySetup = !staffViewing && space.ownerProfileId === viewerProfileId
+    ? <EmailIdentitySetup spaceId={space.id} slug={space.slug} domain={space.domain} paidPlan={asSpacePlan(space.plan) !== 'free'} paid={asSpacePlan(space.plan) !== 'free' && spaceHasEntitlement(space, SPACE_EMAIL_CUSTOM_IDENTITY_KEY)} />
+    : null
   if (!staffViewing && !(await spaceFunctionAccessLive(space, 'email', caps.role, space.plan))) {
     return (
+      <>
+      {identitySetup}
       <FeatureLockedNotice
         brandName={brandName}
         slug={space.slug}
@@ -79,6 +86,7 @@ export async function EmailBody({ slug }: { slug: string }) {
         featureKey="space_email"
         currentPlan={space.plan}
       />
+      </>
     )
   }
 
@@ -100,6 +108,7 @@ export async function EmailBody({ slug }: { slug: string }) {
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       <div className="space-y-8">
+        {identitySetup}
         {!emailOn && (
           <EmailEnableCard spaceId={space.id} slug={space.slug} readOnly={staffViewing} />
         )}
