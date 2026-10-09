@@ -39,3 +39,12 @@ it('accepted replay survives later suppression without a new dispatch', async ()
   expect(mocks.suppressed).not.toHaveBeenCalled()
   expect(mocks.send).not.toHaveBeenCalled()
 })
+
+it('legacy rollout uses the same single transport without inventing a durable acceptance attempt', async () => {
+  vi.stubEnv('EMAIL_PROVIDER_ACCEPTANCE_ENABLED', '')
+  mocks.send.mockResolvedValue({ data: { id: 'legacy-accepted' }, error: null })
+  expect(await sendRawEmail(payload)).toEqual({ id: 'legacy-accepted' })
+  expect(mocks.send).toHaveBeenCalledTimes(1)
+  expect(mocks.send).toHaveBeenCalledWith(expect.objectContaining(payload), undefined)
+  expect(mocks.rpc).not.toHaveBeenCalled()
+})

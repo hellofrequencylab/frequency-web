@@ -12,7 +12,7 @@
  * so the app never crashes due to a missing mail config.
  */
 
-import { Resend } from 'resend'
+import { Resend, type CreateEmailOptions } from 'resend'
 import { acceptEmailForJob, providerAcceptanceEnabled, readAcceptedEmailForJob } from '@/lib/comms/email-provider-acceptance'
 import { TerminalQueueError } from '@/lib/queue/terminal-error'
 import { readEmailDeliveryContext, type EmailDeliveryContextV1 } from '@/lib/comms/email-delivery-contract'
@@ -173,11 +173,13 @@ export async function sendRawEmail(payload: EmailPayload, attempt?: { queueJobId
     return { id: null }
   }
   const providerPayload = { from: from ?? FROM, ...(replyTo ? { replyTo } : {}), ...rest }
+  // Both legacy rollout and durable acceptance use the same SDK transport boundary.
+  const sendProvider = (frozen: CreateEmailOptions, options?: { idempotencyKey: string }) => client.emails.send(frozen, options)
   if (providerAcceptanceEnabled() || attempt?.providerAcceptanceRequired) {
     if (!attempt?.queueJobId) throw new TerminalQueueError('Email acceptance requires trusted queue job context')
-    return acceptEmailForJob(attempt.queueJobId, providerPayload, (frozen, options) => client.emails.send(frozen, options))
+    return acceptEmailForJob(attempt.queueJobId, providerPayload, sendProvider)
   }
-  const { data, error } = await client.emails.send(providerPayload)
+  const { data, error } = await sendProvider(providerPayload)
   if (error) {
     throw new Error(`[email] send failed: ${typeof error === 'string' ? error : JSON.stringify(error)}`)
   }
