@@ -97,6 +97,14 @@ At each phase completion, report shipped/reviewable PRs and commits, canonical p
 | mailbox-sync | mailbox-forwarding, attachments | Separate opt-in adapters for a nominated Workspace/M365 shared mailbox; minimal OAuth, bounded backfill, cursor repair, dedupe, truthful sent transport and revoke. |
 | launch-proof | baseline, campaign-workspace, attachments, dm-notifications, journey-workspace, conversion-reporting, delivery-operations, ai-assistance, mailbox-forwarding | Two-Space isolation, pilot user-triggered send/reply/authentication, fault/concurrency tests, real mailbox observations, measured objectives and rollback readiness. |
 
+## Parallel implementation and deployment boundaries
+
+Build disjoint dependency-ready packets in isolated branches. Assign delivery/outbox, identity/domain and campaign/account experience work separately; integrate shared sender, router, schema and template seams in dependency order. Existing editor and AI-accounting branches must finish their current release before email production rollout. Re-read active PR ownership and refresh main at each integration checkpoint; a local packet test does not prove compatibility with later upstream changes.
+
+Every feature PR closes one canonical row and changes at most **40 files**, counting the actual diff against its PR base. Target 15 or fewer. Split larger features into independently deployable prerequisites with their own consequence probes, not arbitrary fragments of an unusable feature. Do not apply a sweep exemption to feature work. A prerequisite row uses a distinct subpacket reference so it cannot prematurely close the parent packet.
+
+Build across successive waves: delivery contract and baseline; atomic delivery and paid identity policy; fresh dispatch policy, provider acceptance and identity registry; durable events and domain setup; receiving and campaign accounting; complete inbox/campaign experiences; notifications and journeys; reporting/operations and opt-in mailbox adapters; integrated launch proof. Overlap waves only where dependencies and ownership permit. Keep additive schema rollout, consumer readiness, dispatch activation and actual mailbox acceptance separately evidenced. Prepare reviewable branches while external release work finishes, then deploy each approved green unit in dependency order and verify it before activating dependent senders.
+
 ## Detailed delivery and recovery specifications
 
 Legacy F/I/P labels below identify design detail groups, not phase status. The authoritative phases and packet closure keys are the 0–12 matrix above.
