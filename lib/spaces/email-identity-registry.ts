@@ -5,7 +5,11 @@ import { formatDisplayName } from '@/lib/comms/from-address'
 import { spaceHasEntitlement } from './entitlements'
 import { asSpacePlan, SPACE_EMAIL_CUSTOM_IDENTITY_KEY } from '@/lib/pricing/plans'
 import { spaceEmailIdentityPolicy, type EmailIdentityPolicySpace } from './email-identity-policy'
-import { retrieveEmailDomainVerification } from './email-domain-provider'
+import { createEmailProviderDomain, retrieveEmailDomainVerification } from './email-domain-provider'
+import { emailOwnershipChallenge, verifyEmailDomainOwnership } from './email-domain-ownership'
+import { parseSiteDomain } from '@/lib/sites/domain'
+import { siteDomainStatus } from '@/lib/sites/vercel-domains'
+import { emailDomainDnsInstructions, type EmailDnsRecord } from './email-domain-dns'
 
 // Scoped cast until integration generates the additive registry's database types.
 type Query = {
@@ -29,8 +33,8 @@ async function requireOwner(spaceId: string, requirePaid = true) {
   return space
 }
 
-/** Attach an existing provider domain only after direct provider confirmation. Provisioning is separate. */
-export async function registerSpaceEmailDomain(spaceId: string, domain: string, providerId: string) {
+/** Prove DNS control, then provision internally; callers cannot attach arbitrary account domain IDs. */
+export async function registerSpaceEmailDomain(spaceId: string, domain: string, ownershipToken: string) {
   const space = await requireOwner(spaceId)
   const normalized = domain.toLowerCase().trim()
   if (!/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/.test(normalized) || normalized.length > 253)
@@ -39,11 +43,14 @@ export async function registerSpaceEmailDomain(spaceId: string, domain: string, 
   const owned = space.domain?.toLowerCase()
   if (!owned || (normalized !== owned && !normalized.endsWith(`.${owned}`)))
     throw new Error('Connect this domain to the Space before registering its email identity.')
+  await verifyEmailDomainOwnership(spaceId, space.owner_profile_id, normalized, ownershipToken)
+  const provisioned = await createEmailProviderDomain(normalized)
+  const providerId = provisioned.id
   const verified = await retrieveEmailDomainVerification(providerId, normalized)
   const { data, error } = await table('space_email_domains').insert({ space_id: spaceId, domain: normalized,
     provider_domain_id: providerId, sending_verified: verified.sendingVerified, last_verified_at: new Date().toISOString() }).select('id').single()
   if (error || !data) throw new Error('Could not register the email domain.')
-  return String(data.id)
+  return { domainId: String(data.id), dns: emailDomainDnsInstructions(normalized, provisioned.records as EmailDnsRecord[], false) }
 }
 
 export async function createSpaceEmailIdentity(spaceId: string, domainId: string, localPart: string, displayName: string) {
@@ -81,4 +88,17 @@ export async function pauseSpaceEmailIdentity(spaceId: string, identityId: strin
   const { data, error } = await table('space_email_identities').update({ paused_at: new Date().toISOString() })
     .eq('id', identityId).eq('space_id', spaceId).select('id').maybeSingle()
   if (error || !data) throw new Error('Could not pause the email identity.')
+}
+
+/** Manual setup preparation; website verification is shown separately and never replaces TXT proof. */
+export async function prepareSpaceEmailDomain(spaceId: string, rawDomain: string) {
+  const space = await requireOwner(spaceId)
+  const parsed = parseSiteDomain(rawDomain)
+  if (!parsed.ok) throw new Error(parsed.error)
+  if (!space.domain || (parsed.domain !== space.domain && !parsed.domain.endsWith(`.${space.domain}`)))
+    throw new Error('Connect this domain to the Space before preparing email.')
+  return { domain: parsed.domain, ownership: emailOwnershipChallenge(spaceId, space.owner_profile_id, parsed.domain),
+    website: await siteDomainStatus(space.domain), automaticDnsAvailable: false as const,
+    receivingDomain: `reply.${space.domain}`,
+    instruction: 'Add the ownership TXT record, then check again. Keep existing mailbox MX records.' }
 }
