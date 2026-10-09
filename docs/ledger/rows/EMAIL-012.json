@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-012",
+  "title": "Prepare manual Space email domain onboarding with tenant-bound DNS ownership proof",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/spaces/email-domain-ownership.ts",
+    "ref": "PROG-EMAIL1 packet:domain-onboarding-preparation"
+  },
+  "detail": "Draft preparation: email-specific signed one-hour TXT proof binds authenticated owner, Space and domain, verifies joined DNS strings, rejects forged/stale/mismatched state. Canonical site domain parser reused; website verifier shown separately and assigned website domain never replaces email DNS control proof. Registry no longer accepts caller provider ID: only creates provider domain internally after proof, obtains provider verification directly and returns exact provider DNS values for manual setup. Sending/receiving DNS readiness separate; apex receiving refused in favor of reply subdomain, no DNS writes or MX replacement. NOT full domain onboarding acceptance: no integrated wizard/receiving provisioning or durable provisioning operation recovery yet. Resend-success/database-failure must reconcile rather than blindly retry. SQL/RLS acceptance from EMAIL-011 remains unrun. No provider API or DNS mutation performed.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-08",
+    "evidence": "Fixture tests cover tenant/owner/domain token mismatch, expiry, DNS delay/error and split TXT, provider DNS values, separate readiness/apex MX preservation; targeted lint. Keep open until integrated setup/recovery state machine, controlled owner domain verification, provider account prerequisites and SQL acceptance are proven."
+  },
+  "wave": "W7"
+}

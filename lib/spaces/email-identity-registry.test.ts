@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const state = vi.hoisted(() => ({ caller: 'owner', error: false, verified: true, providerFails: false,
+const state = vi.hoisted(() => ({ caller: 'owner', error: false, verified: true, providerFails: false, ownershipFails: false, provisions: 0,
   space: { id: 's1', owner_profile_id: 'owner', domain: 'example.com', plan: 'business', entitlements: { billing: { space_email_custom_identity: true } } },
   identity: { id: 'i1', space_id: 's1', domain_id: 'd1', local_part: 'hello', display_name: 'Example', paused_at: null as string | null },
   domain: { id: 'd1', space_id: 's1', domain: 'example.com', provider_domain_id: 'p1', paused_at: null as string | null }, writes: [] as Record<string, unknown>[] }))
 vi.mock('@/lib/auth', () => ({ getMyProfileId: async () => state.caller }))
-vi.mock('./email-domain-provider', () => ({ retrieveEmailDomainVerification: async () => {
+vi.mock('./email-domain-ownership', () => ({ verifyEmailDomainOwnership: async () => { if (state.ownershipFails) throw new Error('Ownership TXT missing') }, emailOwnershipChallenge: () => ({ token: 'fixture' }) }))
+vi.mock('@/lib/sites/vercel-domains', () => ({ siteDomainStatus: async () => ({ verified: false }) }))
+vi.mock('./email-domain-provider', () => ({ createEmailProviderDomain: async () => { state.provisions++; return { id: 'p1', records: [] } }, retrieveEmailDomainVerification: async () => {
   if (state.providerFails) throw new Error('provider unavailable')
   return { sendingVerified: state.verified }
 } }))
@@ -22,7 +24,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name
   return query
 } }) }))
 import { createSpaceEmailIdentity, registerSpaceEmailDomain, resolveSpaceEmailIdentity, pauseSpaceEmailIdentity } from './email-identity-registry'
-beforeEach(() => { state.caller = 'owner'; state.error = false; state.verified = true; state.providerFails = false;
+beforeEach(() => { state.caller = 'owner'; state.error = false; state.verified = true; state.providerFails = false; state.ownershipFails = false; state.provisions = 0;
   state.space.plan = 'business'; state.identity.paused_at = null; state.domain.paused_at = null; state.writes = [] })
 describe('live Space identity registry', () => {
   it('resolves From from trusted registry and current provider verification', async () => {
@@ -57,6 +59,11 @@ describe('live Space identity registry', () => {
     state.space.plan = 'free'
     await pauseSpaceEmailIdentity('s1', 'i1')
     expect(state.writes[0].paused_at).toEqual(expect.any(String))
+  })
+  it('never provisions from website assignment alone or caller-supplied provider IDs', async () => {
+    state.ownershipFails = true
+    await expect(registerSpaceEmailDomain('s1', 'example.com', 'arbitrary-provider-id')).rejects.toThrow('Ownership TXT missing')
+    expect(state.provisions).toBe(0); expect(state.writes).toEqual([])
   })
   it('fails closed on database errors without sending', async () => {
     state.error = true
