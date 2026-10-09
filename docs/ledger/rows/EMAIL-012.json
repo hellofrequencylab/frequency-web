@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-012",
+  "title": "Prepare manual Space email domain onboarding with tenant-bound DNS ownership proof",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/spaces/email-domain-ownership.ts",
+    "ref": "PROG-EMAIL1 packet:domain-onboarding-preparation"
+  },
+  "detail": "Owner setup implementation remains draft until database and integrated pilot proof. Registered Studio email-domain fields render through FieldControl on the existing Email settings surface; authenticated server actions prepare a persisted operation and Space/owner/domain/op-ID/random-nonce signed TXT proof. Manual provider-issued DNS records, retry/proof refresh, provider verification check, sender/default selection and explicit Frequency reset are available. Durable service-only operation lease prevents concurrent/retried provider creation; provider-success/registry-failure replays saved provider identity; timeout recovery reconciles provider list instead of blind create. Purpose defaults use composite tenant FK; fresh worker default resolver snapshots identity for future messages while queued custom selections retain their original identity. Existing paid capability reconciliation still requires authorized resolver rollout; capability is not loosened. Receiving is explicitly disconnected and separately gated; no automatic DNS or apex MX change. SQL/RLS/default/lease replay and complete actual setup-to-send/reply proof remain unverified. No live DB, provider, DNS, send or deployment mutations performed.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-08",
+    "evidence": "Application fixture tests cover owner/TXT refusal before provider create, persistence recovery without second create, ambiguous acceptance reconciliation, busy leases, signed operation-ID/nonce mismatch, manifest validation and free/paid settings presentation. Tree grant/function/FK/migration checks run separately; 8 new pgTAP behavior assertions authored but NOT EXECUTED (database unavailable). Keep OPEN until migration replay/RLS/service-lease proof, browser wizard review and owner-triggered authenticated sending/reply path pass; receiving activation remains a separate gate."
+  },
+  "wave": "W7"
+}
