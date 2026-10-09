@@ -13,7 +13,7 @@
   "verify": {
     "kind": "manual",
     "checked": "2026-10-08",
-    "evidence": "Prior integrated fixture coverage passed; this main-target release must rerun after EMAIL-010 policy dependency lands. Static source gates and exact results recorded in release report. SQL pgTAP tenant isolation/auth-profile mapping, mutation refusal, composite FK and service-role operations are authored but NOT RUN. Keep OPEN until migration replay, RLS consequences, current provider failure holds and actual worker integration are verified."
+    "evidence": "Main-target registry/provider/policy fixture suite: 25 tests PASS after merging main a2a1631. Targeted lint/diff PASS. Table grants, FK indexes and migration filename uniqueness PASS from source tree. Eleven pgTAP assertions authored for tenant isolation/auth-profile mapping, mutation refusal, composite FK and service-role operations; SQL NOT RUN because local database runtime unavailable. Live migration ledger comparison SKIPPED without credentials. Keep OPEN until migration replay, RLS consequences, actual worker integration and pilot verification are proven."
   },
   "wave": "W7"
 }
