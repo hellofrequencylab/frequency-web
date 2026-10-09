@@ -70,6 +70,7 @@ beforeEach(() => {
 // LIVE-228: Collective merged into Business at $49. Business carries the full paid depth; Non Profit
 // grants the same set; Independent adds branding (whitelabel).
 const BUSINESS_DEPTH = {
+  space_email_custom_identity: true,
   crm: true,
   'crm.playbooks': true,
   email: true,
