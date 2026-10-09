@@ -1161,6 +1161,7 @@ lib/collective/member-spaces-actions.ts
 lib/collective/member-spaces-store.ts
 lib/collective/extra-space-billing.ts
 
+components/sites/editor/editor-page.tsx
 lib/sites/editor/authorization.ts
 
 lib/loom/authorized-image-upload.ts

@@ -25,7 +25,7 @@
  *  • `space`     — a Space's own page editor at /spaces/[slug]/edit-page (spaces.preferences.pageDocs).
  *  A new surface adds a member here AND a row in SURFACE_CATEGORIES: the exhaustive Record
  *  below makes forgetting the row a TYPE ERROR rather than a silently empty palette. */
-export type EditorSurface = 'marketing' | 'space'
+export type EditorSurface = 'marketing' | 'space' | 'website'
 
 /** The category keys (lib/page-editor/config.tsx `categories`) each surface may offer.
  *
@@ -45,6 +45,7 @@ export type EditorSurface = 'marketing' | 'space'
  *  The generic kit (blocks, layout, content, sections, productStory, media, dynamic) renders from
  *  its own props on every surface — verified block by block — so both surfaces keep all of it. */
 export const SURFACE_CATEGORIES: Record<EditorSurface, readonly string[]> = {
+  website: ['blocks', 'layout', 'content', 'sections', 'productStory', 'media', 'dynamic', 'profile', 'spaceContent'],
   marketing: [
     'blocks',
     'layout',

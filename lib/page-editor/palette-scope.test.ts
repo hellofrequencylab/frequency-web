@@ -55,6 +55,18 @@ describe('the palette scopes to the surface', () => {
     expect(keys).not.toContain(CIRCLES_ONLY)
   })
 
+  it('offers website-bound Space content without member Spotlight or Circles index blocks', () => {
+    const keys = groupKeys('website')
+    expect(keys).toContain('profile')
+    expect(keys).toContain('spaceContent')
+    expect(keys).not.toContain('linkTree')
+    expect(keys).not.toContain('circles')
+    const website = offeredTypes('website')
+    expect(website.has('SpaceAbout')).toBe(true)
+    expect(website.has('SpaceReviews')).toBe(true)
+    expect(website.has('LinkTree')).toBe(false)
+  })
+
   it('actually withholds the blocks, not just the group headings', () => {
     const marketing = offeredTypes('marketing')
     const space = offeredTypes('space')

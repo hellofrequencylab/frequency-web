@@ -840,3 +840,65 @@ person reading this section will re-ask. Both came from `OWN-060`.
 
 ⚠️ **None of O-1…O-5 blocks E0.** They are recorded here so they are answered on time rather than
 discovered late — which is the failure mode this whole document exists to avoid.
+
+
+## Website builder handoff seam
+
+The Claude Design standalone v4 handoff defines the website administration shell,
+with Menswork / Hearts on Fire as its reference skin and DAWN and Midnight supplied
+by `lib/sites/editor/theme-contract.json`. The surrounding toolbar, rails, fields and
+canvas use the active website theme. Rails derive from the website background with
+`--ed-lift`; fields use `--ed-lift2`. Frequency Space profile styling is a separate
+surface. The acceptance slice lives in the merged backlog as `LIVE-EDITOR-SHELL`,
+under E4–E6; the collaborative document and touch program gates remain independent.
+
+The website editor uses existing registered page blocks and persists its document in
+`preferences.websiteEditor`. Draft, published and bounded version snapshots have
+separate roles. Public readers consume only the published snapshot; review comments
+stay in the private draft. Saving a draft never replaces the published snapshot.
+Section spacing and visibility inherit desktop values; tablet and phone carry sparse
+overrides and can reset to the inherited value. Website admin credentials gate
+editing; a staff preview pass does not authorize edits. Nested block IDs participate
+in comment validation, so a thread pinned inside a registered content slot remains
+saveable; duplicate IDs and malformed retained snapshots are rejected.
+
+Scheduled publishing captures the reviewed snapshot at scheduling time. Later draft
+edits cannot change that scheduled content. The existing publish-scheduled cron
+activates due snapshots atomically, increments the revision, records the version,
+and expires the website cache. Concurrent editor saves fail explicitly on a stale
+revision. This remains a snapshot editor rather than the E0 Yjs document program.
+
+Host-authorized presence heartbeats write only the caller's per-site row to the
+service-only `website_editor_presence` table. The shell polls every five seconds;
+peers last seen within fifteen seconds supply actual display names and section-relative
+cursor coordinates. Presence does not authorize document writes or imply CRDT merging.
+
+The website's Loom picker uses an action context scoped to the host-authorized
+website pass rather than Frequency session cookies. Every browse and upload
+re-checks the current owner/team role and binds the Space and creator server-side.
+It offers the site's image library; protected masters and other-site scopes are
+excluded. Uploads reuse the canonical Loom ingestion pipeline, including EXIF
+stripping, checksum deduplication, storage quota, metadata capture and cleanup on
+failed row insertion. The default Frequency picker retains its existing session
+authorization and scope behavior.
+
+The handoff's visitor audience choice (Everyone / Members) remains an unimplemented
+E10 capability. Current section visibility is a device override only. Public website
+renders are anonymous and cached, and the host-only admin pass authorizes the editor,
+not ordinary member visitors. A member audience requires an authenticated website
+visitor handoff and a server-side omission/data boundary before its control can be
+represented as functional. CSS hiding alone cannot protect section bytes. Exact
+handoff acceptance remains open for this capability and the separate E0 CRDT program.
+
+Mock account names, unpublished history, teammates and review comments are not
+production records. Website copy and image sources come from the Space's existing
+content and original media URLs; the screenshot crops in the handoff are references.
+
+Website snapshots may also carry `brand.logo` and `brand.accent`. Missing fields
+inherit existing site settings; explicit null clears the field. These overrides
+follow the same draft, scheduled snapshot and published boundary as pages, without
+mutating Space profile branding. Custom DAWN/Midnight accents apply only when the
+website snapshot explicitly supplies them, preserving each theme's default contract.
+Changing a FeatureGrid live source resolves current rows through an own-host
+authorized server action and updates render metadata only. Source-aware metadata
+keys prevent rows from the previously selected source appearing during loading.

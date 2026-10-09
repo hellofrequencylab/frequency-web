@@ -19,6 +19,7 @@ import { mensworkNowLine } from '@/components/sites/menswork-page'
 import { loadMensworkLive } from '@/lib/sites/menswork-data'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import type { ReactNode } from 'react'
+import { WebsiteEditorPage } from '@/components/sites/editor/editor-page'
 
 // THE WEBSITE'S ADMIN PAGES (LIVE-864, owner ruling 2026-10-07: "Those are Admin display pages on the
 // site. Make them look exactly like the design system."). `/admin/overview` and `/admin/calendar` on a
@@ -42,10 +43,13 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
   const view = siteAdminView(viewParam)
   const host = normalizeHost(decodeURIComponent(hostParam))
   const space = view ? await resolveHostedSpace(host) : null
-  if (!view || !space || !readWebsitePublished(space.preferences) || parseSpaceTheme(space.preferences) !== 'menswork') notFound()
+  if (!view || !space) notFound()
+  if (view !== 'editor' && (!readWebsitePublished(space.preferences) || parseSpaceTheme(space.preferences) !== 'menswork')) notFound()
 
   const token = (await cookies()).get(SITE_ADMIN_COOKIE)?.value
   if (!(await siteAdminAllowed(token, host, space))) redirect(`${appOrigin()}${siteAdminHandoffPath(space.slug, view)}`)
+
+  if (view === 'editor') return <WebsiteEditorPage host={host} space={space} token={token!} />
 
   const brandName = space.brandName?.trim() || space.name
   const now = new Date()
