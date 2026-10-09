@@ -24,7 +24,9 @@ import {
   type CampaignInput,
 } from '@/lib/spaces/campaigns'
 import { setSpaceEmailEnabled as setSpaceEmailEnabledImpl } from '@/lib/spaces/email-toggle'
-import { audienceCount as audienceCountImpl, type AudienceFilter } from '@/lib/spaces/audiences'
+import { type AudienceFilter } from '@/lib/spaces/audiences'
+import { readAudienceEligibility } from '@/lib/spaces/audience-readiness'
+import { unavailableAudienceEligibility, type AudienceEligibilitySummary } from '@/lib/spaces/audience-eligibility'
 import { getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -88,20 +90,21 @@ export async function sendSpaceCampaign(
   return res
 }
 
-/** The live recipient count for an audience filter (the picker shows it as the owner picks). Gated on
- *  canEditProfile (owner / admin / editor) OR a janitor staff preview, so a non-editor never probes a
- *  Space's contact count. FAIL-SAFE to 0. The COUNT here can never disagree with the eventual send,
- *  because both resolve through resolveAudience. */
-export async function countSpaceAudience(
-  spaceId: string,
-  filter: AudienceFilter,
-): Promise<number> {
+/** Read-only aggregate preview. Authorize before the service-role reads; never return addresses. */
+export async function previewSpaceAudience(
+  spaceId: string, filter: AudienceFilter, pickedTopic?: unknown,
+): Promise<AudienceEligibilitySummary> {
   const caller = await getCallerProfile()
   const space = await getSpaceById(spaceId)
-  if (!space) return 0
+  if (!space) return unavailableAudienceEligibility()
   const caps = await getSpaceCapabilities(space, caller?.id ?? null)
-  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return 0
-  return audienceCountImpl(spaceId, filter)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return unavailableAudienceEligibility()
+  return readAudienceEligibility(spaceId, filter, pickedTopic)
+}
+
+/** Compatibility count now reflects current campaign policy, never raw contact matching. */
+export async function countSpaceAudience(spaceId: string, filter: AudienceFilter): Promise<number> {
+  return (await previewSpaceAudience(spaceId, filter)).eligible
 }
 
 /** Turn this Space's email on / off (the per-Space kill-switch). `acknowledged` is the owner's

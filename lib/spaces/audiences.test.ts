@@ -87,6 +87,7 @@ function contactsBuilder() {
           profile_id: c.profile_id ?? null,
           consent_state: c.consent_state ?? null,
         })),
+        count: db.contacts.filter(c => c.space_id === filters.space_id).length,
         error: null,
       }
     },
@@ -223,6 +224,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 import {
   resolveAudience,
   audienceCount,
+  resolveAudienceCandidatePlan,
   listAudienceTags,
   normalizeTag,
   definitionToFilter,
@@ -561,5 +563,25 @@ describe('listAudienceTags', () => {
 
   it('returns [] for a blank spaceId', async () => {
     expect(await listAudienceTags('')).toEqual([])
+  })
+})
+
+describe('read-only campaign candidates', () => {
+  it('preserves malformed and duplicate rows for exclusion accounting without changing sends', async () => {
+    db.contacts = [
+      { id: 'bad', space_id: 'space-A', email: 'bad', consent_state: 'unknown' },
+      { id: 'one', space_id: 'space-A', email: 'a@example.org', consent_state: 'subscribed' },
+      { id: 'two', space_id: 'space-A', email: 'A@example.org', consent_state: 'subscribed' },
+      { id: 'foreign', space_id: 'space-B', email: 'foreign@example.org', consent_state: 'subscribed' },
+    ]
+    expect((await resolveAudienceCandidatePlan('space-A')).contacts.map(c => c.id)).toEqual(['bad', 'one', 'two'])
+    expect(await resolveAudience('space-A')).toEqual([{ contactId: 'one', email: 'a@example.org' }])
+  })
+  it('refuses incomplete counts and missing/cross-Space saved audiences in preview', async () => {
+    db.contacts = Array.from({ length: 5001 }, (_, i) => ({ id: `c${i}`, email: `c${i}@example.org`, space_id: 'space-A' }))
+    await expect(resolveAudienceCandidatePlan('space-A')).rejects.toThrow('incomplete')
+    db.contacts = []
+    db.segments = [{ id: 'foreign', space_id: 'space-B', definition: {} }]
+    await expect(resolveAudienceCandidatePlan('space-A', { segmentId: 'foreign' })).rejects.toThrow('unavailable')
   })
 })
