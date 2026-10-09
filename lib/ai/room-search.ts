@@ -77,7 +77,7 @@ export async function searchRoom(
     })
     if (error) throw new Error(error.message)
     // Embeddings are free (edge fn); log a zero-cost row for visibility/auditing.
-    void recordAiUsage({ feature: FEATURE, model: 'gte-small', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: 0, profileId })
+    await recordAiUsage({ feature: FEATURE, model: 'gte-small', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: 0, profileId })
     const hits = (data ?? []) as RoomSearchHit[]
     // No semantic hits (e.g. nothing embedded yet) → fall back so search still works.
     return hits.length > 0 ? { hits, mode: 'semantic' } : { hits: await substringSearch(roomId, q, limit), mode: 'text' }

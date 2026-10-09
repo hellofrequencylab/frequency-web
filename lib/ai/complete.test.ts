@@ -39,12 +39,17 @@ function reply(content: Anthropic.Message['content'], usage: Partial<Anthropic.M
   } as Anthropic.Message
 }
 
+vi.mock('./accounting', () => ({ reserveAiAttempt: async () => 'test-reservation', settleAiAttempt: async () => {}, holdAiAttempt: async () => {}, AiAccountingError: Error }))
+
+vi.mock('./usage', () => ({ aiAvailable: async () => true }))
+
 vi.mock('./client', () => ({
   aiEnabled: () => true,
   getAnthropic: () => {
     if (script.clientOff) return null
     return {
       messages: {
+        countTokens: async () => ({ input_tokens: 10 }),
         create: vi.fn(async (params: Anthropic.MessageCreateParams) => {
           recorded.create.push(JSON.parse(JSON.stringify(params)))
           return script.replies.shift() ?? reply([{ type: 'text', text: '', citations: null }])
@@ -124,7 +129,7 @@ describe('runToolLoop keeps the prefix byte-stable across rounds', () => {
       reply([{ type: 'tool_use', id: 't1', name: 'suggest_circle', input: { q: 'swim' }, caller: { type: 'direct' } }]),
       reply([{ type: 'text', text: 'Try the Sunrise Swim.', citations: null }]),
     )
-    const res = await runToolLoop({
+    const res = await runToolLoop({ accounting: { feature: 'vera-chat' },
       system: { stable: 'PERSONA', volatile: 'member facts' },
       cacheSystem: true,
       tools: TOOLS,
@@ -154,7 +159,7 @@ describe('runToolLoop streams when handed onText', () => {
       reply([{ type: 'text', text: 'Found one.', citations: null }], { cache_read_input_tokens: 2000 }),
     )
     const deltas: Array<[string, number]> = []
-    const res = await runToolLoop({
+    const res = await runToolLoop({ accounting: { feature: 'vera-chat' },
       system: { stable: 'PERSONA', volatile: 'facts' },
       cacheSystem: true,
       tools: TOOLS,
@@ -176,7 +181,7 @@ describe('runToolLoop streams when handed onText', () => {
 
   it('stays on the blocking call when onText is absent (whole-document generation unchanged)', async () => {
     script.replies.push(reply([{ type: 'text', text: 'Whole.', citations: null }]))
-    await runToolLoop({ system: 'S', tools: TOOLS, messages: [{ role: 'user', content: 'hi' }], maxRounds: 1, onToolCalls: async () => null })
+    await runToolLoop({ accounting: { feature: 'vera-chat' }, system: 'S', tools: TOOLS, messages: [{ role: 'user', content: 'hi' }], maxRounds: 1, onToolCalls: async () => null })
     expect(recorded.stream).toHaveLength(0)
     expect(recorded.create).toHaveLength(1)
   })
@@ -185,7 +190,7 @@ describe('runToolLoop streams when handed onText', () => {
 describe('completeRaw + usageOf', () => {
   it('carries the cache counts through so cost and ledger see them', async () => {
     script.replies.push(reply([{ type: 'text', text: 'ok', citations: null }], { cache_read_input_tokens: 500 }))
-    const res = await completeRaw({ system: 'S', messages: [{ role: 'user', content: 'hi' }] })
+    const res = await completeRaw({ accounting: { feature: 'vera-chat' }, system: 'S', messages: [{ role: 'user', content: 'hi' }] })
     expect(res.usage.cacheReadInputTokens).toBe(500)
     expect(res.text).toBe('ok')
   })
@@ -197,8 +202,8 @@ describe('completeRaw + usageOf', () => {
 
   it('throws AiUnavailableError when no client is configured (AI_DISABLED semantics intact)', async () => {
     script.clientOff = true
-    await expect(completeRaw({ system: 'S', messages: [] })).rejects.toBeInstanceOf(AiUnavailableError)
-    await expect(runToolLoop({ system: 'S', tools: [], messages: [], maxRounds: 1, onToolCalls: async () => null })).rejects.toBeInstanceOf(
+    await expect(completeRaw({ accounting: { feature: 'vera-chat' }, system: 'S', messages: [] })).rejects.toBeInstanceOf(AiUnavailableError)
+    await expect(runToolLoop({ accounting: { feature: 'vera-chat' }, system: 'S', tools: [], messages: [], maxRounds: 1, onToolCalls: async () => null })).rejects.toBeInstanceOf(
       AiUnavailableError,
     )
   })

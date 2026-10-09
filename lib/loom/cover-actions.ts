@@ -27,11 +27,10 @@
 // Every one of those is re-checked here; the client is never trusted.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { after } from 'next/server'
 import { getCallerProfile } from '@/lib/auth'
 import { fail, ok, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { studioManifest } from '@/lib/studio/registry'
 import type { LedgerEntry } from '@/lib/studio/kernel/ledger'
 import { getSpaceById, getSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/store'
@@ -52,9 +51,6 @@ import {
 
 /** The budget key + ledger feature for a generated cover (lib/ai/budget.ts). */
 const FEATURE = 'entity-cover'
-
-/** Recraft's list price for one raster generation, for the ledger. Matches the Loom Studio. */
-const COST_USD = 0.04
 
 /** What the caller gets back: the stored image, and the provenance that marks it as AI-made. */
 export interface GeneratedCover {
@@ -172,21 +168,12 @@ export async function generateEntityCoverAction(input: {
   })
 
   try {
-    const results = await generateImages({ prompt, lane: COVER_LANE, size: COVER_SIZE, n: 1 })
+    const results = await generateImages({ accounting: { feature: FEATURE, profileId: caller.id }, prompt, lane: COVER_LANE, size: COVER_SIZE, n: 1 })
     const first = results[0]
     if (!first?.url) return fail('Vera could not draw one this time. Try again, or add your own image.')
 
     // Spend is recorded whether or not the file survives the upload: the generation already
     // happened and the vendor already charged for it.
-    after(() =>
-      recordAiUsage({
-        feature: FEATURE,
-        model: 'recraft-v3',
-        usage: { inputTokens: 0, outputTokens: 0 },
-        costUsd: COST_USD,
-        profileId: caller.id,
-      }),
-    )
 
     const { bytes, contentType } = await downloadRecraft(first.url)
     const mime = contentType.startsWith('image/') ? contentType : 'image/png'
