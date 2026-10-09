@@ -301,3 +301,6 @@ ai_settle_attempt                  internal
 ai_hold_attempt                  internal
 ai_budget_status_today                  internal
 ai_member_turns_today                  internal
+
+# EMAIL-002: inactive atomic reply bridge, service-role only.
+enqueue_conversation_email_intent     internal
