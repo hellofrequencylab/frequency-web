@@ -20,7 +20,7 @@ import type { AutonomyControlsData } from './load-autonomy'
 type Data = Awaited<ReturnType<typeof getAiControlsData>>
 type FeatureRow = Data['rows'][number]
 
-const fmtUsd = (n: number) => `$${n.toFixed(2)}`
+const fmtUsd = (n: number | null) => n === null ? 'Unavailable' : `$${n.toFixed(2)}`
 const fmtWhen = (s: string | null) =>
   s ? new Date(s).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''
 
@@ -33,7 +33,7 @@ export function AiControlsView({
   autonomy?: AutonomyControlsData
   onChanged?: () => void
 }) {
-  const { enabled, envReady, rows, totalSpend, helpChunks, events } = data
+  const { enabled, envReady, rows, totalSpend, accountingAvailable, helpChunks, events } = data
 
   const usageColumns: ColumnDef<FeatureRow>[] = [
     { key: 'feature', header: 'Feature', render: (r) => <span className="text-text">{r.feature}</span> },
@@ -45,13 +45,17 @@ export function AiControlsView({
         <span className={r.spent >= r.cap ? 'font-semibold text-danger' : 'text-muted'}>{fmtUsd(r.spent)}</span>
       ),
     },
+    { key: 'reserved', header: 'Reserved', type: 'currency', render: (r) => fmtUsd(r.reserved) },
+    { key: 'uncertain', header: 'Uncertain today', type: 'currency', render: (r) => (
+      <span title={r.pendingIds.join(', ')}>{fmtUsd(r.uncertain)}{r.uncertain > 0 && <span className="sr-only"> References: {r.pendingIds.join(', ')}</span>}</span>
+    ) },
     { key: 'cap', header: 'Daily cap', type: 'currency', render: (r) => <span className="text-subtle">{fmtUsd(r.cap)}</span> },
     {
       key: 'state',
       header: 'State',
       align: 'right',
       render: (r) =>
-        r.spent >= r.cap ? (
+        r.spent + r.reserved + r.uncertain >= r.cap ? (
           <StatusChip tone="danger" size="sm">
             At cap
           </StatusChip>
@@ -103,10 +107,15 @@ export function AiControlsView({
         description={
           <>
             Per-feature daily ceilings (<code className="rounded bg-surface-elevated px-1">lib/ai/budget.ts</code>); a
-            feature at its cap pauses itself for the day. {fmtUsd(totalSpend)} spent so far today.
+            feature reserves an estimated amount before each paid request. {fmtUsd(totalSpend)} recorded today. Reserved and uncertain amounts also count toward admission.
           </>
         }
       >
+        {!accountingAvailable && <Banner tone="warning" title="Usage accounting is unavailable">Paid AI requests stay paused until accounting can be verified.</Banner>}
+        {rows.some((row) => row.pendingIds.length > 0) && <details className="mb-3 text-body-sm text-muted">
+          <summary>Pending request references, including earlier days</summary>
+          <ul className="mt-2 space-y-1">{rows.flatMap((row) => row.pendingIds.map((id) => <li key={id}>{row.feature}: <code>{id}</code></li>))}</ul>
+        </details>}
         <DataTable
           rows={rows}
           columns={usageColumns}
