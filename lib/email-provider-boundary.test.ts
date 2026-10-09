@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => { process.env.RESEND_API_KEY = 'fixture-only'; return { send: vi.fn(), rpc: vi.fn(), suppressed: vi.fn(async () => false) } })
 vi.mock('resend', () => ({ Resend: class { emails = { send: mocks.send } } }))
-vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ rpc: mocks.rpc }) }))
+vi.mock('@/lib/queue/outbox', () => ({ enqueue: vi.fn(), claimedEmailProviderRpc: (_job: string, name: string, args: unknown) => mocks.rpc(name, args) }))
 vi.mock('@/lib/suppression', () => ({ isSuppressed: mocks.suppressed }))
 import { sendRawEmail } from './email'
 const payload = { to: 'fixture@example.test', subject: 'Fixture', html: '<p>Fixture</p>' }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mock = vi.hoisted(() => ({ rpc: vi.fn() }))
-vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => mock }))
+vi.mock('@/lib/queue/outbox', () => ({ claimedEmailProviderRpc: (_job: string, name: string, args: unknown) => mock.rpc(name, args) }))
 import { acceptEmailForJob } from './email-provider-acceptance'
 import { TerminalQueueError } from '@/lib/queue/terminal-error'
 const payload = { from: 'Frequency <test@send.example.test>', to: 'fixture@example.test', subject: 'Fixture', html: '<p>Fixture</p>' }

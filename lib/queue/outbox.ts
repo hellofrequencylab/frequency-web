@@ -260,6 +260,25 @@ export function bulkRunAfter(index: number, startedAt: Date = new Date()): Date 
   return new Date(startedAt.getTime() + minute * 60_000)
 }
 
+/** The provider ledger is available only for an actual claimed email job. Never accept a
+ * replacement job ID from argument data; the SQL transaction repeats this check under lock. */
+export async function claimedEmailProviderRpc(
+  queueJobId: string,
+  name: 'read_accepted_email_provider_attempt' | 'prepare_email_provider_attempt' | 'settle_email_provider_attempt',
+  args: Record<string, unknown>,
+): Promise<{ data: unknown; error: { code?: string; message?: string } | null }> {
+  if (!['read_accepted_email_provider_attempt', 'prepare_email_provider_attempt', 'settle_email_provider_attempt'].includes(name)) {
+    throw new TerminalQueueError('Unknown email provider ledger operation')
+  }
+  const client = createAdminClient()
+  const { data: job, error } = await client.from('notification_queue').select('id,kind,status')
+    .eq('id', queueJobId).eq('status', 'processing').in('kind', ['email', 'space-campaign-email']).maybeSingle()
+  if (error) throw new Error('Claimed email job lookup unavailable')
+  if (!job) throw new TerminalQueueError('Provider ledger requires a claimed email job')
+  const rpcClient = client as unknown as { rpc(name: string, args: Record<string, unknown>): Promise<{ data: unknown; error: { code?: string; message?: string } | null }> }
+  return rpcClient.rpc(name, { ...args, p_queue_job_id: queueJobId })
+}
+
 function db() {
   return createAdminClient()
 }
