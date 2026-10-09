@@ -7,22 +7,18 @@
 #                  read path is gated on caller identity.
 #   internal       service_role only. REQUIRES an explicit
 #                  `revoke ... from anon, authenticated` in a migration -- the gate checks.
-#
 # WHY THIS FILE EXISTS. Supabase ships `ALTER DEFAULT PRIVILEGES IN SCHEMA public`, so anon and
 # authenticated hold table grants on every new table the moment it is created, and
 # `REVOKE ... FROM public` does not remove them (ADR-959). Before the 2026-08-10 sweep, only
 # SEVEN of 272 tables carried any explicit grant decision at all.
-#
 # The verdicts were SEEDED FROM THE LIVE DATABASE (RLS + policy state), not guessed:
 #   internal      = RLS on, zero policies
 #   public        = a SELECT policy admitting anon whose USING references no caller identity
 #   authenticated = everything else with policies
-#
 # `public` and `authenticated` are DECLARATIONS. The gate does not verify them -- it cannot read
 # a policy predicate, and it cannot see column grants (ADR-964 was exactly that: a correctly
 # `public` table with an anon-readable stripe_customer_id column). `internal` is the load-bearing
 # one, and it is the only verdict that fails closed. If you are unsure, write `internal`.
-#
 # 41 public · 173 authenticated · 87 internal · 301 total, recounted by check:grants (collective_cross_listings 2026-10-08, LIVE-765: owner-consented Journey and Circle listings, original ownership and access retained, service role only; journey_plan_space_shares 2026-10-07: a Journey co-hosted by a second Space, accepted rows list it there and credit it on the Journey page, service role only; space_spotlight_clicks 2026-10-07, LIVE-856: one row per Spotlight Link card press, no visitor data, service role only; space_domain_purchases 2026-10-06, LIVE-781: a domain a Space bought inside Frequency and its renewal record, service role only; push_devices 2026-10-06, LIVE-720: native app push tokens, own-row read and delete, service-role writes; library_downloads 2026-09-29, LIVE-578: the Loom download record, append only, service-role insert and staff read; circle_channels 2026-09-30, LIVE-666 ADR-1679: the one to three Channels a Circle carries, read by the signed-out Circles index on the session client, written only by the service role; commerce_order_transfers 2026-09-29, LIVE-622 ADR-1614: the split-order transfer ledger, service role only like financial_transactions; library_assets + library_collections + library_collection_items + library_versions moved internal to authenticated 2026-09-29, LIVE-570 ADR-1594: the Loom read by its own Space team on the caller session, library_styles stays internal; space_plan_activity 2026-09-28, LIVE-543: the Plan own record, append only, both sides on the caller session; space_plan_comments 2026-09-28, LIVE-542: the thread under a shared Plan, read and written by both sides on the caller session; space_vera_changes 2026-09-23, PROG-CAL11 slice 3: the Vera change log, read and written by the team on the caller session; space_plans + shares + playbooks + private feeds 2026-09-19, ADR-1468; space_calendar_day_notes moved public to authenticated 2026-09-16, ADR-1387; space_calendar_entries + space_calendar_day_notes added 2026-09-16, ADR-1385/1386; recounted 2026-09-15 with the
 # space_member_benefits recovery, which added three service-role-only tables; before it the line
 # read 81 internal / 276 total, itself recounted 2026-09-15 with LIVE-334,
@@ -329,13 +325,12 @@ walkthrough                          authenticated
 welcomes                             authenticated
 zap_config                           public
 zap_transactions                     authenticated
-
 # Website admin editing: service-role only; browser roles are explicitly revoked.
 website_editor_presence              internal
-
 # LIVE-883: recover the exact already-applied service-only schema; runtime remains open.
 ai_budget_reservations                internal
-
 # EMAIL-002: inactive atomic reply bridge, service-role only.
 email_delivery_intents                internal
+space_email_domains authenticated
+space_email_identities authenticated
 collective_cross_listings             internal

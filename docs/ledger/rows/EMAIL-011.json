@@ -1,0 +1,19 @@
+{
+  "id": "EMAIL-011",
+  "title": "Add a tenant-bound Space email identity registry with provider-only verification and fresh worker resolution",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/spaces/email-identity-registry.ts",
+    "ref": "PROG-EMAIL1 packet:identity-model-registry"
+  },
+  "detail": "Draft implementation: generated additive migration creates owner-readable/service-write-only domains and identities with composite tenant foreign key. Server-only owner management derives authenticated profile, requires paid capability for creation, manages identities only within already provisioned tenant registry domains and obtains verification directly from Resend; callers cannot set verified flags. Worker resolver reads current plan/capability and exact linked registry plus current provider verification before constructing From; owner may pause after downgrade. Fixture behavior tests pass. NOT complete: local SQL replay/RLS unverified because Docker socket inaccessible; production worker wiring belongs dependency integration; domain ownership challenge/provisioning wizard and defaults/reply aliases remain separate packets. Do not treat stored Space domain as independent DNS ownership proof during future onboarding. Existing paid entitlement blobs require authorized billing resolver reconciliation. No production API, SQL, DNS or emails executed. Provider-domain registration is deliberately absent from this prerequisite release; EMAIL-012 must prove DNS ownership and recover provisioning before any registration entry point is exposed.",
+  "verify": {
+    "kind": "manual",
+    "checked": "2026-10-08",
+    "evidence": "Main-target registry/provider/policy fixture suite: 25 tests PASS after merging main a2a1631. Targeted lint/diff PASS. Table grants, FK indexes and migration filename uniqueness PASS from source tree. Eleven pgTAP assertions authored for tenant isolation/auth-profile mapping, mutation refusal, composite FK and service-role operations; SQL NOT RUN because local database runtime unavailable. Live migration ledger comparison SKIPPED without credentials. Keep OPEN until migration replay, RLS consequences, actual worker integration and pilot verification are proven."
+  },
+  "wave": "W7"
+}
