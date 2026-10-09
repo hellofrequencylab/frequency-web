@@ -28,9 +28,9 @@ select throws_ok($$insert into public.space_email_identities(space_id,domain_id,
  '23503',null,'composite FK rejects assigning another Space domain');
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-a011-000000000001","role":"authenticated"}',true);
-select results_eq($$select domain from public.space_email_domains order by domain$$,$$values('a.identity.test'::text)$$,
+select results_eq($$select domain from public.space_email_domains order by domain$$,$$select 'a.identity.test'::text$$,
  'owner A sees only its domain using auth-user to profile mapping');
-select results_eq($$select display_name from public.space_email_identities order by display_name$$,$$values('Owner A'::text)$$,
+select results_eq($$select display_name from public.space_email_identities order by display_name$$,$$select 'Owner A'::text$$,
  'owner A sees only its identity');
 select throws_ok($$update public.space_email_domains set sending_verified=true$$,'42501',null,'owner cannot self-attest provider verification');
 select throws_ok($$delete from public.space_email_identities$$,'42501',null,'owner cannot bypass server mutation boundary');
@@ -38,7 +38,7 @@ select throws_ok($$insert into public.space_email_identities(space_id,domain_id,
  values('00000000-0000-4000-c011-000000000001','00000000-0000-4000-d011-000000000001','forged','Forged')$$,
  '42501',null,'owner cannot create an identity directly');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-a011-000000000002","role":"authenticated"}',true);
-select results_eq($$select domain from public.space_email_domains order by domain$$,$$values('b.identity.test'::text)$$,'owner B sees only its domain');
+select results_eq($$select domain from public.space_email_domains order by domain$$,$$select 'b.identity.test'::text$$,'owner B sees only its domain');
 set local role anon;
 select throws_ok($$select * from public.space_email_domains$$,'42501',null,'anonymous cannot read domains');
 select throws_ok($$select * from public.space_email_identities$$,'42501',null,'anonymous cannot read identities');
