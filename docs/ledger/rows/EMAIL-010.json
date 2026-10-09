@@ -12,7 +12,7 @@
   "detail": "Policy prerequisite only. Existing paid plan catalog grants space_email_custom_identity separately from website custom_domain. Policy allows baseline Frequency identity, requires paid plan/current capability plus server-loaded verified tenant identity for custom selection, and holds downgraded, revoked, unverified and cross-Space selections without rebranding. Existing setSpacePlan writer tests verify billing namespace grant/removal. NOT full email-value-ladder acceptance: no provider/domain registry, production sender/worker integration or free branded reply pilot is claimed. Those remain in the parent packet. Existing paid Spaces need billing namespace reconciliation through the authorized resolver before the new capability is available; no live data changed.",
   "verify": {
     "kind": "cmd",
-    "cmd": "pnpm exec vitest run lib/spaces/email-identity-policy.test.ts lib/pricing/space-plan.test.ts",
+    "cmd": "node node_modules/vitest/vitest.mjs run lib/spaces/email-identity-policy.test.ts lib/pricing/space-plan.test.ts",
     "note": "Behavior tests reject cross-Space/paused/unverified identity, website-only grant, explicit revocation and downgrade with stale grants; free baseline remains allowed and existing billing writer sets/removes capability."
   },
   "closed": "2026-10-08"
