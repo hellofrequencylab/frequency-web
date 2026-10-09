@@ -14,5 +14,6 @@
     "kind": "manual",
     "checked": "2026-10-08",
     "evidence": "Not complete. Close only after all packet rows have passed their real consequence probes, preview/production status is documented, Daniel-triggered authenticated send/reply and a second-Space isolation pilot are observed, complete campaign accounting/failure recovery and measured latency are evidenced, and mailbox integration gates are truthfully resolved. No live test sends or provider changes performed during planning."
-  }
+  },
+  "wave": "W7"
 }
