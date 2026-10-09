@@ -1,21 +1,28 @@
 import { beforeEach,describe,expect,it,vi } from 'vitest'
-const state=vi.hoisted(()=>({owner:true,proof:true,createCount:0,registryFails:false,providerTimeout:false,busy:false,space:{id:'s1',plan:'business',entitlements:{} as Record<string,unknown>},defaultRow:null as Record<string,unknown>|null,
+const state=vi.hoisted(()=>({owner:true,proof:true,createCount:0,registryFails:false,providerTimeout:false,busy:false,space:{id:'s1',plan:'business',entitlements:{} as Record<string,unknown>},identityRow:null as Record<string,unknown>|null,defaultRow:null as Record<string,unknown>|null,
  op:null as Record<string,unknown>|null,registry:null as Record<string,unknown>|null,providerId:null as string|null}))
 vi.mock('./email-identity-registry',()=>({requireSpaceEmailIdentityOwner:async()=>{if(!state.owner)throw new Error('owner required');return{owner_profile_id:'owner',domain:'example.com'}},createSpaceEmailIdentity:async()=> 'i1',resolveSpaceEmailIdentity:async()=>({identityId:'i1',from:'Example <hello@example.com>'})}))
 vi.mock('./email-domain-ownership',()=>({emailOwnershipChallenge:(_s:string,_o:string,domain:string,_now:number,op:{id:string;nonce:string})=>({token:`${op.id}.${op.nonce}`,name:`_frequency-email.${domain}`,segments:['fixture'],expiresAt:'later'}),verifyEmailDomainOwnership:async()=>{if(!state.proof)throw new Error('TXT missing')}}))
 vi.mock('./email-domain-provider',()=>({createEmailProviderDomain:async()=>{state.createCount++;state.providerId='p1';if(state.providerTimeout)throw new Error('ambiguous timeout');return{id:'p1'}},reconcileEmailProviderDomain:async()=>state.providerId?{id:state.providerId}:null,requestEmailProviderVerification:async()=>undefined,inspectEmailProviderDomain:async()=>({status:'verified',capabilities:{sending:'enabled'},records:[{record:'DKIM',name:'key',type:'TXT',value:'public-key',status:'verified'},{record:'SPF',name:'send',type:'TXT',value:'spf',status:'verified'}]})}))
 vi.mock('@/lib/supabase/admin',()=>({createAdminClient:()=>({from:(name:string)=>{
  const filter:Record<string,unknown>={};let insert:Record<string,unknown>|null=null;let update:Record<string,unknown>|null=null
- const q={select:()=>q,eq:(k:string,v:unknown)=>{filter[k]=v;return q},insert:(v:Record<string,unknown>)=>{insert=v;return q},update:(v:Record<string,unknown>)=>{update=v;return q},
+ const q={select:()=>q,eq:(k:string,v:unknown)=>{filter[k]=v;return q},insert:(v:Record<string,unknown>)=>{insert=v;return q},update:(v:Record<string,unknown>)=>{update=v;return q},upsert:(v:Record<string,unknown>)=>{state.defaultRow=v;return q},
  single:async()=>{
   if(name==='space_email_domain_operations'){if(insert)state.op={...insert,id:'op1',state:'pending',started_at:'2026-10-08T00:00:00Z'};if(update&&state.op)Object.assign(state.op,update);return{data:state.op,error:null}}
   if(name==='space_email_domains'){if(state.registryFails)return{data:null,error:{code:'XX000'}};state.registry={...insert,id:'d1'};return{data:state.registry,error:null}}
   return{data:null,error:null}
- },maybeSingle:async()=>{const row=name==='spaces'?state.space:name==='space_email_identity_defaults'?state.defaultRow:name==='space_email_domain_operations'?state.op:state.registry;return{data:row&&Object.entries(filter).every(([k,v])=>row[k]===v)?row:null,error:null}}};return q},
+ },maybeSingle:async()=>{const row=name==='spaces'?state.space:name==='space_email_identities'?state.identityRow:name==='space_email_identity_defaults'?state.defaultRow:name==='space_email_domain_operations'?state.op:state.registry;return{data:row&&Object.entries(filter).every(([k,v])=>row[k]===v)?row:null,error:null}}};return q},
  rpc:async()=>({data:{...state.op,mode:state.busy?'busy':state.op?.provider_domain_id?'persist':state.op?.state==='pending'?'create':'reconcile'},error:null})})}))
-import {prepareEmailDomainSetup,runSpaceEmailDomainProvisioning,resolveSpaceEmailDefaultIdentity} from './email-domain-onboarding'
-beforeEach(()=>{state.owner=true;state.proof=true;state.createCount=0;state.registryFails=false;state.providerTimeout=false;state.busy=false;state.op=null;state.registry=null;state.providerId=null;state.space.plan='business';state.space.entitlements={};state.defaultRow=null})
+import {prepareEmailDomainSetup,runSpaceEmailDomainProvisioning,resolveSpaceEmailDefaultIdentity,chooseEmailDomainSender} from './email-domain-onboarding'
+beforeEach(()=>{state.owner=true;state.proof=true;state.createCount=0;state.registryFails=false;state.providerTimeout=false;state.busy=false;state.op=null;state.registry=null;state.providerId=null;state.space.plan='business';state.space.entitlements={};state.defaultRow=null;state.identityRow=null})
 describe('durable owner domain setup',()=>{
+ it('reuses an existing exact tenant sender after interrupted default persistence',async()=>{
+  state.registry={id:'d1',space_id:'s1',domain:'example.com',provider_domain_id:'p1'}
+  state.identityRow={id:'i-existing',space_id:'s1',domain_id:'d1',local_part:'hello',display_name:'Example'}
+  expect(await chooseEmailDomainSender('s1','d1','hello','Example','marketing')).toMatchObject({identityId:'i-existing'})
+  expect(state.defaultRow?.identity_id).toBe('i-existing')
+  await expect(chooseEmailDomainSender('s1','d1','hello','Different','marketing')).rejects.toThrow('another display name')
+ })
  it('creates one operation and returns proof bound to its nonce',async()=>{const prepared=await prepareEmailDomainSetup('s1','example.com');expect(prepared.ownership.token).toContain('op1.');expect(state.createCount).toBe(0)})
  it('rejects owner and DNS proof failure before any provider mutation',async()=>{state.owner=false;await expect(prepareEmailDomainSetup('s1','example.com')).rejects.toThrow('owner');state.owner=true;state.proof=false;await expect(runSpaceEmailDomainProvisioning('s1','example.com','x')).rejects.toThrow('TXT');expect(state.createCount).toBe(0)})
  it('recovers provider success followed by registry failure without a second create',async()=>{state.registryFails=true;await expect(runSpaceEmailDomainProvisioning('s1','example.com','x')).rejects.toThrow('persistence');expect(state.op?.provider_domain_id).toBe('p1');state.registryFails=false;expect(await runSpaceEmailDomainProvisioning('s1','example.com','x')).toMatchObject({domainId:'d1'});expect(state.createCount).toBe(1)})
