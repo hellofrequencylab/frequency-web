@@ -14,5 +14,6 @@
     "kind": "manual",
     "checked": "2026-10-08",
     "evidence": "Fixture tests cover tenant/owner/domain token mismatch, expiry, DNS delay/error and split TXT, provider DNS values, separate readiness/apex MX preservation; targeted lint. Keep open until integrated setup/recovery state machine, controlled owner domain verification, provider account prerequisites and SQL acceptance are proven."
-  }
+  },
+  "wave": "W7"
 }
