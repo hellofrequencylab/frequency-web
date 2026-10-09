@@ -36,7 +36,7 @@ import {
 } from '@/lib/playbooks/registry'
 import { withVoice } from '@/lib/ai/voice'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import { readBreakerStatus } from '@/lib/playbooks/circuit-breaker'
 import { autoExecutionAllowed } from '@/lib/spaces/entitlements'
@@ -288,13 +288,14 @@ async function draftCardLines(name: string, c: RankedCandidate): Promise<Drafted
       playbook: c.playbook.name,
     })
     const res = await completeText({
+      accounting: { feature: 'today' },
       system: TODAY_SYSTEM,
       messages: [{ role: 'user', content: signal }],
       tier: 'haiku',
       maxTokens: 120,
       cacheSystem: true,
     })
-    await recordAiUsage({ feature: 'today', model: res.tier, usage: res.usage, costUsd: res.costUsd })
+
     const lines = (res.text ?? '').split('\n').map((l) => l.trim()).filter(Boolean)
     if (lines.length >= 2) return { whyNow: lines[0], actionDraft: lines[1] }
     if (lines.length === 1) return { whyNow: lines[0], actionDraft: fallback.actionDraft }

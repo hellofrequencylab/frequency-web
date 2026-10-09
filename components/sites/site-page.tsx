@@ -42,6 +42,13 @@ import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
 import { siteAdminNavLinks } from '@/components/sites/site-admin-bar'
 import { SITE_CALENDAR_SLUG, SitePublicCalendar } from '@/components/sites/site-public-calendar'
 import { JsonLd } from '@/components/json-ld'
+import { config } from '@/lib/page-editor/config'
+import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteBrand } from '@/lib/sites/editor/state'
+import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
+import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
+import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
+import { getSpaceContentData } from '@/lib/spaces/content-data'
+import { WebsiteDocument } from '@/components/sites/website-document'
 import { siteEntitySchema } from '@/lib/jsonld'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). The Space's own website, served on its
@@ -87,18 +94,19 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
   if (!readWebsitePublished(space.preferences)) {
     return { title: `${brandName} website coming soon`, robots: { index: false } }
   }
-  const page =
+  const websitePage = publishedWebsitePage(space.preferences, pageSlug)
+  const page = websitePage ??
     readProfilePages(space.preferences).find((p) => p.slug === pageSlug) ??
     (pageSlug === SITE_CONTACT_SLUG && siteHasContactPage(space.preferences) ? { slug: SITE_CONTACT_SLUG, label: 'Contact' } : null) ??
     (pageSlug === SITE_BOOK_SLUG && (await readSiteBooking(space.id)).takesBookings ? { slug: SITE_BOOK_SLUG, label: 'Book' } : null)
   if (!page) return { title: { absolute: brandName }, robots: { index: false } }
-  const title = page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`
-  const description = siteDescription(space, brandName, page.slug)
+  const title = websitePage?.seo.title.trim() || (page.slug === HOME_SLUG ? brandName : `${page.label} | ${brandName}`)
+  const description = websitePage?.seo.description.trim() || siteDescription(space, brandName, page.slug)
   const siteBase = siteBaseUrl(space.slug, await boundSiteDomain(space), appOrigin())
   const canonical = sitePageUrl(siteBase, page.slug)
   // LIVE-870: a Menswork website on its own host shares its designed card (app/hosted/[host]/opengraph-image),
   // the logo, name and headline over the cover. Others share the cover photo, else the logo.
-  const card = parseSpaceTheme(space.preferences) === 'menswork' && /^https:\/\/[^/]+$/.test(siteBase) ? `${siteBase}/opengraph-image` : null
+  const card = (publishedWebsiteSnapshot(space.preferences)?.theme === 'Menswork' || (!publishedWebsiteSnapshot(space.preferences) && parseSpaceTheme(space.preferences) === 'menswork')) && /^https:\/\/[^/]+$/.test(siteBase) ? `${siteBase}/opengraph-image` : null
   const shareImage = card ?? (space.coverImageUrl || space.brandLogoUrl || null)
   const images = shareImage ? [card ? { url: card, width: 1200, height: 630, alt: brandName } : { url: shareImage, alt: brandName }] : undefined
   return {
@@ -133,14 +141,18 @@ export async function SitePage({
   if (!space) notFound()
 
   const brandName = space.brandName?.trim() || space.name
-  const theme = parseSpaceTheme(space.preferences)
+  const website = publishedWebsiteSnapshot(space.preferences)
+  const websiteBrand = resolveWebsiteBrand(website, { logo: space.brandLogoUrl, accent: space.brandAccent })
+  const savedWebsitePage = website?.pages.find((p) => p.slug === pageSlug) ?? null
+  const websitePage = savedWebsitePage ? { ...savedWebsitePage, doc: await refreshAssetRefUrls(savedWebsitePage.doc, { websiteSpaceId: space.id }) } : null
+  const theme = website ? (website.theme === 'Menswork' ? 'menswork' : 'bold') : parseSpaceTheme(space.preferences)
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
   // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
   // still wins.
   const skin = theme === 'menswork' ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) } : null
   const accentVars = skin
-    ? mensworkAccentVars(space.brandAccent)
-    : resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
+    ? mensworkAccentVars(websiteBrand.accent)
+    : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))
   // The Coming soon notice's one way on: a clearly labelled Frequency link, absolute (on the Space's own
   // host a `/spaces/...` path is not a site page).
   const profileHref = `${appOrigin()}/spaces/${space.slug}`
@@ -166,7 +178,7 @@ export async function SitePage({
   const { origin, hasContact, booking, pages, homeHref, siteLinks, cta, pageLinks, tagline } = await siteChromeBasics(space, siteBase)
   const contactPage = pageSlug === SITE_CONTACT_SLUG && hasContact
   const bookPage = pageSlug === SITE_BOOK_SLUG && booking.takesBookings
-  if (!contactPage && !bookPage && !hasPage(space.preferences, pageSlug)) notFound()
+  if (!contactPage && !bookPage && !websitePage && !hasPage(space.preferences, pageSlug)) notFound()
 
   // Stamp the tenant so any block that resolves its rows from the active Space reads THIS one, the same
   // line the public page carries.
@@ -175,7 +187,7 @@ export async function SitePage({
 
   // Home is the house theme (components/sites/house-home.tsx) over the operator's own Home blocks; a
   // custom page renders its own page doc the way the profile renders it, inside the same chrome.
-  const model = home
+  const model = home && !websitePage
     ? await buildHouseHome({
         space,
         grid: profileGrid(space.preferences),
@@ -207,11 +219,11 @@ export async function SitePage({
           .map((b) => ({ type: b.type, props: (b.props ?? {}) as Record<string, unknown> }))
       : null
   const mwPlan = mwBlocks ? planMensworkPage(mwBlocks) : null
-  const mwLive = skin
+  const mwLive = skin || websitePage
     ? await loadMensworkLive(space.id, {
         events: true,
-        circles: !!mwPlan?.some((p) => p.kind === 'circles'),
-        journeys: !!mwPlan?.some((p) => p.kind === 'journeys'),
+        circles: !!websitePage || !!mwPlan?.some((p) => p.kind === 'circles'),
+        journeys: !!websitePage || !!mwPlan?.some((p) => p.kind === 'journeys'),
       })
     : null
   const seasonNow = skin
@@ -228,25 +240,32 @@ export async function SitePage({
     description: siteDescription(space, brandName, HOME_SLUG) ?? null,
     images: [space.coverImageUrl, space.brandLogoUrl],
   })
+  const websiteContent = websitePage ? await getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: websiteBrand.logo, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }) : null
+
+  const websiteFeatures = websitePage ? await loadWebsiteFeatures(space.id, [websitePage.doc]) : {}
 
   return (
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the
     // owner's accent and faces rather than the default Frequency look.
     <AccentScope vars={accentVars} theme={theme}>
       <JsonLd data={entity} />
+      <div data-website-theme={website?.theme} style={website ? websiteThemeVars(website.theme, website.theme === 'Menswork' ? websiteBrand.accent : website.brand?.accent) : undefined}>
+      {website && <style>{WEBSITE_TOKEN_CSS}</style>}
       <SiteChrome
         brandName={brandName}
         homeHref={homeHref}
         links={links}
         cta={cta}
-        themeFonts={hasChosenTheme(space.preferences)}
+        themeFonts={!!website || hasChosenTheme(space.preferences)}
         skin={skin}
-        logoUrl={skin ? space.brandLogoUrl : null}
+        logoUrl={website ? websiteBrand.logo : skin ? space.brandLogoUrl : null}
         tagline={skin ? tagline : null}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
         admin={siteAdminLinks(origin, space.slug, siteBase)}
       >
-        {model ? (
+        {website && websitePage && mwLive ? (
+          <WebsiteDocument doc={websitePage.doc} theme={website.theme} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
+        ) : model ? (
           <>
             <HouseHome model={model} />
             {/* LIVE-869, LIVE-872: a Menswork Home ends with the Space's Frequency calendar, a section with no
@@ -309,6 +328,7 @@ export async function SitePage({
           </div>
         )}
       </SiteChrome>
+      </div>
     </AccentScope>
   )
 }
@@ -335,7 +355,7 @@ export async function siteChromeBasics(space: Space, siteBase: string) {
   // LIVE-835: the Book page reads the Space's services and windows; a Space that takes no bookings 404s.
   // Every page reads it: Book links on Home and in the header open /book only when it is served.
   const booking = await readSiteBooking(space.id)
-  const pages = readProfilePages(space.preferences)
+  const pages = publishedWebsiteSnapshot(space.preferences)?.pages ?? readProfilePages(space.preferences)
   const siteLinks: SiteLinkMap = {
     origin,
     slug: space.slug,
@@ -369,10 +389,10 @@ export function mensworkSiteMenu(homeHref: string, pages: { label: string }[], p
 
 /** A Menswork website's blue admin links: the admin pages on the site's own host (base ``), else through
  *  the console's handoff, and the console's Leadership page as the labelled Frequency link. */
-export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | null = null) {
-  const page = (view: 'overview' | 'calendar') => (siteBase === '' ? `/admin/${view}` : `${origin}${siteAdminHandoffPath(slug, view)}`)
+export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | 'editor' | null = null) {
+  const page = (view: 'overview' | 'calendar' | 'editor') => (siteBase === '' ? `/admin/${view}` : `${origin}${siteAdminHandoffPath(slug, view)}`)
   return siteAdminNavLinks(
-    { overview: page('overview'), calendar: page('calendar'), console: `${origin}/spaces/${slug}/manage/leadership` },
+    { overview: page('overview'), calendar: page('calendar'), editor: page('editor'), console: `${origin}/spaces/${slug}/manage/leadership` },
     current,
   )
 }

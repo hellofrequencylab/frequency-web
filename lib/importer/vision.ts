@@ -13,7 +13,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import { completeRaw } from '@/lib/ai/complete'
-import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import { stripEmDashes } from '@/lib/ai/space-copilot'
 
@@ -156,13 +156,13 @@ export async function planSeedImages(
     })
 
     const res = await completeRaw({
+      accounting: { feature: FEATURE, profileId },
       system: withVoice(SYSTEM),
       messages: [{ role: 'user', content }],
       maxTokens: 1024,
       tools: [TOOL],
       toolChoice: { type: 'tool', name: 'image_plan' },
     })
-    void recordAiUsage({ feature: FEATURE, model: res.model, usage: res.usage, costUsd: res.costUsd, profileId })
 
     const call = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'image_plan')
     const raw = (call?.input as { items?: unknown })?.items

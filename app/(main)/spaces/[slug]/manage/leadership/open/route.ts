@@ -33,7 +33,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   if (!canManage && !staffViewing) return new NextResponse('Not found', { status: 404 })
 
   const leadership = new URL(`/spaces/${encodeURIComponent(space.slug)}/manage/leadership?site=off`, origin)
-  if (!readWebsitePublished(space.preferences)) return NextResponse.redirect(leadership, 303)
+  if (view !== 'editor' && !readWebsitePublished(space.preferences)) return NextResponse.redirect(leadership, 303)
   const base = siteBaseUrl(space.slug, await boundSiteDomain(space), origin)
   const host = /^https:\/\/([^/]+)$/.exec(base)?.[1]
   const pass = host ? signSiteAdminPass({ spaceId: space.id, host, profileId: caller.id, staff: !canManage }) : null

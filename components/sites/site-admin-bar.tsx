@@ -14,11 +14,12 @@ export interface SiteAdminNavLink {
 /** The admin links: the two admin pages, on the site's own host or through the console's handoff, then
  *  the console's Leadership page (footer only). */
 export function siteAdminNavLinks(
-  hrefs: { overview: string; calendar: string; console: string },
-  current: 'overview' | 'calendar' | null = null,
+  hrefs: { overview: string; calendar: string; editor?: string; console: string },
+  current: 'overview' | 'calendar' | 'editor' | null = null,
 ): { menu: SiteAdminNavLink[]; console: string } {
   return {
     menu: [
+      ...(hrefs.editor ? [{ href: hrefs.editor, label: 'Website builder', current: current === 'editor' }] : []),
       { href: hrefs.overview, label: 'Executive Overview', current: current === 'overview' },
       { href: hrefs.calendar, label: 'Yearly Calendar', current: current === 'calendar' },
     ],

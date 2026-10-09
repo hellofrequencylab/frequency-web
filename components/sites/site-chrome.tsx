@@ -90,7 +90,7 @@ export function SiteChrome({
   admin?: { menu: SiteAdminNavLink[]; console: string } | null
   children: ReactNode
 }) {
-  const adminLinks = skin ? admin : null
+  const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
   const menu = adminLinks
     ? [...links, ...adminLinks.menu.map((l) => ({ href: l.href, label: `Admin: ${l.label}`, className: 'hs-nav-admin' }))]
     : links

@@ -1,0 +1,12 @@
+{
+  "derived": {
+    "--ed-chrome": "color-mix(in oklch, var(--th-bg), white var(--ed-lift))",
+    "--ed-field": "color-mix(in oklch, var(--th-bg), white var(--ed-lift2))",
+    "--ed-line": "color-mix(in oklch, var(--th-hairline), white var(--ed-lift))"
+  },
+  "themes": {
+    "Menswork": { "--th-bg": "#111418", "--th-surface": "#181C22", "--th-raised": "#222831", "--th-hairline": "#2E3642", "--th-muted": "#7C8798", "--th-secondary": "#A9B2C0", "--th-text": "#E9ECF1", "--th-accent": "#00A6C8", "--th-accent-text": "#2CC4E0", "--th-on-accent": "#111418", "--th-season": "#D4703E", "--th-on-season": "#111418", "--th-display": "'Sofia Sans Extra Condensed','Arial Narrow',sans-serif", "--th-dw": "800", "--th-body": "Barlow,system-ui,sans-serif", "--th-mono": "'IBM Plex Mono',ui-monospace,monospace", "--th-r": "0px", "--ed-lift": "12%", "--ed-lift2": "19%", "--th-clip-sm": "polygon(0 0,calc(100% - 8px) 0,100% 13.86px,100% 100%,0 100%)", "--th-clip-md": "polygon(0 0,calc(100% - 12px) 0,100% 20.78px,100% 100%,0 100%)", "--th-clip-lg": "polygon(0 0,calc(100% - 20px) 0,100% 34.64px,100% 100%,0 100%)", "seasons": { "winter": "#97A3D4", "spring": "#93B57A", "summer": "#DDB24E", "fall": "#D4703E" } },
+    "DAWN": { "--th-bg": "#F5EEE2", "--th-surface": "#FFFFFF", "--th-raised": "#FAF8F4", "--th-hairline": "#EAE6DE", "--th-muted": "#6E6558", "--th-secondary": "#6B6253", "--th-text": "#3D352A", "--th-accent": "#E2912F", "--th-accent-text": "#965C12", "--th-on-accent": "#FFFFFF", "--th-season": "#0F8E78", "--th-on-season": "#FFFFFF", "--th-display": "Anton,Impact,sans-serif", "--th-dw": "400", "--th-body": "Nunito,system-ui,sans-serif", "--th-mono": "'Geist Mono',ui-monospace,monospace", "--th-r": "10px", "--ed-lift": "62%", "--ed-lift2": "85%", "--th-clip-sm": "inset(0 round 8px)", "--th-clip-md": "inset(0 round 14px)", "--th-clip-lg": "inset(0 round 22px)" },
+    "Midnight": { "--th-bg": "#0C1018", "--th-surface": "#161C28", "--th-raised": "#1F2736", "--th-hairline": "#2A3445", "--th-muted": "#8D9AB0", "--th-secondary": "#9AA6BC", "--th-text": "#E7ECF4", "--th-accent": "#F0AD4E", "--th-accent-text": "#F0AD4E", "--th-on-accent": "#0C1018", "--th-season": "#53CFAC", "--th-on-season": "#0C1018", "--th-display": "Anton,Impact,sans-serif", "--th-dw": "400", "--th-body": "Nunito,system-ui,sans-serif", "--th-mono": "'Geist Mono',ui-monospace,monospace", "--th-r": "6px", "--ed-lift": "10%", "--ed-lift2": "16%", "--th-clip-sm": "inset(0 round 4px)", "--th-clip-md": "inset(0 round 8px)", "--th-clip-lg": "inset(0 round 12px)" }
+  }
+}

@@ -1,4 +1,5 @@
 import { resolveHostedSpace } from '@/lib/sites/hosted'
+import { publishedWebsiteSnapshot, resolveWebsiteBrand } from '@/lib/sites/editor/state'
 import { normalizeHost } from '@/lib/sites/host'
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
@@ -21,11 +22,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ host: s
   const { host: hostParam } = await params
   const host = normalizeHost(decodeURIComponent(hostParam))
   const space = await resolveHostedSpace(host)
-  if (!space || !readWebsitePublished(space.preferences) || parseSpaceTheme(space.preferences) !== 'menswork') {
+  const website = space ? publishedWebsiteSnapshot(space.preferences) : null
+  const menswork = website ? website.theme === 'Menswork' : !!space && parseSpaceTheme(space.preferences) === 'menswork'
+  if (!space || !readWebsitePublished(space.preferences) || !menswork) {
     return new Response('Not found', { status: 404 })
   }
+  const brand = resolveWebsiteBrand(website, { logo: space.brandLogoUrl, accent: space.brandAccent })
   const [logo, cover, fonts] = await Promise.all([
-    space.brandLogoUrl ? fetchRemoteImage(space.brandLogoUrl) : Promise.resolve(null),
+    brand.logo ? fetchRemoteImage(brand.logo) : Promise.resolve(null),
     space.coverImageUrl ? fetchRemoteImage(space.coverImageUrl) : Promise.resolve(null),
     loadMensworkFonts(),
   ])

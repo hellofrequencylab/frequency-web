@@ -6,9 +6,7 @@
 
 import { completeRaw } from '@/lib/ai/complete'
 import { aiEnabled } from '@/lib/ai/client'
-import { MODELS } from '@/lib/ai/models'
-import { estimateCostUsd } from '@/lib/ai/budget'
-import { recordAiUsage } from '@/lib/ai/usage'
+
 import { withVoice } from '@/lib/ai/voice'
 
 const FEATURE = 'studio-winback'
@@ -95,7 +93,7 @@ function isValidDraft(v: unknown): v is WinbackDraft {
 // governed in one place — no per-call SDK instance, no hardcoded model id. Runs on
 // Haiku: a 2 to 3 sentence email needs no Opus, and tiering is the biggest cost
 // lever (lib/ai/models.ts). Voice comes from the shared withVoice primer, and the
-// usage ledger is tagged best-effort.
+// usage is attributed through the central completion wrapper.
 export async function draftWinbackWithClaude(
   name: string,
   opts: { lapseDays?: number } = {},
@@ -107,6 +105,7 @@ export async function draftWinbackWithClaude(
 
   try {
     const res = await completeRaw({
+      accounting: { feature: FEATURE },
       tier: 'haiku',
       maxTokens: 400,
       cacheSystem: true,
@@ -121,12 +120,7 @@ export async function draftWinbackWithClaude(
         },
       ],
     })
-    void recordAiUsage({
-      feature: FEATURE,
-      model: MODELS.haiku,
-      usage: res.usage,
-      costUsd: estimateCostUsd('haiku', res.usage),
-    })
+
     const parsed = extractJson(res.text)
     if (isValidDraft(parsed)) {
       return { subject: parsed.subject.trim().slice(0, 120), body: parsed.body.trim() }
