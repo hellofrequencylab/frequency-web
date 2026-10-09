@@ -8,9 +8,14 @@ import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { previewSpaceAudience } from '@/lib/spaces/campaigns-actions'
 import { createSpaceSegment, updateSpaceSegment, deleteSpaceSegment } from '@/lib/spaces/segments-actions'
-import type { AudienceEligibilitySummary } from '@/lib/spaces/audience-eligibility'
+import { unavailableAudienceEligibility, type AudienceEligibilitySummary } from '@/lib/spaces/audience-eligibility'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
 import { isError } from '@/lib/action-result'
+
+const EXCLUSION_LABELS: Record<keyof AudienceEligibilitySummary['excluded'], string> = {
+  invalid: 'invalid email', duplicate: 'duplicate address', unknownConsent: 'no marketing opt-in',
+  unsubscribed: 'unsubscribed', suppressed: 'delivery suppression', muted: 'topic muted',
+}
 
 // AUDIENCE PICKER (ENTITY-SPACES-BUILD §C Phase 3 + ADR-380). The owner picks who a campaign goes to:
 // everyone in this Space, one tag, or a SAVED SEGMENT. A LIVE count updates as they pick
@@ -67,6 +72,7 @@ export function AudiencePicker({
   const [preview, setPreview] = useState<AudienceEligibilitySummary | null>(null)
   const count = preview?.eligible ?? null
   const [pending, start] = useTransition()
+  const [checkVersion, setCheckVersion] = useState(0)
 
   // Segment management state (save the current filter / delete a saved one).
   const [newName, setNewName] = useState('')
@@ -78,7 +84,7 @@ export function AudiencePicker({
 
   // Re-resolve the live count whenever the filter changes (tag OR segment). The server action is the
   // source of truth (and the same resolver the send uses), so the number the owner sees is the number
-  // currently pass the policy preview. Delivery rechecks remain separate.
+  // of people who currently pass the policy preview. Delivery rechecks remain separate.
   useEffect(() => {
     let cancelled = false
     onCountChange?.(0)
@@ -90,7 +96,7 @@ export function AudiencePicker({
         onCountChange?.(next.state === 'available' ? next.eligible : 0)
       } catch {
         if (cancelled) return
-        setPreview(null)
+        setPreview(unavailableAudienceEligibility(pickedTopic))
         onCountChange?.(0)
       }
     })
@@ -99,7 +105,7 @@ export function AudiencePicker({
     }
     // onFilterChange/onCountChange are stable enough; we re-run on the filter's own facets only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spaceId, pickedTopic, filter.tag, filter.segmentId, filter.memberSegment, filter.consent, filter.engagementDepth, filter.resonanceTier, filter.churnRisk, filter.place])
+  }, [spaceId, checkVersion, pickedTopic, filter.tag, filter.segmentId, filter.memberSegment, filter.consent, filter.engagementDepth, filter.resonanceTier, filter.churnRisk, filter.place])
 
   // The select's current value: a member segment (member:<key>), a saved segment (segment:<id>), a tag
   // (the tag string), or '' = everyone. The three are mutually exclusive by construction, because each
@@ -226,7 +232,7 @@ export function AudiencePicker({
 
       <p className="inline-flex items-center gap-1.5 text-body-sm text-muted" role="status" aria-live="polite">
         <Users className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-        {pending ? (
+        {pending || preview == null ? (
           <span>Checking eligibility&hellip;</span>
         ) : preview?.state !== 'available' || count == null ? (
           <span>Audience eligibility could not be checked. Try again before sending.</span>
@@ -238,11 +244,17 @@ export function AudiencePicker({
         )}
       </p>
 
+      {preview?.state === 'unavailable' && !pending && (
+        <Button type="button" variant="outline" size="sm" onClick={() => setCheckVersion(version => version + 1)}>
+          Check again
+        </Button>
+      )}
+
       {preview?.state === 'available' && !pending && (
         <div className="text-meta text-subtle" aria-label="Audience exclusions">
           <p>{preview.matched.toLocaleString()} matching contacts. Counts can change before delivery.</p>
           {Object.entries(preview.excluded).filter(([, value]) => value > 0).map(([reason, value]) => (
-            <p key={reason}>{value.toLocaleString()} excluded: {{ invalid: 'invalid email', duplicate: 'duplicate address', unknownConsent: 'no marketing opt-in', unsubscribed: 'unsubscribed', suppressed: 'delivery suppression', muted: 'topic muted' }[reason as keyof AudienceEligibilitySummary['excluded']]}</p>
+            <p key={reason}>{value.toLocaleString()} excluded: {EXCLUSION_LABELS[reason as keyof AudienceEligibilitySummary['excluded']]}</p>
           ))}
         </div>
       )}

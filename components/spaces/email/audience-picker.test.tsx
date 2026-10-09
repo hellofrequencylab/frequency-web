@@ -192,3 +192,17 @@ describe('AudiencePicker eligibility evidence', () => {
     expect(onCountChange.mock.calls.some(call => call[0] === 0)).toBe(true)
   })
 })
+
+describe('AudiencePicker recovery', () => {
+  it('retries an unavailable preview without changing the audience or enabling a stale count', async () => {
+    previewSpaceAudience.mockRejectedValueOnce(new Error('unavailable'))
+    const onCountChange = vi.fn()
+    await render(<AudiencePicker spaceId="space-A" slug="danieltyack" tags={[]} filter={{}} onFilterChange={() => {}} onCountChange={onCountChange} />)
+    expect(onCountChange).toHaveBeenLastCalledWith(0)
+    const retry = [...container!.querySelectorAll('button')].find(button => button.textContent?.includes('Check again'))!
+    expect(retry).toBeTruthy()
+    await act(async () => retry.click())
+    expect(container!.textContent).toContain('3 people are currently eligible')
+    expect(onCountChange).toHaveBeenLastCalledWith(3)
+  })
+})
