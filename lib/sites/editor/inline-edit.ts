@@ -4,8 +4,8 @@ export function inlineTextValue(value: string): string {
   return inlineHtmlToText(value).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_]/g, '').replace(/\s+/g, ' ').trim()
 }
 export interface InlineTextMatch { field: string; start: number; end: number; path?: (string | number)[] }
-export type InlineTextKind = 'heading' | 'body' | 'label' | 'generic'
-export interface InlineFieldDefinition { type?: string; contentEditable?: boolean; arrayFields?: Record<string, InlineFieldDefinition>; objectFields?: Record<string, InlineFieldDefinition> }
+type InlineTextKind = 'heading' | 'body' | 'label' | 'generic'
+interface InlineFieldDefinition { type?: string; contentEditable?: boolean; arrayFields?: Record<string, InlineFieldDefinition>; objectFields?: Record<string, InlineFieldDefinition> }
 
 /** Match only authored schema fields, including nested card/list copy. Live metadata is never edited. */
 export function findInlineTextMatch(props: Record<string, unknown>, fields: Record<string, InlineFieldDefinition>, target: string, occurrence = 0, kind: InlineTextKind = 'generic'): InlineTextMatch | null {

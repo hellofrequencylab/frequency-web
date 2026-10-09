@@ -25,7 +25,7 @@ export function sectionLayoutPreset(props: Record<string, unknown>, display: Sec
   return { props: { ...props, mediaSide: preset === 'right' ? 'right' : 'left' }, display: { ...display, columns: preset === 'stacked' ? 1 : 2, placements: {} } }
 }
 
-export type ElementPlacement = NonNullable<SectionDisplay['placements']>[string]
+type ElementPlacement = NonNullable<SectionDisplay['placements']>[string]
 export function dragElementPlacement(initial: ElementPlacement, deltaX: number, deltaY: number, columnStep: number, rowStep: number, resize: boolean, initialHeight: number): ElementPlacement {
   const dx = Number.isFinite(deltaX) ? Math.round(deltaX / Math.max(1, columnStep)) : 0
   const dy = Number.isFinite(deltaY) ? deltaY : 0
