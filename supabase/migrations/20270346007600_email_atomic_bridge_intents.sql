@@ -23,7 +23,9 @@ create function public.enqueue_conversation_email_intent(
   p_conversation_id uuid, p_actor_profile_id uuid, p_external_message_id text,
   p_observed_sender text, p_body text, p_payload jsonb
 ) returns jsonb
-language plpgsql security invoker set search_path = '' as $$
+-- Privileged narrowly because auth.users is not readable by service_role in a clean Supabase replay.
+-- Execute remains service-only; all conversation/actor/tenant/confirmed-email checks precede mutation.
+language plpgsql security definer set search_path = '' as $$
 declare
   c public.comms_conversations%rowtype;
   s public.spaces%rowtype;
