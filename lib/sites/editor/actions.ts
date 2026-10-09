@@ -6,11 +6,11 @@ import { refreshSite } from '@/lib/sites/site-cache'
 import { readWebsiteEditor, nextWebsiteState, validWebsiteSnapshot, type WebsiteSnapshot, type WebsiteEditorState } from './state'
 
 
-export async function saveWebsiteDraft(host: string, expectedRevision: number, draft: WebsiteSnapshot, publish = false, scheduledAt?: string): Promise<{ ok: true; state: WebsiteEditorState } | { ok: false; error: string; conflict?: boolean }> {
+export async function saveWebsiteDraft(host: string, expectedRevision: number, draft: WebsiteSnapshot, publish = false, scheduledAt?: string | null): Promise<{ ok: true; state: WebsiteEditorState } | { ok: false; error: string; conflict?: boolean }> {
   if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || !validWebsiteSnapshot(draft)) return { ok: false, error: 'This draft could not be saved. Check its pages and try again.' }
   const auth = await authorizeWebsiteEditor(host)
   if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to sign in.' }
-  if (typeof publish !== 'boolean' || (scheduledAt !== undefined && (typeof scheduledAt !== 'string' || !Number.isFinite(Date.parse(scheduledAt)) || Date.parse(scheduledAt) <= Date.now() || publish))) return { ok: false, error: 'Choose a future date and time for publishing.' }
+  if (typeof publish !== 'boolean' || (scheduledAt !== undefined && publish) || (scheduledAt != null && (typeof scheduledAt !== 'string' || !Number.isFinite(Date.parse(scheduledAt)) || Date.parse(scheduledAt) <= Date.now()))) return { ok: false, error: 'Choose a future date and time for publishing.' }
   const existing = readWebsiteEditor(auth.preferences)
   const current = existing ?? { v: 1 as const, revision: 0, draft, published: null, versions: [] }
   if (current.revision !== expectedRevision) return { ok: false, conflict: true, error: 'Someone saved a newer draft. Reload before continuing; your changes have not been overwritten.' }
@@ -28,7 +28,7 @@ export async function saveWebsiteDraft(host: string, expectedRevision: number, d
       }
     }) }
   }) }
-  const next = nextWebsiteState(current, privateDraft, publish, authorName, new Date().toISOString(), scheduledAt ? new Date(scheduledAt).toISOString() : undefined)
+  const next = nextWebsiteState(current, privateDraft, publish, authorName, new Date().toISOString(), scheduledAt === null ? null : scheduledAt ? new Date(scheduledAt).toISOString() : undefined)
   // Bound the complete retained history, not only the incoming document.
   while (new TextEncoder().encode(JSON.stringify(next)).length > 1_500_000 && next.versions.length > 1) next.versions.pop()
   if (new TextEncoder().encode(JSON.stringify(next)).length > 1_500_000) return { ok: false, error: 'This website is too large to save. Reduce its section count and try again.' }
