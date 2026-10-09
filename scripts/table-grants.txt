@@ -338,4 +338,6 @@ ai_budget_reservations                internal
 
 space_email_domain_operations internal
 space_email_identity_defaults authenticated
+space_email_domains authenticated
+space_email_identities authenticated
 collective_cross_listings             internal

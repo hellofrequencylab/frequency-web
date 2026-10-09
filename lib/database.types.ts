@@ -14148,6 +14148,92 @@ export type Database = {
           },
         ]
       }
+      space_email_domains: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          last_verified_at: string | null
+          paused_at: string | null
+          provider_domain_id: string
+          sending_verified: boolean
+          space_id: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          last_verified_at?: string | null
+          paused_at?: string | null
+          provider_domain_id: string
+          sending_verified?: boolean
+          space_id: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          last_verified_at?: string | null
+          paused_at?: string | null
+          provider_domain_id?: string
+          sending_verified?: boolean
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_email_domains_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_email_identities: {
+        Row: {
+          created_at: string
+          display_name: string
+          domain_id: string
+          id: string
+          local_part: string
+          paused_at: string | null
+          space_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          domain_id: string
+          id?: string
+          local_part: string
+          paused_at?: string | null
+          space_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          domain_id?: string
+          id?: string
+          local_part?: string
+          paused_at?: string | null
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_email_identities_domain_id_space_id_fkey"
+            columns: ["domain_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "space_email_domains"
+            referencedColumns: ["id", "space_id"]
+          },
+          {
+            foreignKeyName: "space_email_identities_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_email_templates: {
         Row: {
           body: string

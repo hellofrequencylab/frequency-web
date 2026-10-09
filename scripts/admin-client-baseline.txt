@@ -16,6 +16,15 @@
 # checks current canEditProfile/staff-read permission before service reads. Queries scope contact
 # candidates, Space/global suppression and Space/topic preference rows; only aggregate counts leave
 # this reader. Private suppression/preferences cannot be exposed through member RLS just for preview.
+# EMAIL-011: email-identity-registry.ts is a server-only management/worker boundary.
+# Registry SQL denies browser-role writes so callers cannot self-attest provider verification.
+# Management derives getMyProfileId(), matches current spaces.owner_profile_id, requires paid
+# custom-identity capability for creation, and scopes domain/identity queries to the same Space.
+# Owner revocation remains available after downgrade. Creating a draft identity does not authorize
+# sending: trusted worker resolution scopes the selected identity/domain to its Space, rechecks
+# current plan/capability and paused state, and verifies the exact domain directly with Resend.
+# This declaration permits only this reviewed importer; SQL replay/RLS and worker integration
+# remain OPEN acceptance gates, not waived by the service boundary declaration.
 #
 # EMAIL-012: email-domain-onboarding.ts is a server-only owner-authorized provisioning boundary.
 # Every setup/check/sender action reaches the EMAIL-011 current-owner guard, requiring paid capability
@@ -1189,6 +1198,7 @@ lib/loom/authorized-image-upload.ts
 lib/collective/network-store.ts
 
 lib/spaces/audience-readiness.ts
+lib/spaces/email-identity-registry.ts
 lib/collective/cross-listing-store.ts
 lib/collective/network-report.ts
 
