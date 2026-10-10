@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { appOrigin } from '@/lib/sites/host'
 import { MENSWORK_SEASON_INFO, type MensworkSeason } from '@/lib/theme/menswork'
@@ -6,18 +6,20 @@ import { dateLabel } from '@/lib/sites/menswork-page'
 import { HOUSE_CSS } from './house-css'
 import { MENSWORK_CSS } from './menswork-css'
 import { MENSWORK_PAGE_CSS } from './menswork-page-css'
-import { HouseMenu } from './house-menu'
+import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
 import { SiteFooterAdmin, type SiteAdminNavLink } from './site-admin-bar'
 
 // THE WEBSITE CHROME, house theme (owner ask 2026-10-07: the "Daniel Tyack Site v4" design is the default
 // look of every Space website). A published Space website is the Space's own pages without any Frequency
 // app chrome:
 //
-//   · HEADER: a floating frosted pill, sticky, 12px from the top. The brand name, a menu of the Home
-//     sections the Space actually placed (each link labelled with that section's own eyebrow), and the
-//     Space's own header button (its label and target are the owner's, preferences.headerCta). Under 940px
-//     the menu folds into a round button (house-menu.tsx). The pill firms up once the page scrolls, with a
-//     CSS scroll timeline, so the header itself needs no script.
+//   · HEADER (header handoff v5, components/sites/house-header.tsx): a frosted bar, sticky, 12px from the
+//     top. The logo slot (round photo plus name by default when the Space has a logo), a one-line menu of
+//     the Home sections the Space actually placed (each link labelled with that section's own eyebrow)
+//     that scrolls sideways instead of wrapping, and the Space's own header button (its label and target
+//     are the owner's, preferences.headerCta). One pill row from 940px; under it the menu takes a second
+//     row. A link with `mega` opens a floating panel under the bar. The bar firms up once the page
+//     scrolls (a CSS scroll timeline) and fades away when scrolling pauses.
 //   · SKIN: a Space on the Menswork page theme gets the Menswork website skin layered over the house CSS
 //     (components/sites/menswork-css.ts): the same sections and words in that theme's palette and shapes,
 //     with the current season's accent. A skinned site also sets the Space's logo beside its name, drawn
@@ -44,10 +46,8 @@ export function siteHref(base: string, pageSlug: string): string {
   return `${base}/${pageSlug}`
 }
 
-export interface SiteLink {
-  href: string
-  label: string
-}
+/** A header menu item: a plain link, or (with `mega`) a dropdown panel of links and a feature card. */
+export type SiteLink = HouseHeaderLink
 
 interface SiteSkin {
   theme: 'menswork'
@@ -62,6 +62,8 @@ export function SiteChrome({
   themeFonts,
   skin = null,
   logoUrl = null,
+  logoMode,
+  fadeOnPause = true,
   tagline = null,
   showBrandFooter,
   seasonNow = null,
@@ -78,9 +80,14 @@ export function SiteChrome({
   themeFonts: boolean
   /** A full website skin from the Space's page theme (only Menswork has one), with its season. */
   skin?: SiteSkin | null
-  /** The Space's logo, set beside the name. Only a skinned site passes one; the house look keeps the
-   *  name in type. */
+  /** The Space's logo. The house look sets it as a round photo beside the name (or alone, logoMode
+   *  'logo'); a skinned site draws it as a one-colour mark beside the name. */
   logoUrl?: string | null
+  /** The house header's logo slot: name only, round photo plus name (the default with a logo), or the
+   *  logo image alone. */
+  logoMode?: SiteLogoMode
+  /** The house header fades away when scrolling pauses. */
+  fadeOnPause?: boolean
   /** The Space's tagline, printed in a skinned site's footer. */
   tagline?: string | null
   /** Website drafts can author a full footer in any theme. Legacy sites keep their skin default. */
@@ -94,9 +101,6 @@ export function SiteChrome({
   children: ReactNode
 }) {
   const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
-  const menu = adminLinks
-    ? [...links, ...adminLinks.menu.map((l) => ({ href: l.href, label: `Admin: ${l.label}`, className: 'hs-nav-admin' }))]
-    : links
   return (
     <div
       data-site-root=""
@@ -107,51 +111,17 @@ export function SiteChrome({
       className="hs-root"
     >
       <style>{skin ? HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS : HOUSE_CSS}</style>
-      <header className="hs-header">
-        <div className="hs-pill">
-          <a href={homeHref} className="hs-brand">
-            {logoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
-              <img src={logoUrl} alt="" className="hs-logo" />
-            )}
-            {brandName}
-          </a>
-          {links.length > 0 && (
-            <nav aria-label={`${brandName} menu`} className="hs-nav">
-              {links.map((l) => (
-                <a key={l.href} href={l.href}>
-                  {l.label}
-                </a>
-              ))}
-              {adminLinks && (
-                <span className="hs-nav-admin">
-                  <span className="hs-nav-admin-tag">Admin:</span>
-                  {adminLinks.menu.map((l, i) => (
-                    <Fragment key={l.href}>
-                      {i > 0 && <span className="hs-nav-admin-sep" aria-hidden>|</span>}
-                      <a href={l.href} aria-current={l.current ? 'page' : undefined}>
-                        {l.label}
-                      </a>
-                    </Fragment>
-                  ))}
-                </span>
-              )}
-            </nav>
-          )}
-          <div className="hs-header-actions">
-            {cta && (
-              <a
-                href={cta.href}
-                className="hs-btn hs-btn-dark"
-                {...(cta.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-              >
-                {cta.label}
-              </a>
-            )}
-            <HouseMenu label={`${brandName} menu`} links={menu} />
-          </div>
-        </div>
-      </header>
+      <HouseHeader
+        brandName={brandName}
+        homeHref={homeHref}
+        links={links}
+        adminLinks={adminLinks?.menu ?? null}
+        cta={cta}
+        logoUrl={logoUrl}
+        logoMode={skin ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
+        skinned={!!skin}
+        fadeOnPause={fadeOnPause}
+      />
       {skin && <SeasonBar season={skin.season} now={seasonNow} />}
 
       <main id="top">{children}</main>
