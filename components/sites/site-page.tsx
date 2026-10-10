@@ -261,7 +261,7 @@ export async function SitePage({
         cta={chromeCta}
         themeFonts={!!website || hasChosenTheme(space.preferences)}
         skin={skin}
-        logoUrl={website ? websiteBrand.logo : skin ? space.brandLogoUrl : null}
+        logoUrl={website ? websiteBrand.logo : space.brandLogoUrl}
         tagline={website ? websiteChrome.tagline : skin ? tagline : null}
         showBrandFooter={!!website || !!skin}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}

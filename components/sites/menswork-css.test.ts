@@ -13,6 +13,7 @@ const classes = (css: string) => new Set(css.match(/\.hs-[a-z0-9-]+/g))
 const LAYOUT_ONLY = new Set([
   '.hs-stack',
   '.hs-header-actions',
+  '.hs-brand-name',
   '.hs-menu',
   '.hs-hero-actions',
   '.hs-start-who',
