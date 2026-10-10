@@ -86,11 +86,13 @@ function ChromeTextField({ label, value, maxLength, onCommit }: { label: string;
 }
 
 /** Global website chrome edits stay in the website draft; linked live sources remain authoritative. */
-export function WebsiteChromeInspector({ area, chrome, defaults, sourceSettingsHref, onChange, onTheme, onPages }: {
+export function WebsiteChromeInspector({ area, chrome, defaults, sourceSettingsHref, onChange, onTheme, onPages, onMenu }: {
   area: 'header' | 'footer'; chrome?: WebsiteChrome
   defaults: { name: string; tagline: string | null; cta: { label: string; href: string } | null }
   sourceSettingsHref?: string; onChange: (value: WebsiteChrome) => void
   onTheme: () => void; onPages: () => void
+  /** Opens the shared menu and logo editor (components/spaces/site-menu-editor.tsx). */
+  onMenu?: () => void
 }) {
   const value = resolveWebsiteChrome({ chrome }, defaults)
   const commit = (next: WebsiteChrome) => { if (!validWebsiteChrome(next)) return false; onChange(next); return true }
@@ -100,6 +102,7 @@ export function WebsiteChromeInspector({ area, chrome, defaults, sourceSettingsH
     <ChromeTextField label="Website name" maxLength={100} value={value.name} onCommit={(name) => commit({ ...chrome, name })} />
     {chrome?.name !== undefined && <button type="button" className="we-row" onClick={() => reset('name')}>Use Space name</button>}
     {area === 'header' ? <>
+      {onMenu && <button type="button" className="we-row" onClick={onMenu}>Edit menu and logo</button>}
       <button type="button" className="we-row" onClick={onTheme}>Edit logo and brand colors</button>
       <div className="we-field"><span>Header button</span><label><Input variant="seamless" type="checkbox" aria-label="Show header button" checked={value.cta !== null} onChange={(e) => onChange({ ...chrome, cta: e.target.checked ? defaults.cta ?? { label: 'Contact', href: '/contact' } : null })} /> Show button</label></div>
       {value.cta && <>

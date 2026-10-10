@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import type { ResolvedMenuLink } from '@/lib/spaces/site-menu'
 
 // The Space profile MENU row, rendered by the (profile) route-group layout. Three item kinds share it:
 //   - Home + custom sub-pages (path links; active state below)
@@ -21,6 +22,12 @@ import { usePathname } from 'next/navigation'
 export interface SpaceProfileTab {
   href: string
   label: string
+  /** The menu key (lib/spaces/site-menu.ts), when the tab came from the automatic set. `home` marks Home. */
+  key?: string
+  /** A custom link off the Space (opens in a new tab). */
+  external?: boolean
+  /** A dropdown from the saved menu: drawn as the mega panel (space-menu-dropdown.tsx). */
+  mega?: ResolvedMenuLink['mega']
 }
 
 export function SpaceProfileTabs({

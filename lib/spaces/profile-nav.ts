@@ -1,7 +1,8 @@
 import { collectiveNetworkOpen } from '@/lib/collective/network'
 import { getCallerProfile } from '@/lib/auth'
 import type { WebRole } from '@/lib/core/roles'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
+import { readSiteMenu, resolveSiteMenu, type MenuCatalogEntry } from '@/lib/spaces/site-menu'
 import { isConsoleSpaceType, spaceManageHref, type Space } from '@/lib/spaces/types'
 import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
@@ -30,6 +31,8 @@ interface SpaceProfileNav {
   tabs: SpaceProfileTab[]
   /** The operator's back-end links (Manage / CRM), empty for a visitor. */
   adminTabs: SpaceProfileTab[]
+  /** Every tab this viewer could get automatically, keyed for the menu editor (lib/spaces/site-menu.ts). */
+  catalog: MenuCatalogEntry[]
 }
 
 /**
@@ -177,9 +180,9 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
   // "Start your first circle" empty state stays reachable.
   const canSeeAsOwner = manage.canManage || manage.staffViewing
 
-  const tabs: SpaceProfileTab[] = [
-    { href: base, label: pages[0]?.label ?? 'Home' },
-    ...sections.map((s) => ({ href: `${base}#${s.anchor}`, label: s.label })),
+  const autoTabs: (SpaceProfileTab & { key: string })[] = [
+    { key: 'home', href: base, label: pages[0]?.label ?? 'Home' },
+    ...sections.map((s) => ({ key: `anchor:${s.anchor}`, href: `${base}#${s.anchor}`, label: s.label })),
     // The Calendar tab — THE MERGED CALENDAR AND EVENTS PAGE (LIVE-520). The Up next feed, the month
     // grid, the agenda, and the subscribable feed, on one page and behind ONE menu row; the `#events`
     // anchor that used to sit beside it is suppressed above. The label stays "Calendar" because the
@@ -187,8 +190,8 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     // all say calendar, and a menu word that disagreed with all of them would be a second name for
     // one thing. Shown only when the Space has upcoming PUBLIC events (the exact set the grid
     // renders), so the tab never opens onto an empty calendar.
-    ...(hasCalendarEvents ? [{ href: `${base}/calendar`, label: 'Calendar' }] : []),
-    ...(collectiveNetworkOpen(space) ? [{ href: `${base}/network`, label: 'Network' }] : []),
+    ...(hasCalendarEvents ? [{ key: 'feature:calendar', href: `${base}/calendar`, label: 'Calendar' }] : []),
+    ...(collectiveNetworkOpen(space) ? [{ key: 'feature:network', href: `${base}/network`, label: 'Network' }] : []),
     // Memberships (LIVE-509): the Space's tiers, and the door that joins one. Sits high, right after
     // Calendar, because it is the commercial answer to "what is this place" and it was previously
     // reachable ONLY through the one operator-overridable header button. A visitor gets it once the
@@ -200,18 +203,18 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
       hasActiveTiers: hasTiers,
       canManage: canSeeAsOwner,
     })
-      ? [{ href: `${base}/memberships`, label: 'Memberships' }]
+      ? [{ key: 'feature:memberships', href: `${base}/memberships`, label: 'Memberships' }]
       : []),
     // The Collaborators tab (ADR-799 B1): the businesses that operate together with this space. Shown
     // only when there is at least one accepted collaboration.
-    ...(hasCollaborators ? [{ href: `${base}/collaborators`, label: 'Collaborators' }] : []),
+    ...(hasCollaborators ? [{ key: 'feature:collaborators', href: `${base}/collaborators`, label: 'Collaborators' }] : []),
     // Circles: a Space's community IS its Circles (NAMING.md, ADR-1091), and this is where they are.
     // A manager sees it even at zero, because the empty state is where "Start your first circle"
     // lives; a visitor only sees it once there is a circle they could actually open.
-    ...(circlesEnabled && (presence.circles || canSeeAsOwner) ? [{ href: `${base}/circles`, label: 'Circles' }] : []),
+    ...(circlesEnabled && (presence.circles || canSeeAsOwner) ? [{ key: 'feature:circles', href: `${base}/circles`, label: 'Circles' }] : []),
     // People: the member directory of space_memberships, never the staff roster at settings/members.
     // Shown only to an active member or a manager (ADR-1471).
-    ...(showPeople ? [{ href: `${base}/people`, label: 'People' }] : []),
+    ...(showPeople ? [{ key: 'feature:people', href: `${base}/people`, label: 'People' }] : []),
     // NO DISCUSSION ROW (LIVE-523, ADR-1534 amending ADR-1469 §2). The Space Circle's feed now LEADS
     // the Circles tab above, and the other circles are indexed beneath it, so the Space's community
     // is one page. A dedicated Discussion row beside Circles was two menu rows over one subject —
@@ -229,18 +232,28 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
       hasContactFacts: hasContactFacts(space.preferences),
       canManage: canSeeAsOwner,
     })
-      ? [{ href: `${base}/contact`, label: 'Contact' }]
+      ? [{ key: 'feature:contact', href: `${base}/contact`, label: 'Contact' }]
       : []),
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise. Gated on the `reviews` function (default ON).
-    ...(reviewsEnabled ? [{ href: `${base}/reviews`, label: 'Reviews' }] : []),
+    ...(reviewsEnabled ? [{ key: 'feature:reviews', href: `${base}/reviews`, label: 'Reviews' }] : []),
     ...(storefront.published && isConsoleSpaceType(space.type) && shopEnabled
-      ? [{ href: `${base}/shop`, label: storefront.tabLabel }]
+      ? [{ key: 'feature:shop', href: `${base}/shop`, label: storefront.tabLabel }]
       : []),
     ...pages
       .filter((p) => p.slug !== HOME_SLUG)
-      .map((p) => ({ href: `${base}/${p.slug}`, label: p.label })),
+      .map((p) => ({ key: `page:${p.slug}`, href: `${base}/${p.slug}`, label: p.label })),
   ]
+
+  // THE SAVED MENU (lib/spaces/site-menu.ts): a Business Space that saved a menu gets that list, in its
+  // order, with its dropdowns and custom links, filtered to the items shown on the Space page. Items
+  // whose feature or page is not available to THIS viewer drop out (resolved against the tabs above), and
+  // a feature or page newer than the save joins the end. Free Spaces and Spaces that never saved keep
+  // the automatic tabs above, unchanged.
+  const saved = resolveSiteMenu(readSiteMenu(space.preferences), autoTabs, 'space', { canEdit: spaceCanUseFullWebsite(space) })
+  const tabs: SpaceProfileTab[] = saved
+    ? saved.map((l) => ({ href: l.href, label: l.label, ...(l.external ? { external: true } : {}), ...(l.mega ? { mega: l.mega } : {}), ...(l.href === base ? { key: 'home' } : {}) }))
+    : autoTabs
 
   // Just "Manage" now: the CRM has no separate menu item (it lives inside the Manage dashboard's
   // Community area). `spaceManageHref` is the full-page console; the profile menu instead opens the
@@ -249,5 +262,5 @@ async function buildNavFor(space: Space, viewer: SpaceNavViewer | null): Promise
     ? [{ href: spaceManageHref(space.type, space.slug), label: 'Manage' }]
     : []
 
-  return { tabs, adminTabs }
+  return { tabs, adminTabs, catalog: autoTabs.map(({ key, label, href }) => ({ key, label, href })) }
 }

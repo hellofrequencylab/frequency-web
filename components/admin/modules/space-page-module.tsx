@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { getSpacePageData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
+import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { SpacePageBuilder } from '@/components/entity-blocks/profile-page-builder'
 import type { BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { RailModuleLoading } from './rail-module-loading'
@@ -83,6 +84,8 @@ export function SpacePageModule() {
         canManagePages={data.canManagePages}
         readOnly={data.readOnly}
       />
+      {/* The menu and header logo, shared with the Space's website (lib/spaces/site-menu.ts). */}
+      {!data.readOnly && <SiteMenuEditor slug={data.slug} />}
     </section>
   )
 }
