@@ -26,6 +26,8 @@ export interface HouseHeaderLink {
   label: string
   /** A dropdown in place of a plain link. */
   mega?: SiteMegaMenu | null
+  /** An off-site custom link: opens in a new tab. */
+  external?: boolean
 }
 
 export type SiteLogoMode = 'name' | 'avatar' | 'logo'
@@ -167,7 +169,7 @@ export function HouseHeader({
                     </svg>
                   </button>
                 ) : (
-                  <a key={l.href} href={l.href} onMouseEnter={closeMega}>
+                  <a key={l.href} href={l.href} onMouseEnter={closeMega} {...(l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
                     {l.label}
                   </a>
                 ),

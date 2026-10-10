@@ -18,6 +18,7 @@ import { appOrigin } from '@/lib/sites/host'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
+import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
 import { SpaceCanvasEditorSection } from '@/components/entity-blocks/space-canvas/space-canvas-editor-section'
 
 // SPACE PAGE SETTINGS (multi-page model). The "Page" quick-edit surface in the unified console: a
@@ -116,6 +117,12 @@ export default async function SpacePageSettingsPage({
         readOnly={readOnly}
         contactPage={contactPage}
       />
+      {/* The menu and header logo, shared with the Space's website (lib/spaces/site-menu.ts). */}
+      {!readOnly && (
+        <section className="mt-10 rounded-card border border-border bg-surface p-5 lift-1" aria-label="Menu and logo">
+          <SiteMenuEditor slug={slug} />
+        </section>
+      )}
     </FocusTemplate>
   )
 }

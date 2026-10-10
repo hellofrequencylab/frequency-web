@@ -21,8 +21,10 @@ import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 export function SpaceProfileMenu({
   tabs,
   canManage = false,
+  homeHref,
 }: {
   tabs: SpaceProfileTab[]
+  homeHref?: string
   /** Whether the viewer manages this Space — gates the "Manage" item. */
   canManage?: boolean
 }) {
@@ -30,6 +32,7 @@ export function SpaceProfileMenu({
     <SpaceProfileMenuView
       tabs={tabs}
       canManage={canManage}
+      homeHref={homeHref}
       pathname={usePathname()}
       panel={useSearchParams().get('panel') ?? undefined}
     />

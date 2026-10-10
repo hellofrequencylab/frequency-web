@@ -97,3 +97,39 @@ describe('the menu still answers "where am I"', () => {
     expect(lit).toEqual([`${base}/teachers`])
   })
 })
+
+// THE SAVED MENU (lib/spaces/site-menu.ts): a dropdown is a button that opens the mega panel outside
+// the scroll rail, and a custom link off the Space opens in a new tab.
+describe('the saved menu in the rail', () => {
+  const tabs: SpaceProfileTab[] = [
+    { href: `${base}/calendar`, label: 'Calendar' },
+    { key: 'home', href: base, label: 'Home' },
+    {
+      href: `${base}/circles`,
+      label: 'Sessions',
+      mega: {
+        links: [{ label: 'Circles', desc: 'Weekly groups', href: `${base}/circles` }],
+        feature: { title: 'Book a call', desc: null, href: 'https://cal.test/a', img: null, pos: null },
+      },
+    },
+    { href: 'https://etsy.test/shop', label: 'Shop', external: true },
+  ]
+
+  it('draws the dropdown closed, then opens its panel with the links and the card', () => {
+    const el = mount(<SpaceProfileMenuView tabs={tabs} canManage pathname={base} homeHref={base} />)
+    const button = [...el.querySelectorAll('button')].find((b) => b.textContent?.includes('Sessions'))!
+    expect(button.getAttribute('aria-expanded')).toBe('false')
+    act(() => button.click())
+    expect(button.getAttribute('aria-expanded')).toBe('true')
+    const panel = document.getElementById(button.getAttribute('aria-controls')!)!
+    expect(panel.textContent).toContain('Weekly groups')
+    expect(panel.querySelector('a[href="https://cal.test/a"]')?.getAttribute('target')).toBe('_blank')
+  })
+
+  it('opens a custom link in a new tab, finds Home by its key, and pins Manage to the Space index', () => {
+    const el = mount(<SpaceProfileMenuView tabs={tabs} canManage pathname={base} homeHref={base} />)
+    expect(el.querySelector('a[href="https://etsy.test/shop"]')?.getAttribute('target')).toBe('_blank')
+    expect(el.querySelector(`a[href="${base}"]`)?.getAttribute('aria-current')).toBe('page')
+    expect(el.querySelector(`a[href="${base}?panel=manage"]`)).not.toBeNull()
+  })
+})

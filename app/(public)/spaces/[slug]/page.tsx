@@ -208,7 +208,7 @@ export default async function PublicSpacePage({
         // `canManage` is false by construction rather than by choice: this tree has no viewer to be
         // a manager. An operator who signs in is rewritten to the member body by
         // lib/nav/member-space-rewrite.ts and never renders this page at all.
-        stickyNav={<SpaceProfileMenuView tabs={tabs} canManage={false} pathname={`/spaces/${space.slug}`} />}
+        stickyNav={<SpaceProfileMenuView tabs={tabs} canManage={false} pathname={`/spaces/${space.slug}`} homeHref={`/spaces/${space.slug}`} />}
       >
         <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
         {/* THE VISITOR'S FRONT DOOR (LIVE-524), and it sits BELOW the operator's blocks on purpose.

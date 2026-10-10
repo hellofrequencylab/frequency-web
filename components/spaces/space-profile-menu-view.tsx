@@ -3,6 +3,7 @@ import { SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SURFACE_PANELS, isPanelId } from '@/components/spaces/workspace/surface-panels'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
+import { SpaceMenuDropdown } from '@/components/spaces/space-menu-dropdown'
 
 // THE SPACE MENU'S MARKUP, WITH NO HOOKS (LIVE-522).
 //
@@ -42,8 +43,11 @@ export function SpaceProfileMenuView({
   canManage = false,
   pathname,
   panel,
+  homeHref,
 }: {
   tabs: SpaceProfileTab[]
+  /** The Space's index (`/spaces/<slug>`), for Home's active state and the Manage pin. */
+  homeHref?: string
   /** Whether the viewer manages this Space — gates the "Manage" item. */
   canManage?: boolean
   /** The current path. A PROP, not a router hook: see the header note. */
@@ -62,7 +66,9 @@ export function SpaceProfileMenuView({
     canManage && isPanelId(rawPanel) && rawPanel !== 'manage' ? SURFACE_PANELS[rawPanel].label : null
   const manageActive = canManage && rawPanel === 'manage'
 
-  const indexHref = tabs[0]?.href
+  // Home is found by its menu key: a saved menu (lib/spaces/site-menu.ts) may move or drop it, and the
+  // Manage pin below hangs off the Space's index either way.
+  const indexHref = homeHref ?? tabs.find((t) => t.key === 'home')?.href ?? tabs[0]?.href
   const isActive = (tab: SpaceProfileTab): boolean => {
     if (tab.href.includes('#')) return false
     if (tab.href === indexHref) return pathname === tab.href && openPanelLabel == null
@@ -116,6 +122,14 @@ export function SpaceProfileMenuView({
             className="admin-subnav-scroll flex min-w-0 flex-1 items-center gap-1 overflow-x-auto overscroll-x-contain px-4 py-3 sm:px-6 sm:py-2.5 lg:px-4"
           >
             {tabs.map((tab) => {
+              if (tab.mega) return <SpaceMenuDropdown key={`mega:${tab.label}`} tab={tab} itemClassName={itemClasses(false)} />
+              if (tab.external) {
+                return (
+                  <a key={tab.href} href={tab.href} target="_blank" rel="noopener noreferrer" className={itemClasses(false)}>
+                    {tab.label}
+                  </a>
+                )
+              }
               const active = isActive(tab)
               return (
                 <Link
