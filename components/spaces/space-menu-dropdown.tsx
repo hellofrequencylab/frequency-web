@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
@@ -18,6 +18,7 @@ export function SpaceMenuDropdown({ tab, itemClassName }: { tab: SpaceProfileTab
   const [top, setTop] = useState(0)
   const button = useRef<HTMLButtonElement>(null)
   const panel = useRef<HTMLDivElement>(null)
+  const id = useId()
 
   useEffect(() => {
     if (!open) return
@@ -46,7 +47,6 @@ export function SpaceMenuDropdown({ tab, itemClassName }: { tab: SpaceProfileTab
 
   const mega = tab.mega
   if (!mega) return null
-  const id = `space-menu-${tab.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
   const toggle = () => {
     if (!open && button.current) setTop(button.current.getBoundingClientRect().bottom + 8)
     setOpen((o) => !o)

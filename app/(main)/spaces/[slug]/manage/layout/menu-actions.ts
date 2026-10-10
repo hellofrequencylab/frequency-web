@@ -14,6 +14,7 @@ import { refreshSite } from '@/lib/sites/site-cache'
 import { readSiteBooking } from '@/lib/sites/site-booking'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import type { Space } from '@/lib/spaces/types'
+import { slugify } from '@/lib/utils'
 import {
   knownKeys,
   parseHeaderLogo,
@@ -122,7 +123,7 @@ function seedFrom(c: { space: MenuCatalogEntry[]; website: MenuCatalogEntry[] })
   const onSpace = new Set(c.space.map((e) => e.key))
   const items: MenuItem[] = []
   const add = (e: MenuCatalogEntry, visibility: MenuItem['visibility']) =>
-    items.push({ id: e.key.replace(/[^a-z0-9]+/g, '-'), label: e.label, visibility, target: { kind: 'auto', key: e.key } })
+    items.push({ id: slugify(e.key), label: e.label, visibility, target: { kind: 'auto', key: e.key } })
   for (const e of c.space) add(e, c.website.length === 0 || onWebsite.has(e.key) ? 'both' : 'space')
   for (const e of c.website) if (!onSpace.has(e.key)) add(e, 'website')
   return { v: 1, items, known: knownKeys([...c.space, ...c.website]) }
