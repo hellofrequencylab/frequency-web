@@ -57,7 +57,7 @@ html:has([data-house-site]),body:has([data-house-site]){background:var(--color-c
 .hs-brand-name{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .hs-logo-avatar{flex:none;width:40px;height:40px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--color-surface)}
 .hs-logo-image{flex:none;height:40px;width:auto;max-width:180px;object-fit:contain;border-radius:8px}
-.hs-nav{grid-area:nav;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent)}
+.hs-nav{grid-area:nav;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,transparent,var(--color-ink) 18px,var(--color-ink) calc(100% - 18px),transparent);mask-image:linear-gradient(to right,transparent,var(--color-ink) 18px,var(--color-ink) calc(100% - 18px),transparent)}
 .hs-nav::-webkit-scrollbar{display:none}
 .hs-nav-track{display:flex;align-items:center;gap:2px;width:max-content;margin:0 auto;padding:0 14px;font-weight:500;font-size:15px}
 .hs-nav a,.hs-nav-mega{display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:999px;white-space:nowrap;cursor:pointer;font:inherit;background:transparent;color:var(--color-text-muted);transition:background 130ms ease,color 130ms ease}
