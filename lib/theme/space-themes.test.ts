@@ -10,9 +10,12 @@ import {
 } from './space-themes'
 
 describe('space-theme registry (ADR-578)', () => {
-  it('lists bold (today\'s look) first and registers it as the default', () => {
-    expect(SPACE_THEMES[0].id).toBe('bold')
-    expect(DEFAULT_SPACE_THEME).toBe('bold')
+  it('lists frequency (the house look) first and registers it as the default (ADR-1726)', () => {
+    expect(SPACE_THEMES[0].id).toBe('frequency')
+    expect(DEFAULT_SPACE_THEME).toBe('frequency')
+    // The retired Anton `bold` set: a stored value reads as the default, and Menswork is labelled Bold.
+    expect(resolveSpaceTheme('bold')).toBe('frequency')
+    expect(SPACE_THEMES.find((t) => t.id === 'menswork')?.label).toBe('Bold')
     expect(SPACE_THEMES.some((t) => t.id === DEFAULT_SPACE_THEME)).toBe(true)
   })
 
@@ -111,6 +114,7 @@ const FACE_VAR: Record<string, string> = {
   Lexend: '--font-lexend',
   'Atkinson Hyperlegible': '--font-atkinson',
   Nunito: '--font-nunito',
+  'Space Grotesk': '--font-grotesk',
   'Sofia Sans Extra Condensed': '--font-sofia-xc',
   Barlow: '--font-barlow',
 }
@@ -132,11 +136,13 @@ describe('space-theme block contents (fonts match the registry)', () => {
   }
 })
 
-describe('space-theme knob totality (every non-bold theme is a full treatment, not a family swap)', () => {
-  const styled = SPACE_THEMES.filter((t) => t.id !== DEFAULT_SPACE_THEME)
+describe('space-theme knob totality (every font set is a full treatment, not a family swap)', () => {
+  // Frequency joined this contract when it replaced the Anton default (ADR-1726): the base headline
+  // rule is tuned for Anton caps, so the default needs its own treatment like every other set.
+  const styled = SPACE_THEMES
 
-  it('covers the five styled themes (a seventh theme automatically joins this contract)', () => {
-    expect(styled.length).toBe(SPACE_THEMES.length - 1)
+  it('covers every font set (a new one automatically joins this contract)', () => {
+    expect(styled.length).toBe(SPACE_THEMES.length)
   })
 
   for (const t of styled) {
@@ -195,17 +201,10 @@ describe('space-theme knob totality (every non-bold theme is a full treatment, n
   }
 })
 
-describe('bold byte-identity pins (the default authors NOTHING beyond its font anchor)', () => {
-  it('bold\'s block sets no radius and no --font-heading', () => {
-    const block = themeBlock(DEFAULT_SPACE_THEME)
-    expect(block).not.toBe('')
-    expect(block).not.toMatch(/--radius-/)
-    expect(block).not.toMatch(/--font-heading/)
-  })
-
-  it('no bold-scoped treatment rule exists for any text role', () => {
-    // Anything matching `[data-space-theme="bold"] .font-…` would restyle the default look.
-    expect(globalsCss).not.toMatch(/\[data-space-theme="bold"\]\s+\.font-(display|section|eyebrow)/)
+describe('the retired Anton bold set stays retired (ADR-1726)', () => {
+  it('has no block and no treatment rule, so a stored `bold` renders as Frequency', () => {
+    expect(globalsCss).not.toMatch(/\[data-space-theme="bold"\]/)
+    expect(themeBlock(DEFAULT_SPACE_THEME)).not.toMatch(/--radius-/)
   })
 
   it('the shared [data-space-theme] rule applies the body face and pins the radius baseline', () => {

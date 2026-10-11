@@ -7,12 +7,14 @@ import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Input, Textarea, Label, labelClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
+import { SITE_THEMES, type SiteStyle } from '@/lib/theme/site-style'
 import { suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
 import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import {
@@ -80,6 +82,7 @@ export function SpaceBrandingForm({
   headerCta = null,
   defaultCtaLabel,
   pageTheme,
+  siteStyle,
   heroHeight = COVER_HEIGHT_DEFAULT,
   heroButtonOrientation = 'row',
   readOnly = false,
@@ -101,6 +104,8 @@ export function SpaceBrandingForm({
   /** The current Space PAGE STYLE (ADR-578) — the selected one of the six TYPOGRAPHY themes. A theme no
    *  longer carries shape: every Space renders one radius (2026-09-01, see globals.css). */
   pageTheme: SpaceThemeId
+  /** The site style (ADR-1726): theme, sync and the Space page's own fonts. */
+  siteStyle?: SiteStyle
   /** The hero cover height + button orientation (item 5, edited here now, not in the page builder). */
   heroHeight?: HeroHeight
   heroButtonOrientation?: HeroButtonOrientation
@@ -178,6 +183,13 @@ export function SpaceBrandingForm({
   if (pageTheme !== seenTheme) {
     setSeenTheme(pageTheme)
     setTheme(pageTheme)
+  }
+  const initialStyle: SiteStyle = siteStyle ?? { theme: pageTheme === 'menswork' ? 'bold' : 'frequency', fonts: pageTheme, synced: true, spaceFonts: pageTheme }
+  const [style, setStyle] = useState<SiteStyle>(initialStyle)
+  const [seenStyle, setSeenStyle] = useState<SiteStyle | undefined>(siteStyle)
+  if (siteStyle !== seenStyle) {
+    setSeenStyle(siteStyle)
+    setStyle(initialStyle)
   }
 
   // HERO LOOK (item 5) — height + button orientation, moved here from the page builder. Optimistic, each
@@ -642,52 +654,62 @@ export function SpaceBrandingForm({
         </div>
       </details>
 
-      {/* PAGE STYLE — the TYPOGRAPHY identity the whole page renders in. A clear button + dropdown
-          (closed by default, matching Header): the presets stay tucked away until the operator opens it. The
-          accent colour is set separately below. Optimistic buttons, each saves the moment it is picked. */}
+      {/* THEME AND FONTS (ADR-1726): the site THEME (Frequency or Bold) and the FONT SET the website wears,
+          and whether the Space page follows them. Optimistic buttons, each saves the moment it is picked. */}
       <details className="group rounded-card border border-border bg-surface-elevated">
         <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-control px-4 py-3 text-body-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
           <Type className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-          <span className="flex-1">Page style</span>
+          <span className="flex-1">Theme and fonts</span>
           <span className="text-2xs font-medium text-muted group-open:hidden">Edit</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
         </summary>
-        <div className="space-y-2 px-4 pb-4 pt-1">
-          <p className="text-meta text-muted">
-            The fonts for your whole page. Your colours and corners stay the same. Pick the feel that fits.
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {SPACE_THEMES.map((t) => {
-              const active = theme === t.id
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  disabled={readOnly || pending || active}
-                  onClick={() => {
-                    setTheme(t.id) // optimistic: flip the active card now, not after the refresh
-                    run(() => updateSpaceProfile(spaceId, { theme: t.id }))
-                  }}
-                  aria-pressed={active}
-                  title={t.description}
-                  // Each card PREVIEWS its own theme: `data-space-theme` scopes the theme's font vars +
-                  // treatment rules to this card (they live on <html>, so this works outside AccentScope),
-                  // and `font-display` on the label renders it in that theme's display face.
-                  data-space-theme={t.id}
-                  className={cn(
-                    'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                    active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
-                  )}
-                >
-                  <span className="flex items-center gap-1.5 font-display text-body-sm font-semibold text-text">
-                    {t.label}
-                    {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
-                  </span>
-                  <span className="mt-0.5 block text-meta text-muted">{t.description}</span>
-                </button>
-              )
-            })}
+        <div className="space-y-4 px-4 pb-4 pt-1">
+          <div className="space-y-2">
+            <p className={labelClasses}>Theme</p>
+            <StyleChoiceCards
+              choices={SITE_THEMES.map((t) => ({ id: t.id, label: t.label, detail: t.description, preview: t.defaultFonts }))}
+              value={style.theme}
+              disabled={readOnly || pending}
+              onPick={(id) => {
+                const t = SITE_THEMES.find((x) => x.id === id)!
+                // A theme brings its own fonts; the owner can pick other fonts after.
+                setStyle({ ...style, theme: t.id })
+                setTheme(t.defaultFonts)
+                run(() => updateSpaceProfile(spaceId, { siteTheme: t.id, theme: t.defaultFonts }))
+              }}
+            />
           </div>
+          <FontSetPicker
+            label={style.synced ? 'Fonts' : 'Website fonts'}
+            value={theme}
+            disabled={readOnly || pending}
+            onPick={(id) => {
+              setTheme(id)
+              run(() => updateSpaceProfile(spaceId, { theme: id }))
+            }}
+          />
+          <Checkbox
+            checked={style.synced}
+            disabled={readOnly || pending}
+            label="Use the same style on my Space page"
+            hint="Your website leads. Turn this off to give your Space page its own fonts."
+            onChange={(e) => {
+              const synced = e.target.checked
+              setStyle({ ...style, synced, spaceFonts: synced ? style.spaceFonts : theme })
+              run(() => updateSpaceProfile(spaceId, synced ? { styleSynced: true } : { styleSynced: false, spaceFonts: theme }))
+            }}
+          />
+          {!style.synced && (
+            <FontSetPicker
+              label="Space page fonts"
+              value={style.spaceFonts}
+              disabled={readOnly || pending}
+              onPick={(id) => {
+                setStyle({ ...style, spaceFonts: id })
+                run(() => updateSpaceProfile(spaceId, { spaceFonts: id }))
+              }}
+            />
+          )}
         </div>
       </details>
 
@@ -702,6 +724,63 @@ export function SpaceBrandingForm({
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving…
         </p>
       )}
+    </div>
+  )
+}
+
+/** The font sets as preview cards: each card wears its own faces. */
+function FontSetPicker({ label, value, disabled, onPick }: { label: string; value: SpaceThemeId; disabled: boolean; onPick: (id: SpaceThemeId) => void }) {
+  return (
+    <div className="space-y-2">
+      <p className={labelClasses}>{label}</p>
+      <StyleChoiceCards
+        choices={SPACE_THEMES.map((t) => ({ id: t.id, label: t.label, detail: `${t.displayFont} and ${t.bodyFont}`, preview: t.id }))}
+        value={value}
+        disabled={disabled}
+        onPick={onPick}
+      />
+    </div>
+  )
+}
+
+/** One grid of pick-one cards. Each card previews its own font set (`data-space-theme` scopes the faces to
+ *  the card, since every font variable lives on <html>) and saves the moment it is picked. */
+function StyleChoiceCards<T extends string>({
+  choices,
+  value,
+  disabled,
+  onPick,
+}: {
+  choices: { id: T; label: string; detail: string; preview: SpaceThemeId }[]
+  value: T
+  disabled: boolean
+  onPick: (id: T) => void
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {choices.map((c) => {
+        const active = value === c.id
+        return (
+          <button
+            key={c.id}
+            type="button"
+            disabled={disabled || active}
+            onClick={() => onPick(c.id)}
+            aria-pressed={active}
+            data-space-theme={c.preview}
+            className={cn(
+              'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+              active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
+            )}
+          >
+            <span className="flex items-center gap-1.5 font-display text-body-sm font-semibold text-text">
+              {c.label}
+              {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+            </span>
+            <span className="mt-0.5 block text-meta text-muted">{c.detail}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

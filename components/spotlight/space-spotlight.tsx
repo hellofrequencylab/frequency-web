@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
+import { spacePageFonts } from '@/lib/theme/site-style'
 import Link from 'next/link'
 import type { Space } from '@/lib/spaces/types'
 import { getInitials } from '@/lib/utils'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
-import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { readSpaceSpotlight, spaceSpotlightGrid, spotlightSiteGrid } from '@/lib/spaces/spotlight'
 import { markSpotlightRender } from '@/lib/spaces/spotlight-site'
@@ -23,7 +23,7 @@ export function SpotlightAccent({ space, children }: { space: Space; children: R
   return (
     <AccentScope
       vars={resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))}
-      theme={parseSpaceTheme(space.preferences)}
+      theme={spacePageFonts(space.preferences)}
     >
       {children}
     </AccentScope>

@@ -1,8 +1,8 @@
 import { resolveHostedSpace } from '@/lib/sites/hosted'
 import { publishedWebsiteSnapshot, resolveWebsiteBrand } from '@/lib/sites/editor/state'
+import { siteTheme } from '@/lib/theme/site-style'
 import { normalizeHost } from '@/lib/sites/host'
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
-import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { mensworkSeason } from '@/lib/theme/menswork'
 import { fetchRemoteImage } from '@/lib/og/remote-image'
 import { cardResponse } from '@/lib/og/deliver'
@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ host: s
   const host = normalizeHost(decodeURIComponent(hostParam))
   const space = await resolveHostedSpace(host)
   const website = space ? publishedWebsiteSnapshot(space.preferences) : null
-  const menswork = website ? website.theme === 'Menswork' : !!space && parseSpaceTheme(space.preferences) === 'menswork'
+  const menswork = website ? website.theme === 'Menswork' : !!space && siteTheme(space.preferences) === 'bold'
   if (!space || !readWebsitePublished(space.preferences) || !menswork) {
     return new Response('Not found', { status: 404 })
   }

@@ -48,6 +48,7 @@ export function SpaceBrandingModule() {
         headerCta={data.headerCta}
         defaultCtaLabel={data.defaultCtaLabel}
         pageTheme={data.pageTheme}
+        siteStyle={data.siteStyle}
         heroHeight={heroLook?.height as HeroHeight | undefined}
         heroButtonOrientation={heroLook?.buttonOrientation as HeroButtonOrientation | undefined}
         readOnly={data.readOnly}

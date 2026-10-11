@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
+import { readSiteStyle, siteTheme } from '@/lib/theme/site-style'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
@@ -15,7 +16,6 @@ import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { hasPage, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
-import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { mensworkAccentVars, mensworkSeason } from '@/lib/theme/menswork'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceLanding } from '@/components/spaces/space-landing'
@@ -109,7 +109,7 @@ export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): 
   const canonical = sitePageUrl(siteBase, page.slug)
   // LIVE-870: a Menswork website on its own host shares its designed card (app/hosted/[host]/opengraph-image),
   // the logo, name and headline over the cover. Others share the cover photo, else the logo.
-  const card = (publishedWebsiteSnapshot(space.preferences)?.theme === 'Menswork' || (!publishedWebsiteSnapshot(space.preferences) && parseSpaceTheme(space.preferences) === 'menswork')) && /^https:\/\/[^/]+$/.test(siteBase) ? `${siteBase}/opengraph-image` : null
+  const card = (publishedWebsiteSnapshot(space.preferences)?.theme === 'Menswork' || (!publishedWebsiteSnapshot(space.preferences) && siteTheme(space.preferences) === 'bold')) && /^https:\/\/[^/]+$/.test(siteBase) ? `${siteBase}/opengraph-image` : null
   const shareImage = card ?? (space.coverImageUrl || space.brandLogoUrl || null)
   const images = shareImage ? [card ? { url: card, width: 1200, height: 630, alt: brandName } : { url: shareImage, alt: brandName }] : undefined
   return {
@@ -148,11 +148,14 @@ export async function SitePage({
   const websiteBrand = resolveWebsiteBrand(website, { logo: space.brandLogoUrl, accent: space.brandAccent })
   const savedWebsitePage = website?.pages.find((p) => p.slug === pageSlug) ?? null
   const websitePage = savedWebsitePage ? { ...savedWebsitePage, doc: await refreshAssetRefUrls(savedWebsitePage.doc, { websiteSpaceId: space.id }) } : null
-  const theme = website ? (website.theme === 'Menswork' ? 'menswork' : 'bold') : parseSpaceTheme(space.preferences)
+  // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
+  const siteStyle = readSiteStyle(space.preferences)
+  const boldSite = website ? website.theme === 'Menswork' : siteStyle.theme === 'bold'
+  const theme = website ? (boldSite ? 'menswork' : 'frequency') : boldSite ? 'menswork' : siteStyle.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
   // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
   // still wins.
-  const skin = theme === 'menswork' ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) } : null
+  const skin = boldSite ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) } : null
   const accentVars = skin
     ? mensworkAccentVars(websiteBrand.accent)
     : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))

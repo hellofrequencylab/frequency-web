@@ -17,6 +17,7 @@
 // re-validate the strict `#rrggbb` shape. isValidAccent is the ONE rule both accent entry points share.
 
 import { revalidatePath } from 'next/cache'
+import { refreshSite } from '@/lib/sites/site-cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -24,6 +25,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isValidAccent } from '@/lib/spaces/accent'
 import { isSpaceThemeId, DEFAULT_SPACE_THEME, type SpaceThemeId } from '@/lib/theme/space-themes'
+import { isSiteThemeId, withSiteStyle, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** The editable profile fields. Every field is optional on the wire; an empty string clears the
@@ -38,9 +40,15 @@ interface UpdateSpaceProfileInput {
   about?: string | null
   tagline?: string | null
   visibility?: 'network' | 'private'
-  /** The Space PAGE THEME (ADR-578): a typography + shape identity id, stored on preferences.theme (jsonb,
-   *  no migration). A known id is kept; the default ('bold') or an unknown value clears the key. */
+  /** The website's FONT SET (ADR-578, renamed ADR-1726), stored on preferences.theme. A known id is kept;
+   *  the default (`frequency`) or an unknown value clears the key. */
   theme?: SpaceThemeId | string | null
+  /** The site THEME, Frequency or Bold (lib/theme/site-style.ts, ADR-1726). */
+  siteTheme?: SiteThemeId | string | null
+  /** The Space page follows the website's style. Off: the Space page keeps `spaceFonts`. */
+  styleSynced?: boolean
+  /** The Space page's own font set, used while syncing is off. */
+  spaceFonts?: SpaceThemeId | string | null
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped accessor.
@@ -148,18 +156,31 @@ export async function updateSpaceProfile(
   //     stale hero override would silently SHADOW the edit — the operator changes the tagline here and
   //     "nothing happens" because an old override keeps winning. When they edit the canonical field, drop the
   //     matching hero override so the new value actually shows.
-  const touchesPrefs =
-    input.theme !== undefined || input.tagline !== undefined || input.brandName !== undefined
+  const touchesStyle =
+    input.theme !== undefined || input.siteTheme !== undefined || input.styleSynced !== undefined || input.spaceFonts !== undefined
+  const touchesPrefs = touchesStyle || input.tagline !== undefined || input.brandName !== undefined
   if (touchesPrefs) {
     const prefs =
       space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
         ? { ...(space.preferences as Record<string, unknown>) }
         : {}
 
-    if (input.theme !== undefined) {
-      const theme = (input.theme ?? '').trim()
-      if (theme && isSpaceThemeId(theme) && theme !== DEFAULT_SPACE_THEME) prefs.theme = theme
+    if (touchesStyle) {
+      // THE SITE STYLE (ADR-1726): the website font set stays on preferences.theme, the theme, sync and the
+      // Space page's own fonts on preferences.siteStyle. Unknown values fall back to the defaults.
+      const fontsOf = (v: string | null | undefined) => {
+        const id = (v ?? '').trim()
+        return id && isSpaceThemeId(id) ? id : DEFAULT_SPACE_THEME
+      }
+      const patchStyle: Partial<SiteStyle> = {}
+      if (input.theme !== undefined) patchStyle.fonts = fontsOf(input.theme)
+      if (input.siteTheme !== undefined) patchStyle.theme = isSiteThemeId(input.siteTheme) ? input.siteTheme : 'frequency'
+      if (input.styleSynced !== undefined) patchStyle.synced = input.styleSynced !== false
+      if (input.spaceFonts !== undefined) patchStyle.spaceFonts = fontsOf(input.spaceFonts)
+      const next = withSiteStyle(prefs, patchStyle)
+      if ('theme' in next) prefs.theme = next.theme
       else delete prefs.theme
+      prefs.siteStyle = next.siteStyle
     }
 
     if (input.tagline !== undefined || input.brandName !== undefined) {
@@ -194,5 +215,7 @@ export async function updateSpaceProfile(
   revalidatePath(`/spaces/${space.slug}`, 'layout')
   revalidatePath('/spaces/directory')
   revalidatePath(`/sites/${space.slug}`)
+  // The website's own host caches its pages under the site tag; a theme or font change must reach it too.
+  if (touchesStyle) refreshSite(space.slug)
   return ok()
 }

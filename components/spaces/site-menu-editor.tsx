@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { Field, Input, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Radio } from '@/components/ui/radio'
 import {
   getSiteMenuEditorData,
   resetSiteMenu,
@@ -303,17 +305,14 @@ function DropdownFields({
       )}
 
       <div className="space-y-3 pt-2">
-        <label className="flex items-center gap-2 text-body-sm text-text">
-          <input
-            type="checkbox"
-            checked={!!item.feature}
-            disabled={readOnly}
-            onChange={(e) =>
-              onChange({ feature: e.target.checked ? { title: item.label, target: children[0]?.target ?? { kind: 'auto', key: 'home' } } : undefined })
-            }
-          />
-          Show a photo card beside the links
-        </label>
+        <Checkbox
+          checked={!!item.feature}
+          disabled={readOnly}
+          label="Show a photo card beside the links"
+          onChange={(e) =>
+            onChange({ feature: e.target.checked ? { title: item.label, target: children[0]?.target ?? { kind: 'auto', key: 'home' } } : undefined })
+          }
+        />
         {item.feature && (
           <div className="flex flex-wrap items-end gap-3">
             <Field label="Card title" className="min-w-40 flex-1">
@@ -450,30 +449,24 @@ function LogoSection({ slug, data, onSaved }: { slug: string; data: MenuEditorDa
         {LOGO_MODES.map((m) => {
           const disabled = pending || (m.value === 'logo' && !logoUrl)
           return (
-            <label
+            <Radio
               key={m.value}
-              className={cn(
-                'flex cursor-pointer flex-col gap-1 rounded-card border p-3 transition-colors',
+              name={`logo-mode-${slug}`}
+              value={m.value}
+              checked={mode === m.value}
+              disabled={disabled}
+              onChange={() => {
+                setMode(m.value)
+                persist(m.value, logoUrl)
+              }}
+              label={<span className="font-semibold">{m.label}</span>}
+              hint={m.value === 'logo' && !logoUrl ? 'Upload a logo to use this.' : m.hint}
+              wrapperClassName={cn(
+                'rounded-card border p-3 transition-colors',
                 mode === m.value ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:bg-surface-elevated',
-                disabled && mode !== m.value && 'cursor-not-allowed opacity-60',
+                disabled && mode !== m.value && 'opacity-60',
               )}
-            >
-              <span className="flex items-center gap-2 text-body-sm font-semibold text-text">
-                <input
-                  type="radio"
-                  name={`logo-mode-${slug}`}
-                  value={m.value}
-                  checked={mode === m.value}
-                  disabled={disabled}
-                  onChange={() => {
-                    setMode(m.value)
-                    persist(m.value, logoUrl)
-                  }}
-                />
-                {m.label}
-              </span>
-              <span className="text-meta text-muted">{m.value === 'logo' && !logoUrl ? 'Upload a logo to use this.' : m.hint}</span>
-            </label>
+            />
           )
         })}
       </div>
@@ -482,11 +475,7 @@ function LogoSection({ slug, data, onSaved }: { slug: string; data: MenuEditorDa
         <label className={cn('inline-flex cursor-pointer items-center gap-2 text-body-sm font-medium text-primary-strong', pending && 'pointer-events-none opacity-60')}>
           <Upload className="h-4 w-4" aria-hidden />
           {logoUrl ? 'Upload a different logo' : 'Upload a logo'}
-          <input
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={(e) => {
+          <input type="file" accept="image/*" className="sr-only" onChange={(e) => {
               const f = e.target.files?.[0]
               if (f) upload(f)
               e.target.value = ''

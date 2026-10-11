@@ -25,7 +25,7 @@
 // preferences.profileLayout / moduleMenu). `parseSpaceTheme` is the one fail-safe reader.
 
 /** The set of authored space-theme ids. Add a theme = author its CSS block AND extend this union. */
-export type SpaceThemeId = 'bold' | 'editorial' | 'classic' | 'playful' | 'accessible' | 'modern' | 'menswork'
+export type SpaceThemeId = 'frequency' | 'editorial' | 'classic' | 'playful' | 'accessible' | 'modern' | 'menswork'
 
 /** The full declaration of a space theme — its id, human copy, and the two font faces it pairs (named so
  *  the picker reads like a real font menu, not an abstract token). */
@@ -42,14 +42,19 @@ export interface SpaceThemeDef {
   bodyFont: string
 }
 
-/** Every registered space theme. `bold` (today's look) is first; it is the no-op default everywhere. */
+/** Every registered font set. `frequency` (the house look) is first; it is the default everywhere.
+ *
+ *  OWNER RENAME 2026-10-11 (ADR-1726): the site THEMES are now Frequency and Bold (lib/theme/site-style.ts),
+ *  and these ids are the FONT SETS a theme wears. The old Anton `bold` set folded into `frequency`
+ *  (a stored `bold` still reads as `frequency`, resolveSpaceTheme), and `menswork` keeps its id (the CSS
+ *  attribute and every stored value) under its new label, Bold. */
 export const SPACE_THEMES: readonly SpaceThemeDef[] = [
   {
-    id: 'bold',
-    label: 'Bold',
-    description: 'The house look: condensed caps headlines over clean, friendly body text.',
-    displayFont: 'Anton',
-    bodyFont: 'Nunito',
+    id: 'frequency',
+    label: 'Frequency',
+    description: 'The house look: an elegant serif headline over clean, modern body text.',
+    displayFont: 'Playfair Display',
+    bodyFont: 'Space Grotesk',
   },
   {
     id: 'editorial',
@@ -90,16 +95,15 @@ export const SPACE_THEMES: readonly SpaceThemeDef[] = [
     // The one theme that also dresses the WEBSITE end to end (lib/theme/menswork.ts): on the Space page it
     // is fonts like every other theme; on the Space's website it brings its own palette and shapes too.
     id: 'menswork',
-    label: 'Menswork',
-    description: 'Grounded and direct: tall condensed caps over plain body text. Your website goes charcoal and teal.',
+    label: 'Bold',
+    description: 'Grounded and direct: tall condensed caps over plain body text.',
     displayFont: 'Sofia Sans Extra Condensed',
     bodyFont: 'Barlow',
   },
 ]
 
-/** The fallback theme id. An unknown or missing `preferences.theme` value resolves to this — and it is
- *  today's look, so every existing Space (which has no theme set) renders exactly as before. */
-export const DEFAULT_SPACE_THEME: SpaceThemeId = 'bold'
+/** The fallback font set. An unknown or missing `preferences.theme` value resolves to this. */
+export const DEFAULT_SPACE_THEME: SpaceThemeId = 'frequency'
 
 /** Type guard: is this raw string a known space-theme id? */
 export function isSpaceThemeId(id: string): id is SpaceThemeId {
@@ -108,6 +112,7 @@ export function isSpaceThemeId(id: string): id is SpaceThemeId {
 
 /** Turn a raw id (or null/undefined) into a safe SpaceThemeId, else DEFAULT_SPACE_THEME. */
 export function resolveSpaceTheme(id: string | null | undefined): SpaceThemeId {
+  // `bold` was the Anton set, folded into Frequency (ADR-1726); a stored `bold` reads as the default.
   return id != null && isSpaceThemeId(id) ? id : DEFAULT_SPACE_THEME
 }
 

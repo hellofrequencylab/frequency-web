@@ -1,9 +1,9 @@
 import { isAssetRef } from '@/lib/library/asset-ref'
 import type { Data, ContentItem } from '@/lib/page-editor/types'
+import { siteTheme } from '@/lib/theme/site-style'
 import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
 import { readSiteHero } from '@/lib/spaces/website'
 import { readHeroConfig } from '@/lib/spaces/hero-config'
-import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import type { WebsiteTheme } from './state'
 import type { Space } from '@/lib/spaces/types'
 
@@ -88,5 +88,5 @@ export function initialWebsiteTheme(preferences: unknown): WebsiteTheme {
   const theme = typeof p.websiteTheme === 'string' ? p.websiteTheme : typeof p.theme === 'string' ? p.theme : ''
   if (theme.toLowerCase() === 'midnight') return 'Midnight'
   if (theme.toLowerCase() === 'dawn') return 'DAWN'
-  return parseSpaceTheme(preferences) === 'menswork' || theme.toLowerCase() === 'menswork' ? 'Menswork' : 'DAWN'
+  return siteTheme(preferences) === 'bold' || theme.toLowerCase() === 'menswork' ? 'Menswork' : 'DAWN'
 }
