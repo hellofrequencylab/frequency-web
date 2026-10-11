@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Input, Textarea, Label, labelClasses } from '@/components/ui/field'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
@@ -665,36 +666,18 @@ export function SpaceBrandingForm({
         <div className="space-y-4 px-4 pb-4 pt-1">
           <div className="space-y-2">
             <p className={labelClasses}>Theme</p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {SITE_THEMES.map((t) => {
-                const active = style.theme === t.id
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    disabled={readOnly || pending || active}
-                    aria-pressed={active}
-                    onClick={() => {
-                      // A theme brings its own fonts; the owner can pick other fonts after.
-                      setStyle({ ...style, theme: t.id })
-                      setTheme(t.defaultFonts)
-                      run(() => updateSpaceProfile(spaceId, { siteTheme: t.id, theme: t.defaultFonts }))
-                    }}
-                    data-space-theme={t.defaultFonts}
-                    className={cn(
-                      'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                      active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
-                    )}
-                  >
-                    <span className="flex items-center gap-1.5 font-display text-body-sm font-semibold text-text">
-                      {t.label}
-                      {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
-                    </span>
-                    <span className="mt-0.5 block text-meta text-muted">{t.description}</span>
-                  </button>
-                )
-              })}
-            </div>
+            <StyleChoiceCards
+              choices={SITE_THEMES.map((t) => ({ id: t.id, label: t.label, detail: t.description, preview: t.defaultFonts }))}
+              value={style.theme}
+              disabled={readOnly || pending}
+              onPick={(id) => {
+                const t = SITE_THEMES.find((x) => x.id === id)!
+                // A theme brings its own fonts; the owner can pick other fonts after.
+                setStyle({ ...style, theme: t.id })
+                setTheme(t.defaultFonts)
+                run(() => updateSpaceProfile(spaceId, { siteTheme: t.id, theme: t.defaultFonts }))
+              }}
+            />
           </div>
           <FontSetPicker
             label={style.synced ? 'Fonts' : 'Website fonts'}
@@ -705,23 +688,17 @@ export function SpaceBrandingForm({
               run(() => updateSpaceProfile(spaceId, { theme: id }))
             }}
           />
-          <label className="flex items-start gap-2 text-body-sm text-text">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={style.synced}
-              disabled={readOnly || pending}
-              onChange={(e) => {
-                const synced = e.target.checked
-                setStyle({ ...style, synced, spaceFonts: synced ? style.spaceFonts : theme })
-                run(() => updateSpaceProfile(spaceId, synced ? { styleSynced: true } : { styleSynced: false, spaceFonts: theme }))
-              }}
-            />
-            <span>
-              Use the same style on my Space page
-              <span className="block text-meta text-muted">Your website leads. Turn this off to give your Space page its own fonts.</span>
-            </span>
-          </label>
+          <Checkbox
+            checked={style.synced}
+            disabled={readOnly || pending}
+            label="Use the same style on my Space page"
+            hint="Your website leads. Turn this off to give your Space page its own fonts."
+            onChange={(e) => {
+              const synced = e.target.checked
+              setStyle({ ...style, synced, spaceFonts: synced ? style.spaceFonts : theme })
+              run(() => updateSpaceProfile(spaceId, synced ? { styleSynced: true } : { styleSynced: false, spaceFonts: theme }))
+            }}
+          />
           {!style.synced && (
             <FontSetPicker
               label="Space page fonts"
@@ -751,39 +728,59 @@ export function SpaceBrandingForm({
   )
 }
 
-/** The font sets as preview cards: each card wears its own faces (`data-space-theme`). */
+/** The font sets as preview cards: each card wears its own faces. */
 function FontSetPicker({ label, value, disabled, onPick }: { label: string; value: SpaceThemeId; disabled: boolean; onPick: (id: SpaceThemeId) => void }) {
   return (
     <div className="space-y-2">
       <p className={labelClasses}>{label}</p>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {SPACE_THEMES.map((t) => {
-          const active = value === t.id
-          return (
-            <button
-              key={t.id}
-              type="button"
-              disabled={disabled || active}
-              onClick={() => onPick(t.id)}
-              aria-pressed={active}
-              title={t.description}
-              data-space-theme={t.id}
-              className={cn(
-                'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
-              )}
-            >
-              <span className="flex items-center gap-1.5 font-display text-body-sm font-semibold text-text">
-                {t.label}
-                {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
-              </span>
-              <span className="mt-0.5 block text-meta text-muted">
-                {t.displayFont} and {t.bodyFont}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      <StyleChoiceCards
+        choices={SPACE_THEMES.map((t) => ({ id: t.id, label: t.label, detail: `${t.displayFont} and ${t.bodyFont}`, preview: t.id }))}
+        value={value}
+        disabled={disabled}
+        onPick={onPick}
+      />
+    </div>
+  )
+}
+
+/** One grid of pick-one cards. Each card previews its own font set (`data-space-theme` scopes the faces to
+ *  the card, since every font variable lives on <html>) and saves the moment it is picked. */
+function StyleChoiceCards<T extends string>({
+  choices,
+  value,
+  disabled,
+  onPick,
+}: {
+  choices: { id: T; label: string; detail: string; preview: SpaceThemeId }[]
+  value: T
+  disabled: boolean
+  onPick: (id: T) => void
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {choices.map((c) => {
+        const active = value === c.id
+        return (
+          <button
+            key={c.id}
+            type="button"
+            disabled={disabled || active}
+            onClick={() => onPick(c.id)}
+            aria-pressed={active}
+            data-space-theme={c.preview}
+            className={cn(
+              'rounded-control border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+              active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
+            )}
+          >
+            <span className="flex items-center gap-1.5 font-display text-body-sm font-semibold text-text">
+              {c.label}
+              {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+            </span>
+            <span className="mt-0.5 block text-meta text-muted">{c.detail}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }
