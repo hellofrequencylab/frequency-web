@@ -14,7 +14,7 @@ import { SiteOverview } from '@/components/sites/admin/site-overview'
 import { SiteCalendar } from '@/components/sites/admin/site-calendar'
 import { findRetreat, pagePhoto, retreatDates } from '@/components/sites/site-public-calendar'
 import { SiteChrome } from '@/components/sites/site-chrome'
-import { mensworkSiteMenu, siteAdminLinks, siteChromeBasics } from '@/components/sites/site-page'
+import { mensworkSiteMenu, siteMenuLinks, siteAdminLinks, siteChromeBasics } from '@/components/sites/site-page'
 import { mensworkNowLine } from '@/components/sites/menswork-page'
 import { loadMensworkLive } from '@/lib/sites/menswork-data'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -67,7 +67,7 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
       <SiteChrome
         brandName={brandName}
         homeHref={chrome.homeHref}
-        links={chrome.pageLinks.length > 0 ? mensworkSiteMenu(chrome.homeHref, chrome.pages, chrome.pageLinks) : []}
+        links={siteMenuLinks(space, chrome, '') ?? (chrome.pageLinks.length > 0 ? mensworkSiteMenu(chrome.homeHref, chrome.pages, chrome.pageLinks) : [])}
         cta={chrome.cta}
         // The Menswork theme is a chosen page theme, so its faces lead.
         themeFonts

@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-891",
+  "title": "A Space page and its website share one editable menu (per-link visibility, dropdowns, custom links) and one header logo choice",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "L",
+  "source": {
+    "file": "lib/spaces/site-menu.ts",
+    "ref": "Owner ask 2026-10-10: one menu editor for Spaces and websites, synced both ways, visibility per link, Business-only assignable items, Image / Name / uploaded logo. ADR-1725"
+  },
+  "detail": "FILED AND CLOSED 2026-10-10. preferences.siteMenu holds one list of links and dropdowns, each shown on both platforms, the Space page only or the website only. Links target keyed automatic entries (home, page:, feature:, anchor:) or a validated custom URL. resolveSiteMenu draws the list on each platform against that platform's own keyed catalog, drops what it cannot draw, appends features and pages newer than the save, and returns null (automatic menu unchanged) without a saved menu or without space_full_website. preferences.headerLogo picks Image and name, Name only or an uploaded Logo for the Space page cover chip and the website header. One editor, mounted in Manage > Page, the Page rail module and the website editor header settings.",
+  "closed": "2026-10-10",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/resolveSiteMenu\\(readSiteMenu\\(space\\.preferences\\)/.test(r('lib/spaces/profile-nav.ts')))miss.push('the Space page menu does not read the saved menu');const sp=r('components/sites/site-page.tsx');if(!/siteMenuLinks\\(space,/.test(sp)||!/'website', \\{ canEdit: spaceCanUseFullWebsite\\(space\\)/.test(sp))miss.push('the website menu does not read the saved menu behind the plan gate');const ed=r('components/spaces/site-menu-editor.tsx');if(!/Space page only/.test(ed)||!/Website only/.test(ed)||!/Add a dropdown/.test(ed))miss.push('the editor has no visibility choice or dropdowns');const mounts=['app/(main)/spaces/[slug]/manage/layout/page.tsx','components/sites/editor/shell.tsx'].filter(p=>/<SiteMenuEditor/.test(r(p)));if(mounts.length<2)miss.push('the editor is not on both platforms');if(!/readHeaderLogo\\(space\\.preferences\\)/.test(r('app/(main)/spaces/[slug]/(profile)/layout.tsx'))||!/headerLogoSlot\\(readHeaderLogo/.test(sp))miss.push('the header logo choice is not read on both platforms');if(miss.length){console.error('LIVE-891: '+miss.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

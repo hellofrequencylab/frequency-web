@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
 import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
-import { SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteHasContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
+import { HOUSE_NAV, SITE_BOOK_SLUG, SITE_CONTACT_SLUG, siteHasContactPage, siteLocalHref, withoutAccentMarks, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { readSiteBooking } from '@/lib/sites/site-booking'
 import { SiteBooking } from '@/components/sites/site-booking'
@@ -20,7 +20,9 @@ import { mensworkAccentVars, mensworkSeason } from '@/lib/theme/menswork'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
-import { SiteChrome, SITE_CONTAINER, siteHref } from '@/components/sites/site-chrome'
+import { SiteChrome, SITE_CONTAINER, siteHref, type SiteLink } from '@/components/sites/site-chrome'
+import { headerLogoSlot, readHeaderLogo, readSiteMenu, resolveSiteMenu, type MenuCatalogEntry } from '@/lib/spaces/site-menu'
+import { spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { MENSWORK_CSS } from '@/components/sites/menswork-css'
 import { MensworkPage, mensworkNowLine } from '@/components/sites/menswork-page'
 import { planMensworkPage, type MwBlock } from '@/lib/sites/menswork-page'
@@ -206,7 +208,11 @@ export async function SitePage({
   const contactModel = contactPage ? buildHouseContact({ space, grid: profileGrid(space.preferences), links: siteLinks, cta }) : null
   // A Menswork site's menu is its pages, the same on every page (the design system's site nav); the house
   // look's Home section anchors stay on Home.
-  const links = skin && pageLinks.length > 0 ? mensworkSiteMenu(homeHref, pages, pageLinks) : [...(model?.nav ?? []), ...pageLinks]
+  // A Business Space's SAVED menu (shared with its Space page) wins; otherwise the site's own menu.
+  const links =
+    siteMenuLinks(space, { homeHref, pages, hasContact, booking, origin }, siteBase, model?.nav ?? []) ??
+    (skin && pageLinks.length > 0 ? mensworkSiteMenu(homeHref, pages, pageLinks) : [...(model?.nav ?? []), ...pageLinks])
+  const headerLogo = siteLogo(space, website ? websiteBrand.logo : space.brandLogoUrl)
 
   // A MENSWORK custom page draws its blocks as the design system's sections (components/sites/menswork-page.tsx),
   // with the Space's own events, circles and journeys; the season bar names the module now and the next
@@ -261,7 +267,8 @@ export async function SitePage({
         cta={chromeCta}
         themeFonts={!!website || hasChosenTheme(space.preferences)}
         skin={skin}
-        logoUrl={website ? websiteBrand.logo : space.brandLogoUrl}
+        logoUrl={skin ? (website ? websiteBrand.logo : space.brandLogoUrl) : headerLogo.logoUrl}
+        logoMode={headerLogo.logoMode}
         tagline={website ? websiteChrome.tagline : skin ? tagline : null}
         showBrandFooter={!!website || !!skin}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
@@ -384,6 +391,57 @@ export async function siteChromeBasics(space: Space, siteBase: string) {
     pageLinks,
     tagline: await readTagline(space.id),
   }
+}
+
+/** The Space's features the website can link on the Space page when it has no page of its own for them
+ *  (lib/spaces/site-menu.ts). People is left out: it is a members-only page a site visitor cannot open. */
+const SPACE_FEATURE_PATHS: Record<string, string> = {
+  calendar: 'calendar',
+  network: 'network',
+  memberships: 'memberships',
+  collaborators: 'collaborators',
+  circles: 'circles',
+  contact: 'contact',
+  reviews: 'reviews',
+  shop: 'shop',
+}
+
+/**
+ * The website menu from the Space's SAVED menu (shared with the Space page, lib/spaces/site-menu.ts), or
+ * null to keep the site's own automatic menu (no saved menu, or a plan without menu editing). The site
+ * draws Home, the section anchors on Home (`homeNav`, only on Home), its pages, Contact and Book itself;
+ * a Space feature or page the site has no page for links to it on the Space page, and a Home anchor
+ * links back to Home from the other pages.
+ */
+export function siteMenuLinks(
+  space: Space,
+  chrome: { homeHref: string; pages: { slug: string; label: string }[]; hasContact: boolean; booking: { takesBookings: boolean }; origin: string },
+  siteBase: string,
+  homeNav: { anchor: string; label: string }[] = [],
+): SiteLink[] | null {
+  const catalog: MenuCatalogEntry[] = [
+    { key: 'home', label: chrome.pages[0]?.label ?? 'Home', href: chrome.homeHref },
+    ...homeNav.map((n) => ({ key: `anchor:${n.anchor}`, label: n.label, href: `${chrome.homeHref === '/' ? '' : chrome.homeHref}#${n.anchor}` })),
+    ...chrome.pages.filter((p) => p.slug !== HOME_SLUG).map((p) => ({ key: `page:${p.slug}`, label: p.label, href: siteHref(siteBase, p.slug) })),
+    ...(chrome.hasContact ? [{ key: 'feature:contact', label: 'Contact', href: siteHref(siteBase, SITE_CONTACT_SLUG) }] : []),
+    ...(chrome.booking.takesBookings ? [{ key: 'feature:book', label: 'Book', href: siteHref(siteBase, SITE_BOOK_SLUG) }] : []),
+  ]
+  const spaceUrl = `${chrome.origin}/spaces/${space.slug}`
+  const houseAnchors = new Set(Object.values(HOUSE_NAV).map((n) => n?.anchor))
+  const fallbackHref = (key: string): string | null => {
+    const [kind, id] = key.split(':')
+    if (kind === 'feature' && SPACE_FEATURE_PATHS[id]) return `${spaceUrl}/${SPACE_FEATURE_PATHS[id]}`
+    if (kind === 'page' && hasPage(space.preferences, id)) return `${spaceUrl}/${id}`
+    if (kind === 'anchor' && houseAnchors.has(id)) return `${chrome.homeHref === '/' ? '' : chrome.homeHref}#${id}`
+    return null
+  }
+  return resolveSiteMenu(readSiteMenu(space.preferences), catalog, 'website', { canEdit: spaceCanUseFullWebsite(space), fallbackHref })
+}
+
+/** What the website's header logo slot draws, from the shared header logo setting. */
+export function siteLogo(space: Space, image: string | null): { logoUrl: string | null; logoMode: 'name' | 'avatar' | 'logo' } {
+  const slot = headerLogoSlot(readHeaderLogo(space.preferences), image)
+  return { logoUrl: slot.image, logoMode: slot.shape === 'logo' ? 'logo' : slot.shape === 'round' ? 'avatar' : 'name' }
 }
 
 /** A Menswork site's menu: its pages, the same on every page (the design system's site nav). */

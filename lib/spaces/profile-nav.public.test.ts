@@ -141,7 +141,7 @@ describe('the menu the share URL mounts can survive a static prerender', () => {
 describe('Collective network navigation', () => {
   it('shows the Network door only for an active connected Collective', async () => {
     const collective = { plan: 'collective', status: 'active', networkConnected: true, ownerProfileId: 'owner' } as Partial<Space>
-    expect((await buildPublicSpaceProfileNav(space(collective))).tabs).toContainEqual({ href: '/spaces/royaltemple/network', label: 'Network' })
+    expect((await buildPublicSpaceProfileNav(space(collective))).tabs).toContainEqual({ key: 'feature:network', href: '/spaces/royaltemple/network', label: 'Network' })
     for (const change of [{ plan: 'business' }, { status: 'suspended' }, { networkConnected: false }]) {
       expect((await buildPublicSpaceProfileNav(space({ ...collective, ...change } as Partial<Space>))).tabs.some(tab => tab.label === 'Network')).toBe(false)
     }

@@ -12,6 +12,7 @@ import { usableSpaceFunctions, type SpaceFunctionKey } from '@/lib/spaces/functi
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
+import { readHeaderLogo } from '@/lib/spaces/site-menu'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
@@ -230,6 +231,12 @@ export default async function SpaceProfileChromeLayout({
   // sticky bar reads as one persistent nav across profile ↔ Manage ↔ CRM. Active state stays client-side
   // (SpaceProfileTabs → usePathname), so nothing here goes stale across soft navigation.
   const { tabs, adminTabs } = await buildSpaceProfileNav(space)
+
+  // THE HEADER LOGO (lib/spaces/site-menu.ts, shared with the website): the round image beside the name
+  // by default, the name alone with the image off, or an uploaded logo (a wordmark) in the chip.
+  const headerLogo = readHeaderLogo(space.preferences)
+  const showLogoChip = headerLogo.mode !== 'name'
+  const logoChipUrl = headerLogo.mode === 'logo' && headerLogo.logoUrl ? headerLogo.logoUrl : space.brandLogoUrl
 
   // THE EDITABLE TOP HERO (PR: editable-top-hero). The whole cover hero — height, button orientation, the
   // eyebrow / heading / tagline copy, and the one dominant CTA — resolves through ONE pure helper over the
@@ -566,9 +573,11 @@ export default async function SpaceProfileChromeLayout({
               On mobile the actions move to the card below the cover, so the phone hero holds only the identity. */}
           <div className="flex items-end justify-between gap-4">
             <div className="flex min-w-0 items-end gap-4">
-              <div className="shrink-0">
-                <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} backdrop={logoBackdrop} />
-              </div>
+              {showLogoChip && (
+                <div className="shrink-0">
+                  <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} />
+                </div>
+              )}
               {/* `taglineHiddenOnMobile` — the second argument, which BOTH call sites used to omit, so
                   the parameter was dead and the behaviour the comment on it describes did not exist.
                   It matters because the lockup is bottom-anchored inside a FIXED-HEIGHT
@@ -600,9 +609,11 @@ export default async function SpaceProfileChromeLayout({
       >
         {coverImage}
       </div>
-      <div className="absolute -bottom-10 left-5 sm:-bottom-12 sm:left-6">
-        <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} backdrop={logoBackdrop} />
-      </div>
+      {showLogoChip && (
+        <div className="absolute -bottom-10 left-5 sm:-bottom-12 sm:left-6">
+          <BrandAnchor name={brandName} logoUrl={logoChipUrl} backdrop={logoBackdrop} />
+        </div>
+      )}
     </div>
   )
 
@@ -620,7 +631,7 @@ export default async function SpaceProfileChromeLayout({
         // name lockup + actions, cleared BELOW the hanging chip with top padding. Name on the left, actions
         // pushed right on desktop; on mobile the name lockup stays and the actions drop to the white card
         // below (mobileActionBand).
-        <div className="flex flex-col gap-4 pt-14 sm:flex-row sm:items-end sm:justify-between sm:gap-x-6 sm:pt-16">
+        <div className={cn('flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-x-6', showLogoChip ? 'pt-14 sm:pt-16' : 'pt-4')}>
           <div className="min-w-0">
             {nameLockup(false)}
           </div>
@@ -649,7 +660,7 @@ export default async function SpaceProfileChromeLayout({
   // reload. It is no longer a fold-out dropdown, and there is no separate CRM item (the CRM lives inside
   // the dashboard's Community area). A visitor never sees it (canManage false).
   const canManage = adminTabs.some((t) => t.label === 'Manage')
-  const stickyNav = <SpaceProfileMenu tabs={tabs} canManage={canManage} />
+  const stickyNav = <SpaceProfileMenu tabs={tabs} canManage={canManage} homeHref={base} />
 
   return (
     <>
