@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-892",
+  "title": "Publishing from the website editor can no longer replace a live site's house look with a theme whose render is not ready",
+  "status": "done",
+  "priority": "P0",
+  "lane": "live",
+  "size": "S",
+  "source": {
+    "file": "lib/sites/editor/state.ts",
+    "ref": "Owner report 2026-10-11: a DAWN publish from the website editor swapped danieltyack.com's house theme for the editor's unfinished render (raw accent asterisks, full-width sections, a one-link menu). 'Can we not break the site when somebody edits?'"
+  },
+  "detail": "FILED AND CLOSED 2026-10-11. publishedWebsiteSnapshot, the one gate every public reader goes through (site-page, the hosted share image, the crawler), now returns null unless the published theme is in WEBSITE_THEMES_LIVE (Menswork only today), so a DAWN or Midnight publish keeps the house look live. The editor still saves and versions the publish, and its Publish dialog says the theme is in preview and the live site keeps its look. danieltyack's published DAWN snapshot was cleared by hand the same day (draft and version history kept).",
+  "closed": "2026-10-11",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/sites/editor/state.ts','utf8');const miss=[];const m=/WEBSITE_THEMES_LIVE[^=]*=\\s*new Set<WebsiteTheme>\\(\\[([^\\]]*)\\]\\)/.exec(s);if(!m)miss.push('no live-theme list');else if(/DAWN|Midnight/.test(m[1]))miss.push('an unfinished theme is marked live');if(!/validWebsiteSnapshot\\(published\\) && WEBSITE_THEMES_LIVE\\.has\\(published\\.theme\\)/.test(s))miss.push('the public published read is not gated on the live-theme list');if(!/still in preview/.test(fs.readFileSync('components/sites/editor/shell.tsx','utf8')))miss.push('the Publish dialog does not warn');if(miss.length){console.error('LIVE-892: '+miss.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

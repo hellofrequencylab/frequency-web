@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextWebsiteState, publishedWebsitePage, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, resolveWebsiteChrome, resolveWebsiteChromeCta, RESERVED_WEBSITE_SLUGS, WEBSITE_THEMES, sectionDisplay, updateSectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot, type SiteComment, type SectionDisplay } from './state'
+import { nextWebsiteState, publishedWebsitePage, publishedWebsiteSnapshot, readWebsiteEditor, resolveWebsiteBrand, resolveWebsiteChrome, resolveWebsiteChromeCta, RESERVED_WEBSITE_SLUGS, WEBSITE_THEMES, WEBSITE_THEMES_LIVE, sectionDisplay, updateSectionDisplay, validWebsiteSnapshot, withoutWebsiteDrafts, type WebsiteEditorState, type WebsiteSnapshot, type SiteComment, type SectionDisplay } from './state'
 const comment = (): SiteComment => ({ id: 'c1', blockId: 'text', text: 'Private review', author: 'owner', createdAt: '2026-10-08T12:00:00Z', resolved: false })
 const snapshot = (): WebsiteSnapshot => ({ theme: 'Menswork', pages: [{ slug: 'home', label: 'Home', doc: { root: {}, content: [{ type: 'Text', props: { id: 'text', text: 'Original' } }] }, seo: { title: '', description: '' }, comments: [comment()] }] })
 const state = (): WebsiteEditorState => ({ v: 1, revision: 0, draft: snapshot(), published: null, versions: [] })
@@ -58,6 +58,17 @@ describe('website draft boundary', () => {
     expect(live.published?.pages[0].comments).toEqual([])
     expect(live.draft.pages[0].comments).toHaveLength(1)
     expect(withoutWebsiteDrafts({ websiteEditor: live, profileLayout: 'unchanged' })).toEqual({ profileLayout: 'unchanged' })
+  })
+  it('keeps the house look live when a theme whose render is not ready is published', () => {
+    // Owner ask 2026-10-11: a DAWN publish replaced danieltyack.com with an unfinished render.
+    for (const theme of WEBSITE_THEMES) {
+      const live = nextWebsiteState(state(), { ...snapshot(), theme }, true, 'owner')
+      expect(live.published?.theme, theme).toBe(theme)
+      expect(publishedWebsiteSnapshot({ websiteEditor: live }) !== null, theme).toBe(WEBSITE_THEMES_LIVE.has(theme))
+      expect(publishedWebsitePage({ websiteEditor: live }, 'home') !== null, theme).toBe(WEBSITE_THEMES_LIVE.has(theme))
+    }
+    expect(WEBSITE_THEMES_LIVE.has('Menswork')).toBe(true)
+    expect(WEBSITE_THEMES_LIVE.has('DAWN')).toBe(false)
   })
   it('captures scheduled content independently from subsequent autosaves', () => {
     const scheduled = nextWebsiteState(state(), snapshot(), false, 'owner', '2026-10-08T12:00:00Z', '2026-10-09T12:00:00Z')
