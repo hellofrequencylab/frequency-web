@@ -135,10 +135,19 @@ export function publishedWebsitePage(preferences: unknown, slug: string): Websit
   return publishedWebsiteSnapshot(preferences)?.pages.find((p) => p.slug === slug) ?? null
 }
 
+/** Website editor themes whose published render is ready to replace a live site. A theme not listed here
+ *  can be edited and published, but the public site keeps its house look (owner ask 2026-10-11, after a
+ *  DAWN publish swapped danieltyack.com for an unfinished render: "can we not break the site when
+ *  somebody edits?"). Add a theme only once its render matches the look it replaces. */
+export const WEBSITE_THEMES_LIVE: ReadonlySet<WebsiteTheme> = new Set<WebsiteTheme>(['Menswork'])
+
+/** The published website the PUBLIC site draws, or null to keep the house look: nothing published, or a
+ *  published theme not yet in WEBSITE_THEMES_LIVE. The one gate every public reader goes through (the
+ *  site, its share image, the crawler); the editor reads its own state through readWebsiteEditor. */
 export function publishedWebsiteSnapshot(preferences: unknown): WebsiteSnapshot | null {
   const editor = record(preferences) ? preferences.websiteEditor : null
   const published = record(editor) ? editor.published : null
-  return validWebsiteSnapshot(published) ? published : null
+  return validWebsiteSnapshot(published) && WEBSITE_THEMES_LIVE.has(published.theme) ? published : null
 }
 
 export function withoutWebsiteDrafts<T>(preferences: T): T {
