@@ -24,6 +24,7 @@ import { SiteChrome, SITE_CONTAINER, siteHref, type SiteLink } from '@/component
 import { headerLogoSlot, readHeaderLogo, readSiteMenu, resolveSiteMenu, type MenuCatalogEntry } from '@/lib/spaces/site-menu'
 import { spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { MENSWORK_CSS } from '@/components/sites/menswork-css'
+import { FREQUENCY_PAGE_CSS } from '@/components/sites/frequency-page-css'
 import { MensworkPage, mensworkNowLine } from '@/components/sites/menswork-page'
 import { planMensworkPage, type MwBlock } from '@/lib/sites/menswork-page'
 import { loadMensworkLive } from '@/lib/sites/menswork-data'
@@ -217,21 +218,22 @@ export async function SitePage({
     (skin && pageLinks.length > 0 ? mensworkSiteMenu(homeHref, pages, pageLinks) : [...(model?.nav ?? []), ...pageLinks])
   const headerLogo = siteLogo(space, website ? websiteBrand.logo : space.brandLogoUrl)
 
-  // A MENSWORK custom page draws its blocks as the design system's sections (components/sites/menswork-page.tsx),
-  // with the Space's own events, circles and journeys; the season bar names the module now and the next
-  // Circle Night. Other sites keep the Space page's render.
-  // LIVE-869: a Menswork site's `calendar` page (listed among its pages, so the owner places it in the
-  // menu) is the public yearly calendar, not a page doc.
-  const calendarPage = !!skin && pageSlug === SITE_CALENDAR_SLUG
+  // A custom page draws its blocks as the site page sections (components/sites/menswork-page.tsx), with the
+  // Space's own events, circles and journeys, in EITHER theme: the theme is only the stylesheet (Bold:
+  // MENSWORK_PAGE_CSS, Frequency: FREQUENCY_PAGE_CSS), so a switch re-dresses every block (ADR-1727). On
+  // Bold the season bar names the module now and the next Circle Night.
+  // LIVE-869: a site's `calendar` page (listed among its pages, so the owner places it in the menu) is the
+  // public yearly calendar, not a page doc.
+  const calendarPage = pageSlug === SITE_CALENDAR_SLUG
   const customPage = !home && !contactPage && !bookPage && !calendarPage
   const mwBlocks: MwBlock[] | null =
-    skin && customPage
+    customPage
       ? ((withVisibleBlocks(await loadSpacePageDoc(space.preferences, brandName, pageSlug)).content ?? []) as MwBlock[])
           .filter((b) => b && typeof b.type === 'string' && b.type !== 'SpaceIdentityHeader')
           .map((b) => ({ type: b.type, props: (b.props ?? {}) as Record<string, unknown> }))
       : null
   const mwPlan = mwBlocks ? planMensworkPage(mwBlocks) : null
-  const mwLive = skin || websitePage
+  const mwLive = skin || websitePage || mwPlan
     ? await loadMensworkLive(space.id, {
         events: true,
         circles: !!websitePage || !!mwPlan?.some((p) => p.kind === 'circles'),
@@ -318,6 +320,8 @@ export async function SitePage({
             </div>
           </div>
         ) : mwBlocks && mwPlan && mwLive ? (
+          <>
+          {!skin && <style>{FREQUENCY_PAGE_CSS}</style>}
           <MensworkPage
             blocks={mwBlocks}
             plan={mwPlan}
@@ -331,6 +335,7 @@ export async function SitePage({
               </Suspense>
             )}
           />
+          </>
         ) : (
           <div className={`${SITE_CONTAINER} pb-16 pt-28 sm:pb-24`}>
             <h1 className="hs-h2">{pages.find((p) => p.slug === pageSlug)?.label ?? brandName}</h1>
