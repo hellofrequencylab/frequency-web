@@ -54,7 +54,7 @@ describe('seed moods', () => {
 
   it('moodToSpaceTheme maps every mood to a real page theme (task #21)', () => {
     expect(moodToSpaceTheme('warm')).toBe('editorial')
-    expect(moodToSpaceTheme('bold')).toBe('bold')
+    expect(moodToSpaceTheme('bold')).toBe('frequency')
     expect(moodToSpaceTheme('calm')).toBe('classic')
     expect(moodToSpaceTheme('playful')).toBe('playful')
     // Total + safe: garbage falls back to the default mood's theme, always a real theme id.

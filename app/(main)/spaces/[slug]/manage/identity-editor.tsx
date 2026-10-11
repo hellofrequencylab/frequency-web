@@ -107,6 +107,7 @@ export async function SpaceIdentityEditor({ slug }: { slug: string }) {
         headerCta={branding.headerCta}
         defaultCtaLabel={branding.defaultCtaLabel}
         pageTheme={branding.pageTheme}
+        siteStyle={branding.siteStyle}
         heroHeight={hero?.height as HeroHeight | undefined}
         heroButtonOrientation={hero?.buttonOrientation as HeroButtonOrientation | undefined}
         readOnly={branding.readOnly}

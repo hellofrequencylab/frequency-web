@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { spacePageFonts } from '@/lib/theme/site-style'
 import { getVisibleSpaceForRequest } from '@/lib/spaces/visible-space-for-request'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { spaceProfileMetadata } from '@/lib/spaces/profile-metadata'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType } from '@/lib/spaces/profile-config'
-import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceBreadcrumbs } from '@/components/spaces/space-breadcrumbs'
 
@@ -80,7 +80,7 @@ export default async function SpaceRootLayout({
   //  · the page THEME id (ADR-578) — read fail-safe off preferences, `bold` (today's look) default.
   // Both ride the one AccentScope wrapper below.
   const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
-  const spaceTheme = parseSpaceTheme(space.preferences)
+  const spaceTheme = spacePageFonts(space.preferences)
 
   // The breadcrumb stays OUTSIDE the scope: it is the app shell's wayfinding trail into the Space,
   // not part of the Space's own page, and it renders identically on every entity area.

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense, cache } from 'react'
+import { spacePageFonts } from '@/lib/theme/site-style'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
@@ -17,7 +18,6 @@ import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profi
 import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { readCoverScrim, readCoverFocus, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
-import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { cn } from '@/lib/utils'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
@@ -259,7 +259,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
 
   // Match the real profile's accent + typography so the preview reads as the actual page, not a generic one.
   const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
-  const spaceTheme = parseSpaceTheme(space.preferences)
+  const spaceTheme = spacePageFonts(space.preferences)
 
   return (
     <AccentScope vars={accentVars} theme={spaceTheme}>

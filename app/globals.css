@@ -1230,9 +1230,8 @@
    swap alone is not a theme (Fraunces rendered with Anton's caps styling reads like shouted
    Playfair, not "quiet and considered").
 
-   `bold` is the NO-OP default (today's look): its fonts equal the base defaults and its block
-   sets no radius, no `--font-heading`, and no treatment rule, so an existing Space — which
-   resolves to `bold` — renders byte-identically. Every id here has a matching SpaceThemeDef;
+   `frequency` is the default (the house look, ADR-1726): a Space with no font set stored resolves
+   to it, and a stored legacy `bold` (the retired Anton set) does too. Every id here has a matching SpaceThemeDef;
    space-themes.test.ts reads this file and enforces the pairing.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -1258,8 +1257,7 @@
    ("the spaces have square images", then "the styles still don't match") were both this. A knob that
    is mostly set wrong, by people who did not know they were setting it, is not an axis.
 
-   For `bold` the body face is Nunito — the base default — so the font line is a no-op; the other
-   themes swap the reading face. Fonts, weight, case, tracking and leading still differ per theme:
+   Every font set names its own reading face here (Frequency reads in Space Grotesk). Fonts, weight, case, tracking and leading still differ per theme:
    the TYPE TREATMENT rules further down are untouched, and they are what makes the themes distinct. */
 [data-space-theme] {
   font-family: var(--font-body, var(--font-nunito)), system-ui, sans-serif;
@@ -1268,11 +1266,12 @@
   --radius-cover: 24px;
 }
 
-/* bold — today's look (Anton / Nunito). Now that no theme sets a radius, `bold` is a no-op on BOTH
-   axes: its faces are the base defaults too, so a `bold` Space renders the untouched product. */
-[data-space-theme="bold"] {
-  --font-display: var(--font-anton);
-  --font-body: var(--font-nunito);
+/* frequency — the house look (Playfair Display over Space Grotesk), the default font set. The Anton
+   `bold` set folded into it (ADR-1726, owner rename 2026-10-11: the themes are Frequency and Bold). */
+[data-space-theme="frequency"] {
+  --font-display: var(--font-playfair);
+  --font-heading: var(--font-playfair);
+  --font-body: var(--font-grotesk);
 }
 
 /* editorial — a light Fraunces serif, quiet and considered. */
@@ -1334,8 +1333,8 @@
    · Eyebrow — `.font-eyebrow`, a bare marker class (deliberately NO base rule,
      and NOT a data-text-role, so it stays out of the ADR-580 editor machinery).
 
-   `bold` deliberately appears NOWHERE here — no treatment rule, no
-   `--font-heading` — so a bold Space keeps today's computed styles verbatim.
+   The retired Anton `bold` set appears NOWHERE here — no treatment rule, no
+   `--font-heading` (ADR-1726 folded it into `frequency`).
    space-themes.test.ts enforces that absence. */
 
 /* Heading hook: with no theme (or `bold`) `--font-heading` is unset, so this resolves to
@@ -1343,6 +1342,21 @@
    styled themes. */
 .font-section {
   font-family: var(--font-heading, var(--font-body, var(--font-nunito))), system-ui, sans-serif;
+}
+
+/* frequency — Playfair at medium weight in sentence case, the house website's headline voice. */
+[data-space-theme="frequency"] .font-display {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+[data-space-theme="frequency"] .font-section {
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+[data-space-theme="frequency"] .font-eyebrow {
+  letter-spacing: 0.16em;
 }
 
 /* editorial — LIGHT Fraunces in sentence case; opsz (auto) + SOFT 40 give the

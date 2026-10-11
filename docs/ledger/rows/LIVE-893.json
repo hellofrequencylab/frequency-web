@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-893",
+  "title": "A Space and its website wear one of two named themes, Frequency (default) or Bold, with fonts chosen inside the theme and an optional split for the Space page",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/theme/site-style.ts",
+    "ref": "Owner ask 2026-10-11: 'call the theme Daniel Tyack is using Frequency and have it be the default theme. Call the Menswork theme Bold.' First slice of three (names, then block parity, then editor rails). ADR-1726"
+  },
+  "detail": "FILED AND CLOSED 2026-10-11. SITE_THEMES is Frequency and Bold. The font set stays on preferences.theme (frequency replaces the Anton bold set as default; a stored bold reads as frequency; menswork keeps its id, labelled Bold). preferences.siteStyle holds the theme, the sync toggle and the Space page's own fonts; a Space with no saved style derives its theme from its font set. siteTheme picks the website skin, spacePageFonts the Space page faces. Identity and branding offers Theme, Fonts and 'Use the same style on my Space page'. The website editor shows Menswork as Bold and DAWN as Frequency (preview).",
+  "closed": "2026-10-11",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const ss=r('lib/theme/site-style.ts');if(!/id: 'frequency',\\s*label: 'Frequency'/.test(ss)||!/id: 'bold',\\s*label: 'Bold'/.test(ss))miss.push('the two themes are not named Frequency and Bold');const st=r('lib/theme/space-themes.ts');if(!/DEFAULT_SPACE_THEME: SpaceThemeId = 'frequency'/.test(st))miss.push('Frequency is not the default');if(!/id: 'menswork',\\s*label: 'Bold'/.test(st))miss.push('Menswork is not labelled Bold');if(!/synced/.test(ss)||!/spacePageFonts/.test(r('app/(main)/spaces/[slug]/layout.tsx')))miss.push('the Space page does not follow the website style');if(!/Use the same style on my Space page/.test(r('components/spaces/space-branding-form.tsx')))miss.push('no sync toggle');if(/data-space-theme=\\\"bold\\\"\\]/.test(r('app/globals.css')))miss.push('the retired Anton set is still styled');if(miss.length){console.error('LIVE-893: '+miss.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

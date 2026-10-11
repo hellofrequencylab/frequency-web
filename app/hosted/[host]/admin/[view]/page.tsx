@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
+import { siteTheme } from '@/lib/theme/site-style'
 import { notFound, redirect } from 'next/navigation'
 import { resolveHostedSpace } from '@/lib/sites/hosted'
 import { appOrigin, normalizeHost } from '@/lib/sites/host'
-import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { mensworkAccentVars, mensworkSeason, mensworkSign } from '@/lib/theme/menswork'
 import { SITE_ADMIN_COOKIE, siteAdminHandoffPath, siteAdminView } from '@/lib/sites/site-admin-pass'
@@ -44,7 +44,7 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
   const host = normalizeHost(decodeURIComponent(hostParam))
   const space = view ? await resolveHostedSpace(host) : null
   if (!view || !space) notFound()
-  if (view !== 'editor' && (!readWebsitePublished(space.preferences) || parseSpaceTheme(space.preferences) !== 'menswork')) notFound()
+  if (view !== 'editor' && (!readWebsitePublished(space.preferences) || siteTheme(space.preferences) !== 'bold')) notFound()
 
   const token = (await cookies()).get(SITE_ADMIN_COOKIE)?.value
   if (!(await siteAdminAllowed(token, host, space))) redirect(`${appOrigin()}${siteAdminHandoffPath(space.slug, view)}`)

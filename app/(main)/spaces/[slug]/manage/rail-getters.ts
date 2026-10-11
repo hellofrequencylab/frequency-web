@@ -15,6 +15,7 @@
 // Co-located under the Space manage tree beside the layout + mode actions these mirror.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { readSiteStyle, type SiteStyle } from '@/lib/theme/site-style'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import {
@@ -203,6 +204,8 @@ interface SpaceBrandingData {
   /** The Space PAGE STYLE (ADR-578): the typography + shape identity id (preferences.theme), so the rail's
    *  Identity & Branding section can render the six-option style chooser with the current pick selected. */
   pageTheme: SpaceThemeId
+  /** The site style (ADR-1726): theme, website fonts, sync and the Space page's own fonts. */
+  siteStyle: SiteStyle
   readOnly: boolean
 }
 
@@ -229,6 +232,7 @@ function buildBrandingData(
     headerCta: readHeaderCtaPreference(space.preferences),
     defaultCtaLabel: defaultPrimaryCtaLabel(space.type),
     pageTheme: parseSpaceTheme(space.preferences),
+    siteStyle: readSiteStyle(space.preferences),
     readOnly: staffViewing || !canUseProfile,
   }
 }

@@ -581,6 +581,22 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
   BUILD-LIST spec used both; the rail and the page say stickers only). Internal:
   `meta.spotlight.stickers`, allowlist `SPOTLIGHT_STICKERS`, writer `setSpotlightStickers`.
 
+## Site themes and fonts (ADR-1726, October 2026, owner-ruled)
+
+- **Theme** (a Space's site theme) = the whole look a Space page and its website wear. Two exist:
+  **Frequency** (the default; the house look, danieltyack.com) and **Bold** (charcoal, a bright accent
+  and angled cuts; Heart on Fire). Member-facing copy: "Theme", "Frequency theme", "Bold theme".
+  **Not "Menswork"** in copy (the old name; it survives only as the stored font-set id `menswork`, the
+  Menswork skin's code names and the editor's stored `Menswork` snapshot value), **not "house theme"**
+  in copy. Internal: `preferences.siteStyle.theme` = `frequency` | `bold` (lib/theme/site-style.ts).
+- **Fonts** = the font set a theme wears: Frequency, Editorial, Classic, Playful, Accessible, Modern,
+  Bold. Member-facing copy: "Fonts" (and "Website fonts", "Space page fonts" when the two are split).
+  **Not "Page style"** (retired label). The old Anton set, once labelled "Bold", folded into Frequency;
+  a stored `bold` reads as Frequency. Internal: `preferences.theme` holds the website's font set
+  (lib/theme/space-themes.ts).
+- **Use the same style on my Space page** = the sync toggle: on (the default), the Space page follows the
+  website; off, the Space page keeps its own fonts. The website always leads.
+
 ## Business pages (Spaces): two designators
 
 - **A Space has exactly two public designators: "Business" and "Non Profit"** (ADR-552,

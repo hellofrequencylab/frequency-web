@@ -37,7 +37,7 @@ export type { AccentEmphasis, CtaPosture, SeedMood, SeedMoodSpec } from '@/lib/s
 /** The PAGE STYLE a mood drives (task #21): each mood maps to one of the five colour-free page themes
  *  (typography + shape) so the seeded page's LOOK matches its mood, not just its copy tone. The seed applies
  *  this to preferences.theme; the operator can still override it in the Identity & Branding chooser.
- *    warm → editorial (quiet, roomy, unhurried) · bold → bold (the punchy house look) ·
+ *    warm → editorial (quiet, roomy, unhurried) · bold → frequency (the house look; the Anton set folded into it, ADR-1726) ·
  *    calm → classic (settled, bookish) · playful → playful (rounded, warm).
  *  'accessible' is intentionally not mapped: it stays an explicit operator choice for readability-first.
  *
@@ -45,7 +45,7 @@ export type { AccentEmphasis, CtaPosture, SeedMood, SeedMoodSpec } from '@/lib/s
 export function moodToSpaceTheme(value: unknown): SpaceThemeId {
   switch (normalizeSeedMood(value)) {
     case 'bold':
-      return 'bold'
+      return 'frequency'
     case 'calm':
       return 'classic'
     case 'playful':
