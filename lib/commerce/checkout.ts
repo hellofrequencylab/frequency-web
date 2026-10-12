@@ -720,6 +720,20 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     if (error) throw new Error(`[commerce] settlement replay read failed: ${error.message}`)
     rows = (data ?? []) as SettlementRow[]
   }
+  if (rows.length === 0) {
+    // SCAN-823: a paid session whose amount or currency differs from its pending order matched neither
+    // read above. Returning would ack the webhook and leave a charged buyer's order pending with no
+    // signal. Name it loudly and throw so Stripe redelivers and the failure shows in the webhook log.
+    const { data: pending } = await db().from('commerce_orders').select('id, amount_cents, currency')
+      .eq('stripe_checkout_session_id', session.id).eq('status', 'pending')
+    const stuck = (pending ?? []) as { id: string; amount_cents: number; currency: string }[]
+    if (stuck.length) {
+      console.error('[commerce] paid session does not match its pending order', {
+        session: session.id, paidAmount, paidCurrency, orders: stuck,
+      })
+      throw new Error(`[commerce] paid amount or currency does not match the pending order (session=${session.id})`)
+    }
+  }
 
   for (const row of rows) {
     const token = crypto.randomUUID()

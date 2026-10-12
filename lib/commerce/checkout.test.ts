@@ -714,6 +714,21 @@ describe('commerce_orders status flips surface the update error (SCAN-710)', () 
     expect(booking.confirmBookingByOrder).not.toHaveBeenCalled()
   })
 
+  it('a paid session whose amount does not match its pending order throws instead of acking (SCAN-823)', async () => {
+    state.setHandler((c) => {
+      const pendingRead = c.table === 'commerce_orders' && c.op === 'select' && c.filters.some(([, col, v]) => col === 'status' && v === 'pending')
+      return pendingRead ? { data: [{ id: 'o-1', amount_cents: 1000, currency: 'usd' }], error: null } : { data: [], error: null }
+    })
+    await expect(
+      recordCommerceOrderFromSession({
+        id: 'cs_mismatch',
+        metadata: { kind: 'commerce_order' },
+        payment_status: 'paid', amount_total: 1200, currency: 'usd',
+        payment_intent: 'pi_1',
+      } as unknown as Stripe.Checkout.Session),
+    ).rejects.toThrow(/does not match the pending order.*cs_mismatch/)
+  })
+
   it('the expired-session cancel throws on a database error', async () => {
     state.setHandler(failing)
     await expect(

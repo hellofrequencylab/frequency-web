@@ -36,6 +36,7 @@ import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { notifyPromotedSeat } from '@/lib/events/waitlist-notify'
 import { stampEventSpaceId } from '@/lib/events/store'
+import { loadRootSpaceId } from '@/lib/spaces/store'
 import { spaceIdForCircle } from '@/lib/circles/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { coerceVisibilityForScope } from '@/lib/events/options'
@@ -815,7 +816,12 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   // Paid tickets come with Business (LIVE-753), asked of the Space that HOSTS this event (the payee's
   // side, not the editor's). Clearing a price is always allowed.
   if (priceFieldSent) {
-    const editPriceRefusal = await priceRefusal(priceCents, await resolveHostingSpaceIdFromRow(evRow))
+    // SCAN-819: Frequency's own events are hosted by the root Space, which resolveHostingSpaceIdFromRow
+    // collapses to null (personal). The ticket buy path and the tier editor keep root as the payee, so
+    // this check does too, or staff get the personal-seller upgrade message on a root event.
+    const root = await loadRootSpaceId()
+    const payeeSpaceId = root && evRow.host_space_id === root ? root : await resolveHostingSpaceIdFromRow(evRow)
+    const editPriceRefusal = await priceRefusal(priceCents, payeeSpaceId)
     if (editPriceRefusal) return fail(editPriceRefusal)
   }
 

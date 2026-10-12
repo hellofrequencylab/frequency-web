@@ -53,6 +53,10 @@ function from(table: string) {
       preds.push((r) => col(r, c) === v)
       return api
     },
+    is: (c: string, v: null) => {
+      preds.push((r) => (col(r, c) ?? null) === v)
+      return api
+    },
     in: (c: string, vs: unknown[]) => {
       preds.push((r) => vs.includes(col(r, c)))
       return api
@@ -216,5 +220,17 @@ describe('flushConversationBatches — the Space reply route (EMAIL-013)', () =>
     expect(res.emails).toBe(0)
     expect(sent).toHaveLength(0)
     expect(rows[0].delivery_status).toBe('queued')
+  })
+})
+
+describe('atomic bridge intents (SCAN-816)', () => {
+  it('never batches a row the atomic intent RPC already queued its own email for', async () => {
+    rows.push(queued('m1', 'already queued by the intent RPC', 10, { delivery_intent_id: 'intent-1' }))
+    rows.push(queued('m2', 'a batched reply', 10))
+    await flushConversationBatches()
+    expect(sent).toHaveLength(1)
+    expect(sent[0].text).toContain('a batched reply')
+    expect(sent[0].text).not.toContain('already queued')
+    expect(rows.find((r) => r.id === 'm1')?.delivery_status).toBe('queued')
   })
 })

@@ -220,6 +220,9 @@ export async function flushConversationBatches(
       .select('id, conversation_id, body, body_html, occurred_at, metadata')
       .eq('direction', 'outbound')
       .eq('delivery_status', 'queued')
+      // SCAN-816 (scan eight): a row written by enqueue_conversation_email_intent (EMAIL-002) already
+      // carries its own notification_queue job. Batching it again would email the contact twice.
+      .is('metadata->>delivery_intent_id', null)
       .order('occurred_at', { ascending: true })
       .limit(limit)
     queued = (res?.data as QueuedRow[]) ?? []

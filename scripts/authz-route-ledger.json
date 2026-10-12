@@ -258,9 +258,9 @@
     },
     "app/hosted/[host]/opengraph-image/route.tsx": {
       "verdict": "public",
-      "reason": "A published Menswork website's share card (LIVE-870, own registered website host, rewritten by proxy.ts). Anonymous link previewers require this public read. The handler resolves the host, returns 404 unless the website is published and its published editor snapshot selects Menswork (with no snapshot, the Space's site theme must be Bold, the Menswork skin's name since ADR-1726), and renders public branding: published name and logo overrides or their original fallbacks, hero headline, cover and domain. It never renders private drafts, versions, comments or presence and performs no writes. Re-read 2026-10-11 for the theme-reader swap (parseSpaceTheme menswork to siteTheme bold); verdict unchanged.",
-      "checked": "2026-10-11",
-      "digest": "d9d1e50ec3482208"
+      "reason": "A published Menswork website's share card (LIVE-870, own registered website host, rewritten by proxy.ts). Anonymous link previewers require this public read. The handler resolves the host, returns 404 unless the website is published and its published editor snapshot selects Menswork (with no snapshot, the Space's site theme must be Bold, the Menswork skin's name since ADR-1726), and renders public branding: published name and logo overrides or their original fallbacks, hero headline, cover and domain. It never renders private drafts, versions, comments or presence and performs no writes. Re-read 2026-10-11 for the theme-reader swap (parseSpaceTheme menswork to siteTheme bold); verdict unchanged. Re-read 2026-10-12 for SCAN-817: the resolved host is re-read through getSiteSpace, the visibility-checked read the site pages use, so a Private Space gets no card; verdict unchanged.",
+      "checked": "2026-10-12",
+      "digest": "f28547f3f6a965eb"
     }
   }
 }

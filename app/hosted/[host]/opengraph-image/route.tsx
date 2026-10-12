@@ -1,4 +1,5 @@
 import { resolveHostedSpace } from '@/lib/sites/hosted'
+import { getSiteSpace } from '@/lib/sites/site-cache'
 import { publishedWebsiteSnapshot, resolveWebsiteBrand } from '@/lib/sites/editor/state'
 import { siteTheme } from '@/lib/theme/site-style'
 import { normalizeHost } from '@/lib/sites/host'
@@ -21,7 +22,11 @@ export const revalidate = 3600
 export async function GET(_req: Request, { params }: { params: Promise<{ host: string }> }) {
   const { host: hostParam } = await params
   const host = normalizeHost(decodeURIComponent(hostParam))
-  const space = await resolveHostedSpace(host)
+  // SCAN-817: a custom domain resolves through getSpaceByDomain, which checks status but not visibility and
+  // carries no `site:<slug>` tag. Re-read through getSiteSpace, the visibility-checked, tagged read the
+  // pages use, so a Private Space gets no card and an unpublish expires this one with the site.
+  const hosted = await resolveHostedSpace(host)
+  const space = hosted ? await getSiteSpace(hosted.slug) : null
   const website = space ? publishedWebsiteSnapshot(space.preferences) : null
   const menswork = website ? website.theme === 'Menswork' : !!space && siteTheme(space.preferences) === 'bold'
   if (!space || !readWebsitePublished(space.preferences) || !menswork) {

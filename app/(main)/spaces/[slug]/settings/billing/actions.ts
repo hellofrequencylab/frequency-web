@@ -3,6 +3,7 @@
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { createSpaceLoadoutCheckout, createSpaceBillingPortal, recordSpacePlanFromSessionId } from '@/lib/billing/space-plan-checkout'
 import { updateOperatorSeats } from '@/lib/billing/operator-seats'
 import { type BillingInterval } from '@/lib/billing/pricing-keys'
@@ -100,6 +101,13 @@ export async function startSpaceLoadoutCheckout(
 ): Promise<ActionResult<{ url?: string; clientSecret?: string; sessionId?: string }>> {
   const auth = await authorizeOwner(slug)
   if (!auth) return fail('You do not have access to manage this space.')
+  const plan = asLoadoutPlan(input.plan)
+  // SCAN-818: the Non Profit rungs (the discounted price, the 0% network fee, Business depth for member
+  // Spaces) are for a verified 501(c)(3). The page only offers them after review, but this action is
+  // callable with any plan string, so the check lives here on the server.
+  if ((plan === 'nonprofit' || plan === 'nonprofit_collective') && (await getSpaceVerification(auth.spaceId))?.status !== 'verified') {
+    return fail('Non Profit plans need a verified 501(c)(3) first.')
+  }
   const addons = (input.addons ?? []).map((a) => asAddonKey(a)).filter((a): a is NonNullable<typeof a> => a !== null)
   const interval: BillingInterval = input.interval === 'year' ? 'year' : 'month'
   // Decided on the SERVER, before a session exists, so a deployment with no publishable key never
@@ -111,7 +119,7 @@ export async function startSpaceLoadoutCheckout(
     createSpaceLoadoutCheckout(
       auth.spaceId,
       {
-        plan: asLoadoutPlan(input.plan),
+        plan,
         addons,
         interval,
         seatQuantity: input.seatQuantity,

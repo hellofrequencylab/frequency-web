@@ -17,7 +17,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
-import { asSpacePlan } from '@/lib/pricing/plans'
+import { asSpacePlan, limitsWaivedPlan } from '@/lib/pricing/plans'
+import { spaceLimitsWaived } from '@/lib/pricing/space-allowance'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import {
   resolveJourneyAccess,
@@ -64,8 +65,11 @@ export async function checkJourneySell(planId: string, callerId: string | null):
   // the OWNER because an allotment belongs to the owner however is acting; pricing is an act, so it
   // is asked as the actor.
   const caps = await getSpaceCapabilities(space, callerId)
+  // SCAN-820: a staff-waived Space takes payments at the Collective level on every other money path
+  // (lib/pricing/payments-gate.ts, LIVE-822), so a Journey price reads the same lifted plan.
+  const plan = (await spaceLimitsWaived(spaceId)) ? limitsWaivedPlan(space.plan) : asSpacePlan(space.plan)
   const access = resolveJourneyAccess(
-    { profileId: callerId, space: { plan: asSpacePlan(space.plan), canEdit: caps.canEditProfile } },
+    { profileId: callerId, space: { plan, canEdit: caps.canEditProfile } },
     { planId, authorId: row.author_id, spaceId },
   )
 

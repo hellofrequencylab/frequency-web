@@ -175,8 +175,7 @@
         {
           "name": "WR · the core-model rework (ADR-1294), phases 0-11 in order. Three lines, four nouns. Phases 1-3 are one pass over the same files: the feature gates are inert until the grace window ends on 2026-12-01, which makes this the safe window to move paywalls. Phase 5 is the commercial unlock and phase 11 is the only phase that can say whether any of it worked.",
           "ids": [
-            "LIVE-767",
-            "LIVE-884"
+            "LIVE-767"
           ]
         },
         {
@@ -210,13 +209,34 @@
           "name": "W7 · feature depth",
           "ids": [
             "PROG-GD6",
-            "EMAIL-002",
             "EMAIL-003",
             "EMAIL-011",
             "EMAIL-012",
-            "EMAIL-013",
             "LIVE-806",
-            "PROG-EMAIL1"
+            "PROG-EMAIL1",
+            "EMAIL-002",
+            "EMAIL-013",
+            "LIVE-884",
+            "SCAN-827",
+            "SCAN-828",
+            "SCAN-829",
+            "SCAN-830",
+            "SCAN-831",
+            "SCAN-832",
+            "SCAN-833",
+            "SCAN-834",
+            "SCAN-835",
+            "SCAN-836",
+            "SCAN-837",
+            "SCAN-838",
+            "SCAN-839",
+            "SCAN-840",
+            "SCAN-841",
+            "SCAN-844",
+            "SCAN-845",
+            "SCAN-846",
+            "SCAN-847",
+            "SCAN-848"
           ]
         },
         {
@@ -24365,7 +24385,7 @@
         "file": "docs/SPACE-EMAIL-BUILD-PLAN.md",
         "ref": "PROG-EMAIL1 packet:atomic-intents"
       },
-      "detail": "DRAFT: flag-gated house bridge submits one service-only transactional RPC binding current conversation, recipient, actor, Space membership and observed sender. New message/intent/queue and waiting state commit together; identical receipt replays return the original intent, conflicting replay and uncertain legacy receipts fail closed. Additive migration 20270346007600 generated via CLI then dependency-renumbered; no application or live SQL. SQL fault rollback fixture provided but local database/Docker execution unavailable, concurrency and service-role auth.users access not yet proven; do not activate EMAIL_ATOMIC_BRIDGE_ENABLED. Marketing atomic ledger/quota reservation and all other conversation senders remain necessary before closing this packet. Existing notification_queue claim/recovery remains unchanged; provider acceptance idempotency is a separate packet. Rollback disables producer flag and preserves/drains committed existing queue jobs. Observed From equality does not prove cryptographic sender authenticity; production activation requires authenticated inbound evidence/actor-specific token controls plus dispatch policy and provider acceptance gates. Source grant catalogs declare the intent table and RPC internal-only; all intent foreign keys have leading indexes. Generated database types still lack the unapplied RPC, so the schema-contract guard remains unresolved pending approved migration proof/application and regeneration; no exemption or guard bypass is added. CI repair: counterparty uses actual allowed web_role none; RPC adapter independently verifies signed house token before a caller-injected service transaction, avoiding a new service-client importer. Source-derived076 table/RPC declarations match migration draft without claiming live schema regeneration. Local31 adapter/router tests and authz/admin-client guards pass; actual database CI must rerun.\n\nMETA-SCAN 2026-10-12. Migration 20270346007600 is applied in production (schema_migrations hash matches the repo's 810 versions). Flag now read through envFlag (1/true/on). Still open: the bridged insert skips the CRM timeline mirror that appendConversationMessage writes (supabase RPC inserts comms_messages directly); that mirror is a gate for turning the flag on (docs/RUNBOOKS.md Space email rollout switches). Live posture read 2026-10-12 (read-only SQL): RLS on for all eight email tables; email_delivery_intents, email_provider_attempts, space_email_domain_operations, space_email_reply_aliases and space_email_reply_quarantine grant nothing to anon or authenticated and carry no policy (service only); space_email_domains, space_email_identities and space_email_identity_defaults are SELECT-only for authenticated under one policy each; enqueue_conversation_email_intent, prepare/settle/read_accepted_email_provider_attempt and claim_space_email_domain_operation execute for service_role only.",
+      "detail": "DRAFT: flag-gated house bridge submits one service-only transactional RPC binding current conversation, recipient, actor, Space membership and observed sender. New message/intent/queue and waiting state commit together; identical receipt replays return the original intent, conflicting replay and uncertain legacy receipts fail closed. Additive migration 20270346007600 generated via CLI then dependency-renumbered; no application or live SQL. SQL fault rollback fixture provided but local database/Docker execution unavailable, concurrency and service-role auth.users access not yet proven; do not activate EMAIL_ATOMIC_BRIDGE_ENABLED. Marketing atomic ledger/quota reservation and all other conversation senders remain necessary before closing this packet. Existing notification_queue claim/recovery remains unchanged; provider acceptance idempotency is a separate packet. Rollback disables producer flag and preserves/drains committed existing queue jobs. Observed From equality does not prove cryptographic sender authenticity; production activation requires authenticated inbound evidence/actor-specific token controls plus dispatch policy and provider acceptance gates. Source grant catalogs declare the intent table and RPC internal-only; all intent foreign keys have leading indexes. Generated database types still lack the unapplied RPC, so the schema-contract guard remains unresolved pending approved migration proof/application and regeneration; no exemption or guard bypass is added. CI repair: counterparty uses actual allowed web_role none; RPC adapter independently verifies signed house token before a caller-injected service transaction, avoiding a new service-client importer. Source-derived076 table/RPC declarations match migration draft without claiming live schema regeneration. Local31 adapter/router tests and authz/admin-client guards pass; actual database CI must rerun.\n\nMETA-SCAN 2026-10-12. Migration 20270346007600 is applied in production (schema_migrations hash matches the repo's 810 versions). Flag now read through envFlag (1/true/on). Still open: the bridged insert skips the CRM timeline mirror that appendConversationMessage writes (supabase RPC inserts comms_messages directly); that mirror is a gate for turning the flag on (docs/RUNBOOKS.md Space email rollout switches). Live posture read 2026-10-12 (read-only SQL): RLS on for all eight email tables; email_delivery_intents, email_provider_attempts, space_email_domain_operations, space_email_reply_aliases and space_email_reply_quarantine grant nothing to anon or authenticated and carry no policy (service only); space_email_domains, space_email_identities and space_email_identity_defaults are SELECT-only for authenticated under one policy each; enqueue_conversation_email_intent, prepare/settle/read_accepted_email_provider_attempt and claim_space_email_domain_operation execute for service_role only.FOLLOW-UP 2026-10-12. The CRM timeline mirror the RUNBOOKS gate named is in: lib/comms/conversations.ts exports mirrorConversationMessage (the mirror appendConversationMessage always wrote, lifted out, keyed conv-msg:<messageId>), and the atomic house reply in lib/comms/inbound.ts calls it after the RPC commits and only when the RPC did not report a duplicate. Test: lib/comms/inbound-atomic-bridge.test.ts. What is left for the switch is the live proof the evidence names (isolated migration fixture, concurrent identical receipts, worker crash recovery), which needs a database run, not source work.",
       "verify": {
         "kind": "manual",
         "checked": "2026-10-08",
@@ -24456,7 +24476,7 @@
         "file": "lib/comms/tenant-reply-alias.ts",
         "ref": "PROG-EMAIL1 packet:tenant-inbound-alias-prerequisite"
       },
-      "detail": "Source prerequisite only, not full tenant-inbound completion. Immediate Space compose may issue a compact slug-derived r2 member alias only behind an off-by-default operator flag with explicit existing receiving domain and authenticated webhook configuration. Durable service-only mapping and HMAC bind alias/version/Space/conversation/ref/domain; inbound checks live tenant mapping and revocation before using the existing conversation append store. Malformed, ambiguous, wrong-domain, forged, unknown, revoked or cross-tenant aliases persist fingerprint-only quarantine and never enter contact-match fallback. Lookup, quarantine or append faults request provider redelivery. Legacy reply tokens and house routing stay intact; disabled issuance and paid downgrade do not revoke old aliases. No custom receiving provisioning, DNS, apex MX change or activation claim. Full tenant-inbound remains dependent on durable provider events and identity model, both open. Batch/campaign alias coverage, owner revocation controls, retention and integrated pilot still pending. No live SQL/provider/DNS/mail executed.\n\nMETA-SCAN 2026-10-12. Migration 20270346008000 is applied in production. Fixed: the same alias in the envelope and the To header counted as two routes and quarantined every real reply as ambiguous_alias; candidates are now de-duplicated by bare lowercase address. Compose now refuses before opening a thread when aliases are on but receiving is not configured (spaceReplyAliasReady). Still open: batch, Space CRM reply, leader and studio sends still issue legacy reply addresses. Live posture read 2026-10-12 (read-only SQL): RLS on for all eight email tables; email_delivery_intents, email_provider_attempts, space_email_domain_operations, space_email_reply_aliases and space_email_reply_quarantine grant nothing to anon or authenticated and carry no policy (service only); space_email_domains, space_email_identities and space_email_identity_defaults are SELECT-only for authenticated under one policy each; enqueue_conversation_email_intent, prepare/settle/read_accepted_email_provider_attempt and claim_space_email_domain_operation execute for service_role only.\n\nFOLLOW-UP 2026-10-12. Send-path coverage: the Space CRM reply (app/(main)/spaces/[slug]/crm/conversations-actions.ts) and the batch flush (lib/comms/outbound-batch.ts, which reads the thread's spaceId) now issue the tenant alias through buildSpaceConversationReplyAddress; the reply action refuses before queueing when aliases are on without receiving (spaceReplyAliasReady). Leader sends, studio conversation campaigns, the admin CRM and the lead inbox open threads with no Space, so the builder correctly keeps their legacy address. Still open: the inbound bridge's house/member addresses, the integrated pilot, owner revocation and retention.",
+      "detail": "Source prerequisite only, not full tenant-inbound completion. Immediate Space compose may issue a compact slug-derived r2 member alias only behind an off-by-default operator flag with explicit existing receiving domain and authenticated webhook configuration. Durable service-only mapping and HMAC bind alias/version/Space/conversation/ref/domain; inbound checks live tenant mapping and revocation before using the existing conversation append store. Malformed, ambiguous, wrong-domain, forged, unknown, revoked or cross-tenant aliases persist fingerprint-only quarantine and never enter contact-match fallback. Lookup, quarantine or append faults request provider redelivery. Legacy reply tokens and house routing stay intact; disabled issuance and paid downgrade do not revoke old aliases. No custom receiving provisioning, DNS, apex MX change or activation claim. Full tenant-inbound remains dependent on durable provider events and identity model, both open. Batch/campaign alias coverage, owner revocation controls, retention and integrated pilot still pending. No live SQL/provider/DNS/mail executed.\n\nMETA-SCAN 2026-10-12. Migration 20270346008000 is applied in production. Fixed: the same alias in the envelope and the To header counted as two routes and quarantined every real reply as ambiguous_alias; candidates are now de-duplicated by bare lowercase address. Compose now refuses before opening a thread when aliases are on but receiving is not configured (spaceReplyAliasReady). Still open: batch, Space CRM reply, leader and studio sends still issue legacy reply addresses. Live posture read 2026-10-12 (read-only SQL): RLS on for all eight email tables; email_delivery_intents, email_provider_attempts, space_email_domain_operations, space_email_reply_aliases and space_email_reply_quarantine grant nothing to anon or authenticated and carry no policy (service only); space_email_domains, space_email_identities and space_email_identity_defaults are SELECT-only for authenticated under one policy each; enqueue_conversation_email_intent, prepare/settle/read_accepted_email_provider_attempt and claim_space_email_domain_operation execute for service_role only.\n\nFOLLOW-UP 2026-10-12. Send-path coverage: the Space CRM reply (app/(main)/spaces/[slug]/crm/conversations-actions.ts) and the batch flush (lib/comms/outbound-batch.ts, which reads the thread's spaceId) now issue the tenant alias through buildSpaceConversationReplyAddress; the reply action refuses before queueing when aliases are on without receiving (spaceReplyAliasReady). Leader sends, studio conversation campaigns, the admin CRM and the lead inbox open threads with no Space, so the builder correctly keeps their legacy address. Still open: the inbound bridge's house/member addresses, the integrated pilot, owner revocation and retention.FOLLOW-UP 2026-10-12 (2). The inbound bridge's member-facing Reply-To addresses (the legacy forward-and-send in routeHouseReplyOutbound and the atomic payload) now come from buildSpaceConversationReplyAddress, so a Space thread carries the Space alias on every member-facing send. The HOUSE address the operator replies to from their own inbox stays a Frequency-signed token on purpose: aliases carry the member role only, and the house route is what authenticates the operator. Send-path coverage is complete; the integrated pilot, owner revocation and retention remain.",
       "verify": {
         "kind": "manual",
         "checked": "2026-10-08",
@@ -26493,7 +26513,7 @@
         "file": "app/(public)/market/[id]/page.tsx",
         "ref": "Owner October 8 reliability audit: anonymous detail remains MISS/private-no-store"
       },
-      "detail": "Implementation prepared: runtime ISR without force-static or server session reads; fresh opt-in authenticated service availability rechecks product publication and independent booking Space visibility/function gates. Metadata uses the same public eligibility gate. Canonical UUID redirects preserve query strings before cookie stamping and shared-cache lookup. Product, variant, Journey offer, Space privacy/status/storefront and review/comment mutations invalidate affected detail HTML, including ambiguous committed-write/lost-reply outcomes. Existing checkout current-price/stock checks, signed Market attribution and member booking defaults remain. Local behavioral probe, 234 focused tests, full typecheck and source guards passed before clean rebase to main including LIVE-882. OPEN until actual Vercel build artifact and anonymous first/repeat retained-cookie HIT, canonical/malformed URL and private/unpublished gates, plus controlled cache-withdrawal consequences are captured with the exact meaningful-source digest. No production changes or runtime caching success claimed.\n\nRE-TESTED 2026-10-12 (meta scan). The implementation described above never landed: scripts/check-public-market-detail.mjs, the probe this row names, exists on no branch, and app/(public)/market/[id]/page.tsx still reads the session and renders per request. The row is unstarted, not prepared. The 2026-10-12 speed pass only parallelised the page's reads; the shared-ISR work (public eligibility gate, authenticated availability recheck, invalidation on every product, variant, Space and review mutation) is still the whole job.",
+      "detail": "Implementation prepared: runtime ISR without force-static or server session reads; fresh opt-in authenticated service availability rechecks product publication and independent booking Space visibility/function gates. Metadata uses the same public eligibility gate. Canonical UUID redirects preserve query strings before cookie stamping and shared-cache lookup. Product, variant, Journey offer, Space privacy/status/storefront and review/comment mutations invalidate affected detail HTML, including ambiguous committed-write/lost-reply outcomes. Existing checkout current-price/stock checks, signed Market attribution and member booking defaults remain. Local behavioral probe, 234 focused tests, full typecheck and source guards passed before clean rebase to main including LIVE-882. OPEN until actual Vercel build artifact and anonymous first/repeat retained-cookie HIT, canonical/malformed URL and private/unpublished gates, plus controlled cache-withdrawal consequences are captured with the exact meaningful-source digest. No production changes or runtime caching success claimed.\n\nRE-TESTED 2026-10-12 (meta scan). The implementation described above never landed: scripts/check-public-market-detail.mjs, the probe this row names, exists on no branch, and app/(public)/market/[id]/page.tsx still reads the session and renders per request. The row is unstarted, not prepared. The 2026-10-12 speed pass only parallelised the page's reads; the shared-ISR work (public eligibility gate, authenticated availability recheck, invalidation on every product, variant, Space and review mutation) is still the whole job.ROOT CAUSE 2026-10-12 (second pass, read from production after #3383 deployed). A repeat anonymous view with the whole cookie jar retained was still MISS with private, no-store, while /events/<slug> answered PRERENDER with a public cache-control, and the build table marks /market/[id], /store/[id], /housing/[id] and /classifieds/[id] as dynamic. The difference is generateStaticParams: Next 16's generate-static-params.md says a dynamic route revalidates (ISR) at runtime only when generateStaticParams exists (an empty list is enough), and those four pages were the only sitemap-advertised details without one. Each now exports generateStaticParams returning [], so every path is generated on its first visit and cached; lib/nav/public-detail-isr.test.ts and the LIVE-884 probe require it on every ISR-intended public detail. The capture script now retains the whole cookie jar between the first and repeat view.",
       "verify": {
         "kind": "cmd",
         "cmd": "node scripts/check-public-market-detail.mjs --require-runtime",
@@ -26887,6 +26907,566 @@
         "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];if(!/grid=\\{publicSpotlightGrid\\(data\\.grid, data\\.layout\\.blocks\\)\\}/.test(r('app/spotlight/[handle]/page.tsx')))miss.push('the public Spotlight renders the in-app starter, so it has no bio and drops authored blocks');const g=r('lib/spotlight/public-grid.ts');if(!/const ids: string\\[\\] = \\['about'\\]/.test(g)||!/for \\(const block of authored\\)/.test(g))miss.push('the public starter does not lead with About and place authored blocks');if(miss.length){console.error('SCAN-815: '+miss.join('; '));process.exit(1)}\""
       },
       "closed": "2026-10-07"
+    },
+    {
+      "id": "SCAN-816",
+      "title": "A bridged house reply queued through the atomic intent is emailed once, not a second time by the conversation batch flush",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/comms/outbound-batch.ts",
+        "ref": "Meta scan eight (2026-10-12), Space email cluster review of #3364 (EMAIL-002)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: enqueue_conversation_email_intent (migration 20270346007600) writes an outbound comms_messages row with delivery_status 'queued' AND its own notification_queue email job. flushConversationBatches read every queued outbound row with no other filter, so the five-minute conversation-batches cron would send the same reply again from the default house address and mark it sent. Behind EMAIL_ATOMIC_BRIDGE_ENABLED, which is off today, so no member has been double-emailed yet; turning the switch on would have done it on every reply. THE FIX: the flush skips rows whose metadata carries delivery_intent_id, with a test in outbound-batch-claim.test.ts that fails without it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/comms/outbound-batch.ts','utf8');if(!/\\.is\\('metadata->>delivery_intent_id', null\\)/.test(s)){console.error('SCAN-816: the batch flush re-sends rows the atomic intent RPC already queued');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-817",
+      "title": "A Private Space's own domain stops serving a share card, and an unpublish expires the card with the site",
+      "status": "done",
+      "priority": "P3",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/hosted/[host]/opengraph-image/route.tsx",
+        "ref": "Meta scan eight (2026-10-12), website cluster review of #3318 (LIVE-870)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: the hosted share card resolved a custom domain through getSpaceByDomain, which checks status but not visibility and is untagged. A Private Space with its own domain and a published website still served a card with its name, headline, logo and cover while every page 404'd, and because the route is ISR for an hour with no site:<slug> tag, refreshSite on an unpublish did not expire it. THE FIX: the route re-reads the resolved Space through getSiteSpace, the visibility-checked read tagged site:<slug> that the pages use.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/hosted/[host]/opengraph-image/route.tsx','utf8');if(!/hosted \\? await getSiteSpace\\(hosted\\.slug\\)/.test(s)){console.error('SCAN-817: the hosted share card reads the Space without the visibility check or the site tag');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-818",
+      "title": "Only a verified 501(c)(3) can start a Non Profit or Non Profit Collective plan checkout",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/spaces/[slug]/settings/billing/actions.ts",
+        "ref": "Meta scan eight (2026-10-12), pricing ladder review of #3208 (LIVE-747) and #3278 (LIVE-754)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: startSpaceLoadoutCheckout accepts 'nonprofit' and 'nonprofit_collective' from any Space admin and createSpaceLoadoutCheckout checks only billingLive and the per-plan switch, which nonprofit_collective shares with Collective (on in production since 2026-10-06). Verification was read only by the billing page UI, so a direct call to the server action bought the discounted Non Profit Collective price, the 0% network fee and Business depth for up to five member Spaces with no review, as soon as OWN-094 syncs the price. THE FIX: the action refuses both Non Profit plans unless getSpaceVerification reads 'verified'. LEFT: the Stripe billing portal, if it is ever configured to allow plan switching, would need the same rule in the subscription reconciler.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/spaces/[slug]/settings/billing/actions.ts','utf8');if(!/plan === 'nonprofit_collective'\\) && \\(await getSpaceVerification\\(auth\\.spaceId\\)\\)\\?\\.status !== 'verified'/.test(s)){console.error('SCAN-818: a Non Profit plan checkout starts without a verified 501(c)(3)');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-819",
+      "title": "Staff can set a price on one of Frequency's own events from the edit form, the same as the ticket and tier paths allow",
+      "status": "done",
+      "priority": "P3",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/events/actions.ts",
+        "ref": "Meta scan eight (2026-10-12), pricing ladder review of #3277 (LIVE-753)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: the event edit action asked the payments gate about resolveHostingSpaceIdFromRow, which collapses the root Space to null, so a price on a root-hosted event hit the personal-seller refusal. The ticket buy path (lib/billing/tickets.ts) and the tier editor keep root as the payee, so the three money paths disagreed and staff saw an upgrade message on Frequency's own events. THE FIX: the edit path keeps root as the payee when the event's host_space_id is the root Space. LEFT: the create path, where root is not a placement a member can pick.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/events/actions.ts','utf8');if(!/root && evRow\\.host_space_id === root \\? root : await resolveHostingSpaceIdFromRow\\(evRow\\)/.test(s)){console.error('SCAN-819: a root-hosted event price is refused as a personal sale');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-820",
+      "title": "A staff-waived Space can price a Journey, like every other money path it already may",
+      "status": "done",
+      "priority": "P3",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/journeys/sell-gate.ts",
+        "ref": "Meta scan eight (2026-10-12), pricing ladder review of #3284 (LIVE-822)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: LIVE-822 lets staff waive a Space's limits, and the payments gate then lets that Space sell shop items, tickets and memberships at the Collective level. checkJourneySell read the raw plan into resolveJourneyAccess, so the same waived free Space was refused at 'set a Journey price', the one money path that disagreed. THE FIX: the sell gate reads limitsWaivedPlan(plan) when spaceLimitsWaived is true, the same lift the payments gate applies.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/journeys/sell-gate.ts','utf8');if(!/\\(await spaceLimitsWaived\\(spaceId\\)\\) \\? limitsWaivedPlan\\(space\\.plan\\)/.test(s)){console.error('SCAN-820: the Journey sell gate ignores a staff waiver');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-821",
+      "title": "A domain purchase Vercel may have completed is held for an operator, not refunded",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/sites/domain-purchase.ts",
+        "ref": "Meta scan eight (2026-10-12), domains review of #3240 (LIVE-781) and #3328 (LIVE-786)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: recordDomainPurchaseFromSession refunded the Space on every registrar error, including 'network' (the fetch threw) and 'upstream' (a 5xx, an unknown code, or a 200 with no order id). Those can mean Vercel registered the domain, so Frequency would pay for a domain the Space was refunded for and never bound. The renewal path in the same feature already treats these errors as ambiguous. Latent: domain_purchase_enabled is off. Also, a failed write of the bought order left the row in 'purchasing' with no order id anywhere. THE FIX: on 'network' or 'upstream' the row stays 'purchasing' with failure_reason set, so the daily sweep raises registration-submission-unknown for an operator; definitive refusals still refund. The post-buy write is error-checked and logs the order id. Test in domain-purchase.test.ts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/sites/domain-purchase.ts','utf8');if(!/bought\\.error === 'network' \\|\\| bought\\.error === 'upstream'/.test(s)||!/return 'purchasing'/.test(s)){console.error('SCAN-821: an ambiguous registrar error refunds a domain Vercel may have registered');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-823",
+      "title": "A paid shop session that does not match its order's amount fails loudly instead of leaving the order pending in silence",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/commerce/checkout.ts",
+        "ref": "Meta scan eight (2026-10-12), commerce review of #3337 (LIVE-882)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: LIVE-882 made the pending-to-paid flip and the replay read match on amount_cents and currency as well as the session. When a paid session's amount or currency differed from the order (any Stripe-side change such as Adaptive Pricing, which reports the buyer's currency), both reads returned nothing, the function returned normally, the webhook acked 200 and Stripe never redelivered: a charged buyer, an order pending forever, no log line. No in-app path makes them differ today. THE FIX: when neither read matches, the settle reads the session's pending rows; if one exists it logs the expected and paid amounts and throws, so Stripe redelivers and the failure is visible. Test in checkout.test.ts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/commerce/checkout.ts','utf8');if(!/paid amount or currency does not match the pending order/.test(s)){console.error('SCAN-823: a paid session with a mismatched amount acks with the order still pending');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-824",
+      "title": "Raising the daily AI cap in code without raising the database ceiling fails a test instead of stopping every paid AI call",
+      "status": "done",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "lib/ai/budget.ts",
+        "ref": "Meta scan eight (2026-10-12), AI accounting review of #3345 and #3355 (LIVE-883)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: GLOBAL_DAILY_CAP_USD = 25 carries the instruction 'raise as real usage and revenue grow', and lib/ai/accounting.ts passes it to the reservation RPC, which raises 'Invalid AI reservation' whenever p_global_cap > 25. Following the comment alone would stop every paid AI call (fail closed, so no spend leak, but a full outage of Vera and every AI surface). THE FIX: the comment names the SQL ceiling, and lib/ai/budget-ceiling.test.ts fails when the TypeScript cap exceeds the newest ceiling in supabase/migrations.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('lib/ai/budget-ceiling.test.ts')||!/GLOBAL_DAILY_CAP_USD\\)\\.toBeLessThanOrEqual/.test(fs.readFileSync('lib/ai/budget-ceiling.test.ts','utf8'))){console.error('SCAN-824: nothing couples the TypeScript AI cap to the reservation RPC ceiling');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-825",
+      "title": "A stranger's sister Circle no longer lands inside someone else's Space, and a hidden Circle cannot be copied by its id",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/circles/sister.ts",
+        "ref": "Meta scan eight (2026-10-12), Circles review of #3201 (LIVE-665)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: seedSisterCircleAction gated only on the offer (a full Circle plus not a member) and the create gate, and seedSisterCircle copied the source's space_id, access and hub_id into a draft the caller hosts. Any signed-in member could start a Circle inside a Space they had no role in, skipping requireSpaceEditor and the Space Circle meter that the proper door applies; once published its events stamped onto the Space's calendar and Space members read its announcements. The action read the source with the admin client, so a raw id of a full private or unlisted Circle copied its location, about and agreements. THE FIX: the action refuses a Circle the caller cannot read under their own session (the restrictive can_see_circle policy), and the sister keeps the source's Space, access and Hub only for the source's host or one of its Space's editors; anyone else's sister lands on the root Space, open, like a remix.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const a=fs.readFileSync('app/(main)/circles/remix-actions.ts','utf8');const s=fs.readFileSync('lib/circles/sister.ts','utf8');const miss=[];if(!/if \\(!visible\\) throw new Error/.test(a))miss.push('the sister action copies a Circle the caller cannot see');if(!/input\\.keepPlacement/.test(s)||/space_id: src\\.space_id,\\n\\s+hub_id: src\\.hub_id,\\n\\s+topical_channel_id/.test(s))miss.push('a stranger\\'s sister inherits the source Space');if(miss.length){console.error('SCAN-825: '+miss.join('; '));process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-826",
+      "title": "The day-after follow-up reaches every gathering that is due, not just the first 200 events in a four-day band",
+      "status": "done",
+      "priority": "P3",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/cron/event-followups/route.ts",
+        "ref": "Meta scan eight (2026-10-12), funnels review of #3230 (LIVE-802) and #3231 (LIVE-803)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: the hourly follow-up cron read events starting between now minus about four days and now plus 14 hours, oldest first, capped at the 200-item budget, then filtered for the ones that ended 2 to 26 hours ago. Due events sit near the end of that band, so once it held more than 200 events, older events that were not due filled the page and due ones never got the guest invitation or the 'Did you make it?' email, with nothing reported. THE FIX: the cron pages through the whole band in pages of 1,000 (bounded at 20 pages) and keeps due events up to the budget.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/api/cron/event-followups/route.ts','utf8');if(!/\\.range\\(page \\* PAGE, page \\* PAGE \\+ PAGE - 1\\)/.test(s)){console.error('SCAN-826: the follow-up cron reads one capped page of a band where due events sit last');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-827",
+      "title": "Website editor drafts, review comments and the private Executive Overview are readable with the public anon key",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "supabase/migrations/20270127000000_revoke_claim_token_from_anon.sql",
+        "ref": "Meta scan eight (2026-10-12), website cluster review of #3342 (LIVE-EDITOR-STATE) and #3310/#3312 (LIVE-862, LIVE-864)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: migration 20270127000000 grants SELECT on spaces.preferences to anon and authenticated, and spaces_read_active lets anon read every active non-private Space. #3342 keeps the whole website editor state in preferences.websiteEditor (the unpublished draft, the scheduled snapshot, version history, and review comments with author names), and #3310/#3312 keep the Executive Overview, which the code calls private to the Space's managers, in preferences.programOverview. GET /rest/v1/spaces?select=slug,preferences with the anon key returns all of it. withoutWebsiteDrafts and withoutLeadershipPreferences only strip the server-rendered projection, not the grant. THE FIX: move websiteEditor and programOverview into a service-role-only table (for example space_private_state(space_id pk, website_editor jsonb, program_overview text)) and point save_website_editor, publish_due_websites, the editor readers and the leadership read and write at it; only the comment-free published snapshot stays public. Revoking preferences from anon outright needs an audit of browser readers first. Needs a migration and a data move, so it is an owner-approved change. The probe reads the newest migration that grants spaces columns to anon.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if((()=>{const d='supabase/migrations';const fsx=fs.readdirSync(d).filter(f=>f.endsWith('.sql')).sort().reverse();for(const f of fsx){const s=r(d+'/'+f);const ms=[...s.matchAll(/^grant select \\(([^)]*)\\)\\s*on public\\.spaces to anon/gm)];if(ms.length)return /\\bpreferences\\b/.test(ms[ms.length-1][1])&&!fs.readdirSync(d).some(x=>/space_private_state/.test(r(d+'/'+x)));}return false})()){console.error('SCAN-827: spaces.preferences, which holds website drafts and the private overview, is still granted to anon');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-828",
+      "title": "Queued Space campaign and batched reply sends re-check the custom sender before they go out",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/spaces/email.ts",
+        "ref": "Meta scan eight (2026-10-12), Space email review of #3363 (EMAIL-011) and #3379."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: the custom From is resolved once at enqueue (lib/spaces/email.ts campaign enqueue, and metadata.batch_from for batched replies). runSpaceCampaignEmail sends p.from as-is after checking only Space status, and the batch flush sends batch_from. Campaign jobs are spread out by bulkRunAfter, so a downgrade, pause or lost DNS verification mid-campaign still sends from the custom domain, contradicting email-identity-policy.ts ('call with fresh state immediately before custom delivery') and SPACE-EMAIL-BUILD-PLAN ('enforce at the provider dispatch boundary', 'queued custom sends move to a visible entitlement hold'). pauseSpaceEmailIdentity has no caller. THE FIX: carry identityId in the job payload and batch metadata; the worker and the flush call resolveSpaceEmailIdentity and fail the send visibly on refusal, never falling back to the Frequency address. Part of EMAIL-011's open work.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/resolveSpaceEmailIdentity/.test(r('lib/spaces/email.ts'))||!/resolveSpaceEmailIdentity/.test(r('lib/comms/outbound-batch.ts'))){console.error('SCAN-828: queued custom-sender sends never re-resolve the identity at dispatch');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-829",
+      "title": "The campaign audience preview works for a Space with more than 1,000 contacts",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/audiences.ts",
+        "ref": "Meta scan eight (2026-10-12), Space email review of #3359 (EMAIL-021)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: in strict mode readSpaceContacts asks for count 'exact' with .limit(5000) and throws 'Audience preview incomplete' when count differs from the rows returned. PostgREST caps a response at max_rows = 1000 (supabase/config.toml and the hosted default), so above 1,000 contacts the picker shows the retry state forever; this replaced the old live count, so the largest Spaces regressed. THE FIX: read contacts in pages of 1,000 with .range() up to MAX_RECIPIENTS, compare against min(count, MAX_RECIPIENTS), and report a count over the cap as a separate capped state.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/\\.range\\(/.test(r('lib/spaces/audiences.ts'))){console.error('SCAN-829: the strict audience read is one capped page, so a Space over 1,000 contacts never previews');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-830",
+      "title": "One Space cannot block another from setting up email on a domain it does not own",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270346007800_space_email_domain_operations.sql",
+        "ref": "Meta scan eight (2026-10-12), Space email review of #3365 (EMAIL-012)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: space_email_domain_operations.domain is globally unique and prepareEmailDomainSetup inserts the operation before any TXT ownership proof, while spaces.domain is saved without proof. A paid Space can connect victim.com, prepare email and release the site domain; the real owner then always gets 'This domain is already being connected'. THE FIX: make the constraint unique(space_id, domain), or let an expired pending operation with no provider id be taken over; global uniqueness then rests on space_email_domains, written only after the TXT proof. Needs a migration.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270346007800'&&/space_email_domain_operations/.test(r('supabase/migrations/'+f))&&/unique\\s*\\(\\s*space_id\\s*,\\s*domain\\s*\\)|drop constraint/i.test(r('supabase/migrations/'+f)))){console.error('SCAN-830: an unproven email domain operation still holds the domain for every Space');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-831",
+      "title": "Switching a website's theme cannot serve an editor document through a render that is not ready yet",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/sites/editor/state.ts",
+        "ref": "Meta scan eight (2026-10-12), website cluster review of #3373 and #3377."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: publishedWebsiteSnapshot gates on the theme the snapshot was written in (WEBSITE_THEMES_LIVE is Menswork only), but since #3377 components/sites/site-page.tsx renders by readSiteStyle().theme alone, and the editor's Theme tab and Identity and branding save the site style live with no publish. A Bold site with a published Menswork snapshot that switches to Frequency immediately serves the editor document through the Frequency render, the case #3373 says must stay gated, and the share card (the hosted OG route and site-page.tsx) keys on the snapshot theme, so a Frequency site keeps the Bold card. THE FIX: gate publishedWebsiteSnapshot on the theme the site wears (siteTheme(preferences) mapped to Menswork or DAWN) as well, and key the OG route and site-page card on siteTheme. Confirm with the owner that the Frequency render of editor documents is still not ready.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/siteTheme\\(/.test(r('lib/sites/editor/state.ts'))){console.error('SCAN-831: the publish gate reads the snapshot theme, not the theme the site wears');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-832",
+      "title": "Edit menu and logo inside the website editor opens the menu editor, not an empty dialog",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "components/sites/editor/shell.tsx",
+        "ref": "Meta scan eight (2026-10-12), website cluster review of #3372 (LIVE-891)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: the website editor runs on the site's own host (/admin/editor) and mounts SiteMenuEditor, whose getSiteMenuEditorData, saveSiteMenu, saveHeaderLogo and uploadSpaceImage authorize through getCallerProfile, the Frequency session cookie. That cookie is host-only (no domain option in lib/supabase/server.ts) and never reaches <slug>.frequencylocal.com or a custom domain, which is why the site-admin pass exists. authorize() returns null and the dialog renders nothing; save and logo upload would fail too. LIVE-891 is closed with a probe that only checks the mount. THE FIX: pass-authorized twins (loadWebsiteMenu, saveWebsiteMenu, saveWebsiteHeaderLogo gated by authorizeWebsiteEditor(host)) and an actions prop on SiteMenuEditor. A link to /spaces/<slug>/manage/layout would be a stopgap but would fail LIVE-891's probe, so it needs the owner's word.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('lib/sites/editor').some(f=>/authorizeWebsiteEditor/.test(r('lib/sites/editor/'+f))&&/saveWebsiteMenu/.test(r('lib/sites/editor/'+f)))){console.error('SCAN-832: the menu editor mounted on the website host has no host-authorized actions');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-833",
+      "title": "A website editor save and a Space settings save cannot undo each other through the shared preferences blob",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/spaces/store.ts",
+        "ref": "Meta scan eight (2026-10-12), website cluster review of #3342 and #3377."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: writeSpacePreferences and the leadership, hero, publish-toggle and menu writers read, modify and write the whole spaces.preferences blob with no lock. An editor autosave (the atomic save_website_editor RPC) landing between their read and write is reverted, and the editor then reports 'Someone saved a newer draft' and drops the autosave. saveWebsiteStyle writes the full blob guarded only on websiteEditor.revision, so it can revert a concurrent menu, hero or overview save. THE FIX: key-scoped writes, for example an RPC set_space_preference(p_space_id, p_key, p_value) using jsonb_set, starting with saveWebsiteStyle.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>/set_space_preference/.test(r('supabase/migrations/'+f)))){console.error('SCAN-833: preferences writers still replace the whole blob');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-834",
+      "title": "A website guest booking is confirmed by the guest's own email before it holds a slot or records marketing consent",
+      "status": "open",
+      "priority": "P2",
+      "lane": "owner",
+      "ownerAction": "ruling",
+      "size": "M",
+      "source": {
+        "file": "lib/spaces/booking-actions.ts",
+        "ref": "Meta scan eight (2026-10-12), website cluster review of #3289 (LIVE-835)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: createGuestBookingAction creates a CONFIRMED booking for any typed name and email, limited only by a honeypot and six bookings per IP per ten minutes, sends the confirmation to that address and records captureLead(..., optedIn) for an address the visitor may not own. A bot rotating IPs can hold every open slot and send platform mail to third parties. THE FIX (owner ruling): hold guest bookings pending until an emailed confirm link is clicked, or cap guest bookings per Space per day; record optedIn only after confirmation.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/guestConfirm|confirmGuestBooking/.test(r('lib/spaces/booking-actions.ts'))){console.error('SCAN-834: a website guest booking confirms and records consent without proof of the email');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-835",
+      "title": "Decide whether a staff limit waiver also lowers a Space's network fee",
+      "status": "open",
+      "priority": "P3",
+      "lane": "owner",
+      "ownerAction": "ruling",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/fees.ts",
+        "ref": "Meta scan eight (2026-10-12), pricing ladder review of #3284 (LIVE-822)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: the payments gate lets a waived free Space sell at the Collective level, and the waiver migration says waived Spaces are treated as Collective, but spaceNetworkBps never reads spaceLimitsWaived. A waived free Space's network-sourced sales price at the free rung (10%), and a waived Business Space pays 5% instead of 3%. THE FIX if the owner says waivers include the fee: after the Collective inheritance step, when spaceLimitsWaived(spaceId), take min(rung(plan), rung(limitsWaivedPlan(plan))) so a Non Profit stays at 0%. If not, write that down in the waiver's help and close this row.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/spaceLimitsWaived/.test(r('lib/billing/fees.ts'))){console.error('SCAN-835: the network fee ignores a staff waiver and no ruling says it should');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-836",
+      "title": "A font or document in the private Library bucket is not a signed-out download by default",
+      "status": "open",
+      "priority": "P2",
+      "lane": "owner",
+      "ownerAction": "ruling",
+      "size": "XS",
+      "source": {
+        "file": "lib/library/download-door.ts",
+        "ref": "Meta scan eight (2026-10-12), Library review of #3200 (LIVE-692)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: library_assets.download_policy defaults to 'open', the Studio upload never sets a policy for a library-files row, effectiveDownloadPolicy tightens 'open' only for protected assets, and protectRefusal refuses to protect a library-files asset. So the download door signs a URL for a signed-out caller with the asset id, though the bucket exists because a font licence usually forbids a public link and a document is often internal. A test (download-door.test.ts, 'signs an unprotected document from the private library-files bucket') pins today's behaviour, so the change needs the owner's word. THE FIX: insert library-files rows with download_policy 'staff', or treat 'open' as 'staff' for that bucket in effectiveDownloadPolicy.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/LIBRARY_FILES_BUCKET/.test(r('lib/library/download-door.ts'))&&!/downloadPolicy: 'staff'|download_policy: 'staff'/.test(r('app/(main)/admin/library/actions.ts')+r('lib/library/store.ts'))){console.error('SCAN-836: a library-files upload is an open download by default');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-837",
+      "title": "Vercel cannot auto-renew a purchased domain at Frequency's cost while domain sales are paused",
+      "status": "open",
+      "priority": "P3",
+      "lane": "owner",
+      "ownerAction": "ruling",
+      "size": "XS",
+      "source": {
+        "file": "lib/sites/domain-purchase.ts",
+        "ref": "Meta scan eight (2026-10-12), domains review of #3240 (LIVE-781) and #3328 (LIVE-786)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: the purchase turns Vercel autoRenew on whenever the Space has a saved card. Only the renewal sweep turns it off, and the sweep skips registered rows with no renewal state while domain_purchase_enabled is off. With sales paused Vercel renews and bills the platform, and when sales reopen the sweep raises registry-expiration-needs-review for a renewal the Space was never charged for. THE FIX (owner call): buy with autoRenew false always, since the sweep is the intended spending path, or let the sweep run its auto-renew-off step while closed.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/autoRenew: false/.test(r('lib/sites/domain-purchase.ts'))){console.error('SCAN-837: a purchased domain auto-renews at Vercel outside the renewal sweep');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-838",
+      "title": "Journey and Circle names stop reaching Google Analytics through the page title",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/consent/cookie-consent.ts",
+        "ref": "Meta scan eight (2026-10-12), funnels review of #3229 (LIVE-810)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: LIVE-810 redacts the Journey, Circle and topic slug from page_location in the GA bootstrap and the in-app page_view, but gtag.js attaches document.title as page_title to every hit, and app/(main)/journeys/[slug]/page.tsx titles every non-private Journey with its name, so 'Grief Walks · Frequency' still reaches Google. Nothing sets page_title. The Vercel beforeSend (components/analytics/vercel-analytics.tsx) also keeps the query string. THE FIX: on a redacted path set a generic page_title in the bootstrap config and the manual page_view (and for later hits on that page, gtag set), and strip the query in beforeSend. Needs a browser check of gtag's title handling, which is why it was not fixed in the scan.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/page_title/.test(r('lib/consent/cookie-consent.ts'))){console.error('SCAN-838: GA hits on a redacted Journey or Circle page still carry its name as page_title');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-839",
+      "title": "A Mentor's Nexus Dispatch shows in a feed",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/feed/compose-kinds.ts",
+        "ref": "Meta scan eight (2026-10-12), feed review of #3259 (LIVE-682)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: compose-kinds maps a nexus Dispatch to visibility 'region' and createPost sets scope_id to the nexus region, but feed_for_viewer and scoped_feed_for_viewer (newest definitions in 20270346002000_cluster_reads_every_circle_channel.sql) read only public, group and cluster posts. The Dispatch is saved and nobody sees it, the author included. LIVE-682 is closed with a probe that checks the picker strings. THE FIX: a migration adding the region branch (p.visibility = 'region' and p.scope_id = the viewer's region) to both feed functions, or drop nexus from dispatchScopesFor until a reader exists (which would fail LIVE-682's probe, so it needs the owner's word).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if((()=>{const d='supabase/migrations';const f=fs.readdirSync(d).filter(x=>x.endsWith('.sql')&&/function public\\.feed_for_viewer/.test(r(d+'/'+x))).sort().pop();const t=r(d+'/'+f);const i=t.indexOf('function public.feed_for_viewer');const body=t.slice(i,t.indexOf('revoke all on function public.feed_for_viewer',i));return !/'region'/.test(body)})()){console.error('SCAN-839: no feed reads a region-visibility Dispatch');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-840",
+      "title": "A Space owner can invite a second Space to co-host a Journey, and that Space's admin accepts it",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/journeys/space-shares.ts",
+        "ref": "Meta scan eight (2026-10-12), Journeys review of #3311 (LIVE-861)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: journey_plan_space_shares (20270346006100) has pending and accepted states and readers in lib/journey-plans.ts, but nothing in app, lib or components writes it. LIVE-861's own detail says the first share is written by SQL the owner runs and there is no owner UI to invite or accept a co-host, and no row tracked the follow-up, so the co-host Space's consent is not modelled in the product. THE FIX: an invite action for the Journey's Space admin and an accept action gated on the co-host Space's admin, mirroring event_space_shares.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!['app','lib','components'].some(d=>{const walk=(p)=>fs.statSync(p).isDirectory()?fs.readdirSync(p).some(x=>walk(p+'/'+x)):/\\.tsx?$/.test(p)&&!/test|database\\.types/.test(p)&&/journey_plan_space_shares['\\u0022]\\)\\s*\\.(insert|upsert|update)/.test(r(p));return walk(d)})){console.error('SCAN-840: nothing in the product writes a Journey co-host share');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-841",
+      "title": "A full loyalty card is claimed once, even from two taps at the same moment",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/partners/[slug]/loyalty-actions.ts",
+        "ref": "Meta scan eight (2026-10-12), partners review of #3262 (LIVE-710)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: the claim reads progress and then inserts a partner_redemptions row with source 'loyalty'; there is no lock and no uniqueness rule (migration 20270346002600 adds only an index). Two concurrent requests from two tabs or devices both see 'earned' and both insert, and the counter staff see only a 'Claimed at' time. THE FIX: do the check and insert in one database function under pg_advisory_xact_lock(hashtext(offer_id || profile_id)), or store the last counted visit on the claim with a unique index so a second claim of the same cycle conflicts. Needs a migration.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/\\.rpc\\(/.test(r('app/(main)/partners/[slug]/loyalty-actions.ts'))){console.error('SCAN-841: a loyalty claim is a read then an unguarded insert');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-842",
+      "title": "A member cannot write themselves into a Circle, or mint Zaps, with a direct database insert",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270346008200_drop_member_direct_membership_and_completion_inserts.sql",
+        "ref": "Meta scan eight (2026-10-12), regression review of the scan-seven fixes #3143 (SCAN-687, SCAN-750, SCAN-774) and #3145 (SCAN-691)."
+      },
+      "detail": "FILED AND CLOSED IN CODE 2026-10-12; production applies the migration when the owner runs it. THE CONSEQUENCE: two member INSERT policies from 20260612060000 outlived every app writer. 'memberships: crew+ join own' let any member insert a memberships row for any circle_id with any status (default active) and any volunteer_role, so one PostgREST call gave Circle entry (private.can_enter_circle) or Circle Admin (volunteer_role 'guide'), walking past the join gates SCAN-691, SCAN-750 and SCAN-774 closed in the app. 'crew_completions: crew+ insert own' let a member insert a completion with any task, zaps_earned and verified_at, and trg_after_crew_completion credits zap_transactions for it, so SCAN-687's RPC lockdown left the table door open and Zaps could be minted without limit. THE FIX: migration 20270346008200 drops both policies; every writer of both tables already runs under the service role (lib/circles/join.ts, the admin actions, the demo engine, logCompletion through the RPC). supabase/tests/member_direct_inserts_denied.test.sql proves from pg_policies that no client role keeps an INSERT policy on either table.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const d='supabase/migrations';let open={m:false,c:false};for(const f of fs.readdirSync(d).filter(x=>x.endsWith('.sql')).sort()){const s=fs.readFileSync(d+'/'+f,'utf8');for(const [k,n] of [['m','memberships: crew[+] join own'],['c','crew_completions: crew[+] insert own']]){const re=new RegExp('(create|drop) policy (if exists )?.'+n,'gi');let x;while((x=re.exec(s)))open[k]=/create/i.test(x[1]);}}if(open.m||open.c){console.error('SCAN-842: a member can still insert '+(open.m?'a Circle membership':'')+(open.m&&open.c?' and ':'')+(open.c?'a crew completion':'')+' directly');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-843",
+      "title": "A Circle Run of a tier-gated Journey needs every member of the Circle to hold the tier, not just the member who starts it",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/journeys/run-actions.ts",
+        "ref": "Meta scan eight (2026-10-12), regression review of #3144 (SCAN-724)."
+      },
+      "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: SCAN-724 made a Circle Run meet the price, tier and seat gates, but checkFreeEnrol runs checkJourneyTier for the caller only, while startRun enrols every active member of the Circle and the learn page reads that enrolment as full access with no tier re-check. A member holding a Space tier could run a tier-gated Journey for a Circle of people who do not, and all of them got it. THE FIX: when the Journey carries a space_tier_id and the caller is not its author or manager, startJourneyRunAction refuses unless every active member passes checkJourneyTier; a failed read refuses.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/journeys/run-actions.ts','utf8');if(!/await rosterTierCheck\\(input\\.planId, input\\.circleId\\)/.test(s)){console.error('SCAN-843: a Circle Run checks the Journey tier for the caller only');process.exit(1)}\""
+      },
+      "closed": "2026-10-12"
+    },
+    {
+      "id": "SCAN-844",
+      "title": "A member cannot skip a host's RSVP approval queue by re-inserting their RSVP as already admitted",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345011900_event_rsvps_member_write_guard.sql",
+        "ref": "Meta scan eight (2026-10-12), regression review of #3143 (SCAN-696)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: guard_event_rsvp_member_write allows approval_status 'none' or 'pending' on any member INSERT whatever the event, and the insert policy (20270303000000_guest_rsvp_seats.sql) checks only that the row is the caller's own. Every reader treats not-pending as admitted (lib/events/admission.ts isAdmitted, the capacity and going counts, the hidden-venue disclosure). A member deletes their pending row (delete-own is allowed) and re-inserts it with 'none', and the same works after a host's decline, which deletes the row; the app's booking-window checks are skipped too. THE FIX: a migration so the guard, on a caller-role INSERT, reads events.rsvp_requires_approval and requires approval_status = 'pending' when it is true, with a pgTAP case.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270345011900'&&/guard_event_rsvp_member_write/.test(r('supabase/migrations/'+f))&&/rsvp_requires_approval/.test(r('supabase/migrations/'+f)))){console.error('SCAN-844: a member can insert an admitted RSVP on an approval-gated event');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-845",
+      "title": "Founder first-week rewards pay once, even if a member clears their own profile meta",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345013100_claim_founder_flags_compare_and_set.sql",
+        "ref": "Meta scan eight (2026-10-12), regression review of #3170 (SCAN-759)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: claim_founder_flags uses profiles.meta.founder.rewarded and .badge as the once-only record, but the 'profiles: self update' policy lets a member PATCH their own meta and prevent_economy_self_edit protects the economy columns, not meta. claimFounderRewards (app/(main)/founder/founder-actions.ts) pays Gems under action 'achievement', whose gem_config row has no daily cap, so 'PATCH meta.founder={} then claim' pays the per-task and completion Gems again each time. SCAN-759 fixed the race, not the record. THE FIX: keep the founder record where a member cannot write it (a service-role-only table), or a BEFORE UPDATE trigger on profiles that refuses a change to meta->'founder' unless the caller is service_role.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270345013100'&&/founder/.test(r('supabase/migrations/'+f))&&/(before update[\\s\\S]*profiles|founder_rewards|founder_claims)/i.test(r('supabase/migrations/'+f)))){console.error('SCAN-845: the founder once-only record lives in member-writable profile meta');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-846",
+      "title": "A direct posts insert cannot forge a system line or hang a reply under a post the member cannot see",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270317000000_narrow_space_update_rls_arms.sql",
+        "ref": "Meta scan eight (2026-10-12), regression review of #3140 (SCAN-680, SCAN-682)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: SCAN-680 and SCAN-682 were closed in createPost and createReply only. The 'posts: insert (crew+ in scope)' policy never constrains post_type, so 'system', 'space_update' and 'announcement' are accepted and 'system' renders as an unattributed system line with no Report menu (components/feed/post-card.tsx), and it never checks parent_id against the parent's scope, so a public reply can sit under a cluster post the member cannot see. The SCAN-680 row itself says no migration restricts post_type on insert. THE FIX: add post_type in ('feed','note') to the WITH CHECK (announcements keep their admin path) and either parent_id is null (replies go through createReply) or a parent-visibility check.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270317000000'&&/posts: insert/.test(r('supabase/migrations/'+f))&&/post_type\\s+in\\s*\\(/.test(r('supabase/migrations/'+f)))){console.error('SCAN-846: the posts insert policy accepts any post_type and any parent');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-847",
+      "title": "Only a reviewed pull request, from main's workflow, can apply a migration to production",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": ".github/workflows/apply-migration.yml",
+        "ref": "Meta scan eight (2026-10-12), review of #3267."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: fork pull requests are refused correctly, but workflow_dispatch runs the workflow file from the ref the dispatcher picks, so a branch with an edited apply-migration.yml, or any workflow on any branch that declares environment production-db, gets SUPABASE_DB_URL unless the environment restricts deployment branches. The SETUP comment mentions only adding the secret and calls the required reviewer optional. The workflow never checks that the PR was approved, and its green gate trusts check-run names (db-tests, test, lint) a PR branch can create. The environment's settings could not be read from the scan (the environments API is blocked by the proxy). THE FIX: require 'Deployment branches: main only' and a required reviewer on production-db in SETUP and docs/DATABASE.md (an owner setting), add a step that fails unless github.ref is refs/heads/main, require an APPROVED review from someone other than the author, and match required checks by the GitHub Actions app id.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/github\\.ref != 'refs\\/heads\\/main'|github\\.ref == 'refs\\/heads\\/main'/.test(r('.github/workflows/apply-migration.yml'))){console.error('SCAN-847: the production migration workflow runs from any ref the dispatcher picks');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "SCAN-848",
+      "title": "A host cannot take a draft Circle live with a direct database update, skipping the hosting allowance",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20240102000000_hierarchy_v2.sql",
+        "ref": "Meta scan eight (2026-10-12), regression review of #3145 (SCAN-688)."
+      },
+      "detail": "FILED 2026-10-12. THE CONSEQUENCE: the 'circles: host/guide/mentor update' policy (using host_id = get_my_profile_id() or get_my_role() >= 'guide', no column limits) is never replaced, and the BEFORE UPDATE triggers on circles check the access and tier shape, not the status move. So status 'draft' to 'active' through PostgREST skips publishCircleAction's create gate and hosting allowance. The SCAN-688 row says no migration guards the transition. THE FIX: a BEFORE UPDATE trigger refusing old.status = 'draft' and new.status <> 'draft' unless the caller is service_role, or revoke UPDATE on circles from authenticated if no session-client writer remains.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270345000000'&&/on public\\.circles/.test(r('supabase/migrations/'+f))&&/old\\.status\\s*=\\s*'draft'/.test(r('supabase/migrations/'+f)))){console.error('SCAN-848: a draft Circle can go live through a direct update');process.exit(1)}\""
+      }
     }
   ]
 }

@@ -8,6 +8,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { slugify } from '@/lib/utils'
 import { ensureHostOnOwnership } from './remix'
+import { stampCircleSpaceId } from './store'
 
 /** A Circle counts as nearly full at nine tenths of its cap: the same line the Circle header's
  *  seat bar uses. */
@@ -61,12 +62,23 @@ const SHAPE_COLUMNS =
   'id, name, about, type, access, member_cap, primary_pillar, origin_template_id, space_id, hub_id, topical_channel_id, city, neighborhood, timezone, latitude, longitude, status'
 
 /** Seed a sister Circle from `circleId` as a private draft `profileId` hosts. Returns its slug. */
-export async function seedSisterCircle(input: { circleId: string; profileId: string }): Promise<{ circleId: string; slug: string }> {
+export async function seedSisterCircle(input: {
+  circleId: string
+  profileId: string
+  /** SCAN-825: keep the source's Space, access and Hub only when the caller may already place a Circle
+   *  there (the source's host or one of its Space's editors). Anyone else's sister lands where a remix
+   *  does, on the root Space and open, so a stranger cannot start a Circle inside someone's Space. */
+  keepPlacement: boolean
+}): Promise<{ circleId: string; slug: string }> {
   const admin = createAdminClient()
   const { data, error: readErr } = await admin.from('circles').select(SHAPE_COLUMNS).eq('id', input.circleId).maybeSingle()
   if (readErr || !data) throw new Error('That Circle is not available.')
   const src = data as unknown as CircleShape
   if (src.status !== 'forming' && src.status !== 'active') throw new Error('Only a live Circle can seed a sister Circle.')
+
+  const placement = input.keepPlacement
+    ? { space_id: src.space_id, hub_id: src.hub_id, ...(src.access ? { access: src.access } : {}) }
+    : { space_id: await stampCircleSpaceId(), hub_id: null, access: 'open' }
 
   const name = sisterCircleName(src.name)
   let slug = slugify(name) || 'circle'
@@ -81,7 +93,7 @@ export async function seedSisterCircle(input: { circleId: string; profileId: str
       name,
       about: src.about,
       type: src.type,
-      ...(src.access ? { access: src.access } : {}),
+      ...placement,
       member_cap: src.member_cap,
       status: 'draft',
       slug,
@@ -89,8 +101,6 @@ export async function seedSisterCircle(input: { circleId: string; profileId: str
       member_count: 0,
       primary_pillar: src.primary_pillar,
       origin_template_id: src.origin_template_id,
-      space_id: src.space_id,
-      hub_id: src.hub_id,
       topical_channel_id: src.topical_channel_id,
       city: src.city,
       neighborhood: src.neighborhood,

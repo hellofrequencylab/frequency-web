@@ -156,4 +156,7 @@ export function spaceDailyCapFor(feature: string): number {
 // traffic spike or a runaway loop can never run up more than this much Anthropic spend in one UTC day,
 // regardless of the per-feature caps above. Enforced in featureOverBudget (lib/ai/usage.ts), so every
 // AI surface is bounded by it. Tuned for a small / solo launch; raise as real usage and revenue grow.
+// SCAN-824: the reservation RPC refuses any cap above its own SQL ceiling (`p_global_cap > 25` in
+// supabase/migrations/20270346007200_ai_budget_reservations.sql), so raising this alone stops every
+// paid AI call. Raise the SQL ceiling in a migration in the same change; budget-ceiling.test.ts checks.
 export const GLOBAL_DAILY_CAP_USD = 25
