@@ -43,8 +43,7 @@ export async function generateMetadata({
   const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
   const ogTitle = `${event.title} · ${SITE_NAME}`
   const ended = hasEventEnded(event)
-  const facts = await seriesSeoFactsBySlug(event.slug)
-  const { indexedOccurrences } = await getSeriesDisplayConfig()
+  const [facts, { indexedOccurrences }] = await Promise.all([seriesSeoFactsBySlug(event.slug), getSeriesDisplayConfig()])
   const pastRobots = ended && !suppressPastNoindex(facts) ? ({ index: false, follow: true } as const) : undefined
   const robots = pastRobots ?? seriesRobots(facts, indexedOccurrences)
   return {

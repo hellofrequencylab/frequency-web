@@ -124,6 +124,15 @@ export const FEATURE_KEYS: FeatureKey[] = [
   // fileToRoute keeps `[slug]` verbatim, so the prefix matches the real files under app/ and nothing
   // else (feature-keys.test.ts proves the match against the walked tree).
   { key: 'payouts', label: 'Get paid (Space payouts)', area: 'operator', routes: ['/spaces/[slug]/settings/payments', '/settings/billing'], core: true },
+  // 2026-10-12: three Space keys for content/help/spaces/your-website.md, collective.md and email-domain.md.
+  // Dynamic segments are literal, as above. `website` covers the hosted site (and its /admin/editor view,
+  // the website editor), the /sites/<slug> fallback address, and the Manage layout actions that publish
+  // the site and connect its domain. `collective` covers the network home, the reach page that carries
+  // the private Collective report, and the cross-listing settings (LIVE-764, LIVE-765, LIVE-766).
+  // `space-email` is the Space Email surface, where the owner sets up a sender on their own domain.
+  { key: 'website', label: 'Space website', area: 'operator', routes: ['/hosted/[host]', '/sites/[slug]', '/spaces/[slug]/manage/layout'], core: false },
+  { key: 'collective', label: 'Collective network', area: 'operator', routes: ['/spaces/[slug]/network', '/spaces/[slug]/settings/reach', '/spaces/[slug]/settings/cross-listing'], core: false },
+  { key: 'space-email', label: 'Space email and sender domain', area: 'operator', routes: ['/spaces/[slug]/settings/email'], core: false },
 ]
 
 /** Fast membership check for the coverage tool + any future validation. */

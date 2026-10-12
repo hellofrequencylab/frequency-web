@@ -40,6 +40,7 @@ describe('siteRobotsTxt', () => {
     expect(txt).toContain('Allow: /')
     expect(txt).toContain('Sitemap: https://danieltyack.com/sitemap.xml')
     expect(txt).not.toContain('frequencylocal')
+    expect(txt).toContain('Disallow: /admin\nDisallow: /spotlight-click')
   })
 
   it('keeps crawlers out of a host with no published site', () => {
