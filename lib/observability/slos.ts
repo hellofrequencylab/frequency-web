@@ -220,8 +220,8 @@ export const CRON_FRESHNESS: readonly CronFreshnessWindow[] = [
   {
     group: 'weekly',
     freshByMinutes: 60 * 24 * 7 + 60 * 24, // one week + one day grace
-    jobs: ['weekly-digest'],
-    why: 'digest delivery; a miss is visible to every recipient',
+    jobs: ['weekly-digest', 'this-week'],
+    why: 'digest delivery and the Thursday regional calendar; a miss is visible to every recipient',
   },
 ]
 
@@ -433,6 +433,11 @@ export const CRON_UNMONITORED: readonly UnmonitoredCron[] = [
   // entry moves to CRON_MONITORED in the same change. Its cursor makes a missed night cheap: the
   // next run copies everything the missed one would have.
   { job: 'storage-backup', reason: 'nightly storage copy to R2 (HYG-144); a missed night is caught up by the next run from its cursor, and no check is free on the 20-check plan' },
+  // LIVE-806: unmonitored only because the 20-check plan is full. A missed Thursday is a quiet
+  // inbox, not a lost record: the next Thursday reads the same live Events under a fresh ISO-week
+  // key, and `cron.this_week.counts` in the runtime logs says whether it ran. When a check frees
+  // up, the owner creates a `this-week` check and this entry moves to CRON_MONITORED.
+  { job: 'this-week', reason: 'the Thursday "This week in <region>" email (LIVE-806); a missed week is a quiet inbox the next Thursday fills from live Events, and no check is free on the 20-check plan' },
 ]
 
 /** Is this cron expected to page when it goes quiet? False for an opt-out and for a job

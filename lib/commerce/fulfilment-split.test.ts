@@ -34,6 +34,8 @@ vi.mock('@/lib/supabase/admin', () => ({
         update: (p: Row) => ((patch = p), chain),
         eq: (c: string, v: unknown) => (filters.push((r) => r[c] === v), chain),
         neq: (c: string, v: unknown) => (filters.push((r) => r[c] !== v), chain),
+        // `metadata->>ticket_event_id` is null for every Market order here (LIVE-767 leaves ticket records out).
+        is: (c: string, v: unknown) => (filters.push((r) => (c.startsWith('metadata->>') ? v === null : r[c] === v)), chain),
         in: (c: string, vs: unknown[]) => (filters.push((r) => vs.includes(r[c])), chain),
         order: () => chain,
         limit: () => chain,

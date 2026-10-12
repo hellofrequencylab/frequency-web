@@ -36,6 +36,7 @@ import { EventCohostChooser } from '@/components/admin/modules/event-cohost-choo
 import { KeptDatesNotice } from '@/components/admin/modules/event-kept-dates-notice'
 import { EventPlacementField } from '@/components/events/event-placement-field'
 import { EventShareField } from '@/components/events/event-share-field'
+import { EventRevenueSplitField } from '@/components/events/event-revenue-split-field'
 import { readEventHeroHeight } from '@/lib/events/hero-height'
 import { readEventCoverAspect } from '@/lib/events/cover-aspect'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
@@ -548,6 +549,10 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
       {/* SHARE (composite): co-host elsewhere, onto ANOTHER Space's calendar too (Events EC3), without
           moving where it lives. Steward-approved on the other side. Its own actions. */}
       <EventShareField eventId={eventId} slug={eventSlug} />
+
+      {/* TICKET SHARES (composite, LIVE-767): what each accepted Collaborator earns from every ticket.
+          Home Space owner only; renders nothing for anyone else or with no Collaborator. Its own actions. */}
+      <EventRevenueSplitField eventId={eventId} slug={eventSlug} />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { BadgeCheck, Users } from 'lucide-react'
 import {
   listMembershipTiers,
@@ -71,6 +72,25 @@ export async function MembershipJoin({
           </p>
           <div className="mt-4 flex justify-center">
             <MembershipCancelButton membershipId={mine.id} label="Leave the waitlist" />
+          </div>
+        </div>
+      )
+    }
+    // THROUGH THE COLLECTIVE (LIVE-767): the viewer's membership was bought in the Collective this
+    // Space is a member Space of. It is theirs here, read-time only, and the row is the parent's, so
+    // the cancel lives on the parent's join surface and never on an id this Space does not own.
+    if (mine.source === 'collective' && mine.via) {
+      return (
+        <div className="rounded-card border border-success/30 bg-success-bg px-6 py-8 text-center">
+          <BadgeCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
+          <p className="text-body-sm font-semibold text-text">You are a member through {mine.via.spaceName}.</p>
+          <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">
+            {mine.tierName} since {since}. Your membership there counts in every Space in that network.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <Link href={`/spaces/${mine.via.spaceSlug}`} className="text-body-sm font-semibold text-primary-strong transition-colors hover:text-primary">
+              Manage it at {mine.via.spaceName}
+            </Link>
           </div>
         </div>
       )

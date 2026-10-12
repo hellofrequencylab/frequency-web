@@ -118,3 +118,6 @@ space_email_reply_aliases
 space_email_reply_quarantine
 # EMAIL-012: operation leases/ownership nonces are service-only; migration078 explicitly revokes browser roles.
 space_email_domain_operations
+
+# LIVE-767: co-host revenue shares are set by the home Space owner through a server action and read by the ticket checkout and the Reach report; service-only, no browser role.
+event_revenue_splits

@@ -76,6 +76,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 import { feeBearingSpaceId } from '@/lib/events/belonging'
+import { holdsSharedMembership } from '@/lib/collective/shared-membership'
+import { planTicketSplit, splitMetadata } from '@/lib/events/revenue-splits'
+import { loadTicketSplitPayees } from '@/lib/events/revenue-splits-store'
+import { settleSplitOrderTransfers } from '@/lib/commerce/transfers'
+import { reverseSplitRefundForPaymentIntent } from '@/lib/commerce/split-refund'
+import { ENTITY_ID } from '@/lib/finance/record'
 import { sendGuestTicketReceipt } from '@/lib/events/guest-ticket-email'
 import { sendMemberTicketReceipt } from '@/lib/events/member-ticket-email'
 import { notifyTicketSaleHost } from './ticket-sale-notify'
@@ -320,7 +326,9 @@ async function loadActiveMembership(
     .eq('member_profile_id', profileId)
     .eq('status', 'active')
     .maybeSingle()
-  return data ?? null
+  // SHARED MEMBERSHIP (LIVE-767): no row here, but an active membership in the Collective this
+  // Space belongs to admits the buyer to a members ticket the same way. Read-time only.
+  return data ?? (await holdsSharedMembership(spaceId, profileId))
 }
 
 /** The member benefits assigned to the buyer's membership tier in the hosting Space (ADR-1372).
@@ -957,6 +965,62 @@ export async function createTicketCheckout(opts: {
   const sdk = stripe
   const gaMeta = await checkoutGaMetadata()
 
+  // ── REVENUE SPLITS ON A CO-HOSTED EVENT (LIVE-767) ───────────────────────────────────────────
+  // When the home Space owner gave accepted Collaborator Spaces a share of every ticket and at least
+  // one of them is payable today, the money takes the Market's SEPARATE plan (lib/commerce/funds-flow.ts,
+  // ADR-1576) instead of the destination charge below: one charge on the platform carrying
+  // `transfer_group`, no `transfer_data`, no `application_fee_amount` (the platform keeps its fee by
+  // transferring less), and a commerce_orders row with `funds_flow = 'separate'` and `metadata.split`
+  // that LIVE-622's ledger (lib/commerce/transfers.ts) pays from once the ticket settles. The row is
+  // written BEFORE the session, exactly as lib/commerce/checkout.ts does, so a payable session never
+  // exists without the plan behind it; a reservation failure below marks it failed with the session.
+  // The platform fee is the one priced above on the home Space's rung and the receipt is unchanged;
+  // planTicketSplit takes it from every share pro rata. A Space with no payable share is a plain
+  // destination charge, which is the path every ticket took before this.
+  const feeSpaceForSplit = feeSpaceId && feeSpaceId !== (await loadRootSpaceId()) ? feeSpaceId : null
+  const splitPayees = feeSpaceForSplit ? await loadTicketSplitPayees(event.id) : []
+  const splits = feeSpaceForSplit && splitPayees.length
+    ? planTicketSplit({
+        grossCents: gross,
+        platformFeeCents: fee,
+        home: { spaceId: feeSpaceForSplit, ownerProfileId: payeeProfileId, stripeAccountId: status.accountId },
+        payees: splitPayees,
+      })
+    : []
+  let splitOrderId: string | null = null
+  if (splits.length > 1) {
+    const { data: orderRow, error: orderErr } = await db()
+      .from('commerce_orders')
+      .insert({
+        buyer_profile_id: buyerProfileId,
+        guest_email: guestEmail,
+        owner_kind: 'split',
+        owner_profile_id: null,
+        owner_space_id: null,
+        entity_id: ENTITY_ID.labs,
+        amount_cents: gross,
+        platform_fee_cents: fee,
+        source: effectiveSource,
+        attribution_ref: effectiveSource === 'network' ? attributionRef : null,
+        currency: 'usd',
+        status: 'pending',
+        seller_stripe_account_id: null,
+        funds_flow: 'separate',
+        // `ticket_event_id` marks the row as a ticket's money record, not a Market purchase: the
+        // buyer's Orders list leaves it out (their ticket is on the event), and each Space's
+        // earnings view counts its share (LIVE-624).
+        metadata: { split: splitMetadata(splits), kind: 'ticket', ticket_event_id: event.id },
+      })
+      .select('id')
+      .maybeSingle()
+    splitOrderId = (orderRow as { id?: string } | null)?.id ?? null
+    if (orderErr || !splitOrderId) {
+      console.error('[tickets] split order insert failed', { eventId: event.id, error: orderErr?.message ?? 'no id' })
+      return { error: 'Could not start checkout. Please try again.' }
+    }
+  }
+  const splitMeta: Record<string, string> = splitOrderId ? { split_order_id: splitOrderId } : {}
+
   const session = await createAllowingSavedCard(
     (savedCardParams) =>
       sdk.checkout.sessions.create({
@@ -978,8 +1042,12 @@ export async function createTicketCheckout(opts: {
       },
     ],
     payment_intent_data: {
-      application_fee_amount: fee,
-      transfer_data: { destination: status.accountId },
+      // A split ticket (LIVE-767) lands on the platform with `transfer_group` = the order id and
+      // NOTHING else; the sellers are paid by transfer from the ledger. Every other ticket is the
+      // destination charge it always was.
+      ...(splitOrderId
+        ? { transfer_group: splitOrderId }
+        : { application_fee_amount: fee, transfer_data: { destination: status.accountId } }),
       // Stripe's OWN receipt, the backstop to ours. It lives here rather than at the top level
       // because a Checkout Session has no `receipt_email` of its own: the field belongs to the
       // PaymentIntent the session creates. Omitted rather than sent to a null.
@@ -990,6 +1058,7 @@ export async function createTicketCheckout(opts: {
         ...identityMeta,
         ...(tier ? { ticket_type_id: tier.id } : {}),
         ...benefitMeta,
+        ...splitMeta,
       },
     },
     metadata: {
@@ -998,6 +1067,7 @@ export async function createTicketCheckout(opts: {
       ...identityMeta,
       ...(tier ? { ticket_type_id: tier.id } : {}),
       ...benefitMeta,
+      ...splitMeta,
       ...gaMeta,
     },
     // Prefills Checkout for the guest and, because Stripe echoes it back on the session, gives the
@@ -1077,12 +1147,18 @@ export async function createTicketCheckout(opts: {
     } catch {
       // best-effort — an unexpired session simply lapses on its own; we still refuse the URL
     }
+    if (splitOrderId) await markSplitOrder(splitOrderId, { status: 'failed' })
     return {
       error: reservation?.reason === 'sold_out'
         ? 'This ticket just sold out.'
         : 'Could not start checkout. Please try again.',
     }
   }
+
+  // The split order learns its session id, the key the abandon flips on. A miss here is logged,
+  // not fatal: the settle writes the session and the PaymentIntent again by the order id the
+  // session carries in `split_order_id`.
+  if (splitOrderId) await markSplitOrder(splitOrderId, { stripe_checkout_session_id: session.id })
 
   // ── THE FEE RECEIPT (ADR-914, migration 20270202000000) ──────────────────────────────────
   // Written as a PATCH on the row the RPC just inserted, keyed by the session id, rather than as
@@ -1163,6 +1239,10 @@ export async function createTicketCheckout(opts: {
  */
 export async function abandonTicketFromSession(session: Stripe.Checkout.Session): Promise<void> {
   if (session.metadata?.kind !== 'ticket') return
+  // A split ticket's pending order (LIVE-767) is cancelled with its seat; pending-only, so a
+  // settled order is never touched.
+  const splitOrderId = session.metadata?.split_order_id || null
+  if (splitOrderId) await markSplitOrder(splitOrderId, { status: 'cancelled' }, 'pending')
   try {
     const { error } = await db()
       .from('event_tickets')
@@ -1369,6 +1449,16 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
 
   const settleArgs = { _session_id: session.id, _payment_intent_id: paymentIntentId }
   const rows = flippedRows('settle_ticket_atomic', settleArgs, await db().rpc('settle_ticket_atomic', settleArgs))
+  // ── A SPLIT TICKET PAYS ITS SELLERS FROM THE LEDGER (LIVE-767) ─────────────────────────────
+  // The charge landed on the platform; nobody has been paid yet. Flip the order to paid with the
+  // PaymentIntent (pending-only and amount-guarded, so a replay flips nothing) and settle its
+  // transfers through LIVE-622's ledger, which plans one row per seller and pays each under its own
+  // idempotency key; what fails stays planned for the reconciler. Runs on a redelivery too: both
+  // halves are idempotent, and a seller who was not paid the first time is paid now.
+  const splitOrderId = session.metadata?.split_order_id || null
+  if (splitOrderId && paymentIntentId) {
+    await settleSplitTicketOrder(splitOrderId, session, paymentIntentId)
+  }
   // ZERO ROWS IS TWO DIFFERENT FACTS AND ONLY ONE OF THEM IS FINE. A Stripe redelivery flips
   // nothing because the ticket is already `succeeded`; that is the design. A session whose ticket
   // row does not exist at all flips nothing for a completely different reason: money moved and
@@ -1896,15 +1986,25 @@ export async function refundTicket(ticketId: string, eventId: string): Promise<R
     // documented way to fully unwind a destination charge — verified against the
     // Stripe Connect refunds docs (2026-06-09): "Set both reverse_transfer: true and
     // refund_application_fee: true when processing refunds for destination charges."
+    // A SPLIT TICKET (LIVE-767) is a platform charge with no transfer and no application fee, so
+    // neither flag applies: it refunds plain, and each seller's transfer is reversed pro rata below.
+    const split = await splitOrderForPaymentIntent(ticket.stripe_payment_intent_id)
     await stripe.refunds.create({
       payment_intent: ticket.stripe_payment_intent_id,
-      reverse_transfer: true,
-      refund_application_fee: true,
+      ...(split ? {} : { reverse_transfer: true, refund_application_fee: true }),
       metadata: { kind: 'ticket', ticket_id: ticket.id, event_id: ticket.event_id },
     })
   } catch (err) {
     console.error('[tickets] refund failed', { ticketId, err })
     return { error: 'Refund failed at the payment processor.' }
+  }
+  // The sellers' shares come back the way a Market split refund takes them (lib/commerce/split-refund.ts):
+  // each created transfer reversed pro rata. The buyer is already made whole; a failure here stays
+  // owed on the ledger, and the charge.refunded webhook runs the same reversal again.
+  try {
+    await reverseSplitRefundForPaymentIntent(ticket.stripe_payment_intent_id, ticket.amount_cents ?? 0)
+  } catch (err) {
+    console.error('[tickets] split reversal not recorded; the charge.refunded webhook retries it', { ticketId, err })
   }
 
   // Reconcile immediately (belt-and-suspenders); the charge.refunded webhook also
@@ -1918,6 +2018,60 @@ export async function refundTicket(ticketId: string, eventId: string): Promise<R
     console.error('[tickets] inline refund reconcile failed; the charge.refunded webhook is now the only path', { ticketId, err })
   }
   return { ok: true }
+}
+
+/** The commerce_orders row behind a split ticket's PaymentIntent, or null for every other ticket. */
+async function splitOrderForPaymentIntent(paymentIntentId: string): Promise<{ id: string } | null> {
+  // FAIL-SAFE to null: a read blip here must not stop a refund. A destination-charge ticket (every
+  // ticket before LIVE-767) has no such row, and treating a missed read as "not split" keeps that
+  // path exactly as it was: reverse the transfer and the application fee on the charge.
+  try {
+    const { data } = await db()
+      .from('commerce_orders')
+      .select('id')
+      .eq('stripe_payment_intent_id', paymentIntentId)
+      .eq('funds_flow', 'separate')
+      .maybeSingle()
+    return (data as { id: string } | null) ?? null
+  } catch (err) {
+    console.warn('[tickets] split order lookup failed; refunding as a destination charge', { paymentIntentId, err })
+    return null
+  }
+}
+
+/** A narrow write on a split ticket's order (LIVE-767). `onlyWhen` guards the status so a flip never
+ *  lands on a row that has moved on. Logged, never thrown: the ticket's own path decides what is fatal. */
+async function markSplitOrder(orderId: string, patch: Record<string, unknown>, onlyWhen?: 'pending'): Promise<void> {
+  try {
+    let q = db().from('commerce_orders').update(patch).eq('id', orderId).eq('funds_flow', 'separate')
+    if (onlyWhen) q = q.eq('status', onlyWhen)
+    const { error } = await q
+    if (error) console.error('[tickets] split order write failed', { orderId, patch, error: error.message })
+  } catch (e) {
+    console.error('[tickets] split order write threw', { orderId, error: e instanceof Error ? e.message : String(e) })
+  }
+}
+
+/** Flip a split ticket's order to paid against the session Stripe signed, then pay its sellers. */
+async function settleSplitTicketOrder(orderId: string, session: Stripe.Checkout.Session, paymentIntentId: string): Promise<void> {
+  try {
+    const paid = Number.isSafeInteger(session.amount_total) ? (session.amount_total as number) : null
+    let q = db()
+      .from('commerce_orders')
+      .update({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId, stripe_checkout_session_id: session.id })
+      .eq('id', orderId)
+      .eq('funds_flow', 'separate')
+      .eq('status', 'pending')
+    if (paid != null) q = q.eq('amount_cents', paid)
+    const { error } = await q
+    if (error) {
+      console.error('[tickets] split order paid flip failed', { orderId, error: error.message })
+      return
+    }
+    await settleSplitOrderTransfers(orderId)
+  } catch (e) {
+    console.error('[tickets] split ticket settle threw; the reconciler retries it', { orderId, error: e instanceof Error ? e.message : String(e) })
+  }
 }
 
 /** Flip a refunded ticket to `refunded` and free its tier capacity (idempotent).
