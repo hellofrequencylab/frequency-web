@@ -9,16 +9,26 @@
 # path (DDL first, THEN the explicit ledger insert at the repo file's own version, never
 # `apply_migration` and never `supabase db push`, docs/DATABASE.md).
 #
-# SETUP (owner, once): Settings > Environments > New environment `production-db`, add the secret
-# SUPABASE_DB_URL (Supabase > Connect > Session pooler URI, with the password filled in). Optionally
-# add yourself as a required reviewer to approve each run by hand.
+# SETUP (owner, once): Settings > Environments > New environment `production-db`, with ALL THREE:
+#   1. the secret SUPABASE_DB_URL (Supabase > Connect > Session pooler URI, password filled in);
+#   2. Deployment branches and tags: Selected, `main` only. Without it, a workflow_dispatch run from
+#      ANY branch (an edited copy of this file included) that names `environment: production-db`
+#      receives the secret (SCAN-847);
+#   3. Required reviewers: the owner. Each run then waits for a human click before the job starts,
+#      which is the approval a one-person repo cannot get from a second reviewer.
+# The job also refuses by itself (below) when it is not running from main's workflow file, when the
+# dispatcher is not a repo admin and no other person approved the PR, and when the green checks it
+# trusts were not posted by GitHub Actions (a PR branch can name a job anything).
 #
 # WHAT IT REFUSES, so a run can only do what the paste path did:
 #   - a PR that is closed, a draft, from a fork, or not based on main;
 #   - a PR whose diff MODIFIES, DELETES or RENAMES any file under supabase/migrations (add-only);
 #   - a new version that is not above every version already on main AND in the production ledger;
-#   - a PR whose `db-tests`, `test` or `lint` checks are not green on its head commit (db-tests is
-#     the gate that applies every migration to an empty database, so the SQL is proven first).
+#   - a PR whose `db-tests`, `test` or `lint` checks are not green on its head commit, as check runs
+#     posted by the GitHub Actions app (db-tests is the gate that applies every migration to an
+#     empty database, so the SQL is proven first);
+#   - a dispatch from any ref but main, or by someone who is not a repo admin unless another person
+#     approved the PR (SCAN-847).
 # A version already in the ledger under the same name is skipped, so a re-run is harmless.
 # One apply at a time across the repo: the concurrency group never cancels an in-flight run.
 name: apply-migration
@@ -48,6 +58,10 @@ concurrency:
 
 jobs:
   apply:
+    # SCAN-847: workflow_dispatch runs the workflow file from the ref the dispatcher picks. Only
+    # main's copy of this file may reach the production-db environment; the environment's own
+    # deployment-branch rule (SETUP) is the second lock on the same door.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production-db
@@ -56,6 +70,12 @@ jobs:
       PR: ${{ inputs.pr }}
       DRY_RUN: ${{ inputs.dry_run }}
     steps:
+      - name: Refuse any ref but main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::apply-migration runs only from main's workflow file (dispatched from ${GITHUB_REF})"
+          exit 1
+
       - uses: actions/checkout@v7
         with:
           ref: main
@@ -76,16 +96,38 @@ jobs:
           git fetch -q origin "pull/${PR}/head:pr-head"
           [ "$(git rev-parse pr-head)" = "$sha" ] || { echo "::error::PR head moved while reading it"; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "author=$(jq -r .user.login pr.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Require a second person's approval, or an admin dispatcher (SCAN-847)
+        env:
+          AUTHOR: ${{ steps.pr.outputs.author }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          # The latest review per reviewer decides; an APPROVED from anyone but the author counts.
+          approved=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews?per_page=100" \
+            --jq '[.[] | select(.user.login != "'"$AUTHOR"'")] | group_by(.user.login) | map(last) | map(select(.state == "APPROVED")) | length')
+          if [ "${approved:-0}" -gt 0 ]; then
+            echo "PR #$PR is approved by $approved reviewer(s) other than its author."; exit 0
+          fi
+          # A one-person repo has no second reviewer. A repo admin dispatching, who also clicks the
+          # environment's required-reviewer approval, is that person; anyone else needs the review.
+          perm=$(gh api "repos/${GITHUB_REPOSITORY}/collaborators/${ACTOR}/permission" --jq .permission)
+          if [ "$perm" = admin ]; then
+            echo "No second-person approval on #$PR; dispatched by repo admin $ACTOR, who approves the run."; exit 0
+          fi
+          echo "::error::PR #$PR has no APPROVED review from anyone but its author, and $ACTOR ($perm) is not a repo admin."
+          exit 1
 
       - name: Require db-tests, test and lint green on the PR head
         env:
           SHA: ${{ steps.pr.outputs.sha }}
         run: |
           set -euo pipefail
+          # Only check runs the GitHub Actions app (id 15368) posted count: a PR branch can name a
+          # job `db-tests`, but it cannot post as another app, and a commit status is not a run.
           gh api --paginate "repos/${GITHUB_REPOSITORY}/commits/${SHA}/check-runs?per_page=100" \
-            --jq '.check_runs[] | "\(.name)\t\(.conclusion)"' > runs.tsv
-          gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/status" \
-            --jq '.statuses[] | "\(.context)\t\(.state)"' >> runs.tsv
+            --jq '.check_runs[] | select(.app.id == 15368) | "\(.name)\t\(.conclusion)"' > runs.tsv
           for need in db-tests test lint; do
             if ! awk -F'\t' -v n="$need" '$1==n && ($2=="success") {ok=1} END {exit !ok}' runs.tsv; then
               echo "::error::'$need' is not green on ${SHA}. Fix the PR first; this run applies nothing."
