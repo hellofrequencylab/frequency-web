@@ -70,6 +70,11 @@ type BookRow = {
   note: string | null
   answers?: unknown
   service_type_id?: string | null
+  // SCAN-834: the website guest hold columns.
+  guest_confirm_token?: string | null
+  guest_confirm_expires_at?: string | null
+  guest_confirmed_at?: string | null
+  guest_opt_in?: boolean | null
 }
 type ServiceTypeRow = {
   id: string
@@ -126,9 +131,26 @@ function availabilityBuilder() {
 }
 
 function bookingsBuilder() {
-  const filters: { space_id?: string; status?: string; statusIn?: string[]; id?: string; gte?: string } = {}
+  const filters: {
+    space_id?: string
+    status?: string
+    statusIn?: string[]
+    id?: string
+    gte?: string
+    token?: string
+    lteExpires?: string
+  } = {}
   let pendingInsert: Record<string, unknown> | null = null
   let pendingUpdate: Record<string, unknown> | null = null
+  const matches = (b: BookRow): boolean =>
+    (filters.space_id === undefined || b.space_id === filters.space_id) &&
+    (filters.status === undefined || b.status === filters.status) &&
+    (filters.statusIn === undefined || filters.statusIn.includes(b.status)) &&
+    (filters.id === undefined || b.id === filters.id) &&
+    (filters.token === undefined || b.guest_confirm_token === filters.token) &&
+    (filters.gte === undefined || b.starts_at >= filters.gte) &&
+    (filters.lteExpires === undefined ||
+      (typeof b.guest_confirm_expires_at === 'string' && b.guest_confirm_expires_at <= filters.lteExpires))
   const api = {
     select() {
       return api
@@ -142,7 +164,8 @@ function bookingsBuilder() {
       if (col === 'space_id') filters.space_id = val
       if (col === 'status') filters.status = val
       if (col === 'id') filters.id = val
-      // an eq after update() is the terminal write
+      if (col === 'guest_confirm_token') filters.token = val
+      // an eq('id') after update() is the terminal write (the legacy single-row flip)
       if (pendingUpdate && col === 'id') {
         const row = db.bookings.find((b) => b.id === val)
         if (row) Object.assign(row, pendingUpdate)
@@ -152,6 +175,11 @@ function bookingsBuilder() {
     },
     gte(col: string, val: string) {
       if (col === 'starts_at') filters.gte = val
+      return api
+    },
+    lte(col: string, val: string) {
+      // releaseExpiredGuestHolds: .lte('guest_confirm_expires_at', now)
+      if (col === 'guest_confirm_expires_at') filters.lteExpires = val
       return api
     },
     order() {
@@ -166,6 +194,13 @@ function bookingsBuilder() {
       return api
     },
     async maybeSingle() {
+      // A compare-and-set update (.update().eq(...).eq(...).select().maybeSingle()): flip the filtered rows,
+      // answer with the first one, or null when nothing matched.
+      if (pendingUpdate) {
+        const hit = db.bookings.filter(matches)
+        for (const row of hit) Object.assign(row, pendingUpdate)
+        return { data: hit[0] ?? null, error: null }
+      }
       if (pendingInsert) {
         if (db.failNextInsert) {
           db.failNextInsert = false
@@ -179,16 +214,17 @@ function bookingsBuilder() {
         db.inserts.push(pendingInsert)
         return { data: row, error: null }
       }
-      // a select().eq('id', ...).maybeSingle() read
-      const row = db.bookings.find((b) => b.id === filters.id) ?? null
+      // a select().eq('id' | 'guest_confirm_token', ...).maybeSingle() read
+      const row = db.bookings.find(matches) ?? null
       return { data: row, error: null }
     },
     then(resolve: (r: { data: BookRow[] | null; error: null }) => unknown) {
-      let data = db.bookings.filter((b) => b.space_id === filters.space_id)
-      if (filters.status) data = data.filter((b) => b.status === filters.status)
-      if (filters.statusIn) data = data.filter((b) => filters.statusIn!.includes(b.status))
-      if (filters.gte) data = data.filter((b) => b.starts_at >= filters.gte!)
-      data = [...data].sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+      // A filtered update awaited directly (releaseExpiredGuestHolds): flip every matching row.
+      if (pendingUpdate) {
+        for (const row of db.bookings.filter(matches)) Object.assign(row, pendingUpdate)
+        return Promise.resolve(resolve({ data: null, error: null }))
+      }
+      const data = [...db.bookings.filter(matches)].sort((a, b) => a.starts_at.localeCompare(b.starts_at))
       return Promise.resolve(resolve({ data, error: null }))
     },
   }
@@ -334,6 +370,19 @@ function schedulesBuilder() {
   return api
 }
 
+// SCAN-834: what a guest hold must NOT do until the click, and what the click must do.
+const captureLeadSpy = vi.fn(async () => null)
+vi.mock('@/lib/crm/lead-capture', () => ({ captureLead: captureLeadSpy }))
+const holdEmailSpy = vi.fn(async () => undefined)
+vi.mock('@/lib/email', async (orig) => ({
+  ...(await orig<typeof import('@/lib/email')>()),
+  sendGuestBookingConfirmEmail: holdEmailSpy,
+}))
+vi.mock('@/lib/sites/site-booking', () => ({
+  siteConfirmBookingUrl: async (_space: unknown, token: string) => `https://river-yoga.test/confirm-booking?token=${token}`,
+  siteBookUrl: async () => 'https://river-yoga.test/book',
+}))
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from(table: string) {
@@ -369,6 +418,9 @@ import {
   startServiceDeposit,
   listPublicOpenSlots,
   createGuestBooking,
+  confirmGuestBooking,
+  guestHoldExpired,
+  GUEST_HOLD_MINUTES,
   cleanGuestBooker,
   bookerColumns,
   bookerFromRow,
@@ -389,6 +441,8 @@ beforeEach(() => {
   db.failNextInsert = false
   calendarDb.entries = []
   calendarDb.schedules = []
+  captureLeadSpy.mockClear()
+  holdEmailSpy.mockClear()
 })
 
 // A reference "now": a fixed Tuesday so weekday math is deterministic.
@@ -891,7 +945,7 @@ describe('guest booker (LIVE-835, pure)', () => {
   })
 })
 
-describe('createGuestBooking (LIVE-835)', () => {
+describe('createGuestBooking (LIVE-835) holds the slot until the guest confirms (SCAN-834)', () => {
   // Same frozen clock and window as the createBooking suite.
   beforeEach(() => {
     vi.useFakeTimers()
@@ -910,7 +964,7 @@ describe('createGuestBooking (LIVE-835)', () => {
     expect(open.length).toBeGreaterThan(0)
   })
 
-  it('books an open slot for a guest with no member profile', async () => {
+  it('places a PENDING hold with a confirm token and a 30 minute expiry, and mails only the confirm link', async () => {
     const target = (await listPublicOpenSlots('space-1'))[0]!.startsAt
     const r = await createGuestBooking({
       spaceId: 'space-1',
@@ -918,14 +972,25 @@ describe('createGuestBooking (LIVE-835)', () => {
       name: ' Ada Lovelace ',
       email: 'Ada@Example.com',
       note: '  First time.  ',
+      optIn: true,
     })
     expect('error' in r).toBe(false)
     expect(db.bookings).toHaveLength(1)
-    expect(db.bookings[0]!.status).toBe('confirmed')
-    expect(db.bookings[0]!.member_profile_id).toBeNull()
-    expect(db.bookings[0]!.guest_name).toBe('Ada Lovelace')
-    expect(db.bookings[0]!.guest_email).toBe('ada@example.com')
-    expect(db.bookings[0]!.note).toBe('First time.')
+    const row = db.bookings[0]!
+    expect(row.status).toBe('pending')
+    expect(row.member_profile_id).toBeNull()
+    expect(row.guest_name).toBe('Ada Lovelace')
+    expect(row.guest_email).toBe('ada@example.com')
+    expect(row.note).toBe('First time.')
+    expect(row.guest_confirm_token).toMatch(/^[A-Za-z0-9_-]{20,}$/)
+    expect(row.guest_confirm_expires_at).toBe(new Date(Date.now() + GUEST_HOLD_MINUTES * 60000).toISOString())
+    expect(row.guest_opt_in).toBe(true)
+    // The lead (and its opt-in) waits for the click; the one email sent carries the confirm link.
+    expect(captureLeadSpy).not.toHaveBeenCalled()
+    expect(holdEmailSpy).toHaveBeenCalledTimes(1)
+    const mail = holdEmailSpy.mock.calls[0]![0] as unknown as { to: string; confirmUrl: string }
+    expect(mail.to).toBe('ada@example.com')
+    expect(mail.confirmUrl).toBe(`https://river-yoga.test/confirm-booking?token=${row.guest_confirm_token}`)
   })
 
   it('refuses a bad email before touching the slot', async () => {
@@ -933,6 +998,7 @@ describe('createGuestBooking (LIVE-835)', () => {
     const r = await createGuestBooking({ spaceId: 'space-1', startsAtISO: target, name: 'Ada', email: 'nope' })
     expect('error' in r).toBe(true)
     expect(db.bookings).toHaveLength(0)
+    expect(holdEmailSpy).not.toHaveBeenCalled()
   })
 
   it('runs the same slot validation as a member booking (off-boundary, taken)', async () => {
@@ -959,6 +1025,83 @@ describe('createGuestBooking (LIVE-835)', () => {
     if ('error' in taken) expect(taken.error).toMatch(/just taken/i)
     else throw new Error('expected an error')
     expect(db.bookings).toHaveLength(1)
+  })
+
+  it('a live hold blocks the slot for the next guest; an expired hold does not', async () => {
+    const target = (await listPublicOpenSlots('space-1'))[0]!.startsAt
+    const first = await createGuestBooking({ spaceId: 'space-1', startsAtISO: target, name: 'Ada', email: 'ada@example.com' })
+    expect('error' in first).toBe(false)
+    // The held time is out of the public list and a second guest bounces off it.
+    expect((await listPublicOpenSlots('space-1')).some((s) => s.startsAt === target)).toBe(false)
+    const second = await createGuestBooking({ spaceId: 'space-1', startsAtISO: target, name: 'Bob', email: 'bob@example.com' })
+    if ('error' in second) expect(second.error).toMatch(/just taken/i)
+    else throw new Error('expected an error')
+    expect(db.bookings).toHaveLength(1)
+
+    // The hold lapses: the slot is open again, and the next guest's hold releases the dead one.
+    vi.setSystemTime(new Date(Date.now() + (GUEST_HOLD_MINUTES + 1) * 60000))
+    expect((await listPublicOpenSlots('space-1')).some((s) => s.startsAt === target)).toBe(true)
+    const third = await createGuestBooking({ spaceId: 'space-1', startsAtISO: target, name: 'Cy', email: 'cy@example.com' })
+    expect('error' in third).toBe(false)
+    expect(db.bookings).toHaveLength(2)
+    expect(db.bookings[0]!.status).toBe('cancelled')
+    expect(db.bookings[1]!.status).toBe('pending')
+  })
+
+  it('the click confirms the hold, and only then records the lead with the opt-in', async () => {
+    const target = (await listPublicOpenSlots('space-1'))[0]!.startsAt
+    await createGuestBooking({ spaceId: 'space-1', startsAtISO: target, name: 'Ada', email: 'ada@example.com', optIn: true })
+    const token = db.bookings[0]!.guest_confirm_token!
+    expect(captureLeadSpy).not.toHaveBeenCalled()
+
+    const r = await confirmGuestBooking(token)
+    expect(r).toMatchObject({ ok: true, state: 'confirmed', spaceSlug: 'river-yoga', startsAt: target })
+    expect(db.bookings[0]!.status).toBe('confirmed')
+    expect(db.bookings[0]!.guest_confirmed_at).toBeTruthy()
+    expect(captureLeadSpy).toHaveBeenCalledTimes(1)
+    expect(captureLeadSpy.mock.calls[0]![0]).toMatchObject({
+      spaceId: 'space-1',
+      door: 'website_booking',
+      email: 'ada@example.com',
+      optedIn: true,
+    })
+    // The slot stays taken once confirmed.
+    expect((await listPublicOpenSlots('space-1')).some((s) => s.startsAt === target)).toBe(false)
+
+    // A second click is idempotent: no second lead, no second flip.
+    const again = await confirmGuestBooking(token)
+    expect(again).toMatchObject({ ok: true, state: 'already' })
+    expect(captureLeadSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('an expired token is refused, releases the hold, and records nothing', async () => {
+    const target = (await listPublicOpenSlots('space-1'))[0]!.startsAt
+    await createGuestBooking({ spaceId: 'space-1', startsAtISO: target, name: 'Ada', email: 'ada@example.com', optIn: true })
+    const token = db.bookings[0]!.guest_confirm_token!
+    vi.setSystemTime(new Date(Date.now() + (GUEST_HOLD_MINUTES + 1) * 60000))
+
+    expect(await confirmGuestBooking(token)).toEqual({ ok: false, reason: 'expired' })
+    expect(db.bookings[0]!.status).toBe('cancelled')
+    expect(captureLeadSpy).not.toHaveBeenCalled()
+  })
+
+  it('an unknown or malformed token is refused without a lookup side effect', async () => {
+    expect(await confirmGuestBooking('nope')).toEqual({ ok: false, reason: 'invalid' })
+    expect(await confirmGuestBooking('bad token!')).toEqual({ ok: false, reason: 'invalid' })
+    expect(await confirmGuestBooking(null)).toEqual({ ok: false, reason: 'invalid' })
+    expect(captureLeadSpy).not.toHaveBeenCalled()
+  })
+
+  it('guestHoldExpired (pure): only a pending guest hold past its expiry', () => {
+    const now = new Date('2026-06-29T08:00:00.000Z')
+    const past = '2026-06-29T07:59:00.000Z'
+    const future = '2026-06-29T08:30:00.000Z'
+    expect(guestHoldExpired({ status: 'pending', guest_confirm_token: 't', guest_confirm_expires_at: past }, now)).toBe(true)
+    expect(guestHoldExpired({ status: 'pending', guest_confirm_token: 't', guest_confirm_expires_at: future }, now)).toBe(false)
+    expect(guestHoldExpired({ status: 'confirmed', guest_confirm_token: 't', guest_confirm_expires_at: past }, now)).toBe(false)
+    // A paid deposit hold has no token: it is never "expired" by this rule.
+    expect(guestHoldExpired({ status: 'pending', guest_confirm_token: null, guest_confirm_expires_at: past }, now)).toBe(false)
+    expect(guestHoldExpired({ status: 'pending' }, now)).toBe(false)
   })
 })
 

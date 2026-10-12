@@ -1,6 +1,6 @@
 import 'server-only'
 import { readPublicBookingSetup, type ServiceType } from '@/lib/spaces/booking'
-import { SITE_BOOK_SLUG, siteTakesBookings } from '@/lib/sites/house-theme'
+import { SITE_BOOK_SLUG, SITE_CONFIRM_BOOKING_SLUG, siteTakesBookings } from '@/lib/sites/house-theme'
 import { appOrigin } from '@/lib/sites/host'
 import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
@@ -38,4 +38,14 @@ export async function readSiteBooking(spaceId: string): Promise<SiteBooking> {
 export async function siteBookUrl(space: Pick<Space, 'id' | 'slug'> & { domain?: string | null }): Promise<string> {
   const base = siteBaseUrl(space.slug, await boundSiteDomain({ id: space.id, domain: space.domain ?? null }), appOrigin())
   return sitePageUrl(base, SITE_BOOK_SLUG)
+}
+
+/** The link in a website guest's "Confirm your booking" email (SCAN-834): the site's own confirm page,
+ *  on the same origin as its Book page, carrying the hold's one-time token. */
+export async function siteConfirmBookingUrl(
+  space: Pick<Space, 'id' | 'slug'> & { domain?: string | null },
+  token: string,
+): Promise<string> {
+  const base = siteBaseUrl(space.slug, await boundSiteDomain({ id: space.id, domain: space.domain ?? null }), appOrigin())
+  return `${sitePageUrl(base, SITE_CONFIRM_BOOKING_SLUG)}?token=${encodeURIComponent(token)}`
 }

@@ -18,6 +18,7 @@ import { enqueue } from '@/lib/queue/outbox'
 import { routeNotification } from '@/lib/notifications/router'
 import {
   sendBookingConfirmationEmail,
+  sendGuestBookingConfirmEmail,
   buildBookingReminderEmail,
   sendBookingCancelledEmail,
   enqueueEmail,
@@ -267,6 +268,37 @@ export async function notifyBookingConfirmed(ctx: BookingNotifyContext): Promise
     }
   } catch (err) {
     console.error('[booking-notify] confirm failed', err)
+  }
+}
+
+/** SCAN-834: the one email a website guest's HOLD sends, before anything is confirmed: the link that
+ *  proves the address they typed. No .ics, no owner copy, no reminder; those follow the click. Best-effort;
+ *  never throws. */
+export async function notifyGuestBookingHold(ctx: {
+  spaceId: string
+  spaceName: string
+  guest: { name: string; email: string }
+  startsAt: string
+  endsAt: string
+  serviceName: string | null
+  confirmUrl: string
+  holdMinutes: number
+}): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    const tz = await bookingTimezone(admin, ctx.spaceId)
+    await sendGuestBookingConfirmEmail({
+      to: ctx.guest.email,
+      guestName: ctx.guest.name,
+      spaceName: ctx.spaceName,
+      serviceName: ctx.serviceName,
+      whenAbsolute: formatWhen(ctx.startsAt, tz),
+      durationMinutes: durationMinutes(ctx.startsAt, ctx.endsAt),
+      confirmUrl: ctx.confirmUrl,
+      holdMinutes: ctx.holdMinutes,
+    })
+  } catch (err) {
+    console.error('[booking-notify] guest hold email failed', err)
   }
 }
 
