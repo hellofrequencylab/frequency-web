@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { SpacePipeline } from '@/components/spaces/crm/space-pipeline'
 import { CrmFunnelPanel } from '@/components/spaces/crm/crm-funnel-panel'
 import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
-import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
+import { CrmViewTabs, crmConversationsHref, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
 import { ImportContactsButton } from '@/components/crm/import/import-contacts-button'
@@ -81,13 +81,17 @@ export async function CrmBody({
   await ensureSpaceStages(space.id, space.type, space.modeVariant)
 
   const boardHref = `/spaces/${space.slug}/crm`
+  // LIVE-897: the door to the Conversations console, for the viewer who may open it. Same gate as
+  // app/(main)/spaces/[slug]/crm/conversations/page.tsx: a manager (canEditProfile, which is what
+  // resolveSpaceManageAccess reads as canManage) of a console Space. Staff preview is not a door.
+  const conversationsHref = crmConversationsHref(space.slug, space.type, caps.canEditProfile)
 
   return (
     <>
       {/* LIST-FIRST (docs/NEXT-GEN-CRM.md): the persistent view tabs sit at the top of every board view,
           so the familiar People list is always one tap away from Pipeline or Cockpit. In the inline panel
           the Pipeline / Cockpit tabs link out to the standalone route (the deep views stay full-width). */}
-      <CrmViewTabs boardHref={boardHref} active={activeView} />
+      <CrmViewTabs boardHref={boardHref} active={activeView} conversationsHref={conversationsHref} />
 
       {/* ── PEOPLE (default front door): the familiar member roster + the import path ─────────────── */}
       {activeView === 'people' && (
