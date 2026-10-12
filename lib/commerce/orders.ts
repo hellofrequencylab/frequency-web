@@ -346,6 +346,8 @@ export async function listOrdersForBuyer(profileId: string, opts: { limit?: numb
     .select(ORDER_COLS)
     .eq('buyer_profile_id', profileId)
     .neq('status', 'pending')
+    // A ticket's split money record (LIVE-767) is not a Market purchase; the ticket is on the event.
+    .is('metadata->>ticket_event_id', null)
     .order('created_at', { ascending: false })
     .limit(LIMIT(opts.limit))
   const orders = ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)

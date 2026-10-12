@@ -58,6 +58,7 @@ import {
   isPastDueSpaceMembership,
   type PastDueSpaceMembership,
 } from '@/lib/spaces/membership-dunning'
+import { resolveSharedMembership } from '@/lib/collective/shared-membership'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -114,6 +115,12 @@ interface MyMembership {
   startedAt: string
   /** Stripe recovery state. Display only. pending is the free-join default (LIVE-429). */
   paymentStatus: string | null
+  /** `own`: the viewer's row in THIS Space. `collective`: no own row, but an active membership in
+   *  the Collective this Space is a member Space of counts here (LIVE-767). Read-time only. */
+  source: 'own' | 'collective'
+  /** Set when `source` is `collective`: the Collective the membership was bought in. The join
+   *  surface names it and sends a cancel there, never at a row this Space does not own. */
+  via: { spaceId: string; spaceSlug: string; spaceName: string } | null
 }
 
 // Hard caps so a malformed/hostile tier set can never write an unbounded number of rows.
@@ -566,13 +573,31 @@ export async function listAllMembershipTiers(spaceId: string): Promise<Membershi
 }
 
 /** The viewer's own active membership for a Space, or null (any authenticated caller; FAIL-SAFE to
- *  null). The join surface reads this to show "you are a member of <tier>" + a Cancel. */
+ *  null). The join surface reads this to show "you are a member of <tier>" + a Cancel.
+ *
+ *  SHARED MEMBERSHIP (LIVE-767): with no open row of their own, a viewer who holds an active
+ *  membership in the Collective this Space is a member Space of is a member here too, labelled
+ *  `source: 'collective'`. Every consumer of this reader (the Space front door, the people page, the
+ *  member directory, the join surface) honours it without a second read. */
 export async function getMyMembership(spaceId: string): Promise<MyMembership | null> {
   const profileId = await getMyProfileId()
   if (!profileId) return null
   try {
     const row = await readMyOpenMembership(spaceId, profileId)
-    if (!row) return null
+    if (!row) {
+      const shared = await resolveSharedMembership(spaceId, profileId)
+      if (!shared) return null
+      return {
+        id: shared.id,
+        tierId: shared.tierId,
+        tierName: shared.tierName,
+        status: 'active',
+        startedAt: shared.startedAt,
+        paymentStatus: shared.paymentStatus,
+        source: 'collective',
+        via: shared.via,
+      }
+    }
     const tiers = await readTiers(spaceId, false)
     const tier = tiers.find((t) => t.id === row.tier_id)
     return {
@@ -582,6 +607,8 @@ export async function getMyMembership(spaceId: string): Promise<MyMembership | n
       status: row.status === 'waitlist' ? 'waitlist' : 'active',
       startedAt: row.started_at,
       paymentStatus: row.payment_status ?? null,
+      source: 'own',
+      via: null,
     }
   } catch {
     return null
