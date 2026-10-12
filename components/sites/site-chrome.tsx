@@ -71,6 +71,7 @@ export function SiteChrome({
   seasonNow = null,
   admin = null,
   look = {},
+  member = null,
   children,
 }: {
   brandName: string
@@ -103,6 +104,8 @@ export function SiteChrome({
   admin?: { menu: SiteAdminNavLink[]; console: string } | null
   /** The owner's global styles that differ from the theme's own (siteLookOverrides, ADR-1728). */
   look?: Partial<Pick<SiteLook, 'corners' | 'spacing' | 'header'>>
+  /** The reader's own membership in this Space, an island beside the header button (LIVE-699). */
+  member?: ReactNode
   children: ReactNode
 }) {
   const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
@@ -129,6 +132,7 @@ export function SiteChrome({
         logoMode={skin ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
         skinned={!!skin}
         fadeOnPause={fadeOnPause}
+        member={member}
       />
       {skin && <SeasonBar season={skin.season} now={seasonNow} />}
 

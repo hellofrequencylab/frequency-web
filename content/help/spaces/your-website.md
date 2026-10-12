@@ -75,6 +75,30 @@ You can change the theme and global styles in two places, and both save to the s
 
 Either way, the change shows on your live website straight away.
 
+## One page in the other theme
+
+Your site has one theme, and any page can step out of it. In the website editor, open the page, select
+**Page settings**, and under **Page theme** pick **Frequency** or **Bold**. That page wears the theme you
+picked, in that theme's own fonts, and your explicit global styles still hold. Everything else on the
+site keeps the site theme.
+
+**Same as site** is the default. Leave a page there and it follows the Theme tab, so switching the site
+theme later carries it along. Like the theme, a page theme shows on your live website at once.
+
+## Your brand on your website
+
+Your website header wears your Space's brand: the brand name, the logo and the accent colour you set in
+**Identity and branding**. With no brand name set, the header shows your Space name; with no logo, it
+shows the name alone. In the website editor you can give the website its own name and logo, and those
+win on the website only. Your Space page keeps its own.
+
+## Members see their membership
+
+Someone who is signed in to Frequency and is a member of your Space sees their membership in your
+website header, as a small pill with the tier name. It opens your Memberships page on Frequency. It
+shows on your free `frequencylocal.com` address; on your own domain the browser keeps the sign-in to
+itself, so visitors there see the plain header. Nothing about anyone's other Spaces is shown.
+
 ## Keep your Space page in step
 
 Under **Theme and fonts**, **Use the same style on my Space page** is on to start with. Your
