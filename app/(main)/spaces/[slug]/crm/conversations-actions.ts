@@ -19,7 +19,8 @@ import { enqueueEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { canEmailContact } from '@/lib/crm/contact-consent'
 import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
-import { buildConversationReplyAddress, conversationSigningAvailable, CONVERSATION_SIGNING_UNAVAILABLE_COPY } from '@/lib/comms/reply-address'
+import { conversationSigningAvailable, CONVERSATION_SIGNING_UNAVAILABLE_COPY } from '@/lib/comms/reply-address'
+import { buildSpaceConversationReplyAddress, spaceReplyAliasReady } from '@/lib/comms/tenant-reply-alias'
 import {
   getConversationById,
   appendConversationMessage,
@@ -110,6 +111,9 @@ export async function sendSpaceConversationReplyAction(
   }
 
   if (!conv.externalEmail) return fail('We have no email address for this conversation.')
+  // Tenant reply aliases switched on without a receiving domain (EMAIL-013): refuse before anything is
+  // queued or recorded, the same rule compose follows.
+  if (!spaceReplyAliasReady(gate.spaceId)) return fail('Replies for this Space are not set up yet. Nothing was sent.')
   if (conv.memberProfileId) {
     // A 1:1 reply in an active conversation is transactional — send unless the address is hard-suppressed.
     const gateResult = await resolveSendGate(conv.memberProfileId, 'email', 'transactional', { email: conv.externalEmail })
@@ -164,7 +168,7 @@ export async function sendSpaceConversationReplyAction(
       await enqueueEmail({
         to: conv.externalEmail,
         from,
-        replyTo: buildConversationReplyAddress(conv.ref),
+        replyTo: await buildSpaceConversationReplyAddress(conv.ref, gate.spaceId),
         subject,
         html: emailHtml,
         text: emailText,
