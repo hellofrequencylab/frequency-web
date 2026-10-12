@@ -6,10 +6,11 @@ import { atomicBridgeEnabled, atomicBridgeMessageId, enqueueAtomicConversationEm
 const input = { replyAuthority: { ref: 'REF', token: 'token' }, conversationId: 'conv', actorProfileId: 'actor', externalMessageId: '<received>', observedSender: 'actor@example.test', body: 'reply', payload: { to: 'member@example.test', subject: 'reply', html: '<p>reply</p>' } }
 beforeEach(() => { vi.clearAllMocks(); mock.verify.mockReturnValue(true); mock.conversation.mockResolvedValue({ id: 'conv' }); vi.unstubAllEnvs() })
 describe('atomic bridge RPC adapter', () => {
-  it('is off by default and needs exact activation', () => {
+  it('is off by default and needs an explicit envFlag value', () => {
     vi.stubEnv('EMAIL_ATOMIC_BRIDGE_ENABLED', '')
     expect(atomicBridgeEnabled()).toBe(false)
-    vi.stubEnv('EMAIL_ATOMIC_BRIDGE_ENABLED', '1'); expect(atomicBridgeEnabled()).toBe(false)
+    vi.stubEnv('EMAIL_ATOMIC_BRIDGE_ENABLED', 'yes'); expect(atomicBridgeEnabled()).toBe(false)
+    vi.stubEnv('EMAIL_ATOMIC_BRIDGE_ENABLED', '1'); expect(atomicBridgeEnabled()).toBe(true)
     vi.stubEnv('EMAIL_ATOMIC_BRIDGE_ENABLED', 'true'); expect(atomicBridgeEnabled()).toBe(true)
   })
   it('retains one deterministic outgoing Message-ID across receive retries', () => {

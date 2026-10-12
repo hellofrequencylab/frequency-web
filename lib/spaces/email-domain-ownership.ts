@@ -5,12 +5,17 @@ import { signingSecret } from '@/lib/signing-secret'
 const MAX_AGE = 60 * 60 * 1000
 const mac = (body: string) => createHmac('sha256', signingSecret('email-domain-ownership', ['CONVERSATION_TOKEN_SECRET']))
   .update(`email-domain-ownership:${body}`).digest('hex')
+// A proof bound to a persisted setup operation is STABLE: the same Space, owner, domain, operation id and
+// stored nonce always give the same TXT value, and it does not expire, so "check again" after slow DNS
+// never asks the owner to edit their record. The nonce is server-held and the record must be live in DNS
+// at check time, which is what proves ownership. An unbound proof keeps its one-hour window.
 export function emailOwnershipChallenge(spaceId: string, ownerId: string, domain: string, now = Date.now(), operation?: { id: string; nonce: string }) {
-  const body = Buffer.from(JSON.stringify({ spaceId, ownerId, domain, issuedAt: now, operationId: operation?.id ?? null, nonce: operation?.nonce ?? randomUUID() })).toString('base64url')
+  const issuedAt = operation ? 0 : now
+  const body = Buffer.from(JSON.stringify({ spaceId, ownerId, domain, issuedAt, operationId: operation?.id ?? null, nonce: operation?.nonce ?? randomUUID() })).toString('base64url')
   const token = `${body}.${mac(body)}`
   const value = `frequency-email=${token}`
   const segments = value.match(/.{1,200}/g) ?? []
-  return { token, segments, name: `_frequency-email.${domain}`, type: 'TXT' as const, value: `frequency-email=${token}`, expiresAt: new Date(now + MAX_AGE).toISOString() }
+  return { token, segments, name: `_frequency-email.${domain}`, type: 'TXT' as const, value: `frequency-email=${token}`, expiresAt: operation ? null : new Date(now + MAX_AGE).toISOString() }
 }
 export async function verifyEmailDomainOwnership(spaceId: string, ownerId: string, domain: string, token: string, now = Date.now(), operation?: { id: string; nonce: string }) {
   if (token.length > 2048) throw new Error('Email domain ownership proof is invalid.')
@@ -20,7 +25,7 @@ export async function verifyEmailDomainOwnership(spaceId: string, ownerId: strin
   const state = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'))
   if (state.spaceId !== spaceId || state.ownerId !== ownerId || state.domain !== domain ||
     (operation && (state.operationId !== operation.id || state.nonce !== operation.nonce)) ||
-    !Number.isFinite(state.issuedAt) || state.issuedAt > now || now - state.issuedAt > MAX_AGE)
+    !Number.isFinite(state.issuedAt) || (operation ? state.issuedAt !== 0 : state.issuedAt === 0 || state.issuedAt > now || now - state.issuedAt > MAX_AGE))
     throw new Error('Email domain ownership proof expired or belongs to another Space.')
   let records: string[][]
   try { records = await resolveTxt(`_frequency-email.${domain}`) } catch { throw new Error('Ownership TXT record is not visible yet. Check again after DNS updates.') }

@@ -37,6 +37,14 @@ export function envNumber(key: string, fallback: number, options: { min?: number
   return n
 }
 
+/** An opt-in switch: true only for `1`, `true` or `on` (any case, trimmed). Unset, blank and every
+ *  other value are off, so `X=1` and `X=true` cannot disagree between two flags (the
+ *  CONVERSATION_EMAIL_BRIDGE spelling, shared). */
+export function envFlag(key: string): boolean {
+  const v = envStringOrNull(key)?.toLowerCase()
+  return v === '1' || v === 'true' || v === 'on'
+}
+
 /** A REQUIRED env var: the trimmed value, or a thrown error naming the key and the caller.
  *  Unset, empty and whitespace-only all throw — the same blank-is-unset rule as the helpers above.
  *

@@ -28,7 +28,12 @@ vi.mock('@/lib/comms/outbound-batch', () => ({
   queueOutboundMessage: (a: unknown) => queueOutboundMessage(a),
 }))
 
-import { startConversationMessage } from './conversation-compose'
+const defaultIdentity = vi.fn(async (_spaceId: string, _purpose: string): Promise<{ identityId: string; from: string } | null> => null)
+vi.mock('@/lib/spaces/email-domain-onboarding', () => ({
+  resolveSpaceEmailDefaultIdentity: (spaceId: string, purpose: string) => defaultIdentity(spaceId, purpose),
+}))
+
+import { startConversationMessage, resolveSpaceConversationFrom, brandSenderUnavailable } from './conversation-compose'
 
 const BASE = {
   ownerProfileId: 'owner-1',
@@ -134,5 +139,21 @@ describe('startConversationMessage', () => {
     expect(opened.scopeId).toBeNull()
     const appended = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
     expect((appended.mirror as Record<string, unknown>).scope).toBeNull()
+  })
+})
+
+describe('resolveSpaceConversationFrom (EMAIL-011/012)', () => {
+  it('uses the owner-chosen conversation sender, else the brand through Frequency', async () => {
+    defaultIdentity.mockResolvedValueOnce({ identityId: 'i1', from: 'River <hi@river.studio>' })
+    expect(await resolveSpaceConversationFrom('s1', 'River')).toBe('River <hi@river.studio>')
+    expect(defaultIdentity).toHaveBeenLastCalledWith('s1', 'conversation')
+    expect(await resolveSpaceConversationFrom('s1', 'River')).toMatch(/^River </)
+  })
+
+  it('refuses a held sender with its own copy instead of switching addresses', async () => {
+    defaultIdentity.mockRejectedValueOnce(new Error('This sender is paused or its domain is not verified yet. Nothing was sent.'))
+    const err = await resolveSpaceConversationFrom('s1', 'River').catch((e: unknown) => e)
+    expect(brandSenderUnavailable(err)).toMatch(/not verified yet/)
+    expect(brandSenderUnavailable('x')).toMatch(/unavailable/)
   })
 })

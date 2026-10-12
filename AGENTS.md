@@ -80,6 +80,8 @@ When the code and a doc disagree, **the code wins**, and the doc is fixed in the
 
 **Checkout.** Route both halves through `lib/billing/checkout-ui.ts` and render `components/billing/checkout-panel.tsx`. `!session.url` is true for every on-page session. A fallback must pass `forceHosted`. Status values are per-table; read the live constraint.
 
+**Rollout switches.** An on/off env switch reads `envFlag` (`lib/env/string.ts`: `1` / `true` / `on`), is listed in `.env.example` blank with a one-line gate, and its activation gate lives in `docs/RUNBOOKS.md`. Never read `process.env.X === 'true'` by hand.
+
 **Admin menu.** Add a row in one of the four registered catalogs (`REGISTERED_CATALOGS` in `scripts/check-menu.mjs`). Never rewrite the rail to add an item. Frozen menu debt may shrink and never grow except the OWN-058 raise (11 → 13) that admitted Circle and Event Settings doors; the count lives in `scripts/check-menu.mjs` and MENU-CONTRACT.
 
 Product-first ([ADR-1403](docs/DECISIONS.md)): do not start Editor / Sites / Etsy / App Platform from a scan or a docs pass.

@@ -22,10 +22,11 @@ import {
 } from '@/lib/comms/conversations'
 import type { InteractionScopeRef } from '@/lib/crm/interactions'
 import { conversationSigningAvailable } from '@/lib/comms/reply-address'
-import { buildSpaceConversationReplyAddress } from './tenant-reply-alias'
+import { buildSpaceConversationReplyAddress, spaceReplyAliasReady } from './tenant-reply-alias'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { conversationFrom } from '@/lib/comms/from-address'
+import { resolveSpaceEmailDefaultIdentity } from '@/lib/spaces/email-domain-onboarding'
 
 // SINGLE-SOURCE sentinel (check:crm-parity): the compose block below — open conversation + reply
 // address + first outbound — must never be re-inlined into a surface.
@@ -37,6 +38,20 @@ import { conversationFrom } from '@/lib/comms/from-address'
 // address extracted from EMAIL_FROM rather than nested inside it, blank env treated as unset).
 export function spaceConversationFrom(brandName: string): string {
   return conversationFrom(brandName, { via: false })
+}
+
+/** The From a Space's conversations actually send with: the owner's chosen Individual conversations
+ *  sender on their own verified domain (EMAIL-011/012), else spaceConversationFrom. Resolved fresh
+ *  against plan and provider verification; THROWS member-safe copy when the chosen sender is held, so
+ *  the caller refuses rather than quietly switching a thread back to the Frequency address. */
+export async function resolveSpaceConversationFrom(spaceId: string, brandName: string): Promise<string> {
+  const identity = await resolveSpaceEmailDefaultIdentity(spaceId, 'conversation')
+  return identity?.from ?? spaceConversationFrom(brandName)
+}
+
+/** The refusal copy for a held sender: the resolver's own member-safe sentence, or a generic one. */
+export function brandSenderUnavailable(err: unknown): string {
+  return err instanceof Error && err.message ? err.message : 'Your Space sender is unavailable. Nothing was sent.'
 }
 
 export interface StartConversationMessageInput {
@@ -88,6 +103,8 @@ export async function startConversationMessage(
   // buildConversationReplyAddress THROWS. Check first, so a misconfigured server opens no thread and
   // records no message it can never send (the predicate logs the refusal).
   if (!conversationSigningAvailable()) return null
+  // Same rule for a Space whose tenant reply aliases are switched on without a receiving domain (EMAIL-013).
+  if (!spaceReplyAliasReady(input.spaceId ?? null)) return null
 
   const conv = await openOrGetConversation({
     kind: 'crm',

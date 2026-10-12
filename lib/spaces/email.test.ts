@@ -305,6 +305,9 @@ function outreachBuilder() {
   return api
 }
 
+const identity = vi.hoisted(() => ({ resolve: vi.fn(async (): Promise<{ identityId: string; from: string } | null> => null) }))
+vi.mock('./email-domain-onboarding', () => ({ resolveSpaceEmailDefaultIdentity: identity.resolve }))
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from(table: string) {
@@ -526,6 +529,23 @@ describe('sendSpaceCampaign: happy path + headers', () => {
     expect('error' in r).toBe(false)
     if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 0, failed: 2 })
     expect(db.outreach.every((o) => o.status === 'failed')).toBe(true)
+  })
+})
+
+describe('sendSpaceCampaign: the owner-chosen Campaigns sender (EMAIL-011/012)', () => {
+  it('sends from the verified custom sender when the Space chose one for campaigns', async () => {
+    identity.resolve.mockResolvedValueOnce({ identityId: 'i1', from: 'River Studio <hello@river.studio>' })
+    const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect('error' in r).toBe(false)
+    expect(identity.resolve).toHaveBeenCalledWith('space-A', 'marketing')
+    expect(sends[0]!.from).toBe('River Studio <hello@river.studio>')
+  })
+
+  it('stops the send when the chosen sender is held, never falling back to Frequency', async () => {
+    identity.resolve.mockRejectedValueOnce(new Error('This sender is paused or its domain is not verified yet. Nothing was sent.'))
+    const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect('error' in r && r.error).toMatch(/not verified yet/)
+    expect(sends).toHaveLength(0)
   })
 })
 

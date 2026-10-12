@@ -1,5 +1,6 @@
 // Called only at the actual provider boundary. Do not taint legacy client-reachable email renderers
 // with a new server-only import: lib/email.ts's existing graph must remain buildable.
+import { envFlag } from '@/lib/env/string'
 import { claimedEmailProviderRpc } from '@/lib/queue/outbox'
 import { TerminalQueueError } from '@/lib/queue/terminal-error'
 import type { CreateEmailOptions } from 'resend'
@@ -7,7 +8,7 @@ import type { CreateEmailOptions } from 'resend'
 type ProviderResult = { data: { id?: string } | null; error: unknown }
 type Sender = (payload: CreateEmailOptions, options: { idempotencyKey: string }) => Promise<ProviderResult>
 type Prepared = { state: string; providerId?: string; idempotencyKey?: string; nonce?: string; payload?: CreateEmailOptions }
-export function providerAcceptanceEnabled() { return process.env.EMAIL_PROVIDER_ACCEPTANCE_ENABLED === 'true' }
+export function providerAcceptanceEnabled() { return envFlag('EMAIL_PROVIDER_ACCEPTANCE_ENABLED') }
 
 async function rpc(queueJobId: string, name: Parameters<typeof claimedEmailProviderRpc>[1], args: Record<string, unknown>): Promise<unknown> {
   const result = await claimedEmailProviderRpc(queueJobId, name, args)

@@ -11,7 +11,7 @@ export async function verifyEmailDeliveryContract() {
   const queued = [], sent = []
   let suppressed = false
   const oldKey = process.env.RESEND_API_KEY
-  const oldFlags = ['EMAIL_PROVIDER_ACCEPTANCE_ENABLED','EMAIL_DISPATCH_POLICY_ENABLED'].map(key => [key, process.env[key]])
+  const oldFlags = ['EMAIL_PROVIDER_ACCEPTANCE_ENABLED'].map(key => [key, process.env[key]])
   for (const [key] of oldFlags) process.env[key] = 'false'
   process.env.RESEND_API_KEY = 'fixture-only-no-network'
   const modules = new Map()
@@ -21,7 +21,7 @@ export async function verifyEmailDeliveryContract() {
     ['@/lib/queue/outbox', { enqueue: async (kind,payload,options) => { queued.push({kind,payload,options}) } }],
     ['@/lib/suppression', { isSuppressed: async () => suppressed }],
     ['@/lib/unsubscribe-tokens', { buildUnsubscribeUrl: () => { throw Error('Unexpected unsubscribe transport') } }],
-    ['@/lib/env/string', { envString: (_key,fallback) => fallback }],
+    ['@/lib/env/string', { envString: (_key,fallback) => fallback, envFlag: key => ['1','true','on'].includes((process.env[key] ?? '').trim().toLowerCase()) }],
     ['@/lib/email-studio/postal', { PLATFORM_POSTAL_LINE:'Fixture address' }],
   ])
   const load = file => {

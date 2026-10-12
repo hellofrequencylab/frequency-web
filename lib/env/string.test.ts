@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { envString, envStringOrNull, envNumber, requireEnvString, requireEnvValue } from './string'
+import { envFlag, envString, envStringOrNull, envNumber, requireEnvString, requireEnvValue } from './string'
 
 // The property under test (scan2 L3-02): a BLANK variable is unset. `??` does not give you that,
 // and `.env.example` ships several keys blank, so every helper here is exercised with '' and
@@ -101,5 +101,14 @@ describe('requireEnvString / requireEnvValue', () => {
     expect(requireEnvValue('NEXT_PUBLIC_X', ' value ')).toBe('value')
     expect(() => requireEnvValue('NEXT_PUBLIC_X', undefined)).toThrow('NEXT_PUBLIC_X')
     expect(() => requireEnvValue('NEXT_PUBLIC_X', '  ')).toThrow('NEXT_PUBLIC_X')
+  })
+})
+
+describe('envFlag', () => {
+  afterEach(() => { delete process.env.TEST_FLAG })
+  it('is on for 1, true and on in any case, and off for unset, blank and anything else', () => {
+    expect(envFlag('TEST_FLAG')).toBe(false)
+    for (const on of ['1', 'true', 'TRUE', ' on ']) { process.env.TEST_FLAG = on; expect(envFlag('TEST_FLAG')).toBe(true) }
+    for (const off of ['', '  ', '0', 'false', 'yes', 'enabled']) { process.env.TEST_FLAG = off; expect(envFlag('TEST_FLAG')).toBe(false) }
   })
 })
