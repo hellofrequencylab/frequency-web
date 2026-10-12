@@ -4,6 +4,8 @@ const state=vi.hoisted(()=>({owner:true,proof:true,createCount:0,registryFails:f
 vi.mock('./email-identity-registry',()=>({requireSpaceEmailIdentityOwner:async()=>{if(!state.owner)throw new Error('owner required');return{owner_profile_id:'owner',domain:'example.com'}},createSpaceEmailIdentity:async()=> 'i1',resolveSpaceEmailIdentity:async()=>({identityId:'i1',from:'Example <hello@example.com>'})}))
 vi.mock('./email-domain-ownership',()=>({emailOwnershipChallenge:(_s:string,_o:string,domain:string,_now:number,op:{id:string;nonce:string})=>({token:`${op.id}.${op.nonce}`,name:`_frequency-email.${domain}`,segments:['fixture'],expiresAt:'later'}),verifyEmailDomainOwnership:async()=>{if(!state.proof)throw new Error('TXT missing')}}))
 vi.mock('./email-domain-provider',()=>({createEmailProviderDomain:async()=>{state.createCount++;state.providerId='p1';if(state.providerTimeout)throw new Error('ambiguous timeout');return{id:'p1'}},reconcileEmailProviderDomain:async()=>state.providerId?{id:state.providerId}:null,requestEmailProviderVerification:async()=>undefined,inspectEmailProviderDomain:async()=>({status:'verified',capabilities:{sending:'enabled'},records:[{record:'DKIM',name:'key',type:'TXT',value:'public-key',status:'verified'},{record:'SPF',name:'send',type:'TXT',value:'spf',status:'verified'}]})}))
+const inbox=vi.hoisted(()=>({from:null as string|null}))
+vi.mock('@/lib/comms/space-inbox-address',()=>({resolveSpaceInboxFrom:async()=>inbox.from}))
 vi.mock('@/lib/supabase/admin',()=>({createAdminClient:()=>({from:(name:string)=>{
  const filter:Record<string,unknown>={};let insert:Record<string,unknown>|null=null;let update:Record<string,unknown>|null=null
  const q={select:()=>q,eq:(k:string,v:unknown)=>{filter[k]=v;return q},insert:(v:Record<string,unknown>)=>{insert=v;return q},update:(v:Record<string,unknown>)=>{update=v;return q},upsert:(v:Record<string,unknown>)=>{state.defaultRow=v;return q},
@@ -14,7 +16,7 @@ vi.mock('@/lib/supabase/admin',()=>({createAdminClient:()=>({from:(name:string)=
  },maybeSingle:async()=>{const row: Record<string,unknown>|null=name==='spaces'?state.space:name==='space_email_identities'?state.identityRow:name==='space_email_identity_defaults'?state.defaultRow:name==='space_email_domain_operations'?state.op:state.registry;return{data:row&&Object.entries(filter).every(([k,v])=>row[k]===v)?row:null,error:null}}};return q},
  rpc:async()=>({data:{...state.op,mode:state.busy?'busy':state.op?.provider_domain_id?'persist':state.op?.state==='pending'?'create':'reconcile'},error:null})})}))
 import {prepareEmailDomainSetup,runSpaceEmailDomainProvisioning,resolveSpaceEmailDefaultIdentity,chooseEmailDomainSender} from './email-domain-onboarding'
-beforeEach(()=>{state.owner=true;state.proof=true;state.createCount=0;state.registryFails=false;state.providerTimeout=false;state.busy=false;state.op=null;state.registry=null;state.providerId=null;state.space.plan='business';state.space.entitlements={};state.defaultRow=null;state.identityRow=null})
+beforeEach(()=>{inbox.from=null;state.owner=true;state.proof=true;state.createCount=0;state.registryFails=false;state.providerTimeout=false;state.busy=false;state.op=null;state.registry=null;state.providerId=null;state.space.plan='business';state.space.entitlements={};state.defaultRow=null;state.identityRow=null;})
 describe('durable owner domain setup',()=>{
  it('reuses an existing exact tenant sender after interrupted default persistence',async()=>{
   state.registry={id:'d1',space_id:'s1',domain:'example.com',provider_domain_id:'p1'}
@@ -28,6 +30,17 @@ describe('durable owner domain setup',()=>{
  it('recovers provider success followed by registry failure without a second create',async()=>{state.registryFails=true;await expect(runSpaceEmailDomainProvisioning('s1','example.com','x')).rejects.toThrow('persistence');expect(state.op?.provider_domain_id).toBe('p1');state.registryFails=false;expect(await runSpaceEmailDomainProvisioning('s1','example.com','x')).toMatchObject({domainId:'d1'});expect(state.createCount).toBe(1)})
  it('reconciles ambiguous provider acceptance rather than blindly repeating create',async()=>{state.providerTimeout=true;await expect(runSpaceEmailDomainProvisioning('s1','example.com','x')).rejects.toThrow('timeout');state.providerTimeout=false;expect(await runSpaceEmailDomainProvisioning('s1','example.com','x')).toMatchObject({domainId:'d1'});expect(state.createCount).toBe(1)})
  it('keeps baseline Frequency sending available when a paid Space has no custom default',async()=>{expect(await resolveSpaceEmailDefaultIdentity('s1','marketing')).toBeNull()})
+ it('falls back to the verified Space inbox address for conversations on every plan, never for campaigns, and never over a custom identity',async()=>{
+  inbox.from='"Labs" <hello@labs.frequencylocal.com>'
+  expect(await resolveSpaceEmailDefaultIdentity('s1','conversation')).toEqual({identityId:null,from:'"Labs" <hello@labs.frequencylocal.com>'})
+  expect(await resolveSpaceEmailDefaultIdentity('s1','marketing')).toBeNull()
+  state.space.plan='free'
+  expect(await resolveSpaceEmailDefaultIdentity('s1','conversation')).toEqual({identityId:null,from:'"Labs" <hello@labs.frequencylocal.com>'})
+  state.space.plan='business';state.space.entitlements={space_email_custom_identity:true};state.defaultRow={space_id:'s1',purpose:'conversation',identity_id:'i1'}
+  expect(await resolveSpaceEmailDefaultIdentity('s1','conversation')).toMatchObject({identityId:'i1',from:'Example <hello@example.com>'})
+  inbox.from=null;state.defaultRow=null
+  expect(await resolveSpaceEmailDefaultIdentity('s1','conversation')).toBeNull()
+ })
  it('holds a revoked paid custom default but chooses Frequency for new drafts after downgrade',async()=>{state.defaultRow={space_id:'s1',purpose:'marketing',identity_id:'i1'};await expect(resolveSpaceEmailDefaultIdentity('s1','marketing')).rejects.toThrow('currently unavailable');state.space.plan='free';expect(await resolveSpaceEmailDefaultIdentity('s1','marketing')).toBeNull()})
  it('holds concurrent leased setup and an unresolved prior provider outcome',async()=>{state.busy=true;await expect(runSpaceEmailDomainProvisioning('s1','example.com','x')).rejects.toThrow('already running');expect(state.createCount).toBe(0);state.busy=false;if(state.op)state.op.state='uncertain';await expect(runSpaceEmailDomainProvisioning('s1','example.com','x')).rejects.toThrow('reconciliation');expect(state.createCount).toBe(0)})
 })

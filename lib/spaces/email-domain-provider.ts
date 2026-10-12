@@ -51,3 +51,32 @@ export async function requestEmailProviderVerification(providerId:string) {
  const {error}=await new Resend(key).domains.verify(providerId)
  if(error)throw new Error('Provider verification could not start. Check again shortly.')
 }
+
+/** EMAIL-022: a Space inbox domain (`<slug>.<root>`) is created with sending AND receiving on, so Resend
+ *  accepts mail for every address on it once the MX record it returns is in the zone. */
+export async function createEmailProviderInboxDomain(domain: string) {
+ const key = process.env.RESEND_API_KEY
+ if (!key) throw new Error('Email domain provisioning is unavailable.')
+ const { data, error } = await new Resend(key).domains.create({ name: domain, capabilities: { sending: 'enabled', receiving: 'enabled' } })
+ if (error || !data || data.name.toLowerCase() !== domain.toLowerCase())
+  throw new Error('Email domain provisioning needs reconciliation. Nothing is ready to receive.')
+ return { id: data.id, status: data.status, capabilities: data.capabilities, records: data.records }
+}
+
+/** The provider's existing domain by exact name, or null. Lets a retried provision reuse the domain it
+ *  already created instead of asking for a second one. */
+export async function findEmailProviderDomainByName(domain: string) {
+ const key = process.env.RESEND_API_KEY
+ if (!key) throw new Error('Email domain reconciliation is unavailable.')
+ const client = new Resend(key); let after: string | undefined
+ for (let page = 0; page < 20; page++) {
+  const { data, error } = await client.domains.list({ limit: 100, ...(after ? { after } : {}) })
+  if (error || !data) throw new Error('Email domain reconciliation is unavailable.')
+  const hit = data.data.find(d => d.name.toLowerCase() === domain.toLowerCase())
+  if (hit) return { id: hit.id }
+  if (!data.has_more) return null
+  after = data.data.at(-1)?.id
+  if (!after) break
+ }
+ return null
+}

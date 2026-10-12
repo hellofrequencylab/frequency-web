@@ -253,3 +253,42 @@ async function certificateIssued(cfg: VercelConfig, domain: string): Promise<boo
     return false
   }
 }
+
+/** A DNS record to write into a zone Vercel hosts (EMAIL-022: the Space inbox address's MX, SPF and DKIM
+ *  records under the frequencylocal.com zone). `name` is zone-relative, as Vercel's records API takes it
+ *  (`@` for the zone itself). */
+interface ZoneDnsRecord {
+  type: 'MX' | 'TXT' | 'CNAME'
+  name: string
+  value: string
+  ttl?: number
+  mxPriority?: number
+}
+
+/** Write `records` into the `zone` Vercel DNS zone. Idempotent: a record Vercel already holds with the
+ *  same name, type and value counts as written. BEST EFFORT and NEVER THROWS: a missing config or an API
+ *  error comes back as `{ ok: false }` with the first error, and every record that could be written was.
+ *  Needs only the token and team (the zone is a team domain, not a project domain). */
+export async function upsertZoneDnsRecords(
+  zone: string,
+  records: ZoneDnsRecord[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const cfg = config()
+    if (!cfg) return { ok: false, error: 'not-configured' }
+    let firstError: string | null = null
+    for (const r of records) {
+      const body: Record<string, unknown> = { type: r.type, name: r.name, value: r.value, ttl: r.ttl ?? 60 }
+      if (r.type === 'MX') body.mxPriority = r.mxPriority ?? 10
+      const res = await call(cfg, 'POST', `/v2/domains/${encodeURIComponent(zone)}/records`, body)
+      if (res.ok) continue
+      const code = errorCode(res.json)
+      // Vercel refuses an exact duplicate (same name, type and value) as a conflict: already written.
+      if (res.status === 409 || code === 'record_already_exists' || code === 'already_exists') continue
+      firstError ??= code || `vercel-${res.status}`
+    }
+    return firstError ? { ok: false, error: firstError } : { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'vercel-unreachable' }
+  }
+}

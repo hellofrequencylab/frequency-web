@@ -342,3 +342,4 @@ space_email_identities authenticated
 collective_cross_listings             internal
 space_email_reply_aliases             internal
 space_email_reply_quarantine          internal
+space_inbox_addresses                 internal

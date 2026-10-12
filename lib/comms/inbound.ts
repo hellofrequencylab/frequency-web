@@ -39,6 +39,7 @@ import {
 import { conversationFrom } from '@/lib/comms/from-address'
 import { envFlag } from '@/lib/env/string'
 import { buildSpaceConversationReplyAddress, resolveTenantReplyAlias, quarantineTenantReplyAlias } from './tenant-reply-alias'
+import { quarantineSpaceInboxMessage, recordSpaceInboxMessage, resolveSpaceInboxRoute } from './space-inbox-address'
 
 /** The normalized inbound message the router works from — a superset of the legacy {from,subject,text}. */
 export interface ParsedInboundMessage {
@@ -349,6 +350,7 @@ type InboundRouteStatus =
   | 'dropped_automated'
   | 'error'
   | 'quarantined_alias'
+  | 'no_owner'
 
 interface InboundRouteResult {
   status: InboundRouteStatus
@@ -365,6 +367,22 @@ interface InboundRouteResult {
  */
 export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<InboundRouteResult> {
   try {
+    // 0) A mail to a Space's public address (EMAIL-022, `hello@<slug>.<root>`) is not a reply to a thread:
+    //    it opens a NEW conversation in that Space with the sender as the counterpart. Resolved BEFORE
+    //    the alias so a public address never falls through to alias parsing or the contact-match
+    //    fallback. An unknown, unverified or paused address quarantines like a bad alias.
+    const inbox = await resolveSpaceInboxRoute(parsed.recipients)
+    if (inbox.kind === 'quarantine') {
+      await quarantineSpaceInboxMessage(inbox.reason, parsed.recipients, parsed.messageId)
+      return { status: 'quarantined_alias' }
+    }
+    if (inbox.kind === 'ready') {
+      if (isAutomatedMessage(parsed)) return { status: 'dropped_automated' }
+      const landed = await recordSpaceInboxMessage(inbox, parsed)
+      if (landed.status === 'no_owner') console.warn('[comms] space inbox: Space has no owner, message not recorded')
+      return landed
+    }
+
     // 1) Is this even one of our reply addresses? If not, hand back to the legacy contact-match fallback.
     const tenantAlias = await resolveTenantReplyAlias(parsed.recipients)
     if (tenantAlias.kind === 'quarantine') {
