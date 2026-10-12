@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-699",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-12",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/sites-theme-depth.mjs"
+    }
+  },
+  "append": {
+    "detail": "\n\nSHIPPED 2026-10-12: a theme per page (preferences.siteStyle.pages, readSitePageStyle / withSitePageTheme in lib/theme/site-style.ts, the Page settings panel's Page theme choice with Same as site as the default, saved live through saveWebsiteStyle; the canvas and the public page wear it); the Space visual brand in the website header resolved once (lib/sites/site-brand.ts resolveSiteHeaderBrand: website chrome name, else brand name, else Space name; logo and accent with the published draft's override; the brand editor's follow-up note retired); per-Space membership identity as a client island in the website header (components/sites/site-member-badge.tsx asking app/api/sites/[slug]/membership, which reads getMyMembership for THIS Space only and grants CORS credentials only to the Space's own https hosts, lib/sites/site-member.ts). The island only sees a session on the free frequencylocal.com subdomain (same-site); a custom domain reads no membership by construction. Probe: scripts/probes/sites-theme-depth.mjs. Help: content/help/spaces/your-website.md. Left out: occasion authoring polish and multi-Space identity, which were never in this row's verify."
+  }
+}
