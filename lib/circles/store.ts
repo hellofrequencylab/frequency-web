@@ -15,6 +15,7 @@ import { acceptedCrossListingSubjects } from '@/lib/collective/cross-listing-sto
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { holdsSharedMembership } from '@/lib/collective/shared-membership'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import {
@@ -205,7 +206,10 @@ async function resolveCircleViewer(
       ])
       const role = (seat.data as { role?: string } | null)?.role ?? null
       isSpaceMember = !!owned.data || role !== null
+      // SHARED MEMBERSHIP (LIVE-767): a paid-members door also opens for an active membership in
+      // the Collective this Space is a member Space of. Asked only when the Space's own row misses.
       isSpacePaidMember = !!paid.data
+        || (access === 'space_paid_members' && !!(await holdsSharedMembership(spaceId, viewerProfileId)))
       isSpaceSteward = !!owned.data || role === 'editor' || role === 'moderator' || role === 'admin'
     }
 
