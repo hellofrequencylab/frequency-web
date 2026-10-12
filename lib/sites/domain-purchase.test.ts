@@ -175,11 +175,12 @@ describe('recordDomainPurchaseFromSession', () => {
   it('buys once after payment, records the order and renewal, then binds and attaches the domain', async () => {
     await expect(recordDomainPurchaseFromSession(session())).resolves.toBe('registered')
     expect(buyDomain).toHaveBeenCalledTimes(1)
-    expect(buyDomain).toHaveBeenCalledWith('adalovelace.com', { expectedPriceCents: 1125, autoRenew: true, contact: REGISTRANT })
+    expect(buyDomain).toHaveBeenCalledWith('adalovelace.com', { expectedPriceCents: 1125, autoRenew: false, contact: REGISTRANT })
     const row = tables.space_domain_purchases[0]
     expect(row.status).toBe('registered')
     expect(row.vercel_order_id).toBe('ord_1')
-    expect(row.auto_renew).toBe(true)
+    // SCAN-837: the registrar never auto-renews; the renewal sweep is the only spending path.
+    expect(row.auto_renew).toBe(false)
     expect(row.stripe_payment_intent_id).toBe('pi_1')
     expect(typeof row.renews_at).toBe('string')
     // The registry holds the registrant now; Frequency keeps no copy.
@@ -213,8 +214,8 @@ describe('recordDomainPurchaseFromSession', () => {
     expect(buyDomain).not.toHaveBeenCalled()
   })
 
-  it('leaves auto-renew off when the Space has no saved payment method', async () => {
-    paymentMethodsList.mockResolvedValue({ data: [] })
+  it('leaves auto-renew off even when the Space has a saved payment method (SCAN-837)', async () => {
+    paymentMethodsList.mockResolvedValue({ data: [{ id: 'pm_1' }] })
     await recordDomainPurchaseFromSession(session())
     expect(buyDomain.mock.calls[0][1].autoRenew).toBe(false)
     expect(tables.space_domain_purchases[0].auto_renew).toBe(false)

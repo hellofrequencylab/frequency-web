@@ -233,15 +233,6 @@ interface ClaimedRow {
   stripe_customer_id: string | null
 }
 
-async function hasSavedPaymentMethod(customerId: string | null): Promise<boolean> {
-  if (!stripe || !customerId) return false
-  try {
-    const list = await stripe.paymentMethods.list({ customer: customerId, limit: 1 })
-    return Array.isArray(list?.data) && list.data.length > 0
-  } catch {
-    return false
-  }
-}
 
 async function refund(paymentIntentId: string | null, purchaseId: string): Promise<boolean> {
   if (!stripe || !paymentIntentId) return false
@@ -301,9 +292,13 @@ export async function recordDomainPurchaseFromSession(session: Stripe.Checkout.S
     await db().from('spaces').update({ stripe_customer_id: customerId }).eq('id', row.space_id).is('stripe_customer_id', null)
   }
 
-  const autoRenew = await hasSavedPaymentMethod(customerId)
+  // SCAN-837 (owner ruling 2026-10-12): the registrar never auto-renews. The renewal sweep
+  // (domain-renewals.ts) is the only spending path: it charges the Space first, then renews. A
+  // registrar auto-renew while domain sales are paused would bill Frequency for a year the Space
+  // was never charged for, and the sweep would then raise a review it cannot settle.
+  const autoRenew = false
   const bought = row.registrant
-    ? await buyDomain(row.domain, { expectedPriceCents: row.vercel_price_cents, autoRenew, contact: row.registrant })
+    ? await buyDomain(row.domain, { expectedPriceCents: row.vercel_price_cents, autoRenew: false, contact: row.registrant })
     : ({ ok: false, error: 'contact-invalid' } as const)
 
   if (!bought.ok && (bought.error === 'network' || bought.error === 'upstream')) {
