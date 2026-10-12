@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-819",
+  "title": "Staff can set a price on one of Frequency's own events from the edit form, the same as the ticket and tier paths allow",
+  "status": "done",
+  "priority": "P3",
+  "lane": "live",
+  "size": "XS",
+  "wave": "W7",
+  "source": {
+    "file": "app/(main)/events/actions.ts",
+    "ref": "Meta scan eight (2026-10-12), pricing ladder review of #3277 (LIVE-753)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: the event edit action asked the payments gate about resolveHostingSpaceIdFromRow, which collapses the root Space to null, so a price on a root-hosted event hit the personal-seller refusal. The ticket buy path (lib/billing/tickets.ts) and the tier editor keep root as the payee, so the three money paths disagreed and staff saw an upgrade message on Frequency's own events. THE FIX: the edit path keeps root as the payee when the event's host_space_id is the root Space. LEFT: the create path, where root is not a placement a member can pick.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/events/actions.ts','utf8');if(!/root && evRow\\.host_space_id === root \\? root : await resolveHostingSpaceIdFromRow\\(evRow\\)/.test(s)){console.error('SCAN-819: a root-hosted event price is refused as a personal sale');process.exit(1)}\""
+  },
+  "closed": "2026-10-12"
+}
