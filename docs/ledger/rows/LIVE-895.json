@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-895",
+  "title": "Every site has global styles over its theme (corners, spacing, header pill or bar, footer full or minimal), and a synced Bold Space page takes Bold's accent",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "lib/theme/site-style.ts",
+    "ref": "Owner ask 2026-10-11: 'All sites should be templated with rails and global styles and edits.' Answers 2026-10-12: edit in both places, 3+3 presets, pill or bar and full or minimal, Bold sync is fonts and accent. ADR-1728"
+  },
+  "detail": "FILED AND CLOSED 2026-10-12. preferences.siteStyle carries corners, spacing, header and footer, each null for the theme's own. THEME_LOOK holds today's Frequency and Bold looks, so unrestyled sites are unchanged. The site root names only the choices that differ (siteLookOverrides) and SITE_LOOK_CSS answers them in both themes; the footer choice draws the full footer. Identity and branding edits the four. A synced Space page on a Bold site falls back to Bold's teal accent. The website editor's Theme rail joins next.",
+  "closed": "2026-10-12",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const miss=[];const ss=r('lib/theme/site-style.ts');if(!/export const THEME_LOOK/.test(ss)||!/export function siteLookOverrides/.test(ss))miss.push('no global styles over the theme');if(!/data-site-corners=\\{look\\.corners\\}/.test(r('components/sites/site-chrome.tsx')))miss.push('the website does not wear the corners choice');if(!/look=\\{lookOverrides\\}/.test(r('components/sites/site-page.tsx')))miss.push('the site page does not pass the choices');if(!/siteLook: \\{ \\[key\\]: stored \\}/.test(r('components/spaces/space-branding-form.tsx')))miss.push('Identity and branding cannot edit them');if(!/spacePageDefaultAccent/.test(r('app/(main)/spaces/[slug]/layout.tsx')))miss.push('a synced Bold Space page does not take the accent');if(miss.length){console.error('LIVE-895: '+miss.join('; '));process.exit(1)}\""
+  },
+  "wave": "W7"
+}

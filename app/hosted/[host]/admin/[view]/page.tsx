@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
-import { siteTheme } from '@/lib/theme/site-style'
+import { readSiteStyle, siteLook, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
 import { notFound, redirect } from 'next/navigation'
 import { resolveHostedSpace } from '@/lib/sites/hosted'
 import { appOrigin, normalizeHost } from '@/lib/sites/host'
@@ -62,6 +62,7 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
   const live = await loadMensworkLive(space.id, { events: true, circles: false, journeys: false })
   const nowLine = mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, now)
   const season = mensworkSeason(now)
+  const siteStyle = readSiteStyle(space.preferences)
   const inChrome = (body: ReactNode) => (
     <AccentScope vars={mensworkAccentVars(space.brandAccent)} theme="menswork">
       <SiteChrome
@@ -76,6 +77,9 @@ export default async function SiteAdminPage({ params }: { params: Promise<{ host
         tagline={chrome.tagline}
         seasonNow={{ ...nowLine, next: live.events.find((e) => /circle night/i.test(e.title))?.startsAt ?? null }}
         admin={siteAdminLinks(chrome.origin, space.slug, '', view)}
+        // The owner's global styles, the same as the rest of the site (ADR-1728).
+        look={siteLookOverrides(siteStyle)}
+        showBrandFooter={siteLook(siteStyle).footer === 'full'}
       >
         {body}
       </SiteChrome>

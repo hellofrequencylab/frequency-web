@@ -25,7 +25,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isValidAccent } from '@/lib/spaces/accent'
 import { isSpaceThemeId, DEFAULT_SPACE_THEME, type SpaceThemeId } from '@/lib/theme/space-themes'
-import { isSiteThemeId, withSiteStyle, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
+import { isSiteLookValue, isSiteThemeId, readSiteStyle, withSiteStyle, SITE_LOOK_OPTIONS, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** The editable profile fields. Every field is optional on the wire; an empty string clears the
@@ -49,6 +49,9 @@ interface UpdateSpaceProfileInput {
   styleSynced?: boolean
   /** The Space page's own font set, used while syncing is off. */
   spaceFonts?: SpaceThemeId | string | null
+  /** Global styles (ADR-1728): corners, spacing, header, footer. A value sets it; null returns it to the
+   *  theme's own. A key left out is unchanged. */
+  siteLook?: Partial<Record<SiteLookKey, string | null>>
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped accessor.
@@ -157,7 +160,7 @@ export async function updateSpaceProfile(
   //     "nothing happens" because an old override keeps winning. When they edit the canonical field, drop the
   //     matching hero override so the new value actually shows.
   const touchesStyle =
-    input.theme !== undefined || input.siteTheme !== undefined || input.styleSynced !== undefined || input.spaceFonts !== undefined
+    input.theme !== undefined || input.siteTheme !== undefined || input.styleSynced !== undefined || input.spaceFonts !== undefined || input.siteLook !== undefined
   const touchesPrefs = touchesStyle || input.tagline !== undefined || input.brandName !== undefined
   if (touchesPrefs) {
     const prefs =
@@ -177,6 +180,17 @@ export async function updateSpaceProfile(
       if (input.siteTheme !== undefined) patchStyle.theme = isSiteThemeId(input.siteTheme) ? input.siteTheme : 'frequency'
       if (input.styleSynced !== undefined) patchStyle.synced = input.styleSynced !== false
       if (input.spaceFonts !== undefined) patchStyle.spaceFonts = fontsOf(input.spaceFonts)
+      if (input.siteLook) {
+        const look = { ...readSiteStyle(prefs).look }
+        for (const key of Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]) {
+          if (!(key in input.siteLook)) continue
+          const v = input.siteLook[key]
+          // An unknown value is ignored rather than stored; null returns the choice to the theme's own.
+          if (v === null) look[key] = null
+          else if (isSiteLookValue(key, v)) (look as Record<SiteLookKey, string | null>)[key] = v
+        }
+        patchStyle.look = look
+      }
       const next = withSiteStyle(prefs, patchStyle)
       if ('theme' in next) prefs.theme = next.theme
       else delete prefs.theme

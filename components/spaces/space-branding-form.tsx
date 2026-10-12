@@ -14,7 +14,8 @@ import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
-import { SITE_THEMES, type SiteStyle } from '@/lib/theme/site-style'
+import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, type SiteLookKey, type SiteStyle } from '@/lib/theme/site-style'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
 import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import {
@@ -184,7 +185,7 @@ export function SpaceBrandingForm({
     setSeenTheme(pageTheme)
     setTheme(pageTheme)
   }
-  const initialStyle: SiteStyle = siteStyle ?? { theme: pageTheme === 'menswork' ? 'bold' : 'frequency', fonts: pageTheme, synced: true, spaceFonts: pageTheme }
+  const initialStyle: SiteStyle = siteStyle ?? { theme: pageTheme === 'menswork' ? 'bold' : 'frequency', fonts: pageTheme, synced: true, spaceFonts: pageTheme, look: { corners: null, spacing: null, header: null, footer: null } }
   const [style, setStyle] = useState<SiteStyle>(initialStyle)
   const [seenStyle, setSeenStyle] = useState<SiteStyle | undefined>(siteStyle)
   if (siteStyle !== seenStyle) {
@@ -679,6 +680,29 @@ export function SpaceBrandingForm({
               }}
             />
           </div>
+          {/* GLOBAL STYLES (ADR-1728): corners, spacing, header and footer, over the theme. Picking the
+              theme's own value stores nothing, so a later theme switch brings that theme's default. */}
+          <div className="space-y-3">
+            {(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => (
+              <div key={key} className="space-y-1.5">
+                <p className={labelClasses}>{LOOK_LABEL[key]}</p>
+                <SegmentedControl
+                  label={LOOK_LABEL[key]}
+                  value={siteLook(style)[key]}
+                  onChange={(v: string) => {
+                    if (readOnly || pending) return
+                    const stored = v === THEME_LOOK[style.theme][key] ? null : v
+                    setStyle({ ...style, look: { ...style.look, [key]: stored } })
+                    run(() => updateSpaceProfile(spaceId, { siteLook: { [key]: stored } }))
+                  }}
+                  segments={SITE_LOOK_OPTIONS[key].map((o) => ({
+                    value: o.id,
+                    label: o.id === THEME_LOOK[style.theme][key] ? `${o.label} (theme)` : o.label,
+                  }))}
+                />
+              </div>
+            ))}
+          </div>
           <FontSetPicker
             label={style.synced ? 'Fonts' : 'Website fonts'}
             value={theme}
@@ -727,6 +751,9 @@ export function SpaceBrandingForm({
     </div>
   )
 }
+
+/** The global styles' names, as the pickers label them. */
+const LOOK_LABEL: Record<SiteLookKey, string> = { corners: 'Corners', spacing: 'Spacing', header: 'Header', footer: 'Footer' }
 
 /** The font sets as preview cards: each card wears its own faces. */
 function FontSetPicker({ label, value, disabled, onPick }: { label: string; value: SpaceThemeId; disabled: boolean; onPick: (id: SpaceThemeId) => void }) {
