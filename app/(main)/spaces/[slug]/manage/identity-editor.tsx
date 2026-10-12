@@ -8,6 +8,8 @@ import { SpaceInfoConnectForm } from '@/components/spaces/space-business-info-fo
 import { SpaceSettingsForm } from '@/components/spaces/space-settings-form'
 import { SpaceLocationForm } from '@/components/spaces/space-location-form'
 import { SpaceFaqEditor } from '@/components/spaces/space-faq-editor'
+import { isConsoleSpaceType, normalizeSpaceType } from '@/lib/spaces/types'
+import { spaceSetupHref } from '@/lib/spaces/setup'
 import { ProfileCompletenessCard } from '../settings/profile-completeness-card'
 import { getSpaceRailCore } from './rail-getters'
 
@@ -37,26 +39,31 @@ import { getSpaceRailCore } from './rail-getters'
  *  asks for happens on the READ that PUBLISHES the pin (lib/nearby/map-pins.ts), never on the way
  *  into this form. Fails to an empty location rather than throwing: a settings page must not 500
  *  because one column read went wrong. */
-async function readSpaceLocation(spaceId: string): Promise<SpaceLocation> {
+async function readSpaceLocation(spaceId: string): Promise<{ location: SpaceLocation; type: string | null }> {
   try {
     const { data } = await createAdminClient()
       .from('spaces')
-      .select('street, city, region, postal_code, country, latitude, longitude, location_precision')
+      // `type` rides along for the one read this page makes of it: whether the "Finish setting up"
+      // door (ADR-1733) applies, which is a console-type question.
+      .select('type, street, city, region, postal_code, country, latitude, longitude, location_precision')
       .eq('id', spaceId)
       .maybeSingle()
-    if (!data) return normalizeSpaceLocation({})
-    return normalizeSpaceLocation({
-      street: data.street,
-      city: data.city,
-      region: data.region,
-      postalCode: data.postal_code,
-      country: data.country,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      precision: data.location_precision,
-    })
+    if (!data) return { location: normalizeSpaceLocation({}), type: null }
+    return {
+      type: typeof data.type === 'string' ? data.type : null,
+      location: normalizeSpaceLocation({
+        street: data.street,
+        city: data.city,
+        region: data.region,
+        postalCode: data.postal_code,
+        country: data.country,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        precision: data.location_precision,
+      }),
+    }
   } catch {
-    return normalizeSpaceLocation({})
+    return { location: normalizeSpaceLocation({}), type: null }
   }
 }
 
@@ -67,11 +74,13 @@ export async function SpaceIdentityEditor({ slug }: { slug: string }) {
   const { basics, branding, settings, hero } = core
   const spaceId = branding.spaceId
 
-  const [reviews, faqs, location] = await Promise.all([
+  const [reviews, faqs, { location, type }] = await Promise.all([
     getSpaceReviews(spaceId),
     getSpaceFaqs(spaceId),
     readSpaceLocation(spaceId),
   ])
+  // The setup walk (ADR-1733) serves console types only; the card offers its door while incomplete.
+  const setupHref = type && isConsoleSpaceType(normalizeSpaceType(type)) ? spaceSetupHref(branding.slug) : undefined
 
   return (
     <section className="space-y-6">
@@ -90,6 +99,7 @@ export async function SpaceIdentityEditor({ slug }: { slug: string }) {
           reviewCount: reviews.count,
           socialCount: basics.business.socials?.length ?? 0,
         }}
+        setupHref={setupHref}
       />
 
       {/* IDENTITY & BRANDING: name, tagline, pictures, the hero look, page theme, accent, header CTA. */}

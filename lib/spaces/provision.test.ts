@@ -7,8 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 //   3. SLUG: an unsafe slug is rejected (isSafeSlug); a colliding slug returns a friendly fail and
 //      writes nothing.
 //   4. HAPPY PATH: a valid request inserts the row (active/free/{}/owner/network) at the blueprint
-//      skin, seats the caller as an admin member, and redirects to the Space's Circles manager
-//      (LIVE-261: a brand-new owner lands on hosting, not on the console's CRM command center).
+//      skin, seats the caller as an admin member, and redirects a console Space into its SETUP walk
+//      (ADR-1733), whose finish is the Circles manager LIVE-261 chose (hosting, never the console's
+//      CRM command center). The landing rule itself is pinned in lib/spaces/setup.test.ts.
 
 // ── Mock the caller identity ──────────────────────────────────────────────────────────────
 let currentProfileId: string | null = 'owner-0000-4000-a000-000000000own'
@@ -171,10 +172,10 @@ describe('createSpace — slug validation', () => {
 })
 
 describe('createSpace — happy path', () => {
-  it('inserts the row, seats the owner as admin, and redirects to HOSTING, not the CRM console', async () => {
+  it('inserts the row, seats the owner as admin, and redirects into SETUP, not the CRM console', async () => {
     const out = await run(VALID)
     expect(out.kind).toBe('redirect')
-    if (out.kind === 'redirect') expect(out.url).toBe('/spaces/river-yoga/manage/circles')
+    if (out.kind === 'redirect') expect(out.url).toBe('/spaces/river-yoga/setup')
 
     expect(store.inserts).toHaveLength(1)
     const row = store.inserts[0]!

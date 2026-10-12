@@ -17,8 +17,9 @@ import {
 
 // The CREATE-A-SPACE form (client). Leads with "what do you run?" (a Mode + Focus choice), then collects
 // just name, handle, and visibility, and calls the createSpace server action (which seeds the Mode preset
-// and drops the owner straight on their /manage console on success). Brand name is NOT collected here: it
-// defaults to the name and is editable later in Basics (ADR-552 Phase 4 slim). The server re-validates
+// and, on success, walks the owner through /spaces/<slug>/setup, the seeding wizard, before landing them
+// on their Circles manager; ADR-1733). Brand name is NOT collected here: it defaults to the name and the
+// setup walk's Identity step asks for it next (ADR-552 Phase 4 slim). The server re-validates
 // everything; this form mirrors the checks for fast, inline feedback only.
 //
 // The "what do you run?" choices come from the parent (the Mode registry, Space Modes M3), so the form
