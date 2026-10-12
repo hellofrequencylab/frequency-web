@@ -7,6 +7,62 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-10-12 pass (scan eight: the 207 merges since scan seven, six sequential finders)
+
+Run against `origin/main` at `1e5b2a76`, 207 merges after scan seven's `1531d9b`. Six finders ran one
+after another (the box hangs on parallel agents), each told to refute its own findings before
+reporting: Space email; Space websites, the website editor and site themes; Spotlight, Collective and
+the five-tier ladder; domains, AI accounting, commerce and CRM; the native app, funnels, feed and
+Journeys; and a regression pass over the PRs that closed scan seven's rows.
+
+**What the instruments say.** Per the box rules, no full `tsc`, build or test run. Every changed file
+lints clean, and every test file touching a changed path passes (vitest per file), each new test
+failing without its fix. `pnpm check:backlog` is green with every new probe agreeing with the tree,
+and `check:migrations`, `check:rls` and `check:rls-recursion` pass. Two webhook test suites cannot
+load locally because `@react-email/render` is missing from this checkout's `node_modules`; CI
+installs it.
+
+**Findings.** 33 survived refutation, recorded as 32 rows (one row covers two policy holes).
+
+**Fixed in this pass: 12 rows, `SCAN-816` to `SCAN-826`, `SCAN-842`, `SCAN-843`.** The three that
+mattered most: two member INSERT policies that let anyone write an active or Admin Circle membership
+and mint Zaps through crew completions (a migration drops both; production applies it when the
+owner runs it), a stranger's sister Circle landing inside someone else's Space, and Non Profit plans
+purchasable without a verified 501(c)(3). The rest: a double send behind the atomic email switch,
+a Private Space's share card, ambiguous domain registrations no longer refunded, a silent paid-order
+mismatch, the AI cap and its SQL ceiling, the Journey sell gate and Circle Run tier gate, root event
+pricing, and the follow-up cron's page cap.
+
+**Filed with a probe: 20 rows, `SCAN-827` to `SCAN-841` and `SCAN-844` to `SCAN-848`.** 3 P1,
+12 P2, 5 P3. Every probe exits 1 on this tree.
+- **P1:** website editor drafts and the private Executive Overview readable with the anon key
+  (`SCAN-827`), RSVP approval skipped by re-inserting (`SCAN-844`), founder rewards re-claimed by
+  clearing profile meta (`SCAN-845`). All three need a migration.
+- **Scan seven's fixes held in the app but not at the database** for four rows: SCAN-680/682
+  (`SCAN-846`), SCAN-688 (`SCAN-848`), SCAN-696 (`SCAN-844`), SCAN-759 (`SCAN-845`). The lesson for
+  the next fix wave: a row about who may write a table is not closed until the RLS policy says so.
+- **Rows closed while incomplete:** LIVE-891 (the website editor's menu dialog is empty on the
+  site's own host, `SCAN-832`) and LIVE-682 (a Nexus Dispatch has no feed reader, `SCAN-839`).
+  Both probes passed on strings, not consequences.
+
+**Owner rulings this pass asks for.** `SCAN-834` (guest bookings proved by email), `SCAN-835`
+(whether a waiver lowers the network fee), `SCAN-836` (private Library downloads default to staff,
+which a test pins today), `SCAN-837` (Vercel auto-renew while domain sales are paused), and the
+`production-db` environment settings behind `SCAN-847`.
+
+**Scorecard, honest gap to 10.**
+- **Security 6.** Unchanged in number. Scan seven's 14 high findings are closed in the app, and two
+  direct-write holes close here, but four of its fixes still have a database door, and website
+  drafts are readable with the anon key.
+- **Wiring 8.** Two closed rows shipped doors with nothing behind them (the editor menu, the Nexus
+  Dispatch), and Journey co-hosting has no invite or accept step.
+- **Correctness 8.** Up from 7: the money findings from scan seven are closed, and this pass's money
+  findings were latent (switches off) or fixed.
+- **SEO / GEO 8.** Unchanged; one leak of Journey names to Google through the page title.
+- **DB⇄code 9.** Unchanged.
+- **Bookkeeping 10.** 32 rows, 32 probes, one list.
+- **Docs 9.**
+
 ## 2026-10-05 pass (scan seven: 26 finders, 26 skeptics, every feature surface and the SEO / GEO layer)
 
 Run against `origin/main` at `1531d9b`, the same day as scan six, by 26 parallel finders (one per
