@@ -1151,6 +1151,18 @@ export async function listPublicOpenSlots(
   return readOpenSlots(spaceId, serviceTypeId)
 }
 
+/** The Space's booking timezone with NO caller check, for the public Market detail page (LIVE-884):
+ *  the page already resolved the Space as publicly visible before asking, and a timezone label is
+ *  not a secret. Same resolution as getSpaceBookingTimezone; FAIL-SAFE to 'UTC'. */
+export async function getPublicSpaceBookingTimezone(spaceId: string): Promise<string> {
+  try {
+    const [schedule, windows] = await Promise.all([readSchedule(spaceId), readWindows(spaceId)])
+    return schedule.timezone ?? windows[0]?.timezone ?? 'UTC'
+  } catch {
+    return 'UTC'
+  }
+}
+
 /** The open-slot read behind listOpenSlots and listPublicOpenSlots. FAIL-SAFE to []. */
 async function readOpenSlots(spaceId: string, serviceTypeId?: string | null): Promise<OpenSlot[]> {
   try {

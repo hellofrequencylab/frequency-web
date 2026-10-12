@@ -8,7 +8,7 @@ import { spacePaymentsVerdict } from '@/lib/pricing/payments-gate'
 import { buttonClasses } from '@/components/ui/button'
 import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
-import { listOpenSlots, getSpaceBookingTimezone } from '@/lib/spaces/booking'
+import { listPublicOpenSlots, getPublicSpaceBookingTimezone } from '@/lib/spaces/booking'
 import { getProductReviews } from '@/lib/commerce/reviews'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
 import { sellerVerifiedForProduct } from '@/lib/commerce/seller-verification'
@@ -144,9 +144,13 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       ? spacePaymentsVerdict(product.ownerSpaceId ?? '', { also: 'space_storefront' })
       : Promise.resolve(null),
     // A service pulls its open slots from the Space's availability calendar (booking_space_id).
+    // The PUBLIC readers (LIVE-884): the member readers resolve the viewer from the session cookie,
+    // which turned every service listing into a per-request render and showed an anonymous visitor
+    // no slots at all. The Space was confirmed publicly visible above, the slots are instants only,
+    // and bookServiceAction re-checks the chosen slot against live bookings when the member books.
     isService && product.bookingSpaceId
-      ? Promise.all([listOpenSlots(product.bookingSpaceId), getSpaceBookingTimezone(product.bookingSpaceId)])
-      : Promise.resolve<[Awaited<ReturnType<typeof listOpenSlots>>, string]>([[], 'UTC']),
+      ? Promise.all([listPublicOpenSlots(product.bookingSpaceId), getPublicSpaceBookingTimezone(product.bookingSpaceId)])
+      : Promise.resolve<[Awaited<ReturnType<typeof listPublicOpenSlots>>, string]>([[], 'UTC']),
     // Trust & Safety (Phase 8): the seller verification badge, the reviews block, and the viewer's own
     // review (to prefill). A signed-in non-owner may review; a platform operator may moderate.
     Promise.all([
