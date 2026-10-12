@@ -1,0 +1,14 @@
+{
+  "id": "LIVE-767",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-12",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/collective-shared-membership.mjs"
+    }
+  },
+  "append": {
+    "detail": "\n\nBUILT 2026-10-12. Shared membership: lib/collective/shared-membership.ts (sharedMembershipScope reuses memberSpacePlan's relationship rule with the child's plan pinned to free; resolveSharedMembership reads the parent through spaces.parent_id and returns the viewer's ACTIVE membership there, labelled via the Collective). getMyMembership falls back to it (source 'collective', via), so the Space front door, people page, member directory and the join surface honour it; the members-only ticket tier gate (lib/billing/tickets.ts loadActiveMembership) and the paid-members Circle door (lib/circles/store.ts) honour it too. Read-time only: detach or a parent downgrade ends it. Revenue splits on co-hosted Events: migration 20270346008100 event_revenue_splits (event_id, space_id, bps, created_by; unique per pair; RLS, service role only). Rule in lib/events/revenue-splits.ts (pure): only accepted Collaborators (listCollaboratorSpacesForEvent), together at most 9500 bps (the home Space keeps the 500 bps top network rung), every payee's owner account ready under payoutsLive, refused at set time; planTicketSplit takes the home rung's fee from every share pro rata so the shares sum to the gross and to the fee. Store half in revenue-splits-store.ts; owner action app/(main)/events/split-actions.ts (home Space OWNER only); field components/events/event-revenue-split-field.tsx under Collaborators in the event settings module. Ticket checkout: with a payable share it writes a commerce_orders row (owner_kind split, funds_flow separate, metadata.split plus ticket_event_id) BEFORE the session and builds the platform charge with transfer_group and no transfer_data or application_fee_amount; the settle flips the order paid and calls settleSplitOrderTransfers (the LIVE-622 ledger); refundTicket refunds plain on a split charge and reverses through reverseSplitRefundForPaymentIntent, and the charge.refunded webhook already does the same by PaymentIntent; an expired session cancels the pending order. The buyer's Orders list leaves ticket records out; each Space's earnings view (LIVE-624) shows its share. LEFT OUT: Journey splits. The Journey checkout does settle through lib/commerce/checkout.ts, but a split there needs its own table and owner surface on the Journey editor plus synthetic seller groups in createCommerceCheckout's pricing loop, a second PR-sized piece; the help page says so. Probe: scripts/probes/collective-shared-membership.mjs."
+  }
+}

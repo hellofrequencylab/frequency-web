@@ -19,6 +19,11 @@ import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId
 // minimal). Each is stored only when the owner picked it (`null` means "the theme's own"), so switching
 // themes keeps an explicit choice and otherwise brings the new theme's defaults.
 //
+// A THEME PER PAGE (LIVE-699): `preferences.siteStyle.pages` maps a page slug to its own theme. A page with
+// no entry wears the site's theme ("same as site", the default); a page on the other theme wears that
+// theme's own fonts and shapes, and the owner's explicit global style choices still hold. The site's theme
+// stays the one source for every page that has not said otherwise.
+//
 // Pure and fail-safe: a malformed node reads as the defaults.
 
 export type SiteThemeId = 'frequency' | 'bold'
@@ -100,7 +105,13 @@ export interface SiteStyle {
   spaceFonts: SpaceThemeId
   /** The owner's global style choices; `null` keeps the theme's own. */
   look: { [K in SiteLookKey]: SiteLook[K] | null }
+  /** Pages that wear their own theme, by slug. A page not listed wears the site's (LIVE-699). */
+  pages?: Record<string, SiteThemeId>
 }
+
+/** A page slug as the website stores it; the cap keeps a hostile node from growing without bound. */
+const PAGE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const MAX_PAGE_THEMES = 30
 
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
 
@@ -118,7 +129,36 @@ export function readSiteStyle(preferences: unknown): SiteStyle {
     const v = node?.[key]
     return SITE_LOOK_OPTIONS[key].some((o) => o.id === v) ? (v as SiteLook[K]) : null
   }
-  return { theme, fonts, synced, spaceFonts, look: { corners: pick('corners'), spacing: pick('spacing'), header: pick('header'), footer: pick('footer') } }
+  return { theme, fonts, synced, spaceFonts, look: { corners: pick('corners'), spacing: pick('spacing'), header: pick('header'), footer: pick('footer') }, pages: readPageThemes(node?.pages) }
+}
+
+function readPageThemes(raw: unknown): Record<string, SiteThemeId> {
+  if (!record(raw)) return {}
+  const out: Record<string, SiteThemeId> = {}
+  for (const [slug, theme] of Object.entries(raw).slice(0, MAX_PAGE_THEMES)) {
+    if (slug.length <= 64 && PAGE_SLUG.test(slug) && isSiteThemeId(theme)) out[slug] = theme
+  }
+  return out
+}
+
+/** The style ONE PAGE wears: the site style, with the page's own theme when it has one. A page on the other
+ *  theme takes that theme's own fonts; the owner's explicit corners, spacing, header and footer still hold,
+ *  and anything left to "the theme's own" follows the page's theme (siteLook). */
+export function readSitePageStyle(preferences: unknown, pageSlug: string): SiteStyle {
+  const style = readSiteStyle(preferences)
+  const theme = style.pages?.[pageSlug]
+  if (!theme || theme === style.theme) return style
+  return { ...style, theme, fonts: SITE_THEMES.find((t) => t.id === theme)!.defaultFonts }
+}
+
+/** Give a page its own theme, or clear it (null) so it wears the site's again. An invalid slug is ignored. */
+export function withSitePageTheme(preferences: unknown, pageSlug: string, theme: SiteThemeId | null): Record<string, unknown> {
+  const current = readSiteStyle(preferences)
+  if (!PAGE_SLUG.test(pageSlug) || pageSlug.length > 64) return withSiteStyle(preferences, {})
+  const pages = { ...current.pages }
+  if (theme === null) delete pages[pageSlug]
+  else pages[pageSlug] = theme
+  return withSiteStyle(preferences, { pages })
 }
 
 /** Whether a value is one of a global style's options. */
@@ -164,7 +204,8 @@ export function withSiteStyle(preferences: unknown, patch: Partial<SiteStyle>): 
   if (style.fonts === DEFAULT_SPACE_THEME) delete next.theme
   else next.theme = style.fonts
   const look = Object.fromEntries(Object.entries(style.look).filter(([, v]) => v !== null))
-  next.siteStyle = { theme: style.theme, synced: style.synced, spaceFonts: style.spaceFonts, ...look }
+  const pages = readPageThemes(style.pages)
+  next.siteStyle = { theme: style.theme, synced: style.synced, spaceFonts: style.spaceFonts, ...look, ...(Object.keys(pages).length ? { pages } : {}) }
   return next
 }
 

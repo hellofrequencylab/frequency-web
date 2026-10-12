@@ -29,6 +29,7 @@ Everything Business does, plus:
 - **A network page** with your member Spaces and one shared calendar of their events.
 - **A private Collective report** that adds up members, Events and revenue across the network.
 - **Shared listings**, so a Journey or Circle from one member Space can show on another.
+- **One membership across the network**, and a share of ticket money for a co-host Space.
 
 Each of these is explained below.
 
@@ -92,12 +93,42 @@ The original owner, price and entry rules stay with the Journey or Circle. A lis
 other Space permission to edit it or adds people to a closed Circle. Either owner can remove it.
 Private Journeys, unlisted Circles and inactive Spaces do not appear through a listing.
 
+## One membership across the network
+
+A paid membership in your Collective counts in every member Space. Someone who joins the Collective
+sees members-only tickets, paid-members Circles and the people list in each member Space as a
+member, with no second join. Their join card there says which Collective the membership comes from
+and sends them back to it to manage or cancel.
+
+This follows the same rule as everything else a member Space inherits: it holds while the Space is
+attached, active and owned by the same account as the Collective, and ends the moment the Space is
+detached or the Collective plan ends. A membership bought directly in a member Space stays its own.
+
+## Sharing ticket money with a co-host
+
+When another Space is an accepted Collaborator on one of your events, you can give it a share of
+every ticket. Open the event's settings, find **Ticket shares** under Collaborators, and set a whole
+percent beside each Space. Together the shares never take the whole ticket; your Space always keeps a share.
+
+A few rules keep the money honest:
+
+- Only the owner of the Space hosting the event can set shares.
+- A Space has to have payouts set up before it can take a share. A share for a Space that is still
+  setting up is refused until it is ready.
+- The network fee comes out of every share in proportion, including yours. Your own people and your
+  tips stay at 0%, as always.
+- Shares apply to tickets sold after you save them. A refund takes each share back in the same
+  proportion.
+
+Each Space sees its share in its own earnings. Revenue splits on Journeys are not here yet; a
+co-hosted Journey still pays the Space that sells it.
+
 ## What is still being built
 
 We would rather tell you straight than sell you a promise. One piece of the network is still on
 the way:
 
-- Shared membership across member Spaces, and revenue splits on co-hosted Events and Journeys.
+- Revenue splits on co-hosted Journeys.
 
 The price you start at holds while it lands. We will tell you when it goes live.
 

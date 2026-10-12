@@ -177,11 +177,11 @@ type and helpers live in `lib/action-result.ts`.
 ## Cron
 
 **`vercel.json` is the schedule's source of truth**, and every entry maps 1:1 to a route handler
-under `app/api/cron`. **34 jobs as of 2026-10-06** (27 as of 2026-08-17; `signup-lead-recovery` joined on 2026-09-08, ADR-1274; `onboarding-throughput` joined on 2026-09-14, LIVE-311; `tag-library` joined on 2026-09-29, LIVE-587; `reconcile-transfers` joined on 2026-09-29, LIVE-622; `storage-backup` joined on 2026-09-30, HYG-144; `event-followups` joined on 2026-10-06, LIVE-802; `embed-posts` joined on 2026-10-06, LIVE-677), in seven families:
+under `app/api/cron`. **35 jobs as of 2026-10-12** (27 as of 2026-08-17; `signup-lead-recovery` joined on 2026-09-08, ADR-1274; `onboarding-throughput` joined on 2026-09-14, LIVE-311; `tag-library` joined on 2026-09-29, LIVE-587; `reconcile-transfers` joined on 2026-09-29, LIVE-622; `storage-backup` joined on 2026-09-30, HYG-144; `event-followups` joined on 2026-10-06, LIVE-802; `embed-posts` joined on 2026-10-06, LIVE-677; `this-week` joined on 2026-10-12, LIVE-806), in seven families:
 
 | Family | Example jobs | Cadence |
 |---|---|---|
-| Delivery + queue | `process-queue`, `weekly-digest`, `nurture`, `conversation-batches` | 2 min → weekly |
+| Delivery + queue | `process-queue`, `weekly-digest`, `this-week` (the Thursday "This week in <region>" calendar built from live public Events, LIVE-806), `nurture`, `conversation-batches` | 2 min → weekly |
 | Events | `event-reminders`, `event-occurrences`, `space-follower-event-reminders`, `event-followups` (the guest follow-up the day after a gathering, LIVE-802) | 15 min / hourly / nightly |
 | Growth + CRM | `space-campaigns`, `space-drips`, `journey-drips`, `referral-release`, `signup-lead-recovery`, `onboarding-throughput` (a nightly reading of accounts stuck behind the admission gate, LIVE-311) | 5–30 min, daily |
 | Embeddings | `embed-events`, `embed-posts` (the feed interest signal, LIVE-677), `embed-practices`, `embed-help`, `embed-library`, `embed-room-messages`, `tag-library` (Vera names Loom images nobody named, ahead of `embed-library`, LIVE-587) | nightly / 10–30 min |
