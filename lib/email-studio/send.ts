@@ -26,7 +26,7 @@ import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { bulkRunAfter } from '@/lib/queue/outbox'
 import { buildConversationReplyAddress, conversationSigningAvailable } from '@/lib/comms/reply-address'
 import { openOrGetConversation, appendConversationMessage, newConversationMessageId } from '@/lib/comms/conversations'
-import { conversationFrom } from '@/lib/comms/from-address'
+import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 import { envString } from '@/lib/env/string'
 import { isSendingLeaseStale } from '@/lib/messaging/status'
 import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
@@ -854,7 +854,8 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
         if (conv) {
           const messageId = newConversationMessageId(conv.ref)
           emailFrom = conversationFromHeader
-          emailReplyTo = buildConversationReplyAddress(conv.ref)
+          // The campaign's display name masks the signed reply address (owner ruling 2026-10-12).
+          emailReplyTo = withDisplayName(conversationFromHeader, buildConversationReplyAddress(conv.ref))
           emailHeaders = { 'Message-ID': messageId, 'X-Campaign-Id': campaignId }
           await appendConversationMessage({
             conversationId: conv.id,

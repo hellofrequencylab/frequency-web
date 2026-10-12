@@ -28,6 +28,7 @@ import {
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { resolveSignature } from '@/lib/comms/signature'
 import { renderReplyEmail } from '@/lib/comms/email-template'
+import { withDisplayName } from '@/lib/comms/from-address'
 import { type ConversationPriority } from '@/lib/comms/labels'
 import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
 import { startConversationMessage } from '@/lib/comms/conversation-compose'
@@ -166,7 +167,9 @@ export async function sendConversationReply(input: {
       await enqueueEmail({
         to: conv.externalEmail,
         from,
-        replyTo: buildConversationReplyAddress(conv.ref),
+        // Platform lane: the Frequency wrapper stays; only the Reply-To is masked with the From's display
+        // name so a mail client shows the operator, not the signed token (owner ruling 2026-10-12).
+        replyTo: withDisplayName(from, buildConversationReplyAddress(conv.ref)),
         subject,
         html: emailHtml,
         text: emailText,

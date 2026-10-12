@@ -14,7 +14,7 @@ import { resolveSendGate } from '@/lib/comms/send-gate'
 import { enqueueEmail } from '@/lib/email'
 import { buildConversationReplyAddress, conversationSigningAvailable } from '@/lib/comms/reply-address'
 import { openOrGetConversation, appendConversationMessage, newConversationMessageId } from '@/lib/comms/conversations'
-import { conversationFrom } from '@/lib/comms/from-address'
+import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 
 /**
  * The leader's downline as send recipients: every active member of every circle the leader stewards
@@ -140,7 +140,8 @@ export async function sendLeaderMessageToDownline(
       await enqueueEmail({
         to: r.email,
         from,
-        replyTo: buildConversationReplyAddress(conv.ref),
+        // The leader's display name masks the signed reply address (owner ruling 2026-10-12).
+        replyTo: withDisplayName(from, buildConversationReplyAddress(conv.ref)),
         subject,
         html,
         text: body,

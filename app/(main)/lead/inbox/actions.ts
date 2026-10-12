@@ -14,7 +14,7 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { enqueueEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildConversationReplyAddress, conversationSigningAvailable, CONVERSATION_SIGNING_UNAVAILABLE_COPY } from '@/lib/comms/reply-address'
-import { conversationFrom } from '@/lib/comms/from-address'
+import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 import {
   getConversationById,
   appendConversationMessage,
@@ -29,6 +29,7 @@ import { sendLeaderMessageToDownline } from '@/lib/comms/leader-send'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { resolveSignature } from '@/lib/comms/signature'
 import { renderReplyEmail } from '@/lib/comms/email-template'
+import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { type ConversationPriority } from '@/lib/comms/labels'
 import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
 
@@ -137,13 +138,17 @@ export async function sendLeaderReply(input: {
     })
     if (!queued) return fail('Could not queue the reply. Try again.')
   } else {
-    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature)
+    // A reply on a Space's thread wears the Space's brand (owner ruling 2026-10-12, LIVE-898); a thread
+    // with no Space, or a brand read fault, renders the plain Frequency wrapper.
+    const brand = await resolveSpaceEmailBrand(conv.spaceId)
+    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature, brand)
     const messageId = newConversationMessageId(conv.ref)
     try {
       await enqueueEmail({
         to: conv.externalEmail,
         from,
-        replyTo: buildConversationReplyAddress(conv.ref),
+        // The From's display name masks the signed reply address so a mail client shows the leader.
+        replyTo: withDisplayName(from, buildConversationReplyAddress(conv.ref)),
         subject,
         html: emailHtml,
         text: emailText,

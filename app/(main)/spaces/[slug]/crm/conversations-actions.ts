@@ -35,6 +35,8 @@ import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comm
 import { brandSignature } from '@/lib/comms/signature'
 import { startConversationMessage, resolveSpaceConversationFrom, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
 import { renderReplyEmail } from '@/lib/comms/email-template'
+import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
+import { withDisplayName } from '@/lib/comms/from-address'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
 import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES, type ConversationPriority } from '@/lib/comms/labels'
 import { veraDraftReply, veraSummarize, veraSuggestTriage } from '@/lib/comms/vera-conversation'
@@ -162,13 +164,17 @@ export async function sendSpaceConversationReplyAction(
     // 2026-09-05 (scan2 L3-06, ADR-1212): the reply-to is signed; in production without the secret the
     // builder throws from inside the send. Check first and answer in member-safe copy.
     if (!conversationSigningAvailable()) return fail(CONVERSATION_SIGNING_UNAVAILABLE_COPY)
-    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature)
+    // A Space reply wears the Space's brand (owner ruling 2026-10-12, LIVE-898); the resolver is null
+    // on a read fault, which renders the plain wrapper rather than refusing the reply.
+    const brand = await resolveSpaceEmailBrand(gate.spaceId)
+    const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature, brand)
     const messageId = newConversationMessageId(conv.ref)
     try {
       await enqueueEmail({
         to: conv.externalEmail,
         from,
-        replyTo: await buildSpaceConversationReplyAddress(conv.ref, gate.spaceId),
+        // The From's display name masks the signed per-thread alias (EMAIL-013); the alias rides underneath.
+        replyTo: withDisplayName(from, await buildSpaceConversationReplyAddress(conv.ref, gate.spaceId)),
         subject,
         html: emailHtml,
         text: emailText,
