@@ -26,14 +26,23 @@ export const GUIDANCE_LIMIT = 15
 export const GENERATED_PREFIXES = ['test/e2e/__screenshots__/']
 export const GENERATED_FILES = new Set(['test/e2e/template-fingerprints.json'])
 
-export function isGenerated(filename) {
+/** A ledger fragment a compaction DELETES (ADR-1730). `pnpm ledger:compact` folds every fragment into
+ *  the two base files and removes them, so a due fold (past 30 fragments, AGENTS.md) always lists
+ *  more files than this gate allows. The removals are the tool's output; the base files it rewrites
+ *  still count as authored. Only a removal counts: an added or edited fragment is a person's work. */
+export const FOLDED_FRAGMENT = /^docs\/ledger\/(rows|adr)\/[^/]+$/
+
+/** `entry` is a path, or `{ filename, status }` as the PR files API lists it. */
+export function isGenerated(entry) {
+  const filename = typeof entry === 'string' ? entry : entry.filename
   if (GENERATED_FILES.has(filename)) return true
+  if (typeof entry !== 'string' && entry.status === 'removed' && FOLDED_FRAGMENT.test(filename)) return true
   return GENERATED_PREFIXES.some((p) => filename.startsWith(p))
 }
 
 /** The number the gate reads: files a person authored. */
-export function authoredCount(filenames) {
-  return filenames.filter((f) => !isGenerated(f)).length
+export function authoredCount(entries) {
+  return entries.filter((f) => !isGenerated(f)).length
 }
 
 /**
@@ -70,8 +79,8 @@ export function decide({ authored, total, title, listed }) {
   return { ok: true, lines }
 }
 
-/** Every filename in the PR, following the API's pagination. Throws on a non-2xx page. */
-export async function listPullRequestFiles({ repo, number, token, fetchImpl = fetch }) {
+/** Every `{ filename, status }` in the PR, following the API's pagination. Throws on a non-2xx page. */
+export async function listPullRequestEntries({ repo, number, token, fetchImpl = fetch }) {
   const names = []
   for (let page = 1; page <= 30; page += 1) {
     const res = await fetchImpl(
@@ -87,10 +96,15 @@ export async function listPullRequestFiles({ repo, number, token, fetchImpl = fe
     if (!res.ok) throw new Error(`GET pulls/${number}/files page ${page}: HTTP ${res.status}`)
     const body = await res.json()
     if (!Array.isArray(body)) throw new Error(`GET pulls/${number}/files page ${page}: not an array`)
-    for (const f of body) if (f && typeof f.filename === 'string') names.push(f.filename)
+    for (const f of body) if (f && typeof f.filename === 'string') names.push({ filename: f.filename, status: typeof f.status === 'string' ? f.status : 'modified' })
     if (body.length < 100) break
   }
   return names
+}
+
+/** Every filename in the PR (scripts/check-id-collisions.mjs reads this shape). */
+export async function listPullRequestFiles(opts) {
+  return (await listPullRequestEntries(opts)).map((e) => e.filename)
 }
 
 async function main() {
@@ -103,7 +117,7 @@ async function main() {
   let listed = false
   try {
     if (!repo || !number || !token) throw new Error('GITHUB_REPOSITORY, PR_NUMBER and GITHUB_TOKEN are required to list the files')
-    const files = await listPullRequestFiles({ repo, number, token })
+    const files = await listPullRequestEntries({ repo, number, token })
     authored = authoredCount(files)
     listed = true
     console.log(`Changed files vs base: ${files.length} listed (API total ${total}); authored ${authored}`)

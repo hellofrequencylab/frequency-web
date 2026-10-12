@@ -13,32 +13,24 @@ Authority order: running code + `supabase/migrations/` > repo `docs/` > Notion.
 This file is **why**, not **whether it is done**. Status lives in
 [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json). A plan that contradicts an ADR is stale.
 
-## Theme index (2026-09-18)
+## Theme index (2026-10-12)
 
-Search this file for the ADR number. Do not split the file. Latest heading in this
-tree as of this index: **ADR-1486**. 1486 is LIVE-415 Admin = Guest-plus-staff events. 1485 is LIVE-436. 1481 is LIVE-432. 1479 is LIVE-430. 1478 is LIVE-429. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415 (original PM console; amended). 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1480 and 1482–1484 are claimed on other open PRs.
-
-tree as of this index: **ADR-1482**. 1482 is LIVE-433 (seat-counter leftover). 1478–1481 are claimed by open leftover PRs. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424.
-
-tree as of this index: **ADR-1483**. 1483 is LIVE-434. 1477 is LIVE-428 on main. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478 through 1482 are claimed by open leftover PRs.
-
-tree as of this index: **ADR-1485**. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1484 are claimed on other open PRs.
-
-tree as of this index: **ADR-1486**. 1486 is LIVE-437. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1485 are claimed on other open leftover PRs.
-
-tree as of this index: **ADR-1487**. 1487 is LIVE-438. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1486 are claimed on other open PRs.
-
-tree as of this index: **ADR-1488**. 1488 is LIVE-439. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1471 is LIVE-420. 1470 is LIVE-422. 1468 is Space Plans (PROG-CAL2–8) and parking LIVE-412. 1467 is the Calendar view slide shell. 1466 is a Platform moderator (OWN-054). 1465 is SCAN-644. 1464 is the Admin Calendar five-view set. 1458 is LIVE-417. 1457 is LIVE-419. 1456 is LIVE-418. 1452 is SCAN-643. 1451 is SCAN-642. 1463 is LIVE-393. 1455 is LIVE-414. 1454 is LIVE-416. 1449 is LIVE-313. 1448 is OWN-058. 1450 is LIVE-415. 1447 is HYG-104. 1446 is HYG-103. 1445 is the calendar C0–C5 ruling. 1444 is OWN-063. 1443 is SCAN-641. 1442 is HYG-078. 1453 is claimed on other open PRs. 1469 is LIVE-421. 1472 is LIVE-423. 1473 is claimed by LIVE-424. 1478–1480 and 1482–1487 are claimed on other open PRs.
-
-tree as of this index: **ADR-1491**. 1491 is the 2026-09-21 tail-order ruling (editor third to last, Etsy second to last, the app last). 1490 is LIVE-437. 1487 is LIVE-438. 1483 is LIVE-434. 1482 is LIVE-433. 1485 is LIVE-436. 1481 is LIVE-432. 1477 is LIVE-428. 1476 is LIVE-427. 1475 is LIVE-426. 1474 is LIVE-425. 1468 is Space Plans (PROG-CAL2-8). 1467 is the Calendar view slide shell. 1464 is the Admin Calendar five-view set. 1463 is LIVE-393. 1445 is the calendar C0-C5 ruling. 1325 is the plan this one amends.
+Search this file for the ADR number. Do not split the file. The newest entries are at the end:
+`pnpm ledger:next` prints the next free number, and `pnpm ledger:view --adr <n>` prints one entry
+with any pending fragment folded in. On any theme, read the NEWEST ADR first. When an entry retires
+another, its Status says **Supersedes** [ADR-n] and ADR-n's Status says **Superseded … by** it
+(ADR-1730; `pnpm check:adr` fails on a one-way link). This index routes; it never records status.
 
 | Theme | Start here |
 |---|---|
 | **Names** | ADR-208 → [NAMING.md](NAMING.md) |
-| **Product + commercial law** | ADR-1294 [CORE-MODEL.md](CORE-MODEL.md). ADR-811 Community Collective. ADR-914 gate the repeat, not the transaction. |
-| **Interior (accepted)** | ADR-1403 → [FOCUS-MODEL.md](FOCUS-MODEL.md). Quest is the Collective's program, not the spine. Does not override ADR-1294. |
-| **What ships next** | ADR-925 [UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md) · ADR-921 [BUILD-LIST.md](BUILD-LIST.md) · ADR-1043 one list |
+| **Product + commercial law** | ADR-1294 [CORE-MODEL.md](CORE-MODEL.md), as amended by **ADR-1709** (the five-tier ladder: Members join, Crew hosts, a Space runs, Business sells, Collective connects). ADR-1709 supersedes ADR-914's transaction rule, ADR-1415 and ADR-1438. Prices: [PRICING.md](PRICING.md). |
+| **Interior (accepted)** | ADR-1403 → [FOCUS-MODEL.md](FOCUS-MODEL.md). Quest is the Collective's program, not the spine. Its Q3 is superseded by ADR-1709. |
+| **What ships next** | ADR-1043 one list: [BUILD-BACKLOG.json](BUILD-BACKLOG.json), `pnpm backlog`. ADR-1703: everything but the iOS app build is out of parked. ADR-925, ADR-921 explain the plans. |
 | **Editor / pages** | ADR-974…978 [EDITOR-ARCHITECTURE.md](EDITOR-ARCHITECTURE.md) · [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) |
+| **Space websites** | ADR-1708 (sites on Space blocks), ADR-1723 to ADR-1729 (a standalone site, guest bookings, one menu and logo, the Frequency and Bold themes, global styles, the editor edits the shared style) |
+| **Space email** | PROG-EMAIL1: [SPACE-EMAIL-BUILD-PLAN.md](SPACE-EMAIL-BUILD-PLAN.md), [COMMS-SYSTEM.md](COMMS-SYSTEM.md) "Space email layer", [RUNBOOKS.md](RUNBOOKS.md) "Space email rollout switches" |
+| **The ledger itself** | ADR-1043 one list · ADR-1635 fragments, not edits · ADR-1730 supersession pointers |
 | **Studio wizards** | ADR-986 [STUDIO.md](STUDIO.md) |
 | **Admin menu** | ADR-553, ADR-927 [MENU-CONTRACT.md](MENU-CONTRACT.md) |
 | **Spaces / tenants** | ADR-249 [SPACES.md](SPACES.md) |
@@ -554,7 +546,7 @@ The digital/physical flag is a product-data field from the first marketplace mig
 
 ## ADR-037: Free full app + an accruing Vault + membership-to-cash-in (the freemium model)
 
-**Status:** Accepted (target) · governs [PLATFORM-VISION.md](PLATFORM-VISION.md) §3 · refines
+**Status:** Accepted (target) · governs [PLATFORM-VISION.md](PLATFORM-VISION.md) §3 · refines · **Superseded in part by [ADR-219](DECISIONS.md)** (the lifetime-rank display).
 ADR-031 (tiers) + ADR-035 (entitlement bridge)
 **Context:** The Foundation's mission is free, real community for everyone (fight loneliness,
 heal society), funded by public donations. The game (zaps/gems/ranks/leaderboard/store) is a
@@ -1533,7 +1525,7 @@ articles) needs **no AI** and is the highest-leverage first step.
 
 ## ADR-068: Beta induction — a deliberate, temporary onboarding gate (separate from launch onboarding)
 
-**Status:** Accepted · 2026-06-03 · a scoped **exception** to the non-blocking onboarding model
+**Status:** Accepted · 2026-06-03 · a scoped **exception** to the non-blocking onboarding model · **Superseded in part or whole by [ADR-071](DECISIONS.md)**; read that ADR for what it retires.
 ([ADR-047](DECISIONS.md)/[ONBOARDING.md](ONBOARDING.md)); scripted in Vera's voice
 ([AI-VERA.md](AI-VERA.md)) ahead of the live AI kernel. Spec: [FUNNELS.md](FUNNELS.md) (né BETA-INDUCTION.md).
 
@@ -2265,7 +2257,7 @@ entity (a `nodes.entity_type/entity_id` column). `qrcode` + `@types/qrcode` adde
 ---
 ## ADR-087: "Journeys" = the open member library; the gamified engine → "Quests"
 
-**Status:** Accepted · 2026-06-04 · migration `20260604180000_rename_journeys_engine_to_quests`. Engine rename shipped; the open Journeys library is backlog §Q1.
+**Status:** Accepted · 2026-06-04 · migration `20260604180000_rename_journeys_engine_to_quests`. Engine rename shipped; the open Journeys library is backlog §Q1. · **Superseded in part or whole by [ADR-152](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context:** A new feature (backlog §Q1) lets members curate practice-combos by Pillar and
 share them into an open, free library — the product owner calls these **"Journeys."** That name
@@ -4416,7 +4408,7 @@ member **zap-rate multiplier** (ECONOMY §6).
 
 ## ADR-140: Gamification gap closure — joinable Pillar Journeys, member zap-rate, store balance
 
-**Status:** Accepted — shipped. Follows [ADR-139](DECISIONS.md). Spec:
+**Status:** Accepted — shipped. Follows [ADR-139](DECISIONS.md). Spec: · **Superseded in part by [ADR-219](DECISIONS.md)** (the member zap-rate throttle).
 [ECONOMY-AND-JOURNEYS.md](ECONOMY-AND-JOURNEYS.md) §5–§7,
 [GAMIFICATION-AUDIT.md](GAMIFICATION-AUDIT.md).
 
@@ -7167,7 +7159,7 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 ## ADR-299: Composer balances all four Pillars — Expression is the 4th slot (a challenge), not a season Challenge
 
-**Status:** Accepted (2026-06-16, revises ADR-298's challenge model) — "I want the challenges linked… all focused on expression and count towards the expression score… balance their four pillars to get their dot in the middle of the graph. Maybe we make an expression category inside the journey and the challenges are something separate." Code: [`lib/ai/journey-composition.ts`](../lib/ai/journey-composition.ts), the composer actions, [`journey-composer.tsx`](../components/journey/v2/journey-composer.tsx). No schema change.
+**Status:** Accepted (2026-06-16, revises ADR-298's challenge model) — "I want the challenges linked… all focused on expression and count towards the expression score… balance their four pillars to get their dot in the middle of the graph. Maybe we make an expression category inside the journey and the challenges are something separate." Code: [`lib/ai/journey-composition.ts`](../lib/ai/journey-composition.ts), the composer actions, [`journey-composer.tsx`](../components/journey/v2/journey-composer.tsx). No schema change. · **Superseded in part by [ADR-300](DECISIONS.md)** (Expression as a challenge-style slot).
 
 **Context.** ADR-298's composer produced three practices (Mind/Body/Spirit) + two ad-hoc "challenge" `exercise` blocks. The owner wanted Expression to **carry the same weight as the other three Pillars** so a composed Journey starts balanced on the four-Pillar Signature read, and flagged that the real, gamified **Challenge** is a separate thing. The investigation found the only "Expression challenge" in the data model is the per-Journey **capstone** (`season_challenges.journey_id`, `UNIQUE (season, journey_id)` — at most one per Journey, official-season-scoped, gates completion). It is **not** a per-Pillar score; the Signature balance (`getMemberPillarBalance`) counts **practices per Pillar**, and Expression is already a first-class Pillar there. So "two Expression Challenges on one Journey" was both impossible (unique constraint) and the wrong lever.
 
@@ -7216,7 +7208,7 @@ Writes are **staff-gated** (`requireAdmin('admin')`, admin+), `isSafeRoute`-vali
 
 ## ADR-303: Quest practice library — per-log Zaps valued by CADENCE (`reward_zaps` override re-instated, `weight_class` becomes the fallback)
 
-**Status:** Accepted (2026-06-17) · partially reverses ADR-104's deprecation in the Rewards-Economy-v2 brief (ADR around §"Weight classes", line ~6196): "I want you to set the Zap value of each practice based on its cadence. Daily = 10⚡, 3×/week = 15⚡, Weekly = 25⚡. The session length or effort does not change the value." Source of truth: the Quest Practices Notion database.
+**Status:** Accepted (2026-06-17) · partially reverses ADR-104's deprecation in the Rewards-Economy-v2 brief (ADR around §"Weight classes", line ~6196): "I want you to set the Zap value of each practice based on its cadence. Daily = 10⚡, 3×/week = 15⚡, Weekly = 25⚡. The session length or effort does not change the value." Source of truth: the Quest Practices Notion database. · **Superseded in part or whole by [ADR-438](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** Rewards Economy v2 made `practices.weight_class` (light 8 / standard 12 / heavy 15) the ONLY per-log payout driver and **deprecated** the `reward_zaps` override (ADR-104 had it, and `logPractice` had applied it). The new Quest practice library values a practice by **how often** it's done, not how hard it is — a model `weight_class` (an effort tier) structurally can't express, and whose three values (8/12/15) don't include 10. The owner's locked rule also needs the four **daily core** practices (one per Pillar) to each total exactly **280⚡ over 28 days** (10 × 28), and the four Pillars to be equal — which requires a daily log to pay exactly 10⚡.
 
@@ -9363,7 +9355,7 @@ Verified with two `BEGIN…ROLLBACK` dry-runs against prod data before applying:
 
 ## ADR-450: Unified editing system — "One Edit, two planes"
 
-**Status:** Accepted (2026-06-29) as the design; pilot (practice) in build. Full spec: [EDITING-SYSTEM.md](EDITING-SYSTEM.md). Owner decisions this turn: **inline-first**, **wizard becomes a guided mode inside Edit (not a separate place)**, **design now + build the practice surface first**.
+**Status:** Accepted (2026-06-29) as the design; pilot (practice) in build. Full spec: [EDITING-SYSTEM.md](EDITING-SYSTEM.md). Owner decisions this turn: **inline-first**, **wizard becomes a guided mode inside Edit (not a separate place)**, **design now + build the practice surface first**. · **Superseded in part or whole by [ADR-986](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** A recon (2026-06-29) found 9+ distinct editing surfaces with no shared model — a practice page alone exposes three ways to edit the same thing (header "Edit practice" button, action-row link to a full studio, and a "Settings" slide-out). Every entity reinvents its editor; nothing feels integrated. But every primitive needed already exists: URL-driven Edit Mode ([ADR-138](DECISIONS.md)), inline editors, the scope-aware Settings drawer + module registry, the block Layout editor ([ADR-270/272](DECISIONS.md)), and a live-preview Theme Studio.
 
@@ -10812,7 +10804,7 @@ Rejected the direct-balance approach (the pre-v2 trigger incremented `current_se
 
 ## ADR-501: The App catalog derives FROM the code registries (code → catalog); LP2's proposed inversion is rejected
 
-**Status:** Accepted (2026-07-02). Supersedes the planned "LP2 — invert registries to derive from catalog" (docs/LOOM-PLATFORM.md). No code change; this records the direction LP1 shipped and closes LP2.
+**Status:** Accepted (2026-07-02). Supersedes the planned "LP2 — invert registries to derive from catalog" (docs/LOOM-PLATFORM.md). No code change; this records the direction LP1 shipped and closes LP2. · **Superseded in part or whole by [ADR-975](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** The Loom Platform plan (docs/LOOM-PLATFORM.md) sketched a Wave-2 task **LP2: "AdminModule / LAYOUT_MODULES / element-catalog become adapters over `APPS`"** — i.e. make the `APPS` catalog the source of truth and have the code registries *derive from it*. When LP1 was actually built, the App contract landed the OTHER way round, on purpose: `lib/apps/catalog.ts` computes `APPS` by `.map()`-ing over the existing code registries — `ADMIN_MODULES` (the editor spine), `LAYOUT_MODULES` (page blocks), and `ELEMENT_SEEDS` (code-drawn SVG) — so `EDITOR_APPS ∪ PAGE_APPS ∪ ELEMENT_APPS = APPS`. The catalog is a read-only *projection* of code, exactly like `lib/library/element-registry.tsx` ("code is source of truth, The Loom indexes it read-only") and `lib/apps/app-registry.tsx` (the Loom Apps lane), and `lib/library/splash-templates.ts` (the splash catalog). This principle is stated verbatim in all three modules.
 
@@ -11633,7 +11625,7 @@ The short column is threaded fail-safe into the render bag: `getSpaceAbout(space
 
 ## ADR-552: Two programs, one simple system — collapse spaces to Business / Non Profit, usage-metered
 
-**Status:** Accepted (2026-07-06). Approved owner direction. Finalizes the space model into two
+**Status:** Accepted (2026-07-06). Approved owner direction. Finalizes the space model into two · **Superseded in part by [ADR-913](DECISIONS.md)** (the flat paying-state trio on the tip path).
 types and two paid programs. Full plan + phased build: `docs/BUSINESS-MODEL-PLAN.md`. Ships
 behind `billing_live = OFF`; nothing charges until an operator flips it.
 
@@ -13974,7 +13966,7 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 ## ADR-742: Member-facing consent-gated promotion — network_contacts → the marketing contacts DB
 
-**Status:** Accepted (2026-07-17) · Network / CRM privacy boundary · implements ADR-154 §"privacy invariant" on the ADR-099 consent ladder. Touches `app/(main)/connections/actions.ts` (new `promoteToContacts`, hardened `setVisibility`), `app/(main)/connections/[id]/detail.tsx`, `app/(main)/network/contacts/page.tsx`, new `lib/connections/promote.ts` (+ `promote.test.ts`), new `components/connections/promote-to-contacts.tsx` + `visibility-control.tsx`. **NO migration.** Reuses the existing `syncScanToCrm` bridge — its internals are unchanged. ADR number picked high/unused to avoid clashing with the concurrent Phase-3 event-loop work (event_guests / QR).
+**Status:** Accepted (2026-07-17) · Network / CRM privacy boundary · implements ADR-154 §"privacy invariant" on the ADR-099 consent ladder. Touches `app/(main)/connections/actions.ts` (new `promoteToContacts`, hardened `setVisibility`), `app/(main)/connections/[id]/detail.tsx`, `app/(main)/network/contacts/page.tsx`, new `lib/connections/promote.ts` (+ `promote.test.ts`), new `components/connections/promote-to-contacts.tsx` + `visibility-control.tsx`. **NO migration.** Reuses the existing `syncScanToCrm` bridge — its internals are unchanged. ADR number picked high/unused to avoid clashing with the concurrent Phase-3 event-loop work (event_guests / QR). · **Superseded in part by [ADR-778](DECISIONS.md)** (the deferral of the shared visibility tier).
 
 **Context.** ADR-154 democratized the personal book (`network_contacts`) to member tier and named the one crossing that concentrates leak risk: a private capture entering the shared marketing DB (`contacts`). That crossing already had a fail-safe, idempotent, consent-correct engine (`syncScanToCrm`: root-scoped upsert on `lower(email)`, `consent_state='unknown'`, links `linked_contact_id`, never downgrades an existing lead/member) but no member-facing way to invoke it deliberately — it only fired implicitly at create time when an email was present. Members also had a Private↔Network visibility toggle with no explanation of what "Network" actually exposes.
 
@@ -14149,7 +14141,7 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 ## ADR-785: The Space Manage hub — a four-category control hub opening on Resonance (CRM + inbox)
 
-**Status:** Accepted (2026-07-18) · Space console IA rebuild · NO migration. Adds `lib/admin/modules/space-hub.ts` (sections) + `app/(main)/spaces/[slug]/manage/{hub-search.tsx, settings/page.tsx}`; rewrites `manage/console.tsx` (render), `manage/manage-board.tsx`, `manage/page.tsx`; adds an `adminBar` pass-through to `DashboardTemplate`. Phase 2 of the Manage-hub overhaul (phase 1 = ADR-784 badges). Extends the MENU-CONTRACT catalog (ADR-553); introduces no parallel module list.
+**Status:** Accepted (2026-07-18) · Space console IA rebuild · NO migration. Adds `lib/admin/modules/space-hub.ts` (sections) + `app/(main)/spaces/[slug]/manage/{hub-search.tsx, settings/page.tsx}`; rewrites `manage/console.tsx` (render), `manage/manage-board.tsx`, `manage/page.tsx`; adds an `adminBar` pass-through to `DashboardTemplate`. Phase 2 of the Manage-hub overhaul (phase 1 = ADR-784 badges). Extends the MENU-CONTRACT catalog (ADR-553); introduces no parallel module list. · **Superseded in part or whole by [ADR-1336](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** The `/manage` console was a flat card-board of every surface at once. The owner directed a control-hub restructure: a category menu (like Classifieds) with the space's features grouped under four browse categories, opening on a relationship-first landing, with configuration pulled into a separate header-level surface.
 
@@ -14167,7 +14159,7 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 ## ADR-786: The Space Inbox + the ticket take-rate ladder
 
-**Status:** Accepted (2026-07-18) · Space Resonance completion + billing correctness · NO migration. Adds `app/(main)/spaces/[slug]/crm/inbox/page.tsx` + `crm/inbox-actions.ts`, a `space.inbox` module, and a `sendReply` prop on `InboxWorkspace`; ladders space-hosted event tickets in `lib/billing/tickets.ts`. The follow-up to ADR-784/785 (the two items those ADRs deferred).
+**Status:** Accepted (2026-07-18) · Space Resonance completion + billing correctness · NO migration. Adds `app/(main)/spaces/[slug]/crm/inbox/page.tsx` + `crm/inbox-actions.ts`, a `space.inbox` module, and a `sendReply` prop on `InboxWorkspace`; ladders space-hosted event tickets in `lib/billing/tickets.ts`. The follow-up to ADR-784/785 (the two items those ADRs deferred). · **Superseded in part by [ADR-913](DECISIONS.md)** ("tips stay flat").
 
 **Context.** The Manage hub's Resonance category opened on the CRM but had no space-scoped **Inbox** (only the platform-staff `/admin/crm/inbox` existed), and **event tickets** charged a flat platform fee instead of honoring the 5%→3% paying-state take-rate ladder that space memberships + the storefront already use.
 
@@ -14194,7 +14186,7 @@ graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (unt
 
 ## ADR-788: Profile & Settings becomes a real hub tab, reversing ADR-785 §4
 
-**Status:** Accepted. Reverses [ADR-785](DECISIONS.md) §4 and the alternative ADR-785 explicitly rejected. Written 2026-08-04 from the shipped code — cited by `lib/admin/modules/space-hub.ts` and twice in its test, but never recorded, so ADR-785 §4 has been the only ledger entry on the subject while stating the opposite of what ships.
+**Status:** Accepted. Reverses [ADR-785](DECISIONS.md) §4 and the alternative ADR-785 explicitly rejected. Written 2026-08-04 from the shipped code — cited by `lib/admin/modules/space-hub.ts` and twice in its test, but never recorded, so ADR-785 §4 has been the only ledger entry on the subject while stating the opposite of what ships. · **Superseded in part or whole by [ADR-1336](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** ADR-785 scoped the Space Manage hub to **four** browse categories and put configuration in the header: *"Profile & Settings is a header-level surface… reached from a button in the hub header — NOT a browse tab."* Its Alternatives paragraph rejected precisely this change: *"A fifth 'Profile & Settings' tab (rejected — the owner scoped exactly four browse categories; settings is configuration, not daily operation, so it lives in the header)."*
 
@@ -15466,7 +15458,7 @@ The durable rule: **a privacy setting is one pure resolver every renderer calls,
 
 ## ADR-868 — The member sidebar's commerce area collapses to a Marketplace umbrella, Channels turns on, and the directory reads Members (2026-07-27)
 
-**Status.** Accepted (founder mandate, seven changes, verbatim).
+**Status.** Accepted (founder mandate, seven changes, verbatim). · **Superseded in part or whole by [ADR-937](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** The member sidebar's COMMUNITY section had grown to eight rows (Circles · Events · Business Spaces · Classifieds · Housing · Market · Community · My Contacts) with three problems the founder named directly: Channels (the focus areas ADR-864 just made load-bearing) was not in the menu at all; the commerce rows sprawled (Classifieds and Market are two doors into what a member experiences as one shopping area); and "Community" as a ROW label collided with the "Community" SECTION header two inches above it. The menu system is the DB-backed `menu_items` surface (`left`) whose sync only ever inserts (ADR-860), so any live-row change must land on both sides — the live rows AND the code defaults — or the two drift apart again.
 
@@ -16789,6 +16781,8 @@ Two bugs the new tests caught, recorded because both shapes recur: the `entryPoi
 The durable rule: **charge for the introduction, never for the relationship — and prove which one it was from a row, not a cookie.**
 
 ## ADR-914
+
+**Status:** **Superseded in part or whole by [ADR-1709](DECISIONS.md)**; read that ADR for what it retires.
 
 **Selling is not a tier. The rate is the ladder.** (2026-07-30, owner ruling; supersedes ADR-913's seller gate)
 
@@ -23174,7 +23168,7 @@ touching `supabase/`.
 
 ## ADR-1021: A Circle's Space mode admits the AUDIENCE; the CRM predicate stays where it is (2026-08-12)
 
-**Status:** accepted · **Touches:** `supabase/migrations/20270229000000_circle_space_audience.sql`,
+**Status:** accepted · **Touches:** `supabase/migrations/20270229000000_circle_space_audience.sql`, · **Superseded in part or whole by [ADR-1092](DECISIONS.md)**; read that ADR for what it retires.
 `lib/circles/space-audience.ts`, `app/(main)/circles/actions.ts` · **Amends:** [ADR-1015](DECISIONS.md) §access modes
 
 ### The bug
@@ -32788,6 +32782,8 @@ it was written. *A citation is a promise that a reader can go and find the reaso
 
 ## ADR-1156: a blocker can be real and still be measured by the wrong instrument (2026-08-25)
 
+**Status:** **Superseded in part or whole by [ADR-1220](DECISIONS.md)**; read that ADR for what it retires.
+
 **Context.** ADR-1082 established that a blocker phrased as "cannot be checked" is a claim with an
 expiry date, and re-testing five such premises found five expired. That rule catches a row whose
 *answer* has changed. It does not catch a row whose *question* was aimed at the wrong number. Two
@@ -37769,7 +37765,7 @@ The funds flow was never written down. It was inferred, repeatedly, and wrongly.
 ⚠️ **The generalisable part, and it is the fourth time this repo has written a version of it.** `OWN-040` produced six wrong diagnoses over sixteen days against a system that was answering honestly the whole time. Five were cheap: they suggested a test, the test failed, the next reading followed. **The expensive one was the one that justified waiting** — an identity document with a plausible real-world ETA, which converted a diagnosis into a two-week park and stopped anyone from trying the thing that turned out to work. A wrong diagnosis you can test costs an hour; a wrong diagnosis that explains why you cannot test costs whatever it claims to be waiting for. The row's own earlier lesson — *when an error carries a URL, open the URL before theorising* — was right and incomplete. **Opening it is not reading it:** the banner this row seized on and the incomplete setup that was actually blocking were on the same page, and the row picked the one that came with a story.
 ## ADR-1292: PROPOSED — the Quest becomes the Collective's own program, individuals never pay, and dues to a community become the second revenue leg (2026-09-08)
 
-**Status:** ⚠️ **Ruled by [ADR-1403](DECISIONS.md) (2026-09-18).** Interior and programs
+**Status:** ⚠️ **Ruled by [ADR-1403](DECISIONS.md) (2026-09-18).** Interior and programs · **Superseded in part or whole by [ADR-1294](DECISIONS.md)**; read that ADR for what it retires.
 **accepted**. Commercial law stays [ADR-1294](DECISIONS.md) (CORE-MODEL), not “individuals
 never pay.” The six §10 answers live on ADR-1403. `OWN-066` closes with that ruling.
 
@@ -37855,7 +37851,7 @@ walled behind the subscription it was meant to make worth buying.
 
 ## ADR-1293: Accepted — everything freemium, seats carry scale, and exposure is earned rather than sold (2026-09-08)
 
-**Status:** ✅ **Accepted** 2026-09-22 (owner). Five parts were ruled by the owner on 2026-09-08 and are recorded as such
+**Status:** ✅ **Accepted** 2026-09-22 (owner). Five parts were ruled by the owner on 2026-09-08 and are recorded as such · **Superseded in part or whole by [ADR-1294](DECISIONS.md)**; read that ADR for what it retires.
 below; the last three were ruled 2026-09-22 and are recorded in the "Accepted 2026-09-22" paragraph at the end of this entry. Measurements and the full argument live in
 [`OFFER-MODEL.md`](OFFER-MODEL.md); status lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
 (`OWN-067`). Draft 2 — supersedes the one-price-plus-add-on-apps shape of the first draft.
@@ -40701,7 +40697,7 @@ after this lands. HYG-072 closes on this ADR.
 
 ## ADR-1335: the take rate is two numbers plus two zeros, keyed by rung, and a plan meets it through one resolver (2026-09-14)
 
-**Status.** Accepted. Closes `LIVE-230`. Applies `docs/CORE-MODEL.md` §5 phase 4 (PROG-R4) to the
+**Status.** Accepted. Closes `LIVE-230`. Applies `docs/CORE-MODEL.md` §5 phase 4 (PROG-R4) to the · **Superseded in part or whole by [ADR-1709](DECISIONS.md)**; read that ADR for what it retires.
 one money rule it names. Amends [ADR-811](DECISIONS.md) §4 (the five-rate network vector),
 [ADR-913](DECISIONS.md) and [ADR-914](DECISIONS.md) (the seeded values), and the seed in
 `20270203000000_seed_take_rate_vector.sql`, whose stored shape this ADR retires without a migration.
@@ -45442,7 +45438,7 @@ closes the greenfield hole, not a live grant. No new ledger row.
 
 ## ADR-1403: The Quest is the Collective's program, product beats craft, CORE-MODEL stays commercial law (2026-09-18)
 
-**Status:** Accepted · **Amends** [ADR-1292](DECISIONS.md) · **Does not amend**
+**Status:** Accepted · **Amends** [ADR-1292](DECISIONS.md) · **Does not amend** · **Superseded in part or whole by [ADR-1709](DECISIONS.md)**; read that ADR for what it retires.
 [ADR-1294](DECISIONS.md) · owner, 2026-09-18 · [`FOCUS-MODEL.md`](FOCUS-MODEL.md) ·
 `OWN-066`
 
@@ -45770,7 +45766,7 @@ no longer photographs `/discover`. Numbered **1410** because **1409** is LIVE-37
 
 ## ADR-1415: A free Space may sell memberships; Connect readiness is the door (LIVE-410)
 
-**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1403](DECISIONS.md) Q3 · **Amends** [ADR-914](DECISIONS.md) (memberships as a Business wall) · backlog `LIVE-410` · corroborated by `lib/pricing/gates.ts` (`space_memberships` / `space_membership_tickets` at the free floor) and `lib/pricing/feature-meters.ts` (`space_membership_tiers.free = 1`)
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1403](DECISIONS.md) Q3 · **Amends** [ADR-914](DECISIONS.md) (memberships as a Business wall) · backlog `LIVE-410` · corroborated by `lib/pricing/gates.ts` (`space_memberships` / `space_membership_tickets` at the free floor) and `lib/pricing/feature-meters.ts` (`space_membership_tiers.free = 1`) · **Superseded in part or whole by [ADR-1709](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** ADR-914 put `space_memberships` at Business because a membership is a recurring promise, and helping someone make that promise from an account they might abandon next month is not a feature. FOCUS-MODEL Q3 asked whether that was a readiness concern wearing a pricing gate. ADR-1403 ruled yes: host free until you charge, then you pay. Readiness (payout-ready Connect) still applies. LIVE-231 made the Business wall honest and did not move it. LIVE-233 / LIVE-339 already surface Connect at the first sell attempt. The remaining untruth was the $29 plan as permission to collect the first dollar. LIVE-376 shipped first on 2026-09-19 and took ADR-1413 for the sole-Space event default. A parallel PR already claimed 1414 for purchase conversion, so this decision is ADR-1415.
 
@@ -46142,7 +46138,7 @@ Premise re-tested 2026-09-19: all four files still exported `force-dynamic`. Sto
 
 ## ADR-1438: Collective merges into Business at $49 (LIVE-228)
 
-**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.1 · **Amends** [ADR-811](DECISIONS.md) (Collective is no longer a Space plan; Frequency remains a Community Collective) · backlog `LIVE-228` · numbered **1438** because **1436** is HYG-068 on another branch and **1437** is SCAN-637 on main · corroborated by `lib/pricing/plans.ts` (`SPACE_PLANS` without `collective`, `LEGACY_PLAN_REMAP.collective → business`) and `lib/billing/pricing-keys.ts` (`business_base` at 4900 cents, `collective_base` retired)
+**Status:** Accepted · 2026-09-19 · **Implements** [ADR-1294](DECISIONS.md) CORE-MODEL §5 phase 3.1 · **Amends** [ADR-811](DECISIONS.md) (Collective is no longer a Space plan; Frequency remains a Community Collective) · backlog `LIVE-228` · numbered **1438** because **1436** is HYG-068 on another branch and **1437** is SCAN-637 on main · corroborated by `lib/pricing/plans.ts` (`SPACE_PLANS` without `collective`, `LEGACY_PLAN_REMAP.collective → business`) and `lib/billing/pricing-keys.ts` (`business_base` at 4900 cents, `collective_base` retired) · **Superseded in part or whole by [ADR-1709](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** ADR-811 sold Business at $29 and Collective at $79 list / $49 founding. CORE-MODEL ruling 3 (2026-09-08): one paid advertised tier at $49 with two seats; the six Collective Spaces grandfather at $49 rather than dropping to free. Re-tested 2026-09-19: `SPACE_PLANS` still named `collective`; `business_base` was still 2900 cents with no founding split; `collective_base` was still a live catalog item. Production had granted those six Spaces; `space_subscription_items` was empty.
 
@@ -47159,7 +47155,7 @@ Premise re-tested 2026-09-21 against the live tree. Every phase-6 item had alrea
 
 ## ADR-1491: The editor moves to third to last; Etsy second to last; the app last (owner ruling 2026-09-21)
 
-**Status:** Accepted · 2026-09-21 · numbered **1491** because **1486**-**1490** are claimed on this tree · **reverses the E0-E9 half of** [ADR-1325](DECISIONS.md) and the 2026-09-07 reading recorded in `meta.slate.ruled` · corroborated by `docs/BUILD-BACKLOG.json` `meta.slate.waves` order
+**Status:** Accepted · 2026-09-21 · numbered **1491** because **1486**-**1490** are claimed on this tree · **reverses the E0-E9 half of** [ADR-1325](DECISIONS.md) and the 2026-09-07 reading recorded in `meta.slate.ruled` · corroborated by `docs/BUILD-BACKLOG.json` `meta.slate.waves` order · **Superseded in part or whole by [ADR-1703](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** The owner, on a phone and unable to run console work, asked for the remaining build to be sequenced so that three groups sit at the end and everything else is cleared first. Verbatim: *"I want to save building the app for the very end. The full Etsy capability, second to last, and white label websites and the editor. To do that, third to last. I want you to take care of everything else so we can completely clear the backlog."*
 
@@ -48433,7 +48429,7 @@ The owner's directive of 2026-09-27 states it as product: the main community Cir
 
 ## ADR-1535: The App Platform is the single final phase, and mobile builds alongside the site (owner ruling 2026-09-28)
 
-**Status:** Accepted · 2026-09-28 · backlog `meta.slate` (ADR-1535 line), `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6`, `HYG-123`, `HYG-126`, `HYG-127`, `HYG-128` · **AMENDS [ADR-1491](DECISIONS.md)** (the 2026-09-21 tail order) · numbered **1535** because 1531-1533 exist only on a branch that never merged (`HYG-126`) and 1534 is taken · owner ruling, 2026-09-28
+**Status:** Accepted · 2026-09-28 · backlog `meta.slate` (ADR-1535 line), `DEF-MOBILE`, `DEF-ETSY`, `PROG-GD6`, `HYG-123`, `HYG-126`, `HYG-127`, `HYG-128` · **AMENDS [ADR-1491](DECISIONS.md)** (the 2026-09-21 tail order) · numbered **1535** because 1531-1533 exist only on a branch that never merged (`HYG-126`) and 1534 is taken · owner ruling, 2026-09-28 · **Superseded in part or whole by [ADR-1703](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** ADR-1491 fixed four tail groups by owner ruling: the editor with white-label sites third to last, the Etsy-grade store second to last, and "the app", read as both the App Platform and mobile, last. Today the owner ruled again, in three parts inside one hour, and the record keeps the order they came in because the second corrects the first. (1) "Make sure everything is prioritized on the backlog. I want to fan out and finish it off as efficiently as possible. Defer the Mobile build to the end. Make a list of everything else, organize them into phases on the backlog." (2) Asked, by multiple choice, whether "everything else" reversed the ADR-1491 holds: "Sorry, I meant app platform. I want that build out after everything else is done." (3) Asked where the other held programs sit: "App till last. Mobile build gets done alongside the site."
 
@@ -49708,7 +49704,7 @@ What had actually moved is in the same log. Playwright counted exactly 4023 diff
 
 ## ADR-1573: The open list is this quarter's build: eight rows close as built, ruled or merged, twenty park with a date, and the editor waits for an owner session (backlog cull, owner rulings 2026-09-29)
 
-**Status:** Accepted · 2026-09-29 · backlog: 8 rows closed (`PROG-R10`, `LIVE-263`, `LIVE-186`, `PROG-DAWN3`, `LIVE-454`, `PROG-P7`, `DEF-CODE`, `LIVE-465`), 20 parked (`PROG-E0` to `PROG-E10`, `PROG-W6`, `LIVE-310`, `DEF-ETSY`, `DEF-MOBILE`, `DEF-DOMAIN`, `DEF-A2P`, `PROG-GD6`, `LIVE-551`, `LIVE-464`), 3 dated (`PROG-A1`, `PROG-A3`, `PROG-A4`), 3 reshaped (`LIVE-060`, `LIVE-213`, `HYG-075`) · **AMENDS [ADR-1491](DECISIONS.md) §3** (the editor rows park), **[ADR-1535](DECISIONS.md) §2** (mobile parks) and **[ADR-1535](DECISIONS.md) §4** (the phone door parks with A2P) · extends [ADR-1082](DECISIONS.md) (re-test the premise), [ADR-1492](DECISIONS.md) (a row closes on a probe, not a prose verdict) and [ADR-1403](DECISIONS.md) (product beats craft) · the rulings that landed in their own PRs first: [ADR-1569](DECISIONS.md) (`LIVE-607`), [ADR-1570](DECISIONS.md) (`LIVE-608`), [ADR-1575](DECISIONS.md) (`DEF-MONEY` into `LIVE-606`), [ADR-1579](DECISIONS.md) (`LIVE-447`), [ADR-1584](DECISIONS.md) (`LIVE-221`), [ADR-1593](DECISIONS.md) (`PROG-PRAC4`) · numbered **1573** because it was reserved for this cull when the audit was written and is still free on `main`
+**Status:** Accepted · 2026-09-29 · backlog: 8 rows closed (`PROG-R10`, `LIVE-263`, `LIVE-186`, `PROG-DAWN3`, `LIVE-454`, `PROG-P7`, `DEF-CODE`, `LIVE-465`), 20 parked (`PROG-E0` to `PROG-E10`, `PROG-W6`, `LIVE-310`, `DEF-ETSY`, `DEF-MOBILE`, `DEF-DOMAIN`, `DEF-A2P`, `PROG-GD6`, `LIVE-551`, `LIVE-464`), 3 dated (`PROG-A1`, `PROG-A3`, `PROG-A4`), 3 reshaped (`LIVE-060`, `LIVE-213`, `HYG-075`) · **AMENDS [ADR-1491](DECISIONS.md) §3** (the editor rows park), **[ADR-1535](DECISIONS.md) §2** (mobile parks) and **[ADR-1535](DECISIONS.md) §4** (the phone door parks with A2P) · extends [ADR-1082](DECISIONS.md) (re-test the premise), [ADR-1492](DECISIONS.md) (a row closes on a probe, not a prose verdict) and [ADR-1403](DECISIONS.md) (product beats craft) · the rulings that landed in their own PRs first: [ADR-1569](DECISIONS.md) (`LIVE-607`), [ADR-1570](DECISIONS.md) (`LIVE-608`), [ADR-1575](DECISIONS.md) (`DEF-MONEY` into `LIVE-606`), [ADR-1579](DECISIONS.md) (`LIVE-447`), [ADR-1584](DECISIONS.md) (`LIVE-221`), [ADR-1593](DECISIONS.md) (`PROG-PRAC4`) · numbered **1573** because it was reserved for this cull when the audit was written and is still free on `main` · **Superseded in part or whole by [ADR-1621](DECISIONS.md)**; read that ADR for what it retires. · **Superseded in part or whole by [ADR-1703](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** On 2026-09-29 the owner, on a phone, asked for a clean list: "One cull PR with one ADR" (03:40Z), then "Yes, park the far rows too" so that the open list is this quarter's build (03:45Z), then ruled on the audit's two open questions and its seven merges and built-closes (03:52Z). The audit that fed the rulings was read-only over `main` at `51b27a82e` (#2993): every `cmd` probe on the 86 open and parked rows was run from an export of that tree, and each row got one of seven verdicts with an evidence line (KEEP 48, KEEP-RESHAPE 6, PARK 20, MERGE-INTO 5, CLOSE-BUILT 2, CLOSE-RULED 3, OWNER-QUESTION 2). "This quarter" reads as W2 to W8 of `meta.slate.waves` (October to December 2026): W5 alone is fifteen Loom rows, so W4 (the editor and white label), W11 (Etsy) and the A2P-gated door do not start before January.
 
@@ -50049,7 +50045,7 @@ The owner ruled HYG-109 on 2026-09-22: build the full editor with Filerobot, sev
 
 ## ADR-1624: Only W4, W9 and W11 are deferred: the domain register becomes 55 rows, the mobile site is an active lane while the native app stays parked, and the owner rows are open again (HYG-138, owner replan 2026-09-29)
 
-**Status:** Accepted · 2026-09-29 · backlog `HYG-138` (filed and closed here), `DEF-DOMAIN` (closed as decomposed), 55 child rows (`LIVE-651` to `LIVE-700`, `LIVE-704`, `OWN-085` to `OWN-087`, `HYG-139`), 3 more mobile-site rows (`LIVE-701` to `LIVE-703`), 6 follow-ups (`LIVE-705`, `LIVE-706`, `HYG-140`, `HYG-141`, `HYG-142`, `HYG-143`), 8 rows from the owner's rulings session (`LIVE-707` to `LIVE-712`, `HYG-144`, `OWN-088`), 3 closed as ruled (`LIVE-670`, `LIVE-694`, `OWN-086`), 4 unparked (`LIVE-234`, `DEF-A2P`, `PROG-GD6`, `LIVE-455`), 2 holds kept (`DEF-MOBILE`, `LIVE-464`) · **AMENDS [ADR-1573](DECISIONS.md)** (the cull parked DEF-DOMAIN, DEF-MOBILE's wave, DEF-A2P, PROG-GD6 and LIVE-234's neighbours for the quarter) and **[ADR-1535](DECISIONS.md) §2** (WM is the mobile site, not the native app) · promotes from a register the way [ADR-1447](DECISIONS.md) §2 allows, because the owner has now scheduled it · each premise re-tested per [ADR-1082](DECISIONS.md) · the one list per [ADR-1043](DECISIONS.md) · owner asks stay visible as `ownerAction` per [ADR-1356](DECISIONS.md) · numbered 1624 by the orchestrator's assignment
+**Status:** Accepted · 2026-09-29 · backlog `HYG-138` (filed and closed here), `DEF-DOMAIN` (closed as decomposed), 55 child rows (`LIVE-651` to `LIVE-700`, `LIVE-704`, `OWN-085` to `OWN-087`, `HYG-139`), 3 more mobile-site rows (`LIVE-701` to `LIVE-703`), 6 follow-ups (`LIVE-705`, `LIVE-706`, `HYG-140`, `HYG-141`, `HYG-142`, `HYG-143`), 8 rows from the owner's rulings session (`LIVE-707` to `LIVE-712`, `HYG-144`, `OWN-088`), 3 closed as ruled (`LIVE-670`, `LIVE-694`, `OWN-086`), 4 unparked (`LIVE-234`, `DEF-A2P`, `PROG-GD6`, `LIVE-455`), 2 holds kept (`DEF-MOBILE`, `LIVE-464`) · **AMENDS [ADR-1573](DECISIONS.md)** (the cull parked DEF-DOMAIN, DEF-MOBILE's wave, DEF-A2P, PROG-GD6 and LIVE-234's neighbours for the quarter) and **[ADR-1535](DECISIONS.md) §2** (WM is the mobile site, not the native app) · promotes from a register the way [ADR-1447](DECISIONS.md) §2 allows, because the owner has now scheduled it · each premise re-tested per [ADR-1082](DECISIONS.md) · the one list per [ADR-1043](DECISIONS.md) · owner asks stay visible as `ownerAction` per [ADR-1356](DECISIONS.md) · numbered 1624 by the orchestrator's assignment · **Superseded in part or whole by [ADR-1703](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** At about 18:45Z on 2026-09-29 the owner asked: "Is every parked or deferred task, and undeveloped section on the active backlog build list? The only things I want deferred are W4, W9, and W11." Three multiple-choice answers followed. Mobile: "I want the mobile site to be active but iOS dev to remain parked." DEF-DOMAIN, the register of about 120 unbuilt items across 15 areas that ADR-1573 had parked as one XL row: "Split into rows." The owner rows the cull had parked: "Unpark all but launch."
 
@@ -51021,7 +51017,7 @@ Two remedies the row suggested were measured and ruled out. Nothing in that dire
 
 ## ADR-1658: Space email has an acceptable-use draft for counsel, kept out of the product until it is reviewed (LIVE-707)
 
-**Status:** Accepted · 2026-09-29 · backlog `LIVE-707` (closed here) · unblocks `OWN-085` (stays open with the owner) · owner ruling OWN-085 "Draft the AUP for review" · no migration
+**Status:** Accepted · 2026-09-29 · backlog `LIVE-707` (closed here) · unblocks `OWN-085` (stays open with the owner) · owner ruling OWN-085 "Draft the AUP for review" · no migration · **Superseded in part or whole by [ADR-1673](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** Space email can send (lib/spaces/email.ts), but no acceptable-use policy existed. The Turn on email card asks the owner to tick one box ("I have permission to email these people and will follow anti-spam rules"), its header comment said the counsel-gated AUP was deferred, and the send backbone listed "AUP/DPA legal copy" as out of scope. OWN-085 asked the owner to have an AUP reviewed; the owner ruled that an agent drafts it first. Re-tested before the change (ADR-1082): no policy text for Space email anywhere in app/, components/, content/ or docs/.
 
@@ -51244,7 +51240,7 @@ Re-tested on `main` at `645681934` and against the run itself:
 
 ## ADR-1675: The Practitioner persona promises what a practitioner can sell today, not "paywalled Programs" (LIVE-709)
 
-**Status:** Accepted · 2026-09-30 · backlog `LIVE-709` (closed here) · owner ruling 2026-09-29 ("Practitioner re-scope", OWN-086, recorded by [ADR-1624](DECISIONS.md)) · re-tested first per [ADR-1082](DECISIONS.md) · amends the Practitioner row of [ADR-163](DECISIONS.md) System 2 as written in `docs/ROLES.md` · builds on [ADR-914](DECISIONS.md) (selling is not a tier), [ADR-1397](DECISIONS.md) (only a paid Space may price a Journey) and [ADR-1474](DECISIONS.md) (journeys is a money path) · no migration
+**Status:** Accepted · 2026-09-30 · backlog `LIVE-709` (closed here) · owner ruling 2026-09-29 ("Practitioner re-scope", OWN-086, recorded by [ADR-1624](DECISIONS.md)) · re-tested first per [ADR-1082](DECISIONS.md) · amends the Practitioner row of [ADR-163](DECISIONS.md) System 2 as written in `docs/ROLES.md` · builds on [ADR-914](DECISIONS.md) (selling is not a tier), [ADR-1397](DECISIONS.md) (only a paid Space may price a Journey) and [ADR-1474](DECISIONS.md) (journeys is a money path) · no migration · **Superseded in part or whole by [ADR-1709](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** The Practitioner partner card on `/partners/join` (`PERSONA_META.practitioner` in `lib/personas-core.ts`) read "Host paywalled Programs + gamify your clients' progress, with a private Channel & Circles under the Frequency brand", and its tools were `[]`, so a practitioner the team verified had nothing to press. The intake persona (`lib/onboarding/personas.ts`) opened with "Host your programs: spin up a program in minutes". Re-tested on `main` at `f7f7d3075`: the row's premise said Programs were retired, and that is only half true. [ADR-864](DECISIONS.md) brought the word back as a Business Space's Channel with a Chapter blueprint, which a Space runs from `/spaces/<slug>/settings/program`. But nothing sells one. There is no price on a Program, no product kind for one, no checkout, and Programs are not one of the six money paths (`PayoutChannel` in `lib/billing/payout-prompt.ts`). So the promise still named a thing nobody can sell, and "in minutes" was untrue of a feature that needs the Business plan.
 
@@ -51403,7 +51399,7 @@ Re-tested on `main` at `645681934` and against the run itself:
 
 ## ADR-1682: The iOS readiness rows park with the native app, and 24 P3 rows park until after launch (HYG-157)
 
-**Status:** Accepted · 2026-09-30 · backlog `HYG-157` (filed and closed here) · owner multiple choice at ~01:45Z (the iOS readiness rows) and the P3 sort approved at ~01:50Z · companion to `HYG-156`, which records the same day's rulings on the owner rows; split off to keep each PR under the size gate · amends [ADR-1650](DECISIONS.md) (the app readiness active on WM) for ten of its rows · no migration
+**Status:** Accepted · 2026-09-30 · backlog `HYG-157` (filed and closed here) · owner multiple choice at ~01:45Z (the iOS readiness rows) and the P3 sort approved at ~01:50Z · companion to `HYG-156`, which records the same day's rulings on the owner rows; split off to keep each PR under the size gate · amends [ADR-1650](DECISIONS.md) (the app readiness active on WM) for ten of its rows · no migration · **Superseded in part or whole by [ADR-1703](DECISIONS.md)**; read that ADR for what it retires.
 
 **Context.** ADR-1650 kept the iOS app readiness active on the WM wave while the native build itself (`DEF-MOBILE`) stayed parked. Ten of those rows are build work that only matters once a native client exists. Separately, the P3 band held rows that no member will miss before launch, and they were spread across waves as if they were scheduled.
 
@@ -51831,3 +51827,214 @@ Three readings explain the shape:
 **Consequences.** The build line falls with the share of pushes that are docs-only and with the shorter upload; the observability line falls by the build-log share and the preview trace and proxy share. The row's expected lift is $150 to $250 a month at September's pace, before the dashboard steps. The real number is the owner's billing read 24 hours after this deploys, and that read, not this ADR, closes the row. A code change inside a path the classifier calls documentation would skip a build that mattered; the list contains no such path, and the test and probe pin it.
 
 **Rows.** HYG-162.
+
+## ADR-1704: Account delete and data export refuse during act-as (corrects ADR-426's guardrail note)
+
+**Status:** Accepted · 2026-10-05 · backlog `SCAN-748` · corrects the "Guardrails" sentence of [ADR-426](DECISIONS.md) · no migration
+
+**Context.** ADR-426 recorded that account delete and email change were member-inaccessible, so a janitor acting as a member could not reach them. Settings, Account has since gained `DeleteAccount` and `DownloadData` (`app/(main)/settings/account/section.tsx`). Act-as swaps the whole Supabase session, so `getMyProfileId()` inside `deleteAccountAction` and `downloadMyData` resolves the member, `deleteMyAccount` erases their files and Stripe customer (cancelling paid Space plans) through the service-role client, and the export hands over their full personal data. Nothing outside `lib/impersonation.ts`, `impersonate-actions.ts`, the signout route and the banner read the stash, and only `impersonation.start` / `impersonation.stop` are audited, so the destructive act looked self-initiated.
+
+**Decision.** Both actions read the act-as stash (`readImpersonation()` from `@/lib/impersonation`) right after establishing the caller and before any destructive or revealing call. When the stash is present they return `fail('Exit act-as first. ...')`, which the existing controls surface inline. The member keeps the only key to these two doors; staff who need an export or a deletion use the admin surfaces under their own session, where the audit log names them. The ADR-426 sentence "account-delete + email-change are already member-inaccessible, so acting-as cannot reach them" is superseded by this rule: the doors are member-accessible, and act-as is refused at the action.
+
+**Rejected.** Logging an `impersonation.export` audit row and letting the export through (staff would still receive the full export from inside a borrowed session; a refusal is the smaller change and the audit surface already covers the admin path). Hiding the controls in `section.tsx` while acting as (the action is the gate; a hidden button is not).
+
+**Consequences.** Changed: `app/(main)/settings/account/actions.ts`, `app/(main)/settings/account/export-actions.ts`. Pinned by `app/(main)/settings/account/act-as-refusal.test.ts` (refusal before `deleteMyAccount` / `buildMemberExport`, the no-stash path unchanged, source-shape order of the check, no em dash). Any future member-facing destructive action reached from Settings must make the same read.
+
+## ADR-1707: Leftover Space tabs and the events and podcasts indexes stay dynamic for crawlers (owner accepts SCAN-788)
+
+**Status:** Accepted · 2026-10-06 · backlog `SCAN-788` · owner ruling, multiple choice in the project thread · no migration
+
+**Context.** SCAN-788 found that the sitemap advertises the Space profile tabs (book, calendar, circles, collaborators, reviews, memberships, contact, shop and custom pages), the per-Space podcasts index and the /events index, yet all of them still render in the `app/(main)` group: the layout awaits `headers()` and `getCachedUser()` before it returns `publicChrome()`, and the profile layout reads `getMyProfileId()`. Every crawler fetch is a full dynamic render with an auth read and no ISR cache. The pages return 200 with their own canonicals; the set is about 150 URLs (around 20 networked Spaces times their tabs, plus the two indexes). The fix in the row is to give each family an ISR twin under `app/(public)` and extend `memberSpaceRewrite` so signed-in members land on member copies: about 25 files over two or three PRs, touching every signed-in Space tab, and adding routes the postbuild fan-out and budget gates must absorb.
+
+**Decision.** Accepted as is, by owner ruling on 2026-10-06 (options: accept it, full fix, later; chosen "Accept it"). The crawl cost at this size is a slower first byte for crawlers and a few database reads per crawl, which is smaller than the regression and build-budget risk of duplicating every tab. The misleading comment in `app/(main)/layout.tsx` that claimed leftover public views skip the auth read is corrected in the same change, so the next reader is not told the opposite of what the code does.
+
+**Revisit trigger.** Reopen SCAN-788 (or file its successor) when networked Spaces pass 100, or when crawler traffic shows up as a measurable share of function invocations or Supabase auth reads on the Vercel or Supabase dashboards, whichever comes first.
+
+**Rejected.** The full ISR split now (above). Dropping the tabs and indexes from the sitemap (it trades a small server cost for losing the local-intent and commercial URLs from discovery). Parking the row (only iOS build rows may be parked).
+
+**Consequences.** Changed: `app/(main)/layout.tsx` (comment only). SCAN-788 closes on this ruling with a manual verify; its original probe is kept in the row detail for whoever reopens it.
+
+## ADR-1708: White label sites ship ahead of the full editor, on the Space page blocks, with danieltyack.com first
+
+**Status:** Accepted · 2026-10-06 · backlog `PROG-E10`, `LIVE-741` · owner ruling in the project thread · no migration
+
+**Context.** PROG-E10 (Sites, absorbing White Label W1 to W5) was sequenced after editor phases E1 and E3 (ADR-1325) and parked with the whole editor group until 2027-01-05 (ADR-1573). Meanwhile most of what a first site needs already exists: `spaces.domain` (unique, indexed), `getSpaceByDomain` / `resolveSpaceForHost` behind the `custom_domain` gate (LIVE-310), per-Space theming (P7), the Space page block editor saving to `preferences.pageDocs`, and `BlockRender`. What was missing was a site that renders, host routing, the domain binding, and site SEO.
+
+**Decision.** By owner ruling on 2026-10-06 ("build the white label site section one piece at a time ... core functionality set up with danieltyack.com as the first white label site ... I do not need to have the editor fully running. Basic edit blocks from the space page will suffice"), the Sites slice of PROG-E10 is unparked and built now, in five small phases, each its own PR: (1) the site renders at /sites/<slug> with a publish switch (LIVE-741); (2) proxy.ts routes a custom host to its site; (3) danieltyack.com is bound (owner steps: domain value, Vercel domain, DNS); (4) site SEO (host-aware robots and sitemap, canonical on the domain); (5) cached site pages refreshed on publish. The site renders the page docs the Space page editor already writes, so no migration and no new storage. The E1/E3 ordering in ADR-1325 is waived for this slice only.
+
+**Rejected.** Waiting for E0 to E9 (the full WYSIWYG editor) before any site exists. A separate site document store (the profile and the site share one set of page docs, so the owner edits once).
+
+**Consequences.** PROG-E10 narrows to what this slice leaves: self-serve domain binding through the Vercel API, a free subdomain on any paid plan, and site templates. E0 to E9 and PROG-W6 are unchanged and stay parked. When E0's versioned pages land, the site route is one more reader to move onto them. Each phase files its own row with a probe that fails before it lands.
+
+## ADR-1709: The five-tier pricing ladder. Members join, Crew hosts, a Space runs, Business sells, Collective connects
+
+**Status:** Accepted · 2026-10-06 · owner ruling (Frequency Pricing Ladder Report, Daniel Tyack, 2026-10-06, posted in the project thread; copy at `/mnt/project-files/pricing/2026-10-06-ladder-brief.md`) · backlog `HYG-164` (this record and its rows), build rows `LIVE-747` to `LIVE-767`, `HYG-165`, `OWN-094` to `OWN-096` · **Supersedes** [ADR-914](DECISIONS.md) (selling is not a tier; the transaction rule), [ADR-1415](DECISIONS.md) (a free Space sells memberships), [ADR-1335](DECISIONS.md) (the three-rung take rate), the Collective half of [ADR-1438](DECISIONS.md) (Collective merged into Business), [ADR-1403](DECISIONS.md) Q3 and the "tickets and Market from any account" promise of [ADR-1675](DECISIONS.md) · **Amends** [ADR-811](DECISIONS.md) (the tier set and prices), [ADR-908](DECISIONS.md) and [ADR-1084](DECISIONS.md) (the Crew presets and the supporter mark), [ADR-1294](DECISIONS.md) ruling 3, [ADR-1524](DECISIONS.md) O-2 · **Keeps** ADR-811's network principle, ADR-913 parts 1 to 4, ADR-916, ADR-917, ADR-1084's name, ADR-1294's three lines, ADR-1337, ADR-1350, ADR-1363, ADR-1368, ADR-1397, ADR-1435, ADR-1584, ADR-1600
+
+**Context.** In September the code drifted back to an older model: under ADR-914 and ADR-1415 every tier can sell (a free Member at a 10% network fee, Crew at 8%, a free Space at 10%), Collective folded into Business at $49 (ADR-1438), and the paid rung settles at 3% (ADR-1335). Read on 2026-10-06 from main and production: `SPACE_PLANS` is free / business / nonprofit / independent with `collective` remapped to Business; `collective_base` is retired; the meter map has free and business columns only; `pricing_settings.take_rate` still carries plan-named keys nobody reads; `catalog.pwyw` suggests 2499; `plan_collective_enabled` reads **true** in production although nothing reads it; 21 free Spaces, 6 Business (hand grants), 0 paid Space subscriptions. Every count limit is wired but inert until `pricing_settings.beta_grace` passes `2026-12-01`, when they enforce with no deploy. Whatever numbers are in the code that day are the ones that switch on.
+
+**Decision.** The owner's report is the spec. In short:
+
+1. **Five tiers, one verb each.** Member (free, personal), Crew (personal, contribute what you want), Space (free Space plan), Business ($49 a month, $490 a year), Collective (new Space plan rung above Business, $149 a month, $1,490 a year, 5 member Spaces included). Non Profit ($39) and Independent ($249, hand-sold, off the public ladder, off the network) stay. New catalog items: `collective_base` re-opened at 14900, `collective_space` (an extra member Space) at 2900, and Non Profit Collective at 11900, each with yearly at ten months. Vera AI ($20) is included in Collective. Operator seats stay $12.
+2. **Selling is what Business is for.** A new `space_payments` gate with a Business floor guards paid tickets, paid memberships, donations, shop checkout and booking deposits. Personal selling is off for every personal tier. The gate does not wait for the grace window (like the paid-Journey gate). A refusal is never a dead end: it shows what Business adds and starts its 14-day trial in place, with "keep it free" as an equal choice and nothing the host built lost. There is no free Business trial for a new Space.
+3. **Tips stay open at 0% on every tier.** They are the only money a free tier receives.
+4. **The network fee ladder is 5%, 3%, 0%.** Business and Independent 500 bps, Collective 300, Non Profit and Non Profit Collective 0, charged once per customer the network introduces. 0% on a Space's own audience and on tips, always. The free rung (1000) and the personal rungs (1000, 800) stay in code as default-deny values only; tests assert personal and free selling are refused, not priced. The stored `take_rate` row is rewritten in the rung shape.
+5. **Limits are sized to launch, and a full meter only stops new writes.** The free Space keeps every business tool with launch limits; Business and Collective columns follow the report's tables. Non Profit and Independent read the Business column; Non Profit Collective reads Collective. Display-only meters get counters (bookings, pipelines, membership tiers, Collaborators hosted, people per Journey) and new meters arrive (Circles, upcoming Events and guests per Event per Space, published Practices, bookable services, campaigns, live funnels, active automations, Entry Points, shop listings). Automation opens to the free Space (1 automation, 100 runs). A full meter never hides, deletes or locks what exists.
+6. **Crew is support plus a host kit.** Presets $5, $10 and $25 with $10 suggested (floor 499, ceiling 10000). Hosting: 5 Circles, 10 upcoming Events, 100 guests, 5 Journeys, 50 people per Journey; a Member keeps 1 Circle and 2 upcoming free Events with a 30-guest cap. The supporter mark goes to any active Crew and fades 45 days after support stops. Granted Crew (from a paid Space membership) gets the same host kit, never unlimited. The name stays "contribute what you want" (ADR-1084, `docs/NAMING.md`).
+7. **Collective sells connection that works.** It is advertised as Founding Collective (price locked, roadmap dated) only after member Spaces and the network home work in production. Its sell switch, `plan_collective_enabled`, read **true** in production on 2026-10-06 although nothing read it; asked whether to turn it off first, the owner ruled "leave it on" (decision card, 2026-10-06). So Collective is purchasable once `LIVE-747` merges and `OWN-094` mints its Stripe prices, and public pages name it from `LIVE-759`.
+8. **Kept dates and switches.** `pricing_settings.beta_grace` stays `{"until":"2026-12-01"}`. Phases 0 to 2 (`HYG-164`, `LIVE-747` to `LIVE-752`, `OWN-094`) merge before that date.
+
+**Owner defaults for the smaller questions** (the report's §7, used unless the owner says otherwise): any member starts 1 free Space and owning a Business or Collective lets them start more, each free until it takes its own plan; the Founding Business 3% buy-down stays for Spaces already in it; the six granted Business Spaces stay Business and are offered Founding Collective where they run several groups; Business includes 2 seats.
+
+**What stays.** The three public lines (people join free, businesses host free, you pay when you start charging). 0% on a Space's own audience and on tips. "We charge once for the introduction": a buyer becomes a contact at their first purchase. A ready payout account for every money path. Two months free on yearly. Prices are read from the catalog and never typed into marketing copy; `lib/pricing/plan-story.ts` stays a zero-import leaf (ADR-1368).
+
+**Rejected.** Keeping selling open on free (ADR-914's "never gate the transaction"): the owner chose free hosting as the point and selling as the paid unlock, with tips and the upgrade moment as the answer to the Venmo risk ADR-914 named. Moving the grace window: the owner kept 1 December. A free Business trial for new Spaces. "Pay what you want" wording.
+
+**Consequences.** The rows filed with this record carry the work in phase order, one PR each, each with a probe that fails until its consequence ships: plans and catalog (`LIVE-747`), the Stripe sync (`OWN-094`), limits and meters (`LIVE-748` to `LIVE-752`), the payments gate and fee ladder (`LIVE-753`, `LIVE-754`), Crew (`LIVE-755` to `LIVE-757`), the upgrade moment (`LIVE-758`), the story on every surface (`LIVE-759` to `LIVE-762`), the docs sweep (`HYG-165`), Collective features (`LIVE-763` to `LIVE-767`) and launch (`OWN-095`, `OWN-096`). Tests that pin the old model (`free-seller.test.tsx`, `take-rate-ladder.test.ts`, `gate-meter-drift.test.ts`, `pricing.test.ts`, `scripts/check-collective.mjs`) are rewritten in the phase that changes their rule, never skipped or deleted. Survey of every affected file: `/mnt/project-files/pricing/survey-code.md` and `survey-surfaces.md`.
+
+## ADR-1715: The demographic is two readers and eleven archetypes, and archetype names stay internal
+
+**Status:** Accepted · 2026-10-06 · backlog `LIVE-790` to `LIVE-798`, `HYG-170` · owner approval 6 October 2026 in the project thread · no migration in this record
+
+**Context.** `docs/CONTENT-VOICE.md` §2 named two readers, the Seeker and the Latent Leader, and nothing about who is inside them. No AI prompt knew its reader: `VOICE_PRIMER` carried voice but no audience, and Vera never read the persona a member picked. Older framings survived in live code and docs: the persona trio from `docs/CREATIVE-PLATFORM.md` keyed the Market Read, Vera's default register called Frequency a revolution, the Builder story was told only as coaches and healers, and several surfaces spoke in nervous-system terms. The research behind this record is the owner's report "Frequency Demographic and Archetypes" (6 October 2026), delivered with the Demographic Canon Handoff.
+
+**Decision.** The two locked readers stay; every line of copy is still written to one of them. Underneath sit eleven archetypes in four families: Seekers (Wired Professional, Transplant, Activity-First Man, Evidence-First Skeptic), Latent Leaders (Host-Connector, Gathering Host), a Supporter (Mission Patron) and Builders on the Space side (Portfolio Teacher, Second-Act Practitioner, Studio Keeper, Network Steward). They add three rules: men come through activities; write for the spiritual and the skeptic at once; supporters pay so it stays free. Archetype names are internal: planning, briefs, analytics and AI prompts only, never member-facing copy. §2 of CONTENT-VOICE is replaced accordingly, §1's mission line drops nervous-system language, §7a and §7b gain the new clusters and the split leader track, and the §10 checklist opens with which reader and archetype. Names still defer to `docs/NAMING.md`.
+
+Wellness signals are sensitive data. A persona, archetype, arrival answer, age band or gender is never sent to an ad or analytics pixel, never shown to the member, and never placed in an email, a profile or a public page. This release collects no age or gender.
+
+**Order.** Ten PRs, one row each: the canon (LIVE-790), the AI layer (LIVE-791), the CI guard with the Market Read fix (LIVE-792), persona copy (LIVE-793), surface jargon and the Pace field (LIVE-794), archetype data and the arrival follow-up (LIVE-795), Vera knows the reader (LIVE-796), marketing surfaces (LIVE-797), docs and design briefs (HYG-170), help gaps (LIVE-798). The Notion copies are re-synced after this record merges.
+
+**Rejected.** Replacing the two readers with the archetypes (the readers are what copy is written to; archetypes say who is inside them). Showing archetype names to members. Inferring gender for the activity-first path (its data id is gender-neutral; anyone who picks the activity answer gets it).
+
+**Consequences.** Every withVoice prompt learns the audience from one paragraph. `pnpm check:canon` gains the retired framings and an archetype-leak rule, so the old framing cannot return while the rest lands. Supersedes the persona trio in `docs/CREATIVE-PLATFORM.md` §1 as an audience definition.
+
+## ADR-1720: The North County launch brief sets the launch build, and showing-up Members is the north star
+
+**Status:** Accepted · 2026-10-06 · backlog `LIVE-800` to `LIVE-810` · owner brief "Frequency Launch Build Brief" in the project thread · no migration
+
+**Context.** The owner posted the Frequency Launch Build Brief on 2026-10-06: Frequency launches in North County San Diego on 1 December 2026, through five funnels (Calm down fast, Find your people, Host one Circle, Bring your practice, Run it together), and twelve workstreams in priority order, the first seven before 1 December. A sweep of main the same day (report `/mnt/project-files/launch/2026-10-06-launch-sweep.md`) found the pricing workstreams (1, 7, 11, 12) already filed under the five-tier pricing ladder decision (draft #3206), the demographic workstreams (3, 4) under the demographic canon decision (draft #3214), and the money proof (2) as LIVE-234. Workstreams 5, 6, 8, 9 and 10 had no rows.
+
+**Decision.** (1) The launch north star is weekly showing-up Members: distinct people a Host marked present at a gathering in the last 7 days. It supersedes ADR-024's Weekly Active Members (one `practice.verified` in 7 days) as the number launch work is judged by; WAM stays as a practice signal. Never optimize for time in app. (2) The brief's workstreams 5, 6, 8, 9 and 10 are filed one row per pull request: the five funnel doors (LIVE-800), the funnel-chosen next step (LIVE-801), the guest follow-up (LIVE-802), the "Did you make it?" check-in (LIVE-803), "Made with Frequency" (LIVE-804), the public Mindless timer (LIVE-805), the Thursday local email (LIVE-806), the city page index rule of 3 upcoming Events or 2 active Spaces (LIVE-807), the source question (LIVE-808), the showing-up reading (LIVE-809) and the analytics guard (LIVE-810). (3) The sequence is the brief's: workstreams 1 to 7 before 1 December 2026, 8 if there is room; each window opens when the gate before it passes. (4) Market only what has worked once in production.
+
+**Rejected.** Filing the doors as more `/for/*` conversion pages (those sell paid plans; a door makes one promise and lands on a first win). Keeping three different city indexing thresholds.
+
+**Consequences.** LIVE-810 is a live defect: persona reaches Google Analytics today through `persona-log.ts`, so it is P1 and lands before the demographic rollout adds archetype. Where an older report differs from the brief, the brief and the owner decisions in the Pricing Ladder Report win.
+
+## ADR-1721: Builds compile without the Turbopack build cache, and a postbuild gate holds the compile under 7 GB
+
+**Status:** Accepted · 2026-10-06 · backlog `HYG-171` · reverses the cache half of ADR-1656's rejected list · no migration
+
+**Context.** The Vercel Standard build machine has 8 GB. On 2026-10-06 a cold compile of main peaked at about 7.8 GB (summed VmHWM of the `next` processes) and PR previews died with "Out of Memory", logged as `routes-manifest.json couldn't be found`, even a 4-file PR with no app code (#3271, #3273). The owner moved to the 16 GB Enhanced machine to keep merges moving, at twice the per-minute price, after a September bill in which Enhanced build minutes were about $254. Next 16.3 turned `turbopackFileSystemCacheForBuild` on by default, and with it on Turbopack builds with dependency tracking (`dependencyTracking: persistentCaching || hasDeferredEntries` in next/dist/build/turbopack-build/impl.js), keeping the whole invalidation graph in memory so the next build can reuse it. A one-shot build does not need that graph.
+
+**Decision.** (1) `experimental.turbopackFileSystemCacheForBuild: false`. Every build is a cold, untracked compile. (2) `scripts/check-build-memory.mjs` measures the real build: `prebuild` starts a detached sampler that polls /proc for the `next/dist` processes, and `postbuild` fails the build when their summed high-water mark passes `BUDGET_MB = 7168`, a 1 GB reserve under Standard. On Vercel a missing reading fails too.
+
+**Rejected.** Staying on Enhanced (twice the per-minute price, the bill the owner is cutting). Turning on Elastic or concurrent builds (same reason). Raising Node's heap limit (Turbopack's memory is native, not V8 heap, and the container limit is the limit).
+
+**Consequences.** Every build pays a cold compile; ADR-1656 rejected this when the question was cache size, and memory now outranks it. The HYG-140 hold and `check:cache-budget` keep working on whatever cache remains (`node_modules`). When the gate fires, find what grew per DEPLOY-SAFETY's fan-out rule; do not raise the budget. Once a Standard build reads under budget, the owner switches the build machine back to Standard.
+
+## ADR-1722: A Space's own accent carries white button labels, like the house amber
+
+**Status:** Accepted · 2026-10-07 · backlog `LIVE-833` · extends ADR-1031 · no migration
+
+**Context.** ADR-1031 keeps the primary button label white on the brand amber, below AA, by owner decision; `scripts/check-contrast.mjs` freezes that pair. A Space's picked hex accent took a different path: `lib/spaces/accent.ts` chose the label by the WCAG luminance crossover, so any mid-tone accent (Daniel Tyack's `#1FB6C5`, the amber hex itself) got near-black ink. The owner, 2026-10-07: "The button is supposed to be white text on blue. We changed the rules about contrast because white looks just fine on the buttons."
+
+**Decision.** A hex accent's `--color-text-on-primary` is white. The one exception is a near-white fill, where white would vanish outright (under 1.5:1 against the fill): there the label is near-black ink.
+
+**Rejected.** Darkening the owner's picked colour until white passes AA (it changes the brand colour the owner picked, the move ADR-1031 already rejected for the amber).
+
+**Consequences.** Button labels on mid-tone Space accents sit below 4.5:1, knowingly, the same trade ADR-1031 made for the house amber. The `-strong` text slot (eyebrows, active tab, badges) is unchanged and still measured to AA.
+
+## ADR-1723: A Space website stands alone; its links never send a visitor back to Frequency
+
+**Status:** Accepted · 2026-10-07 · backlog `LIVE-834` · no migration
+
+**Context.** The house website theme (LIVE-812, LIVE-832) made every owner link "stay on Frequency" (`appHref`): the header button, every session card's Book button, the closing band's button and the Contact form's thank-you all opened `frequencylocal.com/spaces/<slug>/book`, where booking needs a Frequency sign-in. The owner, 2026-10-07: "I don't want any front end links on the websites going back into frequency. If someone clicks book, that happens through the site. The only Frequency links are clear CTAs for Frequency. When a user is on the website, they should never be re directed back to the main site for anything. The website is stand alone. All admin management happens in the Frequency console."
+
+**Decision.** Every link a website draws from an owner's setting goes through `siteLocalHref` (`lib/sites/house-theme.ts`). The Space's own Frequency paths become site pages: its root is Home, a page is that page, and Book or Contact is the site's Contact form, else a mail link to the Space's email. Any other Frequency path is dropped. Links to other sites, mail and phone links and in-page anchors pass. The only Frequency links left are the clearly labelled ones the theme draws itself: the On Frequency section (Follow, memberships) and the footer mark.
+
+**Rejected.** Keeping Book on Frequency until the site can take bookings (it is exactly the hand-off the owner ruled out).
+
+**Consequences.** Until a website takes bookings itself, Book opens the site's Contact form, which writes a CRM lead and emails the owner. On-site booking needs bookings without a Frequency account (a guest booker), a separate build. Unthemed blocks on custom pages and the host router's deep-path redirect (`lib/sites/host.ts`) still reach Frequency; both are follow-ups.
+
+## ADR-1724: A Space website takes bookings on the site, from guests without a Frequency account
+
+**Status:** Accepted · 2026-10-07 · backlog `LIVE-835` · extends ADR-605 (booking ladder) and ADR-508 (Space websites) · migration `20270346005900_space_bookings_guest.sql` (applied by hand)
+
+**Context.** A Space website's Book button opened the Space on Frequency, and booking there needs a signed-in member (`createBooking`, "Sign in to book a time."). The owner, 2026-10-07: "I don't want any front end links on the websites going back into frequency. If someone clicks book, that happens through the site. ... When a user is on the website, they should never be re directed back to the main site for anything. The website is stand alone." He then chose real on-site booking where people without an account book with a name and an email, get a confirmation email, and land in the owner's CRM.
+
+**Decision.** `space_bookings.member_profile_id` becomes nullable and a row may instead carry `guest_name` + `guest_email`; a CHECK (`space_bookings_booker_check`) holds that every row names one booker. The website serves `/book` (`SITE_BOOK_SLUG`, already a reserved page slug) when the Space has an active service or an availability window (`siteTakesBookings`), with the member picker in guest mode. `createGuestBooking` places the booking through the same `validateAndPlaceBooking` core as a member's (its booker generalised to `{ profileId } | { guestName, guestEmail }`), so slot validation, buffers, the monthly meter and the unique index are shared, not copied. The door (`createGuestBookingAction`) resolves the Space from its public slug with an anonymous viewer, answers a honeypot like a success and rate-limits per IP (`booking_guest`, 6 per 10 minutes), the contact form's pattern. The guest gets the confirmation (with .ics) and the reminder at the address they gave, linking to the website's Book page; the owner's copy names them with that address. The guest is captured into the Space's CRM through `captureLead` on a new `website_booking` door, mailable only when they tick "Keep me posted".
+
+**Rejected.** A guest profile row per booker (an account the visitor never asked for, and a second identity to merge when they do join). A separate guest-bookings table (a second conflict engine; the unique slot index must see both). Routing Book to the Contact page as the final state (it is the interim of PR #3288, not a booking).
+
+**Consequences.** Every reader of `member_profile_id` on bookings treats null as a guest: the owner list shows the guest's name and email, cancel and reschedule mail the guest, the reminder handler mails a guest straight onto the outbox (no profile for the notification gate), and the member timeline is skipped for a guest. RLS is unchanged: a guest row is readable only through the Space-writer and staff branches. A service that takes a deposit is refused for a guest while deposits are live, since checkout needs a buyer account. A guest cannot cancel or reschedule themselves; the owner can.
+
+## ADR-1725: One menu and one header logo for a Space page and its website
+
+**Status:** Accepted · 2026-10-10 · backlog `LIVE-891` · extends ADR-508 (Space websites) and LIVE-830 (house theme) · no migration (preferences JSON)
+
+**Context.** The Space page's tab row was built entirely in code (`lib/spaces/profile-nav.ts`: Home, Home section anchors, a tab per live feature, then custom pages), and the website's header menu was built separately from its pages and Home sections (`components/sites/site-page.tsx`). Neither had a menu editor. The owner, 2026-10-10: "I want to have a menu editor that works on both the spaces and websites. Users should have a visibility option for where they want it to show. Business accounts are the only ones with assignable menu items on the space page. Free accounts get the single page with standard subpages like Circles, Calendar and other active features. The idea is to be able to have the same menu links on either platform managed on either platform and synced with each other. Logo should have Image / Name as stock option, with an option to turn off image, or upload a logo." In the clarifying round he chose one shared list, Both / Space / Website visibility, dropdowns with every link kind, a locked fixed menu for Free, the same mega panel on both platforms, an Image+Name / Name / Logo choice shared by both, the editor in both places, today's menu kept until the first save, new features joining the end, and Business-and-up via the existing full-website entitlement.
+
+**Decision.** One saved menu at `spaces.preferences.siteMenu` (`lib/spaces/site-menu.ts`). An item is a plain link or a dropdown (child links with a description, plus an optional photo card) and carries `visibility: both | space | website`. A link targets either an AUTO key that means the same on both platforms (`home`, `page:<slug>`, `feature:<id>`, `anchor:<id>`) or a validated custom URL (https, mailto, tel, a site path, a #anchor). Each platform keeps building its automatic entries exactly as before, now keyed (the Space page's tabs gained `key`; the website builds a keyed catalog in `siteMenuLinks`), and `resolveSiteMenu` draws the saved list against that catalog: items not shown on this platform are filtered out, an auto item the platform cannot draw is dropped (or, on the website, linked on the Space page through `fallbackHref`), and a page or feature key that was not in `known` at save time joins the end. With no saved menu, or without `space_full_website`, `resolveSiteMenu` returns null and both platforms draw their automatic menu unchanged. The header logo is `preferences.headerLogo { mode: image_name | name | logo, logoUrl }`, open to every plan: the Space page's cover chip and the website header both read it (`headerLogoSlot`). One client editor (`components/spaces/site-menu-editor.tsx`) loads and saves through `menu-actions.ts` (editor-gated, writes through `writeSpacePreferences`) and is mounted in Manage → Page, the Page rail module and the website editor's header settings.
+
+**Rejected.** Two menus copied into each other (two sources of truth that drift on a failed write). Storing resolved hrefs (the website and the Space page link the same feature at different addresses, and an href goes stale when a page is renamed). Seeding every Space's menu by migration (a Space that never opens the editor should keep gaining feature tabs as before). A separate Space-page dropdown style (the owner chose the same panel on both).
+
+**Consequences.** A saved menu now decides the Space page's tab order, so the Home tab is found by key and the Manage pin takes the Space index as `homeHref` rather than `tabs[0]`. Anchors never auto-join (sections come and go). The website editor's canvas still previews its own page list in the header until the next publish of the shared menu reaches the live site. The website snapshot's `brand.logo` override (Theme tab) still sets the round image the Image+Name choice draws.
+
+## ADR-1726: Two site themes, Frequency and Bold, over one block source, with fonts inside the theme
+
+**Status:** Accepted · 2026-10-11 · backlog `LIVE-893` · amends ADR-578 (Space page themes are typography) and ADR-893 · extends ADR-1708 (white-label sites on Space blocks) and ADR-1725
+
+**Context.** Three overlapping theme lists had grown up: the Space page font sets (`bold` the Anton default, `editorial`, `classic`, `playful`, `accessible`, `modern`, `menswork`), the website's unnamed house look with a Menswork skin chosen by the `menswork` font set, and the website editor's `Menswork` / `DAWN` / `Midnight`, of which only Menswork renders block by block. On 2026-10-11 a DAWN publish replaced danieltyack.com with an unfinished render (LIVE-892). The owner then ruled: "Let's call the theme Daniel Tyack is using 'Frequency' and have it be the default theme. Let's call the Menswork theme 'Bold'. The themes need to be fully cross compatible between Frequency websites. If a user switches, each core block should easily display in the new theme. All sites should be templated with rails and global styles and edits." Clarifying answers: fold the Anton `bold` set into Frequency; websites pick from Frequency and Bold only (DAWN and Midnight go away); one theme for the Space page and the website, with an option to turn syncing off and edit independently, the website leading while synced; global styles cover accent, fonts, corners and spacing, and header and footer; content stays in the Space's own blocks, the one source both themes render; delivery is names, then block parity, then the editor rails.
+
+**Decision.** This ADR is the first slice (names and store). A site THEME is `frequency` or `bold` (`lib/theme/site-style.ts`, `SITE_THEMES`), stored on `preferences.siteStyle.theme`. The FONT SET stays on `preferences.theme` (the website's fonts), so every stored value keeps working: `frequency` replaces the Anton `bold` id as the default (Playfair Display over Space Grotesk, the house website's own faces), a stored `bold` reads as `frequency`, and `menswork` keeps its id under the label Bold. A Space that never saved a style derives its theme from its font set (`menswork` meant Bold, anything else Frequency), which is exactly how the website chose its skin before. `preferences.siteStyle.synced` (default on) makes the Space page follow the website's fonts; off, it renders `preferences.siteStyle.spaceFonts`. Readers: `siteTheme` picks the website skin (Bold is the Menswork skin), `spacePageFonts` feeds the Space page's `AccentScope`. The owner picks Theme, Fonts and the sync toggle in Identity and branding; choosing a theme also applies its default fonts. The website editor shows its stored `Menswork` as Bold and `DAWN` as Frequency (preview), and hides Midnight unless a draft already uses it.
+
+**Rejected.** Renaming stored ids (`menswork` → `bold`, `bold` → `frequency` in the database) in this slice: every published snapshot, version and preference would need a migration, and one invalid snapshot makes the whole editor state unreadable (`readWebsiteEditor`). An alias reader costs nothing and can be compacted later. A separate Space page theme list (the owner chose one theme for both, with an escape hatch). Website editor documents as the content source (they drift from the Space page and need per-theme layout data; the owner chose Space blocks).
+
+**Consequences.** Every Space without a stored font set moves from Anton to Playfair Display over Space Grotesk on its Space page, as the owner ruled. Danieltyack keeps Classic fonts on the Frequency theme; Heart on Fire keeps Bold. Still to come, in order: every core block renders in both themes, with a guard that fails when a block lacks a render in either; then every site on the editor rails, with global styles (accent, fonts, corners and spacing, header and footer) and the Bold palette and shapes applied to the Space page when synced.
+
+## ADR-1727: A site's blocks are drawn once; the theme is only the stylesheet
+
+**Status:** Accepted · 2026-10-11 · backlog `LIVE-894` · second slice of ADR-1726
+
+**Context.** ADR-1726 named the two site themes, Frequency and Bold, and set the order: names, then block parity, then the editor rails. The owner's bar: "If a user switches, each core block should easily display in the new theme." Home already met it: both themes plan Home through the house sections (`lib/sites/house-theme.ts`) and Bold only layers its skin CSS over the same markup. A custom page did not: on Bold its blocks were planned into the site page sections (`lib/sites/menswork-page.ts`, drawn by `components/sites/menswork-page.tsx`), while on Frequency the same page fell back to the plain Space page render, so a switch changed the page's structure and not just its look. Nothing in the suite noticed a block or a class with no render in one theme.
+
+**Decision.** A custom page is planned and drawn through the site page sections in EITHER theme. The theme picks the stylesheet: Bold keeps `MENSWORK_PAGE_CSS`; Frequency gets `FREQUENCY_PAGE_CSS` (`components/sites/frequency-page-css.ts`), the house look on the same classes (house serif headlines, soft rounded cards, warm shadows, round markers), scoped away from a Bold site and inlined only on the pages that draw sections. A site's `calendar` page is the public calendar in both themes. A block the sections do not draw keeps the Space page's own render inside the themed band, and that is a listed choice: `lib/sites/site-block-themes.test.ts` fails when a website palette block or a Space Home block has neither a section nor a place on the own-render list, when a listed block gains a section and stays listed, when the page plan is gated on the theme again, and when a class the shared markup draws, or one theme's sheet styles, is missing from the other sheet.
+
+**Rejected.** A second, Frequency-only set of page components: two renders drift, which is the gap this closes. Restyling the Space page's own render per theme for the data cards (About, Offerings, Reviews and the rest): they need their own section designs and Space data, and belong with the editor rails slice.
+
+**Consequences.** Switching a site's theme now changes only the stylesheet for every block on every page. Frequency sites with custom pages gain the sectioned layout (no live Frequency site had one on 2026-10-11; danieltyack.com is Home only). The `mw-` class prefix is now theme-neutral markup; a rename is cosmetic and deferred. Next: the editor rails slice, which retires DAWN and Midnight and adds global styles.
+
+## ADR-1728: Global styles over the theme: corners, spacing, header and footer, one setting edited from either side
+
+**Status:** Accepted · 2026-10-12 · backlog `LIVE-895` · third slice of ADR-1726, first half (the website editor's half is next)
+
+**Context.** ADR-1726 named the themes and ADR-1727 drew every block once with the theme as the stylesheet. The owner's remaining ask: "All sites should be templated with rails and global styles and edits", with global styles covering accent, fonts, corners and spacing, and header and footer. Accent (the Space's brand accent) and fonts (ADR-1726) already exist. Clarifying answers on 2026-10-12: one setting edited from both the website editor and Identity and branding; three presets each for corners (Soft, Subtle, Square) and spacing (Airy, Balanced, Compact); a header that is a floating pill or a full-width bar and a footer that is full or minimal, on either theme; a synced Space page on a Bold website takes Bold's fonts and accent only, keeping the app's surfaces and layout.
+
+**Decision.** `preferences.siteStyle` gains `corners`, `spacing`, `header` and `footer` (`lib/theme/site-style.ts`), each stored only when the owner picked a value other than the theme's own; `null` means "the theme's own", so a theme switch keeps explicit choices and brings the new theme's defaults for the rest. `THEME_LOOK` writes down today's two looks (Frequency: soft, airy, pill, minimal; Bold: square, balanced, bar, full), so a site nobody restyled renders exactly as before. The website root carries `data-site-corners|spacing|header` only for a choice that differs from its theme (`siteLookOverrides`), and `SITE_LOOK_CSS` (`components/sites/site-look-css.ts`) answers each value in both themes' classes; the footer choice picks whether the full footer is drawn (it now also shows the tagline on a Frequency site). Identity and branding offers the four as segmented controls under the theme; picking the theme's own value stores nothing. A synced Space page on a Bold website falls back to Bold's teal when the owner picked no accent (`spacePageDefaultAccent`); fonts already followed.
+
+**Rejected.** Sliders for radius and spacing (the owner chose presets; free values make it easy for a site to look off). A full Bold palette on the Space page (charcoal surfaces across member pages; the owner chose fonts and accent only). Storing every resolved value (a theme switch could then never bring its own defaults).
+
+**Consequences.** Every site gets four global styles, edited in Identity and branding today. Next: the website editor's Theme rail edits this same setting, and DAWN and Midnight leave the editor.
+
+## ADR-1729: The website editor edits the shared site style, and every editor document draws through the theme's sections
+
+**Status:** Accepted · 2026-10-12 · backlog `LIVE-896` · completes ADR-1726's third slice (ADR-1728 was its first half)
+
+**Context.** After ADR-1728 the site style (theme, fonts, corners, spacing, header, footer) was one setting edited in Identity and branding, but the website editor still offered its own three themes (Menswork, DAWN, Midnight) on the draft, rendered a DAWN or Midnight document as bare blocks (the render that broke danieltyack.com, LIVE-892), and a published editor snapshot chose the live skin from the theme it was written in. The owner asked for one setting edited from either side, Frequency and Bold only, and every core block displaying in either theme.
+
+**Decision.** The editor's Theme tab offers Frequency and Bold only (stored as `DAWN` and `Menswork` on the draft, so every saved snapshot stays valid); a Midnight draft is told the theme is retired and offered the two. Picking a theme also saves it, with its fonts, to the shared `preferences.siteStyle`, and the four global styles sit under it; both save live through `saveWebsiteStyle` (`lib/sites/editor/actions.ts`), which authorizes like every editor action and writes only while the draft revision it read is still the stored one, retrying on a fresh read, because the editor autosaves its draft into the same row. The canvas wears the global styles and the full or minimal footer, and a Frequency document carries `FREQUENCY_PAGE_CSS`. `WebsiteDocument` draws every theme through the site page sections (ADR-1727), never bare blocks. On the live site the theme is the site style alone: a published snapshot wears it (Bold keeps the editor's Bold tokens; Frequency keeps the house tokens), so the editor, Identity and branding and the live site can no longer disagree.
+
+**Rejected.** Making the theme a draft-only, publish-gated choice (two places would then hold two different themes, the disagreement this closes). A preferences merge function in SQL (the row's only concurrent writer here is the editor's own autosave, which bumps a revision the update can guard on). Opening DAWN to publishing in the same change (LIVE-892 keeps an editor document written in the Frequency theme off the live site until the owner has checked the sectioned render on a preview; flipping `WEBSITE_THEMES_LIVE` is a one-line, separately reviewed step).
+
+**Consequences.** One style, three doors: Identity and branding, the editor's Theme tab and the live site all read `preferences.siteStyle`. Midnight is gone from the editor. Still open: letting a Frequency editor publish go live (LIVE-892's gate), once the owner signs off on the preview.
+
+## ADR-1730: A superseded ADR names its successor, compaction keeps the one list's citations alive, and the theme index routes without status
+
+**Status:** Accepted · 2026-10-12 · backlog `HYG-172` · meta scan · extends [ADR-1635](DECISIONS.md) (fragments, not edits) and [ADR-1043](DECISIONS.md) (one list)
+
+**Context.** A meta scan on 2026-10-12 found three ways the ledger had drifted while every check stayed green. (1) 294 fragments were waiting against a compaction threshold of 30; the notice only warned. Running `pnpm ledger:compact` then failed `check:backlog` on 41 rows, because rows that cited a fragment as their `source.file` (the ADR-1709 pricing rows, the ADR-1720 launch rows, LIVE-866, LIVE-867) lost that file when the fold deleted it. (2) 31 ADRs had been retired by a later ADR (25 by a linked `**Supersedes** [ADR-n]` clause, 6 in unlinked prose) and said nothing about it, so a reader landing on ADR-914, ADR-1415, ADR-1438 or ADR-1403 Q3 read a rule ADR-1709 had replaced. (3) The theme index at the top of DECISIONS.md, the first thing a reader sees, held eight stacked "latest heading in this tree" lines from 1482 to 1491 (status in prose, which ADR-1043 forbids, gone stale within days) and routed "commercial law" to ADR-914.
+
+**Decision.** (1) `compactLedger` re-points any row whose `source.file` is a fragment it deletes: an ADR fragment becomes `docs/DECISIONS.md` with the ADR number moved into `ref`, a row fragment becomes `docs/BUILD-BACKLOG.json`. (2) Supersession is two-way. An ADR that retires another LINKS it in its Status paragraph's Supersedes clause; only linked ids count, because the prose around them names other ADRs in passing. `pnpm check:adr` fails when the base file holds a linked supersession whose old ADR never says "Superseded … by" its successor. A feature PR still never edits an old entry: compaction appends the pointer itself (`addSupersedeBackLinks`), and the gate reads the base file only, so a fragment that supersedes is fine until the next fold writes the pointer. The 31 missing pointers were added in this change. (3) The theme index routes and never records status: it points at `pnpm ledger:next` and `pnpm ledger:view`, sends commercial law through ADR-1709, and gains rows for Space websites, Space email and the ledger itself.
+
+**Rejected.** Making the compaction notice a hard failure on feature PRs (it would block unrelated publishing at a random moment; the fold is a housekeeping step and the weekly maintenance sweep is where it belongs). Parsing every ADR mentioned in a Supersedes sentence (ADR-219's clause names ADR-168 only to say a rule still reads it; that would plant a false pointer). Hand-editing the 41 row sources in the JSON (the tool that broke them is the tool that must not break them again).
+
+**Consequences.** A reader who opens any superseded ADR is told where the current rule lives. Compaction is safe to run at any time. `scripts/probes/ledger-coherence.mjs` holds all three consequences for HYG-172.

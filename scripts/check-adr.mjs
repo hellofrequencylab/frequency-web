@@ -38,7 +38,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { invokedDirectly } from './lib/invoked-directly.mjs'
-import { ADR_HEADING, readDecisionsView } from './lib/ledger.mjs'
+import { ADR_HEADING, missingSupersedeBackLinks, readDecisionsView } from './lib/ledger.mjs'
 
 const LEDGER = join('docs', 'DECISIONS.md')
 // `#{2,3}`, not `##`. Seven entries in the ledger use a ### heading -- ADR-052 through
@@ -271,8 +271,11 @@ function main() {
   const { placeholders, tbd, files } = scanPlaceholders()
   const tbdGrew = tbd > TBD_FROZEN
   const baseLines = view.baseText.split('\n').length
+  // ADR-1730: the BASE file only. A fragment that supersedes an older ADR gets its back-pointer
+  // written by `pnpm ledger:compact`, so a feature PR never edits an old entry in place.
+  const orphanedSupersedes = missingSupersedeBackLinks(view.baseText)
 
-  if (view.problems.length === 0 && collisions.length === 0 && dangling.length === 0 && placeholders.length === 0 && !tbdGrew) {
+  if (view.problems.length === 0 && collisions.length === 0 && dangling.length === 0 && placeholders.length === 0 && !tbdGrew && orphanedSupersedes.length === 0) {
     console.log(
       `✓ ADR contract: ${total} distinct ADR number(s), each declared exactly once, ` +
         'and every cited number resolves to an entry.\n' +
@@ -318,6 +321,15 @@ function main() {
         '    If you are DESCRIBING the convention rather than citing a number, put the token in\n' +
         '    `backticks` (or a fenced block). That is the line this guard draws: bare means a\n' +
         '    reader should be able to follow it, quoted means it is the subject of the sentence.\n',
+    )
+  }
+
+  for (const { from, to } of orphanedSupersedes) {
+    console.error(
+      `  • ADR-${from} supersedes [ADR-${to}] but ADR-${to} never says so.\n` +
+        '    A reader who lands on the old entry follows a rule that is no longer true. Add\n' +
+        `    "**Superseded in part or whole by [ADR-${from}](DECISIONS.md)**" to ADR-${to}'s Status line,\n` +
+        '    or run `pnpm ledger:compact`, which writes it.\n',
     )
   }
 
