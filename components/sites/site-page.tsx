@@ -151,7 +151,9 @@ export async function SitePage({
   const websitePage = savedWebsitePage ? { ...savedWebsitePage, doc: await refreshAssetRefUrls(savedWebsitePage.doc, { websiteSpaceId: space.id }) } : null
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
   const siteStyle = readSiteStyle(space.preferences)
-  const boldSite = website ? website.theme === 'Menswork' : siteStyle.theme === 'bold'
+  // ONE source (ADR-1728): the theme is the site style, edited from Identity and branding or the editor's
+  // Theme tab, so a published editor snapshot wears it too rather than the theme it was written in.
+  const boldSite = siteStyle.theme === 'bold'
   const theme = website ? (boldSite ? 'menswork' : 'frequency') : boldSite ? 'menswork' : siteStyle.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
   // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
@@ -267,8 +269,10 @@ export async function SitePage({
     // owner's accent and faces rather than the default Frequency look.
     <AccentScope vars={accentVars} theme={theme}>
       <JsonLd data={entity} />
-      <div data-website-theme={website?.theme} style={website ? websiteThemeVars(website.theme, website.theme === 'Menswork' ? websiteBrand.accent : website.brand?.accent) : undefined}>
-      {website && <style>{WEBSITE_TOKEN_CSS}</style>}
+      {/* A Bold site wears the editor's Bold tokens; a Frequency site keeps the house tokens its sheets read. */}
+      <div data-website-theme={website && boldSite ? 'Menswork' : undefined} style={website && boldSite ? websiteThemeVars('Menswork', websiteBrand.accent) : undefined}>
+      {website && boldSite && <style>{WEBSITE_TOKEN_CSS}</style>}
+      {websitePage && !skin && <style>{FREQUENCY_PAGE_CSS}</style>}
       <SiteChrome
         brandName={websiteChrome.name}
         homeHref={homeHref}
@@ -285,7 +289,7 @@ export async function SitePage({
         admin={siteAdminLinks(origin, space.slug, siteBase)}
       >
         {website && websitePage && mwLive ? (
-          <WebsiteDocument doc={websitePage.doc} theme={website.theme} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
+          <WebsiteDocument doc={websitePage.doc} theme={boldSite ? 'Menswork' : 'DAWN'} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
         ) : model ? (
           <>
             <HouseHome model={model} />

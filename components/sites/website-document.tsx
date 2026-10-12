@@ -11,7 +11,8 @@ import { MensworkPage } from './menswork-page'
 
 // Shared by the website and its editor iframe. The renderer never imports editor
 // UI, history, actions, or collaboration code. Editing wraps the SAME section tree.
-export function WebsiteDocument({ doc, theme, config, metadata, live, links, origin, title, wrapSection }: {
+export function WebsiteDocument({ doc, config, metadata, live, links, origin, title, wrapSection }: {
+  /** The editor theme the document was written in. Every theme draws through the same sections now. */
   doc: Data; theme: WebsiteTheme; config: Config; metadata?: Metadata
   live: MwLive; links: SiteLinkMap; origin: string; title: string
   wrapSection?: (node: ReactNode, indexes: number[]) => ReactNode
@@ -97,8 +98,10 @@ export function WebsiteDocument({ doc, theme, config, metadata, live, links, ori
       @supports(animation-timeline:view()){.site-doc-section{animation-duration:1s;animation-timing-function:linear;animation-fill-mode:both;animation-timeline:view();animation-range:entry 0% entry 100%}}
       @keyframes site-fade{from{opacity:0}to{opacity:1}}@keyframes site-rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
       @media(prefers-reduced-motion:reduce){.site-doc-section[data-site-animation]{animation:none!important}}`}</style>
-    {theme === 'Menswork' ? <MensworkPage blocks={blocks} plan={planMensworkPage(blocks)} live={live} links={links} origin={origin} pageTitle={title}
+    {/* Every theme draws the page through the same site page sections (ADR-1727); the theme is only the
+        stylesheet the page around it carries (Bold: MENSWORK_PAGE_CSS, Frequency: FREQUENCY_PAGE_CSS). */}
+    <MensworkPage blocks={blocks} plan={planMensworkPage(blocks)} live={live} links={links} origin={origin} pageTitle={title}
       renderOther={(block) => <BlockRender config={config} data={{ root: {}, content: [block] }} metadata={metadata} isEditing={!!wrapSection} />}
-      wrapSection={wrap} /> : blocks.map((block, i) => wrap(<BlockRender config={config} data={{ root: {}, content: [block] }} metadata={metadata} isEditing={!!wrapSection} />, [i]))}
+      wrapSection={wrap} />
   </>
 }
