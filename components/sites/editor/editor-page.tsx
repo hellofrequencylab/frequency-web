@@ -15,6 +15,7 @@ import { seedWebsiteHome, withWebsiteIds, initialWebsiteTheme } from '@/lib/site
 import type { Space } from '@/lib/spaces/types'
 import { siteAdminLinks, siteChromeBasics } from '../site-page'
 import { mensworkNowLine } from '../menswork-page'
+import { readSiteStyle } from '@/lib/theme/site-style'
 import { ConnectedWebsiteEditor } from './website-editor'
 
 export async function WebsiteEditorPage({ host, space: cached, token }: { host: string; space: Space; token: string }) {
@@ -46,5 +47,5 @@ export async function WebsiteEditorPage({ host, space: cached, token }: { host: 
     seasonNow: { ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()), next: live.events.find((event) => /circle night/i.test(event.title))?.startsAt ?? null },
     admin: siteAdminLinks(chrome.origin, space.slug, ''),
   }
-  return <ConnectedWebsiteEditor host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} metadata={{ space: content, websiteFeatures, websiteChrome }} live={live} links={chrome.siteLinks} origin={chrome.origin} />
+  return <ConnectedWebsiteEditor host={host} brandName={brandName} logo={space.brandLogoUrl} brandAccent={space.brandAccent} author={person?.name ?? 'You'} initial={initial} metadata={{ space: content, websiteFeatures, websiteChrome }} live={live} links={chrome.siteLinks} origin={chrome.origin} siteStyle={readSiteStyle(space.preferences)} />
 }

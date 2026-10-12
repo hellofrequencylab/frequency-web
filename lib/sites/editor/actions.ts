@@ -91,3 +91,37 @@ export async function loadWebsiteFeatureSource(host: string, source: string): Pr
     return { ok: true, items: await resolveWebsiteFeatureItems(auth.space.id, source) }
   } catch { return { ok: false, error: 'Could not load this content. Try selecting its source again.' } }
 }
+
+/** The site's GLOBAL STYLES from the editor's Theme tab (ADR-1728): the theme (Frequency or Bold, which
+ *  brings its own fonts) and the corners, spacing, header and footer choices. The same setting Identity and
+ *  branding edits, live at once like it. The editor autosaves its draft into the same preferences row, so
+ *  the write only lands while the draft revision it read is still current, and retries on a fresh read. */
+export async function saveWebsiteStyle(host: string, patch: { theme?: string; look?: Partial<Record<string, string | null>> }): Promise<{ ok: true; style: import('@/lib/theme/site-style').SiteStyle } | { ok: false; error: string }> {
+  const { isSiteThemeId, isSiteLookValue, readSiteStyle, withSiteStyle, SITE_LOOK_OPTIONS, SITE_THEMES } = await import('@/lib/theme/site-style')
+  if (!patch || typeof patch !== 'object' || (patch.theme !== undefined && !isSiteThemeId(patch.theme))) return { ok: false, error: 'Choose Frequency or Bold.' }
+  const lookKeys = Object.keys(SITE_LOOK_OPTIONS) as (keyof typeof SITE_LOOK_OPTIONS)[]
+  for (const [key, value] of Object.entries(patch.look ?? {})) {
+    if (!lookKeys.includes(key as keyof typeof SITE_LOOK_OPTIONS) || (value !== null && !isSiteLookValue(key as keyof typeof SITE_LOOK_OPTIONS, value))) return { ok: false, error: 'That style is not one of the choices.' }
+  }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const auth = await authorizeWebsiteEditor(host)
+    if (!auth) return { ok: false, error: 'Your editing session ended. Reopen the builder to sign in.' }
+    const prefs = auth.preferences && typeof auth.preferences === 'object' && !Array.isArray(auth.preferences) ? (auth.preferences as Record<string, unknown>) : {}
+    const current = readSiteStyle(prefs)
+    const theme = patch.theme !== undefined && isSiteThemeId(patch.theme) ? patch.theme : current.theme
+    const look = { ...current.look, ...(patch.look as Partial<typeof current.look>) }
+    const next = withSiteStyle(prefs, { theme, look, ...(theme !== current.theme ? { fonts: SITE_THEMES.find((t) => t.id === theme)!.defaultFonts } : {}) })
+    // The stored revision as it is, so the guard matches the row even when the editor state fails validation.
+    const editor = prefs.websiteEditor as { revision?: unknown } | undefined
+    const revision = editor && typeof editor === 'object' && Number.isSafeInteger(editor.revision) ? (editor.revision as number) : null
+    const db = auth.db as unknown as { from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => { filter: (c: string, op: string, v: string) => { select: (f: string) => Promise<{ data: unknown[] | null; error: unknown }> } } } } }
+    // The draft revision the style was computed against must still be the stored one.
+    const result = await db.from('spaces').update({ preferences: next }).eq('id', auth.space.id).filter('preferences->websiteEditor->>revision', revision === null ? 'is' : 'eq', revision === null ? 'null' : String(revision)).select('id')
+    if (result.error) return { ok: false, error: 'Could not save your style. Try again.' }
+    if (result.data && result.data.length > 0) {
+      refreshSite(auth.space.slug)
+      return { ok: true, style: readSiteStyle(next) }
+    }
+  }
+  return { ok: false, error: 'Your website was saving at the same moment. Pick the style again.' }
+}

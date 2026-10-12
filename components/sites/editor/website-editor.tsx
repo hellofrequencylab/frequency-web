@@ -6,11 +6,11 @@ import { websiteLoomScopes, websiteLoomScope, websiteLoomImages, uploadWebsiteLo
 import { WebsiteFeatureSourceContext } from './feature-source-context'
 import type { WebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { config } from '@/lib/page-editor/config'
-import { saveWebsiteDraft, proposeWebsiteText, syncWebsitePresence, loadWebsiteFeatureSource } from '@/lib/sites/editor/actions'
+import { saveWebsiteDraft, saveWebsiteStyle, proposeWebsiteText, syncWebsitePresence, loadWebsiteFeatureSource } from '@/lib/sites/editor/actions'
 import type { WebsiteSnapshot } from '@/lib/sites/editor/state'
 import { WebsiteEditorShell, type WebsiteEditorShellProps } from './shell'
 
-export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onPresence' | 'config'>) {
+export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onSave' | 'onPropose' | 'onPresence' | 'onStyle' | 'config'>) {
   const host = props.host
   const [features, setFeatures] = useState<WebsiteFeatures>(() => (props.metadata?.websiteFeatures as WebsiteFeatures | undefined) ?? {})
   const [sourceError, setSourceError] = useState<string | null>(null)
@@ -35,6 +35,7 @@ export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onS
   const sources = useMemo(() => ({ load: loadSource, error: sourceError }), [loadSource, sourceError])
   const save = useCallback((revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => saveWebsiteDraft(host, revision, draft, publish, scheduledAt), [host])
   const propose = useCallback((request: string, value: string) => proposeWebsiteText(host, request, value), [host])
+  const style = useCallback((patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0]) => saveWebsiteStyle(host, patch), [host])
   const presence = useCallback((cursor: Parameters<typeof syncWebsitePresence>[1]) => syncWebsitePresence(host, cursor), [host])
   const media = useMemo(() => ({
     scopes: () => websiteLoomScopes(host),
@@ -42,5 +43,5 @@ export function ConnectedWebsiteEditor(props: Omit<WebsiteEditorShellProps, 'onS
     images: (key: string, options: Parameters<typeof websiteLoomImages>[2]) => websiteLoomImages(host, key, options),
     upload: (key: string, data: FormData) => uploadWebsiteLoomImage(host, key, data),
   }), [host])
-  return <LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}><WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onPresence={presence} /></WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider>
+  return <LoomPickerActionsProvider actions={media}><WebsiteFeatureSourceContext.Provider value={sources}><WebsiteEditorShell {...props} metadata={{ ...props.metadata, websiteFeatures: features }} config={config} onSave={save} onPropose={propose} onPresence={presence} onStyle={style} /></WebsiteFeatureSourceContext.Provider></LoomPickerActionsProvider>
 }

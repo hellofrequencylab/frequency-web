@@ -117,3 +117,11 @@ it('resets tablet-only element geometry on phone even when desktop has no placem
   expect(html).toContain('@media(max-width:600px)')
   expect(html).toContain('grid-column:auto;grid-row:auto;height:auto;min-height:0')
 })
+
+describe('every theme draws the same sections (ADR-1727, ADR-1728)', () => {
+  it('renders a Frequency (DAWN) document through the site page sections, not the bare blocks', () => {
+    const doc: Data = { root: {}, content: [{ type: 'Heading', props: { id: 'h', title: 'Our story' } }] }
+    for (const theme of ['Menswork', 'DAWN'] as const) expect(render(doc, false, {}, theme)).toContain('class="mw-page"')
+  })
+})
+

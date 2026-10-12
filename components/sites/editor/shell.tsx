@@ -14,6 +14,7 @@ import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
 import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, type WebsiteSnapshot, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
 import type { MwLive } from '@/lib/sites/menswork-data'
+import { SITE_LOOK_OPTIONS, SITE_THEMES, THEME_LOOK, siteLook, siteLookOverrides, type SiteLookKey, type SiteStyle, type SiteThemeId } from '@/lib/theme/site-style'
 import type { SiteLinkMap } from '@/lib/sites/house-theme'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import dynamic from 'next/dynamic'
@@ -33,6 +34,9 @@ export interface WebsiteEditorShellProps {
   onSave: (revision: number, draft: WebsiteSnapshot, publish: boolean, scheduledAt?: string | null) => Promise<SaveResult>
   onPresence?: (cursor: WebsitePresence['cursor']) => Promise<{ ok: true; people: WebsitePresence[] } | { ok: false; error: string }>
   onPropose?: (request: string, value: string) => Promise<{ ok: true; text: string } | { ok: false; error: string }>
+  /** The site's global styles (ADR-1728), shared with Identity and branding, and their live save. */
+  siteStyle?: SiteStyle
+  onStyle?: (patch: { theme?: SiteThemeId; look?: Partial<Record<SiteLookKey, string | null>> }) => Promise<{ ok: true; style: SiteStyle } | { ok: false; error: string }>
 }
 function readMobileViewport() { return window.matchMedia('(max-width:767px)').matches }
 function subscribeViewport(callback: () => void) {
@@ -41,8 +45,12 @@ function subscribeViewport(callback: () => void) {
   return () => query.removeEventListener('change', callback)
 }
 
-/** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN previews Frequency. */
+/** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. Midnight
+ *  is retired (ADR-1728): a draft that still carries it is offered the two themes. */
 const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Frequency', Midnight: 'Midnight' }
+const EDITOR_THEME: Record<SiteThemeId, (typeof WEBSITE_THEMES)[number]> = { frequency: 'DAWN', bold: 'Menswork' }
+const LOOK_LABEL: Record<SiteLookKey, string> = { corners: 'Corners', spacing: 'Spacing', header: 'Header', footer: 'Footer' }
+const DEFAULT_STYLE: SiteStyle = { theme: 'frequency', fonts: 'frequency', synced: true, spaceFonts: 'frequency', look: { corners: null, spacing: null, header: null, footer: null } }
 
 const TABS: { label: Tab; icon: typeof FileText }[] = [{ label: 'Pages', icon: FileText }, { label: 'Layers', icon: Layers }, { label: 'Add', icon: Plus }, { label: 'Theme', icon: Palette }, { label: 'Site', icon: Settings2 }]
 const DEVICES: { id: Device; icon: typeof Monitor; label: string }[] = [{ id: 'desktop', icon: Monitor, label: 'Desktop' }, { id: 'tablet', icon: Tablet, label: 'Tablet' }, { id: 'phone', icon: Smartphone, label: 'Phone' }]
@@ -69,7 +77,7 @@ function Icon({ label, children, className = '', ...props }: { label: string; ch
   return <button type="button" className={`we-icon ${className}`} aria-label={label} title={label} {...props}>{children}</button>
 }
 
-export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onPresence }: WebsiteEditorShellProps) {
+export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author, initial, config, metadata, live, links, origin, onSave, onPropose, onPresence, siteStyle, onStyle }: WebsiteEditorShellProps) {
   const [people, setPeople] = useState<WebsitePresence[]>([])
   const cursor = useRef<WebsitePresence['cursor']>(null)
   useEffect(() => {
@@ -86,6 +94,18 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     return () => { active = false; window.clearInterval(timer) }
   }, [onPresence])
   const [draft, setDraft] = useState(initial.draft)
+  const [style, setStyle] = useState<SiteStyle>(() => siteStyle ?? { ...DEFAULT_STYLE, theme: initial.draft.theme === 'Menswork' ? 'bold' : 'frequency' })
+  const [styleError, setStyleError] = useState('')
+  const lookStyle = { ...style, theme: draft.theme === 'Menswork' ? ('bold' as const) : ('frequency' as const) }
+  async function saveStyle(patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0], optimistic: SiteStyle) {
+    const before = style
+    setStyle(optimistic)
+    setStyleError('')
+    if (!onStyle) return
+    const result = await onStyle(patch)
+    if (result.ok) setStyle(result.style)
+    else { setStyle(before); setStyleError(result.error) }
+  }
   const [choosingLogo, setChoosingLogo] = useState(false)
   const websiteBrand = resolveWebsiteBrand(draft, { logo, accent: brandAccent })
   const activeLogo = websiteBrand.logo
@@ -326,18 +346,22 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           {tab === 'Layers' && <><div className="we-caption">{page.label}</div><button type="button" className="we-row" onClick={() => openChrome('header')}>Header and navigation</button>{renderLayers(outline)}<button type="button" className="we-row" onClick={() => openChrome('footer')}>Footer</button><button type="button" className="we-row" onClick={() => insert(page.doc.content.length)}><Plus size={15} />Add section</button></>}
           {tab === 'Add' && palette}
           {tab === 'Site' && <><div className="we-caption">Website settings</div><button type="button" className="we-row" onClick={() => openChrome('header')}>Header and navigation</button><button type="button" className="we-row" onClick={() => openChrome('footer')}>Footer</button><button type="button" className="we-row" onClick={() => { setTab('Theme'); setLeft(true) }}>Theme and logo</button><button type="button" className="we-row" onClick={() => { setPanel('page'); setRight(true) }}>Page settings</button><button type="button" className="we-row" onClick={() => { setPanel('seo'); setRight(true) }}>SEO and sharing</button><a className="we-row" href={`https://${host}/`} target="_blank" rel="noreferrer">Open live website</a><a className="we-row" href={`${origin}/spaces/${links.slug}`} target="_blank" rel="noreferrer">Space home</a></>}
-          {tab === 'Theme' && <><div className="we-caption">Theme</div>{WEBSITE_THEMES.filter((theme) => theme !== 'Midnight' || draft.theme === 'Midnight').map((theme) => <button type="button" key={theme} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => { if (theme !== draft.theme) commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }) }}>
-            <span className="we-theme-swatch" style={websiteThemeVars(theme)}><i style={{ background: 'var(--ed-chrome)' }} /><i style={{ background: 'var(--th-bg)' }}><b /></i></span><span><strong>{WEBSITE_THEME_LABEL[theme]}</strong><small>{theme === 'Menswork' ? 'Charcoal · teal · 60° cut' : theme === 'DAWN' ? 'Warm · bright · rounded · preview' : 'Deep blue · amber · retiring'}</small></span>
-          </button>)}<div className="we-caption">Logo</div>{activeLogo && <img src={activeLogo} alt={`${brandName} logo`} style={{ width: 44, height: 44, objectFit: 'contain', margin: 8 }} />}
+          {tab === 'Theme' && <><div className="we-caption">Theme</div>{SITE_THEMES.map((t) => { const theme = EDITOR_THEME[t.id]; return <button type="button" key={t.id} className="we-theme-card" aria-pressed={draft.theme === theme} onClick={() => { if (theme === draft.theme) return; commit({ ...draft, theme, pages: draft.pages.map((item) => ({ ...item, doc: resetDocumentPlacements(item.doc) })) }); void saveStyle({ theme: t.id }, { ...style, theme: t.id, fonts: t.defaultFonts }) }}>
+            <span className="we-theme-swatch" style={websiteThemeVars(theme)}><i style={{ background: 'var(--ed-chrome)' }} /><i style={{ background: 'var(--th-bg)' }}><b /></i></span><span><strong>{WEBSITE_THEME_LABEL[theme]}</strong><small>{t.description}</small></span>
+          </button> })}{draft.theme === 'Midnight' && <p role="note" className="we-note">Midnight is retired. Pick Frequency or Bold to keep editing in a theme your live site can wear.</p>}
+            {/* GLOBAL STYLES (ADR-1728): the same setting Identity and branding edits, live at once. */}
+            <div className="we-caption">Global styles</div>{(Object.keys(SITE_LOOK_OPTIONS) as SiteLookKey[]).map((key) => <div key={key} className="we-field">{LOOK_LABEL[key]}<div className="we-choice-row" role="group" aria-label={LOOK_LABEL[key]}>{SITE_LOOK_OPTIONS[key].map((o) => <button type="button" key={o.id} className="we-action secondary" aria-pressed={siteLook(lookStyle)[key] === o.id} onClick={() => { const stored = o.id === THEME_LOOK[lookStyle.theme][key] ? null : o.id; void saveStyle({ look: { [key]: stored } }, { ...style, look: { ...style.look, [key]: stored } }) }}>{o.label}</button>)}</div></div>)}
+            {styleError && <p role="alert" className="we-note">{styleError}</p>}
+            <div className="we-caption">Logo</div>{activeLogo && <img src={activeLogo} alt={`${brandName} logo`} style={{ width: 44, height: 44, objectFit: 'contain', margin: 8 }} />}
             <div className="we-actions"><button type="button" className="we-action secondary" onClick={() => setChoosingLogo(true)}>Change logo</button>{activeLogo && <button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, logo: null } })}>Remove logo</button>}</div>
             <div className="we-caption">Brand accent</div><label className="we-field">Accent color<Input variant="seamless" type="color" value={colorInputValue} onChange={(event) => commit({ ...draft, brand: { ...draft.brand, accent: event.target.value } })} /></label><button type="button" className="we-action secondary" onClick={() => commit({ ...draft, brand: { ...draft.brand, accent: null } })}>Use theme accent</button><div className="we-swatch-list"><span className="we-swatch" style={{ background: 'var(--th-accent)' }} /><span className="we-swatch" style={{ background: 'var(--th-season)' }} /><span className="we-swatch" style={{ background: 'var(--th-text)' }} /></div>
             <div className="we-caption">Type</div>{['display', 'body', 'mono'].map((role) => <div className="we-note" key={role}>{role}<strong style={{ display: 'block', color: 'var(--th-text)', fontFamily: `var(--th-${role}-render)` }}>{String(websiteThemeVars(draft.theme)[`--th-${role}` as keyof React.CSSProperties]).split(',')[0].replaceAll("'", '')}</strong></div>)}
-            <div className="we-caption">Corners</div><div className="we-context">{draft.theme === 'Menswork' ? '60° cut' : 'Round'}</div><div className="we-note">The editor wears the theme it edits. Rails use the site’s own colors, lifted a step lighter. Words, photos and live blocks stay as they are. Switching themes resets element positions to the new layout; Undo restores them.</div></>}
+            <div className="we-note">The editor wears the theme it edits. The theme and global styles change your live site as soon as you pick them, here or in Identity and branding. Words, photos and live blocks stay as they are. Switching themes resets element positions to the new layout; Undo restores them.</div></>}
         </div></> : <div className="we-strip">{TABS.map(({ label, icon: TabIcon }) => <Icon key={label} label={label} onClick={() => { setTab(label); setLeft(true) }}><TabIcon size={18} /></Icon>)}</div>}
       <div className="we-fold"><Icon label={left ? 'Fold left rail' : 'Open left rail'} onClick={() => setLeft(!left)}>{left ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}</Icon></div>
     </aside>
     <main className="we-stage" data-device={device} aria-label="Website editor canvas">
-      <div className="we-frame-scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={draft.theme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={setTextSelection} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} /></div>
+      <div className="we-frame-scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={draft.theme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={setTextSelection} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(lookStyle)} fullFooter={siteLook(lookStyle).footer === 'full'} /></div>
       {!preview && <VeraDock>
         {(asking || veraStatus || proposal) && <div className="we-thread">
           <p role="status">{asking ? 'Vera is preparing a proposal…' : veraStatus}</p>{proposal && <div className="we-proposal"><div className="we-caption">Proposed text</div><p>{proposal.after}</p><div className="we-actions"><button type="button" className="we-action" onClick={applyProposal}>Apply</button><button type="button" className="we-action secondary" onClick={() => { setProposal(null); setVeraStatus('Proposal discarded.') }}>Discard</button></div></div>}</div>}

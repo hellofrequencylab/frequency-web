@@ -82,3 +82,4 @@
 
 .we-field input:is([type=checkbox],[type=radio]){width:auto;align-self:flex-start;accent-color:var(--th-accent)}
 @media(max-width:767px){.we-stage[data-device=phone] .we-frame{max-width:100%}.we-vera-dock{top:auto;bottom:12px}.we-vera-dock[data-open=true]{top:8px;bottom:auto}.we-vera-toggle span{font-size:11px}.we-inspector-head small{font-size:11px}}
+.we-choice-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.we-choice-row .we-action{padding:6px 10px;font-size:13px}.we-choice-row .we-action[aria-pressed=true]{background:var(--th-accent);color:var(--th-on-accent);box-shadow:none}
