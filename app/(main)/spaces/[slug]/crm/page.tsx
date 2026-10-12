@@ -13,7 +13,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail'
 import { SpaceStageList } from '@/components/spaces/crm/space-stage-list'
-import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
+import { CrmViewTabs, crmConversationsHref, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
 import { FeatureMeterUpsell } from '@/components/pricing/feature-meter-upsell'
 import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
@@ -106,6 +106,9 @@ export default async function SpaceCrmBoardPage({
   await ensureSpaceStages(space.id, space.type, space.modeVariant)
 
   const boardHref = `/spaces/${space.slug}/crm`
+  // LIVE-897: the deep sub-views render the tab bar themselves, so they carry the same Conversations door
+  // CrmBody derives for the default board (a manager of a console Space).
+  const conversationsHref = crmConversationsHref(space.slug, space.type, caps.canEditProfile)
 
   // CONTACT DETAIL MODE: when a contact is selected (?contact=<id>) the board hands the full surface to
   // the on-board detail (identity + fields + timeline + deals + note composer). The detail read is
@@ -121,7 +124,7 @@ export default async function SpaceCrmBoardPage({
         width="default"
       >
         {/* The persistent view tabs keep the familiar People list one tap away from a person detail. */}
-        <CrmViewTabs boardHref={boardHref} active="people" />
+        <CrmViewTabs boardHref={boardHref} active="people" conversationsHref={conversationsHref} />
 
         <Suspense fallback={<ListSkeleton />}>
           <SpaceContactDetail
@@ -150,7 +153,7 @@ export default async function SpaceCrmBoardPage({
         width="default"
       >
         {/* The persistent view tabs keep the familiar People list one tap away from a funnel drill. */}
-        <CrmViewTabs boardHref={boardHref} active="people" />
+        <CrmViewTabs boardHref={boardHref} active="people" conversationsHref={conversationsHref} />
 
         <Suspense fallback={<ListSkeleton />}>
           <SpaceStageList spaceId={space.id} stage={selectedStage} boardHref={boardHref} />

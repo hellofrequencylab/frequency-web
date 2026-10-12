@@ -32,6 +32,8 @@ const PAGE_OWN_RENDER = new Set([
   'PlanBand', 'PillarNav', 'IllustratedFeature', 'RolePicker', 'Manifesto', 'LeadFunnel', 'Showcase', 'Tiers',
   'SeasonTimeline', 'CircleFirstNight', 'RolesPath', 'QuestLoop', 'BackTheBuild', 'PhotoBeat', 'Marquee',
   'LiveStats', 'LivePosts',
+  // The astrology calendar family draws itself in every theme (components/page-editor/blocks/wildheart.tsx).
+  'WildheartYearJourney', 'WildheartSkyMap', 'WildheartNowLine',
 ])
 
 /** Home blocks that keep the Space page's own render (inside the house `.hs-plain` band). */

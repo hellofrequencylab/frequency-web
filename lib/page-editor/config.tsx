@@ -25,6 +25,7 @@ import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from '@/components/p
 import { spacesComponents } from '@/components/page-editor/blocks/spaces'
 import { profileComponents } from '@/components/page-editor/blocks/profile'
 import { designComponents } from '@/components/page-editor/blocks/design'
+import { wildheartComponents } from '@/components/page-editor/blocks/wildheart'
 import { DESIGN_BLOCK_TYPES } from '@/lib/page-editor/block-limits'
 
 export const config: Config = {
@@ -59,6 +60,7 @@ export const config: Config = {
     ...spacesComponents,
     ...profileComponents,
     ...designComponents,
+    ...wildheartComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -139,6 +141,13 @@ export const config: Config = {
     linkTree: {
       title: 'Link tree',
       components: [...LINKTREE_CATEGORY_COMPONENTS],
+    },
+    // The astrology calendar family (the Wildheart theme's signature, ADR in docs/ledger): three renderings
+    // of one wheel model. Website pages only (lib/page-editor/palette-scope.ts): they read the Space's
+    // events through `metadata.space`, and wear any site theme.
+    wildheart: {
+      title: 'Astrology calendar',
+      components: ['WildheartYearJourney', 'WildheartSkyMap', 'WildheartNowLine'],
     },
   },
 }

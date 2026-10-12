@@ -18,6 +18,8 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { enqueueEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { canEmailContact } from '@/lib/crm/contact-consent'
+import { canAddSpaceContact } from '@/lib/crm/contact-allowance'
+import { fireSpaceTrigger } from '@/lib/spaces/drip-enroll'
 import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
 import { conversationSigningAvailable, CONVERSATION_SIGNING_UNAVAILABLE_COPY } from '@/lib/comms/reply-address'
 import { buildSpaceConversationReplyAddress, spaceReplyAliasReady } from '@/lib/comms/tenant-reply-alias'
@@ -325,6 +327,39 @@ async function resolveSpaceCounterpart(
   }
 }
 
+/** Create the contact row a first direct message needs when the address is new to this Space. Returns
+ *  null when the Space's contact allowance is spent or the insert fails, so the caller can say so. */
+async function createSpaceCounterpart(
+  spaceId: string,
+  email: string,
+): Promise<{ contactId: string; profileId: string | null } | null> {
+  try {
+    if (!(await canAddSpaceContact(spaceId))) return null
+    const db = createAdminClient()
+    const nowIso = new Date().toISOString()
+    const { data: inserted } = await db
+      .from('contacts')
+      .insert({
+        space_id: spaceId,
+        email,
+        consent_state: 'unknown',
+        source: 'space_console',
+        first_seen_at: nowIso,
+        last_seen_at: nowIso,
+        updated_at: nowIso,
+      })
+      .select('id, profile_id')
+      .maybeSingle()
+    if (!inserted) return null
+    const contactId = String(inserted.id)
+    // AUTOMATION TRIGGER (ADR-561): a contact just entered this Space's CRM. Fire-and-forget; it never throws.
+    void fireSpaceTrigger(spaceId, 'contact.created', { contactId })
+    return { contactId, profileId: inserted.profile_id ?? null }
+  } catch {
+    return null
+  }
+}
+
 /** Start a NEW ticketed conversation with one of this space's members/contacts, and send the first
  *  message as the space. Seeds the space's Conversations console (the reply-able 1:1 path). */
 export async function startSpaceConversationAction(
@@ -342,8 +377,14 @@ export async function startSpaceConversationAction(
   if (!subject) return fail('Add a subject line.')
   if (!body) return fail('Write your message first.')
 
-  const counterpart = await resolveSpaceCounterpart(gate.spaceId, email)
-  if (!counterpart) return fail("That email isn't a contact in this space yet. Add them to your contacts first.")
+  // A direct message to someone new is how a contact enters a CRM (owner ruling 2026-10-12: "do I have
+  // to have a contact linked to send a single direct message?"). An unknown address becomes a contact
+  // of THIS Space on send, as a lead with consent 'unknown' (ADR-099: never auto-subscribed), metered by
+  // the space_crm allowance like every other new row (ADR-917). The consent and mute gates below still
+  // run against the new row, so a suppressed or unsubscribed address is refused exactly as before.
+  const counterpart =
+    (await resolveSpaceCounterpart(gate.spaceId, email)) ?? (await createSpaceCounterpart(gate.spaceId, email))
+  if (!counterpart) return fail('Your contact list is full, so this address cannot be added. Free a seat or raise your plan.')
 
   // Consent (CRM audit F6, both halves): a Space starting outreach honors THIS SPACE's own consent
   // lane — the tenant contact's consent_state, the per-space suppression, and the per-space topic

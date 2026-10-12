@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readSitePageStyle, readSiteStyle, siteLook, siteLookOverrides, siteTheme, spacePageDefaultAccent, spacePageFonts, withSitePageTheme, withSiteStyle, SITE_THEMES, THEME_LOOK } from './site-style'
 import { MENSWORK_PALETTE } from './menswork'
+import { WILDHEART_PALETTE } from './wildheart'
 
 // ADR-1726: the themes are Frequency (the house look) and Bold (until now Menswork). Every stored value
 // from before the rename must keep rendering the way it did.
@@ -37,11 +38,17 @@ describe('the site style', () => {
     expect(prefs.siteStyle).toEqual({ theme: 'frequency', synced: true, spaceFonts: 'classic' })
   })
 
-  it('names the two themes Frequency and Bold, each with its own default fonts', () => {
+  it('names the three themes Frequency, Bold and Wildheart, each with its own default fonts', () => {
     expect(SITE_THEMES.map((t) => [t.id, t.label, t.defaultFonts])).toEqual([
       ['frequency', 'Frequency', 'frequency'],
       ['bold', 'Bold', 'menswork'],
+      ['wildheart', 'Wildheart', 'classic'],
     ])
+    // A stock theme: no stored value from before it existed reads as Wildheart.
+    expect(readSiteStyle({ theme: 'classic' }).theme).toBe('frequency')
+    expect(readSiteStyle({ siteStyle: { theme: 'wildheart' } })).toMatchObject({ theme: 'wildheart', fonts: 'frequency' })
+    expect(siteLook(readSiteStyle({ siteStyle: { theme: 'wildheart' } }))).toEqual(THEME_LOOK.wildheart)
+    expect(THEME_LOOK.wildheart).toEqual({ corners: 'soft', spacing: 'airy', header: 'bar', footer: 'full' })
   })
 
   // ADR-1728: corners, spacing, header and footer over the theme.
@@ -74,6 +81,7 @@ describe('the site style', () => {
     expect(spacePageDefaultAccent({ theme: 'menswork' }, '--color-primary')).toBe(MENSWORK_PALETTE.teal)
     expect(spacePageDefaultAccent({ theme: 'menswork', siteStyle: { theme: 'bold', synced: false } }, '--color-primary')).toBe('--color-primary')
     expect(spacePageDefaultAccent({ theme: 'classic' }, '--color-primary')).toBe('--color-primary')
+    expect(spacePageDefaultAccent({ siteStyle: { theme: 'wildheart' } }, '--color-primary')).toBe(WILDHEART_PALETTE.violet)
   })
 
   // LIVE-699: a theme per page, falling back to the site's.
