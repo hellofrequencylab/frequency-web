@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-838",
+  "title": "Journey and Circle names stop reaching Google Analytics through the page title",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/consent/cookie-consent.ts",
+    "ref": "Meta scan eight (2026-10-12), funnels review of #3229 (LIVE-810)."
+  },
+  "detail": "FILED 2026-10-12. THE CONSEQUENCE: LIVE-810 redacts the Journey, Circle and topic slug from page_location in the GA bootstrap and the in-app page_view, but gtag.js attaches document.title as page_title to every hit, and app/(main)/journeys/[slug]/page.tsx titles every non-private Journey with its name, so 'Grief Walks · Frequency' still reaches Google. Nothing sets page_title. The Vercel beforeSend (components/analytics/vercel-analytics.tsx) also keeps the query string. THE FIX: on a redacted path set a generic page_title in the bootstrap config and the manual page_view (and for later hits on that page, gtag set), and strip the query in beforeSend. Needs a browser check of gtag's title handling, which is why it was not fixed in the scan.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/page_title/.test(r('lib/consent/cookie-consent.ts'))){console.error('SCAN-838: GA hits on a redacted Journey or Circle page still carry its name as page_title');process.exit(1)}\""
+  }
+}

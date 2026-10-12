@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-840",
+  "title": "A Space owner can invite a second Space to co-host a Journey, and that Space's admin accepts it",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "lib/journeys/space-shares.ts",
+    "ref": "Meta scan eight (2026-10-12), Journeys review of #3311 (LIVE-861)."
+  },
+  "detail": "FILED 2026-10-12. THE CONSEQUENCE: journey_plan_space_shares (20270346006100) has pending and accepted states and readers in lib/journey-plans.ts, but nothing in app, lib or components writes it. LIVE-861's own detail says the first share is written by SQL the owner runs and there is no owner UI to invite or accept a co-host, and no row tracked the follow-up, so the co-host Space's consent is not modelled in the product. THE FIX: an invite action for the Journey's Space admin and an accept action gated on the co-host Space's admin, mirroring event_space_shares.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!['app','lib','components'].some(d=>{const walk=(p)=>fs.statSync(p).isDirectory()?fs.readdirSync(p).some(x=>walk(p+'/'+x)):/\\.tsx?$/.test(p)&&!/test|database\\.types/.test(p)&&/journey_plan_space_shares['\\u0022]\\)\\s*\\.(insert|upsert|update)/.test(r(p));return walk(d)})){console.error('SCAN-840: nothing in the product writes a Journey co-host share');process.exit(1)}\""
+  }
+}

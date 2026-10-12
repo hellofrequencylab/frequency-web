@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-841",
+  "title": "A full loyalty card is claimed once, even from two taps at the same moment",
+  "status": "open",
+  "priority": "P3",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "app/(main)/partners/[slug]/loyalty-actions.ts",
+    "ref": "Meta scan eight (2026-10-12), partners review of #3262 (LIVE-710)."
+  },
+  "detail": "FILED 2026-10-12. THE CONSEQUENCE: the claim reads progress and then inserts a partner_redemptions row with source 'loyalty'; there is no lock and no uniqueness rule (migration 20270346002600 adds only an index). Two concurrent requests from two tabs or devices both see 'earned' and both insert, and the counter staff see only a 'Claimed at' time. THE FIX: do the check and insert in one database function under pg_advisory_xact_lock(hashtext(offer_id || profile_id)), or store the last counted visit on the claim with a unique index so a second claim of the same cycle conflicts. Needs a migration.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/\\.rpc\\(/.test(r('app/(main)/partners/[slug]/loyalty-actions.ts'))){console.error('SCAN-841: a loyalty claim is a read then an unguarded insert');process.exit(1)}\""
+  }
+}

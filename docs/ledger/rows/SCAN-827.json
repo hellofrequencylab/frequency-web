@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-827",
+  "title": "Website editor drafts, review comments and the private Executive Overview are readable with the public anon key",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "wave": "W7",
+  "source": {
+    "file": "supabase/migrations/20270127000000_revoke_claim_token_from_anon.sql",
+    "ref": "Meta scan eight (2026-10-12), website cluster review of #3342 (LIVE-EDITOR-STATE) and #3310/#3312 (LIVE-862, LIVE-864)."
+  },
+  "detail": "FILED 2026-10-12. THE CONSEQUENCE: migration 20270127000000 grants SELECT on spaces.preferences to anon and authenticated, and spaces_read_active lets anon read every active non-private Space. #3342 keeps the whole website editor state in preferences.websiteEditor (the unpublished draft, the scheduled snapshot, version history, and review comments with author names), and #3310/#3312 keep the Executive Overview, which the code calls private to the Space's managers, in preferences.programOverview. GET /rest/v1/spaces?select=slug,preferences with the anon key returns all of it. withoutWebsiteDrafts and withoutLeadershipPreferences only strip the server-rendered projection, not the grant. THE FIX: move websiteEditor and programOverview into a service-role-only table (for example space_private_state(space_id pk, website_editor jsonb, program_overview text)) and point save_website_editor, publish_due_websites, the editor readers and the leadership read and write at it; only the comment-free published snapshot stays public. Revoking preferences from anon outright needs an audit of browser readers first. Needs a migration and a data move, so it is an owner-approved change. The probe reads the newest migration that grants spaces columns to anon.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if((()=>{const d='supabase/migrations';const fsx=fs.readdirSync(d).filter(f=>f.endsWith('.sql')).sort().reverse();for(const f of fsx){const s=r(d+'/'+f);const ms=[...s.matchAll(/^grant select \\(([^)]*)\\)\\s*on public\\.spaces to anon/gm)];if(ms.length)return /\\bpreferences\\b/.test(ms[ms.length-1][1])&&!fs.readdirSync(d).some(x=>/space_private_state/.test(r(d+'/'+x)));}return false})()){console.error('SCAN-827: spaces.preferences, which holds website drafts and the private overview, is still granted to anon');process.exit(1)}\""
+  }
+}

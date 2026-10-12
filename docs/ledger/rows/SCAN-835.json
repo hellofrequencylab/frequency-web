@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-835",
+  "title": "Decide whether a staff limit waiver also lowers a Space's network fee",
+  "status": "open",
+  "priority": "P3",
+  "lane": "owner",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/billing/fees.ts",
+    "ref": "Meta scan eight (2026-10-12), pricing ladder review of #3284 (LIVE-822)."
+  },
+  "detail": "FILED 2026-10-12. THE CONSEQUENCE: the payments gate lets a waived free Space sell at the Collective level, and the waiver migration says waived Spaces are treated as Collective, but spaceNetworkBps never reads spaceLimitsWaived. A waived free Space's network-sourced sales price at the free rung (10%), and a waived Business Space pays 5% instead of 3%. THE FIX if the owner says waivers include the fee: after the Collective inheritance step, when spaceLimitsWaived(spaceId), take min(rung(plan), rung(limitsWaivedPlan(plan))) so a Non Profit stays at 0%. If not, write that down in the waiver's help and close this row.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/spaceLimitsWaived/.test(r('lib/billing/fees.ts'))){console.error('SCAN-835: the network fee ignores a staff waiver and no ruling says it should');process.exit(1)}\""
+  }
+}
