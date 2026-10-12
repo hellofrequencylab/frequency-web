@@ -36,7 +36,9 @@ import {
   conversationScopeRef,
   type ConversationRow,
 } from '@/lib/comms/conversations'
-import { conversationFrom } from '@/lib/comms/from-address'
+import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
+import { renderReplyEmail } from '@/lib/comms/email-template'
+import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { envFlag } from '@/lib/env/string'
 import { buildSpaceConversationReplyAddress, resolveTenantReplyAlias, quarantineTenantReplyAlias } from './tenant-reply-alias'
 import { quarantineSpaceInboxMessage, recordSpaceInboxMessage, resolveSpaceInboxRoute } from './space-inbox-address'
@@ -505,6 +507,14 @@ function bridgeBodyToHtml(text: string): string {
   return `<div style="font-family:system-ui,sans-serif;font-size:15px;line-height:1.5;color:#111">${escaped.replace(/\n/g, '<br>')}</div>`
 }
 
+/** The member-facing body of a bridged reply. A Space's thread wears the Space's brand (owner ruling
+ *  2026-10-12, LIVE-898) through the shared reply template; a platform thread, or a brand read fault,
+ *  keeps the bare bridge body byte for byte. */
+async function bridgeMemberEmail(conv: ConversationRow, body: string): Promise<{ html: string; text: string }> {
+  const brand = await resolveSpaceEmailBrand(conv.spaceId)
+  return brand ? renderReplyEmail(body, null, brand) : { html: bridgeBodyToHtml(body), text: body }
+}
+
 /** Resolve an agent profile's login email + display name (for the forward To + the outbound From).
  *  FAIL-SAFE: null on any miss. */
 async function resolveAgent(profileId: string | null): Promise<{ email: string; name: string | null } | null> {
@@ -536,11 +546,14 @@ async function forwardInboundToHouse(conv: ConversationRow, parsed: ParsedInboun
     if (!agent) return
     const memberName = conv.externalEmail ?? 'A member'
     const body = parsed.text ?? '(no message body)'
+    const from = conversationFrom(memberName)
     await enqueueEmail({
       to: agent.email,
       // Show the member as the sender so the agent's inbox reads like a normal thread.
-      from: conversationFrom(memberName),
-      replyTo: buildConversationReplyAddress(conv.ref, 'house'),
+      from,
+      // The house token rides underneath the member's display name, so the agent's reply box shows a
+      // name, not the raw signed address (owner ruling 2026-10-12).
+      replyTo: withDisplayName(from, buildConversationReplyAddress(conv.ref, 'house')),
       subject: bridgeReplySubject(conv.subject),
       html: bridgeBodyToHtml(body),
       text: body,
@@ -572,15 +585,18 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
     try {
       const authority = parseConversationReplyAddress(parsed.recipients)
       if (!authority || authority.role !== 'house' || authority.ref !== conv.ref) throw new Error('House reply authority missing')
+      const from = conversationFrom(agent.name)
+      const rendered = await bridgeMemberEmail(conv, body)
       const result = await enqueueAtomicConversationEmail({
         replyAuthority: { ref: authority.ref, token: authority.token },
         conversationId: conv.id, actorProfileId: agentId, externalMessageId: parsed.messageId,
         observedSender: parsed.from, body,
         payload: {
-          to: conv.externalEmail, from: conversationFrom(agent.name),
-          // Member-facing Reply-To: the Space's own alias when aliases are on (EMAIL-013).
-          replyTo: await buildSpaceConversationReplyAddress(conv.ref, conv.spaceId),
-          subject: bridgeReplySubject(conv.subject), html: bridgeBodyToHtml(body), text: body,
+          to: conv.externalEmail, from,
+          // Member-facing Reply-To: the Space's own alias when aliases are on (EMAIL-013), masked with
+          // the agent's display name (owner ruling 2026-10-12).
+          replyTo: withDisplayName(from, await buildSpaceConversationReplyAddress(conv.ref, conv.spaceId)),
+          subject: bridgeReplySubject(conv.subject), html: rendered.html, text: rendered.text,
           headers: { 'Message-ID': atomicBridgeMessageId(conv.id, parsed.messageId) },
         },
       }, createAdminClient() as unknown as import('@/lib/comms/atomic-email-intent').AtomicIntentRpc)
@@ -636,16 +652,19 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
 
   // Send onward to the member. Reply-To = the MEMBER address so their reply comes back INBOUND.
   try {
+    const from = conversationFrom(agent?.name ?? null)
+    const rendered = await bridgeMemberEmail(conv, body)
     await enqueueEmail({
       to: conv.externalEmail,
-      from: conversationFrom(agent?.name ?? null),
-      // Member-facing Reply-To: the Space's own alias when aliases are on (EMAIL-013). The HOUSE
-      // address above stays a Frequency-signed token: aliases carry the member role only, and the
-      // house route is what authenticates the operator's reply from their own inbox.
-      replyTo: await buildSpaceConversationReplyAddress(conv.ref, conv.spaceId),
+      from,
+      // Member-facing Reply-To: the Space's own alias when aliases are on (EMAIL-013), masked with the
+      // agent's display name (owner ruling 2026-10-12). The HOUSE address above stays a
+      // Frequency-signed token: aliases carry the member role only, and the house route is what
+      // authenticates the operator's reply from their own inbox.
+      replyTo: withDisplayName(from, await buildSpaceConversationReplyAddress(conv.ref, conv.spaceId)),
       subject: bridgeReplySubject(conv.subject),
-      html: bridgeBodyToHtml(body),
-      text: body,
+      html: rendered.html,
+      text: rendered.text,
       headers: { 'Message-ID': newConversationMessageId(conv.ref) },
     })
   } catch (err) {
