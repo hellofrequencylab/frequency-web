@@ -598,6 +598,16 @@ To reconcile a prior authorized read-only aggregate query, provide `--observatio
 
 Unknown and denied consent count as marketing exclusions. Granted consent is only an upper bound until address validity, deduplication, topic mutes and global/Space suppression are checked. Do not turn imports into subscribed contacts. The owner selects one isolated test recipient explicitly; the readiness command has no send action. Observe the resulting authenticated headers, provider delivery and correctly scoped inbound/answered reply separately. Production provider domains, quota, webhook subscription and environment overrides require authorized account inspection; missing evidence remains `not-observed`.
 
+### Space email rollout switches (EMAIL-002, EMAIL-003, EMAIL-013)
+
+Three env switches, all off by default, all read through `envFlag` (`1` / `true` / `on`). The migrations behind them are applied in production; the switches are what stay off. Turn one on in Vercel Production only when its row's open evidence is in, then redeploy.
+
+| Switch | Turns on | Gate before turning it on | Turn it off |
+|---|---|---|---|
+| `EMAIL_ATOMIC_BRIDGE_ENABLED` | Bridged replies write message, intent and queue job in one RPC | EMAIL-002 concurrency proof; the CRM timeline mirror is written for bridged replies | Unset. Committed queue jobs still drain. |
+| `EMAIL_PROVIDER_ACCEPTANCE_ENABLED` | Each send records provider acceptance in `email_provider_attempts` before it counts as sent | EMAIL-003: one observed real send carries a provider id | Unset. Jobs already attempted keep the ledger (sticky per job). |
+| `SPACE_EMAIL_REPLY_ALIASES_ENABLED` | New Space threads get tenant reply aliases | EMAIL-013, below | Unset. Issued aliases still route. |
+
 ### Space reply alias prerequisite (EMAIL-013)
 
 `SPACE_EMAIL_REPLY_ALIASES_ENABLED` defaults off. Enable only after migration080 replay/RLS proof and a controlled receiving test through the existing signed inbound webhook establish that the explicitly configured `CONVERSATION_REPLY_DOMAIN` works. This flag provisions neither DNS nor receiving. Immediate Space compose then issues member-only tenant aliases; batches retain legacy routes. Disable the flag to stop new issuance while preserving issued routes. Service-only `space_email_reply_aliases.revoked_at` revokes a route; old paid/free downgrades do not. Invalid routes persist bounded fingerprints in `space_email_reply_quarantine`; storage faults request redelivery. Owner revocation controls, retention, all-send coverage and full tenant inbound acceptance remain open.

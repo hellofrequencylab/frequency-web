@@ -1,5 +1,6 @@
 import 'server-only'
 import { reserveAiAttempt, settleAiAttempt, holdAiAttempt, type AiAccountingContext } from '@/lib/ai/accounting'
+import { envFlag } from '@/lib/env/string'
 
 // Recraft API client — The Loom's managed image/vector engine (docs/RESEARCH-ASSET-GEN.md). Recraft
 // is the pragmatic managed pick for consistent VECTOR icon sets + brand styles + instruction SVG
@@ -44,7 +45,7 @@ const LANE_STYLE: Record<RecraftLane, string> = {
 // Published API prices: https://www.recraft.ai/pricing?tab=api (2026-10-08).
 // The API returns no invoice amount; settlement records the operation's tariff estimate.
 async function paidRequest<T>(context: AiAccountingContext, cost: number, run: () => Promise<T>): Promise<T> {
-  if (process.env.AI_DISABLED === '1') throw new Error('AI is paused')
+  if (envFlag('AI_DISABLED')) throw new Error('AI is paused')
   key() // Reject missing configuration before reserving or dispatching.
   const id = await reserveAiAttempt(context, 'recraft-v3', cost)
   let result: T

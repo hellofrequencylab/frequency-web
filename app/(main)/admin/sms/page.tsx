@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { smsEnabledFlag } from '@/lib/platform-flags'
 import { isSmsProvisioned, isSmsConsentTableReady } from '@/lib/comms/sms'
 import { SmsToggle } from './sms-toggle'
+import { envFlag } from '@/lib/env/string'
 
 // The operator console for the SMS channel ("text the group", ADR-256) — the single
 // hardest-gated channel we run. SMS only ever sends when BOTH are true: the A2P 10DLC
@@ -86,7 +87,7 @@ export default async function AdminSmsPage() {
 
   // Legal registration status. Booleans only — the console reads whether each secret is
   // present, never its value.
-  const provisioningEnabled = process.env.SMS_PROVISIONING_ENABLED === 'true'
+  const provisioningEnabled = envFlag('SMS_PROVISIONING_ENABLED')
   const brandSet = !!process.env.SMS_A2P_BRAND_ID
   const campaignSet = !!process.env.SMS_A2P_CAMPAIGN_ID
   const serviceSet = !!process.env.TWILIO_MESSAGING_SERVICE_SID

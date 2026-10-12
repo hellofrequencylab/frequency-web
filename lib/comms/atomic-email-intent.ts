@@ -3,11 +3,11 @@ import { createHash } from 'node:crypto'
 import { getConversationByRef } from '@/lib/comms/conversations'
 import { verifyConversationToken } from '@/lib/comms/reply-address'
 import type { EmailPayload } from '@/lib/email'
-import { envString } from '@/lib/env/string'
+import { envFlag, envString } from '@/lib/env/string'
 
 /** Explicit consumer-before-producer switch; leave unset until SQL consequence, dispatch/acceptance and bridge-authentication gates pass. */
 export function atomicBridgeEnabled(): boolean {
-  return process.env.EMAIL_ATOMIC_BRIDGE_ENABLED === 'true'
+  return envFlag('EMAIL_ATOMIC_BRIDGE_ENABLED')
 }
 
 /** Stable payload across webhook replay; random Message-ID would make an identical receive conflict. */

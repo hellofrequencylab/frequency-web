@@ -36,6 +36,7 @@ import {
   type ConversationRow,
 } from '@/lib/comms/conversations'
 import { conversationFrom } from '@/lib/comms/from-address'
+import { envFlag } from '@/lib/env/string'
 import { resolveTenantReplyAlias, quarantineTenantReplyAlias } from './tenant-reply-alias'
 
 /** The normalized inbound message the router works from — a superset of the legacy {from,subject,text}. */
@@ -465,8 +466,7 @@ export async function routeInboundReply(parsed: ParsedInboundMessage): Promise<I
 /** The email bridge (ADR-814): forward member replies to the agent's inbox and route the agent's mailed-in
  *  reply back out to the member. OFF by default; needs inbound receiving already live. */
 function emailBridgeEnabled(): boolean {
-  const v = (process.env.CONVERSATION_EMAIL_BRIDGE ?? '').trim().toLowerCase()
-  return v === '1' || v === 'true' || v === 'on'
+  return envFlag('CONVERSATION_EMAIL_BRIDGE')
 }
 
 /** The conversational sending identity (matches the reply actions' From: "<Name> via Frequency <addr>"). */
