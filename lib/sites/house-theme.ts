@@ -118,6 +118,10 @@ export function siteHasContactPage(preferences: unknown): boolean {
 /** The Book page's path on a website (LIVE-835). `book` is a reserved page slug (lib/spaces/profile-pages), so
  *  no custom page can take it. Owner ask 2026-10-07: "If someone clicks book, that happens through the site." */
 export const SITE_BOOK_SLUG = 'book'
+/** SCAN-834: the page a website guest's confirmation link opens (`/confirm-booking?token=...`). Served by
+ *  app/hosted/[host]/confirm-booking, a static sibling of the `[page]` route, so no site page may take
+ *  this slug. */
+export const SITE_CONFIRM_BOOKING_SLUG = 'confirm-booking'
 
 /** The website's Book page (`/book`) is offered once the Space takes bookings: at least one weekly
  *  availability window (a service with no hours has no times to pick, and booking refuses it). Without one

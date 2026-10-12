@@ -30,7 +30,8 @@ import { cn } from '@/lib/utils'
 // GUEST MODE (LIVE-835). On a Space website's Book page the picker takes `guest` (the Space slug): the visitor
 // has no account, so it asks for a name and an email, offers a "Keep me posted" box and carries a hidden
 // honeypot, then books through createGuestBookingAction. No reschedule, no deposit, no "your bookings": the
-// confirmation email is the visitor's record. Without `guest` the member flow is unchanged.
+// confirmation email is the visitor's record. SCAN-834: a guest success is a 30 minute HOLD; the time is
+// theirs once they click the link in the "Confirm your booking" email, so the calm screen says so. Without `guest` the member flow is unchanged.
 
 const NO_OP_SUBSCRIBE = () => () => {}
 
@@ -192,11 +193,11 @@ export function BookingPicker({
       <div className="rounded-card border border-success/30 bg-success-bg px-6 py-8 text-center">
         <CalendarCheck className="mx-auto mb-3 h-8 w-8 text-success" aria-hidden />
         <p className="text-body-sm font-semibold text-text">
-          {isReschedule ? 'You are rescheduled.' : 'You are booked.'}
+          {isReschedule ? 'You are rescheduled.' : isGuest ? 'Check your email to confirm.' : 'You are booked.'}
         </p>
         <p className="mx-auto mt-1 max-w-sm text-body-sm text-muted">
           {isGuest
-            ? `${when} (${viewerTzLabel}). Your confirmation email is on its way.`
+            ? `We are holding ${when} (${viewerTzLabel}) for 30 minutes. Click the link we just sent to make it yours.`
             : `${when} (${viewerTzLabel}). You can manage this from your bookings.`}
         </p>
         <button

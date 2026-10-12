@@ -13486,7 +13486,11 @@ export type Database = {
           created_at: string
           ends_at: string
           guest_email: string | null
+          guest_confirm_expires_at: string | null
+          guest_confirm_token: string | null
+          guest_confirmed_at: string | null
           guest_name: string | null
+          guest_opt_in: boolean
           id: string
           member_profile_id: string | null
           note: string | null
@@ -13505,7 +13509,11 @@ export type Database = {
           created_at?: string
           ends_at: string
           guest_email?: string | null
+          guest_confirm_expires_at?: string | null
+          guest_confirm_token?: string | null
+          guest_confirmed_at?: string | null
           guest_name?: string | null
+          guest_opt_in?: boolean
           id?: string
           member_profile_id?: string | null
           note?: string | null
@@ -13524,7 +13532,11 @@ export type Database = {
           created_at?: string
           ends_at?: string
           guest_email?: string | null
+          guest_confirm_expires_at?: string | null
+          guest_confirm_token?: string | null
+          guest_confirmed_at?: string | null
           guest_name?: string | null
+          guest_opt_in?: boolean
           id?: string
           member_profile_id?: string | null
           note?: string | null

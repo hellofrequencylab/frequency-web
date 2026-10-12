@@ -1326,6 +1326,91 @@ export async function sendBookingConfirmationEmail(params: {
   })
 }
 
+// ── Guest booking hold: "Confirm your booking" (SCAN-834) ──────────────────────────────────────
+// A website visitor typed a name and an email and picked a time. Nothing is booked until they click the
+// link below, which is what proves the address is theirs: so this is a permission request (transactional),
+// not a confirmation, and it carries no calendar file. A guest is not a member, so the footer says why
+// they got it and offers no manage-emails control (there is nothing to manage; ignoring it is enough).
+
+export async function sendGuestBookingConfirmEmail(params: {
+  to: string
+  guestName: string
+  spaceName: string
+  serviceName: string | null
+  whenAbsolute: string
+  durationMinutes: number
+  confirmUrl: string
+  holdMinutes: number
+}) {
+  await enqueueEmail({
+    to: params.to,
+    subject: `Confirm your booking with ${params.spaceName}`,
+    html: guestBookingConfirmHtml(params),
+    text: guestBookingConfirmText(params),
+  })
+}
+
+function guestBookingFooter(spaceName: string): EmailFooter {
+  return {
+    text: `You're receiving this because someone entered this email to book a time with ${escapeHtml(spaceName)}. If that was not you, ignore it and nothing happens.`,
+    unsubscribe: false,
+  }
+}
+
+function guestBookingConfirmHtml(p: {
+  guestName: string
+  spaceName: string
+  serviceName: string | null
+  whenAbsolute: string
+  durationMinutes: number
+  confirmUrl: string
+  holdMinutes: number
+}): string {
+  const title = p.serviceName ?? `Session with ${p.spaceName}`
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      One quick step
+    </p>
+    <h1 style="${h1Style}">${escapeHtml(title)}</h1>
+    <p style="${pStyle}">Hi ${escapeHtml(p.guestName)}, we are holding this time for you. Confirm it below and it is yours.</p>
+    <p style="${pStyle}">
+      <strong>${escapeHtml(p.whenAbsolute)}</strong><br>
+      <span style="color:#777;">${p.durationMinutes} minute session with ${escapeHtml(p.spaceName)}</span>
+    </p>
+    <p style="margin:0 0 28px;">
+      <a href="${p.confirmUrl}" style="${btnStyle}">Confirm my booking</a>
+    </p>
+    <p style="${pStyle}font-size:13px;color:#888;">
+      The hold lasts ${p.holdMinutes} minutes. After that the time opens up again and you can book a fresh one.<br>
+      If the button doesn't work, paste this into your browser:<br>
+      <a href="${p.confirmUrl}" style="color:#888;">${p.confirmUrl}</a>
+    </p>
+  `, guestBookingFooter(p.spaceName))
+}
+
+function guestBookingConfirmText(p: {
+  guestName: string
+  spaceName: string
+  serviceName: string | null
+  whenAbsolute: string
+  durationMinutes: number
+  confirmUrl: string
+  holdMinutes: number
+}): string {
+  return `One quick step: ${p.serviceName ?? p.spaceName}
+
+Hi ${p.guestName}, we are holding this time for you. Confirm it here and it is yours:
+
+${p.confirmUrl}
+
+When: ${p.whenAbsolute}
+Length: ${p.durationMinutes} minute session with ${p.spaceName}
+
+The hold lasts ${p.holdMinutes} minutes. After that the time opens up again and you can book a fresh one.
+
+If that was not you, ignore this email and nothing happens.`
+}
+
 function bookingConfirmationHtml(p: {
   recipientName: string
   audience: 'member' | 'owner'

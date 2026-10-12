@@ -54,7 +54,11 @@ export async function BookingOwnerList({ spaceId }: { spaceId: string }) {
           <div className="min-w-0">
             <p className="truncate text-body-sm font-semibold text-text">{b.memberName}</p>
             {/* A guest who booked on the website (LIVE-835) has no profile: show the address they gave. */}
-            {b.guestEmail && <p className="truncate text-meta text-muted">{b.guestEmail} · Website booking</p>}
+            {b.guestEmail && (
+              <p className="truncate text-meta text-muted">
+                {b.guestEmail} · {b.awaitingGuestConfirmation ? "Awaiting the guest's confirmation" : 'Website booking'}
+              </p>
+            )}
             <p className="text-meta text-muted">
               {whenFmt.format(new Date(b.startsAt))} ({tzLabel})
             </p>
@@ -70,7 +74,8 @@ export async function BookingOwnerList({ spaceId }: { spaceId: string }) {
               </dl>
             )}
           </div>
-          <BookingCancelButton bookingId={b.id} />
+          {/* SCAN-834: an unconfirmed guest hold lapses on its own within the hour; nothing to cancel yet. */}
+          {!b.awaitingGuestConfirmation && <BookingCancelButton bookingId={b.id} />}
         </li>
       ))}
     </ul>

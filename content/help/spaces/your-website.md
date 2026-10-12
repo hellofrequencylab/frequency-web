@@ -141,9 +141,13 @@ website keeps its current look until that theme is ready.
 If your Space has a service or open times set up, your website gets a Book page. A visitor books
 right there with a name and an email. No Frequency account needed.
 
-The guest gets a confirmation email with a calendar file and a reminder before their time. You get
-your usual booking email with their name and address, and they land in your Space Contacts. They
-only get your news if they tick **Keep me posted**.
+The time is held for thirty minutes while the guest confirms it from a link we email them. If they do
+not click in time, the hold lapses and the time opens up again. Until they click, it shows in your
+bookings as awaiting the guest's confirmation.
+
+Once they confirm, the guest gets a confirmation email with a calendar file and a reminder before
+their time. You get your usual booking email with their name and address, and they land in your Space
+Contacts. They only get your news if they tick **Keep me posted**.
 
 A few limits for guests:
 

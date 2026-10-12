@@ -23,6 +23,7 @@
 // the slot_minutes window math, a no-show policy, payments/packages, and per-MEMBER timezone
 // conversion. v1 keeps ONE timezone per Space and displays slots in that labeled timezone.
 
+import { randomBytes } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
@@ -44,6 +45,10 @@ import { eventInstant } from '@/lib/time/zone'
  *  window the ticket rail holds a seat; an abandoned session frees its slot through the
  *  checkout.session.expired path instead of Stripe's 24-hour default. */
 export const BOOKING_CHECKOUT_SECONDS = 30 * 60
+
+/** SCAN-834: how long a website guest's unconfirmed hold keeps its slot. The guest clicks the link in
+ *  the "Confirm your booking" email inside this window or the hold lapses and the slot opens again. */
+export const GUEST_HOLD_MINUTES = 30
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -169,6 +174,8 @@ export interface SpaceBooking {
   note: string | null
   /** P3: the member's answers to the service's booking questions (labeled), for the owner calendar. */
   answers: BookingAnswer[]
+  /** SCAN-834: a website guest's hold that still waits for the click on their confirmation email. */
+  awaitingGuestConfirmation: boolean
 }
 
 // How far ahead a member may book. v1 offers a rolling two-week window of open slots.
@@ -518,6 +525,11 @@ type BookingRow = {
   note: string | null
   answers?: unknown
   service_type_id?: string | null
+  /** SCAN-834: the guest hold columns (migration 20270346008300). Absent before it is applied. */
+  guest_confirm_token?: string | null
+  guest_confirm_expires_at?: string | null
+  guest_confirmed_at?: string | null
+  guest_opt_in?: boolean | null
 }
 
 type AvailabilityQuery = {
@@ -534,6 +546,7 @@ type BookingQuery = {
   eq: (col: string, val: string) => BookingQuery
   in: (col: string, vals: string[]) => BookingQuery
   gte: (col: string, val: string) => BookingQuery
+  lte: (col: string, val: string) => BookingQuery
   order: (col: string, opts: { ascending: boolean }) => BookingQuery
   update: (patch: Record<string, unknown>) => BookingQuery
   insert: (rows: Record<string, unknown>[]) => BookingQuery
@@ -620,6 +633,9 @@ const BOOKING_COLS_P3 = `${BOOKING_COLS}, answers, service_type_id`
 // LIVE-835: the guest booker columns. Read first, with the P3 and base reads as fallbacks, so a database
 // without the 20270346005900 migration keeps reading exactly as before.
 const BOOKING_COLS_GUEST = `${BOOKING_COLS_P3}, guest_name, guest_email`
+// SCAN-834: the guest hold columns. Read first where a hold matters, with the earlier reads as fallbacks,
+// so a database without the 20270346008300 migration keeps reading exactly as before.
+const BOOKING_COLS_HOLD = `${BOOKING_COLS_GUEST}, guest_confirm_token, guest_confirm_expires_at, guest_confirmed_at, guest_opt_in`
 const SERVICE_TYPE_COLS = 'id, space_id, name, description, duration_minutes, price_cents, active, sort_order, product_id'
 const SERVICE_TYPE_COLS_P3 = `${SERVICE_TYPE_COLS}, questions`
 
@@ -993,15 +1009,63 @@ async function readConfirmedBookings(spaceId: string, fromISO: string): Promise<
  *  once the bookable-services migration is applied, so pre-migration this reads exactly like confirmed.
  *  Service-role; FAIL-SAFE to []. */
 async function readBlockingBookings(spaceId: string, fromISO: string): Promise<BookingRow[]> {
+  // SCAN-834: a website guest's hold blocks its slot only until it expires. Read the hold columns first
+  // so an expired, not-yet-released hold drops out here; pre-migration the base read blocks as before.
+  for (const cols of [BOOKING_COLS_HOLD, BOOKING_COLS]) {
+    try {
+      const { data, error } = await bookingsTable()
+        .select(cols)
+        .eq('space_id', spaceId)
+        .in('status', ['confirmed', 'pending'])
+        .gte('starts_at', fromISO)
+        .order('starts_at', { ascending: true })
+      if (error || !data) continue
+      return data.filter((row) => !guestHoldExpired(row))
+    } catch {
+      /* the hold columns are missing (pre-migration): try the base read */
+    }
+  }
+  return []
+}
+
+/** Is this row a website guest hold whose confirmation window has lapsed? Pure. A confirmed row, a
+ *  member row, and a paid deposit hold (no token) are never "expired" here. */
+export function guestHoldExpired(
+  row: { status: string; guest_confirm_token?: string | null; guest_confirm_expires_at?: string | null },
+  now: Date = new Date(),
+): boolean {
+  if (row.status !== 'pending' || !row.guest_confirm_token || !row.guest_confirm_expires_at) return false
+  const t = new Date(row.guest_confirm_expires_at).getTime()
+  return Number.isFinite(t) && t <= now.getTime()
+}
+
+/** Release every lapsed website guest hold on a Space (status pending -> cancelled), so the
+ *  one-active-per-slot index does not keep a dead hold's slot. Runs before a booking is placed. FAIL-SOFT:
+ *  pre-migration there is nothing to release. */
+async function releaseExpiredGuestHolds(spaceId: string, now: Date = new Date()): Promise<void> {
+  try {
+    await bookingsTable()
+      .update({ status: 'cancelled' })
+      .eq('space_id', spaceId)
+      .eq('status', 'pending')
+      .lte('guest_confirm_expires_at', now.toISOString())
+  } catch {
+    /* fail-soft: readBlockingBookings filters an expired hold out of the open-slot read regardless */
+  }
+}
+
+/** The website guest holds of a Space at/after `fromISO` that still wait for the guest's click (SCAN-834),
+ *  for the owner's list. Service-role; FAIL-SAFE to [] (and to [] pre-migration). */
+async function readAwaitingGuestHolds(spaceId: string, fromISO: string): Promise<BookingRow[]> {
   try {
     const { data, error } = await bookingsTable()
-      .select(BOOKING_COLS)
+      .select(BOOKING_COLS_HOLD)
       .eq('space_id', spaceId)
-      .in('status', ['confirmed', 'pending'])
+      .eq('status', 'pending')
       .gte('starts_at', fromISO)
       .order('starts_at', { ascending: true })
     if (error || !data) return []
-    return data
+    return data.filter((row) => !!row.guest_confirm_token && !guestHoldExpired(row))
   } catch {
     return []
   }
@@ -1644,9 +1708,12 @@ interface GuestBookingInput {
 /**
  * Book an open slot as a GUEST from the Space's website (LIVE-835). Server-only: the caller is the
  * guest door, which resolved `spaceId` from a public slug. Validates the name and email, refuses a
- * service that would take a deposit (there is no account to check out against), then places the
- * booking through the shared core. Side effects: the confirmation (guest + owner, with .ics), the
- * reminder, and the guest captured into the Space's CRM as a lead. Returns ActionResult.
+ * service that would take a deposit (there is no account to check out against), then places a HOLD
+ * through the shared core (SCAN-834, owner ruling 2026-10-12): a 'pending' row with a confirm token
+ * that lapses after GUEST_HOLD_MINUTES. The only side effect here is the "Confirm your booking" email
+ * to the address the guest typed. The booking confirmation, the reminder, and the CRM lead (with the
+ * guest's opt-in) all wait for confirmGuestBooking, which only the link in that email can reach.
+ * Returns ActionResult.
  */
 export async function createGuestBooking(input: GuestBookingInput): Promise<ActionResult> {
   const guest = cleanGuestBooker(input.name, input.email)
@@ -1664,6 +1731,12 @@ export async function createGuestBooking(input: GuestBookingInput): Promise<Acti
     }
   }
 
+  const hold = {
+    token: mintGuestConfirmToken(),
+    expiresAt: new Date(Date.now() + GUEST_HOLD_MINUTES * 60000).toISOString(),
+    optIn: input.optIn === true,
+  }
+
   const placed = await validateAndPlaceBooking({
     space,
     booker: { guestName: guest.guestName, guestEmail: guest.guestEmail },
@@ -1672,30 +1745,140 @@ export async function createGuestBooking(input: GuestBookingInput): Promise<Acti
     serviceTypeId,
     answers: input.answers ?? null,
     rescheduledFrom: null,
+    guestHold: hold,
   })
   if (!placed.ok) return fail(placed.error)
 
-  await afterBookingPlaced(space, placed)
+  // The one email a hold sends: the link that proves the address. Best-effort, like every booking mail;
+  // a hold whose email never lands simply lapses and frees its slot.
+  try {
+    const { notifyGuestBookingHold } = await import('@/lib/spaces/booking-notify')
+    const { siteConfirmBookingUrl } = await import('@/lib/sites/site-booking')
+    await notifyGuestBookingHold({
+      spaceId: space.id,
+      spaceName: space.brandName?.trim() || space.name,
+      guest: { name: guest.guestName, email: guest.guestEmail },
+      startsAt: placed.startsAt,
+      endsAt: placed.endsAt,
+      serviceName: placed.serviceName,
+      confirmUrl: await siteConfirmBookingUrl(space, hold.token),
+      holdMinutes: GUEST_HOLD_MINUTES,
+    })
+  } catch {
+    /* fail-soft */
+  }
+  return ok()
+}
 
-  // The guest lands in the owner's CRM as a lead (the website-booking door). Best-effort: a CRM miss
-  // (the contact allowance, a write error) never undoes a booking that already stands.
+/** A url-safe, hard-to-guess one-time confirm secret (the claim-token convention, lib/spaces/claim.ts). */
+function mintGuestConfirmToken(): string {
+  return randomBytes(24).toString('base64url')
+}
+
+/** What confirmGuestBooking tells the confirmation page. `already` is a second click on a link that
+ *  already did its job; `expired` and `invalid` are the two ways a link can fail. */
+export type GuestConfirmOutcome =
+  | {
+      ok: true
+      state: 'confirmed' | 'already'
+      spaceId: string
+      spaceSlug: string
+      spaceName: string
+      startsAt: string
+      endsAt: string
+      serviceName: string | null
+    }
+  | { ok: false; reason: 'expired' | 'invalid' }
+
+/**
+ * The click on a website guest's confirmation link (SCAN-834). Server-only; the caller passes the token
+ * from the link. A live, unexpired hold flips to confirmed with a COMPARE-AND-SET scoped to
+ * (token, status pending), so two clicks confirm once; the first then sends the booking confirmation
+ * (guest + owner, with .ics), schedules the reminder, and records the guest in the Space CRM with the
+ * opt-in they ticked, none of which happened before this click. An expired hold is released on the spot.
+ */
+export async function confirmGuestBooking(rawToken: unknown): Promise<GuestConfirmOutcome> {
+  const token = typeof rawToken === 'string' ? rawToken.trim() : ''
+  if (!token || token.length > 64 || !/^[A-Za-z0-9_-]+$/.test(token)) return { ok: false, reason: 'invalid' }
+
+  let row: BookingRow | null = null
+  try {
+    const res = await bookingsTable().select(BOOKING_COLS_HOLD).eq('guest_confirm_token', token).maybeSingle()
+    row = res.error ? null : res.data
+  } catch {
+    row = null
+  }
+  const booker = row ? bookerFromRow(row) : null
+  if (!row || !booker || 'profileId' in booker) return { ok: false, reason: 'invalid' }
+
+  const space = await getSpaceById(row.space_id)
+  if (!space) return { ok: false, reason: 'invalid' }
+  const serviceName = row.service_type_id ? ((await resolveService(space.id, row.service_type_id))?.name ?? null) : null
+  const summary = {
+    spaceId: space.id,
+    spaceSlug: space.slug,
+    spaceName: space.brandName?.trim() || space.name,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    serviceName,
+  }
+
+  if (row.status === 'confirmed') return { ok: true, state: 'already', ...summary }
+  if (row.status !== 'pending') return { ok: false, reason: 'expired' }
+  if (guestHoldExpired(row)) {
+    await releaseExpiredGuestHolds(space.id)
+    return { ok: false, reason: 'expired' }
+  }
+
+  // Compare-and-set: only a still-pending row flips, so a double click confirms (and mails) once.
+  let flipped = false
+  try {
+    const res = await bookingsTable()
+      .update({ status: 'confirmed', guest_confirmed_at: new Date().toISOString(), guest_confirm_expires_at: null })
+      .eq('guest_confirm_token', token)
+      .eq('status', 'pending')
+      .select(BOOKING_COLS)
+      .maybeSingle()
+    flipped = !res.error && !!res.data
+  } catch {
+    flipped = false
+  }
+  if (!flipped) return { ok: true, state: 'already', ...summary }
+
+  // The booking stands from here. Its mail and reminder are best-effort, like every booking's.
+  try {
+    await afterBookingPlaced(space, {
+      ok: true,
+      bookingId: row.id,
+      booker,
+      startsAt: row.starts_at,
+      endsAt: row.ends_at,
+      serviceName,
+    })
+  } catch {
+    /* fail-soft */
+  }
+
+  // The guest lands in the owner's CRM as a lead only now, with the address proven by the click. Their
+  // "Keep me posted" tick was parked on the hold for this moment. Best-effort: a CRM miss (the contact
+  // allowance, a write error) never undoes a booking that already stands.
   try {
     const { captureLead } = await import('@/lib/crm/lead-capture')
     await captureLead({
       spaceId: space.id,
       door: 'website_booking',
-      email: guest.guestEmail,
-      displayName: guest.guestName,
-      where: space.brandName?.trim() || space.name,
-      label: placed.serviceName ? `Booked: ${placed.serviceName}` : 'Booked a time',
-      optedIn: input.optIn === true,
+      email: booker.guestEmail,
+      displayName: booker.guestName,
+      where: summary.spaceName,
+      label: serviceName ? `Booked: ${serviceName}` : 'Booked a time',
+      optedIn: row.guest_opt_in === true,
       channel: 'system',
-      metadata: { bookingId: placed.bookingId, startsAt: placed.startsAt, serviceName: placed.serviceName },
+      metadata: { bookingId: row.id, startsAt: row.starts_at, serviceName },
     })
   } catch {
     /* fail-soft: the booking and both emails already went out */
   }
-  return ok()
+  return { ok: true, state: 'confirmed', ...summary }
 }
 
 /** The result of a successful placement (used by the confirmation + reminder side effects). */
@@ -1723,8 +1906,12 @@ async function validateAndPlaceBooking(params: {
   serviceTypeId: string | null
   answers: Record<string, string> | null
   rescheduledFrom: string | null
+  /** SCAN-834: place a website guest's HOLD (status pending, with its confirm token and expiry) instead
+   *  of a confirmed booking. Null for every member path. */
+  guestHold?: { token: string; expiresAt: string; optIn: boolean } | null
 }): Promise<PlacedBooking | { ok: false; error: string }> {
   const { space, booker, startsAtISO, serviceTypeId, rescheduledFrom } = params
+  const guestHold = params.guestHold ?? null
   const spaceId = space.id
 
   const startsAt = new Date(startsAtISO)
@@ -1744,6 +1931,8 @@ async function validateAndPlaceBooking(params: {
   const scoped = windowsForService(allWindows, serviceTypeId)
   if (scoped.length === 0) return { ok: false, error: 'That time is no longer available. Pick another.' }
 
+  // SCAN-834: a lapsed guest hold must not keep its slot through the unique index, so release them first.
+  await releaseExpiredGuestHolds(spaceId, now)
   const context = await readScheduleContext(spaceId)
   const [booked, calendarBlocks] = await Promise.all([
     readBlockingBookings(spaceId, now.toISOString()),
@@ -1782,8 +1971,17 @@ async function validateAndPlaceBooking(params: {
     ...('profileId' in booker ? {} : { guest_name: bookerCols.guest_name, guest_email: bookerCols.guest_email }),
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
-    status: 'confirmed',
+    status: guestHold ? 'pending' : 'confirmed',
     note: cleanNote ? cleanNote : null,
+    // SCAN-834: a guest hold's columns ride the base row too, so a hold can never degrade into a confirmed
+    // booking on a database without the 20270346008300 migration: the insert fails instead.
+    ...(guestHold
+      ? {
+          guest_confirm_token: guestHold.token,
+          guest_confirm_expires_at: guestHold.expiresAt,
+          guest_opt_in: guestHold.optIn,
+        }
+      : {}),
   }
   // Include the P3 columns only when they carry a value, so a pre-migration insert (no such column)
   // is not attempted for the common case; if a bound insert errors on the missing column, retry base.
@@ -2358,7 +2556,14 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
   if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
 
   try {
-    const rows = await readConfirmedBookings(spaceId, new Date().toISOString())
+    const nowISO = new Date().toISOString()
+    const [confirmed, awaiting] = await Promise.all([
+      readConfirmedBookings(spaceId, nowISO),
+      // SCAN-834: a website guest's live hold shows too, marked as waiting on their click.
+      readAwaitingGuestHolds(spaceId, nowISO),
+    ])
+    const awaitingIds = new Set(awaiting.map((r) => r.id))
+    const rows = [...confirmed, ...awaiting].sort((a, b) => a.starts_at.localeCompare(b.starts_at))
     if (rows.length === 0) return []
 
     // Batch-resolve member display names (one query for all member bookers). A guest booking from the
@@ -2378,6 +2583,7 @@ export async function listSpaceBookings(spaceId: string): Promise<SpaceBooking[]
       endsAt: r.ends_at,
       note: r.note,
       answers: parseAnswers(r.answers),
+      awaitingGuestConfirmation: awaitingIds.has(r.id),
     }))
   } catch {
     return []

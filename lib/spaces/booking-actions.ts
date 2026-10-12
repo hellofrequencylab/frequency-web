@@ -10,6 +10,7 @@
 //   booking-picker.tsx            -> createBooking
 //   booking-cancel-button.tsx     -> cancelBooking
 //   the website's Book page       -> listGuestOpenSlotsAction / createGuestBookingAction (LIVE-835)
+//   the website's confirm page    -> confirmGuestBookingAction (SCAN-834)
 //
 // SERVER components (booking-member, booking-owner-list, the pages) import the READ actions
 // (listOpenSlots / listSpaceBookings / listSpaceAvailability / getSpaceBookingTimezone) directly
@@ -30,6 +31,8 @@ import {
   startServiceDeposit as startServiceDepositImpl,
   listPublicOpenSlots,
   createGuestBooking as createGuestBookingImpl,
+  confirmGuestBooking as confirmGuestBookingImpl,
+  type GuestConfirmOutcome,
   type AvailabilityWindow,
   type ServiceTypeInput,
   type ScheduleInput,
@@ -147,7 +150,10 @@ interface GuestBookingActionInput {
   company?: string
 }
 
-/** Book an open slot as a guest from a Space website (LIVE-835). Same ActionResult as createBooking. */
+/** Book an open slot as a guest from a Space website (LIVE-835). Same ActionResult as createBooking.
+ *  SCAN-834: a success here is a HOLD, not a booking. The guest's time is kept for GUEST_HOLD_MINUTES while
+ *  the "Confirm your booking" email travels to the address they typed; confirmGuestBookingAction finishes
+ *  it. Nothing is confirmed, mailed to the owner, or recorded as consent until that click. */
 export async function createGuestBookingAction(input: GuestBookingActionInput): Promise<ActionResult> {
   // The honeypot answers like a success: telling a bot it was caught only teaches it to stop.
   if (typeof input.company === 'string' && input.company.trim()) return ok()
@@ -172,4 +178,12 @@ export async function createGuestBookingAction(input: GuestBookingActionInput): 
     answers: input.answers ?? null,
     optIn: input.optIn === true,
   })
+}
+
+/** The click on a website guest's confirmation link (SCAN-834): the token from `/confirm-booking?token=`.
+ *  A live hold becomes the booking (confirmation mail, reminder, CRM lead with the guest's opt-in all
+ *  happen here and only here); an expired or unknown token fails closed. A token is 24 random bytes, so
+ *  no per-IP limit is needed to make guessing one pointless. */
+export async function confirmGuestBookingAction(token: string): Promise<GuestConfirmOutcome> {
+  return confirmGuestBookingImpl(token)
 }
