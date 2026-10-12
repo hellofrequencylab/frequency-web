@@ -1,5 +1,5 @@
 # EMAIL-013: trusted compose authorizes the conversation; inbound webhook verifies signature then alias HMAC/live Space mapping before service lookup. Quarantine stores fingerprints only.
-# LIVE-898: the Space brand a conversation email wears is read at the batch flush (a cron with no session) and at compose after the caller authorized the Space; it reads five public branding columns of one spaces row and writes nothing.
+# LIVE-902: the Space brand a conversation email wears is read at the batch flush (a cron with no session) and at compose after the caller authorized the Space; it reads five public branding columns of one spaces row and writes nothing.
 # LIVE-766: private Collective owner report revalidates parent plan and same-owner attachment before bounded member/event/finance reads.
 # check:admin-client baseline — every file allowed to import the RLS-bypassing service-role
 # client (lib/supabase/admin.ts). Frozen by the tenancy-walls ratchet (ADR-923): a new

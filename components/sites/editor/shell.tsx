@@ -47,8 +47,10 @@ function subscribeViewport(callback: () => void) {
 
 /** The editor's stored theme ids under their names (ADR-1726): Menswork is Bold, DAWN is Frequency. Midnight
  *  is retired (ADR-1728): a draft that still carries it is offered the two themes. */
-const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Frequency', Midnight: 'Midnight' }
-const EDITOR_THEME: Record<SiteThemeId, (typeof WEBSITE_THEMES)[number]> = { frequency: 'DAWN', bold: 'Menswork' }
+const WEBSITE_THEME_LABEL: Record<(typeof WEBSITE_THEMES)[number], string> = { Menswork: 'Bold', DAWN: 'Frequency', Midnight: 'Midnight', Wildheart: 'Wildheart' }
+const EDITOR_THEME: Record<SiteThemeId, (typeof WEBSITE_THEMES)[number]> = { frequency: 'DAWN', bold: 'Menswork', wildheart: 'Wildheart' }
+/** The site theme an editor theme stands for (the inverse of EDITOR_THEME; a retired theme reads as Frequency). */
+const siteThemeOf = (theme: (typeof WEBSITE_THEMES)[number]): SiteThemeId => (theme === 'Menswork' ? 'bold' : theme === 'Wildheart' ? 'wildheart' : 'frequency')
 const LOOK_LABEL: Record<SiteLookKey, string> = { corners: 'Corners', spacing: 'Spacing', header: 'Header', footer: 'Footer' }
 const DEFAULT_STYLE: SiteStyle = { theme: 'frequency', fonts: 'frequency', synced: true, spaceFonts: 'frequency', look: { corners: null, spacing: null, header: null, footer: null } }
 
@@ -94,9 +96,9 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     return () => { active = false; window.clearInterval(timer) }
   }, [onPresence])
   const [draft, setDraft] = useState(initial.draft)
-  const [style, setStyle] = useState<SiteStyle>(() => siteStyle ?? { ...DEFAULT_STYLE, theme: initial.draft.theme === 'Menswork' ? 'bold' : 'frequency' })
+  const [style, setStyle] = useState<SiteStyle>(() => siteStyle ?? { ...DEFAULT_STYLE, theme: siteThemeOf(initial.draft.theme) })
   const [styleError, setStyleError] = useState('')
-  const lookStyle = { ...style, theme: draft.theme === 'Menswork' ? ('bold' as const) : ('frequency' as const) }
+  const lookStyle = { ...style, theme: siteThemeOf(draft.theme) }
   async function saveStyle(patch: Parameters<NonNullable<WebsiteEditorShellProps['onStyle']>>[0], optimistic: SiteStyle) {
     const before = style
     setStyle(optimistic)
@@ -110,7 +112,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   const websiteBrand = resolveWebsiteBrand(draft, { logo, accent: brandAccent })
   const activeLogo = websiteBrand.logo
   const chromeDefaults = { name: brandName, tagline: (metadata?.websiteChrome as { tagline?: string | null } | undefined)?.tagline ?? null, cta: (metadata?.websiteChrome as { cta?: { label: string; href: string } | null } | undefined)?.cta ?? null }
-  const activeAccent = draft.theme === 'Menswork' ? websiteBrand.accent : draft.brand?.accent
+  const activeAccent = draft.theme === 'Menswork' || draft.theme === 'Wildheart' ? websiteBrand.accent : draft.brand?.accent
   const accentValue = String(websiteThemeVars(draft.theme, activeAccent)['--th-accent' as keyof React.CSSProperties])
   const colorInputValue = /^#[0-9a-f]{3}$/i.test(accentValue) ? `#${accentValue.slice(1).split('').map((part) => part + part).join('')}` : accentValue
   const latest = useRef(initial.draft)
@@ -155,7 +157,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // wears it, with the page theme's own defaults for any global style left to "the theme's own".
   const pageTheme = style.pages?.[page.slug] ?? null
   const canvasTheme = pageTheme ? EDITOR_THEME[pageTheme] : draft.theme
-  const pageLookStyle = { ...style, theme: canvasTheme === 'Menswork' ? ('bold' as const) : ('frequency' as const) }
+  const pageLookStyle = { ...style, theme: siteThemeOf(canvasTheme) }
   const selected = selectedId ? findBlockDeep(page.doc, config, selectedId) : null
   const outline = useMemo(() => buildOutline(page.doc, config), [page.doc, config])
   const groups = useMemo(() => derivePickerGroups(config, page.doc, 'website'), [page.doc, config])

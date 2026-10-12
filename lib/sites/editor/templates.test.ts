@@ -7,6 +7,8 @@ describe('website page layouts', () => {
     expect(websiteTemplateSections('Menswork', 'Program')).toContainEqual({ type: 'FeatureGrid', props: { source: 'offerings', title: 'Offerings' } })
     expect(websiteTemplateSections('DAWN', 'Circle finder').map((section) => section.type)).toContain('SpaceCommunity')
     expect(websiteTemplateSections('Midnight', 'Blank')).toEqual([])
+    expect(websiteTemplateSections('Wildheart', 'Season').map((s) => s.type)).toEqual(['PhotoHero', 'WildheartYearJourney', 'SpacePractices', 'SpaceEvents', 'WildheartSkyMap'])
+    expect(websiteTemplateSections('Wildheart', 'Program')[0]).toEqual({ type: 'WildheartNowLine' })
   })
   it('uses each theme’s hero and story presets rather than a shared fixed layout', () => {
     expect(websiteTemplateSections('Menswork', 'Program')[0]).toEqual({ type: 'PhotoHero', props: { content: 'below' } })

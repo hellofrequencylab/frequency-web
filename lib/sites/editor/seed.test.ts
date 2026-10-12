@@ -31,5 +31,8 @@ describe('website initialization from original site content', () => {
     expect(initialWebsiteTheme({ theme: 'menswork' })).toBe('Menswork')
     expect(initialWebsiteTheme({ theme: 'classic' })).toBe('DAWN')
     expect(initialWebsiteTheme({ websiteTheme: 'DAWN', theme: 'menswork' })).toBe('DAWN')
+    // Wildheart only when the owner saved it as the site theme; nothing applies it on its own.
+    expect(initialWebsiteTheme({ siteStyle: { theme: 'wildheart' } })).toBe('Wildheart')
+    expect(initialWebsiteTheme({ theme: 'wildheart' })).toBe('DAWN')
   })
 })
