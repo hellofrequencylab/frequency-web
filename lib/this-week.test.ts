@@ -4,6 +4,7 @@ import {
   renderThisWeek,
   thisWeekDedupeKey,
   thisWeekQueryBand,
+  type ThisWeekEvent,
   type ThisWeekEventRow,
   type ThisWeekRegion,
 } from './this-week'
@@ -147,7 +148,7 @@ describe('grouping by region', () => {
 })
 
 describe('the rendering', () => {
-  const events = [
+  const events: ThisWeekEvent[] = [
     {
       id: 'a',
       title: 'Sunrise circle <open to all>',
