@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-845",
+  "title": "Founder first-week rewards pay once, even if a member clears their own profile meta",
+  "status": "open",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "supabase/migrations/20270345013100_claim_founder_flags_compare_and_set.sql",
+    "ref": "Meta scan eight (2026-10-12), regression review of #3170 (SCAN-759)."
+  },
+  "detail": "FILED 2026-10-12. THE CONSEQUENCE: claim_founder_flags uses profiles.meta.founder.rewarded and .badge as the once-only record, but the 'profiles: self update' policy lets a member PATCH their own meta and prevent_economy_self_edit protects the economy columns, not meta. claimFounderRewards (app/(main)/founder/founder-actions.ts) pays Gems under action 'achievement', whose gem_config row has no daily cap, so 'PATCH meta.founder={} then claim' pays the per-task and completion Gems again each time. SCAN-759 fixed the race, not the record. THE FIX: keep the founder record where a member cannot write it (a service-role-only table), or a BEFORE UPDATE trigger on profiles that refuses a change to meta->'founder' unless the caller is service_role.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270345013100'&&/founder/.test(r('supabase/migrations/'+f))&&/(before update[\\s\\S]*profiles|founder_rewards|founder_claims)/i.test(r('supabase/migrations/'+f)))){console.error('SCAN-845: the founder once-only record lives in member-writable profile meta');process.exit(1)}\""
+  }
+}

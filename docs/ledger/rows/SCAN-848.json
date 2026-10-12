@@ -1,0 +1,18 @@
+{
+  "id": "SCAN-848",
+  "title": "A host cannot take a draft Circle live with a direct database update, skipping the hosting allowance",
+  "status": "open",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "supabase/migrations/20240102000000_hierarchy_v2.sql",
+    "ref": "Meta scan eight (2026-10-12), regression review of #3145 (SCAN-688)."
+  },
+  "detail": "FILED 2026-10-12. THE CONSEQUENCE: the 'circles: host/guide/mentor update' policy (using host_id = get_my_profile_id() or get_my_role() >= 'guide', no column limits) is never replaced, and the BEFORE UPDATE triggers on circles check the access and tier shape, not the status move. So status 'draft' to 'active' through PostgREST skips publishCircleAction's create gate and hosting allowance. The SCAN-688 row says no migration guards the transition. THE FIX: a BEFORE UPDATE trigger refusing old.status = 'draft' and new.status <> 'draft' unless the caller is service_role, or revoke UPDATE on circles from authenticated if no session-client writer remains.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!fs.readdirSync('supabase/migrations').some(f=>f>'20270345000000'&&/on public\\.circles/.test(r('supabase/migrations/'+f))&&/old\\.status\\s*=\\s*'draft'/.test(r('supabase/migrations/'+f)))){console.error('SCAN-848: a draft Circle can go live through a direct update');process.exit(1)}\""
+  }
+}
