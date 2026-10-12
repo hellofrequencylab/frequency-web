@@ -1,0 +1,7 @@
+{
+  "id": "OWN-096",
+  "wave": "W7",
+  "append": {
+    "detail": "\n\nCONFIRMED IN PRODUCTION 2026-10-12 20:30Z, two of three. (1) platform_flags.plan_collective_enabled reads true (set 2026-07-24; the row's earlier note was right, an agent's check against pricing_settings on 2026-10-12 was the wrong table). (2) https://frequencylocal.com/pricing renders the five tiers: Free, Business, Collective, Non Profit, Non Profit Collective (counted from the live HTML). OWN-095's three pre-switch messages were sent the same evening (25 accepted). Still open: the free-Space checkout refusal and a Business checkout end to end are real signed-in purchases, which LIVE-234's owner walk carries; this row closes when the owner reports them."
+  }
+}
