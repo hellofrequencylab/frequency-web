@@ -31,11 +31,11 @@ export default async function CollectiveNetworkPage({ params }: { params: Promis
   const now = new Date()
   const year = now.getUTCFullYear(), month1 = now.getUTCMonth() + 1
   const window = monthGridWindow(year, month1)
-  const [members, events] = await Promise.all([
+  const [members, events, hero] = await Promise.all([
     listPublicCollectiveMembers(parent), loadCollectiveNetworkWindow(parent, name, window.fromDay, window.toDay),
+    resolveIndexHero(`/spaces/${parent.slug}/network`),
   ])
   const upcoming = liveNetworkUpcoming(events, dayInZone(now, parent.timeZone))
-  const hero = await resolveIndexHero(`/spaces/${parent.slug}/network`)
   // Owner management and the public projection are separate doors: never add private members to this page.
   const management = caller?.id === parent.ownerProfileId
     ? <Link href={`/spaces/${slug}/settings/billing`} className={buttonClasses('secondary', 'sm')}>Manage member Spaces</Link> : undefined

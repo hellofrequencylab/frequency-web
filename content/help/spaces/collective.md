@@ -1,12 +1,12 @@
 ---
 title: Collective
-description: What the Collective plan is for, what it includes beyond Business, and what is still being built.
+description: What the Collective plan is for, what it includes beyond Business, where the network page and report live, and what is still being built.
 category: spaces
 order: 5
 published: 2026-10-06
-updated: 2026-10-08
+updated: 2026-10-12
 audience: member
-featureKeys: [billing]
+featureKeys: [billing, collective]
 status: published
 ---
 
@@ -26,6 +26,11 @@ Everything Business does, plus:
 - **A lower network fee** on customers the network introduces. Your own people and your tips stay at
   **0%**, as they are on every plan.
 - **Higher allowances** across the board, and five editable QR codes.
+- **A network page** with your member Spaces and one shared calendar of their events.
+- **A private Collective report** that adds up members, Events and revenue across the network.
+- **Shared listings**, so a Journey or Circle from one member Space can show on another.
+
+Each of these is explained below.
 
 The price, the yearly price, and the extra-Space price are all on the [pricing page](/pricing). Paying
 yearly gives you two months free, the same as every plan.
@@ -47,6 +52,36 @@ there is room.
 Select **Detach** beside a member Space to restore its own plan. Nothing it has built is deleted
 or moved. If the Collective is cancelled or suspended, member Spaces immediately use their own
 plans. A member Space that already has a paid plan keeps that plan.
+
+## Your network page
+
+Your Collective gets a **Network** tab on its Space page. It shows:
+
+- **Member Spaces**, each as a card that opens that Space.
+- **Up next**, the next few events from across the network.
+- **Shared calendar**, one month view of events from the Collective and its member Spaces.
+
+A member Space appears here once it is active and listed in the directory. A private member Space
+stays off this page, even though it is still part of your Collective. As the owner you also see
+**Manage member Spaces**, which takes you to **Plan and usage**.
+
+The Network tab shows while your Collective plan is active and your Space is connected to the
+network. If the plan ends, the page goes away and your member Spaces carry on as they are.
+
+## Your Collective report
+
+Open **Your reach** from Manage. Below your own reach numbers, the owner of the Collective sees a
+private section called **Your Collective**. It adds up the whole network, all time:
+
+- **Spaces**, **Active members**, **Events** and **Net revenue**.
+- **Gross revenue**, **Fees** and **Refunds** underneath.
+- A link to each member Space's own reach page.
+
+Each member and each Event is counted once, even if they show up in more than one Space. Revenue is
+in US dollars, after refunds, and covers settled sales, tickets, gifts and split shares. Membership
+billing is not included. Only the Collective's owner sees this section, and only while the
+Collective plan is active.
+
 ## Listing a Journey or Circle with another Space
 
 Open **Manage circles**, then **Collective listings**. Choose a published Journey or listed Circle
@@ -59,14 +94,12 @@ Private Journeys, unlisted Circles and inactive Spaces do not appear through a l
 
 ## What is still being built
 
-We would rather tell you straight than sell you a promise. Collective checkout is open now, and the
-network features arrive in stages:
+We would rather tell you straight than sell you a promise. One piece of the network is still on
+the way:
 
-- A network home: one shared calendar and a directory of your member Spaces.
-- Reporting that rolls up members, Events, and revenue across the Collective.
 - Shared membership across member Spaces, and revenue splits on co-hosted Events and Journeys.
 
-The price you start at holds while these land. We will tell you as each one goes live.
+The price you start at holds while it lands. We will tell you when it goes live.
 
 ## Is Collective right for me?
 

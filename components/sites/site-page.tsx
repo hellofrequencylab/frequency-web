@@ -239,13 +239,20 @@ export async function SitePage({
           .map((b) => ({ type: b.type, props: (b.props ?? {}) as Record<string, unknown> }))
       : null
   const mwPlan = mwBlocks ? planMensworkPage(mwBlocks) : null
-  const mwLive = skin || websitePage || mwPlan
-    ? await loadMensworkLive(space.id, {
-        events: true,
-        circles: !!websitePage || !!mwPlan?.some((p) => p.kind === 'circles'),
-        journeys: !!websitePage || !!mwPlan?.some((p) => p.kind === 'journeys'),
-      })
-    : null
+  // The live rows, the bound domain, the editor content and its feature data are independent reads, so
+  // they run together: a cache miss after every owner save pays for the slowest one, not the sum.
+  const [mwLive, boundDomain, websiteContent, websiteFeatures] = await Promise.all([
+    skin || websitePage || mwPlan
+      ? loadMensworkLive(space.id, {
+          events: true,
+          circles: !!websitePage || !!mwPlan?.some((p) => p.kind === 'circles'),
+          journeys: !!websitePage || !!mwPlan?.some((p) => p.kind === 'journeys'),
+        })
+      : null,
+    boundSiteDomain(space),
+    websitePage ? getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: websiteBrand.logo, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }) : null,
+    websitePage ? loadWebsiteFeatures(space.id, [websitePage.doc]) : {},
+  ])
   const seasonNow = skin
     ? {
         ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()),
@@ -256,13 +263,10 @@ export async function SitePage({
   const entity = siteEntitySchema({
     type: space.type,
     name: brandName,
-    url: siteBaseUrl(space.slug, await boundSiteDomain(space), origin),
+    url: siteBaseUrl(space.slug, boundDomain, origin),
     description: siteDescription(space, brandName, HOME_SLUG) ?? null,
     images: [space.coverImageUrl, space.brandLogoUrl],
   })
-  const websiteContent = websitePage ? await getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: websiteBrand.logo, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }) : null
-
-  const websiteFeatures = websitePage ? await loadWebsiteFeatures(space.id, [websitePage.doc]) : {}
 
   return (
     // The Space's PAGE THEME rides the same wrapper as the accent (ADR-578), so the site wears the
