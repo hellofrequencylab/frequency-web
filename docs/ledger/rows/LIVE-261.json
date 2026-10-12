@@ -1,0 +1,13 @@
+{
+  "id": "LIVE-261",
+  "wave": "W7",
+  "patch": {
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/space-setup.mjs"
+    }
+  },
+  "append": {
+    "detail": "AMENDED 2026-10-12 (ADR-1733, LIVE-901). The owner ruling: \"I set it up and thought I would be taken through the seeding process, but it just created it and dumped me in a circle.\" createSpace now redirects a Business or Nonprofit Space to /spaces/<slug>/setup (lib/spaces/setup.ts postCreateLanding), the member seeding walk (story, identity, contact and links, offerings, first things), and that walk FINISHES on /spaces/<slug>/manage/circles, so this row's end state (hosting, never the CRM command center) still holds and is now reached after the seeding rather than instead of it. A non-console type keeps the direct landing. The probe moved with the landing: it used to grep the redirect line for /manage/circles, which the amended line no longer carries; it now runs scripts/probes/space-setup.mjs, which asserts the finish href and the non-console landing both still say /manage/circles."
+  }
+}

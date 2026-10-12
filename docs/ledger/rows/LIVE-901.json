@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-901",
+  "title": "Space setup: a new Business or Nonprofit Space walks its owner through seeding before the Circles manager",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "M",
+  "source": {
+    "file": "docs/DECISIONS.md",
+    "ref": "ADR-1733: owner ruling 2026-10-12, \"it just created it and dumped me in a circle\""
+  },
+  "detail": "BUILT 2026-10-12 (ADR-1733, amends LIVE-261's landing). lib/spaces/setup.ts (pure): postCreateLanding(type, slug) sends a console type (business, nonprofit) to /spaces/<slug>/setup and every other type to /spaces/<slug>/manage/circles; spaceSetupSteps(SPACE_MANIFEST) reads the walk off the manifest's sections (story, identity, contact and links, offerings, then First things); spaceSetupFields drops the spark fields creation already asked. createSpace (lib/spaces/provision.ts) redirects through postCreateLanding. The route app/(main)/spaces/[slug]/setup/page.tsx gates on resolveSpaceManageAccess canManage and isConsoleSpaceType; space-setup-spark.tsx composes SparkShell and saves every step through the existing actions (updateSpaceProfile, setSpaceBusinessInfo, setSpaceImages, uploadSpaceImage, setSpaceAccent), so leaving mid-way loses nothing. Vera drafts the tagline and the story through suggestTaglineAction and draftSpaceBioAction, never blocking. First things offers the Circle wizard (/circles/new) and the Event Spark hosted by the Space (/events/new?space=<id>), both skippable; the finish lands on /manage/circles. ProfileCompletenessCard takes setupHref and offers Finish setting up to an older console Space while incomplete; menu catalogs untouched. Stale comments fixed in provision.ts, create-space-form.tsx and bundles.ts; docs/STUDIO.md's wizards cell no longer says none yet. Tests: lib/spaces/setup.test.ts, lib/spaces/provision.test.ts. LEFT OUT: the short About and the offering blurbs are veraDrafts in the manifest but have no draft seam, so they are typed; no website research door for members (the Seeder's, on purpose); no @wizard intercept route, since createSpace arrives by server redirect.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/space-setup.mjs"
+  },
+  "closed": "2026-10-12",
+  "wave": "W7"
+}

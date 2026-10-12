@@ -32,7 +32,7 @@ way only, and `pnpm check:studio` fails the build if it ever reverses.
 | **Shell** | `StudioWindow`: overlay panel, chrome, Esc/backdrop close, scroll-lock, sticky footer | ✅ built (ADR-142) |
 | **Builder kit** | identity, fields, autosave, footer, launcher, sortable, in `components/studio/kit/` | ✅ built (ADR-143) |
 | **Spark kit** | `components/studio/spark/*`: the shell, the doors, the shared drop zone, one renderer per field kind | ✅ built (ADR-986) |
-| **Wizards on the kit** | the per-entity flows composing the above | ⏳ none yet: the kit exists, the migration is next |
+| **Wizards on the kit** | the per-entity flows composing the above | ⏳ in progress. Event (`app/(main)/events/event-spark.tsx`) and Space setup, the member seeding walk a new Business or Nonprofit Space opens on (`app/(main)/spaces/[slug]/setup`, steps read off `SPACE_MANIFEST` by `lib/spaces/setup.ts`, ADR-1733) compose the kit; the rest still hand-roll their shell. This cell said "none yet" until 2026-10-12 |
 
 > **Correction (ADR-986).** This table previously marked the Registry "✅ built
 > (journey ready; others declared)". It did not exist. Neither did ADR-450 §3's

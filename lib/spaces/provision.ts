@@ -14,9 +14,11 @@
 //   5. Apply the SETUP PRESET (owner ruling 1 of ADR-1294): a capability bundle, chosen in the Spark
 //      or derived from the Mode, that leaves the Space's core tools on and the rest off but
 //      switchable. Subtractive only, so it can never grant a paid tool. Best-effort and logged.
-// On slug collision it returns a friendly fail; on success it redirects the new owner straight to the
-// Space's Circles manager, so the first screen is hosting rather than the console's command center
-// (LIVE-261; ADR-552 Phase 4 still holds for the console itself, no double-hop through /settings).
+// On slug collision it returns a friendly fail; on success it redirects the new owner into the
+// Space's SETUP walk (/spaces/<slug>/setup, ADR-1733), whose finish lands on the Circles manager, so
+// the first screen is seeding and the second is hosting, never the console's command center
+// (LIVE-261 amended; ADR-552 Phase 4 still holds for the console itself, no double-hop through
+// /settings). A non-console type skips the walk and lands on the Circles manager directly.
 // Returns ActionResult on any path that DOESN'T redirect.
 //
 // `spaces` is not in the generated DB types yet, so the insert/uniqueness read reach the table
@@ -41,6 +43,7 @@ import { featureGatesLive } from '@/lib/pricing/settings'
 import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-limits'
 import { resolveSetupPreset, setupPresetForMode } from '@/lib/pricing/bundles'
 import { setSpaceBundle } from '@/lib/pricing/space-bundle'
+import { postCreateLanding } from '@/lib/spaces/setup'
 
 /** The fields the create wizard collects. `visibility` defaults to 'network' (discoverable). The
  *  `modeVariant` (the Focus, Space Modes M3) is optional: null resolves to the type's default Focus. */
@@ -121,8 +124,10 @@ async function rootEntityId(): Promise<string | null> {
 
 /**
  * Provision a new entity Space owned by the caller, then seat the caller as a Space admin. On
- * success this REDIRECTS to /spaces/<slug>/manage (so it returns nothing on the happy path).
- * Returns an ActionResult error on any guard failure so the wizard can surface it inline.
+ * success this REDIRECTS to `postCreateLanding(type, slug)` (lib/spaces/setup.ts): the setup walk at
+ * /spaces/<slug>/setup for a Business or Nonprofit Space, the Circles manager for any other type, so
+ * it returns nothing on the happy path. Returns an ActionResult error on any guard failure so the
+ * wizard can surface it inline.
  */
 export async function createSpace(input: CreateSpaceInput): Promise<ActionResult> {
   const profileId = await getMyProfileId()
@@ -315,15 +320,17 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
     await ensureSpaceStages(spaceId, type, modeVariant)
   }
 
-  // Success: hand the owner straight to HOSTING (LIVE-261). This landed on `/manage` until
-  // 2026-09-09, which is the console's command center: revenue, pipeline, contacts. A person who
-  // has owned a Space for four seconds has no revenue and no contacts, so the first thing the
-  // product said to them was "here is your CRM" — a tool for a business they have not started
-  // running here yet. The Space is worth having because it hosts things, so the first screen is
-  // the Circles this Space runs, with its own "start one" affordance and a link back to the rest
-  // of the console. Hosting is free; the money surfaces are one click away when there is money.
+  // Success: hand the owner to SETUP, then to HOSTING (ADR-1733 amending LIVE-261). This landed
+  // on `/manage` until 2026-09-09, the console's command center (revenue, pipeline, contacts), and
+  // on `/manage/circles` until 2026-10-12, which the owner read as "it just created it and dumped
+  // me in a circle". A person who has owned a Space for four seconds has no story, no logo, no
+  // contact details and no offerings, so the first screen is the walk that asks for them
+  // (/spaces/<slug>/setup; every step saves through the existing update actions), and its finish
+  // is the Circles this Space runs, LIVE-261's end state. The rule lives in `postCreateLanding`:
+  // a console type (business / nonprofit) walks setup, any other type lands straight on
+  // /manage/circles exactly as before. Hosting is free; the money surfaces are one click away.
   // redirect() throws, so it must sit OUTSIDE any try/catch (Next docs: redirecting.md).
-  redirect(`/spaces/${slug}/manage/circles`)
+  redirect(postCreateLanding(type, slug))
 }
 
 /**

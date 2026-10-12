@@ -124,8 +124,9 @@ export const GENERAL_BUNDLE_ID = GENERAL_BUNDLE.id
  * "the whole product, in four nouns"), `loom` is the image library every one of those writes into,
  * and `reviews` is the trust surface a brand-new Space has nothing else to stand on.
  *
- * 🔴 `circles` is not a judgement call: `createSpace` lands a new owner on /manage/circles, so a
- * preset that switched Circles off would deliver them to a screen their own Space forbids.
+ * 🔴 `circles` is not a judgement call: `createSpace` walks a new owner through /spaces/<slug>/setup
+ * and that walk FINISHES on /manage/circles (ADR-1733, lib/spaces/setup.ts), so a preset that
+ * switched Circles off would deliver them to a screen their own Space forbids.
  */
 export const CORE_SPACE_FUNCTION_KEYS: readonly SpaceFunctionKey[] = [
   UNDISABLEABLE_FUNCTION_KEY,

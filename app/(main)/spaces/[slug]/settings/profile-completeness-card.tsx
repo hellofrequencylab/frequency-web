@@ -1,4 +1,5 @@
-import { Check, Circle } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowRight, Check, Circle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { scoreProfileCompleteness, type CompletenessInput } from '@/lib/spaces/completeness'
 import { ProgressTrack } from '@/components/ui/progress-track'
@@ -13,8 +14,13 @@ import { ProgressTrack } from '@/components/ui/progress-track'
 // and this card just renders. It is fully additive — it registers no console module and touches no menu
 // contract, it simply sits above the existing form. COPY runs CONTENT-VOICE: plain labels, no narrated
 // feelings, no em/en dashes.
+//
+// THE "FINISH SETTING UP" DOOR (ADR-1733). A Space created before the setup walk shipped never saw it,
+// so when the caller passes `setupHref` (a console-type Space, /spaces/<slug>/setup) and the profile is
+// still incomplete, the card offers that one link. Not a menu item (docs/MENU-CONTRACT.md): the door
+// lives on the meter that already says what is missing.
 
-export function ProfileCompletenessCard({ input }: { input: CompletenessInput }) {
+export function ProfileCompletenessCard({ input, setupHref }: { input: CompletenessInput; setupHref?: string }) {
   const report = scoreProfileCompleteness(input)
   // Tone the meter by how far along the profile is: a full profile reads as success, a mostly-there one
   // as primary, an early one as a quiet warning nudge. Tokens only, never a hex.
@@ -51,6 +57,16 @@ export function ProfileCompletenessCard({ input }: { input: CompletenessInput })
       />
 
       <p className="mt-2.5 text-meta text-muted">{headline}</p>
+
+      {setupHref && report.score < 100 && (
+        <Link
+          href={setupHref}
+          className="mt-3 inline-flex items-center gap-1.5 text-body-sm font-semibold text-primary-strong underline-offset-4 transition-colors hover:text-primary hover:underline"
+        >
+          Finish setting up
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+      )}
 
       {/* The checklist: every tracked field, done first (a quiet check) then the still-missing ones with
           their plain "why it matters" hint. When everything is done the list still shows the finished
