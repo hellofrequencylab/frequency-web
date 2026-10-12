@@ -94,7 +94,18 @@ export async function spaceNetworkBps(
     const { inheritedSpacePlan } = await import('@/lib/collective/member-spaces-store')
     plan = await inheritedSpacePlan(spaceId, plan)
   }
-  const rung = networkTakeRateBpsForPlan(plan, rate ?? (await resolvedNetworkRate()))
+  const resolvedRate = rate ?? (await resolvedNetworkRate())
+  let rung = networkTakeRateBpsForPlan(plan, resolvedRate)
+  if (spaceId) {
+    // SCAN-835 (owner ruling 2026-10-12): a staff limits waiver treats the Space as the plan it is
+    // waived to (limitsWaivedPlan, at least Collective) for the network fee too, never raising it:
+    // a waived free or Business Space pays the Collective rung, a Non Profit stays at 0.
+    const { spaceLimitsWaived } = await import('@/lib/pricing/space-allowance')
+    if (await spaceLimitsWaived(spaceId)) {
+      const { limitsWaivedPlan } = await import('@/lib/pricing/plans')
+      rung = Math.min(rung, networkTakeRateBpsForPlan(limitsWaivedPlan(plan), resolvedRate))
+    }
+  }
   return spaceId ? foundingBuyDownBps(rung, await foundingLockedTakeBps(spaceId)) : rung
 }
 
