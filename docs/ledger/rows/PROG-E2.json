@@ -1,0 +1,7 @@
+{
+  "id": "PROG-E2",
+  "wave": "W7",
+  "append": {
+    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY. Probe run as written: FAIL (scripts/block-baselines.json does not exist). First half holds: supabase/migrations/20270345007500_document_usage_index.sql ships public.block_type_usage(text). Second half not started: no scripts/block-baselines.json ratchet, no retirement migration, and the five block systems are all still in the tree (lib/entity-blocks/registry.ts, lib/page-editor/config.tsx components map, lib/email-studio/blocks + product-block.ts, lib/library/element-catalog.ts REGISTRY_NAMES, components/spotlight/*)."
+  }
+}

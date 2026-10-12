@@ -1,0 +1,7 @@
+{
+  "id": "PROG-A4",
+  "wave": "W7",
+  "append": {
+    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). NOT STARTED. Probe run as written: FAIL (no modules/crm barrel; supabase/tests has 69 pgTAP files and none named for crm or module enablement). CRM remains app/(main)/admin/crm plus the Space, Circle and Event copies kept identical by scripts/check-crm-parity.mjs."
+  }
+}
