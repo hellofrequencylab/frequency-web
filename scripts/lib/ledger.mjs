@@ -402,6 +402,81 @@ export function fragmentCount(root = '.') {
 // A broken fragment refuses the whole compaction: folding a list that is not the list would bake
 // the breakage into the base file where no gate names the fragment any more.
 
+// ── Supersession back-pointers (ADR-1730) ────────────────────────────────────────────────────
+// An ADR that retires another says so in its Status paragraph: `**Supersedes** [ADR-n](...)`. The
+// old ADR must then say "Superseded by ADR-<new>" somewhere in its own text, or a reader who lands
+// on it follows a dead rule. Only LINKED ids in the Supersedes clause count: the prose around them
+// names other ADRs in passing ("the ADR-168 rule still reads it"), and a link is the author saying
+// "this one". The clause runs to the next ` · ` separator or the end of the Status paragraph.
+
+/** Every ADR entry as { id, start, end } line ranges (end exclusive) over `lines`. */
+function adrEntries(lines) {
+  const out = []
+  lines.forEach((line, i) => {
+    const m = ADR_HEADING.exec(line)
+    if (m) {
+      if (out.length) out[out.length - 1].end = i
+      out.push({ id: m[1], start: i, end: lines.length })
+    }
+  })
+  return out
+}
+
+/** The index of an entry's Status line, or -1 (looked for in the first eight lines). */
+function statusLine(lines, entry) {
+  for (let i = entry.start + 1; i < Math.min(entry.end, entry.start + 9); i++) if (/^\*\*Status/.test(lines[i])) return i
+  return -1
+}
+
+/** [{ from, to }]: ADR `from` declares in its Status paragraph that it supersedes linked ADR `to`. */
+export function supersedeLinks(text) {
+  const lines = text.split('\n')
+  const links = []
+  for (const e of adrEntries(lines)) {
+    const at = statusLine(lines, e)
+    if (at < 0) continue
+    let para = ''
+    for (let i = at; i < e.end && lines[i].trim(); i++) para += `${lines[i]} `
+    const re = /\bsupersedes\b\**/gi
+    let m
+    while ((m = re.exec(para))) {
+      const rest = para.slice(m.index + m[0].length)
+      const clause = rest.split(/ · /)[0]
+      for (const l of clause.matchAll(/\[ADR-(\d+[a-z]?)\]/g)) if (l[1] !== e.id) links.push({ from: e.id, to: l[1] })
+    }
+  }
+  return links
+}
+
+/** The supersede links whose old ADR exists but never names its successor. */
+export function missingSupersedeBackLinks(text) {
+  const lines = text.split('\n')
+  const entries = new Map(adrEntries(lines).map((e) => [e.id, e]))
+  return supersedeLinks(text).filter(({ from, to }) => {
+    const old = entries.get(to)
+    if (!old) return false
+    const body = lines.slice(old.start, old.end).join('\n')
+    return !new RegExp(`superseded[^\\n]{0,400}ADR-${from}\\b`, 'i').test(body)
+  })
+}
+
+/** `text` with a back-pointer appended to each old ADR's Status line that lacks one. Compaction runs
+ *  it, so a fragment that supersedes an older ADR needs no in-place edit of the base file. */
+export function addSupersedeBackLinks(text) {
+  const missing = missingSupersedeBackLinks(text)
+  if (!missing.length) return text
+  const lines = text.split('\n')
+  const entries = new Map(adrEntries(lines).map((e) => [e.id, e]))
+  for (const { from, to } of missing) {
+    const old = entries.get(to)
+    const at = statusLine(lines, old)
+    const note = ` · **Superseded in part or whole by [ADR-${from}](DECISIONS.md)**; read that ADR for what it retires.`
+    if (at >= 0) lines[at] = lines[at] + note
+    else lines.splice(old.start + 1, 0, '', `**Status:** ${note.slice(3)}`)
+  }
+  return lines.join('\n')
+}
+
 /** { backlogText, decisionsText, remove: [paths], rows, adrs } for `root`. Throws LedgerError on a
  *  broken fragment. Pure over the tree: it writes nothing. */
 export function compactLedger(root = '.') {
@@ -409,9 +484,24 @@ export function compactLedger(root = '.') {
   const decisions = readDecisionsView(root)
   const problems = [...backlog.problems, ...decisions.problems]
   if (problems.length) throw new LedgerError(`refusing to compact broken fragments:\n  ${problems.join('\n  ')}`)
+  // A row may cite a fragment as its source.file. The fold deletes that file, so re-point the
+  // citation at the base file it folds into (the ADR number moves into ref) instead of leaving
+  // check:backlog a missing-source failure for every such row.
+  const removed = new Set([...backlog.fragments, ...decisions.fragments].map((f) => f.path))
+  for (const row of backlog.doc.entries ?? []) {
+    const file = row?.source?.file
+    if (typeof file !== 'string' || !removed.has(file)) continue
+    const adr = /\/(ADR-\d+)\.md$/.exec(file)
+    if (adr) {
+      row.source.file = 'docs/DECISIONS.md'
+      if (!String(row.source.ref ?? '').includes(adr[1])) row.source.ref = row.source.ref ? `${adr[1]}: ${row.source.ref}` : adr[1]
+    } else {
+      row.source.file = 'docs/BUILD-BACKLOG.json'
+    }
+  }
   return {
     backlogText: JSON.stringify(backlog.doc, null, 2),
-    decisionsText: decisions.text,
+    decisionsText: addSupersedeBackLinks(decisions.text),
     remove: [...backlog.fragments.map((f) => f.path), ...decisions.fragments.map((f) => f.path)],
     rows: backlog.fragments.length,
     adrs: decisions.fragments.length,

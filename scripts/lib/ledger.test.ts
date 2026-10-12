@@ -9,6 +9,9 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
+  addSupersedeBackLinks,
+  missingSupersedeBackLinks,
+  supersedeLinks,
   applyRowFragments,
   closeEdit,
   compactLedger,
@@ -301,6 +304,16 @@ describe('compaction (HYG-148)', () => {
     expect([again.backlogText, again.decisionsText]).toEqual(once)
   })
 
+  it('re-points a row that cites a fragment it deletes at the base file', () => {
+    write('docs/ledger/rows/S-1.json', JSON.stringify({ ...row('S-1'), source: { file: 'docs/ledger/adr/ADR-002.md', ref: 'owner report' } }))
+    write('docs/ledger/rows/S-2.json', JSON.stringify({ ...row('S-2'), source: { file: 'docs/ledger/rows/S-2.json', ref: 'owner ask' } }))
+    compactInto()
+    const base = JSON.parse(readFileSync(path.join(dir, 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    const src = (id: string) => base.entries.find((e: Row) => e.id === id).source
+    expect(src('S-1')).toEqual({ file: 'docs/DECISIONS.md', ref: 'ADR-002: owner report' })
+    expect(src('S-2')).toEqual({ file: 'docs/BUILD-BACKLOG.json', ref: 'owner ask' })
+  })
+
   it('refuses to fold a broken fragment into the base', () => {
     write('docs/ledger/rows/Z-1.json', JSON.stringify({ id: 'Z-1', patch: { status: 'done' } }))
     expect(() => compactLedger(dir)).toThrow(/refusing to compact broken fragments[\s\S]*Z-1/)
@@ -330,5 +343,33 @@ describe('helpers (HYG-148)', () => {
     const n = nextFree('.', ['HYG'])
     expect(n.adr).toBeGreaterThan(1635)
     expect(Number(n.rows.HYG.split('-')[1])).toBeGreaterThan(145)
+  })
+})
+
+describe('supersession back-pointers (ADR-1730)', () => {
+  const ledger = [
+    '# L', '',
+    '## ADR-010: old rule', '', '**Status:** Accepted', '', 'Body.', '',
+    '## ADR-011: other', '', '**Status:** Accepted', '', 'Body.', '',
+    '## ADR-020: new rule', '',
+    '**Status:** Accepted · **Supersedes** [ADR-010](DECISIONS.md) (the old rule), and the ADR-011 note stands · **Amends** [ADR-011](DECISIONS.md)',
+    '', 'Body.',
+  ].join('\n')
+
+  it('counts only LINKED ids inside the Supersedes clause, not passing mentions or the Amends clause', () => {
+    expect(supersedeLinks(ledger)).toEqual([{ from: '020', to: '010' }])
+  })
+
+  it('reports a one-way supersession, and adding the pointer clears it without touching anything else', () => {
+    expect(missingSupersedeBackLinks(ledger)).toEqual([{ from: '020', to: '010' }])
+    const fixed = addSupersedeBackLinks(ledger)
+    expect(missingSupersedeBackLinks(fixed)).toEqual([])
+    expect(fixed).toMatch(/## ADR-010: old rule\n\n\*\*Status:\*\* Accepted · \*\*Superseded in part or whole by \[ADR-020\]/)
+    expect(fixed.split('\n').length).toBe(ledger.split('\n').length)
+    expect(addSupersedeBackLinks(fixed)).toBe(fixed)
+  })
+
+  it('the live base ledger has no one-way supersession', () => {
+    expect(missingSupersedeBackLinks(readFileSync('docs/DECISIONS.md', 'utf8'))).toEqual([])
   })
 })

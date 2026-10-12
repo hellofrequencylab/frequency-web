@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { authoredCount, decide, isGenerated, listPullRequestFiles } from './pr-size-gate.mjs'
+import { authoredCount, decide, isGenerated, listPullRequestEntries, listPullRequestFiles } from './pr-size-gate.mjs'
 
 const png = (i: number) => `test/e2e/__screenshots__/visual.spec.ts/surface-${i}--dawn-light-desktop.png`
 const authored = (i: number) => `lib/thing-${i}.ts`
@@ -68,5 +68,27 @@ describe('the PR size gate counts authored files, not runner output (HYG-072, AD
   it('throws on a non-2xx page rather than counting a partial list as the truth', async () => {
     const fetchImpl = (async () => ({ ok: false, status: 403, json: async () => ({}) })) as unknown as typeof fetch
     await expect(listPullRequestFiles({ repo: 'o/r', number: '1', token: 't', fetchImpl })).rejects.toThrow('HTTP 403')
+  })
+
+  it('a compaction is not authorship: removed ledger fragments are generated, added or edited ones are not', () => {
+    const fold = [
+      ...Array.from({ length: 294 }, (_, i) => ({ filename: `docs/ledger/rows/LIVE-${i}.json`, status: 'removed' })),
+      { filename: 'docs/BUILD-BACKLOG.json', status: 'modified' },
+      { filename: 'docs/DECISIONS.md', status: 'modified' },
+    ]
+    expect(authoredCount(fold)).toBe(2)
+    expect(isGenerated({ filename: 'docs/ledger/adr/ADR-1.md', status: 'removed' })).toBe(true)
+    expect(isGenerated({ filename: 'docs/ledger/rows/LIVE-1.json', status: 'added' })).toBe(false)
+    expect(isGenerated({ filename: 'docs/ledger/rows/LIVE-1.json', status: 'modified' })).toBe(false)
+    expect(isGenerated('docs/ledger/rows/LIVE-1.json')).toBe(false)
+    expect(isGenerated({ filename: 'lib/x.ts', status: 'removed' })).toBe(false)
+  })
+
+  it('the gate reads each file with its status; the plain listing other gates import stays filenames', async () => {
+    const fetchImpl = (async () => ({ ok: true, status: 200, json: async () => [{ filename: 'docs/ledger/rows/A-1.json', status: 'removed' }, { filename: 'lib/a.ts' }] })) as unknown as typeof fetch
+    const entries = await listPullRequestEntries({ repo: 'o/r', number: '1', token: 't', fetchImpl })
+    expect(entries).toEqual([{ filename: 'docs/ledger/rows/A-1.json', status: 'removed' }, { filename: 'lib/a.ts', status: 'modified' }])
+    expect(authoredCount(entries)).toBe(1)
+    expect(await listPullRequestFiles({ repo: 'o/r', number: '1', token: 't', fetchImpl })).toEqual(['docs/ledger/rows/A-1.json', 'lib/a.ts'])
   })
 })
