@@ -28,9 +28,10 @@ async function view(path, cookie) {
   }
 }
 const first = await view(`/market/${productId}`)
-// Retain the discovery stamp (fq_mkt) exactly as a browser would, nothing else.
-const stamp = (first.setCookie ?? '').split(/,(?=\s*\w+=)/).map((c) => c.split(';')[0].trim()).find((c) => c.startsWith('fq_mkt='))
-const repeat = await view(`/market/${productId}`, stamp)
+// Retain every cookie the first view set (the fq_mkt discovery stamp and the fq_attr first-touch
+// cookie), exactly as a browser would: a repeat that drops one is a first view again.
+const jar = (first.setCookie ?? '').split(/,(?=\s*\w+=)/).map((c) => c.split(';')[0].trim()).filter((c) => c.includes('=')).join('; ')
+const repeat = await view(`/market/${productId}`, jar || undefined)
 const malformedId = await view('/market/not-a-product-id')
 const privateView = await view(`/market/${privateId}`)
 const evidence = { capturedAt: new Date().toISOString(), origin, productId, sourceDigest, anonymousFirst: first, anonymousRepeat: repeat, malformedId, privateId: privateView }

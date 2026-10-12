@@ -15,6 +15,15 @@ import { ViewerListingClaim } from '@/components/marketplace/listing-claim-box'
 // and would void ISR; the signed-in chrome swaps in from /api/viewer after hydration.
 export const revalidate = 3600
 
+// ISR on a dynamic segment needs this (Next 16, generate-static-params.md: "you must return an
+// empty array from generateStaticParams ... in order to revalidate (ISR) paths at runtime").
+// Without it the route rendered per request with a private, no-store cache-control even though
+// `revalidate` was set; /events/<slug> cached only because it already had one (LIVE-884). An empty
+// list prerenders nothing at build: each path is generated on its first visit and cached.
+export async function generateStaticParams(): Promise<{ id: string }[]> {
+  return []
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
   const listing = await getListing(id)

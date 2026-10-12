@@ -43,6 +43,12 @@ describe('sitemap-advertised listing details stay eligible for ISR', () => {
   it.each(PAGES)('%s asks for ISR', (file) => {
     expect(readFileSync(file, 'utf8')).toMatch(/export const revalidate\s*=\s*3600/)
   })
+  // LIVE-884: on a dynamic segment `revalidate` alone does nothing. Next 16 enables ISR for the
+  // route only when generateStaticParams exists (an empty list is enough); without it the four
+  // listing details rendered per request in production while /events/<slug> cached.
+  it.each(PAGES)('%s declares generateStaticParams, which is what turns revalidate on', (file) => {
+    expect(codeOf(file)).toMatch(/export (async )?function generateStaticParams/)
+  })
 
   it.each(PAGES)('%s reaches for no dynamic API', (file) => {
     const found = DYNAMIC_APIS.filter((d) => d.re.test(codeOf(file))).map((d) => d.name)
