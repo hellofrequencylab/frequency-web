@@ -1,7 +1,19 @@
 import type { CSSProperties } from 'react'
 import contract from './theme-contract.json'
 import { MENSWORK_SEASONS, mensworkSeason, mensworkAccentVars } from '@/lib/theme/menswork'
+import { WILDHEART_SEASONS, wildheartAccentVars } from '@/lib/theme/wildheart'
+import { seasonOf } from '@/lib/theme/astrology-wheel'
 import type { WebsiteTheme } from './state'
+
+/** The `--font-*` variables next/font registers for each theme's display, body and mono (label) faces.
+ *  Bold's and Frequency's ride the root layout (app/layout.tsx); Wildheart's load on its own website
+ *  (components/sites/wildheart-fonts.ts), so anywhere else they fall back to the contract's named faces. */
+export const WEBSITE_THEME_FONT_VARS: Record<WebsiteTheme, [display: string, body: string, mono: string]> = {
+  Menswork: ['sofia-xc', 'barlow', 'plex-mono'],
+  DAWN: ['anton', 'nunito', 'geist-mono'],
+  Midnight: ['anton', 'nunito', 'geist-mono'],
+  Wildheart: ['wh-fell', 'wh-garamond', 'wh-hanken'],
+}
 
 export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | null, date = new Date()): CSSProperties {
   const tokens: Record<string, string> = {}
@@ -9,17 +21,20 @@ export function websiteThemeVars(theme: WebsiteTheme, brandAccent?: string | nul
   if (theme === 'Menswork') {
     tokens['--th-season'] = MENSWORK_SEASONS[mensworkSeason(date)]
   }
-  if (theme === 'Menswork' || (typeof brandAccent === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(brandAccent))) {
-    const accent = mensworkAccentVars(brandAccent)
-    if (accent) {
-      tokens['--th-accent'] = accent['--color-primary']!
-      tokens['--th-accent-text'] = accent['--color-primary-strong']!
-      tokens['--th-on-accent'] = accent['--color-text-on-primary']!
-    }
+  if (theme === 'Wildheart') {
+    tokens['--th-season'] = WILDHEART_SEASONS[seasonOf(date)].fill
+  }
+  const hexAccent = typeof brandAccent === 'string' && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(brandAccent)
+  // Each skinned theme measures the owner's accent with its own rules; the house themes only take a hex.
+  const accent = theme === 'Wildheart' ? wildheartAccentVars(brandAccent) : theme === 'Menswork' || hexAccent ? mensworkAccentVars(brandAccent) : null
+  if (accent) {
+    tokens['--th-accent'] = accent['--color-primary']!
+    tokens['--th-accent-text'] = accent['--color-primary-strong']!
+    tokens['--th-on-accent'] = accent['--color-text-on-primary']!
   }
   // next/font registers generated family names. Bind the handoff's named faces
   // to those same local font variables, retaining the contract as the fallback.
-  const fonts = theme === 'Menswork' ? ['sofia-xc', 'barlow', 'plex-mono'] : ['anton', 'nunito', 'geist-mono']
+  const fonts = WEBSITE_THEME_FONT_VARS[theme]
   for (const [index, role] of ['display', 'body', 'mono'].entries()) tokens[`--th-${role}-render`] = `var(--font-${fonts[index]}, ${tokens[`--th-${role}`]})`
   return { ...tokens, ...contract.derived } as CSSProperties
 }

@@ -1,0 +1,16 @@
+{
+  "id": "LIVE-902",
+  "title": "Wildheart: a third site theme and the astrology calendar block family",
+  "lane": "live",
+  "priority": "P1",
+  "size": "L",
+  "status": "done",
+  "closed": "2026-10-12",
+  "adr": "ADR-1734",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node --experimental-strip-types --no-warnings --import ./scripts/probe-ts.mjs scripts/probes/wildheart-theme.mjs"
+  },
+  "detail": "Owner brief 2026-10-12: a third site theme beside Frequency and Bold, from the Wildheart design handoff, with the astrology calendar as its signature (the scroll-through on Home, the sky map on the year page, the date line on every page). Owner ruling the same day: a STOCK theme with generic, gender-neutral empowerment copy; the Wildheart Space launches on the stock theme and the owner applies this one by hand.\n\nSHIPPED 2026-10-12: `wildheart` SiteThemeId with its picker entry, look defaults and Space page accent (lib/theme/site-style.ts); `Wildheart` editor theme, live, with its theme-contract entry and site-scoped font variables (lib/sites/editor/state.ts, theme-contract.json, theme.ts); the palette, seasons, shapes, textures, motion and accent rules as one token block (lib/theme/wildheart.ts); the website skin restyling every house class, tokens only (components/sites/wildheart-css.ts); the symbol library with U+FE0E on every glyph and SVG moons (lib/theme/wildheart-symbols.ts, components/sites/wildheart-symbols.tsx); the pure wheel engine ported from the handoff's astro.js (lib/theme/astrology-wheel.ts: sun longitude, moon age, ingresses, season arcs, the eight festivals, computed moons, a Space's events sorted into month and sign); the three Server Component blocks registered under the `wildheart` category on the website surface (components/page-editor/blocks/wildheart.tsx, lib/page-editor/config.tsx, palette-scope.ts); the date line under the header on a Wildheart site (components/sites/wildheart-now-line.tsx, site-chrome.tsx); the fonts on the site root only (components/sites/wildheart-fonts.ts, public/fonts/wildheart); the Wildheart branch in site-page.tsx, the editor shell and canvas; the logo lockups copied to public/brand/wildheart. Tests: lib/theme/wildheart.test.ts (the contrast ratios), wildheart-symbols.test.ts (no emoji presentation), astrology-wheel.test.ts (sign boundaries, month sorting, the Wolf Moon full), components/sites/wildheart-css.test.ts (every house class, scoped, no hex), components/page-editor/blocks/wildheart.test.tsx (the three renders). Probe: scripts/probes/wildheart-theme.mjs. Left out: a client-side turning wheel (the strip scrolls with CSS, the sky map is static SVG), the handoff's Vision and Calendar admin pages and LogoMark component, program copy of any kind, and the editor canvas's faces (next/font is applied on the site page, outside the iframe).",
+  "wave": "W7"
+}

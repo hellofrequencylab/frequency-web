@@ -6,6 +6,10 @@ import { dateLabel } from '@/lib/sites/menswork-page'
 import { HOUSE_CSS } from './house-css'
 import { MENSWORK_CSS } from './menswork-css'
 import { MENSWORK_PAGE_CSS } from './menswork-page-css'
+import { FREQUENCY_PAGE_CSS } from './frequency-page-css'
+import { WILDHEART_CSS } from './wildheart-css'
+import { WildheartSubBar } from './wildheart-now-line'
+import { WildheartInkDefs } from './wildheart-symbols'
 import { SITE_LOOK_CSS } from './site-look-css'
 import type { SiteLook } from '@/lib/theme/site-style'
 import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
@@ -51,9 +55,18 @@ export function siteHref(base: string, pageSlug: string): string {
 /** A header menu item: a plain link, or (with `mega`) a dropdown panel of links and a feature card. */
 export type SiteLink = HouseHeaderLink
 
+/** A full website skin: Bold (the Menswork skin) or Wildheart, each with the season now. The Wildheart skin
+ *  layers over the house look AND the Frequency page sections (light grounds, DAWN tokens re-pointed), then
+ *  draws its own date line under the header (components/sites/wildheart-now-line.tsx). */
 interface SiteSkin {
-  theme: 'menswork'
+  theme: 'menswork' | 'wildheart'
   season: MensworkSeason
+}
+
+function skinCss(skin: SiteSkin | null): string {
+  if (!skin) return HOUSE_CSS
+  if (skin.theme === 'wildheart') return HOUSE_CSS + FREQUENCY_PAGE_CSS + WILDHEART_CSS
+  return HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS
 }
 
 export function SiteChrome({
@@ -97,7 +110,8 @@ export function SiteChrome({
   /** Website drafts can author a full footer in any theme. Legacy sites keep their skin default. */
   showBrandFooter?: boolean
   /** A skinned site's season bar detail: the sign module now, its theme as the Space's year page names it,
-   *  and the next Circle Night from the Space's own events. */
+   *  and the next Circle Night from the Space's own events. On Wildheart, `module` is the next event's
+   *  title and `next` its start, for the date line's right-hand side. */
   seasonNow?: { module: string; theme: string | null; next: string | null } | null
   /** The blue admin links ending the menu, and the console link the footer's admin section adds. Only
    *  with a skin. */
@@ -121,7 +135,8 @@ export function SiteChrome({
       data-site-header={look.header}
       className="hs-root"
     >
-      <style>{(skin ? HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS : HOUSE_CSS) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
+      <style>{skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
+      {skin?.theme === 'wildheart' && <WildheartInkDefs />}
       <HouseHeader
         brandName={brandName}
         homeHref={homeHref}
@@ -134,7 +149,8 @@ export function SiteChrome({
         fadeOnPause={fadeOnPause}
         member={member}
       />
-      {skin && <SeasonBar season={skin.season} now={seasonNow} />}
+      {skin?.theme === 'menswork' && <SeasonBar season={skin.season} now={seasonNow} />}
+      {skin?.theme === 'wildheart' && <WildheartSubBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} />}
 
       <main id="top">{children}</main>
 

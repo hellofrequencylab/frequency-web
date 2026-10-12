@@ -17,6 +17,9 @@ import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profi
 import { hasPage, readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readSiteHero, readWebsitePublished } from '@/lib/spaces/website'
 import { mensworkAccentVars, mensworkSeason } from '@/lib/theme/menswork'
+import { wildheartAccentVars } from '@/lib/theme/wildheart'
+import { seasonOf } from '@/lib/theme/astrology-wheel'
+import { WILDHEART_FONT_CLASS } from '@/components/sites/wildheart-fonts'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
@@ -24,6 +27,7 @@ import { SiteChrome, SITE_CONTAINER, siteHref, type SiteLink } from '@/component
 import { headerLogoSlot, readHeaderLogo, readSiteMenu, resolveSiteMenu, type MenuCatalogEntry } from '@/lib/spaces/site-menu'
 import { spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { MENSWORK_CSS } from '@/components/sites/menswork-css'
+import { WILDHEART_CSS } from '@/components/sites/wildheart-css'
 import { FREQUENCY_PAGE_CSS } from '@/components/sites/frequency-page-css'
 import { MensworkPage, mensworkNowLine } from '@/components/sites/menswork-page'
 import { planMensworkPage, type MwBlock } from '@/lib/sites/menswork-page'
@@ -159,18 +163,28 @@ export async function SitePage({
   // ONE source (ADR-1728): the theme is the site style, edited from Identity and branding or the editor's
   // Theme tab, so a published editor snapshot wears it too rather than the theme it was written in.
   const boldSite = siteStyle.theme === 'bold'
-  const theme = website ? (boldSite ? 'menswork' : 'frequency') : boldSite ? 'menswork' : siteStyle.fonts
+  // The Wildheart theme (lib/theme/wildheart.ts): the third skin, light where Bold is dark. Its Space page
+  // wears its font set like any theme; its own faces ride the website root (WILDHEART_FONT_CLASS).
+  const wildSite = siteStyle.theme === 'wildheart'
+  const theme = boldSite ? 'menswork' : website && !wildSite ? 'frequency' : siteStyle.fonts
   // The Menswork page theme dresses the whole website (lib/theme/menswork.ts): its palette, shapes and the
   // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
-  // still wins.
-  const skin = boldSite ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) } : null
+  // still wins. Wildheart does the same with its violet.
+  const skin = boldSite
+    ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) }
+    : wildSite
+      ? { theme: 'wildheart' as const, season: seasonOf(new Date()) }
+      : null
   // The owner's global styles over the theme the site actually wears (ADR-1728).
-  const lookStyle = { ...siteStyle, theme: boldSite ? ('bold' as const) : ('frequency' as const) }
+  const lookStyle = { ...siteStyle, theme: boldSite ? ('bold' as const) : wildSite ? ('wildheart' as const) : ('frequency' as const) }
   const lookOverrides = siteLookOverrides(lookStyle)
   const fullFooter = siteLook(lookStyle).footer === 'full'
-  const accentVars = skin
+  const accentVars = boldSite
     ? mensworkAccentVars(websiteBrand.accent)
-    : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))
+    : wildSite
+      ? wildheartAccentVars(websiteBrand.accent)
+      : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))
+  const editorTheme = boldSite ? ('Menswork' as const) : wildSite ? ('Wildheart' as const) : ('DAWN' as const)
   // The Coming soon notice's one way on: a clearly labelled Frequency link, absolute (on the Space's own
   // host a `/spaces/...` path is not a site page).
   const profileHref = `${appOrigin()}/spaces/${space.slug}`
@@ -182,8 +196,8 @@ export async function SitePage({
     return (
       <AccentScope vars={accentVars} theme={theme}>
         {skin ? (
-          <div data-house-theme={skin.theme} data-season={skin.season}>
-            <style>{MENSWORK_CSS}</style>
+          <div data-house-theme={skin.theme} data-season={skin.season} className={wildSite ? WILDHEART_FONT_CLASS : undefined}>
+            <style>{wildSite ? WILDHEART_CSS : MENSWORK_CSS}</style>
             <SiteComingSoon brandName={brandName} profileHref={profileHref} />
           </div>
         ) : (
@@ -260,12 +274,16 @@ export async function SitePage({
     websitePage ? getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: websiteBrand.logo, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }) : null,
     websitePage ? loadWebsiteFeatures(space.id, [websitePage.doc]) : {},
   ])
-  const seasonNow = skin
+  // Bold's season bar names the module now and the next Circle Night; Wildheart's date line names the sky
+  // and the Space's next event, whatever it is called.
+  const seasonNow = boldSite
     ? {
         ...mensworkNowLine((space.preferences as Record<string, unknown> | null)?.pageDocs, new Date()),
         next: mwLive?.events.find((e) => /circle night/i.test(e.title)) ?? null,
       }
-    : null
+    : wildSite
+      ? { module: mwLive?.events[0]?.title ?? '', theme: null, next: mwLive?.events[0] ?? null }
+      : null
   // The site's own entity, on its own origin: the root layout only carries Frequency's Organization.
   const entity = siteEntitySchema({
     type: space.type,
@@ -280,9 +298,9 @@ export async function SitePage({
     // owner's accent and faces rather than the default Frequency look.
     <AccentScope vars={accentVars} theme={theme}>
       <JsonLd data={entity} />
-      {/* A Bold site wears the editor's Bold tokens; a Frequency site keeps the house tokens its sheets read. */}
-      <div data-website-theme={website && boldSite ? 'Menswork' : undefined} style={website && boldSite ? websiteThemeVars('Menswork', websiteBrand.accent) : undefined}>
-      {website && boldSite && <style>{WEBSITE_TOKEN_CSS}</style>}
+      {/* A Bold or Wildheart site wears the editor's tokens; a Frequency site keeps the house tokens its sheets read. */}
+      <div data-website-theme={website && skin ? editorTheme : undefined} style={website && skin ? websiteThemeVars(editorTheme, websiteBrand.accent) : undefined} className={wildSite ? WILDHEART_FONT_CLASS : undefined}>
+      {website && skin && <style>{WEBSITE_TOKEN_CSS}</style>}
       {websitePage && !skin && <style>{FREQUENCY_PAGE_CSS}</style>}
       <SiteChrome
         brandName={websiteChrome.name}
@@ -301,13 +319,13 @@ export async function SitePage({
         admin={siteAdminLinks(origin, space.slug, siteBase)}
       >
         {website && websitePage && mwLive ? (
-          <WebsiteDocument doc={websitePage.doc} theme={boldSite ? 'Menswork' : 'DAWN'} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
+          <WebsiteDocument doc={websitePage.doc} theme={editorTheme} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
         ) : model ? (
           <>
             <HouseHome model={model} />
             {/* LIVE-869, LIVE-872: a Menswork Home ends with the Space's Frequency calendar, a section with no
                 menu anchor. */}
-            {skin && (
+            {boldSite && (
               <section className={`${SITE_CONTAINER} pb-16 sm:pb-24`}>
                 <SitePublicCalendar space={space} brandName={brandName} />
               </section>

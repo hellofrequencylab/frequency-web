@@ -88,5 +88,7 @@ export function initialWebsiteTheme(preferences: unknown): WebsiteTheme {
   const theme = typeof p.websiteTheme === 'string' ? p.websiteTheme : typeof p.theme === 'string' ? p.theme : ''
   if (theme.toLowerCase() === 'midnight') return 'Midnight'
   if (theme.toLowerCase() === 'dawn') return 'DAWN'
+  // Only a SAVED site style reads as Wildheart: nothing applies the theme on its own (owner ruling 2026-10-12).
+  if (siteTheme(preferences) === 'wildheart') return 'Wildheart'
   return siteTheme(preferences) === 'bold' || theme.toLowerCase() === 'menswork' ? 'Menswork' : 'DAWN'
 }

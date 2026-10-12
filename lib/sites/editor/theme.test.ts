@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import contract from './theme-contract.json'
 import { normalizeWebsiteFields } from '../website-fields'
-import { websiteThemeVars } from './theme'
+import { websiteThemeVars, WEBSITE_THEME_FONT_VARS } from './theme'
 import { WEBSITE_THEMES } from './state'
 
 describe('website theme handoff', () => {
@@ -10,8 +10,16 @@ describe('website theme handoff', () => {
     for (const [key, value] of Object.entries(contract.themes[theme])) if (typeof value === 'string') expect(vars[key]).toBe(value)
     expect(vars['--ed-chrome']).toBe('color-mix(in oklch, var(--th-bg), white var(--ed-lift))')
     expect(vars['--ed-field']).toContain('var(--ed-lift2)')
-    expect(vars['--th-display-render']).toBe(`var(--font-${theme === 'Menswork' ? 'sofia-xc' : 'anton'}, ${vars['--th-display']})`)
-    expect(vars['--th-body-render']).toBe(`var(--font-${theme === 'Menswork' ? 'barlow' : 'nunito'}, ${vars['--th-body']})`)
+    expect(vars['--th-display-render']).toBe(`var(--font-${WEBSITE_THEME_FONT_VARS[theme][0]}, ${vars['--th-display']})`)
+    expect(vars['--th-body-render']).toBe(`var(--font-${WEBSITE_THEME_FONT_VARS[theme][1]}, ${vars['--th-body']})`)
+  })
+  it('gives Wildheart its own site-scoped faces, the season fill now and the violet accent', () => {
+    expect(WEBSITE_THEME_FONT_VARS.Wildheart).toEqual(['wh-fell', 'wh-garamond', 'wh-hanken'])
+    const vars = websiteThemeVars('Wildheart', null, new Date('2027-01-01T12:00:00Z')) as Record<string, string>
+    expect(vars['--th-season']).toBe('#A3AEDC')
+    expect(vars['--th-accent']).toBe('#6E4D96')
+    expect(vars['--th-on-accent']).toBe('#FBF7EF')
+    expect((websiteThemeVars('Wildheart', '#1D3557') as Record<string, string>)['--th-accent']).toBe('#1D3557')
   })
   it('uses the current Menswork season and the website owner accent with an optional custom brand accent', () => {
     const vars = websiteThemeVars('Menswork', '#ffcc44', new Date('2026-01-01T12:00:00Z')) as Record<string, string>
