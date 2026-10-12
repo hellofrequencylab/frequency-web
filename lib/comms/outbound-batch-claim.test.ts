@@ -92,11 +92,20 @@ vi.mock('@/lib/email', () => ({
   },
 }))
 vi.mock('@/lib/comms/conversations', () => ({
-  getConversationById: async (id: string) => ({ id, ref: 'ref-1', subject: 'Hello', externalEmail: 'contact@example.com' }),
+  getConversationById: async (id: string) => ({ id, ref: 'ref-1', subject: 'Hello', externalEmail: 'contact@example.com', spaceId: 'space-1' }),
   newConversationMessageId: () => `<msg-${Math.random().toString(36).slice(2)}@test>`,
   appendConversationMessage: async () => null,
 }))
 vi.mock('@/lib/comms/reply-address', () => ({ buildConversationReplyAddress: () => 'reply@test' }))
+const aliasCalls: unknown[][] = []
+let aliasFails = false
+vi.mock('@/lib/comms/tenant-reply-alias', () => ({
+  buildSpaceConversationReplyAddress: async (...args: unknown[]) => {
+    aliasCalls.push(args)
+    if (aliasFails) throw new Error('Space reply route is unavailable.')
+    return 'reply@test'
+  },
+}))
 vi.mock('@/lib/comms/email-template', () => ({
   renderCoalescedEmail: (text: string, html: string) => ({ text, html }),
 }))
@@ -122,6 +131,8 @@ beforeEach(() => {
   rows = []
   sent.length = 0
   warnings.length = 0
+  aliasCalls.length = 0
+  aliasFails = false
   vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
     warnings.push(args.map(String).join(' '))
   })
@@ -186,5 +197,24 @@ describe('flushConversationBatches — claim before send (scan2 L6-05)', () => {
     const res = await flushConversationBatches()
     expect(res.emails).toBe(0)
     expect(rows.every((r) => r.metadata.batch_claimed_at === undefined)).toBe(true)
+  })
+})
+
+describe('flushConversationBatches — the Space reply route (EMAIL-013)', () => {
+  it('asks for the reply address with the thread\'s Space, so a Space thread can carry its tenant alias', async () => {
+    rows = [queued('m1', 'first', 12)]
+    await flushConversationBatches()
+    expect(aliasCalls).toEqual([['ref-1', 'space-1']])
+    expect(sent).toHaveLength(1)
+  })
+
+  it('a reply route that cannot be built sends nothing and hands the burst back for the next pass', async () => {
+    aliasFails = true
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    rows = [queued('m1', 'first', 12)]
+    const res = await flushConversationBatches()
+    expect(res.emails).toBe(0)
+    expect(sent).toHaveLength(0)
+    expect(rows[0].delivery_status).toBe('queued')
   })
 })

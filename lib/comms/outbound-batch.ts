@@ -14,7 +14,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail } from '@/lib/email'
-import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { buildSpaceConversationReplyAddress } from '@/lib/comms/tenant-reply-alias'
 import { conversationFrom } from '@/lib/comms/from-address'
 import { renderCoalescedEmail } from '@/lib/comms/email-template'
 import {
@@ -304,7 +304,9 @@ export async function flushConversationBatches(
       await enqueueEmail({
         to: conv.externalEmail,
         from,
-        replyTo: buildConversationReplyAddress(conv.ref),
+        // A Space thread gets its tenant reply alias when that switch is on (EMAIL-013); a fault here
+        // hands the claim back like any enqueue failure, so the burst is retried, never sent unroutable.
+        replyTo: await buildSpaceConversationReplyAddress(conv.ref, conv.spaceId),
         subject: replySubject(conv.subject),
         html: signedHtml,
         text: signedText,
