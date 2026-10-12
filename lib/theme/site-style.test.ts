@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { readSiteStyle, siteLook, siteLookOverrides, siteTheme, spacePageDefaultAccent, spacePageFonts, withSiteStyle, SITE_THEMES, THEME_LOOK } from './site-style'
+import { readSitePageStyle, readSiteStyle, siteLook, siteLookOverrides, siteTheme, spacePageDefaultAccent, spacePageFonts, withSitePageTheme, withSiteStyle, SITE_THEMES, THEME_LOOK } from './site-style'
 import { MENSWORK_PALETTE } from './menswork'
 
 // ADR-1726: the themes are Frequency (the house look) and Bold (until now Menswork). Every stored value
 // from before the rename must keep rendering the way it did.
 describe('the site style', () => {
   it('reads every legacy font set as the theme it used to mean', () => {
-    expect(readSiteStyle(null)).toEqual({ theme: 'frequency', fonts: 'frequency', synced: true, spaceFonts: 'frequency', look: { corners: null, spacing: null, header: null, footer: null } })
+    expect(readSiteStyle(null)).toEqual({ theme: 'frequency', fonts: 'frequency', synced: true, spaceFonts: 'frequency', look: { corners: null, spacing: null, header: null, footer: null }, pages: {} })
     // danieltyack: the house look in Classic fonts.
     expect(readSiteStyle({ theme: 'classic' })).toMatchObject({ theme: 'frequency', fonts: 'classic' })
     // heart-on-fire: Menswork is the Bold theme in its own fonts.
@@ -74,5 +74,37 @@ describe('the site style', () => {
     expect(spacePageDefaultAccent({ theme: 'menswork' }, '--color-primary')).toBe(MENSWORK_PALETTE.teal)
     expect(spacePageDefaultAccent({ theme: 'menswork', siteStyle: { theme: 'bold', synced: false } }, '--color-primary')).toBe('--color-primary')
     expect(spacePageDefaultAccent({ theme: 'classic' }, '--color-primary')).toBe('--color-primary')
+  })
+
+  // LIVE-699: a theme per page, falling back to the site's.
+  it('lets one page wear its own theme and falls back to the site theme everywhere else', () => {
+    const site = withSiteStyle({}, { theme: 'frequency', look: { corners: 'square', spacing: null, header: null, footer: null } })
+    expect(readSitePageStyle(site, 'events')).toEqual(readSiteStyle(site))
+    const prefs = withSitePageTheme(site, 'events', 'bold')
+    expect(readSiteStyle(prefs).pages).toEqual({ events: 'bold' })
+    // The site, Home and every other page keep the site's theme.
+    expect(siteTheme(prefs)).toBe('frequency')
+    expect(readSitePageStyle(prefs, 'home').theme).toBe('frequency')
+    // The events page wears Bold, in Bold's own fonts, keeping the owner's explicit corners and taking
+    // Bold's own spacing, header and footer for the rest.
+    const events = readSitePageStyle(prefs, 'events')
+    expect(events).toMatchObject({ theme: 'bold', fonts: 'menswork' })
+    expect(siteLook(events)).toEqual({ ...THEME_LOOK.bold, corners: 'square' })
+    expect(siteLookOverrides(events)).toEqual({})
+    // Clearing the override puts the page back on the site's theme and drops the stored entry.
+    const cleared = withSitePageTheme(prefs, 'events', null)
+    expect(readSitePageStyle(cleared, 'events').theme).toBe('frequency')
+    expect((cleared.siteStyle as Record<string, unknown>).pages).toBeUndefined()
+  })
+
+  it('keeps page themes through every other style write and drops a malformed entry', () => {
+    const prefs = withSitePageTheme({}, 'about', 'bold')
+    expect(readSiteStyle(withSiteStyle(prefs, { theme: 'bold', fonts: 'menswork' })).pages).toEqual({ about: 'bold' })
+    // A page whose theme equals the site's reads as the site style, unchanged.
+    expect(readSitePageStyle(withSiteStyle(prefs, { theme: 'bold' }), 'about').fonts).toBe(readSiteStyle(withSiteStyle(prefs, { theme: 'bold' })).fonts)
+    expect(readSiteStyle({ siteStyle: { theme: 'frequency', pages: { 'Bad Slug': 'bold', about: 'midnight', ok: 'bold' } } }).pages).toEqual({ ok: 'bold' })
+    expect(readSiteStyle({ siteStyle: { theme: 'frequency', pages: 'bold' } }).pages).toEqual({})
+    // An invalid slug writes nothing.
+    expect(readSiteStyle(withSitePageTheme({}, 'Not A Slug', 'bold')).pages).toEqual({})
   })
 })
