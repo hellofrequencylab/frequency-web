@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-const mocks = vi.hoisted(() => ({ atomic: vi.fn(), append: vi.fn(), enqueue: vi.fn(), conversation: vi.fn() }))
+const mocks = vi.hoisted(() => ({ atomic: vi.fn(), append: vi.fn(), mirror: vi.fn(), enqueue: vi.fn(), conversation: vi.fn() }))
 vi.mock('@/lib/comms/atomic-email-intent', () => ({ atomicBridgeEnabled: () => true, atomicBridgeMessageId: () => '<stable-fixture@frequencylocal.com>', enqueueAtomicConversationEmail: mocks.atomic }))
-vi.mock('@/lib/comms/conversations', () => ({ getConversationByRef: mocks.conversation, appendConversationMessage: mocks.append }))
+vi.mock('@/lib/comms/conversations', () => ({ getConversationByRef: mocks.conversation, appendConversationMessage: mocks.append, mirrorConversationMessage: mocks.mirror, conversationScopeRef: () => null }))
 vi.mock('@/lib/email', () => ({ enqueueEmail: mocks.enqueue }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({
   from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { display_name: 'Actor', auth_user_id: 'auth' } }) }) }) }),
@@ -14,7 +14,7 @@ function incoming(): ParsedInboundMessage {
 }
 beforeEach(() => {
   vi.clearAllMocks(); vi.stubEnv('CONVERSATION_TOKEN_SECRET', 'test-conversation-secret-please-32-bytes')
-  mocks.conversation.mockResolvedValue({ id: 'conv', ref: '1001', kind: 'crm', channel: 'email', assignedTo: 'actor', ownerProfileId: 'actor', externalEmail: 'member@example.test', subject: 'Fixture', status: 'open', spaceId: 'space' })
+  mocks.conversation.mockResolvedValue({ id: 'conv', ref: '1001', kind: 'crm', channel: 'email', assignedTo: 'actor', ownerProfileId: 'actor', externalEmail: 'member@example.test', subject: 'Fixture', status: 'open', spaceId: 'space', contactId: 'contact', memberProfileId: null })
   mocks.atomic.mockResolvedValue({ intentId: 'intent', messageId: 'message', jobId: 'job', duplicate: false })
 })
 describe('actual atomic house reply route', () => {
@@ -22,6 +22,14 @@ describe('actual atomic house reply route', () => {
     expect((await routeInboundReply(incoming())).status).toBe('recorded_outbound')
     expect(mocks.atomic).toHaveBeenCalledTimes(1)
     expect(mocks.append).not.toHaveBeenCalled(); expect(mocks.enqueue).not.toHaveBeenCalled()
+  })
+  it('mirrors the committed reply onto the CRM timeline, keyed on the RPC message id (EMAIL-002)', async () => {
+    await routeInboundReply(incoming())
+    expect(mocks.mirror).toHaveBeenCalledTimes(1)
+    expect(mocks.mirror).toHaveBeenCalledWith('message', expect.objectContaining({
+      direction: 'outbound', body: 'Body',
+      mirror: expect.objectContaining({ ownerProfileId: 'actor', subjectKind: 'contact', subjectId: 'contact', spaceId: 'space' }),
+    }))
   })
   it('transaction failure asks webhook for retry rather than acknowledging recorded', async () => {
     mocks.atomic.mockRejectedValue(new Error('injected transaction failure'))
@@ -31,7 +39,7 @@ describe('actual atomic house reply route', () => {
   it('receipt replay acknowledges duplicate without legacy write', async () => {
     mocks.atomic.mockResolvedValue({ intentId: 'intent', messageId: 'message', jobId: 'job', duplicate: true })
     expect((await routeInboundReply(incoming())).status).toBe('duplicate')
-    expect(mocks.append).not.toHaveBeenCalled()
+    expect(mocks.append).not.toHaveBeenCalled(); expect(mocks.mirror).not.toHaveBeenCalled()
   })
   it('valid house token from a different sender cannot authorize outbound', async () => {
     expect((await routeInboundReply({ ...incoming(), from: 'stranger@example.test' })).status).toBe('error')

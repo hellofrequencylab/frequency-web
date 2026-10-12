@@ -29,6 +29,7 @@ import {
 import {
   getConversationByRef,
   appendConversationMessage,
+  mirrorConversationMessage,
   reopenConversationIfClosed,
   updateConversationFields,
   newConversationMessageId,
@@ -37,7 +38,7 @@ import {
 } from '@/lib/comms/conversations'
 import { conversationFrom } from '@/lib/comms/from-address'
 import { envFlag } from '@/lib/env/string'
-import { resolveTenantReplyAlias, quarantineTenantReplyAlias } from './tenant-reply-alias'
+import { buildSpaceConversationReplyAddress, resolveTenantReplyAlias, quarantineTenantReplyAlias } from './tenant-reply-alias'
 
 /** The normalized inbound message the router works from — a superset of the legacy {from,subject,text}. */
 export interface ParsedInboundMessage {
@@ -559,11 +560,29 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
         observedSender: parsed.from, body,
         payload: {
           to: conv.externalEmail, from: conversationFrom(agent.name),
-          replyTo: buildConversationReplyAddress(conv.ref, 'member'),
+          // Member-facing Reply-To: the Space's own alias when aliases are on (EMAIL-013).
+          replyTo: await buildSpaceConversationReplyAddress(conv.ref, conv.spaceId),
           subject: bridgeReplySubject(conv.subject), html: bridgeBodyToHtml(body), text: body,
           headers: { 'Message-ID': atomicBridgeMessageId(conv.id, parsed.messageId) },
         },
       }, createAdminClient() as unknown as import('@/lib/comms/atomic-email-intent').AtomicIntentRpc)
+      // The RPC inserts the comms_messages row in SQL, so the CRM timeline mirror that
+      // appendConversationMessage writes has to happen here, after the commit (EMAIL-002). Keyed on
+      // the message id, so a replay that returns the original intent writes nothing twice.
+      if (!result.duplicate && conv.ownerProfileId && (conv.memberProfileId || conv.contactId)) {
+        await mirrorConversationMessage(result.messageId, {
+          direction: 'outbound',
+          body,
+          mirror: {
+            ownerProfileId: conv.ownerProfileId,
+            subjectKind: conv.memberProfileId ? 'profile' : 'contact',
+            subjectId: (conv.memberProfileId ?? conv.contactId)!,
+            spaceId: conv.spaceId,
+            subject: conv.subject,
+            scope: conversationScopeRef(conv),
+          },
+        })
+      }
       return { status: result.duplicate ? 'duplicate' : 'recorded_outbound', conversationId: conv.id, ref: conv.ref }
     } catch (err) {
       // No acknowledgement as recorded until the whole transaction commits; redelivery can recover.
@@ -602,7 +621,10 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
     await enqueueEmail({
       to: conv.externalEmail,
       from: conversationFrom(agent?.name ?? null),
-      replyTo: buildConversationReplyAddress(conv.ref, 'member'),
+      // Member-facing Reply-To: the Space's own alias when aliases are on (EMAIL-013). The HOUSE
+      // address above stays a Frequency-signed token: aliases carry the member role only, and the
+      // house route is what authenticates the operator's reply from their own inbox.
+      replyTo: await buildSpaceConversationReplyAddress(conv.ref, conv.spaceId),
       subject: bridgeReplySubject(conv.subject),
       html: bridgeBodyToHtml(body),
       text: body,
