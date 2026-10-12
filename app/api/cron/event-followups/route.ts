@@ -91,15 +91,26 @@ async function handler(req: NextRequest) {
   // instant. Read a band wide enough for any zone, then decide precisely with followUpDue.
   const from = new Date(now.getTime() - AFTER_END_MAX_MS - 3 * 24 * HOUR).toISOString()
   const to = new Date(now.getTime() + 14 * HOUR).toISOString()
-  const { data: evRaw } = await admin
-    .from('events')
-    .select('id, title, slug, starts_at, ends_at, time_zone, is_cancelled, scope_circle_id, parent_event_id, host_space_id')
-    .eq('is_cancelled', false)
-    .gte('starts_at', from)
-    .lte('starts_at', to)
-    .order('starts_at', { ascending: true })
-    .limit(budget.items)
-  const events = ((evRaw ?? []) as unknown as EventRow[]).filter((ev) => followUpDue(ev, now))
+  // SCAN-826: the band is about four and a half days wide and due events sit near its end, so one
+  // page capped at the item budget, oldest first, filled up with events that were not due and the due
+  // ones never got their follow-up. Page through the whole band and keep the due ones, up to the budget.
+  const PAGE = 1000
+  const MAX_PAGES = 20
+  const events: EventRow[] = []
+  for (let page = 0; page < MAX_PAGES && events.length < budget.items; page++) {
+    const { data: evRaw } = await admin
+      .from('events')
+      .select('id, title, slug, starts_at, ends_at, time_zone, is_cancelled, scope_circle_id, parent_event_id, host_space_id')
+      .eq('is_cancelled', false)
+      .gte('starts_at', from)
+      .lte('starts_at', to)
+      .order('starts_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(page * PAGE, page * PAGE + PAGE - 1)
+    const rows = (evRaw ?? []) as unknown as EventRow[]
+    for (const ev of rows) if (followUpDue(ev, now) && events.length < budget.items) events.push(ev)
+    if (rows.length < PAGE) break
+  }
 
   let sent = 0
   let processed = 0
