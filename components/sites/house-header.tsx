@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { HouseMenu } from './house-menu'
 import type { SiteAdminNavLink } from './site-admin-bar'
 
@@ -47,6 +47,7 @@ export function HouseHeader({
   logoMode,
   skinned,
   fadeOnPause = true,
+  member = null,
 }: {
   brandName: string
   homeHref: string
@@ -58,6 +59,9 @@ export function HouseHeader({
   /** A themed skin (Menswork) draws its own bar: phone menu button, no fade. */
   skinned: boolean
   fadeOnPause?: boolean
+  /** The reader's own membership in this Space (components/sites/site-member-badge.tsx), beside the
+   *  button. An island, so the cached header stays the same for everyone (LIVE-699). */
+  member?: ReactNode
 }) {
   const [mega, setMega] = useState<string | null>(null)
   const [hidden, setHidden] = useState(false)
@@ -191,6 +195,7 @@ export function HouseHeader({
           </nav>
         )}
         <div className="hs-header-actions">
+          {member}
           {cta && (
             <a
               href={cta.href}

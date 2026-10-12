@@ -20,8 +20,10 @@ import { Input } from '@/components/ui/field'
 // the operator's chosen hex), per ADMIN-DESIGN-SYSTEM §4.
 //
 // Note: the Space's chosen theme takes effect through the shell's existing `data-skin`
-// resolution (the Space's `skin` selects its active theme); the VISUAL brand (logo + name in
-// the header) is wired in a follow-up.
+// resolution (the Space's `skin` selects its active theme). The VISUAL brand (logo, name and accent)
+// reaches the app shell through BrandMark and the Space's own website header through
+// lib/sites/site-brand.ts (LIVE-699): the website wears these three fields, with the published
+// website draft's own name, logo and accent over them when the owner set those in the editor.
 
 export interface SkinOption {
   slug: string
@@ -159,7 +161,7 @@ export function SpaceBrandEditor({
               placeholder={space.name}
               maxLength={200}
             />
-            <p className="mt-1 text-meta text-subtle">Shown in the Space header. Defaults to the Space name.</p>
+            <p className="mt-1 text-meta text-subtle">Shown in the Space header and in the website header. Defaults to the Space name.</p>
           </div>
 
           {/* Brand accent */}

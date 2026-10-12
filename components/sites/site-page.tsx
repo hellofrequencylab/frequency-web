@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { readSiteStyle, siteLook, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
+import { readSitePageStyle, siteLook, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
@@ -46,13 +46,15 @@ import { siteAdminNavLinks } from '@/components/sites/site-admin-bar'
 import { SITE_CALENDAR_SLUG, SitePublicCalendar } from '@/components/sites/site-public-calendar'
 import { JsonLd } from '@/components/json-ld'
 import { config } from '@/lib/page-editor/config'
-import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteBrand, resolveWebsiteChrome, resolveWebsiteChromeCta } from '@/lib/sites/editor/state'
+import { publishedWebsitePage, publishedWebsiteSnapshot, resolveWebsiteChrome, resolveWebsiteChromeCta } from '@/lib/sites/editor/state'
 import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
 import { loadWebsiteFeatures } from '@/lib/sites/editor/live-data'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { WebsiteDocument } from '@/components/sites/website-document'
 import { siteEntitySchema } from '@/lib/jsonld'
+import { resolveSiteHeaderBrand } from '@/lib/sites/site-brand'
+import { SiteMemberBadge } from '@/components/sites/site-member-badge'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). The Space's own website, served on its
 // free subdomain (`<slug>.frequencylocal.com`, LIVE-782), on its own domain once connected, and at
@@ -93,8 +95,8 @@ import { siteEntitySchema } from '@/lib/jsonld'
 export async function siteMetadata(slug: string, pageSlug: string = HOME_SLUG): Promise<Metadata> {
   const space = await getSiteSpace(slug)
   if (!space) return { title: 'Site', robots: { index: false } }
-  const originalBrandName = space.brandName?.trim() || space.name
-  const brandName = readWebsitePublished(space.preferences) ? publishedWebsiteSnapshot(space.preferences)?.chrome?.name ?? originalBrandName : originalBrandName
+  // The Space's brand, with the published website's own name over it (lib/sites/site-brand.ts, LIVE-699).
+  const brandName = resolveSiteHeaderBrand(space, readWebsitePublished(space.preferences) ? publishedWebsiteSnapshot(space.preferences) : null).name
   if (!readWebsitePublished(space.preferences)) {
     return { title: `${brandName} website coming soon`, robots: { index: false } }
   }
@@ -144,13 +146,16 @@ export async function SitePage({
   const space = await getSiteSpace(slug)
   if (!space) notFound()
 
-  const brandName = space.brandName?.trim() || space.name
   const website = publishedWebsiteSnapshot(space.preferences)
-  const websiteBrand = resolveWebsiteBrand(website, { logo: space.brandLogoUrl, accent: space.brandAccent })
+  // THE SPACE'S VISUAL BRAND (LIVE-699): its stored name, logo and accent, with the published website's own
+  // over them, resolved once (lib/sites/site-brand.ts) for the header, the title and the share card.
+  const websiteBrand = resolveSiteHeaderBrand(space, website)
+  const brandName = websiteBrand.name
   const savedWebsitePage = website?.pages.find((p) => p.slug === pageSlug) ?? null
   const websitePage = savedWebsitePage ? { ...savedWebsitePage, doc: await refreshAssetRefUrls(savedWebsitePage.doc, { websiteSpaceId: space.id }) } : null
   // The site THEME picks the skin (Bold is the Menswork skin), the website FONT SET the faces (ADR-1726).
-  const siteStyle = readSiteStyle(space.preferences)
+  // A PAGE may wear its own theme (LIVE-699, preferences.siteStyle.pages); every other page keeps the site's.
+  const siteStyle = readSitePageStyle(space.preferences, pageSlug)
   // ONE source (ADR-1728): the theme is the site style, edited from Identity and branding or the editor's
   // Theme tab, so a published editor snapshot wears it too rather than the theme it was written in.
   const boldSite = siteStyle.theme === 'bold'
@@ -190,6 +195,8 @@ export async function SitePage({
 
   const { origin, hasContact, booking, pages, homeHref, siteLinks, cta, pageLinks, tagline } = await siteChromeBasics(space, siteBase)
   const websiteChrome = resolveWebsiteChrome(website, { name: brandName, tagline, cta })
+  // The reader's own membership in THIS Space, asked for after the cached page is up (LIVE-699).
+  const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={`${origin}/spaces/${space.slug}/memberships`} />
   const chromeCta = resolveWebsiteChromeCta(website?.chrome, cta, siteBase)
   const contactPage = pageSlug === SITE_CONTACT_SLUG && hasContact
   const bookPage = pageSlug === SITE_BOOK_SLUG && booking.takesBookings
@@ -289,6 +296,7 @@ export async function SitePage({
         tagline={website ? websiteChrome.tagline : fullFooter ? tagline : null}
         showBrandFooter={fullFooter}
         look={lookOverrides}
+        member={memberBadge}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
         admin={siteAdminLinks(origin, space.slug, siteBase)}
       >

@@ -81,6 +81,8 @@ ${M} .hs-nav-track{height:100%;align-items:stretch;gap:24px;width:auto;margin:0;
 @media (min-width:940px){${M} .hs-nav{display:flex}}
 ${M} .hs-nav a{${LABEL};display:flex;align-items:center;padding:0;border-radius:0;border-bottom:2px solid transparent;color:var(--color-text-muted);transition:color 150ms linear,border-color 150ms linear}
 ${M} .hs-nav a:hover{background:transparent;color:var(--color-text);border-bottom-color:var(--color-primary)}
+${M} .hs-member{${LABEL};padding:6px 10px;border-radius:0;border:1px solid var(--color-border);background:transparent;color:var(--color-text-muted);transition:color 150ms linear,border-color 150ms linear}
+${M} .hs-member:hover{background:transparent;color:var(--color-text);border-color:var(--color-primary)}
 ${M} .hs-logo-avatar,${M} .hs-logo-image{border-radius:0;box-shadow:none}
 ${M} .hs-nav-mega{${LABEL};padding:0;border-radius:0;border-bottom:2px solid transparent;color:var(--color-text-muted);transition:color 150ms linear,border-color 150ms linear}
 ${M} .hs-nav-mega:hover,${M} .hs-nav-mega[aria-expanded="true"]{background:transparent;color:var(--color-text);border-bottom-color:var(--color-primary)}
