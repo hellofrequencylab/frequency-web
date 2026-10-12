@@ -1,0 +1,7 @@
+{
+  "id": "PROG-E8",
+  "wave": "W7",
+  "append": {
+    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY. The ADR-1287 increment holds (lib/ai/complete.ts stable/volatile prompt cache, NDJSON streaming on app/api/vera/turn, lib/ai/schema.ts zod on model JSON). One small addition since 2026-10-05: the website editor has a Vera side dock (components/sites/editor/vera-dock.tsx) backed by a text-only action in lib/sites/editor/actions.ts:44 (\"Vera can return plain text only. No model writes, publishing tools, or code\"), which is a help channel, not a composer. Still missing: no page composer (lib/ai/vera/create-tools.ts creates entities, not block documents), no per-Space retrieval (lib/ai/help-rag.ts indexes help only), no bounded critic, no ghosted diff review, no single-undo page. Stays manual."
+  }
+}

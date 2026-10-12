@@ -306,6 +306,15 @@ export async function recordDomainPurchaseFromSession(session: Stripe.Checkout.S
     ? await buyDomain(row.domain, { expectedPriceCents: row.vercel_price_cents, autoRenew, contact: row.registrant })
     : ({ ok: false, error: 'contact-invalid' } as const)
 
+  if (!bought.ok && (bought.error === 'network' || bought.error === 'upstream')) {
+    // SCAN-821: a timeout, a 5xx or a 200 with no order id may have registered the domain. Refunding
+    // here could leave Frequency paying Vercel for a domain the Space got its money back for. Hold the
+    // row in `purchasing` (the renewal path's rule for the same errors): the daily sweep raises
+    // registration-submission-unknown after an hour so an operator reconciles before any refund.
+    console.error(`[domain-purchase] ambiguous registration for ${row.domain} (row=${row.id}): ${bought.error}`)
+    await db().from(TABLE).update({ failure_reason: bought.error, updated_at: new Date().toISOString() }).eq('id', row.id)
+    return 'purchasing'
+  }
   if (!bought.ok) {
     const refunded = await refund(paymentIntentId, row.id)
     await db()
@@ -324,7 +333,7 @@ export async function recordDomainPurchaseFromSession(session: Stripe.Checkout.S
   const order = await getDomainOrder(bought.data.orderId)
   const status = order.ok && order.data.status === 'completed' ? 'registered' : 'ordered'
   const now = new Date()
-  await db()
+  const { error: recordError } = await db()
     .from(TABLE)
     .update({
       status,
@@ -337,6 +346,8 @@ export async function recordDomainPurchaseFromSession(session: Stripe.Checkout.S
       updated_at: now.toISOString(),
     })
     .eq('id', row.id)
+  // The row stays `purchasing` if this write failed, and the sweep's attention notice needs the order id.
+  if (recordError) console.error(`[domain-purchase] bought ${row.domain} as Vercel order ${bought.data.orderId} but could not record it (row=${row.id}): ${recordError.message}`)
 
   // The existing connect path: bind the Space's domain (only when it has none) and attach it to the
   // project. A failed attach is retried by the Domain section's Check again, which re-attaches.

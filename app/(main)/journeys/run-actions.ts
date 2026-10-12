@@ -20,6 +20,7 @@ import {
 } from '@/lib/journeys/runs'
 import { resolveRunGate, journeysOfferedBySpace } from '@/lib/journeys/run-gate'
 import { checkFreeEnrol } from '@/lib/journeys/free-enrol-gate'
+import { checkJourneyTier } from '@/lib/journeys/tier-gate'
 import { JOURNEY_FULL_MESSAGE } from '@/lib/journeys/journey-access'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { planMeta } from '@/lib/journey-plans'
@@ -70,6 +71,10 @@ export async function startJourneyRunAction(input: {
   if (!free.ok) return fail(free.error)
   const seats = await rosterSeatCheck(input.planId, input.circleId)
   if (!seats.ok) return fail(seats.error)
+  if (!isOwner) {
+    const tiers = await rosterTierCheck(input.planId, input.circleId)
+    if (!tiers.ok) return fail(tiers.error)
+  }
 
   const runId = await startRun({
     planId: input.planId,
@@ -93,6 +98,24 @@ export async function startJourneyRunAction(input: {
 
   revalidatePath(`/circles/${gate.circleSlug}`)
   return ok({ runId })
+}
+
+/** SCAN-843: checkFreeEnrol asks the Journey's membership-tier gate about the CALLER only, and startRun
+ *  enrols every active member, whom the learn page then treats as fully enrolled. So a member holding the
+ *  tier could unlock a tier-gated Journey for a whole Circle that does not. A tier-gated Journey runs only
+ *  when every active member of the Circle passes the same gate. FAIL-CLOSED: a broken read refuses. */
+async function rosterTierCheck(planId: string, circleId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const admin = createAdminClient()
+  const { data: plan, error: planError } = await admin.from('journey_plans').select('space_tier_id').eq('id', planId).maybeSingle()
+  if (planError) return { ok: false, error: 'Could not check who this Journey is for. Try again.' }
+  if (!(plan as { space_tier_id: string | null } | null)?.space_tier_id) return { ok: true }
+  const { data: members, error } = await admin.from('memberships').select('profile_id').eq('circle_id', circleId).eq('status', 'active')
+  if (error) return { ok: false, error: 'Could not check who this Journey is for. Try again.' }
+  for (const m of (members ?? []) as { profile_id: string }[]) {
+    const tier = await checkJourneyTier(planId, String(m.profile_id))
+    if (!tier.ok) return { ok: false, error: 'This Journey is for members of a Space tier, and not everyone in this Circle holds it.' }
+  }
+  return { ok: true }
 }
 
 /** Does the Journey's enroll_cap hold the WHOLE roster a Run would enrol? checkFreeEnrol only reserves

@@ -1,0 +1,7 @@
+{
+  "id": "PROG-E6",
+  "wave": "W7",
+  "append": {
+    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY (website slice only). Moved since 2026-10-05 (\"nothing started\"). Exists in components/sites/editor/canvas.tsx: section drag reorder with drop targets (data-drop-target, draggingSections), pointer-driven spacing handles (.we-spacing-handle, canvas.tsx:95-111, with keyboard arm and Escape cancel), move/resize handles on grid elements (.we-move-handle, .we-resize-handle; lib/sites/editor/layout.ts dragElementPlacement, placeElementWithoutOverlap), an insert button between sections (.we-insert) and a 44px coarse-pointer target rule; in shell.tsx: a nested Layers tree (renderLayers, :311), a slash-key inserter (:247, :279) and an insert modal (:219). Missing against the E6 definition: no long-press drag or touch gesture model, no presets-first inserter (the inserter lists blocks by filter), no drag-and-drop library (@dnd-kit / react-dnd absent), the keyboard model is partial (handles and reorder, no full keyboard authoring path), it is website-only, and the gate (full authoring path completes on a phone) is a device test. Stays manual."
+  }
+}

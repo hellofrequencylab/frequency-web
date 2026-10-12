@@ -1,0 +1,7 @@
+{
+  "id": "PROG-GD6",
+  "wave": "W7",
+  "append": {
+    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). NOT STARTED (and parked until after launch, HYG-157). The SMS code in the tree is comms, not identity: lib/comms/sms-verification.ts (normalizeE164, generateSmsCode, hashSmsCode, checkSmsCode), lib/comms/sms-send.ts, lib/comms/sms.ts, app/api/webhooks/twilio/route.ts verify a phone for the broadcast channel. Nothing binds a phone number to a seat as a second identity: no phone identity table in supabase/migrations, no phone sign-in or OTP-to-session path under lib/auth (the one hit in lib/auth/post-sign-in.ts is a comment about a device), no guest-door phone step. Still gated on DEF-A2P."
+  }
+}

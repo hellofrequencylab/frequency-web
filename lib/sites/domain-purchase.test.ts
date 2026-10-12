@@ -240,10 +240,20 @@ describe('recordDomainPurchaseFromSession', () => {
   })
 
   it('marks the row failed when the refund itself does not land, so it is visible', async () => {
-    buyDomain.mockResolvedValue({ ok: false, error: 'upstream' })
+    buyDomain.mockResolvedValue({ ok: false, error: 'price-changed' })
     refundsCreate.mockRejectedValue(new Error('stripe down'))
     await expect(recordDomainPurchaseFromSession(session())).resolves.toBe('failed')
     expect(tables.space_domain_purchases[0].status).toBe('failed')
+  })
+
+  it('never refunds when Vercel may have registered the domain (SCAN-821)', async () => {
+    for (const error of ['network', 'upstream'] as const) {
+      tables.space_domain_purchases[0].status = 'pending'
+      buyDomain.mockResolvedValue({ ok: false, error })
+      await expect(recordDomainPurchaseFromSession(session())).resolves.toBe('purchasing')
+      expect(refundsCreate).not.toHaveBeenCalled()
+      expect(tables.space_domain_purchases[0]).toMatchObject({ status: 'purchasing', failure_reason: error })
+    }
   })
 
   it('never replaces a domain the Space already has', async () => {

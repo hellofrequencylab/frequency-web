@@ -37,7 +37,10 @@ describe('the Menswork website share card', () => {
 
 
 const routeMocks = vi.hoisted(() => ({ preferences: {} as Record<string, unknown>, image: vi.fn() }))
-vi.mock('@/lib/sites/hosted', () => ({ resolveHostedSpace: async () => ({ preferences: routeMocks.preferences, brandLogoUrl: 'https://images.example/original.png', brandAccent: null, coverImageUrl: null, name: 'Heart on Fire' }) }))
+const hostedSpace = () => ({ slug: 'heart-on-fire', preferences: routeMocks.preferences, brandLogoUrl: 'https://images.example/original.png', brandAccent: null, coverImageUrl: null, name: 'Heart on Fire' })
+vi.mock('@/lib/sites/hosted', () => ({ resolveHostedSpace: async () => hostedSpace() }))
+// SCAN-817: the route re-reads the resolved Space through the visibility-checked site read.
+vi.mock('@/lib/sites/site-cache', () => ({ getSiteSpace: async (slug: string) => (slug === 'heart-on-fire' ? hostedSpace() : null) }))
 vi.mock('@/lib/spaces/website', () => ({ readWebsitePublished: (prefs: Record<string, unknown>) => prefs.websitePublished === true, readSiteHero: () => ({ heading: 'Original heading' }) }))
 vi.mock('@/lib/theme/space-themes', () => ({ parseSpaceTheme: () => 'bold' }))
 vi.mock('@/lib/og/remote-image', () => ({ fetchRemoteImage: routeMocks.image }))

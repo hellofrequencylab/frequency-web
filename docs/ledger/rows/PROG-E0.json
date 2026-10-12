@@ -1,0 +1,7 @@
+{
+  "id": "PROG-E0",
+  "wave": "W7",
+  "append": {
+    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY. Exists: node-id keying (lib/entity-blocks/node-tree.ts BlockNode/upgradeLayout; task 9 landed, upgradeLayout is called at the top of parseEntityLayout, lib/entity-blocks/layout.ts:318, and the email path reads it in lib/email-studio/render.ts, send.ts, product-block.ts, render-layout.ts); unknown-block preservation (ADR-978); check:stored-blocks and check:entity-layouts in package.json; the usage index public.block_type_usage (20270345007500). Missing: no yjs, y-prosemirror or automerge in package.json and zero CRDT imports under lib/, components/, app/; no page_versions table or pointer-swap publish in any migration (the website editor keeps its own revision + versions array inside spaces.preferences.websiteEditor, 20270346007400, which is not page_versions); no render_path flag anywhere in lib/, app/ or scripts/; no base_revision/undo manager; app_instances is still dropped (20270316000000) with no re-create or trigger; all four live .channel() uses stay public (components/messages/thread.tsx, components/chat/use-support-chat.ts, lib/realtime/use-typing.ts, components/rooms/room-thread.tsx; reward-live.tsx is the one private channel) and no realtime.messages RLS; package.json still lacks check:doc-safety, check:blocks, check:surface-binding and check:email-blocks. Stays manual; roughly 5 of 18 EDITOR-E0 tasks are in the tree."
+  }
+}
