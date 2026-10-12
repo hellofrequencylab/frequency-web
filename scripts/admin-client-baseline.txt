@@ -1,3 +1,4 @@
+# EMAIL-022: the Space inbox address module provisions and routes mail from the Resend webhook and the settings action after their own authorization (owner guard on the action, signed webhook on inbound); it reads and writes only space_inbox_addresses and the conversation rows it opens, under service role because no member session exists on the inbound path.
 # EMAIL-013: trusted compose authorizes the conversation; inbound webhook verifies signature then alias HMAC/live Space mapping before service lookup. Quarantine stores fingerprints only.
 # LIVE-898: the Space brand a conversation email wears is read at the batch flush (a cron with no session) and at compose after the caller authorized the Space; it reads five public branding columns of one spaces row and writes nothing.
 # LIVE-766: private Collective owner report revalidates parent plan and same-owner attachment before bounded member/event/finance reads.
@@ -824,6 +825,7 @@ lib/comms/leader-send.ts
 lib/comms/outbound-batch.ts
 lib/comms/signature.ts
 lib/comms/sms.ts
+lib/comms/space-inbox-address.ts
 lib/comms/support-chat.ts
 lib/comms/tenant-reply-alias.ts
 lib/comms/workspace.ts
