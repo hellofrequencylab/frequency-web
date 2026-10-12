@@ -1,3 +1,4 @@
+import { MENSWORK_PALETTE } from '@/lib/theme/menswork'
 import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 
 // THE SITE STYLE (owner ask 2026-10-11, ADR-1726). A Space and its website wear one of two THEMES:
@@ -12,6 +13,11 @@ import { DEFAULT_SPACE_THEME, isSpaceThemeId, parseSpaceTheme, type SpaceThemeId
 // STORED: `preferences.theme` stays the website's font set (every existing value keeps working), and
 // `preferences.siteStyle` holds the rest: `{ theme, synced, spaceFonts }`. A Space that never saved a
 // style reads from its legacy font set: `menswork` meant the Bold theme, anything else Frequency.
+//
+// GLOBAL STYLES (ADR-1728): on top of the theme the owner can set CORNERS (soft, subtle, square), SPACING
+// (airy, balanced, compact), the HEADER (a floating pill or a full-width bar) and the FOOTER (full or
+// minimal). Each is stored only when the owner picked it (`null` means "the theme's own"), so switching
+// themes keeps an explicit choice and otherwise brings the new theme's defaults.
 //
 // Pure and fail-safe: a malformed node reads as the defaults.
 
@@ -42,6 +48,48 @@ export const SITE_THEMES: readonly SiteThemeDef[] = [
 
 const DEFAULT_SITE_THEME: SiteThemeId = 'frequency'
 
+type SiteCorners = 'soft' | 'subtle' | 'square'
+type SiteSpacing = 'airy' | 'balanced' | 'compact'
+type SiteHeader = 'pill' | 'bar'
+type SiteFooter = 'full' | 'minimal'
+
+/** The global style choices, in the order the editors offer them, each option with its owner-facing label. */
+export const SITE_LOOK_OPTIONS = {
+  corners: [
+    { id: 'soft', label: 'Soft' },
+    { id: 'subtle', label: 'Subtle' },
+    { id: 'square', label: 'Square' },
+  ],
+  spacing: [
+    { id: 'airy', label: 'Airy' },
+    { id: 'balanced', label: 'Balanced' },
+    { id: 'compact', label: 'Compact' },
+  ],
+  header: [
+    { id: 'pill', label: 'Floating pill' },
+    { id: 'bar', label: 'Full-width bar' },
+  ],
+  footer: [
+    { id: 'full', label: 'Full' },
+    { id: 'minimal', label: 'Minimal' },
+  ],
+} as const satisfies Record<string, readonly { id: string; label: string }[]>
+
+export type SiteLookKey = keyof typeof SITE_LOOK_OPTIONS
+
+/** What each theme looks like before the owner changes anything (today's Frequency and Bold sites). */
+export const THEME_LOOK: Record<SiteThemeId, SiteLook> = {
+  frequency: { corners: 'soft', spacing: 'airy', header: 'pill', footer: 'minimal' },
+  bold: { corners: 'square', spacing: 'balanced', header: 'bar', footer: 'full' },
+}
+
+export interface SiteLook {
+  corners: SiteCorners
+  spacing: SiteSpacing
+  header: SiteHeader
+  footer: SiteFooter
+}
+
 export interface SiteStyle {
   theme: SiteThemeId
   /** The website's font set. */
@@ -50,6 +98,8 @@ export interface SiteStyle {
   synced: boolean
   /** The Space page's own font set, used only while `synced` is off. */
   spaceFonts: SpaceThemeId
+  /** The owner's global style choices; `null` keeps the theme's own. */
+  look: { [K in SiteLookKey]: SiteLook[K] | null }
 }
 
 const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v)
@@ -64,7 +114,34 @@ export function readSiteStyle(preferences: unknown): SiteStyle {
   const theme: SiteThemeId = isSiteThemeId(node?.theme) ? node.theme : fonts === 'menswork' ? 'bold' : DEFAULT_SITE_THEME
   const synced = node?.synced !== false
   const spaceFonts = typeof node?.spaceFonts === 'string' && isSpaceThemeId(node.spaceFonts) ? node.spaceFonts : fonts
-  return { theme, fonts, synced, spaceFonts }
+  const pick = <K extends SiteLookKey>(key: K): SiteLook[K] | null => {
+    const v = node?.[key]
+    return SITE_LOOK_OPTIONS[key].some((o) => o.id === v) ? (v as SiteLook[K]) : null
+  }
+  return { theme, fonts, synced, spaceFonts, look: { corners: pick('corners'), spacing: pick('spacing'), header: pick('header'), footer: pick('footer') } }
+}
+
+/** Whether a value is one of a global style's options. */
+export function isSiteLookValue<K extends SiteLookKey>(key: K, v: unknown): v is SiteLook[K] {
+  return SITE_LOOK_OPTIONS[key].some((o) => o.id === v)
+}
+
+/** The global styles a site wears: each owner choice, else its theme's own. */
+export function siteLook(style: SiteStyle): SiteLook {
+  const base = THEME_LOOK[style.theme]
+  return {
+    corners: style.look.corners ?? base.corners,
+    spacing: style.look.spacing ?? base.spacing,
+    header: style.look.header ?? base.header,
+    footer: style.look.footer ?? base.footer,
+  }
+}
+
+/** The global styles that differ from the theme's own: the only ones the website has to restyle. */
+export function siteLookOverrides(style: SiteStyle): Partial<SiteLook> {
+  const look = siteLook(style)
+  const base = THEME_LOOK[style.theme]
+  return Object.fromEntries((Object.keys(look) as SiteLookKey[]).filter((k) => look[k] !== base[k]).map((k) => [k, look[k]]))
 }
 
 /** The theme the website wears. */
@@ -86,6 +163,15 @@ export function withSiteStyle(preferences: unknown, patch: Partial<SiteStyle>): 
   const style: SiteStyle = { ...current, ...patch }
   if (style.fonts === DEFAULT_SPACE_THEME) delete next.theme
   else next.theme = style.fonts
-  next.siteStyle = { theme: style.theme, synced: style.synced, spaceFonts: style.spaceFonts }
+  const look = Object.fromEntries(Object.entries(style.look).filter(([, v]) => v !== null))
+  next.siteStyle = { theme: style.theme, synced: style.synced, spaceFonts: style.spaceFonts, ...look }
   return next
+}
+
+/** The accent a Space page falls back to when the owner picked none. A synced Space page on a Bold
+ *  website wears Bold's fonts and Bold's teal, but keeps the app's own surfaces and layout so member pages
+ *  stay readable (ADR-1728); any other Space page keeps its type's default. */
+export function spacePageDefaultAccent(preferences: unknown, typeDefault: string): string {
+  const style = readSiteStyle(preferences)
+  return style.synced && style.theme === 'bold' ? MENSWORK_PALETTE.teal : typeDefault
 }

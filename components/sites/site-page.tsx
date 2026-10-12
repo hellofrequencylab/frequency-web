@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { readSiteStyle, siteTheme } from '@/lib/theme/site-style'
+import { readSiteStyle, siteLook, siteLookOverrides, siteTheme } from '@/lib/theme/site-style'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { ArrowRight, Radio } from 'lucide-react'
@@ -157,6 +157,10 @@ export async function SitePage({
   // current season's accent. Its teal stands in for the type's default accent; an accent the owner picked
   // still wins.
   const skin = boldSite ? { theme: 'menswork' as const, season: mensworkSeason(new Date()) } : null
+  // The owner's global styles over the theme the site actually wears (ADR-1728).
+  const lookStyle = { ...siteStyle, theme: boldSite ? ('bold' as const) : ('frequency' as const) }
+  const lookOverrides = siteLookOverrides(lookStyle)
+  const fullFooter = siteLook(lookStyle).footer === 'full'
   const accentVars = skin
     ? mensworkAccentVars(websiteBrand.accent)
     : resolveAccentVars(websiteBrand.accent, defaultAccentForType(space.type))
@@ -274,8 +278,9 @@ export async function SitePage({
         skin={skin}
         logoUrl={skin ? (website ? websiteBrand.logo : space.brandLogoUrl) : headerLogo.logoUrl}
         logoMode={headerLogo.logoMode}
-        tagline={website ? websiteChrome.tagline : skin ? tagline : null}
-        showBrandFooter={!!website || !!skin}
+        tagline={website ? websiteChrome.tagline : fullFooter ? tagline : null}
+        showBrandFooter={fullFooter}
+        look={lookOverrides}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
         admin={siteAdminLinks(origin, space.slug, siteBase)}
       >

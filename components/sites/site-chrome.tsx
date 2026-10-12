@@ -6,6 +6,8 @@ import { dateLabel } from '@/lib/sites/menswork-page'
 import { HOUSE_CSS } from './house-css'
 import { MENSWORK_CSS } from './menswork-css'
 import { MENSWORK_PAGE_CSS } from './menswork-page-css'
+import { SITE_LOOK_CSS } from './site-look-css'
+import type { SiteLook } from '@/lib/theme/site-style'
 import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
 import { SiteFooterAdmin, type SiteAdminNavLink } from './site-admin-bar'
 
@@ -68,6 +70,7 @@ export function SiteChrome({
   showBrandFooter,
   seasonNow = null,
   admin = null,
+  look = {},
   children,
 }: {
   brandName: string
@@ -98,6 +101,8 @@ export function SiteChrome({
   /** The blue admin links ending the menu, and the console link the footer's admin section adds. Only
    *  with a skin. */
   admin?: { menu: SiteAdminNavLink[]; console: string } | null
+  /** The owner's global styles that differ from the theme's own (siteLookOverrides, ADR-1728). */
+  look?: Partial<Pick<SiteLook, 'corners' | 'spacing' | 'header'>>
   children: ReactNode
 }) {
   const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
@@ -108,9 +113,12 @@ export function SiteChrome({
       data-house-fonts={themeFonts ? 'theme' : 'house'}
       data-house-theme={skin?.theme}
       data-season={skin?.season}
+      data-site-corners={look.corners}
+      data-site-spacing={look.spacing}
+      data-site-header={look.header}
       className="hs-root"
     >
-      <style>{skin ? HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS : HOUSE_CSS}</style>
+      <style>{(skin ? HOUSE_CSS + MENSWORK_CSS + MENSWORK_PAGE_CSS : HOUSE_CSS) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
       <HouseHeader
         brandName={brandName}
         homeHref={homeHref}
