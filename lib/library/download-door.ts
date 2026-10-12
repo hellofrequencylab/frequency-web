@@ -5,6 +5,7 @@ import type { getCallerProfile } from '@/lib/auth'
 import { signedLibraryAssetUrl } from './asset-urls'
 import { extForMime } from './export-svg'
 import { LIBRARY_DOWNLOAD_POLICIES, isLibraryAssetExpired, type LibraryDownloadPolicy } from './types'
+import { LIBRARY_FILES_BUCKET } from './upload-kinds'
 
 // THE LOOM DOWNLOAD DOOR (LIVE-578, ADR-1596; child 3 of PROG-D6 under ADR-1562).
 //
@@ -78,9 +79,15 @@ export function readDoorPolicy(v: unknown): LibraryDownloadPolicy {
  * two knobs stay independent (ADR-1594) except for the default nobody chose.
  */
 export function effectiveDownloadPolicy(
-  asset: Pick<DownloadableAsset, 'isProtected' | 'downloadPolicy'>,
+  asset: Pick<DownloadableAsset, 'isProtected' | 'downloadPolicy'> & Partial<Pick<DownloadableAsset, 'storageBucket'>>,
 ): LibraryDownloadPolicy {
-  return asset.isProtected && asset.downloadPolicy === 'open' ? 'staff' : asset.downloadPolicy
+  if (asset.downloadPolicy !== 'open') return asset.downloadPolicy
+  // SCAN-836 (owner ruling 2026-10-12): a font or document in the private library-files bucket is
+  // staff-only by default. The bucket exists because a font licence usually forbids a public link
+  // and a document is often internal, so `open` (the column default nobody chose) reads as `staff`
+  // there, the same rule as a protected master. An operator who picks `members` keeps that pick.
+  if (asset.isProtected || asset.storageBucket === LIBRARY_FILES_BUCKET) return 'staff'
+  return 'open'
 }
 
 /**
@@ -166,7 +173,7 @@ export async function openLibraryDownload(
   if (!asset || (!asset.url && !asset.storagePath)) return { ok: false, refusal: 'missing' }
   if (isLibraryAssetExpired(asset.expiresAt, deps.now)) return { ok: false, refusal: 'expired' }
 
-  const policy = effectiveDownloadPolicy({ isProtected: asset.isProtected, downloadPolicy: asset.downloadPolicy })
+  const policy = effectiveDownloadPolicy({ isProtected: asset.isProtected, downloadPolicy: asset.downloadPolicy, storageBucket: asset.storageBucket })
   const refusal = await admitDownload(policy, caller, deps.isStudioStaff ?? isLoomStudioStaff)
   if (refusal) return { ok: false, refusal }
 

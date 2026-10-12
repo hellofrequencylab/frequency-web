@@ -230,6 +230,10 @@ describe('the pure pieces', () => {
     expect(effectiveDownloadPolicy({ isProtected: true, downloadPolicy: 'members' })).toBe('members')
     expect(effectiveDownloadPolicy({ isProtected: true, downloadPolicy: 'staff' })).toBe('staff')
     expect(effectiveDownloadPolicy({ isProtected: false, downloadPolicy: 'open' })).toBe('open')
+    // SCAN-836: the private library-files bucket is staff-only unless an operator picked members.
+    expect(effectiveDownloadPolicy({ isProtected: false, downloadPolicy: 'open', storageBucket: 'library-files' })).toBe('staff')
+    expect(effectiveDownloadPolicy({ isProtected: false, downloadPolicy: 'members', storageBucket: 'library-files' })).toBe('members')
+    expect(effectiveDownloadPolicy({ isProtected: false, downloadPolicy: 'open', storageBucket: 'library-public' })).toBe('open')
   })
 
   it('an unknown stored policy reads as the strictest one at the door', () => {
@@ -252,8 +256,8 @@ describe('the pure pieces', () => {
 })
 
 describe('openLibraryDownload: a font or document in library-files (LIVE-692)', () => {
-  it('signs an unprotected document from the private library-files bucket, never by url', async () => {
-    state.asset = asset({
+  const document = () =>
+    asset({
       kind: 'document',
       slug: 'brand-guide',
       url: null,
@@ -261,11 +265,33 @@ describe('openLibraryDownload: a font or document in library-files (LIVE-692)', 
       storage_bucket: 'library-files',
       storage_path: 'root/brand-guide.pdf',
     })
-    const out = await openLibraryDownload(ID, null)
+
+  it('is staff-only by default: a signed-out caller is refused (SCAN-836, owner ruling 2026-10-12)', async () => {
+    state.asset = document()
+    expect(await openLibraryDownload(ID, null)).toEqual({ ok: false, refusal: 'members' })
+    expect(state.signed).toEqual([])
+    expect(state.inserts).toEqual([])
+  })
+
+  it('is staff-only by default: a member is refused', async () => {
+    state.asset = document()
+    expect(await openLibraryDownload(ID, { id: 'p-member' } as never)).toEqual({ ok: false, refusal: 'staff' })
+  })
+
+  it('signs a document for staff from the private library-files bucket, never by url', async () => {
+    state.asset = document()
+    const out = await openLibraryDownload(ID, { id: 'p-staff' } as never)
     if (!out.ok) throw new Error('expected a download')
     expect(state.signed).toEqual([
       { bucket: 'library-files', path: 'root/brand-guide.pdf', ttl: 60, opts: { download: 'brand-guide.pdf' } },
     ])
-    expect(state.inserts).toEqual([{ asset_id: ID, profile_id: null, policy: 'open' }])
+    expect(state.inserts).toEqual([{ asset_id: ID, profile_id: 'p-staff', policy: 'staff' }])
+  })
+
+  it('keeps an operator pick of members on a library-files document', async () => {
+    state.asset = document()
+    state.asset.download_policy = 'members'
+    const out = await openLibraryDownload(ID, { id: 'p-member' } as never)
+    expect(out.ok).toBe(true)
   })
 })
