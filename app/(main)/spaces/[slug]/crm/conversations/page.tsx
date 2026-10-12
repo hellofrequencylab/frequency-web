@@ -80,7 +80,11 @@ export default async function SpaceConversationsPage({
       adminBar={false}
       description="Every ticketed conversation with your members and leads. Reply as your space, assign it to a teammate, and their reply comes back to the same thread."
       back={{ href: `/spaces/${space.slug}/manage?section=resonance`, label: 'Back to Resonance' }}
-      actions={canManage ? <SpaceConversationCompose startAction={startSpaceConversationAction.bind(null, space.slug)} /> : undefined}
+      actions={
+        canManage ? (
+          <SpaceConversationCompose startAction={startSpaceConversationAction.bind(null, space.slug)} senderName={space.name} />
+        ) : undefined
+      }
       banner={staffViewing ? <StaffPreviewBanner spaceName={space.brandName ?? space.name} /> : undefined}
       stats={
         <>
