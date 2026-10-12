@@ -88,3 +88,33 @@ export function conversationFrom(displayName: string | null | undefined, options
   const label = via && raw.toLowerCase() !== 'frequency' ? `${raw} via Frequency` : raw
   return `${quotePhrase(label)} <${addr}>`
 }
+
+/** The raw display name of a `Name <addr>` header: the phrase before `<`, unquoted and unescaped.
+ *  '' for a bare address or an empty header. Pure. */
+export function displayNameOf(header: string): string {
+  const s = (header ?? '').trim()
+  const lt = s.indexOf('<')
+  if (lt < 0) return ''
+  let phrase = s.slice(0, lt).trim()
+  if (phrase.length >= 2 && phrase.startsWith('"') && phrase.endsWith('"')) {
+    phrase = phrase.slice(1, -1).replace(/\\(.)/g, '$1')
+  }
+  return phrase.trim()
+}
+
+/**
+ * `address` masked with the display name of `from`, so a Reply-To built from an opaque signed alias
+ * (EMAIL-013) shows the sender's name in a mail client instead of the raw token (owner ruling
+ * 2026-10-12: "that email looks like trash. How do we mask that."). The alias stays underneath for
+ * thread binding; only the phrase changes.
+ *   withDisplayName('Ada via Frequency <people@x>', 'r2.abc@send.x') → `Ada via Frequency <r2.abc@send.x>`
+ *   withDisplayName('people@x', 'r2.abc@send.x')                    → `r2.abc@send.x`
+ *   withDisplayName('"Lovelace, Ada" <people@x>', 'Bob <r2@x>')     → `"Lovelace, Ada" <r2@x>`
+ * Pure.
+ */
+export function withDisplayName(from: string, address: string): string {
+  const addr = addressOf(address)
+  if (!addr) return ''
+  const name = formatDisplayName(displayNameOf(from))
+  return name ? `${name} <${addr}>` : addr
+}

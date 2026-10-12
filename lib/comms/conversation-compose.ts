@@ -25,7 +25,8 @@ import { conversationSigningAvailable } from '@/lib/comms/reply-address'
 import { buildSpaceConversationReplyAddress, spaceReplyAliasReady } from './tenant-reply-alias'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
-import { conversationFrom } from '@/lib/comms/from-address'
+import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
+import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import { resolveSpaceEmailDefaultIdentity } from '@/lib/spaces/email-domain-onboarding'
 
 // SINGLE-SOURCE sentinel (check:crm-parity): the compose block below — open conversation + reply
@@ -129,11 +130,14 @@ export async function startConversationMessage(
     scope: input.scope ?? null,
   }
 
-  // The shared render: the studio-compiled document when the caller composed one, else the plain
-  // branded reply template. Batching stores the CLEAN body and stamps chrome at flush.
+  // The shared render: the studio-compiled document when the caller composed one, else the reply
+  // template wearing the Space's brand (owner ruling 2026-10-12; null on the platform lane or a brand
+  // read fault, which renders the plain Frequency wrapper rather than refusing the send). Batching
+  // stores the CLEAN body and stamps chrome, brand included, at flush.
+  const brand = await resolveSpaceEmailBrand(input.spaceId ?? null)
   const rendered = input.bodyHtml
     ? { html: input.bodyHtml, text: body }
-    : renderReplyEmail(body, input.signature)
+    : renderReplyEmail(body, input.signature, brand)
 
   if (conversationBatchWindowMinutes() > 0) {
     const queued = await queueOutboundMessage({
@@ -156,7 +160,9 @@ export async function startConversationMessage(
     await enqueueEmail({
       to: email,
       from: input.from,
-      replyTo: await buildSpaceConversationReplyAddress(conv.ref, input.spaceId ?? null),
+      // The signed per-thread alias (EMAIL-013) rides underneath; the display name from the From
+      // masks it so a mail client shows the sender, not the raw token.
+      replyTo: withDisplayName(input.from, await buildSpaceConversationReplyAddress(conv.ref, input.spaceId ?? null)),
       subject,
       html: rendered.html,
       text: rendered.text,

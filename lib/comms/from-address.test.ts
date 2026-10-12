@@ -4,6 +4,8 @@ import {
   conversationAddress,
   conversationFrom,
   formatDisplayName,
+  displayNameOf,
+  withDisplayName,
   DEFAULT_CONVERSATION_ADDRESS,
 } from './from-address'
 
@@ -136,5 +138,41 @@ describe('conversationFrom (L3-01: one valid mailbox, never nested)', () => {
     const from = conversationFrom('Mallory <mallory@evil.test>')
     expect(isSingleMailbox(from)).toBe(true)
     expect(from.endsWith('<noreply@x.test>')).toBe(true)
+  })
+})
+
+// Owner ruling 2026-10-12: the signed per-thread alias (EMAIL-013) showed raw in a real Space email's
+// Reply-To. withDisplayName masks it with the From's display name; the alias stays underneath.
+describe('withDisplayName (masks a signed reply alias with the From name)', () => {
+  const ALIAS = 'danielt.r2.0123456789abcdef0123.0123456789abcdef0123456789abcdef@send.frequencylocal.com'
+
+  it('wears a bare display name', () => {
+    expect(withDisplayName('Ada via Frequency <people@people.frequencylocal.com>', ALIAS)).toBe(
+      `Ada via Frequency <${ALIAS}>`,
+    )
+  })
+
+  it('unquotes a quoted name and re-quotes it when RFC 5322 needs it', () => {
+    expect(withDisplayName('"Lovelace, Ada via Frequency" <people@x.test>', ALIAS)).toBe(
+      `"Lovelace, Ada via Frequency" <${ALIAS}>`,
+    )
+    expect(withDisplayName('"Ada \\"the\\" Lovelace" <people@x.test>', ALIAS)).toBe(`"Ada \\"the\\" Lovelace" <${ALIAS}>`)
+  })
+
+  it('a From with no name gives the bare address', () => {
+    expect(withDisplayName('people@x.test', ALIAS)).toBe(ALIAS)
+    expect(withDisplayName('', ALIAS)).toBe(ALIAS)
+    expect(withDisplayName('<people@x.test>', ALIAS)).toBe(ALIAS)
+  })
+
+  it('an address already wrapped is unwrapped first, never nested', () => {
+    expect(withDisplayName('Ada <people@x.test>', `Frequency <${ALIAS}>`)).toBe(`Ada <${ALIAS}>`)
+    expect(withDisplayName('Ada <people@x.test>', `<${ALIAS}>`)).toBe(`Ada <${ALIAS}>`)
+  })
+
+  it('displayNameOf reads the phrase before the bracket', () => {
+    expect(displayNameOf('Ada <a@b.test>')).toBe('Ada')
+    expect(displayNameOf('"Lovelace, Ada" <a@b.test>')).toBe('Lovelace, Ada')
+    expect(displayNameOf('a@b.test')).toBe('')
   })
 })
