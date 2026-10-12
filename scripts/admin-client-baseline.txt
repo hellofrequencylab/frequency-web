@@ -817,6 +817,8 @@ lib/commerce/variants.ts
 lib/comms/bulk-dm.ts
 lib/comms/contact-preferences.ts
 lib/comms/conversations.ts
+# LIVE-898: the Space brand a conversation email wears is read at the batch flush (a cron with no session) and at compose after the caller authorized the Space; it reads five public branding columns of one spaces row and writes nothing.
+lib/comms/email-brand.ts
 lib/comms/inbound.ts
 lib/comms/leader-send.ts
 lib/comms/outbound-batch.ts
