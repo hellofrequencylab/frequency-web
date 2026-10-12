@@ -1,0 +1,15 @@
+{
+  "id": "OWN-095",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-12",
+    "verify": {
+      "kind": "manual",
+      "evidence": "Open until the owner approves the messages and they are sent; record the send date here.",
+      "checked": "2026-10-06"
+    }
+  },
+  "append": {
+    "detail": "\n\nSENT 2026-10-12 20:26Z on the owner's approval (\"I approve all the steps\"). The three drafts the owner approved in the Owner actions doc went through production's own outbox (notification_queue kind email, dedupe keys own-095:<group>:<email>, tag own_095) and the process-queue cron: 25 queued, 25 done, 25 accepted by the provider (email_provider_attempts), 0 errors, 0 suppressed. Recipients read from production: 6 Business Space owners (every active plan=business Space), 13 Crew members (membership_tier=crew, non-demo, with a login; the 14th profile has no auth user), and 6 distinct humans behind the 20 active free Spaces (free-Space owners who also own a Business Space got the Business message only). Sent from the platform sender, not the Space CRM, so no CRM thread rows exist for these."
+  }
+}
