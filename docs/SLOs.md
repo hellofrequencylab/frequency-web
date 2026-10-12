@@ -71,7 +71,7 @@ of their silence; `isCronFresh(job, lastSuccessMs)` answers the question for one
 | every 30 min | 60 min | `referral-release`, `embed-events`, `journey-drips` | referral payouts + search freshness + Journey drips |
 | hourly | 2 h | `journey-prompt`, `practice-lifecycle` | the local-morning prompt (ADR-1225); practice transitions |
 | daily | 1 day + 1h | 13 nightly jobs (renewals, retention, lifecycle, embeddings, the daily readings) | renewals, retention, embeddings |
-| weekly | 1 week + 1 day | `weekly-digest` | a miss is visible to every recipient |
+| weekly | 1 week + 1 day | `weekly-digest`, `this-week` | a miss is visible to every recipient |
 
 > The schedule list in [`vercel.json`](../vercel.json) is the source of truth for *when*
 > jobs run; this table is the **freshness contract** the heartbeat monitor pages against.
