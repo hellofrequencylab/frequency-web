@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-10-12T16:17:40.561Z",
+  "origin": "https://frequencylocal.com",
+  "productId": "7597ed91-cb12-4c79-a5b1-5800fb6184a3",
+  "sourceDigest": "7413c8f70a6467f6",
+  "capturedFrom": "a Vercel sandbox (iad1) against the production deployment of main at 1e5b2a7 (#3384), node fetch, no session cookie; the repeat view resent every cookie the first view set (fq_mkt and fq_attr)",
+  "anonymousFirst": {
+    "status": 200,
+    "xVercelCache": "MISS",
+    "cacheControl": "public, max-age=0, must-revalidate",
+    "age": "0",
+    "setCookie": "fq_mkt=<signed discovery stamp>; Path=/; Max-Age=604800; HttpOnly; SameSite=lax, fq_attr=<first-touch attribution>; Path=/; Max-Age=7776000; SameSite=lax"
+  },
+  "anonymousRepeat": {
+    "status": 200,
+    "xVercelCache": "HIT",
+    "cacheControl": "public, max-age=0, must-revalidate",
+    "age": "0",
+    "setCookie": null
+  },
+  "malformedId": {
+    "status": 404,
+    "xVercelCache": "MISS",
+    "cacheControl": "public, max-age=0, must-revalidate",
+    "age": "0",
+    "setCookie": "fq_mkt=<signed discovery stamp>, fq_attr=<first-touch attribution>"
+  },
+  "privateId": {
+    "status": 404,
+    "xVercelCache": "MISS",
+    "cacheControl": "public, max-age=0, must-revalidate",
+    "age": "0",
+    "setCookie": "fq_mkt=<signed discovery stamp>, fq_attr=<first-touch attribution>",
+    "note": "5ea5b979-5529-4450-8433-5f741cdf21e1 is an archived (status <> active) commerce_products row"
+  }
+}
