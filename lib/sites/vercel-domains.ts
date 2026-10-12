@@ -257,7 +257,7 @@ async function certificateIssued(cfg: VercelConfig, domain: string): Promise<boo
 /** A DNS record to write into a zone Vercel hosts (EMAIL-022: the Space inbox address's MX, SPF and DKIM
  *  records under the frequencylocal.com zone). `name` is zone-relative, as Vercel's records API takes it
  *  (`@` for the zone itself). */
-export interface ZoneDnsRecord {
+interface ZoneDnsRecord {
   type: 'MX' | 'TXT' | 'CNAME'
   name: string
   value: string

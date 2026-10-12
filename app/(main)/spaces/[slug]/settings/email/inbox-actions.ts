@@ -7,19 +7,20 @@ import { provisionSpaceInboxAddress, checkSpaceInboxAddress, type SpaceInboxResu
 // EMAIL-022: the one button on the "Your Space address" card. Owner only (any plan: the Space address
 // is for every account). The module never throws; a refused result carries its own member-safe sentence.
 type Outcome = Extract<SpaceInboxResult, { ok: true }>
-async function run(spaceId: string, slug: string, task: () => Promise<SpaceInboxResult>): Promise<ActionResult<Outcome>> {
-  try {
-    await requireSpaceEmailIdentityOwner(spaceId, false)
-  } catch (err) {
-    return fail(err instanceof Error ? err.message : 'Only the Space owner can set up the Space address.')
-  }
-  const result = await task()
+/** The owner gate, in the shape identity-actions.ts uses: throws for anyone but the Space owner. */
+async function assertOwner(spaceId: string) { return requireSpaceEmailIdentityOwner(spaceId, false) }
+function finish(slug: string, result: SpaceInboxResult): ActionResult<Outcome> {
   revalidatePath(`/spaces/${slug}/settings/email`)
   return result.ok ? ok(result) : fail(result.message)
 }
-export async function setUpSpaceInboxAddress(spaceId: string, slug: string) {
-  return run(spaceId, slug, () => provisionSpaceInboxAddress(spaceId))
+function refused(err: unknown): ActionResult<Outcome> {
+  return fail(err instanceof Error ? err.message : 'Only the Space owner can set up the Space address.')
 }
-export async function checkSpaceInboxAddressAction(spaceId: string, slug: string) {
-  return run(spaceId, slug, () => checkSpaceInboxAddress(spaceId))
+export async function setUpSpaceInboxAddress(spaceId: string, slug: string): Promise<ActionResult<Outcome>> {
+  try { await assertOwner(spaceId) } catch (err) { return refused(err) }
+  return finish(slug, await provisionSpaceInboxAddress(spaceId))
+}
+export async function checkSpaceInboxAddressAction(spaceId: string, slug: string): Promise<ActionResult<Outcome>> {
+  try { await assertOwner(spaceId) } catch (err) { return refused(err) }
+  return finish(slug, await checkSpaceInboxAddress(spaceId))
 }

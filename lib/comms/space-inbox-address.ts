@@ -49,7 +49,7 @@ import {
   type ZoneRecord,
 } from './space-inbox-address-core'
 
-export interface SpaceInboxAddressRow {
+interface SpaceInboxAddressRow {
   id: string
   space_id: string
   domain: string
@@ -220,7 +220,7 @@ export async function resolveSpaceInboxFrom(spaceId: string): Promise<string | n
   }
 }
 
-export type SpaceInboxRoute =
+type SpaceInboxRoute =
   | { kind: 'none' }
   | { kind: 'quarantine'; reason: 'ambiguous_alias' | 'inbox_address_unknown' | 'inbox_address_unverified' }
   | { kind: 'ready'; spaceId: string; ownerProfileId: string | null; brandName: string; address: string }
@@ -267,7 +267,7 @@ async function ensureSpaceContact(spaceId: string, email: string): Promise<{ con
   return { contactId: String(inserted.data.id), profileId: (inserted.data.profile_id as string | null) ?? null }
 }
 
-export type SpaceInboxRecordStatus =
+type SpaceInboxRecordStatus =
   | { status: 'recorded'; conversationId: string; ref: string }
   | { status: 'duplicate'; conversationId?: string; ref?: string }
   | { status: 'no_owner' }

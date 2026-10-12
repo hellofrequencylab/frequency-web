@@ -43,7 +43,7 @@ export function spaceInboxFromLine(brandName: string, address: string): string |
   return name ? `${name} <${address}>` : null
 }
 
-export type InboxRecipientMatch =
+type InboxRecipientMatch =
   | { kind: 'none' }
   | { kind: 'ambiguous' }
   | { kind: 'match'; domain: string; localPart: string; address: string }

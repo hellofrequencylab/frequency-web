@@ -16,7 +16,7 @@ vi.mock('@/lib/supabase/admin',()=>({createAdminClient:()=>({from:(name:string)=
  },maybeSingle:async()=>{const row: Record<string,unknown>|null=name==='spaces'?state.space:name==='space_email_identities'?state.identityRow:name==='space_email_identity_defaults'?state.defaultRow:name==='space_email_domain_operations'?state.op:state.registry;return{data:row&&Object.entries(filter).every(([k,v])=>row[k]===v)?row:null,error:null}}};return q},
  rpc:async()=>({data:{...state.op,mode:state.busy?'busy':state.op?.provider_domain_id?'persist':state.op?.state==='pending'?'create':'reconcile'},error:null})})}))
 import {prepareEmailDomainSetup,runSpaceEmailDomainProvisioning,resolveSpaceEmailDefaultIdentity,chooseEmailDomainSender} from './email-domain-onboarding'
-beforeEach(()=>{inbox.from=null;state.owner=true;state.proof=true;state.createCount=0;state.registryFails=false;state.providerTimeout=false;state.busy=false;state.op=null;state.registry=null;state.providerId=null;state.space.plan='business';state.space.entitlements={};state.defaultRow=null;state.identityRow=null})
+beforeEach(()=>{inbox.from=null;state.owner=true;state.proof=true;state.createCount=0;state.registryFails=false;state.providerTimeout=false;state.busy=false;state.op=null;state.registry=null;state.providerId=null;state.space.plan='business';state.space.entitlements={};state.defaultRow=null;state.identityRow=null;})
 describe('durable owner domain setup',()=>{
  it('reuses an existing exact tenant sender after interrupted default persistence',async()=>{
   state.registry={id:'d1',space_id:'s1',domain:'example.com',provider_domain_id:'p1'}
