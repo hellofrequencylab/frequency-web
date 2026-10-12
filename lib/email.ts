@@ -21,6 +21,7 @@ import { envString } from '@/lib/env/string'
 import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 import { enqueue, type JobLane } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
+import { renderThisWeek, type ThisWeekEvent } from '@/lib/this-week'
 // Email Studio (Phase 4) transactional seam: renders an in-house email from its EDITABLE template when an
 // operator has seeded + edited one, else returns null so the hardcoded copy below stands. Additive + fail-safe.
 
@@ -434,6 +435,51 @@ export async function sendWeeklyDigestEmail(params: {
     html:    digestHtml({ recipientName, dispatches, upcomingEvents, nearbyEvents, topStreak, rank, goAgain, unsubscribeUrl }),
     text:    digestText({ recipientName, dispatches, upcomingEvents, nearbyEvents, topStreak, rank, goAgain, unsubscribeUrl }),
   })
+}
+
+
+// ── "This week in <region>" (Thursday, LIVE-806) ──────────────────────────────
+// The regional calendar email: every public Event coming up in the member's home region this
+// week. The body is rendered by the pure half (lib/this-week.ts renderThisWeek) and wrapped in the
+// same shell as every other Frequency email here. The cron (app/api/cron/this-week/route.ts)
+// does all the gating before this is called; this only composes and enqueues.
+
+export async function sendThisWeekEmail(params: {
+  to:                 string
+  recipientName:      string
+  recipientProfileId: string
+  regionName:         string
+  events:             readonly ThisWeekEvent[]
+  /** `this-week:<profile_id>:<ISO week>`: the outbox's own unique key, a second wall behind the
+   *  cron's cron_run_markers claim, so a re-fired run can never land two rows for one member. */
+  dedupeKey:          string
+}) {
+  const { to, recipientName, recipientProfileId, regionName, events, dedupeKey } = params
+
+  // Lifecycle, like the Sunday digest: the one lever for "Frequency telling me what is on and
+  // asking me to come back", and the scope whose consent description names events outright
+  // (lib/consent/scopes.ts). `events` is the per-RSVP channel (reminders, updates); this is not
+  // about an RSVP the reader made.
+  const unsubscribeUrl = buildUnsubscribeUrl({
+    baseUrl:   BASE_URL,
+    profileId: recipientProfileId,
+    category:  'lifecycle',
+  })
+
+  const rendered = renderThisWeek({ regionName, recipientName, events, baseUrl: BASE_URL, unsubscribeUrl })
+
+  // A list fan-out rides the bulk lane (LIVE-091): it must never take the quota a welcome email
+  // or a receipt is queued behind.
+  await enqueueEmail(
+    {
+      to,
+      subject: rendered.subject,
+      headers: listUnsubscribeHeaders(unsubscribeUrl),
+      html:    emailShell(rendered.bodyHtml),
+      text:    rendered.text,
+    },
+    { lane: 'bulk', dedupeKey },
+  )
 }
 
 
