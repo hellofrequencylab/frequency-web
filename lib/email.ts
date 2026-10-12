@@ -21,7 +21,7 @@ import { envString } from '@/lib/env/string'
 import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 import { enqueue, type JobLane } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
-import { renderThisWeek, type ThisWeekEvent } from '@/lib/this-week'
+import type { ThisWeekEvent } from '@/lib/this-week'
 // Email Studio (Phase 4) transactional seam: renders an in-house email from its EDITABLE template when an
 // operator has seeded + edited one, else returns null so the hardcoded copy below stands. Additive + fail-safe.
 
@@ -466,6 +466,9 @@ export async function sendThisWeekEmail(params: {
     category:  'lifecycle',
   })
 
+  // Loaded on call, not at module scope: lib/email.ts is exercised in-process by the EMAIL-001
+  // delivery probe, which allows only its declared dependencies, and only this sender needs it.
+  const { renderThisWeek } = await import('@/lib/this-week')
   const rendered = renderThisWeek({ regionName, recipientName, events, baseUrl: BASE_URL, unsubscribeUrl })
 
   // A list fan-out rides the bulk lane (LIVE-091): it must never take the quota a welcome email
