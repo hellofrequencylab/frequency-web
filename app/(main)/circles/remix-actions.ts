@@ -13,6 +13,7 @@ import { remixTemplate, publishCircle } from '@/lib/circles/remix'
 import { generateCircleEvents } from '@/lib/circles/events'
 import { getTemplateById } from '@/lib/circles/templates-data'
 import { seedSisterCircle, sisterCircleOffer } from '@/lib/circles/sister'
+import { listSpaceEventCreatorIds } from '@/lib/events/placement'
 
 /** The signed-in REAL member's profile id. Demo profiles cannot remix (mirrors
  *  the claim guard). */
@@ -89,12 +90,16 @@ export async function generateCircleEventsAction(input: {
  *  applies exactly as it does to a remix. */
 export async function seedSisterCircleAction(circleId: string): Promise<{ slug: string; circleId: string }> {
   const profileId = await callerProfileId()
+  // SCAN-825: the caller must be able to see the Circle under their own session (RLS), or a raw id
+  // would copy a private Circle's place and agreements.
+  const { data: visible } = await (await createClient()).from('circles').select('id').eq('id', circleId).maybeSingle()
+  if (!visible) throw new Error('That Circle is not available.')
   const admin = createAdminClient()
   const [{ data: circle }, { data: membership }] = await Promise.all([
-    admin.from('circles').select('host_id, member_count, member_cap, status').eq('id', circleId).maybeSingle(),
+    admin.from('circles').select('host_id, member_count, member_cap, status, space_id').eq('id', circleId).maybeSingle(),
     admin.from('memberships').select('status').eq('circle_id', circleId).eq('profile_id', profileId).maybeSingle(),
   ])
-  const c = circle as { host_id: string | null; member_count: number; member_cap: number; status: string } | null
+  const c = circle as { host_id: string | null; member_count: number; member_cap: number; status: string; space_id: string | null } | null
   if (!c) throw new Error('That Circle is not available.')
   const offer = sisterCircleOffer({
     memberCount: c.member_count,
@@ -106,7 +111,9 @@ export async function seedSisterCircleAction(circleId: string): Promise<{ slug: 
   })
   if (!offer) throw new Error('A sister Circle opens once this one is nearly full.')
   await assertCanCreate('circle.create')
-  const res = await seedSisterCircle({ circleId, profileId })
+  const keepPlacement =
+    c.host_id === profileId || (!!c.space_id && (await listSpaceEventCreatorIds(c.space_id)).includes(profileId))
+  const res = await seedSisterCircle({ circleId, profileId, keepPlacement })
   revalidatePath('/circles')
   revalidatePath('/lead')
   return res
