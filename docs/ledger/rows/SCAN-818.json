@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-818",
+  "title": "Only a verified 501(c)(3) can start a Non Profit or Non Profit Collective plan checkout",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "XS",
+  "wave": "W7",
+  "source": {
+    "file": "app/(main)/spaces/[slug]/settings/billing/actions.ts",
+    "ref": "Meta scan eight (2026-10-12), pricing ladder review of #3208 (LIVE-747) and #3278 (LIVE-754)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: startSpaceLoadoutCheckout accepts 'nonprofit' and 'nonprofit_collective' from any Space admin and createSpaceLoadoutCheckout checks only billingLive and the per-plan switch, which nonprofit_collective shares with Collective (on in production since 2026-10-06). Verification was read only by the billing page UI, so a direct call to the server action bought the discounted Non Profit Collective price, the 0% network fee and Business depth for up to five member Spaces with no review, as soon as OWN-094 syncs the price. THE FIX: the action refuses both Non Profit plans unless getSpaceVerification reads 'verified'. LEFT: the Stripe billing portal, if it is ever configured to allow plan switching, would need the same rule in the subscription reconciler.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/spaces/[slug]/settings/billing/actions.ts','utf8');if(!/plan === 'nonprofit_collective'\\) && \\(await getSpaceVerification\\(auth\\.spaceId\\)\\)\\?\\.status !== 'verified'/.test(s)){console.error('SCAN-818: a Non Profit plan checkout starts without a verified 501(c)(3)');process.exit(1)}\""
+  },
+  "closed": "2026-10-12"
+}
