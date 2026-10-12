@@ -43,6 +43,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { NotificationCategory } from '@/lib/notification-preferences'
 import { isSmsEnabled, smsQuietHours } from '@/lib/notification-preferences'
 import { smsEnabledFlag } from '@/lib/platform-flags'
+import { envFlag } from '@/lib/env/string'
 
 // sms_consent is a genuinely-new table, not in database.types yet — route reads
 // through an untyped admin client (same helper-function pattern as
@@ -108,7 +109,7 @@ export function evaluateSmsGate(state: SmsGateState): SmsGateDecision {
  */
 export function isSmsProvisioned(): boolean {
   return (
-    process.env.SMS_PROVISIONING_ENABLED === 'true' &&
+    envFlag('SMS_PROVISIONING_ENABLED') &&
     !!process.env.SMS_A2P_BRAND_ID &&
     !!process.env.SMS_A2P_CAMPAIGN_ID &&
     !!process.env.TWILIO_MESSAGING_SERVICE_SID

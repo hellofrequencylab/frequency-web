@@ -47,6 +47,8 @@ import { mapResendEventToInteraction, resendIdempotencyKey, type ResendTimelineE
 import { encodeSendToken, injectTracking } from './email-tracking'
 import { randomUUID } from 'crypto'
 import { briefError, log } from '@/lib/log'
+import { envString } from '@/lib/env/string'
+import { resolveSpaceEmailDefaultIdentity } from './email-domain-onboarding'
 
 // ── Tunables (documented v1 values) ─────────────────────────────────────────────────────────────
 
@@ -535,8 +537,17 @@ async function deliverSpaceCampaign(
     return fail('This space has used its email allowance for this month. It resets on the 1st, and moving up a plan raises it.')
   }
 
-  const fallbackFrom = process.env.EMAIL_FROM ?? 'Frequency <noreply@send.frequencylocal.com>'
-  const fromLine = spaceFromLine(space.brandName ?? space.name, fallbackFrom)
+  const fallbackFrom = envString('EMAIL_FROM', 'Frequency <noreply@send.frequencylocal.com>')
+  // The owner's chosen Campaigns sender on their own verified domain (EMAIL-011/012), resolved fresh
+  // against plan and provider verification. A held sender stops the send rather than quietly falling
+  // back to Frequency (email-identity-policy.ts); no choice means the Frequency sender, as before.
+  let fromLine = spaceFromLine(space.brandName ?? space.name, fallbackFrom)
+  try {
+    const identity = await resolveSpaceEmailDefaultIdentity(spaceId, 'marketing')
+    if (identity) fromLine = identity.from
+  } catch (err) {
+    return fail(err instanceof Error ? err.message : 'Your campaign sender is unavailable. Nothing was sent.')
+  }
   // Reply-To: only set when the owner configured a real reply address; v1 has none on the Space, so
   // replies go to the verified sender. (A per-Space reply inbox is a later, additive step.)
 

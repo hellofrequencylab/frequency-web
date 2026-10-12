@@ -27,6 +27,17 @@ describe('email-specific domain control proof', () => {
     await expect(verifyEmailDomainOwnership('s','o','example.com',proof.token,1001,{id:'op-b',nonce:'nonce-a'})).rejects.toThrow('another Space')
     await expect(verifyEmailDomainOwnership('s','o','example.com',proof.token,1001,{id:'op-a',nonce:'nonce-b'})).rejects.toThrow('another Space')
   })
+  it('keeps an operation-bound proof stable and valid while DNS propagates', async () => {
+    const op={id:'op-a',nonce:'nonce-a'}
+    const first=emailOwnershipChallenge('s','o','example.com',1000,op)
+    const later=emailOwnershipChallenge('s','o','example.com',1000+86_400_000,op)
+    expect(later.token).toBe(first.token)
+    expect(first.expiresAt).toBeNull()
+    dns.values=[first.segments]
+    await expect(verifyEmailDomainOwnership('s','o','example.com',first.token,1000+3*86_400_000,op)).resolves.toBeUndefined()
+    const unbound=emailOwnershipChallenge('s','o','example.com',1000)
+    await expect(verifyEmailDomainOwnership('s','o','example.com',unbound.token,1001,op)).rejects.toThrow('another Space')
+  })
   it('fails safely while DNS is unavailable', async () => {
     const proof = emailOwnershipChallenge('s','o','example.com',1000); dns.fail=true
     await expect(verifyEmailDomainOwnership('s','o','example.com',proof.token,1001)).rejects.toThrow('Check again')

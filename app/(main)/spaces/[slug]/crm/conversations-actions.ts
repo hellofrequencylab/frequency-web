@@ -32,7 +32,7 @@ import {
 } from '@/lib/comms/conversations'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
 import { brandSignature } from '@/lib/comms/signature'
-import { startConversationMessage, spaceConversationFrom } from '@/lib/comms/conversation-compose'
+import { startConversationMessage, resolveSpaceConversationFrom, brandSenderUnavailable } from '@/lib/comms/conversation-compose'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { listSpaceAssignableAgents } from '@/lib/comms/workspace'
 import { CONVERSATION_STATUSES, CONVERSATION_PRIORITIES, type ConversationPriority } from '@/lib/comms/labels'
@@ -116,7 +116,12 @@ export async function sendSpaceConversationReplyAction(
     if (!gateResult.allowed) return fail('This address has bounced or marked us as spam, so this reply cannot go out.')
   }
 
-  const from = spaceConversationFrom(gate.brandName)
+  let from: string
+  try {
+    from = await resolveSpaceConversationFrom(gate.spaceId, gate.brandName)
+  } catch (err) {
+    return fail(brandSenderUnavailable(err))
+  }
   // The Space reply's From is the BRAND, so the signature must be the brand's, not the acting manager's
   // personal saved signature (which resolveSignature would return). Use the brand-scoped helper.
   const signature = brandSignature(gate.brandName)
@@ -356,11 +361,17 @@ export async function startSpaceConversationAction(
 
   // The shared compose primitive (ADR-821): open the ticket + send the first message through the ONE
   // pipeline replies use — reply-token, Message-ID, renderReplyEmail + brand signature, batching.
+  let from: string
+  try {
+    from = await resolveSpaceConversationFrom(gate.spaceId, gate.brandName)
+  } catch (err) {
+    return fail(brandSenderUnavailable(err))
+  }
   const started = await startConversationMessage({
     ownerProfileId: gate.ownerProfileId ?? gate.viewerProfileId,
     actorProfileId: gate.viewerProfileId,
     actorAuthorKind: 'staff',
-    from: spaceConversationFrom(gate.brandName),
+    from,
     signature: brandSignature(gate.brandName),
     email,
     contactId: counterpart.contactId,

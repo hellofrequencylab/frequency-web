@@ -97,6 +97,14 @@ can guess `ref` but never its tag. Inbound order: parse → `verifyConversationT
   reply-token is present the router returns `no_token` and the webhook falls back to the legacy
   from-address contact-match (`recordInboundEmail`) — today's CRM inbox is unchanged.
 
+## Space email layer (PROG-EMAIL1, 2026-10)
+
+Built on top of the spine above, not beside it: every send still goes `enqueueEmail` → `notification_queue` → `sendRawEmail`. Plan: `docs/SPACE-EMAIL-BUILD-PLAN.md`; status lives in the EMAIL-* rows.
+
+- **Sender identity** (EMAIL-011/012). A paid Space proves its domain (`lib/spaces/email-domain-ownership.ts`, TXT at `_frequency-email.<domain>`), registers it with Resend, and picks a default sender per purpose (`space_email_identity_defaults`: `conversation` or `marketing`). Sends resolve it fresh at send time: campaigns in `sendSpaceCampaign`, conversations through `resolveSpaceConversationFrom` (`lib/comms/conversation-compose.ts`). A held sender (plan dropped, domain unverified, paused) refuses the send; it never falls back to the Frequency address.
+- **Tenant reply aliases** (EMAIL-013, `lib/comms/tenant-reply-alias.ts`). Behind `SPACE_EMAIL_REPLY_ALIASES_ENABLED`, a Space thread's Reply-To is `<slug>.r2.<key>.<hmac>@<reply domain>`, bound to exactly one Space and conversation. Inbound resolves it before the plus-token; a malformed, forged, revoked or cross-tenant alias is quarantined (fingerprints only) and never falls through to the contact match.
+- **Atomic bridge intents** (EMAIL-002) and **provider acceptance ledger** (EMAIL-003) sit behind `EMAIL_ATOMIC_BRIDGE_ENABLED` and `EMAIL_PROVIDER_ACCEPTANCE_ENABLED`. All three switches are off; `docs/RUNBOOKS.md` "Space email rollout switches" has the gate for each.
+
 ## Per-Space tenancy — every Business Space gets the same technology
 
 The spine is multi-tenant: `comms_conversations.space_id` scopes a thread to one Space (NULL = platform).

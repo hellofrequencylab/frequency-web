@@ -56,9 +56,15 @@ export async function resolveSpaceEmailIdentity(spaceId: string, identityId: str
     id: String(identity.id), spaceId, sendingVerified: verified.sendingVerified,
     paused: !!identity.paused_at || !!domain.paused_at,
   })
-  if (!decision.allowed) throw new Error(`Email identity held: ${decision.reason}`)
+  if (!decision.allowed) throw new Error(IDENTITY_HELD[decision.reason])
   return { identityId, from: `${formatDisplayName(String(identity.display_name))} <${identity.local_part}@${domain.domain}>` }
 }
+
+const IDENTITY_HELD = {
+  space_unavailable: 'This Space could not be found. Nothing was sent.',
+  paid_identity_required: 'Sending from your own domain needs a Business, Non Profit or Collective plan. Nothing was sent.',
+  identity_unavailable: 'This sender is paused or its domain is not verified yet. Nothing was sent.',
+} as const
 
 /** Revocation is available after downgrade; it never deletes old inbound ownership. */
 export async function pauseSpaceEmailIdentity(spaceId: string, identityId: string) {

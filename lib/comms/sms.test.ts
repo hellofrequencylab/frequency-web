@@ -127,10 +127,12 @@ describe('isSmsProvisioned — fail-closed on env', () => {
     expect(isSmsProvisioned()).toBe(true)
   })
 
-  it('is false when the master switch is anything but the literal "true"', () => {
-    setAll()
-    process.env.SMS_PROVISIONING_ENABLED = '1'
-    expect(isSmsProvisioned()).toBe(false)
+  it('is false when the master switch is not an envFlag on-value (1 / true / on)', () => {
+    for (const off of ['yes', 'enabled', 'false', '0', '']) {
+      setAll()
+      process.env.SMS_PROVISIONING_ENABLED = off
+      expect(isSmsProvisioned()).toBe(false)
+    }
   })
 
   it('is false when any single flag is missing', () => {

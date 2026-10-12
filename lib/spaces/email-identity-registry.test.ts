@@ -49,11 +49,11 @@ describe('live Space identity registry', () => {
   })
   it('holds after downgrade and on provider failure, unverified or paused domain', async () => {
     state.space.plan = 'free'
-    await expect(resolveSpaceEmailIdentity('s1', 'i1')).rejects.toThrow('paid_identity_required')
+    await expect(resolveSpaceEmailIdentity('s1', 'i1')).rejects.toThrow('needs a Business, Non Profit or Collective plan')
     state.space.plan = 'business'; state.verified = false
-    await expect(resolveSpaceEmailIdentity('s1', 'i1')).rejects.toThrow('identity_unavailable')
+    await expect(resolveSpaceEmailIdentity('s1', 'i1')).rejects.toThrow('not verified yet')
     state.verified = true; state.domain.paused_at = 'now'
-    await expect(resolveSpaceEmailIdentity('s1', 'i1')).rejects.toThrow('identity_unavailable')
+    await expect(resolveSpaceEmailIdentity('s1', 'i1')).rejects.toThrow('paused')
     state.domain.paused_at = null; state.providerFails = true
     await expect(resolveSpaceEmailIdentity('s1', 'i1')).rejects.toThrow('provider unavailable')
   })

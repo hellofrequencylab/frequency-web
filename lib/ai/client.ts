@@ -15,6 +15,7 @@
 // shapes. Default (flag unset) is the direct Anthropic path, byte-for-byte as today.
 
 import Anthropic from '@anthropic-ai/sdk'
+import { envFlag } from '@/lib/env/string'
 
 let cached: Anthropic | null | undefined
 
@@ -63,6 +64,6 @@ export function getAnthropic(): Anthropic | null {
 /** Is AI usable right now? (a client is configured and not env-disabled). True when
  *  either the direct Anthropic key or the gateway is configured. */
 export function aiEnabled(): boolean {
-  if (process.env.AI_DISABLED === '1') return false
+  if (envFlag('AI_DISABLED')) return false
   return !!process.env.ANTHROPIC_API_KEY || !!resolveGateway()
 }

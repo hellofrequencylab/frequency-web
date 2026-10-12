@@ -1,6 +1,7 @@
 import 'server-only'
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { envFlag, envStringOrNull } from '@/lib/env/string'
 import { signingSecret } from '@/lib/signing-secret'
 import { buildConversationReplyAddress, parseConversationReplyAddress } from './reply-address'
 
@@ -12,11 +13,21 @@ const tag=(row:Alias)=>createHmac('sha256',signingSecret('tenant-reply-alias',['
  .update(JSON.stringify([2,row.alias_key,row.space_id,row.conversation_id,row.conversation_ref,row.local_prefix,row.receiving_domain])).digest('hex').slice(0,32)
 const address=(row:Alias)=>`${row.local_prefix}.r2.${row.alias_key}.${tag(row)}@${row.receiving_domain}`
 
+const aliasDomain=()=>{
+ const domain=envStringOrNull('CONVERSATION_REPLY_DOMAIN')?.toLowerCase()
+ return domain&&/^([a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(domain)&&envStringOrNull('RESEND_INBOUND_WEBHOOK_SECRET')?domain:null
+}
+
+/** False only when issuance is on for this Space but receiving is not configured, so compose can refuse before it opens a thread it could never send. */
+export function spaceReplyAliasReady(spaceId:string|null) {
+ return !spaceId||!envFlag('SPACE_EMAIL_REPLY_ALIASES_ENABLED')||aliasDomain()!==null
+}
+
 /** Trusted compose boundary only. The flag enables issuance; existing aliases remain routable when disabled. */
 export async function buildSpaceConversationReplyAddress(ref:string,spaceId:string|null) {
- if(!spaceId||process.env.SPACE_EMAIL_REPLY_ALIASES_ENABLED!=='true')return buildConversationReplyAddress(ref)
- const domain=process.env.CONVERSATION_REPLY_DOMAIN?.trim().toLowerCase()
- if(!domain||!/^([a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(domain)||!process.env.RESEND_INBOUND_WEBHOOK_SECRET)
+ if(!spaceId||!envFlag('SPACE_EMAIL_REPLY_ALIASES_ENABLED'))return buildConversationReplyAddress(ref)
+ const domain=aliasDomain()
+ if(!domain)
   throw new Error('Space reply aliases require an explicitly configured receiving domain and authenticated webhook.')
  const conv=await table('comms_conversations').select('id,ref,space_id').eq('ref',ref).eq('space_id',spaceId).maybeSingle()
  const space=await table('spaces').select('slug').eq('id',spaceId).maybeSingle()
@@ -38,10 +49,11 @@ export async function buildSpaceConversationReplyAddress(ref:string,spaceId:stri
 
 /** r2 is a reserved marker: malformed, multi-route and wrong-domain addresses never reach legacy fallback. */
 export async function resolveTenantReplyAlias(recipients:string[]) {
- const candidates=recipients.filter(r=>r.toLowerCase().includes('.r2.'))
+ // The envelope recipient and the To header usually carry the same alias: one distinct address is one route.
+ const candidates=[...new Set(recipients.filter(r=>r.toLowerCase().includes('.r2.')).map(r=>r.trim().toLowerCase().replace(/^.*<([^<>]+)>$/,'$1')))]
  if(!candidates.length)return {kind:'none' as const}
  if(candidates.length!==1||recipients.some(r=>parseConversationReplyAddress(r)))return {kind:'quarantine' as const,reason:'ambiguous_alias'}
- const bare=candidates[0].trim().toLowerCase().replace(/^.*<([^<>]+)>$/,'$1')
+ const bare=candidates[0]
  const match=/^([a-z0-9-]{1,7})\.r2\.([a-f0-9]{20})\.([a-f0-9]{32})@([a-z0-9.-]+)$/.exec(bare)
  if(!match)return {kind:'quarantine' as const,reason:'malformed_alias'}
  const result=await table('space_email_reply_aliases').select('*').eq('alias_key',match[2]).maybeSingle()
