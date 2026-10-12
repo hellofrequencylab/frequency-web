@@ -1,0 +1,7 @@
+{
+  "id": "PROG-EMAIL1",
+  "wave": "W7",
+  "append": {
+    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). PARTLY. node scripts/space-email-program.mjs --json reads docs/space-email-packets.json as 2 packets complete (baseline EMAIL-020, delivery-contract EMAIL-001), 1 active (atomic-intents EMAIL-002, open), 1 ready but not filed (email-value-ladder), and 27 waiting of which 26 are not filed; EMAIL-003 provider-acceptance is open. Fragments in docs/ledger/rows for EMAIL-002, 003, 011, 012, 013 carry 2026-10-12 CI evidence on the pgTAP fixtures. The close condition (every packet row passed, Daniel-triggered authenticated send and reply, second-Space isolation pilot, campaign accounting, measured latency, mailbox gates resolved) is live owner observation and cannot be met from the tree."
+  }
+}

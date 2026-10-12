@@ -1,0 +1,7 @@
+{
+  "id": "PROG-A1",
+  "wave": "W7",
+  "append": {
+    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). NOT STARTED. Probe run as written: FAIL (no modules/crm/index.ts; eslint.config.mjs has only the ADR-246 no-restricted-syntax rule). No modules/ directory exists. lib/apps/ (app-registry.tsx, access.ts, catalog.ts, adapters.ts) is the Loom app catalog and gate layer, and scripts/check-module-reachability.mjs checks that registered layout modules in lib/widgets/modules.ts are mounted by a page; neither is a feature-module boundary. CRM is still four route trees held by check:crm-parity."
+  }
+}

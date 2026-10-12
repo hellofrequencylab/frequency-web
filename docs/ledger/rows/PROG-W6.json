@@ -1,0 +1,7 @@
+{
+  "id": "PROG-W6",
+  "wave": "W7",
+  "append": {
+    "detail": "RE-TESTED 2026-10-12 (program premise re-test, ADR-1082). NOT STARTED. Probe run as written: FAIL (no site_templates in any migration). Zero site_templates or DTCG hits under lib/, app/ or supabase/migrations. lib/sites/editor/templates.ts WEBSITE_PAGE_TEMPLATES is a constant array of page section templates for the three built-in website themes, not a marketplace, a stored template or a portable theme format. Member sites (a profile on the site rails) have no route; app/hosted/[host] resolves Spaces only (lib/sites/hosted.ts resolveHostedSpace)."
+  }
+}
