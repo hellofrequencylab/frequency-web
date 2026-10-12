@@ -90,6 +90,53 @@ export type Database = {
         Relationships: [
         ]
       }
+      space_inbox_addresses: {
+        Row: {
+          created_at: string
+          dns_records: Json
+          domain: string
+          id: string
+          local_part: string
+          provider_domain_id: string | null
+          space_id: string
+          state: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          dns_records?: Json
+          domain: string
+          id?: string
+          local_part?: string
+          provider_domain_id?: string | null
+          space_id: string
+          state?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          dns_records?: Json
+          domain?: string
+          id?: string
+          local_part?: string
+          provider_domain_id?: string | null
+          space_id?: string
+          state?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_inbox_addresses_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_budget_reservations: {
         Row: {
           id: string

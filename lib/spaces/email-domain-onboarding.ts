@@ -9,6 +9,7 @@ import { requireSpaceEmailIdentityOwner, createSpaceEmailIdentity, resolveSpaceE
 import { createEmailProviderDomain, reconcileEmailProviderDomain, inspectEmailProviderDomain, requestEmailProviderVerification } from './email-domain-provider'
 import { advanceEmailDomainOperation, type EmailDomainOperation } from './email-domain-operation'
 import { emailDomainDnsInstructions, type EmailDnsRecord } from './email-domain-dns'
+import { resolveSpaceInboxFrom } from '@/lib/comms/space-inbox-address'
 
 type Result={data:Record<string,unknown>|null;error:{code?:string}|null}
 type Query={select(s:string):Query;eq(k:string,v:unknown):Query;insert(v:Record<string,unknown>):Query;update(v:Record<string,unknown>):Query;upsert(v:Record<string,unknown>,opts?:Record<string,unknown>):Query;delete():Query;single():Promise<Result>;maybeSingle():Promise<Result>}
@@ -84,14 +85,24 @@ export async function chooseEmailDomainSender(spaceId:string,domainId:string,loc
  if(error) throw new Error('Sender was created, but its default could not be saved. Check email settings before sending.')
  return {identityId,purpose}
 }
-export async function resolveSpaceEmailDefaultIdentity(spaceId:string,purpose:'conversation'|'marketing'|'operational') {
+/** The Space's default sender for `purpose`: the owner's CUSTOM identity on their own domain (paid plans
+ *  only, EMAIL-011/012), else the Space's own inbox address `hello@<slug>.<root>` for conversations when
+ *  it is verified (every plan, EMAIL-022), else null for the Frequency sender. */
+export async function resolveSpaceEmailDefaultIdentity(spaceId:string,purpose:'conversation'|'marketing'|'operational'):Promise<{identityId:string|null;from:string}|null> {
  const space=await db().from('spaces').select('plan,entitlements').eq('id',spaceId).maybeSingle()
  if(space.error||!space.data)throw new Error('Email sender selection is unavailable.')
- if(asSpacePlan(space.data.plan as string|null)==='free')return null
+ if(asSpacePlan(space.data.plan as string|null)==='free')return spaceInboxIdentity(spaceId,purpose)
  const {data,error}=await db().from('space_email_identity_defaults').select('identity_id').eq('space_id',spaceId).eq('purpose',purpose).maybeSingle()
  if(error) throw new Error('Email sender selection is unavailable.')
  if(data&&!spaceHasEntitlement({entitlements:space.data.entitlements},SPACE_EMAIL_CUSTOM_IDENTITY_KEY))throw new Error('Custom email sender is currently unavailable.')
- return data?resolveSpaceEmailIdentity(spaceId,String(data.identity_id)):null
+ return data?resolveSpaceEmailIdentity(spaceId,String(data.identity_id)):spaceInboxIdentity(spaceId,purpose)
+}
+/** The free-for-everyone fallback: conversations only (campaigns keep the Frequency sender until the
+ *  address carries a reputation of its own), and only a VERIFIED address; null keeps Frequency. */
+async function spaceInboxIdentity(spaceId:string,purpose:'conversation'|'marketing'|'operational') {
+ if(purpose!=='conversation')return null
+ const from=await resolveSpaceInboxFrom(spaceId)
+ return from?{identityId:null,from}:null
 }
 
 export async function useFrequencyEmailSender(spaceId:string,purpose:'conversation'|'marketing'|'operational') {

@@ -19,6 +19,9 @@ import { CampaignList } from '@/components/spaces/email/campaign-list'
 import { AnalyticsPanel } from '@/components/spaces/email/analytics-panel'
 import { SuppressionList } from '@/components/spaces/email/suppression-list'
 import { EmailIdentitySetup } from '@/components/spaces/email/email-identity-setup'
+import { SpaceInboxAddressCard } from '@/components/spaces/email/space-inbox-address-setup'
+import { readSpaceInboxAddress, spaceInboxAddressesEnabled, spaceInboxRoot } from '@/lib/comms/space-inbox-address'
+import { spaceInboxAddress, spaceInboxDomain } from '@/lib/comms/space-inbox-address-core'
 import { asSpacePlan, SPACE_EMAIL_CUSTOM_IDENTITY_KEY } from '@/lib/pricing/plans'
 import { RecentSends } from '@/components/spaces/email/recent-sends'
 
@@ -67,8 +70,15 @@ export async function EmailBody({ slug }: { slug: string }) {
   // entitlement check PLUS the featureAllowed('space_email') plan-ladder check. A staff janitor keeps the
   // read-only preview. The separate per-space email kill-switch (isSpaceEmailEnabled) still governs SENDING.
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const identitySetup = !staffViewing && space.ownerProfileId === viewerProfileId
-    ? <EmailIdentitySetup spaceId={space.id} slug={space.slug} domain={space.domain} paidPlan={asSpacePlan(space.plan) !== 'free'} paid={asSpacePlan(space.plan) !== 'free' && spaceHasEntitlement(space, SPACE_EMAIL_CUSTOM_IDENTITY_KEY)} />
+  const isOwner = !staffViewing && space.ownerProfileId === viewerProfileId
+  // EMAIL-022: the Space's own public address, for every plan, behind its rollout switch. The owner's
+  // own-domain door (EMAIL-011/012) stays below it; a free plan sees the locked note there.
+  const inboxCard = isOwner && spaceInboxAddressesEnabled() ? await spaceInboxCard(space.id, space.slug) : null
+  const identitySetup = isOwner
+    ? <>
+        {inboxCard}
+        <EmailIdentitySetup spaceId={space.id} slug={space.slug} domain={space.domain} paidPlan={asSpacePlan(space.plan) !== 'free'} paid={asSpacePlan(space.plan) !== 'free' && spaceHasEntitlement(space, SPACE_EMAIL_CUSTOM_IDENTITY_KEY)} />
+      </>
     : null
   if (!staffViewing && !(await spaceFunctionAccessLive(space, 'email', caps.role, space.plan))) {
     return (
@@ -186,6 +196,23 @@ async function SendAllowancePrompt({
       currentTier={plan}
       usage={sends}
       upgradeHref={`/spaces/${slug}/settings/billing`}
+    />
+  )
+}
+
+/** The Space address card's data: the address the Space has or would get, and its state. Null when the
+ *  slug cannot carry a domain (the card then has nothing honest to offer). Fail-safe reads. */
+async function spaceInboxCard(spaceId: string, slug: string) {
+  const root = spaceInboxRoot()
+  const domain = root ? spaceInboxDomain(slug, root) : null
+  if (!domain) return null
+  const row = await readSpaceInboxAddress(spaceId)
+  return (
+    <SpaceInboxAddressCard
+      spaceId={spaceId}
+      slug={slug}
+      address={row ? spaceInboxAddress(row.domain, row.local_part) : spaceInboxAddress(domain)}
+      state={row?.state ?? null}
     />
   )
 }
