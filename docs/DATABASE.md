@@ -644,6 +644,14 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
   the PR head, and then re-runs the PR's failed CI so it can merge at once. It does exactly what
   the SQL Editor paste did (DDL, then the ledger insert at the file's version), one run at a time.
   The paste path stays the fallback when the secret is not set.
+  **Who may run it (SCAN-847).** The job refuses any dispatch not from `main`'s copy of the
+  workflow file, trusts only check runs the GitHub Actions app posted (a branch can name a job
+  `db-tests`; it cannot post as another app), and wants an APPROVED review from someone other
+  than the PR's author, or, in this one-person repo, a repo admin as the dispatcher who also
+  clicks the environment's required-reviewer approval. The `production-db` environment must
+  carry all three settings: the secret, **Deployment branches: `main` only** (or any branch's
+  workflow that names the environment receives the secret), and **Required reviewers: the
+  owner**. Those three are owner settings; the workflow cannot read or set them.
 - **Author + review** happen on the repo file. Local/branch/CI ephemeral databases build from the
   repo files on a clean slate (there is no prod history to collide with there), so `db push` is fine
   *only* against a throwaway DB, never the linked prod project.

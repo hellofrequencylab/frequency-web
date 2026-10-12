@@ -1,0 +1,14 @@
+{
+  "id": "SCAN-847",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-12",
+    "verify": {
+      "kind": "cmd",
+      "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';if(!/github\\.ref != 'refs\\/heads\\/main'|github\\.ref == 'refs\\/heads\\/main'/.test(r('.github/workflows/apply-migration.yml'))){console.error('SCAN-847: the production migration workflow runs from any ref the dispatcher picks');process.exit(1)}\""
+    }
+  },
+  "append": {
+    "detail": "\n\nOwner ruling 2026-10-12 (sets the environment half). apply-migration.yml: the job runs only when github.ref is refs/heads/main (job-level if plus an explicit refusing step); a new step requires an APPROVED review from someone other than the author, or in this one-person repo a repo-admin dispatcher who also clicks the environment's required-reviewer approval; the green gate trusts only check runs posted by the GitHub Actions app (app.id 15368), never a commit status or a branch-named job. SETUP and docs/DATABASE.md name the three production-db settings (secret, Deployment branches main only, Required reviewers). The owner is setting those now; the workflow cannot read them."
+  }
+}
