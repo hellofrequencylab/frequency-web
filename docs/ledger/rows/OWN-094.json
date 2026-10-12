@@ -1,0 +1,15 @@
+{
+  "id": "OWN-094",
+  "patch": {
+    "status": "done",
+    "closed": "2026-10-12",
+    "verify": {
+      "kind": "manual",
+      "evidence": "CLOSED 2026-10-12: the owner ran Sync the catalog to Stripe on /admin/pricing at 20:41Z (36 of 36 synced). pricing_stripe_prices read by SQL afterwards holds 36 livemode rows on acct_1TdurHPhyalyRPP1 including collective_base_month/_year, collective_space_month/_year and nonprofit_collective_month/_year, each with a stripe_price_id and stripe_product_id (the _list twins archived as designed). Re-verify: select key, livemode, archived from pricing_stripe_prices where key like 'collective_%' or key like 'nonprofit_collective_%'.",
+      "checked": "2026-10-12"
+    }
+  },
+  "append": {
+    "detail": "\n\nLive Stripe catalog sync run by the owner 2026-10-12 20:41Z; collective_space and nonprofit_collective price ids present in production"
+  }
+}
