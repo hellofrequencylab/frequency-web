@@ -33,6 +33,11 @@ vi.mock('@/lib/spaces/email-domain-onboarding', () => ({
   resolveSpaceEmailDefaultIdentity: (spaceId: string, purpose: string) => defaultIdentity(spaceId, purpose),
 }))
 
+const resolveBrand = vi.fn(async (_spaceId: string | null): Promise<Record<string, unknown> | null> => null)
+vi.mock('@/lib/comms/email-brand', () => ({
+  resolveSpaceEmailBrand: (spaceId: string | null) => resolveBrand(spaceId),
+}))
+
 import { startConversationMessage, resolveSpaceConversationFrom, brandSenderUnavailable } from './conversation-compose'
 
 const BASE = {
@@ -56,6 +61,7 @@ beforeEach(() => {
   appendConversationMessage.mockResolvedValue({ id: 'msg-1' })
   queueOutboundMessage.mockResolvedValue(true)
   enqueueEmail.mockResolvedValue(undefined)
+  resolveBrand.mockResolvedValue(null)
 })
 
 describe('startConversationMessage', () => {
@@ -88,13 +94,40 @@ describe('startConversationMessage', () => {
     const res = await startConversationMessage(BASE)
     expect(res).toEqual({ ref: '1042', conversationId: 'conv-1' })
     const sent = enqueueEmail.mock.calls[0][0] as Record<string, unknown>
-    expect(sent.replyTo).toBe('reply+1042-hmac@reply.test')
+    // The From's display name masks the signed alias (owner ruling 2026-10-12); the alias rides underneath.
+    expect(sent.replyTo).toBe('Ada via Frequency <reply+1042-hmac@reply.test>')
     expect((sent.headers as Record<string, string>)['Message-ID']).toBe('<msg-1@reply.test>')
     expect(sent.to).toBe('lead@example.com')
     const appended = appendConversationMessage.mock.calls[0][0] as Record<string, unknown>
     expect(appended.direction).toBe('outbound')
     expect((appended.mirror as Record<string, unknown>).subjectKind).toBe('contact')
     expect(queueOutboundMessage).not.toHaveBeenCalled()
+  })
+
+  it('a Space compose wears the Space brand in the html and masks the reply alias with the From name', async () => {
+    resolveBrand.mockResolvedValue({
+      name: 'Riverside Makers',
+      logoUrl: null,
+      accent: null,
+      url: 'https://frequencylocal.com/spaces/riverside-makers',
+    })
+    const res = await startConversationMessage({ ...BASE, spaceId: 'space-1', from: '"Lovelace, Ada" <people@test>' })
+    expect(res).toEqual({ ref: '1042', conversationId: 'conv-1' })
+    expect(resolveBrand).toHaveBeenCalledWith('space-1')
+    const sent = enqueueEmail.mock.calls[0][0] as Record<string, unknown>
+    expect(sent.replyTo).toBe('"Lovelace, Ada" <reply+1042-hmac@reply.test>')
+    expect(sent.html).toContain('Riverside Makers')
+    expect(sent.html).toContain('Sent with Frequency')
+    expect(sent.text).toContain('Sent with Frequency')
+  })
+
+  it('a From with no display name leaves the reply alias bare; a brand fault means the plain wrapper', async () => {
+    resolveBrand.mockResolvedValue(null)
+    const res = await startConversationMessage({ ...BASE, spaceId: 'space-1', from: 'people@test' })
+    expect(res).toEqual({ ref: '1042', conversationId: 'conv-1' })
+    const sent = enqueueEmail.mock.calls[0][0] as Record<string, unknown>
+    expect(sent.replyTo).toBe('reply+1042-hmac@reply.test')
+    expect(sent.html).not.toContain('Sent with Frequency')
   })
 
   it('batch mode: queues instead of emailing, carrying the from + signature for the flush', async () => {

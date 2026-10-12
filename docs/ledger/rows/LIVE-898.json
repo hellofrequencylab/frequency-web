@@ -1,0 +1,19 @@
+{
+  "id": "LIVE-898",
+  "title": "A Space's conversation email wears the Space's brand and a masked reply address",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "closed": "2026-10-12",
+  "source": {
+    "file": "lib/comms/email-template.ts",
+    "ref": "Owner ruling 2026-10-12, on a real email a Space sent through Frequency (header Frequency / COMMUNITY COLLECTIVE, footer Community Collective. frequencylocal.com, Reply-To shown raw as danielt.r2.<20 hex>.<32 hex>@send.frequencylocal.com): \"that email looks like trash. How do we mask that.\""
+  },
+  "detail": "Shipped 2026-10-12. A message a Space sends through Frequency now looks like the Space's. lib/comms/email-brand.ts resolves the Space's brand (brand_name or name, brand_logo_url, brand_accent, public page) fresh per send, fail-safe to null. lib/comms/email-template.ts takes an optional EmailBrand: the header is the Space's logo (max height 40px, when there is one) and its name in the accent colour, no Frequency masthead; the footer is one small Sent with Frequency line plus the Space's page, mirrored in the plain text; every value from data is escaped. With no brand (platform mail, or a brand read fault) the output is unchanged byte for byte. lib/comms/from-address.ts withDisplayName masks the Reply-To with the From's display name, so a mail client shows Ada via Frequency, not the token. The signed per-thread alias (EMAIL-013, lib/comms/tenant-reply-alias.ts) still rides underneath for thread binding. Wired on both paths: the immediate send in lib/comms/conversation-compose.ts and the batch flush in lib/comms/outbound-batch.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const r=(p)=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const t=r('lib/comms/email-template.ts');const f=r('lib/comms/from-address.ts');if(!/brand\\?: EmailBrand \\| null/.test(t)||!/Sent with/.test(t)||!/export function withDisplayName\\(/.test(f)){console.error('LIVE-898: email-template.ts does not take a brand or from-address.ts has no withDisplayName');process.exit(1)}\""
+  },
+  "wave": "W7"
+}

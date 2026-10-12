@@ -15,8 +15,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail } from '@/lib/email'
 import { buildSpaceConversationReplyAddress } from '@/lib/comms/tenant-reply-alias'
-import { conversationFrom } from '@/lib/comms/from-address'
+import { conversationFrom, withDisplayName } from '@/lib/comms/from-address'
 import { renderCoalescedEmail } from '@/lib/comms/email-template'
+import { resolveSpaceEmailBrand } from '@/lib/comms/email-brand'
 import {
   getConversationById,
   appendConversationMessage,
@@ -299,8 +300,11 @@ export async function flushConversationBatches(
       ordered.map((m) => ({ body: String(m.body ?? ''), bodyHtml: (m.body_html as string) ?? null })),
     )
     // Brand + sign the coalesced EMAIL only (header/footer + signature); the stored messages stay clean.
+    // A Space thread wears the Space's brand (owner ruling 2026-10-12); the resolver is null on the
+    // platform lane or a read fault, which means the plain wrapper, never a held burst.
     const signature = firstBatchSignature(ordered)
-    const { html: signedHtml, text: signedText } = renderCoalescedEmail(text, html, signature)
+    const brand = await resolveSpaceEmailBrand(conv.spaceId)
+    const { html: signedHtml, text: signedText } = renderCoalescedEmail(text, html, signature, brand)
     const from = firstBatchFrom(ordered) ?? defaultConversationFrom()
     const messageId = newConversationMessageId(conv.ref)
     try {
@@ -309,7 +313,8 @@ export async function flushConversationBatches(
         from,
         // A Space thread gets its tenant reply alias when that switch is on (EMAIL-013); a fault here
         // hands the claim back like any enqueue failure, so the burst is retried, never sent unroutable.
-        replyTo: await buildSpaceConversationReplyAddress(conv.ref, conv.spaceId),
+        // The From's display name masks the signed alias so a mail client shows a name, not the token.
+        replyTo: withDisplayName(from, await buildSpaceConversationReplyAddress(conv.ref, conv.spaceId)),
         subject: replySubject(conv.subject),
         html: signedHtml,
         text: signedText,
