@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-842",
+  "title": "A member cannot write themselves into a Circle, or mint Zaps, with a direct database insert",
+  "status": "done",
+  "priority": "P1",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "supabase/migrations/20270346008100_drop_member_direct_membership_and_completion_inserts.sql",
+    "ref": "Meta scan eight (2026-10-12), regression review of the scan-seven fixes #3143 (SCAN-687, SCAN-750, SCAN-774) and #3145 (SCAN-691)."
+  },
+  "detail": "FILED AND CLOSED IN CODE 2026-10-12; production applies the migration when the owner runs it. THE CONSEQUENCE: two member INSERT policies from 20260612060000 outlived every app writer. 'memberships: crew+ join own' let any member insert a memberships row for any circle_id with any status (default active) and any volunteer_role, so one PostgREST call gave Circle entry (private.can_enter_circle) or Circle Admin (volunteer_role 'guide'), walking past the join gates SCAN-691, SCAN-750 and SCAN-774 closed in the app. 'crew_completions: crew+ insert own' let a member insert a completion with any task, zaps_earned and verified_at, and trg_after_crew_completion credits zap_transactions for it, so SCAN-687's RPC lockdown left the table door open and Zaps could be minted without limit. THE FIX: migration 20270346008100 drops both policies; every writer of both tables already runs under the service role (lib/circles/join.ts, the admin actions, the demo engine, logCompletion through the RPC). supabase/tests/member_direct_inserts_denied.test.sql proves from pg_policies that no client role keeps an INSERT policy on either table.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const fs=require('fs');const d='supabase/migrations';let open={m:false,c:false};for(const f of fs.readdirSync(d).filter(x=>x.endsWith('.sql')).sort()){const s=fs.readFileSync(d+'/'+f,'utf8');for(const [k,n] of [['m','memberships: crew[+] join own'],['c','crew_completions: crew[+] insert own']]){const re=new RegExp('(create|drop) policy (if exists )?.'+n,'gi');let x;while((x=re.exec(s)))open[k]=/create/i.test(x[1]);}}if(open.m||open.c){console.error('SCAN-842: a member can still insert '+(open.m?'a Circle membership':'')+(open.m&&open.c?' and ':'')+(open.c?'a crew completion':'')+' directly');process.exit(1)}\""
+  },
+  "closed": "2026-10-12"
+}
