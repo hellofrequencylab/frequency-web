@@ -127,17 +127,35 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   // the till live on the Journey slug. Leftover `/market/<uuid>` links (emails, old cards, a
   // re-priced row) hop here once, then leave. A missing plan falls through to the generic listing
   // so a deleted Journey does not 404 a paid receipt.
-  if (product.journeyPlanId) {
-    const plan = await getPlanById(product.journeyPlanId)
-    if (plan?.plan.slug) redirect(journeyMemberPath(plan.plan.slug))
-  }
+  // Read once: the same row also feeds the purchase panel below (a priced Journey buys ACCESS TO A
+  // COURSE, so its panel says so) when the plan has no slug to redirect to.
+  const journeyPlan = product.journeyPlanId ? await getPlanById(product.journeyPlanId) : null
+  if (journeyPlan?.plan.slug) redirect(journeyMemberPath(journeyPlan.plan.slug))
 
   const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig
 
   // Purchasable variants (Etsy-Grade Phase 2): only a plain product carries them (a service books, never
   // buys). With variants the buyer picks one (the picker sets the price + availability); the price label
   // reads "From <min variant price>" and sold-out means EVERY tracked variant is out (not product.stock).
-  const variants = !isService ? await listActiveVariants(product.id) : []
+  // Every read below depends only on the product, so they run together rather than one after another.
+  const [variants, paymentsVerdict, [slots, tz], [sellerVerified, reviews, comments, highestOfferCents]] = await Promise.all([
+    !isService ? listActiveVariants(product.id) : Promise.resolve([]),
+    product.ownerKind === 'space' && canTakePayments(product.ownerKind)
+      ? spacePaymentsVerdict(product.ownerSpaceId ?? '', { also: 'space_storefront' })
+      : Promise.resolve(null),
+    // A service pulls its open slots from the Space's availability calendar (booking_space_id).
+    isService && product.bookingSpaceId
+      ? Promise.all([listOpenSlots(product.bookingSpaceId), getSpaceBookingTimezone(product.bookingSpaceId)])
+      : Promise.resolve<[Awaited<ReturnType<typeof listOpenSlots>>, string]>([[], 'UTC']),
+    // Trust & Safety (Phase 8): the seller verification badge, the reviews block, and the viewer's own
+    // review (to prefill). A signed-in non-owner may review; a platform operator may moderate.
+    Promise.all([
+      sellerVerifiedForProduct(product),
+      getProductReviews(product.id),
+      getListingComments('product', product.id),
+      getHighestOfferCents('product', product.id),
+    ]),
+  ])
   const hasVariants = variants.length > 0
   const minVariantPrice = hasVariants
     ? Math.min(...variants.map((v) => effectiveVariantPriceCents({ priceCents: product.priceCents }, v)))
@@ -157,37 +175,14 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   // ADR-1709 (LIVE-753): personal selling is off, and a Space Shop also has to clear the payments gate
   // on its plan, so the page offers Buy only where the checkout would accept it.
   const connectOnly =
-    !canTakePayments(product.ownerKind) ||
-    (product.ownerKind === 'space' &&
-      !(await spacePaymentsVerdict(product.ownerSpaceId ?? '', { also: 'space_storefront' })).ok)
+    !canTakePayments(product.ownerKind) || (product.ownerKind === 'space' && !paymentsVerdict?.ok)
   const sellerContact = connectOnly ? await getSellerContact(product.ownerProfileId) : null
-
-  // A service pulls its open slots from the Space's availability calendar (booking_space_id).
-  const [slots, tz] =
-    isService && product.bookingSpaceId
-      ? await Promise.all([listOpenSlots(product.bookingSpaceId), getSpaceBookingTimezone(product.bookingSpaceId)])
-      : [[], 'UTC']
 
   const priceLabel = isService
     ? servicePriceLabel(product.priceCents, product.currency, svc)
     : hasVariants
       ? `From ${usd(minVariantPrice, product.currency)}`
       : usd(product.priceCents, product.currency)
-
-  // Trust & Safety (Phase 8): the seller verification badge, the reviews block, and the viewer's own
-  // review (to prefill). A signed-in non-owner may review; a platform operator may moderate.
-  const [sellerVerified, reviews, comments, highestOfferCents] = await Promise.all([
-    sellerVerifiedForProduct(product),
-    getProductReviews(product.id),
-    getListingComments('product', product.id),
-    getHighestOfferCents('product', product.id),
-  ])
-
-  // A priced Journey buys ACCESS TO A COURSE, not a parcel, so its purchase panel says so: the
-  // amount rides the card form, the confirmation reads "You are in", and closing it lands the buyer
-  // in the Journey rather than back on the page that sold it. The slug is the only extra fact that
-  // needs, and it is read only for a Journey product.
-  const journeyPlan = product.journeyPlanId ? await getPlanById(product.journeyPlanId) : null
 
   // The hero action: only the connect-only "Contact seller" path is a plain link. The Buy button,
   // variant picker, and booking calendar are interactive, so they render in the footer purchase panel.

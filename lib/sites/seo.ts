@@ -37,7 +37,8 @@ export function sitePageUrl(base: string, pageSlug: string = SITE_HOME_SLUG): st
  *  else (an unbound host, an unpublished or private site) asks them to stay out. */
 export function siteRobotsTxt(origin: string, published: boolean): string {
   if (!published) return 'User-agent: *\nDisallow: /\n'
-  return `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`
+  // The editor (/admin) and the spotlight click counter are served on the host but are not pages.
+  return `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /spotlight-click\n\nSitemap: ${origin}/sitemap.xml\n`
 }
 
 function escapeXml(s: string): string {
