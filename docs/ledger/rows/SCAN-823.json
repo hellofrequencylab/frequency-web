@@ -1,0 +1,19 @@
+{
+  "id": "SCAN-823",
+  "title": "A paid shop session that does not match its order's amount fails loudly instead of leaving the order pending in silence",
+  "status": "done",
+  "priority": "P2",
+  "lane": "live",
+  "size": "S",
+  "wave": "W7",
+  "source": {
+    "file": "lib/commerce/checkout.ts",
+    "ref": "Meta scan eight (2026-10-12), commerce review of #3337 (LIVE-882)."
+  },
+  "detail": "FILED AND CLOSED 2026-10-12. THE CONSEQUENCE: LIVE-882 made the pending-to-paid flip and the replay read match on amount_cents and currency as well as the session. When a paid session's amount or currency differed from the order (any Stripe-side change such as Adaptive Pricing, which reports the buyer's currency), both reads returned nothing, the function returned normally, the webhook acked 200 and Stripe never redelivered: a charged buyer, an order pending forever, no log line. No in-app path makes them differ today. THE FIX: when neither read matches, the settle reads the session's pending rows; if one exists it logs the expected and paid amounts and throws, so Stripe redelivers and the failure is visible. Test in checkout.test.ts.",
+  "verify": {
+    "kind": "cmd",
+    "cmd": "node -e \"const s=require('fs').readFileSync('lib/commerce/checkout.ts','utf8');if(!/paid amount or currency does not match the pending order/.test(s)){console.error('SCAN-823: a paid session with a mismatched amount acks with the order still pending');process.exit(1)}\""
+  },
+  "closed": "2026-10-12"
+}
