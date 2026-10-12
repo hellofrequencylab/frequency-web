@@ -2022,13 +2022,21 @@ export async function refundTicket(ticketId: string, eventId: string): Promise<R
 
 /** The commerce_orders row behind a split ticket's PaymentIntent, or null for every other ticket. */
 async function splitOrderForPaymentIntent(paymentIntentId: string): Promise<{ id: string } | null> {
-  const { data } = await db()
-    .from('commerce_orders')
-    .select('id')
-    .eq('stripe_payment_intent_id', paymentIntentId)
-    .eq('funds_flow', 'separate')
-    .maybeSingle()
-  return (data as { id: string } | null) ?? null
+  // FAIL-SAFE to null: a read blip here must not stop a refund. A destination-charge ticket (every
+  // ticket before LIVE-767) has no such row, and treating a missed read as "not split" keeps that
+  // path exactly as it was: reverse the transfer and the application fee on the charge.
+  try {
+    const { data } = await db()
+      .from('commerce_orders')
+      .select('id')
+      .eq('stripe_payment_intent_id', paymentIntentId)
+      .eq('funds_flow', 'separate')
+      .maybeSingle()
+    return (data as { id: string } | null) ?? null
+  } catch (err) {
+    console.warn('[tickets] split order lookup failed; refunding as a destination charge', { paymentIntentId, err })
+    return null
+  }
 }
 
 /** A narrow write on a split ticket's order (LIVE-767). `onlyWhen` guards the status so a flip never

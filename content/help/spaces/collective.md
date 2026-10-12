@@ -108,7 +108,7 @@ detached or the Collective plan ends. A membership bought directly in a member S
 
 When another Space is an accepted Collaborator on one of your events, you can give it a share of
 every ticket. Open the event's settings, find **Ticket shares** under Collaborators, and set a whole
-percent beside each Space. Together the shares can take up to 95%; your Space keeps the rest.
+percent beside each Space. Together the shares never take the whole ticket; your Space always keeps a share.
 
 A few rules keep the money honest:
 
