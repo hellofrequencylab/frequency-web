@@ -26,6 +26,15 @@ import { ViewerHousingAddress } from '@/components/marketplace/housing-address'
 // arrival hydrate from /api/viewer.
 export const revalidate = 3600
 
+// ISR on a dynamic segment needs this (Next 16, generate-static-params.md: "you must return an
+// empty array from generateStaticParams ... in order to revalidate (ISR) paths at runtime").
+// Without it the route rendered per request with a private, no-store cache-control even though
+// `revalidate` was set; /events/<slug> cached only because it already had one (LIVE-884). An empty
+// list prerenders nothing at build: each path is generated on its first visit and cached.
+export async function generateStaticParams(): Promise<{ id: string }[]> {
+  return []
+}
+
 // The facts <dl> label, shared with the signed-in Address fact so the two read as one list.
 const FACT_LABEL = 'text-2xs font-semibold uppercase tracking-wide text-muted'
 

@@ -28,6 +28,8 @@ const PAGE = 'app/(public)/market/[id]/page.tsx'
 const page = read(PAGE)
 if (!page) fail(`${PAGE} is missing`)
 if (!/^export const revalidate = \d+/m.test(page)) fail('the Market detail page does not export revalidate')
+// Next 16: revalidate on a dynamic segment only takes effect when generateStaticParams exists.
+if (!/^export (async )?function generateStaticParams/m.test(page)) fail('the Market detail page has no generateStaticParams, so revalidate is inert')
 if (/export const dynamic\s*=\s*['"]force-dynamic['"]|\bcookies\(\)|\bheaders\(\)|unstable_noStore|\bnoStore\(/.test(page)) fail('the Market detail page reads the request at render')
 
 // Session readers the page's own render must not call. The member slot readers (listOpenSlots,
