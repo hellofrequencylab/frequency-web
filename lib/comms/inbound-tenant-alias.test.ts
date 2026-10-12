@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const state=vi.hoisted(()=>({alias:{kind:'ready',spaceId:'s1',conversationId:'c1',ref:'42'} as Record<string,string>,conv:{id:'c1',ref:'42',spaceId:'s1',externalEmail:'member@test.local',memberProfileId:'m1',ownerProfileId:null,contactId:null,status:'open'},quarantineFails:false,lookupFails:false,appendFails:false,conversationMissing:false}))
 const append=vi.hoisted(()=>vi.fn())
 const quarantine=vi.hoisted(()=>vi.fn())
-vi.mock('./tenant-reply-alias',()=>({resolveTenantReplyAlias:async()=>{if(state.lookupFails)throw new Error('DB offline');return state.alias},quarantineTenantReplyAlias:async(...args:unknown[])=>{quarantine(...args);if(state.quarantineFails)throw new Error('quarantine offline')}}))
+vi.mock('./tenant-reply-alias',()=>({buildSpaceConversationReplyAddress:async(ref:string)=>`reply+${ref}@fixture.test`,resolveTenantReplyAlias:async()=>{if(state.lookupFails)throw new Error('DB offline');return state.alias},quarantineTenantReplyAlias:async(...args:unknown[])=>{quarantine(...args);if(state.quarantineFails)throw new Error('quarantine offline')}}))
 vi.mock('./conversations',()=>({getConversationByRef:async()=>state.conversationMissing?null:state.conv,appendConversationMessage:async(...args:unknown[])=>{append(...args);return state.appendFails?null:{id:'message1'}},reopenConversationIfClosed:async()=>undefined,conversationScopeRef:()=>null}))
 vi.mock('@/lib/email',()=>({enqueueEmail:vi.fn(),fetchReceivedEmail:vi.fn(),findReceivedEmailIdByMessageId:vi.fn()}))
 import {routeInboundReply} from './inbound'

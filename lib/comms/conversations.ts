@@ -324,6 +324,41 @@ export interface AppendMessageInput {
  *  must be surfaced so the provider redelivers instead of the reply being silently lost. */
 type AppendOutcome = { id: string } | { duplicate: true } | null
 
+/** Mirror one written conversation message onto the CRM person-timeline (best-effort, never throws).
+ *  Keyed `conv-msg:<messageId>`, so a replay is a no-op. `appendConversationMessage` calls it for every
+ *  non-internal write; the atomic bridge (EMAIL-002) calls it after its RPC commits, because that RPC
+ *  inserts the comms_messages row in SQL and the timeline would otherwise miss the reply. */
+export async function mirrorConversationMessage(
+  messageId: string,
+  input: {
+    direction: MessageDirection
+    channel?: string | null
+    body: string
+    mirror: NonNullable<AppendMessageInput['mirror']>
+  },
+): Promise<void> {
+  try {
+    await recordContactInteraction(
+      {
+        ownerProfileId: input.mirror.ownerProfileId,
+        subjectKind: input.mirror.subjectKind,
+        subjectId: input.mirror.subjectId,
+        channel: (input.channel ?? 'email') as never,
+        direction: input.direction === 'internal' ? 'internal' : input.direction,
+        summary: input.mirror.subject ?? null,
+        body: input.body,
+        source: 'crm_activity' as never,
+        idempotencyKey: `conv-msg:${messageId}`,
+        scope: input.mirror.scope ?? null,
+        engagementEventId: input.mirror.engagementEventId ?? null,
+      },
+      input.mirror.spaceId ?? null,
+    )
+  } catch (err) {
+    console.error('[comms] timeline mirror failed (non-fatal):', err)
+  }
+}
+
 /** Append a message to a conversation, bump its activity, and (best-effort) mirror to the timeline.
  *  Returns `{ id }` on success, `{ duplicate: true }` on an external_message_id replay, or `null` on a
  *  transient/unknown failure (callers that only care about success still treat any non-`{id}` as a no-op). */
@@ -367,26 +402,12 @@ export async function appendConversationMessage(input: AppendMessageInput): Prom
 
     // Mirror non-internal messages to the CRM person-timeline (never blocks the write).
     if (!input.isInternal && input.mirror) {
-      try {
-        await recordContactInteraction(
-          {
-            ownerProfileId: input.mirror.ownerProfileId,
-            subjectKind: input.mirror.subjectKind,
-            subjectId: input.mirror.subjectId,
-            channel: (input.channel ?? 'email') as never,
-            direction: input.direction === 'internal' ? 'internal' : input.direction,
-            summary: input.mirror.subject ?? null,
-            body: input.body,
-            source: 'crm_activity' as never,
-            idempotencyKey: `conv-msg:${messageId}`,
-            scope: input.mirror.scope ?? null,
-            engagementEventId: input.mirror.engagementEventId ?? null,
-          },
-          input.mirror.spaceId ?? null,
-        )
-      } catch (err) {
-        console.error('[comms] timeline mirror failed (non-fatal):', err)
-      }
+      await mirrorConversationMessage(messageId, {
+        direction: input.direction,
+        channel: input.channel,
+        body: input.body,
+        mirror: input.mirror,
+      })
     }
     return { id: messageId }
   } catch (err) {
