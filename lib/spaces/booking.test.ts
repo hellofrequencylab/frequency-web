@@ -371,9 +371,9 @@ function schedulesBuilder() {
 }
 
 // SCAN-834: what a guest hold must NOT do until the click, and what the click must do.
-const captureLeadSpy = vi.fn(async () => null)
+const captureLeadSpy = vi.fn(async (_input: unknown) => null)
 vi.mock('@/lib/crm/lead-capture', () => ({ captureLead: captureLeadSpy }))
-const holdEmailSpy = vi.fn(async () => undefined)
+const holdEmailSpy = vi.fn(async (_input: unknown) => undefined)
 vi.mock('@/lib/email', async (orig) => ({
   ...(await orig<typeof import('@/lib/email')>()),
   sendGuestBookingConfirmEmail: holdEmailSpy,
