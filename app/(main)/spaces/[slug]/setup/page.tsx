@@ -17,6 +17,12 @@ import { SpaceSetupSpark, type SpaceSetupInitial } from './space-setup-spark'
 // previewer is read-only on the console and is denied here rather than shown a form they cannot
 // submit. Console types only (isConsoleSpaceType), the same wall /manage keeps. Every action the
 // Spark calls re-checks canEditProfile on its own, so this gate is UX and the actions stay the authority.
+//
+// THE SHELL LIVES IN THE SPARK (ADR-986, the same shape as services/new and classifieds/new): each
+// step's heading, progress cue and Back / Continue footer are client state, so `SparkShell`, the
+// kit's wizard shell, is composed inside `SpaceSetupSpark`. A FocusTemplate here would stack a
+// second heading lockup over it. check:templates matches literal tags in this file by design, so
+// this page sits on scripts/templates-baseline.txt with the three other Spark pages.
 
 export const metadata: Metadata = {
   title: 'Space setup',
