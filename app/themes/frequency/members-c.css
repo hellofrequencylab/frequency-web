@@ -113,4 +113,8 @@
 [data-design="frequency"] [data-kit="members"] .faces a:first-child{margin-left:0}
 [data-design="frequency"] [data-kit="members"] .faces a .av{margin-left:0}
 
+/* The Vault's sections follow the Layout editor's order, so spacing rides the sibling, not the class. */
+[data-design="frequency"] [data-kit="members"] .mc-sections>.mc-section+.mc-section{margin-top:56px}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .mc-sections>.mc-section+.mc-section{margin-top:40px}}
+
 }
