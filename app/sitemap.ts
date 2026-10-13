@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
+import { SITE_DESIGN } from "@/lib/theme/design";
 import {
   getTopicalChannels,
   getPublicCircles,
@@ -232,6 +233,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // is no longer advertised here as canonical.
     { url: `${SITE_URL}/start`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${SITE_URL}/the-lab`, changeFrequency: "monthly", priority: 0.8 },
+    // Frequency-only pages (ADR-1737): /stories and /vision exist in the Frequency design's site map
+    // and answer 404 under DAWN, so they are advertised only when the build wears Frequency.
+    ...(SITE_DESIGN === "frequency"
+      ? ([
+          { url: `${SITE_URL}/stories`, changeFrequency: "monthly", priority: 0.6 },
+        ] satisfies MetadataRoute.Sitemap)
+      : []),
     { url: `${SITE_URL}/the-community`, changeFrequency: "monthly", priority: 0.8 },
     // The Quest is a side thing we all do together, not the centre of the offer (LIVE-254).
     // It read 0.8 here, level with The Community and The Lab, which told a crawler the game
