@@ -153,13 +153,45 @@ export function pages(dir = ROOT, out = []) {
   return out
 }
 
+/** Source with every comment blanked, read the way the parser reads it: one pass that knows
+ *  strings and both comment kinds. Three regexes in sequence got this wrong twice over: a `/*` inside
+ *  a `//` line (a comment saying "/admin/*") opened a block that swallowed the shell tag below it, and
+ *  `https://` inside a string looked like a line comment. Newlines are kept so nothing else shifts. */
+export function stripComments(src) {
+  let out = ''
+  let i = 0
+  let quote = null
+  while (i < src.length) {
+    const c = src[i]
+    const n = src[i + 1]
+    if (quote) {
+      out += c
+      if (c === '\\') { out += n ?? ''; i += 2; continue }
+      if (c === quote) quote = null
+      i++
+      continue
+    }
+    if (c === '"' || c === "'" || c === '`') { quote = c; out += c; i++; continue }
+    if (c === '/' && n === '/') {
+      while (i < src.length && src[i] !== '\n') i++
+      continue
+    }
+    if (c === '/' && n === '*') {
+      i += 2
+      while (i < src.length && !(src[i] === '*' && src[i + 1] === '/')) { if (src[i] === '\n') out += '\n'; i++ }
+      i += 2
+      continue
+    }
+    out += c
+    i++
+  }
+  return out
+}
+
 /** Does this file's own source compose a shell? Comment-blind on purpose: a shell named in a
  *  comment is not a shell rendered, and this is the same reason check:tokens strips comments. */
 export function composesShell(src) {
-  const code = src
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
-    .replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+  const code = stripComments(src)
   // An import is not enough on its own — it must also be RENDERED as a tag. `<AdminTemplate`
   // catches the composition; a bare `import { AdminTemplate }` that is never used does not.
   return SHELLS.some((s) => new RegExp(`<${s}\\b`).test(code))
@@ -170,7 +202,7 @@ export function composesShell(src) {
  *  composition cannot certify itself by naming another composition). */
 export function composesPageShell(src) {
   if (composesShell(src)) return true
-  const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+  const code = stripComments(src)
   return Object.keys(COMPOSITIONS).some((c) => new RegExp(`<${c}\\b`).test(code))
 }
 
@@ -198,12 +230,25 @@ export function ancestorComposes(pagePath, read = (f) => readFileSync(f, 'utf8')
 }
 
 /** Does this file contain anything that could be a JSX tag? A redirect/notFound stub does not, and
- *  owes no shell. Deliberately OVER-inclusive: `<[A-Za-z]` also matches `a < b` and `Array<string>`,
- *  so a stub with either would be considered and could land in `bare`. That direction is the safe
- *  one — it can only make the reported number too HIGH, never hide a real bare page — but it is why
- *  the success line says "considered" rather than claiming these pages render markup. */
+ *  owes no shell. A `<` directly after an identifier, `.`, `)` or `]` is a type argument or a
+ *  comparison (`Record<…>`, `Array<string>`, `a < b`), never a tag, so it is skipped; that used to
+ *  count six redirect pages as bare. Still over-inclusive in the safe direction: anything else that
+ *  opens like a tag is considered, so the number can be too HIGH, never hide a real bare page. */
 export function rendersJsx(src) {
-  return /<[A-Za-z]/.test(src)
+  const code = stripComments(src)
+  for (const m of code.matchAll(/<[A-Za-z]/g)) {
+    let j = m.index - 1
+    while (j >= 0 && /\s/.test(code[j])) j--
+    if (j >= 0 && /[\w$]/.test(code[j])) {
+      // An identifier before the `<` is a type argument, unless the word is a keyword that can lead
+      // an expression (`return <Page />`).
+      let k = j
+      while (k >= 0 && /[\w$]/.test(code[k])) k--
+      if (!/^(return|yield|await|default|case|in|of|typeof|void)$/.test(code.slice(k + 1, j + 1))) continue
+    } else if (j >= 0 && /[.)\]]/.test(code[j])) continue
+    return true
+  }
+  return false
 }
 
 export function evaluate(io = {}) {
