@@ -238,6 +238,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(SITE_DESIGN === "frequency"
       ? ([
           { url: `${SITE_URL}/stories`, changeFrequency: "monthly", priority: 0.6 },
+          { url: `${SITE_URL}/vision`, changeFrequency: "monthly", priority: 0.5 },
         ] satisfies MetadataRoute.Sitemap)
       : []),
     { url: `${SITE_URL}/the-community`, changeFrequency: "monthly", priority: 0.8 },
