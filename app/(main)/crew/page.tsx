@@ -3,6 +3,8 @@ import { DashboardTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { getCrewContext } from '@/lib/quest/crew-context'
 import { getPageHeaderImage } from '@/lib/page-settings/store'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { CrewBody } from '@/components/frequency/members/crew/crew-body'
 
 // My Quest (/crew) — the member's season home. Module-driven (ADR-270/294): the page composes the
 // shared header grammar, then renders <PageModules>, which lays out the /crew blocks (the Season
@@ -19,6 +21,10 @@ export default async function CrewPage() {
 
   // Operator-set wide header image — set from Settings → SEO & meta → Header image.
   const headerImage = await getPageHeaderImage('/crew')
+
+  // FREQUENCY (ADR-1737): the same context and the same modules, in the members kit and in the
+  // operator's Layout order. DAWN keeps the Dashboard composition below.
+  if (SITE_DESIGN === 'frequency') return <CrewBody ctx={ctx} headerImage={headerImage} />
 
   // 🔴 NO UPGRADE NUDGE ON THIS PAGE. A season-reset "convert before your standing resets" prompt
   // and a Crew preview banner both stood here, and both are gone with the `gamification_full` gate

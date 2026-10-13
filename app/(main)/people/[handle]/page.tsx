@@ -67,8 +67,11 @@ import { getCachedMemberProgress } from '@/lib/member-progress'
 import { supporterMarkShows } from '@/lib/pricing/catalog-config'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import {
-  ProfileBody, ProfilePhoto, ProfileCircles, ProfileStanding, ProfileAchievements,
+  ProfileBody, ProfilePhoto, ProfileCircles, ProfileStanding, ProfileAchievements, ProfilePractice,
 } from '@/components/frequency/members/profile/profile-body'
+import { FqIcon } from '@/components/frequency/icon'
+import { getInPersonCounts, getCircleTenure, getPracticeCounts, sinceLabel } from '@/lib/profile/in-person'
+import { getMemberJourneyProgress } from '@/lib/journeys/progress'
 
 export default async function ProfilePage({
   params,
@@ -243,7 +246,7 @@ export default async function ProfilePage({
     // learned that this member belonged to exactly one UNLISTED Circle and received its slug. The
     // band line is gone; narrowing the read is what stops the achievement republishing the same bit
     // three DOM nodes away.
-    admin.from('memberships').select('circles!circle_id ( id, name, slug, unlisted, status, space_id )').eq('profile_id', profileId).eq('status', 'active'),
+    admin.from('memberships').select('circles!circle_id ( id, name, slug, unlisted, status, space_id, image_url )').eq('profile_id', profileId).eq('status', 'active'),
     // The Frequency Signature — the member's practice spread across the four Pillars
     // (docs/JOURNEYS.md §9.2), the identity centerpiece below.
     getMemberSignature(profileId),
@@ -303,10 +306,10 @@ export default async function ProfilePage({
   const rootSpaceId = await loadRootSpaceId()
   const LISTABLE_CIRCLE_STATUS = ['forming', 'active', 'inactive']
   const circles = ((circlesResult.data ?? []) as unknown as {
-    circles: { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null } | null
+    circles: { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null; image_url: string | null } | null
   }[])
     .map(m => m.circles)
-    .filter((c): c is { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null } =>
+    .filter((c): c is { id: string; name: string; slug: string; unlisted: boolean; status: string; space_id: string | null; image_url: string | null } =>
       !!c && c.unlisted === false && LISTABLE_CIRCLE_STATUS.includes(c.status) && isUnwalledSpaceId(c.space_id, rootSpaceId))
 
   // Rank, next tier, and progress come from the one canonical source (season-ranks),
@@ -366,13 +369,19 @@ export default async function ProfilePage({
   )
   {/* The remaining chips (Founder / Supporter / season rank / demo) are gamification/status — they read
       BELOW the header with the stats, not over the photo. */}
+  // The bought flair and title, wired ONCE and worn by both designs' status clusters.
+  const cosmetics = (
+    <>
+      <CosmeticFlair value={equippedFlair} />
+      <CosmeticTitle value={equippedTitle} />
+    </>
+  )
   const badges = (
     <span className="flex items-center gap-2 flex-wrap">
       {/* The bought cosmetics (LIVE-013). They ride WITH the status chips rather than over the
           cover: a flair and a title are things this member chose to wear, and they read beside
           Founder / rank, not competing with the name lockup. The border rides the avatar. */}
-      <CosmeticFlair value={equippedFlair} />
-      <CosmeticTitle value={equippedTitle} />
+      {cosmetics}
       <FoundingBadge founding={profile.is_founding_member} className="text-meta leading-tight" />
       {isSupporter && <SupporterBadge />}
       {rankEndorsed && (
@@ -519,6 +528,23 @@ export default async function ProfilePage({
   if (SITE_DESIGN === 'frequency') {
     const fqTab = tab === 'posts' || tab === 'circles' || tab === 'practice' ? tab : 'story'
     const base = `/people/${profile.handle as string}`
+    // The reference's four numbers are in-person counts (check-ins, people met), read from the host's
+    // attendance marks; the Circles and Practice tabs read only what their tab shows.
+    const [inPerson, tenure, myJourneys, practiceCounts] = await Promise.all([
+      getInPersonCounts(profileId),
+      fqTab === 'circles' ? getCircleTenure(profileId, circles.map((c) => c.id)) : Promise.resolve(new Map()),
+      fqTab === 'practice' && isOwner ? getMemberJourneyProgress(profileId) : Promise.resolve([]),
+      fqTab === 'practice' && isOwner ? getPracticeCounts(profileId) : Promise.resolve([]),
+    ])
+    // The status cluster without the DAWN rank pill: the season rank wears the kit's glass tag instead.
+    const fqBadges = (
+      <>
+        {cosmetics}
+        <FoundingBadge founding={profile.is_founding_member} className="text-meta leading-tight" />
+        {isSupporter && <SupporterBadge />}
+        {isDemo && <DemoBadge />}
+      </>
+    )
     const fqActions = isOwner ? (
       <>
         <OpenAdminBarButton
@@ -528,6 +554,7 @@ export default async function ProfilePage({
           className="btn"
         />
         <Link className="btn pa" href="/codes">
+          <FqIcon name="qr" />
           My Code
         </Link>
         {vcardEnabled && (
@@ -574,10 +601,11 @@ export default async function ProfilePage({
     const fqChips = (
       <div className="row wrap">
         {role !== 'member' && roleBadge}
+        {rankEndorsed && <span className="tag glass">{rankDef.label}</span>}
         {isCrew && <span className="fq-iri-text on-light mc-crew">Crew</span>}
-        {/* The same status cluster the DAWN band wears: the bought flair and title, Founder,
-            Supporter, the endorsed season rank, demo. One node, so the cosmetics stay wired once. */}
-        {badges}
+        {/* The rest of the status cluster the DAWN band wears: the bought flair and title, Founder,
+            Supporter, demo. */}
+        {fqBadges}
       </div>
     )
     const metaLine = (
@@ -597,11 +625,29 @@ export default async function ProfilePage({
     const tabContent =
       fqTab === 'circles' ? (
         <ProfileCircles
-          circles={circles}
+          circles={circles.map((c) => {
+            const t = tenure.get(c.id)
+            return { id: c.id, name: c.name, slug: c.slug, imageUrl: c.image_url, since: sinceLabel(t?.joinedAt ?? null), checkins: t?.checkins ?? 0 }
+          })}
           emptyLine={isOwner ? 'No Circles yet. Find one near you.' : `${firstName} is not in a public Circle yet.`}
         />
       ) : fqTab === 'practice' ? (
-        <FrequencySignature signature={signature} variant="full" layout="stack" name={isOwner ? undefined : firstName} />
+        <ProfilePractice
+          journeys={myJourneys.map((j) => ({
+            slug: j.slug,
+            title: j.title,
+            percent: j.percent,
+            line: j.phasesTotal > 0 ? `${j.phasesComplete} of ${j.phasesTotal} phases` : `${j.percent}%`,
+          }))}
+          practices={practiceCounts.map((p) => ({
+            id: p.id,
+            title: p.title,
+            href: `/practices/${p.id}`,
+            sessions: p.sessions,
+          }))}
+        >
+          <FrequencySignature signature={signature} variant="full" layout="stack" name={isOwner ? undefined : firstName} />
+        </ProfilePractice>
       ) : (
         <div className="stack mc-gap-24">
           {fqTab === 'story' && myProfileId && !blockedEither && (
@@ -656,9 +702,9 @@ export default async function ProfilePage({
           secondary={secondaryControls}
           stats={[
             { value: currentStreak.toLocaleString(), label: 'Day streak' },
-            { value: lifetimeZaps.toLocaleString(), label: 'Zaps earned' },
+            { value: inPerson.checkinsThisYear.toLocaleString(), label: inPerson.checkinsThisYear === 1 ? 'Check-in this year' : 'Check-ins this year' },
             { value: circles.length.toLocaleString(), label: circles.length === 1 ? 'Circle' : 'Circles' },
-            { value: postCount.toLocaleString(), label: postCount === 1 ? 'Post' : 'Posts' },
+            { value: inPerson.peopleMet.toLocaleString(), label: inPerson.peopleMet === 1 ? 'Person met in person' : 'People met in person' },
           ]}
           panels={
             <>
@@ -725,8 +771,8 @@ export default async function ProfilePage({
               {isOwner && isCrew && (
                 <div className="soft stack mc-start">
                   <span className="k">Crew</span>
-                  <span className="h3">You&apos;re Crew.</span>
-                  <span className="t2">Thank you for backing the community.</span>
+                  <span className="h3">You&apos;re Crew this season.</span>
+                  <span className="t2">Thank you for backing the community. Your rank shows on your profile while you are Crew.</span>
                 </div>
               )}
             </>

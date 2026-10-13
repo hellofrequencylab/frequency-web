@@ -252,7 +252,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
       </div>
       <div className="fqm-you-foot">
         <Link href="/settings">Settings</Link>
-        <Link href="/help">Help</Link>
+        <Link href="/support">Help</Link>
         <Link href="/site-map">Site map</Link>
       </div>
     </>

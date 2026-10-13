@@ -157,14 +157,14 @@ export const FQ_NAV: readonly FqNavSection[] = [
         h: 'Account',
         items: [
           { label: 'Join Crew', sub: 'Pay what you want', href: '/upgrade', icon: 'membership' },
-          { label: 'Help and support', sub: 'Ask Vera, open a ticket', href: '/help', icon: 'tip' },
+          { label: 'Help and support', sub: 'Ask Vera, open a ticket', href: '/support', icon: 'tip' },
           { label: 'Settings', sub: 'Notifications, privacy, plan', href: '/settings', icon: 'nudge' },
         ],
       },
     ],
     cards: [
       { kicker: 'The Vault', title: 'Zaps, Gems and your streak', href: '/crew/store', photo: 'gathering-07.jpg' },
-      { kicker: 'Help', title: 'Ask Vera, open a ticket', href: '/help', photo: 'gathering-08.jpg' },
+      { kicker: 'Help', title: 'Ask Vera, open a ticket', href: '/support', photo: 'gathering-08.jpg' },
     ],
     foot: 'Your people stay yours.',
     footCta: 'View profile',

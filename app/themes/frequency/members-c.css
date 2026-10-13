@@ -98,4 +98,38 @@
 [data-design="frequency"] [data-kit="members"] .k.mc-k-gap{margin-bottom:10px}
 [data-design="frequency"] [data-kit="members"] .mc-maplink{padding:8px 0;font:500 15px/1.2 var(--fq-font-sans)}
 
+/* Journey course home, the Journeys index (members pass). */
+[data-design="frequency"] [data-kit="members"] .mc-bottom-12{margin-bottom:12px}
+[data-design="frequency"] [data-kit="members"] .mc-bottom-24{margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .mc-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-design="frequency"] [data-kit="members"] .card.mc-jcard{display:flex;flex-direction:column}
+[data-design="frequency"] [data-kit="members"] .mc-jcard-ph{display:flex;align-items:center;justify-content:center;aspect-ratio:16/10;color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .mc-jcard-ph .fq-icon{width:28px;height:28px}
+[data-design="frequency"] [data-kit="members"] .mc-jcard-body{padding:18px 20px 20px}
+[data-design="frequency"] [data-kit="members"] .list>[aria-disabled="true"]{cursor:default}
+[data-design="frequency"] [data-kit="members"] .av:has(.fa-initials){display:inline-flex;align-items:center;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .fa-initials{font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted);letter-spacing:.02em}
+[data-design="frequency"] [data-kit="members"] .faces a{display:flex;margin-left:-8px;border-radius:50%}
+[data-design="frequency"] [data-kit="members"] .faces a:first-child{margin-left:0}
+[data-design="frequency"] [data-kit="members"] .faces a .av{margin-left:0}
+
+/* Module-ordered bodies (the Vault, My Quest): sections follow the Layout editor's order, so the
+   spacing is the column's gap, and a section whose module rendered nothing takes no room. */
+[data-design="frequency"] [data-kit="members"] .mc-sections{display:flex;flex-direction:column;gap:56px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .mc-sections>.mc-section:empty{display:none}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .mc-sections{gap:40px}}
+[data-design="frequency"] [data-kit="members"] .mc-banner{display:block;width:100%;height:auto;border-radius:24px;margin-bottom:28px}
+[data-design="frequency"] [data-kit="members"] .mc-place{width:20px;text-align:center;font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="members"] .t1.mc-normal{font-weight:400}
+
+/* Leaderboard (members pass). */
+[data-design="frequency"] [data-kit="members"] ol.list.mc-plain{list-style:none;margin:0;padding:0}
+[data-design="frequency"] [data-kit="members"] .list.mc-plain>li>a{display:flex;align-items:center;gap:14px;border-radius:14px;margin:0 -10px;padding:0 10px;transition:background var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .list.mc-plain>li>a:hover{background:rgba(255,255,255,.6)}
+[data-design="frequency"] [data-kit="members"] .tag.mc-tag-lg{height:40px;padding:0 16px;font:500 16px/1 var(--fq-font-display);letter-spacing:-.02em;align-self:flex-start}
+
+/* Settings panes (members pass). */
+[data-design="frequency"] [data-kit="members"] .mc-gap-20{gap:20px}
+[data-design="frequency"] [data-kit="members"] .input[readonly]{color:var(--fq-text-muted);cursor:default}
+
 }
