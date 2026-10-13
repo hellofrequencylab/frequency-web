@@ -106,12 +106,9 @@ export function CampaignDetail({
                 <Archive className="h-3 w-3" /> Archive
               </button>
             )}
-            <button
-              onClick={() => setAdding(true)}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-            >
+            <Button size="sm" onClick={() => setAdding(true)} className="ml-auto">
               <Plus className="h-3.5 w-3.5" /> Add entry point
-            </button>
+            </Button>
           </>
         )}
         {error && (
