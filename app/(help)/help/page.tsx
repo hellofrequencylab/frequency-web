@@ -2,7 +2,9 @@ import type { Metadata } from 'next'
 import { SITE_NAME } from '@/lib/site'
 import Link from 'next/link'
 import { LifeBuoy } from 'lucide-react'
-import { getAllCategories, helpHref } from '@/lib/help/content'
+import { getAllCategories, getSearchIndex, helpHref } from '@/lib/help/content'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { HelpBody } from '@/components/frequency/members/help/help-body'
 import { EmptyState } from '@/components/ui/empty-state'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
@@ -29,6 +31,16 @@ export const metadata: Metadata = {
 
 export default async function HelpHomePage() {
   const categories = await getAllCategories()
+
+  // FREQUENCY (ADR-1737): the reference's member Help entry over the same content (Help.html).
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={breadcrumbSchema([{ name: 'Help', path: '/help' }])} />
+        <HelpBody categories={categories} index={await getSearchIndex()} />
+      </>
+    )
+  }
 
   const hero = await resolveIndexHero('/help')
 
