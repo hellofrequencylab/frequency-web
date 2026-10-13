@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import { DashboardTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { getVaultData } from '@/lib/vault/vault-data'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { VaultBody } from '@/components/frequency/members/vault/vault-body'
 
 // The Vault (ADR-270/294). Module-driven: the whole interior — standing hero, the leaderboard
 // link, Your Vault, Trophies, Awards, and the Vault Store — is arranged by the operator through the
@@ -18,6 +20,10 @@ export default async function StorePage() {
   // modules below self-fetch off the same cache.
   const data = await getVaultData()
   if (!data) notFound()
+
+  // FREQUENCY (ADR-1737): the reference's Vault (The Vault.html), off the same cached read and the
+  // same Store components. DAWN keeps the module-driven page below.
+  if (SITE_DESIGN === 'frequency') return <VaultBody />
 
   return (
     <DashboardTemplate

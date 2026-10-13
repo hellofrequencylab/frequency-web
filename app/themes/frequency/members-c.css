@@ -47,4 +47,15 @@
 [data-design="frequency"] [data-kit="members"] .mc-orb-core{position:relative;width:180px;height:180px;border-radius:50%;background:var(--fq-pa-orb);box-shadow:0 0 60px var(--fq-ig-halo),inset 0 0 0 1px var(--fq-border-hair)}
 @media (prefers-reduced-motion:reduce){[data-design="frequency"] [data-kit="members"] .mc-orb-wrap .fq-breathe{animation:none}}
 
+/* The Vault. */
+[data-design="frequency"] [data-kit="members"] .mc-amount{min-width:64px;text-align:right}
+[data-design="frequency"] [data-kit="members"] .mc-strong{color:var(--fq-text-strong);font-weight:500}
+[data-design="frequency"] [data-kit="members"] .mc-award{align-items:center;gap:10px;text-align:center}
+[data-design="frequency"] [data-kit="members"] .mc-medal{width:76px;height:76px;border-radius:50%;background:var(--fq-iridescent);box-shadow:0 12px 30px -12px var(--fq-ig-halo),inset 0 0 0 4px color-mix(in oklab,var(--fq-ig-hole) 60%,transparent);display:flex;align-items:center;justify-content:center;color:var(--fq-ig-hole)}
+[data-design="frequency"] [data-kit="members"] .mc-medal .fq-icon{width:28px;height:28px}
+[data-design="frequency"] [data-kit="members"] .mc-award.mc-locked{opacity:.45}
+[data-design="frequency"] [data-kit="members"] .mc-locked .mc-medal{background:var(--fq-track);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .mc-step{display:block;height:4px;border-radius:999px;background:var(--fq-track)}
+[data-design="frequency"] [data-kit="members"] .mc-step.on{background:var(--fq-pa)}
+
 }
