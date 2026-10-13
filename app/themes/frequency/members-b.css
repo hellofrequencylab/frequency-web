@@ -120,4 +120,7 @@
 [data-design="frequency"] [data-kit="members"] .fa-capture.fqm-cl-compose,[data-design="frequency"] [data-kit="members"] .why.fqm-cl-compose{margin:0 0 8px}
 [data-design="frequency"] [data-kit="members"] .fqm-cl-empty{padding:32px 0}
 @media (max-width:900px){[data-design="frequency"] [data-kit="members"] .fqm-stats.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+[data-design="frequency"] [data-kit="members"] .fqm-note{margin-bottom:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-item-ph{position:relative;display:block}
+[data-design="frequency"] [data-kit="members"] .fqm-pre{white-space:pre-wrap}
 }

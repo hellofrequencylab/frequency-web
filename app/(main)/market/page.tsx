@@ -91,7 +91,17 @@ export default async function MarketPage({
   // THE DESIGN SWITCH (ADR-1737, templates/members/Marketplace.html): the same catalog and group
   // filter in the member kit; every card opens the product page, where the buy flow lives.
   if (SITE_DESIGN === 'frequency') {
-    return <FqMarketBody items={shown ?? items} group={group ?? null} counts={counts} signedIn={!!viewerProfileId} />
+    return (
+      <FqMarketBody
+        items={items}
+        group={group ?? null}
+        counts={counts}
+        signedIn={!!viewerProfileId}
+        ratings={ratings}
+        verified={verified}
+        founding={founding}
+      />
+    )
   }
 
   const hero = await resolveMarketHero('/market', { cover: HERO_IMAGE })
