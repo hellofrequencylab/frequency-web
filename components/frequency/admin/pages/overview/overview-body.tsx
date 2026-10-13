@@ -9,8 +9,12 @@ import { listWorkspaceConversations } from '@/lib/comms/workspace'
 import { listEventsForSpace, type SpaceEvent } from '@/lib/events/store'
 import { goingCountsByEvent } from '@/lib/events/going-counts'
 import { getProfileSummaries } from '@/lib/connections/matching'
+import { listSpaceMemberships } from '@/lib/spaces/memberships'
+import { isPastDueSpaceMembership } from '@/lib/spaces/membership-dunning'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
-import { AdminHead, AdminPageBody, Av, EMPTY, Kpi, n, usd } from '../shared'
+import { AdminHead, AdminPageBody, Av, EMPTY, Kpi, WeekBars, n, trendOf, usd } from '../shared'
+import { countBetween, firstTimers, percentChange, returnRate, weeklyCounts } from '../checkin-stats'
+import { loadSpaceCheckins } from '../space-reads'
 
 // THE SPACE OVERVIEW, FREQUENCY (design_handoff/frequency/templates/admin/Overview.html). The console's
 // Home tab under SITE_DESIGN=frequency; DAWN keeps components/spaces/dashboard/space-dashboard.tsx. The
@@ -18,11 +22,14 @@ import { AdminHead, AdminPageBody, Av, EMPTY, Kpi, n, usd } from '../shared'
 // worklist, the conversations queue, the Space's events), plus the shared going-count helper for the
 // RSVP column. The console's manage gate authorized the caller before this renders.
 //
-// NO READING, SO THE DESIGN'S EMPTY VALUE ("—"), never a sample number:
-//   · Check-ins, 30 days         (no per-Space check-in tally reader)
-//   · Came back within 2 weeks   (no return-rate reader)
-//   · every trend line           (no prior-period comparison reader)
-//   · Check-ins by week chart    (no weekly check-in series)
+// CHECK-INS (space-reads.ts loadSpaceCheckins): the verified check-in ledger on this Space's events feeds
+// Check-ins, 30 days (with its change on the 30 days before), Came back within 2 weeks, the Check-ins by
+// week chart and the first-timers line in Needs you. Revenue's change compares the last 30 days with the 30
+// before, both from spaceEarningsSummary. Past-due memberships are listSpaceMemberships' payment status.
+//
+// NO READING, SO THE DESIGN'S EMPTY VALUE ("—"), never a sample number: a check-in read that failed, and
+// a return rate with nobody in its window. Active members has no prior-period reader, so it carries the
+// weekly-active note instead of a trend.
 
 const WEEK_DAYS = 7
 
@@ -64,15 +71,26 @@ export async function FqOverviewBody({
 }) {
   const now = new Date()
   const today = dayInZone(now, HOME_TZ)
-  const [earnings, health, memberIds, worklist, conversations, weekEvents, viewer] = await Promise.all([
+  const [earnings, earnings60, health, memberIds, worklist, conversations, weekEvents, viewer, checkins, memberships] = await Promise.all([
     spaceEarningsSummary(spaceId, 30),
+    spaceEarningsSummary(spaceId, 60),
     getSpaceHealth(spaceId),
     listActiveSpaceMemberIds(spaceId),
     getWorklist({ spaceId }),
     listWorkspaceConversations({ scope: 'all', viewerProfileId: '', spaceId, limit: 100 }),
     listEventsForSpace(spaceId, { fromDay: today, toDay: addDays(today, WEEK_DAYS), limit: 50 }),
     viewerProfileId ? getProfileSummaries([viewerProfileId]) : Promise.resolve(null),
+    loadSpaceCheckins(spaceId, 90),
+    listSpaceMemberships(spaceId),
   ])
+  const nowMs = now.getTime()
+  const checkins30 = checkins ? countBetween(checkins, nowMs, 30) : null
+  const checkinsTrend = checkins ? trendOf(percentChange(checkins30 ?? 0, countBetween(checkins, nowMs, 60, 30))) : undefined
+  const returned = checkins ? returnRate(checkins, nowMs) : null
+  const weekly = checkins ? weeklyCounts(checkins, nowMs, 12) : null
+  const newFaces = checkins ? firstTimers(checkins, nowMs, 7) : 0
+  const pastDue = memberships.filter((m) => isPastDueSpaceMembership(m.paymentStatus)).length
+  const revenueTrend = trendOf(percentChange(earnings.netCents, earnings60.netCents - earnings.netCents))
 
   const events = weekEvents.filter((e) => !e.is_cancelled)
   const [going, hosts] = await Promise.all([
@@ -98,6 +116,24 @@ export async function FqOverviewBody({
       sub: 'Waiting on your reply',
       href: `/spaces/${slug}/crm/conversations`,
       cta: 'Review',
+    })
+  }
+  if (pastDue > 0) {
+    needs.push({
+      icon: 'membership',
+      title: `${pastDue} ${pastDue === 1 ? 'membership needs' : 'memberships need'} a new card`,
+      sub: 'The last payment did not go through',
+      href: `/spaces/${slug}/settings/offerings#memberships`,
+      cta: 'View',
+    })
+  }
+  if (newFaces > 0) {
+    needs.push({
+      icon: 'contacts',
+      title: `${newFaces} first ${newFaces === 1 ? 'timer' : 'timers'} this week`,
+      sub: 'Send a welcome',
+      href: `/spaces/${slug}/manage?section=resonance`,
+      cta: 'See who',
     })
   }
   if (worklist.rows.length > 0) {
@@ -138,12 +174,17 @@ export async function FqOverviewBody({
       />
 
       <div className="g4">
-        <Kpi label="Check-ins, 30 days" value={EMPTY} />
-        <Kpi label="Came back within 2 weeks" value={EMPTY} />
+        <Kpi label="Check-ins, 30 days" value={checkins30 === null ? EMPTY : n(checkins30)} trend={checkinsTrend} />
+        <Kpi
+          label="Came back within 2 weeks"
+          value={returned ? `${returned.rate}%` : EMPTY}
+          note={returned ? `Of ${n(returned.people)} ${returned.people === 1 ? 'person' : 'people'} who checked in` : undefined}
+        />
         <Kpi label="Active members" value={n(memberIds.length)} note={`${n(health.weeklyActive)} active this week`} />
         <Kpi
           label="Revenue, 30 days"
           value={usd(earnings.netCents)}
+          trend={revenueTrend}
           note={earnings.orderCount > 0 ? `${earnings.orderCount} paid ${earnings.orderCount === 1 ? 'order' : 'orders'}` : 'No sales yet'}
         />
       </div>
@@ -155,9 +196,7 @@ export async function FqOverviewBody({
               <span className="h3">Check-ins by week</span>
               <span className="t2">Last 12 weeks</span>
             </div>
-            <div className="bars adp-empty" role="img" aria-label="No weekly check-in counts yet">
-              {EMPTY}
-            </div>
+            <WeekBars values={weekly} label="Check-ins by week" />
           </div>
 
           <div>

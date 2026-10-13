@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Av, EMPTY } from '../shared'
+import { Av } from '../shared'
 
-// The Contacts chip bar, search and table (templates/admin/Contacts.html). A thin client island over rows the
-// server already read and shaped (contacts-body.tsx): the chips and the search filter in the browser, nothing
-// is fetched here. The two columns the platform has no reading for (Last visit, Visits) show the design's
-// empty value.
+// The Contacts chip bar, search, table and Export (templates/admin/Contacts.html). A thin client island over
+// rows the server already read and shaped (contacts-body.tsx): the chips and the search filter in the
+// browser, nothing is fetched here. Last visit and Visits arrive as display strings (the design's empty
+// value when there is no reading).
 
 export type ContactTone = 'ok' | 'warn' | 'bad' | 'n'
 
@@ -16,6 +16,8 @@ export interface ContactRow {
   name: string
   sub: string
   avatarUrl: string | null
+  lastVisit: string
+  visits: string
   source: 'Member' | 'Contact'
   status: { label: string; tone: ContactTone }
   href: string
@@ -117,8 +119,8 @@ export function ContactsTable({ rows }: { rows: ContactRow[] }) {
                       </span>
                     </span>
                   </td>
-                  <td>{EMPTY}</td>
-                  <td>{EMPTY}</td>
+                  <td>{r.lastVisit}</td>
+                  <td>{r.visits}</td>
                   <td>
                     <span className="tag">{r.source}</span>
                   </td>
@@ -144,5 +146,34 @@ export function ContactsTable({ rows }: { rows: ContactRow[] }) {
         </div>
       )}
     </>
+  )
+}
+
+/** One CSV cell: quoted when it holds a comma, quote or line break; a leading formula character is
+ *  neutralised so a spreadsheet never runs it. */
+function cell(value: string): string {
+  const safe = /^[=+\-@]/.test(value) ? `'${value}` : value
+  return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
+}
+
+/** The head's Export: every row on the page as a CSV file, written in the browser from what the server
+ *  already sent. Nothing is fetched. */
+export function ExportContactsButton({ rows, filename }: { rows: ContactRow[]; filename: string }) {
+  function download() {
+    const lines = [
+      ['Name', 'Handle or email', 'Last visit', 'Visits', 'Source', 'Status'],
+      ...rows.map((r) => [r.name, r.sub, r.lastVisit, r.visits, r.source, r.status.label]),
+    ].map((line) => line.map(cell).join(','))
+    const url = URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+  return (
+    <button type="button" className="btn" disabled={rows.length === 0} onClick={download}>
+      Export
+    </button>
   )
 }

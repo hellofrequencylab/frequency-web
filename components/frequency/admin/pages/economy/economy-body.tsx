@@ -5,8 +5,10 @@ import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { PATHS, RateBand, loadMoneyPaths, type MoneyPathState } from '@/app/(main)/spaces/[slug]/settings/payments/payments-body'
 import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import type { Space } from '@/lib/spaces/types'
-import { AdminHead, AdminPageBody, EMPTY, Kpi, n, usd } from '../shared'
+import { AdminHead, AdminPageBody, EMPTY, Kpi, WeekBars, n, trendOf, usd } from '../shared'
 import { loadEarnRates } from '../earn-rates'
+import { percentChange } from '../checkin-stats'
+import { loadSpaceRevenueSeries } from '../space-reads'
 
 // ECONOMY, FREQUENCY (design_handoff/frequency/templates/admin/Economy.html). The Space's Get paid page
 // (/spaces/[slug]/settings/payments) under SITE_DESIGN=frequency; DAWN keeps its FocusTemplate bands. The
@@ -15,8 +17,11 @@ import { loadEarnRates } from '../earn-rates'
 // read), and the platform earn rates from zap_config / gem_config (loadEarnRates, read-only; only real rules,
 // never the design's placeholder bonuses). The payout setup card and the rate statement follow unchanged.
 //
-// NO READING, SO THE DESIGN'S EMPTY VALUE ("—"): Next payout, Zaps issued, Gems spent here, every trend, and
-// the Revenue by week chart. There is no payout ledger in the app (Stripe pays out on its own schedule), so
+// Revenue by week and the revenue change are loadSpaceRevenueSeries (space-reads.ts): differences of the same
+// spaceEarningsSummary windows, so the bars and the KPI can never disagree with the console Home.
+//
+// NO READING, SO THE DESIGN'S EMPTY VALUE ("—"): Next payout, Zaps issued and Gems spent here (Zaps and Gems
+// are not recorded per Space), and the trends on those. There is no payout ledger in the app (Stripe pays out on its own schedule), so
 // the design's Payouts table is the money-paths table instead, and there is no Statement action to draw.
 
 const PATH_STATUS: Record<MoneyPathState, { label: string; tone: 'ok' | 'warn' | 'n' }> = {
@@ -35,10 +40,11 @@ export async function FqEconomyBody({
   viewerProfileId: string | null
   staffViewing: boolean
 }) {
-  const [earnings, paths, rates] = await Promise.all([
+  const [earnings, paths, rates, series] = await Promise.all([
     spaceEarningsSummary(space.id, 30),
     loadMoneyPaths(space, viewerProfileId, staffViewing),
     loadEarnRates(),
+    loadSpaceRevenueSeries(space.id),
   ])
   const month = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date())
 
@@ -51,6 +57,7 @@ export async function FqEconomyBody({
         <Kpi
           label="Revenue, 30 days"
           value={usd(earnings.netCents)}
+          trend={series ? trendOf(percentChange(series.last30, series.prior30)) : undefined}
           note={earnings.orderCount > 0 ? `${earnings.orderCount} paid ${earnings.orderCount === 1 ? 'order' : 'orders'}` : 'No sales yet'}
         />
         <Kpi label="Next payout" value={EMPTY} />
@@ -79,9 +86,7 @@ export async function FqEconomyBody({
               <span className="h3">Revenue by week</span>
               <span className="t2">Last 12 weeks</span>
             </div>
-            <div className="bars adp-empty" role="img" aria-label="No weekly revenue series yet">
-              {EMPTY}
-            </div>
+            <WeekBars values={series?.weeks ?? null} label="Revenue by week" format={usd} />
           </div>
 
           <div className="sec-h sec adp-gap">

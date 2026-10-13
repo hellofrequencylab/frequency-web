@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, type ReactNode, type MouseEvent, type ComponentProps } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowUp, ArrowDown, Copy, MessageSquare, Trash2, GripVertical, Bold, Italic, Link, AlignLeft, Type } from 'lucide-react'
+import { ArrowUp, ArrowDown, Copy, MessageSquare, Trash2, GripVertical, Bold, Italic, Link, AlignLeft, Type, Eye, EyeOff } from 'lucide-react'
 import { safeUrl, sanitizeInlineHtml } from '@/lib/entity-blocks/block-content'
 import type { Config, Metadata, Data, ContentItem } from '@/lib/page-editor/types'
 import type { MwLive } from '@/lib/sites/menswork-data'
@@ -412,6 +412,7 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
           <button type="button" title="Move down" aria-label="Move down" disabled={indexes.at(-1) === doc.content.length - 1} onClick={() => onAction(id, 'down')}><ArrowDown size={15} /></button>
           <button type="button" title="Duplicate" aria-label="Duplicate" onClick={() => onAction(id, 'copy')}><Copy size={15} /></button>
           <button type="button" title="Comment" aria-label="Comment" onClick={() => onCommentPin ? onCommentPin(id, { x: .5, y: .5 }) : onAction(id, 'comment')}><MessageSquare size={15} /></button>
+          {FQ_EDITOR && onDisplay && (() => { const layout = sectionDeviceLayout(doc, id, device); const hiddenHere = !!layout.hidden; const name = hiddenHere ? `Show on ${device}` : `Hide on ${device}`; return <button type="button" title={name} aria-label={name} aria-pressed={hiddenHere} onClick={() => onDisplay(id, { ...layout, hidden: !hiddenHere })}>{hiddenHere ? <EyeOff size={15} /> : <Eye size={15} />}</button> })()}
           <button type="button" title="Delete" aria-label="Delete" onClick={() => onAction(id, 'delete')}><Trash2 size={15} /></button>
         </div>}
         {selected && textSelectedHere && !!textTarget && <div className="we-micro" role="toolbar" aria-label="Text controls" onMouseDown={(e) => e.preventDefault()} onClick={(e) => e.stopPropagation()}>

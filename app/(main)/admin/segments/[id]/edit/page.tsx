@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { requireAdmin } from '@/lib/admin/guard'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getSegment } from '@/lib/traits/segments'
 import { SegmentComposer } from '../../segment-composer'
 import { tagOptions, traitOptions } from '../../picker-options'
@@ -20,7 +20,7 @@ export default async function EditSegmentPage({ params }: { params: Promise<{ id
   if (segment.is_system) redirect('/admin/segments')
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow="Insights"
       title="Edit segment"
       description="Adjust the rules and watch the live count update before you save."
@@ -37,6 +37,6 @@ export default async function EditSegmentPage({ params }: { params: Promise<{ id
           definition: segment.definition,
         }}
       />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

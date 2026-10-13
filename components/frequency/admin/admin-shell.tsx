@@ -6,6 +6,7 @@ import type { AdminNavItem } from './nav-model'
 import '@/app/themes/frequency/kit-members.css'
 import '@/app/themes/frequency/kit-admin.css'
 import '@/app/themes/frequency/admin-shell.css'
+import '@/app/themes/frequency/admin-pages.css'
 
 // THE FREQUENCY ADMIN SHELL (design_handoff/frequency/templates/admin/shell.js, HANDOFF "Member Admin"). The
 // 264px glass sidebar (logo, the Space switcher, the navigation with the Moderation badge, Back to Frequency

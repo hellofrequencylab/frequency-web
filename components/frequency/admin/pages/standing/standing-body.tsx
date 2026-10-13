@@ -1,5 +1,4 @@
 import { Suspense } from 'react'
-import Link from 'next/link'
 import { FqIcon } from '@/components/frequency/icon'
 import { AwardLauncher } from '@/app/(main)/admin/gamification/award-launcher'
 import { GamificationSeason } from '@/components/widgets/gamification/gamification-season'
@@ -8,23 +7,26 @@ import { GamificationMetrics } from '@/components/widgets/gamification/gamificat
 import { GamificationAchievements } from '@/components/widgets/gamification/gamification-achievements'
 import { GamificationChallenges } from '@/components/widgets/gamification/gamification-challenges'
 import { countAchievementUnlocks } from '@/components/widgets/gamification/gamification-stats'
-import { loadTopAchievers } from '@/components/widgets/gamification/gamification-top-achievers'
 import { getCurrentSeason } from '@/lib/seasons'
-import { AdminHead, AdminPageBody, Av, EMPTY, Kpi, n } from '../shared'
+import { AdminHead, AdminPageBody, EMPTY, Kpi, n } from '../shared'
 import { loadEarnRates } from '../earn-rates'
+import { loadStandingReads } from './standing-reads'
+import { StandingLeaderboard } from './leaderboard'
 
 // STANDING, FREQUENCY (design_handoff/frequency/templates/admin/Standing.html). /admin/gamification under
 // SITE_DESIGN=frequency; DAWN keeps the module-driven page. The page's own gate (requireAdmin host or
 // community staff) ran before this renders. Reads are the page's existing ones: the current season
-// (getCurrentSeason), the awards tally (user_achievements, GamificationStats), the top achievers
-// (GamificationTopAchievers' profiles read) and the live Zap rates (loadEarnRates). Every action the page
-// had follows the design body unchanged: Award an achievement (the head button), the season control, the
-// janitor's reward editor, the metrics, and the achievements and challenges tables.
+// (getCurrentSeason), the awards tally (user_achievements, GamificationStats), the live Zap rates
+// (loadEarnRates), and standing-reads.ts over the profiles columns the engine keeps: who is on a streak, the
+// longest streak and its holder, and the two leaderboards (this season's Zaps and lifetime Zaps, each with
+// the member's season rank). Every action the page had follows the design body unchanged: Award an
+// achievement (the head button), the season control, the janitor's reward editor, the metrics, and the
+// achievements and challenges tables.
 //
-// NO READING, SO THE DESIGN'S EMPTY VALUE ("—"): On a streak, Longest streak, Freezes used, every trend, and
-// the leaderboard's Rank column. The design's "This week / Season" tabs and the leaderboard opt-out switch
-// have no reader or action, so they are not drawn; nor is "Save rules" (the rates are edited by the janitor's
-// reward editor below).
+// NO READING, SO THE DESIGN'S EMPTY VALUE ("—"): Freezes used (no freeze ledger) and every trend (no
+// prior-period reader). The design's "This week" tab has no weekly Zap tally, so the tabs are Season and All
+// time. The leaderboard opt-out switch and "Save rules" have no setting behind them and are not drawn (the
+// rates are edited by the janitor's reward editor below).
 
 function daysLeft(endsAt: string | null): number | null {
   if (!endsAt) return null
@@ -33,10 +35,10 @@ function daysLeft(endsAt: string | null): number | null {
 }
 
 export async function FqStandingBody() {
-  const [season, awards, leaders, rates] = await Promise.all([
+  const [season, awards, standing, rates] = await Promise.all([
     getCurrentSeason(),
     countAchievementUnlocks(),
-    loadTopAchievers(),
+    loadStandingReads(),
     loadEarnRates(),
   ])
   const left = season ? daysLeft(season.ends_at) : null
@@ -59,60 +61,18 @@ export async function FqStandingBody() {
       />
 
       <div className="g4">
-        <Kpi label="On a streak" value={EMPTY} />
-        <Kpi label="Longest streak" value={EMPTY} />
+        <Kpi label="On a streak" value={standing.onStreak === null ? EMPTY : n(standing.onStreak)} />
+        <Kpi
+          label="Longest streak"
+          value={standing.longest ? `${n(standing.longest.days)} ${standing.longest.days === 1 ? 'day' : 'days'}` : EMPTY}
+          note={standing.longest?.name}
+        />
         <Kpi label="Awards given" value={n(awards)} />
         <Kpi label="Freezes used" value={EMPTY} note={season ? 'This season' : undefined} />
       </div>
 
       <div className="ap-cols adp-split sec">
-        <div>
-          <div className="sec-h">
-            <span className="h2">Leaderboard</span>
-            <span className="t2">Most achievements</span>
-          </div>
-          <div className="panel tbl-wrap">
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Member</th>
-                  <th>Rank</th>
-                  <th>Streak</th>
-                  <th>Zaps</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaders.length === 0 ? (
-                  <tr>
-                    <td className="t1" colSpan={5}>
-                      No achievements earned yet.
-                    </td>
-                  </tr>
-                ) : (
-                  leaders.map((p, i) => (
-                    <tr key={p.id}>
-                      <td className="t1">{i + 1}</td>
-                      <td>
-                        <span className="row">
-                          <Av url={p.avatar_url} />
-                          <Link className="t1" href={`/people/${p.handle}`}>
-                            {p.display_name ?? p.handle}
-                          </Link>
-                        </span>
-                      </td>
-                      <td>{EMPTY}</td>
-                      <td>{n(p.current_streak ?? 0)}</td>
-                      <td>
-                        <FqIcon name="zap" size={14} /> {n(p.lifetime_zaps ?? 0)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <StandingLeaderboard season={standing.season} allTime={standing.allTime} />
 
         <aside className="side">
           <div className="panel stack">

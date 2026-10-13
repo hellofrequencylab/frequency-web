@@ -18,6 +18,10 @@
 [data-design="frequency"] [data-kit="editor"] .slot{display:block;padding:4px 8px;font:500 10.5px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="editor"] .scroller{display:flex;flex-direction:column;padding:28px 28px 132px}
 [data-design="frequency"] [data-kit="editor"] .frame{display:block;flex:1;width:100%;min-height:0;border:0}
+/* The stage zoom (design: the .zoom control scales the frame). --pe-zoom is set on .stage by the shell. */
+[data-design="frequency"] [data-kit="editor"] .stage .frame{zoom:var(--pe-zoom,1)}
+[data-design="frequency"] [data-kit="editor"] .zoom .ib:disabled{opacity:.4;cursor:default}
+[data-design="frequency"] [data-kit="editor"] .zoom span{min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
 [data-design="frequency"] [data-kit="editor"] .pe[data-preview="1"] .scroller{padding:0}
 [data-design="frequency"] [data-kit="editor"] .fld>.l{font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="editor"] .fld>span.l em{font-style:normal;color:var(--fq-text-faint)}

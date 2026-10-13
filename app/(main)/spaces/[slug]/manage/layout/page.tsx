@@ -15,7 +15,7 @@ import { SITE_CONTACT_SLUG, siteHasContactPage } from '@/lib/sites/house-theme'
 import { boundSiteDomain } from '@/lib/sites/site-domain'
 import { siteBaseUrl, sitePageUrl } from '@/lib/sites/seo'
 import { appOrigin } from '@/lib/sites/host'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
 import { SiteMenuEditor } from '@/components/spaces/site-menu-editor'
@@ -85,7 +85,7 @@ export default async function SpacePageSettingsPage({
     : null
   const readOnly = staffViewing && !canManage
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow="Manage space"
       title="Page"
       description="Manage your profile pages and reorder or hide blocks. Cover style and accent live in Branding; your name, story, and contact live in Business info."
@@ -123,6 +123,6 @@ export default async function SpacePageSettingsPage({
           <SiteMenuEditor slug={slug} />
         </section>
       )}
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

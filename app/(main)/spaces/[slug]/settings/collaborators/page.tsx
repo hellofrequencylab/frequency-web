@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -44,7 +44,7 @@ export default async function SpaceCollaboratorsPage({ params }: { params: Promi
   const lockedReason: 'plan' | 'module' = !planOk ? 'plan' : 'module'
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Collaborators"
       description="The businesses that operate inside your space, and requests to collaborate. Invite another business space; they approve, and you both show as collaborators."
@@ -62,6 +62,6 @@ export default async function SpaceCollaboratorsPage({ params }: { params: Promi
       {!featureLocked && <SharedCollaboratorCalendar spaceId={space.id} ownName={brandName} />}
       {/* B3 booking coordination: request/approve advisory venue holds between accepted collaborators. */}
       {!featureLocked && <VenueHoldsSection spaceId={space.id} />}
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

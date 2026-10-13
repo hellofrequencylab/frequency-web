@@ -19,7 +19,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Network, UsersRound } from 'lucide-react'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Button, buttonClasses } from '@/components/ui/button'
@@ -76,7 +76,7 @@ export default async function SpaceProgramPage({
 
   if (featureLocked) {
     return (
-      <FocusTemplate
+      <ConsoleFocusTemplate
         eyebrow={brandName}
         title="Program"
         description="Run your model as a Program. Your flagship circle becomes the blueprint, and members start Chapters anywhere."
@@ -86,7 +86,7 @@ export default async function SpaceProgramPage({
           Program is turned off for this space, or your role does not include it. An admin can turn it on
           in the module settings.
         </p>
-      </FocusTemplate>
+      </ConsoleFocusTemplate>
     )
   }
 
@@ -116,7 +116,7 @@ export default async function SpaceProgramPage({
   const programTease = staffViewing ? null : await resolveSpaceTeaseGate(space, 'program')
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Program"
       description={
@@ -309,6 +309,6 @@ export default async function SpaceProgramPage({
           </form>
         )}
       </div>
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

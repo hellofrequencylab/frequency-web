@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { CollectiveNetworkReport } from '@/components/spaces/collective-network-report'
 import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
@@ -67,7 +67,7 @@ export default async function SpaceReachPage({ params }: { params: Promise<{ slu
   const brandName = space.brandName ?? space.name
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Your reach"
       description="What the network sent you, and what would send more. Placement here is earned, never bought, so this page shows you the whole formula."
@@ -89,6 +89,6 @@ export default async function SpaceReachPage({ params }: { params: Promise<{ slu
         computedAt={stored?.computedAt ?? null}
       />
       {caller?.id === space.ownerProfileId && ['collective', 'nonprofit_collective'].includes(space.plan ?? '') && <Suspense fallback={<p className="mt-8 text-body-sm text-muted">Loading your Collective report…</p>}><CollectiveNetworkReport spaceId={space.id} callerProfileId={caller.id} /></Suspense>}
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

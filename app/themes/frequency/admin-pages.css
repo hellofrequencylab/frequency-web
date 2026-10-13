@@ -49,6 +49,26 @@
 /* Existing DAWN-built action surfaces kept below a Frequency body (forms, editors): spaced, not restyled. */
 [data-design="frequency"] [data-kit="admin"] .adp .adp-legacy{margin-top:40px;display:flex;flex-direction:column;gap:32px}
 
+/* THE ADMIN PAGE FRAME (components/frequency/admin/admin-page-frame.tsx): a console page with no Member Admin
+   design of its own. The head and section heads are the kit's; the page's own content keeps its markup, and
+   its tables and cards take the kit's lines and glass panel through the token layer, by class only. */
+[data-design="frequency"] [data-kit="admin"] .adp-frame .adp-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;font:500 14px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="admin"] .adp-frame .adp-back:hover{color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="admin"] .adp-frame .adp-back-ic{transform:rotate(180deg)}
+[data-design="frequency"] [data-kit="admin"] .adp-frame .head .meta{max-width:68ch}
+[data-design="frequency"] [data-kit="admin"] .adp-frame .adp-stats{margin-bottom:32px}
+[data-design="frequency"] [data-kit="admin"] .adp-frame-body{display:flex;flex-direction:column;gap:40px;min-width:0}
+[data-design="frequency"] [data-kit="admin"] .adp-frame[data-measure="focus"] .adp-frame-body{max-width:760px}
+[data-design="frequency"] [data-kit="admin"] .adp-fsec{min-width:0}
+[data-design="frequency"] [data-kit="admin"] .adp-fsec>.sec-h{align-items:flex-end}
+/* The page's own tables read as the kit's .tbl: muted 12px heads, 14px cells, hairlines, tabular numbers. */
+[data-design="frequency"] [data-kit="admin"] .adp-frame-body table:not(.tbl){width:100%;border-collapse:collapse;font:400 14px/1.35 var(--fq-font-sans);font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="admin"] .adp-frame-body table:not(.tbl) th{font:500 12px/1 var(--fq-font-sans);color:var(--fq-text-muted);text-align:left;padding:12px 14px;border-bottom:1px solid var(--fq-border-hair);background:transparent;text-transform:none;letter-spacing:0}
+[data-design="frequency"] [data-kit="admin"] .adp-frame-body table:not(.tbl) td{padding:14px;border-bottom:1px solid var(--fq-border-hair);color:var(--fq-text-body);vertical-align:middle}
+[data-design="frequency"] [data-kit="admin"] .adp-frame-body table:not(.tbl) tbody tr:hover td{background:var(--fq-track)}
+/* The page's own cards (the DAWN surface card: a bordered surface with a large radius) wear the glass panel. */
+[data-design="frequency"] [data-kit="admin"] .adp-frame-body :is(.rounded-2xl,.rounded-card,.rounded-xl).border.bg-surface{background:var(--fq-glass-panel);border-color:transparent;border-radius:24px;box-shadow:var(--fq-glass-panel-shadow)}
+
 @media (max-width:1000px){
 [data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split{grid-template-columns:1fr}
 [data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split>.side{position:static}

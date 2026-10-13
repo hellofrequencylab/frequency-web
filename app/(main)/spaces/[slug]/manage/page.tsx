@@ -9,7 +9,9 @@ import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { PlacementApprovals } from '@/components/events/placement-approvals'
 import { EventShareApprovals } from '@/components/events/event-share-approvals'
 import { FeatureEventField } from '@/components/events/feature-event-field'
-import { hubSearchItems } from '@/lib/admin/modules/space-hub'
+import { SPACE_HUB_SECTIONS, asHubSection, hubSearchItems } from '@/lib/admin/modules/space-hub'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { AdminPageFrame } from '@/components/frequency/admin/admin-page-frame'
 import { HubSearch } from './hub-search'
 import { SpaceManageBoard } from './manage-board'
 
@@ -66,6 +68,45 @@ export default async function SpaceManagePage({
   if (!isConsoleSpaceType(space.type)) notFound()
 
   const brandName = space.brandName ?? space.name
+
+  // THE FREQUENCY CONSOLE (SITE_DESIGN, build-time). The page sits in the design's admin shell, whose sidebar
+  // is the hub's tabs. Home and Resonance are the Member Admin Overview and Contacts bodies, and Marketing
+  // frames itself (space-marketing.tsx), so each carries its own head. Every other tab wears the shell's page
+  // frame (the tab's name and blurb as the head) with the tools finder under it. The approvals and the
+  // feature field follow unchanged.
+  if (SITE_DESIGN === 'frequency') {
+    const hub = asHubSection(section)
+    const tab = SPACE_HUB_SECTIONS.find((s) => s.key === hub)
+    const board = <SpaceManageBoard slug={slug} section={section} thumbBar />
+    const tail = canManage && (
+      <>
+        <Suspense fallback={null}>
+          <PlacementApprovals target={{ type: 'space', id: space.id }} />
+        </Suspense>
+        <Suspense fallback={null}>
+          <EventShareApprovals spaceId={space.id} />
+        </Suspense>
+        <FeatureEventField spaceId={space.id} />
+      </>
+    )
+    return (
+      <div className="max-md:pb-18">
+        {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
+        {hub === 'dashboard' || hub === 'resonance' || hub === 'marketing' ? (
+          <>
+            {board}
+            {tail}
+          </>
+        ) : (
+          <AdminPageFrame kicker={brandName} title={tab?.label ?? 'Manage'} meta={tab?.blurb}>
+            <HubSearch items={hubSearchItems(space.slug)} />
+            {board}
+            {tail}
+          </AdminPageFrame>
+        )}
+      </div>
+    )
+  }
 
   // Owner directive: the Manage hub reads like the admin CRM workspace (/admin/crm) — it leads with the
   // SEARCH BAR, then the category MENU, then the section content, with NO big identity hero above them

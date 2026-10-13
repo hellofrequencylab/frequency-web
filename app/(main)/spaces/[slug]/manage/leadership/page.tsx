@@ -6,7 +6,7 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { readProgramOverview } from '@/lib/spaces/leadership'
 import { siteAdminHandoffPath } from '@/lib/sites/site-admin-pass'
-import { DashboardTemplate } from '@/components/templates'
+import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { buttonClasses } from '@/components/ui/button'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { OverviewEditor } from './overview-editor'
@@ -48,7 +48,7 @@ export default async function SpaceLeadershipPage({
   const markdown = readProgramOverview(space.preferences)
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow="Manage space"
       title="Leadership"
       description={`The executive overview and the yearly calendar for ${brandName} are admin pages on your website. Only your space's managers can open them.`}
@@ -75,6 +75,6 @@ export default async function SpaceLeadershipPage({
           </section>
         )}
       </div>
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }

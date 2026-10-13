@@ -4,8 +4,11 @@ import { tierLabel } from '@/lib/dashboard/verdict'
 import { contactIdFromRowId, isContactRowId, loadSpaceResonanceRoster } from '@/lib/spaces/resonance-roster'
 import type { MemberSummary } from '@/lib/people/member-viewer'
 import type { ResonanceTier } from '@/lib/traits/compute'
-import { AdminHead, AdminPageBody, n } from '../shared'
-import { ContactsTable, type ContactRow, type ContactTone } from './contacts-table'
+import { HOME_TZ } from '@/lib/time/zone'
+import { AdminHead, AdminPageBody, EMPTY, n } from '../shared'
+import { DAY_MS, visitsByProfile } from '../checkin-stats'
+import { loadSpaceCheckins } from '../space-reads'
+import { ContactsTable, ExportContactsButton, type ContactRow, type ContactTone } from './contacts-table'
 
 // THE SPACE CONTACTS, FREQUENCY (design_handoff/frequency/templates/admin/Contacts.html). The console's
 // Resonance tab under SITE_DESIGN=frequency; DAWN keeps components/spaces/crm/space-resonance-crm.tsx. The
@@ -14,13 +17,25 @@ import { ContactsTable, type ContactRow, type ContactTone } from './contacts-tab
 // row opens the existing detail: a member's profile, or a contact's page in the Space CRM. Import is the
 // existing importer. The console's manage gate authorized the caller before this renders.
 //
-// NO READING, SO THE DESIGN'S EMPTY VALUE ("—"): the Last visit and Visits columns. No Export action exists,
-// so the design's Export button is not drawn.
+// Last visit and Visits are the verified check-ins on this Space's events (space-reads.ts loadSpaceCheckins),
+// per member. An imported contact has no profile to check in with, and a failed read has no reading: both
+// show the design's empty value ("—"). Export writes the rows on screen to a CSV in the browser.
 
 const TIERS: readonly ResonanceTier[] = ['resonant', 'cooling', 'at_risk']
 const TONE: Record<ResonanceTier, ContactTone> = { resonant: 'ok', cooling: 'warn', at_risk: 'bad' }
 
-function toRow(m: MemberSummary, slug: string): ContactRow {
+type Visits = ReturnType<typeof visitsByProfile> | null
+
+/** The design's Last visit words: Today, Yesterday, a weekday within the week, else the date. */
+function lastVisitLabel(at: number, now: number): string {
+  const day = (ms: number) => new Intl.DateTimeFormat('en-CA', { timeZone: HOME_TZ }).format(ms)
+  if (day(at) === day(now)) return 'Today'
+  if (day(at) === day(now - DAY_MS)) return 'Yesterday'
+  if (now - at < 6 * DAY_MS) return new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: HOME_TZ }).format(at)
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: HOME_TZ }).format(at)
+}
+
+function toRow(m: MemberSummary, slug: string, visits: Visits, now: number): ContactRow {
   const contact = isContactRowId(m.id)
   const badges = m.badges ?? []
   const tier = TIERS.find((t) => badges.includes(t)) ?? null
@@ -32,8 +47,11 @@ function toRow(m: MemberSummary, slug: string): ContactRow {
       : tier
         ? { label: tierLabel(tier), tone: TONE[tier] }
         : { label: 'Member', tone: 'n' }
+  const seen = !contact && visits ? visits.get(m.id) : undefined
   return {
     id: m.id,
+    lastVisit: seen ? lastVisitLabel(seen.last, now) : EMPTY,
+    visits: contact || !visits ? EMPTY : n(seen?.visits ?? 0),
     name: m.displayName,
     sub: contact ? m.handle : `@${m.handle}`,
     avatarUrl: m.avatarUrl ?? null,
@@ -55,8 +73,14 @@ export async function FqContactsBody({
   slug: string
   spaceName: string
 }) {
-  const [roster, health] = await Promise.all([loadSpaceResonanceRoster(spaceId), getSpaceHealth(spaceId)])
-  const rows = roster.map((m) => toRow(m, slug))
+  const [roster, health, checkins] = await Promise.all([
+    loadSpaceResonanceRoster(spaceId),
+    getSpaceHealth(spaceId),
+    loadSpaceCheckins(spaceId),
+  ])
+  const visits = checkins ? visitsByProfile(checkins) : null
+  const now = new Date().getTime()
+  const rows = roster.map((m) => toRow(m, slug, visits, now))
 
   return (
     <AdminPageBody>
@@ -65,6 +89,8 @@ export async function FqContactsBody({
         title="Contacts"
         meta={`${n(rows.length)} ${rows.length === 1 ? 'person' : 'people'} · ${n(health.weeklyActive)} active this week`}
         actions={
+          <>
+          <ExportContactsButton rows={rows} filename={`${slug}-contacts.csv`} />
           <ImportContactsButton
             target={{ kind: 'space', spaceId }}
             spaceName={spaceName}
@@ -72,6 +98,7 @@ export async function FqContactsBody({
             variant="bare"
             className="btn pa"
           />
+          </>
         }
       />
       <ContactsTable rows={rows} />

@@ -19,6 +19,8 @@
 import type { LucideIcon } from 'lucide-react'
 import { PageHeading } from './page-heading'
 import { AdminAutoBackLink } from '@/components/admin/admin-auto-back-link'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { AdminFrameSection, AdminPageFrame } from '@/components/frequency/admin/admin-page-frame'
 
 const WIDTHS = {
   narrow: 'max-w-2xl',
@@ -65,6 +67,17 @@ export function AdminTemplate({
   contentSpacing?: 'default' | 'tight'
   children: React.ReactNode
 }) {
+  // Under the Frequency design (SITE_DESIGN, build-time) every admin page sits in the design's admin shell,
+  // so it wears the shell's page frame: the design's head and section heads around the page's own content.
+  // The title icon and the DAWN admin bar are DAWN chrome and stay out; an explicit back link is kept (the
+  // shell's breadcrumb replaces the automatic one). DAWN renders below exactly as before.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <AdminPageFrame kicker={eyebrow} title={title} meta={description} actions={actions} back={hideBackLink ? undefined : back}>
+        {children}
+      </AdminPageFrame>
+    )
+  }
   return (
     <div className={`mx-auto w-full ${WIDTHS[width]}`}>
       {!hideBackLink && <AdminAutoBackLink back={back} />}
@@ -105,6 +118,13 @@ export function AdminSection({
   actions?: React.ReactNode
   children: React.ReactNode
 }) {
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <AdminFrameSection title={title} description={description} actions={actions}>
+        {children}
+      </AdminFrameSection>
+    )
+  }
   return (
     <section className="space-y-4">
       {(title || actions) && (

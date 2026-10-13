@@ -82,3 +82,29 @@ it('opens the publish modal with the change list and the now / schedule switch',
   click('Schedule')
   expect(dialog?.querySelector('input[type=datetime-local]')).toBeTruthy()
 })
+
+it('lists the publish checks computed from the draft', () => {
+  const { node } = mount()
+  act(() => node.querySelector<HTMLButtonElement>('.top .btn.pa')!.click())
+  const checks = Array.from(node.querySelectorAll('.modal .chk')).map((c) => c.textContent)
+  expect(checks).toEqual(['✓Every image has alt text', '!Add a search description to Home, About'])
+})
+
+it('zooms the stage in tens between 50 and 100 percent, view only', () => {
+  const { node, click, button } = mount()
+  const stage = node.querySelector<HTMLElement>('main.stage')!
+  expect(stage.style.getPropertyValue('--pe-zoom')).toBe('1')
+  expect(button('Zoom in')?.disabled).toBe(true)
+  click('Zoom out'); click('Zoom out')
+  expect(node.querySelector('.zoom span')?.textContent).toBe('80%')
+  expect(stage.style.getPropertyValue('--pe-zoom')).toBe('0.8')
+})
+
+it('shares the live website address', async () => {
+  const writeText = vi.fn(async () => {})
+  Object.assign(navigator, { clipboard: { writeText } })
+  const { node, click } = mount()
+  await act(async () => { click('Share'); await Promise.resolve() })
+  expect(writeText).toHaveBeenCalledWith('https://hearts.example/')
+  expect(node.querySelector('.toast')?.textContent).toContain('Website link copied')
+})

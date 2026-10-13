@@ -5,11 +5,12 @@
 import { slugify } from '@/lib/utils'
 import { Input, Textarea } from '@/components/ui/field'
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type KeyboardEvent } from 'react'
-import { ArrowUp, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Copy, Eye, FileText, Globe, Layers, MessageSquare, Monitor, PanelLeft, PanelRight, Palette, Plus, Radio, Redo2, Search, Settings2, Home, ExternalLink, Trash2, Smartphone, Sparkles, Tablet, Undo2, X } from 'lucide-react'
+import { ArrowUp, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Copy, Eye, FileText, Globe, Layers, MessageSquare, Monitor, PanelLeft, PanelRight, Palette, Plus, Radio, Redo2, Search, Settings2, Home, ExternalLink, Trash2, Smartphone, Sparkles, Tablet, Undo2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
 import { addBlock, buildOutline, derivePickerGroups, duplicateBlockDeep, findBlockDeep, moveBlockTo, nudgeBlock, removeBlockDeep, updateBlockPropsDeep, type OutlineNode } from '@/components/page-editor/mobile/data-ops'
 import { inlineFieldValue, replaceInlineField } from '@/lib/sites/editor/inline-edit'
-import { resetDocumentPlacements } from '@/lib/sites/editor/layout'
+import { resetDocumentPlacements, sectionDeviceLayout } from '@/lib/sites/editor/layout'
+import { publishChecks } from '@/lib/sites/editor/publish-checks'
 import { websiteThemeVars, WEBSITE_TOKEN_CSS } from '@/lib/sites/editor/theme'
 import { WEBSITE_PAGE_TEMPLATES, websiteTemplateSections } from '@/lib/sites/editor/templates'
 import { WEBSITE_THEMES, WEBSITE_THEMES_LIVE, RESERVED_WEBSITE_SLUGS, validWebsiteSnapshot, resolveWebsiteBrand, updateSectionDisplay, type WebsiteSnapshot, type WebsiteEditorState, type Device, type WebsitePresence, type SectionDisplay } from '@/lib/sites/editor/state'
@@ -158,6 +159,22 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
   // Frequency-only view state (no effect on the draft): the top bar's page menu and the inspector tab.
   const [pickOpen, setPickOpen] = useState(false)
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>('content')
+  // The stage zoom (design: 50 to 100 percent in tens), the Layers drop marker and the toast line. View only.
+  const [zoom, setZoom] = useState(100)
+  const [dropId, setDropId] = useState<string | null>(null)
+  const [toast, setToast] = useState('')
+  const toastTimer = useRef<number | undefined>(undefined)
+  function say(message: string) {
+    setToast(message)
+    window.clearTimeout(toastTimer.current)
+    toastTimer.current = window.setTimeout(() => setToast(''), 2600)
+  }
+  /** Share: copy the live website's address (the design's Share button). */
+  async function share() {
+    const url = `https://${host}/`
+    try { await navigator.clipboard.writeText(url); say('Website link copied. Anyone with it can view your live site.') }
+    catch { say(`Copy this link: ${url}`) }
+  }
   const history = useRef<WebsiteSnapshot[]>([])
   const future = useRef<WebsiteSnapshot[]>([])
   const [historyCounts, setHistoryCounts] = useState({ past: 0, future: 0 })
@@ -326,9 +343,9 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
     commit({ ...draft, pages })
   }
   function renderLayers(nodes: OutlineNode[], parentId: string | null = null, slotKey: string | null = null, depth = 0): ReactNode {
-    return nodes.map((node, index) => <div key={node.id} draggable onDragStart={(event) => { event.stopPropagation(); event.dataTransfer.setData('text/plain', node.id) }} onDragOver={(event) => { event.preventDefault(); event.stopPropagation() }} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); const id = event.dataTransfer.getData('text/plain'); if (id !== node.id && findBlockDeep(page.doc, config, id)) updateDoc(moveBlockTo(page.doc, config, id, { parentId, slotKey, index })) }}>
+    return nodes.map((node, index) => <div key={node.id} draggable onDragStart={(event) => { event.stopPropagation(); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', node.id) }} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); if (dropId !== node.id) setDropId(node.id) }} onDragEnd={() => setDropId(null)} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); setDropId(null); const id = event.dataTransfer.getData('text/plain'); if (id !== node.id && findBlockDeep(page.doc, config, id)) updateDoc(moveBlockTo(page.doc, config, id, { parentId, slotKey, index })) }}>
       {FQ_EDITOR
-        ? <button type="button" className={`row${on(selectedId === node.id)}`} style={{ paddingLeft: 8 + depth * 14 }} aria-pressed={selectedId === node.id} onClick={() => select(node.id)}><span className="grip" aria-hidden>⋮⋮</span><span className="ic"><Layers size={16} aria-hidden /></span><span className="t">{node.label}{node.summary && node.summary !== node.label && <small>{node.summary}</small>}</span>{/^(Space|Live)/.test(node.type) && <span className="meta">Live</span>}</button>
+        ? <button type="button" className={`row${on(selectedId === node.id)}${dropId === node.id ? ' drop-before' : ''}${depth === 0 && sectionDeviceLayout(page.doc, node.id, device).hidden ? ' off' : ''}`} style={{ paddingLeft: 8 + depth * 14 }} aria-pressed={selectedId === node.id} onClick={() => select(node.id)}><span className="grip" aria-hidden>⋮⋮</span><span className="ic"><Layers size={16} aria-hidden /></span><span className="t">{node.label}{node.summary && node.summary !== node.label && <small>{node.summary}</small>}</span>{/^(Space|Live)/.test(node.type) && <span className="meta">Live</span>}</button>
         : <button type="button" className="we-row" style={{ paddingLeft: 10 + depth * 14 }} aria-pressed={selectedId === node.id} onClick={() => select(node.id)}><Layers size={15} aria-hidden /><span>{node.summary || node.label}</span>{/^(Space|Live)/.test(node.type) && <small>Live</small>}</button>}
       {node.slots.map((slot) => <div key={slot.key}>{slot.children.length > 0 && <span className={k('we-layer-slot')} style={{ paddingLeft: 24 + depth * 14 }}>{slot.label}</span>}{renderLayers(slot.children, node.id, slot.key, depth + 1)}</div>)}
     </div>)
@@ -432,6 +449,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <Icon label="Redo" disabled={!historyCounts.future} onClick={() => travel(true)}><Redo2 size={18} aria-hidden /></Icon>
           <Icon label={preview ? 'Back to editor' : 'Preview'} aria-pressed={preview} onClick={() => setPreview(!preview)}><Eye size={18} aria-hidden /></Icon>
           <span className="faces" title={[`${author} · editing`, ...people.map((person) => `${person.name} · editing`)].join(', ')}>{[{ key: 'me', name: author }, ...people.map((person) => ({ key: person.profileId, name: person.name }))].map((person) => <span key={person.key} aria-label={`${person.name} · editing`}>{person.name.split(' ').slice(0, 2).map((n) => n[0]).join('')}</span>)}</span>
+          <button type="button" className="btn sm" onClick={() => void share()}>Share</button>
           <button type="button" className="btn pa" onClick={() => setModal('publish')}>Publish{changeCount > 0 && <span className="pubn">{changeCount}</span>}</button>
         </header>
         <aside className="rail" aria-label="Website navigation">
@@ -439,8 +457,9 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
           <div className="body" role="tabpanel" aria-label={tab}>{railBody}</div>
           <div className="foot"><span className="lbl">Changes save as a draft</span><a className="btn sm txt" aria-label="Website home" href={`https://${host}/`} target="_blank" rel="noreferrer">Live site</a></div>
         </aside>
-        <main className="stage" data-device={device} aria-label="Website editor canvas">
+        <main className="stage" data-device={device} aria-label="Website editor canvas" style={{ ['--pe-zoom' as string]: preview ? 1 : zoom / 100 }}>
           <div className="scroller"><WebsiteCanvas key={page.slug} pageSlug={page.slug} people={people} onCursor={(value) => { cursor.current = value }} doc={page.doc} theme={canvasTheme} device={device} config={config} metadata={metadata} live={live} nav={draft.pages} links={{ ...links, pages: draft.pages.map((p) => p.slug) }} origin={origin} title={page.label} brandName={brandName} logo={activeLogo} brandAccent={activeAccent} selectedId={selectedId} preview={preview} comments={page.comments} onSelect={select} onTextSelect={setTextSelection} onChromeSelect={openChrome} chrome={draft.chrome} onEdit={(id, field, value) => editProps(id, { [field]: value })} onAction={action} onCommentPin={(id, position) => { setSelectedId(id); setPinPosition({ blockId: id, ...position }); setPanel('comments'); setRight(true) }} onReorder={reorderSections} onInsert={insert} onDisplay={updateDisplay} look={siteLookOverrides(pageLookStyle)} fullFooter={siteLook(pageLookStyle).footer === 'full'} /></div>
+          {!preview && <div className="zoom" role="group" aria-label="Zoom"><Icon label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((z) => Math.max(50, z - 10))}><ZoomOut size={16} aria-hidden /></Icon><span aria-live="polite">{zoom}%</span><Icon label="Zoom in" disabled={zoom >= 100} onClick={() => setZoom((z) => Math.min(100, z + 10))}><ZoomIn size={16} aria-hidden /></Icon></div>}
           {!preview && <div className="vera">
             <div className={`reply${on(veraVisible)}`} role="status">{asking ? 'Vera is preparing a proposal…' : veraStatus}{proposal && <><b className="lbl">Proposed text</b><p>{proposal.after}</p><div className="acts"><button type="button" className="btn sm pa" onClick={applyProposal}>Apply</button><button type="button" className="btn sm" onClick={() => { setProposal(null); setVeraStatus('Proposal discarded.') }}>Discard</button></div></>}</div>
             <form className="bar" onSubmit={(e) => { e.preventDefault(); void askVera() }}>
@@ -462,6 +481,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         </aside>
       </div>
       {logoPicker}
+      <div className={`toast${on(!!toast)}`} role="status" aria-live="polite">{toast}</div>
       {modal && <div className="ov on" onClick={() => setModal(null)}><Dialog label={modalLabel}>
         <Icon label="Close dialog" className="x" onClick={() => setModal(null)}><X size={18} aria-hidden /></Icon>
         {modal === 'publish' && <span className="eyebrow">{draft.chrome?.name || brandName} · {page.label}</span>}
@@ -472,6 +492,7 @@ export function WebsiteEditorShell({ host, brandName, logo, brandAccent, author,
         {modal === 'templates' && <><label className="fld"><span className="l">Page name</span><input className="in" autoFocus value={pageName} maxLength={80} onChange={(e) => setPageName(e.target.value)} /></label>{error && <p role="alert" className="note err">{error}</p>}<div className="blocks">{WEBSITE_PAGE_TEMPLATES.map(({ name, description }) => <button type="button" key={name} className="blk" disabled={!pageName.trim()} onClick={() => newPage(name)}><span className="th" aria-hidden><i className="a s" /><i className="w" /><i /></span>{name}<small>{description}</small><small>{draft.theme} layout</small></button>)}</div></>}
         {modal === 'publish' && <>{previewNote}
           <div className="chg">{changedPages.map((p) => <div key={p.slug}><FileText size={16} aria-hidden /><b>{p.label}</b><span className="sp" />Updated</div>)}{removedPages.map((item) => <div key={item.slug}><Trash2 size={16} aria-hidden /><b>{item.label}</b><span className="sp" />Removed</div>)}{navigationChanged && <div><Layers size={16} aria-hidden /><b>Navigation</b><span className="sp" />Updated</div>}{chromeChanged && <div><Settings2 size={16} aria-hidden /><b>Header and footer</b><span className="sp" />Updated</div>}{brandChanged && <div><Palette size={16} aria-hidden /><b>Brand settings</b><span className="sp" />Updated</div>}{draft.theme !== persisted.published?.theme && <div><Palette size={16} aria-hidden /><b>Theme</b><span className="sp" />{draft.theme}</div>}{changeCount === 0 && <div>No page content changes.</div>}</div>
+          {publishChecks(draft.pages, config).map((check) => <div className="chk" key={check.text}><i className={check.ok ? undefined : 'w'} aria-hidden>{check.ok ? '✓' : '!'}</i>{check.text}</div>)}
           <div className="seg when" role="group" aria-label="When"><button type="button" className={on(publishWhen === 'now').trim() || undefined} aria-pressed={publishWhen === 'now'} onClick={() => setPublishWhen('now')}>Publish now</button><button type="button" className={on(publishWhen === 'schedule').trim() || undefined} aria-pressed={publishWhen === 'schedule'} onClick={() => setPublishWhen('schedule')}>Schedule</button></div>
           {publishWhen === 'schedule' && <label className="fld"><span className="l">Publish date and time <em>Your local time zone</em></span><input className="in" type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} /></label>}
           {scheduledNotice}

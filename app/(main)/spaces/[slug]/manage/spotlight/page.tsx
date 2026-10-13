@@ -11,7 +11,7 @@ import { readTagline } from '@/lib/spaces/tagline'
 import { readSpaceSpotlight, spaceSpotlightGrid } from '@/lib/spaces/spotlight'
 import { resolveRows } from '@/lib/entity-blocks/layout'
 import type { BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { renderSpaceBlockNodes } from '@/components/widgets/space-profile/space-profile-modules'
 import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
@@ -125,7 +125,7 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
 
   const brandName = space.brandName?.trim() || space.name
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow="Manage space"
       title="Spotlight"
       description="One link for your bio or business card. Pick what it shows; bookings, sales and messages still land in your console."
@@ -146,6 +146,6 @@ export default async function SpaceSpotlightEditorPage({ params }: { params: Pro
         ownLinks={ownLinks}
         clicks={canManage ? clicks : undefined}
       />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }
