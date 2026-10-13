@@ -256,8 +256,6 @@ export type SpaceContentData = {
    *  row), for a block that draws a whole year and expands the series itself (the Wildheart wheel,
    *  LIVE-905). Read only when the page carries such a block; undefined otherwise. */
   series?: SpaceEventItem[]
-  /** The Space's own zone (spaces.time_zone), the fallback for an event without one. */
-  timeZone?: string | null
   /** Whether the Space is taking bookings + the booking tab href, for the SpaceBooking block. */
   booking?: SpaceBookingInfo
   /** The Space's live practices + journeys the SpacePractices block lists (both empty for a brand-new

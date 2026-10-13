@@ -134,12 +134,11 @@ export async function SpaceLanding({
   // so each team card links to `/people/<handle>`. FAIL-SAFE: no picks ⇒ undefined, and the block falls
   // back to its stored/manual entries.
   // A block that draws a whole year (the Wildheart wheel) expands the Space's recurring series itself
-  // (LIVE-905), so it also gets the live series rows and the Space's zone; any other page pays no read.
+  // (LIVE-905), so it also gets the live series rows; any other page pays no read.
   const drawsYear = (data.content ?? []).some((b) => typeof b?.type === 'string' && b.type.startsWith('Wildheart'))
   const [teamPicks, series] = await Promise.all([resolveTeamPicksForDoc(data), drawsYear ? getSpaceSeriesRows(space.id) : Promise.resolve(undefined)])
   spaceContent.teamPicks = teamPicks
   spaceContent.series = series
-  spaceContent.timeZone = space.timeZone
 
   return <BlockRender config={config} data={data} metadata={{ space: spaceContent }} />
 }

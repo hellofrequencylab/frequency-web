@@ -2,7 +2,8 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listEventsForSpace, listSpaceSeriesRows } from '@/lib/events/store'
-import { expandSiteSeries, foldSiteEvent, siteEventZone, siteInstant, type SiteEventRow } from '@/lib/sites/site-events'
+import { expandSiteSeries, type SiteEventRow } from '@/lib/sites/site-events'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listPublicSpaceCircles } from '@/lib/circles/store'
 
@@ -18,13 +19,10 @@ export interface MwEvent {
   slug: string
   title: string
   description: string | null
-  /** The start as every site formatter reads it: the UTC parts are the wall clock (lib/time/zone.ts). On a
-   *  site whose rows are true instants (`instantRows`), the stored instant folded into `timeZone`. */
+  /** The start as stored: the wall clock as UTC parts (lib/time/zone.ts). */
   startsAt: string
   endsAt: string | null
   location: string | null
-  /** The zone the wall clock is in (events.time_zone, else the Space's, else home). */
-  timeZone: string | null
 }
 
 export interface MwCircle {
@@ -69,12 +67,6 @@ interface MwLiveNeed {
   events: boolean
   circles: boolean
   journeys: boolean
-  /** The Space's rows are TRUE INSTANTS beside their `time_zone` (the Wildheart seed writes them so,
-   *  scripts/seed-wildheart.sql), not the product's wall-clock-as-UTC-parts convention: fold each start
-   *  into its zone's wall clock so every site formatter prints the local time (LIVE-905). */
-  instantRows?: boolean
-  /** The Space's own zone (spaces.time_zone), the fallback for a row without one. */
-  spaceZone?: string | null
   /** The clock, for the series expansion window and the upcoming floor (tests pass one). */
   now?: Date
 }
@@ -114,23 +106,23 @@ async function readEvents(spaceId: string, need: MwLiveNeed): Promise<MwEvent[]>
       })
     }
     const by = new Map(upcoming.concat(series).map((e) => [e.id, e]))
+    // Wall clocks as UTC parts throughout (lib/time/zone.ts): the window's end and the floor are written
+    // the way the column is. The series read has no date floor, so the same floor the upcoming read used
+    // keeps the list to what is still to come.
     const through = new Date(Date.UTC(now.getUTCFullYear() + 1, 11, 31, 23, 59, 59))
-    // The anchors read has no date floor; the site lists what is still to come (today on, in UTC).
-    const floor = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-    return expandSiteSeries(rows, { through, from: new Date(floor), spaceZone: need.spaceZone })
-      .filter((r) => (siteInstant(r.startsAt)?.getTime() ?? floor) >= floor)
+    const floor = upcomingEventFloor(now)
+    return expandSiteSeries(rows, { through, from: new Date(floor) })
+      .filter((r) => r.startsAt >= floor)
       .map((r) => {
         const src = by.get(r.parentEventId ?? r.id) ?? by.get(r.id)
-        const folded = need.instantRows ? foldSiteEvent(r, need.spaceZone) : r
         return {
           id: r.id,
           slug: r.slug ?? src?.slug ?? r.id,
           title: r.title,
           description: src?.description ?? null,
-          startsAt: folded.startsAt,
-          endsAt: folded.endsAt ?? null,
+          startsAt: r.startsAt,
+          endsAt: r.endsAt ?? null,
           location: src ? (src.hide_address ? (src.city ?? null) : (src.location?.trim() || src.city || null)) : null,
-          timeZone: siteEventZone(r.timeZone, need.spaceZone),
         }
       })
   } catch {

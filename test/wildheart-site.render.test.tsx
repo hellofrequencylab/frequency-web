@@ -14,7 +14,7 @@ import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_CSS } from '@/components/sites/wildheart-css'
 import { readSiteFooter, siteFooterFor } from '@/lib/sites/site-footer'
 import { buildEvents, buildItems, buildPageDocs, buildPreferences, ptIso, CIRCLE, CIRCLES_MORE, FOUNDATION, PAGES, SLUG, TAGLINE, YEAR } from '../scripts/seed-wildheart.mts'
-import { expandSiteSeries, foldSiteEvent, type SiteEventRow } from '@/lib/sites/site-events'
+import { expandSiteSeries, type SiteEventRow } from '@/lib/sites/site-events'
 
 // THE WILDHEART SITE, RENDERED OFFLINE (LIVE-903, LIVE-904). The live site is the seed's page docs drawn by
 // the same chrome and section renderer the Next page uses (components/sites/site-page.tsx), with the
@@ -36,8 +36,8 @@ const items = buildItems()
 
 const TZ = 'America/Los_Angeles'
 
-/** The seed's rows as the database holds them: true instants beside the Space's zone (the SQL writes
- *  `timestamp ... at time zone 'America/Los_Angeles'`), the Circle Night anchor with its rule. */
+/** The seed's rows as the database holds them (lib/time/zone.ts): the wall clock as UTC parts beside the
+ *  Space's zone, the Circle Night anchor with its rule. */
 const storedRows: (SiteEventRow & { description: string })[] = events.map((e, i) => ({
   id: `evt-${i}`,
   slug: e.slug,
@@ -54,13 +54,12 @@ const storedRows: (SiteEventRow & { description: string })[] = events.map((e, i)
 }))
 
 /** The seed's events as the live rows a page reads (lib/sites/menswork-data.ts readEvents): every anchor
- *  expanded through next year, each start folded into its own zone, soonest first from today. */
+ *  expanded through next year, soonest first from today. */
 function liveEvents(): MwLive['events'] {
   const floor = new Date(Date.UTC(2026, 9, 12))
-  return expandSiteSeries(storedRows, { through: new Date(Date.UTC(2027, 11, 31, 23, 59, 59)), from: floor, spaceZone: TZ })
+  return expandSiteSeries(storedRows, { through: new Date(Date.UTC(2027, 11, 31, 23, 59, 59)), from: floor })
     .filter((e) => new Date(e.startsAt).getTime() >= floor.getTime())
-    .map((e) => foldSiteEvent(e, TZ))
-    .map((e) => ({ id: e.id, slug: e.slug ?? e.id, title: e.title, description: e.description, startsAt: e.startsAt, endsAt: e.endsAt ?? null, location: null, timeZone: e.timeZone }))
+    .map((e) => ({ id: e.id, slug: e.slug ?? e.id, title: e.title, description: e.description, startsAt: e.startsAt, endsAt: e.endsAt ?? null, location: null }))
 }
 
 function liveJourneys(): MwLive['journeys'] {
@@ -103,11 +102,10 @@ const metadata = {
     slug: SLUG,
     tagline: TAGLINE,
     logoUrl: '/brand/wildheart/wildheart-logo.svg',
-    // The landing's channel (components/spaces/space-landing.tsx): the upcoming rows as stored, the live
-    // series rows, and the Space's zone; the Wildheart block expands and folds them itself.
+    // The landing's channel (components/spaces/space-landing.tsx): the upcoming rows as stored and the live
+    // series rows; the Wildheart block expands the series itself.
     events: storedRows.filter((e) => new Date(e.startsAt).getTime() >= Date.UTC(2026, 9, 12)),
     series: storedRows.filter((e) => e.recurrenceType && e.recurrenceType !== 'none'),
-    timeZone: TZ,
   },
   links,
 }
@@ -197,7 +195,7 @@ describe('the Wildheart site, rendered from the seed through the real chrome and
   it("draws the Space's own rows: the next Circle Night, the four circles with their seats, and the foundation's weeks", () => {
     const home = renderPage('home')
     expect(home).toContain('Next Circle Night')
-    // The live bug (LIVE-905): the stored 2026-11-04T02:00Z is Tue Nov 3 at 6:00 PM in the Space's zone.
+    // The live bug (LIVE-905): the stored 2026-11-03T18:00Z (the wall clock as UTC parts) reads Tue Nov 3 at 6:00 PM.
     expect(words(home)).toContain('Next Circle Night Tue Nov 3 · 6:00 PM')
     expect(words(home)).not.toContain('2:00 AM')
     expect(words(home)).toContain("Hunter's Moon")

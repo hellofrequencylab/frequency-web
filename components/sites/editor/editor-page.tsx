@@ -28,7 +28,7 @@ export async function WebsiteEditorPage({ host, space: cached, token }: { host: 
   setActiveSpace(space)
   const brandName = space.brandName?.trim() || space.name
   const [chrome, live, content, person] = await Promise.all([
-    siteChromeBasics(space, ''), loadMensworkLive(space.id, { events: true, circles: true, journeys: true, instantRows: readSiteStyle(space.preferences).theme === 'wildheart', spaceZone: space.timeZone }),
+    siteChromeBasics(space, ''), loadMensworkLive(space.id, { events: true, circles: true, journeys: true }),
     getSpaceContentData(space.id, { name: brandName, type: space.type, logoUrl: space.brandLogoUrl, coverUrl: space.coverImageUrl, tagline: space.tagline, slug: space.slug, profile: readProfileData(space.preferences) }),
     readSiteAdminAuthor(pass.profileId),
   ])

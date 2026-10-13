@@ -4,10 +4,10 @@ import { WildheartMarkSplitBlock, WildheartMoonPathBlock, WildheartNowLineBlock,
 import { utcDate } from '@/lib/theme/astrology-wheel'
 
 const now = utcDate(2027, 3, 23)
-// Rows as the landing hands them over: true instants beside the Space's zone (6 PM in Los Angeles).
+// Rows as the landing hands them over: the wall clock as UTC parts (lib/time/zone.ts), 6 PM in Los Angeles.
 const TZ = 'America/Los_Angeles'
-const metadata = { space: { timeZone: TZ, events: [{ id: 'e1', slug: 'first', title: 'Spring gathering', startsAt: '2027-03-24T01:00:00Z', timeZone: TZ }, { id: 'e2', slug: 'second', title: 'A quiet evening', startsAt: '2027-04-07T01:00:00Z', timeZone: TZ }] } }
-const anchor = { id: 'cn', slug: 'cn', title: 'Circle Night', startsAt: '2027-03-10T02:00:00Z', endsAt: '2027-03-10T03:30:00Z', timeZone: TZ, recurrenceType: 'weekly', recurrenceRule: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU' }
+const metadata = { space: { events: [{ id: 'e1', slug: 'first', title: 'Spring gathering', startsAt: '2027-03-23T18:00:00Z', timeZone: TZ }, { id: 'e2', slug: 'second', title: 'A quiet evening', startsAt: '2027-04-06T18:00:00Z', timeZone: TZ }] } }
+const anchor = { id: 'cn', slug: 'cn', title: 'Circle Night', startsAt: '2027-03-09T18:00:00Z', endsAt: '2027-03-09T19:30:00Z', timeZone: TZ, recurrenceType: 'weekly', recurrenceRule: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TU' }
 
 describe('the astrology calendar block family', () => {
   it('registers three blocks whose defaults are generic and gender-neutral', () => {
@@ -18,7 +18,7 @@ describe('the astrology calendar block family', () => {
   })
 
   it('curates the year journey\'s stops from the sky and the Space events and hands the island its wheel', () => {
-    const md = { space: { timeZone: TZ, events: [...metadata.space.events, { id: 'w1', slug: 'w1', title: 'Week 1 · Arriving', startsAt: '2027-01-06T02:00:00Z', timeZone: TZ }], series: [anchor] } }
+    const md = { space: { events: [...metadata.space.events, { id: 'w1', slug: 'w1', title: 'Week 1 · Arriving', startsAt: '2027-01-05T18:00:00Z', timeZone: TZ }], series: [anchor] } }
     const html = renderToStaticMarkup(<WildheartYearJourneyBlock heading="Every season has a door." year={2027} now={now} metadata={md} programStops={[{ match: 'Week 1', title: 'Foundation begins', note: 'Tuesdays 6 PM', teach: 'Eight weeks.' }, { match: 'Circle Night', after: 'Week 1', title: 'Circle Nights begin', note: '', teach: 'Every other week.' }]} />)
     expect(html).toContain('Every season has a door.')
     expect(html).toContain('The year opens')
@@ -34,7 +34,7 @@ describe('the astrology calendar block family', () => {
     expect(html).toContain('wh-yj-rail-stop')
     expect(html).not.toMatch(/️/)
     // LIVE-905: the anchor's rule puts every other Tuesday from Mar 9 on the wheel (22 dots through
-    // December), each on its Los Angeles day, and the section opens in winter whatever the date now.
+    // December), each on its own day, and the section opens in winter whatever the date now.
     expect((html.match(/data-kind="circle"/g) ?? []).length).toBe(22)
     expect(html).toContain('Circle Night · Mar 23')
     expect(html).toContain('Circle Night · Dec 28')
@@ -49,7 +49,7 @@ describe('the astrology calendar block family', () => {
     expect(html).toContain('data-season="spring"')
     expect(html).toContain('Spring gathering')
     // LIVE-905: the whole year by default, in season sections headed by the season's theme and modules,
-    // every Circle Night in its own zone ("Tue · 6:00 PM", never the UTC "Wed · 2:00 AM").
+    // every Circle Night at its stored wall clock ("Tue · 6:00 PM").
     expect(html).toContain('wh-sm-season-head')
     expect(html).toContain('Spring · Rise')
     expect(html).toContain('Rage · Values · Voice')
@@ -118,7 +118,7 @@ describe('the astrology calendar block family', () => {
   })
 
   it('reads the module now, the featured gathering and the next days from the Space events', () => {
-    const md = { space: { timeZone: TZ, events: [{ id: 'c', slug: 'c', title: 'Circle Night', startsAt: '2027-03-31T01:00:00Z', endsAt: '2027-03-31T02:30:00Z', timeZone: TZ }, { id: 'f', slug: 'f', title: 'Full moon circle', startsAt: '2027-04-22T01:00:00Z', timeZone: TZ }, { id: 'old', slug: 'old', title: 'Long ago', startsAt: '2026-01-02T02:00:00Z', timeZone: TZ }] } }
+    const md = { space: { events: [{ id: 'c', slug: 'c', title: 'Circle Night', startsAt: '2027-03-30T18:00:00Z', endsAt: '2027-03-30T19:30:00Z', timeZone: TZ }, { id: 'f', slug: 'f', title: 'Full moon circle', startsAt: '2027-04-21T18:00:00Z', timeZone: TZ }, { id: 'old', slug: 'old', title: 'Long ago', startsAt: '2026-01-01T18:00:00Z', timeZone: TZ }] } }
     const html = renderToStaticMarkup(<WildheartSeasonBandBlock now={now} modules={[{ sign: 'aries', title: 'Rage', theme: 'Anger as life force' }]} beats={[{ letter: 'P', word: 'Presence' }]} gatheringLabel="Circle Night" metadata={md} />)
     expect(html).toContain('data-season="spring"')
     expect(html).toContain('Rage')

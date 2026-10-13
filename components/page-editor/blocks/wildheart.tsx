@@ -21,7 +21,7 @@ import { slugify } from '@/lib/utils'
 import { safeImageUrl } from '@/lib/entity-blocks/block-content'
 import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { dateLabel } from '@/lib/sites/menswork-page'
-import { expandSiteSeries, foldSiteEvent, type SiteEventRow } from '@/lib/sites/site-events'
+import { expandSiteSeries, type SiteEventRow } from '@/lib/sites/site-events'
 import { WildheartNowLine } from '@/components/sites/wildheart-now-line'
 import { WhConstellation, WhGlyph, WhLogoMark, WhMoon, WhMoonPhases, WhOrnament, WhSeal } from '@/components/sites/wildheart-symbols'
 import { WildheartYearJourney, type YearGeometry, type YearJourneyData, type YearStop } from '@/components/sites/wildheart-year-journey'
@@ -58,11 +58,11 @@ const ROWS = new WeakMap<object, Map<number, SpaceEvent[]>>()
 
 /** The Space's own rows from the metadata channel: `space.events` (the upcoming list) and `space.series`
  *  (every live recurring anchor and every cancelled row, components/spaces/space-landing.tsx), every anchor
- *  expanded through the end of the year after `year` so every Circle Night lands on the wheel, and every
- *  start folded into the event's own zone (the Space's standing in), so a date reads as the gathering's
- *  own wall clock, never UTC (LIVE-905, lib/sites/site-events.ts). Cancelled rows never reach a block. */
+ *  expanded through the end of the year after `year` so every Circle Night lands on the wheel (LIVE-905,
+ *  lib/sites/site-events.ts). Every start is the stored wall clock (lib/time/zone.ts), read as it is.
+ *  Cancelled rows never reach a block. */
 function spaceEvents(metadata: Record<string, unknown> | undefined, year: number): SpaceEvent[] {
-  const space = metadata?.space as { events?: unknown; series?: unknown; timeZone?: unknown } | undefined
+  const space = metadata?.space as { events?: unknown; series?: unknown } | undefined
   if (!space) return []
   const hit = ROWS.get(space)?.get(year)
   if (hit) return hit
@@ -73,8 +73,7 @@ function spaceEvents(metadata: Record<string, unknown> | undefined, year: number
     seen.add(e.id)
     rows.push(e)
   }
-  const spaceZone = typeof space.timeZone === 'string' ? space.timeZone : null
-  const out = expandSiteSeries(rows, { through: new Date(Date.UTC(year + 1, 11, 31, 23, 59, 59)), spaceZone }).map((e) => foldSiteEvent(e, spaceZone))
+  const out = expandSiteSeries(rows, { through: new Date(Date.UTC(year + 1, 11, 31, 23, 59, 59)) })
   const byYear = ROWS.get(space) ?? new Map<number, SpaceEvent[]>()
   byYear.set(year, out)
   ROWS.set(space, byYear)

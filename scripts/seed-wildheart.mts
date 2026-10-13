@@ -758,30 +758,19 @@ export function buildPreferences(): Record<string, unknown> {
 }
 
 // ── Time helpers ──────────────────────────────────────────────────────────────────────────────
-/** The UTC offset of `tz` at instant `ms`, in milliseconds (DST-aware, no library). */
-function tzOffsetMs(ms: number): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: TZ, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
-  }).formatToParts(new Date(ms))
-  const g = (k: string) => Number(parts.find((p) => p.type === k)?.value)
-  return Date.UTC(g('year'), g('month') - 1, g('day'), g('hour'), g('minute'), g('second')) - ms
-}
-/** A Pacific wall-clock date + time as a UTC ISO instant. */
+// THE STORED CONVENTION (lib/time/zone.ts, LIVE-905): `starts_at` holds the host's wall clock as UTC
+// PARTS (6:00 PM in Los Angeles is 2026-11-03T18:00:00Z), read in `events.time_zone`. The first seed
+// wrote true instants (`at time zone 'America/Los_Angeles'`), which the site read back as 2:00 AM.
+/** A wall-clock date + time as the stored ISO: the parts kept literally, in UTC. */
 export function ptIso(date: string, time: string): string {
-  const [y, m, d] = date.split('-').map(Number)
-  const [hh, mm] = time.split(':').map(Number)
-  const guess = Date.UTC(y, m - 1, d, hh, mm)
-  let t = guess - tzOffsetMs(guess)
-  const again = tzOffsetMs(t)
-  if (again !== tzOffsetMs(guess)) t = guess - again
-  return new Date(t).toISOString()
+  return `${date}T${time}:00.000Z`
 }
 
 // ── SQL mode ──────────────────────────────────────────────────────────────────────────────────
 const q = (s: string | null | undefined): string => (s === null || s === undefined ? 'null' : `'${s.replace(/'/g, "''")}'`)
 const qj = (v: unknown): string => `${q(JSON.stringify(v))}::jsonb`
 const qarr = (v: string[]): string => `array[${v.map(q).join(', ')}]::text[]`
-const pt = (date: string, time: string) => `(timestamp '${date} ${time}' at time zone '${TZ}')`
+const pt = (date: string, time: string) => `timestamptz '${date} ${time}+00'`
 
 function sqlEventInsert(e: SeedEvent): string {
   const journey = e.journey === 'foundation' ? `(select id from journey_plans where slug = ${q(FOUNDATION.slug)})` : 'null'
@@ -951,7 +940,7 @@ function renderSql(): string {
     '  category, energy_tag, time_zone, cover_image_path, gallery_image_paths, poster_path, theme, details, space_id, host_space_id, domain_id,',
     '  attendance_mode, online_url, venue_name, street, city, region, country, postal_code, geog, hide_address, journey_id, source, is_demo,',
     '  posted_by_profile_id, organizer_name, organizer_contact)',
-    `select a.slug || '-' || d.day, a.id, ${`(d.day || ' ${anchor.start}')::timestamp at time zone '${TZ}'`}, ${`(d.day || ' ${anchor.end}')::timestamp at time zone '${TZ}'`}, 'none', null, null, false,`,
+    `select a.slug || '-' || d.day, a.id, ${`(d.day || ' ${anchor.start}+00')::timestamptz`}, ${`(d.day || ' ${anchor.end}+00')::timestamptz`}, 'none', null, null, false,`,
     '  a.title, a.description, a.host_id, a.scope_id, a.scope_type, a.location, a.visibility, a.status, a.published_at, a.price_cents, a.currency, a.capacity, a.venmo_handle, a.join_mode,',
     '  a.category, a.energy_tag, a.time_zone, a.cover_image_path, a.gallery_image_paths, a.poster_path, a.theme, a.details, a.space_id, a.host_space_id, a.domain_id,',
     '  a.attendance_mode, a.online_url, a.venue_name, a.street, a.city, a.region, a.country, a.postal_code, a.geog, a.hide_address, a.journey_id, a.source, a.is_demo,',
@@ -967,7 +956,7 @@ function renderSql(): string {
     '',
     `-- VERIFY: select count(*) total, count(*) filter (where recurrence_type <> 'none') anchors, count(*) filter (where parent_event_id is not null) occurrences, count(*) filter (where journey_id is not null) foundation, count(*) filter (where slug like 'wildheart-full-moon-%' or slug like 'wildheart-new-moon-%') moons, count(*) filter (where ends_at::date > starts_at::date) multi_day from events where space_id = '${SPACE_ID}';`,
     `-- EXPECT: ${events.length + CIRCLE_NIGHT_OCCURRENCES.length} | 1 | ${CIRCLE_NIGHT_OCCURRENCES.length} | ${WEEKS.length} | ${MOONS.length} | 1`,
-    `-- VERIFY: select slug, recurrence_rule, to_char(starts_at at time zone '${TZ}', 'Dy YYYY-MM-DD HH24:MI') from events where slug = '${anchor.slug}';`,
+    `-- VERIFY: select slug, recurrence_rule, to_char(starts_at at time zone 'UTC', 'Dy YYYY-MM-DD HH24:MI') from events where slug = '${anchor.slug}';`,
     `-- EXPECT: ${anchor.slug} | ${CIRCLE_NIGHT_RULE} | Tue ${CIRCLE_NIGHT_ANCHOR} 18:00`,
     '',
     '-- ============================================================================================',
