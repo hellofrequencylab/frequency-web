@@ -69,13 +69,11 @@ export default async function OnAirPage({
   if (SITE_DESIGN === 'frequency') {
     const initialId =
       defaultPracticeId ?? practices.find((p) => !p.loggedToday)?.id ?? practices[0]?.id ?? ''
-    const initial = practices.find((p) => p.id === initialId)
-    const own = initial?.durationMin && initial.durationMin > 0 ? initial.durationMin : null
     return (
       <MindlessDoor
         session={{ practices, defaultPracticeId, prefs, practicedToday, journeyLegs }}
-        initialMinutes={own ?? prefs.minutes}
-        lockedMinutes={initial?.durationLocked && own ? own : null}
+        initialPracticeId={initialId}
+        rememberedMinutes={prefs.minutes}
       />
     )
   }
