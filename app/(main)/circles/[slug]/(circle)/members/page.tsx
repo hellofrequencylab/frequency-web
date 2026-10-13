@@ -10,7 +10,9 @@ import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { CircleRoleChip } from '@/components/circles/circle-role-chip'
 import { CircleRoleLegend } from '@/components/circles/circle-role-legend'
 import { CircleRolePicker } from '@/components/circles/circle-role-picker'
-import { circleRoleFromStoredValue } from '@/lib/core/circle-roles'
+import { circleRoleFromStoredValue, CIRCLE_ROLE_LABEL } from '@/lib/core/circle-roles'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqMembersPane } from '@/components/frequency/members/circle/members-pane'
 
 // ── THE MEMBERS TAB ─────────────────────────────────────────────────────────────────────────────
 // A BODY, not a shell: the cover, the title, the capacity bar and the tab strip all belong to the
@@ -48,6 +50,51 @@ export default async function CircleMembersPage({
   // "Just the host, so far" is the common case, not an error. Say so plainly and give the one
   // person who can change it the thing that changes it.
   const aloneHere = members.length <= 1
+
+  // THE FREQUENCY ROSTER (templates/members/Circle.html, Members tab). Same roster, same gates, same
+  // role picker and invite door; only the grid changes.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqMembersPane
+        people={members.map((m) => {
+          const isOwner = circle.host?.id === m.profile.id
+          const rung = circleRoleFromStoredValue(m.volunteer_role)
+          return {
+            id: m.id,
+            handle: m.profile.handle,
+            name: m.profile.display_name,
+            avatarUrl: m.profile.avatar_url,
+            role: CIRCLE_ROLE_LABEL[isOwner ? 'host' : rung],
+            control:
+              canSetRoles && !isOwner ? (
+                <CircleRolePicker
+                  circleId={circle.id}
+                  profileId={m.profile.id}
+                  personName={m.profile.display_name}
+                  role={rung}
+                />
+              ) : undefined,
+          }
+        })}
+        seatsLine={circle.member_cap - members.length > 0 ? `${circle.member_cap - members.length} seats open` : 'Full'}
+        empty={
+          aloneHere ? (
+            <div className="empty stack">
+              <span className="h3">{canManage ? 'Just you here so far' : 'This circle is still forming'}</span>
+              <span className="t2">
+                {canManage
+                  ? 'Share the link with the people you want here. Names land on this list as they join.'
+                  : 'The host is the only one so far. Join and you will be one of the first.'}
+              </span>
+              {canManage && <HostInviteButton circleId={circle.id} />}
+            </div>
+          ) : null
+        }
+        legend={!aloneHere && canSetRoles ? <CircleRoleLegend /> : null}
+        youAreHere={!aloneHere && !!myProfileId && members.some((m) => m.profile.id === myProfileId)}
+      />
+    )
+  }
 
   return (
     <section aria-labelledby="circle-members-heading">
