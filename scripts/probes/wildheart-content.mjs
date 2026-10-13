@@ -32,8 +32,8 @@ function strings(fragment) {
   const attrs = /\b(?:alt|aria-label|label|title)="([^"]*)"/g
   for (const m of fragment.matchAll(attrs)) if (!/\{\{/.test(m[1])) out.push(m[1])
   const text = fragment
-    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, ' ')
-    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, ' ')
+    .replace(/<script\b[\s\S]*?<\/script\b[^>]*>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style\b[^>]*>/gi, ' ')
     .replace(/\{\{[^}]*\}\}/g, '|')
     .replace(/<[^>]+>/g, '|')
   out.push(...text.split('|'))
