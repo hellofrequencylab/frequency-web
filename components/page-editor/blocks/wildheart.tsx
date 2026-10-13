@@ -594,8 +594,9 @@ export function WildheartMoonStripBlock({ label, total = 8, done = 0, pad, vis }
 const yearField = { type: 'number', label: 'Year (blank for this year)', min: 1970, max: 2200 } as const
 const layoutOf = (layout: unknown) => ({ pad: padClass(layout as LayoutValue), vis: visClass(layout as LayoutValue) })
 
-/** The theme's own twelve module names: the houses, in the order the year walks them from Capricorn. */
-const HOUSE_MODULES = [...ZODIAC.slice(9), ...ZODIAC.slice(0, 9)].map((z) => ({ sign: z.id, title: z.houseName, theme: `${z.house} · ${z.name}` }))
+/** The theme's own twelve house names, in the order the year walks them from Capricorn. Block content,
+ *  not a navigation catalog: it feeds the SeasonBand's default copy. */
+const ZODIAC_HOUSES = [...ZODIAC.slice(9), ...ZODIAC.slice(0, 9)].map((z) => ({ sign: z.id, title: z.houseName, theme: `${z.house} · ${z.name}` }))
 
 export const wildheartComponents: Record<string, ComponentConfig> = {
   WildheartYearJourney: {
@@ -741,7 +742,7 @@ export const wildheartComponents: Record<string, ComponentConfig> = {
       label: '',
       image: '',
       alt: '',
-      modules: HOUSE_MODULES,
+      modules: ZODIAC_HOUSES,
       gatheringLabel: 'Gathering',
       gatheringNote: '',
       beats: [],
