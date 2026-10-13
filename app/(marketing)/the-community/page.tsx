@@ -10,6 +10,8 @@ import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyPeople } from '@/components/frequency/site/pages/people/frequency-people'
 
 export const revalidate = 3600
 
@@ -118,14 +120,23 @@ export default async function TheCommunityPage() {
   const published = page?.doc ?? null
   const template = getTemplate('the-community')
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
-  const live = await getLiveData(createAdminClient()).catch(() => null)
+  // Under Frequency the body is the coded design page, which reads its own data; the live block
+  // data only feeds the document's blocks, so it is not fetched for a body that will not render it.
+  const live = SITE_DESIGN === 'frequency' ? null : await getLiveData(createAdminClient()).catch(() => null)
   return (
     <>
       {/* Breadcrumb is DERIVED from the route, not from copy, so it is emitted here rather than
           by any block. Everything editorial (Article, FAQPage) travels with the document. */}
       <JsonLd data={breadcrumbSchema([{ name: 'The Community', path: '/the-community' }])} />
       <BlockDocJsonLd data={data} path="/the-community" published={PUBLISHED} updated={latestDay(UPDATED, page?.published_at)} />
-      <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
+      {/* THE DESIGN SWITCH (ADR-1737): under Frequency the body is the design's page (built under
+          components/frequency/site/pages), under DAWN the published document. Build-time constant,
+          so the route stays ISR; metadata and JSON-LD above are the same on both. */}
+      {SITE_DESIGN === 'frequency' ? (
+        <FrequencyPeople />
+      ) : (
+        <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
+      )}
     </>
   )
 }

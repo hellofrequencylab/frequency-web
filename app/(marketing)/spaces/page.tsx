@@ -10,6 +10,8 @@ import { getLiveData } from '@/lib/page-editor/live-data'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencySpaces } from '@/components/frequency/site/pages/spaces/frequency-spaces'
 
 export const revalidate = 3600
 
@@ -82,7 +84,9 @@ export default async function SpacesPage() {
   const published = page?.doc ?? null
   const template = getTemplate('spaces')
   const data: Data = isWellFormed(published) ? published : isWellFormed(template) ? template : EMPTY
-  const live = await getLiveData(createAdminClient()).catch(() => null)
+  // Under Frequency the body is the coded design page, which reads its own data; the live block
+  // data only feeds the document's blocks, so it is not fetched for a body that will not render it.
+  const live = SITE_DESIGN === 'frequency' ? null : await getLiveData(createAdminClient()).catch(() => null)
   return (
     <>
       <JsonLd data={breadcrumbSchema([{ name: 'Spaces', path: '/spaces' }])} />
@@ -95,7 +99,14 @@ export default async function SpacesPage() {
         published={PUBLISHED}
         updated={latestDay(UPDATED, page?.published_at)}
       />
-      <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
+      {/* THE DESIGN SWITCH (ADR-1737): under Frequency the body is the design's page (built under
+          components/frequency/site/pages), under DAWN the published document. Build-time constant,
+          so the route stays ISR; metadata and JSON-LD above are the same on both. */}
+      {SITE_DESIGN === 'frequency' ? (
+        <FrequencySpaces />
+      ) : (
+        <BlockRender config={config} data={data} metadata={live ? { live } : {}} />
+      )}
     </>
   )
 }
