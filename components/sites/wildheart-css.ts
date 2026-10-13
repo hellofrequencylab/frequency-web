@@ -298,7 +298,7 @@ ${W} .wh-wheel-dot[data-kind="moon"]{fill:var(--wh-vellum)}
 ${W} .wh-wheel-dot[data-kind="gathering"],${W} .wh-wheel-dot[data-kind="event"]{fill:var(--wh-season)}
 ${W} .wh-wheel-needle{stroke:var(--wh-symbol-ink);stroke-width:.4;stroke-linecap:round}
 ${W} .wh-wheel-needle-cap{fill:var(--wh-violet);stroke:var(--wh-vellum);stroke-width:.6}
-${W} .wh-wheel-moon{position:absolute;inset:auto;left:50%;top:50%;width:36%;height:36%;transform:translate(-50%,-50%)}
+${W} .wh-wheel svg.wh-wheel-moon{position:absolute;inset:auto;left:50%;top:50%;width:36%;height:36%;transform:translate(-50%,-50%)}
 ${W} .wh-skymap-now{display:flex;flex-direction:column;gap:10px}
 ${W} .wh-skymap-now h3{margin:0;${DISPLAY};font-size:2.2rem;line-height:1.05;color:var(--wh-witch)}
 ${W} .wh-skymap-months{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:16px}
