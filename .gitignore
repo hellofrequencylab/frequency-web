@@ -38,11 +38,12 @@ yarn-error.log*
 
 # editor / local tooling
 # Ignore personal/local Claude state, but TRACK shared project config
-# (settings.json, skills, hooks) so every session inherits the docs automation.
+# (settings.json, skills, hooks, agents) so every session inherits the docs automation.
 .claude/*
 !.claude/settings.json
 !.claude/skills/
 !.claude/hooks/
+!.claude/agents/
 .claude/settings.local.json
 
 # typescript
