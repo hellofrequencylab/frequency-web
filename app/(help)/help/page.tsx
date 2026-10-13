@@ -9,7 +9,6 @@ import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
-import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyHelp } from '@/components/frequency/site/pages/help/frequency-help'
 
 export const metadata: Metadata = {
