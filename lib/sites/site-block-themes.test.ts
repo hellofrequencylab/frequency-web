@@ -34,6 +34,11 @@ const PAGE_OWN_RENDER = new Set([
   'LiveStats', 'LivePosts',
   // The astrology calendar family draws itself in every theme (components/page-editor/blocks/wildheart.tsx).
   'WildheartYearJourney', 'WildheartSkyMap', 'WildheartNowLine',
+  // The Wildheart composition blocks (LIVE-903) draw themselves the same way: ornament, photo frame, moon path
+  // and strip, seal cards, season band, retreat band, mark split. Tokens only, so the other themes get them
+  // in their own palette.
+  'WildheartOrnament', 'WildheartPhoto', 'WildheartMoonPath', 'WildheartMoonStrip', 'WildheartSealCards',
+  'WildheartSeasonBand', 'WildheartRetreatBand', 'WildheartMarkSplit',
 ])
 
 /** Home blocks that keep the Space page's own render (inside the house `.hs-plain` band). */
