@@ -95,17 +95,5 @@
     "Custom titles",
     "Collectible badges",
     "Membership credits"
-  ],
-  "bonus": {
-    "setup_complete": {
-      "label": "Finish Get started",
-      "amount": 50,
-      "note": "Design placeholder. Not in the repo yet; confirm or remove."
-    },
-    "goal_show_up_3": {
-      "label": "Today's goal: show up 3 times",
-      "amount": 35,
-      "note": "Design placeholder. Not in the repo yet; confirm or remove."
-    }
-  }
+  ]
 }

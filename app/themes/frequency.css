@@ -149,6 +149,14 @@
   color-scheme: light;
 }
 
+/* STANDARDIZED (owner, 2026-10-13): the export's Commons muted ink #7C766F reads 4.20:1 on the sand
+   canvas and 4.49:1 on white, under AA's 4.5 for the reading text it carries. #6E6862 is the same hue a
+   step deeper: 5.15 on sand, 4.69 on sunken sand, 5.50 on white. Day Commons only; Stage and Commons
+   at night keep the export's values, which pass. */
+:root[data-design="frequency"]:not(.dark) {
+  --fq-text-muted: #6E6862; /* Commons muted, AA on every Commons surface */
+}
+
 /* Commons at night and Stage are dark rooms: native controls and scrollbars follow. */
 .dark[data-design="frequency"],
 [data-design="frequency"] [data-surface="stage"],

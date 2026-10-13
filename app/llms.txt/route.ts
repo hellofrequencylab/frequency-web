@@ -49,7 +49,7 @@ function takeRateStory(input: PricingGridInput, offerings: Offering[]): string {
   // a lower rate plus the tools that build the list which takes that rate to zero", which is the
   // inverse of docs/CORE-MODEL.md. The reason and the rate are both PLAN_STORY now, one sentence
   // each, shared with /pricing so the corpus and the page cannot argue different models.
-  return `People join free, businesses host free, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} Tips only, at 0%: ${tipsOnly}. ${PLAN_STORY.rate} The network fee applies ONLY to a customer the network introduced, once: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
+  return `People join free, businesses host free, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} Tips only, at 0% plus card processing: ${tipsOnly}. ${PLAN_STORY.rate} The network fee applies ONLY to a customer the network introduced, once: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
 }
 
 /** The plain "the ladder is X, then Y" sentence, priced from the same offerings. It states the price

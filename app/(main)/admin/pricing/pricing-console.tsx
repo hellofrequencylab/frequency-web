@@ -1040,7 +1040,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
 
       <FormSection
         title="Take-rate"
-        description="The share Frequency takes on a sale the network sourced, as a percent. A sale to the seller's own audience is always 0%, and tips carry no fee. Crew member is the rate an individual seller pays; the rest are Space plans, and a plan buys the rate down. Independent Spaces are off the network, so their rate stays 0%."
+        description="The share Frequency takes on a sale the network sourced, as a percent. A sale to the seller's own audience is always 0%, and tips carry no platform fee, only card processing. Crew member is the rate an individual seller pays; the rest are Space plans, and a plan buys the rate down. Independent Spaces are off the network, so their rate stays 0%."
       >
         <TakeRateRow rate={values.take_rate} />
       </FormSection>

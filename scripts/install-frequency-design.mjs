@@ -193,6 +193,22 @@ function main() {
     const from = join(core, part)
     if (existsSync(from)) cpSync(from, join(VENDOR, part), { recursive: true })
   }
+  // Owner, 2026-10-13: economy entries the export marks as design placeholders are not real rules, so
+  // they are removed on install (the two `bonus` entries of the 12:23 export).
+  const econ = join(VENDOR, 'assets/economy/economy.json')
+  if (existsSync(econ)) {
+    const data = JSON.parse(readFileSync(econ, 'utf8'))
+    const drop = (o) => {
+      if (!o || typeof o !== 'object') return
+      for (const [k, v] of Object.entries(o)) {
+        if (v && typeof v === 'object' && /design placeholder/i.test(String(v.note ?? ''))) delete o[k]
+        else drop(v)
+      }
+    }
+    drop(data)
+    for (const [k, v] of Object.entries(data)) if (v && typeof v === 'object' && !Array.isArray(v) && !Object.keys(v).length) delete data[k]
+    writeFileSync(econ, JSON.stringify(data, null, 2) + '\n')
+  }
   writeFileSync(
     join(VENDOR, 'INSTALLED.md'),
     `# Installed Frequency design system\n\n> Status lives in [docs/BUILD-BACKLOG.json](../../docs/BUILD-BACKLOG.json). This folder is the vendored export; do not edit it, re-run the installer.\n\n- Source: \`${basename(input)}\`\n- Installed: ${new Date().toISOString().slice(0, 10)}\n- Not vendored (too large for git): assets/photos, assets/broll, assets/facilities. Keep them with the export.\n- Generated from it: app/themes/frequency/core.css (namespaced to --fq-, scoped to [data-design="frequency"]).\n- Hand-kept beside it: app/themes/frequency.css (the alias layer), lib/theme/design-fonts/frequency.ts (faces).\n`,
@@ -200,8 +216,14 @@ function main() {
 
   // 2. generate
   const read = (f) => (existsSync(join(core, f)) ? readFileSync(join(core, f), 'utf8') : '')
+  // STANDARDIZED (owner, 2026-10-13): the export uses `--text-body` twice, the 16px size in
+  // typography.css and the body COLOUR in themes.css, so the colour overwrote the size and its own
+  // `--type-body` font shorthand broke. Every kit reads it as a colour (28 uses), so the colour keeps
+  // the name and the size becomes `--text-body-size`.
+  const standardize = (f, css) =>
+    f === 'tokens/typography.css' ? css.replace(/--text-body(?=\s*:|\s*\))/g, '--text-body-size') : css
   const tokens = ['tokens/typography.css', 'tokens/colors.css', 'tokens/themes.css', 'tokens/space-motion.css']
-    .map((f) => `/* ── ${f} ── */\n${transform(read(f))}`)
+    .map((f) => `/* ── ${f} ── */\n${transform(standardize(f, read(f)))}`)
     .join('\n\n')
   // Component sheets the export ships beside the core (feature blocks, infographics). Their classes
   // (.fe-*, .ig-*) only apply where a block uses them; scoped and namespaced like the rest.

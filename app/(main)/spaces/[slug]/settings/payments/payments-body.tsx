@@ -194,7 +194,7 @@ async function RateBand({ space }: { space: Space }) {
   if (!sells) {
     return (
       <div className="rounded-card border border-border bg-surface p-5">
-        <p className="text-body font-bold leading-tight text-text">Tips are open, with no fee.</p>
+        <p className="text-body font-bold leading-tight text-text">Tips are open, with no platform fee, plus card processing.</p>
         <p className="mt-2 text-body-sm leading-relaxed text-muted">
           A free Space takes tips from day one. Selling tickets, memberships, donations, your shop and
           booking deposits starts at Business, and your own people stay 0% on every plan.

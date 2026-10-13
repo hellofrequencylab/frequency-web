@@ -75,7 +75,7 @@ export interface FunnelPriceRow {
   kind: 'free' | 'business' | 'nonprofit' | 'resonance'
   /** The plan name shown, e.g. "Free", "Business", "+ Resonance". */
   name: string
-  /** The right-hand descriptor, e.g. "Host free, with tips at 0%", "AI that works
+  /** The right-hand descriptor, e.g. "Host free, with tips at 0% plus card processing", "AI that works
    *  for you". Rates come from the shared RATE map, never typed here. */
   detail: string
   /** Featured row (the one the niche is steered toward). */
@@ -194,8 +194,8 @@ const rates = networkTakeRateFromStored(input.values.take_rate)
 const RATE = {
   business: formatBps(networkTakeRateBpsForPlan('business', rates)),
 }
-/** The free-tier row's honest descriptor: a free Space hosts, and takes tips with no fee. */
-const FREE_ROW_DETAIL = 'Host free, with tips at 0%'
+/** The free-tier row's honest descriptor: a free Space hosts, and takes tips with no platform fee, plus card processing. */
+const FREE_ROW_DETAIL = 'Host free, with tips at 0% plus card processing'
 /** The business row's descriptor: selling opens here, with the introduction fee beside it. */
 const BUSINESS_ROW_DETAIL = `Selling starts here, ${RATE.business} once per introduced customer`
 /** The break-even proof, stated once: the fee only ever applies to a NEW person the network brought. */
@@ -207,13 +207,13 @@ function breakEvenCaption(keep: string): string {
  *  is the point; Business is what a Space takes when it starts charging (ADR-1709). The per-niche
  *  clause names the moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
-  return `People join free, businesses host free, and you pay when you start charging. A free Space runs the whole thing and takes tips with no fee, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
+  return `People join free, businesses host free, and you pay when you start charging. A free Space runs the whole thing and takes tips with no platform fee, plus card processing, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
 }
 
 /** The shared what-does-it-cost FAQ answer, with the per-niche "no network fee on ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Nothing to be here, and nothing to host. A free Space runs your page, contacts, bookings and events, and takes tips with no fee. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop, with ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. There's no network fee on ${keep}, only card processing.${extra} You always see the full number, nothing hidden.`
+  return `Nothing to be here, and nothing to host. A free Space runs your page, contacts, bookings and events, and takes tips with no platform fee, plus card processing. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it opens paid tickets, memberships, bookings, donations and your shop, with ${RATE.business} on a customer the network introduces, once, and 0% on the people already yours. There's no network fee on ${keep}, only card processing.${extra} You always see the full number, nothing hidden.`
 }
 
 

@@ -14,11 +14,11 @@
 --fq-text-h4:18px;--fq-lh-h4:1.25;--fq-track-h4:-0.01em;
 --fq-text-serif-xl:72px;--fq-text-serif-l:40px;--fq-text-serif-m:26px;
 --fq-text-body-l:19px;--fq-lh-body-l:1.55;
---fq-text-body:16px;--fq-lh-body:1.55;
+--fq-text-body-size:16px;--fq-lh-body:1.55;
 --fq-text-body-s:14px;--fq-lh-body-s:1.5;
 --fq-text-meta:13px;--fq-lh-meta:1.4;
 --fq-text-label:11px;--fq-track-label:0.14em;
---fq-type-body:400 var(--fq-text-body)/var(--fq-lh-body) var(--fq-font-sans);
+--fq-type-body:400 var(--fq-text-body-size)/var(--fq-lh-body) var(--fq-font-sans);
 --fq-type-meta:500 var(--fq-text-meta)/var(--fq-lh-meta) var(--fq-font-sans);
 --fq-type-label:500 var(--fq-text-label)/1 var(--fq-font-display);}
 

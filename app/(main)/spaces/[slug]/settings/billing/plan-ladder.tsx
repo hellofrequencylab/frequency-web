@@ -138,7 +138,7 @@ export function PlanLadder({
       </h2>
       {/* The promise, stated plainly (CONTENT-VOICE §1a, brand promise #1 + #4). No guilt, no hype. */}
       <p className="mt-1 text-body-sm leading-relaxed text-muted">
-        Hosting is free, with every tool on launch-sized limits and tips at no fee. Selling starts at
+        Hosting is free, with every tool on launch-sized limits and tips at no platform fee, plus card processing. Selling starts at
         Business. You keep 100% of what you bring in, and we earn only on a customer the network
         introduces, once.
       </p>

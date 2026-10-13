@@ -59,7 +59,7 @@ export const PLAN_STORY = {
   /** The network fee, stated as the consequence it is: an introduction fee, never the reason to take
    *  a plan, and never a buy-down. */
   rate:
-    'The network fee applies only to a customer the network introduced, once, at their first purchase. After that they are your people. Your own audience and your tips are free of it on every plan, and Non Profit pays none at all.',
+    'The network fee applies only to a customer the network introduced, once, at their first purchase. After that they are your people. Your own audience and your tips are free of it on every plan (card processing still applies), and Non Profit pays none at all.',
   /** The meter framing: a full meter stops new writes and takes nothing away. */
   meters:
     'Every business tool is on every Space plan. The free limits are sized for a launch, and a full meter only stops new writes. It never hides, deletes, or locks what is already there.',

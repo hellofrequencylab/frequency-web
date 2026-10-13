@@ -87,7 +87,7 @@ export const COMPARISONS: Comparison[] = [
     theyAreGoodAt:
       'Linktree gives you one clean link for all your other links. Fast to set up, tidy to share. For sending a follower to your stuff, it works.',
     theDifference:
-      'A Spotlight page on Frequency is a personal page too, but it points inward, not out. The goal is not one more click to somewhere else. It is to bring people into the same rooms you are in, so a tap turns into a table you both show up to. Tips on your page are open on any account, with no fee, and when you start charging, a Space on Business takes 0% on the people already yours. What your own work earns is yours.',
+      'A Spotlight page on Frequency is a personal page too, but it points inward, not out. The goal is not one more click to somewhere else. It is to bring people into the same rooms you are in, so a tap turns into a table you both show up to. Tips on your page are open on any account, with no platform fee, plus card processing, and when you start charging, a Space on Business takes 0% on the people already yours. What your own work earns is yours.',
     contrast: [
       { dimension: 'What it is', them: 'A page of links to your other pages.', us: 'A personal page inside a real-world community.' },
       { dimension: 'Where it leads', them: 'Out, to your other profiles.', us: 'In, to Circles and events near you.' },
@@ -242,7 +242,7 @@ export function comparisonCopy(c: Comparison): ComparisonCopy {
       : []),
     {
       q: `Is Frequency free?`,
-      a: `Yes. Frequency is free to join, and it stays free. You can browse Circles and events near you, join one, host your own gathering, and take RSVPs without paying anything. Tips are open on every tier with no fee. Selling tickets and taking payments starts at Business, the plan you take when you start charging, and Frequency takes 0% on your own bookings, always.`,
+      a: `Yes. Frequency is free to join, and it stays free. You can browse Circles and events near you, join one, host your own gathering, and take RSVPs without paying anything. Tips are open on every tier with no platform fee, plus card processing. Selling tickets and taking payments starts at Business, the plan you take when you start charging, and Frequency takes 0% on your own bookings, always.`,
     },
     {
       q: `Who is Frequency for?`,

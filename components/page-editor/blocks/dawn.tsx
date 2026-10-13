@@ -1681,7 +1681,7 @@ export const dawnComponents: Record<string, ComponentConfig> = {
           yearly: '',
           billing: 'Free forever. No card.',
           trial: '',
-          forWho: 'Anyone opening a Space: every business tool with launch-sized limits, and tips with no fee. Selling starts at Business.',
+          forWho: 'Anyone opening a Space: every business tool with launch-sized limits, and tips with no platform fee, plus card processing. Selling starts at Business.',
           rate: '',
           featured: 'featured',
           ctaLabel: 'Start a Space',

@@ -1049,7 +1049,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           name: 'Space', price: 'Free', strikePrice: '', cadence: 'forever',
           priceNote: 'Selling starts at Business, when you are ready to charge.',
           tagline: 'Host free. The whole thing.', highlight: 'normal', badge: 'none',
-          features: [{ text: 'Your page, Circles, Events and contacts' }, { text: 'Tips, with no fee' }],
+          features: [{ text: 'Your page, Circles, Events and contacts' }, { text: 'Tips, with no platform fee, plus card processing' }],
           ctaLabel: 'Start a Space', ctaHref: '/spaces', ctaStyle: 'secondary',
         },
       ],

@@ -55,7 +55,7 @@ page shows exactly how much.
 Open your Space's QR codes settings to download its stock code as PNG or SVG. It opens your public
 Space page and stays fixed. It does not use your editable QR code allowance.
 
-**Tips are open on every tier, with no fee.** They are the money a free Space takes.
+**Tips are open on every tier, with no platform fee, plus card processing.** They are the money a free Space takes.
 
 When an allowance is full, the next new thing you add is what waits. Nothing you made is hidden,
 moved, locked, or deleted, and you can always read and export it.
