@@ -60,7 +60,7 @@ function NewCircleTaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg lift-1">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-card border border-primary-bg bg-primary-bg/40 dark:bg-primary-bg lift-1">
       <Field className="sm:col-span-2" label="Task name *">
         <Input
           type="text"
@@ -104,7 +104,7 @@ function NewCircleTaskForm({
         <button
           type="submit"
           disabled={!name.trim() || isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           <Check className="w-3.5 h-3.5" />
           {isPending ? 'Creating…' : 'Create task'}
@@ -113,7 +113,7 @@ function NewCircleTaskForm({
           type="button"
           onClick={onDone}
           disabled={isPending}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-4 py-2 text-meta font-medium text-muted hover:bg-surface-elevated transition-colors"
         >
           <X className="w-3.5 h-3.5" /> Cancel
         </button>
@@ -145,7 +145,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface lift-1 px-4 py-3 group">
+    <div className="flex items-center gap-3 rounded-card border border-border bg-surface lift-1 px-4 py-3 group">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-body-sm font-medium text-text">{task.name}</span>
@@ -186,7 +186,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
             onClick={handleRelease}
             disabled={isPending}
             title="Release claim"
-            className="p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg disabled:opacity-50 transition-colors"
+            className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg disabled:opacity-50 transition-colors"
             aria-label="Release claim"
           >
             <Undo2 className="w-3.5 h-3.5" />
@@ -196,7 +196,7 @@ function CircleTaskRow({ task }: { task: CircleTask }) {
           onClick={handleDelete}
           disabled={isPending}
           title="Delete task"
-          className="p-1.5 rounded-lg text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
+          className="p-1.5 rounded-control text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors"
           aria-label="Delete task"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -223,7 +223,7 @@ export function CircleTasksPanel({ circles }: { circles: HostedCircleTasks[] }) 
             {composingFor !== circle.id && (
               <button
                 onClick={() => setComposingFor(circle.id)}
-                className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+                className="inline-flex items-center gap-1 rounded-control bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" /> New circle task
               </button>
@@ -235,7 +235,7 @@ export function CircleTasksPanel({ circles }: { circles: HostedCircleTasks[] }) 
               <NewCircleTaskForm circleId={circle.id} onDone={() => setComposingFor(null)} />
             )}
             {circle.tasks.length === 0 && composingFor !== circle.id && (
-              <p className="text-body-sm text-subtle rounded-2xl border border-dashed border-border px-4 py-4 text-center">
+              <p className="text-body-sm text-subtle rounded-card border border-dashed border-border px-4 py-4 text-center">
                 No tasks yet. Create one and a Crew member of this circle can claim it.
               </p>
             )}

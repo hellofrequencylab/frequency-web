@@ -128,7 +128,7 @@ export function PriceInput({
         type="button"
         onClick={onEnquire}
         disabled={disabled || !onEnquire}
-        className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated disabled:opacity-50"
+        className="inline-flex items-center justify-center rounded-control border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated disabled:opacity-50"
       >
         Enquire
       </button>
@@ -154,7 +154,7 @@ export function PriceInput({
                 onClick={() => pickChip(amount)}
                 disabled={disabled}
                 aria-pressed={active}
-                className={`rounded-lg border px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-50 ${
+                className={`rounded-control border px-3 py-1.5 text-body-sm font-semibold transition-colors disabled:opacity-50 ${
                   active
                     ? 'border-primary bg-primary-bg text-text'
                     : 'border-border bg-surface text-text hover:border-border-strong'

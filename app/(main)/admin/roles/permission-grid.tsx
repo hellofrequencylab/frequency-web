@@ -69,7 +69,7 @@ export function PermissionGrid({
   }
 
   return (
-    <section className="mt-8 rounded-2xl border border-border bg-surface lift-1">
+    <section className="mt-8 rounded-card border border-border bg-surface lift-1">
       <div className="flex items-start justify-between gap-3 border-b border-border p-4">
         <div>
           <h2 className="flex items-center gap-2 text-body-sm font-semibold text-text">

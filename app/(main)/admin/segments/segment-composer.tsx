@@ -162,7 +162,7 @@ export function SegmentComposer({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+      <div className="space-y-4 rounded-card border border-border bg-surface p-4 sm:p-5">
         <div className="space-y-1.5">
           <Label htmlFor="seg-name">Name</Label>
           <Input
@@ -184,10 +184,10 @@ export function SegmentComposer({
         </div>
       </div>
 
-      <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+      <div className="space-y-3 rounded-card border border-border bg-surface p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-body-sm font-semibold text-text">Members must match</span>
-          <div className="inline-flex overflow-hidden rounded-lg border border-border">
+          <div className="inline-flex overflow-hidden rounded-control border border-border">
             <button
               type="button"
               onClick={() => setCombinator('all')}
@@ -282,7 +282,7 @@ function PredicateRow({
   const trait = row.type === 'trait' ? traitByKey.get(row.key) : undefined
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-canvas/40 p-2">
+    <div className="flex flex-wrap items-center gap-2 rounded-control border border-border bg-canvas/40 p-2">
       {/* Type: tag membership or a computed trait value */}
       <Select
         aria-label="Rule type"
@@ -342,7 +342,7 @@ function PredicateRow({
         onClick={onRemove}
         disabled={!canRemove}
         aria-label="Remove rule"
-        className="ml-auto rounded-lg p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-40"
+        className="ml-auto rounded-control p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-danger disabled:opacity-40"
       >
         <Trash2 className="h-4 w-4" />
       </button>

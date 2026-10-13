@@ -65,14 +65,14 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
 
   if (editing) {
     return (
-      <div className="space-y-2 rounded-2xl border border-primary-bg bg-surface-elevated/60 p-3">
+      <div className="space-y-2 rounded-card border border-primary-bg bg-surface-elevated/60 p-3">
         <Input aria-label="Channel name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Channel name" disabled={pending} className="px-2.5 py-1.5" />
         <Textarea aria-label="Channel description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Description (optional)" disabled={pending} className="px-2.5 py-1.5 resize-none" />
         <div className="flex items-center gap-2">
           <Button size="sm" type="button" onClick={save} disabled={pending || !name.trim()}>
             <Check className="h-3.5 w-3.5" /> {pending ? 'Saving…' : 'Save'}
           </Button>
-          <button type="button" onClick={() => setEditing(false)} disabled={pending} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface">
+          <button type="button" onClick={() => setEditing(false)} disabled={pending} className="inline-flex items-center gap-1 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface">
             <X className="h-3.5 w-3.5" /> Cancel
           </button>
         </div>
@@ -83,8 +83,8 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
 
   return (
     <div>
-    <div className="group flex items-center gap-3 rounded-2xl bg-surface-elevated/60 px-4 py-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-elevated">
+    <div className="group flex items-center gap-3 rounded-card bg-surface-elevated/60 px-4 py-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-surface-elevated">
         <Hash className="h-4 w-4 text-subtle" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
@@ -98,10 +98,10 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
         {ch.description && <p className="mt-0.5 truncate text-meta text-subtle">{ch.description}</p>}
       </div>
       <div className="flex items-center gap-1">
-        <button type="button" onClick={() => setEditing(true)} title="Edit" aria-label={`Edit ${ch.name}`} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none">
+        <button type="button" onClick={() => setEditing(true)} title="Edit" aria-label={`Edit ${ch.name}`} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none">
           <Pencil className="h-3.5 w-3.5" aria-hidden />
         </button>
-        <button type="button" onClick={() => setConfirmHide(true)} disabled={pending} title="Hide from discovery" aria-label={`Hide ${ch.name}`} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none">
+        <button type="button" onClick={() => setConfirmHide(true)} disabled={pending} title="Hide from discovery" aria-label={`Hide ${ch.name}`} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none">
           <EyeOff className="h-3.5 w-3.5" aria-hidden />
         </button>
       </div>
@@ -126,7 +126,7 @@ function HiddenChannelItem({ ch }: { ch: ChannelRow }) {
   const router = useRouter()
   return (
     <div>
-    <div className="flex items-center gap-3 rounded-2xl bg-surface-elevated/60 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-card bg-surface-elevated/60 px-4 py-3">
       <Hash className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
       <span className="flex-1 truncate text-body-sm text-muted">{ch.name}</span>
       <button
@@ -144,7 +144,7 @@ function HiddenChannelItem({ ch }: { ch: ChannelRow }) {
         }}
         disabled={pending}
         title="Restore to discovery"
-        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-medium text-text transition-colors hover:bg-surface disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-medium text-text transition-colors hover:bg-surface disabled:opacity-50"
       >
         <Eye className="h-3.5 w-3.5" /> Restore
       </button>

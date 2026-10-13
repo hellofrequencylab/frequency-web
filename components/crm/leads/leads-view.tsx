@@ -56,7 +56,7 @@ function doorMeta(door: LeadDoor) {
 /** The lead-grab guide — what the doors do and how an owner makes a lead-grab code. Always on screen. */
 function LeadGrabGuide({ codesHref }: { codesHref: string }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface/50 p-5">
+    <section className="rounded-card border border-border bg-surface/50 p-5">
       <SectionHeader title="How lead-grabs work" />
       <p className="text-body-sm text-muted">
         A lead-grab turns a scan or a sign-up into a person in your CRM, with the door they came through kept

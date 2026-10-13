@@ -121,7 +121,7 @@ function EngagementSkeleton() {
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/70" />
+          <div key={i} className="h-20 animate-pulse rounded-card bg-surface-elevated/70" />
         ))}
       </div>
       <TableSkeleton rows={6} cols={3} />

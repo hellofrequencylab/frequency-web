@@ -52,7 +52,7 @@ export function DemoOverview({
       )}
 
       {/* Global visibility switch */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-surface p-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-surface p-5">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <StatusChip tone={on ? 'success' : 'neutral'} size="sm">

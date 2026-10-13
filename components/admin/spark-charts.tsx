@@ -99,7 +99,7 @@ export function ChartCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4">
+    <div className="flex h-full flex-col rounded-card border border-border bg-surface p-4">
       <div className="flex items-baseline justify-between gap-2">
         <p className="eyebrow text-subtle">{title}</p>
         {delta && <p className="text-meta font-semibold text-success">{delta}</p>}

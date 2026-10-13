@@ -143,7 +143,7 @@ function DispatchForm({
               key={t}
               type="button"
               onClick={() => setDispatchType(t)}
-              className={`px-3 py-1.5 rounded-lg text-meta font-semibold border transition-colors ${
+              className={`px-3 py-1.5 rounded-control text-meta font-semibold border transition-colors ${
                 dispatchType === t
                   ? 'border-primary bg-primary text-on-primary'
                   : 'border-border bg-surface text-text hover:border-primary'
@@ -168,7 +168,7 @@ function DispatchForm({
           </button>
         </div>
         {preview ? (
-          <div className="min-h-[160px] rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-text prose-preview">
+          <div className="min-h-[160px] rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-text prose-preview">
             <MarkdownPreview text={body} />
           </div>
         ) : (
@@ -451,7 +451,7 @@ export function DispatchesClient({
                     <button
                       onClick={() => handlePublish(d.id)}
                       disabled={isPending}
-                      className="p-1.5 rounded-lg text-subtle hover:text-success hover:bg-success-bg dark:hover:bg-success-bg/30 disabled:opacity-50 transition-colors"
+                      className="p-1.5 rounded-control text-subtle hover:text-success hover:bg-success-bg dark:hover:bg-success-bg/30 disabled:opacity-50 transition-colors"
                       aria-label="Publish"
                       title="Publish"
                     >
@@ -461,7 +461,7 @@ export function DispatchesClient({
                     <button
                       onClick={() => handleUnpublish(d.id)}
                       disabled={isPending}
-                      className="p-1.5 rounded-lg text-subtle hover:text-warning hover:bg-warning-bg dark:hover:bg-warning-bg/30 disabled:opacity-50 transition-colors"
+                      className="p-1.5 rounded-control text-subtle hover:text-warning hover:bg-warning-bg dark:hover:bg-warning-bg/30 disabled:opacity-50 transition-colors"
                       aria-label="Unpublish"
                       title="Unpublish"
                     >
@@ -470,7 +470,7 @@ export function DispatchesClient({
                   )}
                   <button
                     onClick={() => setEditingId(d.id)}
-                    className="p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors"
+                    className="p-1.5 rounded-control text-subtle hover:text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg transition-colors"
                     aria-label="Edit"
                     title="Edit"
                   >
@@ -479,7 +479,7 @@ export function DispatchesClient({
                   <button
                     onClick={() => setConfirmDelete(d)}
                     disabled={isPending}
-                    className="p-1.5 rounded-lg text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors motion-reduce:transition-none"
+                    className="p-1.5 rounded-control text-subtle hover:text-danger hover:bg-danger-bg disabled:opacity-50 transition-colors motion-reduce:transition-none"
                     aria-label="Delete"
                     title="Delete"
                   >

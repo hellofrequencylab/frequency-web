@@ -33,7 +33,7 @@ export function RelatedAreas({
           <Link
             key={g.key}
             href={g.href}
-            className="group flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-primary/40 hover:bg-surface-elevated motion-reduce:transition-none"
+            className="group flex items-start gap-3 rounded-card border border-border bg-surface p-4 transition-colors hover:border-primary/40 hover:bg-surface-elevated motion-reduce:transition-none"
           >
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
               <g.Icon className="h-4 w-4" aria-hidden />

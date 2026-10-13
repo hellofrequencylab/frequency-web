@@ -148,13 +148,13 @@ export function SpaceLifecyclePanel({
   return (
     <div className="space-y-4">
       {error && (
-        <p className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
+        <p className="rounded-control bg-danger-bg px-3 py-2 text-body-sm font-medium text-danger" role="alert">
           {error}
         </p>
       )}
 
       {/* Lifecycle */}
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-body-sm font-semibold text-text">Lifecycle</h3>
@@ -183,7 +183,7 @@ export function SpaceLifecyclePanel({
       </div>
 
       {/* Ownership */}
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-body-sm font-semibold text-text">Ownership</h3>
@@ -222,7 +222,7 @@ export function SpaceLifecyclePanel({
         className="max-w-md"
       >
         {lifecycleConfirm && (
-          <div className="rounded-2xl border border-border bg-surface p-6 lift-1">
+          <div className="rounded-card border border-border bg-surface p-6 lift-1">
             <div className="flex items-start gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning-bg text-warning">
                 <AlertTriangle className="h-5 w-5" aria-hidden />
@@ -271,7 +271,7 @@ export function SpaceLifecyclePanel({
         ariaLabel="Transfer ownership"
         className="max-w-md"
       >
-        <div className="rounded-2xl border border-border bg-surface p-6 lift-1">
+        <div className="rounded-card border border-border bg-surface p-6 lift-1">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
               <ArrowLeftRight className="h-5 w-5" aria-hidden />
@@ -306,7 +306,7 @@ export function SpaceLifecyclePanel({
           </div>
 
           {selected && (
-            <p className="mt-3 rounded-lg bg-warning-bg px-3 py-2 text-meta font-medium text-warning">
+            <p className="mt-3 rounded-control bg-warning-bg px-3 py-2 text-meta font-medium text-warning">
               Ownership of {spaceName} will move to {selected.name}. This is recorded in the audit log.
             </p>
           )}

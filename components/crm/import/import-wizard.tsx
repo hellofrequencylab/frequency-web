@@ -31,7 +31,7 @@ import type { ManagedSpace } from '@/lib/spaces/managed'
 import { Button } from '@/components/ui/button'
 
 const input =
-  'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
+  'w-full rounded-control border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
 
 /** Human labels for the target fields (the dropdown + review copy). */
 const FIELD_LABEL: Record<MappingChoice, string> = {
@@ -435,7 +435,7 @@ export function ImportWizard({
         ))}
       </ol>
 
-      {banner && <p className={`rounded-lg border px-3 py-2 text-body-sm ${bannerClass}`}>{banner.text}</p>}
+      {banner && <p className={`rounded-control border px-3 py-2 text-body-sm ${bannerClass}`}>{banner.text}</p>}
 
       {step === 'upload' && (
         <div className="space-y-4">
@@ -445,7 +445,7 @@ export function ImportWizard({
                    Space), a Select that names itself, or an empty-state line. */}
               <p className="mb-1 block text-meta font-medium text-muted">Import into</p>
               {lockedSpace ? (
-                <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-body-sm font-medium text-text">{lockedSpace.name}</p>
+                <p className="rounded-control border border-border bg-surface-elevated/40 px-3 py-2 text-body-sm font-medium text-text">{lockedSpace.name}</p>
               ) : spaces.length ? (
                 <Select aria-label="Import into" value={spaceId} onChange={(e) => setSpaceId(e.target.value)}>
                   {spaces.map((s) => (
@@ -460,7 +460,7 @@ export function ImportWizard({
           )}
 
           {targetKind === 'platform' && (
-            <p className="rounded-lg border border-border bg-surface-elevated/40 px-3 py-2 text-meta text-subtle">
+            <p className="rounded-control border border-border bg-surface-elevated/40 px-3 py-2 text-meta text-subtle">
               These contacts land in Frequency’s own list. Everyone comes in as a lead, never auto-subscribed. No Space is involved.
             </p>
           )}
@@ -470,7 +470,7 @@ export function ImportWizard({
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            className={`rounded-2xl border-2 border-dashed transition-colors ${dragging ? 'border-primary bg-primary-bg' : 'border-border'}`}
+            className={`rounded-card border-2 border-dashed transition-colors ${dragging ? 'border-primary bg-primary-bg' : 'border-border'}`}
           >
             <EmptyState
               variant="first-use"
@@ -598,7 +598,7 @@ export function ImportWizard({
               type="button"
               onClick={askVera}
               disabled={busy}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border-strong px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-control border border-border-strong px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
             >
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-primary-strong" />}
               Ask Vera to match them

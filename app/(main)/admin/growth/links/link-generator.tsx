@@ -165,7 +165,7 @@ export function LinkGenerator() {
           <div className="space-y-1.5">
             {/* Captions a read-only <code> preview, not a control, so <label> is wrong here. */}
             <p className={labelClasses}>Tracked destination</p>
-            <div className="flex items-start gap-2 rounded-lg border border-border bg-surface-elevated/60 p-3">
+            <div className="flex items-start gap-2 rounded-control border border-border bg-surface-elevated/60 p-3">
               <code className="min-w-0 flex-1 break-all text-2xs leading-relaxed text-muted">{trackedPreview}</code>
               <button
                 type="button"
@@ -191,7 +191,7 @@ export function LinkGenerator() {
 
       {/* ── Preview / result ────────────────────────────────────────────────── */}
       <aside className="space-y-4">
-        <div className="rounded-2xl border border-border bg-surface p-4">
+        <div className="rounded-card border border-border bg-surface p-4">
           <p className="flex items-center gap-1.5 text-meta font-medium text-muted">
             <QrCode className="h-3.5 w-3.5" /> Preview
           </p>
@@ -209,7 +209,7 @@ export function LinkGenerator() {
           {result && (
             <div className="mt-4 space-y-2">
               <p className="text-2xs uppercase tracking-wide text-muted">Short link</p>
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated/60 p-2.5">
+              <div className="flex items-center gap-2 rounded-control border border-border bg-surface-elevated/60 p-2.5">
                 <code className="min-w-0 flex-1 truncate text-meta text-text">{result.shortUrl}</code>
                 <button
                   type="button"

@@ -41,7 +41,7 @@ export function SubtitleEditor() {
   }, [pathname])
 
   if (loading) {
-    return <div className="h-28 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+    return <div className="h-28 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
   // Not an editable route, or the caller can't edit it.
   if (!editable) return null
@@ -61,7 +61,7 @@ export function SubtitleEditor() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <form onSubmit={submit} className="space-y-3">
         <label className="block space-y-1">
           <span className={labelClasses}>Subtitle</span>
@@ -85,7 +85,7 @@ export function SubtitleEditor() {
           <button
             type="submit"
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? 'Saving…' : 'Save'}
           </button>

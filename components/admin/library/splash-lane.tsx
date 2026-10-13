@@ -103,7 +103,7 @@ export function SplashLane({
   const empty = (showTemplates ? templates.length : 0) + (showLive ? liveRows.length : 0) === 0
   if (empty) {
     return (
-      <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
+      <div className="rounded-card border border-dashed border-border-strong px-6 py-16 text-center">
         <LayoutTemplate className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
         <p className="text-body text-muted">No splashes match.</p>
         <p className="mt-1 text-body-sm text-subtle">Try clearing the search or picking another folder.</p>
@@ -118,7 +118,7 @@ export function SplashLane({
         <section>
           <h3 className="mb-3 font-display text-body-sm uppercase tracking-wide text-subtle">Templates</h3>
           {view === 'list' ? (
-            <div className="overflow-hidden rounded-2xl border border-border">
+            <div className="overflow-hidden rounded-card border border-border">
               {templates.map((t) => (
                 <button
                   key={t.id}
@@ -126,7 +126,7 @@ export function SplashLane({
                   onClick={() => setOpenId(t.id)}
                   className="flex w-full items-center gap-3 border-b border-border px-3 py-2 text-left last:border-b-0 hover:bg-surface-elevated"
                 >
-                  <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">{t.preview}</span>
+                  <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-control bg-surface-elevated">{t.preview}</span>
                   <span className="min-w-0 flex-1 truncate text-body-sm text-text" title={t.title}>{t.title}</span>
                   <KindBadge kind={t.kind} />
                 </button>
@@ -137,7 +137,7 @@ export function SplashLane({
               {templates.map((t) => (
                 <div
                   key={t.id}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-shadow hover:shadow-pop"
+                  className="group relative overflow-hidden rounded-card border border-border bg-surface lift-1 transition-shadow hover:shadow-pop"
                 >
                   <button type="button" onClick={() => setOpenId(t.id)} className="block w-full text-left">
                     <span className="block aspect-[4/3] overflow-hidden bg-surface-elevated transition-transform duration-200 group-hover:scale-[1.02]">
@@ -164,7 +164,7 @@ export function SplashLane({
       {showLive && liveRows.length > 0 && (
         <section>
           <h3 className="mb-3 font-display text-body-sm uppercase tracking-wide text-subtle">Live splashes</h3>
-          <div className="overflow-hidden rounded-2xl border border-border">
+          <div className="overflow-hidden rounded-card border border-border">
             {liveRows.map((l) => {
               const { label: sourceLabel, Icon: SourceIcon } = SOURCE_META[l.source]
               const when = fmtDate(l.schedule)
@@ -243,7 +243,7 @@ function TemplateDrawer({ template, onClose }: { template: SplashTemplateCard; o
         </div>
 
         <div className="space-y-5 p-5">
-          <div className="flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-elevated">
+          <div className="flex h-56 items-center justify-center overflow-hidden rounded-card border border-border bg-surface-elevated">
             {template.preview}
           </div>
 
@@ -259,7 +259,7 @@ function TemplateDrawer({ template, onClose }: { template: SplashTemplateCard; o
           </div>
 
           {/* Source — code is the source of truth; the Loom indexes it read-only (§10). */}
-          <div className="rounded-2xl border border-border bg-surface-elevated/50 p-3">
+          <div className="rounded-card border border-border bg-surface-elevated/50 p-3">
             <p className="flex items-center gap-1.5 text-body-sm font-semibold text-text">
               <GitBranch className="h-4 w-4 text-primary-strong" aria-hidden /> Source: code
             </p>

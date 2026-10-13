@@ -47,7 +47,7 @@ export function QrGenerator({
   const warnings = useMemo(() => scannabilityWarnings(style), [style])
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-surface lift-1">
+    <section className="overflow-hidden rounded-card border border-border bg-surface lift-1">
       {/* Header */}
       <div className="border-b border-border px-5 py-4">
         <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
@@ -88,7 +88,7 @@ export function QrGenerator({
               ))}
             </div>
             {warnings.length > 0 && (
-              <div className="rounded-lg border border-warning/40 bg-warning-bg/50 p-2">
+              <div className="rounded-control border border-warning/40 bg-warning-bg/50 p-2">
                 <p className="flex items-center gap-1 text-2xs font-semibold text-warning">
                   <TriangleAlert className="h-3 w-3" /> Scannability
                 </p>
@@ -103,7 +103,7 @@ export function QrGenerator({
 
           <div className="space-y-2">
             <p className="text-2xs font-semibold uppercase tracking-wider text-muted">Type</p>
-            <div className="inline-flex w-full rounded-lg border border-border bg-canvas p-0.5">
+            <div className="inline-flex w-full rounded-control border border-border bg-canvas p-0.5">
               <Seg active={kind === 'link'} onClick={() => setKind('link')} Icon={Link2} label="Dynamic link" />
               <Seg active={kind === 'node'} onClick={() => setKind('node')} Icon={MapPin} label="Check-in code" />
             </div>

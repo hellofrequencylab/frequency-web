@@ -60,7 +60,7 @@ export function DealForm({ stages, deal }: { stages: CrmStage[]; deal?: CrmDeal 
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 lift-1">
+    <div className="space-y-4 rounded-card border border-border bg-surface p-5 lift-1">
       <label className="block">
         <span className={label}>Title *</span>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Partner: Encinitas Yoga" autoFocus />
@@ -97,7 +97,7 @@ export function DealForm({ stages, deal }: { stages: CrmStage[]; deal?: CrmDeal 
       {error && <p className="text-meta text-danger">{error}</p>}
 
       <div className="flex items-center justify-end gap-2 pt-1">
-        <button type="button" onClick={() => router.push('/admin/growth?tab=crm')} className="rounded-lg px-4 py-2 text-body-sm font-medium text-subtle hover:text-text">
+        <button type="button" onClick={() => router.push('/admin/growth?tab=crm')} className="rounded-control px-4 py-2 text-body-sm font-medium text-subtle hover:text-text">
           Cancel
         </button>
         <Button

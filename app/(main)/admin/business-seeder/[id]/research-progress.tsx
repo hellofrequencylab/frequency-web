@@ -72,7 +72,7 @@ export function ResearchProgress({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="rounded-2xl border border-border bg-surface p-6 lift-1 sm:p-8">
+      <div className="rounded-card border border-border bg-surface p-6 lift-1 sm:p-8">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-body-sm font-semibold text-text">
             <RefreshCw className="h-4 w-4 animate-spin text-primary-strong" aria-hidden />
@@ -122,7 +122,7 @@ export function ResearchProgress({
         </ol>
 
         {slow && (
-          <p className="mt-5 rounded-lg bg-warning-bg px-3 py-2 text-meta text-warning" role="status">
+          <p className="mt-5 rounded-control bg-warning-bg px-3 py-2 text-meta text-warning" role="status">
             This is taking longer than usual. It will still finish in the background, or you can re-run it
             from the Business Seeder list.
           </p>
@@ -137,7 +137,7 @@ export function ResearchProgress({
           <button
             type="button"
             onClick={() => router.refresh()}
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
           >
             <RefreshCw className="h-3.5 w-3.5" aria-hidden />
             Check now

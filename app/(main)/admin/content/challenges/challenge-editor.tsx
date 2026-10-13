@@ -331,7 +331,7 @@ export function ChallengeEditor({
   journeys: ExpressionJourneyOption[]
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+    <div className="overflow-hidden rounded-card border border-border bg-surface">
       <div className="divide-y divide-border/50">
         {challenges.map((c, i) => (
           <ChallengeListItem key={c.id} challenge={c} journeys={journeys} index={i} total={challenges.length} />
@@ -404,7 +404,7 @@ export function ChallengeCreateForm({ journeys, onCreated }: { journeys: Express
     <div>
       <fieldset className="mb-4">
         <legend className="sr-only">Challenge type</legend>
-        <div className="inline-flex rounded-lg border border-border bg-canvas p-0.5">
+        <div className="inline-flex rounded-control border border-border bg-canvas p-0.5">
           {(
             [
               { value: 'season', label: 'Season-wide challenge' },

@@ -78,7 +78,7 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
       />
 
       {error && (
-        <p role="alert" className="rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger">
+        <p role="alert" className="rounded-control bg-danger-bg px-3 py-2 text-body-sm text-danger">
           {error}
         </p>
       )}
@@ -109,7 +109,7 @@ export function TasksWorkspace({ tasks, viewerId }: { tasks: CrmTask[]; viewerId
           {visible.map((t) => (
             <li
               key={t.id}
-              className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface p-3"
+              className="flex items-start justify-between gap-3 rounded-control border border-border bg-surface p-3"
             >
               <div className="min-w-0">
                 <p className={`text-body-sm font-medium ${t.status === 'done' ? 'text-muted line-through' : 'text-text'}`}>
@@ -221,7 +221,7 @@ function TaskCreateForm({
         e.preventDefault()
         if (!saving && !pending) submit()
       }}
-      className="space-y-2 rounded-lg border border-border bg-surface p-3"
+      className="space-y-2 rounded-control border border-border bg-surface p-3"
     >
       <Input
         autoFocus

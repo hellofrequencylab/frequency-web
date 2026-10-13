@@ -46,7 +46,7 @@ export function ReseedSpaceSearch() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
+    <div className="rounded-card border border-border bg-surface p-5">
       <form
         className="flex flex-wrap items-center gap-2"
         onSubmit={(e) => {

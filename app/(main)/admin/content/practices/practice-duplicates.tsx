@@ -49,7 +49,7 @@ function DuplicateRow({
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2">
+    <div className="flex items-center justify-between gap-3 rounded-control border border-border bg-surface px-3 py-2">
       <span className="min-w-0 truncate text-body-sm font-medium text-text">{candidate.title}</span>
       <div className="flex shrink-0 items-center gap-2">
         <span className="text-meta tabular-nums text-muted">{Math.round(candidate.similarity * 100)}% alike</span>
@@ -67,7 +67,7 @@ function DuplicateRow({
           onClick={() => setOpen(true)}
           title={`Merge ${candidate.title} into ${canonicalTitle}`}
           aria-label={`Merge ${candidate.title} into the one you are viewing`}
-          className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated disabled:opacity-50"
         >
           <GitMerge className="h-3.5 w-3.5" aria-hidden /> Merge in
         </button>
@@ -124,7 +124,7 @@ export function PracticeDuplicatesButton({ id, title }: { id: string; title: str
       </button>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="Near-duplicates" className="max-w-lg">
-        <div className="rounded-2xl border border-border bg-surface p-5 shadow-pop">
+        <div className="rounded-card border border-border bg-surface p-5 shadow-pop">
         <h2 className="text-body font-bold text-text">Near-duplicates</h2>
         <p className="mt-1 text-body-sm text-muted">
           Practices that read close to <span className="font-medium text-text">{title}</span>. Merge
@@ -162,7 +162,7 @@ export function PracticeDuplicatesButton({ id, title }: { id: string; title: str
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+            className="inline-flex items-center rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
           >
             Close
           </button>

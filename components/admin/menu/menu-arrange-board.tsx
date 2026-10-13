@@ -147,7 +147,7 @@ export function MenuArrangeBoard({
       </nav>
 
       {error && (
-        <p className="mb-4 rounded-lg border border-border bg-surface-elevated px-3 py-2 text-body-sm text-warning">{error}</p>
+        <p className="mb-4 rounded-control border border-border bg-surface-elevated px-3 py-2 text-body-sm text-warning">{error}</p>
       )}
 
       {loading ? (
@@ -173,7 +173,7 @@ export function MenuArrangeBoard({
                     onDragLeave={() => setOverId((cur) => (cur === box.id ? null : cur))}
                     onDrop={(e) => handleDropOnBox(box.id, e)}
                     className={
-                      'rounded-2xl border bg-surface p-3 lift-1 transition-colors ' +
+                      'rounded-card border bg-surface p-3 lift-1 transition-colors ' +
                       (isOver ? 'border-primary ring-2 ring-primary/30' : 'border-border')
                     }
                   >
@@ -207,14 +207,14 @@ export function MenuArrangeBoard({
                     </div>
                     <ul className="space-y-1">
                       {box.items.length === 0 ? (
-                        <li className="rounded-lg border border-dashed border-border px-2 py-2 text-meta text-subtle">
+                        <li className="rounded-control border border-dashed border-border px-2 py-2 text-meta text-subtle">
                           Empty group. Drop a page here
                         </li>
                       ) : (
                         box.items.map((it) => (
                           <li
                             key={it.id}
-                            className="flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-body-sm"
+                            className="flex items-center justify-between gap-2 rounded-control px-2 py-1 text-body-sm"
                           >
                             <span className={it.mode === 'hidden' ? 'truncate text-subtle line-through' : 'truncate text-text'}>
                               {it.label}
@@ -235,14 +235,14 @@ export function MenuArrangeBoard({
 
           {/* The palette — unlinked pages */}
           <aside className="w-full shrink-0 lg:w-64">
-            <div className="rounded-2xl border border-border bg-surface-elevated p-3">
+            <div className="rounded-card border border-border bg-surface-elevated p-3">
               <div className="mb-2 flex items-center gap-1.5">
                 <Inbox className="h-4 w-4 text-muted" aria-hidden />
                 <h3 className="text-body-sm font-semibold text-text">Unlinked pages</h3>
               </div>
               <p className="mb-3 text-meta text-subtle">Pages not in this menu. Drag one onto a box to add it.</p>
               {palette.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-border px-2 py-3 text-center text-meta text-subtle">
+                <p className="rounded-control border border-dashed border-border px-2 py-3 text-center text-meta text-subtle">
                   Every page is placed. 🎉
                 </p>
               ) : (
@@ -260,7 +260,7 @@ export function MenuArrangeBoard({
                         dragKind.current = null
                         setOverId(null)
                       }}
-                      className="flex cursor-grab items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 text-body-sm text-text active:cursor-grabbing hover:border-primary"
+                      className="flex cursor-grab items-center gap-1.5 rounded-control border border-border bg-surface px-2 py-1.5 text-body-sm text-text active:cursor-grabbing hover:border-primary"
                       title={p.href}
                     >
                       <Plus className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />

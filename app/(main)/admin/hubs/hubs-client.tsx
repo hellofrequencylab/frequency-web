@@ -175,7 +175,7 @@ export function HubsClient({ hubs, nexuses, guides, initialEditId = null }: { hu
           />
         )}
         rowActions={(h) => (
-          <button onClick={() => setEditingId(h.id)} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
+          <button onClick={() => setEditingId(h.id)} className="rounded-control p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
             <Pencil className="h-3.5 w-3.5" aria-hidden />
           </button>
         )}

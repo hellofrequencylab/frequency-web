@@ -45,7 +45,7 @@ export default async function NonprofitVerificationsPage() {
         ) : (
           <ul className="space-y-3">
             {pending.map((v) => (
-              <li key={v.id} className="rounded-2xl border border-border bg-surface p-5 lift-1">
+              <li key={v.id} className="rounded-card border border-border bg-surface p-5 lift-1">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 space-y-1">
                     <p className="text-body-sm font-bold text-text">{v.orgLegalName || 'No legal name given'}</p>

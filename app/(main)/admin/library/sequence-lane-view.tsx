@@ -79,14 +79,14 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
               placeholder="Search flows…"
               className="min-w-[180px] flex-1 px-3 py-2 sm:max-w-xs sm:flex-none"
             />
-            <button type="submit" className="rounded-2xl border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated">
+            <button type="submit" className="rounded-card border border-border-strong px-4 py-2 text-body-sm font-semibold text-text hover:bg-surface-elevated">
               Apply
             </button>
           </form>
         </div>
 
         {page.items.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
+          <div className="rounded-card border border-dashed border-border-strong px-6 py-16 text-center">
             <Route className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
             <p className="text-body text-muted">{q ? 'No flows match.' : 'No managed onboarding flows yet.'}</p>
             <p className="mt-1 text-body-sm text-subtle">
@@ -94,7 +94,7 @@ export async function SequenceLaneView({ q = '', editId = '' }: { q?: string; ed
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
+          <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">
             {page.items.map((item) => {
               const def = parseSequenceDef(item.config)
               const steps = def?.steps.length ?? 0

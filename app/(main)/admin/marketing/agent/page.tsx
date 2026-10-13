@@ -45,7 +45,7 @@ export default async function AgentPage() {
           {proposed.map((a) => {
             const isDraft = a.kind === 'content_draft'
             return (
-            <div key={a.id} className="rounded-2xl border border-border bg-surface lift-1 p-4">
+            <div key={a.id} className="rounded-card border border-border bg-surface lift-1 p-4">
               {isDraft ? (
                 <>
                   <p className="eyebrow text-primary-strong">
@@ -65,12 +65,12 @@ export default async function AgentPage() {
               {a.rationale && <p className="text-meta text-muted mt-1.5">Why: {a.rationale}</p>}
               <div className="flex items-center gap-2 mt-3">
                 <form action={approveAction.bind(null, a.id)}>
-                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg text-success text-meta font-semibold px-3 py-1.5 hover:opacity-80 transition-opacity">
+                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-control bg-success-bg text-success text-meta font-semibold px-3 py-1.5 hover:opacity-80 transition-opacity">
                     <Check className="w-3.5 h-3.5" /> {isDraft ? 'Approve (ready to post)' : 'Approve & send'}
                   </button>
                 </form>
                 <form action={dismissAction.bind(null, a.id)}>
-                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-lg bg-surface-elevated text-muted text-meta font-medium px-3 py-1.5 hover:text-danger transition-colors">
+                  <button type="submit" className="inline-flex items-center gap-1.5 rounded-control bg-surface-elevated text-muted text-meta font-medium px-3 py-1.5 hover:text-danger transition-colors">
                     <X className="w-3.5 h-3.5" /> Dismiss
                   </button>
                 </form>
@@ -86,7 +86,7 @@ export default async function AgentPage() {
         {executed.length === 0 ? (
           <EmptyState variant="first-use" title="Nothing executed yet." description="Approved actions show up here once they run through the spine." />
         ) : (
-          <div className="rounded-2xl border border-border bg-surface lift-1 divide-y divide-border/60 max-w-2xl">
+          <div className="rounded-card border border-border bg-surface lift-1 divide-y divide-border/60 max-w-2xl">
             {executed.slice(0, 20).map((a) => (
               <div key={a.id} className="px-4 py-2.5 text-body-sm text-muted">
                 {String(a.payload.subject ?? a.kind)} → {String(a.payload.email ?? '')}

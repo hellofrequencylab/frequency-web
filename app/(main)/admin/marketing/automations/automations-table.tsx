@@ -58,7 +58,7 @@ function DeleteCell({ rule }: { rule: AutomationRule }) {
           })
         }}
         aria-label="Delete rule"
-        className="rounded-lg p-1.5 text-subtle hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+        className="rounded-control p-1.5 text-subtle hover:bg-danger-bg hover:text-danger disabled:opacity-50"
       >
         <Trash2 className="h-4 w-4" />
       </button>
@@ -141,7 +141,7 @@ export function AutomationsTable({
             type="button"
             onClick={() => setEditingId((id) => (id === r.id ? null : r.id))}
             aria-label="Edit rule"
-            className="rounded-lg p-1.5 text-subtle hover:bg-surface-elevated hover:text-text"
+            className="rounded-control p-1.5 text-subtle hover:bg-surface-elevated hover:text-text"
           >
             <Pencil className="h-4 w-4" />
           </button>

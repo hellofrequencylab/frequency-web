@@ -133,7 +133,7 @@ function ItemForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-border px-4 py-2 text-body-sm font-medium text-muted hover:bg-surface-elevated transition-colors"
+          className="rounded-control border border-border px-4 py-2 text-body-sm font-medium text-muted hover:bg-surface-elevated transition-colors"
         >
           Cancel
         </button>
@@ -172,7 +172,7 @@ export function NewItemButton() {
       </Button>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel="New store item" className="max-w-lg">
-          <div className="w-full rounded-2xl border border-border bg-surface lift-3">
+          <div className="w-full rounded-card border border-border bg-surface lift-3">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="text-body-sm font-semibold text-text">New store item</h2>
               <button
@@ -232,7 +232,7 @@ export function EditItemButton({ item }: { item: StoreItem }) {
       </button>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel={`Edit ${item.name}`} className="max-w-lg">
-          <div className="w-full rounded-2xl border border-border bg-surface lift-3">
+          <div className="w-full rounded-card border border-border bg-surface lift-3">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="text-body-sm font-semibold text-text">Edit {item.name}</h2>
               <button

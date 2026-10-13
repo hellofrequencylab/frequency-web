@@ -113,7 +113,7 @@ export function ConversationWorkspace({
             <Link
               key={s.key}
               href={hrefWith(basePath, { status }, { scope: s.key })}
-              className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${
+              className={`rounded-control px-2.5 py-1 text-meta font-semibold transition-colors ${
                 scope === s.key ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:bg-surface-elevated'
               }`}
             >
@@ -123,7 +123,7 @@ export function ConversationWorkspace({
         {showScopes && <span className="mx-1 h-4 w-px bg-border" aria-hidden />}
         <Link
           href={hrefWith(basePath, { scope }, { status: undefined })}
-          className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${
+          className={`rounded-control px-2.5 py-1 text-meta font-semibold transition-colors ${
             !status ? 'bg-surface-elevated text-text' : 'text-muted hover:bg-surface-elevated'
           }`}
         >
@@ -133,7 +133,7 @@ export function ConversationWorkspace({
           <Link
             key={st}
             href={hrefWith(basePath, { scope }, { status: st })}
-            className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${
+            className={`rounded-control px-2.5 py-1 text-meta font-semibold transition-colors ${
               status === st ? 'bg-surface-elevated text-text' : 'text-muted hover:bg-surface-elevated'
             }`}
           >
@@ -155,7 +155,7 @@ export function ConversationWorkspace({
         // owner-tuned.
         <div className="grid gap-4 lg:grid-cols-[minmax(0,18rem)_1fr]">
           {/* List pane. */}
-          <ul className="max-h-[72vh] space-y-1 overflow-y-auto rounded-lg border border-border bg-surface p-1 lg:max-h-[calc(100dvh-13rem)]">
+          <ul className="max-h-[72vh] space-y-1 overflow-y-auto rounded-control border border-border bg-surface p-1 lg:max-h-[calc(100dvh-13rem)]">
             {rows.map((r) => {
               const active = r.id === thread?.id
               return (
@@ -235,7 +235,7 @@ function ThreadReader({
   // list + typing + live composer). Read-only previewers still get the static transcript.
   const liveChat = thread.channel === 'in_app' && !readOnly && !!chatToken
   return (
-    <ResizableReader className="flex min-h-[60vh] flex-col overflow-hidden rounded-lg border border-border bg-surface lg:min-h-0">
+    <ResizableReader className="flex min-h-[60vh] flex-col overflow-hidden rounded-control border border-border bg-surface lg:min-h-0">
       <div className="flex items-start justify-between gap-2 border-b border-border p-3">
         <div className="min-w-0">
           <p className="truncate text-body-sm font-medium text-text">{thread.counterpartName || 'Unknown'}</p>
@@ -366,7 +366,7 @@ function ThreadStatic({
         {thread.messages.length === 0 && <p className="text-body-sm text-muted">No messages yet.</p>}
         {thread.messages.map((m) =>
           m.isInternal ? (
-            <div key={m.id} className="rounded-lg border border-warning/40 bg-warning-bg/50 px-3 py-2">
+            <div key={m.id} className="rounded-control border border-warning/40 bg-warning-bg/50 px-3 py-2">
               <p className="flex items-center gap-1 text-2xs uppercase tracking-wide text-warning">
                 <Lock className="h-3 w-3" /> Note · {m.authorName} · {when(m.occurredAt)}
               </p>
@@ -424,7 +424,7 @@ function MessageBubble({ message: m }: { message: ConversationThreadMessage }) {
   if (m.channel === 'email') {
     bubble = (
       <div
-        className={`w-fit max-w-[88%] rounded-lg border px-3 py-2 ${
+        className={`w-fit max-w-[88%] rounded-control border px-3 py-2 ${
           outbound ? 'border-primary/25 bg-primary/10' : 'border-border bg-surface-elevated'
         }`}
       >
@@ -444,7 +444,7 @@ function MessageBubble({ message: m }: { message: ConversationThreadMessage }) {
   } else if (m.channel === 'sms') {
     bubble = (
       <div
-        className={`w-fit max-w-[70%] rounded-2xl px-3 py-1.5 ${
+        className={`w-fit max-w-[70%] rounded-card px-3 py-1.5 ${
           outbound ? 'bg-primary/10' : 'bg-surface-elevated'
         }`}
       >
@@ -454,7 +454,7 @@ function MessageBubble({ message: m }: { message: ConversationThreadMessage }) {
   } else {
     bubble = (
       <div
-        className={`w-fit max-w-[80%] rounded-lg px-3 py-2 ${outbound ? 'bg-primary/10' : 'bg-surface-elevated'}`}
+        className={`w-fit max-w-[80%] rounded-control px-3 py-2 ${outbound ? 'bg-primary/10' : 'bg-surface-elevated'}`}
       >
         <p className="whitespace-pre-wrap text-body-sm text-text">{m.body}</p>
       </div>

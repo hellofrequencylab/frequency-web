@@ -21,7 +21,7 @@ export function RevertButton({ logId }: { logId: string }) {
         })
       }
       disabled={isPending}
-      className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60 motion-reduce:transition-none"
+      className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-60 motion-reduce:transition-none"
     >
       {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Revert'}
     </button>
@@ -55,7 +55,7 @@ export function RecommendationCard({ rec }: { rec: StudioRec }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 lift-1">
+    <div className="rounded-card border border-border bg-surface p-4 lift-1">
       <div className="min-w-0">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <StatusChip tone={SEV_TONE[rec.severity]} size="sm">

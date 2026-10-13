@@ -33,7 +33,7 @@ export function DashSection({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface px-5 py-4 sm:px-6 sm:py-5">
+    <section className="rounded-card border border-border bg-surface px-5 py-4 sm:px-6 sm:py-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="min-w-0">
           <h2 className="text-body font-bold text-text">{title}</h2>
@@ -132,7 +132,7 @@ export function Tile({
   children: React.ReactNode
 }) {
   return (
-    <div className={`flex h-full flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
+    <div className={`flex h-full flex-col rounded-card border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
       {label && <p className="eyebrow text-muted">{label}</p>}
       <div className={`${label ? 'mt-3 ' : ''}min-h-12 flex-1`}>{children}</div>
       {caption && <p className="mt-2 text-meta text-subtle">{caption}</p>}
@@ -155,7 +155,7 @@ export function GraphTile({
   children: React.ReactNode
 }) {
   return (
-    <div className={`flex h-full flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
+    <div className={`flex h-full flex-col rounded-card border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
       <div className="flex items-baseline justify-between gap-2">
         <p className="eyebrow text-muted">{label}</p>
         {value !== undefined && <p className="text-body font-bold tabular-nums text-text">{value}</p>}
@@ -228,7 +228,7 @@ export function StatItem({
   const cell =
     'min-w-[7rem] flex-1 px-4 first:pl-0 last:pr-0 lg:border-l lg:border-border/60 lg:first:border-l-0'
   return href ? (
-    <Link href={href} className={`${cell} group rounded-lg transition-opacity hover:opacity-80`}>
+    <Link href={href} className={`${cell} group rounded-control transition-opacity hover:opacity-80`}>
       {inner}
     </Link>
   ) : (

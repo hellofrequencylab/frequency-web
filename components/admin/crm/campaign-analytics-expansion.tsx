@@ -128,7 +128,7 @@ export function CampaignAnalyticsExpansion({ campaignId }: { campaignId: string 
               type="button"
               onClick={runCoach}
               disabled={coachLoading || legacy}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated disabled:opacity-50 motion-reduce:transition-none"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-2.5 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-surface-elevated disabled:opacity-50 motion-reduce:transition-none"
             >
               {coachLoading ? (
                 <>

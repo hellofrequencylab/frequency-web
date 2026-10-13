@@ -189,7 +189,7 @@ export function ReviewBoard({
   return (
     <div className="space-y-6">
       {/* Roll-up legend + approve */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
         <div className="flex flex-wrap items-center gap-2 text-body-sm">
           <StatusChip tone="success" size="sm">✅ {s.green} verified</StatusChip>
           <StatusChip tone="warning" size="sm">⚠️ {s.amber} to review</StatusChip>
@@ -213,7 +213,7 @@ export function ReviewBoard({
 
       {/* Mood + Re-Seed (Importer v2): pick a mood to re-voice the copy. Facts stay put; only the tone
           changes. Available on a reviewed or applied draft (there is verified copy to re-voice). */}
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <div className="flex items-center gap-2 text-body-sm font-semibold text-text">
           <Palette className="h-4 w-4 text-primary-strong" aria-hidden />
           Mood and re-seed
@@ -356,7 +356,7 @@ export function ReviewBoard({
 
       {/* Re-apply the master profile to the live Space (applied only): pushes re-voiced copy / edits. */}
       {applied && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
           <p className="text-meta text-muted">
             Changed the mood or the copy above? Re-apply to push it to the live Space. Verified facts and
             the commercial-fact gate are re-checked; withheld facts stay withheld.
@@ -383,7 +383,7 @@ export function ReviewBoard({
       )}
 
       {applied && links && (
-        <div className="rounded-2xl border border-success/30 bg-success-bg p-4" role="status">
+        <div className="rounded-card border border-success/30 bg-success-bg p-4" role="status">
           <p className="flex items-center gap-1.5 text-body-sm font-semibold text-success">
             <CheckCircle2 className="h-4 w-4" aria-hidden /> Seeded {listed ? 'a listed Space' : 'an unlisted Space'}
           </p>
@@ -419,7 +419,7 @@ export function ReviewBoard({
             <h3 className="text-body font-bold text-text">{section.title}</h3>
             <p className="mt-0.5 text-body-sm text-muted">{section.desc}</p>
           </div>
-          <div className="divide-y divide-border rounded-2xl border border-border bg-surface">
+          <div className="divide-y divide-border rounded-card border border-border bg-surface">
             {section.fields.map((f) => (
               <FieldRow key={f.path} intakeId={intakeId} field={f} readOnly={readOnly} onUpdate={onFieldUpdate} />
             ))}
@@ -513,7 +513,7 @@ function FieldRow({
                 {showSource ? 'Hide source' : 'Show source'}
               </button>
               {showSource && (
-                <div className="mt-1 rounded-lg border border-border bg-surface-elevated p-2 text-2xs text-muted">
+                <div className="mt-1 rounded-control border border-border bg-surface-elevated p-2 text-2xs text-muted">
                   {field.provenance.snippet ? (
                     <p className="whitespace-pre-wrap break-words">“{field.provenance.snippet}”</p>
                   ) : (

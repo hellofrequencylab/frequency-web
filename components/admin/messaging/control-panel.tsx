@@ -64,7 +64,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
   return (
     <div className="space-y-5">
       {/* Guidance */}
-      <div className="rounded-2xl border border-border bg-surface px-4 py-3 text-body-sm text-muted">
+      <div className="rounded-card border border-border bg-surface px-4 py-3 text-body-sm text-muted">
         <p className="font-semibold text-text">Reading this panel</p>
         <p className="mt-1">
           Every row is one person and one message: a campaign email or a Dispatch, and where it
@@ -77,7 +77,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
 
       {/* In-flight lane */}
       {inFlight.pending + inFlight.processing > 0 && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-2xl border border-info/30 bg-info-bg/40 px-4 py-3 text-meta text-muted">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-card border border-info/30 bg-info-bg/40 px-4 py-3 text-meta text-muted">
           <span className="font-semibold text-info">⏳ In flight</span>
           <span>{inFlight.pending} queued</span>
           <span>{inFlight.processing} sending now</span>
@@ -90,7 +90,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
       )}
 
       {/* Filters — a plain GET form so a filtered view is a shareable URL and needs no client JS. */}
-      <form method="get" action={BASE} className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+      <form method="get" action={BASE} className="flex flex-wrap items-end gap-3 rounded-card border border-border bg-surface px-4 py-3">
         <label className="flex flex-col gap-1 text-2xs font-bold uppercase tracking-wide text-muted">
           Campaign or Dispatch
           <Select
@@ -137,7 +137,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
           Apply
         </button>
         {hasFilter && (
-          <Link href={BASE} className="rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text">
+          <Link href={BASE} className="rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text">
             Clear
           </Link>
         )}
@@ -171,7 +171,7 @@ export function MessagingControlPanel({ data }: { data: ControlPanelData }) {
 
 function TouchTable({ touches }: { touches: RecipientTouch[] }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border">
+    <div className="overflow-x-auto rounded-card border border-border">
       <table className="w-full min-w-[40rem] text-left text-body-sm">
         <thead className="bg-surface-elevated text-2xs uppercase tracking-wide text-muted">
           <tr>

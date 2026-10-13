@@ -251,7 +251,7 @@ async function HeaderKpisLive({ members, events }: { members: number; events: nu
 // is the graph; the tile is the only white surface in the area grammar.
 function RingTile({ pct, label, sub }: { pct: number; label: string; sub?: string }) {
   return (
-    <div className="flex items-center rounded-2xl border border-border bg-surface p-4">
+    <div className="flex items-center rounded-card border border-border bg-surface p-4">
       <RingGauge pct={pct} label={label} sub={sub} />
     </div>
   )
@@ -594,9 +594,9 @@ function DashSkeleton({ title }: { title: string }) {
       <h2 className="text-body-lg font-bold text-text">{title}</h2>
       <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-surface-elevated" />
       <div className="mt-5 grid grid-cols-2 gap-3.5 lg:grid-cols-3">
-        <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/70" />
-        <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/70" />
-        <div className="h-28 animate-pulse rounded-2xl bg-surface-elevated/70" />
+        <div className="h-28 animate-pulse rounded-card bg-surface-elevated/70" />
+        <div className="h-28 animate-pulse rounded-card bg-surface-elevated/70" />
+        <div className="h-28 animate-pulse rounded-card bg-surface-elevated/70" />
       </div>
     </section>
   )
@@ -655,7 +655,7 @@ function CircleRow({
   return (
     <Link
       href={href}
-      className="flex items-center justify-between rounded-2xl bg-surface-elevated/60 px-4 py-3 transition-colors hover:bg-surface-elevated"
+      className="flex items-center justify-between rounded-card bg-surface-elevated/60 px-4 py-3 transition-colors hover:bg-surface-elevated"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
@@ -675,7 +675,7 @@ function EmptyCta({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+      className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
     >
       <Plus className="h-3.5 w-3.5" />
       {label}

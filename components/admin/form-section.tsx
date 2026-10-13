@@ -24,7 +24,7 @@ export function FormSection({
         {description && <p className="mt-1 text-body-sm leading-relaxed text-muted">{description}</p>}
       </div>
       <div className="md:col-span-2">
-        <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">{children}</div>
+        <div className="rounded-card border border-border bg-surface p-4 sm:p-5">{children}</div>
       </div>
     </section>
   )

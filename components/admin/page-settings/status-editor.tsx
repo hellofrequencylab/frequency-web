@@ -58,11 +58,11 @@ export function StatusEditor({ spaceId }: { spaceId?: string }) {
   }
 
   if (loading) {
-    return <div className="h-36 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
+    return <div className="h-36 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+    <div className="space-y-3 rounded-card border border-border bg-surface p-4">
       <div className="flex items-center gap-2">
         {(['published', 'draft'] as const).map((s) => (
           <button
@@ -70,7 +70,7 @@ export function StatusEditor({ spaceId }: { spaceId?: string }) {
             type="button"
             onClick={() => setStatus(s)}
             disabled={pending}
-            className={`rounded-lg px-3 py-1.5 text-meta font-semibold transition-colors ${
+            className={`rounded-control px-3 py-1.5 text-meta font-semibold transition-colors ${
               status === s ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'
             }`}
           >
@@ -109,7 +109,7 @@ export function StatusEditor({ spaceId }: { spaceId?: string }) {
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? 'Saving…' : 'Save'}
         </button>

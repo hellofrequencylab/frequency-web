@@ -88,7 +88,7 @@ async function FunnelsPanel() {
       }
     >
       {gaps.length > 0 && (
-        <div className="mt-5 flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning-bg px-4 py-3">
+        <div className="mt-5 flex items-start gap-3 rounded-card border border-warning/30 bg-warning-bg px-4 py-3">
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
           <p className="text-body-sm leading-relaxed text-warning">
             <strong>
@@ -144,7 +144,7 @@ function FunnelStepRow({ step }: { step: JourneyFunnelStep }) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <div className="relative min-w-0 flex-1 overflow-hidden rounded-lg bg-surface-elevated">
+      <div className="relative min-w-0 flex-1 overflow-hidden rounded-control bg-surface-elevated">
         <div
           className={`absolute inset-y-0 left-0 ${measured ? 'bg-primary/15' : 'bg-transparent'}`}
           style={{ width: `${Math.min(100, Math.max(0, width))}%` }}

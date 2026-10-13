@@ -58,7 +58,7 @@ export const metadata = {
 }
 
 function SectionFallback() {
-  return <Skeleton className="h-40 rounded-2xl" />
+  return <Skeleton className="h-40 rounded-card" />
 }
 
 /** The pill sub-menu (the Space HubNav pattern, same classes): one tab per manage area. */
@@ -153,13 +153,13 @@ export default async function ManageEventPage({
                 whole event audience over Email / Direct Message / Dispatch, Text coming
                 soon. Streams behind its own Suspense (it loads the audience counts). */}
             <SectionHeader title="Message everyone" />
-            <Suspense fallback={<Skeleton className="h-56 rounded-2xl" />}>
+            <Suspense fallback={<Skeleton className="h-56 rounded-card" />}>
               <EventBroadcastSection eventId={event.id} slug={event.slug} />
             </Suspense>
           </section>
           <section>
             <SectionHeader title="Message center" />
-            <Suspense fallback={<Skeleton className="h-96 rounded-2xl" />}>
+            <Suspense fallback={<Skeleton className="h-96 rounded-card" />}>
               <EventMemberViewer eventId={event.id} slug={event.slug} />
             </Suspense>
           </section>

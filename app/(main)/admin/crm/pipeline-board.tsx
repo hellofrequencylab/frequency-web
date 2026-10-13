@@ -113,7 +113,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
       </div>
 
       {adding && (
-        <div className="grid gap-2 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-2 rounded-card border border-border bg-surface p-4 sm:grid-cols-2 lg:grid-cols-6">
           <Select
             value={newLane}
             onChange={(e) => setNewLane(e.target.value as PipelineLane)}
@@ -157,7 +157,7 @@ export function PipelineBoard({ stages, deals }: { stages: CrmStage[]; deals: Cr
         {stages.map((stage) => {
           const items = byStage(stage.id)
           return (
-            <div key={stage.id} className="w-72 shrink-0 rounded-2xl border border-border bg-surface-elevated/40 p-3">
+            <div key={stage.id} className="w-72 shrink-0 rounded-card border border-border bg-surface-elevated/40 p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={`h-2 w-2 shrink-0 rounded-pill ${stage.kind === 'won' ? 'bg-success' : stage.kind === 'lost' ? 'bg-danger' : 'bg-primary'}`} />

@@ -30,7 +30,7 @@ const STYLE = MAPLIBRE_STYLE
 
 export default function ScanMap({
   locations,
-  className = 'h-full w-full overflow-hidden rounded-2xl border border-border',
+  className = 'h-full w-full overflow-hidden rounded-card border border-border',
 }: {
   locations: ScanLocation[]
   className?: string

@@ -38,11 +38,11 @@ function formatDate(iso: string | null): string {
 const thCls = 'px-3 py-2 text-left text-meta font-semibold uppercase tracking-wide text-subtle'
 const tdCls = 'px-3 py-2.5 align-top text-body-sm'
 const actionBtn =
-  'inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50'
+  'inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50'
 
 export function PostedEventsTable({ rows, canManage }: { rows: PostedEventRow[]; canManage: boolean }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface lift-1">
+    <div className="overflow-x-auto rounded-card border border-border bg-surface lift-1">
       <table className="w-full min-w-[720px] border-collapse">
         <thead>
           <tr className="border-b border-border">
@@ -297,7 +297,7 @@ function AssignHostPanel({
         </button>
       </div>
       {hits.length > 0 && !selected && (
-        <ul className="max-w-md divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
+        <ul className="max-w-md divide-y divide-border overflow-hidden rounded-control border border-border bg-surface">
           {hits.map((hit) => (
             <li key={hit.id}>
               <button
@@ -383,7 +383,7 @@ function RemovePanel({
           type="button"
           onClick={handleRemove}
           disabled={pending || !reason.trim()}
-          className="shrink-0 rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
+          className="shrink-0 rounded-control bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger transition-colors hover:opacity-90 disabled:opacity-50"
         >
           {pending ? 'Removing…' : 'Remove event'}
         </button>

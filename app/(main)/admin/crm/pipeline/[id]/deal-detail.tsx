@@ -134,7 +134,7 @@ export function DealDetail({
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => moveDeal(deal.id, wonStage.id))}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-success px-3 py-1.5 text-body-sm font-semibold text-success transition-colors hover:bg-success-bg/40 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-control border border-success px-3 py-1.5 text-body-sm font-semibold text-success transition-colors hover:bg-success-bg/40 disabled:opacity-50"
               >
                 <Check className="h-4 w-4" /> Won
               </button>
@@ -144,7 +144,7 @@ export function DealDetail({
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => moveDeal(deal.id, lostStage.id))}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-body-sm font-medium text-muted transition-colors hover:text-text disabled:opacity-50"
               >
                 Lost
               </button>
@@ -174,7 +174,7 @@ export function DealDetail({
       {error && <Banner tone="critical" title="That didn’t go through">{error}</Banner>}
 
       {/* Editable fields */}
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-meta text-muted">
             Contact
@@ -225,7 +225,7 @@ export function DealDetail({
       </div>
 
       {/* Activities & tasks */}
-      <div className="rounded-2xl border border-border bg-surface p-5 lift-1">
+      <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <p className="text-body-sm font-bold text-text">Activity &amp; tasks</p>
 
         {/* Add */}
@@ -347,7 +347,7 @@ export function DealDetail({
           type="button"
           disabled={pending}
           onClick={() => setConfirmingDelete(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-body-sm font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-danger px-3 py-1.5 text-body-sm font-semibold text-danger transition-colors hover:bg-danger-bg/30 disabled:opacity-50"
         >
           <Trash2 className="h-4 w-4" /> Delete card
         </button>

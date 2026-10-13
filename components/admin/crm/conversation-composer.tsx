@@ -92,7 +92,7 @@ export function ConversationComposer({
 
   return (
     <div className="border-t border-border p-3">
-      <div className="mb-2 flex items-center gap-1 rounded-lg bg-surface-elevated p-0.5 text-meta">
+      <div className="mb-2 flex items-center gap-1 rounded-control bg-surface-elevated p-0.5 text-meta">
         <button
           type="button"
           onClick={() => setInternal(false)}
@@ -142,7 +142,7 @@ export function ConversationComposer({
             onClick={draft}
             disabled={drafting || pending}
             title="Draft a reply with Vera (you review before sending)"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-2.5 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text disabled:opacity-50"
           >
             {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Draft with Vera

@@ -126,7 +126,7 @@ export function LoomRail({
   }
 
   const iconBtn =
-    'invisible shrink-0 rounded-lg p-1 text-subtle hover:bg-surface-elevated hover:text-text group-hover/row:visible'
+    'invisible shrink-0 rounded-control p-1 text-subtle hover:bg-surface-elevated hover:text-text group-hover/row:visible'
 
   return (
     <nav className={`space-y-0.5 ${pending ? 'opacity-60' : ''}`} aria-label="Folders">
@@ -202,7 +202,7 @@ export function LoomRail({
             type="button"
             onClick={newCollection}
             disabled={pending}
-            className="rounded-lg p-1 text-subtle hover:bg-surface-elevated hover:text-text"
+            className="rounded-control p-1 text-subtle hover:bg-surface-elevated hover:text-text"
             aria-label="New collection"
             title="New collection"
           >

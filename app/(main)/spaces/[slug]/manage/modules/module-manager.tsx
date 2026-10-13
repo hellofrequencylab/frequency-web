@@ -298,7 +298,7 @@ export function ModuleManager({
                           aria-label={`Move ${row.label} up`}
                           disabled={readOnly || !canMoveUp}
                           onClick={() => move(id, -1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-l-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
+                          className="flex h-7 w-7 items-center justify-center rounded-l-control border border-border bg-surface text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
                         >
                           <ChevronUp className="h-4 w-4" aria-hidden />
                         </button>
@@ -307,7 +307,7 @@ export function ModuleManager({
                           aria-label={`Move ${row.label} down`}
                           disabled={readOnly || !canMoveDown}
                           onClick={() => move(id, 1)}
-                          className="-ml-px flex h-7 w-7 items-center justify-center rounded-r-lg border border-border bg-surface text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
+                          className="-ml-px flex h-7 w-7 items-center justify-center rounded-r-control border border-border bg-surface text-muted transition-colors hover:bg-surface-elevated disabled:opacity-40 motion-reduce:transition-none"
                         >
                           <ChevronDown className="h-4 w-4" aria-hidden />
                         </button>

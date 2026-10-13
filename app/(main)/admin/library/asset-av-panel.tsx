@@ -88,7 +88,7 @@ export function AssetAvPanel({
   if (!hasFile) return null
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/50 p-3">
+    <div className="space-y-3 rounded-card border border-border bg-surface-elevated/50 p-3">
       {/* Replace file */}
       <div>
         <input
@@ -106,7 +106,7 @@ export function AssetAvPanel({
           type="button"
           disabled={pending}
           onClick={() => fileRef.current?.click()}
-          className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-card border border-border px-3 py-1.5 text-body-sm text-text hover:bg-surface-elevated disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {pending ? 'Replacing…' : 'Replace file'}
@@ -135,7 +135,7 @@ export function AssetAvPanel({
               </p>
               <ul className="space-y-1.5">
                 {usage.recordings.map((r) => (
-                  <li key={r.recordingId} className="rounded-lg border border-border bg-surface px-2.5 py-1.5">
+                  <li key={r.recordingId} className="rounded-control border border-border bg-surface px-2.5 py-1.5">
                     <span className="text-body-sm font-semibold text-text">{r.title}</span>
                     <span className="ml-1.5 text-2xs text-muted">{r.mediaKind}</span>
                     {(r.hosts.length > 0 || r.isEpisode) && (

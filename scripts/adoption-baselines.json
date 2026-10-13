@@ -61,13 +61,13 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 1791,
+      "baseline": 1270,
       "frozen": {
         "at": "2026-10-13",
-        "value": 1791,
+        "value": 1270,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Area-2 theme scan: shared primitives/shells moved rounded-lg/2xl onto rounded-control/card (same px under DAWN and Frequency)",
+        "reason": "Theme-bulletproofing scan, consoles lane (2026-10-13): admin, CRM, billing, commerce, analytics and the Space/Circle/Event console pages moved rounded-2xl/lg/full onto rounded-card/control/pill (pixel-identical under DAWN light and dark)",
         "from": 1868
       },
       "history": [
@@ -319,9 +319,9 @@
         {
           "at": "2026-10-13",
           "from": 1868,
-          "to": 1791,
+          "to": 1270,
           "direction": "lowered",
-          "reason": "Area-2 theme scan: shared primitives/shells moved rounded-lg/2xl onto rounded-control/card (same px under DAWN and Frequency)"
+          "reason": "Theme-bulletproofing scan, consoles lane (2026-10-13): admin, CRM, billing, commerce, analytics and the Space/Circle/Event console pages moved rounded-2xl/lg/full onto rounded-card/control/pill (pixel-identical under DAWN light and dark)"
         }
       ]
     },
@@ -1302,14 +1302,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 39,
+      "baseline": 47,
       "frozen": {
-        "at": "2026-10-13",
-        "value": 39,
+        "at": "2026-10-05",
+        "value": 47,
         "direction": "lowered",
         "basis": "64ff33cabd79",
-        "reason": "Theme-bulletproofing scan, area 6: eight text-3xl/4xl numerals and headings on marketing, join and onboarding moved to text-stat-sm/-md, the same sizes and line-heights on the --type-scale axis",
-        "from": 47
+        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
+        "from": 48
       },
       "history": [
         {
@@ -1374,13 +1374,6 @@
           "to": 47,
           "direction": "lowered",
           "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
-        },
-        {
-          "at": "2026-10-13",
-          "from": 47,
-          "to": 39,
-          "direction": "lowered",
-          "reason": "Theme-bulletproofing scan, area 6: eight text-3xl/4xl numerals and headings on marketing, join and onboarding moved to text-stat-sm/-md, the same sizes and line-heights on the --type-scale axis"
         }
       ]
     },

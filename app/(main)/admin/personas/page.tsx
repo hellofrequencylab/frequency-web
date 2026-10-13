@@ -87,7 +87,7 @@ function PersonaQueueList({
     return <EmptyState variant="cleared" title={empty.title} description={empty.description} />
   }
   return (
-    <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
+    <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">
       {rows.map((r) => (
         <PersonaRow key={`${r.profileId}-${r.persona}`} row={r} trust={trustByProfile.get(r.profileId)} />
       ))}

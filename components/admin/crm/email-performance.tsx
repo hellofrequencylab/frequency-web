@@ -24,7 +24,7 @@ export function EmailPerformance({ overview }: { overview: MarketingEmailOvervie
   const nothingYet = overview.sent === 0 && overview.delivered === 0
   if (nothingYet) {
     return (
-      <p className="rounded-2xl border border-dashed border-border bg-surface px-4 py-6 text-center text-body-sm text-muted">
+      <p className="rounded-card border border-dashed border-border bg-surface px-4 py-6 text-center text-body-sm text-muted">
         No email has gone out yet. Open, click, bounce, and complaint stats land here the moment your first send delivers.
       </p>
     )

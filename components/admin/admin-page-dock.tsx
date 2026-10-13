@@ -82,7 +82,7 @@ export function AdminPageDock({
           <Link
             key={l.href}
             href={l.href}
-            className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+            className="flex items-center gap-2.5 rounded-control px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated"
           >
             <l.Icon className="h-4 w-4 shrink-0 text-muted" />
             {l.label}
@@ -164,7 +164,7 @@ function SectionSorter({ scope }: { scope: DashScope }) {
           setOrder(next)
           save(next)
         }}
-        className="mt-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        className="mt-2 flex items-center gap-2 rounded-control px-2 py-1.5 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden />
         Reset to default order
