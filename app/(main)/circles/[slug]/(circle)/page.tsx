@@ -19,6 +19,7 @@ import { PageModules } from '@/components/widgets/page-modules'
 import { setCircleContext } from '@/lib/circles/active-circle'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FqModules } from '@/components/frequency/members/modules'
+import { FqCircleFeed } from '@/components/frequency/members/circle/circle-feed'
 
 // ── THE FEED TAB (the default tab) ──────────────────────────────────────────────────────────────
 // A BODY, not a shell. The identity — cover, title, badges, facts, tabs — belongs to the
@@ -77,9 +78,9 @@ const FEED_TAB_MODULE_IDS = [
   'circle-practice',
 ] as const
 
-/** The Frequency Posts pane's blocks, in order: the feed, then the Circle's shared work. */
+/** The Frequency Posts pane's blocks after the feed (drawn in the kit by FqCircleFeed, the
+ *  `circle-feed` module's behaviour on the same context): the Circle's shared work. */
 const FQ_FEED_MODULE_IDS = [
-  'circle-feed',
   'circle-challenges',
   'circle-practice',
   'circle-meeting',
@@ -213,6 +214,7 @@ export default async function CircleHomePage({
   if (SITE_DESIGN === 'frequency') {
     return (
       <div id="circle-post" className="stack">
+        <FqCircleFeed />
         <FqModules ids={FQ_FEED_MODULE_IDS} />
       </div>
     )

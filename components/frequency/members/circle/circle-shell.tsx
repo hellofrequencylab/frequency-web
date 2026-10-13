@@ -28,10 +28,11 @@ function whenShort(iso: string): string {
 /** The next meetup panel. Streams: the going count and the viewer's own answer are two light reads
  *  the cover should never wait on. */
 async function NextMeetup({ event, myProfileId }: { event: CircleUpcomingEvent; myProfileId: string | null }) {
-  const [counts, mine] = await Promise.all([
+  const admin = createAdminClient()
+  const [counts, mine, cover] = await Promise.all([
     goingCountsByEvent([event.id]),
     myProfileId
-      ? createAdminClient()
+      ? admin
           .from('event_rsvps')
           .select('status')
           .eq('event_id', event.id)
@@ -39,6 +40,17 @@ async function NextMeetup({ event, myProfileId }: { event: CircleUpcomingEvent; 
           .maybeSingle()
           .then(({ data }) => (data as { status: string } | null)?.status ?? null)
       : Promise.resolve(null),
+    // The event's own cover for the photo tile (the reference's 88px thumb). Public bucket, so the
+    // URL is the same one the Events list draws; an event with no cover keeps the bare tile.
+    admin
+      .from('events')
+      .select('cover_image_path')
+      .eq('id', event.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const path = (data as { cover_image_path: string | null } | null)?.cover_image_path
+        return path ? admin.storage.from('event-media').getPublicUrl(path).data.publicUrl : null
+      }),
   ])
   const going = counts[event.id] ?? 0
   const line = [whenShort(event.starts_at), event.location, going > 0 ? `${going} going` : null]
@@ -46,7 +58,7 @@ async function NextMeetup({ event, myProfileId }: { event: CircleUpcomingEvent; 
     .join(' · ')
   return (
     <div className="panel row wrap fqm-meet">
-      <span className="ph" />
+      <span className="ph" style={cover ? { backgroundImage: `url('${cover}')` } : undefined} />
       <span className="grow stack fqm-row-stack">
         <span className="k">Next meetup</span>
         <Link className="h3" href={`/events/${event.slug}`}>

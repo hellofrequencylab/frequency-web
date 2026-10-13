@@ -20,6 +20,8 @@ import { LeaderboardList, type LeaderboardListEntry, type LeaderboardTrack } fro
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqCircleStatsPane } from '@/components/frequency/members/circle/stats-pane'
 
 // ── THE CIRCLE STATS TAB ────────────────────────────────────────────────────────────────────────
 //
@@ -121,6 +123,25 @@ export default async function CircleStatsPage({
     canSeeRows ? loadOptOutPreference(myProfileId) : Promise.resolve(false),
   ])
   const { total, contributors } = summariseContributions(contributions)
+
+  // THE DESIGN SWITCH (ADR-1737): under Frequency the same reads and gates, drawn in the member kit.
+  // Build-time constant, so the DAWN body below is untouched when it is off.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqCircleStatsPane
+        circleId={circle.id}
+        slug={circle.slug}
+        total={total}
+        contributors={contributors}
+        seasonName={season?.name ?? null}
+        canSeeRows={canSeeRows}
+        optedOut={optedOut}
+        track={track}
+        memberIds={memberIds}
+        viewerId={myProfileId}
+      />
+    )
+  }
 
   return (
     <div className="space-y-8">
