@@ -166,6 +166,11 @@
 [data-design="frequency"] [data-kit="members"] .mu-sec-link:hover .h2,[data-design="frequency"] [data-kit="members"] .mu-sec-link:hover .mu-sec-arrow{color:var(--fq-accent)}
 [data-design="frequency"] [data-kit="members"] .mu-sec-link:hover .mu-sec-arrow{transform:translate(2px,-2px)}
 
+/* StudioWindow (create and edit): the kit's floating sheet. Opaque, no backdrop filter: a blurred
+   takeover repaints on every pointer move (LIVE-495, components/ui/dialog.tsx). */
+[data-design="frequency"] [data-kit="members"] .mu-window{background:var(--fq-surface-card);box-shadow:var(--fq-shadow-float),inset 0 0 0 1px var(--fq-border-hair)}
+@media (min-width:640px){[data-design="frequency"] [data-kit="members"] .mu-window{border-radius:28px}}
+
 /* WizardShell: the step bar, and the room. */
 [data-design="frequency"] [data-kit="members"] .mu-steps{display:flex;gap:6px}
 [data-design="frequency"] [data-kit="members"] .mu-steps>span{flex:1;height:4px;border-radius:999px;background:var(--fq-track);transition:background var(--fq-dur-base)}

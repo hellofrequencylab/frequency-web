@@ -16,6 +16,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { UpgradeToggle } from './upgrade-toggle'
 import { PwywPicker } from './pwyw-picker'
 import { CREW_PERKS } from '@/lib/crew/perks'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // MEMBER UPGRADE SURFACE (Pricing P3, ADR-362/363). Renders CREW, the one sellable member tier
 // (ADR-878: the ladder is Member free and Crew), and gates the live checkout CTA behind
@@ -158,7 +159,37 @@ export default async function UpgradePage({
 
       {/* Main card */}
       <div className="rounded-card border border-border bg-surface lift-1 overflow-hidden">
-        {/* Header */}
+        {/* Header. Under Frequency (ADR-1737) the offer sits in the members kit's soft pastel room with
+            the iridescent orb, the way the design frames a Crew moment, rather than DAWN's solid fill;
+            the floor, the beta line and the suggestion are the same three readings. */}
+        {SITE_DESIGN === 'frequency' ? (
+          <div className="soft text-center" style={{ borderRadius: 0 }}>
+            <span className="orb mx-auto mb-4 block" style={{ width: 56, height: 56 }} aria-hidden />
+            <p className="h2">Join the Crew</p>
+            <p className="t2 mt-2">The personal tier: back the community and host more</p>
+            <div className="mt-4 flex items-baseline justify-center gap-1">
+              {live ? (
+                <>
+                  <span className="t2 mr-1">from</span>
+                  <span className="num">{formatCents(pwyw.minCents)}</span>
+                  <span className="t2 ml-1">/ month</span>
+                </>
+              ) : betaOpen ? (
+                <>
+                  <span className="num">Free</span>
+                  <span className="t2 ml-1">during beta</span>
+                </>
+              ) : (
+                <span className="num">Opening soon</span>
+              )}
+            </div>
+            {live && (
+              <p className="t2 mt-2">
+                You pick the amount. {formatCents(pwyw.suggestedCents)} suggested, and every amount buys the same Crew.
+              </p>
+            )}
+          </div>
+        ) : (
         <div className="bg-gradient-to-br bg-primary px-6 py-8 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-card bg-on-primary/20 backdrop-blur-sm mb-4">
             <Zap className="w-7 h-7 text-on-primary" />
@@ -195,6 +226,7 @@ export default async function UpgradePage({
             </p>
           )}
         </div>
+        )}
 
         {/* Benefits */}
         <div className="px-6 py-6">
