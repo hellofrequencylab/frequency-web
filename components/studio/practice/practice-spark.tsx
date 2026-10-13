@@ -48,6 +48,7 @@ import { sparkPracticeAction, createPracticeFromSparkAction } from '@/app/(main)
 import { createPracticeDraftAction } from '@/app/(main)/practices/actions'
 import type { PracticePace, PracticeCadenceHint, PracticeSparkTimer } from '@/lib/ai/practice-spark'
 import { timerPreview } from '@/lib/movement'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The Be Still sub-mode LABELS (naming canon: member copy never shows raw enum slugs).
 const MINDLESS_LABEL: Record<string, string> = {
@@ -420,7 +421,7 @@ export function PracticeSpark() {
           {reviewField('body', body, setBody, LIMIT.body, 'The steps, in plain words')}
 
           <div>
-            <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">Pillars</p>
+            <p className={capsLabel('mb-1 text-2xs font-semibold text-muted')}>Pillars</p>
             <div className="flex flex-wrap gap-1.5">
               {PILLARS.map((p) => (
                 <button
@@ -446,7 +447,7 @@ export function PracticeSpark() {
 
           {timer && (
             <div className="rounded-card border border-border bg-canvas px-3.5 py-2.5">
-              <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">How it is done</span>
+              <span className={capsLabel('block text-2xs font-semibold text-muted')}>How it is done</span>
               <p className="mt-0.5 text-body-sm font-medium text-text">
                 {timerPreview({
                   timerKind: timer.timerKind,

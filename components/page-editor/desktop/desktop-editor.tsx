@@ -53,6 +53,7 @@ import {
 } from '../mobile/data-ops'
 import { FieldForm, type FieldsSchema, type PushRequest } from '../mobile/field-form'
 import { IconButton } from '@/components/ui/icon-button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // ── Live-document context (the usePuck().appState.data replacement) ────────────
 const EditorDocContext = createContext<Data | null>(null)
@@ -187,13 +188,13 @@ export function DesktopEditor({
               <span className="flex items-center gap-1.5 eyebrow text-subtle">
                 <Layers className="h-4 w-4" aria-hidden /> Blocks
               </span>
-              <button
+              <Button
                 type="button"
                 onClick={() => setPalette(null)}
-                className="inline-flex min-h-[32px] items-center gap-1 rounded-lg bg-primary px-2.5 text-meta font-semibold text-on-primary hover:bg-primary-hover"
+                size="sm" className="min-h-[32px]"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add block
-              </button>
+              </Button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
               {outline.length === 0 ? (
@@ -360,7 +361,7 @@ function OutlineTree({
               {node.slots.map((slot) => (
                 <div key={slot.key}>
                   <div className="flex items-center justify-between px-1 py-0.5">
-                    <span className="text-2xs font-semibold uppercase tracking-wide text-muted">
+                    <span className={capsLabel('text-2xs font-semibold text-muted')}>
                       {slot.label}
                     </span>
                     <IconBtn label={`Add to ${slot.label}`} onClick={() => onAddToSlot(node.id, slot.key)}>

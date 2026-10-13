@@ -37,6 +37,7 @@ import {
   type MovementConfig, type MovementMode, type StrengthPresetKind, type YogaPresetKind,
 } from '@/lib/movement'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
 // fields, footer) against the existing practice actions; mirrors the old
@@ -409,7 +410,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       {/* Focus — a practice can belong to MULTIPLE Focuses (Pillars). Toggle each on/off;
           the first selected is the primary (drives the card + Pillar filtering). */}
       <fieldset className="mt-6">
-        <legend className="text-2xs font-semibold uppercase tracking-wide text-muted">Focus</legend>
+        <legend className={capsLabel('text-2xs font-semibold text-muted')}>Focus</legend>
         <div role="group" aria-label="Focus" className="mt-1 flex flex-wrap gap-2">
           {props.pillars.map((p) => {
             const active = !!focusDetails[p.id]
@@ -441,7 +442,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             const name = props.pillars.find((p) => p.id === pillarId)?.name ?? 'Focus'
             return (
               <fieldset key={pillarId} className="rounded-control border border-border bg-surface p-3">
-                <legend className="px-1 text-2xs font-semibold uppercase tracking-wide text-muted">{name}</legend>
+                <legend className={capsLabel('px-1 text-2xs font-semibold text-muted')}>{name}</legend>
                 <div className="space-y-3">
                   <StudioField label="Instructions">
                     <Textarea
@@ -536,7 +537,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           (ADR-442): a tier is only earnable once the length meets its floor, so a short
           practice can never bank Heavy. Lower tiers stay open (under-claim is fine). */}
       <fieldset className="mt-4">
-        <legend className="text-2xs font-semibold uppercase tracking-wide text-muted">Effort</legend>
+        <legend className={capsLabel('text-2xs font-semibold text-muted')}>Effort</legend>
         <div role="radiogroup" aria-label="Effort" className="mt-1 grid grid-cols-3 gap-2">
           {WEIGHT_OPTIONS.map((w) => {
             const active = weightClass === w.value
@@ -576,7 +577,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           sit/breathe, Movement opens the Movement timer (walk, flow, play, or workout), and Log it
           records in one tap. A Movement kind also picks the mode it opens on. */}
       <fieldset className="mt-4">
-        <legend className="text-2xs font-semibold uppercase tracking-wide text-muted">How it&rsquo;s done</legend>
+        <legend className={capsLabel('text-2xs font-semibold text-muted')}>How it&rsquo;s done</legend>
         <StudioNote className="mt-1.5">
           Pick how a member does this practice. <strong>Mindless</strong> opens the quiet timer
           (Be Still) so they sit or breathe. <strong>Get Moving</strong> opens the moving timer
@@ -624,7 +625,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         {/* The Movement mode the timer opens on (only when this is a Movement practice). */}
         {timerKind === 'movement' && (
           <div className="mt-3">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Movement mode</p>
+            <p className={capsLabel('text-2xs font-semibold text-muted')}>Movement mode</p>
             <StudioNote className="mt-1.5">
               Pick the kind of moving, then set it up below. <strong>Strength</strong> gives you a
               full workout (Tabata, EMOM, AMRAP or a circuit, with the work, rest and rounds dialed
@@ -661,7 +662,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
               {durationTuner && (
                 <>
                   <div>
-                    <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Length</p>
+                    <p className={capsLabel('text-2xs font-semibold text-muted')}>Length</p>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       {durationTuner.minutePresets.map((min) => (
                         <MoveChip key={min} active={durationTuner.minutes === min} onClick={() => durationTuner.setMinutes(min)}>
@@ -677,7 +678,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                     </div>
                   </div>
                   <div>
-                    <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Interval cue</p>
+                    <p className={capsLabel('text-2xs font-semibold text-muted')}>Interval cue</p>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {durationTuner.intervalPresets.map((iv) => (
                         <MoveChip key={iv.value} active={durationTuner.interval === iv.value} onClick={() => durationTuner.setInterval(iv.value)}>
@@ -692,7 +693,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
 
               {movementMode === 'yoga' && (
                 <div>
-                  <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Flow</p>
+                  <p className={capsLabel('text-2xs font-semibold text-muted')}>Flow</p>
                   <div className="mt-1 flex flex-wrap gap-2">
                     {YOGA_PRESETS.map((y) => (
                       <MoveChip key={y.kind} active={yogaKind === y.kind} title={y.blurb} onClick={() => { setYogaKind(y.kind); saveMovement({ yogaKind: y.kind }) }}>
@@ -707,7 +708,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
               {movementMode === 'strength' && (
                 <div className="space-y-3">
                   <div>
-                    <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Shape</p>
+                    <p className={capsLabel('text-2xs font-semibold text-muted')}>Shape</p>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {STRENGTH_PRESETS.map((w) => (
                         <MoveChip key={w.kind} active={strengthKind === w.kind} title={w.blurb} onClick={() => pickStrength(w.kind)}>
@@ -739,7 +740,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         {/* The Be Still flavour a Mindless practice opens on (P7). "Auto" leaves it to the Pillar. */}
         {timerKind === 'mindless' && (
           <div className="mt-3">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Be Still mode</p>
+            <p className={capsLabel('text-2xs font-semibold text-muted')}>Be Still mode</p>
             <StudioNote className="mt-1.5">
               How the quiet timer opens. <strong>Meditate</strong>, <strong>Stillness</strong> and
               <strong> Ritual</strong> are quiet countdowns; <strong>Breathe</strong> guides a
@@ -764,7 +765,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 practice opens on Box. "Member's choice" (null) keeps their own saved pattern. */}
             {mindlessMode === 'breathe' && (
               <div className="mt-3">
-                <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Breath pattern</p>
+                <p className={capsLabel('text-2xs font-semibold text-muted')}>Breath pattern</p>
                 <StudioNote className="mt-1.5">
                   The pattern this practice opens with. Pick one to make it part of the practice, or
                   leave it on <strong>Member&rsquo;s choice</strong> to use each person&rsquo;s own saved pattern.
@@ -816,7 +817,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           (ADR-592, P3). Only a timed practice has a pre-roll, so this is hidden for Log it. */}
       {timerKind !== 'none' && (
         <fieldset className="mt-4">
-          <legend className="text-2xs font-semibold uppercase tracking-wide text-muted">Warm-up</legend>
+          <legend className={capsLabel('text-2xs font-semibold text-muted')}>Warm-up</legend>
           <StudioNote className="mt-1.5">
             A short message shown on screen while the timer counts in, before Start Practice, so
             the member can set up. Optional. Set a longer count-in below if the message needs a
@@ -836,7 +837,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             <p className="mt-0.5 text-2xs text-muted">{warmupMessage.trim().length}/{WARMUP_MESSAGE_MAX}. Leave blank for a silent count-in.</p>
           </div>
           <div className="mt-2">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Count-in length</p>
+            <p className={capsLabel('text-2xs font-semibold text-muted')}>Count-in length</p>
             <div className="mt-1 flex flex-wrap gap-2">
               {AUTHORED_WARMUP_PRESETS.map((sec) => (
                 <MoveChip key={sec} active={warmupSec === sec} onClick={() => { setWarmupSec(sec); queueSave({ warmup_sec: sec === 0 ? null : sec }) }}>
@@ -852,7 +853,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       {/* Reward override — admin only. Overrides the weight-class payout + sets the card note. */}
       {props.isAdmin && (
         <fieldset className="mt-4 rounded-control border border-warning/30 bg-warning-bg/20 p-3">
-          <legend className="px-1 text-2xs font-semibold uppercase tracking-wide text-warning">Reward override · admin</legend>
+          <legend className={capsLabel('px-1 text-2xs font-semibold text-warning')}>Reward override · admin</legend>
           <div className="grid gap-4 sm:grid-cols-2">
             <StudioField label="Zap reward override">
               <Input
@@ -911,7 +912,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           author was never told it was under review or why it was not visible. */}
       {props.status != null && (
         <div className="mt-6 border-t border-border pt-4">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Library</p>
+          <p className={capsLabel('text-2xs font-semibold text-muted')}>Library</p>
           {props.isPublic || props.status === 'approved' ? (
             <p className="mt-1.5 text-body-sm text-text">
               <span className="font-semibold text-success">Live.</span>{' '}
@@ -934,7 +935,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             </p>
           )}
           {(props.status === 'draft' || props.status === 'rejected') && (
-            <button
+            <Button
               type="button"
               disabled={submitting}
               onClick={() => {
@@ -944,10 +945,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                   if (!isError(res)) setSubmittedNow(true)
                 })
               }}
-              className="mt-2.5 inline-flex min-h-9 items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+              size="md" className="mt-2.5 min-h-9"
             >
               {submitting ? 'Submitting…' : submittedNow ? 'Submitted' : 'Submit to the library'}
-            </button>
+            </Button>
           )}
           {submittedNow && (
             <p className="mt-1.5 text-2xs text-success">
@@ -959,7 +960,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
 
       {/* Danger zone — delete your own practice (owner-or-admin, re-checked server-side). */}
       <div className="mt-6 border-t border-border pt-4">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Danger zone</p>
+        <p className={capsLabel('text-2xs font-semibold text-muted')}>Danger zone</p>
         <button
           type="button"
           onClick={() => setConfirmDelete(true)}
@@ -1011,7 +1012,7 @@ function MoveChip({ active, onClick, title, children }: { active: boolean; onCli
 function MoveStepper({ label, value, onLess, onMore }: { label: string; value: string | number; onLess: () => void; onMore: () => void }) {
   return (
     <div className="rounded-control border border-border bg-surface px-2 py-1.5 text-center">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{label}</p>
+      <p className={capsLabel('text-2xs font-semibold text-muted')}>{label}</p>
       <div className="mt-0.5 flex items-center justify-between gap-1">
         <button type="button" aria-label={`Less ${label}`} onClick={onLess} className="h-6 w-6 rounded-control border border-border text-muted transition-colors hover:bg-surface-elevated">−</button>
         <span className="min-w-8 text-body-sm font-semibold tabular-nums text-text">{value}</span>

@@ -30,6 +30,8 @@ import { appendImageDescriptor, describeImage } from '@/lib/library/image-descri
 import type { LoomPickAsset } from '@/lib/library/store'
 import { Input } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
+import { capsLabel } from '@/components/ui/caps-label'
+import { Button } from '@/components/ui/button'
 
 // Fallback config until the resolved one loads (matches the registry defaults). The real config comes
 // from the element_settings master (role-gated), resolved server-side by loomScopes().
@@ -340,7 +342,7 @@ export function LoomPicker({
               screen and squeezed the grid). */}
           <aside className="flex shrink-0 gap-3 overflow-x-auto border-b border-border p-3 sm:w-48 sm:flex-col sm:gap-0 sm:space-y-3 sm:overflow-x-visible sm:overflow-y-auto sm:border-b-0 sm:border-r">
             <div className="flex shrink-0 gap-1 sm:block sm:space-y-0.5">
-              <p className="hidden px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-muted sm:block">Browse</p>
+              <p className={capsLabel('hidden px-2.5 pb-1 text-2xs font-semibold text-muted sm:block')}>Browse</p>
               {showImages && (
                 <button type="button" onClick={() => { setView('images'); setTag(null) }} className={`${rail} ${activeView === 'images' && !tag ? railOn : railOff}`}>
                   <ImageIcon className="h-4 w-4 shrink-0" /> Images
@@ -367,7 +369,7 @@ export function LoomPicker({
                 caller has already chosen the context, so no switcher renders. */}
             {!scopeKey && config.tabs.spaces && (
             <div className="flex shrink-0 gap-1 sm:block sm:space-y-0.5">
-              <p className="hidden px-2.5 pb-1 text-2xs font-semibold uppercase tracking-wide text-muted sm:block">Library</p>
+              <p className={capsLabel('hidden px-2.5 pb-1 text-2xs font-semibold text-muted sm:block')}>Library</p>
               {scopes.map((s) => {
                 const on = s.key === scope
                 const Icon = s.kind === 'mine' ? User : Building2
@@ -546,14 +548,14 @@ export function LoomPicker({
         {multiple && (
           <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
             <span className="text-body-sm text-muted">{selected.length} selected</span>
-            <button
+            <Button
               type="button"
               onClick={confirmMany}
               disabled={selected.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+              size="md"
             >
               <Check className="h-3.5 w-3.5" /> Add {selected.length > 0 ? selected.length : ''}
-            </button>
+            </Button>
           </div>
         )}
       </div>
