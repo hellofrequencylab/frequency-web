@@ -9,6 +9,8 @@ import { AdminPageDock } from '@/components/admin/admin-page-dock'
 import { AdminFooter } from '@/components/admin/admin-footer'
 import { getMenu } from '@/lib/menus/read'
 import { viewerRoleFor } from '@/components/layout/menu-role'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyAdminConsole } from '@/components/frequency/admin/admin-console'
 
 // Admin route group. The guard is the single entry gate (host+); a viewer without
 // access is redirected home rather than shown a dead-end 404. Pages re-assert their
@@ -25,7 +27,14 @@ import { viewerRoleFor } from '@/components/layout/menu-role'
 // (railFor → 'none'). The info rail streams behind Suspense.
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { role, webRole, staffRole } = await requireAdminFloor()
+  const { profileId, role, webRole, staffRole } = await requireAdminFloor()
+
+  // THE DESIGN SWITCH (ADR-1737): under Frequency the console wears the design's admin shell (the glass
+  // sidebar over the same admin_header menu, the sticky top bar) and nothing below renders. SITE_DESIGN is
+  // build-time, so a DAWN build never takes this branch and renders exactly as before.
+  if (SITE_DESIGN === 'frequency') {
+    return <FrequencyAdminConsole profileId={profileId} role={role} webRole={webRole} staffRole={staffRole}>{children}</FrequencyAdminConsole>
+  }
 
   // The admin sub-nav (§6): the ACTIVE Studio world's sub-pages render as a flat horizontal row of
   // text links at the TOP of this sticky band, directly above the search bar — the MegaBar's second
