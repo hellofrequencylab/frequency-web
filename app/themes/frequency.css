@@ -47,6 +47,8 @@
   --color-text-muted: var(--fq-text-muted);
   /* `faint` misses AA on Commons sand; subtle text is read, so it takes muted. */
   --color-text-subtle: var(--fq-text-muted);
+  /* DAWN's burnt-brown wordmark ink (the nav's active row, the studio's swatch ring): Frequency's strongest ink. */
+  --brand-mark: var(--fq-text-strong);
 
   /* ── The dark band: Stage's UV void, the same in both modes ── */
   --color-ink: var(--fq-uv-void);
