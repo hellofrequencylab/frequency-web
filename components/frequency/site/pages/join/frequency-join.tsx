@@ -17,20 +17,25 @@
 // The reference's success panels (sample events near you, a Space "on the map") are not rendered:
 // they were sample data, and the real next screen is the induction.
 //
-// Side state is LOCAL. The shell lane owns the page-wide People/Spaces side; this screen renders each
-// half conditionally rather than through .p-only/.e-only, so an outer side state can never hide the
-// half the visitor picked here.
+// CHROME. app/join/(induction)/page.tsx renders this inside the site shell (<SiteShell>), so /join
+// wears the design's header, footer and FX like every other public page; this body is the page
+// between them (a `div.jx`, since the shell owns <main>).
+//
+// SIDE STATE IS THE SHELL'S. Join.html is the one page besides Home whose side is not locked: its
+// Looking / Hosting switch is a `data-set` toggle, remembered with the rest of the site's side and
+// chosen by `#people` / `#spaces` on arrival (lib/frequency/site-pages.ts). So the switch reads and
+// sets the shell's side (useSiteSide), and `--fq-side`, the art, the copy and the form all follow it.
+// Each half still renders conditionally, so only the picked form is in the DOM.
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { useSiteSide } from '@/components/frequency/site/shell/site-root'
 import '@/app/themes/frequency/site-pages-b.css'
 import { stashPendingInduction } from '@/app/join/(induction)/actions'
 import { captureLead } from '@/app/join/(induction)/lead-actions'
 import type { PersonaId } from '@/lib/onboarding/personas'
 import { PLAN_STORY } from '@/lib/pricing/plan-story'
-
-type Side = 'p' | 'e'
 
 const INTERESTS = ['Moving', 'Making', 'Eating', 'Sitting still', 'Going out'] as const
 
@@ -59,7 +64,7 @@ async function captureBounded(input: Parameters<typeof captureLead>[0]) {
 
 export function FrequencyJoin() {
   const router = useRouter()
-  const [side, setSide] = useState<Side>('p')
+  const [side, setSide] = useSiteSide()
   const [picked, setPicked] = useState<string[]>([])
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
@@ -134,120 +139,118 @@ export function FrequencyJoin() {
   const looking = side === 'p'
 
   return (
-    <div data-kit="site" data-surface="stage" data-side={side}>
-      <main className="jx" data-screen-label="01 Get started">
-        <div className="jx-art">
-          <Image
-            src={looking ? '/brand/frequency/photos/day-meditation-circle.jpg' : '/brand/frequency/photos/gathering-09.jpg'}
-            alt={looking ? 'A circle of people sitting together outdoors' : 'A regular group mid-session at a studio'}
-            fill
-            priority
-            sizes="(max-width: 900px) 100vw, 52vw"
-          />
-          <span className="rings" aria-hidden="true" />
-          <div className="jx-q">
-            <span className="k">{looking ? 'For people' : 'For spaces'}</span>
-            {looking ? (
-              <blockquote>
-                A hundred contacts. <em>No one to call on a Tuesday.</em>
-              </blockquote>
-            ) : (
-              <blockquote>
-                You’ve built a community. <em>Let them find it.</em>
-              </blockquote>
-            )}
-            {!looking && (
-              <span className="jx-proof">
-                <i className="fq-breathe" />
-                <span>Spaces rank by how often they gather, never by who paid.</span>
-              </span>
-            )}
-          </div>
+    <div className="jx" data-screen-label="01 Get started">
+      <div className="jx-art">
+        <Image
+          src={looking ? '/brand/frequency/photos/day-meditation-circle.jpg' : '/brand/frequency/photos/gathering-09.jpg'}
+          alt={looking ? 'A circle of people sitting together outdoors' : 'A regular group mid-session at a studio'}
+          fill
+          priority
+          sizes="(max-width: 900px) 100vw, 52vw"
+        />
+        <span className="rings" aria-hidden="true" />
+        <div className="jx-q">
+          <span className="k">{looking ? 'For people' : 'For spaces'}</span>
+          {looking ? (
+            <blockquote>
+              A hundred contacts. <em>No one to call on a Tuesday.</em>
+            </blockquote>
+          ) : (
+            <blockquote>
+              You’ve built a community. <em>Let them find it.</em>
+            </blockquote>
+          )}
+          {!looking && (
+            <span className="jx-proof">
+              <i className="fq-breathe" />
+              <span>Spaces rank by how often they gather, never by who paid.</span>
+            </span>
+          )}
         </div>
-        <div className="jx-panel">
-          <div className="jx-box">
-            <div>
-              <h1>Get started</h1>
-            </div>
-            <p className="sub">
-              {looking
-                ? 'Free, forever. Tell us where you are and we’ll show you what’s happening.'
-                : 'Free until you charge. Your contacts stay yours.'}
-            </p>
-            <div className="jx-seg" role="group" aria-label="I am" data-on={side}>
-              <span className="thumb" />
-              <button type="button" aria-pressed={looking} onClick={() => setSide('p')}>
-                Looking<small>for an experience</small>
-              </button>
-              <button type="button" aria-pressed={!looking} onClick={() => setSide('e')}>
-                Hosting<small>an experience</small>
-              </button>
-            </div>
+      </div>
+      <div className="jx-panel">
+        <div className="jx-box">
+          <div>
+            <h1>Get started</h1>
+          </div>
+          <p className="sub">
+            {looking
+              ? 'Free, forever. Tell us where you are and we’ll show you what’s happening.'
+              : 'Free until you charge. Your contacts stay yours.'}
+          </p>
+          <div className="jx-seg" role="group" aria-label="I am" data-on={side}>
+            <span className="thumb" />
+            <button type="button" data-set="p" aria-pressed={looking} onClick={() => setSide('p')}>
+              Looking<small>for an experience</small>
+            </button>
+            <button type="button" data-set="e" aria-pressed={!looking} onClick={() => setSide('e')}>
+              Hosting<small>an experience</small>
+            </button>
+          </div>
 
-            {looking ? (
-              <form className="jx-f" onSubmit={onLooking}>
+          {looking ? (
+            <form className="jx-f" onSubmit={onLooking}>
+              <label>
+                Your town
+                <input name="town" required placeholder="San Diego" autoComplete="address-level2" />
+              </label>
+              <div className="jx-lab" role="group" aria-labelledby="jx-likes">
+                <span id="jx-likes">What do you like doing?</span>
+                <span className="jx-chips">
+                  {INTERESTS.map((i) => (
+                    <button key={i} type="button" aria-pressed={picked.includes(i)} onClick={() => toggle(i)}>
+                      {i}
+                    </button>
+                  ))}
+                </span>
+              </div>
+              <label>
+                Email
+                <input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
+              </label>
+              {error && <p className="jx-err" role="alert">{error}</p>}
+              <button className="btn fq-iri-btn" type="submit" disabled={pending}>
+                {pending ? 'One sec…' : 'Show me what’s happening'}
+              </button>
+              <p className="jx-fine">One email when something you’d like is near you. No feed, no spam.</p>
+            </form>
+          ) : (
+            <form className="jx-f" onSubmit={onHosting}>
+              <label>
+                Space name
+                <input name="name" required placeholder="Saltwater Studio" />
+              </label>
+              <div className="jx-row">
                 <label>
-                  Your town
+                  Type
+                  <select name="type" defaultValue={SPACE_TYPES[0]!.label}>
+                    {SPACE_TYPES.map((t) => (
+                      <option key={t.label}>{t.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Town
                   <input name="town" required placeholder="San Diego" autoComplete="address-level2" />
                 </label>
-                <div className="jx-lab" role="group" aria-labelledby="jx-likes">
-                  <span id="jx-likes">What do you like doing?</span>
-                  <span className="jx-chips">
-                    {INTERESTS.map((i) => (
-                      <button key={i} type="button" aria-pressed={picked.includes(i)} onClick={() => toggle(i)}>
-                        {i}
-                      </button>
-                    ))}
-                  </span>
-                </div>
-                <label>
-                  Email
-                  <input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
-                </label>
-                {error && <p className="jx-err" role="alert">{error}</p>}
-                <button className="btn fq-iri-btn" type="submit" disabled={pending}>
-                  {pending ? 'One sec…' : 'Show me what’s happening'}
-                </button>
-                <p className="jx-fine">One email when something you’d like is near you. No feed, no spam.</p>
-              </form>
-            ) : (
-              <form className="jx-f" onSubmit={onHosting}>
-                <label>
-                  Space name
-                  <input name="name" required placeholder="Saltwater Studio" />
-                </label>
-                <div className="jx-row">
-                  <label>
-                    Type
-                    <select name="type" defaultValue={SPACE_TYPES[0]!.label}>
-                      {SPACE_TYPES.map((t) => (
-                        <option key={t.label}>{t.label}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Town
-                    <input name="town" required placeholder="San Diego" autoComplete="address-level2" />
-                  </label>
-                </div>
-                <label>
-                  Email
-                  <input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
-                </label>
-                {error && <p className="jx-err" role="alert">{error}</p>}
-                <button className="btn fq-iri-btn" type="submit" disabled={pending}>
-                  {pending ? 'One sec…' : 'Open my Space'}
-                </button>
-                <p className="jx-fine">{`Free to host. 0% on your own regulars, ${PLAN_STORY.plusProcessing}.`}</p>
-              </form>
-            )}
+              </div>
+              <label>
+                Email
+                <input name="email" type="email" required placeholder="you@example.com" autoComplete="email" />
+              </label>
+              {error && <p className="jx-err" role="alert">{error}</p>}
+              <button className="btn fq-iri-btn" type="submit" disabled={pending}>
+                {pending ? 'One sec…' : 'Open my Space'}
+              </button>
+              <p className="jx-fine">{`Free to host. 0% on your own regulars, ${PLAN_STORY.plusProcessing}.`}</p>
+            </form>
+          )}
 
-            <div className="jx-alt">
-              Already have an account? <Link href="/sign-in">Log in</Link>
-            </div>
+          <div className="jx-alt">
+            Already have an account? <Link href="/sign-in">Log in</Link>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

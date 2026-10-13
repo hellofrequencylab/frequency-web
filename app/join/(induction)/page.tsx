@@ -15,6 +15,7 @@ import FunnelInduction from './induction'
 import FeatureFunnel from './feature-funnel'
 import { SITE_DESIGN } from '@/lib/theme/design'
 import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
+import { SiteShell } from '@/components/frequency/site/shell/site-shell'
 
 export default async function FunnelInductionPage({
   searchParams,
@@ -90,8 +91,14 @@ export default async function FunnelInductionPage({
   // renders the induction below, resumed past its intro. Anything else (a funnel, a persona, a
   // `next`, a parked run, a signed-in member) is the induction exactly as before, and DAWN never
   // reaches this branch (SITE_DESIGN is build-time).
+  // It wears the public site's chrome (header, footer, FX) as Join.html does: /join sits outside the
+  // (marketing) layout, so the shell is rendered here, around this one branch only.
   if (SITE_DESIGN === 'frequency' && !user && !parked && !seqSlug && !personaSlug && !nextParam) {
-    return <FrequencyJoin />
+    return (
+      <SiteShell>
+        <FrequencyJoin />
+      </SiteShell>
+    )
   }
 
   if (!user) {
