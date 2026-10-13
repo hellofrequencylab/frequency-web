@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getPublishedSpotlight } from '@/lib/spotlight/data'
 import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
-import { PageHeading } from '@/components/templates'
+import { DashboardTemplate } from '@/components/templates'
 import { toMemberEntity } from '@/lib/entity-blocks/member-adapter'
 import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
 
@@ -41,13 +41,14 @@ export default async function MemberProfilePreviewPage({
   const identity = toMemberEntity(data)
 
   return (
-    <div className="space-y-8">
-      <PageHeading
-        title="Spotlight preview (block-picker)"
-        description={`A module-rendered view of ${identity.displayName}, off Puck. Staff and self preview only, nothing live changes.`}
-        adminBar={false}
-      />
+    // A staff/self diagnostic workspace, so the Dashboard shell: the same PageHeading lockup this
+    // page hand-stacked before, with the operator Settings bar off as it always was.
+    <DashboardTemplate
+      title="Spotlight preview (block-picker)"
+      description={`A module-rendered view of ${identity.displayName}, off Puck. Staff and self preview only, nothing live changes.`}
+      adminBar={false}
+    >
       <MemberProfileModules member={data} />
-    </div>
+    </DashboardTemplate>
   )
 }
