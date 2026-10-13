@@ -24,6 +24,7 @@ import { withVoice } from '@/lib/ai/voice'
 import { buildTodayCards, type TodayCard } from '@/lib/ai/vera/today'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
+import { palette } from '@/lib/theme/palette'
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
 
@@ -118,21 +119,21 @@ function briefHtml(intro: string, cards: TodayCard[], laterCount: number): strin
   const rows = cards
     .map(
       (c) => `
-    <div style="border-left:3px solid #E2912F;padding:2px 0 2px 14px;margin:0 0 16px;">
-      <p style="margin:0 0 2px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#8F8675;">${escapeHtml(c.context)} · ${escapeHtml(c.playbookName)}</p>
-      <p style="margin:0 0 4px;font-size:16px;font-weight:700;color:#3D352A;">${escapeHtml(c.name)}</p>
-      <p style="margin:0 0 4px;font-size:14px;color:#6B6253;line-height:1.55;">${escapeHtml(c.whyNow)}</p>
-      <p style="margin:0;font-size:14px;color:#3D352A;line-height:1.55;">${escapeHtml(c.actionDraft)}</p>
+    <div style="border-left:3px solid ${palette.primary};padding:2px 0 2px 14px;margin:0 0 16px;">
+      <p style="margin:0 0 2px;font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${palette.emailSubtle};">${escapeHtml(c.context)} · ${escapeHtml(c.playbookName)}</p>
+      <p style="margin:0 0 4px;font-size:16px;font-weight:700;color:${palette.text};">${escapeHtml(c.name)}</p>
+      <p style="margin:0 0 4px;font-size:14px;color:${palette.textMuted};line-height:1.55;">${escapeHtml(c.whyNow)}</p>
+      <p style="margin:0;font-size:14px;color:${palette.text};line-height:1.55;">${escapeHtml(c.actionDraft)}</p>
     </div>`,
     )
     .join('')
-  const later = laterCount > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:#8F8675;">${laterCount} more are on the Later shelf.</p>` : ''
+  const later = laterCount > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:${palette.emailSubtle};">${laterCount} more are on the Later shelf.</p>` : ''
   return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;">
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:0 0 8px;">Vera · Today</p>
-    <p style="font-size:16px;color:#3D352A;line-height:1.6;margin:0 0 20px;">${escapeHtml(intro)}</p>
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${palette.emailPrimaryStrong};margin:0 0 8px;">Vera · Today</p>
+    <p style="font-size:16px;color:${palette.text};line-height:1.6;margin:0 0 20px;">${escapeHtml(intro)}</p>
     ${rows}
     ${later}
-    <p style="margin:24px 0 0;"><a href="${BASE_URL}/admin/crm/intelligence" style="display:inline-block;background:#E2912F;color:#FFFFFF;font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;">Open Today &rarr;</a></p>
+    <p style="margin:24px 0 0;"><a href="${BASE_URL}/admin/crm/intelligence" style="display:inline-block;background:${palette.primary};color:${palette.onPrimary};font-size:15px;font-weight:700;text-decoration:none;padding:12px 26px;border-radius:10px;">Open Today &rarr;</a></p>
   </div>`
 }
 
@@ -209,8 +210,8 @@ export async function sendOwnerBrief(
 
 function unsubscribeFooterHtml(unsubscribeUrl: string): string {
   return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:0 24px 24px;">
-    <hr style="border:none;border-top:1px solid #E9E1D4;margin:8px 0 16px;"/>
-    <p style="font-size:12px;color:#8F8675;">You're getting this because you run a community on Frequency. <a href="${unsubscribeUrl}" style="color:#8F8675;">Turn off the daily brief</a> or manage emails any time.</p>
+    <hr style="border:none;border-top:1px solid ${palette.emailBorder};margin:8px 0 16px;"/>
+    <p style="font-size:12px;color:${palette.emailSubtle};">You're getting this because you run a community on Frequency. <a href="${unsubscribeUrl}" style="color:${palette.emailSubtle};">Turn off the daily brief</a> or manage emails any time.</p>
   </div>`
 }
 

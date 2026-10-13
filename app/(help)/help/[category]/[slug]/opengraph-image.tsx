@@ -5,6 +5,7 @@ import { SITE_NAME } from '@/lib/site'
 import { loadNunito } from '@/lib/og/load-nunito'
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
+import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `A help article on ${SITE_NAME}`
@@ -46,10 +47,10 @@ export const contentType = OG_CONTENT_TYPE
 // check:build-budget pays 2 x 17.7MB of libvips on 6.27GB of an 8GB ceiling. Both are readings to
 // confirm against the real postbuild output, not to take on trust from this comment.
 //
-// Satori has no access to the CSS token system, so the two colours are literals mirroring the group
-// card (indigo #6366f1) exactly.
+// Satori has no access to the CSS token system, so the two colours come from the design-keyed palette
+// (lib/theme/palette.ts ogAccent / ogAccentSoft), the same pair the group card draws.
 
-const INDIGO = '#6366f1'
+const INDIGO = palette.ogAccent
 
 /** The same photograph the group card draws, so a help link previews as the help centre whichever
  *  card answers it. Literal path: @vercel/nft cannot resolve one assembled from a variable, and a
@@ -177,7 +178,7 @@ export default async function Image({
                 fontSize: 24,
                 fontWeight: 700,
                 letterSpacing: '0.04em',
-                color: '#c7d2fe',
+                color: palette.ogAccentSoft,
                 backgroundColor: 'rgba(99,102,241,0.24)',
               }}
             >

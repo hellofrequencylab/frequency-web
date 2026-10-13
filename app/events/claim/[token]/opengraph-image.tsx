@@ -10,6 +10,7 @@ import { fetchRemoteImage } from '@/lib/og/remote-image'
 import { siteMarkDataUrl } from '@/lib/og/local-image'
 import { loadNunito } from '@/lib/og/load-nunito'
 import { SITE_NAME } from '@/lib/site'
+import { palette } from '@/lib/theme/palette'
 
 export const runtime = 'nodejs'
 export const alt = `Claim your event on ${SITE_NAME}`
@@ -24,7 +25,7 @@ export const contentType = OG_CONTENT_TYPE
 // event page hero shows — plus the event title, an "Event" pill, the pitch line, and the Frequency
 // watermark. Only a PUBLISHED, still-UNCLAIMED, un-removed event behind the token resolves; anything
 // else (or a coverless event) falls back to the neutral shared claim card, so a guessed / used token
-// reveals nothing. Events indigo accent (#6366f1) mirrors the per-event OG card.
+// reveals nothing. Events indigo accent (palette.ogAccent) mirrors the per-event OG card.
 //
 // COVER PARITY — this must resolve the exact hero the event page renders (app/(main)/events/[slug]/page.tsx):
 // uploaded PUBLIC cover → full scanned poster → the scanner's cropped cover. That precedence used to
@@ -37,8 +38,8 @@ export const contentType = OG_CONTENT_TYPE
 // valid at request time. Any miss (no cover, or a slow/broken/oversized fetch) yields the branded
 // placeholder card.
 
-const ON_INK = '#F3EEE3'
-const INDIGO = '#6366f1'
+const ON_INK = palette.onInk
+const INDIGO = palette.ogAccent
 
 type EventClaimRow = {
   id: string

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { EMAIL_BASE_URL, EMAIL_SHELL_STYLES, emailPostalAddress, type EmailFooter } from '@/lib/email'
+import { palette } from '@/lib/theme/palette'
 
 // THE REACT EMAIL BASE TEMPLATE (LIVE-695). The same brand wrapper `emailShell` (lib/email.ts)
 // writes as a string: doctype, head, the wordmark and tagline, the card, and the footer with the
@@ -61,7 +62,7 @@ export function EmailShell({ children, footer }: { children: ReactNode; footer?:
                 Unsubscribe or manage emails
               </a>
             )}
-            <p style={{ margin: '16px 0 0', color: '#A89E8C' /* token-ok: email HTML */ }}>{emailPostalAddress()}</p>
+            <p style={{ margin: '16px 0 0', color: palette.emailFaint }}>{emailPostalAddress()}</p>
           </div>
         </div>
       </body>
