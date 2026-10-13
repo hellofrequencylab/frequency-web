@@ -52,7 +52,7 @@ export default async function SpaceSharedContactsPage({
       back={{ href: `/spaces/${space.slug}/crm`, label: 'CRM' }}
       width="wide"
     >
-      <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-surface-elevated/50" />}>
+      <Suspense fallback={<div className="h-64 animate-pulse rounded-card bg-surface-elevated/50" />}>
         <SharedSection spaceId={space.id} />
       </Suspense>
     </DashboardTemplate>

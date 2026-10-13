@@ -222,7 +222,7 @@ function CampaignsSkeleton() {
   return (
     <div className="space-y-px rounded-card border border-border bg-surface p-2 lift-1">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-elevated/50" />
+        <div key={i} className="h-14 animate-pulse rounded-control bg-surface-elevated/50" />
       ))}
     </div>
   )

@@ -76,7 +76,7 @@ export function EventDangerZone({
         <div className="mt-3">
           <Link
             href={`/events/new?duplicate=${eventId}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-4 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
           >
             <Copy className="h-3.5 w-3.5" /> Duplicate event
           </Link>

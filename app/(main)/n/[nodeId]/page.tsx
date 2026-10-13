@@ -60,7 +60,7 @@ export default async function NodePage({
       description={partnerName ? `at ${partnerName}` : undefined}
     >
       <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
           <MapPin className="h-8 w-8" />
         </div>
 

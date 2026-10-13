@@ -82,11 +82,11 @@ export async function CircleTasksSection({
           return (
             <div
               key={task.id}
-              className={`rounded-2xl px-4 py-3 flex items-start gap-3 ${
+              className={`rounded-card px-4 py-3 flex items-start gap-3 ${
                 mine ? 'bg-primary-bg/40 dark:bg-primary-bg/15' : 'bg-surface-elevated/60'
               }`}
             >
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 bg-surface-elevated">
+              <div className="flex items-center justify-center w-8 h-8 rounded-control shrink-0 bg-surface-elevated">
                 <ClipboardList className={`w-4 h-4 ${claimed ? 'text-primary' : 'text-subtle'}`} />
               </div>
 

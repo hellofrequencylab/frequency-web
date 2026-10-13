@@ -12,7 +12,7 @@ import { resolveIndexHero } from '@/lib/layout/index-hero'
 // <PageModules>, which lays out the page's blocks (the two ways in, your journeys, the community
 // library) in the operator-chosen template + order. Staff arrange it from the on-page
 // Settings → Layout panel (the route is registered in lib/widgets/module-routes.ts). Each block is
-// a self-fetching RSC in components/widgets/journeys/*.
+// a self-fetching RSC in components/widgets/journeys/.
 
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
@@ -64,7 +64,7 @@ export default async function JourneysPage() {
           {ctaLabel && ctaHref && (
             <a
               href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
             >
               {ctaLabel}
             </a>
@@ -82,7 +82,7 @@ export default async function JourneysPage() {
         <aside className="w-full lg:w-72 lg:shrink-0">
           <Link
             href="/journeys/mine"
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+            className="flex w-full items-center justify-center gap-2 rounded-control bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
           >
             <FolderOpen className="h-4 w-4" /> Your journeys
           </Link>

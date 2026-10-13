@@ -315,7 +315,7 @@ export default async function JourneyPlanPage({
             <span className="text-body-sm text-muted">Preview. How others see your Journey.</span>
             <Link
               href={`/journeys/${plan.slug}/edit`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Pencil className="h-3.5 w-3.5" /> Back to editing
             </Link>

@@ -423,7 +423,7 @@ export default async function MessagesPage({
   }
 
   const filterTabs = (
-    <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+    <div className="flex items-center gap-0.5 rounded-control bg-surface-elevated p-0.5">
       {FILTERS.map(f => (
         <Link
           key={f.value}
@@ -439,7 +439,7 @@ export default async function MessagesPage({
   )
 
   const sortTabs = (
-    <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+    <div className="flex items-center gap-0.5 rounded-control bg-surface-elevated p-0.5">
       {SORTS.map(s => (
         <Link
           key={s.value}
@@ -479,7 +479,7 @@ export default async function MessagesPage({
           {ctaLabel && ctaHref && (
             <a
               href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
             >
               {ctaLabel}
             </a>
@@ -546,9 +546,9 @@ export default async function MessagesPage({
                 <Link
                   key={room.id}
                   href={`/messages/r/${room.id}`}
-                  className="flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-surface-elevated"
+                  className="flex items-center gap-3 rounded-control px-3 py-3 transition-colors hover:bg-surface-elevated"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-signal-bg text-signal-strong">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-signal-bg text-signal-strong">
                     <Hash className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -576,7 +576,7 @@ export default async function MessagesPage({
                   key={room.id}
                   href={`/messages/r/${room.id}`}
                   anchor={
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
                       <Hash className="h-5 w-5" />
                     </span>
                   }
@@ -602,11 +602,11 @@ function RoomRowItem({ room }: { room: RoomRow }) {
   return (
     <Link
       href={`/messages/r/${room.id}`}
-      className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-surface-elevated transition-colors"
+      className="flex items-center gap-3 rounded-control px-3 py-3 hover:bg-surface-elevated transition-colors"
     >
       {/* Always the hash — a room never wears a padlock (GateNotice canon); privacy is
           said in words in the meta line instead. */}
-      <div className="shrink-0 w-10 h-10 rounded-lg bg-primary-bg flex items-center justify-center">
+      <div className="shrink-0 w-10 h-10 rounded-control bg-primary-bg flex items-center justify-center">
         <Hash className="w-4 h-4 text-primary-strong" />
       </div>
       <div className="flex-1 min-w-0">
@@ -648,7 +648,7 @@ async function DMRowItem({ conv, myProfileId, onlineIds }: { conv: ConversationR
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 rounded-lg px-3 py-3 transition-colors ${
+      className={`flex items-center gap-3 rounded-control px-3 py-3 transition-colors ${
         hasUnread
           ? 'bg-primary-bg/70 hover:bg-primary-bg dark:hover:bg-primary-bg'
           : 'hover:bg-surface-elevated'

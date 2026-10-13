@@ -365,12 +365,12 @@ export function ShowManager({
               <li key={show.id} className="space-y-3 rounded-card border border-border bg-surface p-4">
                 <div className="flex items-start gap-3">
                   {coverUrl ? (
-                    <span className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border">
+                    <span className="h-14 w-14 shrink-0 overflow-hidden rounded-control border border-border">
                       {/* eslint-disable-next-line @next/next/no-img-element -- Loom asset URL, not a build asset */}
                       <img src={coverUrl} alt="" className="h-full w-full object-cover" />
                     </span>
                   ) : (
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-muted">
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-control border border-dashed border-border text-muted">
                       <Podcast className="h-5 w-5" aria-hidden />
                     </span>
                   )}
@@ -509,7 +509,7 @@ function EpisodePanel({
             {eps.map((ep, i) => {
               const status = feedStatus(ep)
               return (
-                <li key={ep.id} className="space-y-2 rounded-lg border border-border bg-surface p-3">
+                <li key={ep.id} className="space-y-2 rounded-control border border-border bg-surface p-3">
                   <div className="flex items-start gap-2">
                     <div className="flex shrink-0 flex-col">
                       <button
@@ -574,7 +574,7 @@ function EpisodePanel({
                         value={toLocalInput(ep.publishedAt)}
                         disabled={pending}
                         onChange={(e) => onSetVisibility(ep.id, ep.visibility, fromLocalInput(e.target.value))}
-                        className="rounded-lg border border-border bg-surface px-2 py-1 text-3xs text-text outline-none focus:border-border-strong"
+                        className="rounded-control border border-border bg-surface px-2 py-1 text-3xs text-text outline-none focus:border-border-strong"
                       />
                     </label>
                     {!ep.publishedAt && (
@@ -606,7 +606,7 @@ function EpisodePanel({
         ) : (
           <ul className="space-y-1.5">
             {unassigned.map((r) => (
-              <li key={r.id} className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+              <li key={r.id} className="flex items-center gap-2 rounded-control border border-border bg-surface px-3 py-2">
                 {r.mediaKind === 'video' ? (
                   <Video className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
                 ) : (

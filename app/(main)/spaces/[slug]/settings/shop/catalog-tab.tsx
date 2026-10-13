@@ -85,7 +85,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
               Space's Loom. The full item form below still creates products and tickets. */}
           <Link
             href={`/spaces/${slug}/settings/services/new`}
-            className="flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary-bg/10 p-4 transition-colors hover:bg-primary-bg/20"
+            className="flex items-start gap-3 rounded-card border border-primary/30 bg-primary-bg/10 p-4 transition-colors hover:bg-primary-bg/20"
           >
             <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
             <span className="min-w-0">
@@ -96,7 +96,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
             </span>
           </Link>
 
-          <details className="rounded-2xl border border-border bg-surface p-4">
+          <details className="rounded-card border border-border bg-surface p-4">
             <summary className="cursor-pointer text-body-sm font-semibold text-text">+ New item</summary>
             <ItemForm slug={slug} mode="create" />
           </details>

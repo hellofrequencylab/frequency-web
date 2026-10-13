@@ -124,7 +124,7 @@ export default async function SplashFunnelsPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/pages"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> All pages
           </Link>
@@ -335,7 +335,7 @@ export default async function SplashFunnelsPage() {
                   >
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-lg ${s.accent.icon}`}>
+                        <span className={`inline-flex h-6 w-6 items-center justify-center rounded-control ${s.accent.icon}`}>
                           <s.icon className="h-3.5 w-3.5" aria-hidden />
                         </span>
                         <h3 className="text-body font-bold text-text">{seq.audience}</h3>
@@ -391,7 +391,7 @@ export default async function SplashFunnelsPage() {
                 </span>
                 <p className="mt-3 text-body-sm font-semibold text-text">Planned</p>
                 <p className="mx-auto mt-1 max-w-md text-meta leading-relaxed text-muted">{s.blurb}</p>
-                <span className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-subtle">
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-subtle">
                   <Lock className="h-3.5 w-3.5" /> Not available yet
                 </span>
               </div>

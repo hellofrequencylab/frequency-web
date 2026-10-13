@@ -27,7 +27,7 @@ export function OutreachCard({ claimToken, slug, sentTo }: { claimToken: string;
   }
 
   return (
-    <div className="rounded-2xl border border-primary/40 bg-primary-bg/60 p-4">
+    <div className="rounded-card border border-primary/40 bg-primary-bg/60 p-4">
       <p className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <Zap className="h-4 w-4 text-primary" />{' '}
         {sentTo ? 'It is live, and the organizer has been emailed.' : 'It is live. Now tell the organizer.'}

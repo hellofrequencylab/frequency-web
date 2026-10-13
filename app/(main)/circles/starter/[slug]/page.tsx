@@ -192,7 +192,7 @@ function RhythmRow({
 }) {
   return (
     <div className="flex items-start gap-3 rounded-card border border-border bg-surface p-4">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-elevated text-primary-strong">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-surface-elevated text-primary-strong">
         {icon}
       </span>
       <div className="min-w-0">

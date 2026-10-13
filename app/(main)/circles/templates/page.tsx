@@ -51,7 +51,7 @@ export default async function StarterCirclesPage() {
           action={
             <Link
               href="/circles/new"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <PenLine className="h-4 w-4" aria-hidden /> Start from scratch
             </Link>
@@ -75,7 +75,7 @@ export default async function StarterCirclesPage() {
       action={
         <Link
           href="/circles/new"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
         >
           <PenLine className="h-4 w-4" aria-hidden /> Start from scratch
         </Link>
@@ -90,7 +90,7 @@ export default async function StarterCirclesPage() {
           action={
             <Link
               href="/circles/new"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+              className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
             >
               <PenLine className="h-4 w-4" aria-hidden /> Start from scratch
             </Link>

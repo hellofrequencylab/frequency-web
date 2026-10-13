@@ -844,7 +844,7 @@ function ProfileStandingCard({
             <Link
               key={r.label}
               href={r.href}
-              className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-surface-elevated"
+              className="group flex items-center gap-2.5 rounded-control px-2 py-1.5 transition-colors hover:bg-surface-elevated"
             >
               {body}
               <ArrowRight className="h-3 w-3 shrink-0 text-subtle opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />

@@ -88,7 +88,7 @@ export default async function SpaceLeadsPage({ params }: { params: Promise<{ slu
       }
       width="wide"
     >
-      <Suspense fallback={<div className="h-64 animate-pulse rounded-2xl bg-surface-elevated/50" />}>
+      <Suspense fallback={<div className="h-64 animate-pulse rounded-card bg-surface-elevated/50" />}>
         <LeadsSection spaceId={space.id} boardHref={boardHref} codesHref={codesHref} />
       </Suspense>
     </DashboardTemplate>
@@ -123,7 +123,7 @@ function StatsSkeleton() {
   return (
     <>
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
+        <div key={i} className="h-20 animate-pulse rounded-card bg-surface-elevated/50" />
       ))}
     </>
   )

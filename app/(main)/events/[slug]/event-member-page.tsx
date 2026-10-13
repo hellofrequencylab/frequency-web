@@ -2160,7 +2160,7 @@ export default async function EventDetailPage({
           // No cover: a designed placeholder, not a blank box. Mirrors the
           // circle-card no-cover fill (soft DAWN gradient + centered icon) and
           // leads with the event's date so the slot still says something.
-          <div className={`-mx-4 sm:mx-0 relative flex ${posterHeightCls} w-auto sm:w-full items-center justify-center overflow-hidden rounded-none sm:rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
+          <div className={`-mx-4 sm:mx-0 relative flex ${posterHeightCls} w-auto sm:w-full items-center justify-center overflow-hidden rounded-none sm:rounded-card bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
             <div className="flex flex-col items-center gap-1 text-center">
               <CalendarDays className="h-7 w-7 opacity-80" />
               <span className="text-display-h3 font-bold leading-none">
@@ -2465,7 +2465,7 @@ export default async function EventDetailPage({
       // one-tap claim; signed-out → the host setup funnel, which returns here to finish.
       bodyLead={
         claim && isUnclaimedPosted && extra?.claim_token && claim === extra.claim_token ? (
-          <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-primary/40 bg-primary-bg/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-5 flex flex-col gap-4 rounded-card border border-primary/40 bg-primary-bg/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-body-lg font-bold text-text">
                 <Zap className="h-5 w-5 shrink-0 text-primary" aria-hidden /> Is this your event?

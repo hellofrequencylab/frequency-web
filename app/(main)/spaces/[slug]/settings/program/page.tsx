@@ -140,17 +140,17 @@ export default async function SpaceProgramPage({
           />
         )}
         {errorMsg && (
-          <p className="rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-body-sm text-danger">
+          <p className="rounded-control border border-danger/30 bg-danger-bg px-3 py-2 text-body-sm text-danger">
             {errorMsg}
           </p>
         )}
         {!errorMsg && saved && (
-          <p className="rounded-lg border border-success/30 bg-success-bg px-3 py-2 text-body-sm text-success">
+          <p className="rounded-control border border-success/30 bg-success-bg px-3 py-2 text-body-sm text-success">
             Saved.
           </p>
         )}
         {spacePlan && (
-          <p className="rounded-lg border border-border bg-surface px-3 py-2 text-body-sm text-muted">
+          <p className="rounded-control border border-border bg-surface px-3 py-2 text-body-sm text-muted">
             Producing <span className="font-medium text-text">{spacePlan.title}</span>.
             {programs.length > 0
               ? ' This space already runs a Program, so this page edits the one you have.'
@@ -158,7 +158,7 @@ export default async function SpaceProgramPage({
           </p>
         )}
         {droppedPlanLink && (
-          <p className="rounded-lg border border-warning/40 bg-warning-bg/30 px-3 py-2 text-body-sm text-text">
+          <p className="rounded-control border border-warning/40 bg-warning-bg/30 px-3 py-2 text-body-sm text-text">
             You opened this from a Plan this space does not run, so the Program below will not be
             linked to it. Open the Plan from the space Calendar and try again.
           </p>

@@ -16,7 +16,7 @@ export default function PersonDetailLoading() {
     <div>
       {/* Cover band: avatar + name + @handle overlaid, matching PageHero's `standard` min-height
           so the real hero lands at the same height this paints. */}
-      <div className="relative min-h-[15rem] overflow-hidden rounded-2xl bg-surface-elevated sm:min-h-[20rem]">
+      <div className="relative min-h-[15rem] overflow-hidden rounded-card bg-surface-elevated sm:min-h-[20rem]">
         <div className="absolute inset-x-0 bottom-0 flex items-end gap-4 p-5 sm:p-6">
           <Skeleton className="h-16 w-16 shrink-0 rounded-pill sm:h-20 sm:w-20" />
           <div className="min-w-0 flex-1 space-y-2">

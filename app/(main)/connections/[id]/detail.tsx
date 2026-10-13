@@ -190,7 +190,7 @@ export function Detail({
             ]}
           />
           {/* At-a-glance visibility; the actionable toggle + helper live in the Sharing section below. */}
-          <span className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2 py-1 text-meta font-medium text-muted">
+          <span className="inline-flex items-center gap-1 rounded-control border border-border-strong px-2 py-1 text-meta font-medium text-muted">
             {contact.visibility === 'network' ? (
               <Globe className="h-3.5 w-3.5" />
             ) : contact.visibility === 'shared' ? (
@@ -400,7 +400,7 @@ export function Detail({
             onChange={(e) => setTagDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); onAddTag(tagDraft) } }}
             placeholder={tags.length ? 'Add…' : 'Add a tag…'}
-            className="min-w-[7rem] flex-1 rounded-lg border border-transparent bg-surface-elevated px-2 py-1 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
+            className="min-w-[7rem] flex-1 rounded-control border border-transparent bg-surface-elevated px-2 py-1 text-body-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none"
           />
         </div>
       </Section>
