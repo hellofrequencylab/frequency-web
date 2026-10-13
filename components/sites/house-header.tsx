@@ -48,6 +48,7 @@ export function HouseHeader({
   skinned,
   fadeOnPause = true,
   member = null,
+  brandMark = null,
 }: {
   brandName: string
   homeHref: string
@@ -62,6 +63,9 @@ export function HouseHeader({
   /** The reader's own membership in this Space (components/sites/site-member-badge.tsx), beside the
    *  button. An island, so the cached header stays the same for everyone (LIVE-699). */
   member?: ReactNode
+  /** A skin's own drawing of the mark for the logo slot (the Wildheart LogoMark), in place of the logo image
+   *  and the name. The server draws it; this island only places it. */
+  brandMark?: ReactNode
 }) {
   const [mega, setMega] = useState<string | null>(null)
   const [hidden, setHidden] = useState(false)
@@ -130,20 +134,21 @@ export function HouseHeader({
       }}
     >
       <div className="hs-pill">
-        <a href={homeHref} className="hs-brand" aria-label={showImage ? brandName : undefined}>
-          {showPhoto && (
+        <a href={homeHref} className="hs-brand" aria-label={brandMark ? `${brandName} home` : showImage ? brandName : undefined}>
+          {brandMark}
+          {!brandMark && showPhoto && (
             // eslint-disable-next-line @next/next/no-img-element -- operator photo on an arbitrary host
             <img src={logoUrl} alt="" className="hs-logo hs-logo-avatar" />
           )}
-          {showImage && (
+          {!brandMark && showImage && (
             // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
             <img src={logoUrl} alt={brandName} className="hs-logo hs-logo-image" />
           )}
-          {skinned && logoUrl && logoMode === 'name' && (
+          {!brandMark && skinned && logoUrl && logoMode === 'name' && (
             // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
             <img src={logoUrl} alt="" className="hs-logo" />
           )}
-          {!showImage && <span className="hs-brand-name">{brandName}</span>}
+          {!brandMark && !showImage && <span className="hs-brand-name">{brandName}</span>}
         </a>
         {(links.length > 0 || (adminLinks?.length ?? 0) > 0) && (
           <nav aria-label={`${brandName} menu`} className="hs-nav">
@@ -178,10 +183,10 @@ export function HouseHeader({
                   </a>
                 ),
               )}
-              {adminLinks && adminLinks.length > 0 && (
+              {adminLinks && adminLinks.some((l) => !l.footerOnly) && (
                 <span className="hs-nav-admin">
-                  <span className="hs-nav-admin-tag">Admin:</span>
-                  {adminLinks.map((l, i) => (
+                  <span className="hs-nav-admin-tag">Admin<span className="hs-nav-admin-colon">:</span></span>
+                  {adminLinks.filter((l) => !l.footerOnly).map((l, i) => (
                     <Fragment key={l.href}>
                       {i > 0 && <span className="hs-nav-admin-sep" aria-hidden>|</span>}
                       <a href={l.href} aria-current={l.current ? 'page' : undefined} onMouseEnter={closeMega}>

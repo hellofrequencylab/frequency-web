@@ -38,7 +38,7 @@ const PAGE_OWN_RENDER = new Set([
   // and strip, seal cards, season band, retreat band, mark split. Tokens only, so the other themes get them
   // in their own palette.
   'WildheartOrnament', 'WildheartPhoto', 'WildheartMoonPath', 'WildheartMoonStrip', 'WildheartSealCards',
-  'WildheartSeasonBand', 'WildheartRetreatBand', 'WildheartMarkSplit',
+  'WildheartSeasonBand', 'WildheartRetreatBand', 'WildheartMarkSplit', 'WildheartModules', 'WildheartFirstNight',
 ])
 
 /** Home blocks that keep the Space page's own render (inside the house `.hs-plain` band). */

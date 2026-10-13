@@ -21,6 +21,7 @@ export function HouseMenu({ label, links }: { label: string; links: { href: stri
         onClick={() => setOpen((o) => !o)}
       >
         {open ? <X className="h-4 w-4" aria-hidden /> : <Menu className="h-4 w-4" aria-hidden />}
+        <span className="hs-menu-label sr-only">{open ? 'Close' : 'Menu'}</span>
       </button>
       {open && (
         <nav id="hs-menu-panel" aria-label={label} className="hs-menu-panel">

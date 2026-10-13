@@ -9,19 +9,24 @@ export interface SiteAdminNavLink {
   href: string
   label: string
   current?: boolean
+  /** Listed in the footer's admin section only, not the header. */
+  footerOnly?: boolean
 }
 
 /** The admin links: the two admin pages, on the site's own host or through the console's handoff, then
- *  the console's Leadership page (footer only). */
+ *  the console's Leadership page (footer only). The Wildheart theme names the same two pages the way its
+ *  handoff does (Vision, Calendar) in its admin chip; the Website builder rides the footer section only. */
 export function siteAdminNavLinks(
   hrefs: { overview: string; calendar: string; editor?: string; console: string },
   current: 'overview' | 'calendar' | 'editor' | null = null,
+  theme?: 'wildheart',
 ): { menu: SiteAdminNavLink[]; console: string } {
+  const wild = theme === 'wildheart'
   return {
     menu: [
-      ...(hrefs.editor ? [{ href: hrefs.editor, label: 'Website builder', current: current === 'editor' }] : []),
-      { href: hrefs.overview, label: 'Executive Overview', current: current === 'overview' },
-      { href: hrefs.calendar, label: 'Yearly Calendar', current: current === 'calendar' },
+      ...(hrefs.editor ? [{ href: hrefs.editor, label: 'Website builder', current: current === 'editor', footerOnly: wild }] : []),
+      { href: hrefs.overview, label: 'Executive Overview', current: current === 'overview', ...(wild ? { label: 'Vision' } : {}) },
+      { href: hrefs.calendar, label: 'Yearly Calendar', current: current === 'calendar', ...(wild ? { label: 'Calendar' } : {}) },
     ],
     console: hrefs.console,
   }

@@ -71,7 +71,7 @@ describe('the Wildheart website skin', () => {
   })
 
   it('draws the date line and the calendar family, and honours reduced motion', () => {
-    for (const c of ['.wh-nowline', '.wh-glyph', '.wh-moon', '.wh-journey', '.wh-wheel', '.wh-row', '.wh-skymap-months']) expect(skin).toContain(c)
+    for (const c of ['.wh-nowline', '.wh-glyph', '.wh-moon', '.wh-yj-stage', '.wh-yj-rotor', '.wh-zw', '.wh-sm-grid', '.wh-track-range', '.wh-row', '.wh-fixed', '.wh-fixed-spacer', '.wh-logo']) expect(skin).toContain(c)
     expect(skin).toMatch(/@media \(prefers-reduced-motion:reduce\)\{\[data-house-theme="wildheart"\] \*\{transition:none!important;animation:none!important\}\}/)
   })
 })

@@ -8,33 +8,45 @@ const metadata = { space: { events: [{ id: 'e1', slug: 'first', title: 'Spring g
 
 describe('the astrology calendar block family', () => {
   it('registers three blocks whose defaults are generic and gender-neutral', () => {
-    expect(Object.keys(wildheartComponents)).toEqual(['WildheartYearJourney', 'WildheartSkyMap', 'WildheartNowLine', 'WildheartOrnament', 'WildheartPhoto', 'WildheartMoonPath', 'WildheartSealCards', 'WildheartSeasonBand', 'WildheartRetreatBand', 'WildheartMarkSplit', 'WildheartMoonStrip'])
+    expect(Object.keys(wildheartComponents)).toEqual(['WildheartYearJourney', 'WildheartSkyMap', 'WildheartNowLine', 'WildheartOrnament', 'WildheartPhoto', 'WildheartMoonPath', 'WildheartSealCards', 'WildheartSeasonBand', 'WildheartRetreatBand', 'WildheartMarkSplit', 'WildheartMoonStrip', 'WildheartModules', 'WildheartFirstNight'])
     const copy = JSON.stringify(Object.values(wildheartComponents).map((c) => [c.label, c.defaultProps]))
     expect(copy).not.toMatch(/women|sister|\bher\b|circle night|samhain|retreat|—/i)
     for (const c of Object.values(wildheartComponents)) expect(c.fields).toHaveProperty('layout')
   })
 
-  it('sorts the sky and the Space events into the strip, marking the sign now', () => {
-    const html = renderToStaticMarkup(<WildheartYearJourneyBlock heading="Every season has a door." now={now} metadata={metadata} />)
+  it('curates the year journey\'s stops from the sky and the Space events and hands the island its wheel', () => {
+    const md = { space: { events: [...metadata.space.events, { id: 'w1', slug: 'w1', title: 'Week 1 · Arriving', startsAt: '2027-01-05T18:00' }, { id: 'cn', slug: 'cn', title: 'Circle Night', startsAt: '2027-03-09T18:00' }] } }
+    const html = renderToStaticMarkup(<WildheartYearJourneyBlock heading="Every season has a door." year={2027} now={now} metadata={md} programStops={[{ match: 'Week 1', title: 'Foundation begins', note: 'Tuesdays 6 PM', teach: 'Eight weeks.' }, { match: 'Circle Night', after: 'Week 1', title: 'Circle Nights begin', note: '', teach: 'Every other week.' }]} />)
     expect(html).toContain('Every season has a door.')
-    expect(html).toContain('Spring gathering')
-    expect(html).toContain('A quiet evening')
+    expect(html).toContain('The year opens')
+    expect(html).toContain('The sun enters Aquarius')
     expect(html).toContain('Ostara')
-    expect(html).toContain('Worm Moon')
-    expect(html).toContain('aria-current="date"')
-    expect((html.match(/<li data-season="/g) ?? []).length).toBe(12)
+    expect(html).toContain('Wolf Moon')
+    expect(html).toContain('Foundation begins')
+    expect(html).toContain('Circle Nights begin')
+    expect(html).toContain('Spring gathering')
+    expect((html.match(/class="wh-yj-panel"/g) ?? []).length).toBeLessThanOrEqual(14)
+    expect((html.match(/class="wh-yj-glyph"/g) ?? []).length).toBeGreaterThanOrEqual(11)
+    expect((html.match(/class="wh-yj-season"/g) ?? []).length).toBe(4)
+    expect(html).toContain('wh-yj-rail-stop')
     expect(html).not.toMatch(/️/)
   })
 
-  it('draws the sky map as an SVG wheel with twelve glyphs, four season arcs and a dot per item', () => {
-    const html = renderToStaticMarkup(<WildheartSkyMapBlock now={now} metadata={metadata} />)
-    expect((html.match(/class="wh-wheel-glyph"/g) ?? []).length).toBe(12)
-    expect((html.match(/class="wh-wheel-season"/g) ?? []).length).toBe(4)
-    expect(html).toContain('data-now=""')
-    expect((html.match(/class="wh-wheel-dot"/g) ?? []).length).toBeGreaterThanOrEqual(8 + 24 + 2)
-    expect(html).toContain('Mar 23 · Spring gathering')
-    expect(html).toContain('class="wh-wheel-needle"')
-    expect(html).toContain('Aries')
+  it('draws the sky map as the zodiac wheel with twelve signs, the sign now, its module and the rows in its scope', () => {
+    const html = renderToStaticMarkup(<WildheartSkyMapBlock now={now} metadata={metadata} modules={[{ sign: 'aries', title: 'Rage', theme: 'Anger as life force' }]} />)
+    expect((html.match(/class="wh-zw-sign"/g) ?? []).length).toBe(12)
+    expect(html).toContain('data-season="spring"')
+    expect(html).toContain('Spring gathering')
+    expect(html).toContain('Ostara')
+    expect(html).toContain('Rage')
+    expect(html).toContain('Anger as life force.')
+    expect(html).toContain('In this sign')
+    expect(html).toContain('Festivals')
+    expect(html).toContain('class="wh-track-range"')
+    const compact = renderToStaticMarkup(<WildheartSkyMapBlock now={now} layout="compact" metadata={metadata} />)
+    expect(compact).toContain('wh-sm-compact')
+    expect(compact).toContain('Coming up')
+    expect(compact).toContain('Today')
   })
 
   it('reads the date line for a day', () => {
@@ -50,7 +62,7 @@ describe('the astrology calendar block family', () => {
     const html = renderToStaticMarkup(<WildheartSkyMapBlock year={2030} now={now} />)
     expect(html).toContain('2030')
     expect(html).toContain('Yule')
-    expect(html).not.toContain('wh-wheel-needle"')
+    expect(html).toContain('Calling')
   })
 
   it('registers every composition block on the website palette with a layout field and generic defaults', () => {
@@ -71,7 +83,7 @@ describe('the astrology calendar block family', () => {
   })
 
   it('waxes the moon path from new to full across its steps', () => {
-    expect([0, 1, 2, 3, 4, 5].map((i) => stepPhase(i, 6))).toEqual([0, 1, 2, 2, 3, 4])
+    expect([0, 1, 2, 3, 4, 5].map((i) => stepPhase(i, 6))).toEqual([0, 1, 2, 3, 4, 4])
     const html = renderToStaticMarkup(<WildheartMoonPathBlock heading="Wax at your own pace." steps={[{ title: 'Visit' }, { title: 'Join' }, { title: 'Host' }]} />)
     expect(html).toContain('aria-label="New moon"')
     expect(html).toContain('aria-label="Full moon"')
@@ -90,7 +102,7 @@ describe('the astrology calendar block family', () => {
     const html = renderToStaticMarkup(<WildheartSeasonBandBlock now={now} modules={[{ sign: 'aries', title: 'Rage', theme: 'Anger as life force' }]} beats={[{ letter: 'P', word: 'Presence' }]} gatheringLabel="Circle Night" metadata={md} />)
     expect(html).toContain('data-season="spring"')
     expect(html).toContain('Rage')
-    expect(html).toContain('Next · Circle Night')
+    expect(html).toContain('Next Circle Night')
     expect(html).toContain('Mar 30')
     expect(html).toContain('Full moon circle')
     expect(html).not.toContain('Long ago')
@@ -106,10 +118,14 @@ describe('the astrology calendar block family', () => {
     expect(html).toContain('data-accent=""')
     expect(html).toContain('wh-retreat-seal')
     expect(html).toContain('Held separately')
-    const split = renderToStaticMarkup(<WildheartMarkSplitBlock heading="About us" lead="A circle." note="Not therapy." metadata={{ space: { name: 'Any Space', logoUrl: '/brand/wildheart/wildheart-logo.svg' } }} />)
+    const split = renderToStaticMarkup(<WildheartMarkSplitBlock heading="About us" lead="A circle." note="Not therapy." metadata={{ space: { name: 'Wildheart', logoUrl: '/brand/wildheart/wildheart-logo.svg' } }} />)
     expect(split).toContain('wh-mark-logo')
     expect(split).toContain('role="separator"')
-    expect(renderToStaticMarkup(<WildheartMarkSplitBlock heading="About us" metadata={{ space: { name: 'Any Space' } }} />)).toContain('Any Space')
+    // The mark is the figure plus the Space's own name as the wordmark: WILD over HEART.
+    expect(split).toContain('>WILD</tspan>')
+    expect(split).toContain('>HEART</tspan>')
+    expect(split).toContain('href="#wh-logo-figure"')
+    expect(renderToStaticMarkup(<WildheartMarkSplitBlock heading="About us" metadata={{ space: { name: 'Any Space' } }} />)).toContain('aria-label="Any Space"')
   })
 
   it('keeps a watermark glyph out of the flow on a surface without the skin', () => {

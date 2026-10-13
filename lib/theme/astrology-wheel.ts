@@ -51,9 +51,12 @@ function sunLongitude(date: Date): number {
   return ((apparent % 360) + 360) % 360
 }
 
-/** The sign the sun is in on a date. */
+/** The sign the sun is in on a date: read at the end of that UTC day, so the day the sun crosses into a
+ *  sign counts as that sign whatever the hour (Aries on Mar 20, Scorpio on Oct 23), the way a calendar
+ *  names it, and the reading does not move with the hour a page renders at. */
 export function signOf(date: Date): ZodiacId {
-  return ZODIAC[Math.floor(sunLongitude(date) / 30) % 12].id
+  const end = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59)
+  return ZODIAC[Math.floor(sunLongitude(new Date(end)) / 30) % 12].id
 }
 
 /** The moon's age in days, read at the date's noon. */
@@ -83,7 +86,8 @@ function signRange(date: Date): [Date, Date] {
 
 /** The wheel angle of a date in degrees, 0 at the winter solstice ingress (the top of the wheel). */
 export function wheelAngle(date: Date): number {
-  return ((sunLongitude(date) - 270) % 360 + 360) % 360
+  const end = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59)
+  return ((sunLongitude(new Date(end)) - 270) % 360 + 360) % 360
 }
 
 export interface Sky {
@@ -142,7 +146,7 @@ interface WheelItemInput {
   href?: string | null
 }
 
-export interface WheelItem extends WheelItemInput {
+interface WheelItem extends WheelItemInput {
   day: Date
   angle: number
   month: number

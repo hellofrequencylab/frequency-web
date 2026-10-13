@@ -59,6 +59,7 @@ import { WebsiteDocument } from '@/components/sites/website-document'
 import { siteEntitySchema } from '@/lib/jsonld'
 import { resolveSiteHeaderBrand } from '@/lib/sites/site-brand'
 import { SiteMemberBadge } from '@/components/sites/site-member-badge'
+import { readSiteFooter, siteFooterFor } from '@/lib/sites/site-footer'
 
 // THE EXTERNAL SPACE WEBSITE (ADR-508 U4-B, PROG-E10 phase 1). The Space's own website, served on its
 // free subdomain (`<slug>.frequencylocal.com`, LIVE-782), on its own domain once connected, and at
@@ -210,7 +211,7 @@ export async function SitePage({
   const { origin, hasContact, booking, pages, homeHref, siteLinks, cta, pageLinks, tagline } = await siteChromeBasics(space, siteBase)
   const websiteChrome = resolveWebsiteChrome(website, { name: brandName, tagline, cta })
   // The reader's own membership in THIS Space, asked for after the cached page is up (LIVE-699).
-  const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={`${origin}/spaces/${space.slug}/memberships`} />
+  const memberBadge = <SiteMemberBadge endpoint={`${origin}/api/sites/${space.slug}/membership`} href={`${origin}/spaces/${space.slug}/memberships`} pill={wildSite} />
   const chromeCta = resolveWebsiteChromeCta(website?.chrome, cta, siteBase)
   const contactPage = pageSlug === SITE_CONTACT_SLUG && hasContact
   const bookPage = pageSlug === SITE_BOOK_SLUG && booking.takesBookings
@@ -286,7 +287,12 @@ export async function SitePage({
         next: mwLive?.events.find((e) => /circle night/i.test(e.title)) ?? null,
       }
     : wildSite
-      ? { module: mwLive?.events[0]?.title ?? '', theme: null, next: mwLive?.events[0] ?? null }
+      ? (() => {
+          // The next Circle Night when the Space has one coming (the handoff's "Next Circle Night" line), else
+          // whatever comes next.
+          const next = mwLive?.events.find((e) => /circle night/i.test(e.title)) ?? mwLive?.events[0] ?? null
+          return { module: next?.title ?? '', theme: null, next }
+        })()
       : null
   // The site's own entity, on its own origin: the root layout only carries Frequency's Organization.
   const entity = siteEntitySchema({
@@ -319,8 +325,9 @@ export async function SitePage({
         showBrandFooter={fullFooter}
         look={lookOverrides}
         member={memberBadge}
+        footer={skin ? siteFooterFor(readSiteFooter(space.preferences), siteLinks, origin) : null}
         seasonNow={seasonNow ? { module: seasonNow.module, theme: seasonNow.theme, next: seasonNow.next?.startsAt ?? null } : null}
-        admin={siteAdminLinks(origin, space.slug, siteBase)}
+        admin={siteAdminLinks(origin, space.slug, siteBase, null, wildSite ? 'wildheart' : undefined)}
       >
         {website && websitePage && mwLive ? (
           <WebsiteDocument doc={websitePage.doc} theme={editorTheme} config={config} metadata={{ space: websiteContent, websiteFeatures }} live={mwLive} links={siteLinks} origin={origin} title={websitePage.label} />
@@ -393,6 +400,13 @@ export async function SitePage({
       </div>
     </AccentScope>
   )
+}
+
+/** A site page's meta description:')}(?:/([^/?#]+))?`).exec(href)
+    if (local && (!seg || !seg[1] || links.pages.includes(seg[1]) || seg[1] === 'contact' || seg[1] === 'book')) return local.href
+    return href.startsWith('/') ? `${origin}${href}` : href
+  }
+  return { ...footer, columns: footer.columns.map((c) => ({ ...c, links: c.links.map((l) => ({ ...l, href: resolve(l.href) })) })) }
 }
 
 /** A site page's meta description: the website intro (the line the hero leads with), else the Space
@@ -502,11 +516,12 @@ export function mensworkSiteMenu(homeHref: string, pages: { label: string }[], p
 
 /** A Menswork website's blue admin links: the admin pages on the site's own host (base ``), else through
  *  the console's handoff, and the console's Leadership page as the labelled Frequency link. */
-export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | 'editor' | null = null) {
+export function siteAdminLinks(origin: string, slug: string, siteBase: string, current: 'overview' | 'calendar' | 'editor' | null = null, theme?: 'wildheart') {
   const page = (view: 'overview' | 'calendar' | 'editor') => (siteBase === '' ? `/admin/${view}` : `${origin}${siteAdminHandoffPath(slug, view)}`)
   return siteAdminNavLinks(
     { overview: page('overview'), calendar: page('calendar'), editor: page('editor'), console: `${origin}/spaces/${slug}/manage/leadership` },
     current,
+    theme,
   )
 }
 

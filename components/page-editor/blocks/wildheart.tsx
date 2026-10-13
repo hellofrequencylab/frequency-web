@@ -2,38 +2,45 @@ import type { ComponentConfig } from '@/lib/page-editor/types'
 import { layoutField, layoutDefault, padClass, visClass, type LayoutValue } from '@/lib/page-editor/layout'
 import { imgField } from '@/lib/page-editor/fields'
 import {
+  addDays,
   astrologyWheel,
   eventItems,
+  festivals,
   isoDay,
   parseDay,
   shortDay,
+  signOf,
   sky,
   skyItems,
   utcDate,
-  type WheelItem,
   type WheelModel,
 } from '@/lib/theme/astrology-wheel'
-import { moonPhasePath, ZODIAC } from '@/lib/theme/wildheart-symbols'
+import { ZODIAC } from '@/lib/theme/wildheart-symbols'
 import { safeImageSrc } from '@/lib/safe-image-src'
 import { safeImageUrl } from '@/lib/entity-blocks/block-content'
 import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { dateLabel } from '@/lib/sites/menswork-page'
 import { WildheartNowLine } from '@/components/sites/wildheart-now-line'
-import { WhGlyph, WhMoon, WhMoonPhases, WhOrnament, WhSeal } from '@/components/sites/wildheart-symbols'
+import { WhConstellation, WhGlyph, WhLogoMark, WhMoon, WhMoonPhases, WhOrnament, WhSeal } from '@/components/sites/wildheart-symbols'
+import { WildheartYearJourney, type YearGeometry, type YearJourneyData, type YearStop } from '@/components/sites/wildheart-year-journey'
+import { WildheartSkyMap, type SkyGroup, type SkyMapData, type SkyMapEvent } from '@/components/sites/wildheart-sky-map'
+import { WildheartFirstNight } from '@/components/sites/wildheart-first-night'
 import { InlineText } from '@/components/sites/inline-text'
 
-// ── The astrology calendar block family (Wildheart, owner brief 2026-10-12) ─────────────────────────
-// Three renderings of ONE model (lib/theme/astrology-wheel.ts, pure): a scroll-through strip of the twelve
-// signs for a Home page, a sky map (the SVG wheel) for a year page, and the date line for anywhere. Each
-// sorts the year's festivals and moons (the sky's own, computed) and the Space's own events (injected at
-// render time through `puck.metadata.space.events`, the same channel the Space blocks read) into their
-// month and sign. Server Components, no client JS: the strip scrolls with CSS scroll snap.
+// ── The Wildheart block family (owner brief 2026-10-12; LIVE-903 and LIVE-904, the design handoff) ─────
+// Every section of the handoff's six screens that no generic block can carry is one registered block
+// here, drawn from ONE model (lib/theme/astrology-wheel.ts, pure) where it reads the sky, and from the
+// Space's own events (`puck.metadata.space.events`, the channel the Space blocks read) where it reads
+// dates. Server Components, except the two signature pieces the handoff makes interactive: the pinned,
+// scroll-scrubbed YearJourney and the click-driven SkyMap, which hand serialised data to client islands
+// loaded only on a Wildheart page (components/sites/wildheart-year-journey.tsx, wildheart-sky-map.tsx),
+// and the four-way first-night choice (wildheart-first-night.tsx).
 //
 // Every default word here is the THEME's, generic and gender-neutral (owner ruling 2026-10-12: Wildheart
-// is a stock theme in the Frequency library). A Space's own events carry its own titles. The blocks read
+// is a stock theme in the Frequency library). A Space's own rows carry its own titles. The blocks read
 // `--wh-*` tokens only; outside a Wildheart site they render in the page's own faces and colours.
 
-type SpaceEvent = { id: string; slug?: string; title: string; startsAt: string }
+type SpaceEvent = { id: string; slug?: string; title: string; startsAt: string; endsAt?: string | null; description?: string | null; href?: string | null }
 
 /** The year a block draws: the owner's, or the current one (0 and blanks mean "this year"). */
 function wheelYear(value: unknown, now: Date): number {
@@ -47,229 +54,47 @@ function spaceEvents(metadata: Record<string, unknown> | undefined): SpaceEvent[
   return events.filter((e) => e && typeof e.id === 'string' && typeof e.title === 'string' && typeof e.startsAt === 'string')
 }
 
+/** The first line of an event's description, as its note. */
+const noteOf = (e: SpaceEvent): string => (typeof e.description === 'string' ? e.description.split('\n')[0].trim() : '')
+/** "Tue · 6:00 PM" for an event with a time of day, else nothing. */
+const whenOf = (e: SpaceEvent): string => {
+  const { day, time } = dateLabel(e.startsAt)
+  return time ? `${day.slice(0, 3)} · ${time}` : ''
+}
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+
+/** The sky's own items beside the Space's events, the Space's winning where both name the same day (a
+ *  Space that lists its festivals and moons as events shows them once, with their links). */
 function model(year: number, metadata: Record<string, unknown> | undefined): WheelModel {
-  return astrologyWheel(year, [...skyItems(year), ...eventItems(spaceEvents(metadata))])
+  const events = spaceEvents(metadata)
+  // The Space's own rows read the way the handoff's calendar does: the weekday and time when the event
+  // has one ("Tue · 6:00 PM"), then the description's first line.
+  const own = eventItems(events.map((e) => ({ ...e, href: e.href ?? null }))).map((it, i) => ({ ...it, note: [whenOf(events[i]), noteOf(events[i])].filter(Boolean).join(' · ') }))
+  const noteBy = new Map(events.map((e) => [`event-${e.id}`, noteOf(e)]))
+  const key = (date: string, title: string) => `${date.slice(0, 10)}:${norm(title)}`
+  const byKey = new Map(own.map((e) => [key(e.date, e.title), e]))
+  const merged = new Set<string>()
+  // A sky item the Space also lists (a festival, a moon) keeps its kind and phase and takes the Space's
+  // title, note and link; the Space's row is then not listed twice.
+  const skies = skyItems(year).map((s) => {
+    const hit = byKey.get(key(s.date, s.title)) ?? byKey.get(key(s.date, s.title.replace(/ moon$/i, '')))
+    if (!hit) return s
+    merged.add(hit.id)
+    return { ...s, id: hit.id, title: hit.title, note: noteBy.get(hit.id) || s.note, href: hit.href ?? null }
+  })
+  return astrologyWheel(year, [...skies, ...own.filter((e) => !merged.has(e.id))])
 }
 
-/** One dated item: its date, its mark (a moon, the festival star, a season seed), its title and note. */
-function Row({ item, today }: { item: WheelItem; today: string }) {
-  const mark = item.kind === 'moon' ? <WhMoon phase={item.phase} size={16} /> : item.kind === 'festival' ? <WhGlyph name="star" size={15} /> : <span className="wh-seed" data-season={item.season} aria-hidden="true" />
-  const body = (
-    <>
-      <span className="wh-row-date">{shortDay(item.day)}</span>
-      <span className="wh-row-mark">{mark}</span>
-      <span className="wh-row-text">
-        <span className="wh-row-title">{item.title}</span>
-        {item.note && <span className="wh-row-note">{item.note}</span>}
-      </span>
-    </>
-  )
-  const current = isoDay(item.day) === today ? 'date' : undefined
-  return item.href ? (
-    <a className="wh-row" href={item.href} aria-current={current}>{body}</a>
-  ) : (
-    <div className="wh-row" aria-current={current}>{body}</div>
-  )
-}
-
-function Head({ heading, lead, label }: { heading?: string; lead?: string; label?: string }) {
+function Head({ heading, lead, label, centred }: { heading?: string; lead?: string; label?: string; centred?: boolean }) {
   if (!heading && !lead && !label) return null
   return (
-    <div className="wh-block-head">
+    <div className={cls('wh-block-head', centred ? 'wh-block-head-centred' : undefined)}>
       {label && <span className="wh-label wh-label-ink">{label}</span>}
       {heading && <h2><InlineText text={heading} accentStars /></h2>}
       {lead && <p>{lead}</p>}
     </div>
   )
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 1. The scroll-through strip: twelve signs in the order the year walks them, the items under each.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function WildheartYearJourneyBlock({ year, label, heading, lead, perSign = 6, now = new Date(), metadata, pad, vis }: {
-  year?: number; label?: string; heading?: string; lead?: string; perSign?: number; now?: Date
-  metadata?: Record<string, unknown>; pad?: string; vis?: string
-}) {
-  const y = wheelYear(year, now)
-  const wheel = model(y, metadata)
-  const today = isoDay(now)
-  const current = now.getUTCFullYear() === y ? sky(now).sign : null
-  return (
-    <section className={`wh-block wh-block-journey ${pad ?? ''} ${vis ?? ''}`.trim()} data-season={current ? sky(now).season : undefined}>
-      <Head label={label} heading={heading} lead={lead} />
-      <ol className="wh-journey" aria-label={`The signs of ${y}`}>
-        {wheel.signs.map((s) => (
-          <li key={s.id} data-season={s.season} aria-current={s.id === current ? 'date' : undefined}>
-            <div className="wh-journey-sign">
-              <WhGlyph name={s.id} size={24} halo label={s.name} />
-              <div>
-                <span className="wh-journey-house">{s.house} · {s.houseName}</span>
-                <h3>{s.name}</h3>
-              </div>
-            </div>
-            <span className="wh-journey-range">{shortDay(s.start)} to {shortDay(s.end)} · {wheel.seasons.find((a) => a.id === s.season)?.name}</span>
-            {s.items.length ? (
-              <ol>
-                {s.items.slice(0, Math.max(1, perSign)).map((it) => (
-                  <li key={it.id}><Row item={it} today={today} /></li>
-                ))}
-              </ol>
-            ) : (
-              <p className="wh-journey-empty">A quiet stretch of sky.</p>
-            )}
-          </li>
-        ))}
-      </ol>
-      <p className="wh-journey-hint">Scroll sideways to turn the year.</p>
-    </section>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 2. The sky map: an SVG wheel of twelve sectors, four season arcs, every item a dot on its date angle,
-//    the moon at the centre, and the year's months listed beside it for every reader.
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** A point on a circle of radius r (percent of the 100 unit viewBox) at angle a, 0 at the top. */
-const P = (r: number, a: number): [number, number] => {
-  const t = ((a - 90) * Math.PI) / 180
-  return [+(50 + r * Math.cos(t)).toFixed(2), +(50 + r * Math.sin(t)).toFixed(2)]
-}
-const arc = (r: number, a0: number, a1: number) => {
-  const [x0, y0] = P(r, a0)
-  const [x1, y1] = P(r, a1)
-  return `M${x0} ${y0} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1} ${y1}`
-}
-
-const RING = { cal: [49, 42], sky: [42, 33], season: 29.5, moon: 24 } as const
-const DOT_RADIUS: Record<WheelItem['kind'], number> = { festival: 29.5, moon: 38, gathering: 45.5, event: 45.5 }
-
-export function WildheartSkyMapBlock({ year, label, heading, lead, now = new Date(), metadata, pad, vis }: {
-  year?: number; label?: string; heading?: string; lead?: string; now?: Date
-  metadata?: Record<string, unknown>; pad?: string; vis?: string
-}) {
-  const y = wheelYear(year, now)
-  const wheel = model(y, metadata)
-  const today = isoDay(now)
-  const inYear = now.getUTCFullYear() === y
-  const s = sky(inYear ? now : utcDate(y, 1, 1))
-  const needle = inYear ? wheel.months[0] && ((now.getTime() - Date.UTC(y, 0, 1)) / 864e5 / ((Date.UTC(y + 1, 0, 1) - Date.UTC(y, 0, 1)) / 864e5)) * 360 : null
-  const ticks = Array.from({ length: 73 }, (_, i) => (i * 5 * 360) / 365)
-  const moon = moonPhasePath(s.phase, 11, 12, 12)
-  return (
-    <section className={`wh-block wh-block-skymap ${pad ?? ''} ${vis ?? ''}`.trim()} data-season={s.season}>
-      <Head label={label} heading={heading} lead={lead} />
-      <div className="wh-skymap">
-        <div>
-          <div className="wh-wheel" role="img" aria-label={`The wheel of ${y}: twelve signs, four seasons, ${wheel.items.length} dated days`}>
-            <svg viewBox="0 0 100 100">
-              <circle className="wh-wheel-ring" cx="50" cy="50" r={RING.cal[1]} />
-              <circle className="wh-wheel-ring" cx="50" cy="50" r={RING.sky[1]} />
-              {ticks.map((a, i) => {
-                const [x0, y0] = P(RING.cal[0] - 0.2, a)
-                const [x1, y1] = P(RING.cal[0] - 1.4, a)
-                return <line key={i} className="wh-wheel-tick" x1={x0} y1={y0} x2={x1} y2={y1} />
-              })}
-              {wheel.months.map((m) => {
-                const [x0, y0] = P(RING.cal[0], m.startAngle)
-                const [x1, y1] = P(RING.cal[1], m.startAngle)
-                const [lx, ly] = P((RING.cal[0] + RING.cal[1]) / 2, m.midAngle)
-                return (
-                  <g key={m.name}>
-                    <line className="wh-wheel-month" x1={x0} y1={y0} x2={x1} y2={y1} />
-                    <text className="wh-wheel-label" x={lx} y={ly}>{m.name}</text>
-                  </g>
-                )
-              })}
-              {wheel.signs.map((z) => {
-                const [x0, y0] = P(RING.sky[0], z.startAngle)
-                const [x1, y1] = P(RING.sky[1], z.startAngle)
-                const [gx, gy] = P((RING.sky[0] + RING.sky[1]) / 2 + 1, z.midAngle)
-                const [hx, hy] = P(RING.sky[1] + 1.6, z.midAngle)
-                return (
-                  <g key={z.id}>
-                    {z.startAngle > 0 && <line className="wh-wheel-sign" x1={x0} y1={y0} x2={x1} y2={y1} />}
-                    <text className="wh-wheel-glyph" x={gx} y={gy}>{z.glyph}</text>
-                    <text className="wh-wheel-house" x={hx} y={hy}>{z.house}</text>
-                  </g>
-                )
-              })}
-              {wheel.seasons.map((a) => (
-                <path key={a.id} className="wh-wheel-season" data-season={a.id} data-now={inYear && a.id === s.season ? '' : undefined} d={arc(RING.season, a.startAngle + 0.6, a.endAngle - 0.6)} />
-              ))}
-              {wheel.items.map((it) => {
-                const [cx, cy] = P(DOT_RADIUS[it.kind], it.angle)
-                return (
-                  <circle key={it.id} className="wh-wheel-dot" data-kind={it.kind} cx={cx} cy={cy} r={it.kind === 'festival' ? 1.4 : 1}>
-                    <title>{`${shortDay(it.day)} · ${it.title}`}</title>
-                  </circle>
-                )
-              })}
-              {needle !== null && (() => {
-                const [x0, y0] = P(RING.moon + 1, needle)
-                const [x1, y1] = P(RING.cal[0] + 1.5, needle)
-                return (
-                  <g>
-                    <line className="wh-wheel-needle" x1={x0} y1={y0} x2={x1} y2={y1} />
-                    <circle className="wh-wheel-needle-cap" cx={x1} cy={y1} r="1.6" />
-                  </g>
-                )
-              })()}
-            </svg>
-            <svg className="wh-moon wh-wheel-moon" width="36%" height="36%" viewBox="0 0 24 24" role="img" aria-label={s.phaseName}>
-              <circle className="wh-moon-dark" cx="12" cy="12" r="11" />
-              {moon && <path className="wh-moon-lit" d={moon} />}
-              <circle className="wh-moon-ring" cx="12" cy="12" r="11" />
-            </svg>
-          </div>
-          <ul className="wh-legend" style={{ marginTop: 20 }}>
-            <li><WhGlyph name="star" size={12} />Festivals</li>
-            <li><WhMoon phase={4} size={12} />Moons</li>
-            <li><span className="wh-seed" aria-hidden="true" />Gatherings</li>
-          </ul>
-        </div>
-        <div className="wh-skymap-now">
-          <span className="wh-label">{inYear ? shortDay(now) : `${y}`} · {s.seasonName} · {s.seasonTheme}</span>
-          <h3>{s.signName} · {s.house} {s.houseName}</h3>
-          <WildheartNowLine date={inYear ? now : utcDate(y, 1, 1)} show={['moon']} />
-          <ol className="wh-skymap-months" aria-label={`Every dated day of ${y}, by month`}>
-            {wheel.months.filter((m) => m.items.length).map((m) => (
-              <li key={m.name}>
-                <h4><span>{m.name}</span><WhGlyph name={sky(utcDate(y, m.index + 1, 15)).sign} size={16} /></h4>
-                <ol>
-                  {m.items.map((it) => (
-                    <li key={it.id}><Row item={it} today={today} /></li>
-                  ))}
-                </ol>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 3. The date line, placed inside a page.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function WildheartNowLineBlock({ now = new Date(), pad, vis }: { now?: Date; pad?: string; vis?: string }) {
-  return (
-    <section className={`wh-block wh-block-nowline ${pad ?? ''} ${vis ?? ''}`.trim()} data-season={sky(now).season}>
-      <WildheartNowLine date={now} />
-    </section>
-  )
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 4. The composition pieces (LIVE-903, the fidelity passes against the design handoff): the pieces of
-//    the handoff's six screens no generic block can carry. Each is one section, Server Component, no
-//    client JS, theme-blind outside a Wildheart site (its classes read `--wh-*` with the page's own faces
-//    and colours as fallbacks). Every default is the THEME's: generic words, no program, no gender.
-// ─────────────────────────────────────────────────────────────────────────────
 
 type Props = Record<string, unknown>
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
@@ -286,6 +111,204 @@ function hrefOf(raw: string, metadata: Record<string, unknown> | undefined): str
   return links ? (siteLocalHref(raw, links)?.href ?? null) : raw
 }
 
+const HOUSES = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
+const ROMAN = (i: number) => HOUSES[i] ?? String(i + 1)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. The year journey: the pinned, scroll-scrubbed wheel (the handoff's YearJourney). The block reads
+//    the sky of the year and the Space's events, curates the stops (the year opens, the first ingress,
+//    the eight festivals, the first full moon, the program's own dates matched from the events) with
+//    the theme's teaching lines, and hands the island its data.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The theme's teaching line for each festival and for the stops the sky makes on its own. */
+const TEACH: Record<string, string> = {
+  Samhain: 'A cross-quarter day, halfway between the fall equinox and the winter solstice. The old year ends here.',
+  Yule: 'The winter solstice: the longest night. From here the light returns, a minute a day.',
+  Imbolc: 'A cross-quarter day: the first stirring of spring under the frost.',
+  Ostara: 'The spring equinox: day and night in balance, then light wins.',
+  Beltane: 'A cross-quarter day: the fire festival halfway to midsummer.',
+  Litha: 'The summer solstice: the longest day, the sun at full height.',
+  Lughnasadh: 'A cross-quarter day: the first harvest.',
+  Mabon: 'The fall equinox: balance again, then the dark grows.',
+}
+const TEACH_OPEN = 'Read the needle from the outside in: the calendar date, the sign the sun is passing through, the season, and the moon at the centre. Scroll, or take the wheel and turn it.'
+const TEACH_INGRESS = 'Signs don\'t line up with months. Each begins around the 20th to 23rd, when the sun crosses into the next twelfth of the sky. Each sign is one module.'
+const TEACH_MOON = 'Full moon: the moon sits opposite the sun, fully lit. It comes about every 29½ days, so it drifts through the calendar.'
+
+const dayAngle = (d: Date, year: number) => (Math.round((d.getTime() - Date.UTC(year, 0, 1)) / 864e5) / 365) * 360
+
+interface ProgramStop {
+  match: string
+  title: string
+  note: string
+  teach: string
+  /** Pick the first match after the last day of the stop named here (Circle Nights after the course). */
+  after?: string
+}
+
+function yearJourneyData(year: number, metadata: Record<string, unknown> | undefined, programStops: ProgramStop[], modules: Record<string, { title: string; theme: string }>, links: { enroll: string | null; year: string | null }, labels: YearJourneyData['labels'], maxStops = 14): { data: YearJourneyData; startIso: string } {
+  const start = utcDate(year, 1, 1)
+  const end = utcDate(year, 12, 31)
+  const wheel = model(year, metadata)
+  const inWindow = wheel.items
+  const stops: YearStop[] = []
+  const dayOf = (d: Date) => Math.round((d.getTime() - start.getTime()) / 864e5)
+  const k0 = sky(start)
+  stops.push({ iso: isoDay(start), day: 0, kind: 'today', title: 'The year opens', note: `${k0.seasonName} · ${k0.seasonTheme} · the sun in ${k0.signName}`, teach: TEACH_OPEN, phase: k0.phase, passing: [] })
+  for (let i = 1; i <= dayOf(end); i++) {
+    const d = addDays(start, i)
+    const sg = signOf(d)
+    if (sg !== signOf(addDays(d, -1))) {
+      const z = ZODIAC.find((s) => s.id === sg)!
+      stops.push({ iso: isoDay(d), day: i, kind: 'ingress', title: `The sun enters ${z.name}`, note: `House ${z.house} · ${modules[sg]?.title ?? z.houseName}`, teach: TEACH_INGRESS, sign: sg, passing: [] })
+      break
+    }
+  }
+  for (const f of inWindow.filter((it) => it.kind === 'festival')) stops.push({ iso: isoDay(f.day), day: dayOf(f.day), kind: 'festival', title: f.title, note: f.note ?? '', teach: TEACH[f.title] ?? '', passing: [] })
+  const fm = inWindow.find((it) => it.kind === 'moon' && it.phase === 4)
+  if (fm) stops.push({ iso: isoDay(fm.day), day: dayOf(fm.day), kind: 'moon', title: fm.title, note: 'Full moon · release', teach: TEACH_MOON, phase: 4, passing: [] })
+  const events = spaceEvents(metadata)
+    .map((e) => ({ e, d: parseDay(e.startsAt) }))
+    .filter((x): x is { e: SpaceEvent; d: Date } => !!x.d && x.d.getUTCFullYear() === year)
+    .sort((a, b) => a.d.getTime() - b.d.getTime())
+  const lastOf = (match: string) => events.filter((x) => new RegExp(match, 'i').test(x.e.title)).at(-1)?.d ?? null
+  for (const ps of programStops) {
+    if (!ps.match) continue
+    const re = new RegExp(ps.match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+    const floor = ps.after ? lastOf(ps.after.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) : null
+    const hit = events.find((x) => re.test(x.e.title) && (!floor || x.d.getTime() > floor.getTime()))
+    if (!hit) continue
+    stops.push({ iso: isoDay(hit.d), day: dayOf(hit.d), kind: 'program', title: ps.title || hit.e.title, note: ps.note || noteOf(hit.e), teach: ps.teach, passing: [] })
+  }
+  stops.sort((a, b) => a.day - b.day)
+  const merged: YearStop[] = []
+  for (const s of stops) if (!merged.some((m) => Math.abs(m.day - s.day) < 1)) merged.push(s)
+  const st = merged.slice(0, maxStops)
+  st.forEach((x, k) => {
+    const nx = st[k + 1]
+    x.passing = nx
+      ? inWindow
+          .filter((it) => it.kind !== 'festival' && dayOf(it.day) > x.day && dayOf(it.day) < nx.day)
+          .slice(0, 4)
+          .map((it) => ({ label: shortDay(it.day), title: it.title }))
+      : []
+  })
+  const span = st.length ? st[st.length - 1].day : 0
+  const table: YearJourneyData['table'] = []
+  for (let i = 0; i <= span; i++) {
+    const s = sky(addDays(start, i))
+    table.push({ date: shortDay(s.date), sign: s.sign, signName: s.signName, house: s.house, season: s.season, seasonName: s.seasonName, phase: s.phase, phaseName: s.phaseName })
+  }
+  const geo: YearGeometry = {
+    months: wheel.months.map((m) => ({ name: m.name, a: m.startAngle, mid: m.midAngle, iso: isoDay(utcDate(year, m.index + 1, 15)) })),
+    signs: wheel.signs
+      .filter((z) => z.start.getUTCFullYear() === year)
+      .map((z) => ({ id: z.id, name: z.name, house: z.house, a: z.startAngle, a1: z.startAngle + (addDays(z.end, 1).getTime() - z.start.getTime()) / 864e5 / 365 * 360, mid: z.midAngle, iso: isoDay(addDays(z.start, 2)) })),
+    seasons: wheel.seasons.map((s) => ({ id: s.id, a0: s.startAngle, a1: s.endAngle })),
+    fests: inWindow.filter((it) => it.kind === 'festival').map((f) => ({ title: f.title, a: f.angle, iso: isoDay(f.day) })),
+    dots: inWindow
+      .filter((it) => it.kind !== 'festival' && !(it.kind === 'moon' && it.phase === 0))
+      .map((it) => ({ kind: it.kind === 'moon' ? ('moon' as const) : /retreat/i.test(it.title) ? ('retreat' as const) : /circle night/i.test(it.title) ? ('circle' as const) : /week \d/i.test(it.title) ? ('foundation' as const) : ('gathering' as const), a: it.angle, title: `${it.title} · ${shortDay(it.day)}` })),
+  }
+  // The Capricorn arc that opens the year starts the previous December: give it its own wedge from the top.
+  const cap = wheel.signs.find((z) => z.id === 'capricorn')
+  if (cap && !geo.signs.some((s) => s.id === 'capricorn')) geo.signs.push({ id: 'capricorn', name: cap.name, house: cap.house, a: dayAngle(cap.start, year) - 360, a1: dayAngle(addDays(cap.end, 1), year), mid: cap.midAngle, iso: isoDay(start) })
+  return { data: { a0: 0, span, stops: st, geo, table, labels, enrollHref: links.enroll, yearHref: links.year }, startIso: isoDay(start) }
+}
+
+const YJ_LABELS: YearJourneyData['labels'] = { calendar: 'Calendar', sky: 'Sky', season: 'Season', moon: 'Moon', skip: 'Skip the year ↓', tip: 'Scroll, or spin the wheel', save: 'Save my place', year: 'See the whole year on the sky map →', aria: 'The turning year. Use arrow keys to move between stops.' }
+
+export function WildheartYearJourneyBlock({ year, label, heading, lead, programStops = [], modules = [], enrollHref, yearHref, now = new Date(), metadata, pad, vis }: {
+  year?: number; label?: string; heading?: string; lead?: string; programStops?: Props[]; modules?: Props[]; enrollHref?: string; yearHref?: string; now?: Date
+  metadata?: Record<string, unknown>; pad?: string; vis?: string
+}) {
+  const y = wheelYear(year, now)
+  const mods = Object.fromEntries(modules.map((m) => [str(m.sign).toLowerCase(), { title: str(m.title), theme: str(m.theme) }]).filter(([k, v]) => k && (v as { title: string }).title))
+  const stops: ProgramStop[] = programStops.map((p) => ({ match: str(p.match), title: str(p.title), note: str(p.note), teach: str(p.teach), after: str(p.after) || undefined }))
+  const { data, startIso } = yearJourneyData(y, metadata, stops, mods, { enroll: hrefOf(str(enrollHref), metadata), year: hrefOf(str(yearHref), metadata) }, YJ_LABELS)
+  return (
+    <section className={cls('wh-block wh-block-journey', pad, vis)} data-season={sky(now).season}>
+      <Head label={label} heading={heading} lead={lead} centred />
+      <WildheartYearJourney data={data} startIso={startIso} />
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. The sky map: the click-driven wheel (the handoff's SkyMap), centered on a year page or compact on a
+//    phone. The block sorts the sky's festivals and moons and the Space's events into one list and hands
+//    the island its data.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SM_LABELS: SkyMapData['labels'] = {
+  groups: { sabbat: 'Festivals', moon: 'Moons', circle: 'Circle Nights', gathering: 'Gatherings' },
+  scopes: { sign: 'In this sign', season: 'This season', year: 'All year' },
+  prev: 'Prev sign',
+  next: 'Next sign',
+  spin: 'Spin the year',
+  pause: 'Pause',
+  today: 'Today',
+  tap: 'Tap any sign to travel there.',
+  empty: 'Nothing here. Try this season or all year.',
+  comingUp: 'Coming up',
+  date: 'Date',
+}
+
+function skyMapEvents(year: number, metadata: Record<string, unknown> | undefined, now: Date, compact: boolean): SkyMapEvent[] {
+  // A year page reads the whole year; a phone's compact map reads from the quarter before today, a year on.
+  const years = compact ? [now.getUTCFullYear(), now.getUTCFullYear() + 1] : [year - 1, year]
+  const items = years.flatMap((y) => model(y, metadata).items)
+  return items.map((it) => {
+    const circle = /circle night|week \d/i.test(it.title)
+    const group: SkyGroup = it.kind === 'festival' ? 'sabbat' : it.kind === 'moon' ? 'moon' : circle ? 'circle' : 'gathering'
+    return { iso: isoDay(it.day), title: it.title, note: it.note ?? '', group, phase: it.kind === 'moon' ? it.phase : undefined, href: it.href ?? null }
+  })
+}
+
+export function WildheartSkyMapBlock({ year, label, heading, lead, layout = 'centered', modules = [], now = new Date(), metadata, pad, vis }: {
+  year?: number; label?: string; heading?: string; lead?: string; layout?: string; modules?: Props[]; now?: Date
+  metadata?: Record<string, unknown>; pad?: string; vis?: string
+}) {
+  const y = wheelYear(year, now)
+  const compact = layout === 'compact'
+  const todayIso = compact ? isoDay(now) : now.getUTCFullYear() === y ? isoDay(now) : isoDay(utcDate(y, 1, 1))
+  const start = compact ? isoDay(utcDate(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)) : isoDay(utcDate(y - 1, 10, 1))
+  const end = compact ? isoDay(utcDate(now.getUTCFullYear() + 1, 12, 31)) : isoDay(utcDate(y, 12, 31))
+  const data: SkyMapData = {
+    startIso: start,
+    endIso: end,
+    todayIso,
+    events: skyMapEvents(y, metadata, now, compact).filter((e) => e.iso >= start && e.iso <= end),
+    modules: Object.fromEntries(modules.map((m) => [str(m.sign).toLowerCase(), { title: str(m.title), theme: str(m.theme) }]).filter(([k, v]) => k && (v as { title: string }).title)),
+    labels: SM_LABELS,
+  }
+  const s = sky(parseDay(todayIso) ?? now)
+  return (
+    <section className={cls('wh-block wh-block-skymap', compact ? 'wh-block-skymap-compact' : undefined, pad, vis)} data-season={s.season}>
+      <Head label={label} heading={heading} lead={lead} centred={compact} />
+      <WildheartSkyMap data={data} layout={compact ? 'compact' : 'centered'} wheelSize={compact ? 340 : 440} />
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. The date line, placed inside a page.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function WildheartNowLineBlock({ now = new Date(), pad, vis }: { now?: Date; pad?: string; vis?: string }) {
+  return (
+    <section className={`wh-block wh-block-nowline ${pad ?? ''} ${vis ?? ''}`.trim()} data-season={sky(now).season}>
+      <WildheartNowLine date={now} />
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. The composition pieces: the pieces of the handoff's six screens no generic block can carry. Each is
+//    one section, theme-blind outside a Wildheart site. Every default is the THEME's.
+// ─────────────────────────────────────────────────────────────────────────────
+
 function Title({ text, accent, as: El = 'h2', className }: { text: string; accent?: string; as?: 'h1' | 'h2' | 'h3'; className?: string }) {
   if (!text) return null
   return (
@@ -295,19 +318,19 @@ function Title({ text, accent, as: El = 'h2', className }: { text: string; accen
   )
 }
 
-function Buttons({ primary, primaryHref, secondary, secondaryHref, metadata }: { primary?: string; primaryHref?: string; secondary?: string; secondaryHref?: string; metadata?: Record<string, unknown> }) {
+function Buttons({ primary, primaryHref, secondary, secondaryHref, secondaryKind = 'soft', metadata }: { primary?: string; primaryHref?: string; secondary?: string; secondaryHref?: string; secondaryKind?: 'soft' | 'ghost' | 'secondary'; metadata?: Record<string, unknown> }) {
   const a = primary && hrefOf(primaryHref ?? '', metadata)
   const b = secondary && hrefOf(secondaryHref ?? '', metadata)
   if (!a && !b) return null
   return (
     <div className="wh-actions">
       {a && <a className="hs-btn hs-btn-primary" href={a}>{primary}</a>}
-      {b && <a className="hs-btn hs-btn-soft" href={b}>{secondary}</a>}
+      {b && <a className={`hs-btn hs-btn-${secondaryKind}`} href={b}>{secondary}</a>}
     </div>
   )
 }
 
-const GLYPH_OPTIONS = [...ZODIAC.map((z) => ({ label: z.name, value: z.id })), ...['fire', 'water', 'air', 'earth', 'quintessence', 'sun', 'moon', 'star', 'spark'].map((id) => ({ label: id[0].toUpperCase() + id.slice(1), value: id }))]
+const GLYPH_OPTIONS = [...ZODIAC.map((z) => ({ label: z.name, value: z.id })), ...['fire', 'water', 'air', 'earth', 'quintessence', 'sun', 'moon', 'star', 'spark', 'venus'].map((id) => ({ label: id[0].toUpperCase() + id.slice(1), value: id }))]
 const glyphField = { type: 'select', label: 'Glyph', options: GLYPH_OPTIONS } as const
 
 // 4a. The ornament: a separator with a mark, or the "enter the year" bridge.
@@ -341,14 +364,15 @@ export function WildheartPhotoBlock({ image, alt, shape = 'arch', grade = 'warm'
   )
 }
 
-/** The moon phase for step `i` of `n`, waxing from new (0) to full (4) across the steps. */
-export const stepPhase = (i: number, n: number) => (n <= 1 ? 4 : Math.round((i / (n - 1)) * 4))
+/** The moon phase for step `i` of `n`: waxing from new (0) a phase a step to full (4), then full. */
+export const stepPhase = (i: number, n: number) => (n <= 1 ? 4 : Math.min(4, Math.round((i * 4) / Math.min(n - 1, 4))))
 
-// 4c. The moon path: the steps of a path as a moon waxing from new to full, on one hairline.
-export function WildheartMoonPathBlock({ label, heading, accentWord, note, steps, pad, vis }: {
-  label?: string; heading?: string; accentWord?: string; note?: string; steps: Props[]; pad?: string; vis?: string
+// 4c. The moon path: the steps of a path as a moon waxing from new to full, on one hairline, each step
+//     numbered in roman.
+export function WildheartMoonPathBlock({ label, heading, accentWord, note, steps, metadata, pad, vis }: {
+  label?: string; heading?: string; accentWord?: string; note?: string; steps: Props[]; metadata?: Record<string, unknown>; pad?: string; vis?: string
 }) {
-  const items = steps.map((s) => ({ title: str(s.title), body: str(s.body) })).filter((s) => s.title || s.body)
+  const items = steps.map((s) => ({ title: str(s.title), body: str(s.body), href: hrefOf(str(s.href), metadata) })).filter((s) => s.title || s.body)
   if (items.length === 0) return null
   return (
     <section className={cls('wh-block wh-block-path', pad, vis)}>
@@ -362,14 +386,17 @@ export function WildheartMoonPathBlock({ label, heading, accentWord, note, steps
         </div>
       )}
       <ol className="wh-path" style={{ ['--wh-path-n' as string]: items.length }}>
-        {items.map((s, i) => (
-          <li key={i}>
-            <span className="wh-path-moon"><WhMoon phase={stepPhase(i, items.length)} size={34} /></span>
-            <span className="wh-label">{String(i + 1).padStart(2, '0')}</span>
-            <h3>{s.title}</h3>
-            {s.body && <p>{s.body}</p>}
-          </li>
-        ))}
+        {items.map((s, i) => {
+          const inner = (
+            <>
+              <span className="wh-path-moon"><WhMoon phase={stepPhase(i, items.length)} size={34} /></span>
+              <span className="wh-label">{ROMAN(i)}</span>
+              <h3>{s.title}</h3>
+              {s.body && <p>{s.body}</p>}
+            </>
+          )
+          return <li key={i}>{s.href ? <a className="wh-path-link" href={s.href}>{inner}</a> : inner}</li>
+        })}
       </ol>
     </section>
   )
@@ -399,7 +426,7 @@ export function WildheartSealCardsBlock({ label, heading, accentWord, lead, card
   )
 }
 
-type SpaceEventLite = { id: string; slug?: string; title: string; startsAt: string; href?: string | null }
+type SpaceEventLite = SpaceEvent
 
 /** The Space's upcoming events from the metadata channel, soonest first from `now`. */
 function upcoming(metadata: Record<string, unknown> | undefined, now: Date): SpaceEventLite[] {
@@ -417,25 +444,46 @@ function eventHref(e: SpaceEventLite, metadata: Record<string, unknown> | undefi
   return origin ? `${origin}/events/${e.slug}` : space?.slug ? `/events/${e.slug}` : null
 }
 
-/** One dated row for a Space event: its date, its moon, its title. */
-function SpaceEventRow({ e, metadata }: { e: SpaceEventLite; metadata?: Record<string, unknown> }) {
+/** One dated row for a Space event (the handoff's EventRow): its date, its mark (the day's moon for a
+ *  moon circle, the star for a festival, the sign for a Circle Night, the season seed otherwise), its
+ *  title and its note. */
+function SpaceEventRow({ e, metadata, festivalsOf }: { e: SpaceEventLite; metadata?: Record<string, unknown>; festivalsOf: Set<string> }) {
   const day = parseDay(e.startsAt)
   const when = dateLabel(e.startsAt)
   const href = eventHref(e, metadata)
+  const s = day ? sky(day) : null
+  const t = norm(e.title)
+  const mark = !s ? <WhGlyph name="spark" size={14} /> : /moon/.test(t) ? <WhMoon phase={/new/.test(t) ? 0 : /full|moon$/.test(t) ? 4 : s.phase} size={16} /> : festivalsOf.has(t) ? <WhGlyph name="star" size={15} /> : /circle night/.test(t) ? <WhGlyph name={s.sign} size={15} /> : <span className="wh-seed" data-season={s.season} aria-hidden="true" />
+  const note = noteOf(e)
   const body = (
     <>
       <span className="wh-row-date">{when.day.replace(/^\w+ /, '')}</span>
-      <span className="wh-row-mark">{day ? <WhMoon phase={sky(day).phase} size={16} /> : <WhGlyph name="spark" size={14} />}</span>
-      <span className="wh-row-text"><span className="wh-row-title">{e.title}</span></span>
+      <span className="wh-row-mark">{mark}</span>
+      <span className="wh-row-text">
+        <span className="wh-row-title">{e.title}</span>
+        {note && <span className="wh-row-note">{note}</span>}
+      </span>
     </>
   )
   return href ? <a className="wh-row" href={href}>{body}</a> : <div className="wh-row">{body}</div>
 }
 
-// 4e. The season band: the module now (from the block's twelve), the next gathering with its beats, and
-//     the next dated days, inside the season's own colours. The dates are the Space's own events.
-export function WildheartSeasonBandBlock({ label, heading, accentWord, image, alt, modules, beats, gatheringLabel, gatheringNote, ctaLabel, ctaHref, yearLabel, yearHref, now = new Date(), metadata, pad, vis }: {
-  label?: string; heading?: string; accentWord?: string; image?: unknown; alt?: string; modules: Props[]; beats: Props[]; gatheringLabel?: string; gatheringNote?: string
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const timeRange = (startsAt: string, endsAt?: string | null) => {
+  const a = dateLabel(startsAt)
+  const b = endsAt ? dateLabel(endsAt) : null
+  if (!a.time) return ''
+  if (!b?.time || b.day !== a.day) return a.time
+  const [ta, pa] = a.time.split(' ')
+  const [tb, pb] = b.time.split(' ')
+  return pa === pb ? `${ta} – ${tb} ${pb}` : `${a.time} – ${b.time}`
+}
+
+// 4e. The season band (the handoff's "This season"): the module now (from the block's twelve) with its
+//     photo, the next gathering's date with its beats, and the next rituals with a constellation, inside
+//     the season's own colours. The dates are the Space's own events.
+export function WildheartSeasonBandBlock({ label, heading, accentWord, image, alt, modules, nowNote, beats, gatheringLabel, gatheringNote, ritualsLabel, ctaLabel, ctaHref, yearLabel, yearHref, now = new Date(), metadata, pad, vis }: {
+  label?: string; heading?: string; accentWord?: string; image?: unknown; alt?: string; modules: Props[]; nowNote?: string; beats: Props[]; gatheringLabel?: string; gatheringNote?: string; ritualsLabel?: string
   ctaLabel?: string; ctaHref?: string; yearLabel?: string; yearHref?: string; now?: Date; metadata?: Record<string, unknown>; pad?: string; vis?: string
 }) {
   const s = sky(now)
@@ -444,11 +492,15 @@ export function WildheartSeasonBandBlock({ label, heading, accentWord, image, al
   const events = upcoming(metadata, now)
   const match = gatheringLabel ? new RegExp(gatheringLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null
   const gathering = match ? events.find((e) => match.test(e.title)) ?? null : null
-  const rituals = events.filter((e) => e !== gathering).slice(0, 3)
+  const rituals = events.filter((e) => !(match && match.test(e.title)) && !/week \d/i.test(e.title)).slice(0, 3)
   const beatRows = beats.map((b) => ({ letter: str(b.letter).toUpperCase(), word: str(b.word) })).filter((b) => b.letter || b.word)
   const cta = hrefOf(str(ctaHref), metadata)
   const year = hrefOf(str(yearHref), metadata)
   const when = gathering ? dateLabel(gathering.startsAt) : null
+  const weekday = gathering ? WEEKDAYS[(parseDay(gathering.startsAt)?.getUTCDay() ?? 0)] : ''
+  const fest = new Set(festivals(now.getUTCFullYear()).concat(festivals(now.getUTCFullYear() + 1)).map((f) => norm(f.title)))
+  fest.add('lammas')
+  const nextSign = ZODIAC[(ZODIAC.findIndex((z) => z.id === s.sign) + 1) % 12]
   return (
     <section className={cls('wh-block wh-block-season', pad, vis)} data-season={s.season}>
       <div className="wh-block-head wh-block-head-row">
@@ -473,12 +525,13 @@ export function WildheartSeasonBandBlock({ label, heading, accentWord, image, al
             <span className="wh-tag wh-tag-season">Now · until {shortDay(s.range[1])}</span>
           </span>
           <h3>{title}</h3>
-          {mod?.theme && <p>{mod.theme}</p>}
+          {(mod?.theme || nowNote) && <p>{[mod?.theme ? `${mod.theme}.` : '', nowNote].filter(Boolean).join(' ')}</p>}
+          <span className="sr-only">{nextSign.name}</span>
         </article>
         <article className="wh-card wh-card-next">
-          <span className="wh-label wh-label-ink">{gathering ? `Next · ${gathering.title}` : 'Next'}</span>
+          <span className="wh-label wh-label-ink">{gathering && gatheringLabel ? `Next ${gatheringLabel}` : gathering ? `Next · ${gathering.title}` : 'Next'}</span>
           {when ? <span className="wh-card-date">{when.day.replace(/^\w+ /, '')}</span> : <span className="wh-card-date">Soon</span>}
-          {(when?.time || gatheringNote) && <p>{[when?.day.split(' ')[0], when?.time, gatheringNote].filter(Boolean).join(' · ')}</p>}
+          {gathering && (when?.time || gatheringNote) && <p>{[weekday, timeRange(gathering.startsAt, gathering.endsAt), gatheringNote].filter(Boolean).join(' · ')}</p>}
           {beatRows.length > 0 && (
             <ol className="wh-beats-list">
               {beatRows.map((b, i) => (
@@ -486,20 +539,20 @@ export function WildheartSeasonBandBlock({ label, heading, accentWord, image, al
               ))}
             </ol>
           )}
-          {cta && ctaLabel && <a className="hs-btn hs-btn-soft wh-btn-sm" href={cta}>{ctaLabel}</a>}
+          {cta && ctaLabel && <a className="hs-btn hs-btn-secondary wh-btn-sm" href={cta}>{ctaLabel}</a>}
         </article>
         <article className="wh-card wh-card-sky">
-          <span className="wh-label wh-label-ink">Next dated days</span>
+          <span className="wh-label wh-label-ink">{ritualsLabel || 'Next rituals'}</span>
           {rituals.length > 0 ? (
             <ol className="wh-rows">
               {rituals.map((e) => (
-                <li key={e.id}><SpaceEventRow e={e} metadata={metadata} /></li>
+                <li key={e.id}><SpaceEventRow e={e} metadata={metadata} festivalsOf={fest} /></li>
               ))}
             </ol>
           ) : (
             <p className="wh-journey-empty">A quiet stretch of sky.</p>
           )}
-          <span className="wh-card-glyph"><WhGlyph name={s.sign} size={96} /></span>
+          <span className="wh-card-glyph"><WhConstellation sign={nextSign.id} size={110} /></span>
         </article>
       </div>
     </section>
@@ -507,7 +560,7 @@ export function WildheartSeasonBandBlock({ label, heading, accentWord, image, al
 }
 
 // 4f. The retreat band: a dusk-graded photo with a seal, the dated label with a moon, a display title,
-//     three day tiles, two buttons and a note, on smoke and the dusk gradient.
+//     three day tiles, two buttons and a note, on smoke and the dusk gradient, bleeding to the window.
 export function WildheartRetreatBandBlock({ label, heading, accentWord, lead, days, ctaLabel, ctaHref, secondaryLabel, secondaryHref, note, image, alt, seal, pad, vis, metadata }: {
   label?: string; heading?: string; accentWord?: string; lead?: string; days: Props[]; ctaLabel?: string; ctaHref?: string; secondaryLabel?: string; secondaryHref?: string
   note?: string; image?: unknown; alt?: string; seal?: string; pad?: string; vis?: string; metadata?: Record<string, unknown>
@@ -518,56 +571,53 @@ export function WildheartRetreatBandBlock({ label, heading, accentWord, lead, da
     <section className={cls('wh-block wh-block-retreat', pad, vis)}>
       <div className="wh-retreat" style={{ position: 'relative', overflow: 'hidden' }}>
         {seal && <span className="wh-retreat-watermark" aria-hidden="true"><WhGlyph name={seal} size={460} watermark /></span>}
-        {src && (
-          <div className="wh-retreat-photo">
-            <figure className="wh-frame" data-shape="arch" data-grade="dusk">
-              {/* eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host */}
-              <img src={src} alt={alt ?? ''} loading="lazy" />
-              <span className="wh-frame-grade" aria-hidden="true" />
-            </figure>
-            {seal && <span className="wh-retreat-seal"><WhSeal name={seal} size={84} /></span>}
-          </div>
-        )}
-        <div className="wh-retreat-copy">
-          {label && <span className="wh-label wh-label-ink wh-label-moon"><WhMoon phase={0} size={14} />{label}</span>}
-          <Title text={heading ?? ''} accent={accentWord} className="wh-title-l wh-title-madder" />
-          {lead && <p className="wh-lead">{lead}</p>}
-          {tiles.length > 0 && (
-            <ol className="wh-days">
-              {tiles.map((d, i) => (
-                <li key={i} data-accent={d.accent ? '' : undefined}>
-                  <span className="wh-label">{d.label}</span>
-                  <h3>{d.title}</h3>
-                  {d.body && <p>{d.body}</p>}
-                </li>
-              ))}
-            </ol>
+        <div className="wh-retreat-in">
+          {src && (
+            <div className="wh-retreat-photo">
+              <figure className="wh-frame" data-shape="arch" data-grade="dusk">
+                {/* eslint-disable-next-line @next/next/no-img-element -- owner photo on an arbitrary host */}
+                <img src={src} alt={alt ?? ''} loading="lazy" />
+                <span className="wh-frame-grade" aria-hidden="true" />
+              </figure>
+              {seal && <span className="wh-retreat-seal"><WhSeal name={seal} size={84} /></span>}
+            </div>
           )}
-          <Buttons primary={ctaLabel} primaryHref={ctaHref} secondary={secondaryLabel} secondaryHref={secondaryHref} metadata={metadata} />
-          {note && <span className="wh-label">{note}</span>}
+          <div className="wh-retreat-copy">
+            {label && <span className="wh-label wh-label-ink wh-label-moon"><WhMoon phase={0} size={14} />{label}</span>}
+            <Title text={heading ?? ''} accent={accentWord} className="wh-title-l wh-title-madder" />
+            {lead && <p className="wh-lead">{lead}</p>}
+            {tiles.length > 0 && (
+              <ol className="wh-days">
+                {tiles.map((d, i) => (
+                  <li key={i} data-accent={d.accent ? '' : undefined}>
+                    <span className="wh-label">{d.label}</span>
+                    <h3>{d.title}</h3>
+                    {d.body && <p>{d.body}</p>}
+                  </li>
+                ))}
+              </ol>
+            )}
+            <Buttons primary={ctaLabel} primaryHref={ctaHref} secondary={secondaryLabel} secondaryHref={secondaryHref} secondaryKind="ghost" metadata={metadata} />
+            {note && <span className="wh-label">{note}</span>}
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-// 4g. The mark split: the Space's own logo (or its name) in a washed card beside a heading, a lead, the
-//     ornament, a body and a note card. The About page's shape.
+// 4g. The mark split: the mark (the handoff's LogoMark, twilight, from the Space's own name) in a washed
+//     card beside a heading, a lead, the ornament, a body and a note card. The About page's shape.
 export function WildheartMarkSplitBlock({ label, heading, accentWord, lead, body, note, metadata, pad, vis }: {
   label?: string; heading?: string; accentWord?: string; lead?: string; body?: string; note?: string; metadata?: Record<string, unknown>; pad?: string; vis?: string
 }) {
   const space = metadata?.space as { name?: string; logoUrl?: string | null } | undefined
-  const logo = safeImageSrc(space?.logoUrl ?? null)
+  const name = str(space?.name)
   return (
     <section className={cls('wh-block wh-block-mark', pad, vis)}>
       <div className="wh-mark-split">
         <div className="wh-mark-card">
-          {logo ? (
-            // eslint-disable-next-line @next/next/no-img-element -- the Space's own logo
-            <img src={logo} alt={space?.name ?? ''} className="wh-mark-logo" />
-          ) : (
-            <span className="wh-mark-name">{space?.name ?? ''}</span>
-          )}
+          {name ? <WhLogoMark name={name} size={360} tone="twilight" className="wh-mark-logo" /> : <span className="wh-mark-name" />}
         </div>
         <div className="wh-mark-copy">
           {label && <span className="wh-label wh-label-ink">{label}</span>}
@@ -582,12 +632,65 @@ export function WildheartMarkSplitBlock({ label, heading, accentWord, lead, body
   )
 }
 
-// 4h. The moon strip: a row of moons counting the weeks or seats of something, with its label.
-export function WildheartMoonStripBlock({ label, total = 8, done = 0, pad, vis }: { label?: string; total?: number; done?: number; pad?: string; vis?: string }) {
+// 4h. The moon strip: a heading with a row of moons counting the weeks or seats of something beside it.
+export function WildheartMoonStripBlock({ heading, label, total = 8, done = 0, pad, vis }: { heading?: string; label?: string; total?: number; done?: number; pad?: string; vis?: string }) {
   return (
     <div className={cls('wh-block wh-block-moonstrip', pad, vis)}>
-      <WhMoonPhases total={num(total, 8)} done={num(done, 0)} size={14} label={label || undefined} />
+      <div className="wh-block-head wh-block-head-row wh-moonstrip-head">
+        <div>{heading && <Title text={heading} className="wh-title-s" />}</div>
+        <WhMoonPhases total={num(total, 8)} done={num(done, 0)} size={14} label={label || undefined} />
+      </div>
     </div>
+  )
+}
+
+// 4i. The modules: one card per sign (its season's colour on top, the sign and its house, the module and
+//     its theme), in the order the year walks them from the sign the block starts on.
+export function WildheartModulesBlock({ heading, modules, pad, vis }: { heading?: string; modules: Props[]; pad?: string; vis?: string }) {
+  const items = modules.map((m) => ({ sign: str(m.sign).toLowerCase(), title: str(m.title), theme: str(m.theme) })).filter((m) => ZODIAC.some((z) => z.id === m.sign) && m.title)
+  if (items.length === 0) return null
+  return (
+    <section className={cls('wh-block wh-block-modules', pad, vis)}>
+      {heading && <Title text={heading} className="wh-title-s wh-block-title" />}
+      <ul className="wh-modules">
+        {items.map((m) => {
+          const z = ZODIAC.find((x) => x.id === m.sign)!
+          const season = ({ capricorn: 'winter', aquarius: 'winter', pisces: 'winter', aries: 'spring', taurus: 'spring', gemini: 'spring', cancer: 'summer', leo: 'summer', virgo: 'summer', libra: 'fall', scorpio: 'fall', sagittarius: 'fall' } as Record<string, string>)[m.sign]
+          return (
+            <li key={m.sign} data-season={season}>
+              <span className="wh-module-top">
+                <span className="wh-label wh-label-season">{z.name} · {z.house}</span>
+                <WhGlyph name={z.id} size={20} />
+              </span>
+              <h3>{m.title}</h3>
+              {m.theme && <p>{m.theme}</p>}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+// 4j. Your first night: the four-way choice of how to arrive, with the next gathering's date in its label.
+export function WildheartFirstNightBlock({ label, gatheringLabel, heading, question, options, chosenLabel, ctaLabel, ctaHref, now = new Date(), metadata, pad, vis }: {
+  label?: string; gatheringLabel?: string; heading?: string; question?: string; options: Props[]; chosenLabel?: string; ctaLabel?: string; ctaHref?: string; now?: Date; metadata?: Record<string, unknown>; pad?: string; vis?: string
+}) {
+  const opts = options.map((o) => ({ label: str(o.label), sub: str(o.sub), note: str(o.note) })).filter((o) => o.label)
+  if (opts.length === 0) return null
+  const match = gatheringLabel ? new RegExp(gatheringLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null
+  const next = match ? upcoming(metadata, now).find((e) => match.test(e.title)) ?? null : null
+  const when = next ? dateLabel(next.startsAt) : null
+  const short = when?.time ? when.time.replace(/:00 /, ' ') : ''
+  return (
+    <section className={cls('wh-block wh-block-firstnight', pad, vis)}>
+      <div className="wh-fn">
+        <span className="wh-label wh-label-ink">{[label, when ? `${when.day}${short ? ` · ${short}` : ''}` : ''].filter(Boolean).join(' · ')}</span>
+        {heading && <span className="wh-fn-title">{heading}</span>}
+        {question && <span className="wh-fn-question">{question}</span>}
+        <WildheartFirstNight options={opts} chosen={chosenLabel || 'Chosen'} cta={ctaLabel || 'Save my place'} href={hrefOf(str(ctaHref), metadata)} />
+      </div>
+    </section>
   )
 }
 
@@ -595,36 +698,61 @@ const yearField = { type: 'number', label: 'Year (blank for this year)', min: 19
 const layoutOf = (layout: unknown) => ({ pad: padClass(layout as LayoutValue), vis: visClass(layout as LayoutValue) })
 
 /** The theme's own twelve house names, in the order the year walks them from Capricorn. Block content,
- *  not a navigation catalog: it feeds the SeasonBand's default copy. */
+ *  not a navigation catalog: it feeds the season band's and the sky map's default copy. */
 const ZODIAC_HOUSES = [...ZODIAC.slice(9), ...ZODIAC.slice(0, 9)].map((z) => ({ sign: z.id, title: z.houseName, theme: `${z.house} · ${z.name}` }))
+const modulesField = { type: 'array', label: 'The twelve modules (one per sign)', arrayFields: { sign: { type: 'select', label: 'Sign', options: ZODIAC.map((z) => ({ label: z.name, value: z.id })) }, title: { type: 'text', label: 'Module' }, theme: { type: 'text', label: 'Theme' } }, getItemSummary: (item: Props) => `${str(item.sign)}: ${str(item.title)}` } as const
 
 export const wildheartComponents: Record<string, ComponentConfig> = {
   WildheartYearJourney: {
-    label: 'Year journey (astrology strip)',
-    fields: { label: { type: 'text' }, heading: { type: 'textarea' }, lead: { type: 'textarea' }, year: yearField, layout: layoutField },
+    label: 'Year journey (the pinned wheel)',
+    fields: {
+      label: { type: 'text' },
+      heading: { type: 'textarea' },
+      lead: { type: 'textarea' },
+      year: yearField,
+      modules: modulesField,
+      programStops: { type: 'array', label: 'The program\'s own stops (matched in event titles)', arrayFields: { match: { type: 'text', label: 'Event title contains' }, after: { type: 'text', label: 'Only after the last event containing (optional)' }, title: { type: 'text', label: 'Stop title' }, note: { type: 'text', label: 'Note' }, teach: { type: 'textarea', label: 'A line about it' } }, getItemSummary: (item: Props) => str(item.title) || str(item.match) || 'Stop' },
+      enrollHref: { type: 'text', label: '"Save my place" link' },
+      yearHref: { type: 'text', label: 'Sky map link' },
+      layout: layoutField,
+    },
     defaultProps: {
-      label: 'Your year, turning',
+      label: 'The year',
       heading: 'Every season has a door.',
-      lead: 'Twelve signs, four seasons, every moon. Scroll through the sky and find where you are, and what is coming.',
+      lead: 'Scroll, or spin the wheel and let it coast. The needle at the top reads all four rings at once: the date, the sun\'s sign, the season and the moon.',
       year: 0,
+      modules: ZODIAC_HOUSES,
+      programStops: [],
+      enrollHref: '',
+      yearHref: '',
       layout: layoutDefault,
     },
-    render: ({ label, heading, lead, year, layout, puck }) => (
-      <WildheartYearJourneyBlock label={label || undefined} heading={heading || undefined} lead={lead || undefined} year={year} metadata={puck?.metadata} {...layoutOf(layout)} />
+    render: ({ label, heading, lead, year, modules, programStops, enrollHref, yearHref, layout, puck }) => (
+      <WildheartYearJourneyBlock label={label || undefined} heading={heading || undefined} lead={lead || undefined} year={year} modules={arr(modules)} programStops={arr(programStops)} enrollHref={enrollHref || undefined} yearHref={yearHref || undefined} metadata={puck?.metadata} {...layoutOf(layout)} />
     ),
   },
   WildheartSkyMap: {
-    label: 'Sky map (astrology wheel)',
-    fields: { label: { type: 'text' }, heading: { type: 'textarea' }, lead: { type: 'textarea' }, year: yearField, layout: layoutField },
+    label: 'Sky map (the calendar wheel)',
+    fields: {
+      label: { type: 'text' },
+      heading: { type: 'textarea' },
+      lead: { type: 'textarea' },
+      year: yearField,
+      wheel: { type: 'select', label: 'Layout', options: [{ label: 'Centered (a year page)', value: 'centered' }, { label: 'Compact (a phone)', value: 'compact' }] },
+      modules: modulesField,
+      layout: layoutField,
+    },
     defaultProps: {
       label: 'The sky this year',
       heading: 'One wheel. The whole year.',
       lead: 'Festivals, moons and gatherings, placed on the wheel where they fall. Come back to it whenever you need to know where you are.',
       year: 0,
+      wheel: 'centered',
+      modules: ZODIAC_HOUSES,
       layout: layoutDefault,
     },
-    render: ({ label, heading, lead, year, layout, puck }) => (
-      <WildheartSkyMapBlock label={label || undefined} heading={heading || undefined} lead={lead || undefined} year={year} metadata={puck?.metadata} {...layoutOf(layout)} />
+    render: ({ label, heading, lead, year, wheel, modules, layout, puck }) => (
+      <WildheartSkyMapBlock label={label || undefined} heading={heading || undefined} lead={lead || undefined} year={year} layout={wheel} modules={arr(modules)} metadata={puck?.metadata} {...layoutOf(layout)} />
     ),
   },
   WildheartNowLine: {
@@ -668,7 +796,7 @@ export const wildheartComponents: Record<string, ComponentConfig> = {
       heading: { type: 'textarea', label: 'Heading' },
       accentWord: { type: 'text', label: 'Accent word (optional)' },
       note: { type: 'text', label: 'Note (right of the heading)' },
-      steps: { type: 'array', label: 'Steps', arrayFields: { title: { type: 'text', label: 'Title' }, body: { type: 'textarea', label: 'Line' } }, getItemSummary: (item: Props) => str(item.title) || 'Step' },
+      steps: { type: 'array', label: 'Steps', arrayFields: { title: { type: 'text', label: 'Title' }, body: { type: 'textarea', label: 'Line' }, href: { type: 'text', label: 'Link (optional)' } }, getItemSummary: (item: Props) => str(item.title) || 'Step' },
       layout: layoutField,
     },
     defaultProps: {
@@ -677,16 +805,16 @@ export const wildheartComponents: Record<string, ComponentConfig> = {
       accentWord: '',
       note: 'New moon to full',
       steps: [
-        { title: 'Visit', body: 'Come once. Watch, or join in.' },
-        { title: 'Join', body: 'Take a seat in a circle.' },
-        { title: 'Practise', body: 'A short practice you can keep.' },
-        { title: 'Gather', body: 'The festivals and every moon.' },
-        { title: 'Lead', body: 'Hold a circle of your own.' },
+        { title: 'Visit', body: 'Come once. Watch, or join in.', href: '' },
+        { title: 'Join', body: 'Take a seat in a circle.', href: '' },
+        { title: 'Practise', body: 'A short practice you can keep.', href: '' },
+        { title: 'Gather', body: 'The festivals and every moon.', href: '' },
+        { title: 'Lead', body: 'Hold a circle of your own.', href: '' },
       ],
       layout: layoutDefault,
     },
-    render: ({ label, heading, accentWord, note, steps, layout }) => (
-      <WildheartMoonPathBlock label={label || undefined} heading={heading || undefined} accentWord={accentWord || undefined} note={note || undefined} steps={arr(steps)} {...layoutOf(layout)} />
+    render: ({ label, heading, accentWord, note, steps, layout, puck }) => (
+      <WildheartMoonPathBlock label={label || undefined} heading={heading || undefined} accentWord={accentWord || undefined} note={note || undefined} steps={arr(steps)} metadata={puck?.metadata} {...layoutOf(layout)} />
     ),
   },
   WildheartSealCards: {
@@ -726,10 +854,12 @@ export const wildheartComponents: Record<string, ComponentConfig> = {
       label: { type: 'text', label: 'Line under the heading' },
       image: imgField,
       alt: { type: 'text', label: 'Alt text (the module card photo)' },
-      modules: { type: 'array', label: 'The twelve modules (one per sign)', arrayFields: { sign: { type: 'select', label: 'Sign', options: ZODIAC.map((z) => ({ label: z.name, value: z.id })) }, title: { type: 'text', label: 'Module' }, theme: { type: 'text', label: 'Theme' } }, getItemSummary: (item: Props) => `${str(item.sign)}: ${str(item.title)}` },
+      modules: modulesField,
+      nowNote: { type: 'text', label: 'A line after the module now' },
       gatheringLabel: { type: 'text', label: 'The gathering to feature (matched in event titles)' },
       gatheringNote: { type: 'text', label: 'A line under its date' },
       beats: { type: 'array', label: 'Its beats (a letter and a word)', arrayFields: { letter: { type: 'text', label: 'Letter' }, word: { type: 'text', label: 'Word' } }, getItemSummary: (item: Props) => str(item.word) || 'Beat' },
+      ritualsLabel: { type: 'text', label: 'The next days\' label' },
       ctaLabel: { type: 'text', label: 'Button label' },
       ctaHref: { type: 'text', label: 'Button link' },
       yearLabel: { type: 'text', label: 'Year link label' },
@@ -743,17 +873,19 @@ export const wildheartComponents: Record<string, ComponentConfig> = {
       image: '',
       alt: '',
       modules: ZODIAC_HOUSES,
+      nowNote: '',
       gatheringLabel: 'Gathering',
       gatheringNote: '',
       beats: [],
+      ritualsLabel: 'Next rituals',
       ctaLabel: '',
       ctaHref: '',
-      yearLabel: 'See the year',
+      yearLabel: 'See the year →',
       yearHref: '',
       layout: layoutDefault,
     },
-    render: ({ heading, accentWord, label, image, alt, modules, gatheringLabel, gatheringNote, beats, ctaLabel, ctaHref, yearLabel, yearHref, layout, puck }) => (
-      <WildheartSeasonBandBlock heading={heading || undefined} accentWord={accentWord || undefined} label={label || undefined} image={image} alt={alt} modules={arr(modules)} beats={arr(beats)} gatheringLabel={gatheringLabel || undefined} gatheringNote={gatheringNote || undefined} ctaLabel={ctaLabel || undefined} ctaHref={ctaHref || undefined} yearLabel={yearLabel || undefined} yearHref={yearHref || undefined} metadata={puck?.metadata} {...layoutOf(layout)} />
+    render: ({ heading, accentWord, label, image, alt, modules, nowNote, gatheringLabel, gatheringNote, beats, ritualsLabel, ctaLabel, ctaHref, yearLabel, yearHref, layout, puck }) => (
+      <WildheartSeasonBandBlock heading={heading || undefined} accentWord={accentWord || undefined} label={label || undefined} image={image} alt={alt} modules={arr(modules)} nowNote={nowNote || undefined} beats={arr(beats)} gatheringLabel={gatheringLabel || undefined} gatheringNote={gatheringNote || undefined} ritualsLabel={ritualsLabel || undefined} ctaLabel={ctaLabel || undefined} ctaHref={ctaHref || undefined} yearLabel={yearLabel || undefined} yearHref={yearHref || undefined} metadata={puck?.metadata} {...layoutOf(layout)} />
     ),
   },
   WildheartRetreatBand: {
@@ -823,9 +955,49 @@ export const wildheartComponents: Record<string, ComponentConfig> = {
     ),
   },
   WildheartMoonStrip: {
-    label: 'Moon strip (a count in moons)',
-    fields: { label: { type: 'text', label: 'Label' }, total: { type: 'number', label: 'Total', min: 1, max: 24 }, done: { type: 'number', label: 'Done', min: 0, max: 24 }, layout: layoutField },
-    defaultProps: { label: 'Eight weeks', total: 8, done: 0, layout: layoutDefault },
-    render: ({ label, total, done, layout }) => <WildheartMoonStripBlock label={label || undefined} total={total} done={done} {...layoutOf(layout)} />,
+    label: 'Moon strip (a heading, a count in moons)',
+    fields: { heading: { type: 'textarea', label: 'Heading' }, label: { type: 'text', label: 'Label after the moons' }, total: { type: 'number', label: 'Total', min: 1, max: 24 }, done: { type: 'number', label: 'Done', min: 0, max: 24 }, layout: layoutField },
+    defaultProps: { heading: '', label: 'Eight weeks', total: 8, done: 0, layout: layoutDefault },
+    render: ({ heading, label, total, done, layout }) => <WildheartMoonStripBlock heading={heading || undefined} label={label || undefined} total={total} done={done} {...layoutOf(layout)} />,
+  },
+  WildheartModules: {
+    label: 'Module cards (one per sign)',
+    fields: { heading: { type: 'textarea', label: 'Heading' }, modules: modulesField, layout: layoutField },
+    defaultProps: { heading: 'Twelve modules', modules: ZODIAC_HOUSES, layout: layoutDefault },
+    render: ({ heading, modules, layout }) => <WildheartModulesBlock heading={heading || undefined} modules={arr(modules)} {...layoutOf(layout)} />,
+  },
+  WildheartFirstNight: {
+    label: 'Your first night (how would you like to arrive)',
+    fields: {
+      label: { type: 'text', label: 'Eyebrow' },
+      gatheringLabel: { type: 'text', label: 'The gathering whose date follows it (matched in event titles)' },
+      heading: { type: 'text', label: 'Heading' },
+      question: { type: 'text', label: 'The question' },
+      options: { type: 'array', label: 'The choices', arrayFields: { label: { type: 'text', label: 'Choice' }, sub: { type: 'text', label: 'Under it' }, note: { type: 'textarea', label: 'The note once picked' } }, getItemSummary: (item: Props) => str(item.label) || 'Choice' },
+      chosenLabel: { type: 'text', label: '"Chosen" label' },
+      ctaLabel: { type: 'text', label: 'Button label' },
+      ctaHref: { type: 'text', label: 'Button link' },
+      layout: layoutField,
+    },
+    defaultProps: {
+      label: 'Your first night',
+      gatheringLabel: 'Gathering',
+      heading: 'Come as you are.',
+      question: 'How would you like to arrive?',
+      options: [
+        { label: 'Join in', sub: 'All of it', note: 'Lovely. Your host will save you a place.' },
+        { label: 'Go gently', sub: 'At my pace', note: 'Every practice can be softened. Your host will know.' },
+        { label: 'Witness', sub: 'Just watch', note: 'You are welcome to sit and watch the whole night.' },
+        { label: 'Not sure', sub: 'Ask me first', note: 'Your host will message you before the night to talk it through.' },
+      ],
+      chosenLabel: 'Chosen',
+      ctaLabel: 'Save my place',
+      ctaHref: '',
+      layout: layoutDefault,
+    },
+    render: ({ label, gatheringLabel, heading, question, options, chosenLabel, ctaLabel, ctaHref, layout, puck }) => (
+      <WildheartFirstNightBlock label={label || undefined} gatheringLabel={gatheringLabel || undefined} heading={heading || undefined} question={question || undefined} options={arr(options)} chosenLabel={chosenLabel || undefined} ctaLabel={ctaLabel || undefined} ctaHref={ctaHref || undefined} metadata={puck?.metadata} {...layoutOf(layout)} />
+    ),
   },
 }
+

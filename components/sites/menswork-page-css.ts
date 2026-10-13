@@ -242,6 +242,18 @@ ${M} .mw-module-text,${M} .mw-module-dates{display:flex;flex-direction:column;ga
 ${M} .mw-module-dates>span{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:baseline}
 ${M} .mw-keydates{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 
+${M} .mw-hero-note{margin:4px 0 0}
+${M} .mw-beats-inline{margin-top:20px}
+${M} .mw-beats-inline .mw-beat{cursor:default}
+${M} .mw-beat-d{font-size:14px;line-height:1.4;color:var(--color-text-muted)}
+${M} .mw-beat[aria-pressed] .mw-beat-d{display:none}
+${M} .mw-circle-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+${M} .mw-circle-tile{padding:24px;background:var(--mw-raised);display:flex;flex-direction:column;gap:12px}
+${M} .mw-circle-tile-head,${M} .mw-circle-tile-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+${M} .mw-seats{display:flex;gap:2px}
+${M} .mw-seats span{width:10px;height:10px}
+${M} .mw-week-focus{font-size:15px;line-height:1.4;color:var(--color-text-muted)}
+
 ${M} .hs-season-next{margin:0;${LABEL};font-size:11px;color:var(--color-text-muted);text-align:right}
 ${M} .hs-season-next span{display:block;color:var(--color-text)}
 `

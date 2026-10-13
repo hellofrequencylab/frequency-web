@@ -9,8 +9,9 @@ import { MENSWORK_PAGE_CSS } from './menswork-page-css'
 import { FREQUENCY_PAGE_CSS } from './frequency-page-css'
 import { WILDHEART_CSS } from './wildheart-css'
 import { WildheartSubBar } from './wildheart-now-line'
-import { WildheartInkDefs, WhOrnament } from './wildheart-symbols'
+import { WildheartInkDefs, WhLogoMark, WhOrnament } from './wildheart-symbols'
 import { sky } from '@/lib/theme/astrology-wheel'
+import type { SiteFooter } from '@/lib/sites/site-footer'
 import { SITE_LOOK_CSS } from './site-look-css'
 import type { SiteLook } from '@/lib/theme/site-style'
 import { HouseHeader, type HouseHeaderLink, type SiteLogoMode } from './house-header'
@@ -86,6 +87,7 @@ export function SiteChrome({
   admin = null,
   look = {},
   member = null,
+  footer = null,
   children,
 }: {
   brandName: string
@@ -121,9 +123,31 @@ export function SiteChrome({
   look?: Partial<Pick<SiteLook, 'corners' | 'spacing' | 'header'>>
   /** The reader's own membership in this Space, an island beside the header button (LIVE-699). */
   member?: ReactNode
+  /** The Space's own footer columns, line, note and copyright suffix (lib/sites/site-footer.ts), or null
+   *  for the skin's default footer. */
+  footer?: SiteFooter | null
   children: ReactNode
 }) {
   const adminLinks = skin ? admin : admin ? { ...admin, menu: admin.menu.filter((l) => l.label === 'Website builder') } : null
+  const wild = skin?.theme === 'wildheart'
+  // The Wildheart header is the handoff's: a fixed bar (the row and the date line under it) with a spacer
+  // that reserves its height, so nothing shifts when the date line folds away on scroll.
+  const header = (
+    <HouseHeader
+      brandName={brandName}
+      homeHref={homeHref}
+      links={links}
+      adminLinks={adminLinks?.menu ?? null}
+      cta={cta}
+      logoUrl={logoUrl}
+      logoMode={skin ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
+      skinned={!!skin}
+      fadeOnPause={fadeOnPause}
+      member={member}
+      brandMark={wild ? <WhLogoMark name={brandName} lockup="horizontal" size={46} className="wh-logo-header" /> : null}
+    />
+  )
+  const year = new Date().getFullYear()
   return (
     <div
       data-site-root=""
@@ -138,38 +162,44 @@ export function SiteChrome({
       className="hs-root"
     >
       <style>{skinCss(skin) + (look.corners || look.spacing || look.header ? SITE_LOOK_CSS : '')}</style>
-      {skin?.theme === 'wildheart' && <WildheartInkDefs />}
-      <HouseHeader
-        brandName={brandName}
-        homeHref={homeHref}
-        links={links}
-        adminLinks={adminLinks?.menu ?? null}
-        cta={cta}
-        logoUrl={logoUrl}
-        logoMode={skin ? 'name' : logoMode ?? (logoUrl ? 'avatar' : 'name')}
-        skinned={!!skin}
-        fadeOnPause={fadeOnPause}
-        member={member}
-      />
+      {wild && <WildheartInkDefs />}
+      {wild ? (
+        <>
+          <div className="wh-fixed">
+            {header}
+            <WildheartSubBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} />
+          </div>
+          <div className="wh-fixed-spacer" aria-hidden />
+        </>
+      ) : (
+        header
+      )}
       {skin?.theme === 'menswork' && <SeasonBar season={skin.season} now={seasonNow} />}
-      {skin?.theme === 'wildheart' && <WildheartSubBar next={seasonNow?.next ? { title: seasonNow.module, startsAt: seasonNow.next } : null} />}
 
       <main id="top">{children}</main>
 
+      <div className={wild ? 'wh-footer-ground' : undefined}>
       {(showBrandFooter ?? !!skin) && (
-        <div className="hs-footer-top">
+        <div className="hs-footer-top" data-columns={footer?.columns.length ? '' : undefined}>
           <div className="hs-footer-brand">
             <a href={homeHref} className="hs-brand">
-              {/* A Wildheart footer leads with the Space's own mark (the handoff's LogoMark at 170px). */}
-              {skin?.theme === 'wildheart' && logoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element -- operator logo on an arbitrary host
-                <img src={logoUrl} alt="" className="hs-footer-logo" />
-              )}
-              {brandName}
+              {/* A Wildheart footer leads with the mark (the handoff's LogoMark at 170px). */}
+              {wild ? <WhLogoMark name={brandName} size={170} className="hs-footer-logo" /> : brandName}
             </a>
-            {tagline && <p>{tagline}</p>}
+            {(footer?.blurb ?? tagline) && <p>{footer?.blurb ?? tagline}</p>}
           </div>
-          {links.length > 0 && (
+          {footer?.columns.length ? (
+            footer.columns.map((col) => (
+              <nav key={col.title} aria-label={col.title} className="hs-footer-col">
+                <span className="hs-footer-col-title">{col.title}</span>
+                {col.links.map((l) => (
+                  <a key={`${l.href}:${l.label}`} href={l.href}>
+                    {l.label}
+                  </a>
+                ))}
+              </nav>
+            ))
+          ) : links.length > 0 ? (
             <nav aria-label={`${brandName} pages`} className="hs-footer-links">
               {links.map((l) => (
                 <a key={l.href} href={l.href}>
@@ -177,21 +207,30 @@ export function SiteChrome({
                 </a>
               ))}
             </nav>
-          )}
+          ) : null}
         </div>
       )}
       {adminLinks && <SiteFooterAdmin links={adminLinks.menu} console={adminLinks.console} />}
-      {skin?.theme === 'wildheart' && (
+      {wild && (
         <div className="hs-footer-ornament">
           <WhOrnament variant="star" />
         </div>
       )}
       <footer className="hs-footer">
         <span>
-          © {new Date().getFullYear()} {brandName}
+          © {year} {brandName}
+          {footer?.suffix && (
+            <>
+              {' · '}
+              <a href={appOrigin()}>{footer.suffix}</a>
+            </>
+          )}
         </span>
-        <a href={appOrigin()}>Frequency Partner</a>
+        {footer?.line && <span className="hs-footer-line">{footer.line}</span>}
+        {footer?.note && <span className="hs-footer-note">{footer.note}</span>}
+        {!footer?.suffix && <a href={appOrigin()}>Frequency Partner</a>}
       </footer>
+      </div>
     </div>
   )
 }

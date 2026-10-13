@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { SiteChrome } from '@/components/sites/site-chrome'
@@ -12,15 +12,18 @@ import { config } from '@/lib/page-editor/config'
 import { wildheartAccentVars } from '@/lib/theme/wildheart'
 import { seasonOf } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_CSS } from '@/components/sites/wildheart-css'
-import { buildEvents, buildItems, buildPageDocs, CIRCLE, FOUNDATION, PAGES, SLUG, TAGLINE, YEAR } from '../scripts/seed-wildheart.mts'
+import { readSiteFooter, siteFooterFor } from '@/lib/sites/site-footer'
+import { buildEvents, buildItems, buildPageDocs, buildPreferences, CIRCLE, CIRCLES_MORE, FOUNDATION, PAGES, SLUG, TAGLINE, YEAR } from '../scripts/seed-wildheart.mts'
 
-// THE WILDHEART SITE, RENDERED OFFLINE (LIVE-903). The live site is the seed's page docs drawn by the same
-// chrome and section renderer the Next page uses (components/sites/site-page.tsx), with the Space's own
-// rows. Next's page itself needs the database (getSiteSpace) and next/font, so this test renders the SAME
-// tree one level down: SiteChrome around MensworkPage, blocks the theme does not plan drawn by BlockRender
-// with the Space's events in metadata, the seed's events, circle and journeys as the live rows. It measures
-// the consequences the handoff names and, with WILDHEART_SHOTS_DIR set, writes each page as a static HTML
-// file for scripts/probes/wildheart-shots.mjs to screenshot beside the handoff.
+// THE WILDHEART SITE, RENDERED OFFLINE (LIVE-903, LIVE-904). The live site is the seed's page docs drawn by
+// the same chrome and section renderer the Next page uses (components/sites/site-page.tsx), with the
+// Space's own rows. Next's page itself needs the database (getSiteSpace) and next/font, so this test
+// renders the SAME tree one level down: SiteChrome around MensworkPage, blocks the theme does not plan
+// drawn by BlockRender with the Space's events in metadata, the seed's events, circles and journeys as
+// the live rows (shaped like the handoff's placeholders where the rows are the handoff's: four circles
+// with its seat counts). It measures the consequences the handoff names, holds every handoff string on
+// the six pages (scripts/probes/wildheart-content-checklist.json) and, with WILDHEART_SHOTS_DIR set,
+// writes each page as a static HTML file for scripts/probes/wildheart-shots.mjs to screenshot.
 
 const NOW = new Date(Date.UTC(2026, 9, 12, 20))
 const ORIGIN = 'https://frequency.example'
@@ -30,20 +33,24 @@ const pageDocs = buildPageDocs() as Record<string, { content: MwBlock[] }>
 const events = buildEvents()
 const items = buildItems()
 
-/** The seed's events as the live rows a page reads (lib/sites/menswork-data.ts shape), soonest first. */
+/** The seed's events as the live rows a page reads (lib/sites/menswork-data.ts shape), soonest first,
+ *  with the Circle Night cadence minted through 2027 the way the daily cron mints it. */
 function liveEvents(): MwLive['events'] {
-  return events
-    .map((e, i) => ({
-      id: `evt-${i}`,
-      slug: e.slug,
-      title: e.title,
-      description: e.description,
-      startsAt: `${e.date}T${e.start}`,
-      endsAt: `${e.endDate ?? e.date}T${e.end}`,
-      location: null,
-    }))
-    .filter((e) => e.startsAt >= '2026-10-12')
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+  const rows = events.map((e, i) => ({
+    id: `evt-${i}`,
+    slug: e.slug,
+    title: e.title,
+    description: e.description,
+    startsAt: `${e.date}T${e.start}`,
+    endsAt: `${e.endDate ?? e.date}T${e.end}`,
+    location: null,
+  }))
+  const anchor = events[0]
+  for (let d = new Date(Date.UTC(2026, 10, 17)); d.getTime() < Date.UTC(2028, 0, 1); d = new Date(d.getTime() + 14 * 864e5)) {
+    const day = d.toISOString().slice(0, 10)
+    rows.push({ id: `evt-cn-${day}`, slug: `${anchor.slug}-${day}`, title: anchor.title, description: anchor.description, startsAt: `${day}T${anchor.start}`, endsAt: `${day}T${anchor.end}`, location: null })
+  }
+  return rows.filter((e) => e.startsAt >= '2026-10-12').sort((a, b) => a.startsAt.localeCompare(b.startsAt))
 }
 
 function liveJourneys(): MwLive['journeys'] {
@@ -54,6 +61,7 @@ function liveJourneys(): MwLive['journeys'] {
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((ph) => ({
         title: ph.title,
+        body: ph.body,
         steps: items
           .filter((it) => it.plan === plan && it.block_type === 'module' && it.parent_id === ph.id)
           .map((m) => m.title),
@@ -62,18 +70,21 @@ function liveJourneys(): MwLive['journeys'] {
   })
 }
 
+/** The four circles: the seed's rows, with the handoff's seat counts and hosts standing in for the live
+ *  counts (the handoff's host names are placeholders; the real rows carry the real host). */
+const SEATS: Record<string, { members: number; host: string }> = { 'wildheart-primary-circle': { members: 9, host: 'founding lead' }, 'wildheart-eastside': { members: 11, host: 'trained' }, 'wildheart-foothills': { members: 12, host: 'trained' }, 'wildheart-riverside': { members: 4, host: 'in training' } }
+
 const live: MwLive = {
   events: liveEvents(),
   circles: [
-    {
-      id: 'circle-1', slug: CIRCLE.slug, name: CIRCLE.name, about: CIRCLE.about, memberCount: 7, memberCap: CIRCLE.memberCap,
-      status: 'open', imageUrl: null, neighborhood: null, meets: CIRCLE.meetup.text, host: 'The host', hostAvatar: null, isSpacePrimary: true,
-    },
+    { id: 'circle-1', slug: CIRCLE.slug, name: CIRCLE.name, about: CIRCLE.about, memberCount: SEATS[CIRCLE.slug].members, memberCap: CIRCLE.memberCap, status: 'active', imageUrl: null, neighborhood: CIRCLE.neighborhood, meets: CIRCLE.meetup.text, host: SEATS[CIRCLE.slug].host, hostAvatar: null, isSpacePrimary: true },
+    ...CIRCLES_MORE.map((c) => ({ id: c.id, slug: c.slug, name: c.name, about: c.about, memberCount: SEATS[c.slug].members, memberCap: CIRCLE.memberCap, status: c.status, imageUrl: null, neighborhood: c.neighborhood, meets: c.meetup.text, host: SEATS[c.slug].host, hostAvatar: null, isSpacePrimary: false })),
   ],
   journeys: liveJourneys(),
 }
 
 const links: SiteLinkMap = { origin: ORIGIN, slug: SLUG, siteBase: SITE_BASE, pages: PAGES.map((p) => p.slug), contactHref: '/contact', bookHref: null, email: null }
+const footer = siteFooterFor(readSiteFooter(buildPreferences()), links, ORIGIN)
 
 /** The Space's own rows the blocks the theme does not plan read through `puck.metadata.space`. */
 const metadata = {
@@ -82,17 +93,18 @@ const metadata = {
     slug: SLUG,
     tagline: TAGLINE,
     logoUrl: '/brand/wildheart/wildheart-logo.svg',
-    events: live.events.map((e) => ({ id: e.id, slug: e.slug, title: e.title, startsAt: e.startsAt })),
+    events: live.events.map((e) => ({ id: e.id, slug: e.slug, title: e.title, startsAt: e.startsAt, endsAt: e.endsAt, description: e.description })),
   },
+  links,
 }
 
 const menu = PAGES.map((p) => ({ href: p.slug === 'home' ? '/' : `/${p.slug}`, label: p.label }))
+const next = live.events.find((e) => /circle night/i.test(e.title)) ?? live.events[0] ?? null
 
 export function renderPage(slug: string): string {
   const doc = pageDocs[slug]
   const blocks = (doc?.content ?? []).map((b) => ({ type: b.type, props: b.props ?? {} }))
   const plan = planMensworkPage(blocks)
-  const next = live.events[0] ?? null
   const page = (
     <SiteChrome
       brandName="Wildheart"
@@ -105,8 +117,9 @@ export function renderPage(slug: string): string {
       logoMode="name"
       tagline={TAGLINE}
       showBrandFooter
+      footer={footer}
       seasonNow={next ? { module: next.title, theme: null, next: next.startsAt } : null}
-      admin={null}
+      admin={{ menu: [{ href: '/admin/overview', label: 'Vision' }, { href: '/admin/calendar', label: 'Calendar' }], console: `${ORIGIN}/spaces/${SLUG}/manage/leadership` }}
     >
       <MensworkPage
         blocks={blocks}
@@ -128,40 +141,66 @@ export function renderPage(slug: string): string {
   )
 }
 
-const HEAD = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wildheart</title>
+const HEAD = (title: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Hanken+Grotesk:wght@400;500;600&family=Noto+Sans+Symbols:wght@300;400&display=swap" rel="stylesheet">
 <style>@font-face{font-family:'IM Fell English';src:url(/fonts/wildheart/IMFellEnglish-Regular.ttf);font-weight:400;font-style:normal}@font-face{font-family:'IM Fell English';src:url(/fonts/wildheart/IMFellEnglish-Italic.ttf);font-weight:400;font-style:italic}
-html,body{margin:0}body{font-family:system-ui,sans-serif}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}</style></head><body>`
+html,body{margin:0}body{font-family:system-ui,sans-serif}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.hidden{display:none}@media (min-width:768px){.md\\:block{display:block}.md\\:hidden{display:none}}</style></head><body>`
 
 function writeShot(dir: string, slug: string, html: string) {
   const vars = /data-harness-vars="([^"]*)"/.exec(html)?.[1] ?? ''
   const page = html.replace(/ data-harness-vars="[^"]*"/, ` style="${vars}"`)
-  writeFileSync(join(dir, `${slug}.html`), `${HEAD}${page}</body></html>`)
+  writeFileSync(join(dir, `${slug}.html`), `${HEAD(`${PAGES.find((p) => p.slug === slug)?.label ?? 'Wildheart'} · Wildheart`)}${page}</body></html>`)
+}
+
+/** The words a page shows: its text and the alt, aria-label and title attributes, whitespace folded. */
+function words(html: string): string {
+  const attrs = [...html.matchAll(/\b(?:alt|aria-label|title)="([^"]*)"/g)].map((m) => m[1])
+  const text = html.replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<svg[\s\S]*?<\/svg>/g, (svg) => svg.replace(/<[^>]+>/g, ' ')).replace(/<[^>]+>/g, ' ')
+  return [text, ...attrs].join(' ').replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ')
 }
 
 describe('the Wildheart site, rendered from the seed through the real chrome and sections', () => {
   const out = process.env.WILDHEART_SHOTS_DIR
   if (out) mkdirSync(join(out, 'site'), { recursive: true })
 
-  it.each(PAGES.map((p) => p.slug))('renders %s with the Wildheart skin, the date line, and every seeded block', (slug) => {
+  it.each(PAGES.map((p) => p.slug))('renders %s with the Wildheart skin, the fixed header, the date line, and every seeded block', (slug) => {
     const html = renderPage(slug)
     if (out) writeShot(join(out, 'site'), slug, html)
     expect(html).toContain('data-house-theme="wildheart"')
+    expect(html).toContain('class="wh-fixed"')
+    expect(html).toContain('class="wh-fixed-spacer"')
     expect(html).toContain('wh-nowline')
     expect(html).toContain('<h1')
-    // Every block the page doc places draws something: no block vanishes into an empty section.
-    for (const b of pageDocs[slug].content) if (typeof b.props.id === 'string') expect(html.length).toBeGreaterThan(0)
+    expect(html).toContain('Next Circle Night')
+    // The handoff's footer: three columns, the ornament, the copyright with its suffix and the closing line.
+    for (const s of ['The program', 'Circles', 'On Frequency', 'The Wildheart Space', 'Hearth Gatherings', 'A program on Frequency', 'What is shared stays here']) expect(html).toContain(s)
+    expect(html).toContain('hs-footer-top" data-columns=""')
     // The skin travels with the page, so the file stands alone.
     expect(html).toContain(WILDHEART_CSS.slice(0, 60))
     expect(html).not.toMatch(/—/)
   })
 
-  it('draws the Space\'s own rows: the next events, the circle, and both journeys', () => {
+  it("draws the Space's own rows: the next Circle Night, the four circles with their seats, and the foundation's weeks", () => {
     const home = renderPage('home')
-    expect(home).toContain('Circle Night')
+    expect(home).toContain('Next Circle Night')
+    expect(words(home)).toContain("Hunter's Moon")
     const circles = renderPage('circles')
-    expect(circles).toContain(CIRCLE.name)
+    for (const c of [CIRCLE, ...CIRCLES_MORE]) expect(circles).toContain(c.name)
+    expect(circles).toContain('12 women · host')
+    expect(circles).toContain('mw-badge-full')
+    expect(circles).toContain('mw-badge-forming')
     const program = renderPage('program')
-    expect(program).toContain(FOUNDATION.title)
+    expect(program).toContain('Week 1')
+    expect(program).toContain('Breath and noticing what the body feels, not how it looks')
+    expect(program).not.toContain(YEAR.title)
+  })
+
+  it('carries every string of the handoff template on the six pages (the content checklist)', () => {
+    const checklist = JSON.parse(readFileSync(join(process.cwd(), 'scripts/probes/wildheart-content-checklist.json'), 'utf8')) as { screens: Record<string, string[]>; exceptions: { text: string }[] }
+    const all = PAGES.map((p) => words(renderPage(p.slug))).join(' ')
+    const except = new Set(checklist.exceptions.map((e) => e.text))
+    const missing: string[] = []
+    for (const [screen, list] of Object.entries(checklist.screens)) for (const s of list) if (!except.has(s) && !all.includes(s)) missing.push(`${screen}: ${s}`)
+    expect(missing).toEqual([])
   })
 })
