@@ -27,6 +27,7 @@ import { execFileSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir, homedir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
+import { invokedDirectly } from './lib/invoked-directly.mjs'
 
 const ROOT = process.cwd()
 const VENDOR = join(ROOT, 'design_handoff/frequency')
@@ -302,4 +303,4 @@ function main() {
   console.log(`  brand → public/brand/frequency/        switch it on: pnpm design:use frequency`)
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main()
+if (invokedDirectly(import.meta.url)) main()

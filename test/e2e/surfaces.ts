@@ -1232,6 +1232,18 @@ export const VISUAL_MASK_SITES: readonly {
     why: 'The heading row: the eyebrow is today’s date and the title the time-of-day greeting, both read in America/Los_Angeles at render. The row rather than the h1, because the title block is content-sized and its width follows the words (PageHeading.visualMask).',
   },
   {
+    value: 'feed-greeting',
+    file: 'components/frequency/members/feed/feed-body.tsx',
+    kind: 'live',
+    why: 'The Frequency Feed greeting row (ADR-1740): today’s date and the time-of-day greeting, read at render, the same live content as the DAWN heading row.',
+  },
+  {
+    value: 'feed-stream',
+    file: 'components/frequency/members/feed/posts.tsx',
+    kind: 'live',
+    why: 'The Frequency Feed post stream (ADR-1740): the same live posts, authors, avatars, counts and relative times as the DAWN stream. The empty pane is not masked.',
+  },
+  {
     value: 'feed-stream',
     file: 'components/feed/feed-list.tsx',
     kind: 'live',

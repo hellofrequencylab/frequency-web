@@ -267,7 +267,21 @@ describe('there is exactly one enrol control per page', () => {
     // There were THREE — hero, rail and repeat card — each rendering an EnrollCta, which since
     // ADR-1400 means each mounting its own Stripe checkout island on a priced Journey.
     const src = code('app', '(main)', 'journeys', '[slug]', 'page.tsx')
-    expect(src.match(/buyControl=\{buyControl\}/g) ?? []).toHaveLength(1)
+    // ADR-1740: the page has two design branches (Frequency returns early, DAWN below it). Each
+    // renders exactly one enrol control; a build carries only one branch, so a page never has two.
+    const at = src.indexOf("if (SITE_DESIGN === 'frequency')")
+    let branches = [src]
+    if (at > -1) {
+      const open = src.indexOf('{', at)
+      let depth = 0
+      let end = open
+      for (; end < src.length; end++) {
+        if (src[end] === '{') depth++
+        else if (src[end] === '}' && --depth === 0) break
+      }
+      branches = [src.slice(open, end + 1), src.slice(0, at) + src.slice(end + 1)]
+    }
+    for (const b of branches) expect(b.match(/buyControl=\{buyControl\}/g) ?? []).toHaveLength(1)
     expect(src).toContain('interiorSide=')
   })
 
