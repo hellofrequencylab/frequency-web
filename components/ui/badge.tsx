@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { capsLabel } from './caps-label'
 
 // Shared badge primitive (DAWN core/Badge). The audit found five hand-rolled status pills —
 // Demo, Featured, Starter, Unclaimed, Supporter — each re-deriving its own padding, radius,
@@ -50,7 +51,8 @@ const TONE_SOLID: Record<BadgeTone, string> = {
 // The primitive owns the glyph size too — that was the fifth thing every hand-rolled pill
 // re-derived. An `icon` only has to say how it is PAINTED (`fill-current` for a filled star).
 const SIZE: Record<BadgeSize, string> = {
-  sm: 'gap-1 px-1.5 py-0.5 text-3xs uppercase tracking-wide [&>svg]:size-2.5',
+  // The sm marker IS the caps-label role at badge scale, so it takes the role from its one source.
+  sm: capsLabel('gap-1 px-1.5 py-0.5 text-3xs [&>svg]:size-2.5'),
   md: 'gap-1.5 px-2 py-0.5 text-meta [&>svg]:size-3',
 }
 
