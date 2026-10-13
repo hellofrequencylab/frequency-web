@@ -308,7 +308,16 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           <div className="fqm-vault-h">
             <b>The Vault</b>
             <Suspense fallback={null}>
-              <WithStats stats={stats}>{(d) => (rankOf(d) ? <span className="meta">{rankOf(d)}</span> : null)}</WithStats>
+              <WithStats stats={stats}>
+                {(d) => {
+                  // The design's "Shed · week 6 of 13": the live season and its week; the rank when
+                  // there is no season on.
+                  const line = d.season
+                    ? `${d.season.name} · week ${d.season.week}${d.season.weeks ? ` of ${d.season.weeks}` : ''}`
+                    : rankOf(d)
+                  return line ? <span className="meta">{line}</span> : null
+                }}
+              </WithStats>
             </Suspense>
           </div>
           <Suspense fallback={null}>
@@ -328,6 +337,23 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
                     <small>Day streak</small>
                   </span>
                 </div>
+              )}
+            </WithStats>
+          </Suspense>
+          <Suspense fallback={null}>
+            <WithStats stats={stats}>
+              {(d) => (
+                <Link href="/crew/store" className="fqm-vault-row">
+                  <span className="fqm-grow">
+                    <b>Streak freeze</b>
+                    <small>
+                      {(d.freezeTokens ?? 0) === 0
+                        ? 'None saved. Spend Gems on one.'
+                        : `You have ${d.freezeTokens} saved`}
+                    </small>
+                  </span>
+                  <FqIcon name="chevron" />
+                </Link>
               )}
             </WithStats>
           </Suspense>

@@ -8,7 +8,8 @@ import { getPracticesToLogToday, getRecentPracticeLogs, getMemberPractices } fro
 import { getMemberJourneyProgress } from '@/lib/journeys/progress'
 import { getSpendableBalance } from '@/lib/store/balance'
 import { resolveMemberDay } from '@/lib/member-day'
-import { frozenDaysFrom, streakDayRun } from '@/lib/practice-streak'
+import { freezeTokensFrom, frozenDaysFrom, streakDayRun } from '@/lib/practice-streak'
+import { getCurrentSeason } from '@/lib/seasons'
 import { DemoNotice } from '@/components/sidebar/demo-notice'
 import { pageRailPanels, isQuestSurface, spaceSlugFromPath } from '@/lib/layout/rail-panels'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -109,6 +110,7 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
     progress,
     spendable,
     memberToday,
+    season,
   ] = await Promise.all([
     // `meta` rides along on the row already being read: it carries
     // `practiceStreak.frozenDates` + the rest window, which is the ONLY place a bridged
@@ -133,6 +135,8 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
     // (lib/member-day.ts), so building the window from the server's day put a Pacific member's
     // "today" dot out from ~16:00 local and shifted the whole window by one.
     resolveMemberDay(profileId).catch(() => null),
+    // The season's name and week, for the Frequency Vault panel's header line. Best-effort.
+    getCurrentSeason().catch(() => null),
   ])
 
   const p = profile as {
@@ -213,8 +217,20 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
     vaultGems: spendable ?? gems,
     practices: { adopted: memberPractices.length, toLog: practicesToLog.length },
     today: anchor,
+    freezeTokens: freezeTokensFrom(p?.meta),
+    season: season ? seasonWeek(season, new Date()) : null,
   }
 })
+
+/** "Shed · week 6 of 13": the season's name, the week we are in, and how many it has (null when
+ *  the season has no end date). Weeks count from the season's start, the first week being 1. */
+export function seasonWeek(s: { name: string; starts_at: string; ends_at: string | null }, now: Date): NonNullable<DockData['season']> {
+  const WEEK = 7 * 86_400_000
+  const start = Date.parse(s.starts_at)
+  const week = Math.max(1, Math.floor((now.getTime() - start) / WEEK) + 1)
+  const weeks = s.ends_at ? Math.max(1, Math.ceil((Date.parse(s.ends_at) - start) / WEEK)) : null
+  return { name: s.name, week: weeks ? Math.min(week, weeks) : week, weeks }
+}
 
 // The viewer's practice activity — the Insight-Timer-style bar chart (Days / Weeks / Months),
 // pinned right under the Season Standing block on every rail. Renders nothing until there's

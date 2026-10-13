@@ -44,6 +44,10 @@ export type DockData = {
   practices?: { adopted: number; toLog: number }
   /** The member's calendar day, YYYY-MM-DD (lib/member-day.ts). */
   today?: string
+  /** Streak freezes banked (profiles.meta.practiceStreak). */
+  freezeTokens?: number
+  /** The live season's name and week, or null between seasons. */
+  season?: { name: string; week: number; weeks: number | null } | null
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {

@@ -253,6 +253,11 @@
 [data-design="frequency"] [data-kit="members"] .fqm-vault-nums b{font:500 26px/1 var(--fq-font-display);letter-spacing:-.05em;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .fqm-vault-nums small{font:400 12px/1 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .fqm-rise-card .btn.pa{align-self:stretch}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:var(--fqm-white-60);box-shadow:inset 0 0 0 1px var(--fqm-white-90);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row:hover{color:var(--fq-text-strong);background:var(--fqm-white-75)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row b{display:block;font:600 14px/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row small{display:block;margin-top:5px;font:400 12px/1.2 var(--fq-font-sans);color:var(--fq-text-muted)}
+[data-design="frequency"] [data-kit="members"] .fqm-vault-row svg{width:16px;height:16px;color:var(--fq-text-muted);transform:rotate(-90deg)}
 
 /* The right rail's micro face (Members.dc.html `rMicroItems`): 56x62 buttons, icon over a value. */
 [data-design="frequency"] [data-kit="members"] .fqm-rmi{width:56px;height:62px;border:none;border-radius:16px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--fq-text-strong);cursor:pointer;font:500 12px/1 var(--fq-font-sans)}
