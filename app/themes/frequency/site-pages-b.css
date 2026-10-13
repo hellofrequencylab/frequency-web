@@ -41,10 +41,12 @@
 [data-design="frequency"] [data-kit="site"] .jx-seg button small{font:500 11.5px/1 var(--fq-font-sans);opacity:.8}
 [data-design="frequency"] [data-kit="site"] .jx-seg button[aria-pressed="true"]{color:var(--fq-surface-card)}
 [data-design="frequency"] [data-kit="site"] .jx-seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:12px;background:var(--fq-side);box-shadow:0 0 24px -6px var(--fq-side);transition:transform var(--fq-dur-slow) var(--fq-ease-out),background var(--fq-dur-slow)}
-[data-design="frequency"] [data-kit="site"][data-side="e"] .jx-seg .thumb{transform:translateX(100%)}
+/* The thumb follows the segment's own state, not the root's side, so a shell side state around the
+   page can never slide it to the wrong half. */
+[data-design="frequency"] [data-kit="site"] .jx-seg[data-on="e"] .thumb{transform:translateX(100%)}
 [data-design="frequency"] [data-kit="site"] .jx-f{display:flex;flex-direction:column;gap:16px}
 [data-design="frequency"] [data-kit="site"] .jx-f[hidden]{display:none}
-[data-design="frequency"] [data-kit="site"] .jx-f label{display:flex;flex-direction:column;gap:8px;font:600 13px/1 var(--fq-font-sans);color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="site"] .jx-f label, [data-design="frequency"] [data-kit="site"] .jx-f .jx-lab{display:flex;flex-direction:column;gap:8px;font:600 13px/1 var(--fq-font-sans);color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="site"] .jx-f input, [data-design="frequency"] [data-kit="site"] .jx-f select{height:50px;padding:0 14px;border-radius:12px;border:0;background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fq-text-strong) 14%,transparent);color:var(--fq-text-strong);font:500 16px/1 var(--fq-font-sans);outline:0;transition:box-shadow var(--fq-dur-fast)}
 [data-design="frequency"] [data-kit="site"] .jx-f input::placeholder{color:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="site"] .jx-f input:focus, [data-design="frequency"] [data-kit="site"] .jx-f select:focus{box-shadow:inset 0 0 0 1.5px var(--fq-side),0 0 0 4px var(--fq-side-soft)}

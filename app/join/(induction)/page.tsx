@@ -13,6 +13,8 @@ import type { FunnelDestination } from '@/lib/funnels/definitions'
 import { readPendingInduction } from './pending-induction'
 import FunnelInduction from './induction'
 import FeatureFunnel from './feature-funnel'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyJoin } from '@/components/frequency/site/pages/join/frequency-join'
 
 export default async function FunnelInductionPage({
   searchParams,
@@ -81,6 +83,16 @@ export default async function FunnelInductionPage({
         parkedHandle: parked.handle,
       }
     : undefined
+
+  // THE FREQUENCY FRONT (ADR-1737). Under the Frequency design a signed-out visitor on the bare /join,
+  // with nothing parked, sees the design's Get started screen first. Its two short forms run the
+  // induction's own actions (stash + lead capture) and come straight back here with a persona, which
+  // renders the induction below, resumed past its intro. Anything else (a funnel, a persona, a
+  // `next`, a parked run, a signed-in member) is the induction exactly as before, and DAWN never
+  // reaches this branch (SITE_DESIGN is build-time).
+  if (SITE_DESIGN === 'frequency' && !user && !parked && !seqSlug && !personaSlug && !nextParam) {
+    return <FrequencyJoin />
+  }
 
   if (!user) {
     return <FunnelInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...resume} {...funnel} />
