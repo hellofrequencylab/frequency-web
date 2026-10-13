@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { contextLines } from '@/lib/support/context'
 import type { SupportContext } from '@/lib/support/types'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The captured page/activity context + the screenshot, for either detail surface.
 export function TicketContext({
@@ -18,7 +19,7 @@ export function TicketContext({
 
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Captured context</p>
+      <p className={capsLabel('text-2xs font-semibold text-muted')}>Captured context</p>
 
       {pageUrl && (
         <Link href={pageUrl} className="inline-flex max-w-full items-center gap-1.5 truncate text-meta font-medium text-primary-strong hover:underline">

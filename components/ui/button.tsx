@@ -15,7 +15,7 @@ type ButtonVariant =
   | 'dangerOutline'
   | 'warningOutline'
   | 'successOutline'
-type ButtonSize = 'sm' | 'md'
+type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 
 const VARIANT: Record<ButtonVariant, string> = {
   // FLAT FILL, NO FINISH (ADR-1096). The label carried an eight-shadow text-emboss ring and a
@@ -50,9 +50,16 @@ const VARIANT: Record<ButtonVariant, string> = {
   successOutline: 'border border-success text-success hover:bg-success-bg',
 }
 
+// `xs` and `lg` were added in the design-switch sweep (ADR-1737), each because 3+ hand-rolled
+// primaries already drew exactly that box and could not adopt the primitive without changing size:
+//   xs  the inline row action (Approve, Add, Nudge, Copy link) — `text-2xs`, a step under `sm`.
+//   lg  the roomy full-width commit (Pay, Claim, Continue) that sits at the foot of a card.
+// `sm` and `md` are unchanged, so every existing call site renders byte-identically.
 const SIZE: Record<ButtonSize, string> = {
+  xs: 'px-2.5 py-1 text-2xs',
   sm: 'px-3 py-1.5 text-meta',
   md: 'px-4 py-2 text-body-sm',
+  lg: 'px-5 py-2.5 text-body-sm',
 }
 
 // State set per docs/INTERACTION-STATES.md §2 (Action control): rest · hover (VARIANT) ·

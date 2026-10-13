@@ -8,6 +8,7 @@ import { relativeTime } from '@/lib/utils'
 import type { RoomSearchHit } from '@/lib/ai/room-search'
 import { Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Phase C: in-room search. A header button opens a panel; typing runs a semantic
 // search over the room's history (substring fallback when AI is off). Results are
@@ -92,7 +93,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
                 <p className="px-1 py-2 text-meta text-subtle">No matching messages.</p>
               ) : (
                 <>
-                  <p className="mb-1.5 flex items-center gap-1 px-1 text-2xs font-medium uppercase tracking-wide text-muted">
+                  <p className={capsLabel('mb-1.5 flex items-center gap-1 px-1 text-2xs font-medium text-muted')}>
                     {mode === 'semantic' ? <><Sparkles className="h-3 w-3 text-primary-strong" /> Closest in meaning</> : 'Matches'}
                     <span className="ml-auto normal-case tracking-normal">{hits.length}</span>
                   </p>

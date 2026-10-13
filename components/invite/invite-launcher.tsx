@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { UserPlus, X, Link2, Check, Share2, Loader2, Zap, Gem } from 'lucide-react'
 import { getInviteLink } from '@/app/(main)/invite-actions'
 import { Dialog } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 // Mounts the Invite modal once, app-wide, and opens it on the `open-invite` window
 // event — so an "Invite friends" affordance anywhere just dispatches that event.
@@ -109,9 +110,9 @@ export function InviteLauncher() {
               </button>
             </div>
 
-            <button type="button" onClick={share} className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+            <Button size="lg" type="button" onClick={share} className="mt-3 w-full">
               <Share2 className="h-4 w-4" /> Share your invite
-            </button>
+            </Button>
 
             <p className="mt-3 flex items-center justify-center gap-1.5 text-2xs text-muted">
               <Gem className="h-3 w-3 text-signal" /> They land on your profile; when they join, you’re connected and the Zaps are yours.

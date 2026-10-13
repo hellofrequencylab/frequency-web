@@ -9,6 +9,7 @@
 // server and handed in as a node map, the RSC interleaving pattern, so this client bundle stays
 // lean). Minimal client state: selected lesson + open phases; progress + lock come from the server.
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition, useMemo, useRef, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle, Anchor, CalendarClock, Layers, X } from 'lucide-react'
@@ -365,7 +366,7 @@ export function LearnPlayer({
                         {/* The "Week N" eyebrow only when the phase is a real, titled phase (a flat/
                             legacy journey has one untitled implicit phase — no week label there). */}
                         {p.title && p.title.trim().toLowerCase() !== `${unit} ${pi + 1}` && (
-                          <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">
+                          <span className={capsLabel('block text-2xs font-semibold text-muted')}>
                             {Unit} {pi + 1}
                           </span>
                         )}
@@ -406,7 +407,7 @@ export function LearnPlayer({
                         {p.modules.map((m) => (
                           <div key={m.id}>
                             {m.title && (
-                              <p className="px-2 pb-0.5 pt-1 text-2xs font-semibold uppercase tracking-wide text-muted">{m.title}</p>
+                              <p className={capsLabel('px-2 pb-0.5 pt-1 text-2xs font-semibold text-muted')}>{m.title}</p>
                             )}
                             <ul className="space-y-0.5">
                               {m.lessons.map((l) => {
@@ -501,7 +502,7 @@ export function LearnPlayer({
                   </div>
                 )}
 
-                <p className="text-2xs font-semibold uppercase tracking-wide text-muted">
+                <p className={capsLabel('text-2xs font-semibold text-muted')}>
                   Lesson {idx + 1} of {order.length}{lesson.estMinutes ? ` · ${lesson.estMinutes} min` : ''}{lesson.required ? '' : ' · optional'}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">

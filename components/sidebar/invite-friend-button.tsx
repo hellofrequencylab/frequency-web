@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Gift, Check, Copy, Download, Share2, X, Loader2 } from 'lucide-react'
 import { downloadStyledQrPng } from '@/lib/qr/client-download'
 import { Dialog } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 // THE "INVITE A FRIEND" CTA + POPUP for the right rail (under Report a bug). A member's PERSONAL code IS
 // their invite link: scanning / opening it drops the referrer cookie, and when the friend joins and gets
@@ -138,13 +139,13 @@ export function InviteFriendButton({
 
               {/* Share + download. */}
               <div className="mt-2 flex w-full gap-2">
-                <button
+                <Button
                   type="button"
                   onClick={share}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                  className="flex-1"
                 >
                   <Share2 className="h-4 w-4" aria-hidden /> Share
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={downloadPng}

@@ -9,6 +9,7 @@ import { getBrowserPosition } from '@/lib/geo-browser'
 import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace-core'
 import { useMarketQuery, marketMatch } from '@/components/marketplace/market-search'
 import { UnclaimedBadge } from '@/components/ui/unclaimed-badge'
+import { capsLabel } from '@/components/ui/caps-label'
 
 const KIND_LABEL: Record<ListingKind, string> = Object.fromEntries(LISTING_KINDS.map((k) => [k.key, k.label])) as Record<ListingKind, string>
 
@@ -53,7 +54,7 @@ function Card({ l, distance }: { l: GridListing; distance: number | null }) {
         )}
         {/* Ink scrim at the top so the chip reads over any photo. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-ink/45 to-transparent" aria-hidden />
-        <span className="absolute left-3 top-3 inline-flex items-center rounded-pill bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-text lift-1 backdrop-blur-sm">
+        <span className={capsLabel('absolute left-3 top-3 inline-flex items-center rounded-pill bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold text-text lift-1 backdrop-blur-sm')}>
           {kindLabel}
         </span>
       </div>

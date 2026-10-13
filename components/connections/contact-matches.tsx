@@ -8,6 +8,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { mergeWithMember, dismissMatch } from '@/app/(main)/connections/actions'
 import type { ContactMatchSuggestion } from '@/lib/connections/matching'
+import { Button } from '@/components/ui/button'
 
 // The "this contact is already a member" alert (docs/NETWORK-CRM.md). Shown atop
 // My Contacts when a logged contact hard-matches a member profile (same email or
@@ -97,14 +98,14 @@ function MatchRow({
       </div>
       {error && <span className="text-meta text-danger">{error}</span>}
       <div className="flex shrink-0 items-center gap-1.5">
-        <button
+        <Button
+          size="sm"
           type="button"
           onClick={merge}
           disabled={pending}
-          className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <UserRoundCheck className="h-3.5 w-3.5" /> Merge
-        </button>
+        </Button>
         <button
           type="button"
           onClick={dismiss}

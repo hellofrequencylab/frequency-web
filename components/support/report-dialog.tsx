@@ -17,6 +17,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input, Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -305,7 +306,7 @@ export function ReportDialog({
               <div className="mt-3 rounded-2xl border border-signal/40 bg-signal-bg/20 p-3">
                 <div className="mb-1 flex items-center gap-1.5 text-signal-strong">
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span className="text-2xs font-bold uppercase tracking-wide">Vera</span>
+                  <span className={capsLabel('text-2xs font-bold')}>Vera</span>
                 </div>
                 <p className="text-body-sm leading-relaxed text-text">
                   {vera.answer ?? "I couldn’t find a sure answer in the help center. Go ahead and send it to the team."}

@@ -33,6 +33,7 @@ import { Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { extractSourceTextAction } from '@/lib/studio/spark-actions'
 import type { SparkAccepts } from '@/lib/studio/kernel/manifest'
+import { capsLabel } from '@/components/ui/caps-label'
 
 const DOC_TYPES = '.pdf,.doc,.docx,.txt,.md,application/pdf,text/plain,text/markdown'
 const IMAGE_TYPES = 'image/*'
@@ -196,7 +197,7 @@ export function SparkDropzone({
 
       {takesPaste && (
         <div className="mt-3">
-          <label htmlFor="spark-source" className="mb-1 block text-2xs font-medium uppercase tracking-wide text-muted">
+          <label htmlFor="spark-source" className={capsLabel('mb-1 block text-2xs font-medium text-muted')}>
             Or paste it
           </label>
           <Textarea

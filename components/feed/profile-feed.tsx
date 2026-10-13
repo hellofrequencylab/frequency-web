@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { relativeTime, eventDateBadge, formatEventDate } from '@/lib/utils'
 import { PostCard, type FeedPost, type RawPost } from './post-card'
 import { buildScopeContextResolver } from '@/lib/feed/post-origin'
+import { capsLabel } from '@/components/ui/caps-label'
 
 interface DispatchItem {
   id: string
@@ -306,7 +307,7 @@ function DispatchTimelineCard({ dispatch: d }: { dispatch: DispatchItem }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-3xs font-black uppercase tracking-widest text-primary-strong">
+            <span className={capsLabel('text-3xs font-black text-primary-strong', 'widest')}>
               {d.audience_scope} Dispatch
             </span>
             {d.linked_task && (
@@ -350,7 +351,7 @@ function EventTimelineCard({ event: e }: { event: EventItem }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <CalendarDays className="w-3 h-3 text-primary" />
-            <span className="text-3xs font-black uppercase tracking-widest text-primary">Event</span>
+            <span className={capsLabel('text-3xs font-black text-primary', 'widest')}>Event</span>
           </div>
           <p className="text-body-sm font-bold text-text group-hover:text-warning dark:group-hover:text-primary transition-colors line-clamp-1">
             {e.title}

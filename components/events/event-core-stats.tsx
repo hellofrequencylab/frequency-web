@@ -2,6 +2,7 @@ import { Ticket, Banknote, Check, Star, Clock, Zap, Gauge } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { StatCard } from '@/components/ui/stat-card'
 import { formatEventMoney, type EventCoreStats } from '@/lib/events/event-stats-core'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The ONE core-stats row for an event (EVENTS-REWORK, item 13). The host Manage dashboard
 // and the in-rail Event settings editor both render THIS over loadEventCoreStats, so the
@@ -83,7 +84,7 @@ export function EventCoreStatsCards({
       <>
         {groups.map((g) => (
           <div key={g.label}>
-            <p className="mb-1 text-2xs font-semibold uppercase tracking-wide text-muted">{g.label}</p>
+            <p className={capsLabel('mb-1 text-2xs font-semibold text-muted')}>{g.label}</p>
             <div className="flex flex-wrap gap-1.5">
               {g.tiles.map((t) => (
                 <StatCard key={t.key} size="xs" label={t.label} value={t.value} icon={t.Icon} detail={t.detail} href={g.href} />
@@ -109,7 +110,7 @@ export function EventCoreStatsCards({
           <t.Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <div className="min-w-0">
             <div className="truncate text-body-sm font-bold leading-tight text-text">{t.value}</div>
-            <div className="truncate text-2xs font-medium uppercase tracking-wide text-muted">{t.label}</div>
+            <div className={capsLabel('truncate text-2xs font-medium text-muted')}>{t.label}</div>
             {t.detail && <div className="truncate text-2xs text-muted">{t.detail}</div>}
           </div>
         </div>

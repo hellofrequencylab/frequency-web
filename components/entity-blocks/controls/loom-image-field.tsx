@@ -5,6 +5,7 @@ import { ImagePlus, X } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { assetRefUrl, assetValueFromPick, type AssetValue } from '@/lib/library/asset-ref'
 import { safeImageSrc } from '@/lib/safe-image-src'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The `<img src>` guard is NOT written here. Every src in the product whose value did not come from
 // a source literal goes through the one allowlist in lib/safe-image-src.ts: an anchored regexp
@@ -58,7 +59,7 @@ export function LoomImageField({
 
   return (
     <div className="space-y-1">
-      <span className="block text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+      <span className={capsLabel('block text-2xs font-semibold text-muted')}>{label}</span>
 
       {safeValue ? (
         <div className="flex items-center gap-1.5">

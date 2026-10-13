@@ -6,6 +6,8 @@ import { Dialog } from '@/components/ui/dialog'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { Textarea } from '@/components/ui/field'
 import { assetRefUrl, assetValueFromPick, isAssetRef, type AssetValue } from '@/lib/library/asset-ref'
+import { capsLabel } from '@/components/ui/caps-label'
+import { Button } from '@/components/ui/button'
 
 // THE ON-CANVAS PHOTO POPUP for the WYSIWYG Space page editor. Clicking a photo slot on the live space canvas
 // opens this dialog to manage the slot's photo: CHOOSE it from the Loom (browse the library, or upload into
@@ -140,7 +142,7 @@ export function SpaceImagePopup({
           />
 
           <label className="block">
-            <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Alt text</span>
+            <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>Alt text</span>
             <Textarea
               value={alt}
               onChange={(e) => setAlt(e.target.value)}
@@ -157,14 +159,14 @@ export function SpaceImagePopup({
           )}
 
           <div className="flex flex-col gap-2 pt-1">
-            <button
+            <Button
               type="button"
               onClick={commit}
               disabled={!url.trim()}
-              className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-body-sm font-bold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-40"
+              size="md"
             >
               Use this photo
-            </button>
+            </Button>
             {assetRefUrl(currentValue) && (
               <button
                 type="button"

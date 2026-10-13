@@ -12,6 +12,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getStaffMember } from '@/lib/staff'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Growth layout module (LP7): "Manage" — one card per working sub-page across Acquisition, CRM, and
 // Marketing, each a live stat (where cheap) plus a link straight to the surface that edits it. Self-
@@ -205,7 +206,7 @@ function ManageGroup({ title, description, cards }: { title: string; description
             </div>
             <p className="mt-auto flex items-baseline gap-1.5">
               {c.stat && <span className="text-body-lg font-bold tabular-nums text-text">{c.stat}</span>}
-              <span className="text-2xs font-medium uppercase tracking-wide text-muted">{c.statLabel}</span>
+              <span className={capsLabel('text-2xs font-medium text-muted')}>{c.statLabel}</span>
             </p>
           </Link>
         ))}

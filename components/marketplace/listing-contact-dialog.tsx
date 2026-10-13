@@ -20,8 +20,9 @@ import { Dialog } from '@/components/ui/dialog'
 import { submitListingContact, type OfferTargetKind } from '@/lib/marketplace/listing-offers'
 import { formatPriceCents } from '@/lib/commerce/types'
 import { openDockThread } from '@/lib/messages/dock-open'
-import { cn } from '@/lib/utils'
 import { Input, Textarea } from '@/components/ui/field'
+import { capsLabel } from '@/components/ui/caps-label'
+import { Button, buttonClasses } from '@/components/ui/button'
 
 // Cents to a plain USD label, e.g. 29900 -> "$299", 29950 -> "$299.50". Whole dollars drop the cents.
 // Rendered through the ONE house formatter (lib/commerce/types.ts formatPriceCents, imported above),
@@ -104,10 +105,7 @@ export function ListingContactDialog({
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={
-          triggerClassName ??
-          'inline-flex items-center justify-center gap-2 rounded-control bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90'
-        }
+        className={triggerClassName ?? buttonClasses('primary', 'lg')}
       >
         <MessageCircle className="h-4 w-4" aria-hidden />
         {triggerLabel}
@@ -130,23 +128,23 @@ export function ListingContactDialog({
                 {/* Opens the chat dock in place instead of navigating to the DM page
                     (ADR-896). The buyer keeps the listing they were reading, which is the
                     whole reason they opened this dialog. */}
-                <button
+                <Button
                   type="button"
                   onClick={() => {
                     openDockThread({ kind: 'dm', id: sent.conversationId, title: sellerName })
                     close()
                   }}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-control bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90"
+                  className="flex-1"
                 >
                   Open messages
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={close}
-                  className="inline-flex items-center justify-center rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  variant="secondary"
                 >
                   Close
-                </button>
+                </Button>
               </div>
             </div>
           ) : !viewerSignedIn ? (
@@ -170,7 +168,7 @@ export function ListingContactDialog({
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="listing-contact-message" className="block text-2xs font-semibold uppercase tracking-wide text-muted">
+                <label htmlFor="listing-contact-message" className={capsLabel('block text-2xs font-semibold text-muted')}>
                   Message
                 </label>
                 <Textarea
@@ -186,7 +184,7 @@ export function ListingContactDialog({
 
               {canOffer && (
                 <div className="space-y-1.5">
-                  <label htmlFor="listing-contact-offer" className="block text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <label htmlFor="listing-contact-offer" className={capsLabel('block text-2xs font-semibold text-muted')}>
                     Your offer <span className="font-normal normal-case text-muted">(optional)</span>
                   </label>
                   <div className="flex items-center gap-2 rounded-control border border-border bg-surface-elevated/50 px-3 py-2 focus-within:border-border-strong">
@@ -212,25 +210,17 @@ export function ListingContactDialog({
               {error && <p className="text-body-sm text-danger">{error}</p>}
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={submit}
-                  disabled={pending}
-                  className={cn(
-                    'inline-flex flex-1 items-center justify-center gap-1.5 rounded-control bg-primary px-3 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary/90',
-                    pending && 'opacity-60',
-                  )}
-                >
+                <Button type="button" onClick={submit} disabled={pending} className="flex-1">
                   <MessageCircle className="h-4 w-4" aria-hidden />
                   {pending ? 'Sending' : 'Send message'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={close}
-                  className="inline-flex items-center justify-center rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  variant="secondary"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}

@@ -6,6 +6,7 @@
 // pre-v2 journeys have steps with no phase) so nothing is ever hidden — matching the player,
 // which wraps loose steps in an implicit phase. Calls the author-gated edit actions.
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition, type DragEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Layers, Search, Dumbbell, X, Check, Sparkles, Award, Zap, ExternalLink, RefreshCw, Anchor, GripVertical } from 'lucide-react'
@@ -77,7 +78,7 @@ function CheckEditor({ initial, disabled, onSave }: { initial: CheckConfig | nul
   const commit = (next: CheckConfig) => { setCfg(next); onSave(next) }
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-border bg-surface p-2.5">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Knowledge check</p>
+      <p className={capsLabel('text-2xs font-semibold text-muted')}>Knowledge check</p>
       <Input value={cfg.question} disabled={disabled} onChange={(e) => setCfg({ ...cfg, question: e.target.value })} onBlur={() => onSave(cfg)} aria-label="Question" placeholder="Question" />
       <div className="space-y-1.5">
         {cfg.options.map((opt, i) => (
@@ -165,7 +166,7 @@ function SlotCoaching({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-primary-strong" />
-          <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Vera coaching prompt</span>
+          <span className={capsLabel('text-2xs font-semibold text-muted')}>Vera coaching prompt</span>
           {pillarName && (
             <span className="rounded-pill border border-border bg-surface px-1.5 py-0.5 text-2xs font-medium text-muted">{pillarName}</span>
           )}
@@ -191,7 +192,7 @@ function SlotCoaching({
       />
       {/* Per-step warm-up override (ADR-592, P5): shown in the timer pre-roll for this step, over
           the practice's own warm-up message. Blank = the practice's message (or a silent pre-roll). */}
-      <p className="mt-2 block text-2xs font-semibold uppercase tracking-wide text-muted">Warm-up message for this step</p>
+      <p className={capsLabel('mt-2 block text-2xs font-semibold text-muted')}>Warm-up message for this step</p>
       <Textarea
         value={warmup}
         disabled={disabled}
@@ -376,7 +377,7 @@ export function JourneyEditor({
     <div key={m.id} {...dropProps(m)} className={`mt-2 rounded-card border border-border bg-canvas p-3${dropRing(m)}`}>
       <div className="flex flex-wrap items-center gap-2">
         {dragHandle(m)}
-        <span className="shrink-0 text-2xs font-semibold uppercase tracking-wide text-muted">Module</span>
+        <span className={capsLabel('shrink-0 text-2xs font-semibold text-muted')}>Module</span>
         <Input
           defaultValue={m.title}
           onBlur={(e) => run(() => updateBlockAction(slug, m.id, { title: e.target.value }))}

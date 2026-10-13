@@ -556,9 +556,8 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             <iframe
               src={src}
               title="Embedded media"
-              className="w-full"
+              className="w-full border-0"
               height={embedHeight(embed.provider, embed.ref)}
-              style={{ border: 0 }}
               loading="lazy"
               referrerPolicy="strict-origin-when-cross-origin"
               sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"

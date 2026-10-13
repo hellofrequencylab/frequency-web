@@ -7,6 +7,7 @@ import { RoleBadge } from '@/lib/community-roles'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { AskVeraButton } from './ask-vera-button'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Vera's profile (ADR-238) — the system voice gets her own page, not a member
 // layout: no streaks, no rank, no friend button. Who she is, what her account
@@ -84,7 +85,7 @@ export async function VeraProfile({
       {bio && <p className="mb-6 max-w-prose text-body-sm leading-relaxed text-text/90">{bio}</p>}
 
       <section>
-        <h2 className="mb-3 text-body-sm font-bold uppercase tracking-wider text-subtle">
+        <h2 className={capsLabel('mb-3 text-body-sm font-bold text-subtle', 'wider')}>
           What Vera does
         </h2>
         <ul className="space-y-2.5">

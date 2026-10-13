@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { fieldClasses } from '@/components/ui/field'
+import { Input } from '@/components/ui/field'
 import { formatPriceCents, type Price } from '@/lib/commerce/types'
 import { initialChosenCents, validateChosenAmount } from '@/lib/commerce/buyer-price'
 
@@ -180,7 +180,7 @@ export function PriceInput({
         </label>
         <div className="flex items-center gap-1.5">
           <span className="text-body-sm text-subtle">$</span>
-          <input
+          <Input
             id={`${idPrefix}-amount`}
             type="number"
             min={floor > 0 ? (floor / 100).toFixed(2) : '0'}
@@ -190,7 +190,7 @@ export function PriceInput({
             disabled={disabled}
             placeholder="0.00"
             aria-invalid={error != null}
-            className={`${fieldClasses} max-w-40`}
+            className="max-w-40"
             onChange={(e) => setDollars(e.target.value)}
           />
         </div>

@@ -20,6 +20,7 @@ import {
 } from '@/app/(main)/admin/content/actions'
 
 import { Checkbox } from '@/components/ui/checkbox'
+import { capsLabel } from '@/components/ui/caps-label'
 export interface ReviewRow {
   id: string
   title: string
@@ -84,7 +85,7 @@ function ScreenPanel({ screen }: { screen: PracticeScreenResult }) {
             .filter((g) => g.notes.length > 0)
             .map((g) => (
               <div key={g.label}>
-                <p className="text-2xs font-semibold uppercase tracking-wide text-muted">{g.label}</p>
+                <p className={capsLabel('text-2xs font-semibold text-muted')}>{g.label}</p>
                 <ul className="mt-0.5 space-y-0.5">
                   {g.notes.map((n, i) => (
                     <li key={i} className="text-meta text-muted">

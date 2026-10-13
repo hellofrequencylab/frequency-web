@@ -1,6 +1,7 @@
 import { QrCode } from 'lucide-react'
 import { getEventContext } from '@/lib/events/active-event'
 import { readEventSpecialInstructions, SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // 🔴 PARKED SINCE 2026-09-10 (ADR-1315) — this block is BOUND but no longer OFFERED. The check-in
 // feature moved into the event header, where it is the box that counts down to the doors and then
@@ -45,7 +46,7 @@ export const EventCheckin = async () => {
         <div className="mt-3 border-t border-primary/20 pt-3">
           {/* `text-meta`, not `text-2xs`: text-subtle at the two smallest sizes is sub-AA by
               construction, and the adoption ratchet counts that pairing (UX-MATURITY Lift 3). */}
-          <p className="text-meta font-semibold uppercase tracking-wide text-subtle">{SPECIAL_INSTRUCTIONS_LABEL}</p>
+          <p className={capsLabel('text-meta font-semibold text-subtle')}>{SPECIAL_INSTRUCTIONS_LABEL}</p>
           {/* The host typed this as lines, so it keeps them. `whitespace-pre-line` collapses the
               runs of spaces a paste brings and honours the newlines, which is what a door note is. */}
           <p className="mt-1 whitespace-pre-line text-body-sm text-text">{instructions}</p>

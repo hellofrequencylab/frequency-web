@@ -16,6 +16,7 @@ import { deleteSpaceEmailDraft } from '@/lib/spaces/email-drafts'
 import { isError } from '@/lib/action-result'
 import type { MessagingCampaignItem } from '@/lib/messaging/console'
 import type { EmailColors } from '@/lib/email-studio/render'
+import { Button } from '@/components/ui/button'
 
 export function SpaceMarketingWorkspace({
   spaceId,
@@ -99,13 +100,13 @@ export function SpaceMarketingWorkspace({
           />
         </label>
         {!readOnly && (
-          <button
+          <Button
             type="button"
             onClick={openNew}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+            className="shrink-0"
           >
             <Send className="h-4 w-4" aria-hidden /> New email
-          </button>
+          </Button>
         )}
       </div>
 

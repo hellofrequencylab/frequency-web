@@ -16,6 +16,7 @@ import { RsvpControls } from '@/components/events/rsvp-controls'
 import { Dialog } from '@/components/ui/dialog'
 import { MembershipJoinCard } from '@/components/spaces/membership-join-card'
 import type { MembershipTier } from '@/lib/spaces/memberships'
+import { Button } from '@/components/ui/button'
 
 // The rate row markup now lives in `rate-options.tsx` so the signed-out ticket door can render the
 // same list instead of redrawing it. `FlowRate` is re-exported here because the event page has
@@ -294,14 +295,14 @@ export function RsvpPaymentFlow({
               </div>
               {paymentsReady ? (
                 <>
-                  <button
+                  <Button
                     type="button"
                     onClick={payAndGo}
                     onPointerEnter={warmStripeBrowser}
                     onFocus={warmStripeBrowser}
                     onTouchStart={warmStripeBrowser}
                     disabled={pending}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                    className="w-full"
                   >
                     {pending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -309,25 +310,25 @@ export function RsvpPaymentFlow({
                       <CreditCard className="h-4 w-4" />
                     )}
                     Pay {selected.priceLabel} and complete your RSVP
-                  </button>
+                  </Button>
                   <p className="text-2xs text-muted">
                     Your RSVP holds the spot; payment completes in secure checkout.
                   </p>
                 </>
               ) : (
                 <>
-                  <button
+                  <Button
                     type="button"
                     onClick={payAndGo}
                     onPointerEnter={warmStripeBrowser}
                     onFocus={warmStripeBrowser}
                     onTouchStart={warmStripeBrowser}
                     disabled={pending}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                    className="w-full"
                   >
                     {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     Confirm RSVP
-                  </button>
+                  </Button>
                   <p className="text-2xs text-muted">
                     Pay the {selected.priceLabel} at the door. Online payment opens once the host
                     connects payouts.

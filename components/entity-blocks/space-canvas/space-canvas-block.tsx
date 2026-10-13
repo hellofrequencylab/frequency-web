@@ -72,10 +72,10 @@ const EYEBROW_INK_CLS = 'eyebrow font-eyebrow text-primary'
  *  canvas heading is not dramatically smaller than the page (parity fix 5). */
 const HEADING_CLS = 'font-display text-[clamp(1.875rem,5.5vw,3rem)] uppercase leading-[1.05] text-text'
 /** The LARGE (DesignHeading size="lg") heading the Banner / photoHero uses — a much bigger clamp (parity fix 5). */
-const HEADING_LG_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-[0.95] text-text'
-const HEADING_LG_INK_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-[0.95] text-on-ink'
+const HEADING_LG_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-display text-text'
+const HEADING_LG_INK_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-display text-on-ink'
 /** The big standalone Display heading block, at the published display clamp (parity fix 6). */
-const DISPLAY_CLS = 'font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text'
+const DISPLAY_CLS = 'font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-display text-balance text-text'
 const BODY_CLS = 'text-body-lg leading-relaxed text-muted'
 const BODY_INK_CLS = 'text-body-lg leading-relaxed text-on-ink-muted'
 

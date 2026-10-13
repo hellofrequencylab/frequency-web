@@ -4,6 +4,7 @@ import { type ReactNode } from 'react'
 import Link from 'next/link'
 import { Zap, X, Lock } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
+import { buttonClasses } from '@/components/ui/button'
 import { crewUpgradeSuffix } from '@/lib/core/beta-notices'
 import { openUpgrade } from './upgrade-launcher'
 
@@ -93,7 +94,7 @@ export function UpgradeLightbox({
         </p>
         <Link
           href="/upgrade"
-          className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className={buttonClasses('primary', 'lg', 'mt-4 w-full')}
         >
           Upgrade to Crew
         </Link>
@@ -150,10 +151,7 @@ export function CrewGateButton({
     <button
       type="button"
       onClick={() => openUpgrade(reason)}
-      className={
-        buttonClassName ??
-        'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
-      }
+      className={buttonClassName ?? buttonClasses('primary', 'md')}
     >
       <Lock className="h-3.5 w-3.5" />
       {label}

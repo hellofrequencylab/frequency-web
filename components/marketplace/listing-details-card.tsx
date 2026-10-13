@@ -4,12 +4,13 @@
 
 import { Info } from 'lucide-react'
 import type { ListingDetailField } from '@/lib/marketplace'
+import { capsLabel } from '@/components/ui/caps-label'
 
 export function ListingDetailsCard({ details }: { details: ListingDetailField[] }) {
   if (!details || details.length === 0) return null
   return (
     <section className="rounded-card border border-border bg-surface p-4">
-      <h2 className="mb-3 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+      <h2 className={capsLabel('mb-3 flex items-center gap-1.5 text-2xs font-semibold text-muted')}>
         <Info className="h-3.5 w-3.5" aria-hidden /> Item details
       </h2>
       <dl className="divide-y divide-border/70">

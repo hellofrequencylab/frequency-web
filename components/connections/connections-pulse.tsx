@@ -5,6 +5,7 @@ import type { NearMiss } from '@/lib/connections/resonance'
 import { relativeTime } from '@/lib/utils'
 import { PulseAvatar } from '@/components/connections/pulse-avatar'
 import { PulseConnectButton, PulseWelcomeRow } from '@/components/connections/pulse-actions'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // "Connections this week" pulse (ADR-186, P5 + P3b) — the proactive nudge that
 // turns the Community directory into an agenda. A tasteful, compact card with up
@@ -101,7 +102,7 @@ export async function ConnectionsPulse() {
 function PulseGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">{title}</h3>
+      <h3 className={capsLabel('mb-3 text-2xs font-semibold text-muted')}>{title}</h3>
       <div className="flex flex-col gap-3">{children}</div>
     </div>
   )

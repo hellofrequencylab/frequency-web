@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Radio } from 'lucide-react'
 import { Select } from '@/components/ui/select'
+import { capsLabel } from '@/components/ui/caps-label'
 
 export interface RecordingChoice {
   id: string
@@ -65,7 +66,7 @@ export function RecordingPickerControl({
     }
   }, [slug])
 
-  const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-muted'
+  const labelCls = capsLabel('block text-2xs font-semibold text-muted')
 
   if (choices === null) {
     return (

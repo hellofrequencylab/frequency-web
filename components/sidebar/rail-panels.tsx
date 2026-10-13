@@ -24,6 +24,7 @@ import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
 import { Counter } from '@/components/ui/counter'
 import { DIRECTORY_VISIBILITY_COLUMNS, isListableInDirectory } from '@/lib/connections/directory-visibility'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // The rail's PAGE PANELS (ADR-161) — contextual stat cards keyed into the right rail
 // by route (lib/layout/rail-panels.ts). Each is an independent async server component
@@ -344,7 +345,7 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
         href={nextStep.href}
         className="group block rounded-xl border border-broadcast/30 bg-broadcast-bg/30 p-3 transition-colors hover:bg-broadcast-bg/50"
       >
-        <p className="flex items-center justify-between text-2xs font-semibold uppercase tracking-wide text-muted">
+        <p className={capsLabel('flex items-center justify-between text-2xs font-semibold text-muted')}>
           <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3 text-broadcast-strong" /> Next step</span>
           {status && <span className="tabular-nums">{status.pct}%</span>}
         </p>

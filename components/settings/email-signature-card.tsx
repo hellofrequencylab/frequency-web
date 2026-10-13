@@ -8,6 +8,7 @@ import { Check, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { updateEmailSignatureAction } from '@/app/(main)/settings/profile/signature-actions'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 export function EmailSignatureCard({ initial, autoDefault }: { initial: string; autoDefault: string }) {
   const [value, setValue] = useState(initial)
@@ -55,15 +56,14 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
               <Check className="h-3.5 w-3.5" /> Saved
             </span>
           )}
-          <button
+          <Button
             type="button"
             onClick={save}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Save signature
-          </button>
+          </Button>
         </div>
       </div>
       {error && (

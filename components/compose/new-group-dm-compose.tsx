@@ -11,6 +11,7 @@ import { startGroupConversation } from '@/app/(main)/messages/actions'
 import { sendFriendRequest } from '@/app/(main)/people/friend-actions'
 import { CreateModal, cmLabel } from '@/components/create-modal'
 import { Field, Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 type FriendStatus = 'none' | 'pending_outgoing' | 'pending_incoming' | 'accepted'
 
@@ -197,13 +198,9 @@ function ResultRow({
       </div>
 
       {isFriend && (
-        <button
-          type="button"
-          onClick={onAdd}
-          className="shrink-0 rounded-md bg-primary px-2 py-1 text-2xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-        >
+        <Button type="button" size="xs" onClick={onAdd} className="shrink-0">
           Add
-        </button>
+        </Button>
       )}
       {status === 'none' && !requested && (
         <button

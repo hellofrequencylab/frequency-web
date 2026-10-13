@@ -3,6 +3,7 @@ import { Sparkles, ArrowRight } from 'lucide-react'
 import { topRemixContributors } from '@/lib/practices/lineage'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SectionHeader } from '@/components/ui/section-header'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // Admin practices layout module (ADR-438 Phase 3 "Grow", PRACTICE-LIBRARY §6): contributor
 // recognition. Self-fetching async RSC; reads topRemixContributors (the creators whose originals
@@ -56,7 +57,7 @@ export async function PracticeContributorRecognition() {
                 <Sparkles className="h-4 w-4" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+                <span className={capsLabel('block text-2xs font-semibold text-primary-strong', 'widest')}>
                   #{i + 1} most remixed
                 </span>
                 <span className="mt-0.5 block text-body-sm leading-relaxed text-text">

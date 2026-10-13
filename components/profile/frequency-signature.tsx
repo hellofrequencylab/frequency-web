@@ -252,6 +252,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
             cx={x.toFixed(2)}
             cy={y.toFixed(2)}
             r={isDom ? (compact ? 2.4 : 4.5) : compact ? 1.6 : 3}
+            // data-driven: each pillar's own accent colour
             style={{ fill: accentColor(PILLARS[k].accent) }}
           />
         )
@@ -294,7 +295,11 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
             </span>
           </div>
           <p className="mt-0.5 text-body-sm text-muted">
-            <span className="font-semibold" style={{ color: accentColor(domAccent) }}>
+            <span
+              className="font-semibold"
+              // data-driven: the dominant pillar's accent colour
+              style={{ color: accentColor(domAccent) }}
+            >
               {PILLARS[dominant].label}
             </span>
             -led signature, drawn from {signature.total} {signature.total === 1 ? 'practice' : 'practices'} logged.
@@ -302,7 +307,8 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
 
           {/* Bloom meter — the ABSOLUTE growth read: how full the shape is right now.
               Recent practice across all four Pillars grows it toward a full bloom; a
-              quiet stretch lets it ease back. Painted in the balance tint (currentColor). */}
+              quiet stretch lets it ease back. Painted in the balance tint (currentColor).
+              data-driven: the balance tint is computed from the member's practice mix. */}
           <div className="mt-3" style={{ color: balanceTint }}>
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-meta font-semibold text-text">Bloom</span>
@@ -326,6 +332,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
               const acc = accentColor(PILLARS[k].accent)
               return (
                 <li key={k} className="flex items-center gap-2.5">
+                  {/* data-driven: each pillar paints its own accent, which ProgressTrack's fixed tones cannot carry */}
                   <span className="h-2 w-2 shrink-0 rounded-pill" style={{ backgroundColor: acc }} />
                   <span className="w-20 shrink-0 text-meta font-medium text-text">{PILLARS[k].label}</span>
                   <span className="h-1.5 flex-1 overflow-hidden rounded-pill bg-surface-elevated">

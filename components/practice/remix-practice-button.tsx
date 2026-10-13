@@ -5,6 +5,7 @@ import { Wand2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { forkPracticeAction, remixDirectionsAction } from '@/app/(main)/practices/actions'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // "Remix" a library practice you don't own (ADR-109 fork flow). Remix makes a NEW
 // practice you own, starting from this one — a copy you can edit and publish. The
@@ -75,7 +76,7 @@ export function RemixPracticeButton({ practiceId }: { practiceId: string }) {
             the community gets a practice only you would make. The original stays exactly as it is.
           </p>
           <div className="mt-4 rounded-card bg-surface-elevated/60 p-4">
-            <p id={labelId} className="text-2xs font-semibold uppercase tracking-widest text-primary-strong">
+            <p id={labelId} className={capsLabel('text-2xs font-semibold text-primary-strong', 'widest')}>
               Ways to make it yours
             </p>
             {directions.length > 0 ? (

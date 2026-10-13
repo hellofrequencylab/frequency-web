@@ -7,6 +7,7 @@ import { isError } from '@/lib/action-result'
 import { Dialog } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { Radio } from '@/components/ui/radio'
 
 type ReportDialogProps = {
   targetType: ReportTargetType
@@ -106,24 +107,19 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
             {/* Reason radio buttons */}
             <div className="space-y-2 mb-4">
               {REASONS.map((r) => (
-                <label
+                <Radio
                   key={r.value}
-                  className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                  name="report-reason"
+                  value={r.value}
+                  checked={reason === r.value}
+                  onChange={() => setReason(r.value)}
+                  label={r.label}
+                  wrapperClassName={`w-full rounded-lg border px-3 py-2.5 transition-colors ${
                     reason === r.value
                       ? 'border-primary bg-primary-bg/50 dark:border-primary dark:bg-primary-bg'
                       : 'border-border hover:border-border-strong dark:hover:border-border-strong'
                   }`}
-                >
-                  <input
-                    type="radio"
-                    name="report-reason"
-                    value={r.value}
-                    checked={reason === r.value}
-                    onChange={() => setReason(r.value)}
-                    className="accent-primary"
-                  />
-                  <span className="text-body-sm text-text">{r.label}</span>
-                </label>
+                />
               ))}
             </div>
 

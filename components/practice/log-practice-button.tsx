@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Check, Timer } from 'lucide-react'
 import { logPracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
+import { Button, buttonGeometry } from '@/components/ui/button'
 import { showZapToast } from '@/components/zap-toast'
 import { useMindless } from '@/components/on-air/mindless'
 import { useMovement } from '@/components/on-air/movement'
@@ -91,7 +92,8 @@ export function LogPracticeButton({
   // resume always wins over the logged-state collapse below.
   if (done && !isResume) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg text-success px-3 py-1.5 text-body-sm font-semibold">
+      // Same geometry as the Log button it replaces, so the swap does not shift the row.
+      <span className={buttonGeometry('md', 'bg-success-bg text-success')}>
         <Check className="w-4 h-4" /> Logged today
       </span>
     )
@@ -126,20 +128,16 @@ export function LogPracticeButton({
     // Practice"), matching PracticeTimerButton so the two never diverge. A log-only practice
     // keeps the check + "Log it" affordance — the tap opens the note screen, not a countdown.
     return (
-      <button
-        type="button"
-        onClick={openTimer}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-body-sm font-semibold transition-colors"
-      >
+      <Button type="button" onClick={openTimer}>
         {isLogOnly ? <Check className="w-4 h-4" strokeWidth={2.5} /> : <Timer className="w-4 h-4" />}{' '}
         {isLogOnly ? logLabel : timedLabel}
-      </button>
+      </Button>
     )
   }
 
   // Plain one-tap mode (unchanged): the server log, idempotent per practice per day.
   return (
-    <button
+    <Button
       disabled={pending}
       onClick={() =>
         start(async () => {
@@ -168,11 +166,10 @@ export function LogPracticeButton({
           }
         })
       }
-      className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-body-sm font-semibold disabled:opacity-60 transition-colors"
     >
       <Check className="w-4 h-4" strokeWidth={2.5} />
       {pending ? 'Logging…' : logLabel}
-    </button>
+    </Button>
   )
 }
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
@@ -7,6 +8,8 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Check, Camera, Eye, Layers, Lock, Sparkles, SlidersHorizontal, Save, Send, Loader2, ListChecks, Gem, Clock, BarChart3 } from 'lucide-react'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { HeaderImageField } from '@/components/ui/header-image-field'
 import { IconAccentFace } from '@/components/studio/kit/studio-identity'
 import { DEFAULT_ACCENT, STUDIO_ACCENTS, accentColor } from '@/lib/studio/accents'
@@ -122,21 +125,15 @@ function JourneyActions({
           </Link>
         ) : (
           <>
-            <button type="button" onClick={publish} disabled={pending} className={`${btn} bg-primary text-on-primary hover:bg-primary-hover`}>
+            <Button type="button" onClick={publish} disabled={pending}>
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {pending ? 'Publishing…' : 'Publish'}
-            </button>
-            <label
+            </Button>
+            <Checkbox
               title="Assign yourself every practice so you can run it from Mindless."
-              className="inline-flex items-center gap-1.5 text-body-sm text-muted"
-            >
-              <input
-                type="checkbox"
-                checked={adopt}
-                onChange={(e) => setAdopt(e.target.checked)}
-                className="h-4 w-4 rounded border-border accent-primary"
-              />
-              Adopt it for myself
-            </label>
+              checked={adopt}
+              onChange={(e) => setAdopt(e.target.checked)}
+              label={<span className="text-muted">Adopt it for myself</span>}
+            />
           </>
         )}
       </div>
@@ -167,7 +164,7 @@ function JourneyDetails({ status, visibility, details }: { status: string; visib
   return (
     <div className="w-full rounded-2xl border border-border bg-surface p-3.5 lg:w-72">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Journey Details</span>
+        <span className={capsLabel('text-2xs font-semibold text-muted')}>Journey Details</span>
         <span className="inline-flex items-center gap-1 text-2xs font-medium text-muted">
           <StatusPill status={status} /> · {vis}
         </span>
@@ -353,7 +350,7 @@ export function JourneyBuilder({
           </button>
           {iconOpen && (
             <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 text-left lift-3">
-              <p className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Color</p>
+              <p className={capsLabel('mb-1.5 text-2xs font-semibold text-muted')}>Color</p>
               <div className="flex flex-wrap gap-2">
                 {STUDIO_ACCENTS.map((a) => {
                   const on = accent === a.key
@@ -366,6 +363,7 @@ export function JourneyBuilder({
                       title={a.label}
                       onClick={() => { setAccent(a.key); meta({ accent: a.key }) }}
                       className={`flex h-8 w-8 items-center justify-center rounded-pill border transition-transform hover:scale-110 ${on ? 'border-text' : 'border-border'}`}
+                      // data-driven: swatch paints each accent option in its own colour
                       style={{ backgroundColor: accentColor(a.key) }}
                     >
                       {on && <Check className="h-4 w-4 text-on-primary" aria-hidden />}
@@ -377,7 +375,7 @@ export function JourneyBuilder({
                   cover, so the small face + the cover band stay in sync: the upload sets BOTH the cover
                   banner (coverImage) AND the header leading chip (logoImage), so it truly "replaces the
                   icon" on the live header. The rail Settings module can set the two separately. */}
-              <p className="mb-1.5 mt-3 text-2xs font-semibold uppercase tracking-wide text-muted">Logo or profile image</p>
+              <p className={capsLabel('mb-1.5 mt-3 text-2xs font-semibold text-muted')}>Logo or profile image</p>
               <ImageUpload
                 label="Logo or profile image"
                 value={cover}

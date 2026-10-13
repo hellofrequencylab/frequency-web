@@ -56,6 +56,7 @@ function imageValue(raw: unknown): AssetValue {
 }
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { useProfileLayout } from './profile-layout-context'
+import { capsLabel } from '@/components/ui/caps-label'
 
 // THE INLINE BLOCK EDIT PANEL — redesigned control surface (ADR-528 → ADR-569). Expands under a block in the
 // in-rail builder when the operator clicks it. A TIGHT, modern inspector (Framer/Webflow/Notion density): the
@@ -85,7 +86,7 @@ import { useProfileLayout } from './profile-layout-context'
 // fade). `!` is load-bearing: `cn()` joins rather than merges, and `fieldClasses`' `px-3`/`py-2`
 // emit AFTER `px-2.5`/`py-1.5` in the compiled sheet, so a plain override would lose.
 const compactField = '!px-2.5 !py-1.5 text-meta'
-const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-muted'
+const labelCls = capsLabel('block text-2xs font-semibold text-muted')
 
 /** Whether a field stays in the SETTINGS-ONLY rail when block content is edited on the live page (the
  *  isCoreField split). Mirrors the space canvas `isRailField` (space-canvas-editor) EXACTLY: the block's TEXT
@@ -563,7 +564,7 @@ function SettingsGroup({
 }) {
   return (
     <details open={defaultOpen} className="group overflow-hidden rounded-lg border border-border bg-surface">
-      <summary className="flex cursor-pointer list-none select-none items-center gap-1.5 px-2.5 py-2 text-2xs font-semibold uppercase tracking-wide text-muted outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40 [&::-webkit-details-marker]:hidden">
+      <summary className={capsLabel('flex cursor-pointer list-none select-none items-center gap-1.5 px-2.5 py-2 text-2xs font-semibold text-muted outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40 [&::-webkit-details-marker]:hidden')}>
         <ChevronRight
           className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
           aria-hidden
