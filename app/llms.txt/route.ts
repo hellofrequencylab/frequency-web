@@ -2,6 +2,7 @@ import {
   SITE_NAME,
   SITE_URL,
   SITE_TAGLINE,
+  CATEGORY_LINE,
   CONTACT_EMAIL,
   FOUNDING_PLACE,
   SOCIAL_PROOF_FLOOR,
@@ -51,10 +52,12 @@ function takeRateStory(input: PricingGridInput, offerings: Offering[]): string {
   return `People join free, businesses host free, and you pay when you start charging. ${PLAN_STORY.ladder} ${PLAN_STORY.paid} ${PLAN_STORY.selling} Tips only, at 0%: ${tipsOnly}. ${PLAN_STORY.rate} The network fee applies ONLY to a customer the network introduced, once: ${rates}. It is 0% for good once the buyer is already yours, meaning they follow your Space, they are one of your members, they are in your contacts, or they have bought from you before. Frequency charges once for the introduction. After that they are your people, free.${walls === 'nothing' ? '' : ` What needs a paid plan: ${walls}.`}`
 }
 
-/** The plain "the ladder is X, then Y" sentence, priced from the same offerings. */
+/** The plain "the ladder is X, then Y" sentence, priced from the same offerings. It states the price
+ *  a buyer pays today and nothing else: the "Opening Beta rate under the $X list" branch was dormant
+ *  (no list anchor is set) and is gone (LIVE-912, LAUNCH-MARKETING-PLAN §7). */
 function ladderSentence(offerings: Offering[]): string {
   return offerings
-    .map((o) => `${offeringLadderLabel(o)} ${o.monthly}${o.listAnchor ? ` at the Opening Beta rate under the ${o.listAnchor} list` : ''}`)
+    .map((o) => `${offeringLadderLabel(o)} ${o.monthly}`)
     .join(', ')
 }
 
@@ -73,13 +76,13 @@ const abs = (path: string) => `${SITE_URL}${path}`
 
 // The key public pages, each with a one-line description in the locked voice.
 const pages = (input: PricingGridInput, offerings: Offering[]): { path: string; label: string; desc: string }[] => [
-  { path: '/', label: 'Home', desc: `${SITE_NAME}, the Community Collective. The short version of who it is for and how it works.` },
+  { path: '/', label: 'Home', desc: `${SITE_NAME}. ${CATEGORY_LINE} The short version of who it is for and how it works.` },
   { path: '/start', label: 'Start here', desc: 'Choose how you want to get involved, then take your first move.' },
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
   { path: '/the-quest', label: 'The Quest', desc: 'The light game everyone plays alongside their Circle: Zaps, Gems, season ranks, and Journeys. Not a third of the offer.' },
-  { path: '/the-lab', label: 'The Lab', desc: 'The physical third space, and why a community needs a room.' },
+  { path: '/the-lab', label: 'The Lab', desc: 'The plan for a physical third space, opening in 2028, and why a community needs a room. Not open yet; nothing there is bookable.' },
   { path: '/pricing', label: 'Pricing', desc: `Pricing for Spaces and members: people join free, businesses host free, and you pay when you start charging. You keep 100% of your own bookings. ${takeRateStory(input, offerings)} The whole ladder: ${ladderSentence(offerings)}.` },
-  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },
+  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles and Events, with The Lab planned for 2028), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
   { path: '/spaces', label: 'Spaces, for businesses and organizations', desc: 'How a venue, studio, practitioner or organization grows a Space on Frequency: host free, keep 100% of your own bookings, pay only on the business the network sends you. A Collective Space also gets a public network page: its member Spaces and one shared calendar of their events.' },
   { path: '/help/spaces/your-website', label: 'Space websites', desc: 'Any Space can publish its pages as a standalone website on a free subdomain, or on its own domain with the custom domain add-on on Business (included with Collective). Two themes, Frequency and Bold, plus global styles for corners, spacing, header and footer. Guests book on the site without an account.' },
@@ -239,10 +242,10 @@ export async function GET() {
   const out: string[] = [
     `# ${SITE_NAME}`,
     '',
-    `> ${SITE_NAME} is a Community Collective. It exists to support every community effort and help`,
+    `> ${CATEGORY_LINE} ${SITE_NAME} exists to support every community effort and help`,
     `> everyone in it succeed, together. People find their people by topic, join a Circle (a small standing`,
-    `> local group), show up to nearby Events, grow a Space (a business or organization), and gather at The`,
-    `> Lab (a physical third space). You keep 100% of your own bookings; Frequency earns a share only`,
+    `> local group), show up to nearby Events, and grow a Space (a business or organization). The Lab, a`,
+    `> physical third space, is planned for 2028 and is not open yet. You keep 100% of your own bookings; Frequency earns a share only`,
     `> of the business the network sends you. The Quest is a light, transparent game that rewards`,
     `> showing up in person, not scrolling. ${SITE_TAGLINE}.`,
     `> ${PLAN_STORY.lines} Taking root in ${FOUNDING_PLACE}.`,
