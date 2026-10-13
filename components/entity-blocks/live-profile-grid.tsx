@@ -137,7 +137,7 @@ export function LiveProfileGrid({
           }}
           role="group"
           onMouseDown={() => store?.select(id)}
-          className={`rounded-lg p-2 transition-colors ${
+          className={`rounded-control p-2 transition-colors ${
             selected ? 'bg-primary-bg/30 ring-1 ring-primary' : 'hover:bg-surface-elevated/40'
           }`}
         >

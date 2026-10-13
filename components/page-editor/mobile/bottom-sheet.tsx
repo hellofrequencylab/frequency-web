@@ -78,7 +78,7 @@ export function BottomSheet({
         aria-label={title}
         onMouseDown={(e) => e.stopPropagation()}
         className={cn(
-          'flex w-full max-w-lg flex-col rounded-t-2xl bg-surface pb-[env(safe-area-inset-bottom)] shadow-xl outline-none motion-safe:animate-[slideUp_0.25s_ease-out]',
+          'flex w-full max-w-lg flex-col rounded-t-card bg-surface pb-[env(safe-area-inset-bottom)] shadow-xl outline-none motion-safe:animate-[slideUp_0.25s_ease-out]',
           tall && 'max-h-[85dvh]',
           className,
         )}

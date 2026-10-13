@@ -11,9 +11,8 @@
 // Each value is a size, plus a leading only where the face is set tighter or looser than the global
 // heading rule. `leading-display` is the token (0.95); the three looser leadings have no token yet.
 //
-// NOTE: the Puck emphasis ladder (`EMPHASIS_SCALE`, lib/page-editor/fields.tsx) repeats `section` and
-// `feature` for the editor's Heading-size control. It sits outside this file's owners; it should read
-// these constants when it is next touched.
+// The Puck emphasis ladder (`EMPHASIS_SCALE`, lib/page-editor/fields.tsx) and the Space canvas headings
+// (components/entity-blocks/space-canvas/space-canvas-block.tsx) read these constants.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const DISPLAY_TYPE = {
@@ -29,6 +28,8 @@ export const DISPLAY_TYPE = {
   cover: 'text-[clamp(1.875rem,6vw,3.5rem)]',
   /** The section h2: `SectionHeading`, the kit `DisplayHeading`, the Puck emphasis default. */
   section: 'text-[clamp(1.875rem,5.5vw,3rem)]',
+  /** The small block heading: the Puck emphasis `sm`. */
+  subsection: 'text-[clamp(1.375rem,3.5vw,1.875rem)]',
   /** The typographic interstitial (`Statement`). */
   statement: 'text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]',
   /** One sentence over a photograph (`PhotoBeat`). */

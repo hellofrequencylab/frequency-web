@@ -254,10 +254,10 @@ function IdentityLockup({
             <img
               src={logo}
               alt=""
-              className="h-20 w-20 rounded-2xl border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
+              className="h-20 w-20 rounded-card border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
             />
           ) : (
-            <span className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-page-title font-bold text-subtle shadow-md sm:h-24 sm:w-24">
+            <span className="flex h-20 w-20 items-center justify-center rounded-card border-4 border-surface bg-surface-elevated text-page-title font-bold text-subtle shadow-md sm:h-24 sm:w-24">
               {getInitials(identity.name)}
             </span>
           )}
@@ -535,7 +535,7 @@ export function SpaceStatsBlock({
             className={`rounded-card border p-6 ${ink ? 'border-on-ink/10 bg-on-ink/5' : 'border-border bg-surface shadow-sm'}`}
           >
             <span
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${ink ? 'bg-on-ink/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-control ${ink ? 'bg-on-ink/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}
             >
               {STAT_METRIC_META[s.metric]?.icon}
             </span>

@@ -327,7 +327,7 @@ function OutlineTree({
               if (id && id !== node.id) onDropMove(id, parentId, slotKey, index)
               onDragEndId()
             }}
-            className={`group flex items-center gap-1 rounded-lg border px-2 py-1.5 ${
+            className={`group flex items-center gap-1 rounded-control border px-2 py-1.5 ${
               selectedId === node.id ? 'border-primary bg-primary-bg/40' : 'border-transparent hover:bg-surface-elevated'
             }`}
           >
@@ -382,7 +382,7 @@ function OutlineTree({
                         if (id) onDropMove(id, node.id, slot.key, 0)
                         onDragEndId()
                       }}
-                      className="rounded-lg border border-dashed border-border px-2 py-2 text-center text-meta text-subtle"
+                      className="rounded-control border border-dashed border-border px-2 py-2 text-center text-meta text-subtle"
                     >
                       Empty. Drop or add a block.
                     </div>
@@ -558,7 +558,7 @@ function PalettePopover({
                       key={b.type}
                       title={b.reason}
                       aria-disabled="true"
-                      className="flex min-h-[48px] cursor-not-allowed items-center rounded-lg border border-border bg-surface-elevated px-3 py-2 text-left text-body-sm font-medium text-subtle opacity-60"
+                      className="flex min-h-[48px] cursor-not-allowed items-center rounded-control border border-border bg-surface-elevated px-3 py-2 text-left text-body-sm font-medium text-subtle opacity-60"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </div>
@@ -567,7 +567,7 @@ function PalettePopover({
                       key={b.type}
                       type="button"
                       onClick={() => onPick(b.type)}
-                      className="flex min-h-[48px] items-center rounded-lg border border-border bg-canvas px-3 py-2 text-left text-body-sm font-medium text-text hover:border-primary hover:bg-surface-elevated"
+                      className="flex min-h-[48px] items-center rounded-control border border-border bg-canvas px-3 py-2 text-left text-body-sm font-medium text-text hover:border-primary hover:bg-surface-elevated"
                     >
                       <span className="line-clamp-2">{b.label}</span>
                     </button>

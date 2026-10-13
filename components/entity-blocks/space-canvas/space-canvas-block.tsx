@@ -19,6 +19,7 @@ import { useProfileLayout } from '../profile-layout-context'
 import { SpaceEditableSlot } from './space-editable-slot'
 import { SpaceImagePopup } from './space-image-popup'
 import { assetRefUrl, isAssetRef, type AssetValue } from '@/lib/library/asset-ref'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 
 // ONE SPACE BLOCK, RENDERED TO THE LIVE WYSIWYG CANVAS so the EDIT surface MATCHES the published page. Each
 // block's authored TEXT (text / textarea, plus each Features / Cards item's title + text) is an inline-editable
@@ -69,12 +70,12 @@ const EYEBROW_CLS = 'eyebrow font-eyebrow text-primary-strong'
 const EYEBROW_INK_CLS = 'eyebrow font-eyebrow text-primary'
 /** A design-block heading (DesignHeading default): the Anton display face at the published FLUID CLAMP, so the
  *  canvas heading is not dramatically smaller than the page (parity fix 5). */
-const HEADING_CLS = 'font-display text-[clamp(1.875rem,5.5vw,3rem)] uppercase leading-[1.05] text-text'
+const HEADING_CLS = `font-display ${DISPLAY_TYPE.section} uppercase leading-[1.05] text-text`
 /** The LARGE (DesignHeading size="lg") heading the Banner / photoHero uses — a much bigger clamp (parity fix 5). */
-const HEADING_LG_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-display text-text'
-const HEADING_LG_INK_CLS = 'font-display text-[clamp(2rem,7vw,4.5rem)] uppercase leading-display text-on-ink'
+const HEADING_LG_CLS = `font-display ${DISPLAY_TYPE.feature} uppercase text-text`
+const HEADING_LG_INK_CLS = `font-display ${DISPLAY_TYPE.feature} uppercase text-on-ink`
 /** The big standalone Display heading block, at the published display clamp (parity fix 6). */
-const DISPLAY_CLS = 'font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-display text-balance text-text'
+const DISPLAY_CLS = `font-display ${DISPLAY_TYPE.poster} uppercase text-balance text-text`
 const BODY_CLS = 'text-body-lg leading-relaxed text-muted'
 const BODY_INK_CLS = 'text-body-lg leading-relaxed text-on-ink-muted'
 
@@ -199,7 +200,7 @@ function ItemMedia({
       variant === 'top'
         ? 'aspect-[4/3] w-full rounded-xl object-cover'
         : variant === 'spotlight'
-          ? 'aspect-[4/3] w-full rounded-2xl object-cover'
+          ? 'aspect-[4/3] w-full rounded-card object-cover'
           : 'h-12 w-12 shrink-0 rounded-xl object-cover'
     // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
     return <img src={image} alt="" className={cls} />
@@ -249,7 +250,7 @@ function ItemBody({
           price / link. They are rail-set, so on the canvas they show READ-ONLY (a span, not a live link). */}
       {price ? <p className="text-body-sm font-semibold text-primary-strong">{price}</p> : null}
       {link ? (
-        <span className="mt-1 inline-flex items-center gap-1 self-start rounded-lg border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text">
+        <span className="mt-1 inline-flex items-center gap-1 self-start rounded-control border border-border bg-surface px-3 py-1.5 text-meta font-semibold text-text">
           {cta || 'Learn more'}
         </span>
       ) : null}
@@ -328,7 +329,7 @@ function ItemsTextCanvas({
             className="rounded-card border border-border p-3 hover:border-border-strong"
           >
             {image && (
-              <div className="overflow-hidden rounded-lg border border-border">
+              <div className="overflow-hidden rounded-control border border-border">
                 {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
                 <img src={image} alt="" className="max-h-40 w-full object-cover" />
               </div>
@@ -456,7 +457,7 @@ function FeaturesItemsCanvas({
 }) {
   if (isFeatureDataSource(props)) {
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">
+      <p className="rounded-control border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">
         Your live {label} show on the published page. Choose which items appear in this block&rsquo;s settings.
       </p>
     )
@@ -548,7 +549,7 @@ function FeaturesItemsCanvas({
           const titleBig = !it.price
           return frame(
             i,
-            'rounded-2xl border border-border bg-surface p-6 text-center',
+            'rounded-card border border-border bg-surface p-6 text-center',
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               {it.price ? (
                 <div className="text-4xl font-bold leading-none text-primary-strong">{it.price}</div>
@@ -581,7 +582,7 @@ function FeaturesItemsCanvas({
           const it = read(raw)
           return frame(
             i,
-            'flex flex-col overflow-hidden rounded-2xl border border-border bg-surface',
+            'flex flex-col overflow-hidden rounded-card border border-border bg-surface',
             <>
               {it.image ? (
                 // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
@@ -613,7 +614,7 @@ function FeaturesItemsCanvas({
         const flip = i % 2 === 1
         return frame(
           i,
-          `flex flex-col gap-5 rounded-2xl sm:items-center ${flip ? 'sm:flex-row-reverse' : 'sm:flex-row'}`,
+          `flex flex-col gap-5 rounded-card sm:items-center ${flip ? 'sm:flex-row-reverse' : 'sm:flex-row'}`,
           <>
             {media && <div className="sm:w-1/2">{media}</div>}
             <div className={media ? 'sm:w-1/2' : 'w-full'}>{body(i, it, 'text-lead font-bold text-text')}</div>
@@ -657,7 +658,7 @@ export function SpaceCanvasBlock({
       return <div className="pointer-events-none">{node}</div>
     }
     return (
-      <p className="rounded-lg border border-dashed border-border px-3 py-2 text-meta text-subtle">
+      <p className="rounded-control border border-dashed border-border px-3 py-2 text-meta text-subtle">
         Your live {block.label.toLowerCase()} shows on the published page. Edit which items appear in this
         section&rsquo;s settings.
       </p>
@@ -727,7 +728,7 @@ export function SpaceCanvasBlock({
   if (id === 'cardGrid') {
     const cols = gridColumns(props)
     const imageLeft = props.shape === 'left'
-    const round = props.rounded !== false ? 'rounded-2xl' : ''
+    const round = props.rounded !== false ? 'rounded-card' : ''
     const shade = props.shadow !== false ? 'shadow-pop' : ''
     const frame = ['overflow-hidden border border-border bg-surface', round, shade].filter(Boolean).join(' ')
     return (
@@ -787,7 +788,7 @@ export function SpaceCanvasBlock({
             ? 'aspect-square'
             : 'h-48'
     return (
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-card border border-border bg-surface">
         {imageSlot('image', { className: calloutImg })}
         <div className="space-y-3 p-6">
           {textSlot('title', 'text-lead font-bold text-text')}
@@ -795,7 +796,7 @@ export function SpaceCanvasBlock({
           {props.buttonOn !== false &&
             textSlot(
               'buttonLabel',
-              'mt-1 inline-flex rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary',
+              'mt-1 inline-flex rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary',
             )}
         </div>
       </div>
@@ -821,7 +822,7 @@ export function SpaceCanvasBlock({
   }
   if (id === 'button') {
     return (
-      <div className="inline-flex rounded-lg bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary">
+      <div className="inline-flex rounded-control bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary">
         {textSlot('label', '')}
       </div>
     )
@@ -834,7 +835,7 @@ export function SpaceCanvasBlock({
         <ContentBlockView id={id} props={props} />
       </div>
     ) : (
-      <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">
+      <p className="rounded-control border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">
         Add your {block.label.toLowerCase()} in this block&rsquo;s settings.
       </p>
     )
@@ -896,14 +897,14 @@ export function SpaceCanvasBlock({
           {imgs.length > 0 ? (
             <div className="grid grid-cols-3 gap-2">
               {imgs.map((src, i) => (
-                <div key={`${src}-${i}`} className="overflow-hidden rounded-lg border border-border">
+                <div key={`${src}-${i}`} className="overflow-hidden rounded-control border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
                   <img src={src} alt="" className="aspect-square w-full object-cover" />
                 </div>
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">
+            <p className="rounded-control border border-dashed border-border px-3 py-6 text-center text-meta text-subtle">
               Add photos to this gallery in its settings.
             </p>
           )}
@@ -1009,7 +1010,7 @@ function designCanvas(
       const height = props.height === 'short' || props.height === 'medium' ? props.height : 'tall'
       const scrim = props.scrim === 'medium' ? BANNER_SCRIM_CLASS.medium : BANNER_SCRIM_CLASS.light
       return (
-        <div className="relative overflow-hidden rounded-2xl">
+        <div className="relative overflow-hidden rounded-card">
           <div className="absolute inset-0">{imageSlot('image', { className: 'h-full', fill: true })}</div>
           <div className={`pointer-events-none absolute inset-0 bg-gradient-to-t ${scrim}`} aria-hidden />
           <div
@@ -1047,7 +1048,7 @@ function designCanvas(
             {textSlot('eyebrow', EYEBROW_CLS)}
             {textSlot('title', HEADING_CLS)}
             {textSlot('body', BODY_CLS)}
-            <div className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-primary px-8 py-3.5 text-body font-bold text-on-primary shadow-pop">
+            <div className="mt-8 inline-flex items-center gap-2 rounded-card bg-primary px-8 py-3.5 text-body font-bold text-on-primary shadow-pop">
               {textSlot('buttonLabel', '')}
               <ArrowRight className="h-5 w-5" aria-hidden />
             </div>

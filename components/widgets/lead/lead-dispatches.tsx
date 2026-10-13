@@ -118,7 +118,7 @@ export async function LeadDispatches(): Promise<React.ReactElement | null> {
   return (
     <section>
       <SectionHeader title="Messages & dispatches" count={recent.length} />
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {recent.map((item) => (
           <li key={item.key}>
             <Link

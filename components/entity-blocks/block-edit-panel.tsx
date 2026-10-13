@@ -192,7 +192,7 @@ export function BlockEditPanel({
     // The panel sits DIRECTLY under its block pill, so it fuses to it: no top gap, a flat top edge, and no
     // doubled top border. The pill drops its own bottom rounding + border while editing (see BlockPill), so the
     // pill header and this settings body read as ONE connected surface (matching bg tint), not two stacked chips.
-    <div className="-mt-px space-y-3 rounded-b-lg rounded-t-none border border-t-0 border-border bg-surface-elevated/60 p-3">
+    <div className="-mt-px space-y-3 rounded-b-control rounded-t-none border border-t-0 border-border bg-surface-elevated/60 p-3">
       {/* DATA block: a minimal on/off switch (redesigned from the verbose checkbox). */}
       {isData && <ToggleRow label="Show on page" checked={!hidden} onChange={onToggleHide} />}
 
@@ -563,7 +563,7 @@ function SettingsGroup({
   children: ReactNode
 }) {
   return (
-    <details open={defaultOpen} className="group overflow-hidden rounded-lg border border-border bg-surface">
+    <details open={defaultOpen} className="group overflow-hidden rounded-control border border-border bg-surface">
       <summary className={capsLabel('flex cursor-pointer list-none select-none items-center gap-1.5 px-2.5 py-2 text-2xs font-semibold text-muted outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/40 [&::-webkit-details-marker]:hidden')}>
         <ChevronRight
           className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none"
@@ -706,7 +706,7 @@ function ImagesEditor({
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => drop(i)}
               onDragEnd={() => setDragIndex(null)}
-              className={`group relative aspect-square cursor-grab overflow-hidden rounded-lg border ${dragIndex === i ? 'border-primary opacity-60' : 'border-border'}`}
+              className={`group relative aspect-square cursor-grab overflow-hidden rounded-control border ${dragIndex === i ? 'border-primary opacity-60' : 'border-border'}`}
             >
               {/* Unoptimized: gallery images come from Supabase Storage, not the configured next/image domains. */}
               <Image src={url} alt="" width={160} height={160} unoptimized className="pointer-events-none h-full w-full object-cover" />
@@ -806,7 +806,7 @@ function CompactItemRow({
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
-      className={`flex items-center gap-1.5 rounded-lg border bg-surface px-1.5 py-1.5 ${dragging ? 'border-primary opacity-60' : 'border-border'}`}
+      className={`flex items-center gap-1.5 rounded-control border bg-surface px-1.5 py-1.5 ${dragging ? 'border-primary opacity-60' : 'border-border'}`}
     >
       <span className="shrink-0 cursor-grab text-subtle" aria-hidden>
         <GripVertical className="h-4 w-4" />
@@ -926,7 +926,7 @@ function FeaturesEditor({
     return (
       <div className="space-y-1.5">
         <ItemSettingsHeader label={it.title || `Feature ${i + 1}`} onBack={() => selectItem(null)} />
-        <div className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
+        <div className="space-y-1.5 rounded-control border border-border bg-surface p-2">
           <div className="flex items-start gap-1.5">
             <IconPicker value={it.icon} onChange={(token) => patch(i, { icon: token })} />
             {textOnCanvas ? (
@@ -1117,7 +1117,7 @@ function CardsEditor({
     return (
       <div className="space-y-1.5">
         <ItemSettingsHeader label={c.title || `Card ${i + 1}`} onBack={() => selectItem(null)} />
-        <div className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
+        <div className="space-y-1.5 rounded-control border border-border bg-surface p-2">
           {!textOnCanvas && (
             <label className="block space-y-1">
               <span className={labelCls}>Card title</span>

@@ -20,7 +20,7 @@ export const EventActivityBlock = async () => {
   const { event, activityPosts, canContribute, canDispatch, isHost, myProfileId, isPast } = ctx
 
   return (
-    <Suspense fallback={<Skeleton className="h-40 rounded-2xl" />}>
+    <Suspense fallback={<Skeleton className="h-40 rounded-card" />}>
       <EventActivity
         eventId={event.id}
         slug={event.slug}

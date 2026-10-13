@@ -10,7 +10,7 @@ import { Sparkles } from 'lucide-react'
 
 export function SpaceEditNotice() {
   return (
-    <div className="mb-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary-bg/40 px-4 py-3">
+    <div className="mb-4 flex items-start gap-3 rounded-card border border-primary/30 bg-primary-bg/40 px-4 py-3">
       <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary-strong" aria-hidden />
       <div className="space-y-0.5">
         <p className="text-body-sm font-semibold text-text">You&rsquo;re editing your Space</p>

@@ -57,7 +57,7 @@ export async function QuestLeaderboard() {
           return (
             <div
               key={member.profileId}
-              className={`-mx-2 flex items-center gap-3 rounded-lg px-2 py-2 ${
+              className={`-mx-2 flex items-center gap-3 rounded-control px-2 py-2 ${
                 isSelf ? 'bg-primary-bg/60 dark:bg-primary-bg' : ''
               }`}
             >

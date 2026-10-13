@@ -197,7 +197,7 @@ function ReviewRowItem({
             onClick={prescreen}
             disabled={screening || disabled}
             title="Pre-screen with Vera (advisory)"
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             {screening ? 'Reading…' : 'Pre-screen'}
@@ -206,7 +206,7 @@ function ReviewRowItem({
             type="button"
             onClick={() => decide('approved')}
             disabled={disabled}
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
           >
             <Check className="h-3.5 w-3.5" aria-hidden /> Approve
           </button>
@@ -214,7 +214,7 @@ function ReviewRowItem({
             type="button"
             onClick={() => decide('rejected')}
             disabled={disabled}
-            className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Reject
           </button>
@@ -272,7 +272,7 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
         <div
           role="region"
           aria-label="Bulk review"
-          className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-surface-elevated px-3 py-2 lift-1"
+          className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-card border border-primary/30 bg-surface-elevated px-3 py-2 lift-1"
         >
           <span className="text-body-sm font-semibold text-text">{selected.size} selected</span>
           <span className="mx-1 hidden h-4 w-px bg-border sm:block" aria-hidden />
@@ -280,7 +280,7 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
             type="button"
             disabled={pending}
             onClick={() => bulkReview('approved')}
-            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
+            className="inline-flex min-h-[2rem] items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
           >
             <Check className="h-3.5 w-3.5" aria-hidden /> Approve selected
           </button>
@@ -288,14 +288,14 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
             type="button"
             disabled={pending}
             onClick={() => bulkReview('rejected')}
-            className="inline-flex min-h-[2rem] items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+            className="inline-flex min-h-[2rem] items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Reject selected
           </button>
           <button
             type="button"
             onClick={() => setSelected(new Set())}
-            className="ml-auto inline-flex min-h-[2rem] items-center gap-1 rounded-lg px-2 py-1 text-meta font-medium text-muted transition-colors hover:text-text"
+            className="ml-auto inline-flex min-h-[2rem] items-center gap-1 rounded-control px-2 py-1 text-meta font-medium text-muted transition-colors hover:text-text"
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Clear
           </button>
@@ -311,7 +311,7 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
         </p>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-card border border-border bg-surface">
         <div className="flex items-center gap-3 border-b border-border bg-surface-elevated/50 px-4 py-2">
           <Checkbox
             checked={allSelected}

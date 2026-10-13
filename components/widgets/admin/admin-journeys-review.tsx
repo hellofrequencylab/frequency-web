@@ -23,7 +23,7 @@ export async function AdminJourneysReview() {
           description="New member submissions land here for a decision."
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <div className="overflow-hidden rounded-card border border-border bg-surface">
           <div className="divide-y divide-border/50">
             {pending.map((j) => (
               <div key={j.id} className="flex flex-wrap items-center gap-3 px-4 py-3">

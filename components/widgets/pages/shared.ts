@@ -5,7 +5,7 @@
 import { buttonClasses } from '@/components/ui/button'
 import { capsLabel } from '@/components/ui/caps-label'
 
-export const TABLE_WRAP = 'overflow-x-auto rounded-2xl border border-border bg-surface lift-1'
+export const TABLE_WRAP = 'overflow-x-auto rounded-card border border-border bg-surface lift-1'
 export const HEAD_ROW = capsLabel('border-b border-border text-left text-meta text-subtle', 'wider')
 export const TH = 'px-4 py-2.5 font-semibold'
 export const BODY_ROW = 'border-b border-border/60 last:border-0'

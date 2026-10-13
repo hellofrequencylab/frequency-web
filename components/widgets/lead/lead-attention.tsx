@@ -179,7 +179,7 @@ export async function LeadAttention(): Promise<React.ReactElement | null> {
   return (
     <section>
       <SectionHeader title="What needs you" count={items.length} />
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {items.map((n) => (
           <li key={n.key}>
             <Link

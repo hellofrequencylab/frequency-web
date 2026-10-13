@@ -236,7 +236,7 @@ function BookingSkeleton() {
           <div className="h-4 w-40 animate-pulse rounded bg-surface-elevated/60" />
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: 5 }).map((_, j) => (
-              <div key={j} className="h-8 w-16 animate-pulse rounded-lg bg-surface-elevated/60" />
+              <div key={j} className="h-8 w-16 animate-pulse rounded-control bg-surface-elevated/60" />
             ))}
           </div>
         </div>

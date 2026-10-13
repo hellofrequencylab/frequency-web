@@ -8,6 +8,7 @@
 // ink (dark). Never raw colors — selects compile to a fixed Tailwind set.
 
 import { ImageField } from './image-field'
+import { DISPLAY_TYPE } from '@/components/marketing/display-type'
 import type { AssetValue } from '@/lib/library/asset-ref'
 
 // ── Heading faces come from the theme ────────────────────────────────────────
@@ -110,9 +111,10 @@ export function alignClass(align?: string): string {
 // desktop size, so large screens are unchanged; the min is a smaller mobile floor so
 // long headlines stop swallowing the viewport on phones (they scale smoothly between).
 const EMPHASIS_SCALE: Record<string, string> = {
-  sm: 'text-[clamp(1.375rem,3.5vw,1.875rem)]',
-  default: 'text-[clamp(1.875rem,5.5vw,3rem)]',
-  lg: 'text-[clamp(2rem,7vw,4.5rem)] leading-[0.95]',
+  sm: DISPLAY_TYPE.subsection,
+  default: DISPLAY_TYPE.section,
+  // `feature` carries `leading-display` (0.95 under DAWN), the token for the literal 0.95 this row wrote.
+  lg: DISPLAY_TYPE.feature,
 }
 
 const EMPHASIS_ACCENT: Record<string, string> = {

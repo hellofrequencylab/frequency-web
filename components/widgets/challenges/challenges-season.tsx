@@ -158,7 +158,7 @@ export async function ChallengesSeason() {
                 return (
                   <div
                     key={challenge.id}
-                    className={`rounded-2xl border p-4 transition-colors ${
+                    className={`rounded-card border p-4 transition-colors ${
                       isComplete
                         ? 'border-success/30 bg-success-bg/30'
                         : 'border-border bg-surface hover:border-border-strong'
@@ -166,7 +166,7 @@ export async function ChallengesSeason() {
                   >
                     <div className="flex items-start gap-3">
                       <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-control ${
                           isComplete ? 'bg-success-bg text-success' : 'bg-surface-elevated text-subtle'
                         }`}
                       >

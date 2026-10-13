@@ -11,7 +11,7 @@ export async function JourneysStart() {
   return (
     <section className="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
       {/* Launch CTA — opens the Studio window in place. */}
-      <div className="flex flex-col justify-between gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary-bg/50 to-signal-bg/40 p-5 lift-1">
+      <div className="flex flex-col justify-between gap-4 rounded-card border border-border bg-gradient-to-br from-primary-bg/50 to-signal-bg/40 p-5 lift-1">
         <div className="min-w-0">
           <h2 className="flex items-center gap-1.5 text-body font-bold text-text">
             <Sparkles className="h-4 w-4 text-primary-strong" /> Start a journey
@@ -28,11 +28,11 @@ export async function JourneysStart() {
       {/* This season's Quest — the official, free track that lives in My Quest. */}
       <Link
         href="/crew"
-        className="group flex flex-col justify-between gap-4 rounded-2xl border border-border bg-surface p-5 lift-1 transition-colors hover:border-primary"
+        className="group flex flex-col justify-between gap-4 rounded-card border border-border bg-surface p-5 lift-1 transition-colors hover:border-primary"
       >
         <div className="min-w-0">
           <h2 className="flex items-center gap-1.5 text-body font-bold text-text">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-control bg-primary-bg text-primary-strong">
               <Compass className="h-4 w-4" />
             </span>
             This season&apos;s Quest

@@ -52,9 +52,9 @@ export async function QuestToday() {
   return (
     <Link
       href={nextStep.href}
-      className="flex items-start gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25 motion-reduce:transition-none"
+      className="flex items-start gap-4 rounded-card border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25 motion-reduce:transition-none"
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-primary text-on-primary">
         {expressionNext ? <Sparkles className="h-5 w-5" /> : <Compass className="h-5 w-5" />}
       </span>
       <div className="min-w-0 flex-1">

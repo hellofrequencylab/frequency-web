@@ -40,7 +40,7 @@ export function Snackbar({ state, onDismiss }: { state: SnackbarState; onDismiss
               state.onUndo()
               onDismiss()
             }}
-            className="min-h-[36px] rounded-lg px-2 font-semibold text-primary underline-offset-2 hover:underline"
+            className="min-h-[36px] rounded-control px-2 font-semibold text-primary underline-offset-2 hover:underline"
           >
             Undo
           </button>

@@ -17,7 +17,7 @@ export const EventRecap = async () => {
   if (!hasEnded) return null
 
   return (
-    <Suspense fallback={<Skeleton className="h-48 rounded-2xl" />}>
+    <Suspense fallback={<Skeleton className="h-48 rounded-card" />}>
       <RecapAlbum
         eventId={event.id}
         slug={event.slug}

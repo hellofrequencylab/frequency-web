@@ -438,7 +438,7 @@ export function PickerControl({
         {createHref ? (
           <Link
             href={createHref}
-            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-2 text-meta font-semibold text-primary-strong transition-colors hover:border-primary"
+            className="inline-flex items-center gap-1 rounded-control border border-dashed border-border px-2.5 py-2 text-meta font-semibold text-primary-strong transition-colors hover:border-primary"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden /> {createLabel ?? 'Create the first one'}
           </Link>
@@ -475,7 +475,7 @@ export function PickerControl({
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggle(it.id)}
-                className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-meta font-medium transition-colors ${
+                className={`flex min-w-0 flex-1 items-center gap-2 rounded-control border px-2 py-1.5 text-left text-meta font-medium transition-colors ${
                   on
                     ? 'border-primary bg-primary-bg text-text'
                     : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
@@ -563,7 +563,7 @@ export function IconPicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text transition-colors hover:border-border-strong"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control border border-border bg-surface text-text transition-colors hover:border-border-strong"
       >
         {value ? <BlockIcon name={value} size={20} /> : <Plus className="h-4 w-4 text-subtle" aria-hidden />}
       </button>

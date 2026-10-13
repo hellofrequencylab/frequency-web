@@ -58,7 +58,7 @@ export function ContactFormBlock({
   next = null,
 }: ContactFormBlockProps) {
   const house = variant === 'house'
-  const frame = house ? 'hs-card' : 'rounded-2xl border border-border bg-surface p-6 sm:p-8'
+  const frame = house ? 'hs-card' : 'rounded-card border border-border bg-surface p-6 sm:p-8'
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')

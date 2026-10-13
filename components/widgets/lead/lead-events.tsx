@@ -34,7 +34,7 @@ export async function LeadEvents(): Promise<React.ReactElement | null> {
   return (
     <section>
       <SectionHeader title="Upcoming in your circles" count={upcoming.length} />
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {upcoming.map((e) => (
           <li key={e.id}>
             <Link
