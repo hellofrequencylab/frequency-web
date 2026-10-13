@@ -9,7 +9,9 @@ import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
-import { getJourneyView, getPlan, getPlanAuthor, listJourneyCoHostSpaces, getCompletedLessonIds } from '@/lib/journey-plans'
+import { getJourneyView, getPlan, getPlanAuthor, listJourneyCoHostSpaces, getCompletedLessonIds, listPublicJourneys } from '@/lib/journey-plans'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { JourneyBody } from '@/components/frequency/members/journey/journey-body'
 import { buildJourneyTree } from '@/lib/journeys/tree'
 import { JourneyDock } from '@/components/journey/nav/journey-dock'
 import { readJourneyOutcomes } from '@/lib/journeys/outcomes'
@@ -227,6 +229,134 @@ export default async function JourneyPlanPage({
     // anything else falls back to the header element's registry default, as before.
     entityOverlayStyle: oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? oStyle : null,
   })
+  // ── FREQUENCY (ADR-1737). The same reads, gates and controls, on the Frequency Journey body. The
+  //    DAWN composition below is untouched; SITE_DESIGN is build-time, so only one branch ships live.
+  if (SITE_DESIGN === 'frequency') {
+    const completed = docked && profileId ? [...(await getCompletedLessonIds(profileId, plan.id))] : []
+    const tree = buildJourneyTree(itemsToBlocks(items), completed)
+    const more = (await listPublicJourneys())
+      .filter((j) => j.id !== plan.id)
+      .slice(0, 3)
+      .map((j) => ({ slug: j.slug, title: j.title, coverImage: j.cover_image, adoptCount: j.adopt_count }))
+    const fqActions = (
+      <>
+        {canManageJourney && (
+          <OpenAdminBarButton
+            scope={{ kind: 'journey', id: plan.id }}
+            caps={Array.from(journeyCaps)}
+            label="Manage"
+            icon={<SlidersHorizontal className="h-4 w-4" />}
+            className="btn sm"
+          />
+        )}
+        {canManageJourney && (
+          <OpenAdminBarButton
+            scope={{ kind: 'journey', id: plan.id }}
+            caps={Array.from(journeyCaps)}
+            label={offer ? `${offer.priceLabel}${offer.seatLine ? ` · ${offer.seatLine}` : ''}` : 'Set a price'}
+            icon={<Tag className="h-4 w-4" />}
+            className="btn sm"
+          />
+        )}
+        <QrShareDropdown manager={canManageJourney} />
+      </>
+    )
+    const credits =
+      author || coHosts.length > 0 ? (
+        <span className="stack mc-gap-6">
+          {author && (
+            <Link className="t2" href={`/people/${author.handle}`}>
+              By {author.displayName}
+            </Link>
+          )}
+          {coHosts.map((s) => (
+            <Link key={s.id} className="t2" href={`/spaces/${s.slug}`}>
+              Co-hosted with {s.name}
+            </Link>
+          ))}
+        </span>
+      ) : null
+    return (
+      <>
+        <ShareImageProvider imageUrl={plan.cover_image ?? null}>
+          <JourneyBody
+            plan={{ slug: plan.slug, title: plan.title, summary: plan.summary, adoptCount: plan.adopt_count }}
+            tree={tree}
+            tracked={docked}
+            inside={adopted || isAuthor}
+            offerLabel={offer?.priceLabel ?? null}
+            credits={credits}
+            actions={fqActions}
+            notice={
+              isAuthor && preview ? (
+                <div className="mc-note">
+                  <span className="t2">Preview. How others see your Journey.</span>
+                  <Link className="btn sm" href={`/journeys/${plan.slug}/edit`}>
+                    <Pencil className="h-3.5 w-3.5" /> Back to editing
+                  </Link>
+                </div>
+              ) : null
+            }
+            enrol={
+              <>
+                <AtAGlanceCard
+                  plan={plan}
+                  slug={plan.slug}
+                  facts={facts}
+                  enrolled={adopted}
+                  canStart={canStart}
+                  isAuthor={isAuthor}
+                  progress={null}
+                  enrollAction={adoptPlanAction}
+                  forkAction={forkPlanAction}
+                  offer={offer}
+                  buyControl={buyControl}
+                  tierGate={tierGate}
+                />
+                {plan.official && plan.quest_id && <QuestSponsorRewards questId={plan.quest_id} profileId={profileId} />}
+              </>
+            }
+            details={
+              <>
+                <OutcomesBlock outcomes={readJourneyOutcomes(plan.page_config)} />
+                <InstructorBlock author={author} />
+                {reviewProductId && reviews && (
+                  <ProductReviews
+                    productId={reviewProductId}
+                    productTitle={plan.title}
+                    reviews={reviews}
+                    myReview={myReview}
+                    signedIn={!!profileId}
+                    canReview={!!profileId && !!rawOffer && !canManageJourney && purchased}
+                    canModerate={operator}
+                  />
+                )}
+                <JourneyFaq plan={plan} />
+                {reviewProductId && (
+                  <ListingQna
+                    targetKind="product"
+                    targetId={reviewProductId}
+                    revalidatePath={`/journeys/${plan.slug}`}
+                    comments={comments}
+                    canPost={!!profileId}
+                    canModerate={canManageJourney || operator}
+                    myProfileId={profileId}
+                    isOwner={canManageJourney}
+                  />
+                )}
+                <JourneyGuaranteeBlock guarantee={readJourneyGuarantee(plan.page_config)} />
+              </>
+            }
+            more={more}
+          />
+        </ShareImageProvider>
+        {docked && (
+          <JourneyDock slug={plan.slug} active="about" percent={tree.percent} aboutHref={isAuthor ? `/journeys/${plan.slug}` : undefined} />
+        )}
+      </>
+    )
+  }
+
   const page = (
     <JourneyDetailTemplate
       {...hero}

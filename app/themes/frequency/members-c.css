@@ -1,0 +1,40 @@
+/* Frequency MEMBER BODIES, lane C (Journey, Mindless, Profile, The Vault, Settings, Help, Site map).
+   The few styles the members kit (kit-members.css, generated, do not edit) carries inline in its
+   reference HTML rather than as classes. Hand-kept, --fq- tokens only, scoped exactly like the kit so
+   it paints nothing under DAWN. Every class here is `mc-` so it can never collide with a kit name. */
+
+@layer components {
+
+/* The body frame (components/frequency/members/shared/members-body.tsx). A nested kit scope must not
+   repaint the canvas over the shell's wash. */
+[data-design="frequency"] [data-kit="members"] [data-kit="members"]{background:transparent}
+[data-design="frequency"] [data-kit="members"] .mc-block{display:block}
+[data-design="frequency"] [data-kit="members"] .mc-faint{color:var(--fq-text-faint)}
+[data-design="frequency"] [data-kit="members"] .mc-dim{opacity:.6}
+[data-design="frequency"] [data-kit="members"] .mc-gap-6{gap:6px}
+[data-design="frequency"] [data-kit="members"] .mc-gap-8{gap:8px}
+[data-design="frequency"] [data-kit="members"] .mc-gap-10{gap:10px}
+[data-design="frequency"] [data-kit="members"] .mc-gap-12{gap:12px}
+[data-design="frequency"] [data-kit="members"] .mc-top-8{margin-top:8px}
+[data-design="frequency"] [data-kit="members"] .mc-top-12{margin-top:12px}
+[data-design="frequency"] [data-kit="members"] .mc-top-20{margin-top:20px}
+[data-design="frequency"] [data-kit="members"] .mc-start{align-items:flex-start}
+[data-design="frequency"] [data-kit="members"] .mc-thumb{flex:none;width:48px;height:48px;border-radius:14px}
+[data-design="frequency"] [data-kit="members"] .mc-note{padding:14px 18px;border-radius:16px;background:var(--fq-pa-soft);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .mc-stack-dawn>*+*{margin-top:24px}
+
+/* A progress ring (Journey hero): the iridescent fill masked to --p percent over the track. */
+[data-design="frequency"] [data-kit="members"] .mc-ring{position:relative;flex:none;width:120px;height:120px;border-radius:50%;background:var(--fq-track);display:flex;align-items:center;justify-content:center}
+[data-design="frequency"] [data-kit="members"] .mc-ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--fq-ig-fill);-webkit-mask:conic-gradient(black calc(var(--p,0) * 1%),transparent 0);mask:conic-gradient(black calc(var(--p,0) * 1%),transparent 0)}
+[data-design="frequency"] [data-kit="members"] .mc-ring>span{position:relative;width:100px;height:100px;border-radius:50%;background:var(--fq-ig-hole);display:flex;align-items:center;justify-content:center;font:500 28px/1 var(--fq-font-display);color:var(--fq-text-strong)}
+
+/* The aura panel (Journey hero). */
+[data-design="frequency"] [data-kit="members"] .mc-hero{position:relative;overflow:hidden;display:flex;gap:32px;align-items:center;flex-wrap:wrap;padding:32px}
+[data-design="frequency"] [data-kit="members"] .mc-hero>.fq-aura{opacity:.28}
+[data-design="frequency"] [data-kit="members"] .mc-hero>:not(.fq-aura){position:relative}
+
+/* Lesson rows: done carries the action gradient, the next one the breathing orb. */
+[data-design="frequency"] [data-kit="members"] .ic.mc-done{background:var(--fq-pa)}
+[data-design="frequency"] [data-kit="members"] .ic.mc-now{background:var(--fq-pa-orb);box-shadow:var(--fq-ig-glow)}
+
+}
