@@ -201,8 +201,7 @@ function FinishMoment({
 
       <div className="flex items-start gap-4">
         <span
-          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-control text-on-primary lift-1"
-          style={{ background: 'var(--rank-gold)' }}
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-control bg-rank-gold text-on-primary lift-1"
           aria-hidden
         >
           <Trophy className="h-7 w-7" />
@@ -287,8 +286,7 @@ function SeasonCompleteMoment({
 
       <div className="max-w-xl pr-6">
         <span
-          className="mb-4 flex h-16 w-16 items-center justify-center rounded-control text-on-primary lift-1"
-          style={{ background: 'var(--rank-gold)' }}
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-control bg-rank-gold text-on-primary lift-1"
           aria-hidden
         >
           <Trophy className="h-8 w-8" />
