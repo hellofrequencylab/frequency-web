@@ -163,11 +163,14 @@ describe('the page is navigable and does not snap while it streams', () => {
     expect(pageCode).toContain('<main className={cn(CLAIM_COLUMN, "py-6")}>')
     expect(pageCode).toContain('aria-label="Claim this business"')
     expect(pageCode).toMatch(/<section\s+aria-label="Claim this business"/)
-    // The hero must be INSIDE main, i.e. main opens before the <header>.
+    // The hero must be INSIDE main, i.e. main opens before the shell whose band carries the cover
+    // and its <h1> (DetailTemplate renders the band inside its own <header>).
     const main = pageCode.indexOf('<main className={cn(CLAIM_COLUMN')
-    const header = pageCode.indexOf('<header className={cn(')
+    const shell = pageCode.indexOf('<DetailTemplate')
+    const cover = pageCode.indexOf("<div className={cn('relative w-full overflow-hidden")
     expect(main).toBeGreaterThan(-1)
-    expect(header).toBeGreaterThan(main)
+    expect(shell).toBeGreaterThan(main)
+    expect(cover).toBeGreaterThan(shell)
   })
 
   it('the Suspense fallback has the @container it lays out against', () => {
@@ -176,8 +179,8 @@ describe('the page is navigable and does not snap while it streams', () => {
     // while the fallback is showing: the skeleton was always a tall single column and the page
     // visibly snapped to two the moment the body streamed in. Silent — it renders fine, just wrong.
     expect(readFileSync('components/spaces/profile-body-skeleton.tsx', 'utf8')).toContain('@lg:grid-cols-2')
-    expect(pageCode).toContain('<div className="@container py-8">')
-    const container = pageCode.indexOf('className="@container py-8"')
+    expect(pageCode).toContain('<div className="@container pb-8">')
+    const container = pageCode.indexOf('className="@container pb-8"')
     expect(pageCode.indexOf('<Suspense')).toBeGreaterThan(container)
   })
 

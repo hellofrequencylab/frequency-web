@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { existsSync } from 'node:fs'
-import { composesShell, ancestorComposes, rendersJsx, evaluate, pages, SHELLS, PIECES, loadBaseline, BASELINE_FILE, MIN_PAGES } from './check-templates.mjs'
+import { composesShell, composesPageShell, compositionDrift, COMPOSITIONS, SKIP_DIRS, ancestorComposes, rendersJsx, evaluate, pages, SHELLS, PIECES, loadBaseline, BASELINE_FILE, MIN_PAGES } from './check-templates.mjs'
 
 // The class this guards is the one whose number kept drifting in the plan docs, because it was the
 // only design-debt class with no instrument. These tests pin the two distinctions that made the old
@@ -106,12 +106,22 @@ describe('the ratchet and its floor', () => {
     expect(pages().length).toBeGreaterThanOrEqual(MIN_PAGES)
   })
 
-  it('the scope excludes the systems that are not template-governed', () => {
-    // PAGE-FRAMEWORK: templates govern "App routes behind auth (app/(main)/*)".
+  it('the scope excludes only the systems that are not template-governed', () => {
+    // Marketing, the Space-website theme system, print sheets, dev harnesses and the persona
+    // landings follow their own systems. Everything else is governed.
     const list: string[] = pages()
     expect(list.some((p) => p.includes('(marketing)'))).toBe(false)
-    expect(list.some((p) => p.startsWith('app/discover'))).toBe(false)
+    expect(list.some((p) => p.startsWith('app/sites/'))).toBe(false)
     expect(list.some((p) => p.startsWith('app/(main)'))).toBe(true)
+    expect([...SKIP_DIRS].sort()).toEqual(['(marketing)', 'dev', 'for', 'print', 'sites'])
+  })
+
+  it('the public trees the design switch must reach are governed (widened 2026-10-13)', () => {
+    // A page this gate cannot see is a page the one-env-var change-over cannot reach.
+    const list: string[] = pages()
+    for (const root of ['app/discover/', 'app/(capture)/', 'app/hosted/', 'app/spotlight/']) {
+      expect(list.some((p) => p.startsWith(root)), root).toBe(true)
+    }
   })
 
   it('SKIP_DIRS applies at the TOP LEVEL only, so a nested namesake stays governed', () => {
@@ -119,7 +129,41 @@ describe('the ratchet and its floor', () => {
     // skipped name at any depth. Pinned as a test because the difference used to be described
     // wrongly in a comment, and a comment cannot fail.
     const list: string[] = pages()
-    expect(list).not.toContain('app/spotlight/[handle]/page.tsx')
     expect(list).toContain('app/(main)/settings/profile/spotlight/page.tsx')
+    expect(list).toContain('app/spotlight/[handle]/page.tsx')
+  })
+})
+
+describe('the editable index and registered compositions', () => {
+  it('MarketHero is the editable-index header (PAGE-FRAMEWORK §8.5), so it counts', () => {
+    expect(composesShell('return <><MarketHero title="x" image="/a.jpg" /><PageModules route="/x" /></>')).toBe(true)
+  })
+
+  it('PageModules alone is a body, not a shell', () => {
+    expect(composesPageShell('return <PageModules route="/x" />')).toBe(false)
+  })
+
+  it('a page rendering a registered composition composes its shell', () => {
+    for (const name of Object.keys(COMPOSITIONS)) {
+      expect(composesPageShell(`return <${name} title="x">{k}</${name}>`), name).toBe(true)
+    }
+  })
+
+  it('a composition cannot certify ANOTHER composition (its file must render a core shell)', () => {
+    const files = { 'a.tsx': 'return <CaptureShell title="x" />' }
+    expect(composesShell(files['a.tsx'])).toBe(false)
+  })
+
+  it('every registered composition really renders a kit shell today', () => {
+    expect(compositionDrift()).toEqual([])
+  })
+
+  it('drift is reported when a composition stops composing or disappears', () => {
+    const name = Object.keys(COMPOSITIONS)[0]
+    const file = COMPOSITIONS[name as keyof typeof COMPOSITIONS]
+    const gone = compositionDrift(() => '', () => false)
+    expect(gone).toContain(`${name} (${file})`)
+    const hollow = compositionDrift(() => 'return <div />', () => true)
+    expect(hollow.length).toBe(Object.keys(COMPOSITIONS).length)
   })
 })

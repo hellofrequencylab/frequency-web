@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { processUnsubscribe } from './actions'
 import { isError } from '@/lib/action-result'
-import { Layout, Body, ManageLink } from './card'
+import { UnsubscribeFrame, Body, ManageLink } from './card'
 import { Button } from '@/components/ui/button'
 
 // The member unsubscribe confirm step (L2-01). The page used to opt the member out DURING RENDER,
@@ -44,23 +44,23 @@ export function ConfirmUnsubscribe({
 
   if (done) {
     return (
-      <Layout title="You're unsubscribed." description={`You'll no longer receive ${label} from Frequency by email.`}>
+      <UnsubscribeFrame title="You're unsubscribed." description={`You'll no longer receive ${label} from Frequency by email.`}>
         <Body>You can re-enable this any time, and adjust other notification types, from your settings.</Body>
         <ManageLink />
-      </Layout>
+      </UnsubscribeFrame>
     )
   }
 
   if (error) {
     return (
-      <Layout title="Couldn't process unsubscribe" description={error}>
+      <UnsubscribeFrame title="Couldn't process unsubscribe" description={error}>
         <ManageLink />
-      </Layout>
+      </UnsubscribeFrame>
     )
   }
 
   return (
-    <Layout
+    <UnsubscribeFrame
       title={`Unsubscribe from ${label}?`}
       description={`You'll stop getting ${label} from Frequency by email. Everything else stays as it is.`}
     >
@@ -74,6 +74,6 @@ export function ConfirmUnsubscribe({
         </Button>
       </div>
       <Body>Changed your mind? Just close this page. Nothing changes until you click.</Body>
-    </Layout>
+    </UnsubscribeFrame>
   )
 }

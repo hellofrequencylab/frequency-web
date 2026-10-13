@@ -23,6 +23,7 @@ import { AccentScope } from '@/components/spaces/accent-scope'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
+import { DetailTemplate } from '@/components/templates'
 import { ClaimSpaceButton } from './claim-button'
 
 export const dynamic = 'force-dynamic'
@@ -311,7 +312,14 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
               Original note follows: the operator's Hero-size cover
               with the identity (logo + eyebrow + name + tagline) overlaid on a bottom scrim. Visitor view:
               no Follow / owner actions. Mirrors layout.tsx `heroCoverNode`. */}
-          <header className={cn('relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH)}>
+          {/* THE SHELL (design-switch program): the claim page composes DetailTemplate, the same shell the
+              live Space profile renders, with the cover lockup in its `band` slot (the band owns the single
+              <h1>). DetailTemplate's divider is the Space-profile spacer on /spaces/* (PageAdminBar), so
+              the gap above the body is the live page's rhythm and the body drops its own top pad. */}
+          <DetailTemplate
+            title={hero.heading}
+            band={
+          <div className={cn('relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH)}>
             <Image
               src={coverSrc}
               alt=""
@@ -354,7 +362,9 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
                 </div>
               </div>
             </div>
-          </header>
+          </div>
+            }
+          >
 
           {/* The REAL public profile body — byte-for-byte the visitor render, minus the shell chrome. */}
           {/* PAGE-FRAMEWORK section 5: never block the shell on a slow await. SpaceProfileModules
@@ -367,11 +377,12 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
               (`@container/profile`) is inside the Suspense CHILD, so it does not exist while the
               fallback is showing. Without this the skeleton was always a tall single column and the
               page visibly snapped to two when the body streamed in. */}
-          <div className="@container py-8">
+          <div className="@container pb-8">
             <Suspense fallback={<ProfileBodySkeleton />}>
               <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
             </Suspense>
           </div>
+          </DetailTemplate>
           </main>
         </div>
 

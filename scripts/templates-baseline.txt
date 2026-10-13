@@ -21,8 +21,25 @@
 # put a page header inside a dialog. They are BASELINED rather than excluded from the walk on
 # purpose — a future slot page that really does hand-roll a layout must still fail this gate.
 #
-# ⚠️ Two Show pages (SCAN-644) delegate to ShowPageView, which composes DetailTemplate. The gate
-# does not walk helpers, so they are listed here the same way the Spark delegates are.
+# The two Show pages (SCAN-644) that delegate to ShowPageView left this list on 2026-10-13: it is
+# now a REGISTERED COMPOSITION (COMPOSITIONS in check-templates.mjs, verified to render
+# DetailTemplate on every run), as are CaptureShell, UnsubscribeFrame, OnboardingForm and
+# SequenceRunner. The eight MarketHero pages left with them: the editable-index header is a shell
+# (PAGE-FRAMEWORK §8.5).
+#
+# ⚠️ Entries that joined when the scope widened (2026-10-13, design-switch program, ADR-1737). Each
+# belongs to ANOTHER design system the change-over restyles at its own source, so none can take an
+# app shell without visibly changing DAWN. Listed, not skipped, so a NEW page under these trees fails:
+#   · app/discover/* landings — the marketing kit (PhotoHero / marketing PageHero / Section /
+#     mk-beat beats from components/marketing). An app shell would replace a full-bleed photo hero
+#     with the kit's rounded band. The /discover pages that ARE indexes already compose IndexTemplate
+#     or MarketHero.
+#   · app/hosted/* — a Space's website on its own domain: SitePage / SiteChrome, the site theme
+#     system that app/sites (skipped) also renders.
+#   · app/spotlight/[handle], app/spaces/[slug]/spotlight — a member's or Space's themed Spotlight
+#     mini-site (SpotlightShell / SpaceSpotlight), its own identity header and background.
+#   · app/sign-in — a full-screen PhotoHero takeover (marketing kit) around the auth card.
+#   · app/join/(induction)/* — the scripted, light-locked cinematic induction and its finalizer.
 app/(main)/@wizard/(.)circles/new/page.tsx
 app/(main)/@wizard/(.)classifieds/new/page.tsx
 app/(main)/@wizard/(.)events/new/page.tsx
@@ -40,25 +57,20 @@ app/(main)/admin/crm/pipeline/[id]/page.tsx
 app/(main)/admin/events/[id]/page.tsx
 app/(main)/admin/spaces/[id]/page.tsx
 app/(main)/admin/walkthroughs/[id]/page.tsx
-app/(main)/channels/page.tsx
 app/(main)/circles/[slug]/edit/page.tsx
 app/(main)/circles/new/page.tsx
-app/(main)/circles/page.tsx
 app/(main)/classifieds/[id]/edit/page.tsx
 app/(main)/classifieds/new/page.tsx
-app/(main)/classifieds/page.tsx
 app/(main)/connections/[id]/page.tsx
 app/(main)/connections/page.tsx
 app/(main)/crew/page.tsx
 app/(main)/edit/[slug]/page.tsx
 app/(main)/events/new/page.tsx
 app/(main)/events/page.tsx
-app/(main)/housing/page.tsx
 app/(main)/journeys/[slug]/edit/page.tsx
 app/(main)/journeys/[slug]/guide/page.tsx
 app/(main)/journeys/new/page.tsx
 app/(main)/journeys/page.tsx
-app/(main)/market/page.tsx
 app/(main)/market/sell/page.tsx
 app/(main)/messages/[id]/page.tsx
 app/(main)/messages/r/[roomId]/page.tsx
@@ -73,20 +85,26 @@ app/(main)/scan/page.tsx
 app/(main)/settings/billing/page.tsx
 app/(main)/settings/profile/spotlight/page.tsx
 app/(main)/spaces/[slug]/edit-page/page.tsx
-app/(main)/spaces/[slug]/full/podcasts/[showSlug]/page.tsx
 app/(main)/spaces/[slug]/manage/page.tsx
 app/(main)/spaces/[slug]/settings/services/new/page.tsx
 app/(main)/spaces/[slug]/setup/page.tsx
-app/(main)/spaces/directory/page.tsx
-app/(main)/store/page.tsx
-app/(public)/spaces/[slug]/podcasts/[showSlug]/page.tsx
+app/discover/circles/page.tsx
+app/discover/cities/[citySlug]/page.tsx
+app/discover/cities/page.tsx
+app/discover/events/page.tsx
+app/discover/journeys/page.tsx
+app/discover/page.tsx
+app/discover/places/[citySlug]/page.tsx
+app/discover/places/page.tsx
+app/discover/spaces/[type]/page.tsx
+app/discover/topics/page.tsx
+app/hosted/[host]/[page]/page.tsx
+app/hosted/[host]/admin/[view]/page.tsx
+app/hosted/[host]/page.tsx
 app/join/(induction)/complete/page.tsx
 app/join/(induction)/page.tsx
 app/join/(induction)/preview/page.tsx
-app/onboarding/page.tsx
-app/onboarding/sequence-preview/page.tsx
 app/page.tsx
 app/sign-in/page.tsx
 app/spaces/[slug]/spotlight/page.tsx
-app/spaces/claim/[token]/page.tsx
-app/unsubscribe/page.tsx
+app/spotlight/[handle]/page.tsx
