@@ -1,5 +1,11 @@
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the members kit's `.sec-h` (the Unbounded `.h2` title, the count as `.meta`,
+// the action on the right), the head every section in templates/members/*.html opens with. Inlined at
+// build; DAWN's markup below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // Shared section header — a light, editorial group label (title + optional
 // count + optional action). Replaces the ad-hoc "uppercase text-2xs" and
@@ -26,6 +32,27 @@ export function SectionHeader({
    *  cannot drift, because they are the same string. */
   id?: string
 }) {
+  if (FREQUENCY) {
+    const fqHeading = (
+      <h2 id={id} className="h2 mu-sec-t">
+        {title}
+        {count != null && <span className="meta">{count}</span>}
+        {href && <ArrowUpRight aria-hidden className="mu-sec-arrow" />}
+      </h2>
+    )
+    return (
+      <div className="sec-h">
+        {href ? (
+          <Link href={href} className="mu-sec-link">
+            {fqHeading}
+          </Link>
+        ) : (
+          fqHeading
+        )}
+        {action && <div className="shrink-0">{action}</div>}
+      </div>
+    )
+  }
   const heading = (
     <h2 id={id} className="flex items-baseline gap-2 text-body-sm font-bold tracking-tight text-text transition-colors group-hover:text-primary-strong">
       {title}

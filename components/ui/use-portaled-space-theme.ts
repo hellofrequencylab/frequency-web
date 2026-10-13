@@ -60,6 +60,11 @@ export function usePortaledSpaceTheme(anchor: RefObject<HTMLElement | null>) {
   return useCallback(
     (node: HTMLElement | null) => {
       if (!node) return
+      // The Frequency members kit (ADR-1737) is a scope too: its classes match only under
+      // `[data-kit="members"]`, and a portal leaves it behind at document.body, so a dialog's kit
+      // buttons and fields would render bare. Carry the scope across like the theme. Under DAWN no
+      // ancestor carries it, so this sets nothing.
+      if (anchor.current?.closest('[data-kit="members"]')) node.setAttribute('data-kit', 'members')
       const host = anchor.current?.closest<HTMLElement>('[data-space-theme]')
       if (!host) return
       const id = host.getAttribute('data-space-theme')

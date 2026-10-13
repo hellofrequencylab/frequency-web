@@ -1,5 +1,6 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // The Checkbox primitive (DAWN dawn/components/forms/Checkbox.jsx) — a warm box that fills amber
 // with a check when on. Used for consent gates, settings and filter lists, all of which were
@@ -24,8 +25,12 @@ import { cn } from '@/lib/utils'
 // is a control you act on, not a field you type in, so it keeps that ring — the calm neutral
 // halo in `fieldClasses` is for text fields, and inventing a third treatment here would break
 // the split.
-export const checkboxClasses =
+const dawnCheckbox =
   'peer size-5 shrink-0 appearance-none rounded-control border border-border-strong bg-surface transition-[background-color,border-color] motion-reduce:transition-none checked:border-primary checked:bg-primary aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-50'
+// FREQUENCY (ADR-1737): the control radius is 16px there, which would round a 20px box into a circle;
+// the box keeps a 6px corner. Inlined at build; DAWN's string is unchanged.
+export const checkboxClasses =
+  SITE_DESIGN === 'frequency' ? dawnCheckbox.replace(' rounded-control ', ' rounded-[6px] ') : dawnCheckbox
 
 export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   /** The visible label, rendered beside the box and wired by implicit `<label>` association —

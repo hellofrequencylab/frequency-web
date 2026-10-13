@@ -7,7 +7,7 @@
    still renders a DAWN body therefore wears the design from the source (design_handoff/frequency/
    templates/members/app/app.css; kit installed at kit-members.css).
 
-   THREE PARTS.
+   FOUR PARTS.
      1. The few states and tones the kit has no class for (a danger button, a tinted tag, an invalid
         field, a tab count, the empty state, a stat card's sizes, the wizard's step bar). `mu-` names
         only, so nothing collides with a kit class. Scoped exactly like the kit.
@@ -19,9 +19,12 @@
         with new values, update these by hand (they are the same numbers, side by side).
      3. The display role, unlayered: `.font-display` was tuned for DAWN's Anton (caps, wide tracking,
         weight 400). Under Frequency it is Unbounded, which the design never sets in caps.
+     4. The three DAWN idioms a body still hand-rolls (a primary action, a bold heading, the eyebrow),
+        answered once in the kit's voice so no hand-rolled page needs a DAWN-moving edit.
 
    Imported by app/layout.tsx (so the fallback reaches routes outside the member shell). Every rule is
-   scoped to [data-design="frequency"], so under DAWN this sheet paints nothing. --fq- tokens only. */
+   scoped to [data-design="frequency"], so under DAWN this sheet paints nothing. --fq- tokens, plus the kit's own rgba literals where the
+   kit itself writes one (its card shadow, its glow rim). */
 
 @layer components {
 
@@ -155,6 +158,14 @@
 [data-design="frequency"] [data-kit="members"] .mu-row .t1 a:hover{color:var(--fq-accent)}
 [data-design="frequency"] [data-kit="members"] .mu-dim{opacity:.72;filter:saturate(.6)}
 
+/* SectionHeader: the kit's `.sec-h` with the `.h2` title, the count beside it, the arrow on a link. */
+[data-design="frequency"] [data-kit="members"] .mu-sec-t{display:flex;align-items:baseline;gap:10px}
+[data-design="frequency"] [data-kit="members"] .mu-sec-t .meta{font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="members"] .mu-sec-arrow{flex:none;align-self:center;width:16px;height:16px;color:var(--fq-text-muted);transition:transform var(--fq-dur-fast) var(--fq-ease-out),color var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .mu-sec-link{min-width:0;border-radius:10px}
+[data-design="frequency"] [data-kit="members"] .mu-sec-link:hover .h2,[data-design="frequency"] [data-kit="members"] .mu-sec-link:hover .mu-sec-arrow{color:var(--fq-accent)}
+[data-design="frequency"] [data-kit="members"] .mu-sec-link:hover .mu-sec-arrow{transform:translate(2px,-2px)}
+
 /* WizardShell: the step bar, and the room. */
 [data-design="frequency"] [data-kit="members"] .mu-steps{display:flex;gap:6px}
 [data-design="frequency"] [data-kit="members"] .mu-steps>span{flex:1;height:4px;border-radius:999px;background:var(--fq-track);transition:background var(--fq-dur-base)}
@@ -212,6 +223,10 @@
 [data-design="frequency"] .head:not([data-kit] *)>.mu-actions{flex-direction:row;align-items:center;flex-wrap:wrap;gap:10px}
 [data-design="frequency"] .k:not([data-kit] *){font:500 11px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}
 [data-design="frequency"] .h1:not([data-kit] *){margin:0;font:500 clamp(32px,4vw,46px)/1.02 var(--fq-font-display);letter-spacing:-.05em;color:var(--fq-text-strong);text-wrap:balance}
+[data-design="frequency"] .sec-h:not([data-kit] *){display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:18px}
+[data-design="frequency"] .h2:not([data-kit] *){margin:0;font:500 22px/1.1 var(--fq-font-display);letter-spacing:-.035em;color:var(--fq-text-strong)}
+[data-design="frequency"] .mu-sec-t:not([data-kit] *){display:flex;align-items:baseline;gap:10px}
+[data-design="frequency"] .mu-sec-arrow:not([data-kit] *){width:16px;height:16px;align-self:center;color:var(--fq-text-muted)}
 [data-design="frequency"] .h3:not([data-kit] *){margin:0;font:500 17px/1.2 var(--fq-font-display);letter-spacing:-.025em;color:var(--fq-text-strong)}
 [data-design="frequency"] .meta:not([data-kit] *){margin:0;font:400 14px/1.4 var(--fq-font-sans);color:var(--fq-text-muted)}
 [data-design="frequency"] .t1:not([data-kit] *){font:500 15px/1.25 var(--fq-font-sans);color:var(--fq-text-strong)}
@@ -229,3 +244,18 @@
 /* ── 3. The display role (unlayered, so it outranks the `uppercase` / `tracking-*` utilities the
    DAWN call sites pair with it): Unbounded in the design's own register, never in Anton's caps. ── */
 [data-design="frequency"] .font-display{text-transform:none;font-weight:500;letter-spacing:-.04em}
+
+/* ── 4. The DAWN idioms a page still hand-rolls, read in the kit's voice (unlayered, kit-scoped) ──
+   Most member bodies compose the primitives above; the rest still write DAWN's own class strings by
+   hand. Three of those strings are unmistakable and say exactly one thing, so they are answered here,
+   once, instead of by a per-page edit that would also move DAWN:
+     a hand-rolled primary action   `bg-primary text-on-primary` on a link or button -> the kit's
+                                    `.btn.pa` (iridescent pill, the glow), as Button renders it
+     a heading in a bold weight     Unbounded is never set bold in the design (500, like `.h1`-`.h3`)
+     DAWN's `eyebrow` kicker        the kit's `.k` (the display face at 11px, tracked caps, muted)
+   Unlayered on purpose: the call sites' Tailwind utilities live in `@layer utilities`, which an
+   unlayered rule outranks without an !important. Scoped to the members kit, so DAWN and the other
+   Frequency kits are untouched. */
+[data-design="frequency"] [data-kit="members"] :is(a,button).bg-primary.text-on-primary{background:var(--fq-pa);color:var(--fq-text-strong);border-radius:999px;box-shadow:var(--fq-pa-glow),inset 0 0 0 1px rgba(255,255,255,.5)}
+[data-design="frequency"] [data-kit="members"] :is(h1,h2,h3,h4):is(.font-bold,.font-extrabold,.font-black){font-weight:500}
+[data-design="frequency"] [data-kit="members"] .eyebrow{font:500 11px/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--fq-text-muted)}

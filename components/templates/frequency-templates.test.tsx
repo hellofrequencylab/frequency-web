@@ -87,3 +87,13 @@ describe('the cards', () => {
     expect(managed.querySelector('a.t1')?.getAttribute('href')).toBe('/orders/1')
   })
 })
+
+describe('SectionHeader is the kit .sec-h', () => {
+  it('renders the .h2 title with its count, linked when it has a home', async () => {
+    const { SectionHeader } = await import('@/components/ui/section-header')
+    const s = doc(<SectionHeader title="Your codes" count={4} href="/codes" />).firstElementChild!
+    expect(s.className).toBe('sec-h')
+    expect(s.querySelector('a.mu-sec-link h2.h2')?.firstChild?.textContent).toBe('Your codes')
+    expect(s.querySelector('h2 .meta')?.textContent).toBe('4')
+  })
+})
