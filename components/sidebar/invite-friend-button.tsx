@@ -38,7 +38,7 @@ export function InviteFriendButton({
     // Native share sheet where available (mobile); otherwise fall back to copying the link.
     if (typeof navigator !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({ title: 'Join me on Frequency', text: 'Come find your people on Frequency.', url: link })
+        await navigator.share({ title: 'Join me on Frequency', text: "I'm on Frequency. Come see what's happening near you.", url: link })
         return
       } catch {
         // user dismissed the sheet, or it is unavailable — fall through to copy
@@ -72,7 +72,7 @@ export function InviteFriendButton({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-body-sm font-bold text-text">Invite a friend</span>
-          <span className="block text-meta font-medium text-muted">Earn Zaps when they join ⚡</span>
+          <span className="block text-meta font-medium text-muted">Earn Zaps once they get started</span>
         </span>
       </button>
 
@@ -108,7 +108,7 @@ export function InviteFriendButton({
               </span>
               <h2 id="invite-friend-title" className="mt-3 text-body-lg font-bold text-text">Invite a friend, earn Zaps</h2>
               <p className="mt-1 text-body-sm leading-relaxed text-muted">
-                Share your link or code. When a friend joins Frequency and gets started, you earn Zaps ⚡
+                Share your link or code. Your friend gets Zaps for joining, and you earn Zaps once they join a Circle or pick up a Practice.
               </p>
 
               {/* The branded QR (avatar in the middle), pre-rendered server-side. */}

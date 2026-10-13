@@ -13,7 +13,7 @@ vi.mock('@/lib/queue/outbox', () => ({
 }))
 vi.mock('@/lib/suppression', () => ({ isSuppressed: async () => false }))
 
-import { emailShell, sendSignupRecoveryEmail } from './email'
+import { emailShell, sendSignupRecoveryEmail, sendWelcomeEmail } from './email'
 import { PLATFORM_POSTAL_LINE } from '@/lib/email-studio/postal'
 
 const ORIGINAL = process.env.COMPANY_POSTAL_ADDRESS
@@ -59,5 +59,21 @@ describe('postal address in lib/email.ts footers (LIVE-728)', () => {
     expect(text).toContain('Frequency, PO Box 12 & 13, Encinitas, CA 92024')
     expect(html).not.toContain(PLATFORM_POSTAL_LINE)
     expect(text).not.toContain(PLATFORM_POSTAL_LINE)
+  })
+})
+
+// LIVE-914 (Phase 0.5): the welcome email says only what the referral programme does. The newcomer
+// gets Zaps for joining with a code; the referrer is paid once the friend activates (lib/qr/referral.ts).
+describe('welcome email referral promise (LIVE-914)', () => {
+  it('names the activation gate in both parts and never says "you both earn"', async () => {
+    await sendWelcomeEmail({ to: 'a@example.com', displayName: 'Ana' })
+    expect(enqueued).toHaveLength(1)
+    const { html, text } = enqueued[0]
+    for (const part of [html, text]) {
+      expect(part).not.toMatch(/you both earn/i)
+      expect(part).not.toMatch(/connected to your community/i)
+      expect(part).toContain('you earn Zaps once they join a Circle or pick up a Practice')
+      expect(part).not.toContain('\u2014')
+    }
   })
 })

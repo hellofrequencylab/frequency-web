@@ -1981,8 +1981,8 @@ function welcomeHtml({ displayName, inviterName }: { displayName: string; invite
     <h1 style="${h1Style}">Welcome to Frequency, ${name}.</h1>
     ${inviter ? `<p style="margin:0 0 18px;padding:11px 14px;border-radius:10px;background:#FBEFD9;font-size:14px;line-height:1.5;color:#9A5E12;font-weight:600;">${inviter} invited you in. Find them in your people and say hi when you're settled.</p>` : ''}
     <p style="${pStyle}">
-      You're in. Your profile is live, you're connected to your community, and the
-      whole place is yours to explore. Here's where to start.
+      You're in. Your profile is live and the whole place is yours to explore.
+      Here's where to start.
     </p>
     <a href="${BASE_URL}/feed" style="${btnStyle}">Open your feed &rarr;</a>
 
@@ -1998,10 +1998,10 @@ function welcomeHtml({ displayName, inviterName }: { displayName: string; invite
 
     <hr style="${dividerStyle}">
 
-    <p style="${leadStyle}">Bring a friend, earn as you go</p>
+    <p style="${leadStyle}">Bring a friend along</p>
     <p style="${pStyle}">
-      You've got a personal code. Share it, and when someone you bring joins the beta,
-      you both earn. Find yours under
+      You've got a personal code. A friend who joins with it gets a few Zaps to start,
+      and you earn Zaps once they join a Circle or pick up a Practice. Find yours under
       <a href="${BASE_URL}/codes" style="${link}">your codes</a>.
     </p>
     <p style="${pStyle}">See you out there.</p>
@@ -2011,7 +2011,7 @@ function welcomeHtml({ displayName, inviterName }: { displayName: string; invite
 function welcomeText({ displayName, inviterName }: { displayName: string; inviterName?: string | null }): string {
   return `Welcome to Frequency, ${displayName}.
 ${inviterName ? `\n${inviterName} invited you in. Find them in your people and say hi when you're settled.\n` : ''}
-You're in. Your profile is live, you're connected to your community, and the whole place is yours to explore.
+You're in. Your profile is live and the whole place is yours to explore.
 
 Open your feed: ${BASE_URL}/feed
 
@@ -2021,7 +2021,7 @@ Find your people:
 - Practices (one small thing for yourself): ${BASE_URL}/practices
 - The Quest (earn Zaps, climb the ranks): ${BASE_URL}/crew
 
-Bring a friend, earn as you go: share your personal code and you both earn when someone you bring joins. Find yours at ${BASE_URL}/codes
+Bring a friend along: a friend who joins with your personal code gets a few Zaps to start, and you earn Zaps once they join a Circle or pick up a Practice. Find yours at ${BASE_URL}/codes
 
 See you out there.
 The Frequency Team
