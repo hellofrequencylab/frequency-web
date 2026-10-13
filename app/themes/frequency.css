@@ -97,6 +97,17 @@
   --radius-pill: var(--fq-radius-orb);
   --radius-cover: var(--fq-radius-l);
 
+  /* ── Type steps: DAWN's text roles on Frequency's scale (typography.css) ──
+     DAWN's steps are rem on a 106.25% root, so they land between Frequency's: 12.75px meta, 11.7px and
+     10.6px chrome. Frequency's floor for read text is its 13px meta; its 11px label is the only smaller
+     step, and its 12px tag the chip size. Content roles keep DAWN's --type-scale multiplier. */
+  --text-3xs: var(--fq-text-label);                                /* 11px, the label */
+  --text-2xs: 12px;                                                /* the kit's .tag */
+  --text-meta: calc(var(--fq-text-meta) * var(--type-scale, 1));   /* 13px */
+  --text-body-sm: calc(15px * var(--type-scale, 1));               /* UI text, 14 to 15 */
+  --text-body-lg: calc(var(--fq-text-body-l) * var(--type-scale, 1)); /* 19px */
+  --text-card-title: calc(var(--fq-text-h4) * var(--type-scale, 1));  /* 18px */
+
   /* ── The design layer: what rounded-*, shadow-*, font-* and the type steps mean ── */
   --design-font-body: var(--fq-font-sans);
   --design-font-display: var(--fq-font-display);

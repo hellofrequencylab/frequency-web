@@ -69,7 +69,7 @@
 [data-design="frequency"] [data-kit="site"] .jx-box .sub{margin:-10px 0 0;font-size:16px;line-height:1.5;color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="site"] .jx-seg{display:grid;grid-template-columns:1fr 1fr;position:relative;padding:4px;border-radius:16px;background:color-mix(in srgb,var(--fq-text-strong) 5%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fq-text-strong) 10%,transparent)}
 [data-design="frequency"] [data-kit="site"] .jx-seg button{position:relative;z-index:1;border:0;background:transparent;cursor:pointer;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:600 15px/1 var(--fq-font-sans);color:var(--fq-text-muted);transition:color var(--fq-dur-base)}
-[data-design="frequency"] [data-kit="site"] .jx-seg button small{font:500 11.5px/1 var(--fq-font-sans);opacity:.8}
+[data-design="frequency"] [data-kit="site"] .jx-seg button small{font:500 13px/1 var(--fq-font-sans);opacity:.8}
 [data-design="frequency"] [data-kit="site"] .jx-seg button[aria-pressed="true"]{color:var(--fq-surface-card)}
 [data-design="frequency"] [data-kit="site"] .jx-seg .thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:12px;background:var(--fq-side);box-shadow:0 0 24px -6px var(--fq-side);transition:transform var(--fq-dur-slow) var(--fq-ease-out),background var(--fq-dur-slow)}
 /* The thumb follows the segment's own state, not the root's side, so a shell side state around the
