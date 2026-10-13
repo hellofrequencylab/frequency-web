@@ -17,6 +17,8 @@ import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 // '/circles/*' scope, exactly like the Practices detail page.
 import { PageModules } from '@/components/widgets/page-modules'
 import { setCircleContext } from '@/lib/circles/active-circle'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqModules } from '@/components/frequency/members/modules'
 
 // ── THE FEED TAB (the default tab) ──────────────────────────────────────────────────────────────
 // A BODY, not a shell. The identity — cover, title, badges, facts, tabs — belongs to the
@@ -73,6 +75,16 @@ const FEED_TAB_MODULE_IDS = [
   'circle-members',
   'circle-events',
   'circle-practice',
+] as const
+
+/** The Frequency Posts pane's blocks, in order: the feed, then the Circle's shared work. */
+const FQ_FEED_MODULE_IDS = [
+  'circle-feed',
+  'circle-challenges',
+  'circle-practice',
+  'circle-meeting',
+  'circle-space-info',
+  'circle-health',
 ] as const
 
 export async function generateMetadata({
@@ -193,6 +205,18 @@ export default async function CircleHomePage({
     newThisWeek: health.newThisWeek,
     circlePractice,
   })
+
+  // THE FREQUENCY POSTS PANE (templates/members/Circle.html). About lives in the shell's side panel
+  // and the roster and calendar are their own tabs, so the pane is the conversation first (composer
+  // and stream, the same `circle-feed` module), then the blocks that carry the Circle's shared work.
+  // `#circle-post` stays the Create menu's New post target.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <div id="circle-post" className="stack">
+        <FqModules ids={FQ_FEED_MODULE_IDS} />
+      </div>
+    )
+  }
 
   return (
     <>

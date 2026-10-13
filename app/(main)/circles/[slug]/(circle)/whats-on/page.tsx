@@ -21,6 +21,8 @@ import {
 } from '../tab-facts'
 import { spaceCircleEventScope } from '@/lib/events/circle-upcoming'
 import { CircleTasksSection } from '@/app/(main)/crew/circle-tasks-section'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqWhatsOnPane } from '@/components/frequency/members/circle/whats-on-pane'
 
 // ── THE PROGRAM TAB ─────────────────────────────────────────────────────────────────────────────
 //
@@ -97,6 +99,60 @@ export default async function CircleWhatsOnPage({
         <CircleTasksSection circleId={circle.id} circleName={circle.name} viewerProfileId={myProfileId} />
       </Suspense>
     ) : null
+
+  // THE FREQUENCY PANE (templates/members/Circle.html, Events tab). Same reads, same gates, same
+  // Log practice / Journey / task actions; the kit's list and panels around them.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <FqWhatsOnPane
+        empty={
+          !practice && !hasEvents && !run ? (
+            <div className="empty stack">
+              <span className="h3">Nothing scheduled yet</span>
+              <span className="t2">
+                {canManage
+                  ? 'Set a practice, book an event, or start a journey from the circle tools. Whatever this circle has going shows up here.'
+                  : 'The host has not set a practice, booked an event, or started a journey yet. All three show up here when they do.'}
+              </span>
+              {canManage && (
+                <Link href={`/events/new?circle=${circle.id}`} className="btn sm pa">
+                  Create an event
+                </Link>
+              )}
+            </div>
+          ) : null
+        }
+        practice={
+          practice
+            ? {
+                title: practice.title,
+                description: practice.description ?? null,
+                log: isMember ? <LogPracticeButton practiceId={practice.id} circleId={circle.id} /> : null,
+              }
+            : null
+        }
+        events={events.events}
+        hasMore={events.hasMore}
+        journey={
+          run ? (
+            <div className="stack">
+              <div className="sec-h">
+                <span className="h2">{run.plan.emoji ? `${run.plan.emoji} ${run.plan.title}` : run.plan.title}</span>
+                <Link href={`/journeys/${run.plan.slug}`} className="btn sm">
+                  Open the journey
+                </Link>
+              </div>
+              {run.plan.summary && <p className="body">{run.plan.summary}</p>}
+              <Suspense fallback={<Skeleton className="h-28 w-full rounded-card" />}>
+                <RunProgress runId={run.id} planId={run.plan.id} circleName={circle.name} />
+              </Suspense>
+            </div>
+          ) : null
+        }
+        tasks={tasks}
+      />
+    )
+  }
 
   if (!practice && !hasEvents && !run) {
     return (

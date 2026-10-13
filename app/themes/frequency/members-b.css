@@ -1,0 +1,70 @@
+/* MEMBER SITE, LANE B: the page BODIES for Events, Event, Circles, Circle and Marketplace under the
+   Frequency design (ADR-1740). The kit (kit-members.css) carries every component class; this sheet
+   only lifts the reference templates' inline layout values (templates/members/{Events,Event,Circles,
+   Circle,Marketplace}.html) into named classes, so the TSX carries no raw values. Scoped exactly like
+   the kit and written in --fq- tokens only. DAWN never matches these selectors. */
+@layer components {
+/* Shared: the photo tile beside a list row, a title row with its live dot, a muted line in body ink. */
+[data-design="frequency"] [data-kit="members"] .fqm-thumb{width:88px;height:88px;border-radius:18px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-t1-row{display:flex;align-items:center;gap:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-row-stack{gap:6px}
+[data-design="frequency"] [data-kit="members"] .fqm-body-ink{color:var(--fq-text-body)}
+[data-design="frequency"] [data-kit="members"] .fqm-tabs{margin-bottom:28px}
+[data-design="frequency"] [data-kit="members"] .fqm-chips{margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-chips.lg{margin-bottom:28px}
+[data-design="frequency"] [data-kit="members"] .fqm-back{display:inline-block}
+[data-design="frequency"] [data-kit="members"] .fqm-notices{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-notices:empty{display:none}
+
+/* Events: a day's list, the "Your week" day column. */
+[data-design="frequency"] [data-kit="members"] .fqm-day{margin:8px 0 36px}
+[data-design="frequency"] [data-kit="members"] .fqm-day.last{margin-bottom:0}
+[data-design="frequency"] [data-kit="members"] .fqm-wk{width:40px;flex:none}
+
+/* Circles: the photo card. */
+[data-design="frequency"] [data-kit="members"] .fqm-card{display:flex;flex-direction:column}
+[data-design="frequency"] [data-kit="members"] .fqm-card>.ph{height:170px;position:relative}
+[data-design="frequency"] [data-kit="members"] .fqm-card-b{display:flex;flex-direction:column;gap:6px;padding:18px 20px 20px}
+[data-design="frequency"] [data-kit="members"] .fqm-corner{position:absolute;top:14px;left:14px}
+
+/* Event: the split hero card, the section stack, the time column, the venue photo. */
+[data-design="frequency"] [data-kit="members"] .fqm-ev{margin-top:20px;display:flex;flex-wrap:wrap;border-radius:28px}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-ph{flex:1 1 420px;min-height:380px;position:relative}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-ph>.tag{position:absolute;top:18px;left:18px}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-in{flex:1 1 360px;padding:32px;display:flex;flex-direction:column;gap:16px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-in>.h1{font-size:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-act{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-tag-start{align-self:flex-start}
+[data-design="frequency"] [data-kit="members"] .fqm-secs{gap:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-time{width:72px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-where{height:240px;border-radius:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-gap-sm{gap:8px}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .fqm-ev-in{padding:22px}
+[data-design="frequency"] [data-kit="members"] .fqm-ev-ph{min-height:240px}}
+
+/* Circle: the cover with its ink scrim, the on-photo type and the frosted Invite button. */
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero{position:relative;margin-top:20px;border-radius:28px;overflow:hidden;min-height:340px;display:flex;align-items:flex-end}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,color-mix(in oklab,var(--fq-ink) 65%,transparent))}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-in{position:relative;padding:32px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;width:100%}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-in .h1{color:var(--fq-text-on-accent)}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-sub{font:400 15px/1.4 var(--fq-font-sans);color:color-mix(in oklab,var(--fq-text-on-accent) 85%,transparent)}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-in .btn.fqm-frost{background:color-mix(in oklab,var(--fq-text-on-accent) 85%,transparent);box-shadow:none}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-in .stack{gap:10px}
+[data-design="frequency"] [data-kit="members"] .fqm-meet{gap:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-meet>.ph{width:88px;height:88px;border-radius:20px;flex:none}
+[data-design="frequency"] [data-kit="members"] .fqm-cl-tabs{margin-top:40px}
+[data-design="frequency"] [data-kit="members"] .fqm-pane{margin-top:8px}
+[data-design="frequency"] [data-kit="members"] .fqm-pane.g4{margin-top:24px}
+[data-design="frequency"] [data-kit="members"] .fqm-person{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+[data-design="frequency"] [data-kit="members"] .fqm-about{font-size:15px}
+[data-design="frequency"] [data-kit="members"] .fqm-stats{gap:12px}
+[data-design="frequency"] [data-kit="members"] .fqm-stats .num{font-size:28px}
+[data-design="frequency"] [data-kit="members"] .fqm-tabrow{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-bottom:1px solid var(--fq-border-hair)}
+[data-design="frequency"] [data-kit="members"] .fqm-tabrow>.tabs{border-bottom:none}
+[data-design="frequency"] [data-kit="members"] .fqm-tabrow>.row{padding-bottom:6px}
+
+/* Marketplace: the portrait photo and the card stack. */
+[data-design="frequency"] [data-kit="members"] .fqm-item{gap:10px}
+[data-design="frequency"] [data-kit="members"] .fqm-item>.ph{aspect-ratio:4/5;border-radius:20px}
+[data-design="frequency"] [data-kit="members"] .fqm-item>.btn{align-self:flex-start}
+}

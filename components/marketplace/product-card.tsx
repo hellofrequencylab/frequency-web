@@ -12,7 +12,7 @@ function usd(cents: number, currency = 'usd') {
 /** The card's price label. A service honors its priceModel (From / Free / Enquire); a projected
  *  ticketed event shows a "from" floor across its tiers (or Free); a product shows its flat price. A
  *  null price (a free projection) reads as "Free", never a raw '$0' (ADR-596). */
-function priceLabel(product: MarketItem): string {
+export function priceLabel(product: MarketItem): string {
   const svc = (product.metadata as Record<string, unknown>)?.service as { priceModel?: string } | undefined
   if (product.productKind === 'service' && svc?.priceModel) {
     if (svc.priceModel === 'free') return 'Free'
