@@ -107,5 +107,4 @@ app/join/(induction)/preview/page.tsx
 app/page.tsx
 app/sign-in/page.tsx
 app/spaces/[slug]/spotlight/page.tsx
-app/spaces/claim/[token]/page.tsx
 app/spotlight/[handle]/page.tsx
