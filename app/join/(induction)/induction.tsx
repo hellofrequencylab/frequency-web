@@ -734,7 +734,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
       {/* Stage: one centered column — logo, content, progress — with tight, consistent gaps. */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
         <div className="flex shrink-0 flex-col items-center">
-          <span className="animate-wiggle inline-block rounded-pill bg-primary px-3 py-1 text-meta font-bold uppercase tracking-[0.35em] text-on-primary shadow-sm shadow-primary/25">
+          <span className="animate-wiggle inline-block rounded-pill bg-primary px-3 py-1 text-meta font-bold uppercase tracking-[0.35em] text-on-primary shadow-glow-primary-sm">
             Welcome
           </span>
           <span className="brandmark-link mt-5 block">

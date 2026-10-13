@@ -1,0 +1,23 @@
+/* ══ FREQUENCY — the platform design system beside DAWN (ADR-1737) ══════════════════════════════
+   Applies when <html data-design="frequency">: NEXT_PUBLIC_SITE_DESIGN=frequency at build, or the
+   `?design=frequency` local preview (lib/theme/design.ts).
+
+   THE CONTRACT. DAWN is the unscoped `:root` / `.dark` blocks and the design layer
+   (`--design-*`) in app/globals.css. This file redefines those SAME names under the scopes below,
+   and nothing else: lib/theme/design.test.ts fails on a name DAWN does not define, so a typo can
+   never ship a token nobody reads. A name left out here keeps DAWN's value.
+
+   `:root[data-design="frequency"]` outranks `:root`, and `.dark[data-design="frequency"]` outranks
+   `.dark`, so no !important is needed. Under Frequency the skin, generation, occasion, Space font set
+   and Theme Studio layers are not stamped at all (LEGACY_THEME_AXES), so nothing below the shell
+   re-points these values.
+
+   Raw values live ONLY here and in app/globals.css (check:tokens holds TS and TSX to tokens).
+
+   STATUS: scaffold. The values arrive with the Frequency design system export. */
+
+:root[data-design="frequency"] {
+}
+
+.dark[data-design="frequency"] {
+}

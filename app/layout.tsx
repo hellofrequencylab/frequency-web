@@ -17,8 +17,12 @@ import {
   IBM_Plex_Mono,
 } from "next/font/google";
 import "./globals.css";
+// The design systems beside DAWN (ADR-1737). Each is scoped to <html data-design="<id>">, so it costs
+// nothing until the attribute names it; lib/theme/design.ts is the switch.
+import "./themes/frequency.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
 import { THEME_BOOTSTRAP_SCRIPT, THEME_COLOR_LIGHT } from '@/lib/theme/mode'
+import { SITE_DESIGN } from '@/lib/theme/design'
 import { INSTALL_CAPTURE_SCRIPT } from '@/lib/pwa/install-capture'
 import { POPOVER_DISMISS_SCRIPT } from '@/lib/ui/popover-dismiss'
 import { ThemeModeSync } from '@/components/layout/theme-mode-sync'
@@ -189,6 +193,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-design={SITE_DESIGN}
+      // The pre-paint script may re-stamp data-design (the `?design=` preview) and .dark before React
+      // hydrates; both are deliberate, so the root element alone is exempt from the attribute diff.
+      suppressHydrationWarning
       className={`${nunito.variable} ${geistMono.variable} ${anton.variable} ${playfair.variable} ${caveat.variable} ${spaceGrotesk.variable} ${fraunces.variable} ${ptSerif.variable} ${fredoka.variable} ${lexend.variable} ${atkinson.variable} ${sofiaCondensed.variable} ${barlow.variable} ${plexMono.variable} h-full antialiased`}
     >
       <head>

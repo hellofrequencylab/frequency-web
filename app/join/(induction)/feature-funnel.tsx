@@ -301,7 +301,7 @@ function DemoStep({
 
   const coaching = (
     <div className="text-center md:text-left">
-      <span className="mb-3 inline-block animate-wiggle rounded-pill bg-primary px-3 py-1 text-2xs font-bold uppercase tracking-[0.3em] text-on-primary shadow-sm shadow-primary/25">
+      <span className="mb-3 inline-block animate-wiggle rounded-pill bg-primary px-3 py-1 text-2xs font-bold uppercase tracking-[0.3em] text-on-primary shadow-glow-primary-sm">
         Beta Launch
       </span>
       <p className="mb-2 text-meta font-bold uppercase tracking-[0.3em] text-primary">Free breathwork timer</p>

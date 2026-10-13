@@ -1260,7 +1260,7 @@
    Every font set names its own reading face here (Frequency reads in Space Grotesk). Fonts, weight, case, tracking and leading still differ per theme:
    the TYPE TREATMENT rules further down are untouched, and they are what makes the themes distinct. */
 [data-space-theme] {
-  font-family: var(--font-body, var(--font-nunito)), system-ui, sans-serif;
+  font-family: var(--font-body, var(--design-font-body)), system-ui, sans-serif;
   --radius-card: 24px;
   --radius-control: 14px;
   --radius-cover: 24px;
@@ -1341,7 +1341,7 @@
    the body stack these headings already inherit — a computed no-op outside the five
    styled themes. */
 .font-section {
-  font-family: var(--font-heading, var(--font-body, var(--font-nunito))), system-ui, sans-serif;
+  font-family: var(--font-heading, var(--font-body, var(--design-font-body))), system-ui, sans-serif;
 }
 
 /* frequency — Playfair at medium weight in sentence case, the house website's headline voice. */
@@ -1563,28 +1563,28 @@
   --color-rank-rose-bright:   var(--rank-rose-bright);
 
   /* Fonts wired the same way they were. */
-  --font-sans: var(--font-nunito);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--design-font-body);
+  --font-mono: var(--design-font-mono);
 
   /* Soft, warm-tinted elevation. Overrides Tailwind's hard pure-black defaults so
      every shadow-sm/md/lg reads as gentle, diffused depth instead of a crisp
      template-y box edge. Warm shadow color (near-espresso), low alpha, wide blur.
      See docs/DESIGN.md (warm-editorial direction). */
-  --shadow-2xs: 0 1px 2px rgb(40 30 16 / 0.04);
-  --shadow-xs:  0 1px 3px rgb(40 30 16 / 0.05);
-  --shadow-sm:  0 1px 2px rgb(40 30 16 / 0.04), 0 2px 6px -1px rgb(40 30 16 / 0.06);
-  --shadow-md:  0 2px 4px rgb(40 30 16 / 0.05), 0 6px 16px -4px rgb(40 30 16 / 0.08);
-  --shadow-lg:  0 4px 8px rgb(40 30 16 / 0.06), 0 12px 28px -6px rgb(40 30 16 / 0.10);
-  --shadow-xl:  0 8px 16px rgb(40 30 16 / 0.08), 0 24px 48px -12px rgb(40 30 16 / 0.12);
+  --shadow-2xs: var(--design-shadow-2xs);
+  --shadow-xs:  var(--design-shadow-xs);
+  --shadow-sm:  var(--design-shadow-sm);
+  --shadow-md:  var(--design-shadow-md);
+  --shadow-lg:  var(--design-shadow-lg);
+  --shadow-xl:  var(--design-shadow-xl);
 
   /* Marketing "pop" elevation — a deliberate step stronger than the soft in-app
      scale above, for the splash hero card, pricing tiers, and the demo device
      frame. Use `shadow-pop` / `shadow-pop-lg`. The in-app UI keeps the soft set. */
-  --shadow-pop:    0 4px 12px -2px rgb(20 16 10 / 0.16), 0 16px 40px -10px rgb(20 16 10 / 0.22);
-  --shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
+  --shadow-pop:    var(--design-shadow-pop);
+  --shadow-pop-lg: var(--design-shadow-pop-lg);
   /* Mega-menu panel — downward-only depth (no upward bleed), so the panel reads as sliding
      out from UNDER the opaque bar above it instead of floating on top of the header. */
-  --shadow-menu:   0 14px 24px -10px rgb(20 16 10 / 0.18), 0 28px 50px -20px rgb(20 16 10 / 0.20);
+  --shadow-menu:   var(--design-shadow-menu);
 
   /* Feel axis → utilities. Tailwind v4 generates `rounded-control`, `rounded-card`,
      and `rounded-pill` from these --radius-* keys; because they reference the :root
@@ -1609,14 +1609,15 @@
      encoded is the wrong one.
 
      The three ROLE tokens above stay the contract a skin retunes. These steps are
-     deliberately FIXED rather than skin-bridged: a skin should change corners by
-     moving the roles, not by redefining what `rounded-lg` means, or two skins stop
-     being able to share a component. */
-  --radius-sm:   6px;
-  --radius-md:   10px;
-  --radius-lg:   14px;
-  --radius-xl:   16px;
-  --radius-2xl:  24px;
+     deliberately NOT skin-bridged: a skin should change corners by moving the roles,
+     not by redefining what `rounded-lg` means, or two skins stop being able to share a
+     component. A DESIGN SYSTEM may redefine them (ADR-1737): the values live in the
+     design layer (`--design-radius-*`, "THE DESIGN LAYER" below), DAWN's unchanged. */
+  --radius-sm:   var(--design-radius-sm);
+  --radius-md:   var(--design-radius-md);
+  --radius-lg:   var(--design-radius-lg);
+  --radius-xl:   var(--design-radius-xl);
+  --radius-2xl:  var(--design-radius-2xl);
   --radius-full: 9999px;
 
   /* Named size for the profile hero-stat skeleton tile. A `--spacing-*` key, so
@@ -2072,9 +2073,51 @@
   --spacing-hero-stat: 58px;
 }
 
+/* ── THE DESIGN LAYER (ADR-1737) ───────────────────────────────────────────
+   The values `@theme inline` used to hold as literals, lifted to variables so a design system can
+   replace them. `@theme inline` compiles its value INTO each utility, so a literal there (a shadow, a
+   radius step, a font) could never change per design; `var(--design-*)` can. These are DAWN's values,
+   byte for byte; app/themes/<design>.css overrides them under `:root[data-design="<id>"]`
+   (lib/theme/design.ts). Skins still retune the ROLE tokens (--radius-card, --radius-control); a
+   design is the only thing that redefines what `rounded-lg` or `shadow-md` means. */
+:root {
+  --design-font-body:    var(--font-nunito);
+  --design-font-display: var(--font-anton);
+  --design-font-mono:    var(--font-geist-mono);
+
+  --design-radius-sm:  6px;
+  --design-radius-md:  10px;
+  --design-radius-lg:  14px;
+  --design-radius-xl:  16px;
+  --design-radius-2xl: 24px;
+
+  --design-shadow-2xs: 0 1px 2px rgb(40 30 16 / 0.04);
+  --design-shadow-xs: 0 1px 3px rgb(40 30 16 / 0.05);
+  --design-shadow-sm: 0 1px 2px rgb(40 30 16 / 0.04), 0 2px 6px -1px rgb(40 30 16 / 0.06);
+  --design-shadow-md: 0 2px 4px rgb(40 30 16 / 0.05), 0 6px 16px -4px rgb(40 30 16 / 0.08);
+  --design-shadow-lg: 0 4px 8px rgb(40 30 16 / 0.06), 0 12px 28px -6px rgb(40 30 16 / 0.10);
+  --design-shadow-xl: 0 8px 16px rgb(40 30 16 / 0.08), 0 24px 48px -12px rgb(40 30 16 / 0.12);
+  --design-shadow-pop: 0 4px 12px -2px rgb(20 16 10 / 0.16), 0 16px 40px -10px rgb(20 16 10 / 0.22);
+  --design-shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
+  --design-shadow-menu: 0 14px 24px -10px rgb(20 16 10 / 0.18), 0 28px 50px -20px rgb(20 16 10 / 0.20);
+}
+
+/* Primary-tinted elevation. Tailwind recolours a shadow (`shadow-primary/25`) by rewriting the colour
+   stops of a LITERAL theme shadow; the design layer turned those into `var(--design-shadow-*)`, which it
+   cannot rewrite, so the four tinted CTAs name their glow here instead (ADR-1737). Same geometry as
+   shadow-sm / shadow-lg, the stops in the primary at the alpha the call sites used. */
+@utility shadow-glow-primary-sm {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-primary) 25%, transparent),
+    0 2px 6px -1px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+@utility shadow-glow-primary-lg {
+  box-shadow: 0 4px 8px color-mix(in srgb, var(--color-primary) 20%, transparent),
+    0 12px 28px -6px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
 /* ── Base ────────────────────────────────────────────────────────────────── */
 html {
-  font-family: var(--font-nunito, 'Nunito', sans-serif);
+  font-family: var(--design-font-body, 'Nunito', sans-serif);
   /* SCROLLBAR GUTTER: RESERVED (LIVE-479, shipped 2026-09-28; held back by LIVE-477 on 2026-09-23).
      The DOCUMENT is what scrolls in the member shell (components/layout/app-shell.tsx), and the
      sticky header and the rail track are laid out against its width. Six overlays take a body
@@ -2106,7 +2149,7 @@ html {
 body {
   background: var(--color-canvas);
   color: var(--color-text);
-  font-family: var(--font-nunito, 'Nunito', sans-serif);
+  font-family: var(--design-font-body, 'Nunito', sans-serif);
   line-height: 1.65;
 }
 
@@ -2756,7 +2799,7 @@ h1, h2, h3, h4, h5, h6 {
 .font-display {
   /* `--font-display` lets a scope (a Space page theme, ADR-578) re-point the display face; unset
      everywhere else, it falls back to Anton, so marketing + member headings are unchanged. */
-  font-family: var(--font-display, var(--font-anton)), 'Arial Narrow', system-ui, sans-serif;
+  font-family: var(--font-display, var(--design-font-display)), 'Arial Narrow', system-ui, sans-serif;
   font-weight: 400;
   letter-spacing: 0.012em;
   line-height: 1.0;
