@@ -50,6 +50,9 @@ export type EventRow = SeriesFields & {
   location: string | null
   is_cancelled: boolean
   is_demo: boolean
+  /** The cover in the public event-media bucket, for a result's photo tile. */
+  cover_image_path?: string | null
+  ends_at?: string | null
   host: { display_name: string; handle: string } | null
 }
 
@@ -119,7 +122,7 @@ export async function searchEvents(safe: string, limit = EVENT_RESULTS): Promise
     admin
       .from('events')
       .select(
-        `id, title, slug, starts_at, location, is_cancelled, is_demo, ${SERIES_COLUMNS},
+        `id, title, slug, starts_at, ends_at, location, is_cancelled, is_demo, cover_image_path, ${SERIES_COLUMNS},
          host:profiles!host_id ( display_name, handle )`,
       )
       .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
