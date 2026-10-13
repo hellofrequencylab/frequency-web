@@ -37,14 +37,26 @@ const APEX_RELATIVE_RECORDS = [
 ]
 const providerRecords = () => state.records ?? RECORDS
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: (name: string) => {
-  const filter: Record<string, unknown> = {}; let insert: Record<string, unknown> | null = null; let upsert: Record<string, unknown> | null = null
+  const filter: Record<string, unknown> = {}; let insert: Record<string, unknown> | null = null; let upsert: Record<string, unknown> | null = null; let update: Record<string, unknown> | null = null
   const q = {
     select: () => q, eq: (k: string, v: unknown) => { filter[k] = v; return q }, ilike: (k: string, v: string) => { filter[k] = v; return q }, limit: (n: number) => { state.listCalls.push({ limit: n }); return q },
     or: (f: string) => { state.listCalls.push({ or: f }); return q }, order: (k: string, o: Record<string, unknown>) => { state.listCalls.push({ order: `${k} ${JSON.stringify(o)}` }); return q },
     then: (resolve: (v: { data: unknown; error: unknown }) => unknown) => Promise.resolve(resolve(state.listFails ? { data: null, error: { message: 'list down' } } : { data: state.listRows, error: null })),
-    insert: (v: Record<string, unknown>) => { insert = v; return q }, update: () => q, upsert: (v: Record<string, unknown>) => { upsert = v; return q },
+    insert: (v: Record<string, unknown>) => { insert = v; return q }, update: (v: Record<string, unknown>) => { update = v; return q }, upsert: (v: Record<string, unknown>) => { upsert = v; return q },
     single: async () => {
-      if (name === 'space_inbox_addresses') { if (state.upsertFails) return { data: null, error: { code: 'XX000' } }; state.row = { id: 'row1', local_part: 'hello', verified_at: null, dns_records: [], ...state.row, ...upsert }; return { data: state.row, error: null } }
+      if (name === 'space_inbox_addresses') {
+        if (state.upsertFails) return { data: null, error: { code: 'XX000' } }
+        // Postgres: an upsert is an INSERT first, so a proposed row without `domain` (NOT NULL, no default)
+        // is refused before the conflict branch (the 2026-10-13 02:00 cron run).
+        if (upsert && !('domain' in upsert)) return { data: null, error: { code: '23502', message: 'null value in column "domain" of relation "space_inbox_addresses" violates not-null constraint' } }
+        if (update && !upsert) {
+          if (!state.row || state.row.space_id !== filter.space_id) return { data: null, error: { code: 'PGRST116', message: 'no row' } }
+          state.row = { ...state.row, ...update }
+          return { data: state.row, error: null }
+        }
+        state.row = { id: 'row1', local_part: 'hello', verified_at: null, dns_records: [], ...state.row, ...upsert }
+        return { data: state.row, error: null }
+      }
       if (name === 'contacts' && insert) { const c = { id: `c${state.contacts.length + 1}`, profile_id: null, ...insert }; state.contacts.push(c); return { data: c, error: null } }
       if (name === 'notifications' && insert) { state.notifications.push(insert); return { data: { id: 'n1' }, error: null } }
       return { data: null, error: null }
@@ -171,6 +183,16 @@ describe('provisionSpaceInboxAddress', () => {
     state.providerStatus = 'verified'
     await checkSpaceInboxAddress('s1')
     expect(state.row).toMatchObject({ state: 'verified', dns_written_at: written })
+  })
+  it('patches an existing row with an update, never an upsert of a partial row (the 2026-10-13 02:00 cron run)', async () => {
+    // The mock refuses a partial upsert the way Postgres does (domain is NOT NULL with no default), so
+    // the dns_written_at stamp and the state flip only land when they are updates.
+    state.providerStatus = 'pending'
+    await provisionSpaceInboxAddress('s1')
+    expect(state.row?.dns_written_at).toBeTruthy()
+    state.providerStatus = 'verified'
+    expect(await checkSpaceInboxAddress('s1')).toMatchObject({ ok: true, state: 'verified' })
+    expect(state.row).toMatchObject({ state: 'verified', domain: 'labs.frequencylocal.com' })
   })
   it('leaves a paused address alone', async () => {
     state.row = { space_id: 's1', domain: 'labs.frequencylocal.com', local_part: 'hello', provider_domain_id: 'prov1', state: 'paused', dns_records: [] }
