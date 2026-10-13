@@ -1,6 +1,11 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the members kit's `.sw` (46x28, the knob is its ::after, `.on` the iridescent
+// fill). Pending dims through `mu-pending`. Inlined at build; DAWN's markup is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // A small accessible toggle switch (role="switch"). A native <button> gives keyboard operation (Space /
 // Enter toggle) and focus for free; `aria-checked` reports the state to assistive tech. Controlled: the
@@ -28,6 +33,22 @@ export function Switch({
 }) {
   // Both stop the click; only `disabled` means "you cannot have this".
   const inert = disabled || pending
+  if (FREQUENCY) {
+    return (
+      <button
+        type="button"
+        role="switch"
+        id={id}
+        aria-checked={checked}
+        aria-busy={pending || undefined}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        disabled={inert}
+        onClick={() => onCheckedChange(!checked)}
+        className={cn('sw', checked && 'on', pending && 'mu-pending')}
+      />
+    )
+  }
   return (
     <button
       type="button"

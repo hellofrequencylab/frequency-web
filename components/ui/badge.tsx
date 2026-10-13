@@ -1,6 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { capsLabel } from './caps-label'
+import { SITE_DESIGN } from '@/lib/theme/design'
 
 // Shared badge primitive (DAWN core/Badge). The audit found five hand-rolled status pills —
 // Demo, Featured, Starter, Unclaimed, Supporter — each re-deriving its own padding, radius,
@@ -59,6 +60,12 @@ const SIZE: Record<BadgeSize, string> = {
 // DAWN: pills take the ROLE radius (skinnable), never a literal step (dawn/tokens/spacing.css).
 const BASE = 'inline-flex shrink-0 items-center rounded-pill border font-semibold'
 
+// FREQUENCY (ADR-1737): the members kit's `.tag` (a 24px glass pill), toned by meaning in
+// app/themes/frequency/members-ui.css (`mu-primary` violet act, `mu-broadcast` magenta live,
+// `mu-signal` aqua presence, the three states), `mu-solid` the louder fill, `mu-sm` the card marker.
+// Inlined at build, so DAWN's strings are untouched.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+
 /** The exact badge token string for a tone × size — so a surface that cannot render a `<Badge>`
  *  (a `<Link>` pill, a slot that wants the classes only) shares the SAME tokens without a
  *  hand-rolled `bg-*-bg…` class string. */
@@ -68,6 +75,7 @@ export function badgeClasses(
   options: { solid?: boolean; className?: string } = {},
 ): string {
   const { solid = false, className } = options
+  if (FREQUENCY) return cn('tag', tone !== 'neutral' && `mu-${tone}`, solid && 'mu-solid', size === 'sm' && 'mu-sm', className)
   return cn(BASE, SIZE[size], solid ? TONE_SOLID[tone] : TONE[tone], className)
 }
 

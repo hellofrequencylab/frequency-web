@@ -21,6 +21,9 @@ import "./globals.css";
 // nothing until the attribute names it; lib/theme/design.ts is the switch.
 import "./themes/frequency/core.css";
 import "./themes/frequency.css";
+// The shared primitives' Frequency classes (templates, ui, cards), plus their fallback for a Frequency
+// page inside no product kit (sign-in, onboarding). Scoped to [data-design="frequency"].
+import "./themes/frequency/members-ui.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
 import { THEME_BOOTSTRAP_SCRIPT, THEME_COLOR_LIGHT } from '@/lib/theme/mode'
 import { SITE_DESIGN } from '@/lib/theme/design'

@@ -16,6 +16,26 @@
 //   <ProgressTrack value={9} max={30} label="9 of 30 practice days logged" size="lg" animate />
 //   <ProgressTrack indeterminate label="Importing contacts" />
 
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the members kit's `.meter` (the track, `<i>` the iridescent fill). Heights step
+// with `mu-h*`, tones by meaning with `mu-<tone>` (app/themes/frequency/members-ui.css); the track
+// variants collapse to the kit's one track. Inlined at build; DAWN's markup below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
+const FQ_HEIGHT = { sm: '', md: ' mu-h6', lg: ' mu-h8', xl: ' mu-h10', '2xl': ' mu-h12' } as const
+const FQ_TONE = {
+  primary: '',
+  'primary-strong': '',
+  success: ' mu-success',
+  move: ' mu-move',
+  warning: ' mu-warning',
+  danger: ' mu-danger',
+  signal: ' mu-signal',
+  broadcast: ' mu-broadcast',
+  current: ' mu-current',
+  neutral: ' mu-neutral',
+} as const
+
 const TONE = {
   primary: 'bg-primary',
   'primary-strong': 'bg-primary-strong',
@@ -86,6 +106,25 @@ export function ProgressTrack({
   const raw = (Math.min(Math.max(value, 0), span) / span) * 100
   const pct = raw > 0 ? Math.max(raw, minVisible) : raw
   const now = Math.round((pct / 100) * span)
+
+  if (FREQUENCY) {
+    return (
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={indeterminate ? undefined : span}
+        aria-valuenow={indeterminate ? undefined : now}
+        aria-label={label}
+        className={`meter${FQ_HEIGHT[size]}${FQ_TONE[tone]}${animate ? ' mu-ease' : ''} ${className}`.trimEnd()}
+      >
+        {indeterminate ? (
+          <i className="w-full opacity-60 motion-safe:animate-pulse" />
+        ) : (
+          <i style={{ width: `${pct}%` }} />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div

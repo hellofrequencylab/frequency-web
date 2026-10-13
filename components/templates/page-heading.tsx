@@ -8,6 +8,14 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): under SITE_DESIGN === 'frequency' the heading is the members kit's `.head`
+// (design_handoff/frequency/templates/members/*.html open every page with it): the `.k` eyebrow, the
+// Unbounded `.h1`, the `.meta` line, the actions bottom-aligned on the right and wrapping under on a
+// phone. The design draws no rule under a head, so `divider` is DAWN's alone; the operator Settings
+// control still renders, on its own line. Inlined at build; DAWN's markup below is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 export function PageHeading({
   eyebrow,
@@ -66,6 +74,27 @@ export function PageHeading({
    */
   visualMask?: string
 }) {
+  if (FREQUENCY) {
+    return (
+      <>
+        <div className="head" data-visual-mask={visualMask}>
+          <div className="min-w-0">
+            {back && (
+              <Link href={back.href} className="mu-back">
+                <ChevronLeft aria-hidden />
+                {back.label}
+              </Link>
+            )}
+            {eyebrow && <p className="k">{eyebrow}</p>}
+            <h1 className="h1">{title}</h1>
+            {description && <p className="meta">{description}</p>}
+          </div>
+          {actions && <div className="mu-actions">{actions}</div>}
+        </div>
+        {adminBar ? <PageAdminBar asDivider lead={headingLead} /> : null}
+      </>
+    )
+  }
   return (
     <>
     {/* The header-to-body gap reads the STRUCTURE axis token (--structure-rhythm, set per

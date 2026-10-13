@@ -1,4 +1,11 @@
 import Link from 'next/link'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the members kit's `.card` (templates/members/Circles.html): the cover is a `.ph`
+// that eases larger on hover, the title the Unbounded `.h3`, context and meta the `.t2` voice, and the
+// card lifts with the kit's violet halo (`mu-ecard`, app/themes/frequency/members-ui.css). Every slot
+// keeps its contract (the link never nests a control). Inlined at build; DAWN's markup is unchanged.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // The one browse-card shell — every entity grid (circles, channels, events,
 // partners, people, programs) renders through this so cards read identically
@@ -81,6 +88,41 @@ export function EntityCard({
   dimmed?: boolean
 }) {
   const coverAspectClass = coverAspect === 'short' ? 'aspect-[16/7]' : 'aspect-[16/9]'
+  if (FREQUENCY) {
+    return (
+      <div className={`card mu-ecard${dimmed ? ' mu-dim' : ''}`}>
+        <Link href={href}>
+          {cover && (
+            <div className={`ph block${coverAspect === 'short' ? ' mu-short' : ''}`}>
+              {cover}
+              {coverOverlay && <div className="pointer-events-none absolute inset-0">{coverOverlay}</div>}
+            </div>
+          )}
+          <div className="mu-ebody">
+            <div className="row" style={{ alignItems: 'flex-start' }}>
+              {anchor && <div className="shrink-0">{anchor}</div>}
+              <div className="grow" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="row" style={{ gap: 8 }}>
+                  <h3 className="h3 truncate">{title}</h3>
+                  {badge}
+                </div>
+                {context && <p className="t2 truncate">{context}</p>}
+              </div>
+            </div>
+            {description && <p className="t2 mu-clamp">{description}</p>}
+            {meta && <div className={`mu-emeta${metaNoWrap ? ' mu-nowrap' : ''}`}>{meta}</div>}
+          </div>
+        </Link>
+        {footer && <div className="mu-efoot">{footer}</div>}
+        {action && <div className="mu-eact">{action}</div>}
+        {cover && coverAction && (
+          <div className={`pointer-events-none absolute inset-x-0 top-0 ${coverAspectClass}`} aria-hidden={false}>
+            <div className="pointer-events-auto absolute bottom-3 right-3">{coverAction}</div>
+          </div>
+        )}
+      </div>
+    )
+  }
   return (
     <div
       // `ring-focus` replaced four `has-[:focus-visible]:ring-*` utilities that had never painted

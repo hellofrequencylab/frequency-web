@@ -2,6 +2,11 @@ import Image from 'next/image'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, readAvatarFocus } from '@/lib/images/avatar-focus'
 import { PresenceDot } from '@/components/presence/presence-dot'
+import { SITE_DESIGN } from '@/lib/theme/design'
+
+// FREQUENCY (ADR-1737): the members kit's `.av` (the hairline ring, the 6% ink well under a missing
+// photo, ink initials rather than DAWN's amber chip). Sizes stay this scale's. Inlined at build.
+const FREQUENCY = SITE_DESIGN === 'frequency'
 
 // Avatar — THE round member/entity image (DAWN core/Avatar): a photo when there is one,
 // a warm initials disc when there is not, and an optional "active now" dot.
@@ -89,11 +94,13 @@ export function Avatar({
       width={s.px}
       height={s.px}
       style={resolvedFocus ? { objectPosition: resolvedFocus } : undefined}
-      className={`${s.box} shrink-0 rounded-pill object-cover ${halo} ${dimmed ? 'dimmed' : ''} ${own}`}
+      className={`${FREQUENCY ? 'av ' : ''}${s.box} shrink-0 rounded-pill object-cover ${halo} ${dimmed ? 'dimmed' : ''} ${own}`}
     />
   ) : (
     <span
-      className={`${s.box} ${s.text} flex shrink-0 select-none items-center justify-center rounded-pill bg-primary-bg font-semibold text-primary-strong ${halo} ${own}`}
+      className={`${s.box} ${s.text} flex shrink-0 select-none items-center justify-center rounded-pill ${
+        FREQUENCY ? 'av font-semibold text-text' : 'bg-primary-bg font-semibold text-primary-strong'
+      } ${halo} ${own}`}
     >
       {initials ?? getInitials(name)}
     </span>
