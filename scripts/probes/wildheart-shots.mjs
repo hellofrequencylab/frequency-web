@@ -104,7 +104,8 @@ for (const width of widths) {
     // @babel/standalone@7.29.0) and the route serves those instead.
     const vendor = process.env.WILDHEART_VENDOR
     if (vendor) {
-      await page.route(/unpkg\.com/, (route) => {
+      // Match the host exactly, never a path or another host that merely contains the name.
+      await page.route((url) => url.hostname === 'unpkg.com', (route) => {
         const u = route.request().url()
         const f = /react-dom@/.test(u) ? 'react-dom.js' : /react@/.test(u) ? 'react.js' : /babel/.test(u) ? 'babel.js' : null
         if (f && existsSync(join(vendor, f))) route.fulfill({ status: 200, contentType: 'text/javascript', body: readFileSync(join(vendor, f)) })
