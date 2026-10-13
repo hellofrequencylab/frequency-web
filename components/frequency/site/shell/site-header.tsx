@@ -3,7 +3,7 @@
 // THE FREQUENCY PUBLIC HEADER (header v4): templates/website/web/megamenu.js, ported to React with the
 // kit's class names verbatim (app/themes/frequency/kit-site.css). Data: lib/frequency/site-nav.ts.
 //
-//   Left   logo (home), then For people · For spaces · Features (menus) and Pricing · Stories (links).
+//   Left   logo (home; a member's feed), Feed first when signed in, then For people · For spaces · Features (menus) and Pricing · Stories (links).
 //   Right  search, Log in and the page's primary action; signed in, search and "Your feed".
 //   Menus  open on hover (fine pointers, 180ms intent, 60ms when one is already open, 280ms forgiving
 //          close) or click; ArrowDown opens and focuses the first link; Escape closes and returns focus.
@@ -16,7 +16,7 @@
 // is sample data behind a localStorage switch. Here "signed in" is the real Supabase session, read
 // lazily after paint (no request read, so every page stays static), and it shows one door: Your feed.
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -31,11 +31,14 @@ import {
   WING_MENUS,
   featureHref,
   featuresWingHref,
+  memberFeedLink,
   searchSite,
+  siteLogoHref,
   type MegaCard,
   type SiteLink,
   type Wing,
 } from '@/lib/frequency/site-nav'
+import { hasAccountSignal } from '@/lib/theme/mode'
 
 type MenuKey = Wing | 'packages'
 
@@ -175,6 +178,13 @@ function wingOf(pathname: string): MenuKey | null {
   return null
 }
 
+// The proxy's presentational account marker (fq_acct, lib/theme/mode.ts): never authorization, only
+// which doors to draw. The server snapshot is false, so the static HTML and the hydration pass are the
+// signed-out header and a member's swaps in right after, with no mismatch.
+const noSubscribe = () => () => {}
+const readAccountMarker = () => hasAccountSignal(document.cookie)
+const signedOutOnServer = () => false
+
 // ── The header ─────────────────────────────────────────────────────────────────────────────────────
 
 export function SiteHeader() {
@@ -196,6 +206,8 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [viewer, setViewer] = useState<{ initial: string } | null>(null)
+  const member = useSyncExternalStore(noSubscribe, readAccountMarker, signedOutOnServer) || !!viewer
+  const feedLink = memberFeedLink(member)
 
   const open = menu.isOpen ? menuKey : null
   const showMenu = useCallback(
@@ -332,7 +344,7 @@ export function SiteHeader() {
     scrolled && 'is-scrolled',
     hidden && !menu.isOpen && 'is-hidden',
     menu.mounted && 'mm-open',
-    viewer && 'is-auth',
+    member && 'is-auth',
   ]
     .filter(Boolean)
     .join(' ')
@@ -347,12 +359,17 @@ export function SiteHeader() {
         onMouseEnter={() => clearTimeout(timer.current)}
         onFocus={() => setHidden(false)}
       >
-        <Link href={ROUTES.home} className="lg-fx" aria-label="Frequency home">
+        <Link href={siteLogoHref(member)} className="lg-fx" aria-label={member ? 'Your feed' : 'Frequency home'}>
           <Image className="logo" src={WORDMARK} alt="Frequency Community Collective" width={1920} height={389} priority />
           <span className="lg-sheen" aria-hidden="true" style={{ '--fq-lg': `url("${WORDMARK}")` } as React.CSSProperties} />
         </Link>
 
         <nav className="mm-bar" aria-label="Main">
+          {feedLink && (
+            <Link className="mm-trig" href={feedLink.href!} onMouseEnter={() => intent(hideMenu, 180)}>
+              {feedLink.label}
+            </Link>
+          )}
           {([...WING_MENUS.map((m) => [m.key, m.label] as const), ['packages', FEATURES_LABEL] as const]).map(([k, label]) => (
             <button
               key={k}
@@ -397,13 +414,13 @@ export function SiteHeader() {
         </nav>
 
         <div className="acct">
-          {viewer ? (
+          {member ? (
             <>
               <button type="button" className="acct-ic" aria-label="Search (press /)" onClick={openSearch}>
                 <FqIcon name="search" />
               </button>
               <Link className="acct-me" href={ROUTES.feed}>
-                <span className="acct-av">{viewer.initial}</span>
+                <span className="acct-av">{viewer?.initial}</span>
                 <span className="acct-nm">Your feed</span>
               </Link>
             </>
@@ -510,7 +527,7 @@ export function SiteHeader() {
               <span>Search features, pages, pricing…</span>
             </button>
             <div className="mm-shcta">
-              {viewer ? (
+              {member ? (
                 <Link className="btn fq-iri-btn" href={ROUTES.feed}>
                   Your feed
                 </Link>
@@ -525,6 +542,11 @@ export function SiteHeader() {
                 </>
               )}
             </div>
+            {feedLink && (
+              <Link className="mm-shlink" href={feedLink.href!}>
+                {feedLink.label}
+              </Link>
+            )}
             {WING_MENUS.map((m) => (
               <details key={m.key} open={here === m.key}>
                 <summary>{m.label}</summary>

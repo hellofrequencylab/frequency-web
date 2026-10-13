@@ -44,6 +44,16 @@ export const ROUTES = {
   feed: '/feed',
 } as const
 
+/** Where the logo goes: a signed-in member's home is their feed, everyone else's is the front door. */
+export function siteLogoHref(member: boolean): string {
+  return member ? ROUTES.feed : ROUTES.home
+}
+
+/** The nav's first item for a signed-in member (owner, 2026-10-13): back to the feed. Signed out: none. */
+export function memberFeedLink(member: boolean): SiteLink | null {
+  return member ? { href: ROUTES.feed, label: 'Feed' } : null
+}
+
 /** A link the shell draws. `href: null` means "no route yet": renderers drop it. */
 export interface SiteLink {
   href: string | null
