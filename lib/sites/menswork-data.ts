@@ -1,7 +1,9 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { listEventsForSpace } from '@/lib/events/store'
+import { listEventsForSpace, listSpaceSeriesRows } from '@/lib/events/store'
+import { expandSiteSeries, type SiteEventRow } from '@/lib/sites/site-events'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listPublicSpaceCircles } from '@/lib/circles/store'
 
@@ -17,6 +19,7 @@ export interface MwEvent {
   slug: string
   title: string
   description: string | null
+  /** The start as stored: the wall clock as UTC parts (lib/time/zone.ts). */
   startsAt: string
   endsAt: string | null
   location: string | null
@@ -60,29 +63,68 @@ const EVENTS_CAP = 80
 const CIRCLES_CAP = 24
 const JOURNEYS_CAP = 6
 
-export async function loadMensworkLive(spaceId: string, need: { events: boolean; circles: boolean; journeys: boolean }): Promise<MwLive> {
+interface MwLiveNeed {
+  events: boolean
+  circles: boolean
+  journeys: boolean
+  /** The clock, for the series expansion window and the upcoming floor (tests pass one). */
+  now?: Date
+}
+
+export async function loadMensworkLive(spaceId: string, need: MwLiveNeed): Promise<MwLive> {
   const [events, circles, journeys] = await Promise.all([
-    need.events ? readEvents(spaceId) : Promise.resolve([]),
+    need.events ? readEvents(spaceId, need) : Promise.resolve([]),
     need.circles ? readCircles(spaceId) : Promise.resolve([]),
     need.journeys ? readJourneys(spaceId) : Promise.resolve([]),
   ])
   return { events, circles, journeys }
 }
 
-async function readEvents(spaceId: string): Promise<MwEvent[]> {
+/** The site's upcoming rows plus its live series, every recurring anchor expanded through the end of next
+ *  year (every Circle Night on the wheel, LIVE-905), cancelled rows dropped, soonest first. */
+async function readEvents(spaceId: string, need: MwLiveNeed): Promise<MwEvent[]> {
   try {
-    const rows = await listEventsForSpace(spaceId, { limit: EVENTS_CAP, upcomingOnly: true })
-    return rows
-      .filter((e) => !e.is_cancelled)
-      .map((e) => ({
+    const now = need.now ?? new Date()
+    const [upcoming, series] = await Promise.all([listEventsForSpace(spaceId, { limit: EVENTS_CAP, upcomingOnly: true }), listSpaceSeriesRows(spaceId)])
+    const seen = new Set<string>()
+    const rows: SiteEventRow[] = []
+    for (const e of [...upcoming, ...series]) {
+      if (seen.has(e.id)) continue
+      seen.add(e.id)
+      rows.push({
         id: e.id,
         slug: e.slug,
         title: e.title,
-        description: e.description ?? null,
         startsAt: e.starts_at,
         endsAt: e.ends_at ?? null,
-        location: e.hide_address ? (e.city ?? null) : (e.location?.trim() || e.city || null),
-      }))
+        timeZone: e.time_zone ?? null,
+        recurrenceType: e.recurrence_type ?? null,
+        recurrenceRule: e.recurrence_rule ?? null,
+        recurrenceUntil: e.recurrence_until ?? null,
+        parentEventId: e.parent_event_id ?? null,
+        isCancelled: e.is_cancelled === true,
+      })
+    }
+    const by = new Map(upcoming.concat(series).map((e) => [e.id, e]))
+    // Wall clocks as UTC parts throughout (lib/time/zone.ts): the window's end and the floor are written
+    // the way the column is. The series read has no date floor, so the same floor the upcoming read used
+    // keeps the list to what is still to come.
+    const through = new Date(Date.UTC(now.getUTCFullYear() + 1, 11, 31, 23, 59, 59))
+    const floor = upcomingEventFloor(now)
+    return expandSiteSeries(rows, { through, from: new Date(floor) })
+      .filter((r) => r.startsAt >= floor)
+      .map((r) => {
+        const src = by.get(r.parentEventId ?? r.id) ?? by.get(r.id)
+        return {
+          id: r.id,
+          slug: r.slug ?? src?.slug ?? r.id,
+          title: r.title,
+          description: src?.description ?? null,
+          startsAt: r.startsAt,
+          endsAt: r.endsAt ?? null,
+          location: src ? (src.hide_address ? (src.city ?? null) : (src.location?.trim() || src.city || null)) : null,
+        }
+      })
   } catch {
     return []
   }

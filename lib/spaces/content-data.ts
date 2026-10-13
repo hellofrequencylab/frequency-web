@@ -26,7 +26,7 @@ import type { SectionPresence } from '@/lib/spaces/section-anchors'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 import type { LayoutPreset } from '@/lib/spaces/layout-presets'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
-import { listEventsForSpace, listCalendarEngagement } from '@/lib/events/store'
+import { listEventsForSpace, listCalendarEngagement, listSpaceSeriesRows, type SpaceEvent } from '@/lib/events/store'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { tierSummariesByEvent, priceLabelFromSummary } from '@/lib/events/tier-prices'
 import { eventPayoutReadyMap } from '@/lib/events/payout-readiness'
@@ -120,6 +120,12 @@ export type SpaceEventItem = {
    *  events before they reach a block, so a block that still sees one must paint it as cancelled
    *  (grey, struck through), never as live. */
   isCancelled?: boolean
+  /** The series columns (ADR-1299), so a block that draws a year can expand a recurring anchor across it
+   *  (the Wildheart wheel, LIVE-905, through lib/sites/site-events.ts). Absent on a one-time row. */
+  recurrenceType?: string | null
+  recurrenceRule?: string | null
+  recurrenceUntil?: string | null
+  parentEventId?: string | null
 }
 
 /** Whether the Space is currently taking bookings, for the SpaceBooking block. Honest: `enabled` is
@@ -246,6 +252,10 @@ export type SpaceContentData = {
   stats?: SpaceStat[]
   /** The Space's upcoming events the SpaceEvents block lists (soonest first). Empty when none. */
   events?: SpaceEventItem[]
+  /** The Space's live SERIES rows (every published recurring anchor whatever its date, and every cancelled
+   *  row), for a block that draws a whole year and expands the series itself (the Wildheart wheel,
+   *  LIVE-905). Read only when the page carries such a block; undefined otherwise. */
+  series?: SpaceEventItem[]
   /** Whether the Space is taking bookings + the booking tab href, for the SpaceBooking block. */
   booking?: SpaceBookingInfo
   /** The Space's live practices + journeys the SpacePractices block lists (both empty for a brand-new
@@ -657,8 +667,39 @@ export async function getSpaceUpcomingEvents(spaceId: string): Promise<SpaceEven
         ticketsOnSale,
         isDemo: e.is_demo === true,
         isCancelled: e.is_cancelled === true,
+        ...seriesFields(e),
       }
     })
+  } catch {
+    return []
+  }
+}
+
+/** The series columns a row carries, as the block reads them; nothing for a one-time row. */
+function seriesFields(e: SpaceEvent): Pick<SpaceEventItem, 'recurrenceType' | 'recurrenceRule' | 'recurrenceUntil' | 'parentEventId'> {
+  const type = e.recurrence_type ?? null
+  const parent = e.parent_event_id ?? null
+  if ((!type || type === 'none') && !parent) return {}
+  return { recurrenceType: type, recurrenceRule: e.recurrence_rule ?? null, recurrenceUntil: e.recurrence_until ?? null, parentEventId: parent }
+}
+
+/** The Space's live series rows (lib/events/store.ts listSpaceSeriesRows) in the block's lean shape: every
+ *  recurring anchor and every cancelled row, with the series columns, so a year-drawing block can mint the
+ *  occurrences the cron has not yet and leave a cancelled day empty (LIVE-905). FAIL-SAFE to []. */
+export async function getSpaceSeriesRows(spaceId: string): Promise<SpaceEventItem[]> {
+  try {
+    const rows = await listSpaceSeriesRows(spaceId)
+    return rows.map((e) => ({
+      id: e.id,
+      slug: e.slug,
+      title: e.title,
+      startsAt: e.starts_at,
+      endsAt: e.ends_at ?? null,
+      timeZone: e.time_zone ?? null,
+      description: e.description ?? null,
+      isCancelled: e.is_cancelled === true,
+      ...seriesFields(e),
+    }))
   } catch {
     return []
   }

@@ -17,7 +17,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { upcomingEventFloor } from './upcoming-floor'
-import { SERIES_COLUMNS, seriesUpcomingFloor } from './series'
+import { SERIES_COLUMNS, SERIES_WIDE_READ, seriesUpcomingFloor } from './series'
 import { seriesAnchorIsLive, type RepeatAnchorRow } from './calendar-repeats'
 
 /** An event as the by-space read returns it (the columns the offerings/schedule modules need). */
@@ -43,6 +43,8 @@ export interface SpaceEvent {
   recurrence_type?: string | null
   recurrence_until?: string | null
   parent_event_id?: string | null
+  /** The RRULE value (ADR-1299), so a site can expand an anchor across the year it shows (LIVE-905). */
+  recurrence_rule?: string | null
   // ── Space-page Events block fields (view upgrade) — all in the generated DB types now (ADR-246
   // closed). All additive + nullable, so every existing caller
   // keeps its shape. capacity/price feed the card + popup; join_mode/hide_address carry the ADR-826 /
@@ -67,8 +69,10 @@ export interface SpaceEvent {
 // Space calendar console's summary line, and the public profile hero stat), and recurrence is
 // MATERIALISED (ADR-007), so without these columns the fold that turns occurrences back into
 // gatherings is a silent no-op and each of them counts a weekly series nine times (LIVE-198).
+// `recurrence_rule` rides beside them (LIVE-905): a Space website expands a live anchor across the whole
+// year it draws, and without the rule a fortnightly series would expand weekly.
 const COLS =
-  `id, slug, title, description, starts_at, ends_at, host_id, host_space_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location, plan_id, capacity, price_cents, join_mode, hide_address, city, region, venue_name, attendance_mode, is_demo, ${SERIES_COLUMNS}`
+  `id, slug, title, description, starts_at, ends_at, host_id, host_space_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location, plan_id, capacity, price_cents, join_mode, hide_address, city, region, venue_name, attendance_mode, is_demo, recurrence_rule, ${SERIES_COLUMNS}`
 
 /** An event row for the per-space CALENDAR (Events EC2): the fields the month grid + popup need. */
 export interface SpaceCalendarEvent {
@@ -491,6 +495,33 @@ export async function listSeriesAnchors(ids: string[]): Promise<RepeatAnchorRow[
       is_demo: r.is_demo,
     }))
     return anchors.filter(seriesAnchorIsLive)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * A Space's live SERIES rows for its public website (LIVE-905): every published recurring anchor whatever
+ * its start date, and every cancelled public row. An upcoming-only read loses an anchor the day its first
+ * date passes while the series runs on for a year; the website draws the year, so it expands the anchor
+ * itself (lib/sites/site-events.ts) and needs the cancelled children to leave their days empty. The same
+ * publication gate as listEventsForSpace. FAIL-SAFE: [] on any error.
+ */
+export async function listSpaceSeriesRows(spaceId: string): Promise<SpaceEvent[]> {
+  if (!spaceId) return []
+  try {
+    const { data, error } = await createAdminClient()
+      .from('events')
+      .select(COLS)
+      .eq('space_id', spaceId)
+      .eq('status', 'published')
+      .in('visibility', ['public', 'unlisted'])
+      .is('removed_at', null)
+      .or('and(parent_event_id.is.null,recurrence_type.neq.none),is_cancelled.eq.true')
+      .order('starts_at', { ascending: true })
+      .limit(SERIES_WIDE_READ)
+    if (error || !Array.isArray(data)) return []
+    return data as unknown as SpaceEvent[]
   } catch {
     return []
   }

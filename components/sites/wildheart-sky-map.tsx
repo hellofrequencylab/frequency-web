@@ -1,8 +1,9 @@
 'use client'
 
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { addDays, isoDay, parseDay, shortDay, signOf, sky, utcDate, wheelAngle, DAY } from '@/lib/theme/astrology-wheel'
 import { WILDHEART_GLYPHS, ZODIAC } from '@/lib/theme/wildheart-symbols'
+import { WILDHEART_SEASONS, type WildheartSeason } from '@/lib/theme/wildheart-seasons'
 import { WhConstellation, WhGlyph, WhMoon } from './wildheart-symbols'
 import { RangeField } from '@/components/admin/range-field'
 
@@ -12,6 +13,10 @@ import { RangeField } from '@/components/admin/range-field'
 // prev / next, spins the year, comes back to today, scrubs the season track, and filters the list by
 // scope (this sign, this season, all year) and by group (festivals, moons, Circle Nights, gatherings).
 // Two layouts: `centered` (The year page, wheel 440) and `compact` (a phone's Home, wheel 340).
+// The list reads the whole year by default, the sky's festivals and moons beside the Space's own dates
+// (every Circle Night, the Foundation weeks, the gatherings, enrollment, the retreat), in season sections
+// each headed by the season's name and theme (lib/theme/wildheart-seasons.ts) and the modules its three
+// signs carry (LIVE-905, owner 2026-10-13).
 //
 // A client island on a Wildheart page only. The sky is computed here from the pure engine
 // (lib/theme/astrology-wheel.ts); the dated rows arrive from the server block (the sky's festivals and
@@ -55,6 +60,8 @@ const SIGNS_FROM_CAPRICORN = [...ZODIAC.slice(9), ...ZODIAC.slice(0, 9)].map((z)
 const TROPICAL = ZODIAC.map((z) => z.id)
 const glyphOf = (id: string) => WILDHEART_GLYPHS[id] ?? id
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
+/** The rows a phone's compact map lists under Coming up: the next Circle Nights and the dates around them. */
+const COMPACT_ROWS = 6
 
 /** The handoff's ZodiacWheel: twelve signs on a ring, the houses inside, the seasons band, ticks, the moon
  *  at the centre and a needle at the top. Rotation turns the rings; the glyphs counter-rotate upright. */
@@ -130,6 +137,43 @@ function ZodiacWheel({ selected, onSelect, size, rotation, moonPhase, pointer = 
 const SEASON_OF_IDX = ['winter', 'spring', 'summer', 'fall'] as const
 const SIGN_SEASON: Record<string, (typeof SEASON_OF_IDX)[number]> = { capricorn: 'winter', aquarius: 'winter', pisces: 'winter', aries: 'spring', taurus: 'spring', gemini: 'spring', cancer: 'summer', leo: 'summer', virgo: 'summer', libra: 'fall', scorpio: 'fall', sagittarius: 'fall' }
 const skyOfSign = (id: string) => SIGN_SEASON[id] ?? 'winter'
+/** The three signs of a season, in the sun's order. */
+const SEASON_SIGNS: Record<WildheartSeason, string[]> = { winter: ['capricorn', 'aquarius', 'pisces'], spring: ['aries', 'taurus', 'gemini'], summer: ['cancer', 'leo', 'virgo'], fall: ['libra', 'scorpio', 'sagittarius'] }
+
+/** The list in season sections: consecutive rows of one season under a heading that names the season,
+ *  its theme and the modules its three signs carry. A season the list holds twice (last fall, this fall)
+ *  heads each run with its year. */
+function SeasonSections({ list, modules, active, onPick }: { list: SkyMapEvent[]; modules: SkyMapData['modules']; active: (e: SkyMapEvent) => boolean; onPick: (e: SkyMapEvent) => void }) {
+  const runs: { season: WildheartSeason; year: number; rows: SkyMapEvent[] }[] = []
+  for (const e of list) {
+    const d = parseDay(e.iso)
+    if (!d) continue
+    const season = sky(d).season
+    const last = runs[runs.length - 1]
+    if (last && last.season === season) last.rows.push(e)
+    else runs.push({ season, year: d.getUTCFullYear(), rows: [e] })
+  }
+  const twice = new Set(runs.map((r) => r.season).filter((x, i, a) => a.indexOf(x) !== i))
+  return (
+    <>
+      {runs.map((r, i) => {
+        const meta = WILDHEART_SEASONS[r.season]
+        const mods = SEASON_SIGNS[r.season].map((sg) => modules[sg]?.title ?? ZODIAC.find((z) => z.id === sg)?.houseName ?? cap(sg))
+        return (
+          <section key={`${r.season}-${r.year}-${i}`} className="wh-sm-season" data-season={r.season}>
+            <header className="wh-sm-season-head">
+              <span className="wh-label wh-label-season">{meta.name} · {meta.theme}{twice.has(r.season) ? ` · ${r.year}` : ''}</span>
+              <span className="wh-sm-season-modules">{mods.join(' · ')}</span>
+            </header>
+            {r.rows.map((e, j) => (
+              <EventRow key={j} e={e} active={active(e)} onClick={() => onPick(e)} />
+            ))}
+          </section>
+        )
+      })}
+    </>
+  )
+}
 
 /** One dated row (the handoff's EventRow): date, mark, title, note. */
 function EventRow({ e, active, onClick }: { e: SkyMapEvent; active: boolean; onClick: () => void }) {
@@ -206,7 +250,8 @@ export function WildheartSkyMap({ data, layout = 'centered', wheelSize = 440 }: 
   const all = useMemo(() => [...data.events].sort((a, b) => a.iso.localeCompare(b.iso)), [data.events])
   const [date, setDate] = useState(today)
   const [groups, setGroups] = useState<Record<SkyGroup, boolean>>({ sabbat: true, moon: true, circle: true, gathering: true })
-  const [scope, setScope] = useState<'sign' | 'season' | 'year'>('sign')
+  // The whole year by default (LIVE-905): every date in its season section; the reader narrows from there.
+  const [scope, setScope] = useState<'sign' | 'season' | 'year'>('year')
   const [play, setPlay] = useState(false)
   const s = sky(date)
   const mod = data.modules[s.sign] ?? { title: `${s.house} · ${s.houseName}`, theme: s.seasonTheme }
@@ -276,7 +321,7 @@ export function WildheartSkyMap({ data, layout = 'centered', wheelSize = 440 }: 
 
   if (layout === 'compact') {
     const ws = Math.round(Math.min(cw - 8, wheelSize))
-    const soon = all.filter((e) => dateOf(e).getTime() >= date.getTime()).slice(0, 3)
+    const soon = all.filter((e) => dateOf(e).getTime() >= date.getTime()).slice(0, COMPACT_ROWS)
     return (
       <div ref={rootRef} className="wh-sm wh-sm-compact" data-season={s.season}>
         <div className="wh-sm-line">
@@ -296,9 +341,7 @@ export function WildheartSkyMap({ data, layout = 'centered', wheelSize = 440 }: 
         </div>
         <div className="wh-sm-soon">
           <span className="wh-label">{L.comingUp}</span>
-          {soon.map((e, i) => (
-            <EventRow key={i} e={e} active={isToday(e)} onClick={() => setDate(dateOf(e))} />
-          ))}
+          <SeasonSections list={soon} modules={data.modules} active={isToday} onPick={(e) => setDate(dateOf(e))} />
         </div>
       </div>
     )
@@ -335,11 +378,7 @@ export function WildheartSkyMap({ data, layout = 'centered', wheelSize = 440 }: 
           {scopes}
           <div className="wh-sm-list">
             {list.length === 0 && <div className="wh-sm-empty">{L.empty}</div>}
-            {list.map((e, i) => (
-              <Fragment key={i}>
-                <EventRow e={e} active={isToday(e)} onClick={() => { setPlay(false); setDate(dateOf(e)) }} />
-              </Fragment>
-            ))}
+            <SeasonSections list={list} modules={data.modules} active={isToday} onPick={(e) => { setPlay(false); setDate(dateOf(e)) }} />
           </div>
           {groupChips}
         </div>

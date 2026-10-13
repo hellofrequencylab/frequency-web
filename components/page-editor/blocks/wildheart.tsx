@@ -21,6 +21,7 @@ import { slugify } from '@/lib/utils'
 import { safeImageUrl } from '@/lib/entity-blocks/block-content'
 import { siteLocalHref, type SiteLinkMap } from '@/lib/sites/house-theme'
 import { dateLabel } from '@/lib/sites/menswork-page'
+import { expandSiteSeries, type SiteEventRow } from '@/lib/sites/site-events'
 import { WildheartNowLine } from '@/components/sites/wildheart-now-line'
 import { WhConstellation, WhGlyph, WhLogoMark, WhMoon, WhMoonPhases, WhOrnament, WhSeal } from '@/components/sites/wildheart-symbols'
 import { WildheartYearJourney, type YearGeometry, type YearJourneyData, type YearStop } from '@/components/sites/wildheart-year-journey'
@@ -41,7 +42,7 @@ import { InlineText } from '@/components/sites/inline-text'
 // is a stock theme in the Frequency library). A Space's own rows carry its own titles. The blocks read
 // `--wh-*` tokens only; outside a Wildheart site they render in the page's own faces and colours.
 
-type SpaceEvent = { id: string; slug?: string; title: string; startsAt: string; endsAt?: string | null; description?: string | null; href?: string | null }
+type SpaceEvent = SiteEventRow & { slug?: string; description?: string | null; href?: string | null }
 
 /** The year a block draws: the owner's, or the current one (0 and blanks mean "this year"). */
 function wheelYear(value: unknown, now: Date): number {
@@ -49,10 +50,34 @@ function wheelYear(value: unknown, now: Date): number {
   return Number.isInteger(n) && n >= 1970 && n <= 2200 ? n : now.getUTCFullYear()
 }
 
-function spaceEvents(metadata: Record<string, unknown> | undefined): SpaceEvent[] {
-  const space = metadata?.space as { events?: unknown } | undefined
-  const events = Array.isArray(space?.events) ? (space!.events as SpaceEvent[]) : []
-  return events.filter((e) => e && typeof e.id === 'string' && typeof e.title === 'string' && typeof e.startsAt === 'string')
+const isRow = (e: unknown): e is SpaceEvent => !!e && typeof (e as SpaceEvent).id === 'string' && typeof (e as SpaceEvent).title === 'string' && typeof (e as SpaceEvent).startsAt === 'string'
+
+/** The rows a page's blocks share, per metadata object and year, so the three blocks on Home read the
+ *  same expansion once. */
+const ROWS = new WeakMap<object, Map<number, SpaceEvent[]>>()
+
+/** The Space's own rows from the metadata channel: `space.events` (the upcoming list) and `space.series`
+ *  (every live recurring anchor and every cancelled row, components/spaces/space-landing.tsx), every anchor
+ *  expanded through the end of the year after `year` so every Circle Night lands on the wheel (LIVE-905,
+ *  lib/sites/site-events.ts). Every start is the stored wall clock (lib/time/zone.ts), read as it is.
+ *  Cancelled rows never reach a block. */
+function spaceEvents(metadata: Record<string, unknown> | undefined, year: number): SpaceEvent[] {
+  const space = metadata?.space as { events?: unknown; series?: unknown } | undefined
+  if (!space) return []
+  const hit = ROWS.get(space)?.get(year)
+  if (hit) return hit
+  const seen = new Set<string>()
+  const rows: SpaceEvent[] = []
+  for (const e of [...(Array.isArray(space.events) ? space.events : []), ...(Array.isArray(space.series) ? space.series : [])]) {
+    if (!isRow(e) || seen.has(e.id)) continue
+    seen.add(e.id)
+    rows.push(e)
+  }
+  const out = expandSiteSeries(rows, { through: new Date(Date.UTC(year + 1, 11, 31, 23, 59, 59)) })
+  const byYear = ROWS.get(space) ?? new Map<number, SpaceEvent[]>()
+  byYear.set(year, out)
+  ROWS.set(space, byYear)
+  return out
 }
 
 /** The first line of an event's description, as its note. */
@@ -68,7 +93,7 @@ const norm = (s: string) => slugify(s).replace(/-/g, ' ')
 /** The sky's own items beside the Space's events, the Space's winning where both name the same day (a
  *  Space that lists its festivals and moons as events shows them once, with their links). */
 function model(year: number, metadata: Record<string, unknown> | undefined): WheelModel {
-  const events = spaceEvents(metadata)
+  const events = spaceEvents(metadata, year)
   // The Space's own rows read the way the handoff's calendar does: the weekday and time when the event
   // has one ("Tue · 6:00 PM"), then the description's first line.
   const own = eventItems(events.map((e) => ({ ...e, href: e.href ?? null }))).map((it, i) => ({ ...it, note: [whenOf(events[i]), noteOf(events[i])].filter(Boolean).join(' · ') }))
@@ -138,6 +163,9 @@ const TEACH_OPEN = 'Read the needle from the outside in: the calendar date, the 
 const TEACH_INGRESS = 'Signs don\'t line up with months. Each begins around the 20th to 23rd, when the sun crosses into the next twelfth of the sky. Each sign is one module.'
 const TEACH_MOON = 'Full moon: the moon sits opposite the sun, fully lit. It comes about every 29½ days, so it drifts through the calendar.'
 
+/** The dates a stop's panel lists before the next stop. */
+const PASSING_MAX = 6
+
 const dayAngle = (d: Date, year: number) => (Math.round((d.getTime() - Date.UTC(year, 0, 1)) / 864e5) / 365) * 360
 
 interface ProgramStop {
@@ -170,7 +198,7 @@ function yearJourneyData(year: number, metadata: Record<string, unknown> | undef
   for (const f of inWindow.filter((it) => it.kind === 'festival')) stops.push({ iso: isoDay(f.day), day: dayOf(f.day), kind: 'festival', title: f.title, note: f.note ?? '', teach: TEACH[f.title] ?? '', passing: [] })
   const fm = inWindow.find((it) => it.kind === 'moon' && it.phase === 4)
   if (fm) stops.push({ iso: isoDay(fm.day), day: dayOf(fm.day), kind: 'moon', title: fm.title, note: 'Full moon · release', teach: TEACH_MOON, phase: 4, passing: [] })
-  const events = spaceEvents(metadata)
+  const events = spaceEvents(metadata, year)
     .map((e) => ({ e, d: parseDay(e.startsAt) }))
     .filter((x): x is { e: SpaceEvent; d: Date } => !!x.d && x.d.getUTCFullYear() === year)
     .sort((a, b) => a.d.getTime() - b.d.getTime())
@@ -189,10 +217,11 @@ function yearJourneyData(year: number, metadata: Record<string, unknown> | undef
   const st = merged.slice(0, maxStops)
   st.forEach((x, k) => {
     const nx = st[k + 1]
+    // The dates between this stop and the next, the Circle Nights among them (LIVE-905): six fit the panel.
     x.passing = nx
       ? inWindow
           .filter((it) => it.kind !== 'festival' && dayOf(it.day) > x.day && dayOf(it.day) < nx.day)
-          .slice(0, 4)
+          .slice(0, PASSING_MAX)
           .map((it) => ({ label: shortDay(it.day), title: it.title }))
       : []
   })
@@ -219,7 +248,7 @@ function yearJourneyData(year: number, metadata: Record<string, unknown> | undef
   return { data: { a0: 0, span, stops: st, geo, table, labels, enrollHref: links.enroll, yearHref: links.year }, startIso: isoDay(start) }
 }
 
-const YJ_LABELS: YearJourneyData['labels'] = { calendar: 'Calendar', sky: 'Sky', season: 'Season', moon: 'Moon', skip: 'Skip the year ↓', tip: 'Scroll, or spin the wheel', save: 'Save my place', year: 'See the whole year on the sky map →', aria: 'The turning year. Use arrow keys to move between stops.' }
+const YJ_LABELS: YearJourneyData['labels'] = { calendar: 'Calendar', sky: 'Sky', season: 'Season', moon: 'Moon', skip: 'Skip the year ↓', next: 'Next section', tip: 'Scroll, or spin the wheel', save: 'Save my place', year: 'See the whole year on the sky map →', aria: 'The turning year. Use arrow keys to move between stops.' }
 
 export function WildheartYearJourneyBlock({ year, label, heading, lead, programStops = [], modules = [], enrollHref, yearHref, now = new Date(), metadata, pad, vis }: {
   year?: number; label?: string; heading?: string; lead?: string; programStops?: Props[]; modules?: Props[]; enrollHref?: string; yearHref?: string; now?: Date
@@ -229,8 +258,10 @@ export function WildheartYearJourneyBlock({ year, label, heading, lead, programS
   const mods = Object.fromEntries(modules.map((m) => [str(m.sign).toLowerCase(), { title: str(m.title), theme: str(m.theme) }]).filter(([k, v]) => k && (v as { title: string }).title))
   const stops: ProgramStop[] = programStops.map((p) => ({ match: str(p.match), title: str(p.title), note: str(p.note), teach: str(p.teach), after: str(p.after) || undefined }))
   const { data, startIso } = yearJourneyData(y, metadata, stops, mods, { enroll: hrefOf(str(enrollHref), metadata), year: hrefOf(str(yearHref), metadata) }, YJ_LABELS)
+  // The journey opens in January (owner 2026-10-13: the first events of the year, not today's season), so
+  // the section wears the window's first season, the one the first stop reads.
   return (
-    <section className={cls('wh-block wh-block-journey', pad, vis)} data-season={sky(now).season}>
+    <section className={cls('wh-block wh-block-journey', pad, vis)} data-season={data.table[0]?.season ?? sky(now).season}>
       <Head label={label} heading={heading} lead={lead} centred />
       <WildheartYearJourney data={data} startIso={startIso} />
     </section>
@@ -433,7 +464,7 @@ type SpaceEventLite = SpaceEvent
 /** The Space's upcoming events from the metadata channel, soonest first from `now`. */
 function upcoming(metadata: Record<string, unknown> | undefined, now: Date): SpaceEventLite[] {
   const today = isoDay(now)
-  return spaceEvents(metadata)
+  return spaceEvents(metadata, now.getUTCFullYear())
     .filter((e) => e.startsAt.slice(0, 10) >= today)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
 }
