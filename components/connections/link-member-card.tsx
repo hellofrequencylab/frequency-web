@@ -84,7 +84,7 @@ export function LinkMemberCard({
   }
 
   return (
-    <section className="mt-6 rounded-2xl border border-border bg-surface p-4 lift-1">
+    <section className="mt-6 rounded-card border border-border bg-surface p-4 lift-1">
       <h2 className="flex items-center gap-1.5 text-body-sm font-bold text-text">
         <UserRoundCheck className="h-4 w-4 text-primary-strong" /> On Frequency
       </h2>
@@ -109,7 +109,7 @@ export function LinkMemberCard({
               type="button"
               onClick={unlink}
               disabled={pending}
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-meta text-muted transition-colors hover:text-danger disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1.5 text-meta text-muted transition-colors hover:text-danger disabled:opacity-50"
             >
               <Link2Off className="h-3.5 w-3.5" /> Unlink
             </button>

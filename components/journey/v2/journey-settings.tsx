@@ -243,7 +243,7 @@ export function JourneySettings(props: JourneySettingsProps) {
                     type="button"
                     onClick={() => { setOverlayStyle(v); meta({ headerOverlayStyle: v }) }}
                     aria-pressed={active}
-                    className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${
+                    className={`rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors ${
                       active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-canvas text-muted hover:border-border-strong'
                     }`}
                   >
@@ -327,7 +327,7 @@ export function JourneySettings(props: JourneySettingsProps) {
         </div>
         {/* Certificate — a proper on/off switch (the shared settings Toggle), in its own clear row
             so the control isn't cramped beside the number inputs. */}
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-canvas px-3 py-2.5">
+        <div className="flex items-center justify-between gap-3 rounded-control border border-border bg-canvas px-3 py-2.5">
           <span className="flex min-w-0 flex-col">
             <span className="inline-flex items-center gap-1.5 text-body-sm font-medium text-text">
               <Award className="h-4 w-4 text-rank-gold" aria-hidden /> Certificate

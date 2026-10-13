@@ -140,7 +140,7 @@ export function JourneyAdvanced({
               const meta = WIDGET_META[d.id as keyof typeof WIDGET_META]
               const required = DISCOVERY_REQUIRED.has(d.id)
               return (
-                <li key={d.id} className="flex items-center gap-2 rounded-lg border border-border bg-canvas px-2.5 py-1.5">
+                <li key={d.id} className="flex items-center gap-2 rounded-control border border-border bg-canvas px-2.5 py-1.5">
                   <span className="min-w-0 flex-1">
                     <span className="block text-body-sm font-medium text-text">{meta?.label ?? d.id}</span>
                     {meta?.hint && <span className="block truncate text-meta text-muted">{meta.hint}</span>}
@@ -174,7 +174,7 @@ export function JourneyAdvanced({
               <button
                 type="button"
                 onClick={() => saveOfficial({ official: !official })}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-control border px-3 py-1.5 text-body-sm font-medium transition-colors ${
                   official ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-canvas text-muted hover:bg-surface-elevated'
                 }`}
                 aria-pressed={official}

@@ -101,7 +101,7 @@ function EntryRow({ entry }: { entry: PathEntry }) {
     <li className="relative">
       <span
         className={cn(
-          'absolute -left-[21px] top-1.5 h-2 w-2 rounded-pill',
+          'absolute -left-5.25 top-1.5 h-2 w-2 rounded-pill',
           entry.direction === 'inbound' ? 'bg-success' : 'bg-primary',
         )}
         aria-hidden
@@ -195,12 +195,12 @@ export function MessagePathFold({
       : 'No messages yet.'
 
   return (
-    <section className="rounded-2xl border border-border">
+    <section className="rounded-card border border-border">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left transition-colors hover:bg-surface-elevated/60"
+        className="flex w-full items-center gap-2 rounded-card px-3 py-2.5 text-left transition-colors hover:bg-surface-elevated/60"
       >
         <RouteIcon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
         <span className="text-body-sm font-bold tracking-tight text-text">The Path</span>

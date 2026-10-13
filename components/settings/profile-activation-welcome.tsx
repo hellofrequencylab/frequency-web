@@ -37,7 +37,7 @@ export function ProfileActivationWelcome({
   const lastStepLeft = status.todo.length === 1
 
   return (
-    <div className="mb-6 rounded-2xl border border-broadcast-bg bg-broadcast-bg/40 p-4 dark:bg-broadcast-bg/20">
+    <div className="mb-6 rounded-card border border-broadcast-bg bg-broadcast-bg/40 p-4 dark:bg-broadcast-bg/20">
       <div className="flex items-start gap-3">
         <Compass className="mt-0.5 h-5 w-5 shrink-0 text-broadcast-strong" aria-hidden />
         <div className="min-w-0 flex-1">

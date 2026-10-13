@@ -94,7 +94,7 @@ function ScoreTile({
   label: string
 }) {
   const inner = <Counter value={value} label={label} glyph={Icon} tone={tone} layout="stacked" />
-  const cls = 'block rounded-lg bg-primary-bg/40 px-2 py-2 text-center'
+  const cls = 'block rounded-control bg-primary-bg/40 px-2 py-2 text-center'
   return href ? (
     <Link href={href} className={`${cls} transition-colors hover:bg-primary-bg/60 motion-reduce:transition-none`}>
       {inner}

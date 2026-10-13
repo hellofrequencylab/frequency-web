@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 1868,
+      "baseline": 1507,
       "frozen": {
         "at": "2026-10-13",
-        "value": 1868,
+        "value": 1507,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "ADR-1737 design-switch fan-out (2026-10-13): literal-radius sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
-        "from": 2139
+        "reason": "Theme scan area 3 (member feature components): rounded-2xl to rounded-card and rounded-lg to rounded-control where both resolve identically under DAWN and Frequency, skipping class lists a Frequency selector keys on",
+        "from": 1868
       },
       "history": [
         {
@@ -315,6 +315,13 @@
           "to": 1868,
           "direction": "lowered",
           "reason": "ADR-1737 design-switch fan-out (2026-10-13): literal-radius sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
+        },
+        {
+          "at": "2026-10-13",
+          "from": 1868,
+          "to": 1507,
+          "direction": "lowered",
+          "reason": "Theme scan area 3 (member feature components): rounded-2xl to rounded-card and rounded-lg to rounded-control where both resolve identically under DAWN and Frequency, skipping class lists a Frequency selector keys on"
         }
       ]
     },
@@ -1205,14 +1212,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 112,
+      "baseline": 86,
       "frozen": {
-        "at": "2026-09-21",
-        "value": 112,
+        "at": "2026-10-13",
+        "value": 86,
         "direction": "lowered",
         "basis": "8afdfcd88c01",
-        "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed.",
-        "from": 116
+        "reason": "Theme scan area 3 (member feature components): exact-px sizing in member components moved onto the spacing scale (h-[18px] to h-4.5, h-[420px] to h-105 and the like), same rendered size",
+        "from": 112
       },
       "history": [
         {
@@ -1277,6 +1284,13 @@
           "to": 112,
           "direction": "lowered",
           "reason": "Incidental retirement across the 2026-09-08..21 operator-calendar and Collective-copy merges (PRs #2789-#2817), not a deliberate sweep. Banked so the lower floor holds and the sites cannot come back unnoticed."
+        },
+        {
+          "at": "2026-10-13",
+          "from": 112,
+          "to": 86,
+          "direction": "lowered",
+          "reason": "Theme scan area 3 (member feature components): exact-px sizing in member components moved onto the spacing scale (h-[18px] to h-4.5, h-[420px] to h-105 and the like), same rendered size"
         }
       ]
     },
@@ -1295,14 +1309,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 47,
+      "baseline": 37,
       "frozen": {
-        "at": "2026-10-05",
-        "value": 47,
+        "at": "2026-10-13",
+        "value": 37,
         "direction": "lowered",
         "basis": "64ff33cabd79",
-        "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR.",
-        "from": 48
+        "reason": "Theme scan area 3 (member feature components): text-3xl and text-4xl stat numerals and headings moved to text-stat-sm and text-stat-md, the display roles of identical size and line height",
+        "from": 47
       },
       "history": [
         {
@@ -1367,6 +1381,13 @@
           "to": 47,
           "direction": "lowered",
           "reason": "Meta scan 2026-10-05: lowers the floor to the count measured on main at 2b5ef05 after the 2026-09-28..30 merges retired these sites, so they cannot return unnoticed. Measured, not attributed per PR."
+        },
+        {
+          "at": "2026-10-13",
+          "from": 47,
+          "to": 37,
+          "direction": "lowered",
+          "reason": "Theme scan area 3 (member feature components): text-3xl and text-4xl stat numerals and headings moved to text-stat-sm and text-stat-md, the display roles of identical size and line height"
         }
       ]
     },

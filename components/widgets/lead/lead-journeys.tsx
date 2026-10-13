@@ -127,7 +127,7 @@ export async function LeadJourneys(): Promise<React.ReactElement | null> {
       {activeRuns.length > 0 && (
         <div>
           <SectionHeader title="Active runs in your circles" count={activeRuns.length} />
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+          <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
             {activeRuns.map((r) => (
               <li key={r.id}>
                 <Link

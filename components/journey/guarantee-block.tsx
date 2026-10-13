@@ -20,7 +20,7 @@ export function JourneyGuaranteeBlock({ guarantee }: { guarantee: string }) {
   return (
     <section>
       <SectionHeader title="Your guarantee" />
-      {/* `rounded-card`, not the `rounded-2xl` the older blocks beside this one still carry:
+      {/* `rounded-card`, not the `rounded-card` the older blocks beside this one still carry:
           --radius-card is 24px, so this is value-identical today and follows the skin tomorrow. */}
       <div className="flex items-start gap-3 rounded-card border border-border bg-surface p-5 lift-1">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-muted" aria-hidden />

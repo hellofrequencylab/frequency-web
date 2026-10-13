@@ -107,7 +107,7 @@ function JourneyActions({
     })
   }
 
-  const btn = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
+  const btn = 'inline-flex items-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-semibold transition-colors disabled:opacity-60'
   return (
     <div className={`flex flex-col gap-1 ${align === 'left' ? 'items-start' : ''}`}>
       <div className="flex flex-wrap items-center gap-2">
@@ -162,7 +162,7 @@ function JourneyDetails({ status, visibility, details }: { status: string; visib
     { icon: BarChart3, label: 'Difficulty', value: details.difficulty ? details.difficulty[0].toUpperCase() + details.difficulty.slice(1) : 'Not set' },
   ]
   return (
-    <div className="w-full rounded-2xl border border-border bg-surface p-3.5 lg:w-72">
+    <div className="w-full rounded-card border border-border bg-surface p-3.5 lg:w-72">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className={capsLabel('text-2xs font-semibold text-muted')}>Journey Details</span>
         <span className="inline-flex items-center gap-1 text-2xs font-medium text-muted">
@@ -333,13 +333,13 @@ export function JourneyBuilder({
             onClick={() => setIconOpen((v) => !v)}
             aria-expanded={iconOpen}
             title="Set a logo image, icon, or color"
-            className="group/icn relative rounded-2xl outline-none ring-2 ring-transparent transition hover:ring-border focus-visible:ring-primary"
+            className="group/icn relative rounded-card outline-none ring-2 ring-transparent transition hover:ring-border focus-visible:ring-primary"
           >
             {cover && /^https:\/\//i.test(cover) ? (
               // The uploaded image doubles as the Journey's logo (build item 1). next/image (the
               // Supabase Storage host is allowlisted in next.config); guarded to https so the URL
               // can never carry a javascript:/data: scheme.
-              <Image src={cover} alt="" width={56} height={56} unoptimized className="h-14 w-14 rounded-2xl object-cover" />
+              <Image src={cover} alt="" width={56} height={56} unoptimized className="h-14 w-14 rounded-card object-cover" />
             ) : (
               <IconAccentFace icon={icon} accent={accent} size="md" />
             )}
@@ -349,7 +349,7 @@ export function JourneyBuilder({
             </span>
           </button>
           {iconOpen && (
-            <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface p-3 text-left lift-3">
+            <div className="absolute left-0 top-[3.75rem] z-30 w-64 max-w-[calc(100vw-2rem)] rounded-card border border-border bg-surface p-3 text-left lift-3">
               <p className={capsLabel('mb-1.5 text-2xs font-semibold text-muted')}>Color</p>
               <div className="flex flex-wrap gap-2">
                 {STUDIO_ACCENTS.map((a) => {
@@ -426,7 +426,7 @@ export function JourneyBuilder({
             it and Replace / Remove over it, so the author frames the header right where they set it. */}
         <div className="mb-5">
           {draft ? (
-            <div className="flex h-32 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-body-sm text-subtle">
+            <div className="flex h-32 w-full items-center justify-center gap-2 rounded-card border border-dashed border-border text-body-sm text-subtle">
               <Lock className="h-4 w-4" aria-hidden /> Add a cover photo once you name it
             </div>
           ) : (
@@ -531,7 +531,7 @@ export function JourneyBuilder({
 
 function DraftGhostVera() {
   return (
-    <div className="rounded-2xl border border-dashed border-primary/30 bg-primary-bg/10 p-4 opacity-70" aria-hidden>
+    <div className="rounded-card border border-dashed border-primary/30 bg-primary-bg/10 p-4 opacity-70" aria-hidden>
       <p className="flex items-center gap-2 text-body font-bold text-text">
         <Sparkles className="h-5 w-5 text-primary-strong" /> Build your Journey with Vera
       </p>
@@ -550,7 +550,7 @@ function DraftGhostMain() {
         <p className="text-body-sm text-muted">Three phases are ready to fill the moment you name your Journey.</p>
       </header>
       {[1, 2, 3].map((n) => (
-        <div key={n} className="rounded-2xl border border-border bg-surface p-4">
+        <div key={n} className="rounded-card border border-border bg-surface p-4">
           <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
             <Layers className="h-4 w-4 text-subtle" /> Phase {n}
           </p>
@@ -563,7 +563,7 @@ function DraftGhostMain() {
 
 function DraftGhostSidebar() {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface p-4 opacity-70" aria-hidden>
+    <div className="rounded-card border border-dashed border-border bg-surface p-4 opacity-70" aria-hidden>
       <p className="text-body-sm font-semibold text-text">Settings</p>
       <p className="mt-1 text-meta text-muted">
         Cover, story, visibility, rewards, delivery, and the advanced options unlock once your Journey has a name.

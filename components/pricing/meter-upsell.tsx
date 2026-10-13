@@ -63,7 +63,7 @@ export async function MeterUpsell({
 
   return (
     <section
-      className={`rounded-2xl border border-border bg-surface p-4 lift-1 ${className ?? ''}`}
+      className={`rounded-card border border-border bg-surface p-4 lift-1 ${className ?? ''}`}
       aria-label={`${copy.dimension} allowance`}
       data-meter-upsell={featureKey}
       data-meter-surface={surface?.kind ?? 'unregistered'}
@@ -79,7 +79,7 @@ export async function MeterUpsell({
       <p className="mt-1 text-2xs leading-relaxed text-muted">{copy.promise}</p>
       <Link
         href={upgradeHref}
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         {METER_UPSELL_CTA}
       </Link>

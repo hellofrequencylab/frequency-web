@@ -38,7 +38,7 @@ export function SpaceCrmPrompt() {
   if (dismissed) return null
 
   return (
-    <div className="mb-6 flex items-start gap-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+    <div className="mb-6 flex items-start gap-3 rounded-card border border-border bg-surface-elevated/40 p-4">
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
         <Briefcase className="h-5 w-5" aria-hidden />
       </span>
@@ -59,7 +59,7 @@ export function SpaceCrmPrompt() {
         type="button"
         onClick={dismiss}
         aria-label="Dismiss"
-        className="shrink-0 rounded-lg p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
+        className="shrink-0 rounded-control p-1 text-subtle transition-colors hover:bg-surface hover:text-text"
       >
         <X className="h-4 w-4" aria-hidden />
       </button>

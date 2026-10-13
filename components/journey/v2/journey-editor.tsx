@@ -162,7 +162,7 @@ function SlotCoaching({
     })
   }
   return (
-    <div className="mt-2 rounded-lg border border-dashed border-primary/30 bg-primary-bg/20 p-2.5">
+    <div className="mt-2 rounded-control border border-dashed border-primary/30 bg-primary-bg/20 p-2.5">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5 text-primary-strong" />
@@ -491,7 +491,7 @@ export function JourneyEditor({
                 type="button"
                 disabled={pending}
                 onClick={() => onPick(pr.id)}
-                className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-primary-bg/50"
+                className="flex w-full items-center justify-between gap-3 rounded-control px-2 py-1.5 text-left hover:bg-primary-bg/50"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-body-sm font-medium text-text">{pr.title}</span>
@@ -719,7 +719,7 @@ export function JourneyEditor({
           type="button"
           disabled={pending}
           onClick={() => addAndOpen(() => addLessonAction(slug, parentId, 'lesson'))}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-primary-strong hover:bg-primary-bg"
+          className="inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-primary-strong hover:bg-primary-bg"
         >
           <Plus className="h-4 w-4" /> Add lesson
         </button>
@@ -727,7 +727,7 @@ export function JourneyEditor({
           <button
             type="button"
             onClick={() => { setPicker((v) => (v === pickerKey ? null : pickerKey)); setQuery('') }}
-            className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated hover:text-text"
+            className="inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated hover:text-text"
           >
             <Dumbbell className="h-4 w-4" /> Add practice
           </button>
@@ -736,7 +736,7 @@ export function JourneyEditor({
           type="button"
           disabled={pending}
           onClick={() => addAndOpen(() => addExtraCreditAction(slug, parentId))}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-signal-strong hover:bg-signal-bg/50"
+          className="inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-signal-strong hover:bg-signal-bg/50"
           title="A bonus task, above and beyond, that pays Zaps"
         >
           <Award className="h-4 w-4" /> Add extra credit
@@ -772,7 +772,7 @@ export function JourneyEditor({
 
       {/* Loose steps (pre-v2 content with no phase) — editable, with a nudge to organize. */}
       {looseLeaves.length > 0 && (
-        <section className="rounded-2xl border border-border bg-surface p-4">
+        <section className="rounded-card border border-border bg-surface p-4">
           <div className="mb-1 flex items-center gap-2">
             <Layers className="h-4 w-4 shrink-0 text-subtle" />
             <span className="text-body font-semibold text-text">Steps</span>
@@ -789,7 +789,7 @@ export function JourneyEditor({
         const phaseOpen = !closedPhases.has(p.id)
         const stepCount = lessonsOf(p.id).length + modulesOf(p.id).length
         return (
-        <section key={p.id} {...dropProps(p)} className={`rounded-2xl border border-border bg-surface p-4${dropRing(p)}`}>
+        <section key={p.id} {...dropProps(p)} className={`rounded-card border border-border bg-surface p-4${dropRing(p)}`}>
           <div className="flex flex-wrap items-center gap-2">
             {dragHandle(p)}
             <button
@@ -849,7 +849,7 @@ export function JourneyEditor({
                 type="button"
                 disabled={pending}
                 onClick={() => run(() => addModuleAction(slug, p.id))}
-                className="mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated"
+                className="mt-1 inline-flex items-center gap-1 rounded-control px-2 py-1.5 text-body-sm font-medium text-muted hover:bg-surface-elevated"
               >
                 <Layers className="h-4 w-4" /> Add module
               </button>

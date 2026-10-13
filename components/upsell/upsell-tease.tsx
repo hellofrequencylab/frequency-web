@@ -124,7 +124,7 @@ export function UpsellTease({
   return (
     <div
       role="note"
-      className="relative mt-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary-bg/50 p-4"
+      className="relative mt-4 flex items-start gap-3 rounded-card border border-primary/30 bg-primary-bg/50 p-4"
     >
       <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
         <Sparkles className="h-4 w-4" aria-hidden />
@@ -134,7 +134,7 @@ export function UpsellTease({
         {body && <p className="mt-1 text-body-sm leading-relaxed text-muted">{body}</p>}
         <Link
           href={href}
-          className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          className="mt-2.5 inline-flex items-center gap-1.5 rounded-control bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           {cta}
         </Link>
@@ -143,7 +143,7 @@ export function UpsellTease({
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss"
-        className="-mr-1 -mt-1 rounded-lg p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+        className="-mr-1 -mt-1 rounded-control p-1 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
       >
         <X className="h-4 w-4" aria-hidden />
       </button>

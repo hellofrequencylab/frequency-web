@@ -47,7 +47,7 @@ export async function PracticeNeedsAttention() {
   return (
     <section className="space-y-3">
       <SectionHeader title="Needs attention" count={items.length} />
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-card border border-border bg-surface">
         {/* One mask over the rows, not one per value (LIVE-492, ADR-1545). The list is worst
             quality first and the quality score carries a freshness term that decays with time, so
             the ROWS REORDER between two honest captures a day apart: pr-compare on 2026-09-28 read

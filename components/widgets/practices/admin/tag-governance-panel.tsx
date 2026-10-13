@@ -136,7 +136,7 @@ function PromoteButton({
       type="button"
       disabled={disabled}
       onClick={promote}
-      className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
+      className="inline-flex items-center gap-1 rounded-control border border-border px-2 py-1 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary/10 disabled:opacity-50"
     >
       <Check className="h-3.5 w-3.5" aria-hidden /> Promote
     </button>
@@ -179,7 +179,7 @@ export function TagGovernancePanel({
         </p>
       )}
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-card border border-border bg-surface">
         <div className="border-b border-border bg-surface-elevated/50 px-4 py-2">
           <p className="eyebrow text-muted">
             Canonical tags
@@ -205,7 +205,7 @@ export function TagGovernancePanel({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-card border border-border bg-surface">
         <div className="border-b border-border bg-surface-elevated/50 px-4 py-2">
           <p className="eyebrow text-muted">
             Proposed tags

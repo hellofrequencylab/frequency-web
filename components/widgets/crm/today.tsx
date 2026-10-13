@@ -44,7 +44,7 @@ export async function CrmToday() {
 // sent by the vera-owner-brief cron, never from this screen. Semantic tokens only, copy in voice.
 function OwnerBriefGuidance() {
   return (
-    <div className="mt-6 rounded-2xl border border-border bg-surface/50 p-5">
+    <div className="mt-6 rounded-card border border-border bg-surface/50 p-5">
       <p className="eyebrow text-subtle">Your daily brief</p>
       <p className="mt-1.5 text-body-sm text-text">
         Each morning Vera emails you these same moves, so you do not have to remember to check. She

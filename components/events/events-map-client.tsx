@@ -11,7 +11,7 @@ import type { EventMapPin } from './events-map'
 const EventsMap = dynamic(() => import('./events-map'), {
   ssr: false,
   loading: () => (
-    <div className="h-[420px] w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
+    <div className="h-105 w-full animate-pulse rounded-card border border-border bg-surface-elevated" />
   ),
 })
 
@@ -32,7 +32,7 @@ export function EventsMapToggle({
 
   return (
     <div>
-      <div className="mb-4 inline-flex rounded-control border border-border bg-surface p-0.5">
+      <div className="mb-4 inline-flex rounded-lg border border-border bg-surface p-0.5">
         <button
           type="button"
           onClick={() => setView('list')}

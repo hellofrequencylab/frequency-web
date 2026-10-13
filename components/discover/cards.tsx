@@ -208,7 +208,7 @@ export function PostPreview({ post }: { post: PublicPost }) {
     </>
   )
   return (
-    <article className="rounded-2xl border border-border bg-surface lift-1 p-4">
+    <article className="rounded-card border border-border bg-surface lift-1 p-4">
       {post.author_handle ? (
         <Link
           href={`/people/${post.author_handle}`}

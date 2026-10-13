@@ -51,10 +51,10 @@ function PillarGauge({ pillar }: { pillar: PillarProgress }) {
 
   return (
     <li className="flex min-w-0 flex-1 flex-col items-center gap-2">
-      <div className="relative flex h-[68px] w-full items-end justify-center">
+      <div className="relative flex h-17 w-full items-end justify-center">
         <svg
           viewBox="0 0 80 44"
-          className="h-full w-full max-w-[120px]"
+          className="h-full w-full max-w-30"
           role="img"
           aria-label={`${pillar.name}: ${pillar.daysLogged} of ${pillar.daysTarget} days (${pct}%)`}
         >

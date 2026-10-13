@@ -128,13 +128,13 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
         align="bottom"
         className="max-w-lg"
       >
-        <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 lift-3 sm:rounded-2xl">
+        <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-card border border-border bg-surface p-5 lift-3 sm:rounded-card">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-body-lg font-bold text-text">
                 <Wand2 className="h-5 w-5 text-primary" />
                 {step === 1 ? 'Make it yours' : 'Your practice'}
               </h2>
-              <button onClick={close} aria-label="Close" className="rounded-lg p-1 text-subtle hover:bg-surface-elevated">
+              <button onClick={close} aria-label="Close" className="rounded-control p-1 text-subtle hover:bg-surface-elevated">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -190,7 +190,7 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
             ) : (
               <div className="space-y-4">
                 {veraUsed && (
-                  <p className="flex items-center gap-1.5 rounded-lg bg-primary-bg px-3 py-2 text-meta font-medium text-primary-strong">
+                  <p className="flex items-center gap-1.5 rounded-control bg-primary-bg px-3 py-2 text-meta font-medium text-primary-strong">
                     <Sparkles className="h-3.5 w-3.5" /> Vera tailored this to you. Edit anything before you claim it.
                   </p>
                 )}

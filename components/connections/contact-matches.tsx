@@ -19,7 +19,7 @@ export function ContactMatches({ suggestions }: { suggestions: ContactMatchSugge
   if (items.length === 0) return null
 
   return (
-    <div className="mb-6 rounded-2xl border border-primary/30 bg-primary-bg/40 p-4">
+    <div className="mb-6 rounded-card border border-primary/30 bg-primary-bg/40 p-4">
       <div className="mb-3 flex items-center gap-1.5">
         <Sparkles className="h-4 w-4 text-primary-strong" />
         <h2 className="text-body-sm font-bold text-text">
@@ -112,7 +112,7 @@ function MatchRow({
           disabled={pending}
           aria-label="Dismiss"
           title="Not the same person"
-          className="inline-flex items-center rounded-lg border border-border px-2 py-1.5 text-meta text-muted transition-colors hover:text-text disabled:opacity-50"
+          className="inline-flex items-center rounded-control border border-border px-2 py-1.5 text-meta text-muted transition-colors hover:text-text disabled:opacity-50"
         >
           <X className="h-3.5 w-3.5" />
         </button>

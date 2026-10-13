@@ -85,7 +85,7 @@ export function CollectiveGoal({
         <div className="flex items-end justify-between gap-3">
           <p className="flex items-baseline gap-2">
             <Zap className="h-5 w-5 shrink-0 self-center text-primary" aria-hidden />
-            <span className="text-3xl font-extrabold leading-none tabular-nums text-text">
+            <span className="text-stat-sm font-extrabold leading-none tabular-nums text-text">
               {total.toLocaleString()}
             </span>
             <span className="text-body-sm font-medium text-muted">

@@ -49,7 +49,7 @@ export async function PracticeContributorRecognition() {
   return (
     <section>
       <SectionHeader title="Contributors to celebrate" count={items.length} />
-      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
         {items.map((c, i) => {
           const inner = (
             <>

@@ -28,14 +28,14 @@ export function AcceptIntroButton({ otherProfileId }: { otherProfileId: string }
 
   if (state === 'matched') {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-meta font-semibold text-success">
+      <span className="inline-flex items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-meta font-semibold text-success">
         <HeartHandshake className="h-3.5 w-3.5" aria-hidden /> You both said yes
       </span>
     )
   }
   if (state === 'waiting') {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-lg bg-surface-elevated px-3 py-1.5 text-meta font-semibold text-muted">
+      <span className="inline-flex items-center gap-1.5 rounded-control bg-surface-elevated px-3 py-1.5 text-meta font-semibold text-muted">
         <Hourglass className="h-3.5 w-3.5" aria-hidden /> Waiting on them
       </span>
     )

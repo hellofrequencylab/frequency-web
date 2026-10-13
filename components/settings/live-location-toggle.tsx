@@ -56,7 +56,7 @@ export function LiveLocationToggle({
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5">
+    <section className="rounded-card border border-border bg-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 id="live-location-heading" className="flex items-center gap-2 text-body-sm font-bold text-text">

@@ -444,7 +444,7 @@ export function PriceModeEditor({
                   onClick={() => removeOption(idx)}
                   disabled={disabled}
                   aria-label={`Remove option ${idx + 1}`}
-                  className="shrink-0 rounded-lg border border-border p-2 text-muted transition-colors hover:bg-surface disabled:opacity-50"
+                  className="shrink-0 rounded-control border border-border p-2 text-muted transition-colors hover:bg-surface disabled:opacity-50"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -478,7 +478,7 @@ export function PriceModeEditor({
             type="button"
             onClick={addOption}
             disabled={disabled}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" /> Add option
           </button>
@@ -504,7 +504,7 @@ export function PriceModeEditor({
           type="button"
           onClick={promoteToPackages}
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-semibold text-muted transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" /> Add option
         </button>

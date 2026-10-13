@@ -90,7 +90,7 @@ export async function QuestTasks() {
                   }`}
                 >
                   <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-control ${
                       isDone ? 'bg-success-bg' : 'bg-surface-elevated'
                     }`}
                   >

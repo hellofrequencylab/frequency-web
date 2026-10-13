@@ -67,7 +67,7 @@ function TouchpointDetails({
     })
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
+    <div className="rounded-card border border-border bg-surface p-5">
       <div className="mb-3">
         <p className="flex items-center gap-2 text-body-sm font-semibold text-text">
           {label}
@@ -169,7 +169,7 @@ export function AuthorBlock({ author }: { author: PlanAuthor | null }) {
       <SectionHeader title="Your guide" />
       <Link
         href={`/people/${author.handle}`}
-        className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
+        className="flex items-center gap-3 rounded-card border border-border bg-surface p-4 lift-1 transition-colors hover:border-border-strong"
       >
         {author.avatarUrl ? (
           <Image

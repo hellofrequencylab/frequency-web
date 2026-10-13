@@ -21,7 +21,7 @@ export async function CommunityFeedReach() {
       title="Feed reach"
       description="Who sees whose posts in the main feed. Open it for a young community so the feed feels alive; turn the reach gate back on once there are enough members for it to feel local."
     >
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <div className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
             <Globe2 className="h-4 w-4" aria-hidden />

@@ -64,7 +64,7 @@ export async function PracticeDetailLineage() {
               <Link
                 key={node.id}
                 href={`/practices/${node.id}`}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="flex items-center gap-2 rounded-control px-2 py-1.5 text-body-sm text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <GitBranch className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
                 <span className="truncate font-medium text-text">{node.title || 'Untitled practice'}</span>

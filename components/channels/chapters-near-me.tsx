@@ -67,7 +67,7 @@ export function ChaptersNearMe({ chapters }: { chapters: ChapterSummary[] }) {
             type="button"
             onClick={sortNearMe}
             disabled={locating}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
           >
             {locating
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -83,7 +83,7 @@ export function ChaptersNearMe({ chapters }: { chapters: ChapterSummary[] }) {
           <Link
             key={c.id}
             href={`/circles/${c.slug}`}
-            className="block rounded-2xl border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
+            className="block rounded-card border border-border bg-surface px-3 py-2.5 hover:border-primary-bg dark:hover:border-primary transition-colors"
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-body-sm font-medium text-text truncate">

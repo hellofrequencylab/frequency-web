@@ -255,7 +255,7 @@ function ScanActivity({ stats, archiveHref }: { stats: PageQrScanStats | null; a
 
 function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 text-2xs">
+    <div className="flex items-center justify-between gap-2 rounded-control border border-border bg-surface-elevated/50 px-2.5 py-1.5 text-2xs">
       <span className="shrink-0 text-muted">{label}</span>
       <span className="min-w-0 truncate text-right font-semibold text-text">{value}</span>
     </div>
@@ -274,7 +274,7 @@ function ShareCode({ url, pathname }: { url: string; pathname: string }) {
   return (
     <div className="space-y-2">
       <code
-        className="block truncate rounded-lg border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted"
+        className="block truncate rounded-control border border-border bg-surface-elevated/50 px-2.5 py-1.5 font-mono text-2xs text-muted"
         title={url}
       >
         {url}

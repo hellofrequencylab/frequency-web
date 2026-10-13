@@ -30,7 +30,7 @@ export async function GamificationTopAchievers() {
 
   return (
     <AdminSection title="Top achievers">
-      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="overflow-hidden rounded-card border border-border bg-surface">
         {topEarners.length === 0 ? (
           <EmptyState
             variant="first-use"

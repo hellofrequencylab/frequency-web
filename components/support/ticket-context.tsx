@@ -18,7 +18,7 @@ export function TicketContext({
   if (lines.length === 0 && !screenshotUrl && !pageUrl) return null
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+    <div className="space-y-3 rounded-card border border-border bg-surface p-4">
       <p className={capsLabel('text-2xs font-semibold text-muted')}>Captured context</p>
 
       {pageUrl && (

@@ -308,7 +308,7 @@ export function DetailsEditor({
                   else if (key === 'other') set({ other: [{ label: '', value: '' }] })
                   else set({ [key]: [''] } as Partial<ContactDetails>)
                 }}
-                className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+                className="inline-flex items-center gap-1 rounded-control border border-border px-2.5 py-1 text-meta font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
               >
                 <Plus className="h-3 w-3" /> {SECTION_LABELS[key]}
               </button>

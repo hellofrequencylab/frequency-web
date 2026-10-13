@@ -65,7 +65,7 @@ function targetDateLabel(startsAt: string | null): string {
 }
 
 function chipClasses(on: boolean): string {
-  return `inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
+  return `inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
     on
       ? 'bg-primary-bg text-primary-strong'
       : 'border border-border text-muted hover:border-border-strong hover:text-text'
@@ -207,7 +207,7 @@ export function BroadcastComposer({
   if (locked) {
     const targets = locked.reinvite.targets
     return (
-      <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="rounded-card border border-border bg-surface p-4">
         <p className="mb-1 flex items-center gap-1.5 text-meta font-semibold text-muted">
           <Megaphone className="h-3.5 w-3.5 text-primary" aria-hidden />
           {heading}
@@ -286,7 +286,7 @@ export function BroadcastComposer({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
+    <div className="rounded-card border border-border bg-surface p-4">
       <p className="mb-3 flex items-center gap-1.5 text-meta font-semibold text-muted">
         <Megaphone className="h-3.5 w-3.5 text-primary" aria-hidden />
         {heading}
@@ -356,7 +356,7 @@ export function BroadcastComposer({
                 key={c.key}
                 aria-disabled="true"
                 title={c.note || `${label} is unavailable here.`}
-                className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-muted"
+                className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-control border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-muted"
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden />
                 {label}

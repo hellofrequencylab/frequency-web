@@ -226,10 +226,10 @@ export function MessageThread({
                       key={msg.id}
                       className={`px-3 py-2 text-body-sm leading-relaxed break-words ${
                         isMine
-                          ? 'bg-primary text-on-primary rounded-2xl rounded-br-md'
-                          : 'bg-surface-elevated text-text rounded-2xl rounded-bl-md'
-                      } ${isFirst && !isMine ? 'rounded-tl-2xl' : ''} ${
-                        isFirst && isMine ? 'rounded-tr-2xl' : ''
+                          ? 'bg-primary text-on-primary rounded-card rounded-br-md'
+                          : 'bg-surface-elevated text-text rounded-card rounded-bl-md'
+                      } ${isFirst && !isMine ? 'rounded-tl-card' : ''} ${
+                        isFirst && isMine ? 'rounded-tr-card' : ''
                       }`}
                     >
                       {msg.body}

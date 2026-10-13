@@ -57,7 +57,7 @@ const HEADER_PRESETS: HeaderPreset[] = [
   {
     key: 'journey', name: 'Journey', type: 'Identity', variant: 'identity', size: 'short', overlayStyle: 'shadow',
     eyebrow: 'Journey', title: 'The 28-Day Reset', subtitle: 'Build a steadier, quieter week.',
-    leading: <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-canvas/90 text-primary shadow ring-1 ring-on-ink/10"><Compass className="h-5 w-5" /></span>,
+    leading: <span className="flex h-9 w-9 items-center justify-center rounded-card bg-canvas/90 text-primary shadow ring-1 ring-on-ink/10"><Compass className="h-5 w-5" /></span>,
     features: ['Accent icon chip', 'Admin action row', 'Shadow overlay', 'QR & Share'],
   },
   {

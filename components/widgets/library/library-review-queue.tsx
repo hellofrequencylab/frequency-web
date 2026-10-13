@@ -33,7 +33,7 @@ export async function LibraryReviewQueue() {
   return (
     <ul className="space-y-3">
       {pending.map((p) => (
-        <li key={`${p.contentType}:${p.id}`} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
+        <li key={`${p.contentType}:${p.id}`} className="flex flex-wrap items-start justify-between gap-3 rounded-card border border-border bg-surface p-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta font-semibold text-muted">{typeLabel(p.contentType)}</span>

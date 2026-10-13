@@ -275,7 +275,7 @@ export async function PracticesLibrary() {
                     <ChevronLeft className="h-4 w-4" /> Prev
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-subtle opacity-50">
+                  <span className="inline-flex items-center gap-1 rounded-control border border-border px-3 py-2 text-subtle opacity-50">
                     <ChevronLeft className="h-4 w-4" /> Prev
                   </span>
                 )}
@@ -285,7 +285,7 @@ export async function PracticesLibrary() {
                     Next <ChevronRight className="h-4 w-4" />
                   </Link>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-subtle opacity-50">
+                  <span className="inline-flex items-center gap-1 rounded-control border border-border px-3 py-2 text-subtle opacity-50">
                     Next <ChevronRight className="h-4 w-4" />
                   </span>
                 )}

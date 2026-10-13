@@ -140,7 +140,7 @@ export async function OperationsManage() {
           <Link
             key={card.href}
             href={card.href}
-            className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-border-strong"
+            className="group flex flex-col gap-3 rounded-card border border-border bg-surface p-4 transition-colors hover:border-border-strong"
           >
             <div className="flex items-start justify-between gap-2">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">

@@ -175,7 +175,7 @@ export function AdoptPracticeButton({
                 type="button"
                 disabled={pending}
                 onClick={() => swapWith(h.id)}
-                className="block w-full truncate rounded-lg border border-border px-2 py-1.5 text-left text-meta font-medium text-text transition-colors hover:border-primary hover:bg-primary-bg/20 disabled:opacity-60"
+                className="block w-full truncate rounded-control border border-border px-2 py-1.5 text-left text-meta font-medium text-text transition-colors hover:border-primary hover:bg-primary-bg/20 disabled:opacity-60"
               >
                 {h.title}
               </button>
@@ -213,7 +213,7 @@ export function AdoptPracticeButton({
                 type="button"
                 title={p.hint}
                 onClick={() => adoptWith(p.weeks)}
-                className={`rounded-lg border px-2 py-1.5 text-meta font-semibold transition-colors ${
+                className={`rounded-control border px-2 py-1.5 text-meta font-semibold transition-colors ${
                   p.default
                     ? 'border-primary bg-primary-bg/40 text-text hover:bg-primary-bg/60'
                     : 'border-border text-muted hover:border-primary hover:text-text'

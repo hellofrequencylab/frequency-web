@@ -1246,13 +1246,13 @@ export function MovementSession({
             auto-finalizes at the last confirmed point so an unattended run never inflates airtime.
             Voice: plain, no narrated feelings, no em dashes. */}
         {!warming && runOverPrompt && (
-          <div className="mx-auto mb-2 w-full max-w-sm rounded-2xl border border-move/50 bg-move-bg/30 px-4 py-3 text-center">
+          <div className="mx-auto mb-2 w-full max-w-sm rounded-card border border-move/50 bg-move-bg/30 px-4 py-3 text-center">
             <p className="text-body-sm font-semibold text-text">Still moving?</p>
             <p className="mt-0.5 text-meta text-muted">Confirm to keep logging.</p>
             <button
               type="button"
               onClick={confirmRunOver}
-              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-move px-3.5 py-1.5 text-body-sm font-bold text-on-move transition-colors hover:bg-move-hover"
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-control bg-move px-3.5 py-1.5 text-body-sm font-bold text-on-move transition-colors hover:bg-move-hover"
             >
               Still here
             </button>

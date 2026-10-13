@@ -16,7 +16,7 @@ type Visibility = 'public' | 'private'
 // Add/Edit surface. Creates the room (createRoom) then drops you into it.
 export function NewRoomCompose({
   buttonLabel = 'New Room',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   buttonLabel?: string
   buttonClass?: string
@@ -131,7 +131,7 @@ export function NewRoomCompose({
                     onClick={() => setVisibility(v)}
                     disabled={isPending}
                     aria-pressed={visibility === v}
-                    className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                    className={`flex items-start gap-2.5 rounded-control border px-3 py-2.5 text-left transition-colors ${
                       visibility === v ? 'border-primary bg-primary-bg ring-2 ring-primary/30' : 'border-border hover:bg-surface-elevated'
                     }`}
                   >

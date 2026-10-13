@@ -276,7 +276,7 @@ export function FrequencySignature({ signature, variant = 'full', layout = 'auto
         {/* The constellation, with axis labels positioned at the four cardinals.
             Stacked (narrow sidebar): a responsive square that shrinks to fit. */}
         <div
-          className={stacked ? 'relative mx-auto aspect-square w-full max-w-[210px]' : 'relative shrink-0'}
+          className={stacked ? 'relative mx-auto aspect-square w-full max-w-52.5' : 'relative shrink-0'}
           style={stacked ? undefined : { width: size, height: size }}
         >
           {svg}

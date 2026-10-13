@@ -83,7 +83,7 @@ export async function LinkCardsBlock({
                     alt=""
                     width={56}
                     height={56}
-                    className="h-14 w-14 shrink-0 rounded-lg object-cover"
+                    className="h-14 w-14 shrink-0 rounded-control object-cover"
                   />
                 )}
                 <span className="min-w-0 flex-1">

@@ -140,7 +140,7 @@ export function RecordingReviews({
       </div>
 
       {canRate ? (
-        <div className="mb-4 rounded-2xl border border-border bg-surface p-3">
+        <div className="mb-4 rounded-card border border-border bg-surface p-3">
           <div className="flex items-center gap-2">
             <span className="text-meta font-semibold text-muted">
               {myReview ? 'Your rating' : 'Rate this recording'}
@@ -192,7 +192,7 @@ export function RecordingReviews({
                     {a ? getInitials(a.displayName) : '?'}
                   </div>
                 )}
-                <div className="min-w-0 flex-1 rounded-2xl border border-border bg-surface px-3 py-2">
+                <div className="min-w-0 flex-1 rounded-card border border-border bg-surface px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                       {a ? (
@@ -211,7 +211,7 @@ export function RecordingReviews({
                         onClick={() => remove(r.id)}
                         disabled={pending}
                         aria-label="Remove rating"
-                        className="shrink-0 rounded-lg p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+                        className="shrink-0 rounded-control p-1 text-subtle transition-colors hover:text-danger disabled:opacity-40"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

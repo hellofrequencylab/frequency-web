@@ -119,7 +119,7 @@ function KnowledgeCheck({ config }: { config: CheckConfig }) {
               type="button"
               onClick={() => setPicked(i)}
               disabled={correct}
-              className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-left text-body-sm transition-colors ${state}`}
+              className={`flex w-full items-center gap-2.5 rounded-control border px-3 py-2 text-left text-body-sm transition-colors ${state}`}
             >
               <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-pill border border-current text-2xs font-bold">
                 {String.fromCharCode(65 + i)}
@@ -414,7 +414,7 @@ export function LearnPlayer({
                                 if (locked) {
                                   return (
                                     <li key={l.id}>
-                                      <div aria-disabled="true" className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-body-sm text-subtle opacity-70">
+                                      <div aria-disabled="true" className="flex w-full items-center gap-2 rounded-control px-2.5 py-1.5 text-left text-body-sm text-subtle opacity-70">
                                         <Lock className="h-3.5 w-3.5 shrink-0" />
                                         <span className="min-w-0 truncate">{l.title}</span>
                                       </div>
@@ -429,7 +429,7 @@ export function LearnPlayer({
                                       type="button"
                                       onClick={() => goTo(l.id)}
                                       aria-current={active ? 'true' : undefined}
-                                      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-body-sm transition-colors ${
+                                      className={`flex w-full items-center gap-2 rounded-control px-2.5 py-1.5 text-left text-body-sm transition-colors ${
                                         active ? 'bg-primary-bg font-medium text-primary-strong' : 'text-text hover:bg-surface-elevated'
                                       }`}
                                     >
@@ -459,7 +459,7 @@ export function LearnPlayer({
                                 <button
                                   type="button"
                                   onClick={() => mindless.open({ queue: q })}
-                                  className="mt-1 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg"
+                                  className="mt-1 inline-flex items-center gap-1.5 rounded-control px-2.5 py-1.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg"
                                 >
                                   <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden /> Start all {q.length} as one session
                                 </button>
@@ -599,7 +599,7 @@ export function LearnPlayer({
                 {/* One clear next action */}
                 <div className="mt-6 flex items-center gap-2 border-t border-border pt-4">
                   {prevId && (
-                    <button type="button" onClick={() => goTo(prevId)} className="inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-body-sm text-muted hover:text-text">
+                    <button type="button" onClick={() => goTo(prevId)} className="inline-flex items-center gap-1 rounded-control px-2.5 py-2 text-body-sm text-muted hover:text-text">
                       <ChevronLeft className="h-4 w-4" /> Back
                     </button>
                   )}
@@ -627,7 +627,7 @@ export function LearnPlayer({
                       <button
                         type="button"
                         onClick={() => setForceContinue(true)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-elevated px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:text-text"
+                        className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface-elevated px-4 py-2 text-body-sm font-semibold text-muted transition-colors hover:text-text"
                       >
                         <Check className="h-4 w-4" /> Mark complete & continue
                       </button>

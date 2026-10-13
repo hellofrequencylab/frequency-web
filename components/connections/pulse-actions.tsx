@@ -20,7 +20,7 @@ export function PulseConnectButton({ targetId }: { targetId: string }) {
 
   if (sent) {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-2xs font-medium text-muted">
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-2xs font-medium text-muted">
         <Check className="h-3.5 w-3.5" />
         Request sent
       </span>
@@ -79,7 +79,7 @@ export function PulseWelcomeRow({
         <p className="truncate text-2xs text-muted">{line}</p>
       </div>
       {gems != null ? (
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-success-bg px-3 py-1.5 text-2xs font-semibold text-success">
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-control bg-success-bg px-3 py-1.5 text-2xs font-semibold text-success">
           {gems > 0 ? `+${gems} ` : ''}👋
         </span>
       ) : (

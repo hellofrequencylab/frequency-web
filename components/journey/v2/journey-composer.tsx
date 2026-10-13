@@ -82,7 +82,7 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
   }
 
   return (
-    <section className="rounded-2xl border border-primary/30 bg-primary-bg/20 p-4">
+    <section className="rounded-card border border-primary/30 bg-primary-bg/20 p-4">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
         <Sparkles className="h-5 w-5 shrink-0 text-primary-strong" />
         <h2 className="flex-1 text-body font-bold text-text">{isEmpty ? 'Build with Vera' : 'Edit with Vera'}</h2>
@@ -117,10 +117,10 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
             <Button type="button" disabled={pending || !topic.trim()} onClick={build}>
               <Wand2 className="h-4 w-4" /> {pending ? 'Building…' : 'Build with Vera'}
             </Button>
-            <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary-bg/40 px-3 py-2 text-body-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
+            <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-control border border-primary/40 bg-primary-bg/40 px-3 py-2 text-body-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
               <Compass className="h-4 w-4" /> Start from the recommended framework
             </button>
-            <button type="button" disabled={pending} onClick={shape} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60">
+            <button type="button" disabled={pending} onClick={shape} className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text hover:bg-surface-elevated disabled:opacity-60">
               <LayoutTemplate className="h-4 w-4" /> Start with the shape
             </button>
           </div>

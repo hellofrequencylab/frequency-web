@@ -91,7 +91,7 @@ function TopFriendsView({ title, friends, cardStyle, headingFont }: {
             <Link
               key={f.profileId}
               href={`/people/${f.handle}`}
-              className="flex flex-col items-center gap-1.5 rounded-control border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
+              className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-surface p-2 text-center transition-colors hover:bg-surface-elevated"
               style={cardStyle}
             >
               {f.avatarUrl ? (
@@ -144,7 +144,7 @@ export function BlockView({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              className="block rounded-2xl border border-border-strong bg-surface px-4 py-3 text-center text-body-sm font-semibold text-text lift-1 transition-colors hover:bg-surface-elevated"
+              className="block rounded-card border border-border-strong bg-surface px-4 py-3 text-center text-body-sm font-semibold text-text lift-1 transition-colors hover:bg-surface-elevated"
               style={{ ...cardStyle, ...tintStyle(block.tint) }}
             >
               {item.label}
@@ -154,7 +154,7 @@ export function BlockView({
       )
     case 'image':
       return (
-        <div className="overflow-hidden rounded-2xl border border-border" style={cardStyle}>
+        <div className="overflow-hidden rounded-card border border-border" style={cardStyle}>
           <Image
             src={`${PUBLIC_BASE}${block.assetPath}`}
             alt={block.alt}
@@ -184,7 +184,7 @@ export function BlockView({
       // The allowlisted first-party players are trusted; the iframe is still sandboxed to the
       // perms they need and nothing more.
       return (
-        <div className="overflow-hidden rounded-2xl border border-border" style={cardStyle}>
+        <div className="overflow-hidden rounded-card border border-border" style={cardStyle}>
           <iframe
             src={buildEmbedSrc(block.provider, block.ref)}
             title={`${block.provider} embed`}

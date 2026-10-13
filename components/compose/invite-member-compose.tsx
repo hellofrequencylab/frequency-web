@@ -8,7 +8,7 @@ import { Field, Input, Textarea } from '@/components/ui/field'
 export function InviteMemberCompose({
   inviterName,
   buttonLabel = 'Invite Member',
-  buttonClass = 'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
+  buttonClass = 'inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap',
 }: {
   inviterName: string
   buttonLabel?: string
@@ -67,7 +67,7 @@ export function InviteMemberCompose({
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-surface-elevated p-3">
+        <div className="rounded-control border border-border bg-surface-elevated p-3">
           <div className="flex items-center justify-between gap-2">
             <code className="text-2xs text-muted truncate">{signupUrl}</code>
             <button type="button" onClick={handleCopy}

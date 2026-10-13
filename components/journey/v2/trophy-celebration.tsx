@@ -44,7 +44,7 @@ function Burst() {
 
 function Certificate({ title }: { title: string }) {
   return (
-    <div className="mt-5 rounded-2xl border-2 border-rank-gold/40 bg-canvas p-5 text-center">
+    <div className="mt-5 rounded-card border-2 border-rank-gold/40 bg-canvas p-5 text-center">
       <Award className="mx-auto h-7 w-7 text-rank-gold" strokeWidth={1.75} />
       <p className={capsLabel('mt-2 text-2xs font-bold text-rank-gold', 'widest')}>Certificate of completion</p>
       <p className="mt-2 text-body font-bold text-text">{title}</p>
@@ -102,7 +102,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
         <button
           onClick={onDismiss}
           aria-label="Dismiss"
-          className="absolute right-3 top-3 rounded-lg p-1 text-subtle transition-colors hover:text-text"
+          className="absolute right-3 top-3 rounded-control p-1 text-subtle transition-colors hover:text-text"
         >
           <X className="h-4 w-4" />
         </button>

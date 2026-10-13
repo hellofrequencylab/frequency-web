@@ -57,7 +57,7 @@ export function RecordingBlockEmbed({
 
   if (state.status === 'loading') {
     return (
-      <div className={`${wrap} animate-pulse rounded-2xl border border-border bg-surface p-6`}>
+      <div className={`${wrap} animate-pulse rounded-card border border-border bg-surface p-6`}>
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-pill bg-surface-elevated" />
           <div className="h-3 w-40 rounded bg-surface-elevated" />
@@ -68,7 +68,7 @@ export function RecordingBlockEmbed({
 
   if (state.status === 'locked') {
     return (
-      <div className={`${wrap} rounded-2xl border border-border bg-surface p-6 text-center`}>
+      <div className={`${wrap} rounded-card border border-border bg-surface p-6 text-center`}>
         <Lock className="mx-auto mb-2 h-5 w-5 text-subtle" aria-hidden />
         <p className="text-body-sm font-semibold text-text">{state.title}</p>
         <p className="mt-1 text-meta text-muted">Join this space to listen.</p>
@@ -79,7 +79,7 @@ export function RecordingBlockEmbed({
   if (state.status === 'missing') {
     // Nothing to show on a live page. In the editor the operator sees a hint until they pick a Recording.
     return (
-      <div className={`${wrap} rounded-2xl border border-dashed border-border bg-surface p-6 text-center`}>
+      <div className={`${wrap} rounded-card border border-dashed border-border bg-surface p-6 text-center`}>
         <Radio className="mx-auto mb-2 h-5 w-5 text-subtle" aria-hidden />
         <p className="text-meta text-muted">Pick a recording to play it here.</p>
       </div>

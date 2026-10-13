@@ -215,12 +215,12 @@ function MoreAboutFold({ detail }: { detail: CrmMemberDetail }) {
   if (!hasProfileBlocks(detail)) return null
   const firstName = detail.displayName.trim().split(/\s+/)[0] || detail.displayName
   return (
-    <section className="rounded-2xl border border-border">
+    <section className="rounded-card border border-border">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left transition-colors hover:bg-surface-elevated/60"
+        className="flex w-full items-center gap-2 rounded-card px-3 py-2.5 text-left transition-colors hover:bg-surface-elevated/60"
       >
         <UserCheck className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
         <span className="text-body-sm font-bold tracking-tight text-text">More about {firstName}</span>
@@ -389,7 +389,7 @@ export function CrmMemberDetailPane({
           >
             {/* Near-fullscreen compose overlay: the email editor fills the CENTER at full size, with an
                 editorial context rail (communication stats + threaded past communications) on the RIGHT. */}
-            <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-3">
+            <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-card border border-border bg-surface lift-3">
               <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">
                 <div className="min-w-0">
                   <h3 className="truncate text-body-sm font-bold text-text">Message {detail.displayName}</h3>
@@ -401,7 +401,7 @@ export function CrmMemberDetailPane({
                   type="button"
                   onClick={closeCompose}
                   aria-label="Close"
-                  className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
+                  className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
                 >
                   <X className="h-4 w-4" aria-hidden />
                 </button>
@@ -517,7 +517,7 @@ function ComposeContextRail({ detail }: { detail: CrmMemberDetail }) {
           <ol className="space-y-3 border-l border-border pl-4">
             {interactions.map((it, i) => (
               <li key={`${it.kind}-${it.when}-${i}`} className="relative">
-                <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-pill bg-primary" aria-hidden />
+                <span className="absolute -left-5.25 top-1.5 h-2 w-2 rounded-pill bg-primary" aria-hidden />
                 <p className="text-meta font-semibold text-text">
                   {it.kind} <span className="font-normal text-subtle">· {it.when}</span>
                 </p>

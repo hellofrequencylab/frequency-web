@@ -75,7 +75,7 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
       ariaLabel={`Report ${noun}`}
       className="max-w-sm"
     >
-      <div className="bg-surface rounded-2xl lift-3 border border-border p-6 w-full">
+      <div className="bg-surface rounded-card lift-3 border border-border p-6 w-full">
         {submitted ? (
           <>
             <h3 className="text-body-sm font-semibold text-text mb-2">
@@ -114,7 +114,7 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
                   checked={reason === r.value}
                   onChange={() => setReason(r.value)}
                   label={r.label}
-                  wrapperClassName={`w-full rounded-lg border px-3 py-2.5 transition-colors ${
+                  wrapperClassName={`w-full rounded-control border px-3 py-2.5 transition-colors ${
                     reason === r.value
                       ? 'border-primary bg-primary-bg/50 dark:border-primary dark:bg-primary-bg'
                       : 'border-border hover:border-border-strong dark:hover:border-border-strong'
@@ -142,14 +142,14 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
             <div className="flex gap-2 justify-end">
               <button
                 onClick={handleClose}
-                className="rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-text hover:bg-surface-elevated transition-colors"
+                className="rounded-control border border-border px-3 py-1.5 text-meta font-medium text-text hover:bg-surface-elevated transition-colors"
               >
                 Cancel
               </button>
               <button
                 disabled={!reason || isPending}
                 onClick={handleSubmit}
-                className="rounded-lg bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger hover:opacity-90 disabled:opacity-50 transition-colors"
+                className="rounded-control bg-danger px-3 py-1.5 text-meta font-semibold text-on-danger hover:opacity-90 disabled:opacity-50 transition-colors"
               >
                 {isPending ? 'Submitting...' : 'Submit Report'}
               </button>

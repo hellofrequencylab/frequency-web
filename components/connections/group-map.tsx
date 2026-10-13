@@ -35,7 +35,7 @@ export type GroupMapEvent = {
 export default function GroupMap({
   venue,
   events = [],
-  className = 'h-[320px] w-full overflow-hidden rounded-2xl border border-border',
+  className = 'h-80 w-full overflow-hidden rounded-card border border-border',
 }: {
   venue: GroupMapVenue | null
   events?: GroupMapEvent[]
@@ -44,7 +44,7 @@ export default function GroupMap({
   // Graceful no-coordinates case: a tasteful panel instead of an empty map.
   if (!venue) {
     return (
-      <div className="flex h-[320px] w-full items-center justify-center rounded-2xl border border-dashed border-border bg-surface/60 px-6 text-center">
+      <div className="flex h-80 w-full items-center justify-center rounded-card border border-dashed border-border bg-surface/60 px-6 text-center">
         <p className="text-body-sm text-muted">No location set for this circle yet.</p>
       </div>
     )
