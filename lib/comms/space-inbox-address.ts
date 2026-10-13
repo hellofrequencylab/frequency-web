@@ -40,6 +40,7 @@ import {
   matchSpaceInboxRecipient,
   normalizeInboxRoot,
   providerRecordsToZoneRecords,
+  spaceInboxZone,
   spaceInboxAddress,
   spaceInboxDomain,
   spaceInboxFromLine,
@@ -137,11 +138,15 @@ export async function provisionSpaceInboxAddress(spaceId: string): Promise<Space
     if (!vercelDomainsConfigured()) return { ok: false, message: UNAVAILABLE }
 
     // 1) The provider domain, reusing one that already exists (a retried setup, or a slug that came back).
+    // The records are re-read from the provider on every run, never from the saved row: a row written by
+    // an earlier release can hold stale names (the 2026-10-12 pilot did), and a retry must write the
+    // right ones. The zone they go into is the apex Vercel holds, not the root itself (see spaceInboxZone).
     let providerId = existing?.domain === domain ? existing.provider_domain_id : null
-    let zoneRecords: ZoneRecord[] = existing?.domain === domain && Array.isArray(existing.dns_records) ? existing.dns_records : []
+    let zoneRecords: ZoneRecord[] = []
     let providerState: SpaceInboxState = 'pending'
+    const zone = spaceInboxZone(root)
     const fromProvider = (p: { status: string; capabilities?: { sending?: string; receiving?: string } | null; records: unknown }) => {
-      zoneRecords = providerRecordsToZoneRecords(domain, root, p.records as ProviderDnsRecord[])
+      zoneRecords = providerRecordsToZoneRecords(domain, zone, p.records as ProviderDnsRecord[])
       providerState = inboxStateFromProvider(p)
     }
     if (!providerId) {
@@ -154,7 +159,7 @@ export async function provisionSpaceInboxAddress(spaceId: string): Promise<Space
         providerId = created.id
         fromProvider(created)
       }
-    } else if (!zoneRecords.length) {
+    } else {
       fromProvider(await inspectEmailProviderDomain(providerId, domain))
     }
 
@@ -162,8 +167,8 @@ export async function provisionSpaceInboxAddress(spaceId: string): Promise<Space
     const saved = await saveRow(spaceId, { domain, local_part: SPACE_INBOX_LOCAL_PART, provider_domain_id: providerId, state: providerState, dns_records: zoneRecords })
     if (!saved) return { ok: false, message: 'Your Space address could not be saved. Try again.' }
 
-    // 3) The records into the root zone. Repeatable; a record already there counts as written.
-    const dns = await upsertZoneDnsRecords(root, zoneRecords.map(r => ({ type: r.type, name: r.name, value: r.value, mxPriority: r.mxPriority })))
+    // 3) The records into the apex zone. Repeatable; a record already there counts as written.
+    const dns = await upsertZoneDnsRecords(zone, zoneRecords.map(r => ({ type: r.type, name: r.name, value: r.value, mxPriority: r.mxPriority })))
     if (!dns.ok) {
       console.warn('[space-inbox] zone DNS write failed', { spaceId, error: dns.error })
       return { ok: false, message: 'Your Space address is saved, but its records could not be written yet. Try again in a minute.' }
