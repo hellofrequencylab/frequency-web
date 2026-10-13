@@ -268,7 +268,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     minTier: 'business',
     title: 'Take payments',
     rungs: spaceRungs(
-      'Free Events, free-to-join memberships, and tips with no fee.',
+      'Free Events, free-to-join memberships, and tips with no platform fee, only card processing.',
       'Paid tickets, paid memberships, donations, shop checkout and booking deposits.',
     ),
   },

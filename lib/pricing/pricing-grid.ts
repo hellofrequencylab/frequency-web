@@ -64,6 +64,7 @@ import { allowanceLabel, currentMeterStepIndex, featureMeter } from './feature-m
 import { isBetaPricingActive } from './beta'
 import { meetsGate, mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
 import { planTakesPayments } from './payments-plan'
+import { PLAN_STORY } from './plan-story'
 import {
   ADDON_ENTITLEMENT_KEYS,
   SPACE_PLAN_LABEL,
@@ -175,7 +176,7 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   free: {
     tagline: 'Host free. The whole thing.',
     forWho:
-      'Anyone opening a Space, for as long as they want. Every business tool, with limits sized for a launch, and tips with no fee. No card, no clock.',
+      'Anyone opening a Space, for as long as they want. Every business tool, with limits sized for a launch, and tips with no platform fee, only card processing. No card, no clock.',
   },
   business: {
     tagline: 'Selling starts here.',
@@ -213,11 +214,11 @@ function pricedOffering(
 
 /** The fee line on a column that takes tips only. "0%" is the honest number: a tip carries no fee on
  *  any tier. */
-const TIPS_ONLY_LINE = 'Tips only, at 0%'
+const TIPS_ONLY_LINE = `Tips only, at 0% ${PLAN_STORY.plusProcessing}`
 
 /** The fee line on a column that sells: the promise first, then the introduction fee. */
 function sellingRateLine(bps: number): string {
-  return `0% on your own people, ${formatBps(bps)} once per customer the network introduces`
+  return `0% on your own people ${PLAN_STORY.plusProcessing}, ${formatBps(bps)} once per customer the network introduces`
 }
 
 /** The two MEMBER offerings, in ladder order: Member (free) and Crew. PURE.
@@ -668,7 +669,7 @@ const SPACE_GROUPS: GroupDef[] = [
         key: 'tips',
         label: 'Tips',
         detail: 'Anyone can leave a tip, on every plan, and we take nothing from it.',
-        source: { from: 'always', text: 'Included, 0%' },
+        source: { from: 'always', text: `Included, 0% ${PLAN_STORY.plusProcessing}` },
       },
       {
         key: 'space_shop_listings',
@@ -725,7 +726,7 @@ const SPACE_GROUPS: GroupDef[] = [
         key: 'take_rate',
         label: 'Network fee',
         detail:
-          'Charged once, on a customer the network introduced, at their first purchase. You keep 100% of the business you bring in yourself, and 0% applies for good to anyone already in your world: a follower, one of your members, a contact, or someone who bought before.',
+          `Charged once, on a customer the network introduced, at their first purchase. You keep 100% of the business you bring in yourself, ${PLAN_STORY.afterProcessing}, and 0% applies for good, ${PLAN_STORY.plusProcessing}, to anyone already in your world: a follower, one of your members, a contact, or someone who bought before.`,
         source: { from: 'takeRate' },
       },
     ],
@@ -955,7 +956,7 @@ const MEMBER_GROUPS: GroupDef[] = [
         key: 'tips',
         label: 'Tips',
         detail: 'People can tip you for what you host, and we take nothing from it. Add a payout account once.',
-        source: { from: 'always', text: 'Included, 0%' },
+        source: { from: 'always', text: `Included, 0% ${PLAN_STORY.plusProcessing}` },
       },
       {
         key: 'payments',

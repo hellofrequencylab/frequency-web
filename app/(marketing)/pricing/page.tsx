@@ -218,12 +218,12 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
     },
     {
       q: 'What stays free forever?',
-      a: 'The people part, hosting, and tips. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Opening a Space and running it is free. Tips carry no fee on any tier. A business never pays for access to people.',
+      a: 'The people part, hosting, and tips. Joining Frequency, belonging to Circles, going to events, following Spaces, and messaging never cost anything, for members or for you. Opening a Space and running it is free. Tips carry no platform fee on any tier, only card processing. A business never pays for access to people.',
     },
     ...betaFaq,
     {
       q: 'Do you take a cut of my sales?',
-      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, always, and tips are never touched. ${PLAN_STORY.rate}${fees ? ` Where each selling plan lands: ${fees}.` : ''} Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again. We charge once for the introduction.`,
+      a: `Not of your own. You keep 100% of the bookings and sales you bring in yourself, ${PLAN_STORY.afterProcessing}, and we never take a share of a tip. ${PLAN_STORY.rate}${fees ? ` Where each selling plan lands: ${fees}.` : ''} Once a buyer is yours, meaning they follow you, they are one of your members, they are in your contacts, or they have bought before, we take nothing on them again. We charge once for the introduction.`,
     },
     ...collectiveFaq,
     {
@@ -476,7 +476,7 @@ export default async function PricingPage() {
               </div>
               <p className="mx-auto mt-8 max-w-2xl text-center text-body leading-relaxed text-muted">
                 {PLAN_STORY.crew} Neither personal tier takes payments: selling runs through a Space on
-                Business, which any member can open. Tips work on both, with no fee.
+                Business, which any member can open. Tips work on both, with no platform fee, only card processing.
               </p>
             </div>
           </Section>
@@ -626,7 +626,7 @@ export default async function PricingPage() {
           {[
             {
               title: 'We never take a cut of your own people.',
-              body: 'You keep 100% of the business you bring in yourself, and every tip. We earn only on a customer the network introduces, once.',
+              body: `You keep 100% of the business you bring in yourself, and every tip, ${PLAN_STORY.afterProcessing}. We earn only on a customer the network introduces, once.`,
             },
             {
               title: 'One honest price, no surprise invoices.',
