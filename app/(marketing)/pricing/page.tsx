@@ -11,6 +11,7 @@ import { loadFeatureGateOverrides } from '@/lib/pricing/gates'
 import {
   memberOfferings,
   planExtras,
+  spaceFeatureGrid,
   spaceOfferings,
   type Offering,
   type PricingGridInput,
@@ -24,6 +25,8 @@ import { isWellFormed } from '@/lib/page-editor/templates'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OG_SITE, ROOT_OG_IMAGES } from '@/lib/site'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencyPricing } from '@/components/frequency/site/pages/pricing/frequency-pricing'
 import { pricingFaq } from './pricing-faq'
 import {
   PricingDoors,
@@ -208,18 +211,25 @@ export default async function PricingPage() {
     )
   }
 
-  const extras = planExtras(input)
   const faq = pricingFaq(input)
+  const pageSchema = [breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]), faqSchema(faq), ...priceSchema]
+
+  // The Frequency design (ADR-1737): the same model, the same FAQ, the same schema and the same CTA
+  // hrefs, in the design's body. SITE_DESIGN is build-time, so a DAWN build never reaches this branch.
+  if (SITE_DESIGN === 'frequency') {
+    return (
+      <>
+        <JsonLd data={pageSchema} />
+        <FrequencyPricing members={members} spaces={spaces} grid={spaceFeatureGrid(input)} faq={faq} />
+      </>
+    )
+  }
+
+  const extras = planExtras(input)
 
   return (
     <>
-      <JsonLd
-        data={[
-          breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
-          faqSchema(faq),
-          ...priceSchema,
-        ]}
-      />
+      <JsonLd data={pageSchema} />
 
       <PhotoHero
         image="/images/site/lab-lounge.jpg"
