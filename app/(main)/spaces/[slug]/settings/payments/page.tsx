@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
@@ -56,13 +56,13 @@ export default async function SpacePaymentsPage({
   const brandName = space.brandName ?? space.name
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Get paid"
       description="Where your money lands, which of your money paths are live, and what the network takes."
       width="wide"
     >
       <PaymentsBody slug={slug} />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

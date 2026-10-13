@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { requireAdmin } from '@/lib/admin/guard'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getStages, getDeal } from '@/lib/crm/pipeline'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { DealForm } from '@/components/crm/deal-form'
@@ -17,8 +17,8 @@ export default async function EditPipelineCardPage({ params }: { params: Promise
   const [stages, deal] = await Promise.all([getStages(rootId), getDeal(id, rootId)])
   if (!deal) notFound()
   return (
-    <FocusTemplate title="Edit card" description="Update this card or move its stage.">
+    <ConsoleFocusTemplate title="Edit card" description="Update this card or move its stage.">
       <DealForm stages={stages} deal={deal} />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

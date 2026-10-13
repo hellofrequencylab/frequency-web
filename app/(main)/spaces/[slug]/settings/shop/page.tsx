@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { Coins, Receipt, Wallet } from 'lucide-react'
-import { DashboardTemplate } from '@/components/templates'
+import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import { getCallerProfile } from '@/lib/auth'
@@ -68,7 +68,7 @@ export default async function SpaceShopConsolePage({
   const readOnly = !canManage && staffViewing
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow={brandName}
       title={TAB_COPY[activeTab].title}
       description={TAB_COPY[activeTab].description}
@@ -104,7 +104,7 @@ export default async function SpaceShopConsolePage({
           <StorefrontTab slug={slug} spaceId={space.id} preferences={space.preferences} readOnly={readOnly} />
         )}
       </Suspense>
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }
 

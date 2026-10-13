@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { Briefcase, CircleDollarSign, Gauge, ListChecks, Lock, Trophy } from 'lucide-react'
-import { DashboardTemplate } from '@/components/templates'
+import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { spaceManageHref, type SpaceType } from '@/lib/spaces/types'
@@ -116,7 +116,7 @@ export default async function SpaceCrmBoardPage({
   // calm "pick a contact" prompt rather than another Space's data.
   if (selectedContactId) {
     return (
-      <DashboardTemplate
+      <ConsoleDashboardTemplate
         eyebrow={brandName}
         title="Contact"
         description="One person in your space CRM: their details, history, deals, and your private notes."
@@ -136,7 +136,7 @@ export default async function SpaceCrmBoardPage({
             backHref={boardHref}
           />
         </Suspense>
-      </DashboardTemplate>
+      </ConsoleDashboardTemplate>
     )
   }
 
@@ -145,7 +145,7 @@ export default async function SpaceCrmBoardPage({
   // The read is space-scoped inside listMembersByFilter; an unknown stage yields an empty list.
   if (selectedStage) {
     return (
-      <DashboardTemplate
+      <ConsoleDashboardTemplate
         eyebrow={brandName}
         title="Members by stage"
         description="The people at this point on the climb in your space, lowest health first. Tap anyone to open their detail."
@@ -158,7 +158,7 @@ export default async function SpaceCrmBoardPage({
         <Suspense fallback={<ListSkeleton />}>
           <SpaceStageList spaceId={space.id} stage={selectedStage} boardHref={boardHref} />
         </Suspense>
-      </DashboardTemplate>
+      </ConsoleDashboardTemplate>
     )
   }
 
@@ -193,7 +193,7 @@ export default async function SpaceCrmBoardPage({
   const crmTease = caps.canManageMembers ? await resolveSpaceTeaseGate(space, 'crm') : null
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow={brandName}
       title={viewCopy[activeView].title}
       description={viewCopy[activeView].description}
@@ -231,7 +231,7 @@ export default async function SpaceCrmBoardPage({
           panel bounds it under the profile hero. CrmBody re-derives the same space + caps, so the standalone
           render stays byte-identical. The deep sub-views (?contact=, ?stage=) stay on this route, above. */}
       <CrmBody slug={space.slug} activeView={activeView} />
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }
 
@@ -287,7 +287,7 @@ function LockedCrm({
       : 'A CRM turns the people you meet into a pipeline you can work: stages, deals, and contacts you bring over from My Contacts. Every space gets it. Move up a plan for a higher allowance as you grow.'
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow={brandName}
       title="CRM"
       description="The relationship workspace for this space."
@@ -327,7 +327,7 @@ function LockedCrm({
           usage={usage}
         />
       )}
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }
 

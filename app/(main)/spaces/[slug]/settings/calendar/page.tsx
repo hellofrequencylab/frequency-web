@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -137,7 +137,7 @@ export default async function SpaceCalendarConsolePage({
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Calendar"
       description="Run your space's calendar. Your public events, plus private entries and unavailable time only your team can see."
@@ -229,6 +229,6 @@ export default async function SpaceCalendarConsolePage({
           )}
         </div>
       )}
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

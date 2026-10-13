@@ -11,7 +11,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
-import { DashboardTemplate } from '@/components/templates'
+import { ConsoleDashboardTemplate } from '@/components/templates/console-templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import {
@@ -73,7 +73,7 @@ export default async function SpaceConversationsPage({
   const awaiting = rows.filter((r) => r.awaitingReply).length
 
   return (
-    <DashboardTemplate
+    <ConsoleDashboardTemplate
       eyebrow="Resonance"
       title="Conversations"
       width="wide"
@@ -110,6 +110,6 @@ export default async function SpaceConversationsPage({
           aiTriageAction: suggestSpaceConversationTriageAction.bind(null, space.slug),
         }}
       />
-    </DashboardTemplate>
+    </ConsoleDashboardTemplate>
   )
 }

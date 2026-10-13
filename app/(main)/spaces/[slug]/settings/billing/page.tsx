@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -49,24 +49,24 @@ export default async function SpaceBillingPage({
 
   if (featureLocked) {
     return (
-      <FocusTemplate
+      <ConsoleFocusTemplate
         eyebrow={brandName}
         title="Plan and billing"
         description="The plan and billing for this space."
       >
         <BillingBody slug={slug} />
-      </FocusTemplate>
+      </ConsoleFocusTemplate>
     )
   }
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Plan and usage"
       description="See your current plan and how much of each tool you are using. Hosting tools are on every plan. Business is where selling starts, and a full meter only pauses new things, never what you built."
       width="wide"
     >
       <BillingBody slug={slug} />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

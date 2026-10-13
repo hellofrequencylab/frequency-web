@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -55,20 +55,20 @@ export default async function SpaceMembersPage({
 
   if (featureLocked) {
     return (
-      <FocusTemplate eyebrow={brandName} title="Members" description="The team for this space.">
+      <ConsoleFocusTemplate eyebrow={brandName} title="Members" description="The team for this space.">
         <MembersBody slug={slug} />
-      </FocusTemplate>
+      </ConsoleFocusTemplate>
     )
   }
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Members"
       description="Who is on your team, and the role each one holds. Invite a teammate by email below, then share their link until email delivery ships."
       width="wide"
     >
       <MembersBody slug={slug} />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }

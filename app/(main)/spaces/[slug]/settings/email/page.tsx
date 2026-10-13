@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { FocusTemplate } from '@/components/templates'
+import { ConsoleFocusTemplate } from '@/components/templates/console-templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
@@ -58,20 +58,20 @@ export default async function SpaceEmailPage({
 
   if (featureLocked) {
     return (
-      <FocusTemplate eyebrow={brandName} title="Email" description="Campaigns for this space.">
+      <ConsoleFocusTemplate eyebrow={brandName} title="Email" description="Campaigns for this space.">
         <EmailBody slug={slug} />
-      </FocusTemplate>
+      </ConsoleFocusTemplate>
     )
   }
 
   return (
-    <FocusTemplate
+    <ConsoleFocusTemplate
       eyebrow={brandName}
       title="Email"
       description="Write a campaign, pick who gets it from your own contacts, and send or schedule it."
       width="wide"
     >
       <EmailBody slug={slug} />
-    </FocusTemplate>
+    </ConsoleFocusTemplate>
   )
 }
