@@ -128,4 +128,8 @@
 [data-design="frequency"] [data-kit="members"] .list.mc-plain>li>a:hover{background:rgba(255,255,255,.6)}
 [data-design="frequency"] [data-kit="members"] .tag.mc-tag-lg{height:40px;padding:0 16px;font:500 16px/1 var(--fq-font-display);letter-spacing:-.02em;align-self:flex-start}
 
+/* Settings panes (members pass). */
+[data-design="frequency"] [data-kit="members"] .mc-gap-20{gap:20px}
+[data-design="frequency"] [data-kit="members"] .input[readonly]{color:var(--fq-text-muted);cursor:default}
+
 }

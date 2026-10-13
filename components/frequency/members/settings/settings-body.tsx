@@ -1,10 +1,9 @@
 import { Suspense } from 'react'
-import Link from 'next/link'
 import { MembersBody } from '@/components/frequency/members/shared/members-body'
 import { SettingsPanes, type SettingsPane } from './settings-panes'
 import { AppearanceSection } from '@/app/(main)/settings/appearance/section'
 import { NotificationsSection } from '@/app/(main)/settings/notifications/section'
-import { ConnectionsSection } from '@/app/(main)/settings/connections/section'
+import { AccountPaneForm, PrivacyPane, LocationPane, FeedPane } from './connection-panes'
 import { AccountSection } from '@/app/(main)/settings/account/section'
 import { PlanSection } from '@/app/(main)/settings/billing/section'
 import { MyMembershipsSection } from '@/app/(main)/settings/memberships/section'
@@ -16,16 +15,19 @@ import { SELECTABLE_SKINS } from '@/lib/theme/skins'
 // suite stacks (each with its own forms, server actions and Suspense), so nothing a member can change
 // is lost, only regrouped under the reference's names:
 //
-//   Account        the profile editor door, then blocked people, your data, delete account
+//   Account        photo, name, email and About you saved in place (the profile editor's own action),
+//                  then blocked people, your data, delete account
 //   Notifications  the four-channel grid
-//   Privacy and location   who can find you, location precision, reach
+//   Privacy        Show me on leaderboards, who can find you, location precision, Resonance matching
+//   Location       home base, live location
+//   Feed           how far the feed reaches, and what the feed always does (it ends; night is Appearance)
+//   Membership     plan and billing, then the Spaces you belong to
 //   Appearance     light or dark (and, under DAWN only, Midnight: the skin registry filters by design,
 //                  ADR-1737, so this pane never offers it here)
 //   Install the app
-//   Membership     plan and billing, then the Spaces you belong to
 //
-// The reference's Feed pane is not built: there are no feed settings to save yet, and a switch that
-// saves nothing would be a lie.
+// The reference's "Show why I see things" switch is not drawn: nothing stores or reads that choice yet,
+// and a switch that saves nothing would be a lie.
 
 function Pending({ rows }: { rows: number }) {
   return (
@@ -61,15 +63,9 @@ export function SettingsBody({ sessionId, payouts }: { sessionId?: string; payou
       content: (
         <>
           <PaneHead title="Account" />
-          <div className="row wrap">
-            <span className="grow">
-              <span className="t1 mc-block">Your profile</span>
-              <span className="t2">Name, handle, photo, bio and your Spotlight page</span>
-            </span>
-            <Link className="btn sm" href="/settings/profile">
-              Edit profile
-            </Link>
-          </div>
+          <Suspense fallback={<Pending rows={3} />}>
+            <AccountPaneForm />
+          </Suspense>
           <PaneHead title="Privacy and your data" intro="Manage who you have blocked, download your data, and delete your account." />
           <Suspense fallback={<Pending rows={3} />}>
             <AccountSection />
@@ -92,16 +88,56 @@ export function SettingsBody({ sessionId, payouts }: { sessionId?: string; payou
     },
     {
       key: 'privacy',
-      label: 'Privacy and location',
-      anchors: ['connections', 'location'],
+      label: 'Privacy',
+      anchors: ['connections'],
       content: (
         <>
-          <PaneHead
-            title="Privacy and location"
-            intro="Decide who can find you, how precisely your location is shown, and how far your reach extends. Changes save instantly."
-          />
+          <PaneHead title="Privacy" intro="Decide who can find you, how precisely your location is shown, and whether you appear on boards. Changes save instantly." />
           <Suspense fallback={<Pending rows={4} />}>
-            <ConnectionsSection />
+            <PrivacyPane />
+          </Suspense>
+        </>
+      ),
+    },
+    {
+      key: 'location',
+      label: 'Location',
+      anchors: [],
+      content: (
+        <>
+          <PaneHead title="Location" intro="Where you are based, and whether nearby shows where you are right now." />
+          <Suspense fallback={<Pending rows={2} />}>
+            <LocationPane />
+          </Suspense>
+        </>
+      ),
+    },
+    {
+      key: 'feed',
+      label: 'Feed',
+      anchors: [],
+      content: (
+        <>
+          <PaneHead title="Feed" intro="How far your feed reaches. The ripple still widens it on its own when your area is quiet." />
+          <Suspense fallback={<Pending rows={2} />}>
+            <FeedPane />
+          </Suspense>
+        </>
+      ),
+    },
+    {
+      key: 'membership',
+      label: 'Membership',
+      anchors: ['plan', 'billing', 'memberships'],
+      content: (
+        <>
+          <PaneHead title="Membership" intro="Your plan and payment." />
+          <Suspense fallback={<Pending rows={2} />}>
+            <PlanSection sessionId={sessionId} payouts={payouts} />
+          </Suspense>
+          <PaneHead title="Spaces you belong to" intro="Open one, or leave it from here." />
+          <Suspense fallback={<Pending rows={2} />}>
+            <MyMembershipsSection />
           </Suspense>
         </>
       ),
@@ -130,23 +166,6 @@ export function SettingsBody({ sessionId, payouts }: { sessionId?: string; payou
         <>
           <PaneHead title="Install the app" intro="Put Frequency on your home screen and open it like any other app." />
           <InstallSettingsCard />
-        </>
-      ),
-    },
-    {
-      key: 'membership',
-      label: 'Membership',
-      anchors: ['plan', 'billing', 'memberships'],
-      content: (
-        <>
-          <PaneHead title="Membership" intro="Your plan and payment." />
-          <Suspense fallback={<Pending rows={2} />}>
-            <PlanSection sessionId={sessionId} payouts={payouts} />
-          </Suspense>
-          <PaneHead title="Spaces you belong to" intro="Open one, or leave it from here." />
-          <Suspense fallback={<Pending rows={2} />}>
-            <MyMembershipsSection />
-          </Suspense>
         </>
       ),
     },
