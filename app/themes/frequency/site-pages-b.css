@@ -5,14 +5,14 @@
    --fq- variables only: every literal colour in the reference maps to its Stage token. */
 @layer components {
 /* ── Pricing ──────────────────────────────────────────────────────────────────────────────────── */
-[data-design="frequency"] [data-kit="site"] .pb-g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+[data-design="frequency"] [data-kit="site"] .g3.pb-g4{grid-template-columns:repeat(4,minmax(0,1fr))}
 [data-design="frequency"] [data-kit="site"] .pb-cta{margin-top:auto;padding-top:10px}
 [data-design="frequency"] [data-kit="site"] .pb-cta .btn{width:100%}
 [data-design="frequency"] [data-kit="site"] .pb-note{margin:18px 0 0;max-width:64ch;font-size:16px;line-height:1.6;color:var(--fq-text-body)}
 [data-design="frequency"] [data-kit="site"] .mx td.pb-v{font-size:13.5px;line-height:1.4}
 [data-design="frequency"] [data-kit="site"] .mx td small{display:block;margin-top:4px;font-size:13px;line-height:1.4;color:var(--fq-text-muted)}
-@media (max-width:1100px){[data-design="frequency"] [data-kit="site"] .pb-g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:860px){[data-design="frequency"] [data-kit="site"] .pb-g4{grid-template-columns:1fr}}
+@media (max-width:1100px){[data-design="frequency"] [data-kit="site"] .g3.pb-g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){[data-design="frequency"] [data-kit="site"] .g3.pb-g4{grid-template-columns:1fr}}
 
 /* ── Stories ──────────────────────────────────────────────────────────────────────────────────── */
 [data-design="frequency"] [data-kit="site"] .pb-empty{border-radius:var(--fq-radius-xl);padding:clamp(28px,4vw,48px);background:var(--fq-surface-card);box-shadow:inset 0 0 0 1px var(--fq-border-hair);display:flex;flex-direction:column;gap:14px;max-width:760px}
