@@ -132,12 +132,21 @@ async function readSpace(spaceId: string): Promise<{ slug: string; name: string;
   return data as unknown as { slug: string; name: string; brand_name: string | null; owner_profile_id: string | null }
 }
 
+/** Write the row. A patch that carries `domain` is the full row and may create it (upsert on space_id).
+ *  Any other patch is a change to a row that exists and is an UPDATE: an upsert of a partial row is an
+ *  INSERT first, and Postgres rejects a proposed row with `domain` null before it ever reaches the
+ *  conflict branch ("null value in column domain violates not-null constraint", the 2026-10-13 02:00
+ *  cron run, which wrote the zone records and then could not stamp dns_written_at or the state). */
 async function saveRow(spaceId: string, patch: Record<string, unknown>): Promise<SpaceInboxAddressRow | null> {
-  const { data, error } = await table('space_inbox_addresses')
-    .upsert({ space_id: spaceId, ...patch, updated_at: new Date().toISOString() }, { onConflict: 'space_id' })
-    .select('*')
-    .single()
-  if (error || !data) return null
+  const values = { ...patch, updated_at: new Date().toISOString() }
+  const query = 'domain' in patch
+    ? table('space_inbox_addresses').upsert({ space_id: spaceId, ...values }, { onConflict: 'space_id' })
+    : table('space_inbox_addresses').update(values).eq('space_id', spaceId)
+  const { data, error } = await query.select('*').single()
+  if (error || !data) {
+    console.warn('[space-inbox] row save failed', { spaceId, keys: Object.keys(patch), error: error?.message ?? 'no row' })
+    return null
+  }
   return data as unknown as SpaceInboxAddressRow
 }
 
