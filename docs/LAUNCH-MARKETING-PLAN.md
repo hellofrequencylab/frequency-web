@@ -609,3 +609,51 @@ probes pass, not when this file says so.
 defers to CONTENT-VOICE §3b); design briefs before any DAWN mock work: `design_handoff/BRIEF-01:150`,
 `BRIEF-03` §1 and §5, `BRIEF-04:40-46,62`, `BRIEF-05:33`, `MARKETING-BRIEF.md:27,341`,
 `docs/OVERVIEW.md:39,76`.
+
+---
+
+## 14. Handoff: how to execute this plan
+
+For the agent picking this up. Read §1, §11 and §12 first; the rest is reference.
+
+**Where things are.** This plan, the eight rulings (ADR-1735 in `docs/ledger/adr/`), the agency agents
+(`.claude/agents/`) and the `/marketing-agency` skill all land with PR #3418
+(branch `claude/funny-brahmagupta-d1xbdb`). If it has not merged yet, branch from it or merge it in.
+
+**How to work.**
+- One backlog row per feature PR (AGENTS.md, "The one list"). Never edit `docs/BUILD-BACKLOG.json` or
+  `docs/DECISIONS.md` directly: `pnpm ledger:next` for ids, then a `docs/ledger/rows/<ID>.json` fragment
+  (`pnpm ledger:add`). Each open row needs `priority` and a `verify` probe that measures a consequence
+  (for copy rows, a probe that greps the source or the published document for the banned claim is enough).
+- Before every push: `pnpm lint`, `pnpm test` on touched areas, `pnpm check:canon`, `pnpm check:backlog`,
+  `pnpm check:one-list`, `pnpm check:docs-links`. For anything reachable from a root layout, read
+  `docs/DEPLOY-SAFETY.md` first. Run the app with `pnpm dev` to check pages by eye.
+- Canon wins on its own ground: NAMING, then CONTENT-VOICE (contractions, no em dashes in brand copy),
+  then VALUE-LADDER + `lib/pricing/*`. Pull money copy from `PLAN_STORY` (`lib/pricing/plan-story.ts`),
+  never retype it.
+
+**Start here: Phase 0 (Truth).** Copy and data only, no new features. Suggested PR split:
+
+| PR | Change | Files |
+|---|---|---|
+| 0.1 Home | Guarded, reversible data migration on `pages` slug `home`, on the pattern of `20270345004600_home_document_states_the_model.sql`: replace the "selling tickets, and taking donations are free from day one" lines (`:189`, `:228`, `:230`) with `PLAN_STORY.selling` copy; same fix in `lib/page-editor/templates/home.ts`; add the claim to `scripts/maintenance/home-copy-canon.mjs`. Home is owner-reserved copy (OWN-043): use the R7 headline. | `supabase/migrations/`, `lib/page-editor/templates/home.ts`, `scripts/maintenance/home-copy-canon.mjs` |
+| 0.2 Doors and About | Six door money lines (`funnel-config.ts:276,367,458,550,645`), `trustLine`s ("0% on your own audience, plus card processing"), `:229` "made perfect", `:442`, `:428` vs `:469`, `:603`; About principle (`about.ts:133`); Eventbrite comparison line | `lib/marketing/funnel-config.ts`, `lib/page-editor/templates/about.ts`, `lib/marketing/comparisons.ts` |
+| 0.3 The Lab and naming | Lab as future tense; "Frequency Labs" to "Frequency"; Crew "stays free for everyone" lines; category line per R1 in `SITE_DESCRIPTION` and llms.txt; drop the dormant Opening Beta branch | `what-is-frequency.ts` + `page.tsx`, `tools-for-community-builders.ts` + `page.tsx`, `lib/marketing/who-its-for.ts`, `lib/site.ts:67`, `app/llms.txt/route.ts` |
+| 0.4 Fees | "plus card processing" beside every 0% and 100% claim | `app/(marketing)/pricing/page.tsx:226,629`, `lib/pricing/plan-story.ts`, templates (grep `100%`) |
+| 0.5 Lifecycle copy | Welcome email, day 1/3/7 notifications, invite card, Market Read FOMO, "Others are looking too" | `lib/email.ts:1984,2004,2014,2024`, `app/api/cron/lifecycle-triggers/route.ts:48-54`, `components/sidebar/invite-friend-button.tsx:41,75`, `lib/marketing/market-read.ts:127,163-166`, `app/(main)/network/page.tsx:494` |
+| 0.6 Links and help | "Open Mindless" to `/mindless`; FAQ headings as `### Question?` on get-paid and billing; rename `space-crm.md` to Community Resonance | `calm-down-fast.ts:110`, `the-quest.ts:239`, `content/help/spaces/*` |
+
+Line numbers are from 2026-10-13. Re-grep before you edit.
+
+**Before Phase 0 ships, check two things in production** (read-only SELECT on `pages`): what the published
+`home` document says now, and whether a published `pricing` document exists. If one does, it replaces the
+coded `/pricing` page and needs the same fixes.
+
+**Then Phase 1 (Paths) and Phase 2 (Suite Builder).** Specs are §4 to §6 and §5. Rulings that change code:
+R2 (`lib/core/beta.ts`, `lib/onboarding/funnel-script.ts`, plus a 60-day grace for beta comps), R3
+(`lib/spaces/nonprofit-verification.ts`, billing page; ask the owner for the grandfather end date), R4
+(`lib/pricing/bundles.ts` rule 2 and OFFER-MODEL §3), R6 (`/build-your-suite`). Any Suite Builder field in the
+Space Spark that needs a multi-select is a Studio kernel change: read `docs/STUDIO.md` first.
+
+**Re-measure.** Run `/marketing-agency` after each phase. It audits against this plan and should find the
+phase's items gone.
