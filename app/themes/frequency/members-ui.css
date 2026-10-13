@@ -62,7 +62,7 @@
 
 /* Badge: the kit's `.tag`, toned by meaning (violet act, magenta live, aqua presence). */
 [data-design="frequency"] [data-kit="members"] .tag svg{width:12px;height:12px;flex:none}
-[data-design="frequency"] [data-kit="members"] .tag.mu-sm{height:20px;padding:0 8px;font-size:var(--fq-text-label)}
+[data-design="frequency"] [data-kit="members"] .tag.mu-sm{height:20px;padding:0 8px;font-size:12px /* token-ok: the kit .tag size; the export has no 12px step */}
 [data-design="frequency"] [data-kit="members"] .tag.mu-primary{background:var(--fq-accent-soft);color:var(--fq-accent);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-signal{background:var(--fq-presence-soft);color:var(--fq-presence);box-shadow:none}
 [data-design="frequency"] [data-kit="members"] .tag.mu-broadcast{background:var(--fq-live-soft);color:var(--fq-live);box-shadow:none}
@@ -212,7 +212,7 @@
 [data-design="frequency"] .btn:not([data-kit] *):disabled,[data-design="frequency"] .btn[aria-disabled="true"]:not([data-kit] *){opacity:.4;cursor:not-allowed;transform:none}
 [data-design="frequency"] .btn:not([data-kit] *) svg{width:16px;height:16px}
 [data-design="frequency"] .tag:not([data-kit] *){display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--fq-radius-orb);font:500 12px/1 var(--fq-font-sans);background:color-mix(in oklab,var(--fq-surface-raised) 70%,transparent);color:var(--fq-text-strong);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
-[data-design="frequency"] .tag.mu-sm:not([data-kit] *){height:20px;padding:0 8px;font-size:var(--fq-text-label)}
+[data-design="frequency"] .tag.mu-sm:not([data-kit] *){height:20px;padding:0 8px;font-size:12px /* token-ok: the kit .tag size; the export has no 12px step */}
 [data-design="frequency"] .tag.mu-primary:not([data-kit] *){background:var(--fq-accent-soft);color:var(--fq-accent);box-shadow:none}
 [data-design="frequency"] .tag.mu-solid:not([data-kit] *){background:var(--fq-text-strong);color:var(--fq-surface-card);box-shadow:none}
 [data-design="frequency"] .field:not([data-kit] *){display:flex;flex-direction:column;gap:8px}
