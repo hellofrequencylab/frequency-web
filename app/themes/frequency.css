@@ -85,6 +85,8 @@
   --color-danger-bg: color-mix(in srgb, var(--fq-danger) 14%, var(--fq-bg-canvas));
   --color-info: var(--fq-info);
   --color-info-bg: color-mix(in srgb, var(--fq-info) 14%, var(--fq-bg-canvas));
+  /* Commons --text-on-accent (#FFFFFF). Not var(--fq-text-on-accent): that flips dark at night and on
+     Stage, and the status fills (danger, warning, success) do not. */
   --color-text-on-danger: #FFFFFF;
   --color-text-on-warning: #FFFFFF;
   --color-text-on-success: #FFFFFF;

@@ -1,7 +1,10 @@
 /* Frequency MEMBER BODIES, lane C (Journey, Mindless, Profile, The Vault, Settings, Help, Site map).
    The few styles the members kit (kit-members.css, generated, do not edit) carries inline in its
    reference HTML rather than as classes. Hand-kept, --fq- tokens only, scoped exactly like the kit so
-   it paints nothing under DAWN. Every class here is `mc-` so it can never collide with a kit name. */
+   it paints nothing under DAWN. Every class here is `mc-` so it can never collide with a kit name.
+   Geometry reads the --fq- scale (--fq-text-*, --fq-radius-*, --fq-dur-*); an off-scale step left as a
+   literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
+   export has no token for (token-ok). */
 
 @layer components {
 
@@ -20,7 +23,7 @@
 [data-design="frequency"] [data-kit="members"] .mc-top-20{margin-top:20px}
 [data-design="frequency"] [data-kit="members"] .mc-start{align-items:flex-start}
 [data-design="frequency"] [data-kit="members"] .mc-thumb{flex:none;width:48px;height:48px;border-radius:14px}
-[data-design="frequency"] [data-kit="members"] .mc-note{padding:14px 18px;border-radius:16px;background:var(--fq-pa-soft);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+[data-design="frequency"] [data-kit="members"] .mc-note{padding:14px 18px;border-radius:var(--fq-radius-m);background:var(--fq-pa-soft);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px}
 [data-design="frequency"] [data-kit="members"] .mc-stack-dawn>*+*{margin-top:24px}
 
 /* A progress ring (Journey hero): the iridescent fill masked to --p percent over the track. */
@@ -55,7 +58,7 @@
 [data-design="frequency"] [data-kit="members"] .mc-medal .fq-icon{width:28px;height:28px}
 [data-design="frequency"] [data-kit="members"] .mc-award.mc-locked{opacity:.45}
 [data-design="frequency"] [data-kit="members"] .mc-locked .mc-medal{background:var(--fq-track);box-shadow:none}
-[data-design="frequency"] [data-kit="members"] .mc-step{display:block;height:4px;border-radius:999px;background:var(--fq-track)}
+[data-design="frequency"] [data-kit="members"] .mc-step{display:block;height:4px;border-radius:var(--fq-radius-orb);background:var(--fq-track)}
 [data-design="frequency"] [data-kit="members"] .mc-step.on{background:var(--fq-pa)}
 
 /* Settings: the side list and the panes. */
@@ -63,7 +66,7 @@
 [data-design="frequency"] [data-kit="members"] .mc-navbtn{height:44px;border:none;border-radius:14px;text-align:left;padding:0 14px;font:500 15px/1 var(--fq-font-sans);cursor:pointer;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .panel.mc-pane{gap:20px;padding:28px}
 @media (max-width:720px){[data-design="frequency"] [data-kit="members"] .panel.mc-pane{padding:18px}}
-[data-design="frequency"] [data-kit="members"] .mc-bar{display:block;height:12px;width:60%;border-radius:999px;background:var(--fq-track)}
+[data-design="frequency"] [data-kit="members"] .mc-bar{display:block;height:12px;width:60%;border-radius:var(--fq-radius-orb);background:var(--fq-track)}
 [data-design="frequency"] [data-kit="members"] .mc-bar.short{width:35%}
 
 /* Profile. */
@@ -72,7 +75,7 @@
 [data-design="frequency"] [data-kit="members"] .mc-initials{display:flex;align-items:center;justify-content:center;background:var(--fq-pa-soft);font:500 40px/1 var(--fq-font-display);letter-spacing:-.04em;color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="members"] .g4.mc-stats{margin-top:44px}
 [data-design="frequency"] [data-kit="members"] .mc-gap-24{gap:24px}
-[data-design="frequency"] [data-kit="members"] .mc-crew{font:600 14px/1 var(--fq-font-sans)}
+[data-design="frequency"] [data-kit="members"] .mc-crew{font:600 var(--fq-text-body-s)/1 var(--fq-font-sans)}
 
 /* Help. */
 [data-design="frequency"] [data-kit="members"] .ap-main.mc-narrow{max-width:900px}
@@ -81,9 +84,9 @@
 [data-design="frequency"] [data-kit="members"] .mc-between{justify-content:space-between}
 [data-design="frequency"] [data-kit="members"] .mc-muted{color:var(--fq-text-muted)}
 [data-design="frequency"] [data-kit="members"] .mc-help-search{position:relative;width:100%;max-width:560px}
-[data-design="frequency"] [data-kit="members"] .mc-pill{height:56px;padding:0 20px;border-radius:999px;background:var(--fq-surface-card);box-shadow:var(--fq-glass-panel-shadow),0 0 0 1px var(--fq-border-hair);cursor:text}
+[data-design="frequency"] [data-kit="members"] .mc-pill{height:56px;padding:0 20px;border-radius:var(--fq-radius-orb);background:var(--fq-surface-card);box-shadow:var(--fq-glass-panel-shadow),0 0 0 1px var(--fq-border-hair);cursor:text}
 [data-design="frequency"] [data-kit="members"] .mc-pill:focus-within{box-shadow:var(--fq-glass-panel-shadow),0 0 0 2px var(--fq-focus-ring)}
-[data-design="frequency"] [data-kit="members"] .mc-pill-input{border:none;outline:none;background:none;font:400 16px/1 var(--fq-font-sans);color:var(--fq-text-strong);min-width:0}
+[data-design="frequency"] [data-kit="members"] .mc-pill-input{border:none;outline:none;background:none;font:400 var(--fq-text-body-size)/1 var(--fq-font-sans);color:var(--fq-text-strong);min-width:0}
 [data-design="frequency"] [data-kit="members"] .mc-pill-input::placeholder{color:var(--fq-text-faint)}
 [data-design="frequency"] [data-kit="members"] .panel.mc-results{position:absolute;top:64px;left:0;right:0;z-index:20;text-align:left;padding:6px 22px}
 [data-design="frequency"] [data-kit="members"] .mc-faq{border-top:1px solid var(--fq-border-hair);padding:18px 0}
@@ -108,7 +111,7 @@
 [data-design="frequency"] [data-kit="members"] .mc-jcard-body{padding:18px 20px 20px}
 [data-design="frequency"] [data-kit="members"] .list>[aria-disabled="true"]{cursor:default}
 [data-design="frequency"] [data-kit="members"] .av:has(.fa-initials){display:inline-flex;align-items:center;justify-content:center}
-[data-design="frequency"] [data-kit="members"] .fa-initials{font:500 13px/1 var(--fq-font-sans);color:var(--fq-text-muted);letter-spacing:.02em}
+[data-design="frequency"] [data-kit="members"] .fa-initials{font:500 var(--fq-text-meta)/1 var(--fq-font-sans);color:var(--fq-text-muted);letter-spacing:.02em}
 [data-design="frequency"] [data-kit="members"] .faces a{display:flex;margin-left:-8px;border-radius:50%}
 [data-design="frequency"] [data-kit="members"] .faces a:first-child{margin-left:0}
 [data-design="frequency"] [data-kit="members"] .faces a .av{margin-left:0}
@@ -118,14 +121,14 @@
 [data-design="frequency"] [data-kit="members"] .mc-sections{display:flex;flex-direction:column;gap:56px;min-width:0}
 [data-design="frequency"] [data-kit="members"] .mc-sections>.mc-section:empty{display:none}
 @media (max-width:720px){[data-design="frequency"] [data-kit="members"] .mc-sections{gap:40px}}
-[data-design="frequency"] [data-kit="members"] .mc-banner{display:block;width:100%;height:auto;border-radius:24px;margin-bottom:28px}
+[data-design="frequency"] [data-kit="members"] .mc-banner{display:block;width:100%;height:auto;border-radius:var(--fq-radius-l);margin-bottom:28px}
 [data-design="frequency"] [data-kit="members"] .mc-place{width:20px;text-align:center;font-variant-numeric:tabular-nums}
 [data-design="frequency"] [data-kit="members"] .t1.mc-normal{font-weight:400}
 
 /* Leaderboard (members pass). */
 [data-design="frequency"] [data-kit="members"] ol.list.mc-plain{list-style:none;margin:0;padding:0}
 [data-design="frequency"] [data-kit="members"] .list.mc-plain>li>a{display:flex;align-items:center;gap:14px;border-radius:14px;margin:0 -10px;padding:0 10px;transition:background var(--fq-dur-fast)}
-[data-design="frequency"] [data-kit="members"] .list.mc-plain>li>a:hover{background:rgba(255,255,255,.6)}
+[data-design="frequency"] [data-kit="members"] .list.mc-plain>li>a:hover{background:var(--fqm-white-60)}
 [data-design="frequency"] [data-kit="members"] .tag.mc-tag-lg{height:40px;padding:0 16px;font:500 16px/1 var(--fq-font-display);letter-spacing:-.02em;align-self:flex-start}
 
 /* Settings panes (members pass). */

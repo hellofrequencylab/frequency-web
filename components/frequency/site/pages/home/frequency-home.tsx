@@ -539,7 +539,7 @@ export async function FrequencyHome() {
           <p
             style={{
               color: 'var(--fq-text-body)',
-              fontSize: 'clamp(18px,1.7vw,22px)',
+              fontSize: 'clamp(var(--fq-text-h4),1.7vw,var(--fq-text-h3))',
               lineHeight: 1.55,
               maxWidth: '46ch',
               margin: '28px auto 0',

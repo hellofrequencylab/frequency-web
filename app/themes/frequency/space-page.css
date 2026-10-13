@@ -18,7 +18,10 @@
      from the kit's own classes the way the Circle shell is (components/frequency/members/space).
 
    Colours, faces, radii and motion are --fq-* tokens; a translucent fill is a color-mix of one, so the
-   page follows Commons at night without a second set of values. */
+   page follows Commons at night without a second set of values.
+   Geometry reads the --fq- scale (--fq-text-*, --fq-radius-*, --fq-dur-*); an off-scale step left as a
+   literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
+   export has no token for (token-ok). */
 
 /* ══ 0. THE SPACE'S FONT SET ════════════════════════════════════════════════════════════════════
    A Space's theme picks its primary fonts (lib/theme/space-themes.ts). The house set leaves the design's
@@ -195,10 +198,10 @@
   border-radius: var(--fq-radius-orb);
   background: var(--fq-pa-soft);
   color: var(--fq-text-strong);
-  font: 600 13px/1 var(--fq-font-sans);
+  font: 600 var(--fq-text-meta)/1 var(--fq-font-sans);
 }
 [data-design="frequency"] [data-space-page] [data-fq="offering-meta"] {
-  font: 400 14px/1.4 var(--fq-font-sans);
+  font: 400 var(--fq-text-body-s)/1.4 var(--fq-font-sans);
   color: var(--fq-text-muted);
 }
 [data-design="frequency"] [data-space-page] [data-fq="offering-blurb"] {
@@ -212,7 +215,7 @@
   color: var(--fq-text-strong);
 }
 [data-design="frequency"] [data-space-page] [data-fq="num-label"] {
-  font: 400 13px/1.35 var(--fq-font-sans);
+  font: 400 var(--fq-text-meta)/1.35 var(--fq-font-sans);
   letter-spacing: 0;
   text-transform: none;
   color: var(--fq-text-muted);
@@ -247,7 +250,7 @@
 [data-design="frequency"] [data-kit="members"] .fqs-id>.stack{gap:10px;min-width:0}
 [data-design="frequency"] [data-kit="members"] .fqs-id .h1{color:var(--fq-text-on-accent);overflow-wrap:anywhere}
 [data-design="frequency"] [data-kit="members"] .fqs-k{font:500 var(--fq-text-label)/1 var(--fq-font-display);letter-spacing:.14em;text-transform:uppercase;color:color-mix(in oklab,var(--fq-text-on-accent) 82%,transparent)}
-[data-design="frequency"] [data-kit="members"] .fqs-tagline{margin:0;max-width:62ch;font:400 16px/1.45 var(--fq-font-sans);color:color-mix(in oklab,var(--fq-text-on-accent) 88%,transparent);text-wrap:pretty}
+[data-design="frequency"] [data-kit="members"] .fqs-tagline{margin:0;max-width:62ch;font:400 var(--fq-text-body-size)/1.45 var(--fq-font-sans);color:color-mix(in oklab,var(--fq-text-on-accent) 88%,transparent);text-wrap:pretty}
 [data-design="frequency"] [data-kit="members"] .fqs-tagline a{color:inherit;text-decoration:underline dashed;text-underline-offset:4px}
 [data-design="frequency"] [data-kit="members"] .fqs-tagline .serif{font-size:1.1em}
 [data-design="frequency"] [data-kit="members"] .fqs-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}

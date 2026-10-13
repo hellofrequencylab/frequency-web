@@ -2,11 +2,14 @@
    kit-admin.css. Hand-kept, --fq- tokens only, scoped like the kit so it is inert under DAWN. It covers the
    three things the template draws as a static mock and production has to make real: the Space SWITCHER
    (the template's .ad-space card, opened), an admin world's PAGES under its active row, and the nav row
-   wrapper. Everything the template already styles stays in the kit, untouched. */
+   wrapper. Everything the template already styles stays in the kit, untouched.
+   Geometry reads the --fq- scale (--fq-text-*, --fq-radius-*, --fq-dur-*); an off-scale step left as a
+   literal (a 12px chip, 15px UI text, a 14px or 20px radius) is the design's own value, which the
+   export has no token for (token-ok). */
 @layer components {
 [data-design="frequency"] [data-kit="admin"] .ad-nav-group{display:flex;flex-direction:column;gap:2px}
 [data-design="frequency"] [data-kit="admin"] .ad-sub{display:flex;flex-direction:column;gap:2px;margin:2px 0 6px}
-[data-design="frequency"] [data-kit="admin"] .ad-sub a{height:34px;padding:0 12px 0 42px;font-size:13px;border-radius:12px}
+[data-design="frequency"] [data-kit="admin"] .ad-sub a{height:34px;padding:0 12px 0 42px;font-size:var(--fq-text-meta);border-radius:12px}
 [data-design="frequency"] [data-kit="admin"] .ad-sub a.on{background:var(--fq-pa-soft);box-shadow:none}
 [data-design="frequency"] [data-kit="admin"] .ad-switch{position:relative}
 [data-design="frequency"] [data-kit="admin"] .ad-switch>summary{list-style:none;cursor:pointer}
@@ -14,7 +17,7 @@
 [data-design="frequency"] [data-kit="admin"] .ad-switch-caret{width:16px;height:16px;color:var(--fq-text-muted);transform:rotate(90deg);transition:transform var(--fq-dur-fast)}
 [data-design="frequency"] [data-kit="admin"] .ad-switch[open] .ad-switch-caret{transform:rotate(-90deg)}
 [data-design="frequency"] [data-kit="admin"] .ad-switch-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:18px;background:var(--fq-surface-raised);box-shadow:var(--fq-glass-panel-shadow),inset 0 0 0 1px var(--fq-border-hair)}
-[data-design="frequency"] [data-kit="admin"] .ad-switch-menu a{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:12px;font:500 14px/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
+[data-design="frequency"] [data-kit="admin"] .ad-switch-menu a{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:12px;font:500 var(--fq-text-body-s)/1.2 var(--fq-font-sans);color:var(--fq-text-strong)}
 [data-design="frequency"] [data-kit="admin"] .ad-switch-menu a:hover{background:var(--fq-track)}
 @media (max-width:960px){
 [data-design="frequency"] [data-kit="admin"] .ad-nav-group{flex-direction:row}
