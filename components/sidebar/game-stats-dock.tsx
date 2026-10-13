@@ -39,6 +39,11 @@ export type DockData = {
   rankProgress: { nextLabel: string | null; toGo: number; pct: number }
   arc: { chain: string; step: string; pct: number } | null
   vaultGems: number
+  /** Adopted practices and how many are still unlogged on the member's today (the Frequency rail's
+   *  Today's goals). Optional: only loadGameStats fills it. */
+  practices?: { adopted: number; toLog: number }
+  /** The member's calendar day, YYYY-MM-DD (lib/member-day.ts). */
+  today?: string
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {

@@ -32,7 +32,7 @@ export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'a
 // cookie, and they earn Zaps when the friend joins + gets started). Its own async server component behind a
 // <Suspense> so provisioning the code + rendering the branded QR never blocks the rest of the rail. Renders
 // nothing if the member has no handle or the code can't be provisioned (fail-safe, never an error).
-async function InvitePanel({ profileId }: { profileId: string }) {
+export async function InvitePanel({ profileId }: { profileId: string }) {
   // Build the invite data defensively (code provisioning touches the DB); any failure degrades to no
   // panel, never an error in the rail. JSX render stays OUTSIDE the try/catch (a render error belongs to
   // an error boundary, not this catch — react-hooks/error-boundaries).
@@ -201,7 +201,19 @@ export const loadGameStats = cache(async function loadGameStats(profileId: strin
   }
 
   // `gems` stays lifetime (the head counter is "total earned"); vaultGems is what is SPENDABLE.
-  return { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems: spendable ?? gems }
+  return {
+    zaps,
+    gems,
+    streak,
+    rank,
+    todaysMove,
+    last7,
+    rankProgress,
+    arc,
+    vaultGems: spendable ?? gems,
+    practices: { adopted: memberPractices.length, toLog: practicesToLog.length },
+    today: anchor,
+  }
 })
 
 // The viewer's practice activity — the Insight-Timer-style bar chart (Days / Weeks / Months),
@@ -224,7 +236,7 @@ export async function VaultDockSlot({ profileId }: { profileId: string }) {
   return <GameStatsDockClient data={await loadGameStats(profileId)} />
 }
 
-async function ActivityPanel({ profileId }: { profileId: string }) {
+export async function ActivityPanel({ profileId }: { profileId: string }) {
   const activity = await getMemberActivity(profileId)
   if (!activity.hasAny) return null
   return (
@@ -243,7 +255,7 @@ async function ActivityPanel({ profileId }: { profileId: string }) {
 // The viewer's Frequency Signature — their practice spread across the four Pillars as the
 // circular Mind/Body/Spirit/Expression dial. A site-wide standing panel: it rides under the
 // page panels on every rail so a member always has their evolving identity in view.
-async function SignaturePanel({ profileId }: { profileId: string }) {
+export async function SignaturePanel({ profileId }: { profileId: string }) {
   const signature = await getMemberSignature(profileId)
   return (
     // Masked for the same reason as ActivityPanel: the dial is a reading of the member's logs.
@@ -257,7 +269,7 @@ async function SignaturePanel({ profileId }: { profileId: string }) {
 }
 
 // Render the page panels for the current route (each its own Suspense boundary).
-async function PagePanels({ profileId, role, pathname }: RightSidebarProps & { pathname: string }) {
+export async function PagePanels({ profileId, role, pathname }: RightSidebarProps & { pathname: string }) {
   const keys = pageRailPanels(pathname)
   const isCrew = ['crew', 'host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)
 

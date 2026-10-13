@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { FqIcon, type FqIconName } from '@/components/frequency/icon'
 import { CaptureBar } from '@/components/feed/capture-bar'
@@ -113,76 +113,10 @@ export function FeedComposer({ scopeId, avatarUrl, name, practiceHref }: { scope
 }
 
 // ── Get started ───────────────────────────────────────────────────────────────
+// Lives with the shell now (it leads the right rail, README §3.1); re-exported for the Feed's
+// narrow-screen copy.
 
-export interface GsStep {
-  key: string
-  label: string
-  blurb: string
-  cta: string
-  href: string
-  done: boolean
-}
-
-/** The activation checklist (lib/onboarding/status.ts), drawn as the design's Get started box.
- *  Each CTA opens the step's real flow; done-ness is detected server-side from member state.
- *  × folds the box away for this visit: the platform keeps the guide until the steps are done. */
-export function GetStarted({ steps }: { steps: GsStep[] }) {
-  const [hidden, setHidden] = useState(false)
-  const [open, setOpen] = useState<string | null>(null)
-  const done = steps.filter((s) => s.done).length
-  const firstTodo = steps.find((s) => !s.done)?.key ?? null
-  const active = open ?? firstTodo
-  if (hidden || steps.length === 0) return null
-  const left = steps.length - done
-  const later = (key: string) => {
-    const i = steps.findIndex((s) => s.key === key)
-    const next = [...steps.slice(i + 1), ...steps.slice(0, i)].find((s) => !s.done)
-    setOpen(next ? next.key : null)
-  }
-  return (
-    <section className="panel fa-gs" aria-label="Get started">
-      <div className="fq-aura" aria-hidden />
-      <div className="fa-gs-h">
-        <span className="fa-gs-ring" data-n={`${done}/${steps.length}`} style={{ '--p': `${Math.round((done / steps.length) * 100)}%` } as CSSProperties} aria-hidden />
-        <span className="grow">
-          <b>Get started</b>
-          <span className="t2">{left === 0 ? 'All done' : `Set up your network · ${left} left`}</span>
-        </span>
-        <button type="button" className="fa-x" aria-label="Hide for now" onClick={() => setHidden(true)}>
-          <FqIcon name="close" />
-        </button>
-      </div>
-      <div className="fa-steps">
-        {steps.map((s) => {
-          const now = !s.done && active === s.key
-          return (
-            <div key={s.key} className={s.done ? 'fa-step done' : now ? 'fa-step now' : 'fa-step'}>
-              <button type="button" aria-expanded={now} disabled={s.done} onClick={() => setOpen(s.key)}>
-                <span className={now ? 'fa-mark fq-breathe' : 'fa-mark'} aria-hidden>
-                  {s.done && <FqIcon name="checkin" />}
-                </span>
-                {s.label}
-              </button>
-              {now && (
-                <div className="fa-step-open">
-                  <p>{s.blurb}</p>
-                  <div className="row">
-                    <Link href={s.href} className="btn pa">
-                      {s.cta}
-                    </Link>
-                    <button type="button" className="btn txt sm" onClick={() => later(s.key)}>
-                      Later
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </section>
-  )
-}
+export { GetStarted, type GsStep } from '../shell/get-started'
 
 // ── Needs you ─────────────────────────────────────────────────────────────────
 

@@ -47,8 +47,10 @@ export interface FrequencyMembersShellProps {
   crew: boolean
   /** The viewer's game stats (zaps, gems, streak, rank, current Journey), resolved behind Suspense. */
   stats: Stats
-  /** The right rail's panels (components/sidebar/right-sidebar.tsx), already behind Suspense. */
+  /** The right rail's open face (right-rail.tsx: the design's panels, then the platform's own). */
   sidebar: React.ReactNode
+  /** The right rail's 76px face (right-rail.tsx FrequencyRightMicro): one button per panel. */
+  sidebarMicro: React.ReactNode
   banner: React.ReactNode
   unreadCount: number
   messagesUnread: number
@@ -251,6 +253,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
       <div className="fqm-you-foot">
         <Link href="/settings">Settings</Link>
         <Link href="/help">Help</Link>
+        <Link href="/site-map">Site map</Link>
       </div>
     </>
   )
@@ -273,32 +276,9 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
   )
 
   // ── Right rail ───────────────────────────────────────────────────────────────────────────────────
-  // The open face is the existing rail panels (railFor decides where it shows, unchanged). The micro
-  // face and the tab carry the viewer's real standing; the prototype's sample panels (Your week,
-  // Today's goals, the local leaderboard, People to know) have no data source yet.
-  const rightMicro = (
-    <Suspense fallback={null}>
-      <WithStats stats={stats}>
-        {(d) => (
-          <>
-            <button type="button" className="fqm-rmi" data-fqm-expand="" aria-label={`Day streak ${d.streak}. Open the rail`} data-tip="Day streak" data-tip-sub={`${n(d.streak)} days`}>
-              <FqIcon name="streak" />
-              {n(d.streak)}
-            </button>
-            <button type="button" className="fqm-rmi" data-fqm-expand="" aria-label={`${d.zaps} Zaps this season. Open the rail`} data-tip="Zaps this season" data-tip-sub={`⚡ ${n(d.zaps)}`}>
-              <FqIcon name="zap" />
-              {n(d.zaps)}
-            </button>
-            <button type="button" className="fqm-rmi" data-fqm-expand="" aria-label={`${d.vaultGems} Gems to spend. Open the rail`} data-tip="Gems to spend" data-tip-sub={`💎 ${n(d.vaultGems)}`}>
-              <FqIcon name="gem" />
-              {n(d.vaultGems)}
-            </button>
-          </>
-        )}
-      </WithStats>
-    </Suspense>
-  )
-
+  // Both faces come from right-rail.tsx through the layout: the open face draws the design's panels
+  // (Get started, Your week, Today's goals, the local board, People to know) and then the platform's
+  // own, restyled; the micro face is one button per panel. The tab carries the standing.
   const rightTab = (
     <RailVaultTab
       label="The Vault"
@@ -390,7 +370,7 @@ export function FrequencyMembersShell(props: FrequencyMembersShellProps) {
           {props.banner}
           <FqRailLayout
             left={{ full: leftFull, micro: leftMicro, tab: leftTab }}
-            right={props.sidebar ? { full: props.sidebar, micro: rightMicro, tab: rightTab } : null}
+            right={props.sidebar ? { full: props.sidebar, micro: props.sidebarMicro, tab: rightTab } : null}
             footer={footer}
             chromeOverrides={props.chromeOverrides}
             admin={{ role: gateRole, staffRole: props.staffRole, webRole: props.webRole, caps: props.caps, appOverrides: props.appOverrides }}
