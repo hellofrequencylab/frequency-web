@@ -35,7 +35,7 @@ import type { Space } from '@/lib/spaces/types'
  *  checkout, ticket-eligibility). Rather than become a sixth place that GUESSES at money rules, this
  *  reads the two facts every one of those seams re-derives — the platform switch and the owner's
  *  mirrored Stripe flags — plus the per-space feature gate, and says only what those three prove. */
-const PATHS: { channel: PayoutChannel; fn: Parameters<typeof spaceFunctionAccess>[1] }[] = [
+export const PATHS: { channel: PayoutChannel; fn: Parameters<typeof spaceFunctionAccess>[1] }[] = [
   { channel: 'memberships', fn: 'memberships' },
   { channel: 'bookings', fn: 'availability' },
   { channel: 'orders', fn: 'shop' },
@@ -116,6 +116,31 @@ export async function PaymentsBody({ slug }: { slug: string }) {
 
 /** BAND 2. Reads the platform switch + the OWNER's Stripe flags once and threads them, rather than
  *  letting each row re-derive the same two facts (five redundant flag reads on one render). */
+export type MoneyPathState = 'live' | 'needs_payouts' | 'turned_off' | 'not_live'
+
+/** Each money path and the state this page can prove for it (the platform switch, the OWNER's Stripe
+ *  flags read once, and the per-space feature gate). Shared with the Frequency Economy body. */
+export async function loadMoneyPaths(
+  space: Space,
+  viewerProfileId: string | null,
+  staffViewing: boolean,
+): Promise<{ channel: PayoutChannel; word: string; state: MoneyPathState }[]> {
+  const ownerId = space.ownerProfileId ?? null
+  const [live, owner, caps] = await Promise.all([
+    payoutsLive(),
+    ownerId ? getConnectStatus(ownerId) : Promise.resolve(null),
+    getSpaceCapabilities(space, viewerProfileId),
+  ])
+  const payoutsReady = Boolean(owner?.ready)
+  return PATHS.map(({ channel, fn }) => {
+    const on = staffViewing || spaceFunctionAccess(space, fn, caps.role)
+    // The three states this page can prove. Anything finer (is a paid tier defined, is the shop
+    // published) belongs to that tool's own settings surface, which is one click away.
+    const state: MoneyPathState = !live ? 'not_live' : !on ? 'turned_off' : payoutsReady ? 'live' : 'needs_payouts'
+    return { channel, word: PAYOUT_CHANNEL_WORDS[channel].noun, state }
+  })
+}
+
 async function PathsBand({
   space,
   viewerProfileId,
@@ -125,28 +150,11 @@ async function PathsBand({
   viewerProfileId: string | null
   staffViewing: boolean
 }) {
-  const ownerId = space.ownerProfileId ?? null
-  const [live, owner, caps] = await Promise.all([
-    payoutsLive(),
-    ownerId ? getConnectStatus(ownerId) : Promise.resolve(null),
-    getSpaceCapabilities(space, viewerProfileId),
-  ])
-  const payoutsReady = Boolean(owner?.ready)
+  const paths = await loadMoneyPaths(space, viewerProfileId, staffViewing)
 
   return (
     <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
-      {PATHS.map(({ channel, fn }) => {
-        const on = staffViewing || spaceFunctionAccess(space, fn, caps.role)
-        // The three states this page can prove. Anything finer (is a paid tier defined, is the shop
-        // published) belongs to that tool's own settings surface, which is one click away.
-        const state = !live
-          ? 'not_live'
-          : !on
-            ? 'turned_off'
-            : payoutsReady
-              ? 'live'
-              : 'needs_payouts'
-        const word = PAYOUT_CHANNEL_WORDS[channel].noun
+      {paths.map(({ channel, word, state }) => {
         return (
           <li key={channel} className="flex items-center justify-between gap-3 px-4 py-3">
             <span className="text-body-sm font-semibold capitalize text-text">{word}</span>
@@ -181,7 +189,7 @@ async function PathsBand({
  *
  *  The beta price grant is deliberately absent: it moves which catalog PRICE a plan checkout resolves
  *  and touches no take rate (lib/billing/space-beta-grant.ts says so at length). */
-async function RateBand({ space }: { space: Space }) {
+export async function RateBand({ space }: { space: Space }) {
   const rate = await resolvedNetworkRate()
   // The rate the Space is actually charged: the plan's rung, bought down for a Founding Business.
   const bps = await spaceNetworkBps(space.plan, space.id, rate)

@@ -30,7 +30,7 @@ type RawReport = {
   }
 }
 
-type ReportWithPreview = RawReport & { preview: string; priorReports?: number }
+export type ReportWithPreview = RawReport & { preview: string; priorReports?: number }
 
 // SCAN-679: the queue shows a viewer only what the actions in feed/report-actions.ts would let
 // them act on. Platform scope (staff, a granted Platform moderator, or a community-domain staff
@@ -63,7 +63,10 @@ async function scopeReportsToViewer(
   return postReports.filter((r) => inScope.has(r.target_id))
 }
 
-export async function AdminModerationQueue() {
+/** The pending reports this viewer may act on, each with its target preview (and, for a member, the
+ *  prior-report count). The queue's one read, shared with the Frequency Moderation body. Callers render
+ *  it only behind the moderation route's gate; the scoping inside narrows it further per viewer. */
+export async function loadModerationReports(): Promise<ReportWithPreview[]> {
   const admin = createAdminClient()
 
   // Fetch pending reports with reporter info
@@ -151,7 +154,7 @@ export async function AdminModerationQueue() {
     }
   }
 
-  const reportsWithPreviews: ReportWithPreview[] = reports.map((r) => {
+  return reports.map((r) => {
     let preview = ''
     let priorReports: number | undefined
     if (r.target_type === 'post' || r.target_type === 'comment') {
@@ -168,6 +171,10 @@ export async function AdminModerationQueue() {
     }
     return { ...r, preview, priorReports }
   })
+}
+
+export async function AdminModerationQueue() {
+  const reportsWithPreviews = await loadModerationReports()
 
   return (
     <AdminSection>

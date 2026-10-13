@@ -6,6 +6,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // Gamification layout module (LP7): the four headline counts — achievements, times unlocked, season
 // challenges, and challenges completed. Self-fetching, fail-safe RSC; the page owns the host +
 // community-staff gate, so this never re-gates. Any read that comes back empty degrades to 0.
+/** How many times an achievement has been unlocked (user_achievements), shared with the Frequency Standing body. */
+export async function countAchievementUnlocks(): Promise<number> {
+  const { count } = await createAdminClient().from('user_achievements').select('id', { count: 'exact', head: true })
+  return count ?? 0
+}
+
 export async function GamificationStats() {
   const admin = createAdminClient()
   const [

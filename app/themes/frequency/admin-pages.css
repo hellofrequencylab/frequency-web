@@ -1,0 +1,56 @@
+/* THE MEMBER ADMIN PAGE BODIES (Frequency, ADR-1740). Hand-kept, --fq-* only.
+
+   The bodies under components/frequency/admin/pages/** reproduce design_handoff/frequency/templates/admin/*.html
+   with the kit class names verbatim. Those pages load the members kit (buttons, panels, type) beside
+   admin.css, so a body root is `<div class="adp" data-kit="members">` inside the admin shell's
+   `data-kit="admin"`: both kits resolve. What the design writes as inline style lives here instead, as
+   named modifiers, scoped the same way as kit-admin.css. */
+
+@layer components {
+/* The body root wears the members kit for its classes, not its page background: the admin canvas shows. */
+[data-design="frequency"] [data-kit="admin"] .adp[data-kit="members"]{background:transparent;margin:0}
+
+/* Page head: the console's h1 is denser than the member site's (design: font-size 38px). */
+[data-design="frequency"] [data-kit="admin"] .adp .head .h1{font-size:38px}
+
+/* The two-column console layout: content, then a 360px rail (design: ap-cols with inline columns). */
+[data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split{grid-template-columns:minmax(0,1fr) 360px;gap:32px}
+[data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split>.side{top:92px}
+[data-design="frequency"] [data-kit="admin"] .adp .adp-gap{margin-top:40px}
+[data-design="frequency"] [data-kit="admin"] .adp .stack.adp-wide{gap:32px}
+[data-design="frequency"] [data-kit="admin"] .adp .stack.adp-mid{gap:14px}
+[data-design="frequency"] [data-kit="admin"] .adp .stack.adp-tight{gap:6px}
+[data-design="frequency"] [data-kit="admin"] .adp .stack.adp-list{gap:16px}
+
+/* A table sitting in a panel keeps a thin inset (design: padding 8px). */
+[data-design="frequency"] [data-kit="admin"] .adp .panel.tbl-wrap{padding:8px}
+[data-design="frequency"] [data-kit="admin"] .adp .t1.adp-block{display:block}
+[data-design="frequency"] [data-kit="admin"] .adp .tbl .t2{font-size:13px}
+
+/* Contacts: the chip bar and the round search field. */
+[data-design="frequency"] [data-kit="admin"] .adp .row.adp-filters{margin-bottom:20px;gap:12px}
+[data-design="frequency"] [data-kit="admin"] .adp .input.adp-search{max-width:280px;height:44px;border-radius:999px}
+
+/* Memberships: plan cards, the most-picked ring (design: 0 0 0 2px of the violet light, from the violet hue). */
+[data-design="frequency"] [data-kit="admin"] .adp .panel.adp-pick{box-shadow:var(--fq-glass-panel-shadow),0 0 0 2px color-mix(in oklab,var(--fq-x-violet-neon) 45%,transparent)}
+[data-design="frequency"] [data-kit="admin"] .adp .num.adp-num{font-size:32px}
+
+/* Standing / Moderation: the tabs row sits flat inside a section head, and above the queue. */
+[data-design="frequency"] [data-kit="admin"] .adp .sec-h .tabs.adp-flat{border:none;gap:18px}
+[data-design="frequency"] [data-kit="admin"] .adp .tabs.adp-tabs{margin-bottom:24px}
+[data-design="frequency"] [data-kit="admin"] .adp .body.adp-rep{font-size:15px;margin:0}
+[data-design="frequency"] [data-kit="admin"] .adp .soft.adp-rules{justify-content:space-between}
+[data-design="frequency"] [data-kit="admin"] .adp .rank{font-weight:600}
+[data-design="frequency"] [data-kit="admin"] .adp .self-start{align-self:flex-start}
+
+/* An empty bar chart: the design's empty value, centred in the bars' own box. */
+[data-design="frequency"] [data-kit="admin"] .adp .bars.adp-empty{align-items:center;justify-content:center;color:var(--fq-text-muted);font:500 15px/1 var(--fq-font-sans)}
+
+/* Existing DAWN-built action surfaces kept below a Frequency body (forms, editors): spaced, not restyled. */
+[data-design="frequency"] [data-kit="admin"] .adp .adp-legacy{margin-top:40px;display:flex;flex-direction:column;gap:32px}
+
+@media (max-width:1000px){
+[data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split{grid-template-columns:1fr}
+[data-design="frequency"] [data-kit="admin"] .adp .ap-cols.adp-split>.side{position:static}
+}
+}

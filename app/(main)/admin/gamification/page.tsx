@@ -3,6 +3,8 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { AwardLauncher } from './award-launcher'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqStandingBody } from '@/components/frequency/admin/pages/standing/standing-body'
 
 // GAMIFICATION — achievements, challenges, and engagement stats as an operator surface (ADR-233 §3.3).
 // Module-driven (ADR-270/294): the page composes the AdminTemplate header (with the Award Achievement
@@ -22,6 +24,10 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminGamificationPage() {
   await requireAdmin('host', { staff: 'community' })
+
+  // Under the Frequency design (SITE_DESIGN, build-time) this is the Member Admin Standing page, which
+  // keeps every module below as its own controls; DAWN keeps the module-driven layout.
+  if (SITE_DESIGN === 'frequency') return <FqStandingBody />
 
   return (
     <AdminTemplate

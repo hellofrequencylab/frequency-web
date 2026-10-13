@@ -4,6 +4,8 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { PaymentsBody } from './payments-body'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FqEconomyBody } from '@/components/frequency/admin/pages/economy/economy-body'
 
 // GET PAID (LIVE-294, ADR-1313). The operator's payout home: where the money lands, which of the five
 // money paths are live, the rate actually in effect, and one line separating what the space RECEIVES
@@ -44,6 +46,12 @@ export default async function SpacePaymentsPage({
 
   const { canManage, staffViewing } = await resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole)
   if (!canManage && !staffViewing) notFound()
+
+  // Under the Frequency design (SITE_DESIGN, build-time) this is the Member Admin Economy page, which keeps
+  // the payout setup and the rate statement below its own bands; DAWN keeps the Focus page.
+  if (SITE_DESIGN === 'frequency') {
+    return <FqEconomyBody space={space} viewerProfileId={viewerProfileId} staffViewing={staffViewing} />
+  }
 
   const brandName = space.brandName ?? space.name
 
