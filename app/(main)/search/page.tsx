@@ -3,10 +3,6 @@ import { Search, MapPin, Compass } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sanitizeOrTerm } from '@/lib/search-sanitize'
 import { createClient } from '@/lib/supabase/server'
-import {
-  DIRECTORY_VISIBILITY_COLUMNS,
-  isListableInDirectory,
-} from '@/lib/connections/directory-visibility'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
@@ -19,45 +15,12 @@ import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo } from '@/lib/core/access-matrix'
 import { matchDestinations } from '@/lib/search/destinations'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { HOME_TZ, dayInZone } from '@/lib/time/zone'
-import {
-  SERIES_COLUMNS,
-  TEASER_CARDS_PER_SERIES,
-  collapseSeriesAroundFloor,
-  seriesFetchLimit,
-  seriesUpcomingFloor,
-  type SeriesFields,
-} from '@/lib/events/series'
+import { searchPeople, searchPosts, searchEvents, type PersonRow, type PostRow, type EventRow } from './search-data'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { FrequencySearch } from '@/components/frequency/members/search/search-body'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-type PersonRow = {
-  id: string
-  display_name: string
-  handle: string
-  avatar_url: string | null
-  community_role: string
-  is_demo: boolean
-}
-
-type PostRow = {
-  id: string
-  body: string
-  created_at: string
-  is_demo: boolean
-  author: { display_name: string; handle: string; avatar_url: string | null; community_role: string } | null
-}
-
-type EventRow = SeriesFields & {
-  id: string
-  title: string
-  slug: string
-  starts_at: string
-  location: string | null
-  is_cancelled: boolean
-  is_demo: boolean
-  host: { display_name: string; handle: string } | null
-}
+// The rows and the three gated reads live in ./search-data.ts, shared with the Frequency body.
 
 // ── Result windows ────────────────────────────────────────────────────────────
 // Each tab reads ONE bounded window; none of them cursors. Every window therefore
@@ -65,13 +28,6 @@ type EventRow = SeriesFields & {
 // "that is the first N", and the UI says which (see `truncated` below). The tab count
 // is shown ONLY when the window is complete: a truncated window is a floor, not a
 // total, and printing it as a total was the bug (FINALIZE-PLAN §9.3).
-
-/** People results per search. */
-const PEOPLE_RESULTS = 24
-/** Post results per search. */
-const POST_RESULTS = 20
-/** Event results the tab shows, counting REPEATING EVENTS rather than dates. */
-const EVENT_RESULTS = 20
 
 const TABS = ['people', 'posts', 'events'] as const
 type Tab = (typeof TABS)[number]
@@ -138,6 +94,9 @@ export default async function SearchPage({
   // service-role client, so an unsanitized `?q=` could inject extra `or()` conditions (ADR-274).
   const safe = sanitizeOrTerm(query)
 
+  // THE DESIGN SWITCH (ADR-1737): fixed at build time; a DAWN deploy renders the page below unchanged.
+  if (SITE_DESIGN === 'frequency') return <FrequencySearch query={query} safe={safe} rawTab={rawTab} />
+
   const admin = createAdminClient()
   const supabase = await createClient()
 
@@ -156,90 +115,18 @@ export default async function SearchPage({
       if (safe.length < 2) return empty
 
       if (tab === 'people') {
-        // 🔴 A service-role read on a member-facing page (see ADR-274 above for why: the `?q=`
-        // sanitiser exists BECAUSE this bypasses RLS). Bypassing RLS also bypassed every privacy
-        // control: a member who switched "Show me in the Members directory" off, or turned Ghost
-        // mode on, was still findable here by name and handle, because the only enforcer of those
-        // columns is the proximity RPC and this is a name search. The four privacy columns are
-        // selected and each row goes through the shared /network predicate (ADR-TBD). The gate is
-        // applied BEFORE the truncation check so a hidden row can never be the "one more" that
-        // advertises results the reader will not be shown.
-        const { data } = await admin
-          .from('profiles')
-          .select(`id, display_name, handle, avatar_url, community_role, is_demo, ${DIRECTORY_VISIBILITY_COLUMNS}`)
-          .or(`display_name.ilike.%${safe}%,handle.ilike.%${safe}%`)
-          .eq('is_active', true)
-          .order('display_name')
-          // +1: the extra row is never rendered, it only proves there are more.
-          .limit(PEOPLE_RESULTS + 1)
-        const rows = ((data ?? []) as PersonRow[]).filter(isListableInDirectory)
-        return { ...empty, people: rows.slice(0, PEOPLE_RESULTS), truncated: rows.length > PEOPLE_RESULTS }
+        const { rows, truncated } = await searchPeople(safe)
+        return { ...empty, people: rows, truncated }
       }
 
       if (tab === 'posts') {
-        const { data } = await admin
-          .from('posts')
-          .select(
-            `id, body, created_at, is_demo,
-             author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
-          )
-          .ilike('body', `%${safe}%`)
-          .eq('visibility', 'public')
-          .is('hidden_at', null)
-          .order('created_at', { ascending: false })
-          .limit(POST_RESULTS + 1)
-        const rows = (data ?? []) as unknown as PostRow[]
-        return { ...empty, posts: rows.slice(0, POST_RESULTS), truncated: rows.length > POST_RESULTS }
+        const { rows, truncated } = await searchPosts(safe)
+        return { ...empty, posts: rows, truncated }
       }
 
       // tab === 'events' (rawTab is validated to one of TABS at the top)
-      //
-      // TWO READS, AROUND THE FLOOR. This tab had no date predicate and ordered ascending, so its
-      // window was the OLDEST twenty matching rows from the beginning of time. Folding that single
-      // window would elect a series' very first date ever, which is a worse bug than the
-      // duplication. Splitting it lets a running series lead with its NEXT date while a finished
-      // one still answers with its LAST.
-      //
-      // A FACTORY, never one shared builder: PostgrestFilterBuilder mutates `this` and returns
-      // `this`, and .order() concatenates, so calling .gte() on one instance and .lt() on the same
-      // instance fires a single request carrying BOTH predicates and a doubled order — twice, and
-      // it matches nothing.
-      const eventsBase = () =>
-        admin
-          .from('events')
-          .select(
-            `id, title, slug, starts_at, location, is_cancelled, is_demo, ${SERIES_COLUMNS},
-             host:profiles!host_id ( display_name, handle )`
-          )
-          .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
-          .eq('status', 'published')
-          .eq('visibility', 'public')
-          .eq('is_cancelled', false)
-
-      const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
-      // Fold ONE past the display window for the same reason the flat tabs read one extra
-      // row: the fold caps at whatever it is handed, so a full window is otherwise
-      // indistinguishable from an exact match count.
-      const fetchLimit = seriesFetchLimit(EVENT_RESULTS + 1)
-      const [upcoming, past] = await Promise.all([
-        eventsBase().gte('starts_at', floor).order('starts_at', { ascending: true }).limit(fetchLimit),
-        // NEWEST first, so the window below the floor is the most RECENT past dates rather than a
-        // series' opening months. (The fold then elects the latest of them; the two together are
-        // what stop a search for a long-running cowork answering with a date from years ago.)
-        eventsBase().lt('starts_at', floor).order('starts_at', { ascending: false }).limit(fetchLimit),
-      ])
-
-      const folded = collapseSeriesAroundFloor(
-        (upcoming.data ?? []) as unknown as EventRow[],
-        (past.data ?? []) as unknown as EventRow[],
-        EVENT_RESULTS + 1,
-        { upcomingFrom: floor, perSeries: TEASER_CARDS_PER_SERIES },
-      )
-      return {
-        ...empty,
-        events: folded.slice(0, EVENT_RESULTS),
-        truncated: folded.length > EVENT_RESULTS,
-      }
+      const { rows, truncated } = await searchEvents(safe)
+      return { ...empty, events: rows, truncated }
     })()
 
   // getViewerHats does its own auth read internally; fired here it overlaps the getUser() below.

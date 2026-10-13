@@ -48,7 +48,7 @@ function dayLabel(iso: string): string {
   })
 }
 
-interface DispatchItem {
+export interface DispatchItem {
   id: string
   title: string
   excerpt: string | null
@@ -677,4 +677,21 @@ function FeedEmpty({ message }: { message: string }) {
       description={split ? split[2] : undefined}
     />
   )
+}
+
+/**
+ * The lead Dispatch for one viewer, on its own: the same candidate window, viewer reach and gate the
+ * FeedList's furniture rail runs (pickLeadDispatch), for a surface that renders the stream itself
+ * (the Frequency Member Feed, components/frequency/members/feed). Null when nothing reaches them.
+ */
+export async function loadLeadDispatch(
+  profileId: string,
+  nearby: { lat: number; lng: number; radiusM: number } | null,
+): Promise<DispatchItem | null> {
+  const admin = createAdminClient()
+  const [candidatesR, viewer] = await Promise.all([
+    dispatchCandidates(admin),
+    resolveDispatchViewer(admin, profileId, nearby),
+  ])
+  return pickLeadDispatch((candidatesR.data ?? []) as unknown as RawDispatchRow[], viewer)
 }
