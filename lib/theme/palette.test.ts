@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { DESIGNS, designDef } from './design'
+import { DESIGNS, SITE_DESIGN, designDef } from './design'
 import { PALETTES, type Palette } from './palette'
 
 // THE OFF-CSS PALETTE CONTRACT (ADR-1737). OG cards, email HTML and the wallet pass cannot read a
@@ -76,14 +76,15 @@ describe('the off-CSS palette', () => {
 })
 
 describe('the PWA manifest', () => {
-  // public/manifest.json is a static file, so it cannot follow SITE_DESIGN. It is held to DAWN's
-  // browser-chrome colour here; a Frequency deploy has to switch these two values (see design.ts).
-  it("carries DAWN's light browser-chrome colour", () => {
+  // public/manifest.json is a static file the browser fetches before any CSS applies, so
+  // scripts/write-design-assets.mjs (prebuild + predev) writes these two values from SITE_DESIGN.
+  // The committed copy is DAWN's, and an unset variable reads as DAWN.
+  it("carries this build's design's light browser-chrome colour", () => {
     const manifest = JSON.parse(readFileSync('public/manifest.json', 'utf8')) as {
       theme_color: string
       background_color: string
     }
-    expect(manifest.theme_color).toBe(designDef('dawn').chrome.light)
-    expect(manifest.background_color).toBe(designDef('dawn').chrome.light)
+    expect(manifest.theme_color).toBe(designDef(SITE_DESIGN).chrome.light)
+    expect(manifest.background_color).toBe(designDef(SITE_DESIGN).chrome.light)
   })
 })

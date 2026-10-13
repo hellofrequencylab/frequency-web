@@ -22,7 +22,11 @@
 // switches (skins off, Space font sets off) still follow SITE_DESIGN, so a true check of a design is a
 // local run with the env var set.
 
-/** Every design system the platform can wear. Add one = a CSS file in app/themes/ AND an entry here. */
+/**
+ * Every design system the platform can wear. Add one = a CSS file in app/themes/, an entry here, a
+ * font module in lib/theme/design-fonts/<id>.ts and an entry in lib/og/design-font.ts. The manifest
+ * colours and the active font module are written from SITE_DESIGN by scripts/write-design-assets.mjs.
+ */
 export type DesignId = 'dawn' | 'frequency'
 
 export interface DesignDef {
