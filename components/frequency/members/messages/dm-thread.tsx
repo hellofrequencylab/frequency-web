@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition, type FormEvent } from 'react'
+import { Fragment, useEffect, useState, useTransition, type FormEvent } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { sendMessage } from '@/app/(main)/messages/actions'
 import { useTypingIndicator } from '@/lib/realtime/use-typing'
@@ -22,6 +22,17 @@ function timeLabel(iso: string): string {
   return today
     ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase()
     : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+/** The reference's centred day line ("Today") between messages from different days. */
+function dayLine(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (d.toDateString() === now.toDateString()) return 'Today'
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 }
 
 export function FqDmThread({
@@ -101,17 +112,26 @@ export function FqDmThread({
     <>
       <div ref={ref} className="fa-pane-b">
         {messages.length === 0 && <p className="why" style={{ textAlign: 'center' }}>No messages yet. Say hello.</p>}
-        {messages.map((m) => {
+        {messages.map((m, i) => {
           const mine = m.sender_id === myProfileId
           const who = !mine && participants.length > 2 ? byId[m.sender_id]?.display_name : null
+          const day = dayLine(m.created_at)
+          const newDay = i === 0 || dayLine(messages[i - 1].created_at) !== day
           return (
-            <div key={m.id} className={mine ? 'fa-bub me' : 'fa-bub'}>
+            <Fragment key={m.id}>
+            {newDay && (
+              <span className="t2 fqm-daysep" suppressHydrationWarning>
+                {day}
+              </span>
+            )}
+            <div className={mine ? 'fa-bub me' : 'fa-bub'}>
               <span>{m.body}</span>
               <small>
                 {who ? `${who} · ` : ''}
                 <time dateTime={m.created_at} suppressHydrationWarning>{timeLabel(m.created_at)}</time>
               </small>
             </div>
+            </Fragment>
           )
         })}
         <TypingIndicator names={typingNames} />

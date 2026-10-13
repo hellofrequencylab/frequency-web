@@ -123,4 +123,13 @@
 [data-design="frequency"] [data-kit="members"] .fqm-note{margin-bottom:20px}
 [data-design="frequency"] [data-kit="members"] .fqm-item-ph{position:relative;display:block}
 [data-design="frequency"] [data-kit="members"] .fqm-pre{white-space:pre-wrap}
+/* Messages: the inbox find field and sort switch, presence on a DM photo, the day line, rooms to join. */
+[data-design="frequency"] [data-kit="members"] .fqm-inbox-tools{margin-top:4px}
+[data-design="frequency"] [data-kit="members"] .fqm-inbox-tools .fqm-find{height:40px;flex-basis:auto}
+[data-design="frequency"] [data-kit="members"] .fqm-ic-round{width:48px;height:48px;border-radius:50%}
+[data-design="frequency"] [data-kit="members"] .fqm-presence{position:relative;flex:none;display:inline-flex}
+[data-design="frequency"] [data-kit="members"] .fqm-presence i{position:absolute;right:1px;bottom:1px;width:11px;height:11px;border-radius:50%;background:var(--fq-presence);box-shadow:0 0 0 2px var(--fq-surface-card)}
+[data-design="frequency"] [data-kit="members"] .fqm-pad{padding:14px}
+[data-design="frequency"] [data-kit="members"] .fqm-daysep{align-self:center;text-align:center}
+[data-design="frequency"] [data-kit="members"] .fqm-pane-more{padding:0 28px 28px;overflow-y:auto}
 }
