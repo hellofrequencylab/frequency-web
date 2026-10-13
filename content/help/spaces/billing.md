@@ -4,7 +4,7 @@ description: Where your plan, payments, and invoices live, how a cash agreement 
 category: spaces
 order: 3
 published: 2026-07-27
-updated: 2026-10-06
+updated: 2026-10-13
 audience: member
 featureKeys: [billing]
 status: published
@@ -98,16 +98,24 @@ The badge says who you are, not what you pay. Your rate stays between you and th
 
 ## Common questions
 
-**Does anything charge me?** Only if you choose to subscribe. Nothing charges a Space that has not
+### Does anything charge me?
+
+Only if you choose to subscribe. Nothing charges a Space that has not
 signed up. Free is a real plan with real allowances, so you can run a Space on it for as long as you
 like and pay when you want more room.
 
-**What happens if I cancel?** You keep your plan until the end of the term you paid for, then the
+### What happens if I cancel?
+
+You keep your plan until the end of the term you paid for, then the
 Space drops to Free. Nothing is deleted: your contacts, events, and pages stay where they are, and
 the tools that need a plan simply wait for you.
 
-**Can two people manage billing?** Yes. The owner and any admin can see the billing page and make
+### Can two people manage billing?
+
+Yes. The owner and any admin can see the billing page and make
 changes.
 
-**Where are my receipts?** In the Stripe portal, from the billing page. If you settle up directly
+### Where are my receipts?
+
+In the Stripe portal, from the billing page. If you settle up directly
 with us instead, ask the crew and we will send what you need.

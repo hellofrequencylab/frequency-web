@@ -4,7 +4,7 @@ description: Where your Space's money lands, how the owner connects the payout a
 category: spaces
 order: 4
 published: 2026-09-10
-updated: 2026-10-06
+updated: 2026-10-13
 audience: member
 featureKeys: [payouts]
 status: published
@@ -97,33 +97,47 @@ You **pay** Frequency for your plan. That is a separate charge, and it is the on
 
 ## Common questions
 
-**Do I need a plan to take money?** For tips, no: tips are open on every plan, with no fee. For
+### Do I need a plan to take money?
+
+For tips, no: tips are open on every plan, with no fee. For
 selling, yes. Paid tickets, paid memberships, donations, shop checkout, booking deposits and priced
 Journeys open at Business. Hosting stays free, so you can build everything on a free Space and pick
 Business on the day you start charging. Nothing you built is lost either way. A payout account is what
 actually starts the money.
 
-**Get paid says payments are not turned on yet. Is something wrong?** No. That line is about the
+### Get paid says payments are not turned on yet. Is something wrong?
+
+No. That line is about the
 platform, not your account. You can set your money paths up now, and payouts go live with the rest of
 billing.
 
-**When does the money reach my bank?** On Stripe's payout schedule, to the account the owner
+### When does the money reach my bank?
+
+On Stripe's payout schedule, to the account the owner
 connected. **Manage payouts** opens the Stripe dashboard, where you can see a payout and manage your
 bank details and payout schedule.
 
-**Where are my sales totals?** Not on this page. Get paid answers "can I take money". **Home** shows
+### Where are my sales totals?
+
+Not on this page. Get paid answers "can I take money". **Home** shows
 the last 30 days across shop orders, tickets, and gifts to your fund. Orders also sit in your
 **Shop** console, and tickets sit on the event's manage screen.
 
-**I am the owner and I already set up payouts. Why does a tool still say it cannot take payment?** The
+### I am the owner and I already set up payouts. Why does a tool still say it cannot take payment?
+
+The
 payout account is one of two conditions. Check the path's own setup as well: a tier, a product or a
 ticket that is still a draft stops that path on its own, whatever your payout account says.
 
-**A member shows Payment failed. Did they leave?** No. Their renewal did not go through, and they
+### A member shows Payment failed. Did they leave?
+
+No. Their renewal did not go through, and they
 are still a member while Stripe retries the card. They see the same notice on the Space and in
 Settings. You can cancel them from the member list if you need the seat.
 
-**Why do my booking page and receipts say Made with Frequency?** It is one small line at the foot of
+### Why do my booking page and receipts say Made with Frequency?
+
+It is one small line at the foot of
 your booking page, the booking confirmation your customer gets, and the receipt for a shop order. It
 links to Frequency's home page, so a customer who likes how it went can find their way to hosting
 too. Your own copy of a booking notice does not carry it.

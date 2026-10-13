@@ -378,6 +378,15 @@ const nextConfig: NextConfig = {
         destination: '/help/sharing/dispatches',
         permanent: true,
       },
+      // A Space's CRM is Community Resonance (docs/NAMING.md, CRM / messaging surfaces), so its
+      // help article left the `space-crm` slug (LIVE-915). Permanent (308) on the Dispatches
+      // pattern above: the old URL was linked from two articles and may sit in support replies
+      // and `help_chunks` text. Shadows nothing: the source file is renamed.
+      {
+        source: '/help/spaces/space-crm',
+        destination: '/help/spaces/community-resonance',
+        permanent: true,
+      },
       // A public practice was submitted to Search Console (2026-09-05) under the slug
       // `untitled-practice-2` while its title had said "Daily Hypnosis" since July (LIVE-188).
       // The slug was renamed in the database on 2026-09-06; this rule keeps the submitted URL
