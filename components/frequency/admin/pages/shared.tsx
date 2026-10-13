@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import '@/app/themes/frequency/admin-pages.css'
+import { barHeights } from './checkin-stats'
 
 // THE MEMBER ADMIN PAGE KIT (Frequency, ADR-1740). The pieces every admin page body repeats, written once:
 // the body root, the page head, a KPI card and an avatar. Server-safe, no client JS. The bodies reproduce
@@ -92,4 +93,38 @@ export function usd(cents: number): string {
     minimumFractionDigits: Number.isInteger(v) ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(v)
+}
+
+/** A KPI trend line from a whole-percent change (`+18% vs last month`), or undefined with no reading. */
+export function trendOf(change: number | null, suffix = 'vs last month'): { dir: 'up' | 'down'; text: string } | undefined {
+  if (change === null) return undefined
+  return change >= 0 ? { dir: 'up', text: `+${change}% ${suffix}` } : { dir: 'down', text: `−${Math.abs(change)}% ${suffix}` }
+}
+
+/** The kit's weekly bar chart (`.bars`), oldest week first. The first third of the weeks wear `.lo`, the
+ *  design's quieter earlier bars. `values === null` is a failed read: the design's empty value, not bars.
+ *  Each bar names its week for a pointer and a screen reader. */
+export function WeekBars({ values, label, format = n }: { values: number[] | null; label: string; format?: (v: number) => string }) {
+  if (!values) {
+    return (
+      <div className="bars adp-empty" role="img" aria-label={`${label}: no reading`}>
+        {EMPTY}
+      </div>
+    )
+  }
+  const heights = barHeights(values)
+  const quiet = Math.floor(values.length / 3)
+  const total = values.reduce((a, b) => a + b, 0)
+  return (
+    <div className="stack adp-tight">
+      <div className="bars" role="img" aria-label={`${label}, last ${values.length} weeks, oldest first: ${values.map(format).join(', ')}`}>
+        {values.map((v, i) => {
+          const weeksAgo = values.length - 1 - i
+          const when = weeksAgo === 0 ? 'This week' : weeksAgo === 1 ? 'Last week' : `${weeksAgo} weeks ago`
+          return <i key={i} className={i < quiet ? 'lo' : undefined} style={{ height: `${heights[i]}%` }} title={`${when}: ${format(v)}`} />
+        })}
+      </div>
+      {total === 0 && <span className="t2">Nothing in these weeks yet.</span>}
+    </div>
+  )
 }

@@ -14,7 +14,7 @@ import { ModerationQueue } from '@/app/(main)/admin/moderation/moderation-queue'
 // facet. The page keeps its host + community-staff gate; this renders only through that gated route,
 // so it never re-gates.
 
-type RawReport = {
+export type RawReport = {
   id: string
   target_type: string
   target_id: string
@@ -36,7 +36,7 @@ export type ReportWithPreview = RawReport & { preview: string; priorReports?: nu
 // them act on. Platform scope (staff, a granted Platform moderator, or a community-domain staff
 // role) sees every pending report. A community host sees only reports on posts and comments
 // inside Circles they host, and never their own reports. Fail-safe: a missing caller sees nothing.
-async function scopeReportsToViewer(
+export async function scopeReportsToViewer(
   admin: ReturnType<typeof createAdminClient>,
   reports: RawReport[],
 ): Promise<RawReport[]> {

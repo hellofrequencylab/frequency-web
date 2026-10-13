@@ -1,15 +1,20 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
+import Link from 'next/link'
 import { reviewReport, warnMember, suspendMember, cancelEventFromReport } from '@/app/(main)/feed/report-actions'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { relativeTime } from '@/lib/utils'
 import type { ReportWithPreview } from '@/components/widgets/admin/admin-moderation-queue'
+import type { BlockedMember, ResolvedReport } from './moderation-reads'
+import { Av, EMPTY } from '../shared'
 
 // The Frequency report cards (templates/admin/Moderation.html `.panel.stack.rep`). The SAME server actions
 // the DAWN queue calls (app/(main)/admin/moderation/moderation-queue.tsx): hide the content, warn or suspend
 // a member, cancel an event, dismiss. Each action re-checks the moderator's scope server-side. A card leaves
-// the list once its action succeeds.
+// the list once its action succeeds. The design's four tabs: Open (the queue), Resolved (the latest reviewed
+// reports), Blocked (members whose posting is suspended) and Rules (the community guidelines), all read on
+// the server (moderation-reads.ts) and switched here without a fetch.
 
 const REASON: Record<string, { label: string; tone: 'bad' | 'warn' | 'n' }> = {
   harassment: { label: 'Harassment', tone: 'bad' },
@@ -35,7 +40,34 @@ const SUSPEND: { label: string; days: number | null }[] = [
   { label: 'Indefinite', days: null },
 ]
 
-export function ReportQueue({ reports }: { reports: ReportWithPreview[] }) {
+type ModTab = 'open' | 'resolved' | 'blocked' | 'rules'
+
+const STATUS: Record<string, { label: string; tone: 'ok' | 'n' }> = {
+  actioned: { label: 'Actioned', tone: 'ok' },
+  reviewed: { label: 'Reviewed', tone: 'ok' },
+  dismissed: { label: 'Dismissed', tone: 'n' },
+}
+
+const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
+
+/** The House rules panel (design: the soft row under the queue). The platform's rules are the community
+ *  guidelines page; there is no per-Space rules editor, so the action opens the guidelines. */
+export function HouseRules({ children }: { children?: ReactNode }) {
+  return (
+    <div className="soft row wrap sec adp-rules">
+      <span className="stack adp-tight">
+        <span className="h3">House rules</span>
+        <span className="t2">{children ?? 'The community guidelines, the rules every report here is judged against.'}</span>
+      </span>
+      <Link className="btn sm" href="/guidelines">
+        Read the guidelines
+      </Link>
+    </div>
+  )
+}
+
+export function ReportQueue({ reports, resolved, blocked }: { reports: ReportWithPreview[]; resolved: ResolvedReport[]; blocked: BlockedMember[] }) {
+  const [tab, setTab] = useState<ModTab>('open')
   const [isPending, startTransition] = useTransition()
   const [done, setDone] = useState<Set<string>>(() => new Set())
   const [suspendFor, setSuspendFor] = useState<string | null>(null)
@@ -58,11 +90,26 @@ export function ReportQueue({ reports }: { reports: ReportWithPreview[] }) {
 
   return (
     <>
-      <div className="tabs adp-tabs" role="tablist">
-        <button type="button" role="tab" aria-selected className="on">
-          Open {open.length}
-        </button>
+      <div className="tabs adp-tabs" role="tablist" aria-label="Moderation">
+        {(
+          [
+            ['open', `Open ${open.length}`],
+            ['resolved', 'Resolved'],
+            ['blocked', 'Blocked'],
+            ['rules', 'Rules'],
+          ] as const
+        ).map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={tab === key} className={tab === key ? 'on' : undefined} onClick={() => setTab(key)}>
+            {label}
+          </button>
+        ))}
       </div>
+
+      {tab === 'resolved' && <ResolvedList reports={resolved} />}
+      {tab === 'blocked' && <BlockedList members={blocked} />}
+      {tab === 'rules' && <HouseRules>Every report in this queue is judged against the community guidelines. Read them before you act.</HouseRules>}
+      {tab === 'open' && (
+      <>
 
       {error && (
         <p role="alert" className="st bad">
@@ -174,6 +221,96 @@ export function ReportQueue({ reports }: { reports: ReportWithPreview[] }) {
           })}
         </div>
       )}
+      </>
+      )}
+      {tab !== 'rules' && <HouseRules />}
     </>
+  )
+}
+
+function ResolvedList({ reports }: { reports: ResolvedReport[] }) {
+  if (reports.length === 0) {
+    return (
+      <div className="panel stack adp-mid">
+        <span className="h3">Nothing resolved yet</span>
+        <span className="t2">Reports you act on or dismiss show here, newest first.</span>
+      </div>
+    )
+  }
+  return (
+    <div className="panel tbl-wrap">
+      <table className="tbl">
+        <thead>
+          <tr>
+            <th>Reason</th>
+            <th>About</th>
+            <th>Reported by</th>
+            <th>Reported</th>
+            <th>Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          {reports.map((r) => {
+            const reason = REASON[r.reason] ?? REASON.other
+            const status = STATUS[r.status] ?? { label: r.status, tone: 'n' as const }
+            return (
+              <tr key={r.id}>
+                <td>
+                  <span className={`st ${reason.tone}`}>{reason.label}</span>
+                </td>
+                <td className="t1">{TARGET[r.targetType] ?? r.targetType}</td>
+                <td>{r.reporterName}</td>
+                <td>{dateFmt.format(new Date(r.createdAt))}</td>
+                <td>
+                  <span className={`st ${status.tone}`}>{status.label}</span>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function BlockedList({ members }: { members: BlockedMember[] }) {
+  if (members.length === 0) {
+    return (
+      <div className="panel stack adp-mid">
+        <span className="h3">No one is blocked</span>
+        <span className="t2">Members you suspend from the queue show here until their suspension ends.</span>
+      </div>
+    )
+  }
+  return (
+    <div className="panel tbl-wrap">
+      <table className="tbl">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Since</th>
+            <th>Until</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {members.map((m) => (
+            <tr key={m.id}>
+              <td>
+                <span className="row">
+                  <Av url={m.avatarUrl} />
+                  <Link className="t1" href={`/people/${m.handle}`}>
+                    {m.name}
+                  </Link>
+                </span>
+              </td>
+              <td>{dateFmt.format(new Date(m.since))}</td>
+              <td>{m.until ? dateFmt.format(new Date(m.until)) : 'Until lifted'}</td>
+              <td>{m.reason ? (REASON[m.reason]?.label ?? m.reason) : EMPTY}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
