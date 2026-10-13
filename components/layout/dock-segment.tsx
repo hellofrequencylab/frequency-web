@@ -155,7 +155,7 @@ export function DockSegment({
           literal duration: globals.css zeroes the --motion-* vars for reduced motion rather than
           disabling transitions, so a hardcoded duration opts the member's preference out. */}
       <div
-        className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-[var(--ease-out)] motion-reduce:transition-none ${
+        className={`grid overflow-hidden transition-[grid-template-rows] duration-[var(--motion-base)] ease-out motion-reduce:transition-none ${
           open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
       >

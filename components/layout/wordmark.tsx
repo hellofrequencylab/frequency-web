@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { SITE_NAME, SITE_TAGLINE } from '@/lib/site'
+import { SITE_BRAND } from '@/lib/theme/brand-assets'
 
 // ── The wordmark image, in ONE place ──────────────────────────────────────────
 //
@@ -17,16 +18,15 @@ import { SITE_NAME, SITE_TAGLINE } from '@/lib/site'
 // exactly one empty pixel row (y=130) between the Q's descender and the tagline, so the cut is
 // provable and the letterforms are untouched — nothing was redrawn or re-traced.
 //
-// TO SWAP IN A NEW LOCKUP: replace `public/frequency-wordmark.png` and set WORDMARK_W/H to its
-// real pixel size. Those two are next/image's ASPECT RATIO, not a display size — every call site
+// TO SWAP IN A NEW LOCKUP: the file and its real pixel size live in lib/theme/brand-assets.ts, one
+// entry per design system (ADR-1737), so a design that brings its own mark changes data, not this file.
+// The width/height pair is next/image's ASPECT RATIO, not a display size — every call site
 // sizes with `h-* w-auto`, so height is CSS-driven and any aspect works. Getting W/H wrong does
 // not resize the mark, it STRETCHES it, which is the failure the nine hardcoded copies were one
 // asset swap away from. `.brandmark` in app/globals.css masks the same file and now declares
 // `aspect-ratio` itself, so there is no second number to keep in step — an earlier version of this
 // note asked callers to do that and four of the five did not.
-const WORDMARK_SRC = '/frequency-wordmark.png'
-const WORDMARK_W = 963
-const WORDMARK_H = 130
+const { src: WORDMARK_SRC, width: WORDMARK_W, height: WORDMARK_H } = SITE_BRAND.wordmark
 
 // ── The LOCKUP proportions, as multiples of the MARK's height ─────────────────
 //
@@ -45,10 +45,10 @@ const WORDMARK_H = 130
 const TAGLINE_SIZE = 0.28 // tagline font-size ÷ mark height
 const TAGLINE_GAP = 0.16 // gap between mark and tagline ÷ mark height
 
-// `letterSpacing: 0.18em` is --tracking-eyebrow, the same small-caps spacing the `.eyebrow`
-// utility gives the rest of the product. At that tracking the tagline measures ~5.1em wide
+// The tagline tracks at --tracking-eyebrow (DAWN 0.18em), the same small-caps spacing the `.eyebrow`
+// utility gives the rest of the product, read as the token so a design system retunes both together. At that tracking the tagline measures ~5.1em wide
 // against the mark's 7.41em (963/130), so it sits inside the mark's width and centres under it.
-const TAGLINE_TRACKING = '0.18em'
+const TAGLINE_TRACKING = 'var(--tracking-eyebrow)'
 
 type WordmarkProps = {
   /** Tone and spacing. Pass the surface's own invert rules. */
