@@ -48,7 +48,19 @@ export const DEFAULT_PAGE: SitePageState = { mood: 'page', energy: 'flow', hues:
 export const SITE_PAGES: Record<string, SitePageState> = {
   [ROUTES.home]: { mood: 'home', energy: 'charge', hues: ['m', 'a', 's'], side: 'p', locked: false },
   [ROUTES.people]: { mood: 'people', energy: 'flow', hues: ['a', 'v', 'c'], side: 'p', locked: true },
-  [ROUTES.spaces]: { mood: 'spaces', energy: 'flow', hues: ['s', 'm', 'v'], side: 'e', locked: true },
+  // The design's Spaces header sends its CTA to Join.html#spaces: the visitor is already on Spaces.
+  [ROUTES.spaces]: {
+    mood: 'spaces',
+    energy: 'flow',
+    hues: ['s', 'm', 'v'],
+    side: 'e',
+    locked: true,
+    cta: { href: ROUTES.join, label: 'Open your Space' },
+  },
+  // Features: flow, violet / aqua / sun. Each half sets its own side colour (People aqua, Spaces sun).
+  ...(ROUTES.features
+    ? { [ROUTES.features]: { mood: 'features', energy: 'flow', hues: ['v', 'a', 's'], side: 'p', locked: true } satisfies SitePageState }
+    : {}),
   [ROUTES.pricing]: { mood: 'pricing', energy: 'still', hues: ['s', 'v', 'a'], side: 'e', locked: true, quiet: 1 },
   [ROUTES.vision]: {
     mood: 'vision',

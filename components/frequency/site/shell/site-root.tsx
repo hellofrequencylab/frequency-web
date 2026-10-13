@@ -12,8 +12,8 @@
 // it with <SitePage/> (site-page.tsx).
 //
 // SIDE STATE, as side.js runs it: Home is the only unlocked page. There a click on any `[data-set="p|e"]`
-// sets the side, it is remembered in localStorage['fq-home-side'], and `#people` / `#spaces` in the URL
-// choose it on arrival. Every `[data-set]` gets `aria-pressed`. Server-rendered page bodies need no
+// sets the side, it is remembered in localStorage['fq-home-side'] and written to the URL as `#people` /
+// `#experiences`, and `#people` / `#spaces` / `#experiences` in the URL choose it on arrival. Every `[data-set]` gets `aria-pressed`. Server-rendered page bodies need no
 // client code for the toggle: the buttons carry `data-set`, and the CSS does the rest
 // (`.p-only` / `.e-only`, `.sw .thumb`, `--fq-side`).
 
@@ -105,11 +105,17 @@ export function SiteRoot({ children }: { children: React.ReactNode }) {
     const onClick = (e: MouseEvent) => {
       const el = (e.target as Element | null)?.closest?.('[data-set]') as HTMLElement | null
       const v = el?.dataset.set
-      if (v === 'p' || v === 'e') setSide(v)
+      if (v !== 'p' && v !== 'e') return
+      setSide(v)
+      // Home.html's setSide: the URL says which side you are reading, so a shared link opens on it.
+      if (!page.locked) {
+        const hash = v === 'p' ? '#people' : '#experiences'
+        if (window.location.hash !== hash) window.history.replaceState(window.history.state, '', hash)
+      }
     }
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
-  }, [setSide])
+  }, [setSide, page.locked])
 
   // aria-pressed follows the side on every toggle, including ones a new page just rendered.
   useEffect(() => {
