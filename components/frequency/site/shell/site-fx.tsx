@@ -139,7 +139,11 @@ function run(root: HTMLElement): () => void {
       jewel(f, cols[i % cols.length], Math.round(6 + rnd() * 14), `${(left ? 2 + rnd() * 12 : 86 + rnd() * 12).toFixed(1)}%`, `${(8 + rnd() * 84).toFixed(1)}%`)
     }
   }
-  const q = (sel: string) => Array.from(root.querySelectorAll<HTMLElement>(sel))
+  // Website effects dress website markup only. A page that nests another kit (the public Space page's
+  // members-kit body under the site header) keeps its own markup: these selectors (.panel, .block) are
+  // that kit's class names too, and touching them before hydration is a hydration mismatch.
+  const q = (sel: string) =>
+    Array.from(root.querySelectorAll<HTMLElement>(sel)).filter((e) => !e.closest('[data-kit]:not([data-kit="site"])'))
 
   // Heroes: one signature sphere.
   q('.hero,.phero,.hp-hero').forEach((h) => {
