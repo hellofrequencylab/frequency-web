@@ -92,7 +92,7 @@ export const COMPARISONS: Comparison[] = [
       { dimension: 'What it is', them: 'A page of links to your other pages.', us: 'A personal page inside a real-world community.' },
       { dimension: 'Where it leads', them: 'Out, to your other profiles.', us: 'In, to Circles and events near you.' },
       { dimension: 'The goal', them: 'A click.', us: 'A face you see again in person.' },
-      { dimension: 'On what you sell', them: 'Fees can apply to tips and sales.', us: '0% on tips, always, and 0% on your own bookings.' },
+      { dimension: 'On what you sell', them: 'Fees can apply to tips and sales.', us: '0% on tips, always, and 0% on your own bookings, plus card processing.' },
       { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join, always.' },
     ],
     forReader:
@@ -118,13 +118,13 @@ export const COMPARISONS: Comparison[] = [
       { dimension: 'What it schedules', them: 'A one-to-one meeting, time by time.', us: 'A standing group time that repeats.' },
       { dimension: 'Who it is for', them: 'You and one other person.', us: 'A small group that meets as a Circle.' },
       { dimension: 'The pattern', them: 'A new slot every time.', us: 'The same day, every week or every other week.' },
-      { dimension: 'On a paid booking', them: 'Paid bookings sit behind paid tiers.', us: 'Free bookings on a free Space. Paid bookings on Business, at 0% on your own bookings.' },
+      { dimension: 'On a paid booking', them: 'Paid bookings sit behind paid tiers.', us: 'Free bookings on a free Space. Paid bookings on Business, at 0% on your own bookings, plus card processing.' },
       { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join, always.' },
     ],
     forReader:
       'You can book a meeting in seconds. You still want a standing thing with a few people that does not need re-booking.',
     moneyBeat:
-      'Frequency takes 0% on your own bookings, always. When a session you schedule is paid, what you charge is yours to keep. Frequency runs on one honest price and earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
+      'Frequency takes 0% on your own bookings, plus card processing. When a session you schedule is paid, what you charge is yours to keep. Frequency runs on one honest price and earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
   },
   {
     slug: 'eventbrite',
@@ -162,13 +162,13 @@ export const COMPARISONS: Comparison[] = [
       { dimension: 'Where it happens', them: 'Online: a feed, courses, chat.', us: 'In person: Circles and events near you.' },
       { dimension: 'What it rewards', them: 'Posting and engagement.', us: 'Showing up in real life.' },
       { dimension: 'Who runs it', them: 'One creator and their audience.', us: 'Neighbors who host a Circle, with the format handed to them.' },
-      { dimension: 'On what you sell', them: 'Fees can apply to what you sell.', us: '0% on your own bookings, always.' },
+      { dimension: 'On what you sell', them: 'Fees can apply to what you sell.', us: '0% on your own bookings, plus card processing.' },
       { dimension: 'Cost', them: 'Paid, per creator.', us: 'Free to join, always.' },
     ],
     forReader:
       'You are in a few online communities already. What you are short on is people you can sit across a table from.',
     moneyBeat:
-      'Frequency takes 0% on your own bookings, always. Hosting is free, and selling a session, a class, a ticket, or a membership starts at Business, once payouts are ready. Either way, what your own work earns is yours. Frequency runs on one honest price and earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
+      'Frequency takes 0% on your own bookings, plus card processing. Hosting is free, and selling a session, a class, a ticket, or a membership starts at Business, once payouts are ready. Either way, what your own work earns is yours. Frequency runs on one honest price and earns a share only of the business the network brings you, never a cut of the business you bring yourself.',
   },
 ]
 
@@ -213,10 +213,10 @@ export function comparisonCopy(c: Comparison): ComparisonCopy {
   // Own the "alternative to X" query in every title, and lead with the money hook
   // on the tools that charge against your work. Titles stay under ~60 chars.
   const metaTitle = c.moneyBeat
-    ? `Frequency vs ${c.name}: 0% on your own bookings`
+    ? `Frequency vs ${c.name}: 0% on your own bookings, plus card processing`
     : `Frequency vs ${c.name}: a free alternative`
   const description = c.moneyBeat
-    ? `An alternative to ${c.name}? Frequency is built for the small room that keeps meeting, and takes 0% on your own bookings. One honest price. See how they compare.`
+    ? `An alternative to ${c.name}? Frequency is built for the small room that keeps meeting, and takes 0% on your own bookings, plus card processing. One honest price. See how they compare.`
     : `An alternative to ${c.name}? ${c.name} is a great ${c.category}. Frequency is a free local Circle that keeps meeting in person. See how they compare.`
   const ogTitle = `Frequency vs ${c.name}`
   const lede = `${c.theyAreGoodAt} ${c.theDifference}`
