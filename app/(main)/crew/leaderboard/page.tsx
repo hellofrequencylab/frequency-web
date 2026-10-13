@@ -22,6 +22,11 @@ import { LeaderboardList, type LeaderboardListEntry, type LeaderboardTrack } fro
 import { BoardControls } from '@/components/quest/board-controls'
 import { PageModules } from '@/components/widgets/page-modules'
 import { isOptedOut } from './opt-out'
+import { SITE_DESIGN } from '@/lib/theme/design'
+import { LeaderboardBody, BoardList } from '@/components/frequency/members/crew/leaderboard-body'
+import { visibleModuleOrder } from '@/components/frequency/members/shared/module-order'
+import { getRankDef } from '@/lib/season-ranks'
+import { LeaderboardConsistency } from '@/components/widgets/leaderboard/leaderboard-consistency'
 
 // The Quest leaderboard — cooperative-first (ADR: cooperative leaderboard).
 //
@@ -221,6 +226,13 @@ async function BoardSection({
   )
 }
 
+// The same read as BoardSection, drawn as the members kit's rows (Frequency).
+async function FqBoardSection({ scope, track, profileId }: { scope: Scope; track: Track; profileId: string }) {
+  const limit = scope === 'global' ? 50 : scope === 'hub' ? 30 : 20
+  const entries = await getBoard(createAdminClient(), scope, track, profileId, limit)
+  return <BoardList entries={entries} track={track === 'consistency' ? 'consistency' : 'zaps'} selfId={profileId} scope={scope} />
+}
+
 function BoardSkeleton() {
   return (
     <div className="space-y-1.5">
@@ -282,6 +294,35 @@ export default async function LeaderboardPage({
     getCollective(admin, scope, profile.id),
   ])
   const myStandingRank = rankForCompletion(myFinishedCount)
+
+  // FREQUENCY (ADR-1737): the same reads in the members kit. The consistency layer is the route's one
+  // layout module; it shows when the operator's Layout keeps it on.
+  if (SITE_DESIGN === 'frequency') {
+    const order = await visibleModuleOrder('/crew/leaderboard')
+    return (
+      <LeaderboardBody
+        scope={scope}
+        track={track === 'consistency' ? 'consistency' : 'zaps'}
+        scopePhrase={SCOPE_PHRASE[scope]}
+        seasonName={season?.name ?? null}
+        collective={collective}
+        me={{ zaps: myZaps, gems: myGems, streak: myStreak, rankLabel: getRankDef(myStandingRank).label, finished: myFinishedCount }}
+        hidden={optedOut}
+        board={
+          <Suspense key={`${scope}-${track}`} fallback={null}>
+            <FqBoardSection scope={scope} track={track} profileId={profile.id} />
+          </Suspense>
+        }
+        after={
+          order.includes('leaderboard-consistency') ? (
+            <Suspense fallback={null}>
+              <LeaderboardConsistency />
+            </Suspense>
+          ) : null
+        }
+      />
+    )
+  }
 
   const hero = await resolveIndexHero('/crew/leaderboard')
 

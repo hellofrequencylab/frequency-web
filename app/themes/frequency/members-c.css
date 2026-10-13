@@ -113,8 +113,19 @@
 [data-design="frequency"] [data-kit="members"] .faces a:first-child{margin-left:0}
 [data-design="frequency"] [data-kit="members"] .faces a .av{margin-left:0}
 
-/* The Vault's sections follow the Layout editor's order, so spacing rides the sibling, not the class. */
-[data-design="frequency"] [data-kit="members"] .mc-sections>.mc-section+.mc-section{margin-top:56px}
-@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .mc-sections>.mc-section+.mc-section{margin-top:40px}}
+/* Module-ordered bodies (the Vault, My Quest): sections follow the Layout editor's order, so the
+   spacing is the column's gap, and a section whose module rendered nothing takes no room. */
+[data-design="frequency"] [data-kit="members"] .mc-sections{display:flex;flex-direction:column;gap:56px;min-width:0}
+[data-design="frequency"] [data-kit="members"] .mc-sections>.mc-section:empty{display:none}
+@media (max-width:720px){[data-design="frequency"] [data-kit="members"] .mc-sections{gap:40px}}
+[data-design="frequency"] [data-kit="members"] .mc-banner{display:block;width:100%;height:auto;border-radius:24px;margin-bottom:28px}
+[data-design="frequency"] [data-kit="members"] .mc-place{width:20px;text-align:center;font-variant-numeric:tabular-nums}
+[data-design="frequency"] [data-kit="members"] .t1.mc-normal{font-weight:400}
+
+/* Leaderboard (members pass). */
+[data-design="frequency"] [data-kit="members"] ol.list.mc-plain{list-style:none;margin:0;padding:0}
+[data-design="frequency"] [data-kit="members"] .list.mc-plain>li>a{display:flex;align-items:center;gap:14px;border-radius:14px;margin:0 -10px;padding:0 10px;transition:background var(--fq-dur-fast)}
+[data-design="frequency"] [data-kit="members"] .list.mc-plain>li>a:hover{background:rgba(255,255,255,.6)}
+[data-design="frequency"] [data-kit="members"] .tag.mc-tag-lg{height:40px;padding:0 16px;font:500 16px/1 var(--fq-font-display);letter-spacing:-.02em;align-self:flex-start}
 
 }
