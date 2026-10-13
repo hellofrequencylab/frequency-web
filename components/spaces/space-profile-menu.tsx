@@ -22,17 +22,21 @@ export function SpaceProfileMenu({
   tabs,
   canManage = false,
   homeHref,
+  tools,
 }: {
   tabs: SpaceProfileTab[]
   homeHref?: string
   /** Whether the viewer manages this Space — gates the "Manage" item. */
   canManage?: boolean
+  /** Frequency only: Follow and Boost at the end of the tab row (SpaceProfileMenuView). */
+  tools?: React.ReactNode
 }) {
   return (
     <SpaceProfileMenuView
       tabs={tabs}
       canManage={canManage}
       homeHref={homeHref}
+      tools={tools}
       pathname={usePathname()}
       panel={useSearchParams().get('panel') ?? undefined}
     />
