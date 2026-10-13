@@ -17,6 +17,7 @@ import { resolveWebsiteChrome, resolveWebsiteChromeCta } from '@/lib/sites/edito
 import { WebsiteDocument } from '../website-document'
 import { SiteChrome, siteHref } from '../site-chrome'
 import { FREQUENCY_PAGE_CSS } from '../frequency-page-css'
+import { FQ_EDITOR, k } from './skin'
 
 const CANVAS_CSS = `
 html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
@@ -32,6 +33,24 @@ html,body{margin:0;min-height:100%;}body{background:var(--th-bg)}
 .we-collaborator-cursor{position:absolute;z-index:8;pointer-events:none;display:flex;align-items:flex-start;gap:4px;color:var(--th-season);font:700 12px var(--th-body-render);transform:translate(-2px,-2px)}.we-collaborator-cursor>span:first-child{font-size:24px;line-height:1}.we-collaborator-cursor>span:last-child{background:var(--th-season);color:var(--th-on-season);padding:4px 7px;border-radius:var(--th-r);white-space:nowrap}.we-layout-handles{position:absolute;inset:0;pointer-events:none;z-index:6}.we-layout-handles{border:1px solid transparent}.we-layout-handles[data-active=true]{border-color:var(--th-accent)}[data-layout-element=true]:has([data-site-text-selected=true])>.we-layout-handles,[data-layout-element=true][data-site-text-selected=true]>.we-layout-handles{border-color:transparent}.we-layout-handles:not([data-active=true]) button{opacity:0}.we-layout-handles:hover button,.we-layout-handles:focus-within button,[data-layout-element=true]:hover>.we-layout-handles button{opacity:1}.we-layout-handles:focus-within{border-color:var(--th-accent)}.we-layout-handles button{pointer-events:auto;position:absolute;width:26px;height:26px;background:var(--ed-field);border:1px solid var(--th-accent);color:var(--th-text);cursor:grab;touch-action:none}.we-move-handle{top:-6px;left:0}.we-resize-handle{bottom:-6px;right:0;cursor:nwse-resize!important}.we-pin{position:absolute;right:12%;top:25%;z-index:6;display:grid;place-items:center;width:30px;height:30px;border-radius:50% 50% 50% 0;background:var(--th-accent);color:var(--th-on-accent);border:1px solid var(--th-muted);font:800 12px var(--th-body-render);cursor:pointer}
 .we-insert{display:block;width:100%;height:22px;border:0;background:transparent;color:var(--th-accent-text);font:600 12px var(--th-body-render);cursor:pointer}.we-insert:hover,.we-insert:focus-visible{background:color-mix(in srgb,var(--th-accent) 12%,transparent);outline:1px solid var(--th-accent)}
 @media(pointer:coarse){.we-micro button{width:44px;height:44px}.we-section-label{opacity:1!important}.we-insert{height:44px}}
+`
+
+// THE SECTION CHROME UNDER FREQUENCY (design_handoff/frequency/templates/admin/editor/editor.css: .sec, .sec .tag,
+// .tb, .ins). The canvas is an iframe, so the kit sheet cannot reach it; this restates those rules over the
+// canvas's own controls (the same buttons, the same handlers), reading the --fq-* tokens attach() carries in.
+// Appended after CANVAS_CSS only when SITE_DESIGN is frequency.
+const FQ_CANVAS_CSS = `
+.we-section:hover{outline:1.5px dashed color-mix(in oklab,var(--fq-x-violet-deep) 45%,transparent);outline-offset:-1.5px}
+.we-section[data-selected=true]{outline:2px solid var(--fq-x-violet-deep);outline-offset:-2px}
+.we-section[data-hidden=true]{opacity:.35;filter:grayscale(.6)}
+.we-section-label{left:10px;right:auto;top:10px;height:28px;padding:0 10px;border-radius:999px;background:var(--fq-x-violet-deep);color:var(--fq-surface-raised);font:600 12px/1 var(--fq-font-sans);box-shadow:0 8px 20px -10px var(--fq-x-violet-deep)}
+.we-micro{margin:0 10px -46px auto;padding:4px;gap:2px;border:0;border-radius:14px;background:color-mix(in oklab,var(--fq-text-strong) 90%,transparent);color:var(--fq-surface-raised);box-shadow:0 14px 30px -14px var(--fq-text-strong);backdrop-filter:blur(10px)}
+.we-micro button,.we-typography summary{border-radius:10px;color:inherit}
+.we-micro button:hover{background:color-mix(in oklab,var(--fq-surface-raised) 14%,transparent)}
+.we-typography-panel{border:0;border-radius:16px;background:var(--fq-surface-raised);color:var(--fq-text-strong);box-shadow:0 30px 60px -30px var(--fq-text-strong)}
+.we-insert{color:transparent;font:600 12px/1 var(--fq-font-sans);border-radius:999px}
+.we-insert:hover,.we-insert:focus-visible{outline:0;color:var(--fq-surface-raised);background:var(--fq-x-violet-deep);clip-path:inset(0 calc(50% - 64px) round 999px)}
+.we-chrome-edit{border:0;border-radius:999px;padding:6px 12px;background:var(--fq-surface-raised);color:var(--fq-text-strong);font:600 12px/1 var(--fq-font-sans);box-shadow:inset 0 0 0 1px var(--fq-border-hair)}
 `
 
 function inlineMarkdown(node: Node): string {
@@ -265,7 +284,9 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
       document.documentElement.setAttribute('data-website-styles-loaded', 'true')
     }
     const computed = getComputedStyle(window.document.documentElement)
-    for (const key of Array.from(computed)) if (key.startsWith('--font-')) document.documentElement.style.setProperty(key, computed.getPropertyValue(key))
+    // Under Frequency the section chrome (FQ_CANVAS_CSS) reads the design's --fq-* tokens, which live on the
+    // editor's own <html> (scoped to data-design) and so have to be carried into the frame like the fonts.
+    for (const key of Array.from(computed)) if (key.startsWith('--font-') || (FQ_EDITOR && key.startsWith('--fq-'))) document.documentElement.style.setProperty(key, computed.getPropertyValue(key))
     setMount(document.body)
   }, [])
   useEffect(() => {
@@ -409,9 +430,9 @@ export function WebsiteCanvas({ doc, theme, device, config, metadata, live, link
       </section>
     </div>
   }
-  return <iframe ref={frame} className="we-frame" title={`${title}, ${device} website canvas`} srcDoc="<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head><body></body></html>" sandbox="allow-same-origin" onLoad={attach}>
+  return <iframe ref={frame} className={k('we-frame')} title={`${title}, ${device} website canvas`} srcDoc="<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head><body></body></html>" sandbox="allow-same-origin" onLoad={attach}>
     {mount && createPortal(<div data-website-theme={theme} style={websiteThemeVars(theme, brandAccent)} className="we-canvas-root" onClickCapture={(e) => { const anchor = (e.target as HTMLElement).closest('a'); if (!preview && onChromeSelect && (e.target as HTMLElement).closest('.hs-header,.hs-footer,.hs-footer-top')) { onChromeSelect((e.target as HTMLElement).closest('.hs-header') ? 'header' : 'footer'); onTextSelect?.(null) } if (!anchor) return; e.preventDefault(); if (preview) { const href = safeUrl(anchor.getAttribute('href')); if (href) window.open(new URL(href, origin).href, '_blank', 'noopener,noreferrer') } }}>
-      <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' ? '' : FREQUENCY_PAGE_CSS)}</style>
+      <style>{WEBSITE_TOKEN_CSS + CANVAS_CSS + (theme === 'Menswork' || theme === 'Wildheart' ? '' : FREQUENCY_PAGE_CSS) + (FQ_EDITOR ? FQ_CANVAS_CSS : '')}</style>
       {!preview && onChromeSelect && <button className="we-chrome-edit" type="button" onClick={() => { onTextSelect?.(null); onChromeSelect('header') }}>Edit header</button>}
       <SiteChrome showBrandFooter={fullFooter} look={look} brandName={effectiveChrome.name} homeHref={siteHref(links.siteBase, 'home')} links={pageLinks} cta={resolveWebsiteChromeCta(chromeDraft, chrome?.cta ?? null, links.siteBase)} themeFonts={chrome?.themeFonts ?? true} logoUrl={logo} tagline={effectiveChrome.tagline} seasonNow={theme === 'Menswork' ? chrome?.seasonNow ?? null : theme === 'Wildheart' ? { module: live.events[0]?.title ?? '', theme: null, next: live.events[0]?.startsAt ?? null } : null} admin={chrome?.admin ?? null} skin={theme === 'Menswork' ? { theme: 'menswork', season: mensworkSeason(new Date()) } : theme === 'Wildheart' ? { theme: 'wildheart', season: seasonOf(new Date()) } : null}>
         <WebsiteDocument doc={doc} theme={theme} config={config} metadata={metadata} live={live} links={links} origin={origin} title={title} wrapSection={wrap} />
