@@ -71,7 +71,7 @@ export const SITE_PAGES: Record<string, SitePageState> = {
     hues: ['v', 'c', 'l'],
     side: 'p',
     locked: true,
-    cta: { href: `${ROUTES.help}#contact`, label: 'Talk to us' },
+    cta: { href: `${ROUTES.vision}#partner`, label: 'Talk to us' },
   },
 }
 

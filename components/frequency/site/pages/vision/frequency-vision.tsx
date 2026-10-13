@@ -1,17 +1,48 @@
 // The /vision BODY on the Frequency design (templates/website/Vision.html): third spaces, for partners,
-// investors, civic leaders and press. The shell lane owns the kit root, header, footer and FX.
+// investors, civic leaders and press. The shell lane owns the kit root, header ("Talk to us"), footer
+// and FX.
+//
+// The reference: a hero, then three `.block`s (the density story, Concepts, Partner with us) whose
+// bodies were placeholder chips ("Density map", "Vision · late 2027", "Partner form"), then the `.next`
+// "Back to today" row. website-strategy.md names what those chips stand for: the density story, the
+// facility concepts "always labeled Vision", and a partner interest form. This page builds all three:
+//   • the density story as its three steps;
+//   • the concepts as the facility renders (public/brand/frequency/facilities, which HANDOFF.md says are
+//     "used on Vision only"), every one badged with the kit's `.concept` label;
+//   • the partner form (partner-form.tsx), which opens the visitor's mail app: there is no intake endpoint.
 //
 // 🔴 FUTURE TENSE (ADR-1735, LIVE-912). The Lab is a plan, not a place: nothing is bookable and the
 // first one is planned to open in 2028. The reference dates the vision "late 2027"; the product's own
 // pages (/the-lab, What is Frequency, llms.txt) date it 2028, and the code wins, so this page says 2028.
-// The reference's three placeholder chips ("Density map", "Partner form") stood in for widgets that do
-// not exist; they are replaced by real doors (The Lab plan, the Help contact band).
+// Every render is a concept, and the page says so under the gallery as well as on each image.
 import Link from 'next/link'
 import '@/app/themes/frequency/site-pages-b.css'
+import { CONTACT_EMAIL } from '@/lib/site'
+import { KeepGoing } from '@/components/frequency/site/shell/keep-going'
+import { PartnerForm } from './partner-form'
 
 function vars(v: Record<string, string | number>): React.CSSProperties {
   return v as React.CSSProperties
 }
+
+const VISION = 'Vision · 2028'
+
+/** The facility concept renders, each with the room it imagines. Three rows of one wide and one narrow,
+ *  alternating, on the three-column grid. */
+const CONCEPTS: { file: string; room: string; alt: string; wide?: boolean }[] = [
+  { file: 'hall-stage-night.jpg', room: 'The hall', alt: 'A concept render of a hall with a stage, lit for a night gathering', wide: true },
+  { file: 'biophilic-lounge-day.jpg', room: 'The lounge by day', alt: 'A concept render of a planted lounge in daylight' },
+  { file: 'lounge-cafe.jpg', room: 'The café', alt: 'A concept render of a lounge café' },
+  { file: 'lobby-slat-wall.jpg', room: 'The lobby', alt: 'A concept render of a lobby with a dark slatted wall and a seating corner', wide: true },
+  { file: 'thermal-circuit.jpg', room: 'The thermal circuit', alt: 'A concept render of warm plunge pools under a slatted wood ceiling' },
+  { file: 'storefront-yoga.jpg', room: 'The storefront', alt: 'A concept render of a two-storey glass storefront on a city street at dusk', wide: true },
+]
+
+const DENSITY = [
+  { step: '01', title: 'The network finds the people.', body: 'Circles and Events in Community Spaces that already exist: studios, cafés, living rooms and parks.' },
+  { step: '02', title: 'The people find each other.', body: 'The same faces keep showing up, and the town’s communities start to know one another.' },
+  { step: '03', title: 'The community earns a home.', body: 'When a town’s communities are dense enough, they will earn a third space of their own.' },
+]
 
 export function FrequencyVision() {
   return (
@@ -36,14 +67,14 @@ export function FrequencyVision() {
             planned to open in 2028, and nothing is bookable yet.
           </p>
           <div className="ctas" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Link className="btn fq-iri-btn" href="/help#contact">
+            <a className="btn fq-iri-btn" href="#partner">
               Talk to us
-            </Link>
+            </a>
           </div>
         </div>
       </section>
 
-      <section className="sec" data-energy="flow" data-screen-label="02 Content">
+      <section className="sec" id="density" data-energy="flow" data-screen-label="02 The density story">
         <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.25 })} />
         <div className="wrap" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div className="blocks">
@@ -54,16 +85,25 @@ export function FrequencyVision() {
                 The network finds the people. The people find each other. When a town’s communities are dense
                 enough, they will earn a home of their own.
               </p>
+              <ol className="vz-steps">
+                {DENSITY.map((d) => (
+                  <li key={d.step}>
+                    <span className="vz-n">{d.step}</span>
+                    <b>{d.title}</b>
+                    <span>{d.body}</span>
+                  </li>
+                ))}
+              </ol>
             </div>
             <div className="block">
               <span className="wingtag">Concepts</span>
               <h3>Concepts</h3>
-              <p>Facility concepts, always labeled Vision · 2028. The first Lab is a plan, not a place.</p>
+              <p>Facility concepts, always labeled {VISION}. The first Lab is a plan, not a place.</p>
               <div className="feats">
-                <i>Vision · 2028</i>
+                <i>{VISION}</i>
               </div>
               <p>
-                <Link href="/the-lab">See the plan for The Lab →</Link>
+                <a href="#concepts">See the concepts →</a>
               </p>
             </div>
             <div className="block">
@@ -71,21 +111,63 @@ export function FrequencyVision() {
               <h3>Partner with us</h3>
               <p>Tell us about your town or your building.</p>
               <p>
-                <Link href="/help#contact">Write to us →</Link>
+                <a href="#partner">Write to us →</a>
               </p>
             </div>
           </div>
-          <div className="next fq-iri-rim" data-energy="charge">
-            <div className="fq-aura" style={vars({ '--fq-aura-opacity': 0.35 })} />
-            <div>
-              <span className="k">Keep going</span>
-              <h3>Back to today</h3>
-              <p style={{ margin: '10px 0 0', fontSize: 16 }}>Frequency works in Community Spaces now.</p>
+        </div>
+      </section>
+
+      <section className="sec" id="concepts" style={{ paddingTop: 0 }} data-screen-label="03 Concepts">
+        <div className="wrap">
+          <div className="sh">
+            <div className="label">
+              <b>Concepts</b>
+              {VISION}
             </div>
-            <Link className="btn fq-iri-btn" href="/">
-              Back to today →
-            </Link>
+            <h2 className="h-l">What a home could feel like.</h2>
+            <p className="pb-note">
+              These are concept renders, not photographs. No building exists yet, nothing is bookable, and every
+              detail will change with the town that earns it.{' '}
+              <Link href="/the-lab">Read the plan for The Lab →</Link>
+            </p>
           </div>
+          <div className="vz-g">
+            {CONCEPTS.map((c) => (
+              <figure key={c.file} className={c.wide ? 'vz-c wide' : 'vz-c'}>
+                <div className="photo fq-iri-rim">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- the kit sizes .photo img itself (object-fit cover) */}
+                  <img loading="lazy" decoding="async" src={`/brand/frequency/facilities/${c.file}`} alt={c.alt} />
+                  <span className="concept">{VISION}</span>
+                </div>
+                <figcaption>{c.room}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sec" id="partner" style={{ paddingTop: 0 }} data-screen-label="04 Partner with us">
+        <div className="wrap">
+          <div className="band">
+            <div>
+              <span className="k">Partner with us</span>
+              <h3>Tell us about your town or your building.</h3>
+              <p>For partners, investors, civic leaders and press. A real person reads every note.</p>
+            </div>
+            <PartnerForm email={CONTACT_EMAIL} />
+          </div>
+        </div>
+      </section>
+
+      <section className="sec" style={{ paddingTop: 0 }} data-screen-label="05 Back to today">
+        <div className="wrap">
+          <KeepGoing
+            variant="row"
+            title="Back to today"
+            body="Frequency works in Community Spaces now."
+            primary={{ href: '/', label: 'Back to today →' }}
+          />
         </div>
       </section>
     </>
