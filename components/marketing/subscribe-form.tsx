@@ -33,7 +33,7 @@ export function SubscribeForm() {
         <div className="mx-auto w-12 h-12 rounded-pill bg-success-bg text-success flex items-center justify-center mb-4">
           <Check className="w-6 h-6" strokeWidth={2.5} aria-hidden />
         </div>
-        <h3 className="font-display uppercase text-text text-3xl mb-2">Check your inbox</h3>
+        <h3 className="font-display uppercase text-text text-stat-sm mb-2">Check your inbox</h3>
         <p className="text-body text-muted leading-relaxed">
           {email
             ? `If ${email} can get mail from us, a confirm link is on its way. Click it and you're on the list.`

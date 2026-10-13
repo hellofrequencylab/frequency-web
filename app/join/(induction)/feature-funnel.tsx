@@ -305,7 +305,7 @@ function DemoStep({
         Beta Launch
       </span>
       <p className="mb-2 text-meta font-bold uppercase tracking-[0.3em] text-primary">Free breathwork timer</p>
-      <h1 className="font-display text-display-h2 uppercase leading-[0.95] text-balance text-text">
+      <h1 className="font-display text-display-h2 uppercase leading-display text-balance text-text">
         Breathe with the ring.
       </h1>
 
@@ -440,7 +440,7 @@ function RewardStep({
   return (
     <div className="mx-auto max-w-lg text-center">
       <p className="mb-3 text-meta font-bold uppercase tracking-[0.3em] text-primary">Nice work</p>
-      <h1 className="font-display text-display-h2 uppercase leading-[0.95] text-balance text-text">
+      <h1 className="font-display text-display-h2 uppercase leading-display text-balance text-text">
         You started a streak.
       </h1>
 
@@ -591,8 +591,8 @@ function JoinStep({
     const to = destination?.mode === 'direct' && isSafeInAppPath(destination.url) ? destination.url : '/feed'
     return (
       <div className="mx-auto max-w-lg text-center">
-        <span className="mx-auto mb-4 block text-4xl" aria-hidden>🔥</span>
-        <h1 className="font-display text-display-h2 uppercase leading-[0.95] text-text">You are in.</h1>
+        <span className="mx-auto mb-4 block text-stat-md" aria-hidden>🔥</span>
+        <h1 className="font-display text-display-h2 uppercase leading-display text-text">You are in.</h1>
         <p className="mx-auto mt-4 max-w-md text-body leading-relaxed text-muted">
           Take your first real round and your streak starts for keeps.
         </p>
@@ -612,7 +612,7 @@ function JoinStep({
           <span aria-hidden>⚡</span> {zaps} Zaps
         </span>
       </div>
-      <h1 className="font-display text-display-h2 uppercase leading-[0.95] text-balance text-text">
+      <h1 className="font-display text-display-h2 uppercase leading-display text-balance text-text">
         Join the Frequency beta.
       </h1>
       <p className="mx-auto mt-3 max-w-md text-body leading-relaxed text-muted">

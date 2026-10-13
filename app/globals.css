@@ -471,6 +471,25 @@
   --text-stat-md:      calc(2.25rem * var(--type-scale, 1));
   --text-stat-sm:      calc(1.875rem * var(--type-scale, 1));
 
+  /* THE MARKETING DISPLAY LADDER (components/marketing/display-type.ts). The public site's and the
+     Puck blocks' fluid display sizes, tuned against DAWN's editorial mockups with steeper `vw` terms
+     than the display roles above, so they are their own rows rather than aliases. They used to live
+     in that file as `text-[clamp(...)]` literals, which a design could not reach; as tokens a design
+     sheet retunes them. DAWN's values, byte for byte, and deliberately NOT multiplied by
+     --type-scale (they never were). No `--line-height` companion on purpose: the literal emitted
+     font-size only, so these do too. */
+  --text-mk-splash:     clamp(2.5rem, 9vw, 6rem);
+  --text-mk-masthead:   clamp(2.25rem, 8vw, 4.5rem);
+  --text-mk-feature:    clamp(2rem, 7vw, 4.5rem);
+  --text-mk-poster:     clamp(2rem, 6vw, 3.75rem);
+  --text-mk-cover:      clamp(1.875rem, 6vw, 3.5rem);
+  --text-mk-section:    clamp(1.875rem, 5.5vw, 3rem);
+  --text-mk-statement:  clamp(2rem, 6.5vw, 3.75rem);
+  --text-mk-beat:       clamp(2rem, 4.6vw, 3.5rem);
+  --text-mk-quote:      clamp(1.75rem, 5.5vw, 3rem);
+  --text-mk-band-quote: clamp(1.5rem, 4vw, 2.5rem);
+  --text-mk-figure:     clamp(2.5rem, 6vw, 4rem);
+
   /* PAIRED LINE-HEIGHTS for the display roles — the same prerequisite the content
      roles needed, and for the same reason. `text-4xl` emits font-size AND
      line-height: calc(2.5 / 2.25); a role with no companion emits font-size only.
@@ -608,6 +627,10 @@
   --leading-snug:    1.2;
   --leading-normal:  1.5;
   --leading-relaxed: 1.65;
+  /* The three marketing display faces set looser than --leading-display (display-type.ts). */
+  --leading-mk-statement: 1.1;
+  --leading-mk-quote:     1.08;
+  --leading-mk-beat:      1.05;
   --tracking-tight:         -0.015em;
   --tracking-tight-display: -0.03em;
   --tracking-eyebrow:        0.18em;
@@ -1576,6 +1599,7 @@
   --shadow-md:  var(--design-shadow-md);
   --shadow-lg:  var(--design-shadow-lg);
   --shadow-xl:  var(--design-shadow-xl);
+  --shadow-2xl: var(--design-shadow-2xl);
 
   /* Marketing "pop" elevation — a deliberate step stronger than the soft in-app
      scale above, for the splash hero card, pricing tiers, and the demo device
@@ -1660,6 +1684,17 @@
   --text-stat:         var(--text-stat);
   --text-stat-md:      var(--text-stat-md);
   --text-stat-sm:      var(--text-stat-sm);
+  --text-mk-splash:     var(--text-mk-splash);
+  --text-mk-masthead:   var(--text-mk-masthead);
+  --text-mk-feature:    var(--text-mk-feature);
+  --text-mk-poster:     var(--text-mk-poster);
+  --text-mk-cover:      var(--text-mk-cover);
+  --text-mk-section:    var(--text-mk-section);
+  --text-mk-statement:  var(--text-mk-statement);
+  --text-mk-beat:       var(--text-mk-beat);
+  --text-mk-quote:      var(--text-mk-quote);
+  --text-mk-band-quote: var(--text-mk-band-quote);
+  --text-mk-figure:     var(--text-mk-figure);
 
   /* Same @theme requirement as the content roles: declared in :root alone, Tailwind v4
      leaves the utility emitting font-size ONLY. Verified by compiling, not by reading. */
@@ -1710,6 +1745,9 @@
   --leading-snug:    var(--leading-snug);
   --leading-normal:  var(--leading-normal);
   --leading-relaxed: var(--leading-relaxed);
+  --leading-mk-statement: var(--leading-mk-statement);
+  --leading-mk-quote:     var(--leading-mk-quote);
+  --leading-mk-beat:      var(--leading-mk-beat);
   /* --tracking-tight and --ease-out are bridged for the reason `check:bridge` exists: BOTH names
      already belong to Tailwind, so declaring them in :root and stopping there does not override
      Tailwind — it just leaves the designed value sitting there while Tailwind's paints the page.
@@ -1969,10 +2007,13 @@
    gains a gentle lift or a stronger pop WITHOUT any raw per-block CSS. Applied to a wrapper by the
    render frame; the text inherits it. `none` is the absence of the class (no utility needed). */
 @utility text-shadow-soft {
-  text-shadow: 0 1px 2px rgb(40 30 16 / 0.18);
+  text-shadow: var(--design-text-shadow-soft);
 }
 @utility text-shadow-strong {
-  text-shadow: 0 1px 1px rgb(20 16 10 / 0.28), 0 2px 6px rgb(20 16 10 / 0.24);
+  text-shadow: var(--design-text-shadow-strong);
+}
+@utility text-shadow-on-photo {
+  text-shadow: var(--design-text-shadow-on-photo);
 }
 
 /* Generation-scaled type — opt-in utilities that multiply a base size by the active
@@ -2142,9 +2183,17 @@
   --design-shadow-md: 0 2px 4px rgb(40 30 16 / 0.05), 0 6px 16px -4px rgb(40 30 16 / 0.08);
   --design-shadow-lg: 0 4px 8px rgb(40 30 16 / 0.06), 0 12px 28px -6px rgb(40 30 16 / 0.10);
   --design-shadow-xl: 0 8px 16px rgb(40 30 16 / 0.08), 0 24px 48px -12px rgb(40 30 16 / 0.12);
+  /* Tailwind's own 2xl (DAWN never redefined it), bridged so a design can reach `shadow-2xl` too. */
+  --design-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   --design-shadow-pop: 0 4px 12px -2px rgb(20 16 10 / 0.16), 0 16px 40px -10px rgb(20 16 10 / 0.22);
   --design-shadow-pop-lg: 0 10px 24px -6px rgb(20 16 10 / 0.20), 0 36px 70px -16px rgb(20 16 10 / 0.30);
   --design-shadow-menu: 0 14px 24px -10px rgb(20 16 10 / 0.18), 0 28px 50px -20px rgb(20 16 10 / 0.20);
+  /* The two block text-shadow presets (`text-shadow-soft` / `-strong`), lifted out of their @utility
+     rules so a design can retune them. DAWN's values, byte for byte. */
+  --design-text-shadow-soft: 0 1px 2px rgb(40 30 16 / 0.18);
+  --design-text-shadow-strong: 0 1px 1px rgb(20 16 10 / 0.28), 0 2px 6px rgb(20 16 10 / 0.24);
+  /* The Space hero title's lift when it sits on-ink over a cover photo (`text-shadow-on-photo`). */
+  --design-text-shadow-on-photo: 0 1px 3px rgb(0 0 0 / 0.35);
 
   /* ── Base typography: DAWN's heading and body taste (the `body`, `h1–h6` and `.font-display`
      rules below read these). */
