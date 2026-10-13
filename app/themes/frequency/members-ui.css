@@ -248,7 +248,7 @@
 
 /* ── 3. The display role (unlayered, so it outranks the `uppercase` / `tracking-*` utilities the
    DAWN call sites pair with it): Unbounded in the design's own register, never in Anton's caps. ── */
-[data-design="frequency"] .font-display{text-transform:none;font-weight:500;letter-spacing:-.04em}
+[data-design="frequency"] .font-display{text-transform:none;font-weight:var(--design-display-weight);letter-spacing:-.04em}
 
 /* ── 4. The DAWN idioms a page still hand-rolls, read in the kit's voice (unlayered, kit-scoped) ──
    Most member bodies compose the primitives above; the rest still write DAWN's own class strings by
