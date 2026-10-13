@@ -406,7 +406,7 @@ Encinitas," "ways to meet people in Carlsbad." Only publish where real activity
 exists. Honest thinness beats fake breadth.
 
 ### 7d. Positioning vocabulary for SEO
-**Hero headlines lead with the words people search for** (ADR-1735): local, groups, events, near
+**Hero headlines lead with the words people search for** (ADR-1738): local, groups, events, near
 you. Name what the reader came to find, then the payoff, and ask for no weekly commitment.
 
 - People side: "Find local groups and events *near you.*"

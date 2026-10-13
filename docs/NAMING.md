@@ -686,7 +686,7 @@ These are the words for all of it. Proper nouns are capitalised in UI copy; the 
 - **Retired:** the ADR-552 "no third vocabulary / no tier names" lock (this ADR reintroduces named tiers);
   the flat single-Business $49 model (ADR-590, grandfathered).
 
-## The core belief, "What's happening", and the two sides (ADR-1735, October 2026, owner-ruled)
+## The core belief, "What's happening", and the two sides (ADR-1738, October 2026, owner-ruled)
 
 - **The core belief is "Build circles, not walls."** Imperative, with the full stop, lowercase
   "circles" (the common noun: the line is about how people gather, not the Circle container). It

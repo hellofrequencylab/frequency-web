@@ -5,7 +5,7 @@
 //
 //   Feed · What's Happening · Members · Circle Stats
 //
-// The middle tab was "What's On" until ADR-1735 (2026-10-13) renamed the label; the route is still
+// The middle tab was "What's On" until ADR-1738 (2026-10-13) renamed the label; the route is still
 // `/whats-on`, and the notes below keep the name the decision was made under.
 //
 // FEED IS THE DEFAULT and it carries the reason people came, so it is the bare `/circles/<slug>`
