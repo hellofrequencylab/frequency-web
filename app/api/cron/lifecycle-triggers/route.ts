@@ -40,18 +40,20 @@ const LIFECYCLE_DAYS: LifecycleDay[] = [1, 3, 7]
 type FlagColumn = 'lifecycle_day1_sent' | 'lifecycle_day3_sent' | 'lifecycle_day7_sent'
 const flagColumn = (day: LifecycleDay): FlagColumn => `lifecycle_day${day}_sent`
 
-/** The check-in copy for each window. Voice canon: a fact plus an invitation. */
+/** The check-in copy for each window. Voice canon: a fact plus an invitation. No exclamation
+ *  points, Circle is a proper noun, and nothing points at a door the member can't open yet (the
+ *  leaderboard opens at Regular, so day 7 points at the Circle's calendar instead). LIVE-914. */
 function bodyFor(day: LifecycleDay, circleName: string | null): string {
   switch (day) {
     // Day 1. Welcome to circle
     case 1:
-      return `Welcome to ${circleName}! Introduce yourself in the circle feed.`
+      return `You're in ${circleName}. Say hi in the Circle feed when you're ready.`
     // Day 3. Check in
     case 3:
-      return `You've been in ${circleName} for 3 days. Check out upcoming events and earn some Zaps!`
+      return `Three days in ${circleName}. Have a look at what the Circle has coming up.`
     // Day 7. Engagement push
     case 7:
-      return `One week in ${circleName}! Head to the Crew dashboard to see how you stack up on the leaderboard.`
+      return `A week in ${circleName}. Pick one upcoming Event and come as you are.`
   }
 }
 

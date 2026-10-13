@@ -119,12 +119,12 @@ function synthesize(signal: MarketSignal): PainPoint[] {
     ache: 'I signed up to belong, and I’m still on the outside, looking in.',
     basis: newWithoutCircle > 0 ? 'live' : 'baseline',
     evidence: newWithoutCircle > 0
-      ? `${newWithoutCircle} of ${newThisWeek} people who joined this week haven’t found a circle yet. That is the gap between signing up and being seen.`
+      ? `${newWithoutCircle} of ${newThisWeek} people who joined this week haven’t found a Circle yet. That is the gap between signing up and being seen.`
       : 'Baseline: the Wired Professional and the Transplant join hopeful, then stall at the threshold of a real room.',
     persona: 'Wired Professional, Transplant',
     ideas: [
       { channel: 'Social', hook: 'You can be in a room full of people and still drive home alone on a Friday.',
-        body: 'Frequency isn’t another feed. It’s a few people, near you, who’d notice if you didn’t show up. Come find your circle.' },
+        body: 'Frequency isn’t another feed. It’s a few people, near you, who’d notice if you didn’t show up. Have a look at the Circles near you.' },
       { channel: 'Ad', hook: 'Connected to everything. Close to no one?',
         body: 'A standing place, a standing time, a handful of people who learn your name. Free to start. Leave anytime.' },
       { channel: 'Hook', hook: 'Not another app to check. A room to be missed in.', body: '' },
@@ -142,7 +142,7 @@ function synthesize(signal: MarketSignal): PainPoint[] {
     persona: 'The Seeker family',
     ideas: [
       { channel: 'Social', hook: 'The opposite of lonely isn’t “a lot of friends.” It’s being missed when you’re gone.',
-        body: 'Small circles, on purpose. A place where your absence registers and your return is noticed.' },
+        body: 'Small Circles, on purpose. A place where your absence registers and your return is noticed.' },
       { channel: 'Ad', hook: 'When did anyone last text you “you ok?” just because you went quiet?',
         body: 'That’s the whole idea. A few people near you, paying attention. Come be one of them.' },
       { channel: 'Hook', hook: 'A place to be missed.', body: '' },
@@ -155,15 +155,15 @@ function synthesize(signal: MarketSignal): PainPoint[] {
     ache: 'I want in on something real and early, not a Discord that dies in three weeks.',
     basis: topInterest ? 'live' : 'baseline',
     evidence: topInterest
-      ? `${topInterest.name} is your most-alive interest right now (${topInterest.activeCircles} active circle${topInterest.activeCircles === 1 ? '' : 's'}). Lead acquisition with the thing already gathering people.`
+      ? `${topInterest.name} is your most-alive interest right now (${topInterest.activeCircles} active Circle${topInterest.activeCircles === 1 ? '' : 's'}). Lead acquisition with the thing already gathering people.`
       : 'Baseline: the Activity-First reader comes for the run, the sauna or the game night, and stays for the people.',
     persona: 'Activity-First Man',
     ideas: [
       { channel: 'Social', hook: topInterest ? `${topInterest.name} is taking root near you. In person, off the phone.` : 'Something real is taking root near you. In person, off the phone.',
-        body: 'The first circles are forming now. Get in early, shape it from day one, be one of the first through the door.' },
+        body: 'The first Circles meet in person, near you. Come to one and help decide what it becomes.' },
       { channel: 'Ad', hook: 'Run clubs. Bathhouses. Breathwork. People are paying real money to get off the feed and into a body.',
-        body: 'Frequency is that: local, device-light, community-owned. Be one of the founders, not a follower.' },
-      { channel: 'Hook', hook: 'Get in early on the room, not the app.', body: '' },
+        body: 'Frequency is that: local, device-light, community-owned.' },
+      { channel: 'Hook', hook: 'Join the room, not the app.', body: '' },
     ],
   }
 

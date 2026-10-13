@@ -227,3 +227,18 @@ describe('GET /api/cron/lifecycle-triggers, one check-in per membership per run'
     })
   })
 })
+
+// LIVE-914 (Phase 0.5): the check-ins carry no exclamation points, Circle is a proper noun, and day 7
+// no longer points at the leaderboard (it opens at Regular, so a week-old member can't reach it).
+describe('GET /api/cron/lifecycle-triggers, the check-in copy', () => {
+  it.each([
+    [1, "You're in Sunrise. Say hi in the Circle feed when you're ready."],
+    [3, 'Three days in Sunrise. Have a look at what the Circle has coming up.'],
+    [7, 'A week in Sunrise. Pick one upcoming Event and come as you are.'],
+  ])('day %i reads plainly', async (day, body) => {
+    state.rows = [membership({ id: 'm', joined_at: daysAgo(day) })]
+    await GET(req)
+    expect(state.inserted[0]).toMatchObject({ type: `lifecycle_day${day}`, body })
+    expect(body).not.toMatch(/!|leaderboard/i)
+  })
+})
