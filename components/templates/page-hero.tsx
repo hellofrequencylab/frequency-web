@@ -182,7 +182,7 @@ function fadeScrim(color: string): string {
  *  runs the other way: migrate this constant to `buttonGeometry` and re-baseline the test that pins
  *  it. Tracked in ADR-1193. */
 export const HERO_ACTION_CLASS =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg border border-on-ink/40 bg-on-ink/10 px-3 py-1.5 text-body-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-on-ink/20'
+  'inline-flex items-center justify-center gap-1.5 rounded-control border border-on-ink/40 bg-on-ink/10 px-3 py-1.5 text-body-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-on-ink/20'
 
 /** The header-action button style for an ADAPTIVE hero (`adaptiveText`). Same geometry as
  *  HERO_ACTION_CLASS, but its border, glass and text colour all derive from the ZONE's
@@ -192,7 +192,7 @@ export const HERO_ACTION_CLASS =
  *  edit: seven non-profile heroes depend on that one byte for byte, and a test names it.
  *  Use this for any button in the `actions` slot of a hero with `adaptiveText` on. */
 export const HERO_ACTION_CLASS_ADAPTIVE =
-  'hero-chip inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm font-semibold transition-colors'
+  'hero-chip inline-flex items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-semibold transition-colors'
 
 /** The data attributes that make an element a resolvable text zone. Returns nothing at all when
  *  the hero is not adaptive (so a non-adaptive hero's DOM is byte-identical to before) and, when
@@ -368,7 +368,7 @@ export function PageHero({
                 {eyebrow && (
                   <div className="mb-1.5 flex flex-wrap items-center gap-2 text-meta font-bold uppercase tracking-eyebrow text-primary">{eyebrow}</div>
                 )}
-                <h1 className={`font-display uppercase leading-[1] text-balance ${titleTone} text-[clamp(1.25rem,3vw,2rem)] break-words`}>
+                <h1 className={`font-display uppercase leading-none text-balance ${titleTone} text-[clamp(1.25rem,3vw,2rem)] break-words`}>
                   {title}
                 </h1>
                 {/* The subtitle is NOT here any more: it renders under the cover (see the note by
@@ -416,7 +416,7 @@ export function PageHero({
             {eyebrow && (
               <p className="mb-3 eyebrow text-primary sm:mb-4">{eyebrow}</p>
             )}
-            <h1 className={`font-display uppercase leading-[0.95] text-balance ${titleTone} text-[clamp(1.75rem,6vw,3.75rem)]`}>
+            <h1 className={`font-display uppercase leading-display text-balance ${titleTone} text-[clamp(1.75rem,6vw,3.75rem)]`}>
               {title}
             </h1>
             {subtitle && (

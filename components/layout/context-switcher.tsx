@@ -121,7 +121,7 @@ export function ContextSwitcher({
         disabled={isPending}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+        className="flex w-full items-center gap-2.5 rounded-control px-2 py-1.5 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
       >
         <span className="text-3xs font-semibold uppercase tracking-wider text-muted">In</span>
         <span className="flex-1 truncate text-left">{activeLabel(context, available)}</span>

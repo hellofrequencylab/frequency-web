@@ -22,7 +22,7 @@ export function UpgradeCrew() {
       type="button"
       onClick={() => openUpgrade()}
       aria-label="Upgrade to Crew"
-      className="mx-3 -mb-px flex items-center justify-center gap-1.5 rounded-t-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+      className="mx-3 -mb-px flex items-center justify-center gap-1.5 rounded-t-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
     >
       <Zap className="h-3.5 w-3.5" aria-hidden />
       Upgrade

@@ -128,7 +128,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
         aria-modal="true"
         aria-label="Search"
         tabIndex={-1}
-        className="relative flex h-full w-full flex-col overflow-hidden bg-surface lift-3 outline-none sm:h-auto sm:max-h-[80vh] sm:w-full sm:max-w-xl sm:rounded-2xl sm:border sm:border-border"
+        className="relative flex h-full w-full flex-col overflow-hidden bg-surface lift-3 outline-none sm:h-auto sm:max-h-[80vh] sm:w-full sm:max-w-xl sm:rounded-card sm:border sm:border-border"
       >
         {/* Search bar */}
         <div
@@ -151,7 +151,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
             type="button"
             onClick={onClose}
             aria-label="Close search"
-            className="shrink-0 rounded-lg p-1.5 text-subtle hover:bg-surface-elevated hover:text-text transition-colors"
+            className="shrink-0 rounded-control p-1.5 text-subtle hover:bg-surface-elevated hover:text-text transition-colors"
           >
             <X className="h-5 w-5" />
           </button>

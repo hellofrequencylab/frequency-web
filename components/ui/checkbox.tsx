@@ -29,6 +29,7 @@ const dawnCheckbox =
   'peer size-5 shrink-0 appearance-none rounded-control border border-border-strong bg-surface transition-[background-color,border-color] motion-reduce:transition-none checked:border-primary checked:bg-primary aria-[invalid=true]:border-danger disabled:cursor-not-allowed disabled:opacity-50'
 // FREQUENCY (ADR-1737): the control radius is 16px there, which would round a 20px box into a circle;
 // the box keeps a 6px corner. Inlined at build; DAWN's string is unchanged.
+// token-ok: Frequency's export has no radius step under 10px (--fq-radius-s), so the 6px box corner stays literal.
 export const checkboxClasses =
   SITE_DESIGN === 'frequency' ? dawnCheckbox.replace(' rounded-control ', ' rounded-[6px] ') : dawnCheckbox
 

@@ -49,7 +49,7 @@ describe('MarketingHeader: a member is not offered the door they came through', 
   // overflow on the branch a signed-out reader (and that test) never renders.
   it('pins the member control too', () => {
     const memberArm = MARKETING.slice(MARKETING.indexOf('{authed ? ('), MARKETING.indexOf(') : ('))
-    expect(memberArm).toMatch(/shrink-0 rounded-lg px-3 py-1\.5 text-body-sm font-bold[^`]*whitespace-nowrap/)
+    expect(memberArm).toMatch(/shrink-0 rounded-control px-3 py-1\.5 text-body-sm font-bold[^`]*whitespace-nowrap/)
   })
 
   it('tells the phone sheet who is looking', () => {

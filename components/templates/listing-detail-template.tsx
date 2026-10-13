@@ -222,7 +222,7 @@ export function ListingDetailTemplate({
           />
 
           {view.pickup && (
-            <section className="rounded-2xl border border-border bg-surface p-4">
+            <section className="rounded-card border border-border bg-surface p-4">
               <h2 className="mb-3 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
                 <MapPin className="h-3.5 w-3.5" aria-hidden /> {view.pickup.precise ? 'Pickup location' : 'Pickup area'}
               </h2>
@@ -241,7 +241,7 @@ export function ListingDetailTemplate({
           {asideExtras}
           {claimToken ? (
             /* Arrived via a claim link: the Claim box REPLACES Contact the seller. */
-            <section className="rounded-2xl border border-primary/40 bg-primary-bg/40 p-4">
+            <section className="rounded-card border border-primary/40 bg-primary-bg/40 p-4">
               <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-primary-strong">Claim this listing</h2>
               <ListingClaimBox
                 token={claimToken}
@@ -250,7 +250,7 @@ export function ListingDetailTemplate({
               />
             </section>
           ) : showContact ? (
-            <section className="rounded-2xl border border-border bg-surface p-4">
+            <section className="rounded-card border border-border bg-surface p-4">
               <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-muted">Contact the seller</h2>
               <ListingContactDialog
                 // A ListingDetailView is always a marketplace listing (never a Recording), so its
@@ -277,7 +277,7 @@ export function ListingDetailTemplate({
               reassurance nor any way to report the listing. The note belongs to the listing, not
               to the contact dialog. */}
           {!showContact && !claimToken && contactNote && (
-            <section className="rounded-2xl border border-border bg-surface p-4">{contactNote}</section>
+            <section className="rounded-card border border-border bg-surface p-4">{contactNote}</section>
           )}
 
           <ListingDetailsCard details={view.details} />

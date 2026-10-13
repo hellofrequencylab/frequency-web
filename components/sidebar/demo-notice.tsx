@@ -40,7 +40,7 @@ export async function DemoNotice() {
   return (
     // Masked by the visual suite (test/e2e/surfaces.ts, VISUAL_MASK_SITES): the headcount line
     // is two live counts, and the panel itself comes and goes with the demo flag.
-    <section data-visual-mask="rail-panel" className="overflow-hidden rounded-2xl border border-warning/40 bg-gradient-to-b from-warning-bg/80 to-warning-bg/30 lift-1">
+    <section data-visual-mask="rail-panel" className="overflow-hidden rounded-card border border-warning/40 bg-gradient-to-b from-warning-bg/80 to-warning-bg/30 lift-1">
       {/* Bold header band — a big bolt + a punchy line, so it reads as an ad, not a footnote. */}
       <div className="flex items-center gap-2.5 border-b border-warning/20 bg-warning-bg/60 px-3.5 py-3">
         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-warning text-on-warning lift-1">
@@ -68,7 +68,7 @@ export async function DemoNotice() {
             <li key={a.href}>
               <Link
                 href={a.href}
-                className="group flex items-center justify-between gap-2 rounded-lg border border-warning/25 bg-surface/60 px-2.5 py-1.5 transition-colors hover:border-warning/50 hover:bg-warning-bg/70"
+                className="group flex items-center justify-between gap-2 rounded-control border border-warning/25 bg-surface/60 px-2.5 py-1.5 transition-colors hover:border-warning/50 hover:bg-warning-bg/70"
               >
                 <span className="text-body-sm font-medium text-text transition-colors group-hover:text-warning">{a.label}</span>
                 <span className="inline-flex shrink-0 items-center gap-0.5 text-meta font-extrabold text-warning tabular-nums">

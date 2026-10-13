@@ -130,7 +130,7 @@ export function EntityCard({
       // `box-shadow` with no layer at all, and unlayered beats every layer. The card's focus ring
       // is an `outline` now, which `lift-1` does not touch. See app/globals.css `.ring-focus` and
       // components/cards/card-focus-ring.test.ts.
-      className={`group press relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface lift-1 transition-[colors,transform] hover:border-primary-bg ring-focus motion-reduce:transition-none ${
+      className={`group press relative flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface lift-1 transition-[colors,transform] hover:border-primary-bg ring-focus motion-reduce:transition-none ${
         dimmed ? 'dimmed' : ''
       }`}
     >

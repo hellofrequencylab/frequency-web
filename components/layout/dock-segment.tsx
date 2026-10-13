@@ -174,7 +174,7 @@ export function DockSegment({
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated`}
+        className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-control px-1.5 transition-colors hover:bg-surface-elevated`}
       >
         {head({ open })}
       </button>

@@ -395,7 +395,7 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         data-visual-mask="vault-head"
         // The head height is SHARED with the left rail's account tab (owner: both tabs the same
         // height). It is imported rather than restated — see DOCK_HEAD_H_CLASS.
-        className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated`}
+        className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-control px-1.5 transition-colors hover:bg-surface-elevated`}
       >
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill bg-primary">
           <Zap className="h-3.5 w-3.5 fill-current text-on-primary" />

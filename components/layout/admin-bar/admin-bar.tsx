@@ -62,7 +62,7 @@ function AdminBarTopBar({
         aria-label={unpublished ? 'Close settings. You have unpublished changes' : 'Close settings'}
         title={unpublished ? 'You have changes that are not published yet' : undefined}
         className={cn(
-          'relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none',
+          'relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none',
           unpublished && 'text-primary-strong',
         )}
       >

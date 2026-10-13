@@ -182,7 +182,7 @@ export function RowCard({
   // every content zone keeps the same px-5 inset.
   // `transform` joins the transition list so `.press` below eases instead of snapping; the
   // motion-reduce guard was already here and still covers it.
-  const surface = `rounded-2xl border border-border bg-surface lift-1 transition-[color,background-color,border-color,box-shadow,transform] hover:border-primary-bg motion-reduce:transition-none ${
+  const surface = `rounded-card border border-border bg-surface lift-1 transition-[color,background-color,border-color,box-shadow,transform] hover:border-primary-bg motion-reduce:transition-none ${
     dimmed ? 'opacity-[0.72]' : ''
   }`
   const pad = 'px-5 py-4'
