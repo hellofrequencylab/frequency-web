@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
@@ -23,7 +24,7 @@ export function JourneyDangerZone({ planId, title }: { planId: string; title: st
 
   return (
     <div>
-      <p className="text-2xs font-semibold uppercase tracking-wide text-muted">Danger zone</p>
+      <p className={capsLabel('text-2xs font-semibold text-muted')}>Danger zone</p>
       <button
         type="button"
         onClick={() => setOpen(true)}

@@ -11,6 +11,7 @@
 //
 // Copy is member-facing: plain, warm, no em dashes (docs/CONTENT-VOICE.md).
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -27,6 +28,7 @@ import {
 import { isError } from '@/lib/action-result'
 import { LAUNCH_NEEDS_SPACE_MESSAGE } from '@/lib/journeys/launch-surface'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 import {
   scheduleLaunchSendAction,
   scheduleLaunchSeriesAction,
@@ -231,7 +233,7 @@ export function JourneyLaunch({
 
               <div className="space-y-3 border-t border-border px-4 py-3">
                 <label className="block">
-                  <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>
                     Subject
                   </span>
                   <Input
@@ -242,7 +244,7 @@ export function JourneyLaunch({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>
                     Message
                   </span>
                   <Textarea
@@ -254,7 +256,7 @@ export function JourneyLaunch({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">
+                  <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>
                     Sends
                   </span>
                   <Input
@@ -349,17 +351,18 @@ export function JourneyLaunch({
 
       {/* Footer — the whole series in one press, and the ways back. */}
       {remaining.length > 0 && canSchedule && (
-        <button
+        <Button
           type="button"
           onClick={scheduleAll}
           disabled={pending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+          size="lg"
+          className="w-full"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           {remaining.length === drafts.length
             ? 'Schedule the whole series'
             : `Schedule the remaining ${remaining.length}`}
-        </button>
+        </Button>
       )}
 
       <p className="text-center text-meta text-subtle">

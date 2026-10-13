@@ -1,3 +1,4 @@
+import { capsLabel } from '@/components/ui/caps-label'
 import Link from 'next/link'
 import { Repeat, Clock, Zap, ArrowUpRight } from 'lucide-react'
 import type { RankedPractice } from '@/lib/practices'
@@ -34,7 +35,7 @@ export function PracticeDetail({
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           {pillar && <PillarBadge name={pillar.name} />}
-          <span className="text-2xs font-semibold uppercase tracking-wide text-muted">The practice</span>
+          <span className={capsLabel('text-2xs font-semibold text-muted')}>The practice</span>
         </div>
         {practice.summary && <p className="text-body-sm leading-relaxed text-text">{practice.summary}</p>}
       </div>

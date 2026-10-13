@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useCallback, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -20,6 +21,7 @@ import { publishCircleAction, generateCircleEventsAction } from '@/app/(main)/ci
 import { CircleCallouts } from './circle-callouts'
 import { CircleVeraPanel } from './circle-vera-panel'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 import { FunnelNextStep } from '@/components/funnels/next-step-link'
 
 // The member-facing Starter Circle BUILDER (Stage 4). A full-page editor that
@@ -522,15 +524,14 @@ function CircleActions({
             )}
           </>
         ) : (
-          <button
+          <Button
             type="button"
             onClick={publish}
             disabled={pending}
-            className={`${btn} bg-primary text-on-primary hover:bg-primary-hover`}
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Send className="h-4 w-4" aria-hidden />}{' '}
             {pending ? 'Publishing…' : 'Publish'}
-          </button>
+          </Button>
         )}
       </div>
       {error && <p className="text-2xs text-danger">{error}</p>}
@@ -588,7 +589,7 @@ function Section({
 function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">{label}</span>
+      <span className={capsLabel('mb-1 block text-2xs font-semibold text-muted')}>{label}</span>
       {children}
     </label>
   )

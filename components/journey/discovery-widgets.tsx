@@ -264,6 +264,7 @@ export function PathBlock({
           <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-elevated/60 [&::-webkit-details-marker]:hidden">
             <span
               className="relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-pill text-meta font-bold tabular-nums ring-4 ring-surface"
+              // data-driven: member-chosen Journey accent colour
               style={{ backgroundColor: accentTint(accent, 16), color: accentColor(accent) }}
             >
               {i + 1}

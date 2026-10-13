@@ -1,5 +1,6 @@
 'use client'
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -199,6 +200,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
           ) : (
             <div
               className="flex h-11 w-11 items-center justify-center rounded-2xl"
+              // data-driven: member-chosen Journey accent colour
               style={{ backgroundColor: accentTint(plan.accent, 16), color: accentColor(plan.accent) }}
             >
               <Icon className="h-5 w-5" />
@@ -271,7 +273,7 @@ export function JourneyManageCard({ plan }: { plan: ManagePlan }) {
                   </button>
                 }
               >
-                <p className="px-2.5 py-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">Show this journey on</p>
+                <p className={capsLabel('px-2.5 py-1.5 text-2xs font-semibold text-muted')}>Show this journey on</p>
                 {targetsLoading && (
                   <p className="flex items-center gap-2 px-2.5 py-2 text-body-sm text-muted"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading</p>
                 )}

@@ -6,9 +6,11 @@
 // also shows a printable certificate card. Modeled on the season celebration's card/Burst/anim
 // pattern (token-only colors, reduced-motion safe), but milestone-aware and season-free.
 
+import { capsLabel } from '@/components/ui/caps-label'
 import { useEffect, useRef } from 'react'
 import { Trophy, Gem, X, Sparkles, Award, Printer } from 'lucide-react'
 import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
+import { Button } from '@/components/ui/button'
 
 export interface TrophyMilestone {
   kind: 'phase' | 'journey'
@@ -44,7 +46,7 @@ function Certificate({ title }: { title: string }) {
   return (
     <div className="mt-5 rounded-2xl border-2 border-rank-gold/40 bg-canvas p-5 text-center">
       <Award className="mx-auto h-7 w-7 text-rank-gold" strokeWidth={1.75} />
-      <p className="mt-2 text-2xs font-bold uppercase tracking-widest text-rank-gold">Certificate of completion</p>
+      <p className={capsLabel('mt-2 text-2xs font-bold text-rank-gold', 'widest')}>Certificate of completion</p>
       <p className="mt-2 text-body font-bold text-text">{title}</p>
       <p className="mt-1 text-meta text-muted">Completed on Frequency</p>
     </div>
@@ -109,7 +111,7 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
           <Trophy className="h-10 w-10" strokeWidth={1.75} />
         </div>
 
-        <p className="mt-5 inline-flex items-center gap-1.5 text-2xs font-bold uppercase tracking-widest text-primary-strong">
+        <p className={capsLabel('mt-5 inline-flex items-center gap-1.5 text-2xs font-bold text-primary-strong', 'widest')}>
           <Sparkles className="h-3.5 w-3.5" /> {eyebrow}
         </p>
         <h2 className="mt-1.5 text-balance text-lead font-bold text-text">{milestone.title}</h2>
@@ -127,19 +129,13 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
 
         <div className="mt-6 flex items-center gap-2">
           {isJourney && milestone.certificate && (
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center justify-center gap-1.5 rounded-control border border-border px-4 py-2.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-            >
+            <Button variant="secondary" size="lg" onClick={() => window.print()}>
               <Printer className="h-4 w-4" /> Print
-            </button>
+            </Button>
           )}
-          <button
-            onClick={onDismiss}
-            className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-          >
+          <Button size="lg" onClick={onDismiss} className="flex-1">
             {isJourney ? 'Done' : 'Keep going'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
