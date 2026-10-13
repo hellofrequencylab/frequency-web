@@ -17,6 +17,12 @@
 // address that was verified keeps receiving when the switch is turned off (the same posture as the
 // EMAIL-013 aliases: issuance is switched, routes stay routable).
 //
+// FINISHES ON ITS OWN. The owner presses the button once. The space-inbox-verify cron
+// (app/api/cron/space-inbox-verify, every 15 minutes) then takes every pending row the rest of the way:
+// a row whose records were never written (dns_written_at null) is provisioned again, a row whose
+// records are in the zone is checked against the provider, until it reads verified. Nobody presses
+// Check again; the card keeps the button for the impatient.
+//
 // FAIL-SAFE. provisionSpaceInboxAddress and checkSpaceInboxAddress never throw to the caller: they return
 // a result with a member-safe sentence. resolveSpaceInboxFrom returns null on any miss so the compose
 // path falls back to the Frequency sender. The inbound half throws only where the alias router throws
@@ -58,6 +64,9 @@ interface SpaceInboxAddressRow {
   provider_domain_id: string | null
   state: SpaceInboxState
   dns_records: ZoneRecord[]
+  /** When the zone write last returned ok (migration 20270346008500). Null until written, and
+   *  cleared when a write fails, so the verify cron knows whether to provision again or only check. */
+  dns_written_at: string | null
   created_at: string
   verified_at: string | null
   updated_at: string
@@ -68,11 +77,14 @@ export type SpaceInboxResult =
   | { ok: false; message: string }
 
 type Result = { data: Record<string, unknown> | null; error: { code?: string; message?: string } | null }
+type ListResult = { data: Record<string, unknown>[] | null; error: { code?: string; message?: string } | null }
 type Query = {
   select(s: string): Query; eq(k: string, v: unknown): Query; ilike(k: string, v: string): Query; limit(n: number): Query
+  or(filters: string): Query; order(k: string, opts?: Record<string, unknown>): Query
   insert(v: Record<string, unknown>): Query; update(v: Record<string, unknown>): Query
   upsert(v: Record<string, unknown>, opts?: Record<string, unknown>): Query
   single(): Promise<Result>; maybeSingle(): Promise<Result>
+  then<T>(onfulfilled: (value: ListResult) => T): Promise<T>
 }
 const table = (name: string) => (createAdminClient() as unknown as { from(n: string): Query }).from(name)
 
@@ -97,6 +109,21 @@ export async function readSpaceInboxAddress(spaceId: string): Promise<SpaceInbox
   } catch {
     return null
   }
+}
+
+/**
+ * The rows the verify cron still owes a finish: every `pending` row, and every `failed` row updated
+ * since `failedSince` (a transient provider refusal retries; an old failure waits for the owner).
+ * Oldest `updated_at` first, at most `limit`. Throws on a read fault so the cron can log it.
+ */
+export async function listSpaceInboxAddressesToFinish(opts: { limit: number; failedSince: string }): Promise<SpaceInboxAddressRow[]> {
+  const { data, error } = await table('space_inbox_addresses')
+    .select('*')
+    .or(`state.eq.pending,and(state.eq.failed,updated_at.gte.${opts.failedSince})`)
+    .order('updated_at', { ascending: true })
+    .limit(opts.limit)
+  if (error) throw new Error(error.message ?? 'Space inbox address list is unavailable.')
+  return (data ?? []) as unknown as SpaceInboxAddressRow[]
 }
 
 async function readSpace(spaceId: string): Promise<{ slug: string; name: string; brand_name: string | null; owner_profile_id: string | null } | null> {
@@ -167,12 +194,16 @@ export async function provisionSpaceInboxAddress(spaceId: string): Promise<Space
     const saved = await saveRow(spaceId, { domain, local_part: SPACE_INBOX_LOCAL_PART, provider_domain_id: providerId, state: providerState, dns_records: zoneRecords })
     if (!saved) return { ok: false, message: 'Your Space address could not be saved. Try again.' }
 
-    // 3) The records into the apex zone. Repeatable; a record already there counts as written.
+    // 3) The records into the apex zone. Repeatable; a record already there counts as written. The
+    //    outcome is stamped on the row (dns_written_at) so the verify cron can tell a row whose records
+    //    are in the zone from one that still needs them.
     const dns = await upsertZoneDnsRecords(zone, zoneRecords.map(r => ({ type: r.type, name: r.name, value: r.value, mxPriority: r.mxPriority })))
     if (!dns.ok) {
-      console.warn('[space-inbox] zone DNS write failed', { spaceId, error: dns.error })
-      return { ok: false, message: 'Your Space address is saved, but its records could not be written yet. Try again in a minute.' }
+      console.warn('[space-inbox] zone DNS write failed', { spaceId, zone, error: dns.error })
+      await saveRow(spaceId, { dns_written_at: null })
+      return { ok: false, message: 'Your Space address is saved, but its records could not be written yet. It will be tried again on its own.' }
     }
+    await saveRow(spaceId, { dns_written_at: new Date().toISOString() })
 
     // 4) Ask the provider to look, and report where it stands.
     return await checkSpaceInboxAddress(spaceId)
@@ -202,7 +233,7 @@ export async function checkSpaceInboxAddress(spaceId: string): Promise<SpaceInbo
       ? 'Your Space address is ready.'
       : state === 'failed'
         ? 'The provider could not verify your Space address. Press Set up my address to try again.'
-        : 'Your Space address is being set up. DNS can take a few minutes; check again shortly.'
+        : 'Your Space address is being set up. DNS can take a few minutes, and it finishes on its own.'
     return { ok: true, address, state, message }
   } catch (err) {
     console.error('[space-inbox] check failed', { spaceId, error: err instanceof Error ? err.message : String(err) })

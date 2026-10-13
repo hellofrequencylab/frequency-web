@@ -339,7 +339,8 @@ describe('the floor', () => {
     // 31 since 2026-09-29: reconcile-transfers (LIVE-622).
     // 32 since 2026-09-30: storage-backup (HYG-144). 33 since 2026-10-06: event-followups (LIVE-802).
     // 34 since 2026-10-06: embed-posts (LIVE-677). 35 since 2026-10-12: this-week (LIVE-806).
-    expect(jobs.length).toBe(35)
+    // 36 since 2026-10-13: space-inbox-verify (EMAIL-022).
+    expect(jobs.length).toBe(36)
     expect(jobs.length).toBeGreaterThan(MIN_JOBS)
   })
 })

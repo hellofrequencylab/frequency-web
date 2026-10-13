@@ -1,6 +1,6 @@
 -- EMAIL-022: the Space inbox address table is service-only, one address per Space, bounded states.
 begin;
-select plan(8);
+select plan(10);
 insert into public.entities(id,key,name,kind) select gen_random_uuid(),'labs','Labs','for_profit'
  where not exists(select 1 from public.entities where key='labs');
 insert into public.spaces(id,slug,name,type,entity_id,status,visibility) values
@@ -17,6 +17,8 @@ select lives_ok($$insert into public.space_inbox_addresses(space_id,domain,provi
 select throws_ok($$insert into public.space_inbox_addresses(space_id,domain) values('00000000-0000-4000-c022-000000000001','inbox-a-again.test')$$,'23505','duplicate key value violates unique constraint "space_inbox_addresses_space_id_key"','one address per Space');
 select throws_ok($$insert into public.space_inbox_addresses(space_id,domain) values('00000000-0000-4000-c022-000000000002','inbox-a.test')$$,'23505',null,'one Space per domain');
 select throws_ok($$update public.space_inbox_addresses set state='live' where domain='inbox-a.test'$$,'23514',null,'state stays in the bounded set');
+select has_column('public','space_inbox_addresses','dns_written_at','dns_written_at records when the zone write last succeeded (the verify cron reads it)');
+select lives_ok($$update public.space_inbox_addresses set dns_written_at=now() where domain='inbox-a.test'$$,'service can stamp the DNS write');
 select lives_ok($$insert into public.space_email_reply_quarantine(reason,recipient_fingerprint,message_fingerprint)
  values('inbox_address_unverified',repeat('c',64),repeat('d',64))$$,'inbox quarantine reasons are admitted');
 select * from finish();
