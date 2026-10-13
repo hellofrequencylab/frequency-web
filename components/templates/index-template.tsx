@@ -155,7 +155,7 @@ export function IndexTemplate({
               alt=""
               fetchPriority="high"
               style={heroFocus ? { objectPosition: heroFocus } : undefined}
-              className={FREQUENCY ? 'mb-7 mt-3 h-44 w-full rounded-card object-cover sm:h-56' : 'mb-6 mt-3 h-44 w-full rounded-2xl border border-border object-cover sm:h-56'}
+              className={FREQUENCY ? 'mb-7 mt-3 h-44 w-full rounded-card object-cover sm:h-56' : 'mb-6 mt-3 h-44 w-full rounded-card border border-border object-cover sm:h-56'}
             />
           )}
           {/* Secondary page controls, sitting directly under the banner (a wrapping pill row) —

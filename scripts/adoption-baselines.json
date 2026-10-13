@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 1868,
+      "baseline": 1791,
       "frozen": {
         "at": "2026-10-13",
-        "value": 1868,
+        "value": 1791,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "ADR-1737 design-switch fan-out (2026-10-13): literal-radius sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes",
-        "from": 2139
+        "reason": "Area-2 theme scan: shared primitives/shells moved rounded-lg/2xl onto rounded-control/card (same px under DAWN and Frequency)",
+        "from": 1868
       },
       "history": [
         {
@@ -315,6 +315,13 @@
           "to": 1868,
           "direction": "lowered",
           "reason": "ADR-1737 design-switch fan-out (2026-10-13): literal-radius sites moved onto the ui primitives and theme roles by the admin, member-page, public-route, marketing, chrome and shared-component lanes"
+        },
+        {
+          "at": "2026-10-13",
+          "from": 1868,
+          "to": 1791,
+          "direction": "lowered",
+          "reason": "Area-2 theme scan: shared primitives/shells moved rounded-lg/2xl onto rounded-control/card (same px under DAWN and Frequency)"
         }
       ]
     },

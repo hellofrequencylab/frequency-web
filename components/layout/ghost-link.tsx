@@ -68,7 +68,7 @@ export function GhostLink({
           >
             <X className="h-4 w-4" />
           </button>
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-card bg-primary-bg text-primary-strong">
             <Zap className="h-6 w-6" />
           </div>
           <h2 className="mt-4 text-lead font-bold text-text">Upgrade to {tier}</h2>

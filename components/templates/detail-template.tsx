@@ -175,13 +175,13 @@ export function DetailTemplate({
                 overlayStyle={coverOverlayStyle}
               />
             ) : (
-              <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
+              <div className="relative aspect-[16/6] w-full overflow-hidden rounded-card bg-surface-elevated">
                 {/* Above the fold -> preload for LCP (this fork uses `preload`, not `priority`). */}
                 <Image src={coverImage} alt="" fill sizes="(max-width: 1024px) 100vw, 1344px" preload className="object-cover" />
               </div>
             )
           ) : (
-            <div className="flex aspect-[16/6] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
+            <div className="flex aspect-[16/6] w-full items-center justify-center rounded-card bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
               <ImageIcon className="h-8 w-8 opacity-60" aria-hidden />
             </div>
           )}
@@ -273,7 +273,7 @@ export function DetailTemplate({
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`px-3 py-1.5 rounded-lg text-body-sm font-medium whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-control text-body-sm font-medium whitespace-nowrap transition-colors ${
                   tab.active
                     ? 'bg-primary-bg text-primary-strong'
                     : 'text-muted hover:bg-surface-elevated hover:text-text'

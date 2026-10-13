@@ -132,7 +132,7 @@ export function WizardShell({
           </div>
         ) : (
           <div className="mb-8 flex items-center gap-2">
-            <span className="h-7 w-7 rounded-lg bg-primary" aria-hidden />
+            <span className="h-7 w-7 rounded-control bg-primary" aria-hidden />
             <span className="font-display text-body-lg uppercase tracking-tight text-text">Frequency</span>
           </div>
         )}

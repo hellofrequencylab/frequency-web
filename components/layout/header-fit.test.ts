@@ -78,7 +78,7 @@ describe('MarketingHeader: the wordmark is the only child that may shrink', () =
   })
 
   it('pins the CTA — the conversion control must never be clipped', () => {
-    expect(MARKETING).toMatch(/shrink-0 rounded-lg px-3 py-1\.5 text-body-sm font-bold[^`]*whitespace-nowrap/)
+    expect(MARKETING).toMatch(/shrink-0 rounded-control px-3 py-1\.5 text-body-sm font-bold[^`]*whitespace-nowrap/)
   })
 
   it('pins Sign in', () => {
@@ -107,7 +107,7 @@ describe('AuthButtons: the public auth cluster is pinned and thinned on a phone'
   // the only way back into an account on 22 public pages. It buys its room from padding.
   it('keeps Sign in visible below sm', () => {
     expect(USER_MENU).not.toMatch(/href="\/sign-in"[\s\S]{0,160}hidden sm:/)
-    expect(USER_MENU).toContain('px-2 py-1.5 rounded-lg transition-colors sm:px-3')
+    expect(USER_MENU).toContain('px-2 py-1.5 rounded-control transition-colors sm:px-3')
   })
 })
 
@@ -237,7 +237,7 @@ describe('AppShell header: the icon cluster holds its width, the brand gives way
     })
 
     it('sizes the bell to match the Friends control beside it instead of 4px wider', () => {
-      expect(read('./notification-bell.tsx')).toContain('relative p-1.5 sm:p-2 rounded-lg')
+      expect(read('./notification-bell.tsx')).toContain('relative p-1.5 sm:p-2 rounded-control')
     })
   })
 

@@ -251,7 +251,7 @@ function MobileLeftDrawer({
           <Link
             href={profileHref}
             onClick={onClose}
-            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1 -m-1 hover:bg-chrome-hover transition-colors"
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-control p-1 -m-1 hover:bg-chrome-hover transition-colors"
           >
             {profile.avatar_url ? (
               <Image
@@ -378,7 +378,7 @@ function MobileLeftDrawer({
             <button
               onClick={onClose}
               aria-label="Close navigation"
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-surface-elevated text-text text-body-sm font-medium py-3 hover:bg-border-strong transition-colors"
+              className="w-full flex items-center justify-center gap-2 rounded-control bg-surface-elevated text-text text-body-sm font-medium py-3 hover:bg-border-strong transition-colors"
             >
               <X className="w-4 h-4" />
               Close
@@ -832,7 +832,7 @@ export default function AppShell({
           Bypass Blocks). Placed before the top bar so it wins tab order even on an editor takeover. */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-body-sm focus:font-semibold focus:text-text focus:shadow-pop"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-control focus:bg-surface focus:px-4 focus:py-2 focus:text-body-sm focus:font-semibold focus:text-text focus:shadow-pop"
       >
         Skip to content
       </a>
